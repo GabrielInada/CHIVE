@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DataViz — Dia 01: Upload de Dados</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/src/styles/style.css" />
+</head>
+<body>
+    <header>
+        <div class="logo">
+            DataViz
+            <span class="logo-badge">artigo</span>
+        </div>
+        <div class="header-steps">
+            <span class="step atual">01 · Upload</span>
+            <span>→</span>
+            <span class="step">02 · Gráficos</span>
+            <span>→</span>
+            <span class="step">03 · Publicar</span>
+        </div>
+    </header>
+
+    <div class="workspace">
+        <aside class="painel-esquerdo">
+            <div>
+                <p class="secao-titulo">Carregar arquivo</p>
+                <div id="zona-upload" role="button" tabindex="0">
+                    <span class="upload-icone">⬆</span>
+                    <p class="upload-texto-principal">Arraste seu arquivo aqui</p>
+                    <p class="upload-texto-sub">
+                        ou clique para selecionar<br>
+                        Formatos aceitos: <strong>CSV</strong> ou <strong>JSON</strong>
+                    </p>
+                </div>
+
+                <input type="file" id="input-arquivo" accept=".csv,.json,text/csv,application/json" />
+                <div id="mensagem-erro"></div>
+            </div>
+
+            <div id="info-arquivo">
+                <p class="secao-titulo">Arquivo carregado</p>
+                <div class="arquivo-card">
+                    <div class="arquivo-nome" id="arquivo-nome-texto">—</div>
+                    <div class="arquivo-meta" id="arquivo-meta-texto">—</div>
+                </div>
+            </div>
+
+            <div id="painel-colunas">
+                <p class="secao-titulo">Colunas detectadas</p>
+                <div class="lista-colunas" id="lista-colunas-conteudo"></div>
+            </div>
+
+            <button class="btn-primario" id="btn-avancar" disabled>
+                Avançar para os gráficos →
+            </button>
+
+            <div id="aviso-dev">
+                <code>window.dadosCarregados</code> pronto ✓<br>
+                <code>window.colunasDetectadas</code> pronto ✓
+            </div>
+        </aside>
+
+        <main class="area-resultados">
+            <div id="estado-vazio">
+                <span class="vazio-icone">◫</span>
+                <p class="vazio-titulo">Nenhum dado carregado ainda</p>
+                <p class="vazio-sub">
+                    Carregue um arquivo CSV ou JSON ao lado para ver o preview dos dados aqui.
+                </p>
+            </div>
+
+            <div id="estado-dados">
+                <div class="resultado-card animar">
+                    <div class="card-header">
+                        <span class="card-titulo">Preview dos dados</span>
+                        <span class="card-badge" id="badge-linhas">— linhas</span>
+                    </div>
+                    <div class="card-corpo">
+                        <div id="container-tabela"></div>
+                    </div>
+                </div>
+
+                <div class="resultado-card animar" id="card-stats" style="display:none">
+                    <div class="card-header">
+                        <span class="card-titulo">Estatísticas — colunas numéricas</span>
+                        <span class="card-badge" id="badge-num-colunas">—</span>
+                    </div>
+                    <div class="card-corpo">
+                        <div class="stats-grid" id="container-stats"></div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+</body>
+</html>
