@@ -35,16 +35,14 @@
                     </p>
                 </div>
 
-                <input type="file" id="input-arquivo" accept=".csv,.json,text/csv,application/json" />
+                <input type="file" id="input-arquivo" accept=".csv,.json,text/csv,application/json" multiple />
                 <div id="mensagem-erro"></div>
             </div>
 
             <div id="info-arquivo">
-                <p class="secao-titulo">Arquivo carregado</p>
-                <div class="arquivo-card">
-                    <div class="arquivo-nome" id="arquivo-nome-texto">—</div>
-                    <div class="arquivo-meta" id="arquivo-meta-texto">—</div>
-                </div>
+                <p class="secao-titulo">Arquivos carregados</p>
+                <div class="arquivos-resumo" id="arquivo-resumo-texto">Nenhum arquivo</div>
+                <div class="lista-arquivos" id="lista-arquivos-conteudo"></div>
             </div>
 
             <div id="painel-colunas">
@@ -57,8 +55,8 @@
             </button>
 
             <div id="aviso-dev">
-                <code>window.dadosCarregados</code> pronto ✓<br>
-                <code>window.colunasDetectadas</code> pronto ✓
+                <code>window.datasetsCarregados</code> pronto ✓<br>
+                <code>window.datasetAtivo</code> pronto ✓
             </div>
         </aside>
 

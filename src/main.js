@@ -7,54 +7,143 @@ import {
 import {
 	esconderErro,
 	mostrarErro,
+	renderizarEstadoVazio,
 	renderizarInterface,
+	renderizarListaArquivos,
 } from './components/resultsView.js';
 
+const datasetsCarregados = [];
+let indiceAtivo = -1;
+
+window.datasetsCarregados = datasetsCarregados;
+window.datasetAtivo = null;
 window.dadosCarregados = null;
 window.colunasDetectadas = null;
 
-function processarArquivo(arquivo) {
-	esconderErro();
+function sincronizarGlobais() {
+	const datasetAtivo = datasetsCarregados[indiceAtivo] ?? null;
+	window.datasetAtivo = datasetAtivo;
+	window.dadosCarregados = datasetAtivo ? datasetAtivo.dados : null;
+	window.colunasDetectadas = datasetAtivo ? datasetAtivo.colunas : null;
+}
 
-	const extensao = arquivo.name.split('.').pop().toLowerCase();
-	if (!['csv', 'json'].includes(extensao)) {
-		mostrarErro('Formato não suportado. Envie um arquivo .csv ou .json');
+function atualizarVisao() {
+	if (datasetsCarregados.length === 0) {
+		indiceAtivo = -1;
+		sincronizarGlobais();
+		renderizarEstadoVazio();
 		return;
 	}
 
-	const tamanhoFormatado = formatarTamanhoArquivo(arquivo.size);
+	if (indiceAtivo < 0 || indiceAtivo >= datasetsCarregados.length) {
+		indiceAtivo = 0;
+	}
 
-	const leitor = new FileReader();
+	const datasetAtivo = datasetsCarregados[indiceAtivo];
+	sincronizarGlobais();
 
-	leitor.onload = evento => {
-		const textoArquivo = evento.target.result;
+	renderizarListaArquivos(
+		datasetsCarregados,
+		indiceAtivo,
+		selecionarArquivo,
+		removerArquivo
+	);
 
-		try {
+	renderizarInterface(
+		datasetAtivo.dados,
+		datasetAtivo.colunas,
+		datasetAtivo.nome,
+		datasetAtivo.tamanho
+	);
+}
+
+function selecionarArquivo(indice) {
+	if (indice < 0 || indice >= datasetsCarregados.length) return;
+	indiceAtivo = indice;
+	atualizarVisao();
+}
+
+function removerArquivo(indice) {
+	if (indice < 0 || indice >= datasetsCarregados.length) return;
+
+	datasetsCarregados.splice(indice, 1);
+
+	if (datasetsCarregados.length === 0) {
+		atualizarVisao();
+		return;
+	}
+
+	if (indice < indiceAtivo) {
+		indiceAtivo -= 1;
+	} else if (indice === indiceAtivo) {
+		indiceAtivo = Math.max(0, indiceAtivo - 1);
+	}
+
+	atualizarVisao();
+}
+
+function lerArquivoTexto(arquivo) {
+	return new Promise((resolve, reject) => {
+		const leitor = new FileReader();
+
+		leitor.onload = evento => resolve(evento.target.result);
+		leitor.onerror = () => reject(new Error(`Erro ao ler o arquivo "${arquivo.name}".`));
+
+		leitor.readAsText(arquivo, 'UTF-8');
+	});
+}
+
+async function processarArquivos(arquivos) {
+	esconderErro();
+
+	const listaArquivos = Array.from(arquivos);
+	if (listaArquivos.length === 0) return;
+
+	const resultados = await Promise.allSettled(
+		listaArquivos.map(async arquivo => {
+			const extensao = arquivo.name.split('.').pop().toLowerCase();
+			if (!['csv', 'json'].includes(extensao)) {
+				throw new Error(`Formato não suportado em "${arquivo.name}". Envie .csv ou .json.`);
+			}
+
+			const textoArquivo = await lerArquivoTexto(arquivo);
 			const dadosBrutos = extensao === 'csv'
 				? parsearCSV(textoArquivo)
 				: parsearJSON(textoArquivo);
-
 			const { dados, colunas } = processarDados(dadosBrutos);
 
-			window.dadosCarregados = dados;
-			window.colunasDetectadas = colunas;
+			return {
+				nome: arquivo.name,
+				tamanho: formatarTamanhoArquivo(arquivo.size),
+				dados,
+				colunas,
+			};
+		})
+	);
 
-			renderizarInterface(dados, colunas, arquivo.name, tamanhoFormatado);
+	const datasetsNovos = resultados
+		.filter(resultado => resultado.status === 'fulfilled')
+		.map(resultado => resultado.value);
 
-			console.log('✓ Dados carregados:', dados.length, 'linhas,', colunas.length, 'colunas');
-			console.log('  Colunas:', colunas.map(coluna => `${coluna.nome} (${coluna.tipo})`).join(', '));
-			console.log('  Acesse via: window.dadosCarregados');
-		} catch (erro) {
-			mostrarErro(erro.message);
-			console.error('Erro ao processar arquivo:', erro);
-		}
-	};
+	const erros = resultados
+		.filter(resultado => resultado.status === 'rejected')
+		.map(resultado => resultado.reason?.message || 'Erro desconhecido ao processar arquivo.');
 
-	leitor.onerror = () => {
-		mostrarErro('Erro ao ler o arquivo. Tente novamente.');
-	};
+	if (datasetsNovos.length > 0) {
+		datasetsCarregados.push(...datasetsNovos);
+		indiceAtivo = datasetsCarregados.length - 1;
+		atualizarVisao();
 
-	leitor.readAsText(arquivo, 'UTF-8');
+		datasetsNovos.forEach(dataset => {
+			console.log('✓ Dados carregados:', dataset.nome, '-', dataset.dados.length, 'linhas,', dataset.colunas.length, 'colunas');
+		});
+		console.log('Acesse todos os datasets via: window.datasetsCarregados');
+	}
+
+	if (erros.length > 0) {
+		mostrarErro(erros.join(' | '));
+		erros.forEach(erro => console.error(erro));
+	}
 }
 
 const zonaUpload = document.getElementById('zona-upload');
@@ -70,7 +159,7 @@ zonaUpload.addEventListener('keydown', evento => {
 
 inputArquivo.addEventListener('change', evento => {
 	if (evento.target.files.length > 0) {
-		processarArquivo(evento.target.files[0]);
+		processarArquivos(evento.target.files);
 		evento.target.value = '';
 	}
 });
@@ -92,10 +181,7 @@ zonaUpload.addEventListener('drop', evento => {
 
 	const arquivos = evento.dataTransfer.files;
 	if (arquivos.length > 0) {
-		processarArquivo(arquivos[0]);
-		if (arquivos.length > 1) {
-			mostrarErro('Múltiplos arquivos detectados. Processando apenas o primeiro.');
-		}
+		processarArquivos(arquivos);
 	}
 });
 
@@ -103,15 +189,18 @@ document.addEventListener('dragover', evento => evento.preventDefault());
 document.addEventListener('drop', evento => evento.preventDefault());
 
 document.getElementById('btn-avancar').addEventListener('click', () => {
+	const total = datasetsCarregados.length;
+
 	alert(
-		'Dados prontos!\n\n' +
-		'No Dia 02, este botão vai abrir os gráficos.\n\n' +
-		'Os dados estão em: window.dadosCarregados\n' +
-		'As colunas estão em: window.colunasDetectadas\n\n' +
+		'Datasets prontos!\n\n' +
+		`Total carregado: ${total} arquivo${total > 1 ? 's' : ''}.\n` +
+		'No Dia 02, este botão vai enviar todos os datasets carregados.\n\n' +
+		'Todos os datasets: window.datasetsCarregados\n' +
+		'Dataset ativo: window.datasetAtivo\n\n' +
 		'Abra o DevTools (F12 → Console) e digite:\n' +
-		'window.dadosCarregados'
+		'window.datasetsCarregados'
 	);
 });
 
 console.log('DataViz Dia 01 carregado.');
-console.log('Carregue um CSV ou JSON para começar.');
+console.log('Carregue um ou vários CSV/JSON para começar.');

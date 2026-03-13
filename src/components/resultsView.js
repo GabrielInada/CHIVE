@@ -2,6 +2,15 @@ import { calcularEstatisticas } from '../services/dataService.js';
 
 const LINHAS_PREVIEW = 10;
 
+function escaparHTML(texto) {
+	return String(texto)
+		.replaceAll('&', '&amp;')
+		.replaceAll('<', '&lt;')
+		.replaceAll('>', '&gt;')
+		.replaceAll('"', '&quot;')
+		.replaceAll("'", '&#39;');
+}
+
 export function formatarNumero(valor) {
 	if (valor === null || valor === undefined || isNaN(valor)) return '—';
 	if (Number.isInteger(valor)) return valor.toLocaleString('pt-BR');
@@ -21,12 +30,57 @@ export function esconderErro() {
 	document.getElementById('mensagem-erro').style.display = 'none';
 }
 
-export function renderizarInterface(dados, colunas, nomeArquivo, tamanhoArquivo) {
-	document.getElementById('info-arquivo').style.display = 'block';
-	document.getElementById('arquivo-nome-texto').textContent = nomeArquivo;
-	document.getElementById('arquivo-meta-texto').textContent =
-		`${dados.length.toLocaleString('pt-BR')} linhas · ${colunas.length} colunas · ${tamanhoArquivo}`;
+export function renderizarListaArquivos(datasets, indiceAtivo, aoSelecionar, aoRemover) {
+	const infoArquivo = document.getElementById('info-arquivo');
+	const resumo = document.getElementById('arquivo-resumo-texto');
+	const lista = document.getElementById('lista-arquivos-conteudo');
 
+	infoArquivo.style.display = 'block';
+	resumo.textContent = `${datasets.length} arquivo${datasets.length > 1 ? 's' : ''} carregado${datasets.length > 1 ? 's' : ''}`;
+
+	lista.innerHTML = datasets.map((dataset, indice) => `
+		<div class="arquivo-item ${indice === indiceAtivo ? 'ativo' : ''}" data-idx="${indice}">
+			<button class="arquivo-item-botao" type="button" data-acao="selecionar" data-idx="${indice}">
+				<span class="arquivo-item-nome" title="${escaparHTML(dataset.nome)}">${escaparHTML(dataset.nome)}</span>
+				<span class="arquivo-item-meta">${dataset.dados.length.toLocaleString('pt-BR')} linhas · ${dataset.colunas.length} colunas · ${dataset.tamanho}</span>
+			</button>
+			<button class="arquivo-item-remover" type="button" data-acao="remover" data-idx="${indice}" aria-label="Remover ${escaparHTML(dataset.nome)}">×</button>
+		</div>
+	`).join('');
+
+	lista.onclick = evento => {
+		const alvo = evento.target.closest('[data-acao]');
+		if (!alvo) return;
+
+		const indice = Number(alvo.dataset.idx);
+		if (Number.isNaN(indice)) return;
+
+		if (alvo.dataset.acao === 'remover') {
+			aoRemover(indice);
+			return;
+		}
+
+		aoSelecionar(indice);
+	};
+}
+
+export function renderizarEstadoVazio() {
+	document.getElementById('info-arquivo').style.display = 'none';
+	document.getElementById('painel-colunas').style.display = 'none';
+	document.getElementById('estado-vazio').style.display = 'flex';
+	document.getElementById('estado-dados').style.display = 'none';
+	document.getElementById('container-tabela').innerHTML = '';
+	document.getElementById('container-stats').innerHTML = '';
+	document.getElementById('btn-avancar').disabled = true;
+	document.getElementById('aviso-dev').style.display = 'none';
+	document.getElementById('zona-upload').classList.remove('carregado');
+	document.querySelector('.upload-icone').textContent = '⬆';
+	document.querySelector('.upload-texto-principal').textContent = 'Arraste seu arquivo aqui';
+	document.querySelector('.upload-texto-sub').innerHTML =
+		'ou clique para selecionar<br>Formatos aceitos: <strong>CSV</strong> ou <strong>JSON</strong>';
+}
+
+export function renderizarInterface(dados, colunas, nomeArquivo, tamanhoArquivo) {
 	document.getElementById('painel-colunas').style.display = 'block';
 	const listaColunas = document.getElementById('lista-colunas-conteudo');
 	listaColunas.innerHTML = colunas.map(({ nome, tipo }) => `
@@ -99,6 +153,8 @@ export function renderizarInterface(dados, colunas, nomeArquivo, tamanhoArquivo)
 	document.getElementById('aviso-dev').style.display = 'block';
 	document.getElementById('zona-upload').classList.add('carregado');
 	document.querySelector('.upload-icone').textContent = '✓';
-	document.querySelector('.upload-texto-principal').textContent = 'Arquivo carregado';
-	document.querySelector('.upload-texto-sub').textContent = 'Clique ou arraste para substituir';
+	document.querySelector('.upload-texto-principal').textContent = 'Arquivo(s) carregado(s)';
+	document.querySelector('.upload-texto-sub').textContent = 'Clique ou arraste para adicionar mais';
+	document.getElementById('arquivo-resumo-texto').title =
+		`${nomeArquivo} · ${dados.length.toLocaleString('pt-BR')} linhas · ${colunas.length} colunas · ${tamanhoArquivo}`;
 }
