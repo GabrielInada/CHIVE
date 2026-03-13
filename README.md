@@ -1,4 +1,5 @@
-# CHIVE
+# CHIVE - Connected Hierarchical Interactive Visualization Engine
+
 
 ## Prerequisites
 
