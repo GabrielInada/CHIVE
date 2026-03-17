@@ -10,12 +10,13 @@ function escaparHTML(texto) {
 }
 
 export function formatarNumero(valor) {
-	if (valor === null || valor === undefined || isNaN(valor)) return '—';
-	if (Number.isInteger(valor)) return valor.toLocaleString('pt-BR');
-	if (Math.abs(valor) >= 100) return valor.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
-	if (Math.abs(valor) >= 1) return valor.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+	const numero = Number(valor);
+	if (valor === null || valor === undefined || valor === '' || Number.isNaN(numero)) return '—';
+	if (Number.isInteger(numero)) return numero.toLocaleString('pt-BR');
+	if (Math.abs(numero) >= 100) return numero.toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+	if (Math.abs(numero) >= 1) return numero.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 
-	return valor.toPrecision(4);
+	return numero.toPrecision(4);
 }
 
 export function mostrarErro(mensagem) {
@@ -78,15 +79,79 @@ export function renderizarEstadoVazio() {
 		'ou clique para selecionar<br>Formatos aceitos: <strong>CSV</strong> ou <strong>JSON</strong>';
 }
 
-export function renderizarInterface(dados, colunas, nomeArquivo, tamanhoArquivo, linhasPreview = 10) {
+export function renderizarInterface(
+	dados,
+	colunas,
+	nomeArquivo,
+	tamanhoArquivo,
+	linhasPreview = 10,
+	colunasSelecionadas = null,
+	aoAlterarSelecaoColuna = null
+) {
 	document.getElementById('painel-colunas').style.display = 'block';
+	const nomesColunas = colunas.map(coluna => coluna.nome);
+	const nomesSelecionados = new Set(
+		Array.isArray(colunasSelecionadas)
+			? colunasSelecionadas
+			: nomesColunas
+	);
+	const colunasVisiveis = colunas.filter(coluna => nomesSelecionados.has(coluna.nome));
+
 	const listaColunas = document.getElementById('lista-colunas-conteudo');
-	listaColunas.innerHTML = colunas.map(({ nome, tipo }) => `
-		<div class="coluna-item">
-			<span class="coluna-nome" title="${nome}">${nome}</span>
-			<span class="tipo-tag ${tipo}">${tipo}</span>
+	listaColunas.innerHTML = `
+		<div class="colunas-acoes" aria-label="Ações rápidas de colunas">
+			<button class="colunas-acao" type="button" data-acao-coluna="todas">Selecionar todas</button>
+			<button class="colunas-acao" type="button" data-acao-coluna="limpar">Limpar</button>
+			<button class="colunas-acao" type="button" data-acao-coluna="numericas">Só numéricas</button>
+			<button class="colunas-acao" type="button" data-acao-coluna="texto">Só texto</button>
 		</div>
+	` + colunas.map(({ nome, tipo }) => `
+		<label class="coluna-item" title="${escaparHTML(nome)}">
+			<input class="coluna-checkbox" type="checkbox" data-coluna="${escaparHTML(nome)}" ${nomesSelecionados.has(nome) ? 'checked' : ''} />
+			<span class="coluna-nome">${escaparHTML(nome)}</span>
+			<span class="tipo-tag ${tipo}">${tipo}</span>
+		</label>
 	`).join('');
+
+	listaColunas.onclick = evento => {
+		const alvo = evento.target.closest('[data-acao-coluna]');
+		if (!alvo || !aoAlterarSelecaoColuna) return;
+
+		const acao = alvo.dataset.acaoColuna;
+		if (acao === 'todas') {
+			aoAlterarSelecaoColuna(nomesColunas);
+			return;
+		}
+
+		if (acao === 'limpar') {
+			aoAlterarSelecaoColuna([]);
+			return;
+		}
+
+		if (acao === 'numericas') {
+			aoAlterarSelecaoColuna(
+				colunas.filter(coluna => coluna.tipo === 'numero').map(coluna => coluna.nome)
+			);
+			return;
+		}
+
+		if (acao === 'texto') {
+			aoAlterarSelecaoColuna(
+				colunas.filter(coluna => coluna.tipo === 'texto').map(coluna => coluna.nome)
+			);
+		}
+	};
+
+	listaColunas.onchange = evento => {
+		const alvo = evento.target;
+		if (!(alvo instanceof HTMLInputElement) || alvo.type !== 'checkbox' || !aoAlterarSelecaoColuna) return;
+
+		const selecionados = Array.from(listaColunas.querySelectorAll('.coluna-checkbox:checked'))
+			.map(checkbox => checkbox.dataset.coluna)
+			.filter(Boolean);
+
+		aoAlterarSelecaoColuna(selecionados);
+	};
 
 	document.getElementById('estado-vazio').style.display = 'none';
 	const estadoDados = document.getElementById('estado-dados');
@@ -95,16 +160,16 @@ export function renderizarInterface(dados, colunas, nomeArquivo, tamanhoArquivo,
 	const limite = Number(linhasPreview) > 0 ? Number(linhasPreview) : 10;
 
 	document.getElementById('badge-linhas').textContent =
-		`${dados.length.toLocaleString('pt-BR')} linhas (mostrando ${Math.min(limite, dados.length)})`;
+		`${dados.length.toLocaleString('pt-BR')} linhas (mostrando ${Math.min(limite, dados.length)}) · ${colunasVisiveis.length}/${colunas.length} colunas`;
 
 	const linhasPreviewDados = dados.slice(0, limite);
 
-	const cabecalhoHTML = colunas.map(({ nome, tipo }) =>
+	const cabecalhoHTML = colunasVisiveis.map(({ nome, tipo }) =>
 		`<th class="${tipo === 'numero' ? 'num' : ''}">${nome}</th>`
 	).join('');
 
 	const corpoHTML = linhasPreviewDados.map(linha =>
-		'<tr>' + colunas.map(({ nome, tipo }) => {
+		'<tr>' + colunasVisiveis.map(({ nome, tipo }) => {
 			const val = linha[nome];
 			const exibir = val === null || val === undefined || val === ''
 				? '—'
@@ -116,17 +181,22 @@ export function renderizarInterface(dados, colunas, nomeArquivo, tamanhoArquivo,
 		}).join('') + '</tr>'
 	).join('');
 
-	const rodapeHTML = colunas.map(({ tipo }) => `<td>${tipo}</td>`).join('');
+	if (colunasVisiveis.length === 0) {
+		document.getElementById('container-tabela').innerHTML =
+			'<div class="tabela-sem-colunas">Selecione ao menos uma coluna para renderizar o preview.</div>';
+	} else {
+		const rodapeHTML = colunasVisiveis.map(({ tipo }) => `<td>${tipo}</td>`).join('');
 
-	document.getElementById('container-tabela').innerHTML = `
-		<table class="tabela-preview">
-			<thead><tr>${cabecalhoHTML}</tr></thead>
-			<tbody>${corpoHTML}</tbody>
-			<tfoot><tr>${rodapeHTML}</tr></tfoot>
-		</table>
-	`;
+		document.getElementById('container-tabela').innerHTML = `
+			<table class="tabela-preview">
+				<thead><tr>${cabecalhoHTML}</tr></thead>
+				<tbody>${corpoHTML}</tbody>
+				<tfoot><tr>${rodapeHTML}</tr></tfoot>
+			</table>
+		`;
+	}
 
-	const stats = calcularEstatisticas(dados, colunas);
+	const stats = calcularEstatisticas(dados, colunasVisiveis);
 	const cardStats = document.getElementById('card-stats');
 
 	if (stats.length > 0) {

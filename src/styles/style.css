@@ -270,17 +270,53 @@ header {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.colunas-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.colunas-acao {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.colunas-acao:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(26, 71, 42, 0.05);
 }
 
 .coluna-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   padding: 7px 10px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 5px;
   font-size: 11px;
+  cursor: pointer;
+}
+
+.coluna-checkbox {
+  accent-color: var(--accent);
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
 }
 
 .coluna-nome {
@@ -486,6 +522,13 @@ header {
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.tabela-sem-colunas {
+  padding: 26px 20px;
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .tabela-preview tbody td.num,
