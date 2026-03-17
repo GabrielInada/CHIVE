@@ -11,11 +11,13 @@ import {
 	renderizarInterface,
 	renderizarListaArquivos,
 } from './components/resultsView.js';
-import { t, inicializarI18n, definirLocale } from './services/i18nService.js';
+import { t, inicializarI18n, definirLocale, obterLocale } from './services/i18nService.js';
 
 const datasetsCarregados = [];
 let indiceAtivo = -1;
 let linhasPreviewSelecionadas = 10;
+const LIMITE_ALERTA_TAMANHO_BYTES = 15 * 1024 * 1024;
+const LIMITE_ALERTA_LINHAS = 200000;
 
 window.datasetsCarregados = datasetsCarregados;
 window.datasetAtivo = null;
@@ -38,6 +40,48 @@ function atualizarSelecaoColunasAtivas(colunasSelecionadas) {
 	atualizarVisao();
 }
 
+function atualizarConfigGraficosAtiva(configGraficos) {
+	const datasetAtivo = datasetsCarregados[indiceAtivo];
+	if (!datasetAtivo) return;
+
+	datasetAtivo.configGraficos = {
+		...datasetAtivo.configGraficos,
+		...configGraficos,
+	};
+	atualizarVisao();
+}
+
+function normalizarConfigGraficos(dataset) {
+	const nomesSelecionados = Array.isArray(dataset.colunasSelecionadas)
+		? dataset.colunasSelecionadas
+		: dataset.colunas.map(coluna => coluna.nome);
+	const colunasVisiveis = dataset.colunas.filter(coluna => nomesSelecionados.includes(coluna.nome));
+	const numericas = colunasVisiveis.filter(coluna => coluna.tipo === 'numero').map(coluna => coluna.nome);
+	const categoricas = colunasVisiveis.filter(coluna => coluna.tipo !== 'numero').map(coluna => coluna.nome);
+	const baseBar = categoricas.length > 0
+		? categoricas
+		: colunasVisiveis.map(coluna => coluna.nome);
+
+	const configAtual = dataset.configGraficos || {};
+	const aba = configAtual.aba === 'charts' ? 'charts' : 'preview';
+	const barCategoria = baseBar.includes(configAtual.barCategoria)
+		? configAtual.barCategoria
+		: (baseBar[0] ?? null);
+	const scatterX = numericas.includes(configAtual.scatterX)
+		? configAtual.scatterX
+		: (numericas[0] ?? null);
+	const scatterY = numericas.includes(configAtual.scatterY)
+		? configAtual.scatterY
+		: (numericas[1] ?? numericas[0] ?? null);
+
+	dataset.configGraficos = {
+		aba,
+		barCategoria,
+		scatterX,
+		scatterY,
+	};
+}
+
 function atualizarVisao() {
 	if (datasetsCarregados.length === 0) {
 		indiceAtivo = -1;
@@ -51,6 +95,7 @@ function atualizarVisao() {
 	}
 
 	const datasetAtivo = datasetsCarregados[indiceAtivo];
+	normalizarConfigGraficos(datasetAtivo);
 	sincronizarGlobais();
 
 	renderizarListaArquivos(
@@ -67,7 +112,9 @@ function atualizarVisao() {
 		datasetAtivo.tamanho,
 		linhasPreviewSelecionadas,
 		datasetAtivo.colunasSelecionadas,
-		atualizarSelecaoColunasAtivas
+		atualizarSelecaoColunasAtivas,
+		datasetAtivo.configGraficos,
+		atualizarConfigGraficosAtiva
 	);
 }
 
@@ -115,6 +162,22 @@ async function processarArquivos(arquivos) {
 
 	const resultados = await Promise.allSettled(
 		listaArquivos.map(async arquivo => {
+			if (arquivo.size > LIMITE_ALERTA_TAMANHO_BYTES) {
+				const confirmarArquivoGrande = window.confirm(
+					t(
+						'chive-warn-large-file',
+						arquivo.name,
+						formatarTamanhoArquivo(arquivo.size),
+						formatarTamanhoArquivo(LIMITE_ALERTA_TAMANHO_BYTES)
+					)
+				);
+				if (!confirmarArquivoGrande) {
+					const erroCancelado = new Error('Upload cancelado pelo usuário (arquivo grande).');
+					erroCancelado.cancelado = true;
+					throw erroCancelado;
+				}
+			}
+
 			const extensao = arquivo.name.split('.').pop().toLowerCase();
 			if (!['csv', 'json'].includes(extensao)) {
 				throw new Error(t('chive-error-format', arquivo.name));
@@ -126,12 +189,34 @@ async function processarArquivos(arquivos) {
 				: parsearJSON(textoArquivo);
 			const { dados, colunas } = processarDados(dadosBrutos);
 
+			if (dados.length > LIMITE_ALERTA_LINHAS) {
+				const confirmarLinhas = window.confirm(
+					t(
+						'chive-warn-large-rows',
+						arquivo.name,
+						dados.length.toLocaleString(obterLocale()),
+						LIMITE_ALERTA_LINHAS.toLocaleString(obterLocale())
+					)
+				);
+				if (!confirmarLinhas) {
+					const erroCancelado = new Error('Upload cancelado pelo usuário (muitas linhas).');
+					erroCancelado.cancelado = true;
+					throw erroCancelado;
+				}
+			}
+
 			return {
 				nome: arquivo.name,
 				tamanho: formatarTamanhoArquivo(arquivo.size),
 				dados,
 				colunas,
 				colunasSelecionadas: colunas.map(coluna => coluna.nome),
+				configGraficos: {
+					aba: 'preview',
+					barCategoria: null,
+					scatterX: null,
+					scatterY: null,
+				},
 			};
 		})
 	);
@@ -142,6 +227,7 @@ async function processarArquivos(arquivos) {
 
 	const erros = resultados
 		.filter(resultado => resultado.status === 'rejected')
+		.filter(resultado => !resultado.reason?.cancelado)
 		.map(resultado => resultado.reason?.message || t('chive-error-unknown'));
 
 	if (datasetsNovos.length > 0) {

@@ -39,11 +39,24 @@
 	"chive-empty-sub": "Carregue um arquivo CSV ou JSON ao lado para ver o preview dos dados aqui.",
 
 	"chive-card-preview": "Preview dos dados",
+	"chive-tab-preview": "Preview",
+	"chive-tab-charts": "Visualizações",
 	"chive-label-rows": "Linhas",
 	"chive-badge-preview": "$1 linhas (mostrando $2) · $3/$4 colunas",
 	"chive-no-columns-selected": "Selecione ao menos uma coluna para renderizar o preview.",
 
 	"chive-card-stats": "Estatísticas — colunas numéricas",
+	"chive-card-charts": "Visualizações",
+	"chive-charts-badge": "$1 colunas visíveis · $2 numéricas",
+	"chive-chart-bar-title": "Barras (contagem por categoria)",
+	"chive-chart-scatter-title": "Dispersão (X vs Y)",
+	"chive-chart-control-bar-category": "Categoria (barras)",
+	"chive-chart-control-scatter-x": "Eixo X",
+	"chive-chart-control-scatter-y": "Eixo Y",
+	"chive-chart-option-none": "— selecionar —",
+	"chive-chart-empty-bar": "Selecione ao menos uma coluna visível para montar o gráfico de barras.",
+	"chive-chart-empty-scatter": "Selecione duas colunas numéricas visíveis para montar o gráfico de dispersão.",
+	"chive-chart-no-data": "Sem dados suficientes para este gráfico.",
 	"chive-stats-badge": "{{PLURAL:$1|$1 coluna numérica|$1 colunas numéricas}}",
 	"chive-stat-valid": "n válidos",
 	"chive-stat-min": "mínimo",
@@ -55,6 +68,9 @@
 
 	"chive-type-number": "número",
 	"chive-type-text": "texto",
+
+	"chive-warn-large-file": "O arquivo \"$1\" tem tamanho $2, acima do recomendado ($3). Deseja continuar?",
+	"chive-warn-large-rows": "O arquivo \"$1\" possui $2 linhas, acima do recomendado ($3). Deseja continuar?",
 
 	"chive-error-format": "Formato não suportado em \"$1\". Envie .csv ou .json.",
 	"chive-error-read": "Erro ao ler o arquivo \"$1\".",
