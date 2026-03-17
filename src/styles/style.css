@@ -133,6 +133,16 @@ header {
   transition: padding 0.24s ease;
 }
 
+.sidebar-panel {
+  display: none;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebar-panel.ativo {
+  display: flex;
+}
+
 .painel-topo {
   display: flex;
   align-items: center;
@@ -405,6 +415,12 @@ header {
 
 .btn-primario:hover {
   opacity: 0.85;
+}
+
+.btn-secundario {
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--border);
 }
 
 .btn-primario:disabled {

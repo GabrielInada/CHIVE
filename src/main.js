@@ -16,6 +16,7 @@ import { t, inicializarI18n, definirLocale, obterLocale } from './services/i18nS
 const datasetsCarregados = [];
 let indiceAtivo = -1;
 let linhasPreviewSelecionadas = 10;
+let modoSidebar = 'dados';
 const LIMITE_ALERTA_TAMANHO_BYTES = 15 * 1024 * 1024;
 const LIMITE_ALERTA_LINHAS = 200000;
 
@@ -51,6 +52,137 @@ function atualizarConfigGraficosAtiva(configGraficos) {
 	atualizarVisao();
 }
 
+function atualizarModoSidebar(novoModo) {
+	modoSidebar = novoModo === 'viz' ? 'viz' : 'dados';
+	document.getElementById('sidebar-panel-dados').classList.toggle('ativo', modoSidebar === 'dados');
+	document.getElementById('sidebar-panel-viz').classList.toggle('ativo', modoSidebar === 'viz');
+}
+
+function renderizarControlesVisualizacoesSidebar(dataset) {
+	const container = document.getElementById('lista-visualizacoes-conteudo');
+	if (!dataset) {
+		container.innerHTML = `<div class="tabela-sem-colunas">${t('chive-chart-sidebar-empty')}</div>`;
+		return;
+	}
+
+	const nomesSelecionados = Array.isArray(dataset.colunasSelecionadas)
+		? dataset.colunasSelecionadas
+		: dataset.colunas.map(coluna => coluna.nome);
+	const colunasVisiveis = dataset.colunas.filter(coluna => nomesSelecionados.includes(coluna.nome));
+	const numericas = colunasVisiveis.filter(coluna => coluna.tipo === 'numero').map(coluna => coluna.nome);
+	const categoricas = colunasVisiveis.filter(coluna => coluna.tipo !== 'numero').map(coluna => coluna.nome);
+	const baseBar = categoricas.length > 0
+		? categoricas
+		: colunasVisiveis.map(coluna => coluna.nome);
+
+	if (colunasVisiveis.length === 0) {
+		container.innerHTML = `<div class="tabela-sem-colunas">${t('chive-chart-sidebar-empty')}</div>`;
+		return;
+	}
+
+	const config = dataset.configGraficos;
+	container.innerHTML = `
+		<label class="coluna-item">
+			<input id="viz-toggle-bar" class="coluna-checkbox" type="checkbox" ${config.bar.enabled ? 'checked' : ''} />
+			<span class="coluna-nome">${t('chive-chart-toggle-bar')}</span>
+		</label>
+		<div class="chart-controle">
+			<label for="viz-select-bar">${t('chive-chart-control-bar-category')}</label>
+			<select id="viz-select-bar" class="linhas-select" ${config.bar.enabled ? '' : 'disabled'}>
+				<option value="">${t('chive-chart-option-none')}</option>
+				${baseBar.map(nome => `<option value="${nome}" ${nome === config.bar.category ? 'selected' : ''}>${nome}</option>`).join('')}
+			</select>
+		</div>
+		<label class="coluna-item">
+			<input id="viz-toggle-scatter" class="coluna-checkbox" type="checkbox" ${config.scatter.enabled ? 'checked' : ''} />
+			<span class="coluna-nome">${t('chive-chart-toggle-scatter')}</span>
+		</label>
+		<div class="chart-controle">
+			<label for="viz-select-x">${t('chive-chart-control-scatter-x')}</label>
+			<select id="viz-select-x" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="">${t('chive-chart-option-none')}</option>
+				${numericas.map(nome => `<option value="${nome}" ${nome === config.scatter.x ? 'selected' : ''}>${nome}</option>`).join('')}
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-y">${t('chive-chart-control-scatter-y')}</label>
+			<select id="viz-select-y" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="">${t('chive-chart-option-none')}</option>
+				${numericas.map(nome => `<option value="${nome}" ${nome === config.scatter.y ? 'selected' : ''}>${nome}</option>`).join('')}
+			</select>
+		</div>
+	`;
+
+	const toggleBar = document.getElementById('viz-toggle-bar');
+	const toggleScatter = document.getElementById('viz-toggle-scatter');
+	const selectBar = document.getElementById('viz-select-bar');
+	const selectX = document.getElementById('viz-select-x');
+	const selectY = document.getElementById('viz-select-y');
+
+	toggleBar.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			bar: {
+				...config.bar,
+				enabled: toggleBar.checked,
+			},
+		});
+	});
+
+	toggleScatter.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				enabled: toggleScatter.checked,
+			},
+		});
+	});
+
+	selectBar.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			bar: {
+				...config.bar,
+				category: selectBar.value || null,
+			},
+		});
+	});
+
+	selectX.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				x: selectX.value || null,
+			},
+		});
+	});
+
+	selectY.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				y: selectY.value || null,
+			},
+		});
+	});
+}
+
+function atualizarEstadoBotaoAvancar(dataset) {
+	const btnAvancar = document.getElementById('btn-avancar');
+	if (!dataset) {
+		btnAvancar.disabled = true;
+		return;
+	}
+
+	const qtdSelecionadas = Array.isArray(dataset.colunasSelecionadas)
+		? dataset.colunasSelecionadas.length
+		: 0;
+	btnAvancar.disabled = qtdSelecionadas === 0;
+}
+
 function normalizarConfigGraficos(dataset) {
 	const nomesSelecionados = Array.isArray(dataset.colunasSelecionadas)
 		? dataset.colunasSelecionadas
@@ -64,21 +196,29 @@ function normalizarConfigGraficos(dataset) {
 
 	const configAtual = dataset.configGraficos || {};
 	const aba = configAtual.aba === 'charts' ? 'charts' : 'preview';
-	const barCategoria = baseBar.includes(configAtual.barCategoria)
-		? configAtual.barCategoria
+	const barConfig = configAtual.bar || {};
+	const scatterConfig = configAtual.scatter || {};
+	const barCategoria = baseBar.includes(barConfig.category)
+		? barConfig.category
 		: (baseBar[0] ?? null);
-	const scatterX = numericas.includes(configAtual.scatterX)
-		? configAtual.scatterX
+	const scatterX = numericas.includes(scatterConfig.x)
+		? scatterConfig.x
 		: (numericas[0] ?? null);
-	const scatterY = numericas.includes(configAtual.scatterY)
-		? configAtual.scatterY
+	const scatterY = numericas.includes(scatterConfig.y)
+		? scatterConfig.y
 		: (numericas[1] ?? numericas[0] ?? null);
 
 	dataset.configGraficos = {
 		aba,
-		barCategoria,
-		scatterX,
-		scatterY,
+		bar: {
+			enabled: barConfig.enabled !== false,
+			category: barCategoria,
+		},
+		scatter: {
+			enabled: scatterConfig.enabled !== false,
+			x: scatterX,
+			y: scatterY,
+		},
 	};
 }
 
@@ -116,6 +256,9 @@ function atualizarVisao() {
 		datasetAtivo.configGraficos,
 		atualizarConfigGraficosAtiva
 	);
+
+	atualizarEstadoBotaoAvancar(datasetAtivo);
+	renderizarControlesVisualizacoesSidebar(datasetAtivo);
 }
 
 function selecionarArquivo(indice) {
@@ -213,9 +356,15 @@ async function processarArquivos(arquivos) {
 				colunasSelecionadas: colunas.map(coluna => coluna.nome),
 				configGraficos: {
 					aba: 'preview',
-					barCategoria: null,
-					scatterX: null,
-					scatterY: null,
+					bar: {
+						enabled: true,
+						category: null,
+					},
+					scatter: {
+						enabled: true,
+						x: null,
+						y: null,
+					},
 				},
 			};
 		})
@@ -252,6 +401,8 @@ const inputArquivo = document.getElementById('input-arquivo');
 const botaoToggleSidebar = document.getElementById('btn-toggle-sidebar');
 const selectLinhasPreview = document.getElementById('select-linhas-preview');
 const selectLang = document.getElementById('select-lang');
+const btnAvancar = document.getElementById('btn-avancar');
+const btnEditarColunas = document.getElementById('btn-editar-colunas');
 
 inicializarI18n();
 
@@ -274,6 +425,7 @@ botaoToggleSidebar.addEventListener('click', () => {
 });
 
 atualizarRotuloSidebar();
+atualizarModoSidebar('dados');
 
 selectLang.addEventListener('change', evento => {
 	definirLocale(evento.target.value);
@@ -324,17 +476,16 @@ document.addEventListener('dragover', evento => evento.preventDefault());
 document.addEventListener('drop', evento => evento.preventDefault());
 
 document.getElementById('btn-avancar').addEventListener('click', () => {
-	const total = datasetsCarregados.length;
+	if (datasetsCarregados.length === 0) return;
+	const datasetAtivo = datasetsCarregados[indiceAtivo];
+	if (!datasetAtivo || !Array.isArray(datasetAtivo.colunasSelecionadas) || datasetAtivo.colunasSelecionadas.length === 0) {
+		return;
+	}
+	atualizarModoSidebar('viz');
+});
 
-	alert(
-		'Datasets prontos!\n\n' +
-		`Total carregado: ${total} arquivo${total > 1 ? 's' : ''}.\n` +
-		'No Dia 02, este botão vai enviar todos os datasets carregados.\n\n' +
-		'Todos os datasets: window.datasetsCarregados\n' +
-		'Dataset ativo: window.datasetAtivo\n\n' +
-		'Abra o DevTools (F12 → Console) e digite:\n' +
-		'window.datasetsCarregados'
-	);
+btnEditarColunas.addEventListener('click', () => {
+	atualizarModoSidebar('dados');
 });
 
 console.log('DataViz Dia 01 carregado.');
