@@ -26,6 +26,15 @@ function sincronizarGlobais() {
 	window.datasetAtivo = datasetAtivo;
 	window.dadosCarregados = datasetAtivo ? datasetAtivo.dados : null;
 	window.colunasDetectadas = datasetAtivo ? datasetAtivo.colunas : null;
+	window.colunasSelecionadasAtivas = datasetAtivo ? datasetAtivo.colunasSelecionadas : null;
+}
+
+function atualizarSelecaoColunasAtivas(colunasSelecionadas) {
+	const datasetAtivo = datasetsCarregados[indiceAtivo];
+	if (!datasetAtivo) return;
+
+	datasetAtivo.colunasSelecionadas = colunasSelecionadas;
+	atualizarVisao();
 }
 
 function atualizarVisao() {
@@ -55,7 +64,9 @@ function atualizarVisao() {
 		datasetAtivo.colunas,
 		datasetAtivo.nome,
 		datasetAtivo.tamanho,
-		linhasPreviewSelecionadas
+		linhasPreviewSelecionadas,
+		datasetAtivo.colunasSelecionadas,
+		atualizarSelecaoColunasAtivas
 	);
 }
 
@@ -119,6 +130,7 @@ async function processarArquivos(arquivos) {
 				tamanho: formatarTamanhoArquivo(arquivo.size),
 				dados,
 				colunas,
+				colunasSelecionadas: colunas.map(coluna => coluna.nome),
 			};
 		})
 	);
