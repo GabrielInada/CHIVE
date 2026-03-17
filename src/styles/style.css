@@ -399,6 +399,29 @@ header {
   background: rgba(26, 71, 42, 0.03);
 }
 
+.card-header-controles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.linhas-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.linhas-select {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+}
+
 .card-titulo {
   font-family: var(--fonte-display);
   font-size: 13px;
@@ -418,6 +441,11 @@ header {
 .card-corpo {
   padding: 0;
   overflow-x: auto;
+}
+
+.card-corpo-preview {
+  max-height: min(64vh, 720px);
+  overflow: auto;
 }
 
 .tabela-preview {

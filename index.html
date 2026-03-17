@@ -78,9 +78,21 @@
                 <div class="resultado-card animar">
                     <div class="card-header">
                         <span class="card-titulo">Preview dos dados</span>
-                        <span class="card-badge" id="badge-linhas">— linhas</span>
+                        <div class="card-header-controles">
+                            <label class="linhas-label" for="select-linhas-preview">Linhas</label>
+                            <select id="select-linhas-preview" class="linhas-select">
+                                <option value="1">1</option>
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                                <option value="1000">1000</option>
+                            </select>
+                            <span class="card-badge" id="badge-linhas">— linhas</span>
+                        </div>
                     </div>
-                    <div class="card-corpo">
+                    <div class="card-corpo card-corpo-preview">
                         <div id="container-tabela"></div>
                     </div>
                 </div>

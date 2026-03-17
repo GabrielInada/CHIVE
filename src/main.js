@@ -14,6 +14,7 @@ import {
 
 const datasetsCarregados = [];
 let indiceAtivo = -1;
+let linhasPreviewSelecionadas = 10;
 
 window.datasetsCarregados = datasetsCarregados;
 window.datasetAtivo = null;
@@ -53,7 +54,8 @@ function atualizarVisao() {
 		datasetAtivo.dados,
 		datasetAtivo.colunas,
 		datasetAtivo.nome,
-		datasetAtivo.tamanho
+		datasetAtivo.tamanho,
+		linhasPreviewSelecionadas
 	);
 }
 
@@ -149,6 +151,9 @@ async function processarArquivos(arquivos) {
 const zonaUpload = document.getElementById('zona-upload');
 const inputArquivo = document.getElementById('input-arquivo');
 const botaoToggleSidebar = document.getElementById('btn-toggle-sidebar');
+const selectLinhasPreview = document.getElementById('select-linhas-preview');
+
+linhasPreviewSelecionadas = Number(selectLinhasPreview.value) || 10;
 
 function atualizarRotuloSidebar() {
 	const recolhida = document.body.classList.contains('sidebar-collapsed');
@@ -223,3 +228,8 @@ document.getElementById('btn-avancar').addEventListener('click', () => {
 
 console.log('DataViz Dia 01 carregado.');
 console.log('Carregue um ou vários CSV/JSON para começar.');
+
+selectLinhasPreview.addEventListener('change', evento => {
+	linhasPreviewSelecionadas = Number(evento.target.value) || 10;
+	if (datasetsCarregados.length > 0) atualizarVisao();
+});

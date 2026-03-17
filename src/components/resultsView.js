@@ -1,7 +1,5 @@
 import { calcularEstatisticas } from '../services/dataService.js';
 
-const LINHAS_PREVIEW = 10;
-
 function escaparHTML(texto) {
 	return String(texto)
 		.replaceAll('&', '&amp;')
@@ -80,7 +78,7 @@ export function renderizarEstadoVazio() {
 		'ou clique para selecionar<br>Formatos aceitos: <strong>CSV</strong> ou <strong>JSON</strong>';
 }
 
-export function renderizarInterface(dados, colunas, nomeArquivo, tamanhoArquivo) {
+export function renderizarInterface(dados, colunas, nomeArquivo, tamanhoArquivo, linhasPreview = 10) {
 	document.getElementById('painel-colunas').style.display = 'block';
 	const listaColunas = document.getElementById('lista-colunas-conteudo');
 	listaColunas.innerHTML = colunas.map(({ nome, tipo }) => `
@@ -94,16 +92,18 @@ export function renderizarInterface(dados, colunas, nomeArquivo, tamanhoArquivo)
 	const estadoDados = document.getElementById('estado-dados');
 	estadoDados.style.display = 'flex';
 
-	document.getElementById('badge-linhas').textContent =
-		`${dados.length.toLocaleString('pt-BR')} linhas (mostrando ${Math.min(LINHAS_PREVIEW, dados.length)})`;
+	const limite = Number(linhasPreview) > 0 ? Number(linhasPreview) : 10;
 
-	const linhasPreview = dados.slice(0, LINHAS_PREVIEW);
+	document.getElementById('badge-linhas').textContent =
+		`${dados.length.toLocaleString('pt-BR')} linhas (mostrando ${Math.min(limite, dados.length)})`;
+
+	const linhasPreviewDados = dados.slice(0, limite);
 
 	const cabecalhoHTML = colunas.map(({ nome, tipo }) =>
 		`<th class="${tipo === 'numero' ? 'num' : ''}">${nome}</th>`
 	).join('');
 
-	const corpoHTML = linhasPreview.map(linha =>
+	const corpoHTML = linhasPreviewDados.map(linha =>
 		'<tr>' + colunas.map(({ nome, tipo }) => {
 			const val = linha[nome];
 			const exibir = val === null || val === undefined || val === ''
