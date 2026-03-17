@@ -39,11 +39,24 @@
 	"chive-empty-sub": "Description below the empty-state heading.",
 
 	"chive-card-preview": "Title of the data preview card.",
+	"chive-tab-preview": "Tab label that switches the main result area to the preview/statistics view.",
+	"chive-tab-charts": "Tab label that switches the main result area to the chart visualizations view.",
 	"chive-label-rows": "Label for the row-count selector.",
 	"chive-badge-preview": "Badge in the preview card. $1 = total rows, $2 = rows shown, $3 = visible columns, $4 = total columns.",
 	"chive-no-columns-selected": "Message inside the preview area when no columns are selected.",
 
 	"chive-card-stats": "Title of the statistics card.",
+	"chive-card-charts": "Title of the chart visualization card.",
+	"chive-charts-badge": "Badge in chart card header. $1 = count of currently visible columns, $2 = count of visible numeric columns.",
+	"chive-chart-bar-title": "Heading for the bar chart block.",
+	"chive-chart-scatter-title": "Heading for the scatter plot block.",
+	"chive-chart-control-bar-category": "Label for the select control that chooses which column is used as bar-chart category.",
+	"chive-chart-control-scatter-x": "Label for the select control that chooses the X-axis column for scatter plot.",
+	"chive-chart-control-scatter-y": "Label for the select control that chooses the Y-axis column for scatter plot.",
+	"chive-chart-option-none": "Placeholder option text for chart selectors when nothing is selected.",
+	"chive-chart-empty-bar": "Message shown when bar chart cannot be rendered due to missing suitable visible columns.",
+	"chive-chart-empty-scatter": "Message shown when scatter chart cannot be rendered due to missing visible numeric columns.",
+	"chive-chart-no-data": "Message shown when a chart has no plottable rows after data cleaning/filtering.",
 	"chive-stats-badge": "Badge in the stats card. $1 = number of numeric columns. Uses PLURAL.",
 	"chive-stat-valid": "Label for the count of non-null numeric values in a column.",
 	"chive-stat-min": "Label for the minimum value.",
@@ -55,6 +68,8 @@
 
 	"chive-type-number": "Display label for numeric columns (used in column list tags and table footer). Keep short.",
 	"chive-type-text": "Display label for text columns (used in column list tags and table footer). Keep short.",
+	"chive-warn-large-file": "Confirmation warning before parsing a large file. $1 = file name, $2 = current file size (formatted), $3 = recommended max size.",
+	"chive-warn-large-rows": "Confirmation warning after parsing when row count is large. $1 = file name, $2 = parsed row count (formatted), $3 = recommended max row count (formatted).",
 
 	"chive-error-format": "Error when user uploads an unsupported file type. $1 = file name.",
 	"chive-error-read": "Error when the browser fails to read a file. $1 = file name.",

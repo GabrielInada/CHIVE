@@ -39,11 +39,24 @@
 	"chive-empty-sub": "Load a CSV or JSON file on the left to preview the data here.",
 
 	"chive-card-preview": "Data preview",
+	"chive-tab-preview": "Preview",
+	"chive-tab-charts": "Visualizations",
 	"chive-label-rows": "Rows",
 	"chive-badge-preview": "$1 rows (showing $2) · $3/$4 columns",
 	"chive-no-columns-selected": "Select at least one column to render the preview.",
 
 	"chive-card-stats": "Statistics — numeric columns",
+	"chive-card-charts": "Visualizations",
+	"chive-charts-badge": "$1 visible columns · $2 numeric",
+	"chive-chart-bar-title": "Bar chart (count by category)",
+	"chive-chart-scatter-title": "Scatter plot (X vs Y)",
+	"chive-chart-control-bar-category": "Category (bar chart)",
+	"chive-chart-control-scatter-x": "X axis",
+	"chive-chart-control-scatter-y": "Y axis",
+	"chive-chart-option-none": "— select —",
+	"chive-chart-empty-bar": "Select at least one visible column to build the bar chart.",
+	"chive-chart-empty-scatter": "Select two visible numeric columns to build the scatter plot.",
+	"chive-chart-no-data": "Not enough data for this chart.",
 	"chive-stats-badge": "{{PLURAL:$1|$1 numeric column|$1 numeric columns}}",
 	"chive-stat-valid": "valid n",
 	"chive-stat-min": "minimum",
@@ -55,6 +68,9 @@
 
 	"chive-type-number": "number",
 	"chive-type-text": "text",
+
+	"chive-warn-large-file": "File \"$1\" has size $2, above the recommended limit ($3). Continue anyway?",
+	"chive-warn-large-rows": "File \"$1\" has $2 rows, above the recommended limit ($3). Continue anyway?",
 
 	"chive-error-format": "Format not supported for \"$1\". Please upload a .csv or .json file.",
 	"chive-error-read": "Error reading file \"$1\".",
