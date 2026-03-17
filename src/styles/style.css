@@ -270,6 +270,9 @@ header {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 2px;
 }
 
 .colunas-acoes {
