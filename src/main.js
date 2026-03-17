@@ -14,7 +14,6 @@ import {
 
 const datasetsCarregados = [];
 let indiceAtivo = -1;
-const SIDEBAR_STORAGE_KEY = 'dataviz.sidebarCollapsed';
 
 window.datasetsCarregados = datasetsCarregados;
 window.datasetAtivo = null;
@@ -162,20 +161,12 @@ function atualizarRotuloSidebar() {
 	botaoToggleSidebar.title = recolhida ? 'Expandir painel lateral' : 'Recolher painel lateral';
 }
 
-function restaurarEstadoSidebar() {
-	const recolhida = localStorage.getItem(SIDEBAR_STORAGE_KEY) === 'true';
-	document.body.classList.toggle('sidebar-collapsed', recolhida);
-	atualizarRotuloSidebar();
-}
-
 botaoToggleSidebar.addEventListener('click', () => {
 	document.body.classList.toggle('sidebar-collapsed');
-	const recolhida = document.body.classList.contains('sidebar-collapsed');
-	localStorage.setItem(SIDEBAR_STORAGE_KEY, String(recolhida));
 	atualizarRotuloSidebar();
 });
 
-restaurarEstadoSidebar();
+atualizarRotuloSidebar();
 
 zonaUpload.addEventListener('click', () => {
 	inputArquivo.click();
