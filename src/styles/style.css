@@ -272,6 +272,30 @@ header {
   gap: 6px;
 }
 
+.colunas-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.colunas-acao {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.colunas-acao:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(26, 71, 42, 0.05);
+}
+
 .coluna-item {
   display: flex;
   align-items: center;

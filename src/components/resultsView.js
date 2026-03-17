@@ -91,20 +91,56 @@ export function renderizarInterface(
 	document.getElementById('painel-colunas').style.display = 'block';
 	const nomesColunas = colunas.map(coluna => coluna.nome);
 	const nomesSelecionados = new Set(
-		(Array.isArray(colunasSelecionadas) && colunasSelecionadas.length > 0)
+		Array.isArray(colunasSelecionadas)
 			? colunasSelecionadas
 			: nomesColunas
 	);
 	const colunasVisiveis = colunas.filter(coluna => nomesSelecionados.has(coluna.nome));
 
 	const listaColunas = document.getElementById('lista-colunas-conteudo');
-	listaColunas.innerHTML = colunas.map(({ nome, tipo }) => `
+	listaColunas.innerHTML = `
+		<div class="colunas-acoes" aria-label="Ações rápidas de colunas">
+			<button class="colunas-acao" type="button" data-acao-coluna="todas">Selecionar todas</button>
+			<button class="colunas-acao" type="button" data-acao-coluna="limpar">Limpar</button>
+			<button class="colunas-acao" type="button" data-acao-coluna="numericas">Só numéricas</button>
+			<button class="colunas-acao" type="button" data-acao-coluna="texto">Só texto</button>
+		</div>
+	` + colunas.map(({ nome, tipo }) => `
 		<label class="coluna-item" title="${escaparHTML(nome)}">
 			<input class="coluna-checkbox" type="checkbox" data-coluna="${escaparHTML(nome)}" ${nomesSelecionados.has(nome) ? 'checked' : ''} />
 			<span class="coluna-nome">${escaparHTML(nome)}</span>
 			<span class="tipo-tag ${tipo}">${tipo}</span>
 		</label>
 	`).join('');
+
+	listaColunas.onclick = evento => {
+		const alvo = evento.target.closest('[data-acao-coluna]');
+		if (!alvo || !aoAlterarSelecaoColuna) return;
+
+		const acao = alvo.dataset.acaoColuna;
+		if (acao === 'todas') {
+			aoAlterarSelecaoColuna(nomesColunas);
+			return;
+		}
+
+		if (acao === 'limpar') {
+			aoAlterarSelecaoColuna([]);
+			return;
+		}
+
+		if (acao === 'numericas') {
+			aoAlterarSelecaoColuna(
+				colunas.filter(coluna => coluna.tipo === 'numero').map(coluna => coluna.nome)
+			);
+			return;
+		}
+
+		if (acao === 'texto') {
+			aoAlterarSelecaoColuna(
+				colunas.filter(coluna => coluna.tipo === 'texto').map(coluna => coluna.nome)
+			);
+		}
+	};
 
 	listaColunas.onchange = evento => {
 		const alvo = evento.target;
