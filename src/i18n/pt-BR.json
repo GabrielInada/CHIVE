@@ -1,0 +1,62 @@
+{
+	"@metadata": {
+		"authors": [],
+		"locale": "pt-BR",
+		"message-documentation": "qqq"
+	},
+
+	"chive-page-title": "DataViz — Dia 01: Upload de Dados",
+
+	"chive-step-upload": "01 · Upload",
+	"chive-step-charts": "02 · Gráficos",
+	"chive-step-publish": "03 · Publicar",
+
+	"chive-sidebar-nav": "Navegação",
+	"chive-sidebar-collapse": "Recolher painel lateral",
+	"chive-sidebar-expand": "Expandir painel lateral",
+
+	"chive-section-upload": "Carregar arquivo",
+	"chive-upload-main": "Arraste seu arquivo aqui",
+	"chive-upload-sub": "ou clique para selecionar<br>Formatos aceitos: <strong>CSV</strong> ou <strong>JSON</strong>",
+	"chive-upload-loaded-main": "Arquivo(s) carregado(s)",
+	"chive-upload-loaded-sub": "Clique ou arraste para adicionar mais",
+
+	"chive-section-files": "Arquivos carregados",
+	"chive-no-files": "Nenhum arquivo",
+	"chive-files-loaded": "{{PLURAL:$1|$1 arquivo carregado|$1 arquivos carregados}}",
+	"chive-file-meta": "$1 linhas · $2 colunas · $3",
+	"chive-remove-file": "Remover $1",
+
+	"chive-section-columns": "Colunas detectadas",
+	"chive-action-select-all": "Selecionar todas",
+	"chive-action-clear": "Limpar",
+	"chive-action-only-numeric": "Só numéricas",
+	"chive-action-only-text": "Só texto",
+
+	"chive-btn-advance": "Avançar para os gráficos →",
+
+	"chive-empty-title": "Nenhum dado carregado ainda",
+	"chive-empty-sub": "Carregue um arquivo CSV ou JSON ao lado para ver o preview dos dados aqui.",
+
+	"chive-card-preview": "Preview dos dados",
+	"chive-label-rows": "Linhas",
+	"chive-badge-preview": "$1 linhas (mostrando $2) · $3/$4 colunas",
+	"chive-no-columns-selected": "Selecione ao menos uma coluna para renderizar o preview.",
+
+	"chive-card-stats": "Estatísticas — colunas numéricas",
+	"chive-stats-badge": "{{PLURAL:$1|$1 coluna numérica|$1 colunas numéricas}}",
+	"chive-stat-valid": "n válidos",
+	"chive-stat-min": "mínimo",
+	"chive-stat-max": "máximo",
+	"chive-stat-mean": "média",
+	"chive-stat-median": "mediana",
+
+	"chive-lang-label": "Idioma",
+
+	"chive-type-number": "número",
+	"chive-type-text": "texto",
+
+	"chive-error-format": "Formato não suportado em \"$1\". Envie .csv ou .json.",
+	"chive-error-read": "Erro ao ler o arquivo \"$1\".",
+	"chive-error-unknown": "Erro desconhecido ao processar arquivo."
+}

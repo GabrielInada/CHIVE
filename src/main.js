@@ -11,6 +11,7 @@ import {
 	renderizarInterface,
 	renderizarListaArquivos,
 } from './components/resultsView.js';
+import { t, inicializarI18n, definirLocale } from './services/i18nService.js';
 
 const datasetsCarregados = [];
 let indiceAtivo = -1;
@@ -100,7 +101,7 @@ function lerArquivoTexto(arquivo) {
 		const leitor = new FileReader();
 
 		leitor.onload = evento => resolve(evento.target.result);
-		leitor.onerror = () => reject(new Error(`Erro ao ler o arquivo "${arquivo.name}".`));
+		leitor.onerror = () => reject(new Error(t('chive-error-read', arquivo.name)));
 
 		leitor.readAsText(arquivo, 'UTF-8');
 	});
@@ -116,7 +117,7 @@ async function processarArquivos(arquivos) {
 		listaArquivos.map(async arquivo => {
 			const extensao = arquivo.name.split('.').pop().toLowerCase();
 			if (!['csv', 'json'].includes(extensao)) {
-				throw new Error(`Formato não suportado em "${arquivo.name}". Envie .csv ou .json.`);
+				throw new Error(t('chive-error-format', arquivo.name));
 			}
 
 			const textoArquivo = await lerArquivoTexto(arquivo);
@@ -141,7 +142,7 @@ async function processarArquivos(arquivos) {
 
 	const erros = resultados
 		.filter(resultado => resultado.status === 'rejected')
-		.map(resultado => resultado.reason?.message || 'Erro desconhecido ao processar arquivo.');
+		.map(resultado => resultado.reason?.message || t('chive-error-unknown'));
 
 	if (datasetsNovos.length > 0) {
 		datasetsCarregados.push(...datasetsNovos);
@@ -164,6 +165,9 @@ const zonaUpload = document.getElementById('zona-upload');
 const inputArquivo = document.getElementById('input-arquivo');
 const botaoToggleSidebar = document.getElementById('btn-toggle-sidebar');
 const selectLinhasPreview = document.getElementById('select-linhas-preview');
+const selectLang = document.getElementById('select-lang');
+
+inicializarI18n();
 
 linhasPreviewSelecionadas = Number(selectLinhasPreview.value) || 10;
 
@@ -173,9 +177,9 @@ function atualizarRotuloSidebar() {
 	botaoToggleSidebar.setAttribute('aria-expanded', String(!recolhida));
 	botaoToggleSidebar.setAttribute(
 		'aria-label',
-		recolhida ? 'Expandir painel lateral' : 'Recolher painel lateral'
+		recolhida ? t('chive-sidebar-expand') : t('chive-sidebar-collapse')
 	);
-	botaoToggleSidebar.title = recolhida ? 'Expandir painel lateral' : 'Recolher painel lateral';
+	botaoToggleSidebar.title = recolhida ? t('chive-sidebar-expand') : t('chive-sidebar-collapse');
 }
 
 botaoToggleSidebar.addEventListener('click', () => {
@@ -184,6 +188,15 @@ botaoToggleSidebar.addEventListener('click', () => {
 });
 
 atualizarRotuloSidebar();
+
+selectLang.addEventListener('change', evento => {
+	definirLocale(evento.target.value);
+});
+
+window.addEventListener('chive-locale-changed', () => {
+	atualizarRotuloSidebar();
+	atualizarVisao();
+});
 
 zonaUpload.addEventListener('click', () => {
 	inputArquivo.click();

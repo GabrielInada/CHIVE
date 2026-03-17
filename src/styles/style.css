@@ -66,6 +66,41 @@ header {
   opacity: 0.75;
 }
 
+.header-lang {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lang-label {
+  font-size: 10px;
+  opacity: 0.7;
+  letter-spacing: 0.05em;
+  font-family: var(--fonte-mono);
+}
+
+.lang-select {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  appearance: none;
+  outline: none;
+}
+
+.lang-select:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.lang-select option {
+  background: var(--accent);
+  color: #fff;
+}
+
 .step {
   padding: 3px 10px;
   border-radius: 3px;

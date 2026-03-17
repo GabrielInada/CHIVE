@@ -1,0 +1,62 @@
+{
+	"@metadata": {
+		"authors": [],
+		"locale": "qqq",
+		"message-documentation": "qqq"
+	},
+
+	"chive-page-title": "Browser tab title.",
+
+	"chive-step-upload": "Step indicator: Upload step (e.g. '01 · Upload').",
+	"chive-step-charts": "Step indicator: Charts step.",
+	"chive-step-publish": "Step indicator: Publish step.",
+
+	"chive-sidebar-nav": "Label at the top of the left sidebar.",
+	"chive-sidebar-collapse": "Tooltip/aria-label for the sidebar toggle when sidebar is open (click will collapse it).",
+	"chive-sidebar-expand": "Tooltip/aria-label for the sidebar toggle when sidebar is collapsed (click will expand it).",
+
+	"chive-section-upload": "Heading for the file upload section in the sidebar.",
+	"chive-upload-main": "Main text inside the drag-and-drop upload zone.",
+	"chive-upload-sub": "Secondary text inside the upload zone. May contain basic HTML (br, strong).",
+	"chive-upload-loaded-main": "Upload zone main text after files have been loaded.",
+	"chive-upload-loaded-sub": "Upload zone secondary text after files have been loaded.",
+
+	"chive-section-files": "Heading for the loaded files list section.",
+	"chive-no-files": "Placeholder shown when no files are loaded.",
+	"chive-files-loaded": "Summary of how many files are loaded. $1 = count. Uses PLURAL.",
+	"chive-file-meta": "Metadata line for one file. $1 = row count, $2 = column count, $3 = file size.",
+	"chive-remove-file": "Aria-label for the remove button. $1 = file name.",
+
+	"chive-section-columns": "Heading for the column selection section.",
+	"chive-action-select-all": "Quick-action button: select all columns.",
+	"chive-action-clear": "Quick-action button: deselect all columns.",
+	"chive-action-only-numeric": "Quick-action button: select only numeric columns.",
+	"chive-action-only-text": "Quick-action button: select only text columns.",
+
+	"chive-btn-advance": "Primary button that advances to the next step. Include the → glyph.",
+
+	"chive-empty-title": "Heading in the main area when no file is loaded.",
+	"chive-empty-sub": "Description below the empty-state heading.",
+
+	"chive-card-preview": "Title of the data preview card.",
+	"chive-label-rows": "Label for the row-count selector.",
+	"chive-badge-preview": "Badge in the preview card. $1 = total rows, $2 = rows shown, $3 = visible columns, $4 = total columns.",
+	"chive-no-columns-selected": "Message inside the preview area when no columns are selected.",
+
+	"chive-card-stats": "Title of the statistics card.",
+	"chive-stats-badge": "Badge in the stats card. $1 = number of numeric columns. Uses PLURAL.",
+	"chive-stat-valid": "Label for the count of non-null numeric values in a column.",
+	"chive-stat-min": "Label for the minimum value.",
+	"chive-stat-max": "Label for the maximum value.",
+	"chive-stat-mean": "Label for the mean (average).",
+	"chive-stat-median": "Label for the median.",
+
+	"chive-lang-label": "Label for the language selector in the header.",
+
+	"chive-type-number": "Display label for numeric columns (used in column list tags and table footer). Keep short.",
+	"chive-type-text": "Display label for text columns (used in column list tags and table footer). Keep short.",
+
+	"chive-error-format": "Error when user uploads an unsupported file type. $1 = file name.",
+	"chive-error-read": "Error when the browser fails to read a file. $1 = file name.",
+	"chive-error-unknown": "Fallback error message when the failure reason is unknown."
+}
