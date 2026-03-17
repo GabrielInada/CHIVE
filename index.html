@@ -133,12 +133,13 @@
                             <span class="card-badge" id="badge-charts">—</span>
                         </div>
                         <div class="card-corpo card-corpo-charts">
-                            <div class="charts-grid">
-                                <section class="chart-bloco">
+                            <div id="charts-empty-state" class="chart-vazio" style="display:none"></div>
+                            <div class="charts-grid" id="charts-grid">
+                                <section class="chart-bloco" id="chart-block-bar">
                                     <h4 class="chart-titulo" data-i18n="chive-chart-bar-title">Barras (contagem por categoria)</h4>
                                     <div id="chart-bar-container" class="chart-container"></div>
                                 </section>
-                                <section class="chart-bloco">
+                                <section class="chart-bloco" id="chart-block-scatter">
                                     <h4 class="chart-titulo" data-i18n="chive-chart-scatter-title">Dispersão (X vs Y)</h4>
                                     <div id="chart-scatter-container" class="chart-container"></div>
                                 </section>

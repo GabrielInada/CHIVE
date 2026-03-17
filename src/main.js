@@ -172,15 +172,7 @@ function renderizarControlesVisualizacoesSidebar(dataset) {
 
 function atualizarEstadoBotaoAvancar(dataset) {
 	const btnAvancar = document.getElementById('btn-avancar');
-	if (!dataset) {
-		btnAvancar.disabled = true;
-		return;
-	}
-
-	const qtdSelecionadas = Array.isArray(dataset.colunasSelecionadas)
-		? dataset.colunasSelecionadas.length
-		: 0;
-	btnAvancar.disabled = qtdSelecionadas === 0;
+	btnAvancar.disabled = !dataset;
 }
 
 function normalizarConfigGraficos(dataset) {
@@ -211,11 +203,11 @@ function normalizarConfigGraficos(dataset) {
 	dataset.configGraficos = {
 		aba,
 		bar: {
-			enabled: barConfig.enabled !== false,
+			enabled: barConfig.enabled === true,
 			category: barCategoria,
 		},
 		scatter: {
-			enabled: scatterConfig.enabled !== false,
+			enabled: scatterConfig.enabled === true,
 			x: scatterX,
 			y: scatterY,
 		},
@@ -357,11 +349,11 @@ async function processarArquivos(arquivos) {
 				configGraficos: {
 					aba: 'preview',
 					bar: {
-						enabled: true,
+						enabled: false,
 						category: null,
 					},
 					scatter: {
-						enabled: true,
+						enabled: false,
 						x: null,
 						y: null,
 					},
@@ -477,10 +469,6 @@ document.addEventListener('drop', evento => evento.preventDefault());
 
 document.getElementById('btn-avancar').addEventListener('click', () => {
 	if (datasetsCarregados.length === 0) return;
-	const datasetAtivo = datasetsCarregados[indiceAtivo];
-	if (!datasetAtivo || !Array.isArray(datasetAtivo.colunasSelecionadas) || datasetAtivo.colunasSelecionadas.length === 0) {
-		return;
-	}
 	atualizarModoSidebar('viz');
 });
 

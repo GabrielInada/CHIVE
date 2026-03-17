@@ -102,6 +102,11 @@ document.getElementById('container-stats').innerHTML = '';
 }
 
 function renderizarGraficos(config, dados, colunasVisiveis, colunasNumericasVisiveis) {
+	const chartsGrid = document.getElementById('charts-grid');
+	const emptyState = document.getElementById('charts-empty-state');
+	const blocoBar = document.getElementById('chart-block-bar');
+	const blocoScatter = document.getElementById('chart-block-scatter');
+
 document.getElementById('badge-charts').textContent = t(
 'chive-charts-badge',
 colunasVisiveis.length,
@@ -109,18 +114,31 @@ colunasNumericasVisiveis.length
 );
 
 if (config.aba !== 'charts') {
+		chartsGrid.style.display = 'grid';
+		emptyState.style.display = 'none';
+		blocoBar.style.display = 'block';
+		blocoScatter.style.display = 'block';
 document.getElementById('chart-bar-container').innerHTML = '';
 document.getElementById('chart-scatter-container').innerHTML = '';
 return;
 }
 
 if (!config.bar.enabled && !config.scatter.enabled) {
-mensagemChart('chart-bar-container', t('chive-chart-empty-none'));
-mensagemChart('chart-scatter-container', t('chive-chart-empty-none'));
+		chartsGrid.style.display = 'none';
+		emptyState.style.display = 'flex';
+		emptyState.textContent = t('chive-chart-empty-none');
+		blocoBar.style.display = 'none';
+		blocoScatter.style.display = 'none';
+		document.getElementById('chart-bar-container').innerHTML = '';
+		document.getElementById('chart-scatter-container').innerHTML = '';
 return;
 }
 
+	chartsGrid.style.display = 'grid';
+	emptyState.style.display = 'none';
+
 if (config.bar.enabled) {
+		blocoBar.style.display = 'block';
 const barResult = renderBarChart(
 document.getElementById('chart-bar-container'),
 dados,
@@ -128,10 +146,12 @@ config.bar.category
 );
 if (!barResult.ok) mensagemChart('chart-bar-container', t('chive-chart-empty-bar'));
 } else {
-mensagemChart('chart-bar-container', t('chive-chart-disabled'));
+		blocoBar.style.display = 'none';
+		document.getElementById('chart-bar-container').innerHTML = '';
 }
 
 if (config.scatter.enabled) {
+		blocoScatter.style.display = 'block';
 const scatterResult = renderScatterPlot(
 document.getElementById('chart-scatter-container'),
 dados,
@@ -140,7 +160,8 @@ config.scatter.y
 );
 if (!scatterResult.ok) mensagemChart('chart-scatter-container', t('chive-chart-empty-scatter'));
 } else {
-mensagemChart('chart-scatter-container', t('chive-chart-disabled'));
+		blocoScatter.style.display = 'none';
+		document.getElementById('chart-scatter-container').innerHTML = '';
 }
 }
 
