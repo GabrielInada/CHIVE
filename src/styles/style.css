@@ -754,7 +754,7 @@ header {
 }
 
 .tabela-preview thead th {
-  background: rgba(26, 71, 42, 0.05);
+  background: var(--surface);
   padding: 8px 14px;
   text-align: left;
   font-weight: 500;
@@ -763,6 +763,7 @@ header {
   white-space: nowrap;
   position: sticky;
   top: 0;
+  z-index: 10;
 }
 
 .tabela-preview tfoot td {
