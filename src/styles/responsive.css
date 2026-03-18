@@ -1,0 +1,63 @@
+@media (max-width: 900px) {
+  header {
+    height: auto;
+    padding: 18px 20px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  body.sidebar-collapsed .workspace {
+    --sidebar-width: 1fr;
+  }
+
+  .painel-esquerdo {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  body.sidebar-collapsed .painel-esquerdo {
+    padding: 18px 20px;
+    gap: 24px;
+  }
+
+  body.sidebar-collapsed .painel-topo {
+    justify-content: space-between;
+  }
+
+  body.sidebar-collapsed .painel-topo-label,
+  body.sidebar-collapsed .secao-titulo,
+  body.sidebar-collapsed .upload-texto-principal,
+  body.sidebar-collapsed .upload-texto-sub,
+  body.sidebar-collapsed #info-arquivo,
+  body.sidebar-collapsed #painel-colunas,
+  body.sidebar-collapsed #painel-visualizacoes-sidebar,
+  body.sidebar-collapsed #mensagem-erro,
+  body.sidebar-collapsed #aviso-dev,
+  body.sidebar-collapsed #btn-avancar,
+  body.sidebar-collapsed #btn-editar-colunas {
+    display: initial !important;
+  }
+
+  body.sidebar-collapsed #zona-upload {
+    padding: 32px 20px;
+  }
+
+  body.sidebar-collapsed .upload-icone {
+    margin-bottom: 10px;
+    font-size: 28px;
+  }
+
+  .area-resultados {
+    padding: 24px 20px 40px;
+  }
+
+  .header-steps {
+    flex-wrap: wrap;
+  }
+}

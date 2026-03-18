@@ -1,0 +1,137 @@
+#estado-vazio {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--muted);
+  gap: 16px;
+  padding: 60px 40px;
+}
+
+.vazio-icone {
+  font-size: 52px;
+  opacity: 0.3;
+}
+
+.vazio-titulo {
+  font-family: var(--fonte-display);
+  font-size: 18px;
+  font-weight: 300;
+  color: var(--text);
+  opacity: 0.5;
+}
+
+.vazio-sub {
+  font-size: 12px;
+  max-width: 320px;
+  line-height: 1.6;
+}
+
+#estado-dados {
+  display: none;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.resultado-tabs {
+  display: none;
+  gap: 8px;
+}
+
+.resultado-tab {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.resultado-tab.ativo {
+  border-color: var(--accent);
+  background: rgba(26, 71, 42, 0.08);
+  color: var(--accent);
+}
+
+.resultado-painel {
+  display: none;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.resultado-painel.ativo {
+  display: flex;
+}
+
+.resultado-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(26, 71, 42, 0.03);
+}
+
+.card-header-controles {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.linhas-label {
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.linhas-select {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 4px;
+  padding: 3px 6px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+}
+
+.card-titulo {
+  font-family: var(--fonte-display);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.card-badge {
+  font-size: 10px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.card-corpo {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.card-corpo-preview {
+  max-height: min(64vh, 720px);
+  overflow: auto;
+}
+
+.card-corpo-charts {
+  padding: 16px;
+}

@@ -1,12 +1,7 @@
 import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
-
-function formatarNumero(valor, locale) {
-	if (!Number.isFinite(valor)) return '—';
-	return Number.isInteger(valor)
-		? valor.toLocaleString(locale)
-		: valor.toLocaleString(locale, { maximumFractionDigits: 4 });
-}
+import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
+import { formatarNumero } from '../../utils/formatters.js';
 
 function normalizarDominio([minimo, maximo]) {
 	if (!Number.isFinite(minimo) || !Number.isFinite(maximo)) return [0, 1];
@@ -21,8 +16,8 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	if (!container || !eixoX || !eixoY) return { ok: false };
 	const xScale = opcoes.xScale === 'log' ? 'log' : 'linear';
 	const yScale = opcoes.yScale === 'log' ? 'log' : 'linear';
-	const radius = Number.isFinite(Number(opcoes.radius)) ? Number(opcoes.radius) : 3;
-	const opacity = Number.isFinite(Number(opcoes.opacity)) ? Number(opcoes.opacity) : 0.7;
+	const radius = Number.isFinite(Number(opcoes.radius)) ? Number(opcoes.radius) : SCATTER_PLOT.defaultRadius;
+	const opacity = Number.isFinite(Number(opcoes.opacity)) ? Number(opcoes.opacity) : SCATTER_PLOT.defaultOpacity;
  	const labels = {
 		eixoX: opcoes.labels?.eixoX || 'X',
 		eixoY: opcoes.labels?.eixoY || 'Y',
@@ -48,9 +43,9 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 
 	container.innerHTML = '';
 	hideChartTooltip();
-	const largura = Math.max(container.clientWidth || 700, 320);
-	const altura = 320;
-	const margem = { top: 12, right: 12, bottom: 44, left: 52 };
+	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
+	const altura = CHART_DIMENSIONS.scatter.height;
+	const margem = CHART_DIMENSIONS.scatter.margins;
 	const larguraInterna = largura - margem.left - margem.right;
 	const alturaInterna = altura - margem.top - margem.bottom;
 
@@ -95,7 +90,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		.attr('cx', ponto => escalaX(ponto.x))
 		.attr('cy', ponto => escalaY(ponto.y))
 		.attr('r', radius)
-		.attr('fill', '#1a472a')
+		.attr('fill', CHART_COLORS.scatter)
 		.attr('opacity', opacity)
 		.on('mouseenter', (event, ponto) => {
 			if (pinnedIndex !== null) return;

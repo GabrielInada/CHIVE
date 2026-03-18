@@ -1,0 +1,25 @@
+#mensagem-erro {
+  display: none;
+  background: #fff5f5;
+  border: 1px solid #fca5a5;
+  border-radius: 6px;
+  padding: 12px 16px;
+  font-size: 12px;
+  color: #b91c1c;
+  margin-top: 12px;
+}
+
+#aviso-dev {
+  display: none;
+  background: #1c1a17;
+  color: #c8ff4d;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  padding: 10px 20px;
+  border-radius: 6px;
+  margin-top: 8px;
+}
+
+#aviso-dev code {
+  opacity: 0.7;
+}

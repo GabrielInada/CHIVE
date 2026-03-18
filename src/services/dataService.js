@@ -1,19 +1,20 @@
 import { csvParse, max, mean, median, min } from 'd3';
+import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS } from '../config/index.js';
 
 export function detectarTipo(valores) {
 	const valoresValidos = valores
-		.slice(0, 20)
+		.slice(0, TYPE_DETECTION.sampleSize)
 		.filter(v => v !== null && v !== undefined && String(v).trim() !== '');
 
-	if (valoresValidos.length === 0) return 'texto';
+	if (valoresValidos.length === 0) return TYPE_DEFAULTS.fallback;
 
 	const totalNumeros = valoresValidos.filter(v => !isNaN(Number(v))).length;
-	if (totalNumeros / valoresValidos.length >= 0.8) return 'numero';
+	if (totalNumeros / valoresValidos.length >= TYPE_DETECTION.numberThreshold) return COLUMN_TYPES.NUMBER;
 
 	const totalDatas = valoresValidos.filter(v => !isNaN(Date.parse(v))).length;
-	if (totalDatas / valoresValidos.length >= 0.8) return 'data';
+	if (totalDatas / valoresValidos.length >= TYPE_DETECTION.dateThreshold) return COLUMN_TYPES.DATE;
 
-	return 'texto';
+	return TYPE_DEFAULTS.fallback;
 }
 
 export function parsearCSV(texto) {

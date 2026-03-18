@@ -1,0 +1,29 @@
+:root {
+  --bg: #f5f2eb;
+  --surface: #fffef9;
+  --border: #ddd8cc;
+  --accent: #1a472a;
+  --accent-2: #d4622a;
+  --text: #1c1a17;
+  --muted: #7a7568;
+  --success: #2d6a4f;
+  --tag-num: #e8f4ed;
+  --tag-txt: #fef3e2;
+  --tag-dat: #e8eaf4;
+  --fonte-display: 'Fraunces', serif;
+  --fonte-mono: 'IBM Plex Mono', monospace;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--fonte-mono);
+  font-size: 13px;
+  min-height: 100vh;
+}
