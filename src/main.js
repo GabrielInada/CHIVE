@@ -4,6 +4,7 @@ import {
 	parsearJSON,
 	processarDados,
 } from './services/dataService.js';
+import { filterVisibleColumns, getNumericColumnNames, getCategoricalColumnNames } from './utils/columnHelpers.js';
 import {
 	esconderErro,
 	mostrarErro,
@@ -64,12 +65,9 @@ function renderizarControlesVisualizacoesSidebar(dataset) {
 		return;
 	}
 
-	const nomesSelecionados = Array.isArray(dataset.colunasSelecionadas)
-		? dataset.colunasSelecionadas
-		: dataset.colunas.map(coluna => coluna.nome);
-	const colunasVisiveis = dataset.colunas.filter(coluna => nomesSelecionados.includes(coluna.nome));
-	const numericas = colunasVisiveis.filter(coluna => coluna.tipo === 'numero').map(coluna => coluna.nome);
-	const categoricas = colunasVisiveis.filter(coluna => coluna.tipo !== 'numero').map(coluna => coluna.nome);
+	const colunasVisiveis = filterVisibleColumns(dataset);
+	const numericas = getNumericColumnNames(colunasVisiveis);
+	const categoricas = getCategoricalColumnNames(colunasVisiveis);
 	const baseBar = categoricas.length > 0
 		? categoricas
 		: colunasVisiveis.map(coluna => coluna.nome);
@@ -361,12 +359,9 @@ function atualizarEstadoBotaoAvancar(dataset) {
 }
 
 function normalizarConfigGraficos(dataset) {
-	const nomesSelecionados = Array.isArray(dataset.colunasSelecionadas)
-		? dataset.colunasSelecionadas
-		: dataset.colunas.map(coluna => coluna.nome);
-	const colunasVisiveis = dataset.colunas.filter(coluna => nomesSelecionados.includes(coluna.nome));
-	const numericas = colunasVisiveis.filter(coluna => coluna.tipo === 'numero').map(coluna => coluna.nome);
-	const categoricas = colunasVisiveis.filter(coluna => coluna.tipo !== 'numero').map(coluna => coluna.nome);
+	const colunasVisiveis = filterVisibleColumns(dataset);
+	const numericas = getNumericColumnNames(colunasVisiveis);
+	const categoricas = getCategoricalColumnNames(colunasVisiveis);
 	const baseBar = categoricas.length > 0
 		? categoricas
 		: colunasVisiveis.map(coluna => coluna.nome);

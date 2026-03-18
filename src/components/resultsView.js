@@ -1,20 +1,13 @@
 import { calcularEstatisticas } from '../services/dataService.js';
 import { t, obterLocale } from '../services/i18nService.js';
 import { renderBarChart, renderScatterPlot } from '../modules/visualizations/index.js';
+import { escaparHTML, formatarNumero } from '../utils/formatters.js';
+import { filterVisibleColumns, getNumericColumnNames, getCategoricalColumnNames, getNumericColumns } from '../utils/columnHelpers.js';
 
 function traduzirTipo(tipo) {
 if (tipo === 'numero') return t('chive-type-number');
 if (tipo === 'texto') return t('chive-type-text');
 return tipo;
-}
-
-function escaparHTML(texto) {
-return String(texto)
-.replaceAll('&', '&amp;')
-.replaceAll('<', '&lt;')
-.replaceAll('>', '&gt;')
-.replaceAll('"', '&quot;')
-.replaceAll("'", '&#39;');
 }
 
 function mensagemChart(containerId, mensagem) {
@@ -192,16 +185,7 @@ config.scatter.x,
 }
 }
 
-export function formatarNumero(valor) {
-const numero = Number(valor);
-if (valor === null || valor === undefined || valor === '' || Number.isNaN(numero)) return '—';
 
-const locale = obterLocale();
-if (Number.isInteger(numero)) return numero.toLocaleString(locale);
-if (Math.abs(numero) >= 100) return numero.toLocaleString(locale, { maximumFractionDigits: 1 });
-if (Math.abs(numero) >= 1) return numero.toLocaleString(locale, { maximumFractionDigits: 2 });
-return numero.toPrecision(4);
-}
 
 export function mostrarErro(mensagem) {
 const elemento = document.getElementById('mensagem-erro');
@@ -285,7 +269,7 @@ document.getElementById('estado-dados').style.display = 'flex';
 const nomesColunas = colunas.map(coluna => coluna.nome);
 const nomesSelecionados = new Set(Array.isArray(colunasSelecionadas) ? colunasSelecionadas : nomesColunas);
 const colunasVisiveis = colunas.filter(coluna => nomesSelecionados.has(coluna.nome));
-const colunasNumericasVisiveis = colunasVisiveis.filter(coluna => coluna.tipo === 'numero');
+const colunasNumericasVisiveis = getNumericColumns(colunasVisiveis);
 
 const config = configGraficos || {
 aba: 'preview',

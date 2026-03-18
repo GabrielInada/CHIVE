@@ -1,20 +1,7 @@
 import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
-
-function escaparHTML(texto) {
-	return String(texto)
-		.replaceAll('&', '&amp;')
-		.replaceAll('<', '&lt;')
-		.replaceAll('>', '&gt;')
-		.replaceAll('"', '&quot;')
-		.replaceAll("'", '&#39;');
-}
-
-function formatarNumero(valor, locale) {
-	if (!Number.isFinite(valor)) return '—';
-	return valor.toLocaleString(locale);
-}
+import { escaparHTML, formatarNumero } from '../../utils/formatters.js';
 
 function ordenarCategorias(linhas, ordenacao) {
 	if (ordenacao === 'count-asc') {
