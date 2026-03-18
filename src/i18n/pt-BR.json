@@ -35,7 +35,7 @@
 	"chive-action-only-text": "Só texto",
 
 	"chive-btn-advance": "Gerenciar visualizações →",
-	"chive-btn-edit-columns": "Editar colunas",
+	"chive-btn-edit-columns": "← Editar colunas",
 
 	"chive-empty-title": "Nenhum dado carregado ainda",
 	"chive-empty-sub": "Carregue um arquivo CSV ou JSON ao lado para ver o preview dos dados aqui.",

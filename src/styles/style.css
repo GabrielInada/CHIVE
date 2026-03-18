@@ -754,7 +754,7 @@ header {
 }
 
 .tabela-preview thead th {
-  background: rgba(26, 71, 42, 0.05);
+  background: var(--surface);
   padding: 8px 14px;
   text-align: left;
   font-weight: 500;
@@ -763,6 +763,7 @@ header {
   white-space: nowrap;
   position: sticky;
   top: 0;
+  z-index: 10;
 }
 
 .tabela-preview tfoot td {
@@ -885,9 +886,11 @@ body.sidebar-collapsed .upload-texto-principal,
 body.sidebar-collapsed .upload-texto-sub,
 body.sidebar-collapsed #info-arquivo,
 body.sidebar-collapsed #painel-colunas,
+body.sidebar-collapsed #painel-visualizacoes-sidebar,
 body.sidebar-collapsed #mensagem-erro,
 body.sidebar-collapsed #aviso-dev,
-body.sidebar-collapsed #btn-avancar {
+body.sidebar-collapsed #btn-avancar,
+body.sidebar-collapsed #btn-editar-colunas {
   display: none !important;
 }
 
@@ -955,9 +958,11 @@ body.sidebar-collapsed .upload-icone {
   body.sidebar-collapsed .upload-texto-sub,
   body.sidebar-collapsed #info-arquivo,
   body.sidebar-collapsed #painel-colunas,
+  body.sidebar-collapsed #painel-visualizacoes-sidebar,
   body.sidebar-collapsed #mensagem-erro,
   body.sidebar-collapsed #aviso-dev,
-  body.sidebar-collapsed #btn-avancar {
+  body.sidebar-collapsed #btn-avancar,
+  body.sidebar-collapsed #btn-editar-colunas {
     display: initial !important;
   }
 

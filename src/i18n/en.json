@@ -35,7 +35,7 @@
 	"chive-action-only-text": "Text only",
 
 	"chive-btn-advance": "Manage visualizations →",
-	"chive-btn-edit-columns": "Edit columns",
+	"chive-btn-edit-columns": "← Edit columns",
 
 	"chive-empty-title": "No data loaded yet",
 	"chive-empty-sub": "Load a CSV or JSON file on the left to preview the data here.",
