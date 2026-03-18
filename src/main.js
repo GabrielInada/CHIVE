@@ -14,6 +14,7 @@ import {
 } from './components/resultsView.js';
 import { t, inicializarI18n, definirLocale, obterLocale } from './services/i18nService.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT, PREVIEW_DEFAULT_ROWS, SUPPORTED_FORMATS } from './config/index.js';
+import { downloadSvgFromContainer } from './utils/svgExport.js';
 
 const datasetsCarregados = [];
 let indiceAtivo = -1;
@@ -405,6 +406,8 @@ function normalizarConfigGraficos(dataset) {
 }
 
 function atualizarVisao() {
+	fecharMenusChart();
+
 	if (datasetsCarregados.length === 0) {
 		indiceAtivo = -1;
 		sincronizarGlobais();
@@ -609,6 +612,69 @@ function atualizarRotuloSidebar() {
 	botaoToggleSidebar.title = recolhida ? t('chive-sidebar-expand') : t('chive-sidebar-collapse');
 }
 
+function fecharMenusChart() {
+	document.querySelectorAll('[data-chart-menu]').forEach(menu => {
+		menu.hidden = true;
+	});
+	document.querySelectorAll('[data-chart-menu-btn]').forEach(botao => {
+		botao.setAttribute('aria-expanded', 'false');
+	});
+}
+
+function alternarMenuChart(chartId) {
+	if (!chartId) return;
+	const menu = document.querySelector(`[data-chart-menu="${chartId}"]`);
+	const botao = document.querySelector(`[data-chart-menu-btn="${chartId}"]`);
+	if (!menu || !botao) return;
+
+	const abrir = menu.hidden;
+	fecharMenusChart();
+	menu.hidden = !abrir;
+	botao.setAttribute('aria-expanded', String(abrir));
+}
+
+function configurarAcoesChart() {
+	document.addEventListener('click', evento => {
+		const botaoMenu = evento.target.closest('[data-chart-menu-btn]');
+		if (botaoMenu) {
+			evento.stopPropagation();
+			alternarMenuChart(botaoMenu.dataset.chartMenuBtn);
+			return;
+		}
+
+		const itemMenu = evento.target.closest('[data-chart-action]');
+		if (itemMenu) {
+			evento.stopPropagation();
+			const acao = itemMenu.dataset.chartAction;
+			if (acao === 'download-svg') {
+				const resultado = downloadSvgFromContainer(
+					itemMenu.dataset.chartContainer,
+					itemMenu.dataset.chartFilename || 'chart'
+				);
+				if (!resultado.ok) {
+					mostrarErro(t('chive-chart-download-error'));
+				}
+			} else if (acao === 'add-panel') {
+				window.alert(t('chive-chart-action-add-panel-coming-soon'));
+			}
+			fecharMenusChart();
+			return;
+		}
+
+		if (!evento.target.closest('[data-chart-actions]')) {
+			fecharMenusChart();
+		}
+	});
+
+	document.addEventListener('keydown', evento => {
+		if (evento.key === 'Escape') {
+			fecharMenusChart();
+		}
+	});
+
+	fecharMenusChart();
+}
+
 botaoToggleSidebar.addEventListener('click', () => {
 	document.body.classList.toggle('sidebar-collapsed');
 	atualizarRotuloSidebar();
@@ -616,6 +682,7 @@ botaoToggleSidebar.addEventListener('click', () => {
 
 atualizarRotuloSidebar();
 atualizarModoSidebar('dados');
+configurarAcoesChart();
 
 selectLang.addEventListener('change', evento => {
 	definirLocale(evento.target.value);

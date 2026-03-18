@@ -132,11 +132,85 @@
                             <div id="charts-empty-state" class="chart-vazio" style="display:none"></div>
                             <div class="charts-grid" id="charts-grid">
                                 <section class="chart-bloco" id="chart-block-bar">
-                                    <h4 class="chart-titulo" data-i18n="chive-chart-bar-title">Barras (contagem por categoria)</h4>
+                                    <div class="chart-bloco-topo">
+                                        <h4 class="chart-titulo" data-i18n="chive-chart-bar-title">Barras (contagem por categoria)</h4>
+                                        <div class="chart-acoes" data-chart-actions>
+                                            <button
+                                                type="button"
+                                                class="chart-menu-btn"
+                                                data-chart-menu-btn="bar"
+                                                aria-haspopup="menu"
+                                                aria-expanded="false"
+                                                data-i18n-title="chive-chart-actions-open"
+                                                title="Acoes"
+                                            >
+                                                <span aria-hidden="true">&#8942;</span>
+                                            </button>
+                                            <div class="chart-menu" data-chart-menu="bar" role="menu" hidden>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="download-svg"
+                                                    data-chart-container="chart-bar-container"
+                                                    data-chart-filename="bar-chart"
+                                                    data-i18n="chive-chart-action-download-svg"
+                                                >
+                                                    Download SVG
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="add-panel"
+                                                    data-i18n="chive-chart-action-add-panel"
+                                                >
+                                                    Add to panel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div id="chart-bar-container" class="chart-container"></div>
                                 </section>
                                 <section class="chart-bloco" id="chart-block-scatter">
-                                    <h4 class="chart-titulo" data-i18n="chive-chart-scatter-title">Dispersão (X vs Y)</h4>
+                                    <div class="chart-bloco-topo">
+                                        <h4 class="chart-titulo" data-i18n="chive-chart-scatter-title">Dispersão (X vs Y)</h4>
+                                        <div class="chart-acoes" data-chart-actions>
+                                            <button
+                                                type="button"
+                                                class="chart-menu-btn"
+                                                data-chart-menu-btn="scatter"
+                                                aria-haspopup="menu"
+                                                aria-expanded="false"
+                                                data-i18n-title="chive-chart-actions-open"
+                                                title="Acoes"
+                                            >
+                                                <span aria-hidden="true">&#8942;</span>
+                                            </button>
+                                            <div class="chart-menu" data-chart-menu="scatter" role="menu" hidden>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="download-svg"
+                                                    data-chart-container="chart-scatter-container"
+                                                    data-chart-filename="scatter-plot"
+                                                    data-i18n="chive-chart-action-download-svg"
+                                                >
+                                                    Download SVG
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="add-panel"
+                                                    data-i18n="chive-chart-action-add-panel"
+                                                >
+                                                    Add to panel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div id="chart-scatter-container" class="chart-container"></div>
                                 </section>
                             </div>
