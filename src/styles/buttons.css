@@ -1,0 +1,61 @@
+.btn-primario {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  font-family: var(--fonte-mono);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  width: 100%;
+  transition: opacity 0.15s;
+}
+
+.btn-primario:hover {
+  opacity: 0.85;
+}
+
+.btn-secundario {
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+
+.btn-primario:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.colunas-acao {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-family: var(--fonte-mono);
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.colunas-acao:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(26, 71, 42, 0.05);
+}
+
+.viz-expand-btn {
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.viz-expand-btn:hover {
+  border-color: var(--accent);
+}

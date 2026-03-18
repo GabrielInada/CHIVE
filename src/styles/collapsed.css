@@ -1,0 +1,37 @@
+body.sidebar-collapsed .workspace {
+  --sidebar-width: 74px;
+}
+
+body.sidebar-collapsed .painel-esquerdo {
+  padding: 16px 10px;
+  gap: 12px;
+}
+
+body.sidebar-collapsed .painel-topo {
+  width: 100%;
+  justify-content: center;
+}
+
+body.sidebar-collapsed .painel-topo-label,
+body.sidebar-collapsed .secao-titulo,
+body.sidebar-collapsed .upload-texto-principal,
+body.sidebar-collapsed .upload-texto-sub,
+body.sidebar-collapsed #info-arquivo,
+body.sidebar-collapsed #painel-colunas,
+body.sidebar-collapsed #painel-visualizacoes-sidebar,
+body.sidebar-collapsed #mensagem-erro,
+body.sidebar-collapsed #aviso-dev,
+body.sidebar-collapsed #btn-avancar,
+body.sidebar-collapsed #btn-editar-colunas {
+  display: none !important;
+}
+
+body.sidebar-collapsed #zona-upload {
+  padding: 12px 8px;
+  border-radius: 7px;
+}
+
+body.sidebar-collapsed .upload-icone {
+  margin-bottom: 0;
+  font-size: 24px;
+}

@@ -1,0 +1,122 @@
+#zona-upload {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: var(--bg);
+}
+
+#zona-upload.arrastando {
+  border-color: var(--accent);
+  background: rgba(26, 71, 42, 0.04);
+}
+
+#zona-upload.carregado {
+  border-style: solid;
+  border-color: var(--accent);
+  background: rgba(26, 71, 42, 0.04);
+}
+
+.upload-icone {
+  font-size: 28px;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.upload-texto-principal {
+  font-family: var(--fonte-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.upload-texto-sub {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+#input-arquivo {
+  display: none;
+}
+
+#info-arquivo {
+  display: none;
+}
+
+.arquivos-resumo {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.lista-arquivos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.arquivo-item {
+  display: flex;
+  align-items: stretch;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.arquivo-item.ativo {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(26, 71, 42, 0.15);
+}
+
+.arquivo-item-botao {
+  flex: 1;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.arquivo-item-botao:hover {
+  background: rgba(26, 71, 42, 0.04);
+}
+
+.arquivo-item-nome {
+  display: block;
+  font-weight: 500;
+  color: var(--accent);
+  font-size: 12px;
+  margin-bottom: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arquivo-item-meta {
+  display: block;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.arquivo-item-remover {
+  width: 34px;
+  border: none;
+  border-left: 1px solid var(--border);
+  background: #fff7f7;
+  color: #a33a3a;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.arquivo-item-remover:hover {
+  background: #ffeaea;
+}
