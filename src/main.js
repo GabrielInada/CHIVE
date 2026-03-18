@@ -389,7 +389,7 @@ function normalizarConfigGraficos(dataset) {
 			sort: ['count-desc', 'count-asc', 'label-asc', 'label-desc'].includes(barConfig.sort)
 				? barConfig.sort
 				: 'count-desc',
-			topN: [0, 10, 20, 50].includes(Number(barConfig.topN)) ? Number(barConfig.topN) : 0,
+			topN: [0, 10, 20, 50].includes(Number(barConfig.topN)) ? Number(barConfig.topN) : 10,
 		},
 		scatter: {
 			enabled: scatterConfig.enabled === true,
@@ -543,7 +543,7 @@ async function processarArquivos(arquivos) {
 						category: null,
 						expanded: false,
 						sort: 'count-desc',
-						topN: 0,
+						topN: 10,
 					},
 					scatter: {
 						enabled: false,
