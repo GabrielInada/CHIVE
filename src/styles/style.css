@@ -627,6 +627,25 @@ header {
   padding: 16px;
 }
 
+.chart-tooltip {
+  position: fixed;
+  z-index: 9999;
+  max-width: 280px;
+  background: rgba(28, 26, 23, 0.96);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+.chart-tooltip strong {
+  color: #c8ff4d;
+}
+
 .tabela-preview {
   width: 100%;
   border-collapse: collapse;

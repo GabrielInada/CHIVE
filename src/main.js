@@ -93,6 +93,24 @@ function renderizarControlesVisualizacoesSidebar(dataset) {
 				${baseBar.map(nome => `<option value="${nome}" ${nome === config.bar.category ? 'selected' : ''}>${nome}</option>`).join('')}
 			</select>
 		</div>
+		<div class="chart-controle">
+			<label for="viz-select-bar-sort">${t('chive-chart-control-bar-sort')}</label>
+			<select id="viz-select-bar-sort" class="linhas-select" ${config.bar.enabled ? '' : 'disabled'}>
+				<option value="count-desc" ${config.bar.sort === 'count-desc' ? 'selected' : ''}>${t('chive-chart-sort-count-desc')}</option>
+				<option value="count-asc" ${config.bar.sort === 'count-asc' ? 'selected' : ''}>${t('chive-chart-sort-count-asc')}</option>
+				<option value="label-asc" ${config.bar.sort === 'label-asc' ? 'selected' : ''}>${t('chive-chart-sort-label-asc')}</option>
+				<option value="label-desc" ${config.bar.sort === 'label-desc' ? 'selected' : ''}>${t('chive-chart-sort-label-desc')}</option>
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-bar-topn">${t('chive-chart-control-bar-topn')}</label>
+			<select id="viz-select-bar-topn" class="linhas-select" ${config.bar.enabled ? '' : 'disabled'}>
+				<option value="0" ${Number(config.bar.topN) === 0 ? 'selected' : ''}>${t('chive-chart-topn-all')}</option>
+				<option value="10" ${Number(config.bar.topN) === 10 ? 'selected' : ''}>Top 10</option>
+				<option value="20" ${Number(config.bar.topN) === 20 ? 'selected' : ''}>Top 20</option>
+				<option value="50" ${Number(config.bar.topN) === 50 ? 'selected' : ''}>Top 50</option>
+			</select>
+		</div>
 		<label class="coluna-item">
 			<input id="viz-toggle-scatter" class="coluna-checkbox" type="checkbox" ${config.scatter.enabled ? 'checked' : ''} />
 			<span class="coluna-nome">${t('chive-chart-toggle-scatter')}</span>
@@ -111,13 +129,51 @@ function renderizarControlesVisualizacoesSidebar(dataset) {
 				${numericas.map(nome => `<option value="${nome}" ${nome === config.scatter.y ? 'selected' : ''}>${nome}</option>`).join('')}
 			</select>
 		</div>
+		<div class="chart-controle">
+			<label for="viz-select-scatter-xscale">${t('chive-chart-control-scatter-xscale')}</label>
+			<select id="viz-select-scatter-xscale" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="linear" ${config.scatter.xScale === 'linear' ? 'selected' : ''}>${t('chive-chart-scale-linear')}</option>
+				<option value="log" ${config.scatter.xScale === 'log' ? 'selected' : ''}>${t('chive-chart-scale-log')}</option>
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-scatter-yscale">${t('chive-chart-control-scatter-yscale')}</label>
+			<select id="viz-select-scatter-yscale" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="linear" ${config.scatter.yScale === 'linear' ? 'selected' : ''}>${t('chive-chart-scale-linear')}</option>
+				<option value="log" ${config.scatter.yScale === 'log' ? 'selected' : ''}>${t('chive-chart-scale-log')}</option>
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-scatter-radius">${t('chive-chart-control-scatter-radius')}</label>
+			<select id="viz-select-scatter-radius" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="2" ${Number(config.scatter.radius) === 2 ? 'selected' : ''}>2</option>
+				<option value="3" ${Number(config.scatter.radius) === 3 ? 'selected' : ''}>3</option>
+				<option value="4" ${Number(config.scatter.radius) === 4 ? 'selected' : ''}>4</option>
+				<option value="6" ${Number(config.scatter.radius) === 6 ? 'selected' : ''}>6</option>
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-scatter-opacity">${t('chive-chart-control-scatter-opacity')}</label>
+			<select id="viz-select-scatter-opacity" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="0.3" ${Number(config.scatter.opacity) === 0.3 ? 'selected' : ''}>30%</option>
+				<option value="0.5" ${Number(config.scatter.opacity) === 0.5 ? 'selected' : ''}>50%</option>
+				<option value="0.7" ${Number(config.scatter.opacity) === 0.7 ? 'selected' : ''}>70%</option>
+				<option value="1" ${Number(config.scatter.opacity) === 1 ? 'selected' : ''}>100%</option>
+			</select>
+		</div>
 	`;
 
 	const toggleBar = document.getElementById('viz-toggle-bar');
 	const toggleScatter = document.getElementById('viz-toggle-scatter');
 	const selectBar = document.getElementById('viz-select-bar');
+	const selectBarSort = document.getElementById('viz-select-bar-sort');
+	const selectBarTopN = document.getElementById('viz-select-bar-topn');
 	const selectX = document.getElementById('viz-select-x');
 	const selectY = document.getElementById('viz-select-y');
+	const selectScatterXScale = document.getElementById('viz-select-scatter-xscale');
+	const selectScatterYScale = document.getElementById('viz-select-scatter-yscale');
+	const selectScatterRadius = document.getElementById('viz-select-scatter-radius');
+	const selectScatterOpacity = document.getElementById('viz-select-scatter-opacity');
 
 	toggleBar.addEventListener('change', () => {
 		atualizarConfigGraficosAtiva({
@@ -149,6 +205,26 @@ function renderizarControlesVisualizacoesSidebar(dataset) {
 		});
 	});
 
+	selectBarSort.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			bar: {
+				...config.bar,
+				sort: selectBarSort.value || 'count-desc',
+			},
+		});
+	});
+
+	selectBarTopN.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			bar: {
+				...config.bar,
+				topN: Number(selectBarTopN.value) || 0,
+			},
+		});
+	});
+
 	selectX.addEventListener('change', () => {
 		atualizarConfigGraficosAtiva({
 			...config,
@@ -165,6 +241,46 @@ function renderizarControlesVisualizacoesSidebar(dataset) {
 			scatter: {
 				...config.scatter,
 				y: selectY.value || null,
+			},
+		});
+	});
+
+	selectScatterXScale.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				xScale: selectScatterXScale.value === 'log' ? 'log' : 'linear',
+			},
+		});
+	});
+
+	selectScatterYScale.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				yScale: selectScatterYScale.value === 'log' ? 'log' : 'linear',
+			},
+		});
+	});
+
+	selectScatterRadius.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				radius: Number(selectScatterRadius.value) || 3,
+			},
+		});
+	});
+
+	selectScatterOpacity.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				opacity: Number(selectScatterOpacity.value) || 0.7,
 			},
 		});
 	});
@@ -205,11 +321,19 @@ function normalizarConfigGraficos(dataset) {
 		bar: {
 			enabled: barConfig.enabled === true,
 			category: barCategoria,
+			sort: ['count-desc', 'count-asc', 'label-asc', 'label-desc'].includes(barConfig.sort)
+				? barConfig.sort
+				: 'count-desc',
+			topN: [0, 10, 20, 50].includes(Number(barConfig.topN)) ? Number(barConfig.topN) : 0,
 		},
 		scatter: {
 			enabled: scatterConfig.enabled === true,
 			x: scatterX,
 			y: scatterY,
+			xScale: scatterConfig.xScale === 'log' ? 'log' : 'linear',
+			yScale: scatterConfig.yScale === 'log' ? 'log' : 'linear',
+			radius: [2, 3, 4, 6].includes(Number(scatterConfig.radius)) ? Number(scatterConfig.radius) : 3,
+			opacity: [0.3, 0.5, 0.7, 1].includes(Number(scatterConfig.opacity)) ? Number(scatterConfig.opacity) : 0.7,
 		},
 	};
 }
@@ -351,11 +475,17 @@ async function processarArquivos(arquivos) {
 					bar: {
 						enabled: false,
 						category: null,
+						sort: 'count-desc',
+						topN: 0,
 					},
 					scatter: {
 						enabled: false,
 						x: null,
 						y: null,
+						xScale: 'linear',
+						yScale: 'linear',
+						radius: 3,
+						opacity: 0.7,
 					},
 				},
 			};

@@ -1,7 +1,46 @@
 import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
+import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 
-export function renderBarChart(container, dados, colunaCategoria) {
+function escaparHTML(texto) {
+	return String(texto)
+		.replaceAll('&', '&amp;')
+		.replaceAll('<', '&lt;')
+		.replaceAll('>', '&gt;')
+		.replaceAll('"', '&quot;')
+		.replaceAll("'", '&#39;');
+}
+
+function formatarNumero(valor, locale) {
+	if (!Number.isFinite(valor)) return '—';
+	return valor.toLocaleString(locale);
+}
+
+function ordenarCategorias(linhas, ordenacao) {
+	if (ordenacao === 'count-asc') {
+		return linhas.sort((a, b) => a[1] - b[1] || String(a[0]).localeCompare(String(b[0])));
+	}
+
+	if (ordenacao === 'label-asc') {
+		return linhas.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+	}
+
+	if (ordenacao === 'label-desc') {
+		return linhas.sort((a, b) => String(b[0]).localeCompare(String(a[0])));
+	}
+
+	return linhas.sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+}
+
+export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return { ok: false };
+	const ordenacao = opcoes.ordenacao || 'count-desc';
+	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : 0;
+	const labels = {
+		categoria: opcoes.labels?.categoria || 'Category',
+		contagem: opcoes.labels?.contagem || 'Count',
+		percentual: opcoes.labels?.percentual || 'Percentage',
+	};
+	const locale = opcoes.locale || undefined;
 
 	const contador = new Map();
 	dados.forEach(linha => {
@@ -12,10 +51,18 @@ export function renderBarChart(container, dados, colunaCategoria) {
 		contador.set(categoria, (contador.get(categoria) || 0) + 1);
 	});
 
-	const linhas = Array.from(contador.entries()).sort((a, b) => b[1] - a[1]);
+	let linhas = Array.from(contador.entries());
+	linhas = ordenarCategorias(linhas, ordenacao);
+
+	if (topN > 0) {
+		linhas = linhas.slice(0, topN);
+	}
+
 	if (linhas.length === 0) return { ok: false };
+	const totalContagem = linhas.reduce((acc, item) => acc + item[1], 0);
 
 	container.innerHTML = '';
+ 	hideChartTooltip();
 	const largura = Math.max(container.clientWidth || 700, 320);
 	const altura = 320;
 	const margem = { top: 12, right: 12, bottom: 90, left: 52 };
@@ -30,6 +77,21 @@ export function renderBarChart(container, dados, colunaCategoria) {
 	const grupo = svg
 		.append('g')
 		.attr('transform', `translate(${margem.left},${margem.top})`);
+
+	let pinnedCategoria = null;
+
+	const montarHtmlTooltip = item => {
+		const percentual = totalContagem > 0 ? ((item[1] / totalContagem) * 100) : 0;
+		return `
+			<div><strong>${labels.categoria}:</strong> ${escaparHTML(item[0])}</div>
+			<div><strong>${labels.contagem}:</strong> ${formatarNumero(item[1], locale)}</div>
+			<div><strong>${labels.percentual}:</strong> ${percentual.toFixed(1)}%</div>
+		`;
+	};
+
+	const exibirTooltip = (event, item) => {
+		showChartTooltip(montarHtmlTooltip(item), event.pageX, event.pageY);
+	};
 
 	const escalaX = scaleBand()
 		.domain(linhas.map(item => item[0]))
@@ -51,7 +113,34 @@ export function renderBarChart(container, dados, colunaCategoria) {
 		.attr('width', escalaX.bandwidth())
 		.attr('height', item => alturaInterna - escalaY(item[1]))
 		.attr('rx', 3)
-		.attr('fill', '#d4622a');
+		.attr('fill', '#d4622a')
+		.on('mouseenter', (event, item) => {
+			if (pinnedCategoria !== null) return;
+			exibirTooltip(event, item);
+		})
+		.on('mousemove', event => {
+			if (pinnedCategoria !== null) return;
+			moveChartTooltip(event.pageX, event.pageY);
+		})
+		.on('mouseleave', () => {
+			if (pinnedCategoria !== null) return;
+			hideChartTooltip();
+		})
+		.on('click', (event, item) => {
+			event.stopPropagation();
+			if (pinnedCategoria === item[0]) {
+				pinnedCategoria = null;
+				hideChartTooltip();
+				return;
+			}
+			pinnedCategoria = item[0];
+			exibirTooltip(event, item);
+		});
+
+	svg.on('click', () => {
+		pinnedCategoria = null;
+		hideChartTooltip();
+	});
 
 	grupo
 		.append('g')

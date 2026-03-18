@@ -142,7 +142,17 @@ if (config.bar.enabled) {
 const barResult = renderBarChart(
 document.getElementById('chart-bar-container'),
 dados,
-config.bar.category
+			config.bar.category,
+			{
+				ordenacao: config.bar.sort,
+				topN: config.bar.topN,
+				locale: obterLocale(),
+				labels: {
+					categoria: t('chive-chart-control-bar-category'),
+					contagem: t('chive-tooltip-count'),
+					percentual: t('chive-tooltip-percentage'),
+				},
+			}
 );
 if (!barResult.ok) mensagemChart('chart-bar-container', t('chive-chart-empty-bar'));
 } else {
@@ -156,9 +166,26 @@ const scatterResult = renderScatterPlot(
 document.getElementById('chart-scatter-container'),
 dados,
 config.scatter.x,
-config.scatter.y
+			config.scatter.y,
+			{
+				xScale: config.scatter.xScale,
+				yScale: config.scatter.yScale,
+				radius: config.scatter.radius,
+				opacity: config.scatter.opacity,
+				locale: obterLocale(),
+				labels: {
+					eixoX: t('chive-chart-control-scatter-x'),
+					eixoY: t('chive-chart-control-scatter-y'),
+					indice: t('chive-tooltip-row'),
+				},
+			}
 );
-if (!scatterResult.ok) mensagemChart('chart-scatter-container', t('chive-chart-empty-scatter'));
+		if (!scatterResult.ok) {
+			const chave = scatterResult.reason === 'log-no-positive'
+				? 'chive-chart-empty-scatter-log'
+				: 'chive-chart-empty-scatter';
+			mensagemChart('chart-scatter-container', t(chave));
+		}
 } else {
 		blocoScatter.style.display = 'none';
 		document.getElementById('chart-scatter-container').innerHTML = '';
