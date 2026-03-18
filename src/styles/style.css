@@ -885,9 +885,11 @@ body.sidebar-collapsed .upload-texto-principal,
 body.sidebar-collapsed .upload-texto-sub,
 body.sidebar-collapsed #info-arquivo,
 body.sidebar-collapsed #painel-colunas,
+body.sidebar-collapsed #painel-visualizacoes-sidebar,
 body.sidebar-collapsed #mensagem-erro,
 body.sidebar-collapsed #aviso-dev,
-body.sidebar-collapsed #btn-avancar {
+body.sidebar-collapsed #btn-avancar,
+body.sidebar-collapsed #btn-editar-colunas {
   display: none !important;
 }
 
@@ -955,9 +957,11 @@ body.sidebar-collapsed .upload-icone {
   body.sidebar-collapsed .upload-texto-sub,
   body.sidebar-collapsed #info-arquivo,
   body.sidebar-collapsed #painel-colunas,
+  body.sidebar-collapsed #painel-visualizacoes-sidebar,
   body.sidebar-collapsed #mensagem-erro,
   body.sidebar-collapsed #aviso-dev,
-  body.sidebar-collapsed #btn-avancar {
+  body.sidebar-collapsed #btn-avancar,
+  body.sidebar-collapsed #btn-editar-colunas {
     display: initial !important;
   }
 
