@@ -36,37 +36,42 @@
                 <button id="btn-toggle-sidebar" class="btn-toggle-sidebar" type="button" aria-expanded="true" aria-label="Recolher painel lateral" title="Recolher painel lateral">«</button>
             </div>
 
-            <div>
-                <p class="secao-titulo" data-i18n="chive-section-upload">Carregar arquivo</p>
-                <div id="zona-upload" role="button" tabindex="0">
-                    <span class="upload-icone">⬆</span>
-                    <p class="upload-texto-principal" data-i18n="chive-upload-main">Arraste seu arquivo aqui</p>
-                    <p class="upload-texto-sub" data-i18n="chive-upload-sub" data-i18n-html>ou clique para selecionar<br>
-                        Formatos aceitos: <strong>CSV</strong> ou <strong>JSON</strong>
-                    </p>
+            <section id="sidebar-panel-dados" class="sidebar-panel ativo">
+                <div>
+                    <p class="secao-titulo" data-i18n="chive-section-upload">Carregar arquivo</p>
+                    <div id="zona-upload" role="button" tabindex="0">
+                        <span class="upload-icone">⬆</span>
+                        <p class="upload-texto-principal" data-i18n="chive-upload-main">Arraste seu arquivo aqui</p>
+                        <p class="upload-texto-sub" data-i18n="chive-upload-sub" data-i18n-html>ou clique para selecionar<br>
+                            Formatos aceitos: <strong>CSV</strong> ou <strong>JSON</strong>
+                        </p>
+                    </div>
+
+                    <input type="file" id="input-arquivo" accept=".csv,.json,text/csv,application/json" multiple />
+                    <div id="mensagem-erro"></div>
                 </div>
 
-                <input type="file" id="input-arquivo" accept=".csv,.json,text/csv,application/json" multiple />
-                <div id="mensagem-erro"></div>
-            </div>
+                <div id="info-arquivo">
+                    <p class="secao-titulo" data-i18n="chive-section-files">Arquivos carregados</p>
+                    <div class="arquivos-resumo" id="arquivo-resumo-texto" data-i18n="chive-no-files">Nenhum arquivo</div>
+                    <div class="lista-arquivos" id="lista-arquivos-conteudo"></div>
+                </div>
 
-            <div id="info-arquivo">
-                <p class="secao-titulo" data-i18n="chive-section-files">Arquivos carregados</p>
-                <div class="arquivos-resumo" id="arquivo-resumo-texto" data-i18n="chive-no-files">Nenhum arquivo</div>
-                <div class="lista-arquivos" id="lista-arquivos-conteudo"></div>
-            </div>
+                <div id="painel-colunas">
+                    <p class="secao-titulo" data-i18n="chive-section-columns">Colunas detectadas</p>
+                    <div class="lista-colunas" id="lista-colunas-conteudo"></div>
+                </div>
 
-            <div id="painel-colunas">
-                <p class="secao-titulo" data-i18n="chive-section-columns">Colunas detectadas</p>
-                <div class="lista-colunas" id="lista-colunas-conteudo"></div>
-            </div>
+                <button class="btn-primario" id="btn-avancar" disabled data-i18n="chive-btn-advance">Avançar para os gráficos →</button>
+            </section>
 
-            <button class="btn-primario" id="btn-avancar" disabled data-i18n="chive-btn-advance">Avançar para os gráficos →</button>
-
-            <div id="aviso-dev">
-                <code>window.datasetsCarregados</code> pronto ✓<br>
-                <code>window.datasetAtivo</code> pronto ✓
-            </div>
+            <section id="sidebar-panel-viz" class="sidebar-panel">
+                <div id="painel-visualizacoes-sidebar">
+                    <p class="secao-titulo" data-i18n="chive-section-viz-manage">Visualizações</p>
+                    <div class="lista-colunas" id="lista-visualizacoes-conteudo"></div>
+                </div>
+                <button class="btn-primario btn-secundario" id="btn-editar-colunas" data-i18n="chive-btn-edit-columns">Editar colunas</button>
+            </section>
         </aside>
 
         <main class="area-resultados">
@@ -123,13 +128,13 @@
                             <span class="card-badge" id="badge-charts">—</span>
                         </div>
                         <div class="card-corpo card-corpo-charts">
-                            <div class="charts-controles" id="charts-controles"></div>
-                            <div class="charts-grid">
-                                <section class="chart-bloco">
+                            <div id="charts-empty-state" class="chart-vazio" style="display:none"></div>
+                            <div class="charts-grid" id="charts-grid">
+                                <section class="chart-bloco" id="chart-block-bar">
                                     <h4 class="chart-titulo" data-i18n="chive-chart-bar-title">Barras (contagem por categoria)</h4>
                                     <div id="chart-bar-container" class="chart-container"></div>
                                 </section>
-                                <section class="chart-bloco">
+                                <section class="chart-bloco" id="chart-block-scatter">
                                     <h4 class="chart-titulo" data-i18n="chive-chart-scatter-title">Dispersão (X vs Y)</h4>
                                     <div id="chart-scatter-container" class="chart-container"></div>
                                 </section>

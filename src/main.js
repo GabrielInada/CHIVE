@@ -16,6 +16,7 @@ import { t, inicializarI18n, definirLocale, obterLocale } from './services/i18nS
 const datasetsCarregados = [];
 let indiceAtivo = -1;
 let linhasPreviewSelecionadas = 10;
+let modoSidebar = 'dados';
 const LIMITE_ALERTA_TAMANHO_BYTES = 15 * 1024 * 1024;
 const LIMITE_ALERTA_LINHAS = 200000;
 
@@ -51,6 +52,245 @@ function atualizarConfigGraficosAtiva(configGraficos) {
 	atualizarVisao();
 }
 
+function atualizarModoSidebar(novoModo) {
+	modoSidebar = novoModo === 'viz' ? 'viz' : 'dados';
+	document.getElementById('sidebar-panel-dados').classList.toggle('ativo', modoSidebar === 'dados');
+	document.getElementById('sidebar-panel-viz').classList.toggle('ativo', modoSidebar === 'viz');
+}
+
+function renderizarControlesVisualizacoesSidebar(dataset) {
+	const container = document.getElementById('lista-visualizacoes-conteudo');
+	if (!dataset) {
+		container.innerHTML = `<div class="tabela-sem-colunas">${t('chive-chart-sidebar-empty')}</div>`;
+		return;
+	}
+
+	const nomesSelecionados = Array.isArray(dataset.colunasSelecionadas)
+		? dataset.colunasSelecionadas
+		: dataset.colunas.map(coluna => coluna.nome);
+	const colunasVisiveis = dataset.colunas.filter(coluna => nomesSelecionados.includes(coluna.nome));
+	const numericas = colunasVisiveis.filter(coluna => coluna.tipo === 'numero').map(coluna => coluna.nome);
+	const categoricas = colunasVisiveis.filter(coluna => coluna.tipo !== 'numero').map(coluna => coluna.nome);
+	const baseBar = categoricas.length > 0
+		? categoricas
+		: colunasVisiveis.map(coluna => coluna.nome);
+
+	if (colunasVisiveis.length === 0) {
+		container.innerHTML = `<div class="tabela-sem-colunas">${t('chive-chart-sidebar-empty')}</div>`;
+		return;
+	}
+
+	const config = dataset.configGraficos;
+	container.innerHTML = `
+		<label class="coluna-item">
+			<input id="viz-toggle-bar" class="coluna-checkbox" type="checkbox" ${config.bar.enabled ? 'checked' : ''} />
+			<span class="coluna-nome">${t('chive-chart-toggle-bar')}</span>
+		</label>
+		<div class="chart-controle">
+			<label for="viz-select-bar">${t('chive-chart-control-bar-category')}</label>
+			<select id="viz-select-bar" class="linhas-select" ${config.bar.enabled ? '' : 'disabled'}>
+				<option value="">${t('chive-chart-option-none')}</option>
+				${baseBar.map(nome => `<option value="${nome}" ${nome === config.bar.category ? 'selected' : ''}>${nome}</option>`).join('')}
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-bar-sort">${t('chive-chart-control-bar-sort')}</label>
+			<select id="viz-select-bar-sort" class="linhas-select" ${config.bar.enabled ? '' : 'disabled'}>
+				<option value="count-desc" ${config.bar.sort === 'count-desc' ? 'selected' : ''}>${t('chive-chart-sort-count-desc')}</option>
+				<option value="count-asc" ${config.bar.sort === 'count-asc' ? 'selected' : ''}>${t('chive-chart-sort-count-asc')}</option>
+				<option value="label-asc" ${config.bar.sort === 'label-asc' ? 'selected' : ''}>${t('chive-chart-sort-label-asc')}</option>
+				<option value="label-desc" ${config.bar.sort === 'label-desc' ? 'selected' : ''}>${t('chive-chart-sort-label-desc')}</option>
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-bar-topn">${t('chive-chart-control-bar-topn')}</label>
+			<select id="viz-select-bar-topn" class="linhas-select" ${config.bar.enabled ? '' : 'disabled'}>
+				<option value="0" ${Number(config.bar.topN) === 0 ? 'selected' : ''}>${t('chive-chart-topn-all')}</option>
+				<option value="10" ${Number(config.bar.topN) === 10 ? 'selected' : ''}>Top 10</option>
+				<option value="20" ${Number(config.bar.topN) === 20 ? 'selected' : ''}>Top 20</option>
+				<option value="50" ${Number(config.bar.topN) === 50 ? 'selected' : ''}>Top 50</option>
+			</select>
+		</div>
+		<label class="coluna-item">
+			<input id="viz-toggle-scatter" class="coluna-checkbox" type="checkbox" ${config.scatter.enabled ? 'checked' : ''} />
+			<span class="coluna-nome">${t('chive-chart-toggle-scatter')}</span>
+		</label>
+		<div class="chart-controle">
+			<label for="viz-select-x">${t('chive-chart-control-scatter-x')}</label>
+			<select id="viz-select-x" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="">${t('chive-chart-option-none')}</option>
+				${numericas.map(nome => `<option value="${nome}" ${nome === config.scatter.x ? 'selected' : ''}>${nome}</option>`).join('')}
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-y">${t('chive-chart-control-scatter-y')}</label>
+			<select id="viz-select-y" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="">${t('chive-chart-option-none')}</option>
+				${numericas.map(nome => `<option value="${nome}" ${nome === config.scatter.y ? 'selected' : ''}>${nome}</option>`).join('')}
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-scatter-xscale">${t('chive-chart-control-scatter-xscale')}</label>
+			<select id="viz-select-scatter-xscale" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="linear" ${config.scatter.xScale === 'linear' ? 'selected' : ''}>${t('chive-chart-scale-linear')}</option>
+				<option value="log" ${config.scatter.xScale === 'log' ? 'selected' : ''}>${t('chive-chart-scale-log')}</option>
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-scatter-yscale">${t('chive-chart-control-scatter-yscale')}</label>
+			<select id="viz-select-scatter-yscale" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="linear" ${config.scatter.yScale === 'linear' ? 'selected' : ''}>${t('chive-chart-scale-linear')}</option>
+				<option value="log" ${config.scatter.yScale === 'log' ? 'selected' : ''}>${t('chive-chart-scale-log')}</option>
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-scatter-radius">${t('chive-chart-control-scatter-radius')}</label>
+			<select id="viz-select-scatter-radius" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="2" ${Number(config.scatter.radius) === 2 ? 'selected' : ''}>2</option>
+				<option value="3" ${Number(config.scatter.radius) === 3 ? 'selected' : ''}>3</option>
+				<option value="4" ${Number(config.scatter.radius) === 4 ? 'selected' : ''}>4</option>
+				<option value="6" ${Number(config.scatter.radius) === 6 ? 'selected' : ''}>6</option>
+			</select>
+		</div>
+		<div class="chart-controle">
+			<label for="viz-select-scatter-opacity">${t('chive-chart-control-scatter-opacity')}</label>
+			<select id="viz-select-scatter-opacity" class="linhas-select" ${config.scatter.enabled ? '' : 'disabled'}>
+				<option value="0.3" ${Number(config.scatter.opacity) === 0.3 ? 'selected' : ''}>30%</option>
+				<option value="0.5" ${Number(config.scatter.opacity) === 0.5 ? 'selected' : ''}>50%</option>
+				<option value="0.7" ${Number(config.scatter.opacity) === 0.7 ? 'selected' : ''}>70%</option>
+				<option value="1" ${Number(config.scatter.opacity) === 1 ? 'selected' : ''}>100%</option>
+			</select>
+		</div>
+	`;
+
+	const toggleBar = document.getElementById('viz-toggle-bar');
+	const toggleScatter = document.getElementById('viz-toggle-scatter');
+	const selectBar = document.getElementById('viz-select-bar');
+	const selectBarSort = document.getElementById('viz-select-bar-sort');
+	const selectBarTopN = document.getElementById('viz-select-bar-topn');
+	const selectX = document.getElementById('viz-select-x');
+	const selectY = document.getElementById('viz-select-y');
+	const selectScatterXScale = document.getElementById('viz-select-scatter-xscale');
+	const selectScatterYScale = document.getElementById('viz-select-scatter-yscale');
+	const selectScatterRadius = document.getElementById('viz-select-scatter-radius');
+	const selectScatterOpacity = document.getElementById('viz-select-scatter-opacity');
+
+	toggleBar.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			bar: {
+				...config.bar,
+				enabled: toggleBar.checked,
+			},
+		});
+	});
+
+	toggleScatter.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				enabled: toggleScatter.checked,
+			},
+		});
+	});
+
+	selectBar.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			bar: {
+				...config.bar,
+				category: selectBar.value || null,
+			},
+		});
+	});
+
+	selectBarSort.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			bar: {
+				...config.bar,
+				sort: selectBarSort.value || 'count-desc',
+			},
+		});
+	});
+
+	selectBarTopN.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			bar: {
+				...config.bar,
+				topN: Number(selectBarTopN.value) || 0,
+			},
+		});
+	});
+
+	selectX.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				x: selectX.value || null,
+			},
+		});
+	});
+
+	selectY.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				y: selectY.value || null,
+			},
+		});
+	});
+
+	selectScatterXScale.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				xScale: selectScatterXScale.value === 'log' ? 'log' : 'linear',
+			},
+		});
+	});
+
+	selectScatterYScale.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				yScale: selectScatterYScale.value === 'log' ? 'log' : 'linear',
+			},
+		});
+	});
+
+	selectScatterRadius.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				radius: Number(selectScatterRadius.value) || 3,
+			},
+		});
+	});
+
+	selectScatterOpacity.addEventListener('change', () => {
+		atualizarConfigGraficosAtiva({
+			...config,
+			scatter: {
+				...config.scatter,
+				opacity: Number(selectScatterOpacity.value) || 0.7,
+			},
+		});
+	});
+}
+
+function atualizarEstadoBotaoAvancar(dataset) {
+	const btnAvancar = document.getElementById('btn-avancar');
+	btnAvancar.disabled = !dataset;
+}
+
 function normalizarConfigGraficos(dataset) {
 	const nomesSelecionados = Array.isArray(dataset.colunasSelecionadas)
 		? dataset.colunasSelecionadas
@@ -64,21 +304,37 @@ function normalizarConfigGraficos(dataset) {
 
 	const configAtual = dataset.configGraficos || {};
 	const aba = configAtual.aba === 'charts' ? 'charts' : 'preview';
-	const barCategoria = baseBar.includes(configAtual.barCategoria)
-		? configAtual.barCategoria
+	const barConfig = configAtual.bar || {};
+	const scatterConfig = configAtual.scatter || {};
+	const barCategoria = baseBar.includes(barConfig.category)
+		? barConfig.category
 		: (baseBar[0] ?? null);
-	const scatterX = numericas.includes(configAtual.scatterX)
-		? configAtual.scatterX
+	const scatterX = numericas.includes(scatterConfig.x)
+		? scatterConfig.x
 		: (numericas[0] ?? null);
-	const scatterY = numericas.includes(configAtual.scatterY)
-		? configAtual.scatterY
+	const scatterY = numericas.includes(scatterConfig.y)
+		? scatterConfig.y
 		: (numericas[1] ?? numericas[0] ?? null);
 
 	dataset.configGraficos = {
 		aba,
-		barCategoria,
-		scatterX,
-		scatterY,
+		bar: {
+			enabled: barConfig.enabled === true,
+			category: barCategoria,
+			sort: ['count-desc', 'count-asc', 'label-asc', 'label-desc'].includes(barConfig.sort)
+				? barConfig.sort
+				: 'count-desc',
+			topN: [0, 10, 20, 50].includes(Number(barConfig.topN)) ? Number(barConfig.topN) : 0,
+		},
+		scatter: {
+			enabled: scatterConfig.enabled === true,
+			x: scatterX,
+			y: scatterY,
+			xScale: scatterConfig.xScale === 'log' ? 'log' : 'linear',
+			yScale: scatterConfig.yScale === 'log' ? 'log' : 'linear',
+			radius: [2, 3, 4, 6].includes(Number(scatterConfig.radius)) ? Number(scatterConfig.radius) : 3,
+			opacity: [0.3, 0.5, 0.7, 1].includes(Number(scatterConfig.opacity)) ? Number(scatterConfig.opacity) : 0.7,
+		},
 	};
 }
 
@@ -116,6 +372,9 @@ function atualizarVisao() {
 		datasetAtivo.configGraficos,
 		atualizarConfigGraficosAtiva
 	);
+
+	atualizarEstadoBotaoAvancar(datasetAtivo);
+	renderizarControlesVisualizacoesSidebar(datasetAtivo);
 }
 
 function selecionarArquivo(indice) {
@@ -213,9 +472,21 @@ async function processarArquivos(arquivos) {
 				colunasSelecionadas: colunas.map(coluna => coluna.nome),
 				configGraficos: {
 					aba: 'preview',
-					barCategoria: null,
-					scatterX: null,
-					scatterY: null,
+					bar: {
+						enabled: false,
+						category: null,
+						sort: 'count-desc',
+						topN: 0,
+					},
+					scatter: {
+						enabled: false,
+						x: null,
+						y: null,
+						xScale: 'linear',
+						yScale: 'linear',
+						radius: 3,
+						opacity: 0.7,
+					},
 				},
 			};
 		})
@@ -252,6 +523,8 @@ const inputArquivo = document.getElementById('input-arquivo');
 const botaoToggleSidebar = document.getElementById('btn-toggle-sidebar');
 const selectLinhasPreview = document.getElementById('select-linhas-preview');
 const selectLang = document.getElementById('select-lang');
+const btnAvancar = document.getElementById('btn-avancar');
+const btnEditarColunas = document.getElementById('btn-editar-colunas');
 
 inicializarI18n();
 
@@ -274,6 +547,7 @@ botaoToggleSidebar.addEventListener('click', () => {
 });
 
 atualizarRotuloSidebar();
+atualizarModoSidebar('dados');
 
 selectLang.addEventListener('change', evento => {
 	definirLocale(evento.target.value);
@@ -324,17 +598,12 @@ document.addEventListener('dragover', evento => evento.preventDefault());
 document.addEventListener('drop', evento => evento.preventDefault());
 
 document.getElementById('btn-avancar').addEventListener('click', () => {
-	const total = datasetsCarregados.length;
+	if (datasetsCarregados.length === 0) return;
+	atualizarModoSidebar('viz');
+});
 
-	alert(
-		'Datasets prontos!\n\n' +
-		`Total carregado: ${total} arquivo${total > 1 ? 's' : ''}.\n` +
-		'No Dia 02, este botão vai enviar todos os datasets carregados.\n\n' +
-		'Todos os datasets: window.datasetsCarregados\n' +
-		'Dataset ativo: window.datasetAtivo\n\n' +
-		'Abra o DevTools (F12 → Console) e digite:\n' +
-		'window.datasetsCarregados'
-	);
+btnEditarColunas.addEventListener('click', () => {
+	atualizarModoSidebar('dados');
 });
 
 console.log('DataViz Dia 01 carregado.');

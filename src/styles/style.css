@@ -133,6 +133,16 @@ header {
   transition: padding 0.24s ease;
 }
 
+.sidebar-panel {
+  display: none;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.sidebar-panel.ativo {
+  display: flex;
+}
+
 .painel-topo {
   display: flex;
   align-items: center;
@@ -407,6 +417,12 @@ header {
   opacity: 0.85;
 }
 
+.btn-secundario {
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--border);
+}
+
 .btn-primario:disabled {
   opacity: 0.35;
   cursor: not-allowed;
@@ -609,6 +625,25 @@ header {
   font-size: 12px;
   text-align: center;
   padding: 16px;
+}
+
+.chart-tooltip {
+  position: fixed;
+  z-index: 9999;
+  max-width: 280px;
+  background: rgba(28, 26, 23, 0.96);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.4;
+  pointer-events: none;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.22);
+}
+
+.chart-tooltip strong {
+  color: #c8ff4d;
 }
 
 .tabela-preview {
