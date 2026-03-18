@@ -12,13 +12,12 @@ import {
 	renderizarListaArquivos,
 } from './components/resultsView.js';
 import { t, inicializarI18n, definirLocale, obterLocale } from './services/i18nService.js';
+import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT, PREVIEW_DEFAULT_ROWS, SUPPORTED_FORMATS } from './config/index.js';
 
 const datasetsCarregados = [];
 let indiceAtivo = -1;
-let linhasPreviewSelecionadas = 10;
+let linhasPreviewSelecionadas = PREVIEW_DEFAULT_ROWS;
 let modoSidebar = 'dados';
-const LIMITE_ALERTA_TAMANHO_BYTES = 15 * 1024 * 1024;
-const LIMITE_ALERTA_LINHAS = 200000;
 
 window.datasetsCarregados = datasetsCarregados;
 window.datasetAtivo = null;
@@ -493,13 +492,13 @@ async function processarArquivos(arquivos) {
 
 	const resultados = await Promise.allSettled(
 		listaArquivos.map(async arquivo => {
-			if (arquivo.size > LIMITE_ALERTA_TAMANHO_BYTES) {
+			if (arquivo.size > FILE_SIZE_LIMIT_BYTES) {
 				const confirmarArquivoGrande = window.confirm(
 					t(
 						'chive-warn-large-file',
 						arquivo.name,
 						formatarTamanhoArquivo(arquivo.size),
-						formatarTamanhoArquivo(LIMITE_ALERTA_TAMANHO_BYTES)
+						formatarTamanhoArquivo(FILE_SIZE_LIMIT_BYTES)
 					)
 				);
 				if (!confirmarArquivoGrande) {
@@ -510,7 +509,7 @@ async function processarArquivos(arquivos) {
 			}
 
 			const extensao = arquivo.name.split('.').pop().toLowerCase();
-			if (!['csv', 'json'].includes(extensao)) {
+			if (!SUPPORTED_FORMATS.includes(extensao)) {
 				throw new Error(t('chive-error-format', arquivo.name));
 			}
 
@@ -520,13 +519,13 @@ async function processarArquivos(arquivos) {
 				: parsearJSON(textoArquivo);
 			const { dados, colunas } = processarDados(dadosBrutos);
 
-			if (dados.length > LIMITE_ALERTA_LINHAS) {
+			if (dados.length > ROW_LIMIT) {
 				const confirmarLinhas = window.confirm(
 					t(
 						'chive-warn-large-rows',
 						arquivo.name,
 						dados.length.toLocaleString(obterLocale()),
-						LIMITE_ALERTA_LINHAS.toLocaleString(obterLocale())
+						ROW_LIMIT.toLocaleString(obterLocale())
 					)
 				);
 				if (!confirmarLinhas) {

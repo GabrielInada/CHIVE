@@ -1,5 +1,6 @@
 import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
+import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
 
 function escaparHTML(texto) {
 	return String(texto)
@@ -33,8 +34,8 @@ function ordenarCategorias(linhas, ordenacao) {
 
 export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return { ok: false };
-	const ordenacao = opcoes.ordenacao || 'count-desc';
-	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : 0;
+	const ordenacao = opcoes.ordenacao || BAR_CHART.defaultSort;
+	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : BAR_CHART.defaultTopN;
 	const labels = {
 		categoria: opcoes.labels?.categoria || 'Category',
 		contagem: opcoes.labels?.contagem || 'Count',
@@ -63,9 +64,9 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 
 	container.innerHTML = '';
  	hideChartTooltip();
-	const largura = Math.max(container.clientWidth || 700, 320);
-	const altura = 320;
-	const margem = { top: 12, right: 12, bottom: 90, left: 52 };
+	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.bar.width, 320);
+	const altura = CHART_DIMENSIONS.bar.height;
+	const margem = CHART_DIMENSIONS.bar.margins;
 	const larguraInterna = largura - margem.left - margem.right;
 	const alturaInterna = altura - margem.top - margem.bottom;
 
@@ -113,7 +114,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		.attr('width', escalaX.bandwidth())
 		.attr('height', item => alturaInterna - escalaY(item[1]))
 		.attr('rx', 3)
-		.attr('fill', '#d4622a')
+		.attr('fill', CHART_COLORS.bar)
 		.on('mouseenter', (event, item) => {
 			if (pinnedCategoria !== null) return;
 			exibirTooltip(event, item);
@@ -154,7 +155,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 
 	grupo
 		.append('g')
-		.call(axisLeft(escalaY).ticks(6));
+		.call(axisLeft(escalaY).ticks(BAR_CHART.ticks));
 
 	return { ok: true };
 }
