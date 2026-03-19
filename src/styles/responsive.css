@@ -37,10 +37,13 @@
   body.sidebar-collapsed #info-arquivo,
   body.sidebar-collapsed #painel-colunas,
   body.sidebar-collapsed #painel-visualizacoes-sidebar,
+  body.sidebar-collapsed #painel-dashboard-sidebar,
   body.sidebar-collapsed #mensagem-erro,
   body.sidebar-collapsed #aviso-dev,
   body.sidebar-collapsed #btn-avancar,
-  body.sidebar-collapsed #btn-editar-colunas {
+  body.sidebar-collapsed #btn-editar-colunas,
+  body.sidebar-collapsed #btn-ir-painel,
+  body.sidebar-collapsed #btn-voltar-viz {
     display: initial !important;
   }
 

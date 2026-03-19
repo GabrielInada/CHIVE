@@ -23,7 +23,7 @@ function ensureSvgAttributes(svg) {
 	}
 }
 
-export function downloadSvgFromContainer(containerId, fileNameBase) {
+export function capturarSvgMarkupDeContainer(containerId) {
 	const container = document.getElementById(containerId);
 	if (!container) return { ok: false, reason: 'container-not-found' };
 
@@ -32,10 +32,13 @@ export function downloadSvgFromContainer(containerId, fileNameBase) {
 
 	const svg = sourceSvg.cloneNode(true);
 	ensureSvgAttributes(svg);
-
 	const serializer = new XMLSerializer();
-	const svgContent = serializer.serializeToString(svg);
-	const blob = new Blob([svgContent], { type: 'image/svg+xml;charset=utf-8' });
+	return { ok: true, svgMarkup: serializer.serializeToString(svg) };
+}
+
+export function baixarSvgMarkup(svgMarkup, fileNameBase) {
+	if (!svgMarkup) return { ok: false, reason: 'empty-markup' };
+	const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
 	const url = URL.createObjectURL(blob);
 	const anchor = document.createElement('a');
 	anchor.href = url;
@@ -44,6 +47,11 @@ export function downloadSvgFromContainer(containerId, fileNameBase) {
 	anchor.click();
 	anchor.remove();
 	URL.revokeObjectURL(url);
-
 	return { ok: true };
+}
+
+export function downloadSvgFromContainer(containerId, fileNameBase) {
+	const capturado = capturarSvgMarkupDeContainer(containerId);
+	if (!capturado.ok) return capturado;
+	return baixarSvgMarkup(capturado.svgMarkup, fileNameBase);
 }
