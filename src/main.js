@@ -4,6 +4,7 @@ import {
 	parsearJSON,
 	processarDados,
 } from './services/dataService.js';
+import { escaparHTML } from './utils/formatters.js';
 import { filterVisibleColumns, getNumericColumnNames, getCategoricalColumnNames } from './utils/columnHelpers.js';
 import {
 	esconderErro,
@@ -14,12 +15,34 @@ import {
 } from './components/resultsView.js';
 import { t, inicializarI18n, definirLocale, obterLocale } from './services/i18nService.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT, PREVIEW_DEFAULT_ROWS, SUPPORTED_FORMATS } from './config/index.js';
-import { downloadSvgFromContainer } from './utils/svgExport.js';
+import { capturarSvgMarkupDeContainer, downloadSvgFromContainer, baixarSvgMarkup } from './utils/svgExport.js';
 
 const datasetsCarregados = [];
+const chartsPainel = [];
 let indiceAtivo = -1;
 let linhasPreviewSelecionadas = PREVIEW_DEFAULT_ROWS;
 let modoSidebar = 'dados';
+let layoutPainelAtual = 'layout-2col';
+const slotsPainel = {};
+let idChartPainel = 0;
+
+const LAYOUTS_PAINEL = {
+	'layout-single': {
+		classe: 'layout-single',
+		slots: ['slot-1'],
+		labelKey: 'chive-panel-layout-single',
+	},
+	'layout-2col': {
+		classe: 'layout-2col',
+		slots: ['slot-1', 'slot-2'],
+		labelKey: 'chive-panel-layout-2col',
+	},
+	'layout-hero2': {
+		classe: 'layout-hero2',
+		slots: ['slot-1', 'slot-2', 'slot-3'],
+		labelKey: 'chive-panel-layout-hero2',
+	},
+};
 
 window.datasetsCarregados = datasetsCarregados;
 window.datasetAtivo = null;
@@ -54,9 +77,14 @@ function atualizarConfigGraficosAtiva(configGraficos) {
 }
 
 function atualizarModoSidebar(novoModo) {
-	modoSidebar = novoModo === 'viz' ? 'viz' : 'dados';
+	if (novoModo === 'viz' || novoModo === 'panel') {
+		modoSidebar = novoModo;
+	} else {
+		modoSidebar = 'dados';
+	}
 	document.getElementById('sidebar-panel-dados').classList.toggle('ativo', modoSidebar === 'dados');
 	document.getElementById('sidebar-panel-viz').classList.toggle('ativo', modoSidebar === 'viz');
+	document.getElementById('sidebar-panel-panel').classList.toggle('ativo', modoSidebar === 'panel');
 }
 
 function renderizarControlesVisualizacoesSidebar(dataset) {
@@ -368,7 +396,7 @@ function normalizarConfigGraficos(dataset) {
 		: colunasVisiveis.map(coluna => coluna.nome);
 
 	const configAtual = dataset.configGraficos || {};
-	const aba = configAtual.aba === 'charts' ? 'charts' : 'preview';
+	const aba = ['preview', 'charts', 'panel'].includes(configAtual.aba) ? configAtual.aba : 'preview';
 	const barConfig = configAtual.bar || {};
 	const scatterConfig = configAtual.scatter || {};
 	const barCategoria = baseBar.includes(barConfig.category)
@@ -405,6 +433,265 @@ function normalizarConfigGraficos(dataset) {
 	};
 }
 
+function sincronizarSidebarComAba(aba) {
+	if (aba === 'panel') {
+		atualizarModoSidebar('panel');
+		return;
+	}
+	if (aba === 'charts') {
+		atualizarModoSidebar('viz');
+		return;
+	}
+	atualizarModoSidebar('dados');
+}
+
+function obterLayoutPainel() {
+	return LAYOUTS_PAINEL[layoutPainelAtual] || LAYOUTS_PAINEL['layout-2col'];
+}
+
+function limparSlotsInvalidos() {
+	const layout = obterLayoutPainel();
+	Object.keys(slotsPainel).forEach(slotId => {
+		if (!layout.slots.includes(slotId)) {
+			delete slotsPainel[slotId];
+		}
+	});
+
+	Object.keys(slotsPainel).forEach(slotId => {
+		const existe = chartsPainel.some(chart => chart.id === slotsPainel[slotId]);
+		if (!existe) delete slotsPainel[slotId];
+	});
+}
+
+function removerChartPainel(chartId) {
+	const idx = chartsPainel.findIndex(chart => chart.id === chartId);
+	if (idx === -1) return;
+	chartsPainel.splice(idx, 1);
+	Object.keys(slotsPainel).forEach(slotId => {
+		if (slotsPainel[slotId] === chartId) delete slotsPainel[slotId];
+	});
+	renderizarSidebarPainel();
+	renderizarCanvasPainel();
+}
+
+function obterChartPainel(chartId) {
+	return chartsPainel.find(chart => chart.id === chartId) || null;
+}
+
+function adicionarChartAoPainel(containerId, nomeBase) {
+	const capturado = capturarSvgMarkupDeContainer(containerId);
+	if (!capturado.ok) return capturado;
+
+	idChartPainel += 1;
+	chartsPainel.unshift({
+		id: `panel-chart-${idChartPainel}`,
+		nome: nomeBase,
+		svgMarkup: capturado.svgMarkup,
+		createdAt: Date.now(),
+	});
+
+	renderizarSidebarPainel();
+	renderizarCanvasPainel();
+	return { ok: true };
+}
+
+function renderizarSidebarPainel() {
+	const lista = document.getElementById('lista-painel-charts');
+	if (!lista) return;
+
+	if (chartsPainel.length === 0) {
+		lista.innerHTML = `<div class="painel-vazio">${t('chive-panel-empty-sidebar')}</div>`;
+		return;
+	}
+
+	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
+	lista.innerHTML = chartsPainel.map(chart => `
+		<article class="panel-item" draggable="${desktopDnd ? 'true' : 'false'}" data-panel-chart-id="${chart.id}">
+			<div class="panel-item-topo">
+				<span class="panel-item-titulo" title="${escaparHTML(chart.nome)}">${escaparHTML(chart.nome)}</span>
+				<button class="panel-item-remover" type="button" data-remove-panel-chart="${chart.id}" aria-label="${escaparHTML(t('chive-panel-remove-chart'))}">×</button>
+			</div>
+			<div class="panel-item-preview">${chart.svgMarkup}</div>
+		</article>
+	`).join('');
+
+	lista.querySelectorAll('[data-panel-chart-id]').forEach(item => {
+		item.addEventListener('dragstart', evento => {
+			if (!desktopDnd) return;
+			const chartId = item.dataset.panelChartId;
+			evento.dataTransfer.effectAllowed = 'copy';
+			evento.dataTransfer.setData('text/panel-chart-id', chartId);
+		});
+	});
+
+	lista.querySelectorAll('[data-remove-panel-chart]').forEach(botao => {
+		botao.addEventListener('click', evento => {
+			evento.stopPropagation();
+			removerChartPainel(botao.dataset.removePanelChart);
+		});
+	});
+}
+
+function renderizarCanvasPainel() {
+	limparSlotsInvalidos();
+	const canvas = document.getElementById('panel-layout-canvas');
+	if (!canvas) return;
+
+	const layout = obterLayoutPainel();
+	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
+	canvas.innerHTML = `
+		<div class="painel-layout ${layout.classe}" id="painel-layout-grid">
+			${layout.slots.map(slotId => {
+				const chart = obterChartPainel(slotsPainel[slotId]);
+				if (!chart) {
+					return `<div class="painel-slot vazio" data-panel-slot="${slotId}"><div class="painel-slot-placeholder">${t('chive-panel-slot-empty')}</div></div>`;
+				}
+				return `
+					<div class="painel-slot" data-panel-slot="${slotId}" data-panel-chart-id="${chart.id}" draggable="${desktopDnd ? 'true' : 'false'}">
+						<button type="button" class="painel-slot-limpar" data-clear-panel-slot="${slotId}" aria-label="${escaparHTML(t('chive-panel-clear-slot'))}">×</button>
+						<div class="painel-slot-svg">${chart.svgMarkup}</div>
+					</div>
+				`;
+			}).join('')}
+		</div>
+	`;
+
+	canvas.querySelectorAll('[data-panel-chart-id]').forEach(slot => {
+		if (!desktopDnd) return;
+		slot.addEventListener('dragstart', evento => {
+			const chartId = slot.dataset.panelChartId;
+			const slotId = slot.dataset.panelSlot;
+			evento.dataTransfer.effectAllowed = 'move';
+			evento.dataTransfer.setData('text/panel-chart-id', chartId);
+			evento.dataTransfer.setData('text/panel-slot-id', slotId);
+		});
+	});
+
+	canvas.querySelectorAll('[data-panel-slot]').forEach(slot => {
+		if (desktopDnd) {
+			slot.addEventListener('dragover', evento => {
+				evento.preventDefault();
+				slot.classList.add('drag-over');
+			});
+			slot.addEventListener('dragleave', () => {
+				slot.classList.remove('drag-over');
+			});
+			slot.addEventListener('drop', evento => {
+				evento.preventDefault();
+				slot.classList.remove('drag-over');
+				const targetSlotId = slot.dataset.panelSlot;
+				const sourceSlotId = evento.dataTransfer.getData('text/panel-slot-id');
+				const chartId = evento.dataTransfer.getData('text/panel-chart-id');
+				if (!chartId || !obterChartPainel(chartId)) return;
+
+				if (sourceSlotId) {
+					if (sourceSlotId === targetSlotId) return;
+					const targetChartId = slotsPainel[targetSlotId];
+					slotsPainel[targetSlotId] = chartId;
+					if (targetChartId) {
+						slotsPainel[sourceSlotId] = targetChartId;
+					} else {
+						delete slotsPainel[sourceSlotId];
+					}
+				} else {
+					slotsPainel[targetSlotId] = chartId;
+				}
+
+				renderizarCanvasPainel();
+			});
+		}
+	});
+
+	canvas.querySelectorAll('[data-clear-panel-slot]').forEach(botao => {
+		botao.addEventListener('click', () => {
+			delete slotsPainel[botao.dataset.clearPanelSlot];
+			renderizarCanvasPainel();
+		});
+	});
+}
+
+function preencherSelectLayoutPainel() {
+	const select = document.getElementById('select-panel-layout');
+	if (!select) return;
+	select.innerHTML = Object.entries(LAYOUTS_PAINEL).map(([id, layout]) =>
+		`<option value="${id}" ${id === layoutPainelAtual ? 'selected' : ''}>${t(layout.labelKey)}</option>`
+	).join('');
+}
+
+function exportarLayoutPainelSvg() {
+	const canvas = document.getElementById('panel-layout-canvas');
+	if (!canvas) return { ok: false, reason: 'canvas-not-found' };
+	const rectCanvas = canvas.getBoundingClientRect();
+	if (rectCanvas.width <= 0 || rectCanvas.height <= 0) return { ok: false, reason: 'empty-canvas' };
+
+	const parser = new DOMParser();
+	const serializer = new XMLSerializer();
+	const docSvg = document.implementation.createDocument('http://www.w3.org/2000/svg', 'svg', null);
+	const svgRoot = docSvg.documentElement;
+	svgRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+	svgRoot.setAttribute('width', String(Math.round(rectCanvas.width)));
+	svgRoot.setAttribute('height', String(Math.round(rectCanvas.height)));
+	svgRoot.setAttribute('viewBox', `0 0 ${Math.round(rectCanvas.width)} ${Math.round(rectCanvas.height)}`);
+
+	const bg = docSvg.createElementNS('http://www.w3.org/2000/svg', 'rect');
+	bg.setAttribute('x', '0');
+	bg.setAttribute('y', '0');
+	bg.setAttribute('width', '100%');
+	bg.setAttribute('height', '100%');
+	bg.setAttribute('fill', '#fbfaf6');
+	svgRoot.appendChild(bg);
+
+	canvas.querySelectorAll('[data-panel-slot]').forEach(slotEl => {
+		const slotId = slotEl.dataset.panelSlot;
+		const chart = obterChartPainel(slotsPainel[slotId]);
+		if (!chart) return;
+
+		const slotRect = slotEl.getBoundingClientRect();
+		const x = slotRect.left - rectCanvas.left;
+		const y = slotRect.top - rectCanvas.top;
+		const w = slotRect.width;
+		const h = slotRect.height;
+
+		const parsed = parser.parseFromString(chart.svgMarkup, 'image/svg+xml');
+		const chartSvg = parsed.documentElement;
+		chartSvg.setAttribute('x', String(x));
+		chartSvg.setAttribute('y', String(y));
+		chartSvg.setAttribute('width', String(w));
+		chartSvg.setAttribute('height', String(h));
+		if (!chartSvg.getAttribute('preserveAspectRatio')) {
+			chartSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+		}
+		svgRoot.appendChild(docSvg.importNode(chartSvg, true));
+	});
+
+	return baixarSvgMarkup(serializer.serializeToString(svgRoot), 'panel-layout');
+}
+
+function configurarPainel() {
+	preencherSelectLayoutPainel();
+	renderizarSidebarPainel();
+	renderizarCanvasPainel();
+
+	const selectLayout = document.getElementById('select-panel-layout');
+	selectLayout.addEventListener('change', evento => {
+		layoutPainelAtual = evento.target.value;
+		renderizarCanvasPainel();
+	});
+
+	const btnExportar = document.getElementById('btn-exportar-painel');
+	btnExportar.addEventListener('click', () => {
+		const resultado = exportarLayoutPainelSvg();
+		if (!resultado.ok) {
+			mostrarErro(t('chive-panel-export-error'));
+		}
+	});
+
+	window.addEventListener('resize', () => {
+		renderizarSidebarPainel();
+		renderizarCanvasPainel();
+	});
+}
+
 function atualizarVisao() {
 	fecharMenusChart();
 
@@ -412,6 +699,10 @@ function atualizarVisao() {
 		indiceAtivo = -1;
 		sincronizarGlobais();
 		renderizarEstadoVazio();
+		preencherSelectLayoutPainel();
+		renderizarSidebarPainel();
+		renderizarCanvasPainel();
+		atualizarModoSidebar('dados');
 		return;
 	}
 
@@ -444,6 +735,10 @@ function atualizarVisao() {
 
 	atualizarEstadoBotaoAvancar(datasetAtivo);
 	renderizarControlesVisualizacoesSidebar(datasetAtivo);
+	preencherSelectLayoutPainel();
+	renderizarSidebarPainel();
+	renderizarCanvasPainel();
+	sincronizarSidebarComAba(datasetAtivo.configGraficos.aba);
 }
 
 function selecionarArquivo(indice) {
@@ -596,6 +891,8 @@ const selectLinhasPreview = document.getElementById('select-linhas-preview');
 const selectLang = document.getElementById('select-lang');
 const btnAvancar = document.getElementById('btn-avancar');
 const btnEditarColunas = document.getElementById('btn-editar-colunas');
+const btnIrPainel = document.getElementById('btn-ir-painel');
+const btnVoltarViz = document.getElementById('btn-voltar-viz');
 
 inicializarI18n();
 
@@ -610,6 +907,25 @@ function atualizarRotuloSidebar() {
 		recolhida ? t('chive-sidebar-expand') : t('chive-sidebar-collapse')
 	);
 	botaoToggleSidebar.title = recolhida ? t('chive-sidebar-expand') : t('chive-sidebar-collapse');
+}
+
+let feedbackTimer = null;
+function mostrarFeedback(mensagem) {
+	let toast = document.getElementById('toast-feedback');
+	if (!toast) {
+		toast = document.createElement('div');
+		toast.id = 'toast-feedback';
+		toast.className = 'toast-feedback';
+		document.body.appendChild(toast);
+	}
+
+	toast.textContent = mensagem;
+	toast.classList.add('visivel');
+
+	if (feedbackTimer) window.clearTimeout(feedbackTimer);
+	feedbackTimer = window.setTimeout(() => {
+		toast.classList.remove('visivel');
+	}, 2200);
 }
 
 function fecharMenusChart() {
@@ -655,7 +971,17 @@ function configurarAcoesChart() {
 					mostrarErro(t('chive-chart-download-error'));
 				}
 			} else if (acao === 'add-panel') {
-				window.alert(t('chive-chart-action-add-panel-coming-soon'));
+				const bloco = itemMenu.closest('.chart-bloco');
+				const titulo = bloco?.querySelector('.chart-titulo')?.textContent?.trim() || t('chive-card-charts');
+				const containerId = itemMenu.dataset.chartContainer
+					|| bloco?.querySelector('.chart-container')?.id
+					|| null;
+				const resultado = adicionarChartAoPainel(containerId, titulo);
+				if (!resultado.ok) {
+					mostrarErro(t('chive-panel-add-error'));
+				} else {
+					mostrarFeedback(t('chive-panel-add-success'));
+				}
 			}
 			fecharMenusChart();
 			return;
@@ -683,6 +1009,7 @@ botaoToggleSidebar.addEventListener('click', () => {
 atualizarRotuloSidebar();
 atualizarModoSidebar('dados');
 configurarAcoesChart();
+configurarPainel();
 
 selectLang.addEventListener('change', evento => {
 	definirLocale(evento.target.value);
@@ -734,11 +1061,31 @@ document.addEventListener('drop', evento => evento.preventDefault());
 
 document.getElementById('btn-avancar').addEventListener('click', () => {
 	if (datasetsCarregados.length === 0) return;
-	atualizarModoSidebar('viz');
+	atualizarConfigGraficosAtiva({ ...datasetsCarregados[indiceAtivo].configGraficos, aba: 'charts' });
 });
 
 btnEditarColunas.addEventListener('click', () => {
-	atualizarModoSidebar('dados');
+	if (datasetsCarregados.length === 0) {
+		atualizarModoSidebar('dados');
+		return;
+	}
+	atualizarConfigGraficosAtiva({ ...datasetsCarregados[indiceAtivo].configGraficos, aba: 'preview' });
+});
+
+btnIrPainel.addEventListener('click', () => {
+	if (datasetsCarregados.length === 0) {
+		atualizarModoSidebar('panel');
+		return;
+	}
+	atualizarConfigGraficosAtiva({ ...datasetsCarregados[indiceAtivo].configGraficos, aba: 'panel' });
+});
+
+btnVoltarViz.addEventListener('click', () => {
+	if (datasetsCarregados.length === 0) {
+		atualizarModoSidebar('viz');
+		return;
+	}
+	atualizarConfigGraficosAtiva({ ...datasetsCarregados[indiceAtivo].configGraficos, aba: 'charts' });
 });
 
 console.log('DataViz Dia 01 carregado.');

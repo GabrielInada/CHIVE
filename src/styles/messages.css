@@ -23,3 +23,27 @@
 #aviso-dev code {
   opacity: 0.7;
 }
+
+.toast-feedback {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 12000;
+  background: #1a472a;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  opacity: 0;
+  transform: translateY(8px);
+  pointer-events: none;
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.toast-feedback.visivel {
+  opacity: 1;
+  transform: translateY(0);
+}
