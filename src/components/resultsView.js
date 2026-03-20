@@ -18,14 +18,20 @@ container.innerHTML = `<div class="chart-vazio">${mensagem}</div>`;
 function atualizarTabs(abaAtiva, aoAlterarConfigGraficos, config) {
 const tabPreview = document.getElementById('tab-preview');
 const tabCharts = document.getElementById('tab-charts');
+const tabPanel = document.getElementById('tab-panel');
 const painelPreview = document.getElementById('painel-preview');
 const painelCharts = document.getElementById('painel-charts');
+const painelPanel = document.getElementById('painel-panel');
 const previewAtivo = abaAtiva === 'preview';
+const chartsAtivo = abaAtiva === 'charts';
+const panelAtivo = abaAtiva === 'panel';
 
 tabPreview.classList.toggle('ativo', previewAtivo);
-tabCharts.classList.toggle('ativo', !previewAtivo);
+tabCharts.classList.toggle('ativo', chartsAtivo);
+tabPanel.classList.toggle('ativo', panelAtivo);
 painelPreview.classList.toggle('ativo', previewAtivo);
-painelCharts.classList.toggle('ativo', !previewAtivo);
+painelCharts.classList.toggle('ativo', chartsAtivo);
+painelPanel.classList.toggle('ativo', panelAtivo);
 
 tabPreview.onclick = () => {
 if (!aoAlterarConfigGraficos) return;
@@ -35,6 +41,11 @@ aoAlterarConfigGraficos({ ...config, aba: 'preview' });
 tabCharts.onclick = () => {
 if (!aoAlterarConfigGraficos) return;
 aoAlterarConfigGraficos({ ...config, aba: 'charts' });
+};
+
+tabPanel.onclick = () => {
+if (!aoAlterarConfigGraficos) return;
+aoAlterarConfigGraficos({ ...config, aba: 'panel' });
 };
 }
 
@@ -277,15 +288,35 @@ bar: { enabled: true, category: null },
 scatter: { enabled: true, x: null, y: null },
 };
 
+// Detecta filtro ativo
+const nomesNumericas = colunas.filter(c => c.tipo === 'numero').map(c => c.nome);
+const nomesTexto = colunas.filter(c => c.tipo === 'texto').map(c => c.nome);
+const selecionadasArray = [...nomesSelecionados];
+const filtroAtivo =
+  selecionadasArray.length === nomesColunas.length ? 'todas' :
+  selecionadasArray.length === nomesNumericas.length && selecionadasArray.every(n => nomesNumericas.includes(n)) ? 'numericas' :
+  selecionadasArray.length === nomesTexto.length && selecionadasArray.every(n => nomesTexto.includes(n)) ? 'texto' : null;
+
+// Renderiza botões fora do scroll
+const acoesContainer = document.getElementById('colunas-acoes');
+acoesContainer.innerHTML = `
+  <button class="colunas-acao ${filtroAtivo === 'todas' ? 'ativo' : ''}" type="button" data-acao-coluna="todas">${t('chive-action-select-all')}</button>
+  <button class="colunas-acao" type="button" data-acao-coluna="limpar">${t('chive-action-clear')}</button>
+  <button class="colunas-acao ${filtroAtivo === 'numericas' ? 'ativo' : ''}" type="button" data-acao-coluna="numericas">${t('chive-action-only-numeric')}</button>
+  <button class="colunas-acao ${filtroAtivo === 'texto' ? 'ativo' : ''}" type="button" data-acao-coluna="texto">${t('chive-action-only-text')}</button>
+`;
+acoesContainer.onclick = evento => {
+  const alvo = evento.target.closest('[data-acao-coluna]');
+  if (!alvo || !aoAlterarSelecaoColuna) return;
+  const acao = alvo.dataset.acaoColuna;
+  if (acao === 'todas') { aoAlterarSelecaoColuna(nomesColunas); return; }
+  if (acao === 'limpar') { aoAlterarSelecaoColuna([]); return; }
+  if (acao === 'numericas') { aoAlterarSelecaoColuna(nomesNumericas); return; }
+  if (acao === 'texto') { aoAlterarSelecaoColuna(nomesTexto); }
+};
+
 const listaColunas = document.getElementById('lista-colunas-conteudo');
-listaColunas.innerHTML = `
-<div class="colunas-acoes" aria-label="${t('chive-section-columns')}">
-<button class="colunas-acao" type="button" data-acao-coluna="todas">${t('chive-action-select-all')}</button>
-<button class="colunas-acao" type="button" data-acao-coluna="limpar">${t('chive-action-clear')}</button>
-<button class="colunas-acao" type="button" data-acao-coluna="numericas">${t('chive-action-only-numeric')}</button>
-<button class="colunas-acao" type="button" data-acao-coluna="texto">${t('chive-action-only-text')}</button>
-</div>
-` + colunas.map(({ nome, tipo }) => `
+listaColunas.innerHTML = colunas.map(({ nome, tipo }) => `
 <label class="coluna-item" title="${escaparHTML(nome)}">
 <input class="coluna-checkbox" type="checkbox" data-coluna="${escaparHTML(nome)}" ${nomesSelecionados.has(nome) ? 'checked' : ''} />
 <span class="coluna-nome">${escaparHTML(nome)}</span>
@@ -293,26 +324,14 @@ listaColunas.innerHTML = `
 </label>
 `).join('');
 
-listaColunas.onclick = evento => {
-const alvo = evento.target.closest('[data-acao-coluna]');
-if (!alvo || !aoAlterarSelecaoColuna) return;
+listaColunas.onchange = evento => {
+const alvo = evento.target;
+if (!(alvo instanceof HTMLInputElement) || alvo.type !== 'checkbox' || !aoAlterarSelecaoColuna) return;
 
-const acao = alvo.dataset.acaoColuna;
-if (acao === 'todas') {
-aoAlterarSelecaoColuna(nomesColunas);
-return;
-}
-if (acao === 'limpar') {
-aoAlterarSelecaoColuna([]);
-return;
-}
-if (acao === 'numericas') {
-aoAlterarSelecaoColuna(colunas.filter(coluna => coluna.tipo === 'numero').map(coluna => coluna.nome));
-return;
-}
-if (acao === 'texto') {
-aoAlterarSelecaoColuna(colunas.filter(coluna => coluna.tipo === 'texto').map(coluna => coluna.nome));
-}
+const selecionados = Array.from(listaColunas.querySelectorAll('.coluna-checkbox:checked'))
+.map(checkbox => checkbox.dataset.coluna)
+.filter(Boolean);
+aoAlterarSelecaoColuna(selecionados);
 };
 
 listaColunas.onchange = evento => {

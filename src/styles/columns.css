@@ -41,10 +41,6 @@
 .coluna-nome {
   font-weight: 500;
   color: var(--text);
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tipo-tag {
@@ -71,4 +67,12 @@
 .tipo-tag.data {
   background: var(--tag-dat);
   color: #2c3a8c;
+}
+
+/* Estado ativo nos botões de filtro */
+.colunas-acao.ativo {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(26, 71, 42, 0.08);
+  font-weight: 500;
 }

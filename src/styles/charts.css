@@ -31,11 +31,79 @@
   padding: 12px;
 }
 
+.chart-bloco-topo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
 .chart-titulo {
   font-family: var(--fonte-display);
   font-size: 13px;
-  margin-bottom: 8px;
   color: var(--text);
+}
+
+.chart-acoes {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.chart-menu-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--muted);
+  font-family: var(--fonte-mono);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chart-menu-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(26, 71, 42, 0.05);
+}
+
+.chart-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 170px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 25;
+}
+
+.chart-menu[hidden] {
+  display: none !important;
+}
+
+.chart-menu-item {
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  padding: 7px 9px;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.chart-menu-item:hover {
+  border-color: var(--border);
+  background: rgba(26, 71, 42, 0.05);
 }
 
 .chart-container {
