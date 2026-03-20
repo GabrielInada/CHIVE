@@ -41,10 +41,6 @@
 .coluna-nome {
   font-weight: 500;
   color: var(--text);
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .tipo-tag {
