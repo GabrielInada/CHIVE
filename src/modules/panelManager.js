@@ -468,10 +468,17 @@ function renderGuidedResizeHandles(gridDiv, block) {
 	if (block.templateId === 'layout-2col') {
 		handles.push({ key: 'split', axis: 'x', position: block.proportions.split ?? 50 });
 	} else if (block.templateId === 'layout-1x2') {
-		handles.push({ key: 'split', axis: 'y', position: block.proportions.split ?? 50 });
+		handles.push({ key: 'split', axis: 'y', position: block.proportions.split ?? 50, railStart: 0, railEnd: 100 });
 	} else if (block.templateId === 'layout-hero2') {
-		handles.push({ key: 'splitMain', axis: 'x', position: block.proportions.splitMain ?? 60 });
-		handles.push({ key: 'splitRight', axis: 'y', position: block.proportions.splitRight ?? 50 });
+		const splitMain = clampPercent(block.proportions.splitMain ?? 60, 20, 80);
+		handles.push({ key: 'splitMain', axis: 'x', position: splitMain });
+		handles.push({
+			key: 'splitRight',
+			axis: 'y',
+			position: block.proportions.splitRight ?? 50,
+			railStart: splitMain,
+			railEnd: 100,
+		});
 	} else if (block.templateId === 'layout-3col') {
 		const a = Number(block.proportions.a ?? 33);
 		const b = Number(block.proportions.b ?? 33);
@@ -480,6 +487,22 @@ function renderGuidedResizeHandles(gridDiv, block) {
 	}
 
 	handles.forEach(handleConfig => {
+		let railCenter = null;
+		let railSpan = null;
+
+		if (handleConfig.axis === 'y') {
+			const railStart = Number(handleConfig.railStart ?? 0);
+			const railEnd = Number(handleConfig.railEnd ?? 100);
+			railSpan = Math.max(0, railEnd - railStart);
+			railCenter = railStart + railSpan / 2;
+
+			const rail = document.createElement('div');
+			rail.className = 'painel-resize-rail eixo-y';
+			rail.style.left = `${railCenter}%`;
+			rail.style.width = `calc(${railSpan}% - 10px)`;
+			gridDiv.appendChild(rail);
+		}
+
 		const handle = document.createElement('button');
 		handle.type = 'button';
 		handle.className = `painel-resize-handle eixo-${handleConfig.axis}`;
@@ -489,6 +512,8 @@ function renderGuidedResizeHandles(gridDiv, block) {
 			handle.style.left = `${clampPercent(handleConfig.position, 20, 80)}%`;
 		} else {
 			handle.style.top = `${clampPercent(handleConfig.position, 20, 80)}%`;
+			handle.style.left = `${railCenter}%`;
+			handle.style.width = `calc(${railSpan}% - 10px)`;
 		}
 
 		handle.addEventListener('mousedown', event => {

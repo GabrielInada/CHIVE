@@ -204,6 +204,21 @@
   background: #fff;
 }
 
+.painel-resize-rail {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.painel-resize-rail.eixo-y {
+  top: 8px;
+  bottom: 8px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  border: 1px dashed rgba(56, 73, 61, 0.22);
+  background: rgba(56, 73, 61, 0.04);
+}
+
 .painel-layout.layout-single {
   grid-template-columns: 1fr;
 }

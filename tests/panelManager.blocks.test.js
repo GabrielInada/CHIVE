@@ -123,6 +123,24 @@ describe('panelManager multi-block canvas (phase 2)', () => {
     expect(slot3).toBeTruthy();
   });
 
+  it('positions hero2 vertical handle within the right column rail', () => {
+    const blockId = appState.getState().panel.blocks[0].id;
+    appState.setPanelBlockTemplate(blockId, 'layout-hero2');
+    appState.updatePanelBlockProportions(blockId, { splitMain: 70, splitRight: 45 });
+
+    renderCanvasPanel();
+
+    const handle = document.querySelector(`[data-panel-resize-handle="${blockId}:splitRight"]`);
+    expect(handle).toBeTruthy();
+    expect(handle.style.left).toBe('85%');
+    expect(handle.style.width).toBe('calc(30% - 10px)');
+
+    const rail = document.querySelector('.painel-block[data-panel-block-id="' + blockId + '"] .painel-resize-rail.eixo-y');
+    expect(rail).toBeTruthy();
+    expect(rail.style.left).toBe('85%');
+    expect(rail.style.width).toBe('calc(30% - 10px)');
+  });
+
   it('swaps chart assignments across blocks via drop', () => {
     window.matchMedia = () => ({
       matches: true,
