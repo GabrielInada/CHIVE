@@ -1,0 +1,78 @@
+#painel-colunas {
+  display: none;
+}
+
+.lista-colunas {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.colunas-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.coluna-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.coluna-checkbox {
+  accent-color: var(--accent);
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+}
+
+.coluna-nome {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.tipo-tag {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 3px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.tipo-tag.numero {
+  background: var(--tag-num);
+  color: var(--success);
+}
+
+.tipo-tag.texto {
+  background: var(--tag-txt);
+  color: #7a5200;
+}
+
+.tipo-tag.data {
+  background: var(--tag-dat);
+  color: #2c3a8c;
+}
+
+/* Estado ativo nos botões de filtro */
+.colunas-acao.ativo {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(26, 71, 42, 0.08);
+  font-weight: 500;
+}

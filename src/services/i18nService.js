@@ -1,11 +1,12 @@
 import Banana from 'banana-i18n';
 import ptBR from '../i18n/pt-BR.json';
 import en from '../i18n/en.json';
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_STORAGE_KEY } from '../config/index.js';
 
-const LOCALES = ['pt-BR', 'en'];
-const CHAVE_LOCALE = 'chive-locale';
+const LOCALES = SUPPORTED_LOCALES;
+const CHAVE_LOCALE = LOCALE_STORAGE_KEY;
 
-const banana = new Banana('pt-BR');
+const banana = new Banana(DEFAULT_LOCALE);
 banana.load(ptBR, 'pt-BR');
 banana.load(en, 'en');
 
@@ -47,6 +48,16 @@ export function inicializarI18n() {
 
 	const selectLang = document.getElementById('select-lang');
 	if (selectLang) selectLang.value = locale;
+
+	// Update language display button
+	const langDisplay = document.getElementById('lang-display');
+	if (langDisplay) {
+		const localeLabels = {
+			'pt-BR': 'Português',
+			'en': 'English'
+		};
+		langDisplay.textContent = localeLabels[locale] || locale;
+	}
 
 	traduirPaginaEstatica();
 }

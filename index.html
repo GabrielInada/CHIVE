@@ -3,15 +3,16 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DataViz — Dia 01: Upload de Dados</title>
+    <title>CHIVE</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/styles/style.css" />
 </head>
 <body>
     <header>
         <div class="logo">
-            DataViz
-            <span class="logo-badge">artigo</span>
+            CHIVE
+            <span class="logo-badge">Connected Hierarchical Interactive Visualization Engine</span>
         </div>
         <div class="header-steps">
             <span class="step atual" data-i18n="chive-step-upload">01 · Upload</span>
@@ -22,10 +23,13 @@
         </div>
         <div class="header-lang">
             <label class="lang-label" for="select-lang" data-i18n="chive-lang-label">Idioma</label>
-            <select id="select-lang" class="lang-select">
-                <option value="pt-BR">Português</option>
-                <option value="en">English</option>
-            </select>
+            <div class="lang-select-wrapper">
+                <button id="lang-display" class="lang-display-btn" type="button" aria-haspopup="listbox">Português</button>
+                <select id="select-lang" class="lang-select" aria-label="Select language">
+                    <option value="pt-BR">Português</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
         </div>
     </header>
 
@@ -53,12 +57,13 @@
 
                 <div id="info-arquivo">
                     <p class="secao-titulo" data-i18n="chive-section-files">Arquivos carregados</p>
-                    <div class="arquivos-resumo" id="arquivo-resumo-texto" data-i18n="chive-no-files">Nenhum arquivo</div>
+                    <div class="arquivos-resumo" id="arquivo-resumo-texto">Nenhum arquivo</div>
                     <div class="lista-arquivos" id="lista-arquivos-conteudo"></div>
                 </div>
 
                 <div id="painel-colunas">
                     <p class="secao-titulo" data-i18n="chive-section-columns">Colunas detectadas</p>
+                    <div class="colunas-acoes" id="colunas-acoes"></div>
                     <div class="lista-colunas" id="lista-colunas-conteudo"></div>
                 </div>
 
@@ -71,6 +76,16 @@
                     <div class="viz-cards" id="lista-visualizacoes-conteudo"></div>
                 </div>
                 <button class="btn-primario" id="btn-editar-colunas" data-i18n="chive-btn-edit-columns">← Editar colunas</button>
+                <button class="btn-primario" id="btn-ir-painel" data-i18n="chive-btn-go-panel">Ir para o painel →</button>
+            </section>
+
+            <section id="sidebar-panel-panel" class="sidebar-panel">
+                <div id="painel-dashboard-sidebar">
+                    <p class="secao-titulo" data-i18n="chive-section-panel-saved">Charts salvos</p>
+                    <p class="painel-sidebar-hint" data-i18n="chive-panel-sidebar-hint">Arraste um chart para um slot do layout.</p>
+                    <div class="lista-painel-charts" id="lista-painel-charts"></div>
+                </div>
+                <button class="btn-primario" id="btn-voltar-viz" data-i18n="chive-btn-back-viz">← Voltar para visualizações</button>
             </section>
         </aside>
 
@@ -85,6 +100,7 @@
                 <div class="resultado-tabs" id="resultado-tabs">
                     <button type="button" class="resultado-tab ativo" id="tab-preview" data-aba="preview" data-i18n="chive-tab-preview">Preview</button>
                     <button type="button" class="resultado-tab" id="tab-charts" data-aba="charts" data-i18n="chive-tab-charts">Visualizações</button>
+                    <button type="button" class="resultado-tab" id="tab-panel" data-aba="panel" data-i18n="chive-tab-panel">Painel</button>
                 </div>
 
                 <div id="painel-preview" class="resultado-painel ativo">
@@ -131,14 +147,108 @@
                             <div id="charts-empty-state" class="chart-vazio" style="display:none"></div>
                             <div class="charts-grid" id="charts-grid">
                                 <section class="chart-bloco" id="chart-block-bar">
-                                    <h4 class="chart-titulo" data-i18n="chive-chart-bar-title">Barras (contagem por categoria)</h4>
+                                    <div class="chart-bloco-topo">
+                                        <h4 class="chart-titulo" data-i18n="chive-chart-bar-title">Barras (contagem por categoria)</h4>
+                                        <div class="chart-acoes" data-chart-actions>
+                                            <button
+                                                type="button"
+                                                class="chart-menu-btn"
+                                                data-chart-menu-btn="bar"
+                                                aria-haspopup="menu"
+                                                aria-expanded="false"
+                                                data-i18n-title="chive-chart-actions-open"
+                                                title="Acoes"
+                                            >
+                                                <span aria-hidden="true">&#8942;</span>
+                                            </button>
+                                            <div class="chart-menu" data-chart-menu="bar" role="menu" hidden>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="download-svg"
+                                                    data-chart-container="chart-bar-container"
+                                                    data-chart-filename="bar-chart"
+                                                    data-i18n="chive-chart-action-download-svg"
+                                                >
+                                                    Download SVG
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="add-panel"
+                                                    data-chart-container="chart-bar-container"
+                                                    data-i18n="chive-chart-action-add-panel"
+                                                >
+                                                    Add to panel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div id="chart-bar-container" class="chart-container"></div>
                                 </section>
                                 <section class="chart-bloco" id="chart-block-scatter">
-                                    <h4 class="chart-titulo" data-i18n="chive-chart-scatter-title">Dispersão (X vs Y)</h4>
+                                    <div class="chart-bloco-topo">
+                                        <h4 class="chart-titulo" data-i18n="chive-chart-scatter-title">Dispersão (X vs Y)</h4>
+                                        <div class="chart-acoes" data-chart-actions>
+                                            <button
+                                                type="button"
+                                                class="chart-menu-btn"
+                                                data-chart-menu-btn="scatter"
+                                                aria-haspopup="menu"
+                                                aria-expanded="false"
+                                                data-i18n-title="chive-chart-actions-open"
+                                                title="Acoes"
+                                            >
+                                                <span aria-hidden="true">&#8942;</span>
+                                            </button>
+                                            <div class="chart-menu" data-chart-menu="scatter" role="menu" hidden>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="download-svg"
+                                                    data-chart-container="chart-scatter-container"
+                                                    data-chart-filename="scatter-plot"
+                                                    data-i18n="chive-chart-action-download-svg"
+                                                >
+                                                    Download SVG
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="add-panel"
+                                                    data-chart-container="chart-scatter-container"
+                                                    data-i18n="chive-chart-action-add-panel"
+                                                >
+                                                    Add to panel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div id="chart-scatter-container" class="chart-container"></div>
                                 </section>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="painel-panel" class="resultado-painel">
+                    <div class="resultado-card animar">
+                        <div class="card-header">
+                            <span class="card-titulo" data-i18n="chive-card-panel">Painel</span>
+                            <div class="card-header-controles">
+                                <label class="panel-borders-toggle" for="toggle-panel-slot-borders">
+                                    <input type="checkbox" id="toggle-panel-slot-borders" />
+                                    <span data-i18n="chive-panel-borders-label">Mostrar bordas dos slots</span>
+                                </label>
+                                <button type="button" class="btn-primario btn-panel-export" id="btn-exportar-painel" data-i18n="chive-panel-export-svg">Exportar SVG</button>
+                            </div>
+                        </div>
+                        <div class="card-corpo card-corpo-panel">
+                            <div class="painel-canvas" id="panel-layout-canvas" aria-live="polite"></div>
                         </div>
                     </div>
                 </div>
