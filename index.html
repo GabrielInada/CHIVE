@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CHIVE</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/src/styles/style.css" />
 </head>
@@ -22,10 +23,13 @@
         </div>
         <div class="header-lang">
             <label class="lang-label" for="select-lang" data-i18n="chive-lang-label">Idioma</label>
-            <select id="select-lang" class="lang-select">
-                <option value="pt-BR">Português</option>
-                <option value="en">English</option>
-            </select>
+            <div class="lang-select-wrapper">
+                <button id="lang-display" class="lang-display-btn" type="button" aria-haspopup="listbox">Português</button>
+                <select id="select-lang" class="lang-select" aria-label="Select language">
+                    <option value="pt-BR">Português</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
         </div>
     </header>
 
@@ -53,7 +57,7 @@
 
                 <div id="info-arquivo">
                     <p class="secao-titulo" data-i18n="chive-section-files">Arquivos carregados</p>
-                    <div class="arquivos-resumo" id="arquivo-resumo-texto" data-i18n="chive-no-files">Nenhum arquivo</div>
+                    <div class="arquivos-resumo" id="arquivo-resumo-texto">Nenhum arquivo</div>
                     <div class="lista-arquivos" id="lista-arquivos-conteudo"></div>
                 </div>
 

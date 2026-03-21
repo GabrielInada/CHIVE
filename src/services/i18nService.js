@@ -49,6 +49,16 @@ export function inicializarI18n() {
 	const selectLang = document.getElementById('select-lang');
 	if (selectLang) selectLang.value = locale;
 
+	// Update language display button
+	const langDisplay = document.getElementById('lang-display');
+	if (langDisplay) {
+		const localeLabels = {
+			'pt-BR': 'Português',
+			'en': 'English'
+		};
+		langDisplay.textContent = localeLabels[locale] || locale;
+	}
+
 	traduirPaginaEstatica();
 }
 
