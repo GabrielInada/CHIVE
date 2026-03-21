@@ -11,17 +11,20 @@
  */
 
 import { t } from '../services/i18nService.js';
-import { escaparHTML } from '../utils/formatters.js';
 import { capturarSvgMarkupDeContainer, baixarSvgMarkup } from '../utils/svgExport.js';
 import {
 	getPanelCharts,
-	getPanelSlots,
-	getPanelLayout,
+	getPanelBlocks,
 	addChartSnapshot,
 	removeChartSnapshot,
 	getChartSnapshot,
-	assignChartToSlot,
-	setPanelLayout,
+	assignChartToPanelBlockSlot,
+	setPanelBlockTemplate,
+	addPanelBlock,
+	removePanelBlock,
+	movePanelBlock,
+	updatePanelBlockProportions,
+	updatePanelBlockHeight,
 	validatePanelSlots,
 	clearPanel,
 	onStateChange,
@@ -43,6 +46,16 @@ const LAYOUTS_PAINEL = {
 		slots: ['slot-1', 'slot-2', 'slot-3'],
 		labelKey: 'chive-panel-layout-hero2',
 	},
+	'layout-3col': {
+		classe: 'layout-3col',
+		slots: ['slot-1', 'slot-2', 'slot-3'],
+		labelKey: 'chive-panel-layout-3col',
+	},
+	'layout-1x2': {
+		classe: 'layout-1x2',
+		slots: ['slot-1', 'slot-2'],
+		labelKey: 'chive-panel-layout-1x2',
+	},
 };
 
 // Callback for feedback UI (will be set by main.js)
@@ -58,8 +71,13 @@ export function initPanelManager(feedbackFn = null) {
 	// Re-render when state changes
 	onStateChange('chartAdded', handleChartStateChange);
 	onStateChange('chartRemoved', handleChartStateChange);
-	onStateChange('slotAssigned', handleChartStateChange);
-	onStateChange('layoutChanged', handleLayoutChange);
+	onStateChange('panelBlockSlotAssigned', handleChartStateChange);
+	onStateChange('panelBlockAdded', handleLayoutChange);
+	onStateChange('panelBlockRemoved', handleLayoutChange);
+	onStateChange('panelBlockMoved', handleLayoutChange);
+	onStateChange('panelBlockTemplateChanged', handleLayoutChange);
+	onStateChange('panelBlockProportionsUpdated', handleLayoutChange);
+	onStateChange('panelBlockHeightUpdated', handleLayoutChange);
 }
 
 /**
@@ -142,8 +160,14 @@ export function getLayoutConfig(layoutId) {
  * Get current layout configuration
  * @returns {Object} Current layout configuration
  */
-function getCurrentLayout() {
-	return getLayoutConfig(getPanelLayout());
+function getTemplateForBlock(block) {
+	return getLayoutConfig(block?.templateId);
+}
+
+function clampPercent(value, min = 20, max = 80) {
+	const n = Number(value);
+	if (!Number.isFinite(n)) return min;
+	return Math.max(min, Math.min(max, n));
 }
 
 /**
@@ -153,15 +177,6 @@ function getCurrentLayout() {
  */
 function cleanupInvalidSlots() {
 	validatePanelSlots();
-	const layout = getCurrentLayout();
-	const slots = getPanelSlots();
-	
-	// Remove slots not in current layout
-	Object.keys(slots).forEach(slotId => {
-		if (!layout.slots.includes(slotId)) {
-			assignChartToSlot(slotId, null);
-		}
-	});
 }
 
 /**
@@ -245,112 +260,406 @@ export function renderCanvasPanel() {
 	cleanupInvalidSlots();
 	const canvas = document.getElementById('panel-layout-canvas');
 	if (!canvas) return;
-
-	const layout = getCurrentLayout();
-	const slots = getPanelSlots();
+	const borderToggle = document.getElementById('toggle-panel-slot-borders');
+	canvas.classList.toggle('slot-borders-enabled', Boolean(borderToggle?.checked));
+	const blocks = getPanelBlocks();
 	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
 
 	canvas.innerHTML = '';
-	const gridDiv = document.createElement('div');
-	gridDiv.id = 'painel-layout-grid';
-	gridDiv.className = `painel-layout ${layout.classe}`;
 
-	// Create slot elements
-	layout.slots.forEach(slotId => {
-		const chart = getChartSnapshot(slots[slotId]);
-		const slot = document.createElement('div');
-		slot.className = chart ? 'painel-slot' : 'painel-slot vazio';
-		slot.dataset.panelSlot = slotId;
+	const stack = document.createElement('div');
+	stack.className = 'painel-block-stack';
 
-		if (chart) {
-			slot.dataset.panelChartId = chart.id;
-			slot.draggable = desktopDnd;
+	blocks.forEach((block, index) => {
+		const layout = getTemplateForBlock(block);
+		const blockEl = document.createElement('section');
+		blockEl.className = 'painel-block';
+		blockEl.dataset.panelBlockId = block.id;
 
-			// Clear button
-			const clearBtn = document.createElement('button');
-			clearBtn.type = 'button';
-			clearBtn.className = 'painel-slot-limpar';
-			clearBtn.dataset.clearPanelSlot = slotId;
-			clearBtn.setAttribute('aria-label', t('chive-panel-clear-slot'));
-			clearBtn.textContent = '×';
-			clearBtn.addEventListener('click', () => {
-				assignChartToSlot(slotId, null);
-			});
+		const header = document.createElement('div');
+		header.className = 'painel-block-header';
 
-			// SVG content
-			const svgDiv = document.createElement('div');
-			svgDiv.className = 'painel-slot-svg';
-			svgDiv.innerHTML = chart.svgMarkup;
+		const title = document.createElement('span');
+		title.className = 'painel-block-title';
+		title.textContent = `Block ${index + 1}`;
 
-			slot.appendChild(clearBtn);
-			slot.appendChild(svgDiv);
+		const actions = document.createElement('div');
+		actions.className = 'painel-block-actions';
 
-			// Drag start for slot-to-slot
+		const upBtn = document.createElement('button');
+		upBtn.type = 'button';
+		upBtn.className = 'painel-block-btn';
+		upBtn.dataset.panelBlockUp = block.id;
+		upBtn.textContent = '↑';
+		upBtn.disabled = index === 0;
+		upBtn.addEventListener('click', () => {
+			movePanelBlock(block.id, index - 1);
+		});
+
+		const downBtn = document.createElement('button');
+		downBtn.type = 'button';
+		downBtn.className = 'painel-block-btn';
+		downBtn.dataset.panelBlockDown = block.id;
+		downBtn.textContent = '↓';
+		downBtn.disabled = index === blocks.length - 1;
+		downBtn.addEventListener('click', () => {
+			movePanelBlock(block.id, index + 1);
+		});
+
+		const removeBtn = document.createElement('button');
+		removeBtn.type = 'button';
+		removeBtn.className = 'painel-block-btn painel-block-btn-danger';
+		removeBtn.dataset.panelBlockRemove = block.id;
+		removeBtn.textContent = '×';
+		removeBtn.disabled = blocks.length <= 1;
+		removeBtn.addEventListener('click', () => {
+			removePanelBlock(block.id);
+		});
+
+		actions.appendChild(upBtn);
+		actions.appendChild(downBtn);
+		actions.appendChild(removeBtn);
+		header.appendChild(title);
+		header.appendChild(actions);
+
+		const templateSelect = document.createElement('select');
+		templateSelect.className = 'painel-block-template';
+		templateSelect.dataset.panelBlockTemplate = block.id;
+		Object.entries(LAYOUTS_PAINEL).forEach(([id, config]) => {
+			const option = document.createElement('option');
+			option.value = id;
+			option.textContent = t(config.labelKey);
+			option.selected = id === block.templateId;
+			templateSelect.appendChild(option);
+		});
+		templateSelect.addEventListener('change', e => {
+			setPanelBlockTemplate(block.id, e.target.value);
+			fillLayoutSelect();
+			renderCanvasPanel();
+		});
+
+		const gridDiv = document.createElement('div');
+		gridDiv.className = `painel-layout ${layout.classe}`;
+		gridDiv.dataset.panelLayoutBlock = block.id;
+		applyBlockProportions(gridDiv, block);
+		renderGuidedResizeHandles(gridDiv, block);
+
+		layout.slots.forEach(slotId => {
+			const chart = getChartSnapshot(block.slots?.[slotId]);
+			const slot = document.createElement('div');
+			slot.className = chart ? 'painel-slot' : 'painel-slot vazio';
+			slot.dataset.panelSlot = slotId;
+			slot.dataset.panelBlockId = block.id;
+
+			if (chart) {
+				slot.dataset.panelChartId = chart.id;
+				slot.draggable = desktopDnd;
+
+				const clearBtn = document.createElement('button');
+				clearBtn.type = 'button';
+				clearBtn.className = 'painel-slot-limpar';
+				clearBtn.dataset.clearPanelSlot = `${block.id}:${slotId}`;
+				clearBtn.setAttribute('aria-label', t('chive-panel-clear-slot'));
+				clearBtn.textContent = '×';
+				clearBtn.addEventListener('click', () => {
+					assignChartToPanelBlockSlot(block.id, slotId, null);
+					renderCanvasPanel();
+				});
+
+				const svgDiv = document.createElement('div');
+				svgDiv.className = 'painel-slot-svg';
+				svgDiv.innerHTML = chart.svgMarkup;
+
+				slot.appendChild(clearBtn);
+				slot.appendChild(svgDiv);
+
+				if (desktopDnd) {
+					slot.addEventListener('dragstart', e => {
+						e.dataTransfer.effectAllowed = 'move';
+						e.dataTransfer.setData('text/panel-chart-id', String(chart.id));
+						e.dataTransfer.setData('text/panel-slot-id', slotId);
+						e.dataTransfer.setData('text/panel-block-id', block.id);
+					});
+				}
+			} else {
+				const placeholder = document.createElement('div');
+				placeholder.className = 'painel-slot-placeholder';
+				placeholder.textContent = t('chive-panel-slot-empty');
+				slot.appendChild(placeholder);
+			}
+
 			if (desktopDnd) {
-				slot.addEventListener('dragstart', e => {
-					e.dataTransfer.effectAllowed = 'move';
-					e.dataTransfer.setData('text/panel-chart-id', chart.id);
-					e.dataTransfer.setData('text/panel-slot-id', slotId);
+				slot.addEventListener('dragover', e => {
+					e.preventDefault();
+					slot.classList.add('drag-over');
+				});
+
+				slot.addEventListener('dragleave', () => {
+					slot.classList.remove('drag-over');
+				});
+
+				slot.addEventListener('drop', e => {
+					e.preventDefault();
+					slot.classList.remove('drag-over');
+
+					const targetSlotId = slotId;
+					const targetBlockId = block.id;
+					const sourceSlotId = e.dataTransfer.getData('text/panel-slot-id');
+					const sourceBlockId = e.dataTransfer.getData('text/panel-block-id');
+					const chartId = e.dataTransfer.getData('text/panel-chart-id');
+
+					if (!chartId || !getChartSnapshot(chartId)) return;
+
+					if (sourceSlotId && sourceBlockId) {
+						if (sourceSlotId === targetSlotId && sourceBlockId === targetBlockId) return;
+
+						const stateBlocks = getPanelBlocks();
+						const targetBlock = stateBlocks.find(item => item.id === targetBlockId);
+						const targetChartId = targetBlock?.slots?.[targetSlotId] ?? null;
+
+						assignChartToPanelBlockSlot(targetBlockId, targetSlotId, chartId);
+						if (targetChartId !== null && targetChartId !== undefined) {
+							assignChartToPanelBlockSlot(sourceBlockId, sourceSlotId, targetChartId);
+						} else {
+							assignChartToPanelBlockSlot(sourceBlockId, sourceSlotId, null);
+						}
+					} else {
+						assignChartToPanelBlockSlot(targetBlockId, targetSlotId, chartId);
+					}
+
+					renderCanvasPanel();
 				});
 			}
+
+			gridDiv.appendChild(slot);
+		});
+
+		blockEl.appendChild(header);
+		blockEl.appendChild(templateSelect);
+		blockEl.appendChild(gridDiv);
+
+		const blockResizeHandle = document.createElement('button');
+		blockResizeHandle.type = 'button';
+		blockResizeHandle.className = 'painel-block-size-handle';
+		blockResizeHandle.dataset.panelBlockResize = block.id;
+		blockResizeHandle.setAttribute('aria-label', t('chive-panel-resize-block-height'));
+		blockResizeHandle.addEventListener('mousedown', event => {
+			event.preventDefault();
+			startBlockHeightResizeDrag(block.id, gridDiv, event.clientY);
+		});
+
+		blockEl.appendChild(blockResizeHandle);
+		stack.appendChild(blockEl);
+	});
+
+	const addBlockButton = document.createElement('button');
+	const addTemplateSelect = document.createElement('select');
+	addTemplateSelect.className = 'painel-add-template-select';
+	addTemplateSelect.dataset.panelAddTemplate = '1';
+	addTemplateSelect.setAttribute('aria-label', t('chive-panel-layout-label'));
+	const selectedTemplate = 'layout-2col';
+
+	Object.entries(LAYOUTS_PAINEL).forEach(([id, config]) => {
+		const option = document.createElement('option');
+		option.value = id;
+		option.textContent = t(config.labelKey);
+		option.selected = id === selectedTemplate;
+		addTemplateSelect.appendChild(option);
+	});
+
+	addBlockButton.type = 'button';
+	addBlockButton.className = 'btn-primario painel-add-block-btn';
+	addBlockButton.dataset.panelAddBlock = '1';
+	addBlockButton.textContent = t('chive-panel-add-block');
+	addBlockButton.addEventListener('click', () => {
+		const templateId = addTemplateSelect.value || 'layout-2col';
+		const newBlockId = addPanelBlock(templateId);
+		if (newBlockId === null && feedbackCallback) {
+			feedbackCallback(t('chive-panel-max-blocks'), 'error');
+		}
+	});
+
+	const addControls = document.createElement('div');
+	addControls.className = 'painel-add-controls';
+	addControls.appendChild(addTemplateSelect);
+	addControls.appendChild(addBlockButton);
+
+	canvas.appendChild(stack);
+	canvas.appendChild(addControls);
+}
+
+function applyBlockProportions(gridDiv, block) {
+	if (!block?.proportions) return;
+	Object.entries(block.proportions).forEach(([key, value]) => {
+		gridDiv.style.setProperty(`--${key}`, `${value}%`);
+	});
+	applyDynamicBlockHeight(gridDiv, block);
+}
+
+function applyDynamicBlockHeight(gridDiv, block) {
+	const BASE_MIN_HEIGHT = 220;
+	const MAX_MIN_HEIGHT = 620;
+	const SLOT_MIN_HEIGHT = 96;
+	const ROW_GAP = 10;
+
+	let dynamicMinHeight = BASE_MIN_HEIGHT;
+
+	if (block.templateId === 'layout-1x2') {
+		const split = clampPercent(block.proportions?.split ?? 50, 20, 80) / 100;
+		const smallestRow = Math.min(split, 1 - split);
+		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
+	} else if (block.templateId === 'layout-hero2') {
+		const splitRight = clampPercent(block.proportions?.splitRight ?? 50, 20, 80) / 100;
+		const smallestRow = Math.min(splitRight, 1 - splitRight);
+		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
+	}
+
+	const userHeight = Number(block.heightPx);
+	const userBounded = Number.isFinite(userHeight)
+		? Math.max(BASE_MIN_HEIGHT, Math.min(userHeight, 760))
+		: BASE_MIN_HEIGHT;
+	const bounded = Math.max(userBounded, Math.max(BASE_MIN_HEIGHT, Math.min(dynamicMinHeight, MAX_MIN_HEIGHT)));
+	gridDiv.style.minHeight = `${Math.round(bounded)}px`;
+}
+
+function renderGuidedResizeHandles(gridDiv, block) {
+	if (!gridDiv || !block?.proportions) return;
+
+	const handles = [];
+	if (block.templateId === 'layout-2col') {
+		handles.push({ key: 'split', axis: 'x', position: block.proportions.split ?? 50 });
+	} else if (block.templateId === 'layout-1x2') {
+		handles.push({ key: 'split', axis: 'y', position: block.proportions.split ?? 50, railStart: 0, railEnd: 100 });
+	} else if (block.templateId === 'layout-hero2') {
+		const splitMain = clampPercent(block.proportions.splitMain ?? 60, 20, 80);
+		handles.push({ key: 'splitMain', axis: 'x', position: splitMain });
+		handles.push({
+			key: 'splitRight',
+			axis: 'y',
+			position: block.proportions.splitRight ?? 50,
+			railStart: splitMain,
+			railEnd: 100,
+		});
+	} else if (block.templateId === 'layout-3col') {
+		const a = Number(block.proportions.a ?? 33);
+		const b = Number(block.proportions.b ?? 33);
+		handles.push({ key: 'a', axis: 'x', position: a });
+		handles.push({ key: 'ab', axis: 'x', position: a + b });
+	}
+
+	handles.forEach(handleConfig => {
+		let railCenter = null;
+		let railSpan = null;
+
+		if (handleConfig.axis === 'y') {
+			const railStart = Number(handleConfig.railStart ?? 0);
+			const railEnd = Number(handleConfig.railEnd ?? 100);
+			railSpan = Math.max(0, railEnd - railStart);
+			railCenter = railStart + railSpan / 2;
+
+			const rail = document.createElement('div');
+			rail.className = 'painel-resize-rail eixo-y';
+			rail.style.left = `${railCenter}%`;
+			rail.style.width = `calc(${railSpan}% - 10px)`;
+			gridDiv.appendChild(rail);
+		}
+
+		const handle = document.createElement('button');
+		handle.type = 'button';
+		handle.className = `painel-resize-handle eixo-${handleConfig.axis}`;
+		handle.dataset.panelResizeHandle = `${block.id}:${handleConfig.key}`;
+		handle.setAttribute('aria-label', t('chive-panel-resize-handle'));
+		if (handleConfig.axis === 'x') {
+			handle.style.left = `${clampPercent(handleConfig.position, 20, 80)}%`;
 		} else {
-			// Empty slot
-			const placeholder = document.createElement('div');
-			placeholder.className = 'painel-slot-placeholder';
-			placeholder.textContent = t('chive-panel-slot-empty');
-			slot.appendChild(placeholder);
+			handle.style.top = `${clampPercent(handleConfig.position, 20, 80)}%`;
+			handle.style.left = `${railCenter}%`;
 		}
 
-		gridDiv.appendChild(slot);
+		handle.addEventListener('mousedown', event => {
+			event.preventDefault();
+			startGuidedResizeDrag(block.id, block.templateId, handleConfig.key, gridDiv);
+		});
+
+		gridDiv.appendChild(handle);
 	});
+}
 
-	canvas.appendChild(gridDiv);
+function startGuidedResizeDrag(blockId, templateId, key, gridDiv) {
+	const rect = gridDiv.getBoundingClientRect();
+	if (!rect.width || !rect.height) return;
+	gridDiv.classList.add('is-resizing');
 
-	// Setup drag-drop handlers for all slots
-	canvas.querySelectorAll('[data-panel-slot]').forEach(slot => {
-		if (desktopDnd) {
-			slot.addEventListener('dragover', e => {
-				e.preventDefault();
-				slot.classList.add('drag-over');
-			});
+	const onMove = event => {
+		const currentBlock = getPanelBlocks().find(item => item.id === blockId);
+		if (!currentBlock) return;
 
-			slot.addEventListener('dragleave', () => {
-				slot.classList.remove('drag-over');
-			});
-
-			slot.addEventListener('drop', e => {
-				e.preventDefault();
-				slot.classList.remove('drag-over');
-
-				const targetSlotId = slot.dataset.panelSlot;
-				const sourceSlotId = e.dataTransfer.getData('text/panel-slot-id');
-				const chartId = e.dataTransfer.getData('text/panel-chart-id');
-
-				if (!chartId || !getChartSnapshot(chartId)) return;
-
-				if (sourceSlotId) {
-					// Slot-to-slot: move or swap
-					if (sourceSlotId === targetSlotId) return;
-
-					const slots = getPanelSlots();
-					const targetChartId = slots[targetSlotId];
-					const hasTargetChart = targetChartId !== undefined && targetChartId !== null;
-
-					assignChartToSlot(targetSlotId, chartId);
-					if (hasTargetChart) {
-						assignChartToSlot(sourceSlotId, targetChartId);
-					} else {
-						assignChartToSlot(sourceSlotId, null);
-					}
-				} else {
-					// Sidebar-to-slot: copy
-					assignChartToSlot(targetSlotId, chartId);
-				}
-
-				renderCanvasPanel();
-			});
+		if (templateId === 'layout-2col' && key === 'split') {
+			const next = ((event.clientX - rect.left) / rect.width) * 100;
+			updatePanelBlockProportions(blockId, { split: clampPercent(next, 20, 80) });
+		} else if (templateId === 'layout-1x2' && key === 'split') {
+			const next = ((event.clientY - rect.top) / rect.height) * 100;
+			updatePanelBlockProportions(blockId, { split: clampPercent(next, 20, 80) });
+		} else if (templateId === 'layout-hero2' && key === 'splitMain') {
+			const next = ((event.clientX - rect.left) / rect.width) * 100;
+			updatePanelBlockProportions(blockId, { splitMain: clampPercent(next, 20, 80) });
+		} else if (templateId === 'layout-hero2' && key === 'splitRight') {
+			const next = ((event.clientY - rect.top) / rect.height) * 100;
+			updatePanelBlockProportions(blockId, { splitRight: clampPercent(next, 20, 80) });
+		} else if (templateId === 'layout-3col' && key === 'a') {
+			const next = ((event.clientX - rect.left) / rect.width) * 100;
+			const a = clampPercent(next, 20, 60);
+			const remaining = 100 - a;
+			let b = clampPercent(currentBlock.proportions.b ?? 33, 20, 60);
+			if (b > remaining - 20) b = remaining - 20;
+			const c = 100 - a - b;
+			updatePanelBlockProportions(blockId, { a, b, c });
+		} else if (templateId === 'layout-3col' && key === 'ab') {
+			const next = ((event.clientX - rect.left) / rect.width) * 100;
+			const a = clampPercent(currentBlock.proportions.a ?? 33, 20, 60);
+			const ab = clampPercent(next, a + 20, 80);
+			const b = ab - a;
+			const c = 100 - ab;
+			updatePanelBlockProportions(blockId, { a, b, c });
 		}
-	});
+
+		renderCanvasPanel();
+	};
+
+	const onUp = () => {
+		window.removeEventListener('mousemove', onMove);
+		window.removeEventListener('mouseup', onUp);
+		gridDiv.classList.remove('is-resizing');
+	};
+
+	window.addEventListener('mousemove', onMove);
+	window.addEventListener('mouseup', onUp);
+}
+
+function startBlockHeightResizeDrag(blockId, gridDiv, startClientY) {
+	const rect = gridDiv.getBoundingClientRect();
+	if (!rect.height) return;
+
+	const startY = Number(startClientY);
+	if (!Number.isFinite(startY)) return;
+	gridDiv.classList.add('is-resizing');
+	const startHeight = rect.height;
+
+	const onMove = event => {
+		const deltaY = event.clientY - startY;
+		const nextHeight = startHeight + deltaY;
+		updatePanelBlockHeight(blockId, nextHeight);
+		renderCanvasPanel();
+	};
+
+	const onUp = () => {
+		window.removeEventListener('mousemove', onMove);
+		window.removeEventListener('mouseup', onUp);
+		gridDiv.classList.remove('is-resizing');
+	};
+
+	window.addEventListener('mousemove', onMove);
+	window.addEventListener('mouseup', onUp);
 }
 
 /**
@@ -360,8 +669,8 @@ export function renderCanvasPanel() {
 function fillLayoutSelect() {
 	const select = document.getElementById('select-panel-layout');
 	if (!select) return;
-
-	const currentLayout = getPanelLayout();
+	const blocks = getPanelBlocks();
+	const currentLayout = blocks[0]?.templateId || 'layout-2col';
 	select.innerHTML = '';
 
 	Object.entries(LAYOUTS_PAINEL).forEach(([id, layout]) => {
@@ -381,7 +690,9 @@ export function changeLayout(layoutId) {
 	if (!LAYOUTS_PAINEL[layoutId]) {
 		return;
 	}
-	setPanelLayout(layoutId);
+	const blocks = getPanelBlocks();
+	if (!blocks[0]) return;
+	setPanelBlockTemplate(blocks[0].id, layoutId);
 }
 
 /**
@@ -427,16 +738,40 @@ export function exportPanelLayoutSvg() {
 		bg.setAttribute('fill', '#fbfaf6');
 		svgRoot.appendChild(bg);
 
-		const slots = getPanelSlots();
-		const layout = getCurrentLayout();
+		const slotBorderToggle = document.getElementById('toggle-panel-slot-borders');
+		const includeSlotBorders = canvas.classList.contains('slot-borders-enabled') || Boolean(slotBorderToggle?.checked);
 
-		// Add each chart in its slot
-		layout.slots.forEach(slotId => {
-			const chart = getChartSnapshot(slots[slotId]);
+		if (includeSlotBorders) {
+			const allSlots = canvas.querySelectorAll('[data-panel-slot]');
+			allSlots.forEach(slotEl => {
+				const slotRect = slotEl.getBoundingClientRect();
+				const x = slotRect.left - rectCanvas.left;
+				const y = slotRect.top - rectCanvas.top;
+				const w = slotRect.width;
+				const h = slotRect.height;
+
+				const border = docSvg.createElementNS('http://www.w3.org/2000/svg', 'rect');
+				border.setAttribute('x', String(x));
+				border.setAttribute('y', String(y));
+				border.setAttribute('width', String(w));
+				border.setAttribute('height', String(h));
+				border.setAttribute('fill', 'none');
+				border.setAttribute('stroke', '#5d645d');
+				border.setAttribute('stroke-width', '2');
+				border.setAttribute('rx', '8');
+				border.setAttribute('ry', '8');
+				if (slotEl.classList.contains('vazio')) {
+					border.setAttribute('stroke-dasharray', '6 4');
+				}
+				svgRoot.appendChild(border);
+			});
+		}
+
+		// Add each chart in rendered slots (all blocks)
+		const slotElements = canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]');
+		slotElements.forEach(slotEl => {
+			const chart = getChartSnapshot(slotEl.dataset.panelChartId);
 			if (!chart) return;
-
-			const slotEl = canvas.querySelector(`[data-panel-slot="${slotId}"]`);
-			if (!slotEl) return;
 
 			const slotRect = slotEl.getBoundingClientRect();
 			const x = slotRect.left - rectCanvas.left;
@@ -476,6 +811,7 @@ export function exportPanelLayoutSvg() {
 export function setupPanelEventListeners() {
 	const selectLayout = document.getElementById('select-panel-layout');
 	const btnExportar = document.getElementById('btn-exportar-painel');
+	const slotBordersToggle = document.getElementById('toggle-panel-slot-borders');
 
 	if (selectLayout) {
 		selectLayout.addEventListener('change', e => {
@@ -501,6 +837,12 @@ export function setupPanelEventListeners() {
 					feedbackCallback(t('chive-panel-export-svg'), 'success');
 				}
 			}
+		});
+	}
+
+	if (slotBordersToggle) {
+		slotBordersToggle.addEventListener('change', () => {
+			renderCanvasPanel();
 		});
 	}
 }
