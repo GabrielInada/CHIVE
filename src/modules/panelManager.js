@@ -25,6 +25,7 @@ import {
 	movePanelBlock,
 	updatePanelBlockProportions,
 	updatePanelBlockHeight,
+	updatePanelBlockBorder,
 	validatePanelSlots,
 	clearPanel,
 	onStateChange,
@@ -78,6 +79,7 @@ export function initPanelManager(feedbackFn = null) {
 	onStateChange('panelBlockTemplateChanged', handleLayoutChange);
 	onStateChange('panelBlockProportionsUpdated', handleLayoutChange);
 	onStateChange('panelBlockHeightUpdated', handleLayoutChange);
+	onStateChange('panelBlockBorderUpdated', handleLayoutChange);
 }
 
 /**
@@ -170,6 +172,11 @@ function clampPercent(value, min = 20, max = 80) {
 	return Math.max(min, Math.min(max, n));
 }
 
+function normalizeHexColor(color, fallback = '#5d645d') {
+	const value = String(color || '').trim();
+	return /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+}
+
 /**
  * Cleanup invalid slot assignments
  * Removes slots/assignments that don't match current layout or missing charts
@@ -260,8 +267,6 @@ export function renderCanvasPanel() {
 	cleanupInvalidSlots();
 	const canvas = document.getElementById('panel-layout-canvas');
 	if (!canvas) return;
-	const borderToggle = document.getElementById('toggle-panel-slot-borders');
-	canvas.classList.toggle('slot-borders-enabled', Boolean(borderToggle?.checked));
 	const blocks = getPanelBlocks();
 	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
 
@@ -338,9 +343,72 @@ export function renderCanvasPanel() {
 			renderCanvasPanel();
 		});
 
+		const borderControls = document.createElement('div');
+		borderControls.className = 'painel-block-border-controls';
+
+		const borderToggleLabel = document.createElement('label');
+		borderToggleLabel.className = 'panel-borders-toggle';
+		borderToggleLabel.htmlFor = `toggle-panel-slot-borders-${block.id}`;
+
+		const borderToggle = document.createElement('input');
+		borderToggle.type = 'checkbox';
+		borderToggle.id = `toggle-panel-slot-borders-${block.id}`;
+		borderToggle.checked = Boolean(block.borderEnabled);
+		borderToggle.addEventListener('change', () => {
+			updatePanelBlockBorder(block.id, { enabled: borderToggle.checked });
+			renderCanvasPanel();
+		});
+
+		const borderToggleText = document.createElement('span');
+		borderToggleText.textContent = t('chive-panel-borders-label');
+
+		borderToggleLabel.appendChild(borderToggle);
+		borderToggleLabel.appendChild(borderToggleText);
+
+		const borderColorLabel = document.createElement('label');
+		borderColorLabel.className = 'panel-borders-color';
+		borderColorLabel.htmlFor = `input-panel-slot-border-color-${block.id}`;
+
+		const borderColorText = document.createElement('span');
+		borderColorText.textContent = t('chive-panel-borders-color-label');
+
+		const borderColorInput = document.createElement('input');
+		borderColorInput.type = 'color';
+		borderColorInput.id = `input-panel-slot-border-color-${block.id}`;
+		borderColorInput.value = normalizeHexColor(block.borderColor);
+		borderColorInput.disabled = !borderToggle.checked;
+		borderColorInput.setAttribute('aria-label', t('chive-panel-borders-color-label'));
+		borderColorInput.addEventListener('input', () => {
+			const previewColor = normalizeHexColor(borderColorInput.value, '#5d645d');
+			gridDiv.style.setProperty('--panel-slot-border-color', previewColor);
+			gridDiv.querySelectorAll('[data-panel-slot]').forEach(slotEl => {
+				slotEl.dataset.panelBorderColor = previewColor;
+			});
+		});
+
+		borderColorInput.addEventListener('change', () => {
+			updatePanelBlockBorder(block.id, { color: borderColorInput.value });
+			renderCanvasPanel();
+		});
+
+		borderToggle.addEventListener('change', () => {
+			borderColorInput.disabled = !borderToggle.checked;
+		});
+
+		borderColorLabel.appendChild(borderColorText);
+		borderColorLabel.appendChild(borderColorInput);
+
+		borderControls.appendChild(borderToggleLabel);
+		borderControls.appendChild(borderColorLabel);
+
 		const gridDiv = document.createElement('div');
 		gridDiv.className = `painel-layout ${layout.classe}`;
 		gridDiv.dataset.panelLayoutBlock = block.id;
+		const borderColor = normalizeHexColor(block.borderColor);
+		if (block.borderEnabled) {
+			gridDiv.classList.add('slot-borders-enabled');
+			gridDiv.style.setProperty('--panel-slot-border-color', borderColor);
+		}
 		applyBlockProportions(gridDiv, block);
 		renderGuidedResizeHandles(gridDiv, block);
 
@@ -350,6 +418,8 @@ export function renderCanvasPanel() {
 			slot.className = chart ? 'painel-slot' : 'painel-slot vazio';
 			slot.dataset.panelSlot = slotId;
 			slot.dataset.panelBlockId = block.id;
+			slot.dataset.panelBorderEnabled = block.borderEnabled ? '1' : '0';
+			slot.dataset.panelBorderColor = borderColor;
 
 			if (chart) {
 				slot.dataset.panelChartId = chart.id;
@@ -436,6 +506,7 @@ export function renderCanvasPanel() {
 
 		blockEl.appendChild(header);
 		blockEl.appendChild(templateSelect);
+		blockEl.appendChild(borderControls);
 		blockEl.appendChild(gridDiv);
 
 		const blockResizeHandle = document.createElement('button');
@@ -738,12 +809,11 @@ export function exportPanelLayoutSvg() {
 		bg.setAttribute('fill', '#fbfaf6');
 		svgRoot.appendChild(bg);
 
-		const slotBorderToggle = document.getElementById('toggle-panel-slot-borders');
-		const includeSlotBorders = canvas.classList.contains('slot-borders-enabled') || Boolean(slotBorderToggle?.checked);
-
-		if (includeSlotBorders) {
-			const allSlots = canvas.querySelectorAll('[data-panel-slot]');
-			allSlots.forEach(slotEl => {
+		const allSlots = canvas.querySelectorAll('[data-panel-slot]');
+		allSlots.forEach(slotEl => {
+			const includeSlotBorder = slotEl.dataset.panelBorderEnabled === '1';
+			if (!includeSlotBorder) return;
+			const slotBorderColor = normalizeHexColor(slotEl.dataset.panelBorderColor, '#5d645d');
 				const slotRect = slotEl.getBoundingClientRect();
 				const x = slotRect.left - rectCanvas.left;
 				const y = slotRect.top - rectCanvas.top;
@@ -756,7 +826,7 @@ export function exportPanelLayoutSvg() {
 				border.setAttribute('width', String(w));
 				border.setAttribute('height', String(h));
 				border.setAttribute('fill', 'none');
-				border.setAttribute('stroke', '#5d645d');
+				border.setAttribute('stroke', slotBorderColor);
 				border.setAttribute('stroke-width', '2');
 				border.setAttribute('rx', '8');
 				border.setAttribute('ry', '8');
@@ -764,8 +834,7 @@ export function exportPanelLayoutSvg() {
 					border.setAttribute('stroke-dasharray', '6 4');
 				}
 				svgRoot.appendChild(border);
-			});
-		}
+		});
 
 		// Add each chart in rendered slots (all blocks)
 		const slotElements = canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]');
@@ -811,7 +880,6 @@ export function exportPanelLayoutSvg() {
 export function setupPanelEventListeners() {
 	const selectLayout = document.getElementById('select-panel-layout');
 	const btnExportar = document.getElementById('btn-exportar-painel');
-	const slotBordersToggle = document.getElementById('toggle-panel-slot-borders');
 
 	if (selectLayout) {
 		selectLayout.addEventListener('change', e => {
@@ -840,11 +908,6 @@ export function setupPanelEventListeners() {
 		});
 	}
 
-	if (slotBordersToggle) {
-		slotBordersToggle.addEventListener('change', () => {
-			renderCanvasPanel();
-		});
-	}
 }
 
 /**

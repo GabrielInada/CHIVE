@@ -8,6 +8,7 @@ function setupDom() {
   document.body.innerHTML = `
     <select id="select-panel-layout"></select>
     <input type="checkbox" id="toggle-panel-slot-borders" />
+    <input type="color" id="input-panel-slot-border-color" value="#5d645d" />
     <div id="panel-layout-canvas"></div>
     <div id="lista-painel-charts"></div>
     <button id="btn-exportar-painel" type="button"></button>
@@ -40,14 +41,35 @@ describe('panelManager multi-block canvas (phase 2)', () => {
     expect(blockEls.length).toBe(2);
   });
 
-  it('applies slot-borders-enabled mode when border toggle is checked', () => {
-    const toggle = document.getElementById('toggle-panel-slot-borders');
-    toggle.checked = true;
-
+  it('applies border mode per block from block-local controls', () => {
+    const blockB = appState.addPanelBlock('layout-2col');
     renderCanvasPanel();
 
-    const canvas = document.getElementById('panel-layout-canvas');
-    expect(canvas.classList.contains('slot-borders-enabled')).toBe(true);
+    const blockAId = appState.getState().panel.blocks[0].id;
+    const toggleA = document.getElementById(`toggle-panel-slot-borders-${blockAId}`);
+    const colorA = document.getElementById(`input-panel-slot-border-color-${blockAId}`);
+    expect(toggleA).toBeTruthy();
+    expect(colorA).toBeTruthy();
+
+    toggleA.checked = true;
+    toggleA.dispatchEvent(new Event('change', { bubbles: true }));
+
+    const colorAAfterToggle = document.getElementById(`input-panel-slot-border-color-${blockAId}`);
+    colorAAfterToggle.value = '#ff0000';
+    colorAAfterToggle.dispatchEvent(new Event('change', { bubbles: true }));
+
+    const state = appState.getState();
+    const blockA = state.panel.blocks.find(b => b.id === blockAId);
+    const blockBState = state.panel.blocks.find(b => b.id === blockB);
+    expect(blockA.borderEnabled).toBe(true);
+    expect(blockA.borderColor).toBe('#ff0000');
+    expect(blockBState.borderEnabled).toBe(false);
+
+    const layoutA = document.querySelector(`[data-panel-layout-block="${blockAId}"]`);
+    const layoutB = document.querySelector(`[data-panel-layout-block="${blockB}"]`);
+    expect(layoutA.classList.contains('slot-borders-enabled')).toBe(true);
+    expect(layoutA.style.getPropertyValue('--panel-slot-border-color')).toBe('#ff0000');
+    expect(layoutB.classList.contains('slot-borders-enabled')).toBe(false);
   });
 
   it('adds a new block from canvas control using selected template', () => {
