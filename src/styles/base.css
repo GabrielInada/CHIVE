@@ -1,0 +1,6 @@
+/* Base tokens, layout, and global behavior */
+@import url('./variables.css');
+@import url('./layout.css');
+@import url('./animations.css');
+@import url('./collapsed.css');
+@import url('./responsive.css');

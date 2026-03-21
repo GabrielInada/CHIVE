@@ -1,15 +1,6 @@
 /* Main stylesheet — organized by module */
-@import url('./variables.css');
-@import url('./layout.css');
-@import url('./buttons.css');
-@import url('./upload.css');
-@import url('./columns.css');
-@import url('./visualizations.css');
-@import url('./table.css');
-@import url('./results.css');
-@import url('./charts.css');
-@import url('./panel.css');
-@import url('./messages.css');
-@import url('./animations.css');
-@import url('./collapsed.css');
-@import url('./responsive.css');
+@import url('./base.css');
+@import url('./controls.css');
+@import url('./data-view.css');
+@import url('./visual-output.css');
+@import url('./feedback.css');

@@ -49,7 +49,12 @@ header {
   font-family: var(--fonte-mono);
 }
 
-.lang-select {
+.lang-select-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.lang-display-btn {
   font-family: var(--fonte-mono);
   font-size: 11px;
   background: rgba(255, 255, 255, 0.12);
@@ -58,17 +63,23 @@ header {
   border-radius: 3px;
   padding: 2px 6px;
   cursor: pointer;
-  appearance: none;
   outline: none;
 }
 
-.lang-select:hover {
+.lang-display-btn:hover {
   background: rgba(255, 255, 255, 0.2);
 }
 
-.lang-select option {
-  background: var(--accent);
-  color: #fff;
+.lang-select {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
 }
 
 .step {
