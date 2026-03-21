@@ -141,6 +141,22 @@ describe('panelManager multi-block canvas (phase 2)', () => {
     expect(rail.style.width).toBe('calc(30% - 10px)');
   });
 
+  it('grows vertical-template block height at extreme split with limits', () => {
+    const blockId = appState.getState().panel.blocks[0].id;
+    appState.setPanelBlockTemplate(blockId, 'layout-1x2');
+    appState.updatePanelBlockProportions(blockId, { split: 80 });
+
+    renderCanvasPanel();
+
+    const grid = document.querySelector(`[data-panel-layout-block="${blockId}"]`);
+    expect(grid).toBeTruthy();
+
+    const minHeight = Number.parseInt(grid.style.minHeight, 10);
+    expect(Number.isFinite(minHeight)).toBe(true);
+    expect(minHeight).toBeGreaterThan(220);
+    expect(minHeight).toBeLessThanOrEqual(620);
+  });
+
   it('swaps chart assignments across blocks via drop', () => {
     window.matchMedia = () => ({
       matches: true,

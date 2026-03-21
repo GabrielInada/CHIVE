@@ -459,6 +459,29 @@ function applyBlockProportions(gridDiv, block) {
 	Object.entries(block.proportions).forEach(([key, value]) => {
 		gridDiv.style.setProperty(`--${key}`, `${value}%`);
 	});
+	applyDynamicBlockHeight(gridDiv, block);
+}
+
+function applyDynamicBlockHeight(gridDiv, block) {
+	const BASE_MIN_HEIGHT = 220;
+	const MAX_MIN_HEIGHT = 620;
+	const SLOT_MIN_HEIGHT = 96;
+	const ROW_GAP = 10;
+
+	let dynamicMinHeight = BASE_MIN_HEIGHT;
+
+	if (block.templateId === 'layout-1x2') {
+		const split = clampPercent(block.proportions?.split ?? 50, 20, 80) / 100;
+		const smallestRow = Math.min(split, 1 - split);
+		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
+	} else if (block.templateId === 'layout-hero2') {
+		const splitRight = clampPercent(block.proportions?.splitRight ?? 50, 20, 80) / 100;
+		const smallestRow = Math.min(splitRight, 1 - splitRight);
+		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
+	}
+
+	const bounded = Math.max(BASE_MIN_HEIGHT, Math.min(dynamicMinHeight, MAX_MIN_HEIGHT));
+	gridDiv.style.minHeight = `${Math.round(bounded)}px`;
 }
 
 function renderGuidedResizeHandles(gridDiv, block) {
