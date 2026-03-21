@@ -126,5 +126,8 @@
 
 	"chive-error-format": "Error when user uploads an unsupported file type. $1 = file name.",
 	"chive-error-read": "Error when the browser fails to read a file. $1 = file name.",
-	"chive-error-unknown": "Fallback error message when the failure reason is unknown."
+	"chive-error-upload-processing": "Fallback error shown when file upload processing fails and no specific message is available.",
+	"chive-error-upload-input-missing": "Error shown when the hidden file input element is missing from the DOM during setup.",
+	"chive-error-upload-zone-missing": "Error shown when the upload drop zone element is missing from the DOM during setup.",
+	"chive-error-internal": "Fallback error message for unexpected internal application failures."
 }

@@ -63,7 +63,7 @@ export async function handleFileUpload(files) {
 		try {
 			await processFileForDataset(file);
 		} catch (err) {
-			showError(err.message || t('chive-error-unknown'));
+			showError(err.message || t('chive-error-upload-processing'));
 		}
 	}
 
@@ -190,24 +190,17 @@ export function setupFileInputListeners() {
 	const inputArquivo = document.getElementById('input-arquivo');
 	const zonaUpload = document.getElementById('zona-upload');
 
-	console.log('📁 Setting up file input listeners...');
-	console.log('  inputArquivo:', inputArquivo);
-	console.log('  zonaUpload:', zonaUpload);
-
 	if (inputArquivo) {
 		inputArquivo.addEventListener('change', event => {
-			console.log('📁 File input changed:', event.target.files);
 			handleFileUpload(event.target.files);
 		});
-		console.log('✓ File input listener attached');
 	} else {
-		console.error('✗ input-arquivo element not found!');
+		showError(t('chive-error-upload-input-missing'));
 	}
 
 	if (zonaUpload) {
 		// Click to open file picker
 		zonaUpload.addEventListener('click', () => {
-			console.log('📁 Upload zone clicked');
 			inputArquivo?.click();
 		});
 
@@ -215,7 +208,6 @@ export function setupFileInputListeners() {
 		zonaUpload.addEventListener('keydown', event => {
 			if (event.key === 'Enter' || event.key === ' ') {
 				event.preventDefault();
-				console.log('📁 Upload zone keyboard triggered');
 				inputArquivo?.click();
 			}
 		});
@@ -235,12 +227,9 @@ export function setupFileInputListeners() {
 			event.preventDefault();
 			event.stopPropagation();
 			zonaUpload.classList.remove('hover');
-			console.log('📁 Files dropped:', event.dataTransfer.files);
 			handleFileUpload(event.dataTransfer.files);
 		});
-		
-		console.log('✓ Upload zone listeners attached');
 	} else {
-		console.error('✗ zona-upload element not found!');
+		showError(t('chive-error-upload-zone-missing'));
 	}
 }

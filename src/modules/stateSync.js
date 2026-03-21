@@ -99,11 +99,11 @@ export function getStateSummary() {
 }
 
 /**
- * Log state for debugging (console output)
+ * Return current state debug payload without console output.
  */
 export function debugLogState() {
-	console.log('=== CHIVE APP STATE ===');
-	console.table(getStateSummary());
-	console.log('Full state:', getState());
-	console.log('========================');
+	return {
+		summary: getStateSummary(),
+		state: getState(),
+	};
 }

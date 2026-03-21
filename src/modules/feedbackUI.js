@@ -50,7 +50,7 @@ export function mostrarFeedback(message, duration = 2200) {
 export function showError(message, duration = 0) {
 	const errorsContainer = document.getElementById('erros-container');
 	if (!errorsContainer) {
-		console.error('Errors container not found');
+		showFeedback(message, duration || 2200);
 		return;
 	}
 

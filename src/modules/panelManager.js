@@ -103,7 +103,9 @@ export function addChartToPanel(containerId, chartBaseName) {
 		renderCanvasPanel();
 		return { ok: true, chartId };
 	} catch (err) {
-		console.error('Error adding chart to panel:', err);
+		if (feedbackCallback) {
+			feedbackCallback(t('chive-panel-add-error'), 'error');
+		}
 		return { ok: false, reason: 'add-error' };
 	}
 }
@@ -377,7 +379,6 @@ function fillLayoutSelect() {
  */
 export function changeLayout(layoutId) {
 	if (!LAYOUTS_PAINEL[layoutId]) {
-		console.error(`Unknown layout: ${layoutId}`);
 		return;
 	}
 	setPanelLayout(layoutId);
@@ -461,7 +462,9 @@ export function exportPanelLayoutSvg() {
 		const svgString = serializer.serializeToString(svgRoot);
 		return baixarSvgMarkup(svgString, 'panel-layout');
 	} catch (err) {
-		console.error('Error exporting panel SVG:', err);
+		if (feedbackCallback) {
+			feedbackCallback(t('chive-panel-export-error'), 'error');
+		}
 		return { ok: false, reason: 'export-error' };
 	}
 }
