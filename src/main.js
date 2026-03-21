@@ -78,7 +78,11 @@ window.addEventListener('chive-locale-changed', () => {
 atualizarVisao();
 });
 
-console.log('✓ CHIVE initialized successfully');
+// 8. Surface internal module errors in UI feedback
+window.addEventListener('chive-internal-error', event => {
+const message = event?.detail?.message || t('chive-error-internal');
+showError(message);
+});
 }
 
 // =============================================================================

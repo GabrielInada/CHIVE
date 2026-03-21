@@ -396,7 +396,13 @@ function emitStateChange(eventType, data) {
 			try {
 				cb(data);
 			} catch (err) {
-				console.error(`Error in state listener for ${eventType}:`, err);
+				window.dispatchEvent(new CustomEvent('chive-internal-error', {
+					detail: {
+						type: 'state-listener-error',
+						eventType,
+						message: String(err?.message || err),
+					},
+				}));
 			}
 		});
 	}
@@ -407,7 +413,13 @@ function emitStateChange(eventType, data) {
 			try {
 				cb({ type: eventType, data });
 			} catch (err) {
-				console.error(`Error in wildcard state listener:`, err);
+				window.dispatchEvent(new CustomEvent('chive-internal-error', {
+					detail: {
+						type: 'state-wildcard-listener-error',
+						eventType,
+						message: String(err?.message || err),
+					},
+				}));
 			}
 		});
 	}

@@ -31,7 +31,6 @@ export function getActiveTab() {
 export function switchTab(tabName) {
 	const validTabs = ['preview', 'charts', 'panel'];
 	if (!validTabs.includes(tabName)) {
-		console.warn(`Invalid tab: ${tabName}`);
 		return;
 	}
 

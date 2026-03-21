@@ -127,5 +127,8 @@
 
 	"chive-error-format": "Format not supported for \"$1\". Please upload a .csv or .json file.",
 	"chive-error-read": "Error reading file \"$1\".",
-	"chive-error-unknown": "Unknown error processing file."
+	"chive-error-upload-processing": "Unable to process uploaded file right now.",
+	"chive-error-upload-input-missing": "Upload control is unavailable right now.",
+	"chive-error-upload-zone-missing": "Upload area is unavailable right now.",
+	"chive-error-internal": "An internal application error occurred."
 }
