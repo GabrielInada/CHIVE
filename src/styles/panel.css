@@ -178,36 +178,48 @@
   position: absolute;
   z-index: 3;
   border: 1px solid var(--border);
-  background: #fffdf8;
+  background: rgba(255, 253, 248, 0.6);
   border-radius: 999px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  opacity: 0.16;
+  transition: opacity 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .painel-resize-handle.eixo-x {
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 14px;
-  height: 48px;
+  width: 10px;
+  height: 36px;
   cursor: col-resize;
 }
 
 .painel-resize-handle.eixo-y {
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 48px;
-  height: 14px;
+  width: 36px;
+  height: 10px;
   cursor: row-resize;
 }
 
-.painel-resize-handle:hover {
+.painel-layout:hover .painel-resize-handle,
+.painel-layout.is-resizing .painel-resize-handle {
+  opacity: 0.48;
+}
+
+.painel-resize-handle:hover,
+.painel-resize-handle:focus-visible,
+.painel-layout.is-resizing .painel-resize-handle:hover {
+  opacity: 0.95;
   border-color: var(--accent);
-  background: #fff;
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .painel-resize-rail {
   position: absolute;
   z-index: 2;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
 }
 
 .painel-resize-rail.eixo-y {
@@ -215,8 +227,13 @@
   bottom: 8px;
   transform: translateX(-50%);
   border-radius: 999px;
-  border: 1px dashed rgba(56, 73, 61, 0.22);
-  background: rgba(56, 73, 61, 0.04);
+  border: 1px dashed rgba(56, 73, 61, 0.16);
+  background: rgba(56, 73, 61, 0.03);
+}
+
+.painel-layout:hover .painel-resize-rail,
+.painel-layout.is-resizing .painel-resize-rail {
+  opacity: 1;
 }
 
 .painel-layout.layout-single {

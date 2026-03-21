@@ -536,7 +536,6 @@ function renderGuidedResizeHandles(gridDiv, block) {
 		} else {
 			handle.style.top = `${clampPercent(handleConfig.position, 20, 80)}%`;
 			handle.style.left = `${railCenter}%`;
-			handle.style.width = `calc(${railSpan}% - 10px)`;
 		}
 
 		handle.addEventListener('mousedown', event => {
@@ -551,6 +550,7 @@ function renderGuidedResizeHandles(gridDiv, block) {
 function startGuidedResizeDrag(blockId, templateId, key, gridDiv) {
 	const rect = gridDiv.getBoundingClientRect();
 	if (!rect.width || !rect.height) return;
+	gridDiv.classList.add('is-resizing');
 
 	const onMove = event => {
 		const currentBlock = getPanelBlocks().find(item => item.id === blockId);
@@ -591,6 +591,7 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv) {
 	const onUp = () => {
 		window.removeEventListener('mousemove', onMove);
 		window.removeEventListener('mouseup', onUp);
+		gridDiv.classList.remove('is-resizing');
 	};
 
 	window.addEventListener('mousemove', onMove);

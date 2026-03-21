@@ -133,7 +133,7 @@ describe('panelManager multi-block canvas (phase 2)', () => {
     const handle = document.querySelector(`[data-panel-resize-handle="${blockId}:splitRight"]`);
     expect(handle).toBeTruthy();
     expect(handle.style.left).toBe('85%');
-    expect(handle.style.width).toBe('calc(30% - 10px)');
+    expect(handle.style.width).toBe('');
 
     const rail = document.querySelector('.painel-block[data-panel-block-id="' + blockId + '"] .painel-resize-rail.eixo-y');
     expect(rail).toBeTruthy();
