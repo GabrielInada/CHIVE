@@ -105,6 +105,7 @@
 	"chive-panel-add-block": "Adicionar bloco",
 	"chive-panel-max-blocks": "Limite de 4 blocos atingido",
 	"chive-panel-resize-handle": "Redimensionar bloco do painel",
+	"chive-panel-resize-block-height": "Redimensionar altura do bloco",
 	"chive-panel-slot-empty": "Arraste um chart salvo para este slot",
 	"chive-panel-clear-slot": "Limpar slot",
 	"chive-panel-remove-chart": "Remover chart salvo",

@@ -102,8 +102,37 @@
   border-radius: 8px;
   background: #fff;
   padding: 10px;
+  padding-bottom: 18px;
+  position: relative;
   display: grid;
   gap: 8px;
+}
+
+.painel-block-size-handle {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 253, 248, 0.72);
+  cursor: ns-resize;
+  opacity: 0.3;
+  z-index: 4;
+  transition: opacity 0.18s ease, border-color 0.18s ease;
+}
+
+.painel-block:hover .painel-block-size-handle,
+.painel-layout.is-resizing + .painel-block-size-handle {
+  opacity: 0.75;
+}
+
+.painel-block-size-handle:hover,
+.painel-block-size-handle:focus-visible {
+  opacity: 1;
+  border-color: var(--accent);
 }
 
 .painel-block-header {

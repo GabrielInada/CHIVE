@@ -105,6 +105,7 @@
 	"chive-panel-add-block": "Button label that appends a new panel block to the canvas stack.",
 	"chive-panel-max-blocks": "Error shown when user tries to add more than the maximum allowed blocks.",
 	"chive-panel-resize-handle": "Aria-label for the guided drag handle used to resize panel block regions.",
+	"chive-panel-resize-block-height": "Aria-label for the drag handle used to resize a full panel block height.",
 	"chive-panel-slot-empty": "Placeholder text shown inside an empty panel slot.",
 	"chive-panel-clear-slot": "Aria-label for button that clears one slot assignment.",
 	"chive-panel-remove-chart": "Aria-label for button that removes one saved chart from panel sidebar.",

@@ -24,6 +24,7 @@ import {
 	removePanelBlock,
 	movePanelBlock,
 	updatePanelBlockProportions,
+	updatePanelBlockHeight,
 	validatePanelSlots,
 	clearPanel,
 	onStateChange,
@@ -76,6 +77,7 @@ export function initPanelManager(feedbackFn = null) {
 	onStateChange('panelBlockMoved', handleLayoutChange);
 	onStateChange('panelBlockTemplateChanged', handleLayoutChange);
 	onStateChange('panelBlockProportionsUpdated', handleLayoutChange);
+	onStateChange('panelBlockHeightUpdated', handleLayoutChange);
 }
 
 /**
@@ -433,6 +435,18 @@ export function renderCanvasPanel() {
 		blockEl.appendChild(header);
 		blockEl.appendChild(templateSelect);
 		blockEl.appendChild(gridDiv);
+
+		const blockResizeHandle = document.createElement('button');
+		blockResizeHandle.type = 'button';
+		blockResizeHandle.className = 'painel-block-size-handle';
+		blockResizeHandle.dataset.panelBlockResize = block.id;
+		blockResizeHandle.setAttribute('aria-label', t('chive-panel-resize-block-height'));
+		blockResizeHandle.addEventListener('mousedown', event => {
+			event.preventDefault();
+			startBlockHeightResizeDrag(block.id, gridDiv, event.clientY);
+		});
+
+		blockEl.appendChild(blockResizeHandle);
 		stack.appendChild(blockEl);
 	});
 
@@ -480,7 +494,11 @@ function applyDynamicBlockHeight(gridDiv, block) {
 		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
 	}
 
-	const bounded = Math.max(BASE_MIN_HEIGHT, Math.min(dynamicMinHeight, MAX_MIN_HEIGHT));
+	const userHeight = Number(block.heightPx);
+	const userBounded = Number.isFinite(userHeight)
+		? Math.max(BASE_MIN_HEIGHT, Math.min(userHeight, 760))
+		: BASE_MIN_HEIGHT;
+	const bounded = Math.max(userBounded, Math.max(BASE_MIN_HEIGHT, Math.min(dynamicMinHeight, MAX_MIN_HEIGHT)));
 	gridDiv.style.minHeight = `${Math.round(bounded)}px`;
 }
 
@@ -585,6 +603,32 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv) {
 			updatePanelBlockProportions(blockId, { a, b, c });
 		}
 
+		renderCanvasPanel();
+	};
+
+	const onUp = () => {
+		window.removeEventListener('mousemove', onMove);
+		window.removeEventListener('mouseup', onUp);
+		gridDiv.classList.remove('is-resizing');
+	};
+
+	window.addEventListener('mousemove', onMove);
+	window.addEventListener('mouseup', onUp);
+}
+
+function startBlockHeightResizeDrag(blockId, gridDiv, startClientY) {
+	const rect = gridDiv.getBoundingClientRect();
+	if (!rect.height) return;
+
+	const startY = Number(startClientY);
+	if (!Number.isFinite(startY)) return;
+	gridDiv.classList.add('is-resizing');
+	const startHeight = rect.height;
+
+	const onMove = event => {
+		const deltaY = event.clientY - startY;
+		const nextHeight = startHeight + deltaY;
+		updatePanelBlockHeight(blockId, nextHeight);
 		renderCanvasPanel();
 	};
 

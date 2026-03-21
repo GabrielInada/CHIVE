@@ -48,6 +48,8 @@ const appState = {
 };
 
 const PANEL_BLOCK_LIMIT = 4;
+const PANEL_BLOCK_MIN_HEIGHT = 220;
+const PANEL_BLOCK_MAX_HEIGHT = 760;
 
 function createDefaultProportions(templateId) {
 	if (templateId === 'layout-2col') return { split: 50 };
@@ -80,6 +82,7 @@ function createPanelBlock(templateId = 'layout-2col') {
 		templateId: normalizedTemplate,
 		slots: {},
 		proportions: createDefaultProportions(normalizedTemplate),
+		heightPx: null,
 	};
 }
 
@@ -508,6 +511,23 @@ export function updatePanelBlockProportions(blockId, partialProportions) {
 	});
 	block.proportions = next;
 	emitStateChange('panelBlockProportionsUpdated', { blockId, proportions: block.proportions });
+}
+
+/**
+ * Update user-defined block height in pixels with safety bounds.
+ * @param {string} blockId
+ * @param {number} heightPx
+ */
+export function updatePanelBlockHeight(blockId, heightPx) {
+	ensureDefaultPanelBlock();
+	const block = appState.panel.blocks.find(item => item.id === blockId);
+	if (!block) return;
+
+	const numeric = Number(heightPx);
+	if (!Number.isFinite(numeric)) return;
+
+	block.heightPx = Math.max(PANEL_BLOCK_MIN_HEIGHT, Math.min(PANEL_BLOCK_MAX_HEIGHT, Math.round(numeric)));
+	emitStateChange('panelBlockHeightUpdated', { blockId, heightPx: block.heightPx });
 }
 
 /**

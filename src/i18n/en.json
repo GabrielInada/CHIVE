@@ -105,6 +105,7 @@
 	"chive-panel-add-block": "Add block",
 	"chive-panel-max-blocks": "Maximum 4 blocks reached",
 	"chive-panel-resize-handle": "Resize panel block",
+	"chive-panel-resize-block-height": "Resize block height",
 	"chive-panel-slot-empty": "Drag a saved chart into this slot",
 	"chive-panel-clear-slot": "Clear slot",
 	"chive-panel-remove-chart": "Remove saved chart",

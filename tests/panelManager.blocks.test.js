@@ -157,6 +157,37 @@ describe('panelManager multi-block canvas (phase 2)', () => {
     expect(minHeight).toBeLessThanOrEqual(620);
   });
 
+  it('resizes full block height with bottom drag handle within bounds', () => {
+    const blockId = appState.getState().panel.blocks[0].id;
+    renderCanvasPanel();
+
+    const grid = document.querySelector(`[data-panel-layout-block="${blockId}"]`);
+    grid.getBoundingClientRect = () => ({
+      left: 0,
+      top: 0,
+      width: 500,
+      height: 260,
+      right: 500,
+      bottom: 260,
+      x: 0,
+      y: 0,
+      toJSON: () => ({}),
+    });
+
+    const handle = document.querySelector(`[data-panel-block-resize="${blockId}"]`);
+    expect(handle).toBeTruthy();
+
+    handle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientY: 120 }));
+    window.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientY: 420 }));
+    window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+
+    const state = appState.getState();
+    const block = state.panel.blocks.find(b => b.id === blockId);
+    expect(block.heightPx).toBeGreaterThanOrEqual(220);
+    expect(block.heightPx).toBeLessThanOrEqual(760);
+    expect(block.heightPx).toBe(560);
+  });
+
   it('swaps chart assignments across blocks via drop', () => {
     window.matchMedia = () => ({
       matches: true,
