@@ -33,6 +33,8 @@ const appState = {
 		charts: [],
 		slots: {},
 		layout: 'layout-2col',
+		blocks: [],
+		nextBlockId: 1,
 		nextChartId: 0,
 	},
 	ui: {
@@ -44,6 +46,57 @@ const appState = {
 		},
 	},
 };
+
+const PANEL_BLOCK_LIMIT = 4;
+
+function createDefaultProportions(templateId) {
+	if (templateId === 'layout-2col') return { split: 50 };
+	if (templateId === 'layout-hero2') return { splitMain: 60, splitRight: 50 };
+	if (templateId === 'layout-3col') return { a: 33, b: 33, c: 34 };
+	if (templateId === 'layout-1x2') return { split: 50 };
+	return { split: 100 };
+}
+
+function normalizeTemplateId(templateId) {
+	const allowed = new Set(['layout-single', 'layout-2col', 'layout-hero2', 'layout-3col', 'layout-1x2']);
+	return allowed.has(templateId) ? templateId : 'layout-2col';
+}
+
+function getTemplateSlots(templateId) {
+	const normalized = normalizeTemplateId(templateId);
+	if (normalized === 'layout-single') return ['slot-1'];
+	if (normalized === 'layout-2col') return ['slot-1', 'slot-2'];
+	if (normalized === 'layout-hero2') return ['slot-1', 'slot-2', 'slot-3'];
+	if (normalized === 'layout-3col') return ['slot-1', 'slot-2', 'slot-3'];
+	if (normalized === 'layout-1x2') return ['slot-1', 'slot-2'];
+	return ['slot-1', 'slot-2'];
+}
+
+function createPanelBlock(templateId = 'layout-2col') {
+	const normalizedTemplate = normalizeTemplateId(templateId);
+	const blockId = `block-${appState.panel.nextBlockId++}`;
+	return {
+		id: blockId,
+		templateId: normalizedTemplate,
+		slots: {},
+		proportions: createDefaultProportions(normalizedTemplate),
+	};
+}
+
+function ensureDefaultPanelBlock() {
+	if (!Array.isArray(appState.panel.blocks)) {
+		appState.panel.blocks = [];
+	}
+	if (appState.panel.blocks.length === 0) {
+		appState.panel.blocks.push(createPanelBlock('layout-2col'));
+	}
+}
+
+function clampPercentage(value, min = 20, max = 80) {
+	const n = Number(value);
+	if (!Number.isFinite(n)) return min;
+	return Math.max(min, Math.min(max, n));
+}
 
 /**
  * Get a deep clone of the entire state
@@ -208,6 +261,16 @@ export function removeChartSnapshot(chartId) {
 			delete appState.panel.slots[slotId];
 		}
 	});
+
+	// Remove from block slots
+	ensureDefaultPanelBlock();
+	appState.panel.blocks.forEach(block => {
+		Object.keys(block.slots).forEach(slotId => {
+			if (block.slots[slotId] === normalizedId) {
+				delete block.slots[slotId];
+			}
+		});
+	});
 	emitStateChange('chartRemoved', normalizedId);
 }
 
@@ -228,6 +291,15 @@ export function getChartSnapshot(chartId) {
  */
 export function getPanelSlots() {
 	return appState.panel.slots;
+}
+
+/**
+ * Get panel blocks configuration
+ * @returns {Array} Panel blocks
+ */
+export function getPanelBlocks() {
+	ensureDefaultPanelBlock();
+	return appState.panel.blocks;
 }
 
 /**
@@ -344,6 +416,9 @@ export function sanitizeChartName(name) {
 export function clearPanel() {
 	appState.panel.charts = [];
 	appState.panel.slots = {};
+	appState.panel.nextBlockId = 1;
+	appState.panel.blocks = [createPanelBlock('layout-2col')];
+	appState.panel.layout = 'layout-2col';
 	appState.panel.nextChartId = 0;
 	emitStateChange('panelCleared');
 }
@@ -359,6 +434,161 @@ export function validatePanelSlots() {
 			delete appState.panel.slots[slotId];
 		}
 	});
+
+	ensureDefaultPanelBlock();
+	appState.panel.blocks.forEach(block => {
+		Object.keys(block.slots).forEach(slotId => {
+			const chartId = block.slots[slotId];
+			if (!validChartIds.has(chartId)) {
+				delete block.slots[slotId];
+			}
+		});
+	});
+}
+
+/**
+ * Add a panel block using a template.
+ * Limited to PANEL_BLOCK_LIMIT blocks total.
+ * @param {string} templateId
+ * @returns {string|null} New block id or null when at limit
+ */
+export function addPanelBlock(templateId = 'layout-2col') {
+	ensureDefaultPanelBlock();
+	if (appState.panel.blocks.length >= PANEL_BLOCK_LIMIT) {
+		return null;
+	}
+	const block = createPanelBlock(templateId);
+	appState.panel.blocks.push(block);
+	emitStateChange('panelBlockAdded', block);
+	return block.id;
+}
+
+/**
+ * Remove a panel block by id.
+ * Keeps at least one default block.
+ * @param {string} blockId
+ */
+export function removePanelBlock(blockId) {
+	ensureDefaultPanelBlock();
+	const nextBlocks = appState.panel.blocks.filter(block => block.id !== blockId);
+	appState.panel.blocks = nextBlocks.length > 0 ? nextBlocks : [createPanelBlock('layout-2col')];
+	emitStateChange('panelBlockRemoved', blockId);
+}
+
+/**
+ * Move panel block to a new index.
+ * @param {string} blockId
+ * @param {number} targetIndex
+ */
+export function movePanelBlock(blockId, targetIndex) {
+	ensureDefaultPanelBlock();
+	const currentIndex = appState.panel.blocks.findIndex(block => block.id === blockId);
+	if (currentIndex === -1) return;
+	const boundedTarget = Math.max(0, Math.min(Number(targetIndex), appState.panel.blocks.length - 1));
+	if (!Number.isFinite(boundedTarget) || boundedTarget === currentIndex) return;
+
+	const [item] = appState.panel.blocks.splice(currentIndex, 1);
+	appState.panel.blocks.splice(boundedTarget, 0, item);
+	emitStateChange('panelBlockMoved', { blockId, targetIndex: boundedTarget });
+}
+
+/**
+ * Update stored block proportions with percent constraints.
+ * @param {string} blockId
+ * @param {Object} partialProportions
+ */
+export function updatePanelBlockProportions(blockId, partialProportions) {
+	ensureDefaultPanelBlock();
+	const block = appState.panel.blocks.find(item => item.id === blockId);
+	if (!block || !partialProportions || typeof partialProportions !== 'object') return;
+
+	const next = { ...block.proportions };
+	Object.keys(partialProportions).forEach(key => {
+		next[key] = clampPercentage(partialProportions[key], 20, 80);
+	});
+	block.proportions = next;
+	emitStateChange('panelBlockProportionsUpdated', { blockId, proportions: block.proportions });
+}
+
+/**
+ * Update block template and reset layout-specific proportions/invalid slots.
+ * @param {string} blockId
+ * @param {string} templateId
+ * @returns {boolean} True when template was updated
+ */
+export function setPanelBlockTemplate(blockId, templateId) {
+	ensureDefaultPanelBlock();
+	const block = appState.panel.blocks.find(item => item.id === blockId);
+	if (!block) return false;
+
+	const normalizedTemplate = normalizeTemplateId(templateId);
+	if (block.templateId === normalizedTemplate) return true;
+
+	const allowedSlots = new Set(getTemplateSlots(normalizedTemplate));
+	const nextSlots = {};
+	Object.keys(block.slots).forEach(slotId => {
+		if (allowedSlots.has(slotId)) {
+			nextSlots[slotId] = block.slots[slotId];
+		}
+	});
+
+	block.templateId = normalizedTemplate;
+	block.proportions = createDefaultProportions(normalizedTemplate);
+	block.slots = nextSlots;
+
+	if (appState.panel.blocks[0]?.id === blockId) {
+		appState.panel.layout = normalizedTemplate;
+	}
+
+	emitStateChange('panelBlockTemplateChanged', {
+		blockId,
+		templateId: normalizedTemplate,
+	});
+	return true;
+}
+
+/**
+ * Assign a chart snapshot to a specific block slot.
+ * @param {string} blockId
+ * @param {string} slotId
+ * @param {number|string|null} chartId
+ */
+export function assignChartToPanelBlockSlot(blockId, slotId, chartId) {
+	ensureDefaultPanelBlock();
+	const block = appState.panel.blocks.find(item => item.id === blockId);
+	if (!block) return;
+
+	if (chartId === null) {
+		delete block.slots[slotId];
+		emitStateChange('panelBlockSlotAssigned', { blockId, slotId, chartId: null });
+		return;
+	}
+
+	const normalizedId = normalizePanelChartId(chartId);
+	if (normalizedId === null) {
+		throw new Error(`Chart ${chartId} not found`);
+	}
+	const chart = getChartSnapshot(normalizedId);
+	if (!chart) {
+		throw new Error(`Chart ${chartId} not found`);
+	}
+
+	block.slots[slotId] = normalizedId;
+	emitStateChange('panelBlockSlotAssigned', { blockId, slotId, chartId: normalizedId });
+}
+
+/**
+ * Migrate legacy single-layout panel fields into blocks[0].
+ */
+export function migrateLegacyPanelState() {
+	const legacyLayout = appState.panel.layout || 'layout-2col';
+	const legacySlots = appState.panel.slots || {};
+
+	const firstBlock = createPanelBlock(legacyLayout);
+	firstBlock.slots = { ...legacySlots };
+	appState.panel.blocks = [firstBlock];
+	delete appState.panel.layout;
+	emitStateChange('panelMigratedToBlocks', { blockId: firstBlock.id, templateId: firstBlock.templateId });
 }
 
 /**
@@ -439,6 +669,8 @@ export function resetState() {
 	appState.panel.charts = [];
 	appState.panel.slots = {};
 	appState.panel.layout = 'layout-2col';
+	appState.panel.nextBlockId = 1;
+	appState.panel.blocks = [createPanelBlock('layout-2col')];
 	appState.panel.nextChartId = 0;
 	appState.ui.sidebarMode = 'dados';
 	appState.ui.previewRows = 10;
