@@ -83,6 +83,8 @@ function createPanelBlock(templateId = 'layout-2col') {
 		slots: {},
 		proportions: createDefaultProportions(normalizedTemplate),
 		heightPx: null,
+		borderEnabled: false,
+		borderColor: '#5d645d',
 	};
 }
 
@@ -528,6 +530,34 @@ export function updatePanelBlockHeight(blockId, heightPx) {
 
 	block.heightPx = Math.max(PANEL_BLOCK_MIN_HEIGHT, Math.min(PANEL_BLOCK_MAX_HEIGHT, Math.round(numeric)));
 	emitStateChange('panelBlockHeightUpdated', { blockId, heightPx: block.heightPx });
+}
+
+/**
+ * Update per-block border visibility and color options.
+ * @param {string} blockId
+ * @param {{ enabled?: boolean, color?: string }} options
+ */
+export function updatePanelBlockBorder(blockId, options = {}) {
+	ensureDefaultPanelBlock();
+	const block = appState.panel.blocks.find(item => item.id === blockId);
+	if (!block || !options || typeof options !== 'object') return;
+
+	if (typeof options.enabled === 'boolean') {
+		block.borderEnabled = options.enabled;
+	}
+
+	if (typeof options.color === 'string') {
+		const color = options.color.trim();
+		if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+			block.borderColor = color;
+		}
+	}
+
+	emitStateChange('panelBlockBorderUpdated', {
+		blockId,
+		enabled: block.borderEnabled,
+		color: block.borderColor,
+	});
 }
 
 /**

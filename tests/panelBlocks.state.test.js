@@ -14,6 +14,7 @@ describe('panel blocks state model (phase 1)', () => {
     expect(typeof appState.movePanelBlock).toBe('function');
     expect(typeof appState.updatePanelBlockProportions).toBe('function');
     expect(typeof appState.assignChartToPanelBlockSlot).toBe('function');
+    expect(typeof appState.updatePanelBlockBorder).toBe('function');
   });
 
   it('initializes panel.blocks with one default layout-2col block', () => {
@@ -22,6 +23,24 @@ describe('panel blocks state model (phase 1)', () => {
     expect(Array.isArray(state.panel.blocks)).toBe(true);
     expect(state.panel.blocks.length).toBe(1);
     expect(state.panel.blocks[0].templateId).toBe('layout-2col');
+    expect(state.panel.blocks[0].borderEnabled).toBe(false);
+    expect(state.panel.blocks[0].borderColor).toBe('#5d645d');
+  });
+
+  it('stores border settings per block independently', () => {
+    const blockA = appState.getState().panel.blocks[0].id;
+    const blockB = appState.addPanelBlock('layout-single');
+
+    appState.updatePanelBlockBorder(blockA, { enabled: true, color: '#ff0000' });
+
+    const state = appState.getState();
+    const a = state.panel.blocks.find(b => b.id === blockA);
+    const b = state.panel.blocks.find(bk => bk.id === blockB);
+
+    expect(a.borderEnabled).toBe(true);
+    expect(a.borderColor).toBe('#ff0000');
+    expect(b.borderEnabled).toBe(false);
+    expect(b.borderColor).toBe('#5d645d');
   });
 
   it('caps panel blocks at 4', () => {
