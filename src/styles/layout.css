@@ -108,6 +108,9 @@ header {
   background: var(--surface);
   border-right: 1px solid var(--border);
   padding: 28px 24px;
+  height: calc(100vh - 52px);
+  min-height: 0;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 24px;
@@ -118,10 +121,12 @@ header {
   display: none;
   flex-direction: column;
   gap: 24px;
+  min-height: 0;
 }
 
 .sidebar-panel.ativo {
   display: flex;
+  overflow-y: auto;
 }
 
 .painel-topo {
