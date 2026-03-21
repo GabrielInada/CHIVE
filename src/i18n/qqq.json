@@ -96,6 +96,7 @@
 	"chive-btn-back-viz": "Button in panel sidebar that returns user to visualizations tab/sidebar.",
 	"chive-card-panel": "Title of the panel composition card.",
 	"chive-panel-layout-label": "Label for the panel layout selector.",
+	"chive-panel-borders-label": "Label for checkbox that toggles stronger slot borders in panel canvas.",
 	"chive-panel-layout-single": "Option label for one-slot panel layout.",
 	"chive-panel-layout-2col": "Option label for two-column panel layout.",
 	"chive-panel-layout-hero2": "Option label for layout with one large slot and two smaller slots.",

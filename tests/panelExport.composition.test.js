@@ -22,6 +22,7 @@ function setupDom() {
   document.body.innerHTML = `
     <div id="panel-layout-canvas"></div>
     <select id="select-panel-layout"></select>
+    <input type="checkbox" id="toggle-panel-slot-borders" />
   `;
 }
 
@@ -65,6 +66,40 @@ describe('panel export composition (phase 2)', () => {
     expect(result.ok).toBe(false);
     expect(result.reason).toBe('empty-canvas');
     expect(baixarSvgMarkupMock).not.toHaveBeenCalled();
+  });
+
+  it('includes slot border outlines in export when borders toggle is enabled', () => {
+    const chartA = appState.addChartSnapshot({
+      nome: 'Chart A',
+      svgMarkup: '<svg viewBox="0 0 10 10"><rect width="10" height="10" /></svg>',
+    });
+    const blockA = appState.getState().panel.blocks[0].id;
+    appState.assignChartToPanelBlockSlot(blockA, 'slot-1', chartA);
+
+    const toggle = document.getElementById('toggle-panel-slot-borders');
+    toggle.checked = true;
+
+    renderCanvasPanel();
+
+    const canvas = document.getElementById('panel-layout-canvas');
+    canvas.getBoundingClientRect = () => rect(0, 0, 600, 400);
+
+    const filledSlot = document.querySelector(
+      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+    );
+    const emptySlot = document.querySelector(
+      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
+    );
+    filledSlot.getBoundingClientRect = () => rect(20, 30, 260, 150);
+    emptySlot.getBoundingClientRect = () => rect(300, 30, 260, 150);
+
+    const result = exportPanelLayoutSvg();
+    expect(result.ok).toBe(true);
+
+    const [svgMarkup] = baixarSvgMarkupMock.mock.calls[0];
+    expect(svgMarkup).toMatch(/stroke="#5d645d"/);
+    expect(svgMarkup).toMatch(/stroke-width="2"/);
+    expect(svgMarkup).toMatch(/stroke-dasharray="6 4"/);
   });
 
   it('exports charts from multiple blocks using slot geometry in canvas coordinates', () => {

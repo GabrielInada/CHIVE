@@ -260,6 +260,8 @@ export function renderCanvasPanel() {
 	cleanupInvalidSlots();
 	const canvas = document.getElementById('panel-layout-canvas');
 	if (!canvas) return;
+	const borderToggle = document.getElementById('toggle-panel-slot-borders');
+	canvas.classList.toggle('slot-borders-enabled', Boolean(borderToggle?.checked));
 	const blocks = getPanelBlocks();
 	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
 
@@ -451,21 +453,39 @@ export function renderCanvasPanel() {
 	});
 
 	const addBlockButton = document.createElement('button');
+	const addTemplateSelect = document.createElement('select');
+	addTemplateSelect.className = 'painel-add-template-select';
+	addTemplateSelect.dataset.panelAddTemplate = '1';
+	addTemplateSelect.setAttribute('aria-label', t('chive-panel-layout-label'));
+	const selectedTemplate = 'layout-2col';
+
+	Object.entries(LAYOUTS_PAINEL).forEach(([id, config]) => {
+		const option = document.createElement('option');
+		option.value = id;
+		option.textContent = t(config.labelKey);
+		option.selected = id === selectedTemplate;
+		addTemplateSelect.appendChild(option);
+	});
+
 	addBlockButton.type = 'button';
 	addBlockButton.className = 'btn-primario painel-add-block-btn';
 	addBlockButton.dataset.panelAddBlock = '1';
 	addBlockButton.textContent = t('chive-panel-add-block');
 	addBlockButton.addEventListener('click', () => {
-		const select = document.getElementById('select-panel-layout');
-		const templateId = select?.value || 'layout-2col';
+		const templateId = addTemplateSelect.value || 'layout-2col';
 		const newBlockId = addPanelBlock(templateId);
 		if (newBlockId === null && feedbackCallback) {
 			feedbackCallback(t('chive-panel-max-blocks'), 'error');
 		}
 	});
 
+	const addControls = document.createElement('div');
+	addControls.className = 'painel-add-controls';
+	addControls.appendChild(addTemplateSelect);
+	addControls.appendChild(addBlockButton);
+
 	canvas.appendChild(stack);
-	canvas.appendChild(addBlockButton);
+	canvas.appendChild(addControls);
 }
 
 function applyBlockProportions(gridDiv, block) {
@@ -718,6 +738,35 @@ export function exportPanelLayoutSvg() {
 		bg.setAttribute('fill', '#fbfaf6');
 		svgRoot.appendChild(bg);
 
+		const slotBorderToggle = document.getElementById('toggle-panel-slot-borders');
+		const includeSlotBorders = canvas.classList.contains('slot-borders-enabled') || Boolean(slotBorderToggle?.checked);
+
+		if (includeSlotBorders) {
+			const allSlots = canvas.querySelectorAll('[data-panel-slot]');
+			allSlots.forEach(slotEl => {
+				const slotRect = slotEl.getBoundingClientRect();
+				const x = slotRect.left - rectCanvas.left;
+				const y = slotRect.top - rectCanvas.top;
+				const w = slotRect.width;
+				const h = slotRect.height;
+
+				const border = docSvg.createElementNS('http://www.w3.org/2000/svg', 'rect');
+				border.setAttribute('x', String(x));
+				border.setAttribute('y', String(y));
+				border.setAttribute('width', String(w));
+				border.setAttribute('height', String(h));
+				border.setAttribute('fill', 'none');
+				border.setAttribute('stroke', '#5d645d');
+				border.setAttribute('stroke-width', '2');
+				border.setAttribute('rx', '8');
+				border.setAttribute('ry', '8');
+				if (slotEl.classList.contains('vazio')) {
+					border.setAttribute('stroke-dasharray', '6 4');
+				}
+				svgRoot.appendChild(border);
+			});
+		}
+
 		// Add each chart in rendered slots (all blocks)
 		const slotElements = canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]');
 		slotElements.forEach(slotEl => {
@@ -762,6 +811,7 @@ export function exportPanelLayoutSvg() {
 export function setupPanelEventListeners() {
 	const selectLayout = document.getElementById('select-panel-layout');
 	const btnExportar = document.getElementById('btn-exportar-painel');
+	const slotBordersToggle = document.getElementById('toggle-panel-slot-borders');
 
 	if (selectLayout) {
 		selectLayout.addEventListener('change', e => {
@@ -787,6 +837,12 @@ export function setupPanelEventListeners() {
 					feedbackCallback(t('chive-panel-export-svg'), 'success');
 				}
 			}
+		});
+	}
+
+	if (slotBordersToggle) {
+		slotBordersToggle.addEventListener('change', () => {
+			renderCanvasPanel();
 		});
 	}
 }

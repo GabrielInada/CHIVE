@@ -2,11 +2,12 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as appState from '../src/modules/appState.js';
-import { initializeLayoutSelector, renderCanvasPanel } from '../src/modules/panelManager.js';
+import { renderCanvasPanel } from '../src/modules/panelManager.js';
 
 function setupDom() {
   document.body.innerHTML = `
     <select id="select-panel-layout"></select>
+    <input type="checkbox" id="toggle-panel-slot-borders" />
     <div id="panel-layout-canvas"></div>
     <div id="lista-painel-charts"></div>
     <button id="btn-exportar-painel" type="button"></button>
@@ -39,12 +40,23 @@ describe('panelManager multi-block canvas (phase 2)', () => {
     expect(blockEls.length).toBe(2);
   });
 
-  it('adds a new block from canvas control using selected template', () => {
-    initializeLayoutSelector();
-    const select = document.getElementById('select-panel-layout');
-    select.value = 'layout-single';
+  it('applies slot-borders-enabled mode when border toggle is checked', () => {
+    const toggle = document.getElementById('toggle-panel-slot-borders');
+    toggle.checked = true;
 
     renderCanvasPanel();
+
+    const canvas = document.getElementById('panel-layout-canvas');
+    expect(canvas.classList.contains('slot-borders-enabled')).toBe(true);
+  });
+
+  it('adds a new block from canvas control using selected template', () => {
+    renderCanvasPanel();
+
+    const addTemplateSelect = document.querySelector('[data-panel-add-template]');
+    expect(addTemplateSelect).toBeTruthy();
+    addTemplateSelect.value = 'layout-single';
+    addTemplateSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
     const addBtn = document.querySelector('[data-panel-add-block]');
     expect(addBtn).toBeTruthy();
