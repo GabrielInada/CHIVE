@@ -1,7 +1,7 @@
 import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
-import { escaparHTML, formatarNumero } from '../../utils/formatters.js';
+import { formatarNumero } from '../../utils/formatters.js';
 
 function ordenarCategorias(linhas, ordenacao) {
 	if (ordenacao === 'count-asc') {
@@ -68,17 +68,28 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 
 	let pinnedCategoria = null;
 
-	const montarHtmlTooltip = item => {
+	const montarConteudoTooltip = item => {
 		const percentual = totalContagem > 0 ? ((item[1] / totalContagem) * 100) : 0;
-		return `
-			<div><strong>${labels.categoria}:</strong> ${escaparHTML(item[0])}</div>
-			<div><strong>${labels.contagem}:</strong> ${formatarNumero(item[1], locale)}</div>
-			<div><strong>${labels.percentual}:</strong> ${percentual.toFixed(1)}%</div>
-		`;
+		const wrapper = document.createElement('div');
+
+		const criarLinha = (rotulo, valor) => {
+			const linha = document.createElement('div');
+			const strong = document.createElement('strong');
+			strong.textContent = `${rotulo}:`;
+			linha.appendChild(strong);
+			linha.append(` ${valor}`);
+			return linha;
+		};
+
+		wrapper.appendChild(criarLinha(labels.categoria, String(item[0])));
+		wrapper.appendChild(criarLinha(labels.contagem, formatarNumero(item[1], locale)));
+		wrapper.appendChild(criarLinha(labels.percentual, `${percentual.toFixed(1)}%`));
+
+		return wrapper;
 	};
 
 	const exibirTooltip = (event, item) => {
-		showChartTooltip(montarHtmlTooltip(item), event.pageX, event.pageY);
+		showChartTooltip(montarConteudoTooltip(item), event.pageX, event.pageY);
 	};
 
 	const escalaX = scaleBand()

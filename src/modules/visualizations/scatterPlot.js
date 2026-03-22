@@ -60,14 +60,27 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 
 	let pinnedIndex = null;
 
-	const montarHtmlTooltip = ponto => `
-		<div><strong>${labels.eixoX}:</strong> ${formatarNumero(ponto.x, locale)}</div>
-		<div><strong>${labels.eixoY}:</strong> ${formatarNumero(ponto.y, locale)}</div>
-		<div><strong>${labels.indice}:</strong> ${formatarNumero(ponto.index + 1, locale)}</div>
-	`;
+	const montarConteudoTooltip = ponto => {
+		const wrapper = document.createElement('div');
+
+		const criarLinha = (rotulo, valor) => {
+			const linha = document.createElement('div');
+			const strong = document.createElement('strong');
+			strong.textContent = `${rotulo}:`;
+			linha.appendChild(strong);
+			linha.append(` ${valor}`);
+			return linha;
+		};
+
+		wrapper.appendChild(criarLinha(labels.eixoX, formatarNumero(ponto.x, locale)));
+		wrapper.appendChild(criarLinha(labels.eixoY, formatarNumero(ponto.y, locale)));
+		wrapper.appendChild(criarLinha(labels.indice, formatarNumero(ponto.index + 1, locale)));
+
+		return wrapper;
+	};
 
 	const exibirTooltip = (event, ponto) => {
-		showChartTooltip(montarHtmlTooltip(ponto), event.pageX, event.pageY);
+		showChartTooltip(montarConteudoTooltip(ponto), event.pageX, event.pageY);
 	};
 
 	const dominioX = normalizarDominio(extent(pontos, ponto => ponto.x));
