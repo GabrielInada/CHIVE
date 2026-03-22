@@ -197,5 +197,4 @@ If the app expands or usability testing reveals gaps:
 
 ## Next Steps (Optional Improvements)
 
-- Consider splitting `controls.css` imports to avoid loading `columns.css` and `visualizations.css` to pages that don't need them
-- Add CSS-in-JS or CSS modules if component encapsulation becomes critical
+- Consider splitting `controls.css` imports to avoid loading `columns.css` and `visualizations.css` to pages that don't need them (Quando eu tiver tempo eu faço! @GabrielInada)
