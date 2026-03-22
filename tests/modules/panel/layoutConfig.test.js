@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { LAYOUTS_PAINEL, getLayoutConfig, getTemplateForBlock } from '../src/modules/panel/layoutConfig.js';
+import { LAYOUTS_PAINEL, getLayoutConfig, getTemplateForBlock } from '../../../src/modules/panel/layoutConfig.js';
 
 describe('layoutConfig helpers', () => {
 	it('returns expected layout map entries', () => {

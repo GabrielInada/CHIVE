@@ -1,3 +1,7 @@
+/* @feature: foundation
+   Global design tokens: colors, typography, spacing, shadows
+   Used by all features */
+
 :root {
   --bg: #f5f2eb;
   --surface: #fffef9;

@@ -1,3 +1,6 @@
+/* @feature: panel > visualizations
+   D3-specific styles for bar charts, scatter plots, axes, legends */
+
 .viz-cards {
   display: flex;
   flex-direction: column;

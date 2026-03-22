@@ -1,3 +1,6 @@
+/* @feature: foundation
+   Collapsible element behavior and state styles */
+
 body.sidebar-collapsed .workspace {
   --sidebar-width: 74px;
 }

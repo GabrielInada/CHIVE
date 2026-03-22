@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { definirLocale, obterLocale, t } from '../src/services/i18nService.js';
+import { definirLocale, obterLocale, t } from '../../src/services/i18nService.js';
 
 describe('i18n locale updates', () => {
   beforeEach(() => {

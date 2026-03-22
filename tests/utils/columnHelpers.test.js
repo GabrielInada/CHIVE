@@ -7,7 +7,7 @@ import {
   getNumericColumnNames,
   getCategoricalColumns,
   getCategoricalColumnNames,
-} from '../src/utils/columnHelpers.js';
+} from '../../src/utils/columnHelpers.js';
 
 describe('columnHelpers', () => {
   const columns = [

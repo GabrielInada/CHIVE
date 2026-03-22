@@ -1,3 +1,7 @@
+/* @feature: foundation
+   Grid layout, flexbox utilities, spacing
+   Used by all features */
+
 header {
   background: var(--accent);
   color: #fff;

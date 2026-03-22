@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampPercent, normalizeHexColor, computeDynamicMinHeight } from '../src/modules/panel/resizeMath.js';
+import { clampPercent, normalizeHexColor, computeDynamicMinHeight } from '../../../src/modules/panel/resizeMath.js';
 
 describe('resizeMath helpers', () => {
 	it('clamps percentages to range', () => {

@@ -1,3 +1,6 @@
+/* @feature: results
+   Results view container, empty state display, file list styling */
+
 #estado-vazio {
   height: 100%;
   display: flex;

@@ -1,3 +1,6 @@
+/* @feature: results
+   Column control buttons, column selection UI, filter toggles */
+
 #painel-colunas {
   display: none;
 }
