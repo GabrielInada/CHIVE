@@ -18,6 +18,9 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const yScale = opcoes.yScale === 'log' ? 'log' : 'linear';
 	const radius = Number.isFinite(Number(opcoes.radius)) ? Number(opcoes.radius) : SCATTER_PLOT.defaultRadius;
 	const opacity = Number.isFinite(Number(opcoes.opacity)) ? Number(opcoes.opacity) : SCATTER_PLOT.defaultOpacity;
+	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+		? String(opcoes.color).trim()
+		: CHART_COLORS.scatter;
  	const labels = {
 		eixoX: opcoes.labels?.eixoX || 'X',
 		eixoY: opcoes.labels?.eixoY || 'Y',
@@ -103,7 +106,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		.attr('cx', ponto => escalaX(ponto.x))
 		.attr('cy', ponto => escalaY(ponto.y))
 		.attr('r', radius)
-		.attr('fill', CHART_COLORS.scatter)
+		.attr('fill', color)
 		.attr('opacity', opacity)
 		.on('mouseenter', (event, ponto) => {
 			if (pinnedIndex !== null) return;

@@ -14,6 +14,7 @@ import {
 	getNumericColumnNames,
 	getCategoricalColumnNames,
 } from '../utils/columnHelpers.js';
+import { CHART_COLORS } from '../config/index.js';
 import { onStateChange } from './appState.js';
 import { updateActiveDatasetChartConfig } from './stateSync.js';
 
@@ -42,6 +43,11 @@ const PREVIEW_SCATTER_SVG = `
 		<circle cx="70" cy="7" r="2.6"></circle>
 	</svg>
 `;
+
+function normalizeHexColor(value, fallback) {
+	const color = String(value || '').trim();
+	return /^#[0-9a-fA-F]{6}$/.test(color) ? color : fallback;
+}
 
 /**
  * Initialize chart controls manager
@@ -97,7 +103,14 @@ export function renderChartControlsSidebar(dataset) {
 	}
 
 	const config = dataset.configGraficos || {
-		bar: { enabled: false, expanded: false, category: null, sort: 'count-desc', topN: 10 },
+		bar: {
+			enabled: false,
+			expanded: false,
+			category: null,
+			sort: 'count-desc',
+			topN: 10,
+			color: CHART_COLORS.bar,
+		},
 		scatter: {
 			enabled: false,
 			expanded: false,
@@ -107,6 +120,7 @@ export function renderChartControlsSidebar(dataset) {
 			yScale: 'linear',
 			radius: 3,
 			opacity: 0.7,
+			color: CHART_COLORS.scatter,
 		},
 	};
 	container.innerHTML = '';
@@ -318,6 +332,25 @@ function createBarChartControls(dataset, categoryOptions) {
 	topnDiv.appendChild(topnSelect);
 	controls.push(topnDiv);
 
+	// Color
+	const colorDiv = document.createElement('div');
+	colorDiv.className = 'chart-controle';
+
+	const colorLabel = document.createElement('label');
+	colorLabel.htmlFor = 'viz-input-bar-color';
+	colorLabel.textContent = t('chive-chart-control-bar-color');
+
+	const colorInput = document.createElement('input');
+	colorInput.id = 'viz-input-bar-color';
+	colorInput.type = 'color';
+	colorInput.className = 'chart-color-input';
+	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.bar);
+	colorInput.disabled = !dataset.configGraficos.bar.enabled;
+
+	colorDiv.appendChild(colorLabel);
+	colorDiv.appendChild(colorInput);
+	controls.push(colorDiv);
+
 	return controls;
 }
 
@@ -436,6 +469,25 @@ function createScatterPlotControls(dataset, numericOptions) {
 		config.opacity,
 		!dataset.configGraficos.scatter.enabled
 	));
+
+	// Color
+	const colorDiv = document.createElement('div');
+	colorDiv.className = 'chart-controle';
+
+	const colorLabel = document.createElement('label');
+	colorLabel.htmlFor = 'viz-input-scatter-color';
+	colorLabel.textContent = t('chive-chart-control-scatter-color');
+
+	const colorInput = document.createElement('input');
+	colorInput.id = 'viz-input-scatter-color';
+	colorInput.type = 'color';
+	colorInput.className = 'chart-color-input';
+	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.scatter);
+	colorInput.disabled = !dataset.configGraficos.scatter.enabled;
+
+	colorDiv.appendChild(colorLabel);
+	colorDiv.appendChild(colorInput);
+	controls.push(colorDiv);
 
 	return controls;
 }
@@ -565,6 +617,19 @@ function setupChartControlListeners(dataset) {
 		});
 	}
 
+	const inputBarColor = document.getElementById('viz-input-bar-color');
+	if (inputBarColor) {
+		inputBarColor.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					color: normalizeHexColor(inputBarColor.value, CHART_COLORS.bar),
+				},
+			});
+			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
+		});
+	}
+
 	// Scatter chart controls
 	const scatterControls = [
 		{ id: 'viz-select-x', key: 'x' },
@@ -590,4 +655,17 @@ function setupChartControlListeners(dataset) {
 			});
 		}
 	});
+
+	const inputScatterColor = document.getElementById('viz-input-scatter-color');
+	if (inputScatterColor) {
+		inputScatterColor.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				scatter: {
+					...dataset.configGraficos.scatter,
+					color: normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter),
+				},
+			});
+			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
+		});
+	}
 }

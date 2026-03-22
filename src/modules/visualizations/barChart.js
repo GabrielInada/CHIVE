@@ -28,6 +28,9 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		contagem: opcoes.labels?.contagem || 'Count',
 		percentual: opcoes.labels?.percentual || 'Percentage',
 	};
+	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+		? String(opcoes.color).trim()
+		: CHART_COLORS.bar;
 	const locale = opcoes.locale || undefined;
 
 	const contador = new Map();
@@ -112,7 +115,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		.attr('width', escalaX.bandwidth())
 		.attr('height', item => alturaInterna - escalaY(item[1]))
 		.attr('rx', 3)
-		.attr('fill', CHART_COLORS.bar)
+		.attr('fill', color)
 		.on('mouseenter', (event, item) => {
 			if (pinnedCategoria !== null) return;
 			exibirTooltip(event, item);

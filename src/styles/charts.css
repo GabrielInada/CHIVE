@@ -21,6 +21,20 @@
   letter-spacing: 0.05em;
 }
 
+.chart-color-input {
+  width: 100%;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 4px;
+}
+
+.chart-color-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .charts-grid {
   display: grid;
   grid-template-columns: 1fr;

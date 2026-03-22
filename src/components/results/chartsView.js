@@ -55,6 +55,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 			{
 				ordenacao: config.bar.sort,
 				topN: config.bar.topN,
+				color: config.bar.color,
 				locale: obterLocale(),
 				labels: {
 					categoria: t('chive-chart-control-bar-category'),
@@ -81,6 +82,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 				yScale: config.scatter.yScale,
 				radius: config.scatter.radius,
 				opacity: config.scatter.opacity,
+				color: config.scatter.color,
 				locale: obterLocale(),
 				labels: {
 					eixoX: t('chive-chart-control-scatter-x'),
