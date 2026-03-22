@@ -1,27 +1,16 @@
+import { emitStateChange, onStateChange } from './stateEvents.js';
+import { createPanelBlock as buildPanelBlock } from './panel/blockStateHelpers.js';
+import { createDataStateFacade } from './dataStateFacade.js';
+import { createUiStateFacade } from './uiStateFacade.js';
+import { createPanelStateFacade } from './panelStateFacade.js';
+
+export { onStateChange };
+
 /**
  * CHIVE Application State Management
- * 
+ *
  * Centralized single source of truth for all application state.
  * All mutations go through this module to ensure consistency and enable tracking.
- * 
- * State Shape:
- * {
- *   data: {
- *     datasets: Array<Dataset>,
- *     activeIndex: number
- *   },
- *   panel: {
- *     charts: Array<ChartSnapshot>,
- *     slots: Object<slotId, chartId>,
- *     layout: string,
- *     nextChartId: number
- *   },
- *   ui: {
- *     sidebarMode: 'dados' | 'viz' | 'panel',
- *     previewRows: number,
- *     expandedCharts: Object<chartName, boolean>
- *   }
- * }
  */
 
 const appState = {
@@ -51,41 +40,10 @@ const PANEL_BLOCK_LIMIT = 4;
 const PANEL_BLOCK_MIN_HEIGHT = 220;
 const PANEL_BLOCK_MAX_HEIGHT = 760;
 
-function createDefaultProportions(templateId) {
-	if (templateId === 'layout-2col') return { split: 50 };
-	if (templateId === 'layout-hero2') return { splitMain: 60, splitRight: 50 };
-	if (templateId === 'layout-3col') return { a: 33, b: 33, c: 34 };
-	if (templateId === 'layout-1x2') return { split: 50 };
-	return { split: 100 };
-}
-
-function normalizeTemplateId(templateId) {
-	const allowed = new Set(['layout-single', 'layout-2col', 'layout-hero2', 'layout-3col', 'layout-1x2']);
-	return allowed.has(templateId) ? templateId : 'layout-2col';
-}
-
-function getTemplateSlots(templateId) {
-	const normalized = normalizeTemplateId(templateId);
-	if (normalized === 'layout-single') return ['slot-1'];
-	if (normalized === 'layout-2col') return ['slot-1', 'slot-2'];
-	if (normalized === 'layout-hero2') return ['slot-1', 'slot-2', 'slot-3'];
-	if (normalized === 'layout-3col') return ['slot-1', 'slot-2', 'slot-3'];
-	if (normalized === 'layout-1x2') return ['slot-1', 'slot-2'];
-	return ['slot-1', 'slot-2'];
-}
-
 function createPanelBlock(templateId = 'layout-2col') {
-	const normalizedTemplate = normalizeTemplateId(templateId);
-	const blockId = `block-${appState.panel.nextBlockId++}`;
-	return {
-		id: blockId,
-		templateId: normalizedTemplate,
-		slots: {},
-		proportions: createDefaultProportions(normalizedTemplate),
-		heightPx: null,
-		borderEnabled: false,
-		borderColor: '#5d645d',
-	};
+	const block = buildPanelBlock(appState.panel.nextBlockId, templateId);
+	appState.panel.nextBlockId += 1;
+	return block;
 }
 
 function ensureDefaultPanelBlock() {
@@ -97,617 +55,179 @@ function ensureDefaultPanelBlock() {
 	}
 }
 
-function clampPercentage(value, min = 20, max = 80) {
-	const n = Number(value);
-	if (!Number.isFinite(n)) return min;
-	return Math.max(min, Math.min(max, n));
+/**
+ * Sanitize chart name for safe text display.
+ * @param {string} name
+ * @returns {string}
+ */
+export function sanitizeChartName(name) {
+	return String(name).slice(0, 100).trim();
 }
 
+const dataState = createDataStateFacade({ appState, emitStateChange });
+const uiState = createUiStateFacade({ appState, emitStateChange });
+const panelState = createPanelStateFacade({
+	appState,
+	emitStateChange,
+	createPanelBlock,
+	ensureDefaultPanelBlock,
+	sanitizeChartName,
+	panelBlockLimit: PANEL_BLOCK_LIMIT,
+	panelBlockMinHeight: PANEL_BLOCK_MIN_HEIGHT,
+	panelBlockMaxHeight: PANEL_BLOCK_MAX_HEIGHT,
+});
+
 /**
- * Get a deep clone of the entire state
- * @returns {Object} Current application state
+ * Get a deep clone of the entire state.
+ * @returns {Object}
  */
 export function getState() {
 	return JSON.parse(JSON.stringify(appState));
 }
 
 /**
- * Get active dataset
- * @returns {Object|null} Currently selected dataset or null
+ * Data domain exports
  */
 export function getActiveDataset() {
-	if (appState.data.activeIndex === -1 || !appState.data.datasets[appState.data.activeIndex]) {
-		return null;
-	}
-	return appState.data.datasets[appState.data.activeIndex];
+	return dataState.getActiveDataset();
 }
 
-/**
- * Get all loaded datasets
- * @returns {Array} All datasets
- */
 export function getAllDatasets() {
-	return appState.data.datasets;
+	return dataState.getAllDatasets();
 }
 
-/**
- * Get active dataset index
- * @returns {number} Index of active dataset, or -1 if none
- */
 export function getActiveDatasetIndex() {
-	return appState.data.activeIndex;
+	return dataState.getActiveDatasetIndex();
 }
 
-/**
- * Set active dataset by index
- * @param {number} index - Dataset index
- * @throws {Error} If index is invalid
- */
 export function setActiveDataset(index) {
-	if (index < -1 || index >= appState.data.datasets.length) {
-		throw new Error(`Invalid dataset index: ${index}`);
-	}
-	appState.data.activeIndex = index;
-	emitStateChange('activeDataset', index);
+	return dataState.setActiveDataset(index);
 }
 
-/**
- * Add a new dataset to the collection
- * @param {Object} dataset - Dataset object with data, colunas, etc.
- * @returns {number} Index of newly added dataset
- */
 export function addDataset(dataset) {
-	if (!dataset || !Array.isArray(dataset.dados)) {
-		throw new Error('Invalid dataset: must have "dados" array');
-	}
-	appState.data.datasets.push(dataset);
-	const index = appState.data.datasets.length - 1;
-	if (appState.data.activeIndex === -1) {
-		appState.data.activeIndex = index;
-	}
-	emitStateChange('datasetAdded', { index, dataset });
-	return index;
+	return dataState.addDataset(dataset);
 }
 
-/**
- * Remove dataset by index
- * @param {number} index - Dataset index
- * @throws {Error} If index is invalid
- */
 export function removeDataset(index) {
-	if (index < 0 || index >= appState.data.datasets.length) {
-		throw new Error(`Invalid dataset index: ${index}`);
-	}
-	appState.data.datasets.splice(index, 1);
-	
-	// Adjust active index if needed
-	if (appState.data.activeIndex >= index) {
-		appState.data.activeIndex = Math.max(-1, appState.data.activeIndex - 1);
-	}
-	
-	// Clear panel when dataset removed (snapshots tied to this data)
-	appState.panel.charts = [];
-	appState.panel.slots = {};
-	
-	emitStateChange('datasetRemoved', index);
+	return dataState.removeDataset(index);
 }
 
-/**
- * Update active dataset config
- * @param {Object} updates - Config updates to merge
- */
 export function updateActiveDatasetConfig(updates) {
-	const dataset = getActiveDataset();
-	if (!dataset) return;
-	
-	dataset.configGraficos = {
-		...dataset.configGraficos,
-		...updates,
-	};
-	emitStateChange('configUpdated', updates);
+	return dataState.updateActiveDatasetConfig(updates);
 }
 
-/**
- * Update active dataset column selection
- * @param {Array<string>} columnNames - Selected column names
- */
 export function updateActiveDatasetColumns(columnNames) {
-	const dataset = getActiveDataset();
-	if (!dataset) return;
-	
-	dataset.colunasSelecionadas = columnNames;
-	emitStateChange('columnsUpdated', columnNames);
+	return dataState.updateActiveDatasetColumns(columnNames);
 }
 
 /**
- * Get panel charts
- * @returns {Array} Panel chart snapshots
+ * Panel domain exports
  */
 export function getPanelCharts() {
-	return appState.panel.charts;
+	return panelState.getPanelCharts();
 }
 
-/**
- * Add chart snapshot to panel
- * @param {Object} chartSnapshot - { id, nome, svgMarkup, createdAt }
- * @returns {number} Chart ID
- */
 export function addChartSnapshot(chartSnapshot) {
-	const id = appState.panel.nextChartId++;
-	const numericId = id;
-	const snapshot = {
-		id: numericId,
-		nome: sanitizeChartName(chartSnapshot.nome),
-		svgMarkup: chartSnapshot.svgMarkup,
-		createdAt: chartSnapshot.createdAt || new Date().toISOString(),
-	};
-	appState.panel.charts.push(snapshot);
-	emitStateChange('chartAdded', { id: numericId, snapshot });
-	return numericId;
+	return panelState.addChartSnapshot(chartSnapshot);
 }
 
-function normalizePanelChartId(chartId) {
-	const normalized = Number(chartId);
-	return Number.isFinite(normalized) ? normalized : null;
-}
-
-/**
- * Remove chart from panel
- * @param {number} chartId - Chart ID
- */
 export function removeChartSnapshot(chartId) {
-	const normalizedId = normalizePanelChartId(chartId);
-	if (normalizedId === null) return;
-
-	appState.panel.charts = appState.panel.charts.filter(c => c.id !== normalizedId);
-	// Remove from slots
-	Object.keys(appState.panel.slots).forEach(slotId => {
-		if (appState.panel.slots[slotId] === normalizedId) {
-			delete appState.panel.slots[slotId];
-		}
-	});
-
-	// Remove from block slots
-	ensureDefaultPanelBlock();
-	appState.panel.blocks.forEach(block => {
-		Object.keys(block.slots).forEach(slotId => {
-			if (block.slots[slotId] === normalizedId) {
-				delete block.slots[slotId];
-			}
-		});
-	});
-	emitStateChange('chartRemoved', normalizedId);
+	return panelState.removeChartSnapshot(chartId);
 }
 
-/**
- * Get chart snapshot by ID
- * @param {number} chartId - Chart ID
- * @returns {Object|null} Chart snapshot or null
- */
 export function getChartSnapshot(chartId) {
-	const normalizedId = normalizePanelChartId(chartId);
-	if (normalizedId === null) return null;
-	return appState.panel.charts.find(c => c.id === normalizedId) || null;
+	return panelState.getChartSnapshot(chartId);
 }
 
-/**
- * Get panel slots configuration
- * @returns {Object} Slots mapping { slotId: chartId }
- */
 export function getPanelSlots() {
-	return appState.panel.slots;
+	return panelState.getPanelSlots();
 }
 
-/**
- * Get panel blocks configuration
- * @returns {Array} Panel blocks
- */
 export function getPanelBlocks() {
-	ensureDefaultPanelBlock();
-	return appState.panel.blocks;
+	return panelState.getPanelBlocks();
 }
 
-/**
- * Assign chart to slot
- * @param {string} slotId - Slot identifier
- * @param {number} chartId - Chart ID (or null to clear)
- */
 export function assignChartToSlot(slotId, chartId) {
-	if (chartId === null) {
-		delete appState.panel.slots[slotId];
-	} else {
-		const normalizedId = normalizePanelChartId(chartId);
-		if (normalizedId === null) {
-			throw new Error(`Chart ${chartId} not found`);
-		}
-
-		const chart = getChartSnapshot(normalizedId);
-		if (!chart) {
-			throw new Error(`Chart ${chartId} not found`);
-		}
-		appState.panel.slots[slotId] = normalizedId;
-	}
-	emitStateChange('slotAssigned', { slotId, chartId });
+	return panelState.assignChartToSlot(slotId, chartId);
 }
 
-/**
- * Get current panel layout
- * @returns {string} Layout ID
- */
 export function getPanelLayout() {
-	return appState.panel.layout;
+	return panelState.getPanelLayout();
 }
 
-/**
- * Set panel layout
- * @param {string} layoutId - Layout identifier
- */
 export function setPanelLayout(layoutId) {
-	appState.panel.layout = layoutId;
-	emitStateChange('layoutChanged', layoutId);
+	return panelState.setPanelLayout(layoutId);
+}
+
+export function clearPanel() {
+	return panelState.clearPanel();
+}
+
+export function validatePanelSlots() {
+	return panelState.validatePanelSlots();
+}
+
+export function addPanelBlock(templateId = 'layout-2col') {
+	return panelState.addPanelBlock(templateId);
+}
+
+export function removePanelBlock(blockId) {
+	return panelState.removePanelBlock(blockId);
+}
+
+export function movePanelBlock(blockId, targetIndex) {
+	return panelState.movePanelBlock(blockId, targetIndex);
+}
+
+export function updatePanelBlockProportions(blockId, partialProportions) {
+	return panelState.updatePanelBlockProportions(blockId, partialProportions);
+}
+
+export function updatePanelBlockHeight(blockId, heightPx) {
+	return panelState.updatePanelBlockHeight(blockId, heightPx);
+}
+
+export function updatePanelBlockBorder(blockId, options = {}) {
+	return panelState.updatePanelBlockBorder(blockId, options);
+}
+
+export function setPanelBlockTemplate(blockId, templateId) {
+	return panelState.setPanelBlockTemplate(blockId, templateId);
+}
+
+export function assignChartToPanelBlockSlot(blockId, slotId, chartId) {
+	return panelState.assignChartToPanelBlockSlot(blockId, slotId, chartId);
+}
+
+export function migrateLegacyPanelState() {
+	return panelState.migrateLegacyPanelState();
 }
 
 /**
- * Get UI sidebar mode
- * @returns {string} 'dados' | 'viz' | 'panel'
+ * UI domain exports
  */
 export function getSidebarMode() {
-	return appState.ui.sidebarMode;
+	return uiState.getSidebarMode();
 }
 
-/**
- * Set UI sidebar mode
- * @param {string} mode - 'dados' | 'viz' | 'panel'
- */
 export function setSidebarMode(mode) {
-	if (!['dados', 'viz', 'panel'].includes(mode)) {
-		throw new Error(`Invalid sidebar mode: ${mode}`);
-	}
-	if (appState.ui.sidebarMode === mode) {
-		return;
-	}
-	appState.ui.sidebarMode = mode;
-	emitStateChange('sidebarModeChanged', mode);
+	return uiState.setSidebarMode(mode);
 }
 
-/**
- * Get expanded charts state
- * @returns {Object} Expanded state for each chart
- */
 export function getExpandedCharts() {
-	return appState.ui.expandedCharts;
+	return uiState.getExpandedCharts();
 }
 
-/**
- * Toggle chart expansion
- * @param {string} chartName - Chart name ('bar' | 'scatter')
- * @param {boolean} expanded - Expanded state
- */
 export function setChartExpanded(chartName, expanded) {
-	appState.ui.expandedCharts[chartName] = expanded;
-	emitStateChange('chartExpandedChanged', { chartName, expanded });
+	return uiState.setChartExpanded(chartName, expanded);
 }
 
-/**
- * Get preview rows limit
- * @returns {number} Number of rows to preview
- */
 export function getPreviewRows() {
-	return appState.ui.previewRows;
+	return uiState.getPreviewRows();
 }
 
-/**
- * Set preview rows limit
- * @param {number} rows - Number of rows
- */
 export function setPreviewRows(rows) {
-	if (rows < 1) throw new Error('Preview rows must be >= 1');
-	appState.ui.previewRows = rows;
-	emitStateChange('previewRowsChanged', rows);
-}
-
-/**
- * Sanitize chart name for safe text display
- * @param {string} name - Raw name
- * @returns {string} Sanitized name
- */
-export function sanitizeChartName(name) {
-	return String(name).slice(0, 100).trim();
-}
-
-/**
- * Clear all panel data
- */
-export function clearPanel() {
-	appState.panel.charts = [];
-	appState.panel.slots = {};
-	appState.panel.nextBlockId = 1;
-	appState.panel.blocks = [createPanelBlock('layout-2col')];
-	appState.panel.layout = 'layout-2col';
-	appState.panel.nextChartId = 0;
-	emitStateChange('panelCleared');
-}
-
-/**
- * Validate panel slots (remove invalid slot assignments)
- */
-export function validatePanelSlots() {
-	const validChartIds = new Set(appState.panel.charts.map(c => c.id));
-	Object.keys(appState.panel.slots).forEach(slotId => {
-		const chartId = appState.panel.slots[slotId];
-		if (!validChartIds.has(chartId)) {
-			delete appState.panel.slots[slotId];
-		}
-	});
-
-	ensureDefaultPanelBlock();
-	appState.panel.blocks.forEach(block => {
-		Object.keys(block.slots).forEach(slotId => {
-			const chartId = block.slots[slotId];
-			if (!validChartIds.has(chartId)) {
-				delete block.slots[slotId];
-			}
-		});
-	});
-}
-
-/**
- * Add a panel block using a template.
- * Limited to PANEL_BLOCK_LIMIT blocks total.
- * @param {string} templateId
- * @returns {string|null} New block id or null when at limit
- */
-export function addPanelBlock(templateId = 'layout-2col') {
-	ensureDefaultPanelBlock();
-	if (appState.panel.blocks.length >= PANEL_BLOCK_LIMIT) {
-		return null;
-	}
-	const block = createPanelBlock(templateId);
-	appState.panel.blocks.push(block);
-	emitStateChange('panelBlockAdded', block);
-	return block.id;
-}
-
-/**
- * Remove a panel block by id.
- * Keeps at least one default block.
- * @param {string} blockId
- */
-export function removePanelBlock(blockId) {
-	ensureDefaultPanelBlock();
-	const nextBlocks = appState.panel.blocks.filter(block => block.id !== blockId);
-	appState.panel.blocks = nextBlocks.length > 0 ? nextBlocks : [createPanelBlock('layout-2col')];
-	emitStateChange('panelBlockRemoved', blockId);
-}
-
-/**
- * Move panel block to a new index.
- * @param {string} blockId
- * @param {number} targetIndex
- */
-export function movePanelBlock(blockId, targetIndex) {
-	ensureDefaultPanelBlock();
-	const currentIndex = appState.panel.blocks.findIndex(block => block.id === blockId);
-	if (currentIndex === -1) return;
-	const boundedTarget = Math.max(0, Math.min(Number(targetIndex), appState.panel.blocks.length - 1));
-	if (!Number.isFinite(boundedTarget) || boundedTarget === currentIndex) return;
-
-	const [item] = appState.panel.blocks.splice(currentIndex, 1);
-	appState.panel.blocks.splice(boundedTarget, 0, item);
-	emitStateChange('panelBlockMoved', { blockId, targetIndex: boundedTarget });
-}
-
-/**
- * Update stored block proportions with percent constraints.
- * @param {string} blockId
- * @param {Object} partialProportions
- */
-export function updatePanelBlockProportions(blockId, partialProportions) {
-	ensureDefaultPanelBlock();
-	const block = appState.panel.blocks.find(item => item.id === blockId);
-	if (!block || !partialProportions || typeof partialProportions !== 'object') return;
-
-	const next = { ...block.proportions };
-	Object.keys(partialProportions).forEach(key => {
-		next[key] = clampPercentage(partialProportions[key], 20, 80);
-	});
-	block.proportions = next;
-	emitStateChange('panelBlockProportionsUpdated', { blockId, proportions: block.proportions });
-}
-
-/**
- * Update user-defined block height in pixels with safety bounds.
- * @param {string} blockId
- * @param {number} heightPx
- */
-export function updatePanelBlockHeight(blockId, heightPx) {
-	ensureDefaultPanelBlock();
-	const block = appState.panel.blocks.find(item => item.id === blockId);
-	if (!block) return;
-
-	const numeric = Number(heightPx);
-	if (!Number.isFinite(numeric)) return;
-
-	block.heightPx = Math.max(PANEL_BLOCK_MIN_HEIGHT, Math.min(PANEL_BLOCK_MAX_HEIGHT, Math.round(numeric)));
-	emitStateChange('panelBlockHeightUpdated', { blockId, heightPx: block.heightPx });
-}
-
-/**
- * Update per-block border visibility and color options.
- * @param {string} blockId
- * @param {{ enabled?: boolean, color?: string }} options
- */
-export function updatePanelBlockBorder(blockId, options = {}) {
-	ensureDefaultPanelBlock();
-	const block = appState.panel.blocks.find(item => item.id === blockId);
-	if (!block || !options || typeof options !== 'object') return;
-
-	if (typeof options.enabled === 'boolean') {
-		block.borderEnabled = options.enabled;
-	}
-
-	if (typeof options.color === 'string') {
-		const color = options.color.trim();
-		if (/^#[0-9a-fA-F]{6}$/.test(color)) {
-			block.borderColor = color;
-		}
-	}
-
-	emitStateChange('panelBlockBorderUpdated', {
-		blockId,
-		enabled: block.borderEnabled,
-		color: block.borderColor,
-	});
-}
-
-/**
- * Update block template and reset layout-specific proportions/invalid slots.
- * @param {string} blockId
- * @param {string} templateId
- * @returns {boolean} True when template was updated
- */
-export function setPanelBlockTemplate(blockId, templateId) {
-	ensureDefaultPanelBlock();
-	const block = appState.panel.blocks.find(item => item.id === blockId);
-	if (!block) return false;
-
-	const normalizedTemplate = normalizeTemplateId(templateId);
-	if (block.templateId === normalizedTemplate) return true;
-
-	const allowedSlots = new Set(getTemplateSlots(normalizedTemplate));
-	const nextSlots = {};
-	Object.keys(block.slots).forEach(slotId => {
-		if (allowedSlots.has(slotId)) {
-			nextSlots[slotId] = block.slots[slotId];
-		}
-	});
-
-	block.templateId = normalizedTemplate;
-	block.proportions = createDefaultProportions(normalizedTemplate);
-	block.slots = nextSlots;
-
-	if (appState.panel.blocks[0]?.id === blockId) {
-		appState.panel.layout = normalizedTemplate;
-	}
-
-	emitStateChange('panelBlockTemplateChanged', {
-		blockId,
-		templateId: normalizedTemplate,
-	});
-	return true;
-}
-
-/**
- * Assign a chart snapshot to a specific block slot.
- * @param {string} blockId
- * @param {string} slotId
- * @param {number|string|null} chartId
- */
-export function assignChartToPanelBlockSlot(blockId, slotId, chartId) {
-	ensureDefaultPanelBlock();
-	const block = appState.panel.blocks.find(item => item.id === blockId);
-	if (!block) return;
-
-	if (chartId === null) {
-		delete block.slots[slotId];
-		emitStateChange('panelBlockSlotAssigned', { blockId, slotId, chartId: null });
-		return;
-	}
-
-	const normalizedId = normalizePanelChartId(chartId);
-	if (normalizedId === null) {
-		throw new Error(`Chart ${chartId} not found`);
-	}
-	const chart = getChartSnapshot(normalizedId);
-	if (!chart) {
-		throw new Error(`Chart ${chartId} not found`);
-	}
-
-	block.slots[slotId] = normalizedId;
-	emitStateChange('panelBlockSlotAssigned', { blockId, slotId, chartId: normalizedId });
-}
-
-/**
- * Migrate legacy single-layout panel fields into blocks[0].
- */
-export function migrateLegacyPanelState() {
-	const legacyLayout = appState.panel.layout || 'layout-2col';
-	const legacySlots = appState.panel.slots || {};
-
-	const firstBlock = createPanelBlock(legacyLayout);
-	firstBlock.slots = { ...legacySlots };
-	appState.panel.blocks = [firstBlock];
-	delete appState.panel.layout;
-	emitStateChange('panelMigratedToBlocks', { blockId: firstBlock.id, templateId: firstBlock.templateId });
-}
-
-/**
- * Subscribe to state changes
- * @param {string} eventType - Event type (or '*' for all)
- * @param {Function} callback - Callback function
- * @returns {Function} Unsubscribe function
- */
-const stateListeners = {};
-export function onStateChange(eventType, callback) {
-	if (!stateListeners[eventType]) {
-		stateListeners[eventType] = [];
-	}
-	stateListeners[eventType].push(callback);
-	
-	// Return unsubscribe function
-	return () => {
-		const index = stateListeners[eventType].indexOf(callback);
-		if (index > -1) {
-			stateListeners[eventType].splice(index, 1);
-		}
-	};
-}
-
-/**
- * Emit state change event
- * @private
- * @param {string} eventType - Event type
- * @param {*} data - Change data
- */
-function emitStateChange(eventType, data) {
-	// Notify specific listeners
-	if (stateListeners[eventType]) {
-		stateListeners[eventType].forEach(cb => {
-			try {
-				cb(data);
-			} catch (err) {
-				window.dispatchEvent(new CustomEvent('chive-internal-error', {
-					detail: {
-						type: 'state-listener-error',
-						eventType,
-						message: String(err?.message || err),
-					},
-				}));
-			}
-		});
-	}
-	
-	// Notify wildcard listeners
-	if (stateListeners['*']) {
-		stateListeners['*'].forEach(cb => {
-			try {
-				cb({ type: eventType, data });
-			} catch (err) {
-				window.dispatchEvent(new CustomEvent('chive-internal-error', {
-					detail: {
-						type: 'state-wildcard-listener-error',
-						eventType,
-						message: String(err?.message || err),
-					},
-				}));
-			}
-		});
-	}
-	
-	// Dispatch custom event for external listeners
-	window.dispatchEvent(new CustomEvent('chive-state-changed', {
-		detail: { type: eventType, data },
-	}));
+	return uiState.setPreviewRows(rows);
 }
 
 /**
@@ -729,8 +249,8 @@ export function resetState() {
 }
 
 /**
- * Export window globals for backwards compatibility
- * These are currently updated by stateSync module
+ * Export window globals for backwards compatibility.
+ * These are currently updated by stateSync module.
  */
 export function exposeGlobals() {
 	window.datasetsCarregados = appState.data.datasets;
