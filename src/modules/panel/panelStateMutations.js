@@ -5,10 +5,15 @@ export function normalizePanelChartId(chartId) {
 
 export function addChartSnapshotToState(panelState, chartSnapshot, sanitizeChartName) {
 	const id = panelState.nextChartId++;
+	const metaSummary = typeof chartSnapshot.metaSummary === 'string'
+		? chartSnapshot.metaSummary.slice(0, 180)
+		: '';
 	const snapshot = {
 		id,
 		nome: sanitizeChartName(chartSnapshot.nome),
 		svgMarkup: chartSnapshot.svgMarkup,
+		metadata: chartSnapshot.metadata || null,
+		metaSummary,
 		createdAt: chartSnapshot.createdAt || new Date().toISOString(),
 	};
 	panelState.charts.push(snapshot);

@@ -45,6 +45,7 @@ vi.mock('../src/config/index.js', () => ({
   CHART_COLORS: {
     bar: '#d4622a',
     scatter: '#1a472a',
+    pie: '#5f7c33',
   },
 }));
 

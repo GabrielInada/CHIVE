@@ -14,9 +14,11 @@ import {
 	getNumericColumnNames,
 	getCategoricalColumnNames,
 } from '../utils/columnHelpers.js';
-import { CHART_COLORS } from '../config/index.js';
+import { mergeChartConfigWithDefaults } from './chartConfigDefaults.js';
 import { onStateChange } from './appState.js';
-import { updateActiveDatasetChartConfig } from './stateSync.js';
+import { createBarChartControls, setupBarChartControlListeners } from './chart-controls/barControls.js';
+import { createScatterPlotControls, setupScatterPlotControlListeners } from './chart-controls/scatterControls.js';
+import { createPieChartControls, setupPieChartControlListeners } from './chart-controls/pieControls.js';
 
 // Callback when chart config changes (will be set by main.js)
 let onChartConfigChangeCallback = null;
@@ -44,10 +46,15 @@ const PREVIEW_SCATTER_SVG = `
 	</svg>
 `;
 
-function normalizeHexColor(value, fallback) {
-	const color = String(value || '').trim();
-	return /^#[0-9a-fA-F]{6}$/.test(color) ? color : fallback;
-}
+const PREVIEW_PIE_SVG = `
+	<svg viewBox="0 0 84 38" aria-hidden="true">
+		<circle class="no-fill" cx="24" cy="19" r="12" stroke-width="8" stroke="#8ea857" stroke-dasharray="30 46"></circle>
+		<circle class="no-fill" cx="24" cy="19" r="12" stroke-width="8" stroke="#d4622a" stroke-dasharray="16 60" stroke-dashoffset="-30"></circle>
+		<circle class="no-fill" cx="24" cy="19" r="12" stroke-width="8" stroke="#1a472a" stroke-dasharray="14 62" stroke-dashoffset="-46"></circle>
+		<circle class="no-fill" cx="56" cy="19" r="12" stroke-width="8" stroke="#8ea857"></circle>
+		<circle cx="56" cy="19" r="5" fill="#fffef9"></circle>
+	</svg>
+`;
 
 /**
  * Initialize chart controls manager
@@ -92,6 +99,9 @@ export function renderChartControlsSidebar(dataset) {
 	const baseBar = categoricas.length > 0
 		? categoricas
 		: colunasVisiveis.map(coluna => coluna.nome);
+	const basePie = categoricas.length > 0
+		? categoricas
+		: colunasVisiveis.map(coluna => coluna.nome);
 
 	if (colunasVisiveis.length === 0) {
 		container.innerHTML = '';
@@ -102,27 +112,8 @@ export function renderChartControlsSidebar(dataset) {
 		return;
 	}
 
-	const config = dataset.configGraficos || {
-		bar: {
-			enabled: false,
-			expanded: false,
-			category: null,
-			sort: 'count-desc',
-			topN: 10,
-			color: CHART_COLORS.bar,
-		},
-		scatter: {
-			enabled: false,
-			expanded: false,
-			x: null,
-			y: null,
-			xScale: 'linear',
-			yScale: 'linear',
-			radius: 3,
-			opacity: 0.7,
-			color: CHART_COLORS.scatter,
-		},
-	};
+	const config = mergeChartConfigWithDefaults(dataset.configGraficos);
+	dataset.configGraficos = config;
 	container.innerHTML = '';
 
 	// Bar chart card
@@ -151,8 +142,20 @@ export function renderChartControlsSidebar(dataset) {
 		() => createScatterPlotControls(dataset, numericas)
 	);
 
+	createChartCard(
+		container,
+		'pie',
+		config.pie.enabled,
+		config.pie.expanded === true,
+		t('chive-chart-toggle-pie'),
+		t('chive-viz-category-composition'),
+		t('chive-viz-pie-desc'),
+		PREVIEW_PIE_SVG,
+		() => createPieChartControls(dataset, basePie, numericas)
+	);
+
 	// Setup event listeners for all controls
-	setupChartControlListeners(dataset);
+	setupChartControlListeners(dataset, baseBar, numericas, basePie);
 }
 
 /**
@@ -234,438 +237,8 @@ function createChartCard(container, chartName, enabled, expanded, label, categor
  * Create bar chart control elements
  * @private
  */
-function createBarChartControls(dataset, categoryOptions) {
-	const config = dataset.configGraficos.bar;
-	const controls = [];
-
-	// Category select
-	const categoryDiv = document.createElement('div');
-	categoryDiv.className = 'chart-controle';
-
-	const categoryLabel = document.createElement('label');
-	categoryLabel.htmlFor = 'viz-select-bar';
-	categoryLabel.textContent = t('chive-chart-control-bar-category');
-
-	const categorySelect = document.createElement('select');
-	categorySelect.id = 'viz-select-bar';
-	categorySelect.className = 'linhas-select';
-	categorySelect.disabled = !dataset.configGraficos.bar.enabled;
-
-	const noneOption = document.createElement('option');
-	noneOption.value = '';
-	noneOption.textContent = t('chive-chart-option-none');
-	categorySelect.appendChild(noneOption);
-
-	categoryOptions.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt;
-		option.textContent = opt;
-		option.selected = opt === config.category;
-		categorySelect.appendChild(option);
-	});
-
-	categoryDiv.appendChild(categoryLabel);
-	categoryDiv.appendChild(categorySelect);
-	controls.push(categoryDiv);
-
-	// Sort select
-	const sortDiv = document.createElement('div');
-	sortDiv.className = 'chart-controle';
-
-	const sortLabel = document.createElement('label');
-	sortLabel.htmlFor = 'viz-select-bar-sort';
-	sortLabel.textContent = t('chive-chart-control-bar-sort');
-
-	const sortSelect = document.createElement('select');
-	sortSelect.id = 'viz-select-bar-sort';
-	sortSelect.className = 'linhas-select';
-	sortSelect.disabled = !dataset.configGraficos.bar.enabled;
-
-	const sortOptions = [
-		{ value: 'count-desc', label: t('chive-chart-sort-count-desc') },
-		{ value: 'count-asc', label: t('chive-chart-sort-count-asc') },
-		{ value: 'label-asc', label: t('chive-chart-sort-label-asc') },
-		{ value: 'label-desc', label: t('chive-chart-sort-label-desc') },
-	];
-
-	sortOptions.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt.value;
-		option.textContent = opt.label;
-		option.selected = opt.value === config.sort;
-		sortSelect.appendChild(option);
-	});
-
-	sortDiv.appendChild(sortLabel);
-	sortDiv.appendChild(sortSelect);
-	controls.push(sortDiv);
-
-	// Top N select
-	const topnDiv = document.createElement('div');
-	topnDiv.className = 'chart-controle';
-
-	const topnLabel = document.createElement('label');
-	topnLabel.htmlFor = 'viz-select-bar-topn';
-	topnLabel.textContent = t('chive-chart-control-bar-topn');
-
-	const topnSelect = document.createElement('select');
-	topnSelect.id = 'viz-select-bar-topn';
-	topnSelect.className = 'linhas-select';
-	topnSelect.disabled = !dataset.configGraficos.bar.enabled;
-
-	const topnOptions = [
-		{ value: '0', label: t('chive-chart-topn-all') },
-		{ value: '10', label: 'Top 10' },
-		{ value: '20', label: 'Top 20' },
-		{ value: '50', label: 'Top 50' },
-	];
-
-	topnOptions.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt.value;
-		option.textContent = opt.label;
-		option.selected = String(config.topN) === opt.value;
-		topnSelect.appendChild(option);
-	});
-
-	topnDiv.appendChild(topnLabel);
-	topnDiv.appendChild(topnSelect);
-	controls.push(topnDiv);
-
-	// Color
-	const colorDiv = document.createElement('div');
-	colorDiv.className = 'chart-controle';
-
-	const colorLabel = document.createElement('label');
-	colorLabel.htmlFor = 'viz-input-bar-color';
-	colorLabel.textContent = t('chive-chart-control-bar-color');
-
-	const colorInput = document.createElement('input');
-	colorInput.id = 'viz-input-bar-color';
-	colorInput.type = 'color';
-	colorInput.className = 'chart-color-input';
-	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.bar);
-	colorInput.disabled = !dataset.configGraficos.bar.enabled;
-
-	colorDiv.appendChild(colorLabel);
-	colorDiv.appendChild(colorInput);
-	controls.push(colorDiv);
-
-	return controls;
-}
-
-/**
- * Create scatter plot control elements
- * @private
- */
-function createScatterPlotControls(dataset, numericOptions) {
-	const config = dataset.configGraficos.scatter;
-	const controls = [];
-
-	const addSelect = (id, labelKey, optionsArray, selectedValue, disabled = false) => {
-		const div = document.createElement('div');
-		div.className = 'chart-controle';
-
-		const label = document.createElement('label');
-		label.htmlFor = id;
-		label.textContent = t(labelKey);
-
-		const select = document.createElement('select');
-		select.id = id;
-		select.className = 'linhas-select';
-		select.disabled = disabled;
-
-		optionsArray.forEach(opt => {
-			const option = document.createElement('option');
-			option.value = opt.value;
-			option.textContent = opt.label;
-			option.selected = String(opt.value) === String(selectedValue);
-			select.appendChild(option);
-		});
-
-		div.appendChild(label);
-		div.appendChild(select);
-		return div;
-	};
-
-	// X axis
-	const xOptions = [
-		{ value: '', label: t('chive-chart-option-none') },
-		...numericOptions.map(opt => ({ value: opt, label: opt })),
-	];
-	controls.push(addSelect(
-		'viz-select-x',
-		'chive-chart-control-scatter-x',
-		xOptions,
-		config.x,
-		!dataset.configGraficos.scatter.enabled
-	));
-
-	// Y axis
-	const yOptions = [
-		{ value: '', label: t('chive-chart-option-none') },
-		...numericOptions.map(opt => ({ value: opt, label: opt })),
-	];
-	controls.push(addSelect(
-		'viz-select-y',
-		'chive-chart-control-scatter-y',
-		yOptions,
-		config.y,
-		!dataset.configGraficos.scatter.enabled
-	));
-
-	// X scale
-	const xScaleOptions = [
-		{ value: 'linear', label: t('chive-chart-scale-linear') },
-		{ value: 'log', label: t('chive-chart-scale-log') },
-	];
-	controls.push(addSelect(
-		'viz-select-scatter-xscale',
-		'chive-chart-control-scatter-xscale',
-		xScaleOptions,
-		config.xScale,
-		!dataset.configGraficos.scatter.enabled
-	));
-
-	// Y scale
-	const yScaleOptions = [
-		{ value: 'linear', label: t('chive-chart-scale-linear') },
-		{ value: 'log', label: t('chive-chart-scale-log') },
-	];
-	controls.push(addSelect(
-		'viz-select-scatter-yscale',
-		'chive-chart-control-scatter-yscale',
-		yScaleOptions,
-		config.yScale,
-		!dataset.configGraficos.scatter.enabled
-	));
-
-	// Radius
-	const radiusOptions = [
-		{ value: '2', label: '2' },
-		{ value: '3', label: '3' },
-		{ value: '4', label: '4' },
-		{ value: '6', label: '6' },
-	];
-	controls.push(addSelect(
-		'viz-select-scatter-radius',
-		'chive-chart-control-scatter-radius',
-		radiusOptions,
-		config.radius,
-		!dataset.configGraficos.scatter.enabled
-	));
-
-	// Opacity
-	const opacityOptions = [
-		{ value: '0.3', label: '30%' },
-		{ value: '0.5', label: '50%' },
-		{ value: '0.7', label: '70%' },
-		{ value: '1', label: '100%' },
-	];
-	controls.push(addSelect(
-		'viz-select-scatter-opacity',
-		'chive-chart-control-scatter-opacity',
-		opacityOptions,
-		config.opacity,
-		!dataset.configGraficos.scatter.enabled
-	));
-
-	// Color
-	const colorDiv = document.createElement('div');
-	colorDiv.className = 'chart-controle';
-
-	const colorLabel = document.createElement('label');
-	colorLabel.htmlFor = 'viz-input-scatter-color';
-	colorLabel.textContent = t('chive-chart-control-scatter-color');
-
-	const colorInput = document.createElement('input');
-	colorInput.id = 'viz-input-scatter-color';
-	colorInput.type = 'color';
-	colorInput.className = 'chart-color-input';
-	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.scatter);
-	colorInput.disabled = !dataset.configGraficos.scatter.enabled;
-
-	colorDiv.appendChild(colorLabel);
-	colorDiv.appendChild(colorInput);
-	controls.push(colorDiv);
-
-	return controls;
-}
-
-/**
- * Setup all event listeners for chart controls
- * @private
- */
-function setupChartControlListeners(dataset) {
-	const colunasVisiveis = filterVisibleColumns(dataset);
-	const numericas = getNumericColumnNames(colunasVisiveis);
-	const categoricas = getCategoricalColumnNames(colunasVisiveis);
-	const baseBar = categoricas.length > 0
-		? categoricas
-		: colunasVisiveis.map(coluna => coluna.nome);
-
-	// Bar chart toggle
-	const toggleBar = document.getElementById('viz-toggle-bar');
-	const expandBar = document.getElementById('viz-expand-bar');
-
-	if (toggleBar) {
-		toggleBar.addEventListener('change', () => {
-			const categoriaAtual = dataset.configGraficos.bar?.category;
-			const categoriaPadrao = baseBar.includes(categoriaAtual)
-				? categoriaAtual
-				: (baseBar[0] || null);
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					enabled: toggleBar.checked,
-					category: toggleBar.checked ? categoriaPadrao : categoriaAtual,
-					expanded: toggleBar.checked ? true : dataset.configGraficos.bar?.expanded === true,
-				},
-			});
-			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
-		});
-	}
-
-	if (expandBar) {
-		expandBar.addEventListener('click', () => {
-			const expanded = expandBar.getAttribute('aria-expanded') === 'true';
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					expanded: !expanded,
-				},
-			});
-			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
-		});
-	}
-
-	// Scatter chart toggle
-	const toggleScatter = document.getElementById('viz-toggle-scatter');
-	const expandScatter = document.getElementById('viz-expand-scatter');
-
-	if (toggleScatter) {
-		toggleScatter.addEventListener('change', () => {
-			const xAtual = dataset.configGraficos.scatter?.x;
-			const yAtual = dataset.configGraficos.scatter?.y;
-			const xPadrao = numericas.includes(xAtual) ? xAtual : (numericas[0] || null);
-			const yPadrao = numericas.includes(yAtual)
-				? yAtual
-				: (numericas[1] || numericas[0] || null);
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					enabled: toggleScatter.checked,
-					x: toggleScatter.checked ? xPadrao : xAtual,
-					y: toggleScatter.checked ? yPadrao : yAtual,
-					expanded: toggleScatter.checked ? true : dataset.configGraficos.scatter?.expanded === true,
-				},
-			});
-			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
-		});
-	}
-
-	if (expandScatter) {
-		expandScatter.addEventListener('click', () => {
-			const expanded = expandScatter.getAttribute('aria-expanded') === 'true';
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					expanded: !expanded,
-				},
-			});
-			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
-		});
-	}
-
-	// Bar chart controls
-	const selectBar = document.getElementById('viz-select-bar');
-	if (selectBar) {
-		selectBar.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					category: selectBar.value,
-				},
-			});
-			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
-		});
-	}
-
-	const selectBarSort = document.getElementById('viz-select-bar-sort');
-	if (selectBarSort) {
-		selectBarSort.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					sort: selectBarSort.value,
-				},
-			});
-			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
-		});
-	}
-
-	const selectBarTopN = document.getElementById('viz-select-bar-topn');
-	if (selectBarTopN) {
-		selectBarTopN.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					topN: Number(selectBarTopN.value),
-				},
-			});
-			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
-		});
-	}
-
-	const inputBarColor = document.getElementById('viz-input-bar-color');
-	if (inputBarColor) {
-		inputBarColor.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					color: normalizeHexColor(inputBarColor.value, CHART_COLORS.bar),
-				},
-			});
-			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
-		});
-	}
-
-	// Scatter chart controls
-	const scatterControls = [
-		{ id: 'viz-select-x', key: 'x' },
-		{ id: 'viz-select-y', key: 'y' },
-		{ id: 'viz-select-scatter-xscale', key: 'xScale' },
-		{ id: 'viz-select-scatter-yscale', key: 'yScale' },
-		{ id: 'viz-select-scatter-radius', key: 'radius', type: 'number' },
-		{ id: 'viz-select-scatter-opacity', key: 'opacity', type: 'number' },
-	];
-
-	scatterControls.forEach(({ id, key, type }) => {
-		const select = document.getElementById(id);
-		if (select) {
-			select.addEventListener('change', () => {
-				const value = type === 'number' ? Number(select.value) : select.value;
-				updateActiveDatasetChartConfig({
-					scatter: {
-						...dataset.configGraficos.scatter,
-						[key]: value,
-					},
-				});
-				if (onChartConfigChangeCallback) onChartConfigChangeCallback();
-			});
-		}
-	});
-
-	const inputScatterColor = document.getElementById('viz-input-scatter-color');
-	if (inputScatterColor) {
-		inputScatterColor.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					color: normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter),
-				},
-			});
-			if (onChartConfigChangeCallback) onChartConfigChangeCallback();
-		});
-	}
+function setupChartControlListeners(dataset, baseBar, numericas, basePie) {
+	setupBarChartControlListeners(dataset, baseBar, onChartConfigChangeCallback);
+	setupScatterPlotControlListeners(dataset, numericas, onChartConfigChangeCallback);
+	setupPieChartControlListeners(dataset, basePie, numericas, onChartConfigChangeCallback);
 }

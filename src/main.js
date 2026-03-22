@@ -31,6 +31,7 @@ onStateChange,
 exposeGlobals,
 } from './modules/appState.js';
 import { initializeStateSync } from './modules/stateSync.js';
+import { mergeChartConfigWithDefaults } from './modules/chartConfigDefaults.js';
 import {
 initPanelManager,
 initializeLayoutSelector,
@@ -157,6 +158,7 @@ removeDatasetByIndex
 
 // Render data preview and stats
 if (dataset) {
+	dataset.configGraficos = mergeChartConfigWithDefaults(dataset.configGraficos);
 renderizarInterface(
 dataset.dados,
 dataset.colunas,
@@ -201,10 +203,10 @@ atualizarVisao();
 function updateDatasetConfig(config) {
 const dataset = getActiveDataset();
 if (dataset) {
-dataset.configGraficos = {
-...dataset.configGraficos,
-...config,
-};
+	dataset.configGraficos = mergeChartConfigWithDefaults({
+		...dataset.configGraficos,
+		...config,
+	});
 atualizarVisao();
 }
 }

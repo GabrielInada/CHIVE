@@ -16,6 +16,8 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	if (!container || !eixoX || !eixoY) return { ok: false };
 	const xScale = opcoes.xScale === 'log' ? 'log' : 'linear';
 	const yScale = opcoes.yScale === 'log' ? 'log' : 'linear';
+	const showXAxisLabel = opcoes.showXAxisLabel !== false;
+	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const radius = Number.isFinite(Number(opcoes.radius)) ? Number(opcoes.radius) : SCATTER_PLOT.defaultRadius;
 	const opacity = Number.isFinite(Number(opcoes.opacity)) ? Number(opcoes.opacity) : SCATTER_PLOT.defaultOpacity;
 	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
@@ -25,6 +27,10 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		eixoX: opcoes.labels?.eixoX || 'X',
 		eixoY: opcoes.labels?.eixoY || 'Y',
 		indice: opcoes.labels?.indice || 'Index',
+	};
+	const axisLabels = {
+		x: opcoes.axisLabels?.x || eixoX,
+		y: opcoes.axisLabels?.y || eixoY,
 	};
 	const locale = opcoes.locale || undefined;
 
@@ -144,6 +150,29 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	grupo
 		.append('g')
 		.call(axisLeft(escalaY).ticks(8));
+
+	if (showXAxisLabel) {
+		grupo
+			.append('text')
+			.attr('x', larguraInterna / 2)
+			.attr('y', alturaInterna + margem.bottom - 14)
+			.attr('text-anchor', 'middle')
+			.attr('fill', '#5f5a53')
+			.attr('font-size', 11)
+			.text(axisLabels.x);
+	}
+
+	if (showYAxisLabel) {
+		grupo
+			.append('text')
+			.attr('transform', 'rotate(-90)')
+			.attr('x', -alturaInterna / 2)
+			.attr('y', -margem.left + 16)
+			.attr('text-anchor', 'middle')
+			.attr('fill', '#5f5a53')
+			.attr('font-size', 11)
+			.text(axisLabels.y);
+	}
 
 	return { ok: true };
 }

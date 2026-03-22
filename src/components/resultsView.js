@@ -6,6 +6,7 @@ import { renderizarStats } from './results/statsView.js';
 import { renderizarGraficos } from './results/chartsView.js';
 import { renderizarListaArquivosDOM } from './results/fileListView.js';
 import { renderizarControlesColunasDOM } from './results/columnControlsView.js';
+import { mergeChartConfigWithDefaults } from '../modules/chartConfigDefaults.js';
 
 function traduzirTipo(tipo) {
   if (tipo === 'numero') return t('chive-type-number');
@@ -54,6 +55,7 @@ document.getElementById('container-tabela').innerHTML = '';
 document.getElementById('container-stats').innerHTML = '';
 document.getElementById('chart-bar-container').innerHTML = '';
 document.getElementById('chart-scatter-container').innerHTML = '';
+document.getElementById('chart-pie-container').innerHTML = '';
 document.getElementById('badge-charts').textContent = '—';
 document.getElementById('btn-avancar').disabled = true;
 const avisoDev = document.getElementById('aviso-dev');
@@ -85,11 +87,7 @@ const nomesSelecionados = new Set(Array.isArray(colunasSelecionadas) ? colunasSe
 const colunasVisiveis = colunas.filter(coluna => nomesSelecionados.has(coluna.nome));
 const colunasNumericasVisiveis = getNumericColumns(colunasVisiveis);
 
-const config = configGraficos || {
-aba: 'preview',
-bar: { enabled: true, category: null },
-scatter: { enabled: true, x: null, y: null },
-};
+const config = mergeChartConfigWithDefaults(configGraficos);
 
 // Detecta filtro ativo
 const nomesNumericas = colunas.filter(c => c.tipo === 'numero').map(c => c.nome);

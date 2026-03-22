@@ -12,31 +12,11 @@ import { t } from '../services/i18nService.js';
 import { parsearCSV, parsearJSON, processarDados, formatarTamanhoArquivo } from '../services/dataService.js';
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './appState.js';
 import { showError, clearErrors } from './feedbackUI.js';
-import { CHART_COLORS, FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/index.js';
+import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/index.js';
+import { createDefaultChartConfig } from './chartConfigDefaults.js';
 
 function criarConfigGraficosPadrao() {
-	return {
-		aba: 'preview',
-		bar: {
-			enabled: false,
-			category: null,
-			expanded: false,
-			sort: 'count-desc',
-			topN: 10,
-			color: CHART_COLORS.bar,
-		},
-		scatter: {
-			enabled: false,
-			x: null,
-			y: null,
-			expanded: false,
-			xScale: 'linear',
-			yScale: 'linear',
-			radius: 3,
-			opacity: 0.7,
-			color: CHART_COLORS.scatter,
-		},
-	};
+	return createDefaultChartConfig();
 }
 
 // Callback when dataset list changes

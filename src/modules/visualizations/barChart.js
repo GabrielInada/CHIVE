@@ -23,10 +23,16 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return { ok: false };
 	const ordenacao = opcoes.ordenacao || BAR_CHART.defaultSort;
 	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : BAR_CHART.defaultTopN;
+	const showXAxisLabel = opcoes.showXAxisLabel !== false;
+	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const labels = {
 		categoria: opcoes.labels?.categoria || 'Category',
 		contagem: opcoes.labels?.contagem || 'Count',
 		percentual: opcoes.labels?.percentual || 'Percentage',
+	};
+	const axisLabels = {
+		x: opcoes.axisLabels?.x || colunaCategoria,
+		y: opcoes.axisLabels?.y || labels.contagem,
 	};
 	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
@@ -157,6 +163,29 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	grupo
 		.append('g')
 		.call(axisLeft(escalaY).ticks(BAR_CHART.ticks));
+
+	if (showXAxisLabel) {
+		grupo
+			.append('text')
+			.attr('x', larguraInterna / 2)
+			.attr('y', alturaInterna + margem.bottom - 18)
+			.attr('text-anchor', 'middle')
+			.attr('fill', '#5f5a53')
+			.attr('font-size', 11)
+			.text(axisLabels.x);
+	}
+
+	if (showYAxisLabel) {
+		grupo
+			.append('text')
+			.attr('transform', 'rotate(-90)')
+			.attr('x', -alturaInterna / 2)
+			.attr('y', -margem.left + 16)
+			.attr('text-anchor', 'middle')
+			.attr('fill', '#5f5a53')
+			.attr('font-size', 11)
+			.text(axisLabels.y);
+	}
 
 	return { ok: true };
 }
