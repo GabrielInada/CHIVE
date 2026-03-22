@@ -1,8 +1,10 @@
 import { calcularEstatisticas } from '../services/dataService.js';
 import { t, obterLocale } from '../services/i18nService.js';
 import { renderBarChart, renderScatterPlot } from '../modules/visualizations/index.js';
-import { escaparHTML, formatarNumero } from '../utils/formatters.js';
-import { filterVisibleColumns, getNumericColumnNames, getCategoricalColumnNames, getNumericColumns } from '../utils/columnHelpers.js';
+import { formatarNumero } from '../utils/formatters.js';
+import { getNumericColumns } from '../utils/columnHelpers.js';
+import { renderizarListaArquivosDOM } from './results/fileListView.js';
+import { renderizarControlesColunasDOM } from './results/columnControlsView.js';
 
 function traduzirTipo(tipo) {
 if (tipo === 'numero') return t('chive-type-number');
@@ -12,7 +14,11 @@ return tipo;
 
 function mensagemChart(containerId, mensagem) {
 const container = document.getElementById(containerId);
-container.innerHTML = `<div class="chart-vazio">${mensagem}</div>`;
+container.innerHTML = '';
+const vazio = document.createElement('div');
+vazio.className = 'chart-vazio';
+vazio.textContent = mensagem;
+container.appendChild(vazio);
 }
 
 function atualizarTabs(abaAtiva, aoAlterarConfigGraficos, config) {
@@ -50,35 +56,61 @@ aoAlterarConfigGraficos({ ...config, aba: 'panel' });
 }
 
 function renderizarTabelaPreview(dados, colunasVisiveis, limite) {
+const containerTabela = document.getElementById('container-tabela');
 if (colunasVisiveis.length === 0) {
-document.getElementById('container-tabela').innerHTML =
-`<div class="tabela-sem-colunas">${t('chive-no-columns-selected')}</div>`;
+containerTabela.innerHTML = '';
+const vazio = document.createElement('div');
+vazio.className = 'tabela-sem-colunas';
+vazio.textContent = t('chive-no-columns-selected');
+containerTabela.appendChild(vazio);
 return;
 }
 
 const linhasPreviewDados = dados.slice(0, limite);
-const cabecalhoHTML = colunasVisiveis.map(({ nome, tipo }) =>
-`<th class="${tipo === 'numero' ? 'num' : ''}">${nome}</th>`
-).join('');
+const tabela = document.createElement('table');
+tabela.className = 'tabela-preview';
 
-const corpoHTML = linhasPreviewDados.map(linha =>
-'<tr>' + colunasVisiveis.map(({ nome, tipo }) => {
+const thead = document.createElement('thead');
+const trHead = document.createElement('tr');
+colunasVisiveis.forEach(({ nome, tipo }) => {
+const th = document.createElement('th');
+if (tipo === 'numero') th.classList.add('num');
+th.textContent = nome;
+trHead.appendChild(th);
+});
+thead.appendChild(trHead);
+
+const tbody = document.createElement('tbody');
+linhasPreviewDados.forEach(linha => {
+const tr = document.createElement('tr');
+colunasVisiveis.forEach(({ nome, tipo }) => {
+const td = document.createElement('td');
+if (tipo === 'numero') td.classList.add('num');
 const val = linha[nome];
 const exibir = val === null || val === undefined || val === ''
 ? '—'
 : (tipo === 'numero' ? formatarNumero(val) : String(val));
-return `<td class="${tipo === 'numero' ? 'num' : ''}">${exibir}</td>`;
-}).join('') + '</tr>'
-).join('');
+td.textContent = exibir;
+tr.appendChild(td);
+});
+tbody.appendChild(tr);
+});
 
-const rodapeHTML = colunasVisiveis.map(({ tipo }) => `<td>${traduzirTipo(tipo)}</td>`).join('');
-document.getElementById('container-tabela').innerHTML = `
-<table class="tabela-preview">
-<thead><tr>${cabecalhoHTML}</tr></thead>
-<tbody>${corpoHTML}</tbody>
-<tfoot><tr>${rodapeHTML}</tr></tfoot>
-</table>
-`;
+const tfoot = document.createElement('tfoot');
+const trFoot = document.createElement('tr');
+colunasVisiveis.forEach(({ tipo }) => {
+const td = document.createElement('td');
+td.textContent = traduzirTipo(tipo);
+trFoot.appendChild(td);
+});
+tfoot.appendChild(trFoot);
+
+tabela.appendChild(thead);
+tabela.appendChild(tbody);
+tabela.appendChild(tfoot);
+
+containerTabela.innerHTML = '';
+containerTabela.appendChild(tabela);
 }
 
 function renderizarStats(dados, colunasVisiveis) {
@@ -88,16 +120,39 @@ const cardStats = document.getElementById('card-stats');
 if (stats.length > 0) {
 cardStats.style.display = 'block';
 document.getElementById('badge-num-colunas').textContent = t('chive-stats-badge', stats.length);
-document.getElementById('container-stats').innerHTML = stats.map(stat => `
-<div class="stat-col">
-<div class="stat-col-nome" title="${escaparHTML(stat.nome)}">${escaparHTML(stat.nome)}</div>
-<div class="stat-linha"><span>${t('chive-stat-valid')}</span> <span>${stat.n.toLocaleString(obterLocale())}</span></div>
-<div class="stat-linha"><span>${t('chive-stat-min')}</span> <span>${formatarNumero(stat.min)}</span></div>
-<div class="stat-linha"><span>${t('chive-stat-max')}</span> <span>${formatarNumero(stat.max)}</span></div>
-<div class="stat-linha"><span>${t('chive-stat-mean')}</span> <span>${formatarNumero(stat.media)}</span></div>
-<div class="stat-linha"><span>${t('chive-stat-median')}</span> <span>${formatarNumero(stat.mediana)}</span></div>
-</div>
-`).join('');
+const containerStats = document.getElementById('container-stats');
+containerStats.innerHTML = '';
+
+const criarLinhaStat = (label, valor) => {
+const linha = document.createElement('div');
+linha.className = 'stat-linha';
+const spanLabel = document.createElement('span');
+spanLabel.textContent = label;
+const spanValor = document.createElement('span');
+spanValor.textContent = valor;
+linha.appendChild(spanLabel);
+linha.appendChild(spanValor);
+return linha;
+};
+
+stats.forEach(stat => {
+const coluna = document.createElement('div');
+coluna.className = 'stat-col';
+
+const nome = document.createElement('div');
+nome.className = 'stat-col-nome';
+nome.title = stat.nome;
+nome.textContent = stat.nome;
+
+coluna.appendChild(nome);
+coluna.appendChild(criarLinhaStat(t('chive-stat-valid'), stat.n.toLocaleString(obterLocale())));
+coluna.appendChild(criarLinhaStat(t('chive-stat-min'), formatarNumero(stat.min)));
+coluna.appendChild(criarLinhaStat(t('chive-stat-max'), formatarNumero(stat.max)));
+coluna.appendChild(criarLinhaStat(t('chive-stat-mean'), formatarNumero(stat.media)));
+coluna.appendChild(criarLinhaStat(t('chive-stat-median'), formatarNumero(stat.mediana)));
+
+containerStats.appendChild(coluna);
+});
 return;
 }
 
@@ -216,29 +271,15 @@ const lista = document.getElementById('lista-arquivos-conteudo');
 infoArquivo.style.display = 'block';
 resumo.textContent = t('chive-files-loaded', datasets.length);
 
-lista.innerHTML = datasets.map((dataset, indice) => `
-<div class="arquivo-item ${indice === indiceAtivo ? 'ativo' : ''}" data-idx="${indice}">
-<button class="arquivo-item-botao" type="button" data-acao="selecionar" data-idx="${indice}">
-<span class="arquivo-item-nome" title="${escaparHTML(dataset.nome)}">${escaparHTML(dataset.nome)}</span>
-<span class="arquivo-item-meta">${t('chive-file-meta', dataset.dados.length.toLocaleString(obterLocale()), dataset.colunas.length, dataset.tamanho)}</span>
-</button>
-<button class="arquivo-item-remover" type="button" data-acao="remover" data-idx="${indice}" aria-label="${escaparHTML(t('chive-remove-file', dataset.nome))}">×</button>
-</div>
-`).join('');
-
-lista.onclick = evento => {
-const alvo = evento.target.closest('[data-acao]');
-if (!alvo) return;
-
-const indice = Number(alvo.dataset.idx);
-if (Number.isNaN(indice)) return;
-
-if (alvo.dataset.acao === 'remover') {
-aoRemover(indice);
-return;
-}
-aoSelecionar(indice);
-};
+renderizarListaArquivosDOM({
+lista,
+datasets,
+indiceAtivo,
+traduzir: t,
+obterLocale,
+aoSelecionar,
+aoRemover,
+});
 }
 
 export function renderizarEstadoVazio() {
@@ -258,7 +299,7 @@ if (avisoDev) avisoDev.style.display = 'none';
 document.getElementById('zona-upload').classList.remove('carregado');
 document.querySelector('.upload-icone').textContent = '⬆';
 document.querySelector('.upload-texto-principal').textContent = t('chive-upload-main');
-document.querySelector('.upload-texto-sub').innerHTML = t('chive-upload-sub');
+document.querySelector('.upload-texto-sub').textContent = t('chive-upload-sub');
 }
 
 export function renderizarInterface(
@@ -299,50 +340,21 @@ const filtroAtivo =
 
 // Renderiza botões fora do scroll
 const acoesContainer = document.getElementById('colunas-acoes');
-acoesContainer.innerHTML = `
-  <button class="colunas-acao ${filtroAtivo === 'todas' ? 'ativo' : ''}" type="button" data-acao-coluna="todas">${t('chive-action-select-all')}</button>
-  <button class="colunas-acao" type="button" data-acao-coluna="limpar">${t('chive-action-clear')}</button>
-  <button class="colunas-acao ${filtroAtivo === 'numericas' ? 'ativo' : ''}" type="button" data-acao-coluna="numericas">${t('chive-action-only-numeric')}</button>
-  <button class="colunas-acao ${filtroAtivo === 'texto' ? 'ativo' : ''}" type="button" data-acao-coluna="texto">${t('chive-action-only-text')}</button>
-`;
-acoesContainer.onclick = evento => {
-  const alvo = evento.target.closest('[data-acao-coluna]');
-  if (!alvo || !aoAlterarSelecaoColuna) return;
-  const acao = alvo.dataset.acaoColuna;
-  if (acao === 'todas') { aoAlterarSelecaoColuna(nomesColunas); return; }
-  if (acao === 'limpar') { aoAlterarSelecaoColuna([]); return; }
-  if (acao === 'numericas') { aoAlterarSelecaoColuna(nomesNumericas); return; }
-  if (acao === 'texto') { aoAlterarSelecaoColuna(nomesTexto); }
-};
-
 const listaColunas = document.getElementById('lista-colunas-conteudo');
-listaColunas.innerHTML = colunas.map(({ nome, tipo }) => `
-<label class="coluna-item" title="${escaparHTML(nome)}">
-<input class="coluna-checkbox" type="checkbox" data-coluna="${escaparHTML(nome)}" ${nomesSelecionados.has(nome) ? 'checked' : ''} />
-<span class="coluna-nome">${escaparHTML(nome)}</span>
-<span class="tipo-tag ${tipo}">${traduzirTipo(tipo)}</span>
-</label>
-`).join('');
 
-listaColunas.onchange = evento => {
-const alvo = evento.target;
-if (!(alvo instanceof HTMLInputElement) || alvo.type !== 'checkbox' || !aoAlterarSelecaoColuna) return;
-
-const selecionados = Array.from(listaColunas.querySelectorAll('.coluna-checkbox:checked'))
-.map(checkbox => checkbox.dataset.coluna)
-.filter(Boolean);
-aoAlterarSelecaoColuna(selecionados);
-};
-
-listaColunas.onchange = evento => {
-const alvo = evento.target;
-if (!(alvo instanceof HTMLInputElement) || alvo.type !== 'checkbox' || !aoAlterarSelecaoColuna) return;
-
-const selecionados = Array.from(listaColunas.querySelectorAll('.coluna-checkbox:checked'))
-.map(checkbox => checkbox.dataset.coluna)
-.filter(Boolean);
-aoAlterarSelecaoColuna(selecionados);
-};
+renderizarControlesColunasDOM({
+acoesContainer,
+listaColunas,
+colunas,
+nomesSelecionados,
+filtroAtivo,
+nomesColunas,
+nomesNumericas,
+nomesTexto,
+traduzir: t,
+traduzirTipo,
+aoAlterarSelecaoColuna,
+});
 
 atualizarTabs(config.aba, aoAlterarConfigGraficos, config);
 

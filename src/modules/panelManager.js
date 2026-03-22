@@ -12,6 +12,9 @@
 
 import { t } from '../services/i18nService.js';
 import { capturarSvgMarkupDeContainer, baixarSvgMarkup } from '../utils/svgExport.js';
+import { LAYOUTS_PAINEL, getLayoutConfig as getPanelLayoutConfig, getTemplateForBlock } from './panel/layoutConfig.js';
+import { clampPercent, normalizeHexColor, computeDynamicMinHeight } from './panel/resizeMath.js';
+import { createAddBlockControls, createBlockBorderControls, createBlockHeader, createBlockTemplateSelect, createPanelSlotElement } from './panel/domBuilders.js';
 import {
 	getPanelCharts,
 	getPanelBlocks,
@@ -30,34 +33,6 @@ import {
 	clearPanel,
 	onStateChange,
 } from './appState.js';
-
-const LAYOUTS_PAINEL = {
-	'layout-single': {
-		classe: 'layout-single',
-		slots: ['slot-1'],
-		labelKey: 'chive-panel-layout-single',
-	},
-	'layout-2col': {
-		classe: 'layout-2col',
-		slots: ['slot-1', 'slot-2'],
-		labelKey: 'chive-panel-layout-2col',
-	},
-	'layout-hero2': {
-		classe: 'layout-hero2',
-		slots: ['slot-1', 'slot-2', 'slot-3'],
-		labelKey: 'chive-panel-layout-hero2',
-	},
-	'layout-3col': {
-		classe: 'layout-3col',
-		slots: ['slot-1', 'slot-2', 'slot-3'],
-		labelKey: 'chive-panel-layout-3col',
-	},
-	'layout-1x2': {
-		classe: 'layout-1x2',
-		slots: ['slot-1', 'slot-2'],
-		labelKey: 'chive-panel-layout-1x2',
-	},
-};
 
 // Callback for feedback UI (will be set by main.js)
 let feedbackCallback = null;
@@ -155,26 +130,7 @@ export function getChartById(chartId) {
  * @returns {Object} Layout configuration
  */
 export function getLayoutConfig(layoutId) {
-	return LAYOUTS_PAINEL[layoutId] || LAYOUTS_PAINEL['layout-2col'];
-}
-
-/**
- * Get current layout configuration
- * @returns {Object} Current layout configuration
- */
-function getTemplateForBlock(block) {
-	return getLayoutConfig(block?.templateId);
-}
-
-function clampPercent(value, min = 20, max = 80) {
-	const n = Number(value);
-	if (!Number.isFinite(n)) return min;
-	return Math.max(min, Math.min(max, n));
-}
-
-function normalizeHexColor(color, fallback = '#5d645d') {
-	const value = String(color || '').trim();
-	return /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+	return getPanelLayoutConfig(layoutId);
 }
 
 /**
@@ -281,125 +237,26 @@ export function renderCanvasPanel() {
 		blockEl.className = 'painel-block';
 		blockEl.dataset.panelBlockId = block.id;
 
-		const header = document.createElement('div');
-		header.className = 'painel-block-header';
-
-		const title = document.createElement('span');
-		title.className = 'painel-block-title';
-		title.textContent = `Block ${index + 1}`;
-
-		const actions = document.createElement('div');
-		actions.className = 'painel-block-actions';
-
-		const upBtn = document.createElement('button');
-		upBtn.type = 'button';
-		upBtn.className = 'painel-block-btn';
-		upBtn.dataset.panelBlockUp = block.id;
-		upBtn.textContent = '↑';
-		upBtn.disabled = index === 0;
-		upBtn.addEventListener('click', () => {
-			movePanelBlock(block.id, index - 1);
+		const header = createBlockHeader({
+			blockId: block.id,
+			index,
+			totalBlocks: blocks.length,
+			onMoveUp: () => movePanelBlock(block.id, index - 1),
+			onMoveDown: () => movePanelBlock(block.id, index + 1),
+			onRemove: () => removePanelBlock(block.id),
 		});
 
-		const downBtn = document.createElement('button');
-		downBtn.type = 'button';
-		downBtn.className = 'painel-block-btn';
-		downBtn.dataset.panelBlockDown = block.id;
-		downBtn.textContent = '↓';
-		downBtn.disabled = index === blocks.length - 1;
-		downBtn.addEventListener('click', () => {
-			movePanelBlock(block.id, index + 1);
+		const templateSelect = createBlockTemplateSelect({
+			blockId: block.id,
+			templateId: block.templateId,
+			layouts: LAYOUTS_PAINEL,
+			translate: t,
+			onTemplateChange: e => {
+				setPanelBlockTemplate(block.id, e.target.value);
+				fillLayoutSelect();
+				renderCanvasPanel();
+			},
 		});
-
-		const removeBtn = document.createElement('button');
-		removeBtn.type = 'button';
-		removeBtn.className = 'painel-block-btn painel-block-btn-danger';
-		removeBtn.dataset.panelBlockRemove = block.id;
-		removeBtn.textContent = '×';
-		removeBtn.disabled = blocks.length <= 1;
-		removeBtn.addEventListener('click', () => {
-			removePanelBlock(block.id);
-		});
-
-		actions.appendChild(upBtn);
-		actions.appendChild(downBtn);
-		actions.appendChild(removeBtn);
-		header.appendChild(title);
-		header.appendChild(actions);
-
-		const templateSelect = document.createElement('select');
-		templateSelect.className = 'painel-block-template';
-		templateSelect.dataset.panelBlockTemplate = block.id;
-		Object.entries(LAYOUTS_PAINEL).forEach(([id, config]) => {
-			const option = document.createElement('option');
-			option.value = id;
-			option.textContent = t(config.labelKey);
-			option.selected = id === block.templateId;
-			templateSelect.appendChild(option);
-		});
-		templateSelect.addEventListener('change', e => {
-			setPanelBlockTemplate(block.id, e.target.value);
-			fillLayoutSelect();
-			renderCanvasPanel();
-		});
-
-		const borderControls = document.createElement('div');
-		borderControls.className = 'painel-block-border-controls';
-
-		const borderToggleLabel = document.createElement('label');
-		borderToggleLabel.className = 'panel-borders-toggle';
-		borderToggleLabel.htmlFor = `toggle-panel-slot-borders-${block.id}`;
-
-		const borderToggle = document.createElement('input');
-		borderToggle.type = 'checkbox';
-		borderToggle.id = `toggle-panel-slot-borders-${block.id}`;
-		borderToggle.checked = Boolean(block.borderEnabled);
-		borderToggle.addEventListener('change', () => {
-			updatePanelBlockBorder(block.id, { enabled: borderToggle.checked });
-			renderCanvasPanel();
-		});
-
-		const borderToggleText = document.createElement('span');
-		borderToggleText.textContent = t('chive-panel-borders-label');
-
-		borderToggleLabel.appendChild(borderToggle);
-		borderToggleLabel.appendChild(borderToggleText);
-
-		const borderColorLabel = document.createElement('label');
-		borderColorLabel.className = 'panel-borders-color';
-		borderColorLabel.htmlFor = `input-panel-slot-border-color-${block.id}`;
-
-		const borderColorText = document.createElement('span');
-		borderColorText.textContent = t('chive-panel-borders-color-label');
-
-		const borderColorInput = document.createElement('input');
-		borderColorInput.type = 'color';
-		borderColorInput.id = `input-panel-slot-border-color-${block.id}`;
-		borderColorInput.value = normalizeHexColor(block.borderColor);
-		borderColorInput.disabled = !borderToggle.checked;
-		borderColorInput.setAttribute('aria-label', t('chive-panel-borders-color-label'));
-		borderColorInput.addEventListener('input', () => {
-			const previewColor = normalizeHexColor(borderColorInput.value, '#5d645d');
-			gridDiv.style.setProperty('--panel-slot-border-color', previewColor);
-			gridDiv.querySelectorAll('[data-panel-slot]').forEach(slotEl => {
-				slotEl.dataset.panelBorderColor = previewColor;
-			});
-		});
-
-		borderColorInput.addEventListener('change', () => {
-			updatePanelBlockBorder(block.id, { color: borderColorInput.value });
-			renderCanvasPanel();
-		});
-
-		borderToggle.addEventListener('change', () => {
-			borderColorInput.disabled = !borderToggle.checked;
-		});
-
-		borderColorLabel.appendChild(borderColorText);
-		borderColorLabel.appendChild(borderColorInput);
-
-		borderControls.appendChild(borderToggleLabel);
-		borderControls.appendChild(borderColorLabel);
 
 		const gridDiv = document.createElement('div');
 		gridDiv.className = `painel-layout ${layout.classe}`;
@@ -412,72 +269,43 @@ export function renderCanvasPanel() {
 		applyBlockProportions(gridDiv, block);
 		renderGuidedResizeHandles(gridDiv, block);
 
+		const borderControls = createBlockBorderControls({
+			blockId: block.id,
+			borderEnabled: block.borderEnabled,
+			borderColor: block.borderColor,
+			translate: t,
+			normalizeHexColor,
+			onToggleBorder: enabled => {
+				updatePanelBlockBorder(block.id, { enabled });
+				renderCanvasPanel();
+			},
+			onPreviewColor: previewColor => {
+				gridDiv.style.setProperty('--panel-slot-border-color', previewColor);
+				gridDiv.querySelectorAll('[data-panel-slot]').forEach(slotEl => {
+					slotEl.dataset.panelBorderColor = previewColor;
+				});
+			},
+			onChangeColor: color => {
+				updatePanelBlockBorder(block.id, { color });
+				renderCanvasPanel();
+			},
+		});
+
 		layout.slots.forEach(slotId => {
 			const chart = getChartSnapshot(block.slots?.[slotId]);
-			const slot = document.createElement('div');
-			slot.className = chart ? 'painel-slot' : 'painel-slot vazio';
-			slot.dataset.panelSlot = slotId;
-			slot.dataset.panelBlockId = block.id;
-			slot.dataset.panelBorderEnabled = block.borderEnabled ? '1' : '0';
-			slot.dataset.panelBorderColor = borderColor;
-
-			if (chart) {
-				slot.dataset.panelChartId = chart.id;
-				slot.draggable = desktopDnd;
-
-				const clearBtn = document.createElement('button');
-				clearBtn.type = 'button';
-				clearBtn.className = 'painel-slot-limpar';
-				clearBtn.dataset.clearPanelSlot = `${block.id}:${slotId}`;
-				clearBtn.setAttribute('aria-label', t('chive-panel-clear-slot'));
-				clearBtn.textContent = '×';
-				clearBtn.addEventListener('click', () => {
+			const slot = createPanelSlotElement({
+				slotId,
+				blockId: block.id,
+				chart,
+				borderEnabled: Boolean(block.borderEnabled),
+				borderColor,
+				desktopDnd,
+				translate: t,
+				onClearSlot: () => {
 					assignChartToPanelBlockSlot(block.id, slotId, null);
 					renderCanvasPanel();
-				});
-
-				const svgDiv = document.createElement('div');
-				svgDiv.className = 'painel-slot-svg';
-				svgDiv.innerHTML = chart.svgMarkup;
-
-				slot.appendChild(clearBtn);
-				slot.appendChild(svgDiv);
-
-				if (desktopDnd) {
-					slot.addEventListener('dragstart', e => {
-						e.dataTransfer.effectAllowed = 'move';
-						e.dataTransfer.setData('text/panel-chart-id', String(chart.id));
-						e.dataTransfer.setData('text/panel-slot-id', slotId);
-						e.dataTransfer.setData('text/panel-block-id', block.id);
-					});
-				}
-			} else {
-				const placeholder = document.createElement('div');
-				placeholder.className = 'painel-slot-placeholder';
-				placeholder.textContent = t('chive-panel-slot-empty');
-				slot.appendChild(placeholder);
-			}
-
-			if (desktopDnd) {
-				slot.addEventListener('dragover', e => {
-					e.preventDefault();
-					slot.classList.add('drag-over');
-				});
-
-				slot.addEventListener('dragleave', () => {
-					slot.classList.remove('drag-over');
-				});
-
-				slot.addEventListener('drop', e => {
-					e.preventDefault();
-					slot.classList.remove('drag-over');
-
-					const targetSlotId = slotId;
-					const targetBlockId = block.id;
-					const sourceSlotId = e.dataTransfer.getData('text/panel-slot-id');
-					const sourceBlockId = e.dataTransfer.getData('text/panel-block-id');
-					const chartId = e.dataTransfer.getData('text/panel-chart-id');
-
+				},
+				onDropData: ({ targetSlotId, targetBlockId, sourceSlotId, sourceBlockId, chartId }) => {
 					if (!chartId || !getChartSnapshot(chartId)) return;
 
 					if (sourceSlotId && sourceBlockId) {
@@ -498,8 +326,8 @@ export function renderCanvasPanel() {
 					}
 
 					renderCanvasPanel();
-				});
-			}
+				},
+			});
 
 			gridDiv.appendChild(slot);
 		});
@@ -523,37 +351,16 @@ export function renderCanvasPanel() {
 		stack.appendChild(blockEl);
 	});
 
-	const addBlockButton = document.createElement('button');
-	const addTemplateSelect = document.createElement('select');
-	addTemplateSelect.className = 'painel-add-template-select';
-	addTemplateSelect.dataset.panelAddTemplate = '1';
-	addTemplateSelect.setAttribute('aria-label', t('chive-panel-layout-label'));
-	const selectedTemplate = 'layout-2col';
-
-	Object.entries(LAYOUTS_PAINEL).forEach(([id, config]) => {
-		const option = document.createElement('option');
-		option.value = id;
-		option.textContent = t(config.labelKey);
-		option.selected = id === selectedTemplate;
-		addTemplateSelect.appendChild(option);
+	const addControls = createAddBlockControls({
+		layouts: LAYOUTS_PAINEL,
+		translate: t,
+		onAddBlock: templateId => {
+			const newBlockId = addPanelBlock(templateId);
+			if (newBlockId === null && feedbackCallback) {
+				feedbackCallback(t('chive-panel-max-blocks'), 'error');
+			}
+		},
 	});
-
-	addBlockButton.type = 'button';
-	addBlockButton.className = 'btn-primario painel-add-block-btn';
-	addBlockButton.dataset.panelAddBlock = '1';
-	addBlockButton.textContent = t('chive-panel-add-block');
-	addBlockButton.addEventListener('click', () => {
-		const templateId = addTemplateSelect.value || 'layout-2col';
-		const newBlockId = addPanelBlock(templateId);
-		if (newBlockId === null && feedbackCallback) {
-			feedbackCallback(t('chive-panel-max-blocks'), 'error');
-		}
-	});
-
-	const addControls = document.createElement('div');
-	addControls.className = 'painel-add-controls';
-	addControls.appendChild(addTemplateSelect);
-	addControls.appendChild(addBlockButton);
 
 	canvas.appendChild(stack);
 	canvas.appendChild(addControls);
@@ -569,27 +376,12 @@ function applyBlockProportions(gridDiv, block) {
 
 function applyDynamicBlockHeight(gridDiv, block) {
 	const BASE_MIN_HEIGHT = 220;
-	const MAX_MIN_HEIGHT = 620;
-	const SLOT_MIN_HEIGHT = 96;
-	const ROW_GAP = 10;
-
-	let dynamicMinHeight = BASE_MIN_HEIGHT;
-
-	if (block.templateId === 'layout-1x2') {
-		const split = clampPercent(block.proportions?.split ?? 50, 20, 80) / 100;
-		const smallestRow = Math.min(split, 1 - split);
-		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
-	} else if (block.templateId === 'layout-hero2') {
-		const splitRight = clampPercent(block.proportions?.splitRight ?? 50, 20, 80) / 100;
-		const smallestRow = Math.min(splitRight, 1 - splitRight);
-		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
-	}
-
+	const dynamicMinHeight = computeDynamicMinHeight(block.templateId, block.proportions);
 	const userHeight = Number(block.heightPx);
 	const userBounded = Number.isFinite(userHeight)
 		? Math.max(BASE_MIN_HEIGHT, Math.min(userHeight, 760))
 		: BASE_MIN_HEIGHT;
-	const bounded = Math.max(userBounded, Math.max(BASE_MIN_HEIGHT, Math.min(dynamicMinHeight, MAX_MIN_HEIGHT)));
+	const bounded = Math.max(userBounded, dynamicMinHeight);
 	gridDiv.style.minHeight = `${Math.round(bounded)}px`;
 }
 
