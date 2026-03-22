@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect, vi } from 'vitest';
-import { createBlockBorderControls, createPanelSlotElement } from '../src/modules/panel/domBuilders.js';
+import { createBlockBorderControls, createPanelSlotElement } from '../../../src/modules/panel/domBuilders.js';
 
 describe('domBuilders createPanelSlotElement', () => {
 	it('creates empty slot placeholder when chart is missing', () => {

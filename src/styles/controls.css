@@ -1,4 +1,6 @@
-/* Sidebar controls and workflow interaction styles */
+/* @feature: foundation
+   Generic control styles: inputs, selects, checkboxes, toggle switches
+   Used by all features */
 @import url('./buttons.css');
 @import url('./upload.css');
 @import url('./columns.css');

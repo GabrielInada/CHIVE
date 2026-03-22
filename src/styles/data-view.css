@@ -1,3 +1,4 @@
-/* Dataset list, table preview, and data summary styles */
+/* @feature: results
+   Dataset list, table preview, and data summary styles */
 @import url('./table.css');
 @import url('./results.css');

@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import * as appState from '../src/modules/appState.js';
-import { renderCanvasPanel } from '../src/modules/panelManager.js';
+import * as appState from '../../../src/modules/appState.js';
+import { renderCanvasPanel } from '../../../src/modules/panelManager.js';
 
 function setupDom() {
   document.body.innerHTML = `

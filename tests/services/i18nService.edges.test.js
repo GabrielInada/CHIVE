@@ -23,10 +23,10 @@ vi.mock('banana-i18n', () => ({
 	default: mocks.MockBanana,
 }));
 
-vi.mock('../src/i18n/pt-BR.json', () => ({ default: {} }));
-vi.mock('../src/i18n/en.json', () => ({ default: {} }));
+vi.mock('../../src/i18n/pt-BR.json', () => ({ default: {} }));
+vi.mock('../../src/i18n/en.json', () => ({ default: {} }));
 
-import { t, obterLocale, definirLocale, inicializarI18n } from '../src/services/i18nService.js';
+import { t, obterLocale, definirLocale, inicializarI18n } from '../../src/services/i18nService.js';
 
 /**
  * Edge case tests for i18nService covering low-branching scenarios.

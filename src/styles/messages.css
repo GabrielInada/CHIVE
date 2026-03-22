@@ -1,3 +1,6 @@
+/* @feature: cross-cutting
+   Error messages, warning displays, info alerts */
+
 #mensagem-erro {
   display: none;
   background: #fff5f5;

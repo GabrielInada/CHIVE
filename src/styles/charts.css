@@ -1,3 +1,6 @@
+/* @feature: panel > visualizations
+   Chart control styling, D3 visualization containers, SVG base styles */
+
 .charts-controles {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

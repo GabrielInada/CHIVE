@@ -1,4 +1,5 @@
-/* Main stylesheet — organized by module */
+/* @feature: app
+   Main stylesheet orchestrator — composes base, controls, and feature styles */
 @import url('./base.css');
 @import url('./controls.css');
 @import url('./data-view.css');

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it } from 'vitest';
-import { escaparHTML, formatarNumero } from '../src/utils/formatters.js';
+import { escaparHTML, formatarNumero } from '../../src/utils/formatters.js';
 
 describe('formatters', () => {
   it('escapa caracteres HTML sensiveis', () => {

@@ -1,3 +1,7 @@
+/* @feature: foundation
+   Media queries and responsive breakpoints
+   Adaptive layouts for mobile, tablet, desktop */
+
 @media (max-width: 900px) {
   header {
     height: auto;

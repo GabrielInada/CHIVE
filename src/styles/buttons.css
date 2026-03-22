@@ -1,3 +1,7 @@
+/* @feature: foundation
+   Button styles and variants (primary, secondary, danger, etc.)
+   Used by all features */
+
 .btn-primario {
   background: var(--accent);
   color: #fff;

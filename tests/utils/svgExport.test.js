@@ -5,7 +5,7 @@ import {
   capturarSvgMarkupDeContainer,
   baixarSvgMarkup,
   downloadSvgFromContainer,
-} from '../src/utils/svgExport.js';
+} from '../../src/utils/svgExport.js';
 
 describe('svgExport utils', () => {
   beforeEach(() => {

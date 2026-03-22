@@ -1,3 +1,7 @@
+/* @feature: foundation
+   Transitions, keyframe animations, motion utilities
+   Used by all features */
+
 @keyframes surgir {
   from {
     opacity: 0;

@@ -1,4 +1,6 @@
-/* Base tokens, layout, and global behavior */
+/* @feature: foundation
+   Base tokens, layout, and global behavior
+   No feature ownership - used by all modules */
 @import url('./variables.css');
 @import url('./layout.css');
 @import url('./animations.css');

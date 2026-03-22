@@ -8,7 +8,7 @@ import {
   processarDados,
   calcularEstatisticas,
   formatarTamanhoArquivo,
-} from '../src/services/dataService.js';
+} from '../../src/services/dataService.js';
 
 describe('dataService', () => {
   it('detecta tipo numero e texto corretamente', () => {

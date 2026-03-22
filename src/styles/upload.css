@@ -1,3 +1,6 @@
+/* @feature: file-manager
+   File upload UI, drop zone styling, file list presentation */
+
 #zona-upload {
   border: 2px dashed var(--border);
   border-radius: 8px;
