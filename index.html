@@ -230,6 +230,48 @@
                                     </div>
                                     <div id="chart-scatter-container" class="chart-container"></div>
                                 </section>
+                                <section class="chart-bloco" id="chart-block-pie">
+                                    <div class="chart-bloco-topo">
+                                        <h4 class="chart-titulo" data-i18n="chive-chart-pie-title">Pie/Donut (composition by category)</h4>
+                                        <div class="chart-acoes" data-chart-actions>
+                                            <button
+                                                type="button"
+                                                class="chart-menu-btn"
+                                                data-chart-menu-btn="pie"
+                                                aria-haspopup="menu"
+                                                aria-expanded="false"
+                                                data-i18n-title="chive-chart-actions-open"
+                                                title="Acoes"
+                                            >
+                                                <span aria-hidden="true">&#8942;</span>
+                                            </button>
+                                            <div class="chart-menu" data-chart-menu="pie" role="menu" hidden>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="download-svg"
+                                                    data-chart-container="chart-pie-container"
+                                                    data-chart-filename="pie-donut-chart"
+                                                    data-i18n="chive-chart-action-download-svg"
+                                                >
+                                                    Download SVG
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="add-panel"
+                                                    data-chart-container="chart-pie-container"
+                                                    data-i18n="chive-chart-action-add-panel"
+                                                >
+                                                    Add to panel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="chart-pie-container" class="chart-container"></div>
+                                </section>
                             </div>
                         </div>
                     </div>

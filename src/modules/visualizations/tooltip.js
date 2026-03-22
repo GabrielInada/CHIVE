@@ -15,9 +15,13 @@ export function hideChartTooltip() {
 	el.style.display = 'none';
 }
 
-export function showChartTooltip(html, x, y) {
+export function showChartTooltip(content, x, y) {
 	const el = ensureTooltip();
-	el.innerHTML = html;
+	if (content instanceof Node) {
+		el.replaceChildren(content);
+	} else {
+		el.textContent = String(content ?? '');
+	}
 	el.style.display = 'block';
 	moveChartTooltip(x, y);
 }

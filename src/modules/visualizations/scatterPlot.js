@@ -16,12 +16,21 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	if (!container || !eixoX || !eixoY) return { ok: false };
 	const xScale = opcoes.xScale === 'log' ? 'log' : 'linear';
 	const yScale = opcoes.yScale === 'log' ? 'log' : 'linear';
+	const showXAxisLabel = opcoes.showXAxisLabel !== false;
+	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const radius = Number.isFinite(Number(opcoes.radius)) ? Number(opcoes.radius) : SCATTER_PLOT.defaultRadius;
 	const opacity = Number.isFinite(Number(opcoes.opacity)) ? Number(opcoes.opacity) : SCATTER_PLOT.defaultOpacity;
+	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+		? String(opcoes.color).trim()
+		: CHART_COLORS.scatter;
  	const labels = {
 		eixoX: opcoes.labels?.eixoX || 'X',
 		eixoY: opcoes.labels?.eixoY || 'Y',
 		indice: opcoes.labels?.indice || 'Index',
+	};
+	const axisLabels = {
+		x: opcoes.axisLabels?.x || eixoX,
+		y: opcoes.axisLabels?.y || eixoY,
 	};
 	const locale = opcoes.locale || undefined;
 
@@ -60,14 +69,27 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 
 	let pinnedIndex = null;
 
-	const montarHtmlTooltip = ponto => `
-		<div><strong>${labels.eixoX}:</strong> ${formatarNumero(ponto.x, locale)}</div>
-		<div><strong>${labels.eixoY}:</strong> ${formatarNumero(ponto.y, locale)}</div>
-		<div><strong>${labels.indice}:</strong> ${formatarNumero(ponto.index + 1, locale)}</div>
-	`;
+	const montarConteudoTooltip = ponto => {
+		const wrapper = document.createElement('div');
+
+		const criarLinha = (rotulo, valor) => {
+			const linha = document.createElement('div');
+			const strong = document.createElement('strong');
+			strong.textContent = `${rotulo}:`;
+			linha.appendChild(strong);
+			linha.append(` ${valor}`);
+			return linha;
+		};
+
+		wrapper.appendChild(criarLinha(labels.eixoX, formatarNumero(ponto.x, locale)));
+		wrapper.appendChild(criarLinha(labels.eixoY, formatarNumero(ponto.y, locale)));
+		wrapper.appendChild(criarLinha(labels.indice, formatarNumero(ponto.index + 1, locale)));
+
+		return wrapper;
+	};
 
 	const exibirTooltip = (event, ponto) => {
-		showChartTooltip(montarHtmlTooltip(ponto), event.pageX, event.pageY);
+		showChartTooltip(montarConteudoTooltip(ponto), event.pageX, event.pageY);
 	};
 
 	const dominioX = normalizarDominio(extent(pontos, ponto => ponto.x));
@@ -90,7 +112,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		.attr('cx', ponto => escalaX(ponto.x))
 		.attr('cy', ponto => escalaY(ponto.y))
 		.attr('r', radius)
-		.attr('fill', CHART_COLORS.scatter)
+		.attr('fill', color)
 		.attr('opacity', opacity)
 		.on('mouseenter', (event, ponto) => {
 			if (pinnedIndex !== null) return;
@@ -128,6 +150,29 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	grupo
 		.append('g')
 		.call(axisLeft(escalaY).ticks(8));
+
+	if (showXAxisLabel) {
+		grupo
+			.append('text')
+			.attr('x', larguraInterna / 2)
+			.attr('y', alturaInterna + margem.bottom - 14)
+			.attr('text-anchor', 'middle')
+			.attr('fill', '#5f5a53')
+			.attr('font-size', 11)
+			.text(axisLabels.x);
+	}
+
+	if (showYAxisLabel) {
+		grupo
+			.append('text')
+			.attr('transform', 'rotate(-90)')
+			.attr('x', -alturaInterna / 2)
+			.attr('y', -margem.left + 16)
+			.attr('text-anchor', 'middle')
+			.attr('fill', '#5f5a53')
+			.attr('font-size', 11)
+			.text(axisLabels.y);
+	}
 
 	return { ok: true };
 }

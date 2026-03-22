@@ -1,7 +1,7 @@
 import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
-import { escaparHTML, formatarNumero } from '../../utils/formatters.js';
+import { formatarNumero } from '../../utils/formatters.js';
 
 function ordenarCategorias(linhas, ordenacao) {
 	if (ordenacao === 'count-asc') {
@@ -23,11 +23,20 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return { ok: false };
 	const ordenacao = opcoes.ordenacao || BAR_CHART.defaultSort;
 	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : BAR_CHART.defaultTopN;
+	const showXAxisLabel = opcoes.showXAxisLabel !== false;
+	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const labels = {
 		categoria: opcoes.labels?.categoria || 'Category',
 		contagem: opcoes.labels?.contagem || 'Count',
 		percentual: opcoes.labels?.percentual || 'Percentage',
 	};
+	const axisLabels = {
+		x: opcoes.axisLabels?.x || colunaCategoria,
+		y: opcoes.axisLabels?.y || labels.contagem,
+	};
+	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+		? String(opcoes.color).trim()
+		: CHART_COLORS.bar;
 	const locale = opcoes.locale || undefined;
 
 	const contador = new Map();
@@ -68,17 +77,28 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 
 	let pinnedCategoria = null;
 
-	const montarHtmlTooltip = item => {
+	const montarConteudoTooltip = item => {
 		const percentual = totalContagem > 0 ? ((item[1] / totalContagem) * 100) : 0;
-		return `
-			<div><strong>${labels.categoria}:</strong> ${escaparHTML(item[0])}</div>
-			<div><strong>${labels.contagem}:</strong> ${formatarNumero(item[1], locale)}</div>
-			<div><strong>${labels.percentual}:</strong> ${percentual.toFixed(1)}%</div>
-		`;
+		const wrapper = document.createElement('div');
+
+		const criarLinha = (rotulo, valor) => {
+			const linha = document.createElement('div');
+			const strong = document.createElement('strong');
+			strong.textContent = `${rotulo}:`;
+			linha.appendChild(strong);
+			linha.append(` ${valor}`);
+			return linha;
+		};
+
+		wrapper.appendChild(criarLinha(labels.categoria, String(item[0])));
+		wrapper.appendChild(criarLinha(labels.contagem, formatarNumero(item[1], locale)));
+		wrapper.appendChild(criarLinha(labels.percentual, `${percentual.toFixed(1)}%`));
+
+		return wrapper;
 	};
 
 	const exibirTooltip = (event, item) => {
-		showChartTooltip(montarHtmlTooltip(item), event.pageX, event.pageY);
+		showChartTooltip(montarConteudoTooltip(item), event.pageX, event.pageY);
 	};
 
 	const escalaX = scaleBand()
@@ -101,7 +121,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		.attr('width', escalaX.bandwidth())
 		.attr('height', item => alturaInterna - escalaY(item[1]))
 		.attr('rx', 3)
-		.attr('fill', CHART_COLORS.bar)
+		.attr('fill', color)
 		.on('mouseenter', (event, item) => {
 			if (pinnedCategoria !== null) return;
 			exibirTooltip(event, item);
@@ -143,6 +163,29 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	grupo
 		.append('g')
 		.call(axisLeft(escalaY).ticks(BAR_CHART.ticks));
+
+	if (showXAxisLabel) {
+		grupo
+			.append('text')
+			.attr('x', larguraInterna / 2)
+			.attr('y', alturaInterna + margem.bottom - 18)
+			.attr('text-anchor', 'middle')
+			.attr('fill', '#5f5a53')
+			.attr('font-size', 11)
+			.text(axisLabels.x);
+	}
+
+	if (showYAxisLabel) {
+		grupo
+			.append('text')
+			.attr('transform', 'rotate(-90)')
+			.attr('x', -alturaInterna / 2)
+			.attr('y', -margem.left + 16)
+			.attr('text-anchor', 'middle')
+			.attr('fill', '#5f5a53')
+			.attr('font-size', 11)
+			.text(axisLabels.y);
+	}
 
 	return { ok: true };
 }

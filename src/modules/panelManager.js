@@ -82,7 +82,7 @@ function handleLayoutChange() {
  * @param {string} chartBaseName - Chart display name
  * @returns {Object} { ok: boolean, reason?: string }
  */
-export function addChartToPanel(containerId, chartBaseName) {
+export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 	try {
 		const captured = capturarSvgMarkupDeContainer(containerId);
 		if (!captured.ok) {
@@ -92,6 +92,8 @@ export function addChartToPanel(containerId, chartBaseName) {
 		const chartId = addChartSnapshot({
 			nome: chartBaseName,
 			svgMarkup: captured.svgMarkup,
+			metadata,
+			metaSummary: typeof metadata?.summary === 'string' ? metadata.summary : '',
 		});
 
 		renderSidebarPanel();
@@ -179,6 +181,12 @@ export function renderSidebarPanel() {
 		titulo.textContent = chart.nome; // textContent for XSS prevention
 		titulo.title = chart.nome;
 
+		const metaResumo = typeof chart.metaSummary === 'string' ? chart.metaSummary.trim() : '';
+		const subtitulo = document.createElement('span');
+		subtitulo.className = 'panel-item-subtitulo';
+		subtitulo.textContent = metaResumo;
+		subtitulo.hidden = metaResumo.length === 0;
+
 		const removeBtn = document.createElement('button');
 		removeBtn.className = 'panel-item-remover';
 		removeBtn.type = 'button';
@@ -186,7 +194,12 @@ export function renderSidebarPanel() {
 		removeBtn.setAttribute('aria-label', t('chive-panel-remove-chart'));
 		removeBtn.textContent = '×';
 
-		topo.appendChild(titulo);
+		const titleWrap = document.createElement('div');
+		titleWrap.className = 'panel-item-title-wrap';
+		titleWrap.appendChild(titulo);
+		titleWrap.appendChild(subtitulo);
+
+		topo.appendChild(titleWrap);
 		topo.appendChild(removeBtn);
 
 		// Preview section (SVG content)

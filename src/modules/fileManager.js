@@ -13,28 +13,10 @@ import { parsearCSV, parsearJSON, processarDados, formatarTamanhoArquivo } from 
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './appState.js';
 import { showError, clearErrors } from './feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/index.js';
+import { createDefaultChartConfig } from './chartConfigDefaults.js';
 
 function criarConfigGraficosPadrao() {
-	return {
-		aba: 'preview',
-		bar: {
-			enabled: false,
-			category: null,
-			expanded: false,
-			sort: 'count-desc',
-			topN: 10,
-		},
-		scatter: {
-			enabled: false,
-			x: null,
-			y: null,
-			expanded: false,
-			xScale: 'linear',
-			yScale: 'linear',
-			radius: 3,
-			opacity: 0.7,
-		},
-	};
+	return createDefaultChartConfig();
 }
 
 // Callback when dataset list changes

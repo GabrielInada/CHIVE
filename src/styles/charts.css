@@ -14,11 +14,62 @@
   gap: 6px;
 }
 
+.chart-controle-inline {
+  justify-content: center;
+}
+
+.chart-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.chart-checkbox-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+}
+
+.chart-slider-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-slider-input {
+  width: 100%;
+}
+
+.chart-slider-value {
+  min-width: 30px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--muted);
+}
+
 .chart-controle label {
   font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
+}
+
+.chart-color-input {
+  width: 100%;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  padding: 4px;
+}
+
+.chart-color-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .charts-grid {

@@ -32,6 +32,7 @@ const appState = {
 		expandedCharts: {
 			bar: false,
 			scatter: false,
+			pie: false,
 		},
 	},
 };
@@ -244,7 +245,7 @@ export function resetState() {
 	appState.panel.nextChartId = 0;
 	appState.ui.sidebarMode = 'dados';
 	appState.ui.previewRows = 10;
-	appState.ui.expandedCharts = { bar: false, scatter: false };
+	appState.ui.expandedCharts = { bar: false, scatter: false, pie: false };
 	emitStateChange('stateReset');
 }
 

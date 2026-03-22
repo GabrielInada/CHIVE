@@ -138,3 +138,19 @@
 .card-corpo-charts {
   padding: 16px;
 }
+
+#painel-charts.resultado-painel {
+  min-height: 0;
+}
+
+#painel-charts .resultado-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+#painel-charts .card-corpo-charts {
+  max-height: calc(100vh - 220px);
+  min-height: 0;
+  overflow: auto;
+}

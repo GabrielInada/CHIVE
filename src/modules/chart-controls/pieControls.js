@@ -1,0 +1,441 @@
+import { CHART_COLORS, PIE_CHART } from '../../config/index.js';
+import { t } from '../../services/i18nService.js';
+import { updateActiveDatasetChartConfig } from '../stateSync.js';
+import { createCheckboxControl, normalizeHexColor } from './shared.js';
+
+function createSliderControl(id, labelText, value, min, max, step, disabled = false) {
+	const div = document.createElement('div');
+	div.className = 'chart-controle';
+
+	const label = document.createElement('label');
+	label.htmlFor = id;
+	label.textContent = labelText;
+
+	const sliderRow = document.createElement('div');
+	sliderRow.className = 'chart-slider-row';
+
+	const input = document.createElement('input');
+	input.id = id;
+	input.type = 'range';
+	input.className = 'chart-slider-input';
+	input.min = String(min);
+	input.max = String(max);
+	input.step = String(step);
+	input.value = String(value);
+	input.disabled = disabled;
+
+	const output = document.createElement('output');
+	output.className = 'chart-slider-value';
+	output.htmlFor = id;
+	output.textContent = String(value);
+
+	sliderRow.appendChild(input);
+	sliderRow.appendChild(output);
+	div.appendChild(label);
+	div.appendChild(sliderRow);
+
+	return div;
+}
+
+export function createPieChartControls(dataset, categoryOptions, numericOptions) {
+	const config = dataset.configGraficos.pie;
+	const controls = [];
+
+	const categoryDiv = document.createElement('div');
+	categoryDiv.className = 'chart-controle';
+
+	const categoryLabel = document.createElement('label');
+	categoryLabel.htmlFor = 'viz-select-pie-category';
+	categoryLabel.textContent = t('chive-chart-control-pie-category');
+
+	const categorySelect = document.createElement('select');
+	categorySelect.id = 'viz-select-pie-category';
+	categorySelect.className = 'linhas-select';
+	categorySelect.disabled = !dataset.configGraficos.pie.enabled;
+
+	const noneOption = document.createElement('option');
+	noneOption.value = '';
+	noneOption.textContent = t('chive-chart-option-none');
+	categorySelect.appendChild(noneOption);
+
+	categoryOptions.forEach(opt => {
+		const option = document.createElement('option');
+		option.value = opt;
+		option.textContent = opt;
+		option.selected = opt === config.category;
+		categorySelect.appendChild(option);
+	});
+
+	categoryDiv.appendChild(categoryLabel);
+	categoryDiv.appendChild(categorySelect);
+	controls.push(categoryDiv);
+
+	const measureDiv = document.createElement('div');
+	measureDiv.className = 'chart-controle';
+
+	const measureLabel = document.createElement('label');
+	measureLabel.htmlFor = 'viz-select-pie-measure';
+	measureLabel.textContent = t('chive-chart-control-pie-measure');
+
+	const measureSelect = document.createElement('select');
+	measureSelect.id = 'viz-select-pie-measure';
+	measureSelect.className = 'linhas-select';
+	measureSelect.disabled = !dataset.configGraficos.pie.enabled;
+
+	[
+		{ value: 'count', label: t('chive-chart-control-pie-measure-count') },
+		{ value: 'sum', label: t('chive-chart-control-pie-measure-sum') },
+	].forEach(opt => {
+		const option = document.createElement('option');
+		option.value = opt.value;
+		option.textContent = opt.label;
+		option.selected = opt.value === config.measureMode;
+		measureSelect.appendChild(option);
+	});
+
+	measureDiv.appendChild(measureLabel);
+	measureDiv.appendChild(measureSelect);
+	controls.push(measureDiv);
+
+	const valueDiv = document.createElement('div');
+	valueDiv.className = 'chart-controle';
+
+	const valueLabel = document.createElement('label');
+	valueLabel.htmlFor = 'viz-select-pie-value-column';
+	valueLabel.textContent = t('chive-chart-control-pie-value-column');
+
+	const valueSelect = document.createElement('select');
+	valueSelect.id = 'viz-select-pie-value-column';
+	valueSelect.className = 'linhas-select';
+	valueSelect.disabled = !dataset.configGraficos.pie.enabled || config.measureMode !== 'sum';
+
+	const noneOptionValue = document.createElement('option');
+	noneOptionValue.value = '';
+	noneOptionValue.textContent = t('chive-chart-option-none');
+	valueSelect.appendChild(noneOptionValue);
+
+	numericOptions.forEach(opt => {
+		const option = document.createElement('option');
+		option.value = opt;
+		option.textContent = opt;
+		option.selected = opt === config.valueColumn;
+		valueSelect.appendChild(option);
+	});
+
+	valueDiv.appendChild(valueLabel);
+	valueDiv.appendChild(valueSelect);
+	controls.push(valueDiv);
+
+	controls.push(createSliderControl(
+		'viz-slider-pie-inner-radius',
+		t('chive-chart-control-pie-inner-radius'),
+		Number(config.innerRadius),
+		PIE_CHART.minInnerRadius,
+		PIE_CHART.maxOuterRadius - 8,
+		1,
+		!dataset.configGraficos.pie.enabled
+	));
+
+	controls.push(createSliderControl(
+		'viz-slider-pie-outer-radius',
+		t('chive-chart-control-pie-outer-radius'),
+		Number(config.outerRadius),
+		PIE_CHART.minOuterRadius,
+		PIE_CHART.maxOuterRadius,
+		1,
+		!dataset.configGraficos.pie.enabled
+	));
+
+	controls.push(createSliderControl(
+		'viz-slider-pie-pad-angle',
+		t('chive-chart-control-pie-pad-angle'),
+		Number(config.padAngle),
+		PIE_CHART.minPadAngle,
+		PIE_CHART.maxPadAngle,
+		0.5,
+		!dataset.configGraficos.pie.enabled
+	));
+
+	controls.push(createCheckboxControl(
+		'viz-toggle-pie-category-label',
+		t('chive-chart-control-pie-sector-label'),
+		config.showCategoryLabel,
+		!dataset.configGraficos.pie.enabled
+	));
+
+	controls.push(createCheckboxControl(
+		'viz-toggle-pie-value-label',
+		t('chive-chart-control-pie-sector-value'),
+		config.showValueLabel,
+		!dataset.configGraficos.pie.enabled
+	));
+
+	controls.push(createCheckboxControl(
+		'viz-toggle-pie-legend',
+		t('chive-chart-control-pie-show-legend'),
+		config.showLegend,
+		!dataset.configGraficos.pie.enabled
+	));
+
+	const labelPositionDiv = document.createElement('div');
+	labelPositionDiv.className = 'chart-controle';
+
+	const labelPositionLabel = document.createElement('label');
+	labelPositionLabel.htmlFor = 'viz-select-pie-label-position';
+	labelPositionLabel.textContent = t('chive-chart-control-pie-label-position');
+
+	const labelPositionSelect = document.createElement('select');
+	labelPositionSelect.id = 'viz-select-pie-label-position';
+	labelPositionSelect.className = 'linhas-select';
+	labelPositionSelect.disabled = !dataset.configGraficos.pie.enabled;
+
+	[
+		{ value: 'inside', label: t('chive-chart-control-pie-label-position-inside') },
+		{ value: 'outside', label: t('chive-chart-control-pie-label-position-outside') },
+	].forEach(opt => {
+		const option = document.createElement('option');
+		option.value = opt.value;
+		option.textContent = opt.label;
+		option.selected = opt.value === config.labelPosition;
+		labelPositionSelect.appendChild(option);
+	});
+
+	labelPositionDiv.appendChild(labelPositionLabel);
+	labelPositionDiv.appendChild(labelPositionSelect);
+	controls.push(labelPositionDiv);
+
+	const colorDiv = document.createElement('div');
+	colorDiv.className = 'chart-controle';
+
+	const colorLabel = document.createElement('label');
+	colorLabel.htmlFor = 'viz-input-pie-color';
+	colorLabel.textContent = t('chive-chart-control-pie-color');
+
+	const colorInput = document.createElement('input');
+	colorInput.id = 'viz-input-pie-color';
+	colorInput.type = 'color';
+	colorInput.className = 'chart-color-input';
+	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.pie);
+	colorInput.disabled = !dataset.configGraficos.pie.enabled;
+
+	colorDiv.appendChild(colorLabel);
+	colorDiv.appendChild(colorInput);
+	controls.push(colorDiv);
+
+	return controls;
+}
+
+export function setupPieChartControlListeners(dataset, basePie, numericas, onConfigChanged) {
+	const togglePie = document.getElementById('viz-toggle-pie');
+	const expandPie = document.getElementById('viz-expand-pie');
+
+	if (togglePie) {
+		togglePie.addEventListener('change', () => {
+			const categoriaAtual = dataset.configGraficos.pie?.category;
+			const valueAtual = dataset.configGraficos.pie?.valueColumn;
+			const categoriaPadrao = basePie.includes(categoriaAtual)
+				? categoriaAtual
+				: (basePie[0] || null);
+			const valuePadrao = numericas.includes(valueAtual)
+				? valueAtual
+				: (numericas[0] || null);
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					enabled: togglePie.checked,
+					category: togglePie.checked ? categoriaPadrao : categoriaAtual,
+					valueColumn: togglePie.checked ? valuePadrao : valueAtual,
+					expanded: togglePie.checked ? true : dataset.configGraficos.pie?.expanded === true,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	if (expandPie) {
+		expandPie.addEventListener('click', () => {
+			const expanded = expandPie.getAttribute('aria-expanded') === 'true';
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					expanded: !expanded,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const categorySelect = document.getElementById('viz-select-pie-category');
+	if (categorySelect) {
+		categorySelect.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					category: categorySelect.value,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const measureSelect = document.getElementById('viz-select-pie-measure');
+	if (measureSelect) {
+		measureSelect.addEventListener('change', () => {
+			const measureMode = measureSelect.value === 'sum' ? 'sum' : 'count';
+			const currentValueColumn = dataset.configGraficos.pie?.valueColumn;
+			const nextValueColumn = measureMode === 'sum'
+				? (numericas.includes(currentValueColumn) ? currentValueColumn : (numericas[0] || null))
+				: currentValueColumn;
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					measureMode,
+					valueColumn: nextValueColumn,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const valueSelect = document.getElementById('viz-select-pie-value-column');
+	if (valueSelect) {
+		valueSelect.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					valueColumn: valueSelect.value || null,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const innerSlider = document.getElementById('viz-slider-pie-inner-radius');
+	const outerSlider = document.getElementById('viz-slider-pie-outer-radius');
+	const padAngleSlider = document.getElementById('viz-slider-pie-pad-angle');
+	const syncSliderOutput = slider => {
+		const output = slider?.parentElement?.querySelector('output');
+		if (output) {
+			output.textContent = slider.value;
+		}
+	};
+
+	if (innerSlider) {
+		innerSlider.addEventListener('input', () => syncSliderOutput(innerSlider));
+		innerSlider.addEventListener('change', () => {
+			const outerRadius = Number(outerSlider?.value || dataset.configGraficos.pie.outerRadius || PIE_CHART.defaultOuterRadius);
+			const innerRadius = Math.min(Number(innerSlider.value), Math.max(0, outerRadius - 8));
+			if (String(innerRadius) !== innerSlider.value) {
+				innerSlider.value = String(innerRadius);
+				syncSliderOutput(innerSlider);
+			}
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					innerRadius,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	if (outerSlider) {
+		outerSlider.addEventListener('input', () => syncSliderOutput(outerSlider));
+		outerSlider.addEventListener('change', () => {
+			const outerRadius = Number(outerSlider.value);
+			const currentInner = Number(innerSlider?.value || dataset.configGraficos.pie.innerRadius || PIE_CHART.defaultInnerRadius);
+			const innerRadius = Math.min(currentInner, Math.max(0, outerRadius - 8));
+			if (innerSlider && String(innerRadius) !== innerSlider.value) {
+				innerSlider.value = String(innerRadius);
+				syncSliderOutput(innerSlider);
+			}
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					outerRadius,
+					innerRadius,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	if (padAngleSlider) {
+		padAngleSlider.addEventListener('input', () => syncSliderOutput(padAngleSlider));
+		padAngleSlider.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					padAngle: Number(padAngleSlider.value),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const toggleCategoryLabel = document.getElementById('viz-toggle-pie-category-label');
+	if (toggleCategoryLabel) {
+		toggleCategoryLabel.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					showCategoryLabel: toggleCategoryLabel.checked,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const toggleValueLabel = document.getElementById('viz-toggle-pie-value-label');
+	if (toggleValueLabel) {
+		toggleValueLabel.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					showValueLabel: toggleValueLabel.checked,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const toggleLegend = document.getElementById('viz-toggle-pie-legend');
+	if (toggleLegend) {
+		toggleLegend.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					showLegend: toggleLegend.checked,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const labelPositionSelect = document.getElementById('viz-select-pie-label-position');
+	if (labelPositionSelect) {
+		labelPositionSelect.addEventListener('change', () => {
+			const labelPosition = labelPositionSelect.value === 'outside' ? 'outside' : 'inside';
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					labelPosition,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const colorInput = document.getElementById('viz-input-pie-color');
+	if (colorInput) {
+		colorInput.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					color: normalizeHexColor(colorInput.value, CHART_COLORS.pie),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+}

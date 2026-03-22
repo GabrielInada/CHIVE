@@ -7,6 +7,25 @@
   gap: 10px;
 }
 
+#sidebar-panel-viz {
+  min-height: 0;
+  overflow: hidden;
+}
+
+#painel-visualizacoes-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+#painel-visualizacoes-sidebar .viz-cards {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
 .viz-card {
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -72,6 +91,10 @@
 .viz-preview circle {
   fill: var(--accent-2);
   opacity: 0.85;
+}
+
+.viz-preview .no-fill {
+  fill: none !important;
 }
 
 .viz-card-body {

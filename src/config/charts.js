@@ -5,11 +5,13 @@
 export const CHART_TYPES = {
   BAR: 'bar',
   SCATTER: 'scatter',
+  PIE: 'pie',
 };
 
 export const CHART_COLORS = {
   bar: '#d4622a',
   scatter: '#1a472a',
+  pie: '#5f7c33',
 };
 
 export const CHART_DIMENSIONS = {
@@ -33,6 +35,16 @@ export const CHART_DIMENSIONS = {
       left: 52,
     },
   },
+  pie: {
+    width: 700,
+    height: 360,
+    margins: {
+      top: 16,
+      right: 16,
+      bottom: 16,
+      left: 16,
+    },
+  },
 };
 
 export const BAR_CHART = {
@@ -52,6 +64,19 @@ export const SCATTER_PLOT = {
   defaultRadius: 3,
   opacityOptions: [0.3, 0.5, 0.7, 1],
   defaultOpacity: 0.7,
+};
+
+export const PIE_CHART = {
+  defaultInnerRadius: 0,
+  defaultOuterRadius: 100,
+  defaultPadAngle: 0,
+  minPadAngle: 0,
+  maxPadAngle: 12,
+  minInnerRadius: 0,
+  maxOuterRadius: 140,
+  minOuterRadius: 20,
+  measureModes: ['count', 'sum'],
+  labelPositions: ['inside', 'outside'],
 };
 
 export const CHART_EMPTY_STATES = {

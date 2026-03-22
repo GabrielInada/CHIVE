@@ -20,6 +20,14 @@ const mocks = vi.hoisted(() => ({
   getActiveDataset: vi.fn(() => ({
     configGraficos: {
       aba: 'preview',
+      pie: {
+        category: 'categoria',
+        measureMode: 'count',
+        valueColumn: null,
+        innerRadius: 0,
+        outerRadius: 100,
+        labelPosition: 'inside',
+      },
     },
   })),
   updateActiveDatasetConfig: vi.fn(),
@@ -143,7 +151,7 @@ describe('eventHandlers', () => {
     expect(document.querySelector('[data-chart-menu="menu-1"]').hidden).toBe(true);
 
     document.querySelector('[data-chart-action="add-panel"]').click();
-    expect(mocks.addChartToPanel).toHaveBeenCalledWith('chart-1', 'Meu Grafico');
+    expect(mocks.addChartToPanel).toHaveBeenCalledWith('chart-1', 'Meu Grafico', expect.any(Object));
     expect(mocks.showFeedback).toHaveBeenCalledWith('tr:chive-panel-add-success');
 
     mocks.addChartToPanel.mockReturnValueOnce({ ok: false });

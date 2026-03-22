@@ -42,6 +42,11 @@ vi.mock('../src/modules/feedbackUI.js', () => ({
 vi.mock('../src/config/index.js', () => ({
   FILE_SIZE_LIMIT_BYTES: 10,
   ROW_LIMIT: 2,
+  CHART_COLORS: {
+    bar: '#d4622a',
+    scatter: '#1a472a',
+    pie: '#5f7c33',
+  },
 }));
 
 import {
