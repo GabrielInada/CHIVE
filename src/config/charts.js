@@ -5,12 +5,14 @@
 export const CHART_TYPES = {
   BAR: 'bar',
   SCATTER: 'scatter',
+  NETWORK: 'network',
   PIE: 'pie',
 };
 
 export const CHART_COLORS = {
   bar: '#d4622a',
   scatter: '#1a472a',
+  network: '#3b6a9f',
   pie: '#5f7c33',
 };
 
@@ -64,6 +66,19 @@ export const SCATTER_PLOT = {
   defaultRadius: 3,
   opacityOptions: [0.3, 0.5, 0.7, 1],
   defaultOpacity: 0.7,
+};
+
+export const NETWORK_GRAPH = {
+  defaultNodeRadius: 5,
+  defaultLinkDistance: 46,
+  defaultChargeStrength: -80,
+  defaultLinkOpacity: 0.45,
+  defaultZoomScale: 1,
+  defaultAlphaDecay: 0.045,
+  minZoomScale: 0.3,
+  maxZoomScale: 4,
+  minAlphaDecay: 0.01,
+  maxAlphaDecay: 0.2,
 };
 
 export const PIE_CHART = {

@@ -272,6 +272,48 @@
                                     </div>
                                     <div id="chart-pie-container" class="chart-container"></div>
                                 </section>
+                                <section class="chart-bloco" id="chart-block-network">
+                                    <div class="chart-bloco-topo">
+                                        <h4 class="chart-titulo" data-i18n="chive-chart-network-title">Network graph (source-target links)</h4>
+                                        <div class="chart-acoes" data-chart-actions>
+                                            <button
+                                                type="button"
+                                                class="chart-menu-btn"
+                                                data-chart-menu-btn="network"
+                                                aria-haspopup="menu"
+                                                aria-expanded="false"
+                                                data-i18n-title="chive-chart-actions-open"
+                                                title="Acoes"
+                                            >
+                                                <span aria-hidden="true">&#8942;</span>
+                                            </button>
+                                            <div class="chart-menu" data-chart-menu="network" role="menu" hidden>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="download-svg"
+                                                    data-chart-container="chart-network-container"
+                                                    data-chart-filename="network-graph"
+                                                    data-i18n="chive-chart-action-download-svg"
+                                                >
+                                                    Download SVG
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="add-panel"
+                                                    data-chart-container="chart-network-container"
+                                                    data-i18n="chive-chart-action-add-panel"
+                                                >
+                                                    Add to panel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="chart-network-container" class="chart-container"></div>
+                                </section>
                             </div>
                         </div>
                     </div>

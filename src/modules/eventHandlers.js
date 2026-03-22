@@ -227,6 +227,19 @@ function buildChartSnapshotMetadata(containerId) {
 		};
 	}
 
+	if (containerId === 'chart-network-container') {
+		const network = config.network || {};
+		const source = network.source || '-';
+		const target = network.target || '-';
+		return {
+			type: 'network',
+			source,
+			target,
+			weight: network.weight || null,
+			summary: `${t('chive-chart-control-network-source')}: ${source} · ${t('chive-chart-control-network-target')}: ${target}`,
+		};
+	}
+
 	return {};
 }
 

@@ -55,6 +55,7 @@ document.getElementById('container-tabela').innerHTML = '';
 document.getElementById('container-stats').innerHTML = '';
 document.getElementById('chart-bar-container').innerHTML = '';
 document.getElementById('chart-scatter-container').innerHTML = '';
+document.getElementById('chart-network-container').innerHTML = '';
 document.getElementById('chart-pie-container').innerHTML = '';
 document.getElementById('badge-charts').textContent = '—';
 document.getElementById('btn-avancar').disabled = true;

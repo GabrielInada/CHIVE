@@ -17,6 +17,7 @@ import {
 import { mergeChartConfigWithDefaults } from './chartConfigDefaults.js';
 import { onStateChange } from './appState.js';
 import { createBarChartControls, setupBarChartControlListeners } from './chart-controls/barControls.js';
+import { createNetworkGraphControls, setupNetworkGraphControlListeners } from './chart-controls/networkControls.js';
 import { createScatterPlotControls, setupScatterPlotControlListeners } from './chart-controls/scatterControls.js';
 import { createPieChartControls, setupPieChartControlListeners } from './chart-controls/pieControls.js';
 
@@ -43,6 +44,20 @@ const PREVIEW_SCATTER_SVG = `
 		<circle cx="50" cy="13" r="2.6"></circle>
 		<circle cx="61" cy="10" r="2.6"></circle>
 		<circle cx="70" cy="7" r="2.6"></circle>
+	</svg>
+`;
+
+const PREVIEW_NETWORK_SVG = `
+	<svg viewBox="0 0 84 38" aria-hidden="true">
+		<line x1="14" y1="10" x2="40" y2="17" stroke="#8da3ba" stroke-width="1.6"></line>
+		<line x1="40" y1="17" x2="67" y2="9" stroke="#8da3ba" stroke-width="1.6"></line>
+		<line x1="24" y1="30" x2="40" y2="17" stroke="#8da3ba" stroke-width="1.6"></line>
+		<line x1="40" y1="17" x2="62" y2="29" stroke="#8da3ba" stroke-width="1.6"></line>
+		<circle cx="14" cy="10" r="3.2" fill="#3b6a9f"></circle>
+		<circle cx="40" cy="17" r="3.8" fill="#3b6a9f"></circle>
+		<circle cx="67" cy="9" r="3" fill="#3b6a9f"></circle>
+		<circle cx="24" cy="30" r="2.8" fill="#3b6a9f"></circle>
+		<circle cx="62" cy="29" r="2.8" fill="#3b6a9f"></circle>
 	</svg>
 `;
 
@@ -96,6 +111,7 @@ export function renderChartControlsSidebar(dataset) {
 	const colunasVisiveis = filterVisibleColumns(dataset);
 	const numericas = getNumericColumnNames(colunasVisiveis);
 	const categoricas = getCategoricalColumnNames(colunasVisiveis);
+	const todasColunas = colunasVisiveis.map(coluna => coluna.nome);
 	const baseBar = categoricas.length > 0
 		? categoricas
 		: colunasVisiveis.map(coluna => coluna.nome);
@@ -144,6 +160,18 @@ export function renderChartControlsSidebar(dataset) {
 
 	createChartCard(
 		container,
+		'network',
+		config.network.enabled,
+		config.network.expanded === true,
+		t('chive-chart-toggle-network'),
+		t('chive-viz-category-relationship'),
+		t('chive-viz-network-desc'),
+		PREVIEW_NETWORK_SVG,
+		() => createNetworkGraphControls(dataset, todasColunas, numericas, categoricas)
+	);
+
+	createChartCard(
+		container,
 		'pie',
 		config.pie.enabled,
 		config.pie.expanded === true,
@@ -155,7 +183,7 @@ export function renderChartControlsSidebar(dataset) {
 	);
 
 	// Setup event listeners for all controls
-	setupChartControlListeners(dataset, baseBar, numericas, basePie);
+	setupChartControlListeners(dataset, baseBar, numericas, basePie, todasColunas);
 }
 
 /**
@@ -237,8 +265,9 @@ function createChartCard(container, chartName, enabled, expanded, label, categor
  * Create bar chart control elements
  * @private
  */
-function setupChartControlListeners(dataset, baseBar, numericas, basePie) {
+function setupChartControlListeners(dataset, baseBar, numericas, basePie, todasColunas) {
 	setupBarChartControlListeners(dataset, baseBar, onChartConfigChangeCallback);
+	setupNetworkGraphControlListeners(dataset, todasColunas, onChartConfigChangeCallback);
 	setupScatterPlotControlListeners(dataset, numericas, onChartConfigChangeCallback);
 	setupPieChartControlListeners(dataset, basePie, numericas, onChartConfigChangeCallback);
 }

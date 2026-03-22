@@ -26,6 +26,22 @@ export function createDefaultChartConfig() {
 			showXAxisLabel: true,
 			showYAxisLabel: true,
 		},
+		network: {
+			enabled: false,
+			expanded: false,
+			source: null,
+			target: null,
+			weight: null,
+			group: null,
+			nodeRadius: 5,
+			linkDistance: 46,
+			chargeStrength: -80,
+			linkOpacity: 0.45,
+			zoomScale: 1,
+			alphaDecay: 0.045,
+			showLegend: true,
+			showNodeLabels: false,
+		},
 		pie: {
 			enabled: false,
 			category: null,
@@ -58,6 +74,10 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 		scatter: {
 			...defaults.scatter,
 			...(config.scatter || {}),
+		},
+		network: {
+			...defaults.network,
+			...(config.network || {}),
 		},
 		pie: {
 			...defaults.pie,

@@ -1,5 +1,5 @@
 import { t, obterLocale } from '../../services/i18nService.js';
-import { renderBarChart, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
+import { renderBarChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../modules/chartConfigDefaults.js';
 
 function mensagemChart(containerId, mensagem) {
@@ -17,6 +17,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 	const emptyState = document.getElementById('charts-empty-state');
 	const blocoBar = document.getElementById('chart-block-bar');
 	const blocoScatter = document.getElementById('chart-block-scatter');
+	const blocoNetwork = document.getElementById('chart-block-network');
 	const blocoPie = document.getElementById('chart-block-pie');
 
 	document.getElementById('badge-charts').textContent = t(
@@ -30,22 +31,26 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 		emptyState.style.display = 'none';
 		blocoBar.style.display = 'block';
 		blocoScatter.style.display = 'block';
+		blocoNetwork.style.display = 'block';
 		blocoPie.style.display = 'block';
 		document.getElementById('chart-bar-container').innerHTML = '';
 		document.getElementById('chart-scatter-container').innerHTML = '';
+		document.getElementById('chart-network-container').innerHTML = '';
 		document.getElementById('chart-pie-container').innerHTML = '';
 		return;
 	}
 
-	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.pie.enabled) {
+	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled) {
 		chartsGrid.style.display = 'none';
 		emptyState.style.display = 'flex';
 		emptyState.textContent = t('chive-chart-empty-none');
 		blocoBar.style.display = 'none';
 		blocoScatter.style.display = 'none';
+		blocoNetwork.style.display = 'none';
 		blocoPie.style.display = 'none';
 		document.getElementById('chart-bar-container').innerHTML = '';
 		document.getElementById('chart-scatter-container').innerHTML = '';
+		document.getElementById('chart-network-container').innerHTML = '';
 		document.getElementById('chart-pie-container').innerHTML = '';
 		return;
 	}
@@ -119,6 +124,40 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 	} else {
 		blocoScatter.style.display = 'none';
 		document.getElementById('chart-scatter-container').innerHTML = '';
+	}
+
+	if (chartConfig.network.enabled) {
+		blocoNetwork.style.display = 'block';
+		const networkResult = renderNetworkGraph(
+			document.getElementById('chart-network-container'),
+			dados,
+			chartConfig.network.source,
+			chartConfig.network.target,
+			{
+				weightColumn: chartConfig.network.weight,
+				groupColumn: chartConfig.network.group,
+				nodeRadius: chartConfig.network.nodeRadius,
+				linkDistance: chartConfig.network.linkDistance,
+				chargeStrength: chartConfig.network.chargeStrength,
+				linkOpacity: chartConfig.network.linkOpacity,
+				showNodeLabels: chartConfig.network.showNodeLabels,
+				zoomScale: chartConfig.network.zoomScale,
+				alphaDecay: chartConfig.network.alphaDecay,
+				showLegend: chartConfig.network.showLegend,
+				locale: obterLocale(),
+				labels: {
+					node: t('chive-chart-control-network-source'),
+					linkWeight: t('chive-chart-control-network-weight'),
+				},
+			}
+		);
+
+		if (!networkResult.ok) {
+			mensagemChart('chart-network-container', t('chive-chart-empty-network'));
+		}
+	} else {
+		blocoNetwork.style.display = 'none';
+		document.getElementById('chart-network-container').innerHTML = '';
 	}
 
 	if (chartConfig.pie.enabled) {
