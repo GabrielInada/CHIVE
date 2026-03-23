@@ -64,7 +64,7 @@ if (avisoDev) avisoDev.style.display = 'none';
 document.getElementById('zona-upload').classList.remove('carregado');
 document.querySelector('.upload-icone').textContent = '⬆';
 document.querySelector('.upload-texto-principal').textContent = t('chive-upload-main');
-document.querySelector('.upload-texto-sub').textContent = t('chive-upload-sub');
+document.querySelector('.upload-texto-sub').innerHTML = t('chive-upload-sub');
 }
 
 export function renderizarInterface(

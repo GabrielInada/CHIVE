@@ -84,6 +84,10 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		: NETWORK_GRAPH.defaultAlphaDecay;
 	const showLegend = opcoes.showLegend !== false;
 	const showNodeLabels = opcoes.showNodeLabels === true;
+	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
+		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
+		: 420;
 	const locale = opcoes.locale || undefined;
 	const labels = {
 		node: opcoes.labels?.node || 'Node',
@@ -100,7 +104,7 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 	stopPreviousSimulation(container);
 
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
-	const altura = 420;
+	const altura = chartHeight;
 
 	const svg = select(container)
 		.append('svg')
@@ -109,6 +113,18 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		.attr('viewBox', [-(largura / 2), -(altura / 2), largura, altura]);
 
 	const viewport = svg.append('g');
+
+	if (customTitle) {
+		svg
+			.append('text')
+			.attr('x', 0)
+			.attr('y', -(altura / 2) + 18)
+			.attr('text-anchor', 'middle')
+			.attr('font-size', 13)
+			.attr('font-weight', 600)
+			.attr('fill', '#3f3a33')
+			.text(customTitle);
+	}
 
 	const color = scaleOrdinal(schemeCategory10);
 

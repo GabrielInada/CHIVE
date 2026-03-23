@@ -1,7 +1,7 @@
 import { CHART_COLORS } from '../../config/index.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { createCheckboxControl, normalizeHexColor } from './shared.js';
+import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 
 export function createBarChartControls(dataset, categoryOptions) {
 	const config = dataset.configGraficos.bar;
@@ -109,6 +109,24 @@ export function createBarChartControls(dataset, categoryOptions) {
 		'viz-toggle-bar-y-label',
 		t('chive-chart-control-axis-label-y'),
 		config.showYAxisLabel,
+		!dataset.configGraficos.bar.enabled
+	));
+
+	controls.push(createTextControl(
+		'viz-input-bar-title',
+		t('chive-chart-control-common-title'),
+		config.customTitle,
+		80,
+		!dataset.configGraficos.bar.enabled
+	));
+
+	controls.push(createSliderControl(
+		'viz-slider-bar-height',
+		t('chive-chart-control-common-height'),
+		Number(config.chartHeight || 320),
+		220,
+		720,
+		10,
 		!dataset.configGraficos.bar.enabled
 	));
 
@@ -240,6 +258,37 @@ export function setupBarChartControlListeners(dataset, baseBar, onConfigChanged)
 				bar: {
 					...dataset.configGraficos.bar,
 					showYAxisLabel: toggleBarYLabel.checked,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const inputBarTitle = document.getElementById('viz-input-bar-title');
+	if (inputBarTitle) {
+		inputBarTitle.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					customTitle: String(inputBarTitle.value || '').trim(),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const sliderBarHeight = document.getElementById('viz-slider-bar-height');
+	if (sliderBarHeight) {
+		const syncOutput = () => {
+			const output = sliderBarHeight.parentElement?.querySelector('output');
+			if (output) output.textContent = sliderBarHeight.value;
+		};
+		sliderBarHeight.addEventListener('input', syncOutput);
+		sliderBarHeight.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					chartHeight: Number(sliderBarHeight.value),
 				},
 			});
 			onConfigChanged?.();

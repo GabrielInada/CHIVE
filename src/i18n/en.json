@@ -58,6 +58,8 @@
 	"chive-chart-pie-title": "Pie/Donut chart (composition by category)",
 	"chive-chart-control-axis-label-x": "Show X axis label",
 	"chive-chart-control-axis-label-y": "Show Y axis label",
+	"chive-chart-control-common-title": "Chart title",
+	"chive-chart-control-common-height": "Chart height",
 	"chive-chart-control-bar-category": "Category (bar chart)",
 	"chive-chart-control-bar-sort": "Sort (bar chart)",
 	"chive-chart-control-bar-topn": "Category limit",

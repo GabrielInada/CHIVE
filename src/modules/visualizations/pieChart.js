@@ -52,6 +52,10 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	const showValueLabel = opcoes.showValueLabel !== false;
 	const showLegend = opcoes.showLegend !== false;
 	const labelPosition = opcoes.labelPosition === 'outside' ? 'outside' : 'inside';
+	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
+		? clamp(Number(opcoes.chartHeight), 220, 720)
+		: CHART_DIMENSIONS.pie.height;
 
 	const contador = new Map();
 	dados.forEach(linha => {
@@ -80,10 +84,11 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	hideChartTooltip();
 
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.pie.width, 320);
-	const altura = CHART_DIMENSIONS.pie.height;
+	const altura = chartHeight;
 	const margem = CHART_DIMENSIONS.pie.margins;
+	const titleOffset = customTitle ? 18 : 0;
 	const centerX = (largura - margem.left - margem.right) / 2 + margem.left;
-	const centerY = (altura - margem.top - margem.bottom) / 2 + margem.top;
+	const centerY = (altura - margem.top - margem.bottom - titleOffset) / 2 + margem.top + titleOffset;
 	const maxRadius = Math.max(PIE_CHART.minOuterRadius, Math.min(centerX - margem.left, centerY - margem.top));
 	const outerRadius = clamp(
 		Number.isFinite(rawOuter) ? rawOuter : PIE_CHART.defaultOuterRadius,
@@ -107,6 +112,18 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		.append('svg')
 		.attr('width', largura)
 		.attr('height', altura);
+
+	if (customTitle) {
+		svg
+			.append('text')
+			.attr('x', largura / 2)
+			.attr('y', 16)
+			.attr('text-anchor', 'middle')
+			.attr('font-size', 13)
+			.attr('font-weight', 600)
+			.attr('fill', '#3f3a33')
+			.text(customTitle);
+	}
 
 	const grupo = svg
 		.append('g')

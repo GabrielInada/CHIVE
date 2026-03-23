@@ -60,11 +60,14 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 
 	if (chartConfig.bar.enabled) {
 		blocoBar.style.display = 'block';
+		document.getElementById('chart-bar-container').style.minHeight = `${Number(chartConfig.bar.chartHeight || 320)}px`;
 		const barResult = renderBarChart(
 			document.getElementById('chart-bar-container'),
 			dados,
 			chartConfig.bar.category,
 			{
+				customTitle: chartConfig.bar.customTitle,
+				chartHeight: chartConfig.bar.chartHeight,
 				ordenacao: chartConfig.bar.sort,
 				topN: chartConfig.bar.topN,
 				color: chartConfig.bar.color,
@@ -90,12 +93,15 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 
 	if (chartConfig.scatter.enabled) {
 		blocoScatter.style.display = 'block';
+		document.getElementById('chart-scatter-container').style.minHeight = `${Number(chartConfig.scatter.chartHeight || 320)}px`;
 		const scatterResult = renderScatterPlot(
 			document.getElementById('chart-scatter-container'),
 			dados,
 			chartConfig.scatter.x,
 			chartConfig.scatter.y,
 			{
+				customTitle: chartConfig.scatter.customTitle,
+				chartHeight: chartConfig.scatter.chartHeight,
 				xScale: chartConfig.scatter.xScale,
 				yScale: chartConfig.scatter.yScale,
 				radius: chartConfig.scatter.radius,
@@ -128,12 +134,15 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 
 	if (chartConfig.network.enabled) {
 		blocoNetwork.style.display = 'block';
+		document.getElementById('chart-network-container').style.minHeight = `${Number(chartConfig.network.chartHeight || 420)}px`;
 		const networkResult = renderNetworkGraph(
 			document.getElementById('chart-network-container'),
 			dados,
 			chartConfig.network.source,
 			chartConfig.network.target,
 			{
+				customTitle: chartConfig.network.customTitle,
+				chartHeight: chartConfig.network.chartHeight,
 				weightColumn: chartConfig.network.weight,
 				groupColumn: chartConfig.network.group,
 				nodeRadius: chartConfig.network.nodeRadius,
@@ -162,11 +171,14 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 
 	if (chartConfig.pie.enabled) {
 		blocoPie.style.display = 'block';
+		document.getElementById('chart-pie-container').style.minHeight = `${Number(chartConfig.pie.chartHeight || 360)}px`;
 		const pieResult = renderPieChart(
 			document.getElementById('chart-pie-container'),
 			dados,
 			chartConfig.pie.category,
 			{
+				customTitle: chartConfig.pie.customTitle,
+				chartHeight: chartConfig.pie.chartHeight,
 				measureMode: chartConfig.pie.measureMode,
 				valueColumn: chartConfig.pie.valueColumn,
 				innerRadius: chartConfig.pie.innerRadius,

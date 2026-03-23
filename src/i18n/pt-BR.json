@@ -58,6 +58,8 @@
 	"chive-chart-pie-title": "Pizza/Rosca (composição por categoria)",
 	"chive-chart-control-axis-label-x": "Mostrar rótulo do eixo X",
 	"chive-chart-control-axis-label-y": "Mostrar rótulo do eixo Y",
+	"chive-chart-control-common-title": "Título do gráfico",
+	"chive-chart-control-common-height": "Altura do gráfico",
 	"chive-chart-control-bar-category": "Categoria (barras)",
 	"chive-chart-control-bar-sort": "Ordenação (barras)",
 	"chive-chart-control-bar-topn": "Limite de categorias",

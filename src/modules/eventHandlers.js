@@ -170,8 +170,9 @@ function handleChartAction(menuItem) {
 	} else if (action === 'add-panel') {
 		// Get chart name from DOM
 		const chartBlock = menuItem.closest('.chart-bloco');
-		const titulo = chartBlock?.querySelector('.chart-titulo')?.textContent?.trim()
+		const fallbackTitle = chartBlock?.querySelector('.chart-titulo')?.textContent?.trim()
 			|| t('chive-card-charts');
+		const titulo = getChartSnapshotTitle(containerId, fallbackTitle);
 		const metadata = buildChartSnapshotMetadata(containerId);
 
 		const result = addChartToPanel(containerId, titulo, metadata);
@@ -181,6 +182,29 @@ function handleChartAction(menuItem) {
 			showFeedback(t('chive-panel-add-success'));
 		}
 	}
+}
+
+function getChartSnapshotTitle(containerId, fallbackTitle) {
+	const dataset = getActiveDataset();
+	const config = dataset?.configGraficos || {};
+
+	if (containerId === 'chart-bar-container') {
+		return String(config.bar?.customTitle || '').trim() || fallbackTitle;
+	}
+
+	if (containerId === 'chart-scatter-container') {
+		return String(config.scatter?.customTitle || '').trim() || fallbackTitle;
+	}
+
+	if (containerId === 'chart-pie-container') {
+		return String(config.pie?.customTitle || '').trim() || fallbackTitle;
+	}
+
+	if (containerId === 'chart-network-container') {
+		return String(config.network?.customTitle || '').trim() || fallbackTitle;
+	}
+
+	return fallbackTitle;
 }
 
 function buildChartSnapshotMetadata(containerId) {

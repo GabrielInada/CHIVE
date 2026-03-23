@@ -23,6 +23,10 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.scatter;
+	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
+		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
+		: CHART_DIMENSIONS.scatter.height;
  	const labels = {
 		eixoX: opcoes.labels?.eixoX || 'X',
 		eixoY: opcoes.labels?.eixoY || 'Y',
@@ -53,10 +57,11 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	container.innerHTML = '';
 	hideChartTooltip();
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
-	const altura = CHART_DIMENSIONS.scatter.height;
+	const altura = chartHeight;
 	const margem = CHART_DIMENSIONS.scatter.margins;
+	const titleOffset = customTitle ? 20 : 0;
 	const larguraInterna = largura - margem.left - margem.right;
-	const alturaInterna = altura - margem.top - margem.bottom;
+	const alturaInterna = altura - margem.top - margem.bottom - titleOffset;
 
 	const svg = select(container)
 		.append('svg')
@@ -65,7 +70,19 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 
 	const grupo = svg
 		.append('g')
-		.attr('transform', `translate(${margem.left},${margem.top})`);
+		.attr('transform', `translate(${margem.left},${margem.top + titleOffset})`);
+
+	if (customTitle) {
+		svg
+			.append('text')
+			.attr('x', largura / 2)
+			.attr('y', 16)
+			.attr('text-anchor', 'middle')
+			.attr('font-size', 13)
+			.attr('font-weight', 600)
+			.attr('fill', '#3f3a33')
+			.text(customTitle);
+	}
 
 	let pinnedIndex = null;
 

@@ -1,7 +1,7 @@
 import { CHART_COLORS } from '../../config/index.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { createCheckboxControl, normalizeHexColor } from './shared.js';
+import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 
 function createSelectControl(id, labelKey, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
@@ -123,6 +123,24 @@ export function createScatterPlotControls(dataset, numericOptions) {
 		!dataset.configGraficos.scatter.enabled
 	));
 
+	controls.push(createTextControl(
+		'viz-input-scatter-title',
+		t('chive-chart-control-common-title'),
+		config.customTitle,
+		80,
+		!dataset.configGraficos.scatter.enabled
+	));
+
+	controls.push(createSliderControl(
+		'viz-slider-scatter-height',
+		t('chive-chart-control-common-height'),
+		Number(config.chartHeight || 320),
+		220,
+		720,
+		10,
+		!dataset.configGraficos.scatter.enabled
+	));
+
 	const colorDiv = document.createElement('div');
 	colorDiv.className = 'chart-controle';
 
@@ -240,6 +258,37 @@ export function setupScatterPlotControlListeners(dataset, numericas, onConfigCha
 				scatter: {
 					...dataset.configGraficos.scatter,
 					showYAxisLabel: toggleScatterYLabel.checked,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const inputScatterTitle = document.getElementById('viz-input-scatter-title');
+	if (inputScatterTitle) {
+		inputScatterTitle.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				scatter: {
+					...dataset.configGraficos.scatter,
+					customTitle: String(inputScatterTitle.value || '').trim(),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const sliderScatterHeight = document.getElementById('viz-slider-scatter-height');
+	if (sliderScatterHeight) {
+		const syncOutput = () => {
+			const output = sliderScatterHeight.parentElement?.querySelector('output');
+			if (output) output.textContent = sliderScatterHeight.value;
+		};
+		sliderScatterHeight.addEventListener('input', syncOutput);
+		sliderScatterHeight.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				scatter: {
+					...dataset.configGraficos.scatter,
+					chartHeight: Number(sliderScatterHeight.value),
 				},
 			});
 			onConfigChanged?.();

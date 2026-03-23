@@ -160,18 +160,6 @@ export function renderChartControlsSidebar(dataset) {
 
 	createChartCard(
 		container,
-		'network',
-		config.network.enabled,
-		config.network.expanded === true,
-		t('chive-chart-toggle-network'),
-		t('chive-viz-category-relationship'),
-		t('chive-viz-network-desc'),
-		PREVIEW_NETWORK_SVG,
-		() => createNetworkGraphControls(dataset, todasColunas, numericas, categoricas)
-	);
-
-	createChartCard(
-		container,
 		'pie',
 		config.pie.enabled,
 		config.pie.expanded === true,
@@ -180,6 +168,19 @@ export function renderChartControlsSidebar(dataset) {
 		t('chive-viz-pie-desc'),
 		PREVIEW_PIE_SVG,
 		() => createPieChartControls(dataset, basePie, numericas)
+	);
+
+
+	createChartCard(
+		container,
+		'network',
+		config.network.enabled,
+		config.network.expanded === true,
+		t('chive-chart-toggle-network'),
+		t('chive-viz-category-relationship'),
+		t('chive-viz-network-desc'),
+		PREVIEW_NETWORK_SVG,
+		() => createNetworkGraphControls(dataset, todasColunas, numericas, categoricas)
 	);
 
 	// Setup event listeners for all controls

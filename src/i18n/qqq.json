@@ -58,6 +58,8 @@
 	"chive-chart-pie-title": "Heading for the pie/donut chart block.",
 	"chive-chart-control-axis-label-x": "Label for checkbox control that toggles visibility of the X-axis label text for charts that support axes.",
 	"chive-chart-control-axis-label-y": "Label for checkbox control that toggles visibility of the Y-axis label text for charts that support axes.",
+	"chive-chart-control-common-title": "Label for text input control where users define a custom chart title rendered inside the SVG and reused in panel snapshots.",
+	"chive-chart-control-common-height": "Label for slider control that sets chart rendering height in the visualizations tab.",
 	"chive-chart-control-bar-category": "Label for the select control that chooses which column is used as bar-chart category.",
 	"chive-chart-control-bar-sort": "Label for the select control that chooses bar-chart sorting mode.",
 	"chive-chart-control-bar-topn": "Label for the select control that sets the category limit (top N) for the bar chart.",

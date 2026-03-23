@@ -1,41 +1,7 @@
 import { CHART_COLORS, PIE_CHART } from '../../config/index.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { createCheckboxControl, normalizeHexColor } from './shared.js';
-
-function createSliderControl(id, labelText, value, min, max, step, disabled = false) {
-	const div = document.createElement('div');
-	div.className = 'chart-controle';
-
-	const label = document.createElement('label');
-	label.htmlFor = id;
-	label.textContent = labelText;
-
-	const sliderRow = document.createElement('div');
-	sliderRow.className = 'chart-slider-row';
-
-	const input = document.createElement('input');
-	input.id = id;
-	input.type = 'range';
-	input.className = 'chart-slider-input';
-	input.min = String(min);
-	input.max = String(max);
-	input.step = String(step);
-	input.value = String(value);
-	input.disabled = disabled;
-
-	const output = document.createElement('output');
-	output.className = 'chart-slider-value';
-	output.htmlFor = id;
-	output.textContent = String(value);
-
-	sliderRow.appendChild(input);
-	sliderRow.appendChild(output);
-	div.appendChild(label);
-	div.appendChild(sliderRow);
-
-	return div;
-}
+import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 
 export function createPieChartControls(dataset, categoryOptions, numericOptions) {
 	const config = dataset.configGraficos.pie;
@@ -174,6 +140,24 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 		'viz-toggle-pie-legend',
 		t('chive-chart-control-pie-show-legend'),
 		config.showLegend,
+		!dataset.configGraficos.pie.enabled
+	));
+
+	controls.push(createTextControl(
+		'viz-input-pie-title',
+		t('chive-chart-control-common-title'),
+		config.customTitle,
+		80,
+		!dataset.configGraficos.pie.enabled
+	));
+
+	controls.push(createSliderControl(
+		'viz-slider-pie-height',
+		t('chive-chart-control-common-height'),
+		Number(config.chartHeight || 360),
+		220,
+		720,
+		10,
 		!dataset.configGraficos.pie.enabled
 	));
 
@@ -433,6 +417,37 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, onCon
 				pie: {
 					...dataset.configGraficos.pie,
 					color: normalizeHexColor(colorInput.value, CHART_COLORS.pie),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const inputPieTitle = document.getElementById('viz-input-pie-title');
+	if (inputPieTitle) {
+		inputPieTitle.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					customTitle: String(inputPieTitle.value || '').trim(),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const sliderPieHeight = document.getElementById('viz-slider-pie-height');
+	if (sliderPieHeight) {
+		const syncOutput = () => {
+			const output = sliderPieHeight.parentElement?.querySelector('output');
+			if (output) output.textContent = sliderPieHeight.value;
+		};
+		sliderPieHeight.addEventListener('input', syncOutput);
+		sliderPieHeight.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					chartHeight: Number(sliderPieHeight.value),
 				},
 			});
 			onConfigChanged?.();

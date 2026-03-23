@@ -1,6 +1,6 @@
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { createCheckboxControl } from './shared.js';
+import { createCheckboxControl, createSliderControl, createTextControl } from './shared.js';
 
 function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
@@ -25,40 +25,6 @@ function createSelectControl(id, labelText, optionsArray, selectedValue, disable
 
 	div.appendChild(label);
 	div.appendChild(select);
-	return div;
-}
-
-function createSliderControl(id, labelText, value, min, max, step, disabled = false) {
-	const div = document.createElement('div');
-	div.className = 'chart-controle';
-
-	const label = document.createElement('label');
-	label.htmlFor = id;
-	label.textContent = labelText;
-
-	const sliderRow = document.createElement('div');
-	sliderRow.className = 'chart-slider-row';
-
-	const input = document.createElement('input');
-	input.id = id;
-	input.type = 'range';
-	input.className = 'chart-slider-input';
-	input.min = String(min);
-	input.max = String(max);
-	input.step = String(step);
-	input.value = String(value);
-	input.disabled = disabled;
-
-	const output = document.createElement('output');
-	output.className = 'chart-slider-value';
-	output.htmlFor = id;
-	output.textContent = String(value);
-
-	sliderRow.appendChild(input);
-	sliderRow.appendChild(output);
-	div.appendChild(label);
-	div.appendChild(sliderRow);
-
 	return div;
 }
 
@@ -174,6 +140,24 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		'viz-toggle-network-show-legend',
 		t('chive-chart-control-network-show-legend'),
 		config.showLegend,
+		disabled
+	));
+
+	controls.push(createTextControl(
+		'viz-input-network-title',
+		t('chive-chart-control-common-title'),
+		config.customTitle,
+		80,
+		disabled
+	));
+
+	controls.push(createSliderControl(
+		'viz-slider-network-height',
+		t('chive-chart-control-common-height'),
+		Number(config.chartHeight || 420),
+		220,
+		720,
+		10,
 		disabled
 	));
 
@@ -294,6 +278,37 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, onConfigC
 				network: {
 					...dataset.configGraficos.network,
 					showLegend: legendToggle.checked,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const inputNetworkTitle = document.getElementById('viz-input-network-title');
+	if (inputNetworkTitle) {
+		inputNetworkTitle.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				network: {
+					...dataset.configGraficos.network,
+					customTitle: String(inputNetworkTitle.value || '').trim(),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const sliderNetworkHeight = document.getElementById('viz-slider-network-height');
+	if (sliderNetworkHeight) {
+		const syncOutput = () => {
+			const output = sliderNetworkHeight.parentElement?.querySelector('output');
+			if (output) output.textContent = sliderNetworkHeight.value;
+		};
+		sliderNetworkHeight.addEventListener('input', syncOutput);
+		sliderNetworkHeight.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				network: {
+					...dataset.configGraficos.network,
+					chartHeight: Number(sliderNetworkHeight.value),
 				},
 			});
 			onConfigChanged?.();

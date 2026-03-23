@@ -37,6 +37,10 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.bar;
+	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
+		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
+		: CHART_DIMENSIONS.bar.height;
 	const locale = opcoes.locale || undefined;
 
 	const contador = new Map();
@@ -61,10 +65,11 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	container.innerHTML = '';
  	hideChartTooltip();
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.bar.width, 320);
-	const altura = CHART_DIMENSIONS.bar.height;
+	const altura = chartHeight;
 	const margem = CHART_DIMENSIONS.bar.margins;
+	const titleOffset = customTitle ? 20 : 0;
 	const larguraInterna = largura - margem.left - margem.right;
-	const alturaInterna = altura - margem.top - margem.bottom;
+	const alturaInterna = altura - margem.top - margem.bottom - titleOffset;
 
 	const svg = select(container)
 		.append('svg')
@@ -73,7 +78,19 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 
 	const grupo = svg
 		.append('g')
-		.attr('transform', `translate(${margem.left},${margem.top})`);
+		.attr('transform', `translate(${margem.left},${margem.top + titleOffset})`);
+
+	if (customTitle) {
+		svg
+			.append('text')
+			.attr('x', largura / 2)
+			.attr('y', 16)
+			.attr('text-anchor', 'middle')
+			.attr('font-size', 13)
+			.attr('font-weight', 600)
+			.attr('fill', '#3f3a33')
+			.text(customTitle);
+	}
 
 	let pinnedCategoria = null;
 
