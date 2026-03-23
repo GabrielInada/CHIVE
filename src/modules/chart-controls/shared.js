@@ -81,3 +81,140 @@ export function createSliderControl(id, labelText, value, min, max, step, disabl
 
 	return div;
 }
+
+// Color Presets for palette quick-apply
+export const COLOR_PRESETS = {
+	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
+	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
+	'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
+};
+
+export function hexToRgb(hex) {
+	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+	if (!result) return { r: 0, g: 0, b: 0 };
+	return {
+		r: parseInt(result[1], 16),
+		g: parseInt(result[2], 16),
+		b: parseInt(result[3], 16),
+	};
+}
+
+export function rgbToHex(r, g, b) {
+	const toHex = (val) => Math.round(Math.max(0, Math.min(255, val))).toString(16).padStart(2, '0');
+	return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
+}
+
+export function interpolateColor(hex1, hex2, t) {
+	// t ranges from 0 to 1
+	const clampT = Math.max(0, Math.min(1, t));
+	const rgb1 = hexToRgb(hex1);
+	const rgb2 = hexToRgb(hex2);
+	
+	const r = rgb1.r + (rgb2.r - rgb1.r) * clampT;
+	const g = rgb1.g + (rgb2.g - rgb1.g) * clampT;
+	const b = rgb1.b + (rgb2.b - rgb1.b) * clampT;
+	
+	return rgbToHex(r, g, b);
+}
+
+export function createColorPresetControl(id, labelText, presetName, disabled = false, onSelect) {
+	const div = document.createElement('div');
+	div.className = 'chart-controle';
+
+	const label = document.createElement('label');
+	label.textContent = labelText;
+
+	const presetButtons = document.createElement('div');
+	presetButtons.className = 'chart-color-preset-buttons';
+	presetButtons.style.display = 'flex';
+	presetButtons.style.gap = '6px';
+	presetButtons.style.marginTop = '4px';
+	presetButtons.style.flexWrap = 'wrap';
+
+	Object.entries(COLOR_PRESETS).forEach(([name, colors]) => {
+		const btn = document.createElement('button');
+		btn.type = 'button';
+		btn.dataset.colorPresetControl = id;
+		btn.dataset.presetName = name;
+		btn.textContent = name;
+		btn.className = 'chart-preset-btn';
+		btn.disabled = disabled;
+		btn.style.padding = '4px 8px';
+		btn.style.borderRadius = '3px';
+		btn.style.border = presetName === name ? '2px solid #333' : '1px solid #ccc';
+		btn.style.backgroundColor = '#f9f9f9';
+		btn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+		btn.style.opacity = disabled ? '0.5' : '1';
+		
+		btn.addEventListener('click', () => {
+			if (!disabled && onSelect) {
+				onSelect(name, colors);
+			}
+		});
+
+		presetButtons.appendChild(btn);
+	});
+	
+	div.appendChild(label);
+	div.appendChild(presetButtons);
+	return div;
+}
+
+export function createColorPickerGridControl(id, labelText, items, colorMap, disabled = false, onColorChange) {
+	const div = document.createElement('div');
+	div.className = 'chart-controle';
+
+	const label = document.createElement('label');
+	label.textContent = labelText;
+
+	const grid = document.createElement('div');
+	grid.id = id;
+	grid.className = 'chart-color-picker-grid';
+	grid.style.display = 'grid';
+	grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(120px, 1fr))';
+	grid.style.gap = '8px';
+	grid.style.marginTop = '6px';
+
+	items.forEach((item) => {
+		const itemDiv = document.createElement('div');
+		itemDiv.className = 'chart-color-picker-item';
+		itemDiv.style.display = 'flex';
+		itemDiv.style.alignItems = 'center';
+		itemDiv.style.gap = '6px';
+		itemDiv.style.padding = '4px';
+		itemDiv.style.borderRadius = '3px';
+		itemDiv.style.backgroundColor = '#f5f5f5';
+
+		const colorInput = document.createElement('input');
+		colorInput.type = 'color';
+		colorInput.dataset.colorItem = String(item);
+		colorInput.dataset.colorGridControl = id;
+		colorInput.className = 'chart-color-picker-input';
+		colorInput.value = normalizeHexColor(colorMap[item], '#999999');
+		colorInput.disabled = disabled;
+		colorInput.style.cursor = disabled ? 'not-allowed' : 'pointer';
+		colorInput.style.width = '30px';
+		colorInput.style.height = '28px';
+
+		const label2 = document.createElement('span');
+		label2.textContent = String(item).slice(0, 12);
+		label2.style.fontSize = '12px';
+		label2.style.whiteSpace = 'nowrap';
+		label2.style.overflow = 'hidden';
+		label2.style.textOverflow = 'ellipsis';
+
+		colorInput.addEventListener('change', () => {
+			if (!disabled && onColorChange) {
+				onColorChange(item, colorInput.value);
+			}
+		});
+
+		itemDiv.appendChild(colorInput);
+		itemDiv.appendChild(label2);
+		grid.appendChild(itemDiv);
+	});
+	
+	div.appendChild(label);
+	div.appendChild(grid);
+	return div;
+}

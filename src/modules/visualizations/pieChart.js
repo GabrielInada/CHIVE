@@ -37,6 +37,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		? String(opcoes.color).trim()
 		: CHART_COLORS.pie;
 	const locale = opcoes.locale || undefined;
+		const customSliceColors = opcoes.customSliceColors || {};
 	const labels = {
 		categoria: opcoes.labels?.categoria || 'Category',
 		contagem: opcoes.labels?.contagem || 'Count',
@@ -172,7 +173,13 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		.enter()
 		.append('path')
 		.attr('d', arcGenerator)
-		.attr('fill', (_, index) => buildSliceColor(color, index))
+		.attr('fill', (item) => {
+			const categoria = item.data.categoria;
+			if (customSliceColors[categoria]) {
+				return customSliceColors[categoria];
+			}
+			return buildSliceColor(color, linhas.findIndex(line => line.categoria === categoria));
+		})
 		.attr('stroke', '#fff')
 		.attr('stroke-width', 1)
 		.on('mouseenter', (event, item) => {
@@ -288,7 +295,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 				.attr('width', 10)
 				.attr('height', 10)
 				.attr('rx', 2)
-				.attr('fill', buildSliceColor(color, index));
+				.attr('fill', customSliceColors[item.categoria] || buildSliceColor(color, index));
 			row.append('text')
 				.attr('x', 14)
 				.attr('y', 9)

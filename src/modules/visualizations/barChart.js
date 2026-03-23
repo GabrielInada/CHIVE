@@ -3,6 +3,27 @@ import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
 import { formatarNumero } from '../../utils/formatters.js';
 
+function hexToRgb(hex) {
+	const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || '').trim());
+	if (!match) return { r: 0, g: 0, b: 0 };
+	return {
+		r: parseInt(match[1], 16),
+		g: parseInt(match[2], 16),
+		b: parseInt(match[3], 16),
+	};
+}
+
+function toHex(value) {
+	return Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, '0');
+}
+
+function interpolateColor(minColor, maxColor, t) {
+	const clamped = Math.max(0, Math.min(1, t));
+	const start = hexToRgb(minColor);
+	const end = hexToRgb(maxColor);
+	return `#${toHex(start.r + ((end.r - start.r) * clamped))}${toHex(start.g + ((end.g - start.g) * clamped))}${toHex(start.b + ((end.b - start.b) * clamped))}`;
+}
+
 function ordenarCategorias(linhas, ordenacao) {
 	if (ordenacao === 'count-asc') {
 		return linhas.sort((a, b) => a[1] - b[1] || String(a[0]).localeCompare(String(b[0])));
@@ -37,6 +58,18 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.bar;
+	const colorMode = ['uniform', 'gradient', 'gradient-manual'].includes(opcoes.colorMode)
+		? opcoes.colorMode
+		: 'uniform';
+	const gradientMinColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.gradientMinColor || '').trim())
+		? String(opcoes.gradientMinColor).trim()
+		: color;
+	const gradientMaxColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.gradientMaxColor || '').trim())
+		? String(opcoes.gradientMaxColor).trim()
+		: '#ffffff';
+	const manualThresholdPct = Number.isFinite(Number(opcoes.manualThresholdPct))
+		? Math.max(0, Math.min(100, Number(opcoes.manualThresholdPct)))
+		: 50;
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
 		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
@@ -128,6 +161,22 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		.nice()
 		.range([alturaInterna, 0]);
 
+	const minValor = Math.min(...linhas.map(item => item[1]));
+	const maxValor = Math.max(...linhas.map(item => item[1]));
+	const deltaValor = maxValor - minValor || 1;
+	const thresholdValue = minValor + (deltaValor * (manualThresholdPct / 100));
+
+	const getBarColor = (item) => {
+		if (colorMode === 'uniform') return color;
+		if (colorMode === 'gradient') {
+			return interpolateColor(gradientMinColor, gradientMaxColor, (item[1] - minValor) / deltaValor);
+		}
+		if (colorMode === 'gradient-manual') {
+			return item[1] <= thresholdValue ? gradientMinColor : gradientMaxColor;
+		}
+		return color;
+	};
+
 	grupo
 		.selectAll('rect')
 		.data(linhas)
@@ -138,7 +187,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		.attr('width', escalaX.bandwidth())
 		.attr('height', item => alturaInterna - escalaY(item[1]))
 		.attr('rx', 3)
-		.attr('fill', color)
+		.attr('fill', item => getBarColor(item))
 		.on('mouseenter', (event, item) => {
 			if (pinnedCategoria !== null) return;
 			exibirTooltip(event, item);

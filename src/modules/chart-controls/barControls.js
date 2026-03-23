@@ -2,6 +2,33 @@ import { CHART_COLORS } from '../../config/index.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
+import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
+
+function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
+	const div = document.createElement('div');
+	div.className = 'chart-controle';
+
+	const label = document.createElement('label');
+	label.htmlFor = id;
+	label.textContent = labelText;
+
+	const select = document.createElement('select');
+	select.id = id;
+	select.className = 'linhas-select';
+	select.disabled = disabled;
+
+	optionsArray.forEach(opt => {
+		const option = document.createElement('option');
+		option.value = opt.value;
+		option.textContent = opt.label;
+		option.selected = String(opt.value) === String(selectedValue);
+		select.appendChild(option);
+	});
+
+	div.appendChild(label);
+	div.appendChild(select);
+	return div;
+}
 
 export function createBarChartControls(dataset, categoryOptions) {
 	const config = dataset.configGraficos.bar;
@@ -130,6 +157,18 @@ export function createBarChartControls(dataset, categoryOptions) {
 		!dataset.configGraficos.bar.enabled
 	));
 
+	controls.push(createSelectControl(
+		'viz-select-bar-color-mode',
+		t('chive-chart-color-mode'),
+		[
+			{ value: 'uniform', label: t('chive-chart-color-uniform') },
+			{ value: 'gradient', label: t('chive-chart-color-gradient') },
+			{ value: 'gradient-manual', label: t('chive-chart-color-gradient-manual') },
+		],
+		config.colorMode,
+		!dataset.configGraficos.bar.enabled
+	));
+
 	const colorDiv = document.createElement('div');
 	colorDiv.className = 'chart-controle';
 
@@ -142,11 +181,60 @@ export function createBarChartControls(dataset, categoryOptions) {
 	colorInput.type = 'color';
 	colorInput.className = 'chart-color-input';
 	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.bar);
-	colorInput.disabled = !dataset.configGraficos.bar.enabled;
+	colorInput.disabled = !dataset.configGraficos.bar.enabled || config.colorMode !== 'uniform';
 
 	colorDiv.appendChild(colorLabel);
 	colorDiv.appendChild(colorInput);
 	controls.push(colorDiv);
+
+	const minColorDiv = document.createElement('div');
+	minColorDiv.className = 'chart-controle';
+	const minColorLabel = document.createElement('label');
+	minColorLabel.htmlFor = 'viz-input-bar-gradient-min';
+	minColorLabel.textContent = t('chive-chart-color-gradient-min');
+	const minColorInput = document.createElement('input');
+	minColorInput.id = 'viz-input-bar-gradient-min';
+	minColorInput.type = 'color';
+	minColorInput.className = 'chart-color-input';
+	minColorInput.value = normalizeHexColor(config.gradientMinColor, CHART_COLORS.bar);
+	minColorInput.disabled = !dataset.configGraficos.bar.enabled || config.colorMode === 'uniform';
+	minColorDiv.appendChild(minColorLabel);
+	minColorDiv.appendChild(minColorInput);
+	controls.push(minColorDiv);
+
+	const maxColorDiv = document.createElement('div');
+	maxColorDiv.className = 'chart-controle';
+	const maxColorLabel = document.createElement('label');
+	maxColorLabel.htmlFor = 'viz-input-bar-gradient-max';
+	maxColorLabel.textContent = t('chive-chart-color-gradient-max');
+	const maxColorInput = document.createElement('input');
+	maxColorInput.id = 'viz-input-bar-gradient-max';
+	maxColorInput.type = 'color';
+	maxColorInput.className = 'chart-color-input';
+	maxColorInput.value = normalizeHexColor(config.gradientMaxColor, '#ffffff');
+	maxColorInput.disabled = !dataset.configGraficos.bar.enabled || config.colorMode === 'uniform';
+	maxColorDiv.appendChild(maxColorLabel);
+	maxColorDiv.appendChild(maxColorInput);
+	controls.push(maxColorDiv);
+
+	if (config.colorMode === 'gradient-manual') {
+		controls.push(createSliderControl(
+			'viz-slider-bar-threshold',
+			t('chive-chart-color-threshold'),
+			Number(config.manualThresholdPct || 50),
+			0,
+			100,
+			5,
+			!dataset.configGraficos.bar.enabled
+		));
+	}
+
+	controls.push(createColorPresetControl(
+		'viz-bar-color-preset',
+		t('chive-chart-color-palette'),
+		config.colorScheme || 'Bold',
+		!dataset.configGraficos.bar.enabled
+	));
 
 	return controls;
 }
@@ -237,6 +325,85 @@ export function setupBarChartControlListeners(dataset, baseBar, onConfigChanged)
 			onConfigChanged?.();
 		});
 	}
+
+	const selectBarColorMode = document.getElementById('viz-select-bar-color-mode');
+	if (selectBarColorMode) {
+		selectBarColorMode.addEventListener('change', () => {
+			const nextMode = ['uniform', 'gradient', 'gradient-manual'].includes(selectBarColorMode.value)
+				? selectBarColorMode.value
+				: 'uniform';
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					colorMode: nextMode,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const inputBarGradientMin = document.getElementById('viz-input-bar-gradient-min');
+	if (inputBarGradientMin) {
+		inputBarGradientMin.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					gradientMinColor: normalizeHexColor(inputBarGradientMin.value, CHART_COLORS.bar),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const inputBarGradientMax = document.getElementById('viz-input-bar-gradient-max');
+	if (inputBarGradientMax) {
+		inputBarGradientMax.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					gradientMaxColor: normalizeHexColor(inputBarGradientMax.value, '#ffffff'),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const sliderBarThreshold = document.getElementById('viz-slider-bar-threshold');
+	if (sliderBarThreshold) {
+		const syncOutput = () => {
+			const output = sliderBarThreshold.parentElement?.querySelector('output');
+			if (output) output.textContent = sliderBarThreshold.value;
+		};
+		sliderBarThreshold.addEventListener('input', syncOutput);
+		sliderBarThreshold.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					manualThresholdPct: Number(sliderBarThreshold.value),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const barPresetButtons = document.querySelectorAll('button[data-color-preset-control="viz-bar-color-preset"]');
+	barPresetButtons.forEach(button => {
+		button.addEventListener('click', () => {
+			const presetName = button.dataset.presetName;
+			const palette = COLOR_PRESETS[presetName] || [];
+			if (palette.length === 0) return;
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					colorScheme: presetName,
+					color: normalizeHexColor(palette[0], CHART_COLORS.bar),
+					gradientMinColor: normalizeHexColor(palette[0], CHART_COLORS.bar),
+					gradientMaxColor: normalizeHexColor(palette[palette.length - 1], '#ffffff'),
+				},
+			});
+			onConfigChanged?.();
+		});
+	});
 
 	const toggleBarXLabel = document.getElementById('viz-toggle-bar-x-label');
 	if (toggleBarXLabel) {

@@ -181,5 +181,24 @@
 	"chive-error-upload-processing": "Unable to process uploaded file right now.",
 	"chive-error-upload-input-missing": "Upload control is unavailable right now.",
 	"chive-error-upload-zone-missing": "Upload area is unavailable right now.",
-	"chive-error-internal": "An internal application error occurred."
+
+	"chive-error-internal": "An internal application error occurred.",
+	"chive-chart-color-palette": "Color palette",
+	"chive-chart-color-mode": "Color mode",
+	"chive-chart-color-uniform": "Single color",
+	"chive-chart-color-gradient": "Auto gradient",
+	"chive-chart-color-gradient-manual": "Manual gradient",
+	"chive-chart-color-by-field": "By column",
+	"chive-chart-color-per-item": "Per item",
+	"chive-chart-color-gradient-min": "Start color (minimum)",
+	"chive-chart-color-gradient-max": "End color (maximum)",
+	"chive-chart-color-threshold": "Color threshold",
+	"chive-chart-color-source-node": "Source node color",
+	"chive-chart-color-target-node": "Target node color",
+	"chive-chart-color-edge-by-weight": "Link color by weight",
+	"chive-chart-color-pie-slices": "Sector colors",
+	"chive-chart-color-scatter-field": "Encode by column",
+	"chive-chart-color-scatter-numeric": "Numeric field",
+	"chive-chart-color-scatter-category": "Category field",
+	"chive-chart-color-scheme": "Color scheme"
 }

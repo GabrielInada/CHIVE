@@ -3,6 +3,33 @@ import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.
 import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
 import { formatarNumero } from '../../utils/formatters.js';
 
+const SCATTER_PALETTES = {
+	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
+	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
+	'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
+};
+
+function hexToRgb(hex) {
+	const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || '').trim());
+	if (!match) return { r: 0, g: 0, b: 0 };
+	return {
+		r: parseInt(match[1], 16),
+		g: parseInt(match[2], 16),
+		b: parseInt(match[3], 16),
+	};
+}
+
+function toHex(v) {
+	return Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0');
+}
+
+function interpolateColor(minColor, maxColor, t) {
+	const clamped = Math.max(0, Math.min(1, t));
+	const a = hexToRgb(minColor);
+	const b = hexToRgb(maxColor);
+	return `#${toHex(a.r + ((b.r - a.r) * clamped))}${toHex(a.g + ((b.g - a.g) * clamped))}${toHex(a.b + ((b.b - a.b) * clamped))}`;
+}
+
 function normalizarDominio([minimo, maximo]) {
 	if (!Number.isFinite(minimo) || !Number.isFinite(maximo)) return [0, 1];
 	if (minimo === maximo) {
@@ -23,6 +50,17 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.scatter;
+	const colorMode = ['uniform', 'numeric', 'category'].includes(opcoes.colorMode)
+		? opcoes.colorMode
+		: 'uniform';
+	const colorField = opcoes.colorField || null;
+	const gradientMinColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.gradientMinColor || '').trim())
+		? String(opcoes.gradientMinColor).trim()
+		: color;
+	const gradientMaxColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.gradientMaxColor || '').trim())
+		? String(opcoes.gradientMaxColor).trim()
+		: '#ffffff';
+	const colorScheme = SCATTER_PALETTES[opcoes.colorScheme] ? opcoes.colorScheme : 'Bold';
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
 		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
@@ -39,7 +77,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const locale = opcoes.locale || undefined;
 
 	let pontos = dados
-		.map((linha, index) => ({ x: Number(linha[eixoX]), y: Number(linha[eixoY]), index }))
+		.map((linha, index) => ({ x: Number(linha[eixoX]), y: Number(linha[eixoY]), index, raw: linha }))
 		.filter(ponto => Number.isFinite(ponto.x) && Number.isFinite(ponto.y));
 
 	if (xScale === 'log') {
@@ -121,6 +159,42 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		.nice()
 		.range([alturaInterna, 0]);
 
+	let getPointColor = () => color;
+	if (colorMode === 'numeric' && colorField) {
+		const numericValues = pontos
+			.map(ponto => Number(ponto.raw?.[colorField]))
+			.filter(Number.isFinite);
+		if (numericValues.length > 0) {
+			const min = Math.min(...numericValues);
+			const max = Math.max(...numericValues);
+			const delta = max - min || 1;
+			getPointColor = ponto => {
+				const v = Number(ponto.raw?.[colorField]);
+				if (!Number.isFinite(v)) return color;
+				return interpolateColor(gradientMinColor, gradientMaxColor, (v - min) / delta);
+			};
+		}
+	}
+
+	if (colorMode === 'category' && colorField) {
+		const palette = SCATTER_PALETTES[colorScheme];
+		const categoryMap = new Map();
+		pontos.forEach(ponto => {
+			const cat = ponto.raw?.[colorField] === null || ponto.raw?.[colorField] === undefined || ponto.raw?.[colorField] === ''
+				? '—'
+				: String(ponto.raw?.[colorField]);
+			if (!categoryMap.has(cat)) {
+				categoryMap.set(cat, palette[categoryMap.size % palette.length]);
+			}
+		});
+		getPointColor = ponto => {
+			const cat = ponto.raw?.[colorField] === null || ponto.raw?.[colorField] === undefined || ponto.raw?.[colorField] === ''
+				? '—'
+				: String(ponto.raw?.[colorField]);
+			return categoryMap.get(cat) || color;
+		};
+	}
+
 	grupo
 		.selectAll('circle')
 		.data(pontos)
@@ -129,7 +203,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		.attr('cx', ponto => escalaX(ponto.x))
 		.attr('cy', ponto => escalaY(ponto.y))
 		.attr('r', radius)
-		.attr('fill', color)
+		.attr('fill', ponto => getPointColor(ponto))
 		.attr('opacity', opacity)
 		.on('mouseenter', (event, ponto) => {
 			if (pinnedIndex !== null) return;

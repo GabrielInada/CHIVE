@@ -181,5 +181,24 @@
 	"chive-error-upload-processing": "Não foi possível processar o arquivo enviado no momento.",
 	"chive-error-upload-input-missing": "O controle de upload está indisponível no momento.",
 	"chive-error-upload-zone-missing": "A área de upload está indisponível no momento.",
-	"chive-error-internal": "Ocorreu um erro interno na aplicação."
+
+	"chive-error-internal": "Ocorreu um erro interno na aplicação.",
+	"chive-chart-color-palette": "Paleta de cores",
+	"chive-chart-color-mode": "Modo de cor",
+	"chive-chart-color-uniform": "Cor única",
+	"chive-chart-color-gradient": "Gradiente automático",
+	"chive-chart-color-gradient-manual": "Gradiente manual",
+	"chive-chart-color-by-field": "Por coluna",
+	"chive-chart-color-per-item": "Por item",
+	"chive-chart-color-gradient-min": "Cor inicial (mínimo)",
+	"chive-chart-color-gradient-max": "Cor final (máximo)",
+	"chive-chart-color-threshold": "Limiar de cores",
+	"chive-chart-color-source-node": "Cor dos nós de origem",
+	"chive-chart-color-target-node": "Cor dos nós de destino",
+	"chive-chart-color-edge-by-weight": "Cor dos links por peso",
+	"chive-chart-color-pie-slices": "Cores dos setores",
+	"chive-chart-color-scatter-field": "Codificar por coluna",
+	"chive-chart-color-scatter-numeric": "Campo numérico",
+	"chive-chart-color-scatter-category": "Campo categórico",
+	"chive-chart-color-scheme": "Esquema de cores"
 }

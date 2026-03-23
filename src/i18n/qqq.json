@@ -180,5 +180,24 @@
 	"chive-error-upload-processing": "Fallback error shown when file upload processing fails and no specific message is available.",
 	"chive-error-upload-input-missing": "Error shown when the hidden file input element is missing from the DOM during setup.",
 	"chive-error-upload-zone-missing": "Error shown when the upload drop zone element is missing from the DOM during setup.",
-	"chive-error-internal": "Fallback error message for unexpected internal application failures."
+
+	"chive-error-internal": "Fallback error message for unexpected internal application failures.",
+	"chive-chart-color-palette": "Label for quick-apply color palette preset buttons (Pastel, Bold, Colorblind-Safe).",
+	"chive-chart-color-mode": "Label for dropdown selector of color rendering mode (uniform, gradient, per-item, etc).",
+	"chive-chart-color-uniform": "Option label for uniform/single-color mode.",
+	"chive-chart-color-gradient": "Option label for automatic gradient coloring (min-to-max value interpolation).",
+	"chive-chart-color-gradient-manual": "Option label for manual threshold-based gradient color mode.",
+	"chive-chart-color-by-field": "Option label for coloring by data field/column values.",
+	"chive-chart-color-per-item": "Option label for individual per-category or per-item custom coloring.",
+	"chive-chart-color-gradient-min": "Label for color picker for the start/minimum value in gradient.",
+	"chive-chart-color-gradient-max": "Label for color picker for the end/maximum value in gradient.",
+	"chive-chart-color-threshold": "Label for threshold settings in manual gradient mode.",
+	"chive-chart-color-source-node": "Label for color picker for network graph source (origin) nodes.",
+	"chive-chart-color-target-node": "Label for color picker for network graph target (destination) nodes.",
+	"chive-chart-color-edge-by-weight": "Label for option to color network edges by link weight (gradient).",
+	"chive-chart-color-pie-slices": "Label for the per-sector color customization grid in pie chart controls.",
+	"chive-chart-color-scatter-field": "Label for dropdown to select which column should encode scatter plot point colors.",
+	"chive-chart-color-scatter-numeric": "Option label for encoding scatter plot colors by numeric field (continuous gradient).",
+	"chive-chart-color-scatter-category": "Option label for encoding scatter plot colors by category field (discrete palette).",
+	"chive-chart-color-scheme": "Label for color scheme selector (viridis, plasma, cool, warm, etc)."
 }

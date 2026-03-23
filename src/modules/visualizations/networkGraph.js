@@ -3,8 +3,6 @@ import {
 	forceLink,
 	forceManyBody,
 	forceSimulation,
-	scaleOrdinal,
-	schemeCategory10,
 	select,
 	drag,
 	zoom,
@@ -15,6 +13,27 @@ import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/index.js';
 import { formatarNumero } from '../../utils/formatters.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
+
+function hexToRgb(hex) {
+	const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || '').trim());
+	if (!match) return { r: 0, g: 0, b: 0 };
+	return {
+		r: parseInt(match[1], 16),
+		g: parseInt(match[2], 16),
+		b: parseInt(match[3], 16),
+	};
+}
+
+function toHex(value) {
+	return Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, '0');
+}
+
+function interpolateColor(minColor, maxColor, t) {
+	const clamped = Math.max(0, Math.min(1, t));
+	const start = hexToRgb(minColor);
+	const end = hexToRgb(maxColor);
+	return `#${toHex(start.r + ((end.r - start.r) * clamped))}${toHex(start.g + ((end.g - start.g) * clamped))}${toHex(start.b + ((end.b - start.b) * clamped))}`;
+}
 
 function sanitizeNodeValue(value) {
 	if (value === null || value === undefined) return '';
@@ -84,6 +103,13 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		: NETWORK_GRAPH.defaultAlphaDecay;
 	const showLegend = opcoes.showLegend !== false;
 	const showNodeLabels = opcoes.showNodeLabels === true;
+	const sourceNodeColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.sourceNodeColor || '').trim())
+		? String(opcoes.sourceNodeColor).trim()
+		: '#e3743d';
+	const targetNodeColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.targetNodeColor || '').trim())
+		? String(opcoes.targetNodeColor).trim()
+		: '#6b94c9';
+	const edgeColorMode = opcoes.edgeColorMode === 'uniform' ? 'uniform' : 'gradient';
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
 		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
@@ -126,10 +152,18 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 			.text(customTitle);
 	}
 
-	const color = scaleOrdinal(schemeCategory10);
-
 	const links = network.links.map(link => ({ ...link }));
 	const nodes = network.nodes.map(node => ({ ...node }));
+	const sourceNodeIds = new Set(network.links.map(link => String(link.source)));
+	const targetNodeIds = new Set(network.links.map(link => String(link.target)));
+	const getNodeColor = (nodeData) => {
+		const isSource = sourceNodeIds.has(String(nodeData.id));
+		const isTarget = targetNodeIds.has(String(nodeData.id));
+		if (isSource && isTarget) return interpolateColor(sourceNodeColor, targetNodeColor, 0.5);
+		if (isSource) return sourceNodeColor;
+		if (isTarget) return targetNodeColor;
+		return interpolateColor(sourceNodeColor, targetNodeColor, 0.5);
+	};
 
 	const simulation = forceSimulation(nodes)
 		.force('link', forceLink(links).id(node => node.id).distance(linkDistance))
@@ -151,14 +185,21 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		showChartTooltip(content, event.pageX, event.pageY);
 	};
 
+	const defs = svg.append('defs');
 	const link = viewport
 		.append('g')
-		.attr('stroke', '#7d7d7d')
 		.attr('stroke-opacity', linkOpacity)
 		.selectAll('line')
 		.data(links)
 		.enter()
 		.append('line')
+		.each(function setGradientId(d, index) {
+			d._gradientId = `network-link-gradient-${index}-${Math.random().toString(36).slice(2, 8)}`;
+		})
+		.attr('stroke', d => {
+			if (edgeColorMode === 'uniform') return '#7d7d7d';
+			return `url(#${d._gradientId})`;
+		})
 		.attr('stroke-width', d => Math.max(1, Math.sqrt(Number(d.value) || 1)))
 		.on('mouseenter', (event, linkData) => {
 			const content = document.createElement('div');
@@ -191,7 +232,7 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		.enter()
 		.append('circle')
 		.attr('r', nodeRadius)
-		.attr('fill', d => color(d.group || 'default'))
+		.attr('fill', d => getNodeColor(d))
 		.on('mouseenter', (event, nodeData) => {
 			if (pinnedNode !== null) return;
 			showNodeTooltip(event, nodeData);
@@ -266,13 +307,15 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 	);
 
 	if (showLegend) {
-		const legendGroups = Array.from(new Set(nodes.map(nodeData => nodeData.group || 'default')));
 		const legend = svg
 			.append('g')
 			.attr('transform', `translate(${-(largura / 2) + 12},${-(altura / 2) + 12})`)
 			.attr('class', 'network-legend');
 
-		legendGroups.slice(0, 10).forEach((group, index) => {
+		[
+			{ label: 'Source', color: sourceNodeColor },
+			{ label: 'Target', color: targetNodeColor },
+		].forEach((item, index) => {
 			const row = legend.append('g').attr('transform', `translate(0,${index * 14})`);
 			row
 				.append('rect')
@@ -280,18 +323,37 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 				.attr('height', 8)
 				.attr('rx', 1)
 				.attr('ry', 1)
-				.attr('fill', color(group));
+				.attr('fill', item.color);
 			row
 				.append('text')
 				.attr('x', 12)
 				.attr('y', 7)
 				.attr('font-size', 10)
 				.attr('fill', '#3f3a33')
-				.text(group);
+				.text(item.label);
 		});
 	}
 
 	simulation.on('tick', () => {
+		if (edgeColorMode === 'gradient') {
+			links.forEach(d => {
+				const gradient = defs.select(`#${d._gradientId}`).empty()
+					? defs.append('linearGradient').attr('id', d._gradientId)
+					: defs.select(`#${d._gradientId}`);
+
+				gradient
+					.attr('gradientUnits', 'userSpaceOnUse')
+					.attr('x1', d.source.x)
+					.attr('y1', d.source.y)
+					.attr('x2', d.target.x)
+					.attr('y2', d.target.y);
+
+				gradient.selectAll('stop').remove();
+				gradient.append('stop').attr('offset', '0%').attr('stop-color', sourceNodeColor);
+				gradient.append('stop').attr('offset', '100%').attr('stop-color', targetNodeColor);
+			});
+		}
+
 		link
 			.attr('x1', d => d.source.x)
 			.attr('y1', d => d.source.y)

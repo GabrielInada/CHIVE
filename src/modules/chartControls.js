@@ -155,7 +155,7 @@ export function renderChartControlsSidebar(dataset) {
 		t('chive-viz-category-relationship'),
 		t('chive-viz-scatter-desc'),
 		PREVIEW_SCATTER_SVG,
-		() => createScatterPlotControls(dataset, numericas)
+		() => createScatterPlotControls(dataset, numericas, todasColunas)
 	);
 
 	createChartCard(
@@ -269,6 +269,6 @@ function createChartCard(container, chartName, enabled, expanded, label, categor
 function setupChartControlListeners(dataset, baseBar, numericas, basePie, todasColunas) {
 	setupBarChartControlListeners(dataset, baseBar, onChartConfigChangeCallback);
 	setupNetworkGraphControlListeners(dataset, todasColunas, onChartConfigChangeCallback);
-	setupScatterPlotControlListeners(dataset, numericas, onChartConfigChangeCallback);
+	setupScatterPlotControlListeners(dataset, numericas, todasColunas, onChartConfigChangeCallback);
 	setupPieChartControlListeners(dataset, basePie, numericas, onChartConfigChangeCallback);
 }

@@ -2,6 +2,7 @@ import { CHART_COLORS } from '../../config/index.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
+import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 
 function createSelectControl(id, labelKey, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
@@ -29,9 +30,11 @@ function createSelectControl(id, labelKey, optionsArray, selectedValue, disabled
 	return div;
 }
 
-export function createScatterPlotControls(dataset, numericOptions) {
+export function createScatterPlotControls(dataset, numericOptions, allOptions = []) {
 	const config = dataset.configGraficos.scatter;
 	const controls = [];
+	const disabled = !dataset.configGraficos.scatter.enabled;
+	const categoryOptions = allOptions.filter(option => !numericOptions.includes(option));
 
 	const xOptions = [
 		{ value: '', label: t('chive-chart-option-none') },
@@ -54,7 +57,7 @@ export function createScatterPlotControls(dataset, numericOptions) {
 		'chive-chart-control-scatter-y',
 		yOptions,
 		config.y,
-		!dataset.configGraficos.scatter.enabled,
+		disabled,
 	));
 
 	const xScaleOptions = [
@@ -66,7 +69,7 @@ export function createScatterPlotControls(dataset, numericOptions) {
 		'chive-chart-control-scatter-xscale',
 		xScaleOptions,
 		config.xScale,
-		!dataset.configGraficos.scatter.enabled,
+		disabled,
 	));
 
 	const yScaleOptions = [
@@ -78,7 +81,7 @@ export function createScatterPlotControls(dataset, numericOptions) {
 		'chive-chart-control-scatter-yscale',
 		yScaleOptions,
 		config.yScale,
-		!dataset.configGraficos.scatter.enabled,
+		disabled,
 	));
 
 	const radiusOptions = [
@@ -92,7 +95,7 @@ export function createScatterPlotControls(dataset, numericOptions) {
 		'chive-chart-control-scatter-radius',
 		radiusOptions,
 		config.radius,
-		!dataset.configGraficos.scatter.enabled,
+		disabled,
 	));
 
 	const opacityOptions = [
@@ -106,21 +109,48 @@ export function createScatterPlotControls(dataset, numericOptions) {
 		'chive-chart-control-scatter-opacity',
 		opacityOptions,
 		config.opacity,
-		!dataset.configGraficos.scatter.enabled,
+		disabled,
+	));
+
+	const colorModeOptions = [
+		{ value: 'uniform', label: t('chive-chart-color-uniform') },
+		{ value: 'numeric', label: t('chive-chart-color-scatter-numeric') },
+		{ value: 'category', label: t('chive-chart-color-scatter-category') },
+	];
+	controls.push(createSelectControl(
+		'viz-select-scatter-color-mode',
+		'chive-chart-color-mode',
+		colorModeOptions,
+		config.colorMode,
+		disabled,
+	));
+
+	const colorFieldOptions = config.colorMode === 'category'
+		? categoryOptions
+		: numericOptions;
+	controls.push(createSelectControl(
+		'viz-select-scatter-color-field',
+		'chive-chart-color-scatter-field',
+		[
+			{ value: '', label: t('chive-chart-option-none') },
+			...colorFieldOptions.map(opt => ({ value: opt, label: opt })),
+		],
+		config.colorField,
+		disabled || config.colorMode === 'uniform',
 	));
 
 	controls.push(createCheckboxControl(
 		'viz-toggle-scatter-x-label',
 		t('chive-chart-control-axis-label-x'),
 		config.showXAxisLabel,
-		!dataset.configGraficos.scatter.enabled
+		disabled
 	));
 
 	controls.push(createCheckboxControl(
 		'viz-toggle-scatter-y-label',
 		t('chive-chart-control-axis-label-y'),
 		config.showYAxisLabel,
-		!dataset.configGraficos.scatter.enabled
+		disabled
 	));
 
 	controls.push(createTextControl(
@@ -128,7 +158,7 @@ export function createScatterPlotControls(dataset, numericOptions) {
 		t('chive-chart-control-common-title'),
 		config.customTitle,
 		80,
-		!dataset.configGraficos.scatter.enabled
+		disabled
 	));
 
 	controls.push(createSliderControl(
@@ -138,7 +168,7 @@ export function createScatterPlotControls(dataset, numericOptions) {
 		220,
 		720,
 		10,
-		!dataset.configGraficos.scatter.enabled
+		disabled
 	));
 
 	const colorDiv = document.createElement('div');
@@ -153,16 +183,64 @@ export function createScatterPlotControls(dataset, numericOptions) {
 	colorInput.type = 'color';
 	colorInput.className = 'chart-color-input';
 	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.scatter);
-	colorInput.disabled = !dataset.configGraficos.scatter.enabled;
+	colorInput.disabled = disabled || config.colorMode !== 'uniform';
 
 	colorDiv.appendChild(colorLabel);
 	colorDiv.appendChild(colorInput);
 	controls.push(colorDiv);
 
+	const minColorDiv = document.createElement('div');
+	minColorDiv.className = 'chart-controle';
+	const minColorLabel = document.createElement('label');
+	minColorLabel.htmlFor = 'viz-input-scatter-gradient-min';
+	minColorLabel.textContent = t('chive-chart-color-gradient-min');
+	const minColorInput = document.createElement('input');
+	minColorInput.id = 'viz-input-scatter-gradient-min';
+	minColorInput.type = 'color';
+	minColorInput.className = 'chart-color-input';
+	minColorInput.value = normalizeHexColor(config.gradientMinColor, CHART_COLORS.scatter);
+	minColorInput.disabled = disabled || config.colorMode === 'uniform';
+	minColorDiv.appendChild(minColorLabel);
+	minColorDiv.appendChild(minColorInput);
+	controls.push(minColorDiv);
+
+	const maxColorDiv = document.createElement('div');
+	maxColorDiv.className = 'chart-controle';
+	const maxColorLabel = document.createElement('label');
+	maxColorLabel.htmlFor = 'viz-input-scatter-gradient-max';
+	maxColorLabel.textContent = t('chive-chart-color-gradient-max');
+	const maxColorInput = document.createElement('input');
+	maxColorInput.id = 'viz-input-scatter-gradient-max';
+	maxColorInput.type = 'color';
+	maxColorInput.className = 'chart-color-input';
+	maxColorInput.value = normalizeHexColor(config.gradientMaxColor, '#ffffff');
+	maxColorInput.disabled = disabled || config.colorMode === 'uniform';
+	maxColorDiv.appendChild(maxColorLabel);
+	maxColorDiv.appendChild(maxColorInput);
+	controls.push(maxColorDiv);
+
+	if (config.colorMode === 'category') {
+		controls.push(createSelectControl(
+			'viz-select-scatter-color-scheme',
+			'chive-chart-color-scheme',
+			Object.keys(COLOR_PRESETS).map(name => ({ value: name, label: name })),
+			config.colorScheme || 'Bold',
+			disabled,
+		));
+	}
+
+	controls.push(createColorPresetControl(
+		'viz-scatter-color-preset',
+		t('chive-chart-color-palette'),
+		config.colorScheme || 'Bold',
+		disabled
+	));
+
 	return controls;
 }
 
-export function setupScatterPlotControlListeners(dataset, numericas, onConfigChanged) {
+export function setupScatterPlotControlListeners(dataset, numericas, allOptions, onConfigChanged) {
+	const categoricas = allOptions.filter(option => !numericas.includes(option));
 	const toggleScatter = document.getElementById('viz-toggle-scatter');
 	const expandScatter = document.getElementById('viz-expand-scatter');
 
@@ -207,17 +285,40 @@ export function setupScatterPlotControlListeners(dataset, numericas, onConfigCha
 		{ id: 'viz-select-scatter-yscale', key: 'yScale' },
 		{ id: 'viz-select-scatter-radius', key: 'radius', type: 'number' },
 		{ id: 'viz-select-scatter-opacity', key: 'opacity', type: 'number' },
+		{ id: 'viz-select-scatter-color-mode', key: 'colorMode' },
+		{ id: 'viz-select-scatter-color-field', key: 'colorField', toNull: true },
+		{ id: 'viz-select-scatter-color-scheme', key: 'colorScheme' },
 	];
 
-	scatterControls.forEach(({ id, key, type }) => {
+	scatterControls.forEach(({ id, key, type, toNull }) => {
 		const select = document.getElementById(id);
 		if (select) {
 			select.addEventListener('change', () => {
 				const value = type === 'number' ? Number(select.value) : select.value;
+				let nextValue = toNull ? (value || null) : value;
+
+				if (key === 'colorMode') {
+					const availableFields = value === 'category' ? categoricas : numericas;
+					const currentField = dataset.configGraficos.scatter.colorField;
+					nextValue = value === 'uniform' ? 'uniform' : value;
+					updateActiveDatasetChartConfig({
+						scatter: {
+							...dataset.configGraficos.scatter,
+							colorMode: nextValue,
+							colorField: value === 'uniform'
+								? null
+								: (availableFields.includes(currentField) ? currentField : (availableFields[0] || null)),
+							colorFieldType: value === 'category' ? 'category' : (value === 'numeric' ? 'numeric' : null),
+						},
+					});
+					onConfigChanged?.();
+					return;
+				}
+
 				updateActiveDatasetChartConfig({
 					scatter: {
 						...dataset.configGraficos.scatter,
-						[key]: value,
+						[key]: nextValue,
 					},
 				});
 				onConfigChanged?.();
@@ -227,16 +328,67 @@ export function setupScatterPlotControlListeners(dataset, numericas, onConfigCha
 
 	const inputScatterColor = document.getElementById('viz-input-scatter-color');
 	if (inputScatterColor) {
-		inputScatterColor.addEventListener('change', () => {
+		const applyManualScatterColor = () => {
 			updateActiveDatasetChartConfig({
 				scatter: {
 					...dataset.configGraficos.scatter,
+					colorMode: 'uniform',
+					colorField: null,
+					colorFieldType: null,
 					color: normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter),
+				},
+			});
+			onConfigChanged?.();
+		};
+		inputScatterColor.addEventListener('input', applyManualScatterColor);
+		inputScatterColor.addEventListener('change', applyManualScatterColor);
+	}
+
+	const inputScatterGradientMin = document.getElementById('viz-input-scatter-gradient-min');
+	if (inputScatterGradientMin) {
+		inputScatterGradientMin.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				scatter: {
+					...dataset.configGraficos.scatter,
+					gradientMinColor: normalizeHexColor(inputScatterGradientMin.value, CHART_COLORS.scatter),
 				},
 			});
 			onConfigChanged?.();
 		});
 	}
+
+	const inputScatterGradientMax = document.getElementById('viz-input-scatter-gradient-max');
+	if (inputScatterGradientMax) {
+		inputScatterGradientMax.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				scatter: {
+					...dataset.configGraficos.scatter,
+					gradientMaxColor: normalizeHexColor(inputScatterGradientMax.value, '#ffffff'),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const scatterPresetButtons = document.querySelectorAll('button[data-color-preset-control="viz-scatter-color-preset"]');
+	scatterPresetButtons.forEach(button => {
+		button.addEventListener('click', () => {
+			const presetName = button.dataset.presetName;
+			const palette = COLOR_PRESETS[presetName] || [];
+			if (palette.length === 0) return;
+
+			updateActiveDatasetChartConfig({
+				scatter: {
+					...dataset.configGraficos.scatter,
+					colorScheme: presetName,
+					color: normalizeHexColor(palette[0], CHART_COLORS.scatter),
+					gradientMinColor: normalizeHexColor(palette[0], CHART_COLORS.scatter),
+					gradientMaxColor: normalizeHexColor(palette[palette.length - 1], '#ffffff'),
+				},
+			});
+			onConfigChanged?.();
+		});
+	});
 
 	const toggleScatterXLabel = document.getElementById('viz-toggle-scatter-x-label');
 	if (toggleScatterXLabel) {

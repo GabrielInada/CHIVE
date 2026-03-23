@@ -1,6 +1,6 @@
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { createCheckboxControl, createSliderControl, createTextControl } from './shared.js';
+import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS } from './shared.js';
 
 function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
@@ -140,6 +140,54 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		'viz-toggle-network-show-legend',
 		t('chive-chart-control-network-show-legend'),
 		config.showLegend,
+		disabled
+	));
+
+	const sourceColorDiv = document.createElement('div');
+	sourceColorDiv.className = 'chart-controle';
+	const sourceColorLabel = document.createElement('label');
+	sourceColorLabel.htmlFor = 'viz-input-network-source-color';
+	sourceColorLabel.textContent = t('chive-chart-color-source-node');
+	const sourceColorInput = document.createElement('input');
+	sourceColorInput.id = 'viz-input-network-source-color';
+	sourceColorInput.type = 'color';
+	sourceColorInput.className = 'chart-color-input';
+	sourceColorInput.value = normalizeHexColor(config.sourceNodeColor, '#e3743d');
+	sourceColorInput.disabled = disabled;
+	sourceColorDiv.appendChild(sourceColorLabel);
+	sourceColorDiv.appendChild(sourceColorInput);
+	controls.push(sourceColorDiv);
+
+	const targetColorDiv = document.createElement('div');
+	targetColorDiv.className = 'chart-controle';
+	const targetColorLabel = document.createElement('label');
+	targetColorLabel.htmlFor = 'viz-input-network-target-color';
+	targetColorLabel.textContent = t('chive-chart-color-target-node');
+	const targetColorInput = document.createElement('input');
+	targetColorInput.id = 'viz-input-network-target-color';
+	targetColorInput.type = 'color';
+	targetColorInput.className = 'chart-color-input';
+	targetColorInput.value = normalizeHexColor(config.targetNodeColor, '#6b94c9');
+	targetColorInput.disabled = disabled;
+	targetColorDiv.appendChild(targetColorLabel);
+	targetColorDiv.appendChild(targetColorInput);
+	controls.push(targetColorDiv);
+
+	controls.push(createSelectControl(
+		'viz-select-network-edge-color-mode',
+		t('chive-chart-color-mode'),
+		[
+			{ value: 'gradient', label: t('chive-chart-color-gradient') },
+			{ value: 'uniform', label: t('chive-chart-color-uniform') },
+		],
+		config.edgeColorMode,
+		disabled
+	));
+
+	controls.push(createColorPresetControl(
+		'viz-network-color-preset',
+		t('chive-chart-color-palette'),
+		config.colorScheme || 'Bold',
 		disabled
 	));
 
@@ -283,6 +331,63 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, onConfigC
 			onConfigChanged?.();
 		});
 	}
+
+	const sourceColorInput = document.getElementById('viz-input-network-source-color');
+	if (sourceColorInput) {
+		sourceColorInput.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				network: {
+					...dataset.configGraficos.network,
+					sourceNodeColor: normalizeHexColor(sourceColorInput.value, '#e3743d'),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const targetColorInput = document.getElementById('viz-input-network-target-color');
+	if (targetColorInput) {
+		targetColorInput.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				network: {
+					...dataset.configGraficos.network,
+					targetNodeColor: normalizeHexColor(targetColorInput.value, '#6b94c9'),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const edgeColorModeSelect = document.getElementById('viz-select-network-edge-color-mode');
+	if (edgeColorModeSelect) {
+		edgeColorModeSelect.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				network: {
+					...dataset.configGraficos.network,
+					edgeColorMode: edgeColorModeSelect.value === 'uniform' ? 'uniform' : 'gradient',
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const networkPresetButtons = document.querySelectorAll('button[data-color-preset-control="viz-network-color-preset"]');
+	networkPresetButtons.forEach(button => {
+		button.addEventListener('click', () => {
+			const presetName = button.dataset.presetName;
+			const palette = COLOR_PRESETS[presetName] || [];
+			if (palette.length < 2) return;
+			updateActiveDatasetChartConfig({
+				network: {
+					...dataset.configGraficos.network,
+					colorScheme: presetName,
+					sourceNodeColor: normalizeHexColor(palette[0], '#e3743d'),
+					targetNodeColor: normalizeHexColor(palette[1], '#6b94c9'),
+				},
+			});
+			onConfigChanged?.();
+		});
+	});
 
 	const inputNetworkTitle = document.getElementById('viz-input-network-title');
 	if (inputNetworkTitle) {

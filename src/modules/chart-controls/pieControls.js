@@ -2,10 +2,38 @@ import { CHART_COLORS, PIE_CHART } from '../../config/index.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
+import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
+
+function getPieSectorValues(dataset, config) {
+	if (!config?.category || !Array.isArray(dataset?.dados)) return [];
+
+	const counter = new Map();
+	dataset.dados.forEach(row => {
+		const rawValue = row[config.category];
+		const category = rawValue === null || rawValue === undefined || rawValue === ''
+			? '—'
+			: String(rawValue);
+
+		if (config.measureMode === 'sum') {
+			if (!config.valueColumn) return;
+			const numericValue = Number(row[config.valueColumn]);
+			if (!Number.isFinite(numericValue)) return;
+			counter.set(category, (counter.get(category) || 0) + numericValue);
+			return;
+		}
+
+		counter.set(category, (counter.get(category) || 0) + 1);
+	});
+
+	return Array.from(counter.entries())
+		.sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))
+		.map(([category]) => category);
+}
 
 export function createPieChartControls(dataset, categoryOptions, numericOptions) {
 	const config = dataset.configGraficos.pie;
 	const controls = [];
+	const sectorValues = getPieSectorValues(dataset, config);
 
 	const categoryDiv = document.createElement('div');
 	categoryDiv.className = 'chart-controle';
@@ -206,10 +234,40 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 	colorDiv.appendChild(colorInput);
 	controls.push(colorDiv);
 
+
+	// Palette presets for quick color application
+	if (sectorValues.length > 0) {
+		controls.push(createColorPresetControl(
+			'viz-pie-color-preset',
+			t('chive-chart-color-palette'),
+			config.colorScheme || 'Bold',
+			!dataset.configGraficos.pie.enabled
+		));
+	}
+
+	// Per-slice custom color picker grid
+	if (sectorValues.length > 0) {
+		const colorGridElement = updatePieColorPickerGrid(dataset, sectorValues);
+		controls.push(colorGridElement);
+	}
+
 	return controls;
 }
 
+function updatePieColorPickerGrid(dataset, sectorValues) {
+	return createColorPickerGridControl(
+		'viz-pie-color-grid',
+		t('chive-chart-color-pie-slices'),
+		sectorValues,
+		dataset.configGraficos.pie.customSliceColors || {},
+		!dataset.configGraficos.pie.enabled,
+		null
+	);
+}
+
+
 export function setupPieChartControlListeners(dataset, basePie, numericas, onConfigChanged) {
+	const sectorValues = getPieSectorValues(dataset, dataset.configGraficos.pie);
 	const togglePie = document.getElementById('viz-toggle-pie');
 	const expandPie = document.getElementById('viz-expand-pie');
 
@@ -422,6 +480,48 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, onCon
 			onConfigChanged?.();
 		});
 	}
+
+	const presetButtons = document.querySelectorAll('button[data-color-preset-control="viz-pie-color-preset"]');
+	presetButtons.forEach(button => {
+		button.addEventListener('click', () => {
+			const presetName = button.dataset.presetName;
+			const presetColors = COLOR_PRESETS[presetName] || [];
+			if (presetColors.length === 0 || sectorValues.length === 0) return;
+
+			const nextSliceColors = { ...(dataset.configGraficos.pie.customSliceColors || {}) };
+			sectorValues.forEach((sector, index) => {
+				nextSliceColors[sector] = presetColors[index % presetColors.length];
+			});
+
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					colorScheme: presetName,
+					customSliceColors: nextSliceColors,
+				},
+			});
+			onConfigChanged?.();
+		});
+	});
+
+	const perSliceInputs = document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]');
+	perSliceInputs.forEach(input => {
+		input.addEventListener('change', () => {
+			const sector = input.dataset.colorItem;
+			if (!sector) return;
+
+			const nextSliceColors = { ...(dataset.configGraficos.pie.customSliceColors || {}) };
+			nextSliceColors[sector] = normalizeHexColor(input.value, CHART_COLORS.pie);
+
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					customSliceColors: nextSliceColors,
+				},
+			});
+			onConfigChanged?.();
+		});
+	});
 
 	const inputPieTitle = document.getElementById('viz-input-pie-title');
 	if (inputPieTitle) {
