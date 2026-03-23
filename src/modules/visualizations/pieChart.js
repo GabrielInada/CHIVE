@@ -37,6 +37,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		? String(opcoes.color).trim()
 		: CHART_COLORS.pie;
 	const locale = opcoes.locale || undefined;
+		const customSliceColors = opcoes.customSliceColors || {};
 	const labels = {
 		categoria: opcoes.labels?.categoria || 'Category',
 		contagem: opcoes.labels?.contagem || 'Count',
@@ -52,6 +53,10 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	const showValueLabel = opcoes.showValueLabel !== false;
 	const showLegend = opcoes.showLegend !== false;
 	const labelPosition = opcoes.labelPosition === 'outside' ? 'outside' : 'inside';
+	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
+		? clamp(Number(opcoes.chartHeight), 220, 720)
+		: CHART_DIMENSIONS.pie.height;
 
 	const contador = new Map();
 	dados.forEach(linha => {
@@ -80,10 +85,11 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	hideChartTooltip();
 
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.pie.width, 320);
-	const altura = CHART_DIMENSIONS.pie.height;
+	const altura = chartHeight;
 	const margem = CHART_DIMENSIONS.pie.margins;
+	const titleOffset = customTitle ? 18 : 0;
 	const centerX = (largura - margem.left - margem.right) / 2 + margem.left;
-	const centerY = (altura - margem.top - margem.bottom) / 2 + margem.top;
+	const centerY = (altura - margem.top - margem.bottom - titleOffset) / 2 + margem.top + titleOffset;
 	const maxRadius = Math.max(PIE_CHART.minOuterRadius, Math.min(centerX - margem.left, centerY - margem.top));
 	const outerRadius = clamp(
 		Number.isFinite(rawOuter) ? rawOuter : PIE_CHART.defaultOuterRadius,
@@ -107,6 +113,18 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		.append('svg')
 		.attr('width', largura)
 		.attr('height', altura);
+
+	if (customTitle) {
+		svg
+			.append('text')
+			.attr('x', largura / 2)
+			.attr('y', 16)
+			.attr('text-anchor', 'middle')
+			.attr('font-size', 13)
+			.attr('font-weight', 600)
+			.attr('fill', '#3f3a33')
+			.text(customTitle);
+	}
 
 	const grupo = svg
 		.append('g')
@@ -155,7 +173,13 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		.enter()
 		.append('path')
 		.attr('d', arcGenerator)
-		.attr('fill', (_, index) => buildSliceColor(color, index))
+		.attr('fill', (item) => {
+			const categoria = item.data.categoria;
+			if (customSliceColors[categoria]) {
+				return customSliceColors[categoria];
+			}
+			return buildSliceColor(color, linhas.findIndex(line => line.categoria === categoria));
+		})
 		.attr('stroke', '#fff')
 		.attr('stroke-width', 1)
 		.on('mouseenter', (event, item) => {
@@ -271,7 +295,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 				.attr('width', 10)
 				.attr('height', 10)
 				.attr('rx', 2)
-				.attr('fill', buildSliceColor(color, index));
+				.attr('fill', customSliceColors[item.categoria] || buildSliceColor(color, index));
 			row.append('text')
 				.attr('x', 14)
 				.attr('y', 9)

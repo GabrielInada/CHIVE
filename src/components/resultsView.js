@@ -55,6 +55,7 @@ document.getElementById('container-tabela').innerHTML = '';
 document.getElementById('container-stats').innerHTML = '';
 document.getElementById('chart-bar-container').innerHTML = '';
 document.getElementById('chart-scatter-container').innerHTML = '';
+document.getElementById('chart-network-container').innerHTML = '';
 document.getElementById('chart-pie-container').innerHTML = '';
 document.getElementById('badge-charts').textContent = '—';
 document.getElementById('btn-avancar').disabled = true;
@@ -63,7 +64,7 @@ if (avisoDev) avisoDev.style.display = 'none';
 document.getElementById('zona-upload').classList.remove('carregado');
 document.querySelector('.upload-icone').textContent = '⬆';
 document.querySelector('.upload-texto-principal').textContent = t('chive-upload-main');
-document.querySelector('.upload-texto-sub').textContent = t('chive-upload-sub');
+document.querySelector('.upload-texto-sub').innerHTML = t('chive-upload-sub');
 }
 
 export function renderizarInterface(
