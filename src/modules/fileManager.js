@@ -15,6 +15,7 @@ import { showError, clearErrors } from './feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/index.js';
 import { createDefaultChartConfig } from './chartConfigDefaults.js';
 
+// Acho que isso deveria estar em outro módulo, depois vou refatorar... Talvez chartConfigDefaults.js?
 function criarConfigGraficosPadrao() {
 	return createDefaultChartConfig();
 }
