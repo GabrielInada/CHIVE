@@ -1,7 +1,7 @@
-import { arc, pie, select } from 'd3';
+import { arc, pie, select, zoom, zoomIdentity } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
-import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/index.js';
-import { formatarNumero } from '../../utils/formatters.js';
+import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
+import { formatNumber } from '../../utils/formatters.js';
 
 function clamp(value, min, max) {
 	return Math.min(Math.max(value, min), max);
@@ -108,11 +108,18 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		PIE_CHART.maxPadAngle
 	);
 	const padAngleRad = (padAngleDeg * Math.PI) / 180;
+	const zoomScale = clamp(
+		Number.isFinite(Number(opcoes.zoomScale)) ? Number(opcoes.zoomScale) : PIE_CHART.defaultZoomScale,
+		PIE_CHART.minZoomScale,
+		PIE_CHART.maxZoomScale
+	);
 
 	const svg = select(container)
 		.append('svg')
 		.attr('width', largura)
 		.attr('height', altura);
+
+	const viewport = svg.append('g');
 
 	if (customTitle) {
 		svg
@@ -126,7 +133,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 			.text(customTitle);
 	}
 
-	const grupo = svg
+	const grupo = viewport
 		.append('g')
 		.attr('transform', `translate(${centerX},${centerY})`);
 
@@ -148,7 +155,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	const montarConteudoTooltip = item => {
 		const percentual = total > 0 ? ((item.valor / total) * 100) : 0;
 		const wrapper = document.createElement('div');
-		const criarLinha = (rotulo, valor) => {
+		const createLine = (rotulo, valor) => {
 			const linha = document.createElement('div');
 			const strong = document.createElement('strong');
 			strong.textContent = `${rotulo}:`;
@@ -157,9 +164,9 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 			return linha;
 		};
 
-		wrapper.appendChild(criarLinha(labels.categoria, item.categoria));
-		wrapper.appendChild(criarLinha(labels.contagem, formatarNumero(item.valor, locale)));
-		wrapper.appendChild(criarLinha(labels.percentual, `${percentual.toFixed(1)}%`));
+		wrapper.appendChild(createLine(labels.categoria, item.categoria));
+		wrapper.appendChild(createLine(labels.contagem, formatNumber(item.valor, locale)));
+		wrapper.appendChild(createLine(labels.percentual, `${percentual.toFixed(1)}%`));
 		return wrapper;
 	};
 
@@ -210,6 +217,16 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		hideChartTooltip();
 	});
 
+	const zoomBehavior = zoom()
+		.extent([[0, 0], [largura, altura]])
+		.scaleExtent([PIE_CHART.minZoomScale, PIE_CHART.maxZoomScale])
+		.on('zoom', event => {
+			viewport.attr('transform', event.transform);
+		});
+
+	svg.call(zoomBehavior);
+	svg.call(zoomBehavior.transform, zoomIdentity.scale(zoomScale));
+
 	const pieData = pieGenerator(linhas);
 	if ((showCategoryLabel || showValueLabel) && labelPosition === 'inside') {
 		grupo
@@ -225,7 +242,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 			.data(item => {
 				const parts = [];
 				if (showCategoryLabel) parts.push({ text: String(item.data.categoria), dy: '0' });
-				if (showValueLabel) parts.push({ text: formatarNumero(item.data.valor, locale), dy: showCategoryLabel ? '1.1em' : '0' });
+				if (showValueLabel) parts.push({ text: formatNumber(item.data.valor, locale), dy: showCategoryLabel ? '1.1em' : '0' });
 				return parts;
 			})
 			.enter()
@@ -274,7 +291,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 			.data(item => {
 				const parts = [];
 				if (showCategoryLabel) parts.push({ text: String(item.data.categoria), dy: '0' });
-				if (showValueLabel) parts.push({ text: formatarNumero(item.data.valor, locale), dy: showCategoryLabel ? '1.1em' : '0' });
+				if (showValueLabel) parts.push({ text: formatNumber(item.data.valor, locale), dy: showCategoryLabel ? '1.1em' : '0' });
 				return parts;
 			})
 			.enter()
@@ -301,7 +318,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 				.attr('y', 9)
 				.attr('font-size', 10)
 				.attr('fill', '#3f3a33')
-				.text(`${item.categoria} (${formatarNumero(item.valor, locale)})`);
+				.text(`${item.categoria} (${formatNumber(item.valor, locale)})`);
 		});
 	}
 

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { definirLocale, obterLocale, t } from '../../src/services/i18nService.js';
+import { setLocale, getLocale, t } from '../../src/services/i18nService.js';
 
 describe('i18n locale updates', () => {
   beforeEach(() => {
@@ -10,9 +10,9 @@ describe('i18n locale updates', () => {
   });
 
   it('updates html lang and localStorage when locale changes', () => {
-    definirLocale('en');
+    setLocale('en');
 
-    expect(obterLocale()).toBe('en');
+    expect(getLocale()).toBe('en');
     expect(document.documentElement.lang).toBe('en');
     expect(localStorage.getItem('chive-locale')).toBe('en');
     expect(t('chive-no-files')).toBe('No files');
@@ -22,7 +22,7 @@ describe('i18n locale updates', () => {
     const listener = vi.fn();
     window.addEventListener('chive-locale-changed', listener);
 
-    definirLocale('en');
+    setLocale('en');
 
     expect(listener).toHaveBeenCalledTimes(1);
     window.removeEventListener('chive-locale-changed', listener);

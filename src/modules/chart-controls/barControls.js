@@ -1,4 +1,4 @@
-import { CHART_COLORS } from '../../config/index.js';
+import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';

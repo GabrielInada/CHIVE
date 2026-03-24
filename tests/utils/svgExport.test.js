@@ -2,8 +2,8 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  capturarSvgMarkupDeContainer,
-  baixarSvgMarkup,
+  captureSvgMarkupFromContainer,
+  downloadSvgMarkup,
   downloadSvgFromContainer,
 } from '../../src/utils/svgExport.js';
 
@@ -13,13 +13,13 @@ describe('svgExport utils', () => {
   });
 
   it('retorna erros quando container/svg não existem', () => {
-    expect(capturarSvgMarkupDeContainer('missing')).toEqual({ ok: false, reason: 'container-not-found' });
+    expect(captureSvgMarkupFromContainer('missing')).toEqual({ ok: false, reason: 'container-not-found' });
 
     const div = document.createElement('div');
     div.id = 'container';
     document.body.appendChild(div);
 
-    expect(capturarSvgMarkupDeContainer('container')).toEqual({ ok: false, reason: 'svg-not-found' });
+    expect(captureSvgMarkupFromContainer('container')).toEqual({ ok: false, reason: 'svg-not-found' });
   });
 
   it('captura SVG e injeta atributos obrigatórios', () => {
@@ -28,7 +28,7 @@ describe('svgExport utils', () => {
     div.innerHTML = '<svg width="100" height="50"><rect width="100" height="50" /></svg>';
     document.body.appendChild(div);
 
-    const result = capturarSvgMarkupDeContainer('chart');
+    const result = captureSvgMarkupFromContainer('chart');
     expect(result.ok).toBe(true);
     expect(result.svgMarkup).toContain('xmlns="http://www.w3.org/2000/svg"');
     expect(result.svgMarkup).toContain('xmlns:xlink="http://www.w3.org/1999/xlink"');
@@ -36,7 +36,7 @@ describe('svgExport utils', () => {
   });
 
   it('baixa SVG com nome sanitizado e valida markup vazio', () => {
-    expect(baixarSvgMarkup('', 'Chart')).toEqual({ ok: false, reason: 'empty-markup' });
+    expect(downloadSvgMarkup('', 'Chart')).toEqual({ ok: false, reason: 'empty-markup' });
 
     const createObjectURL = vi.fn(() => 'blob:mock');
     const revokeObjectURL = vi.fn();
@@ -45,7 +45,7 @@ describe('svgExport utils', () => {
 
     const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
 
-    const result = baixarSvgMarkup('<svg />', '  My Chart!!  ');
+    const result = downloadSvgMarkup('<svg />', '  My Chart!!  ');
     expect(result.ok).toBe(true);
     expect(createObjectURL).toHaveBeenCalledTimes(1);
     expect(revokeObjectURL).toHaveBeenCalledWith('blob:mock');

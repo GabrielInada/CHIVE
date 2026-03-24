@@ -1,7 +1,11 @@
 /* @feature: app
-   Main stylesheet orchestrator — composes base, controls, and feature styles */
-@import url('./base.css');
-@import url('./controls.css');
-@import url('./data-view.css');
-@import url('./visual-output.css');
-@import url('./feedback.css');
+   Main stylesheet orchestrator.
+   Uses explicit cascade layers to keep style precedence predictable. */
+
+@layer foundation, controls, data-view, visual-output, feedback;
+
+@import url('./base.css') layer(foundation);
+@import url('./controls.css') layer(controls);
+@import url('./data-view.css') layer(data-view);
+@import url('./visual-output.css') layer(visual-output);
+@import url('./feedback.css') layer(feedback);

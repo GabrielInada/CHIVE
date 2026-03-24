@@ -1,4 +1,4 @@
-import { CHART_COLORS, PIE_CHART } from '../../config/index.js';
+import { CHART_COLORS, PIE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
@@ -149,6 +149,27 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 		0.5,
 		!dataset.configGraficos.pie.enabled
 	));
+
+	controls.push(createSliderControl(
+		'viz-slider-pie-zoom',
+		t('chive-chart-control-pie-zoom'),
+		Number(config.zoomScale),
+		PIE_CHART.minZoomScale,
+		PIE_CHART.maxZoomScale,
+		0.05,
+		!dataset.configGraficos.pie.enabled
+	));
+
+	const resetZoomDiv = document.createElement('div');
+	resetZoomDiv.className = 'chart-controle';
+	const resetZoomBtn = document.createElement('button');
+	resetZoomBtn.type = 'button';
+	resetZoomBtn.id = 'viz-btn-pie-reset-zoom';
+	resetZoomBtn.className = 'chart-control-btn';
+	resetZoomBtn.textContent = t('chive-chart-control-pie-reset-zoom');
+	resetZoomBtn.disabled = !dataset.configGraficos.pie.enabled;
+	resetZoomDiv.appendChild(resetZoomBtn);
+	controls.push(resetZoomDiv);
 
 	controls.push(createCheckboxControl(
 		'viz-toggle-pie-category-label',
@@ -355,6 +376,7 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, onCon
 	const innerSlider = document.getElementById('viz-slider-pie-inner-radius');
 	const outerSlider = document.getElementById('viz-slider-pie-outer-radius');
 	const padAngleSlider = document.getElementById('viz-slider-pie-pad-angle');
+	const pieZoomSlider = document.getElementById('viz-slider-pie-zoom');
 	const syncSliderOutput = slider => {
 		const output = slider?.parentElement?.querySelector('output');
 		if (output) {
@@ -409,6 +431,36 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, onCon
 				pie: {
 					...dataset.configGraficos.pie,
 					padAngle: Number(padAngleSlider.value),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	if (pieZoomSlider) {
+		pieZoomSlider.addEventListener('input', () => syncSliderOutput(pieZoomSlider));
+		pieZoomSlider.addEventListener('change', () => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					zoomScale: Number(pieZoomSlider.value),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const resetPieZoomButton = document.getElementById('viz-btn-pie-reset-zoom');
+	if (resetPieZoomButton) {
+		resetPieZoomButton.addEventListener('click', () => {
+			if (pieZoomSlider) {
+				pieZoomSlider.value = String(PIE_CHART.defaultZoomScale);
+				syncSliderOutput(pieZoomSlider);
+			}
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					zoomScale: PIE_CHART.defaultZoomScale,
 				},
 			});
 			onConfigChanged?.();

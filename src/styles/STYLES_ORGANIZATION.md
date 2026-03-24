@@ -4,10 +4,22 @@ This document describes the organizational structure of stylesheets and their al
 
 ## Architecture
 
-All stylesheets are imported through a bundler pattern:
-- **Main entry**: `style.css` (imports feature bundles)
+All stylesheets are imported through a bundler pattern with cascade layers:
+- **Main entry**: `style.css` (declares layer order and imports feature bundles)
 - **Feature bundles**: `base.css`, `data-view.css`, `visual-output.css`, `controls.css`, `feedback.css`
 - **Individual styles**: Feature-specific CSS files
+
+### Cascade Layer Order
+
+`style.css` defines this precedence from lowest to highest:
+
+1. `foundation`
+2. `controls`
+3. `data-view`
+4. `visual-output`
+5. `feedback`
+
+This keeps overrides intentional and avoids accidental specificity fights between bundles.
 
 ## Feature Ownership Map
 
@@ -19,12 +31,22 @@ Shared infrastructure used by all features. No single feature owns these.
 | `variables.css` | Global design tokens (colors, fonts, spacing, shadows) |
 | `layout.css` | Grid layout, flexbox, header, sidebar structure |
 | `animations.css` | Keyframe animations, transitions, motion utilities |
-| `buttons.css` | Button styles and variants (primary, secondary, danger) |
-| `controls.css` | Form inputs, selects, checkboxes, toggle switches |
 | `collapsed.css` | Collapsible element state and behavior |
 | `responsive.css` | Media queries and responsive breakpoints |
 
 **Bundle via**: `base.css` → `style.css`
+
+### Controls (`@feature: foundation + file-manager + results + panel`)
+Generic reusable controls and sidebar card patterns.
+
+| File | Purpose |
+|------|---------|
+| `buttons.css` | Button styles and variants (primary, secondary, danger) |
+| `upload.css` | Upload drop zone and file upload interactions |
+| `columns.css` | Column selection controls and filter actions |
+| `visualizations.css` | Visualization card controls and preview UI |
+
+**Bundle via**: `controls.css` → `style.css`
 
 ### Results/Data View (`@feature: results`)
 Dataset presentation, column management, and data summaries.
@@ -67,7 +89,7 @@ File upload and selection UI.
 |------|---------|
 | `upload.css` | Upload drop zone, file list presentation |
 
-**Bundle via**: `controls.css` → `style.css`
+**Bundle via**: `controls.css` → `style.css` (layer: `controls`)
 
 ### App Orchestration (`@feature: app`)
 Main stylesheet orchestrator.
@@ -80,24 +102,24 @@ Main stylesheet orchestrator.
 
 ```
 style.css (app)
-├── base.css (foundation)
+├── base.css (foundation layer)
 │   ├── variables.css
 │   ├── layout.css
 │   ├── animations.css
 │   ├── collapsed.css
 │   └── responsive.css
-├── controls.css (foundation + file-manager)
+├── controls.css (controls layer)
 │   ├── buttons.css (foundation)
 │   ├── upload.css (file-manager)
 │   ├── columns.css (results)
 │   └── visualizations.css (panel)
-├── data-view.css (results)
+├── data-view.css (data-view layer)
 │   ├── table.css (results)
 │   └── results.css (results)
-├── visual-output.css (panel)
+├── visual-output.css (visual-output layer)
 │   ├── charts.css (panel)
 │   └── panel.css (panel)
-└── feedback.css (cross-cutting)
+└── feedback.css (feedback layer)
     └── messages.css (cross-cutting)
 ```
 

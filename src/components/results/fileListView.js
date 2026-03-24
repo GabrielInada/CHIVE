@@ -1,65 +1,65 @@
-export function renderizarListaArquivosDOM({
-	lista,
+export function renderFileListDOM({
+	lista: list,
 	datasets,
-	indiceAtivo,
-	traduzir,
-	obterLocale,
-	aoSelecionar,
-	aoRemover,
+	indiceAtivo: activeIndex,
+	traduzir: translate,
+	getLocale,
+	aoSelecionar: onSelect,
+	aoRemover: onRemove,
 }) {
-	lista.innerHTML = '';
+	list.innerHTML = '';
 
-	datasets.forEach((dataset, indice) => {
+	datasets.forEach((dataset, index) => {
 		const item = document.createElement('div');
-		item.className = `arquivo-item ${indice === indiceAtivo ? 'ativo' : ''}`;
-		item.dataset.idx = String(indice);
+		item.className = `arquivo-item ${index === activeIndex ? 'ativo' : ''}`;
+		item.dataset.idx = String(index);
 
-		const botaoSelecionar = document.createElement('button');
-		botaoSelecionar.className = 'arquivo-item-botao';
-		botaoSelecionar.type = 'button';
-		botaoSelecionar.dataset.acao = 'selecionar';
-		botaoSelecionar.dataset.idx = String(indice);
+		const selectButton = document.createElement('button');
+		selectButton.className = 'arquivo-item-botao';
+		selectButton.type = 'button';
+		selectButton.dataset.acao = 'selecionar';
+		selectButton.dataset.idx = String(index);
 
-		const nome = document.createElement('span');
-		nome.className = 'arquivo-item-nome';
-		nome.title = dataset.nome;
-		nome.textContent = dataset.nome;
+		const name = document.createElement('span');
+		name.className = 'arquivo-item-nome';
+		name.title = dataset.nome;
+		name.textContent = dataset.nome;
 
 		const meta = document.createElement('span');
 		meta.className = 'arquivo-item-meta';
-		meta.textContent = traduzir(
+		meta.textContent = translate(
 			'chive-file-meta',
-			dataset.dados.length.toLocaleString(obterLocale()),
+			dataset.dados.length.toLocaleString(getLocale()),
 			dataset.colunas.length,
 			dataset.tamanho
 		);
 
-		const botaoRemover = document.createElement('button');
-		botaoRemover.className = 'arquivo-item-remover';
-		botaoRemover.type = 'button';
-		botaoRemover.dataset.acao = 'remover';
-		botaoRemover.dataset.idx = String(indice);
-		botaoRemover.setAttribute('aria-label', traduzir('chive-remove-file', dataset.nome));
-		botaoRemover.textContent = '×';
+		const removeButton = document.createElement('button');
+		removeButton.className = 'arquivo-item-remover';
+		removeButton.type = 'button';
+		removeButton.dataset.acao = 'remover';
+		removeButton.dataset.idx = String(index);
+		removeButton.setAttribute('aria-label', translate('chive-remove-file', dataset.nome));
+		removeButton.textContent = '×';
 
-		botaoSelecionar.appendChild(nome);
-		botaoSelecionar.appendChild(meta);
-		item.appendChild(botaoSelecionar);
-		item.appendChild(botaoRemover);
-		lista.appendChild(item);
+		selectButton.appendChild(name);
+		selectButton.appendChild(meta);
+		item.appendChild(selectButton);
+		item.appendChild(removeButton);
+		list.appendChild(item);
 	});
 
-	lista.onclick = evento => {
-		const alvo = evento.target.closest('[data-acao]');
-		if (!alvo) return;
+	list.onclick = event => {
+		const target = event.target.closest('[data-acao]');
+		if (!target) return;
 
-		const indice = Number(alvo.dataset.idx);
-		if (Number.isNaN(indice)) return;
+		const index = Number(target.dataset.idx);
+		if (Number.isNaN(index)) return;
 
-		if (alvo.dataset.acao === 'remover') {
-			aoRemover(indice);
+		if (target.dataset.acao === 'remover') {
+			onRemove(index);
 			return;
 		}
-		aoSelecionar(indice);
+		onSelect(index);
 	};
 }

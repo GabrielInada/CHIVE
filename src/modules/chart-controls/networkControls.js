@@ -1,5 +1,6 @@
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
+import { NETWORK_GRAPH } from '../../config/charts.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS } from './shared.js';
 
 function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
@@ -120,11 +121,22 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		'viz-slider-network-zoom',
 		t('chive-chart-control-network-zoom'),
 		Number(config.zoomScale),
-		0.3,
-		4,
+		NETWORK_GRAPH.minZoomScale,
+		NETWORK_GRAPH.maxZoomScale,
 		0.05,
 		disabled
 	));
+
+	const resetZoomDiv = document.createElement('div');
+	resetZoomDiv.className = 'chart-controle';
+	const resetZoomBtn = document.createElement('button');
+	resetZoomBtn.type = 'button';
+	resetZoomBtn.id = 'viz-btn-network-reset-zoom';
+	resetZoomBtn.className = 'chart-control-btn';
+	resetZoomBtn.textContent = t('chive-chart-control-network-reset-zoom');
+	resetZoomBtn.disabled = disabled;
+	resetZoomDiv.appendChild(resetZoomBtn);
+	controls.push(resetZoomDiv);
 
 	controls.push(createSliderControl(
 		'viz-slider-network-alpha-decay',
@@ -305,6 +317,25 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, onConfigC
 			onConfigChanged?.();
 		});
 	});
+
+	const networkZoomSlider = document.getElementById('viz-slider-network-zoom');
+	const resetNetworkZoomButton = document.getElementById('viz-btn-network-reset-zoom');
+	if (resetNetworkZoomButton) {
+		resetNetworkZoomButton.addEventListener('click', () => {
+			if (networkZoomSlider) {
+				networkZoomSlider.value = String(NETWORK_GRAPH.defaultZoomScale);
+				const output = networkZoomSlider.parentElement?.querySelector('output');
+				if (output) output.textContent = networkZoomSlider.value;
+			}
+			updateActiveDatasetChartConfig({
+				network: {
+					...dataset.configGraficos.network,
+					zoomScale: NETWORK_GRAPH.defaultZoomScale,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
 
 	const nodeLabelsToggle = document.getElementById('viz-toggle-network-node-labels');
 	if (nodeLabelsToggle) {

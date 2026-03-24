@@ -1,7 +1,7 @@
 import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
-import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
-import { formatarNumero } from '../../utils/formatters.js';
+import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
+import { formatNumber } from '../../utils/formatters.js';
 
 function hexToRgb(hex) {
 	const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || '').trim());
@@ -131,7 +131,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		const percentual = totalContagem > 0 ? ((item[1] / totalContagem) * 100) : 0;
 		const wrapper = document.createElement('div');
 
-		const criarLinha = (rotulo, valor) => {
+		const createLine = (rotulo, valor) => {
 			const linha = document.createElement('div');
 			const strong = document.createElement('strong');
 			strong.textContent = `${rotulo}:`;
@@ -140,9 +140,9 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 			return linha;
 		};
 
-		wrapper.appendChild(criarLinha(labels.categoria, String(item[0])));
-		wrapper.appendChild(criarLinha(labels.contagem, formatarNumero(item[1], locale)));
-		wrapper.appendChild(criarLinha(labels.percentual, `${percentual.toFixed(1)}%`));
+		wrapper.appendChild(createLine(labels.categoria, String(item[0])));
+		wrapper.appendChild(createLine(labels.contagem, formatNumber(item[1], locale)));
+		wrapper.appendChild(createLine(labels.percentual, `${percentual.toFixed(1)}%`));
 
 		return wrapper;
 	};

@@ -44,7 +44,7 @@ export function syncWindowGlobals() {
  */
 export function updateActiveDatasetColumnSelection(columnNames) {
 	updateActiveDatasetColumns(columnNames);
-	// Caller will handle UI update via atualizarVisao()
+	// Caller will handle UI update via refreshView()
 }
 
 /**
@@ -53,7 +53,7 @@ export function updateActiveDatasetColumnSelection(columnNames) {
  */
 export function updateActiveDatasetChartConfig(configUpdates) {
 	updateActiveDatasetConfig(configUpdates);
-	// Caller will handle UI update via atualizarVisao()
+	// Caller will handle UI update via refreshView()
 }
 
 /**

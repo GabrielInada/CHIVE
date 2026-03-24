@@ -24,8 +24,8 @@ const mocks = vi.hoisted(() => ({
 		onStateChange: vi.fn(),
 	},
 	svgExport: {
-		capturarSvgMarkupDeContainer: vi.fn(() => ({ ok: true, svgMarkup: '<svg/>' })),
-		baixarSvgMarkup: vi.fn(),
+		captureSvgMarkupFromContainer: vi.fn(() => ({ ok: true, svgMarkup: '<svg/>' })),
+		downloadSvgMarkup: vi.fn(),
 	},
 	i18n: {
 		t: vi.fn((k) => `txt:${k}`),
@@ -54,7 +54,7 @@ describe('panelManager (branch coverage)', () => {
 		mocks.appState.addChartSnapshot.mockClear();
 		mocks.appState.removeChartSnapshot.mockClear();
 		mocks.appState.onStateChange.mockClear();
-		mocks.svgExport.capturarSvgMarkupDeContainer.mockClear();
+		mocks.svgExport.captureSvgMarkupFromContainer.mockClear();
 		mocks.i18n.t.mockClear();
 	});
 
@@ -95,7 +95,7 @@ describe('panelManager (branch coverage)', () => {
 		it('captures SVG and adds to panel on success', () => {
 			initPanelManager();
 
-			mocks.svgExport.capturarSvgMarkupDeContainer.mockReturnValue({
+			mocks.svgExport.captureSvgMarkupFromContainer.mockReturnValue({
 				ok: true,
 				svgMarkup: '<svg></svg>',
 			});
@@ -110,7 +110,7 @@ describe('panelManager (branch coverage)', () => {
 		it('passes chart name to snapshot preserving content', () => {
 			initPanelManager();
 
-			mocks.svgExport.capturarSvgMarkupDeContainer.mockReturnValue({
+			mocks.svgExport.captureSvgMarkupFromContainer.mockReturnValue({
 				ok: true,
 				svgMarkup: '<svg/>',
 			});
@@ -128,7 +128,7 @@ describe('panelManager (branch coverage)', () => {
 		it('returns error when SVG capture fails', () => {
 			initPanelManager();
 
-			mocks.svgExport.capturarSvgMarkupDeContainer.mockReturnValue({
+			mocks.svgExport.captureSvgMarkupFromContainer.mockReturnValue({
 				ok: false,
 				reason: 'not-found',
 			});
@@ -142,7 +142,7 @@ describe('panelManager (branch coverage)', () => {
 		it('catches exception during SVG capture', () => {
 			initPanelManager();
 
-			mocks.svgExport.capturarSvgMarkupDeContainer.mockImplementation(() => {
+			mocks.svgExport.captureSvgMarkupFromContainer.mockImplementation(() => {
 				throw new Error('SVG error');
 			});
 
@@ -156,7 +156,7 @@ describe('panelManager (branch coverage)', () => {
 			const feedbackCb = vi.fn();
 			initPanelManager(feedbackCb);
 
-			mocks.svgExport.capturarSvgMarkupDeContainer.mockImplementation(() => {
+			mocks.svgExport.captureSvgMarkupFromContainer.mockImplementation(() => {
 				throw new Error('SVG error');
 			});
 
@@ -169,7 +169,7 @@ describe('panelManager (branch coverage)', () => {
 		it('does not throw on unhandled error', () => {
 			initPanelManager();
 
-			mocks.svgExport.capturarSvgMarkupDeContainer.mockImplementation(() => {
+			mocks.svgExport.captureSvgMarkupFromContainer.mockImplementation(() => {
 				throw new Error('Unexpected');
 			});
 

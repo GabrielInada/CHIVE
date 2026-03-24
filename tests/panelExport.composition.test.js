@@ -12,8 +12,8 @@ const baixarSvgMarkupMock = vi.fn((svgMarkup, fileNameBase) => {
 });
 
 vi.mock('../src/utils/svgExport.js', () => ({
-  capturarSvgMarkupDeContainer: vi.fn(() => ({ ok: false, reason: 'not-used' })),
-  baixarSvgMarkup: (...args) => baixarSvgMarkupMock(...args),
+  captureSvgMarkupFromContainer: vi.fn(() => ({ ok: false, reason: 'not-used' })),
+  downloadSvgMarkup: (...args) => baixarSvgMarkupMock(...args),
 }));
 
 const { renderCanvasPanel, exportPanelLayoutSvg } = await import('../src/modules/panelManager.js');

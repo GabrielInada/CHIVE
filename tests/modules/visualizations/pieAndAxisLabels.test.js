@@ -57,6 +57,24 @@ describe('pie chart and axis labels', () => {
 		expect(container.textContent).toContain('A (15)');
 	});
 
+	it('applies initial zoom scale to pie viewport', () => {
+		const container = document.getElementById('pie');
+		const dados = [
+			{ categoria: 'A' },
+			{ categoria: 'B' },
+			{ categoria: 'A' },
+		];
+
+		const result = renderPieChart(container, dados, 'categoria', {
+			zoomScale: 1.8,
+		});
+
+		expect(result.ok).toBe(true);
+		const svg = container.querySelector('svg');
+		const viewport = svg?.querySelector('g');
+		expect(viewport?.getAttribute('transform') || '').toContain('scale(1.8)');
+	});
+
 	it('hides outside labels for tiny slices while keeping legend entries visible', () => {
 		const container = document.getElementById('pie');
 		const dados = [];

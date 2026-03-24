@@ -4,7 +4,8 @@
  * 
  * This refactored main.js coordinates all modularized components:
  * - appState: Centralized state management
- * - Modules: panelManager, chartControls, uiManager, fileManager, eventHandlers, feedbackUI
+ * - Modules: panelManager, uiManager, fileManager, eventHandlers, feedbackUI
+ * - Features: chartFeatures
  * - Services: dataService, i18nService
  * - Components: resultsView
  * 
@@ -15,34 +16,44 @@
  * - Main.js handles initialization and orchestration only
  */
 
-import { inicializarI18n, t } from './services/i18nService.js';
-import { PREVIEW_DEFAULT_ROWS } from './config/index.js';
+import { initializeI18n, t } from './services/index.js';
+import { PREVIEW_DEFAULT_ROWS } from './config/limits.js';
 import {
-renderizarEstadoVazio,
-renderizarInterface,
-renderizarListaArquivos,
-} from './components/resultsView.js';
+renderEmptyState,
+renderDataInterface,
+renderFileList,
+} from './components/index.js';
+import { initChartControls, renderChartControlsSidebar } from './features/chartFeatures/index.js';
+import { mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 
-// Module imports
 import {
 getState,
 getActiveDataset,
 onStateChange,
 exposeGlobals,
-} from './modules/appState.js';
-import { initializeStateSync } from './modules/stateSync.js';
-import { mergeChartConfigWithDefaults } from './modules/chartConfigDefaults.js';
+initializeStateSync,
+} from './modules/index.js';
 import {
 initPanelManager,
 initializeLayoutSelector,
 renderSidebarPanel,
 renderCanvasPanel,
-} from './modules/panelManager.js';
-import { initChartControls, renderChartControlsSidebar } from './modules/chartControls.js';
-import { initFileManager, getLoadedDatasets, selectDataset, removeDatasetByIndex } from './modules/fileManager.js';
-import { initializeAllEventHandlers } from './modules/eventHandlers.js';
-import { showFeedback, mostrarFeedback, showError, mostrarErro, esconderErro } from './modules/feedbackUI.js';
-import { switchTab } from './modules/uiManager.js';
+} from './modules/index.js';
+import {
+initFileManager,
+getLoadedDatasets,
+selectDataset,
+removeDatasetByIndex,
+initializeAllEventHandlers,
+} from './modules/index.js';
+import {
+showFeedback,
+showFeedbackMessage,
+showError,
+showErrorMessage,
+hideErrorMessage,
+switchTab,
+} from './modules/index.js';
 
 // =============================================================================
 // APPLICATION INITIALIZATION
@@ -54,7 +65,7 @@ import { switchTab } from './modules/uiManager.js';
  */
 async function initializeApplication() {
 // 1. Initialize i18n system
-await inicializarI18n();
+await initializeI18n();
 
 // 2. Initialize state management
 initializeStateSync();
@@ -72,11 +83,11 @@ initializeAllEventHandlers();
 setupStateSubscriptions();
 
 // 6. Initial view render
-atualizarVisao();
+refreshView();
 
 // 7. Re-render dynamic content on locale changes
 window.addEventListener('chive-locale-changed', () => {
-atualizarVisao();
+refreshView();
 });
 
 // 8. Surface internal module errors in UI feedback
@@ -94,14 +105,14 @@ showError(message);
  * Called when datasets list changes (added/removed)
  */
 function handleDatasetsChanged() {
-atualizarVisao();
+refreshView();
 }
 
 /**
  * Called when chart configuration changes
  */
 function handleChartConfigChanged() {
-atualizarVisao();
+refreshView();
 }
 
 /**
@@ -110,17 +121,17 @@ atualizarVisao();
 function setupStateSubscriptions() {
 // Re-render when active dataset changes
 onStateChange('activeDataset', () => {
-atualizarVisao();
+refreshView();
 });
 
 // Re-render when columns change
 onStateChange('columnsUpdated', () => {
-atualizarVisao();
+refreshView();
 });
 
 // Re-render when config changes
 onStateChange('configUpdated', () => {
-atualizarVisao();
+refreshView();
 });
 }
 
@@ -133,7 +144,7 @@ atualizarVisao();
  * Orchestrates all UI rendering based on current state
  * Called after any state change or user action
  */
-function atualizarVisao() {
+function refreshView() {
 const state = getState();
 const datasets = getLoadedDatasets();
 const activeIndex = state.data.activeIndex;
@@ -141,7 +152,7 @@ const dataset = getActiveDataset();
 
 // Handle empty state
 if (datasets.length === 0) {
-renderizarEstadoVazio();
+renderEmptyState();
 renderSidebarPanel();
 renderCanvasPanel();
 switchTab('preview');
@@ -149,7 +160,7 @@ return;
 }
 
 // Render datasets list
-renderizarListaArquivos(
+renderFileList(
 datasets,
 activeIndex,
 selectDataset,
@@ -159,7 +170,7 @@ removeDatasetByIndex
 // Render data preview and stats
 if (dataset) {
 	dataset.configGraficos = mergeChartConfigWithDefaults(dataset.configGraficos);
-renderizarInterface(
+renderDataInterface(
 dataset.dados,
 dataset.colunas,
 dataset.nome,
@@ -192,7 +203,7 @@ function updateDatasetColumns(columns) {
 const dataset = getActiveDataset();
 if (dataset) {
 dataset.colunasSelecionadas = columns;
-atualizarVisao();
+refreshView();
 }
 }
 
@@ -207,7 +218,7 @@ if (dataset) {
 		...dataset.configGraficos,
 		...config,
 	});
-atualizarVisao();
+refreshView();
 }
 }
 
@@ -229,7 +240,7 @@ getLoadedDatasets,
 updateDatasetColumns,
 updateDatasetConfig,
 switchTab,
-atualizarVisao,
-showFeedback: mostrarFeedback,
-showError: mostrarErro,
+refreshView,
+showFeedback: showFeedbackMessage,
+showError: showErrorMessage,
 };

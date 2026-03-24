@@ -11,10 +11,24 @@
  */
 
 import { t } from '../services/i18nService.js';
-import { capturarSvgMarkupDeContainer, baixarSvgMarkup } from '../utils/svgExport.js';
-import { LAYOUTS_PAINEL, getLayoutConfig as getPanelLayoutConfig, getTemplateForBlock } from './panel/layoutConfig.js';
-import { clampPercent, normalizeHexColor, computeDynamicMinHeight } from './panel/resizeMath.js';
-import { createAddBlockControls, createBlockBorderControls, createBlockHeader, createBlockTemplateSelect, createPanelSlotElement } from './panel/domBuilders.js';
+import { captureSvgMarkupFromContainer, downloadSvgMarkup } from '../utils/svgExport.js';
+import {
+	LAYOUTS_PAINEL,
+	getLayoutConfig as getPanelLayoutConfig,
+	getTemplateForBlock,
+} from './panel/layoutConfig.js';
+import {
+	clampPercent,
+	normalizeHexColor,
+	computeDynamicMinHeight,
+} from './panel/resizeMath.js';
+import {
+	createAddBlockControls,
+	createBlockBorderControls,
+	createBlockHeader,
+	createBlockTemplateSelect,
+	createPanelSlotElement,
+} from './panel/domBuilders.js';
 import {
 	getPanelCharts,
 	getPanelBlocks,
@@ -84,7 +98,7 @@ function handleLayoutChange() {
  */
 export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 	try {
-		const captured = capturarSvgMarkupDeContainer(containerId);
+		const captured = captureSvgMarkupFromContainer(containerId);
 		if (!captured.ok) {
 			return captured;
 		}
@@ -669,7 +683,7 @@ export function exportPanelLayoutSvg() {
 		});
 
 		const svgString = serializer.serializeToString(svgRoot);
-		return baixarSvgMarkup(svgString, 'panel-layout');
+		return downloadSvgMarkup(svgString, 'panel-layout');
 	} catch (err) {
 		if (feedbackCallback) {
 			feedbackCallback(t('chive-panel-export-error'), 'error');

@@ -23,7 +23,7 @@ function ensureSvgAttributes(svg) {
 	}
 }
 
-export function capturarSvgMarkupDeContainer(containerId) {
+export function captureSvgMarkupFromContainer(containerId) {
 	const container = document.getElementById(containerId);
 	if (!container) return { ok: false, reason: 'container-not-found' };
 
@@ -36,7 +36,7 @@ export function capturarSvgMarkupDeContainer(containerId) {
 	return { ok: true, svgMarkup: serializer.serializeToString(svg) };
 }
 
-export function baixarSvgMarkup(svgMarkup, fileNameBase) {
+export function downloadSvgMarkup(svgMarkup, fileNameBase) {
 	if (!svgMarkup) return { ok: false, reason: 'empty-markup' };
 	const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
 	const url = URL.createObjectURL(blob);
@@ -51,7 +51,7 @@ export function baixarSvgMarkup(svgMarkup, fileNameBase) {
 }
 
 export function downloadSvgFromContainer(containerId, fileNameBase) {
-	const capturado = capturarSvgMarkupDeContainer(containerId);
+	const capturado = captureSvgMarkupFromContainer(containerId);
 	if (!capturado.ok) return capturado;
-	return baixarSvgMarkup(capturado.svgMarkup, fileNameBase);
+	return downloadSvgMarkup(capturado.svgMarkup, fileNameBase);
 }

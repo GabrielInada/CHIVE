@@ -1,33 +1,33 @@
-export function atualizarTabs(abaAtiva, aoAlterarConfigGraficos, config) {
+export function updateTabs(activeTab, onChartConfigChange, config) {
 	const tabPreview = document.getElementById('tab-preview');
 	const tabCharts = document.getElementById('tab-charts');
 	const tabPanel = document.getElementById('tab-panel');
-	const painelPreview = document.getElementById('painel-preview');
-	const painelCharts = document.getElementById('painel-charts');
-	const painelPanel = document.getElementById('painel-panel');
-	const previewAtivo = abaAtiva === 'preview';
-	const chartsAtivo = abaAtiva === 'charts';
-	const panelAtivo = abaAtiva === 'panel';
+	const previewPanel = document.getElementById('painel-preview');
+	const chartsPanel = document.getElementById('painel-charts');
+	const dashboardPanel = document.getElementById('painel-panel');
+	const previewActive = activeTab === 'preview';
+	const chartsActive = activeTab === 'charts';
+	const panelActive = activeTab === 'panel';
 
-	tabPreview.classList.toggle('ativo', previewAtivo);
-	tabCharts.classList.toggle('ativo', chartsAtivo);
-	tabPanel.classList.toggle('ativo', panelAtivo);
-	painelPreview.classList.toggle('ativo', previewAtivo);
-	painelCharts.classList.toggle('ativo', chartsAtivo);
-	painelPanel.classList.toggle('ativo', panelAtivo);
+	tabPreview.classList.toggle('ativo', previewActive);
+	tabCharts.classList.toggle('ativo', chartsActive);
+	tabPanel.classList.toggle('ativo', panelActive);
+	previewPanel.classList.toggle('ativo', previewActive);
+	chartsPanel.classList.toggle('ativo', chartsActive);
+	dashboardPanel.classList.toggle('ativo', panelActive);
 
 	tabPreview.onclick = () => {
-		if (!aoAlterarConfigGraficos) return;
-		aoAlterarConfigGraficos({ ...config, aba: 'preview' });
+		if (!onChartConfigChange) return;
+		onChartConfigChange({ ...config, aba: 'preview' });
 	};
 
 	tabCharts.onclick = () => {
-		if (!aoAlterarConfigGraficos) return;
-		aoAlterarConfigGraficos({ ...config, aba: 'charts' });
+		if (!onChartConfigChange) return;
+		onChartConfigChange({ ...config, aba: 'charts' });
 	};
 
 	tabPanel.onclick = () => {
-		if (!aoAlterarConfigGraficos) return;
-		aoAlterarConfigGraficos({ ...config, aba: 'panel' });
+		if (!onChartConfigChange) return;
+		onChartConfigChange({ ...config, aba: 'panel' });
 	};
 }

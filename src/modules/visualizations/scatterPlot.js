@@ -1,7 +1,7 @@
 import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
-import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
-import { formatarNumero } from '../../utils/formatters.js';
+import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
+import { formatNumber } from '../../utils/formatters.js';
 
 const SCATTER_PALETTES = {
 	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
@@ -127,7 +127,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const montarConteudoTooltip = ponto => {
 		const wrapper = document.createElement('div');
 
-		const criarLinha = (rotulo, valor) => {
+		const createLine = (rotulo, valor) => {
 			const linha = document.createElement('div');
 			const strong = document.createElement('strong');
 			strong.textContent = `${rotulo}:`;
@@ -136,9 +136,9 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			return linha;
 		};
 
-		wrapper.appendChild(criarLinha(labels.eixoX, formatarNumero(ponto.x, locale)));
-		wrapper.appendChild(criarLinha(labels.eixoY, formatarNumero(ponto.y, locale)));
-		wrapper.appendChild(criarLinha(labels.indice, formatarNumero(ponto.index + 1, locale)));
+		wrapper.appendChild(createLine(labels.eixoX, formatNumber(ponto.x, locale)));
+		wrapper.appendChild(createLine(labels.eixoY, formatNumber(ponto.y, locale)));
+		wrapper.appendChild(createLine(labels.indice, formatNumber(ponto.index + 1, locale)));
 
 		return wrapper;
 	};

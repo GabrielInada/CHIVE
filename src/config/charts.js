@@ -55,7 +55,7 @@ export const BAR_CHART = {
   sortOptions: ['count-desc', 'count-asc', 'label-asc', 'label-desc'],
   defaultSort: 'count-desc',
   topNOptions: [0, 10, 20, 50],
-  defaultTopN: 0,
+  defaultTopN: 10,
 };
 
 export const SCATTER_PLOT = {
@@ -85,6 +85,9 @@ export const PIE_CHART = {
   defaultInnerRadius: 0,
   defaultOuterRadius: 100,
   defaultPadAngle: 0,
+  defaultZoomScale: 1,
+  minZoomScale: 0.3,
+  maxZoomScale: 4,
   minPadAngle: 0,
   maxPadAngle: 12,
   minInnerRadius: 0,
