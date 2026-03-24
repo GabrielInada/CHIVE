@@ -7,5 +7,6 @@ export * from './limits.js';
 export * from './formats.js';
 export * from './types.js';
 export * from './charts.js';
+export * from './chartDefaults.js';
 export * from './locale.js';
 export * from './ui.js';

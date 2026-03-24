@@ -1,6 +1,6 @@
 import { t, obterLocale } from '../../services/i18nService.js';
 import { renderBarChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
-import { mergeChartConfigWithDefaults } from '../../modules/chartConfigDefaults.js';
+import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 
 function mensagemChart(containerId, mensagem) {
 	const container = document.getElementById(containerId);

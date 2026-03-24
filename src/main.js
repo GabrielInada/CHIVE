@@ -31,7 +31,7 @@ onStateChange,
 exposeGlobals,
 } from './modules/appState.js';
 import { initializeStateSync } from './modules/stateSync.js';
-import { mergeChartConfigWithDefaults } from './modules/chartConfigDefaults.js';
+import { mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 import {
 initPanelManager,
 initializeLayoutSelector,

@@ -6,7 +6,7 @@ import { renderizarStats } from './results/statsView.js';
 import { renderizarGraficos } from './results/chartsView.js';
 import { renderizarListaArquivosDOM } from './results/fileListView.js';
 import { renderizarControlesColunasDOM } from './results/columnControlsView.js';
-import { mergeChartConfigWithDefaults } from '../modules/chartConfigDefaults.js';
+import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
 
 function traduzirTipo(tipo) {
   if (tipo === 'numero') return t('chive-type-number');

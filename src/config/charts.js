@@ -55,7 +55,7 @@ export const BAR_CHART = {
   sortOptions: ['count-desc', 'count-asc', 'label-asc', 'label-desc'],
   defaultSort: 'count-desc',
   topNOptions: [0, 10, 20, 50],
-  defaultTopN: 0,
+  defaultTopN: 10,
 };
 
 export const SCATTER_PLOT = {
