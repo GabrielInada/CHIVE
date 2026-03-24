@@ -4,7 +4,7 @@ import en from '../i18n/en.json' with { type: 'json' };
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_STORAGE_KEY } from '../config/locale.js';
 
 const LOCALES = SUPPORTED_LOCALES;
-const CHAVE_LOCALE = LOCALE_STORAGE_KEY;
+const LOCALE_KEY = LOCALE_STORAGE_KEY;
 
 const banana = new Banana(DEFAULT_LOCALE);
 banana.load(ptBR, 'pt-BR');
@@ -14,8 +14,8 @@ banana.load(en, 'en');
  * Translate a message key with optional positional parameters ($1, $2, …).
  * Supports banana-i18n markup: {{PLURAL:$1|one|other}}, etc.
  */
-export function t(chave, ...params) {
-	return banana.i18n(chave, ...params);
+export function t(key, ...params) {
+	return banana.i18n(key, ...params);
 }
 
 /** Returns the currently active locale code, e.g. 'pt-BR' or 'en'. */
@@ -31,7 +31,7 @@ export function setLocale(locale) {
 	if (!LOCALES.includes(locale)) return;
 	banana.setLocale(locale);
 	document.documentElement.lang = locale;
-	localStorage.setItem(CHAVE_LOCALE, locale);
+	localStorage.setItem(LOCALE_KEY, locale);
 	translateStaticPage();
 	window.dispatchEvent(new CustomEvent('chive-locale-changed', { detail: { locale } }));
 }
@@ -41,8 +41,8 @@ export function setLocale(locale) {
  * syncs <html lang>, updates the selector value, and translates static nodes.
  */
 export function initializeI18n() {
-	const salvo = localStorage.getItem(CHAVE_LOCALE);
-	const locale = LOCALES.includes(salvo) ? salvo : 'pt-BR';
+	const savedLocale = localStorage.getItem(LOCALE_KEY);
+	const locale = LOCALES.includes(savedLocale) ? savedLocale : 'pt-BR';
 	banana.setLocale(locale);
 	document.documentElement.lang = locale;
 
@@ -79,8 +79,8 @@ function translateStaticPage() {
 	});
 
 	document.querySelectorAll('[data-i18n-title]').forEach(el => {
-		const texto = t(el.dataset.i18nTitle);
-		el.title = texto;
-		if (el.hasAttribute('aria-label')) el.setAttribute('aria-label', texto);
+		const text = t(el.dataset.i18nTitle);
+		el.title = text;
+		if (el.hasAttribute('aria-label')) el.setAttribute('aria-label', text);
 	});
 }

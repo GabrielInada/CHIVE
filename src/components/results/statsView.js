@@ -2,8 +2,8 @@ import { calculateStatistics } from '../../services/dataService.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { formatNumber } from '../../utils/formatters.js';
 
-export function renderStats(dados, colunasVisiveis) {
-	const stats = calculateStatistics(dados, colunasVisiveis);
+export function renderStats(rows, visibleColumns) {
+	const stats = calculateStatistics(rows, visibleColumns);
 	const cardStats = document.getElementById('card-stats');
 
 	if (stats.length > 0) {

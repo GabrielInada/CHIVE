@@ -2,16 +2,16 @@ import { t, getLocale } from '../../services/i18nService.js';
 import { renderBarChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 
-function showChartMessage(containerId, mensagem) {
+function showChartMessage(containerId, message) {
 	const container = document.getElementById(containerId);
 	container.innerHTML = '';
-	const vazio = document.createElement('div');
-	vazio.className = 'chart-vazio';
-	vazio.textContent = mensagem;
-	container.appendChild(vazio);
+	const empty = document.createElement('div');
+	empty.className = 'chart-vazio';
+	empty.textContent = message;
+	container.appendChild(empty);
 }
 
-export function renderCharts(config, dados, colunasVisiveis, colunasNumericasVisiveis) {
+export function renderCharts(config, rows, visibleColumns, visibleNumericColumns) {
 	const chartConfig = mergeChartConfigWithDefaults(config);
 	const chartsGrid = document.getElementById('charts-grid');
 	const emptyState = document.getElementById('charts-empty-state');
@@ -22,8 +22,8 @@ export function renderCharts(config, dados, colunasVisiveis, colunasNumericasVis
 
 	document.getElementById('badge-charts').textContent = t(
 		'chive-charts-badge',
-		colunasVisiveis.length,
-		colunasNumericasVisiveis.length
+		visibleColumns.length,
+		visibleNumericColumns.length
 	);
 
 	if (chartConfig.aba !== 'charts') {
@@ -63,7 +63,7 @@ export function renderCharts(config, dados, colunasVisiveis, colunasNumericasVis
 		document.getElementById('chart-bar-container').style.minHeight = `${Number(chartConfig.bar.chartHeight || 320)}px`;
 		const barResult = renderBarChart(
 			document.getElementById('chart-bar-container'),
-			dados,
+			rows,
 			chartConfig.bar.category,
 			{
 				customTitle: chartConfig.bar.customTitle,
@@ -100,7 +100,7 @@ export function renderCharts(config, dados, colunasVisiveis, colunasNumericasVis
 		document.getElementById('chart-scatter-container').style.minHeight = `${Number(chartConfig.scatter.chartHeight || 320)}px`;
 		const scatterResult = renderScatterPlot(
 			document.getElementById('chart-scatter-container'),
-			dados,
+			rows,
 			chartConfig.scatter.x,
 			chartConfig.scatter.y,
 			{
@@ -146,7 +146,7 @@ export function renderCharts(config, dados, colunasVisiveis, colunasNumericasVis
 		document.getElementById('chart-network-container').style.minHeight = `${Number(chartConfig.network.chartHeight || 420)}px`;
 		const networkResult = renderNetworkGraph(
 			document.getElementById('chart-network-container'),
-			dados,
+			rows,
 			chartConfig.network.source,
 			chartConfig.network.target,
 			{
@@ -186,7 +186,7 @@ export function renderCharts(config, dados, colunasVisiveis, colunasNumericasVis
 		document.getElementById('chart-pie-container').style.minHeight = `${Number(chartConfig.pie.chartHeight || 360)}px`;
 		const pieResult = renderPieChart(
 			document.getElementById('chart-pie-container'),
-			dados,
+			rows,
 			chartConfig.pie.category,
 			{
 				customTitle: chartConfig.pie.customTitle,

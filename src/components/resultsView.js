@@ -9,38 +9,38 @@ import { renderStats } from './results/statsView.js';
 import { renderFileListDOM } from './results/fileListView.js';
 import { renderColumnControlsDOM } from './results/columnControlsView.js';
 
-function translateType(tipo) {
-  if (tipo === 'numero') return t('chive-type-number');
-  if (tipo === 'texto') return t('chive-type-text');
-  return tipo;
+function translateType(type) {
+  if (type === 'numero') return t('chive-type-number');
+  if (type === 'texto') return t('chive-type-text');
+  return type;
 }
 
-export function showErrorMessage(mensagem) {
-  const elemento = document.getElementById('mensagem-erro');
-  elemento.textContent = '⚠ ' + mensagem;
-  elemento.style.display = 'block';
+export function showErrorMessage(message) {
+  const errorElement = document.getElementById('mensagem-erro');
+  errorElement.textContent = '⚠ ' + message;
+  errorElement.style.display = 'block';
 }
 
 export function hideErrorMessage() {
   document.getElementById('mensagem-erro').style.display = 'none';
 }
 
-export function renderFileList(datasets, indiceAtivo, aoSelecionar, aoRemover) {
-  const infoArquivo = document.getElementById('info-arquivo');
-  const resumo = document.getElementById('arquivo-resumo-texto');
-  const lista = document.getElementById('lista-arquivos-conteudo');
+export function renderFileList(datasets, activeIndex, onSelect, onRemove) {
+  const fileInfo = document.getElementById('info-arquivo');
+  const summary = document.getElementById('arquivo-resumo-texto');
+  const list = document.getElementById('lista-arquivos-conteudo');
 
-  infoArquivo.style.display = 'block';
-  resumo.textContent = t('chive-files-loaded', datasets.length);
+  fileInfo.style.display = 'block';
+  summary.textContent = t('chive-files-loaded', datasets.length);
 
   renderFileListDOM({
-    lista,
+    lista: list,
     datasets,
-    indiceAtivo,
+    indiceAtivo: activeIndex,
     traduzir: t,
     getLocale,
-    aoSelecionar,
-    aoRemover,
+    aoSelecionar: onSelect,
+    aoRemover: onRemove,
   });
 }
 
@@ -58,8 +58,8 @@ export function renderEmptyState() {
   document.getElementById('chart-pie-container').innerHTML = '';
   document.getElementById('badge-charts').textContent = '—';
   document.getElementById('btn-avancar').disabled = true;
-  const avisoDev = document.getElementById('aviso-dev');
-  if (avisoDev) avisoDev.style.display = 'none';
+  const devNotice = document.getElementById('aviso-dev');
+  if (devNotice) devNotice.style.display = 'none';
   document.getElementById('zona-upload').classList.remove('carregado');
   document.querySelector('.upload-icone').textContent = '⬆';
   document.querySelector('.upload-texto-principal').textContent = t('chive-upload-main');
@@ -67,78 +67,78 @@ export function renderEmptyState() {
 }
 
 export function renderDataInterface(
-  dados,
-  colunas,
-  nomeArquivo,
-  tamanhoArquivo,
-  linhasPreview = 10,
-  colunasSelecionadas = null,
-  aoAlterarSelecaoColuna = null,
-  configGraficos = null,
-  aoAlterarConfigGraficos = null
+  rows,
+  columns,
+  fileName,
+  fileSize,
+  previewRows = 10,
+  selectedColumns = null,
+  onColumnSelectionChange = null,
+  chartConfig = null,
+  onChartConfigChange = null
 ) {
   document.getElementById('painel-colunas').style.display = 'block';
   document.getElementById('resultado-tabs').style.display = 'flex';
   document.getElementById('estado-vazio').style.display = 'none';
   document.getElementById('estado-dados').style.display = 'flex';
 
-  const nomesColunas = colunas.map(coluna => coluna.nome);
-  const nomesSelecionados = new Set(Array.isArray(colunasSelecionadas) ? colunasSelecionadas : nomesColunas);
-  const colunasVisiveis = colunas.filter(coluna => nomesSelecionados.has(coluna.nome));
-  const colunasNumericasVisiveis = getNumericColumns(colunasVisiveis);
+  const columnNames = columns.map(column => column.nome);
+  const selectedNames = new Set(Array.isArray(selectedColumns) ? selectedColumns : columnNames);
+  const visibleColumns = columns.filter(column => selectedNames.has(column.nome));
+  const visibleNumericColumns = getNumericColumns(visibleColumns);
 
-  const config = mergeChartConfigWithDefaults(configGraficos);
+  const config = mergeChartConfigWithDefaults(chartConfig);
 
   // Detecta filtro ativo
-  const nomesNumericas = colunas.filter(c => c.tipo === 'numero').map(c => c.nome);
-  const nomesTexto = colunas.filter(c => c.tipo === 'texto').map(c => c.nome);
-  const selecionadasArray = [...nomesSelecionados];
-  const filtroAtivo =
-    selecionadasArray.length === nomesColunas.length ? 'todas'
-      : selecionadasArray.length === nomesNumericas.length && selecionadasArray.every(n => nomesNumericas.includes(n)) ? 'numericas'
-        : selecionadasArray.length === nomesTexto.length && selecionadasArray.every(n => nomesTexto.includes(n)) ? 'texto'
+  const numericNames = columns.filter(c => c.tipo === 'numero').map(c => c.nome);
+  const textNames = columns.filter(c => c.tipo === 'texto').map(c => c.nome);
+  const selectedArray = [...selectedNames];
+  const activeFilter =
+    selectedArray.length === columnNames.length ? 'todas'
+      : selectedArray.length === numericNames.length && selectedArray.every(n => numericNames.includes(n)) ? 'numericas'
+        : selectedArray.length === textNames.length && selectedArray.every(n => textNames.includes(n)) ? 'texto'
           : null;
 
   // Renderiza botões fora do scroll
-  const acoesContainer = document.getElementById('colunas-acoes');
-  const listaColunas = document.getElementById('lista-colunas-conteudo');
+  const actionsContainer = document.getElementById('colunas-acoes');
+  const columnsList = document.getElementById('lista-colunas-conteudo');
 
   renderColumnControlsDOM({
-    acoesContainer,
-    listaColunas,
-    colunas,
-    nomesSelecionados,
-    filtroAtivo,
-    nomesColunas,
-    nomesNumericas,
-    nomesTexto,
+    acoesContainer: actionsContainer,
+    listaColunas: columnsList,
+    colunas: columns,
+    nomesSelecionados: selectedNames,
+    filtroAtivo: activeFilter,
+    nomesColunas: columnNames,
+    nomesNumericas: numericNames,
+    nomesTexto: textNames,
     traduzir: t,
     translateType,
-    aoAlterarSelecaoColuna,
+    aoAlterarSelecaoColuna: onColumnSelectionChange,
   });
 
-  updateTabs(config.aba, aoAlterarConfigGraficos, config);
+  updateTabs(config.aba, onChartConfigChange, config);
 
-  const limite = Number(linhasPreview) > 0 ? Number(linhasPreview) : 10;
+  const rowLimit = Number(previewRows) > 0 ? Number(previewRows) : 10;
   document.getElementById('badge-linhas').textContent = t(
     'chive-badge-preview',
-    dados.length.toLocaleString(getLocale()),
-    Math.min(limite, dados.length),
-    colunasVisiveis.length,
-    colunas.length
+    rows.length.toLocaleString(getLocale()),
+    Math.min(rowLimit, rows.length),
+    visibleColumns.length,
+    columns.length
   );
 
-  renderTablePreview(dados, colunasVisiveis, limite);
-  renderStats(dados, colunasVisiveis);
-  renderCharts(config, dados, colunasVisiveis, colunasNumericasVisiveis);
+  renderTablePreview(rows, visibleColumns, rowLimit);
+  renderStats(rows, visibleColumns);
+  renderCharts(config, rows, visibleColumns, visibleNumericColumns);
 
   document.getElementById('btn-avancar').disabled = false;
-  const avisoDev = document.getElementById('aviso-dev');
-  if (avisoDev) avisoDev.style.display = 'block';
+  const devNotice = document.getElementById('aviso-dev');
+  if (devNotice) devNotice.style.display = 'block';
   document.getElementById('zona-upload').classList.add('carregado');
   document.querySelector('.upload-icone').textContent = '✓';
   document.querySelector('.upload-texto-principal').textContent = t('chive-upload-loaded-main');
   document.querySelector('.upload-texto-sub').textContent = t('chive-upload-loaded-sub');
   document.getElementById('arquivo-resumo-texto').title =
-    `${nomeArquivo} · ${dados.length.toLocaleString(getLocale())} linhas · ${colunas.length} colunas · ${tamanhoArquivo}`;
+    `${fileName} · ${rows.length.toLocaleString(getLocale())} linhas · ${columns.length} colunas · ${fileSize}`;
 }

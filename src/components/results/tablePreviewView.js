@@ -1,30 +1,30 @@
 import { t } from '../../services/i18nService.js';
 import { formatNumber } from '../../utils/formatters.js';
 
-function translateType(tipo) {
-	if (tipo === 'numero') return t('chive-type-number');
-	if (tipo === 'texto') return t('chive-type-text');
-	return tipo;
+function translateType(type) {
+	if (type === 'numero') return t('chive-type-number');
+	if (type === 'texto') return t('chive-type-text');
+	return type;
 }
 
-export function renderTablePreview(dados, colunasVisiveis, limite) {
-	const containerTabela = document.getElementById('container-tabela');
-	if (colunasVisiveis.length === 0) {
-		containerTabela.innerHTML = '';
-		const vazio = document.createElement('div');
-		vazio.className = 'tabela-sem-colunas';
-		vazio.textContent = t('chive-no-columns-selected');
-		containerTabela.appendChild(vazio);
+export function renderTablePreview(rows, visibleColumns, limit) {
+	const tableContainer = document.getElementById('container-tabela');
+	if (visibleColumns.length === 0) {
+		tableContainer.innerHTML = '';
+		const empty = document.createElement('div');
+		empty.className = 'tabela-sem-colunas';
+		empty.textContent = t('chive-no-columns-selected');
+		tableContainer.appendChild(empty);
 		return;
 	}
 
-	const linhasPreviewDados = dados.slice(0, limite);
-	const tabela = document.createElement('table');
-	tabela.className = 'tabela-preview';
+	const previewRows = rows.slice(0, limit);
+	const table = document.createElement('table');
+	table.className = 'tabela-preview';
 
 	const thead = document.createElement('thead');
 	const trHead = document.createElement('tr');
-	colunasVisiveis.forEach(({ nome, tipo }) => {
+	visibleColumns.forEach(({ nome, tipo }) => {
 		const th = document.createElement('th');
 		if (tipo === 'numero') th.classList.add('num');
 		th.textContent = nome;
@@ -33,16 +33,16 @@ export function renderTablePreview(dados, colunasVisiveis, limite) {
 	thead.appendChild(trHead);
 
 	const tbody = document.createElement('tbody');
-	linhasPreviewDados.forEach(linha => {
+	previewRows.forEach(row => {
 		const tr = document.createElement('tr');
-		colunasVisiveis.forEach(({ nome, tipo }) => {
+		visibleColumns.forEach(({ nome, tipo }) => {
 			const td = document.createElement('td');
 			if (tipo === 'numero') td.classList.add('num');
-			const val = linha[nome];
-			const exibir = val === null || val === undefined || val === ''
+			const value = row[nome];
+			const displayValue = value === null || value === undefined || value === ''
 				? '—'
-				: (tipo === 'numero' ? formatNumber(val) : String(val));
-			td.textContent = exibir;
+				: (tipo === 'numero' ? formatNumber(value) : String(value));
+			td.textContent = displayValue;
 			tr.appendChild(td);
 		});
 		tbody.appendChild(tr);
@@ -50,17 +50,17 @@ export function renderTablePreview(dados, colunasVisiveis, limite) {
 
 	const tfoot = document.createElement('tfoot');
 	const trFoot = document.createElement('tr');
-	colunasVisiveis.forEach(({ tipo }) => {
+	visibleColumns.forEach(({ tipo }) => {
 		const td = document.createElement('td');
 		td.textContent = translateType(tipo);
 		trFoot.appendChild(td);
 	});
 	tfoot.appendChild(trFoot);
 
-	tabela.appendChild(thead);
-	tabela.appendChild(tbody);
-	tabela.appendChild(tfoot);
+	table.appendChild(thead);
+	table.appendChild(tbody);
+	table.appendChild(tfoot);
 
-	containerTabela.innerHTML = '';
-	containerTabela.appendChild(tabela);
+	tableContainer.innerHTML = '';
+	tableContainer.appendChild(table);
 }
