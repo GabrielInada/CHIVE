@@ -4,7 +4,8 @@
  * 
  * This refactored main.js coordinates all modularized components:
  * - appState: Centralized state management
- * - Modules: panelManager, chartControls, uiManager, fileManager, eventHandlers, feedbackUI
+ * - Modules: panelManager, uiManager, fileManager, eventHandlers, feedbackUI
+ * - Features: chartFeatures
  * - Services: dataService, i18nService
  * - Components: resultsView
  * 
@@ -29,20 +30,25 @@ getState,
 getActiveDataset,
 onStateChange,
 exposeGlobals,
-} from './modules/appState.js';
-import { initializeStateSync } from './modules/stateSync.js';
-import { mergeChartConfigWithDefaults } from './config/chartDefaults.js';
-import {
+initializeStateSync,
 initPanelManager,
 initializeLayoutSelector,
 renderSidebarPanel,
 renderCanvasPanel,
-} from './modules/panelManager.js';
+initFileManager,
+getLoadedDatasets,
+selectDataset,
+removeDatasetByIndex,
+initializeAllEventHandlers,
+showFeedback,
+mostrarFeedback,
+showError,
+mostrarErro,
+esconderErro,
+switchTab,
+} from './modules/index.js';
+import { mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 import { initChartControls, renderChartControlsSidebar } from './features/chartFeatures/index.js';
-import { initFileManager, getLoadedDatasets, selectDataset, removeDatasetByIndex } from './modules/fileManager.js';
-import { initializeAllEventHandlers } from './modules/eventHandlers.js';
-import { showFeedback, mostrarFeedback, showError, mostrarErro, esconderErro } from './modules/feedbackUI.js';
-import { switchTab } from './modules/uiManager.js';
 
 // =============================================================================
 // APPLICATION INITIALIZATION
