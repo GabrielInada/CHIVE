@@ -74,6 +74,7 @@ export function createDefaultChartConfig() {
 			innerRadius: PIE_CHART.defaultInnerRadius,
 			outerRadius: PIE_CHART.defaultOuterRadius,
 			padAngle: PIE_CHART.defaultPadAngle,
+			zoomScale: PIE_CHART.defaultZoomScale,
 			color: CHART_COLORS.pie,
 			showCategoryLabel: true,
 			showValueLabel: true,

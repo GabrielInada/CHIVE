@@ -1,4 +1,4 @@
-import { arc, pie, select } from 'd3';
+import { arc, pie, select, zoom, zoomIdentity } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
@@ -108,11 +108,18 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		PIE_CHART.maxPadAngle
 	);
 	const padAngleRad = (padAngleDeg * Math.PI) / 180;
+	const zoomScale = clamp(
+		Number.isFinite(Number(opcoes.zoomScale)) ? Number(opcoes.zoomScale) : PIE_CHART.defaultZoomScale,
+		PIE_CHART.minZoomScale,
+		PIE_CHART.maxZoomScale
+	);
 
 	const svg = select(container)
 		.append('svg')
 		.attr('width', largura)
 		.attr('height', altura);
+
+	const viewport = svg.append('g');
 
 	if (customTitle) {
 		svg
@@ -126,7 +133,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 			.text(customTitle);
 	}
 
-	const grupo = svg
+	const grupo = viewport
 		.append('g')
 		.attr('transform', `translate(${centerX},${centerY})`);
 
@@ -209,6 +216,16 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		pinnedCategoria = null;
 		hideChartTooltip();
 	});
+
+	const zoomBehavior = zoom()
+		.extent([[0, 0], [largura, altura]])
+		.scaleExtent([PIE_CHART.minZoomScale, PIE_CHART.maxZoomScale])
+		.on('zoom', event => {
+			viewport.attr('transform', event.transform);
+		});
+
+	svg.call(zoomBehavior);
+	svg.call(zoomBehavior.transform, zoomIdentity.scale(zoomScale));
 
 	const pieData = pieGenerator(linhas);
 	if ((showCategoryLabel || showValueLabel) && labelPosition === 'inside') {

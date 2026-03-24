@@ -196,6 +196,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				innerRadius: chartConfig.pie.innerRadius,
 				outerRadius: chartConfig.pie.outerRadius,
 				padAngle: chartConfig.pie.padAngle,
+				zoomScale: chartConfig.pie.zoomScale,
 				color: chartConfig.pie.color,
 				showCategoryLabel: chartConfig.pie.showCategoryLabel,
 				showValueLabel: chartConfig.pie.showValueLabel,
