@@ -12,9 +12,23 @@
 
 import { t } from '../services/i18nService.js';
 import { capturarSvgMarkupDeContainer, baixarSvgMarkup } from '../utils/svgExport.js';
-import { LAYOUTS_PAINEL, getLayoutConfig as getPanelLayoutConfig, getTemplateForBlock } from './panel/layoutConfig.js';
-import { clampPercent, normalizeHexColor, computeDynamicMinHeight } from './panel/resizeMath.js';
-import { createAddBlockControls, createBlockBorderControls, createBlockHeader, createBlockTemplateSelect, createPanelSlotElement } from './panel/domBuilders.js';
+import {
+	LAYOUTS_PAINEL,
+	getLayoutConfig as getPanelLayoutConfig,
+	getTemplateForBlock,
+} from './panel/layoutConfig.js';
+import {
+	clampPercent,
+	normalizeHexColor,
+	computeDynamicMinHeight,
+} from './panel/resizeMath.js';
+import {
+	createAddBlockControls,
+	createBlockBorderControls,
+	createBlockHeader,
+	createBlockTemplateSelect,
+	createPanelSlotElement,
+} from './panel/domBuilders.js';
 import {
 	getPanelCharts,
 	getPanelBlocks,

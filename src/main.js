@@ -16,30 +16,37 @@
  * - Main.js handles initialization and orchestration only
  */
 
-import { inicializarI18n, t } from './services/i18nService.js';
+import { inicializarI18n, t } from './services/index.js';
 import { PREVIEW_DEFAULT_ROWS } from './config/limits.js';
 import {
 renderizarEstadoVazio,
 renderizarInterface,
 renderizarListaArquivos,
-} from './components/resultsView.js';
+} from './components/index.js';
+import { initChartControls, renderChartControlsSidebar } from './features/chartFeatures/index.js';
+import { mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 
-// Module imports
 import {
 getState,
 getActiveDataset,
 onStateChange,
 exposeGlobals,
 initializeStateSync,
+} from './modules/index.js';
+import {
 initPanelManager,
 initializeLayoutSelector,
 renderSidebarPanel,
 renderCanvasPanel,
+} from './modules/index.js';
+import {
 initFileManager,
 getLoadedDatasets,
 selectDataset,
 removeDatasetByIndex,
 initializeAllEventHandlers,
+} from './modules/index.js';
+import {
 showFeedback,
 mostrarFeedback,
 showError,
@@ -47,8 +54,6 @@ mostrarErro,
 esconderErro,
 switchTab,
 } from './modules/index.js';
-import { mergeChartConfigWithDefaults } from './config/chartDefaults.js';
-import { initChartControls, renderChartControlsSidebar } from './features/chartFeatures/index.js';
 
 // =============================================================================
 // APPLICATION INITIALIZATION
