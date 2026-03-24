@@ -1,31 +1,31 @@
-import { t, obterLocale } from '../services/i18nService.js';
+import { t, getLocale } from '../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
-import { renderizarGraficos } from '../features/chartFeatures/index.js';
+import { renderCharts } from '../features/chartFeatures/index.js';
 import { getNumericColumns } from '../utils/columnHelpers.js';
 
-import { atualizarTabs } from './results/tabsView.js';
-import { renderizarTabelaPreview } from './results/tablePreviewView.js';
-import { renderizarStats } from './results/statsView.js';
-import { renderizarListaArquivosDOM } from './results/fileListView.js';
-import { renderizarControlesColunasDOM } from './results/columnControlsView.js';
+import { updateTabs } from './results/tabsView.js';
+import { renderTablePreview } from './results/tablePreviewView.js';
+import { renderStats } from './results/statsView.js';
+import { renderFileListDOM } from './results/fileListView.js';
+import { renderColumnControlsDOM } from './results/columnControlsView.js';
 
-function traduzirTipo(tipo) {
+function translateType(tipo) {
   if (tipo === 'numero') return t('chive-type-number');
   if (tipo === 'texto') return t('chive-type-text');
   return tipo;
 }
 
-export function mostrarErro(mensagem) {
+export function showErrorMessage(mensagem) {
   const elemento = document.getElementById('mensagem-erro');
   elemento.textContent = '⚠ ' + mensagem;
   elemento.style.display = 'block';
 }
 
-export function esconderErro() {
+export function hideErrorMessage() {
   document.getElementById('mensagem-erro').style.display = 'none';
 }
 
-export function renderizarListaArquivos(datasets, indiceAtivo, aoSelecionar, aoRemover) {
+export function renderFileList(datasets, indiceAtivo, aoSelecionar, aoRemover) {
   const infoArquivo = document.getElementById('info-arquivo');
   const resumo = document.getElementById('arquivo-resumo-texto');
   const lista = document.getElementById('lista-arquivos-conteudo');
@@ -33,18 +33,18 @@ export function renderizarListaArquivos(datasets, indiceAtivo, aoSelecionar, aoR
   infoArquivo.style.display = 'block';
   resumo.textContent = t('chive-files-loaded', datasets.length);
 
-  renderizarListaArquivosDOM({
+  renderFileListDOM({
     lista,
     datasets,
     indiceAtivo,
     traduzir: t,
-    obterLocale,
+    getLocale,
     aoSelecionar,
     aoRemover,
   });
 }
 
-export function renderizarEstadoVazio() {
+export function renderEmptyState() {
   document.getElementById('info-arquivo').style.display = 'none';
   document.getElementById('painel-colunas').style.display = 'none';
   document.getElementById('estado-vazio').style.display = 'flex';
@@ -66,7 +66,7 @@ export function renderizarEstadoVazio() {
   document.querySelector('.upload-texto-sub').innerHTML = t('chive-upload-sub');
 }
 
-export function renderizarInterface(
+export function renderDataInterface(
   dados,
   colunas,
   nomeArquivo,
@@ -103,7 +103,7 @@ export function renderizarInterface(
   const acoesContainer = document.getElementById('colunas-acoes');
   const listaColunas = document.getElementById('lista-colunas-conteudo');
 
-  renderizarControlesColunasDOM({
+  renderColumnControlsDOM({
     acoesContainer,
     listaColunas,
     colunas,
@@ -113,24 +113,24 @@ export function renderizarInterface(
     nomesNumericas,
     nomesTexto,
     traduzir: t,
-    traduzirTipo,
+    translateType,
     aoAlterarSelecaoColuna,
   });
 
-  atualizarTabs(config.aba, aoAlterarConfigGraficos, config);
+  updateTabs(config.aba, aoAlterarConfigGraficos, config);
 
   const limite = Number(linhasPreview) > 0 ? Number(linhasPreview) : 10;
   document.getElementById('badge-linhas').textContent = t(
     'chive-badge-preview',
-    dados.length.toLocaleString(obterLocale()),
+    dados.length.toLocaleString(getLocale()),
     Math.min(limite, dados.length),
     colunasVisiveis.length,
     colunas.length
   );
 
-  renderizarTabelaPreview(dados, colunasVisiveis, limite);
-  renderizarStats(dados, colunasVisiveis);
-  renderizarGraficos(config, dados, colunasVisiveis, colunasNumericasVisiveis);
+  renderTablePreview(dados, colunasVisiveis, limite);
+  renderStats(dados, colunasVisiveis);
+  renderCharts(config, dados, colunasVisiveis, colunasNumericasVisiveis);
 
   document.getElementById('btn-avancar').disabled = false;
   const avisoDev = document.getElementById('aviso-dev');
@@ -140,5 +140,5 @@ export function renderizarInterface(
   document.querySelector('.upload-texto-principal').textContent = t('chive-upload-loaded-main');
   document.querySelector('.upload-texto-sub').textContent = t('chive-upload-loaded-sub');
   document.getElementById('arquivo-resumo-texto').title =
-    `${nomeArquivo} · ${dados.length.toLocaleString(obterLocale())} linhas · ${colunas.length} colunas · ${tamanhoArquivo}`;
+    `${nomeArquivo} · ${dados.length.toLocaleString(getLocale())} linhas · ${colunas.length} colunas · ${tamanhoArquivo}`;
 }

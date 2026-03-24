@@ -38,7 +38,7 @@ export function showFeedback(message, duration = 2200) {
 /**
  * Alias for showFeedback (backwards compatibility)
  */
-export function mostrarFeedback(message, duration = 2200) {
+export function showFeedbackMessage(message, duration = 2200) {
 	showFeedback(message, duration);
 }
 
@@ -86,7 +86,7 @@ export function showError(message, duration = 0) {
 /**
  * Alias for showError (backwards compatibility)
  */
-export function mostrarErro(message, duration = 0) {
+export function showErrorMessage(message, duration = 0) {
 	showError(message, duration);
 }
 
@@ -104,7 +104,7 @@ export function clearErrors() {
 /**
  * Alias for clearErrors (backwards compatibility)
  */
-export function esconderErro() {
+export function hideErrorMessage() {
 	clearErrors();
 }
 

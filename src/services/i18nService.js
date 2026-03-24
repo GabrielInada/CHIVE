@@ -19,7 +19,7 @@ export function t(chave, ...params) {
 }
 
 /** Returns the currently active locale code, e.g. 'pt-BR' or 'en'. */
-export function obterLocale() {
+export function getLocale() {
 	return banana.locale;
 }
 
@@ -27,12 +27,12 @@ export function obterLocale() {
  * Switch the active locale, persist it, re-translate static [data-i18n] nodes,
  * and fire 'chive-locale-changed' so the app can re-render dynamic content.
  */
-export function definirLocale(locale) {
+export function setLocale(locale) {
 	if (!LOCALES.includes(locale)) return;
 	banana.setLocale(locale);
 	document.documentElement.lang = locale;
 	localStorage.setItem(CHAVE_LOCALE, locale);
-	traduirPaginaEstatica();
+	translateStaticPage();
 	window.dispatchEvent(new CustomEvent('chive-locale-changed', { detail: { locale } }));
 }
 
@@ -40,7 +40,7 @@ export function definirLocale(locale) {
  * Call once on startup. Reads the persisted locale (defaults to 'pt-BR'),
  * syncs <html lang>, updates the selector value, and translates static nodes.
  */
-export function inicializarI18n() {
+export function initializeI18n() {
 	const salvo = localStorage.getItem(CHAVE_LOCALE);
 	const locale = LOCALES.includes(salvo) ? salvo : 'pt-BR';
 	banana.setLocale(locale);
@@ -59,7 +59,7 @@ export function inicializarI18n() {
 		langDisplay.textContent = localeLabels[locale] || locale;
 	}
 
-	traduirPaginaEstatica();
+	translateStaticPage();
 }
 
 /**
@@ -67,7 +67,7 @@ export function inicializarI18n() {
  * Elements that also have [data-i18n-html] use innerHTML (safe: strings come
  * from our own translation files, never from user input).
  */
-function traduirPaginaEstatica() {
+function translateStaticPage() {
 	document.title = t('chive-page-title');
 
 	document.querySelectorAll('[data-i18n]').forEach(el => {

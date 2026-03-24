@@ -8,7 +8,7 @@
  * - Global keyboard shortcuts
  */
 
-import { t, definirLocale, obterLocale } from '../services/i18nService.js';
+import { t, setLocale, getLocale } from '../services/i18nService.js';
 import { downloadSvgFromContainer } from '../utils/svgExport.js';
 import { addChartToPanel, setupPanelEventListeners } from './panelManager.js';
 import { showError, showFeedback } from './feedbackUI.js';
@@ -292,18 +292,18 @@ function setupLanguageSelectorListeners() {
 	selectLang.addEventListener('change', event => {
 		const locale = event.target.value;
 		updateDisplay(locale);
-		definirLocale(locale);
+		setLocale(locale);
 	});
 
 	// Update selector on locale change
 	window.addEventListener('chive-locale-changed', () => {
-		const currentLocale = obterLocale();
+		const currentLocale = getLocale();
 		selectLang.value = currentLocale;
 		updateDisplay(currentLocale);
 	});
 
 	// Initialize display with current locale
-	const currentLocale = obterLocale();
+	const currentLocale = getLocale();
 	updateDisplay(currentLocale);
 }
 

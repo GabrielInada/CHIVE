@@ -1,11 +1,11 @@
-import { obterLocale } from '../services/i18nService.js';
+import { getLocale } from '../services/i18nService.js';
 
 /**
  * Escape HTML special characters to prevent injection
  * @param {*} texto - Value to escape
  * @returns {string} - Escaped HTML string
  */
-export function escaparHTML(texto) {
+export function escapeHtml(texto) {
 	return String(texto)
 		.replaceAll('&', '&amp;')
 		.replaceAll('<', '&lt;')
@@ -20,11 +20,11 @@ export function escaparHTML(texto) {
  * @param {string} [locale] - Optional locale override (defaults to current locale)
  * @returns {string} - Formatted number string
  */
-export function formatarNumero(valor, locale) {
+export function formatNumber(valor, locale) {
 	const numero = Number(valor);
 	if (valor === null || valor === undefined || valor === '' || Number.isNaN(numero)) return '—';
 
-	const localeToUse = locale || obterLocale();
+	const localeToUse = locale || getLocale();
 	
 	// Integer: no decimal places
 	if (Number.isInteger(numero)) return numero.toLocaleString(localeToUse);

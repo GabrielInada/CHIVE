@@ -1,4 +1,4 @@
-export function renderizarControlesColunasDOM({
+export function renderColumnControlsDOM({
 	acoesContainer,
 	listaColunas,
 	colunas,
@@ -8,12 +8,12 @@ export function renderizarControlesColunasDOM({
 	nomesNumericas,
 	nomesTexto,
 	traduzir,
-	traduzirTipo,
+	translateType,
 	aoAlterarSelecaoColuna,
 }) {
 	acoesContainer.innerHTML = '';
 
-	const criarBotaoAcao = (acao, texto, ativo = false) => {
+	const createActionButton = (acao, texto, ativo = false) => {
 		const botao = document.createElement('button');
 		botao.className = `colunas-acao${ativo ? ' ativo' : ''}`;
 		botao.type = 'button';
@@ -22,10 +22,10 @@ export function renderizarControlesColunasDOM({
 		return botao;
 	};
 
-	acoesContainer.appendChild(criarBotaoAcao('todas', traduzir('chive-action-select-all'), filtroAtivo === 'todas'));
-	acoesContainer.appendChild(criarBotaoAcao('limpar', traduzir('chive-action-clear')));
-	acoesContainer.appendChild(criarBotaoAcao('numericas', traduzir('chive-action-only-numeric'), filtroAtivo === 'numericas'));
-	acoesContainer.appendChild(criarBotaoAcao('texto', traduzir('chive-action-only-text'), filtroAtivo === 'texto'));
+	acoesContainer.appendChild(createActionButton('todas', traduzir('chive-action-select-all'), filtroAtivo === 'todas'));
+	acoesContainer.appendChild(createActionButton('limpar', traduzir('chive-action-clear')));
+	acoesContainer.appendChild(createActionButton('numericas', traduzir('chive-action-only-numeric'), filtroAtivo === 'numericas'));
+	acoesContainer.appendChild(createActionButton('texto', traduzir('chive-action-only-text'), filtroAtivo === 'texto'));
 
 	acoesContainer.onclick = evento => {
 		const alvo = evento.target.closest('[data-acao-coluna]');
@@ -66,7 +66,7 @@ export function renderizarControlesColunasDOM({
 
 		const tipoSpan = document.createElement('span');
 		tipoSpan.className = `tipo-tag ${tipo}`;
-		tipoSpan.textContent = traduzirTipo(tipo);
+		tipoSpan.textContent = translateType(tipo);
 
 		label.appendChild(checkbox);
 		label.appendChild(nomeSpan);

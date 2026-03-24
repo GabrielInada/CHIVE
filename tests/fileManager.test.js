@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   t: vi.fn((key, params) => `${key}${params ? `:${params.join('|')}` : ''}`),
-  parsearCSV: vi.fn(),
-  parsearJSON: vi.fn(),
-  processarDados: vi.fn(),
-  formatarTamanhoArquivo: vi.fn(size => `${size}B`),
+  parseCsv: vi.fn(),
+  parseJson: vi.fn(),
+  processData: vi.fn(),
+  formatFileSize: vi.fn(size => `${size}B`),
   addDataset: vi.fn(),
   removeDataset: vi.fn(),
   setActiveDataset: vi.fn(),
@@ -21,10 +21,10 @@ vi.mock('../src/services/i18nService.js', () => ({
 }));
 
 vi.mock('../src/services/dataService.js', () => ({
-  parsearCSV: mocks.parsearCSV,
-  parsearJSON: mocks.parsearJSON,
-  processarDados: mocks.processarDados,
-  formatarTamanhoArquivo: mocks.formatarTamanhoArquivo,
+  parseCsv: mocks.parseCsv,
+  parseJson: mocks.parseJson,
+  processData: mocks.processData,
+  formatFileSize: mocks.formatFileSize,
 }));
 
 vi.mock('../src/modules/appState.js', () => ({
@@ -84,12 +84,12 @@ describe('fileManager', () => {
     global.FileReader = FileReaderMock;
     window.confirm = vi.fn(() => true);
 
-    mocks.processarDados.mockReturnValue({
+    mocks.processData.mockReturnValue({
       dados: [{ a: 1 }],
       colunas: [{ nome: 'a', tipo: 'numero' }],
     });
-    mocks.parsearCSV.mockReturnValue([{ a: '1' }]);
-    mocks.parsearJSON.mockReturnValue([{ a: 1 }]);
+    mocks.parseCsv.mockReturnValue([{ a: '1' }]);
+    mocks.parseJson.mockReturnValue([{ a: 1 }]);
   });
 
   it('ignora upload vazio e nao limpa erros quando sem arquivos', async () => {
@@ -107,7 +107,7 @@ describe('fileManager', () => {
     await handleFileUpload([csvFile()]);
 
     expect(mocks.clearErrors).toHaveBeenCalledTimes(1);
-    expect(mocks.parsearCSV).toHaveBeenCalledWith('a,b\\n1,2');
+    expect(mocks.parseCsv).toHaveBeenCalledWith('a,b\\n1,2');
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
 
     const added = mocks.addDataset.mock.calls[0][0];
@@ -127,17 +127,17 @@ describe('fileManager', () => {
   });
 
   it('trata erro de parse e limita linhas quando ultrapassa ROW_LIMIT', async () => {
-    mocks.parsearCSV.mockImplementationOnce(() => {
+    mocks.parseCsv.mockImplementationOnce(() => {
       throw new Error('parse fail');
     });
     await handleFileUpload([csvFile()]);
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-parse: parse fail');
 
-    mocks.parsearCSV.mockReturnValueOnce([{ x: 1 }, { x: 2 }, { x: 3 }]);
+    mocks.parseCsv.mockReturnValueOnce([{ x: 1 }, { x: 2 }, { x: 3 }]);
     await handleFileUpload([csvFile({ content: 'x\\n1\\n2\\n3' })]);
 
     expect(window.confirm).toHaveBeenCalled();
-    expect(mocks.processarDados).toHaveBeenCalledWith([{ x: 1 }, { x: 2 }], 'ok.csv');
+    expect(mocks.processData).toHaveBeenCalledWith([{ x: 1 }, { x: 2 }], 'ok.csv');
   });
 
   it('select/remove/get datasets encaminham para appState com tratamento de erro', () => {

@@ -10,7 +10,7 @@ import {
 } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
-import { formatarNumero } from '../../utils/formatters.js';
+import { formatNumber } from '../../utils/formatters.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 
@@ -213,7 +213,7 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 			};
 			content.appendChild(makeLine('Source', String(linkData.source.id || linkData.source)));
 			content.appendChild(makeLine('Target', String(linkData.target.id || linkData.target)));
-			content.appendChild(makeLine(labels.linkWeight, formatarNumero(Number(linkData.value) || 0, locale)));
+			content.appendChild(makeLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale)));
 			showChartTooltip(content, event.pageX, event.pageY);
 		})
 		.on('mousemove', event => {

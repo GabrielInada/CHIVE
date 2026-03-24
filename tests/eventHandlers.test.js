@@ -14,8 +14,8 @@ const mocks = vi.hoisted(() => ({
   downloadSvgFromContainer: vi.fn(),
   showError: vi.fn(),
   showFeedback: vi.fn(),
-  definirLocale: vi.fn(),
-  obterLocale: vi.fn(() => 'pt-BR'),
+  setLocale: vi.fn(),
+  getLocale: vi.fn(() => 'pt-BR'),
   t: vi.fn(key => `tr:${key}`),
   getActiveDataset: vi.fn(() => ({
     configGraficos: {
@@ -35,8 +35,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../src/services/i18nService.js', () => ({
   t: mocks.t,
-  definirLocale: mocks.definirLocale,
-  obterLocale: mocks.obterLocale,
+  setLocale: mocks.setLocale,
+  getLocale: mocks.getLocale,
 }));
 
 vi.mock('../src/utils/svgExport.js', () => ({
@@ -120,7 +120,7 @@ function setupDom() {
 describe('eventHandlers', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mocks.obterLocale.mockReturnValue('pt-BR');
+    mocks.getLocale.mockReturnValue('pt-BR');
     mocks.downloadSvgFromContainer.mockReturnValue({ ok: true });
     mocks.addChartToPanel.mockReturnValue({ ok: true });
     mocks.getActiveDataset.mockReturnValue({ configGraficos: { aba: 'preview' } });
@@ -165,10 +165,10 @@ describe('eventHandlers', () => {
 
     select.value = 'en';
     select.dispatchEvent(new Event('change', { bubbles: true }));
-    expect(mocks.definirLocale).toHaveBeenCalledWith('en');
+    expect(mocks.setLocale).toHaveBeenCalledWith('en');
     expect(display.textContent).toBe('English');
 
-    mocks.obterLocale.mockReturnValue('pt-BR');
+    mocks.getLocale.mockReturnValue('pt-BR');
     window.dispatchEvent(new Event('chive-locale-changed'));
     expect(select.value).toBe('pt-BR');
     expect(display.textContent).toBe('Português');

@@ -1,8 +1,8 @@
-import { t, obterLocale } from '../../services/i18nService.js';
+import { t, getLocale } from '../../services/i18nService.js';
 import { renderBarChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 
-function mensagemChart(containerId, mensagem) {
+function showChartMessage(containerId, mensagem) {
 	const container = document.getElementById(containerId);
 	container.innerHTML = '';
 	const vazio = document.createElement('div');
@@ -11,7 +11,7 @@ function mensagemChart(containerId, mensagem) {
 	container.appendChild(vazio);
 }
 
-export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumericasVisiveis) {
+export function renderCharts(config, dados, colunasVisiveis, colunasNumericasVisiveis) {
 	const chartConfig = mergeChartConfigWithDefaults(config);
 	const chartsGrid = document.getElementById('charts-grid');
 	const emptyState = document.getElementById('charts-empty-state');
@@ -81,7 +81,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 					x: chartConfig.bar.category || t('chive-chart-control-bar-category'),
 					y: t('chive-tooltip-count'),
 				},
-				locale: obterLocale(),
+				locale: getLocale(),
 				labels: {
 					categoria: t('chive-chart-control-bar-category'),
 					contagem: t('chive-tooltip-count'),
@@ -89,7 +89,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 				},
 			}
 		);
-		if (!barResult.ok) mensagemChart('chart-bar-container', t('chive-chart-empty-bar'));
+		if (!barResult.ok) showChartMessage('chart-bar-container', t('chive-chart-empty-bar'));
 	} else {
 		blocoBar.style.display = 'none';
 		document.getElementById('chart-bar-container').innerHTML = '';
@@ -122,7 +122,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 					x: chartConfig.scatter.x || t('chive-chart-control-scatter-x'),
 					y: chartConfig.scatter.y || t('chive-chart-control-scatter-y'),
 				},
-				locale: obterLocale(),
+				locale: getLocale(),
 				labels: {
 					eixoX: t('chive-chart-control-scatter-x'),
 					eixoY: t('chive-chart-control-scatter-y'),
@@ -134,7 +134,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 			const chave = scatterResult.reason === 'log-no-positive'
 				? 'chive-chart-empty-scatter-log'
 				: 'chive-chart-empty-scatter';
-			mensagemChart('chart-scatter-container', t(chave));
+			showChartMessage('chart-scatter-container', t(chave));
 		}
 	} else {
 		blocoScatter.style.display = 'none';
@@ -165,7 +165,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 				zoomScale: chartConfig.network.zoomScale,
 				alphaDecay: chartConfig.network.alphaDecay,
 				showLegend: chartConfig.network.showLegend,
-				locale: obterLocale(),
+				locale: getLocale(),
 				labels: {
 					node: t('chive-chart-control-network-source'),
 					linkWeight: t('chive-chart-control-network-weight'),
@@ -174,7 +174,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 		);
 
 		if (!networkResult.ok) {
-			mensagemChart('chart-network-container', t('chive-chart-empty-network'));
+			showChartMessage('chart-network-container', t('chive-chart-empty-network'));
 		}
 	} else {
 		blocoNetwork.style.display = 'none';
@@ -202,7 +202,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 				showLegend: chartConfig.pie.showLegend,
 				labelPosition: chartConfig.pie.labelPosition,
 								customSliceColors: chartConfig.pie.customSliceColors,
-				locale: obterLocale(),
+				locale: getLocale(),
 				labels: {
 					categoria: t('chive-chart-control-pie-category'),
 					contagem: t('chive-tooltip-count'),
@@ -215,7 +215,7 @@ export function renderizarGraficos(config, dados, colunasVisiveis, colunasNumeri
 			const chave = pieResult.reason === 'sum-no-numeric'
 				? 'chive-chart-empty-pie-sum'
 				: 'chive-chart-empty-pie';
-			mensagemChart('chart-pie-container', t(chave));
+			showChartMessage('chart-pie-container', t(chave));
 		}
 	} else {
 		blocoPie.style.display = 'none';

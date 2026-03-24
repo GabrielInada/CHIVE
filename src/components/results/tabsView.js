@@ -1,4 +1,4 @@
-export function atualizarTabs(abaAtiva, aoAlterarConfigGraficos, config) {
+export function updateTabs(abaAtiva, aoAlterarConfigGraficos, config) {
 	const tabPreview = document.getElementById('tab-preview');
 	const tabCharts = document.getElementById('tab-charts');
 	const tabPanel = document.getElementById('tab-panel');

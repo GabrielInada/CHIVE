@@ -1,13 +1,13 @@
 import { t } from '../../services/i18nService.js';
-import { formatarNumero } from '../../utils/formatters.js';
+import { formatNumber } from '../../utils/formatters.js';
 
-function traduzirTipo(tipo) {
+function translateType(tipo) {
 	if (tipo === 'numero') return t('chive-type-number');
 	if (tipo === 'texto') return t('chive-type-text');
 	return tipo;
 }
 
-export function renderizarTabelaPreview(dados, colunasVisiveis, limite) {
+export function renderTablePreview(dados, colunasVisiveis, limite) {
 	const containerTabela = document.getElementById('container-tabela');
 	if (colunasVisiveis.length === 0) {
 		containerTabela.innerHTML = '';
@@ -41,7 +41,7 @@ export function renderizarTabelaPreview(dados, colunasVisiveis, limite) {
 			const val = linha[nome];
 			const exibir = val === null || val === undefined || val === ''
 				? '—'
-				: (tipo === 'numero' ? formatarNumero(val) : String(val));
+				: (tipo === 'numero' ? formatNumber(val) : String(val));
 			td.textContent = exibir;
 			tr.appendChild(td);
 		});
@@ -52,7 +52,7 @@ export function renderizarTabelaPreview(dados, colunasVisiveis, limite) {
 	const trFoot = document.createElement('tr');
 	colunasVisiveis.forEach(({ tipo }) => {
 		const td = document.createElement('td');
-		td.textContent = traduzirTipo(tipo);
+		td.textContent = translateType(tipo);
 		trFoot.appendChild(td);
 	});
 	tfoot.appendChild(trFoot);

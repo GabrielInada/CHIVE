@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from 'vitest';
-import { renderizarControlesColunasDOM } from '../../../src/components/results/columnControlsView.js';
+import { renderColumnControlsDOM } from '../../../src/components/results/columnControlsView.js';
 
 describe('columnControlsView', () => {
 	it('renders action buttons and checkbox list, then emits selections', () => {
@@ -10,7 +10,7 @@ describe('columnControlsView', () => {
 		const listaColunas = document.getElementById('lista');
 		const aoAlterarSelecaoColuna = vi.fn();
 
-		renderizarControlesColunasDOM({
+		renderColumnControlsDOM({
 			acoesContainer,
 			listaColunas,
 			colunas: [
@@ -23,7 +23,7 @@ describe('columnControlsView', () => {
 			nomesNumericas: ['valor'],
 			nomesTexto: ['cidade'],
 			traduzir: key => key,
-			traduzirTipo: tipo => tipo,
+			translateType: tipo => tipo,
 			aoAlterarSelecaoColuna,
 		});
 

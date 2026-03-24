@@ -1,9 +1,9 @@
-export function renderizarListaArquivosDOM({
+export function renderFileListDOM({
 	lista,
 	datasets,
 	indiceAtivo,
 	traduzir,
-	obterLocale,
+	getLocale,
 	aoSelecionar,
 	aoRemover,
 }) {
@@ -29,7 +29,7 @@ export function renderizarListaArquivosDOM({
 		meta.className = 'arquivo-item-meta';
 		meta.textContent = traduzir(
 			'chive-file-meta',
-			dataset.dados.length.toLocaleString(obterLocale()),
+			dataset.dados.length.toLocaleString(getLocale()),
 			dataset.colunas.length,
 			dataset.tamanho
 		);

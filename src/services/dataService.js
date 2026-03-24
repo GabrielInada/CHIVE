@@ -1,7 +1,7 @@
 import { csvParse, max, mean, median, min } from 'd3';
 import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS } from '../config/types.js';
 
-export function detectarTipo(valores) {
+export function detectType(valores) {
 	const valoresValidos = valores
 		.slice(0, TYPE_DETECTION.sampleSize)
 		.filter(v => v !== null && v !== undefined && String(v).trim() !== '');
@@ -17,7 +17,7 @@ export function detectarTipo(valores) {
 	return TYPE_DEFAULTS.fallback;
 }
 
-export function parsearCSV(texto) {
+export function parseCsv(texto) {
 	const dados = csvParse(texto);
 
 	if (dados.columns) delete dados.columns;
@@ -26,7 +26,7 @@ export function parsearCSV(texto) {
 	return dados;
 }
 
-export function parsearJSON(texto) {
+export function parseJson(texto) {
 	let parsed;
 
 	try {
@@ -52,12 +52,12 @@ export function parsearJSON(texto) {
 	throw new Error('Formato JSON não reconhecido. O arquivo deve ser um array de objetos: [{...}, {...}]');
 }
 
-export function processarDados(dadosBrutos) {
+export function processData(dadosBrutos) {
 	const nomesColunas = Object.keys(dadosBrutos[0]);
 
 	const colunas = nomesColunas.map(nome => {
 		const valores = dadosBrutos.map(linha => linha[nome]);
-		return { nome, tipo: detectarTipo(valores) };
+		return { nome, tipo: detectType(valores) };
 	});
 
 	const dados = dadosBrutos.map(linha => {
@@ -78,7 +78,7 @@ export function processarDados(dadosBrutos) {
 	return { dados, colunas };
 }
 
-export function calcularEstatisticas(dados, colunas) {
+export function calculateStatistics(dados, colunas) {
 	return colunas
 		.filter(coluna => coluna.tipo === 'numero')
 		.map(({ nome }) => {
@@ -100,7 +100,7 @@ export function calcularEstatisticas(dados, colunas) {
 		.filter(Boolean);
 }
 
-export function formatarTamanhoArquivo(tamanho) {
+export function formatFileSize(tamanho) {
 	if (tamanho < 1024) return `${tamanho} B`;
 	if (tamanho < 1024 * 1024) return `${(tamanho / 1024).toFixed(1)} KB`;
 	return `${(tamanho / (1024 * 1024)).toFixed(1)} MB`;

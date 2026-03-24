@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from 'vitest';
-import { renderizarListaArquivosDOM } from '../../../src/components/results/fileListView.js';
+import { renderFileListDOM } from '../../../src/components/results/fileListView.js';
 
 describe('fileListView', () => {
 	it('renders file items and handles select/remove actions', () => {
@@ -10,7 +10,7 @@ describe('fileListView', () => {
 		const aoSelecionar = vi.fn();
 		const aoRemover = vi.fn();
 
-		renderizarListaArquivosDOM({
+		renderFileListDOM({
 			lista,
 			datasets: [
 				{ nome: 'A.csv', dados: [1, 2], colunas: ['x'], tamanho: '1KB' },
@@ -18,7 +18,7 @@ describe('fileListView', () => {
 			],
 			indiceAtivo: 1,
 			traduzir: (key, ...args) => `${key}:${args.join('|')}`,
-			obterLocale: () => 'en',
+			getLocale: () => 'en',
 			aoSelecionar,
 			aoRemover,
 		});

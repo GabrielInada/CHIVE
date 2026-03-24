@@ -9,7 +9,7 @@
  */
 
 import { t } from '../services/i18nService.js';
-import { parsearCSV, parsearJSON, processarDados, formatarTamanhoArquivo } from '../services/dataService.js';
+import { parseCsv, parseJson, processData, formatFileSize } from '../services/dataService.js';
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './appState.js';
 import { showError, clearErrors } from './feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/limits.js';
@@ -63,7 +63,7 @@ async function processFileForDataset(file) {
 	// Check file size
 	if (file.size > FILE_SIZE_LIMIT_BYTES) {
 		const confirmarArquivoGrande = window.confirm(
-			`${t('chive-warn-file-size', [file.name, formatarTamanhoArquivo(FILE_SIZE_LIMIT_BYTES)])} \n${t('chive-warn-file-size-proceed')}`
+			`${t('chive-warn-file-size', [file.name, formatFileSize(FILE_SIZE_LIMIT_BYTES)])} \n${t('chive-warn-file-size-proceed')}`
 		);
 		if (!confirmarArquivoGrande) {
 			throw new Error(t('chive-error-cancelled'));
@@ -77,9 +77,9 @@ async function processFileForDataset(file) {
 	// Parse based on format
 	try {
 		if (file.name.endsWith('.csv')) {
-			dadosBrutos = parsearCSV(content);
+			dadosBrutos = parseCsv(content);
 		} else {
-			dadosBrutos = parsearJSON(content);
+			dadosBrutos = parseJson(content);
 		}
 	} catch (err) {
 		throw new Error(`${t('chive-error-parse')}: ${err.message}`);
@@ -97,10 +97,10 @@ async function processFileForDataset(file) {
 	}
 
 	// Process dataset and normalize to app shape
-	const processado = processarDados(dadosBrutos, file.name);
+	const processado = processData(dadosBrutos, file.name);
 	const dataset = {
 		nome: file.name,
-		tamanho: formatarTamanhoArquivo(file.size),
+		tamanho: formatFileSize(file.size),
 		dados: processado.dados,
 		colunas: processado.colunas,
 		colunasSelecionadas: processado.colunas.map(coluna => coluna.nome),
