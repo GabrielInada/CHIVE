@@ -4,9 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CHIVE</title>
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="./public/favicon.svg" />
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/src/styles/style.css" />
+    <link rel="stylesheet" href="./src/styles/style.css" />
+    <script type="importmap">
+    {
+        "imports": {
+            "d3": "https://esm.sh/d3@7.9.0",
+            "banana-i18n": "https://esm.sh/banana-i18n@2.4.0"
+        }
+    }
+    </script>
 </head>
 <body>
     <header>
@@ -336,6 +344,6 @@
         </main>
     </div>
 
-    <script type="module" src="/src/main.js"></script>
+    <script type="module" src="./src/main.js"></script>
 </body>
 </html>
