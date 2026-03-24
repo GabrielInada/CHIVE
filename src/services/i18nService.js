@@ -1,7 +1,7 @@
 import Banana from 'banana-i18n';
 import ptBR from '../i18n/pt-BR.json' with { type: 'json' };
 import en from '../i18n/en.json' with { type: 'json' };
-import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_STORAGE_KEY } from '../config/index.js';
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_STORAGE_KEY } from '../config/locale.js';
 
 const LOCALES = SUPPORTED_LOCALES;
 const CHAVE_LOCALE = LOCALE_STORAGE_KEY;

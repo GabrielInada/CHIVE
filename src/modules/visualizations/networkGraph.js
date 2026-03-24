@@ -9,7 +9,7 @@ import {
 	zoomIdentity,
 } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
-import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/index.js';
+import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
 import { formatarNumero } from '../../utils/formatters.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';

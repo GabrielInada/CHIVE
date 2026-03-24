@@ -12,7 +12,7 @@ import { t } from '../services/i18nService.js';
 import { parsearCSV, parsearJSON, processarDados, formatarTamanhoArquivo } from '../services/dataService.js';
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './appState.js';
 import { showError, clearErrors } from './feedbackUI.js';
-import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/index.js';
+import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/limits.js';
 import { createDefaultChartConfig } from '../config/chartDefaults.js';
 
 // Callback when dataset list changes

@@ -3,7 +3,7 @@ import { getNumericColumns } from '../utils/columnHelpers.js';
 import { atualizarTabs } from './results/tabsView.js';
 import { renderizarTabelaPreview } from './results/tablePreviewView.js';
 import { renderizarStats } from './results/statsView.js';
-import { renderizarGraficos } from './results/chartsView.js';
+import { renderizarGraficos } from '../features/chartFeatures/index.js';
 import { renderizarListaArquivosDOM } from './results/fileListView.js';
 import { renderizarControlesColunasDOM } from './results/columnControlsView.js';
 import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';

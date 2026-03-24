@@ -1,6 +1,6 @@
 import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
-import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
+import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatarNumero } from '../../utils/formatters.js';
 
 const SCATTER_PALETTES = {

@@ -8,20 +8,20 @@
  * - Event listeners for control changes
  */
 
-import { t } from '../services/i18nService.js';
+import { t } from '../../services/i18nService.js';
 import {
 	filterVisibleColumns,
 	getNumericColumnNames,
 	getCategoricalColumnNames,
-} from '../utils/columnHelpers.js';
-import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
-import { onStateChange } from './appState.js';
-import { createBarChartControls, setupBarChartControlListeners } from './chart-controls/barControls.js';
-import { createNetworkGraphControls, setupNetworkGraphControlListeners } from './chart-controls/networkControls.js';
-import { createScatterPlotControls, setupScatterPlotControlListeners } from './chart-controls/scatterControls.js';
-import { createPieChartControls, setupPieChartControlListeners } from './chart-controls/pieControls.js';
-import { createChartCard } from './chart-controls/cardFactory.js';
-import { PREVIEW_BAR_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_SVG, PREVIEW_SCATTER_SVG } from './chart-controls/previews.js';
+} from '../../utils/columnHelpers.js';
+import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
+import { onStateChange } from '../appState.js';
+import { createBarChartControls, setupBarChartControlListeners } from './barControls.js';
+import { createNetworkGraphControls, setupNetworkGraphControlListeners } from './networkControls.js';
+import { createScatterPlotControls, setupScatterPlotControlListeners } from './scatterControls.js';
+import { createPieChartControls, setupPieChartControlListeners } from './pieControls.js';
+import { createChartCard } from './cardFactory.js';
+import { PREVIEW_BAR_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_SVG, PREVIEW_SCATTER_SVG } from './previews.js';
 
 // Callback when chart config changes (will be set by main.js)
 let onChartConfigChangeCallback = null;

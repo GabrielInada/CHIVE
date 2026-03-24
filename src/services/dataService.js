@@ -1,5 +1,5 @@
 import { csvParse, max, mean, median, min } from 'd3';
-import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS } from '../config/index.js';
+import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS } from '../config/types.js';
 
 export function detectarTipo(valores) {
 	const valoresValidos = valores

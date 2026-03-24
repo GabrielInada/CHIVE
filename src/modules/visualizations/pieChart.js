@@ -1,6 +1,6 @@
 import { arc, pie, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
-import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/index.js';
+import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
 import { formatarNumero } from '../../utils/formatters.js';
 
 function clamp(value, min, max) {

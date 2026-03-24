@@ -16,7 +16,7 @@
  */
 
 import { inicializarI18n, t } from './services/i18nService.js';
-import { PREVIEW_DEFAULT_ROWS } from './config/index.js';
+import { PREVIEW_DEFAULT_ROWS } from './config/limits.js';
 import {
 renderizarEstadoVazio,
 renderizarInterface,
@@ -38,7 +38,7 @@ initializeLayoutSelector,
 renderSidebarPanel,
 renderCanvasPanel,
 } from './modules/panelManager.js';
-import { initChartControls, renderChartControlsSidebar } from './modules/chartControls.js';
+import { initChartControls, renderChartControlsSidebar } from './features/chartFeatures/index.js';
 import { initFileManager, getLoadedDatasets, selectDataset, removeDatasetByIndex } from './modules/fileManager.js';
 import { initializeAllEventHandlers } from './modules/eventHandlers.js';
 import { showFeedback, mostrarFeedback, showError, mostrarErro, esconderErro } from './modules/feedbackUI.js';

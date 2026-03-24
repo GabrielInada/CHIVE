@@ -1,6 +1,6 @@
 import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
-import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/index.js';
+import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatarNumero } from '../../utils/formatters.js';
 
 function hexToRgb(hex) {
