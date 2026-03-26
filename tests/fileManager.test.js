@@ -210,4 +210,82 @@ describe('fileManager', () => {
     await Promise.resolve();
     expect(mocks.clearErrors).toHaveBeenCalled();
   });
+
+  it('permite fazer re-upload do mesmo arquivo apos delete (regression: limpa input value)', async () => {
+    const onChange = vi.fn();
+    initFileManager(onChange);
+
+    const input = document.createElement('input');
+    input.id = 'input-arquivo';
+    input.type = 'file';
+
+    // Cria um getter/setter para value que funcione
+    let inputValue = '';
+    Object.defineProperty(input, 'value', {
+      get: () => inputValue,
+      set: (v) => { inputValue = v; },
+      configurable: true,
+    });
+
+    document.body.innerHTML = '';
+    document.body.appendChild(input);
+
+    // Captura o handler registrado
+    let capturedHandler = null;
+    const originalAdd = input.addEventListener;
+    input.addEventListener = function(event, handler) {
+      if (event === 'change') {
+        capturedHandler = handler;
+      }
+      return originalAdd.call(this, event, handler);
+    };
+
+    setupFileInputListeners();
+    expect(capturedHandler).toBeDefined();
+
+    const testFile = csvFile({ name: 'dados.csv' });
+
+    // Simula change event com target = input
+    const mockEvent1 = new Event('change');
+    Object.defineProperty(mockEvent1, 'target', {
+      value: input,
+      configurable: true,
+    });
+
+    // Primeiro upload
+    input.value = 'C:\\fakepath\\dados.csv';
+    Object.defineProperty(input, 'files', {
+      value: [testFile],
+      configurable: true,
+    });
+
+    await capturedHandler(mockEvent1);
+
+    expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+    expect(input.value).toBe(''); // Input deve ser limpo
+
+    // Delete dataset
+    removeDatasetByIndex(0);
+    expect(mocks.removeDataset).toHaveBeenCalledWith(0);
+    mocks.addDataset.mockClear();
+
+    // Re-upload do MESMO arquivo
+    input.value = 'C:\\fakepath\\dados.csv'; // Mesmo path
+    Object.defineProperty(input, 'files', {
+      value: [testFile],
+      configurable: true,
+    });
+
+    const mockEvent2 = new Event('change');
+    Object.defineProperty(mockEvent2, 'target', {
+      value: input,
+      configurable: true,
+    });
+
+    await capturedHandler(mockEvent2);
+
+    // Deve ter chamado addDataset novamente (só é possível porque value foi limpo no handler)
+    expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+    expect(input.value).toBe('');
+  });
 });

@@ -169,8 +169,16 @@ export function setupFileInputListeners() {
 	const zonaUpload = document.getElementById('zona-upload');
 
 	if (inputArquivo) {
-		inputArquivo.addEventListener('change', event => {
-			handleFileUpload(event.target.files);
+		inputArquivo.addEventListener('change', async event => {
+			const target = event.target;
+			if (!(target instanceof HTMLInputElement)) return;
+
+			try {
+				await handleFileUpload(target.files);
+			} finally {
+				// Allow selecting the same file again and still trigger `change`.
+				target.value = '';
+			}
 		});
 	} else {
 		showError(t('chive-error-upload-input-missing'));
