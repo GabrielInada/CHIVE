@@ -49,11 +49,25 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	const labels = {
 		categoria: opcoes.labels?.categoria || 'Category',
 		contagem: opcoes.labels?.contagem || 'Count',
+		soma: opcoes.labels?.soma || 'Sum',
+		media: opcoes.labels?.media || 'Mean',
 		percentual: opcoes.labels?.percentual || 'Percentage',
 	};
+	const measureMode = BAR_CHART.measureModes.includes(opcoes.measureMode)
+		? opcoes.measureMode
+		: BAR_CHART.defaultMeasureMode;
+	const valueColumn = opcoes.valueColumn || null;
+	const hasValueColumn = (measureMode === 'count')
+		? true
+		: dados.some(linha => Object.prototype.hasOwnProperty.call(linha, valueColumn));
 	const axisLabels = {
 		x: opcoes.axisLabels?.x || colunaCategoria,
-		y: opcoes.axisLabels?.y || labels.contagem,
+		y: opcoes.axisLabels?.y
+			|| (measureMode === 'mean'
+				? labels.media
+				: measureMode === 'sum'
+					? labels.soma
+					: labels.contagem),
 	};
 	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
@@ -77,13 +91,39 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	const locale = opcoes.locale || undefined;
 
 	const contador = new Map();
-	dados.forEach(linha => {
-		const valorBruto = linha[colunaCategoria];
-		const categoria = valorBruto === null || valorBruto === undefined || valorBruto === ''
-			? '—'
-			: String(valorBruto);
-		contador.set(categoria, (contador.get(categoria) || 0) + 1);
-	});
+	const contadorN = new Map();
+
+	if (measureMode === 'count') {
+		dados.forEach(linha => {
+			const valorBruto = linha[colunaCategoria];
+			const categoria = valorBruto === null || valorBruto === undefined || valorBruto === ''
+				? '—'
+				: String(valorBruto);
+			contador.set(categoria, (contador.get(categoria) || 0) + 1);
+		});
+	} else {
+		if (!valueColumn || !hasValueColumn) return { ok: false, reason: 'no-value-column' };
+		dados.forEach(linha => {
+			const valorBruto = linha[colunaCategoria];
+			const categoria = valorBruto === null || valorBruto === undefined || valorBruto === ''
+				? '—'
+				: String(valorBruto);
+			const valor = Number(linha[valueColumn]);
+			if (!Number.isFinite(valor)) return;
+			contador.set(categoria, (contador.get(categoria) || 0) + valor);
+			contadorN.set(categoria, (contadorN.get(categoria) || 0) + 1);
+		});
+
+		if (measureMode === 'mean') {
+			for (const [categoria, soma] of contador.entries()) {
+				contador.set(categoria, soma / (contadorN.get(categoria) || 1));
+			}
+		}
+	}
+
+	if ((measureMode === 'sum' || measureMode === 'mean') && contador.size === 0) {
+		return { ok: false, reason: 'no-numeric' };
+	}
 
 	let linhas = Array.from(contador.entries());
 	linhas = ordenarCategorias(linhas, ordenacao);
@@ -130,6 +170,11 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	const montarConteudoTooltip = item => {
 		const percentual = totalContagem > 0 ? ((item[1] / totalContagem) * 100) : 0;
 		const wrapper = document.createElement('div');
+		const valorLabel = measureMode === 'mean'
+			? labels.media
+			: measureMode === 'sum'
+				? labels.soma
+				: labels.contagem;
 
 		const createLine = (rotulo, valor) => {
 			const linha = document.createElement('div');
@@ -141,8 +186,10 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		};
 
 		wrapper.appendChild(createLine(labels.categoria, String(item[0])));
-		wrapper.appendChild(createLine(labels.contagem, formatNumber(item[1], locale)));
-		wrapper.appendChild(createLine(labels.percentual, `${percentual.toFixed(1)}%`));
+		wrapper.appendChild(createLine(valorLabel, formatNumber(item[1], locale)));
+		if (measureMode !== 'mean') {
+			wrapper.appendChild(createLine(labels.percentual, `${percentual.toFixed(1)}%`));
+		}
 
 		return wrapper;
 	};

@@ -19,6 +19,8 @@ export function createDefaultChartConfig() {
 			manualThresholdPct: 50,
 			showXAxisLabel: true,
 			showYAxisLabel: true,
+			measureMode: BAR_CHART.defaultMeasureMode,
+			valueColumn: null,
 		},
 		scatter: {
 			enabled: false,

@@ -30,9 +30,11 @@ function createSelectControl(id, labelText, optionsArray, selectedValue, disable
 	return div;
 }
 
-export function createBarChartControls(dataset, categoryOptions) {
+export function createBarChartControls(dataset, categoryOptions, numericOptions = []) {
 	const config = dataset.configGraficos.bar;
 	const controls = [];
+	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
+	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;
 
 	const categoryDiv = document.createElement('div');
 	categoryDiv.className = 'chart-controle';
@@ -62,6 +64,64 @@ export function createBarChartControls(dataset, categoryOptions) {
 	categoryDiv.appendChild(categoryLabel);
 	categoryDiv.appendChild(categorySelect);
 	controls.push(categoryDiv);
+
+	const measureDiv = document.createElement('div');
+	measureDiv.className = 'chart-controle';
+
+	const measureLabel = document.createElement('label');
+	measureLabel.htmlFor = 'viz-select-bar-measure';
+	measureLabel.textContent = t('chive-chart-control-bar-measure');
+
+	const measureSelect = document.createElement('select');
+	measureSelect.id = 'viz-select-bar-measure';
+	measureSelect.className = 'linhas-select';
+	measureSelect.disabled = !dataset.configGraficos.bar.enabled;
+
+	[
+		{ value: 'count', label: t('chive-chart-control-bar-measure-count') },
+		{ value: 'sum', label: t('chive-chart-control-bar-measure-sum') },
+		{ value: 'mean', label: t('chive-chart-control-bar-measure-mean') },
+	].forEach(opt => {
+		const option = document.createElement('option');
+		option.value = opt.value;
+		option.textContent = opt.label;
+		option.selected = opt.value === measureMode;
+		measureSelect.appendChild(option);
+	});
+
+	measureDiv.appendChild(measureLabel);
+	measureDiv.appendChild(measureSelect);
+	controls.push(measureDiv);
+
+	const valueColDiv = document.createElement('div');
+	valueColDiv.className = 'chart-controle';
+
+	const valueColLabel = document.createElement('label');
+	valueColLabel.htmlFor = 'viz-select-bar-value-column';
+	valueColLabel.textContent = t('chive-chart-control-bar-value-column');
+
+	const valueColSelect = document.createElement('select');
+	valueColSelect.id = 'viz-select-bar-value-column';
+	valueColSelect.className = 'linhas-select';
+	valueColSelect.disabled = !dataset.configGraficos.bar.enabled || measureMode === 'count';
+
+	const noneOptValue = document.createElement('option');
+	noneOptValue.value = '';
+	noneOptValue.textContent = t('chive-chart-option-none');
+	noneOptValue.selected = valueColumn === null;
+	valueColSelect.appendChild(noneOptValue);
+
+	numericOptions.forEach(opt => {
+		const option = document.createElement('option');
+		option.value = opt;
+		option.textContent = opt;
+		option.selected = opt === valueColumn;
+		valueColSelect.appendChild(option);
+	});
+
+	valueColDiv.appendChild(valueColLabel);
+	valueColDiv.appendChild(valueColSelect);
+	controls.push(valueColDiv);
 
 	const sortDiv = document.createElement('div');
 	sortDiv.className = 'chart-controle';
@@ -239,7 +299,7 @@ export function createBarChartControls(dataset, categoryOptions) {
 	return controls;
 }
 
-export function setupBarChartControlListeners(dataset, baseBar, onConfigChanged) {
+export function setupBarChartControlListeners(dataset, baseBar, numericOptions, onConfigChanged) {
 	const toggleBar = document.getElementById('viz-toggle-bar');
 	const expandBar = document.getElementById('viz-expand-bar');
 
@@ -307,6 +367,42 @@ export function setupBarChartControlListeners(dataset, baseBar, onConfigChanged)
 				bar: {
 					...dataset.configGraficos.bar,
 					topN: Number(selectBarTopN.value),
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const selectBarMeasure = document.getElementById('viz-select-bar-measure');
+	if (selectBarMeasure) {
+		selectBarMeasure.addEventListener('change', () => {
+			const nextMode = ['count', 'sum', 'mean'].includes(selectBarMeasure.value)
+				? selectBarMeasure.value
+				: 'count';
+			const currentValueColumn = numericOptions.includes(dataset.configGraficos.bar?.valueColumn)
+				? dataset.configGraficos.bar?.valueColumn
+				: null;
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					measureMode: nextMode,
+					valueColumn: nextMode === 'count' ? null : currentValueColumn,
+				},
+			});
+			onConfigChanged?.();
+		});
+	}
+
+	const selectBarValueColumn = document.getElementById('viz-select-bar-value-column');
+	if (selectBarValueColumn) {
+		selectBarValueColumn.addEventListener('change', () => {
+			const nextValue = numericOptions.includes(selectBarValueColumn.value)
+				? selectBarValueColumn.value
+				: null;
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					valueColumn: nextValue,
 				},
 			});
 			onConfigChanged?.();
