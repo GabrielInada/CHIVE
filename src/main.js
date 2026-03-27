@@ -32,6 +32,7 @@ getActiveDataset,
 onStateChange,
 exposeGlobals,
 initializeStateSync,
+setPreviewRows,
 } from './modules/index.js';
 import {
 initPanelManager,
@@ -133,6 +134,7 @@ refreshView();
 onStateChange('configUpdated', () => {
 refreshView();
 });
+
 }
 
 // =============================================================================
@@ -176,6 +178,7 @@ dataset.colunas,
 dataset.nome,
 dataset.tamanho,
 state.ui.previewRows,
+updatePreviewRows,
 dataset.colunasSelecionadas,
 updateDatasetColumns,
 dataset.configGraficos,
@@ -220,6 +223,15 @@ if (dataset) {
 	});
 refreshView();
 }
+}
+
+function updatePreviewRows(rows) {
+	try {
+		setPreviewRows(rows);
+	} catch {
+		// Ignore invalid values and preserve current preview state.
+	}
+	refreshView();
 }
 
 // =============================================================================
