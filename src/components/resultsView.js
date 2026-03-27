@@ -72,6 +72,7 @@ export function renderDataInterface(
   fileName,
   fileSize,
   previewRows = 10,
+  onPreviewRowsChange = null,
   selectedColumns = null,
   onColumnSelectionChange = null,
   chartConfig = null,
@@ -120,6 +121,16 @@ export function renderDataInterface(
   updateTabs(config.aba, onChartConfigChange, config);
 
   const rowLimit = Number(previewRows) > 0 ? Number(previewRows) : 10;
+  const rowSelector = document.getElementById('select-linhas-preview');
+  if (rowSelector) {
+    rowSelector.value = String(rowLimit);
+    rowSelector.onchange = event => {
+      if (!onPreviewRowsChange) return;
+      const nextRows = Number(event.target.value);
+      if (!Number.isFinite(nextRows) || nextRows < 1) return;
+      onPreviewRowsChange(nextRows);
+    };
+  }
   document.getElementById('badge-linhas').textContent = t(
     'chive-badge-preview',
     rows.length.toLocaleString(getLocale()),
