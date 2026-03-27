@@ -113,6 +113,49 @@ describe('pie chart and axis labels', () => {
 		expect(result.reason).toBe('sum-no-numeric');
 	});
 
+	it('supports bar chart sum and mean measure modes with numeric value column', () => {
+		const container = document.getElementById('bar');
+		const dados = [
+			{ categoria: 'A', valor: 10 },
+			{ categoria: 'A', valor: 20 },
+			{ categoria: 'B', valor: 30 },
+		];
+
+		const sumResult = renderBarChart(container, dados, 'categoria', {
+			measureMode: 'sum',
+			valueColumn: 'valor',
+		});
+		expect(sumResult.ok).toBe(true);
+
+		const meanResult = renderBarChart(container, dados, 'categoria', {
+			measureMode: 'mean',
+			valueColumn: 'valor',
+		});
+		expect(meanResult.ok).toBe(true);
+	});
+
+	it('returns explicit failure reasons for bar sum/mean when value column is missing or non-numeric', () => {
+		const container = document.getElementById('bar');
+		const dados = [
+			{ categoria: 'A', valor: 'x' },
+			{ categoria: 'B', valor: 'y' },
+		];
+
+		const noColumnResult = renderBarChart(container, dados, 'categoria', {
+			measureMode: 'sum',
+			valueColumn: 'inexistente',
+		});
+		expect(noColumnResult.ok).toBe(false);
+		expect(noColumnResult.reason).toBe('no-value-column');
+
+		const noNumericResult = renderBarChart(container, dados, 'categoria', {
+			measureMode: 'sum',
+			valueColumn: 'valor',
+		});
+		expect(noNumericResult.ok).toBe(false);
+		expect(noNumericResult.reason).toBe('no-numeric');
+	});
+
 	it('supports toggling axis labels in bar and scatter charts', () => {
 		const barContainer = document.getElementById('bar');
 		const scatterContainer = document.getElementById('scatter');

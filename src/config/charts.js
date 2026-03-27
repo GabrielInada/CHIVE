@@ -56,6 +56,8 @@ export const BAR_CHART = {
   defaultSort: 'count-desc',
   topNOptions: [0, 10, 20, 50],
   defaultTopN: 10,
+  measureModes: ['count', 'sum', 'mean'],
+  defaultMeasureMode: 'count',
 };
 
 export const SCATTER_PLOT = {
