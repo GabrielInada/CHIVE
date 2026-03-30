@@ -8,6 +8,7 @@ import {
   processData,
   calculateStatistics,
   formatFileSize,
+  joinDatasets,
 } from '../../src/services/dataService.js';
 
 describe('dataService', () => {
@@ -52,6 +53,61 @@ describe('dataService', () => {
     expect(stats[0].min).toBe(1);
     expect(stats[0].max).toBe(3);
     expect(stats[0].media).toBe(2);
+  });
+
+  it('retorna estrutura vazia quando processData recebe array vazio', () => {
+    const processed = processData([]);
+    expect(processed).toEqual({ dados: [], colunas: [] });
+  });
+
+  it('executa join com multiplas chaves e prefixa colunas conflitantes', () => {
+    const leftRows = [
+      { id: 'A1', region: 'North', amount: 10, owner: 'Ana' },
+      { id: 'B2', region: 'South', amount: 7, owner: 'Beto' },
+    ];
+    const rightRows = [
+      { key: 'a1', area: 'north', amount: 100, status: 'ok' },
+      { key: 'C3', area: 'West', amount: 80, status: 'late' },
+    ];
+
+    const result = joinDatasets({
+      leftRows,
+      rightRows,
+      leftKeys: ['id', 'region'],
+      rightKeys: ['key', 'area'],
+      joinType: 'inner',
+      leftColumns: ['id', 'amount'],
+      rightColumns: ['amount', 'status'],
+      leftDatasetName: 'sales.csv',
+      rightDatasetName: 'targets.csv',
+      normalization: { trim: true, caseSensitive: false },
+    });
+
+    expect(result.rows.length).toBe(1);
+    expect(result.rows[0]).toEqual({
+      id: 'A1',
+      'sales.amount': 10,
+      'targets.amount': 100,
+      status: 'ok',
+    });
+  });
+
+  it('suporta full join com linhas nao correspondentes', () => {
+    const result = joinDatasets({
+      leftRows: [{ id: '1', value: 'L1' }],
+      rightRows: [{ id: '2', value: 'R2' }],
+      leftKeys: ['id'],
+      rightKeys: ['id'],
+      joinType: 'full',
+      leftColumns: ['id', 'value'],
+      rightColumns: ['id', 'value'],
+      leftDatasetName: 'left.csv',
+      rightDatasetName: 'right.csv',
+    });
+
+    expect(result.rows.length).toBe(2);
+    expect(result.outputColumns).toContain('left.id');
+    expect(result.outputColumns).toContain('right.id');
   });
 
   it('formata tamanhos de arquivo em B KB e MB', () => {

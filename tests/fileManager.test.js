@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   parseCsv: vi.fn(),
   parseJson: vi.fn(),
   processData: vi.fn(),
+  joinDatasets: vi.fn(),
   formatFileSize: vi.fn(size => `${size}B`),
   addDataset: vi.fn(),
   removeDataset: vi.fn(),
@@ -24,6 +25,7 @@ vi.mock('../src/services/dataService.js', () => ({
   parseCsv: mocks.parseCsv,
   parseJson: mocks.parseJson,
   processData: mocks.processData,
+  joinDatasets: mocks.joinDatasets,
   formatFileSize: mocks.formatFileSize,
 }));
 
@@ -48,6 +50,7 @@ import {
   getLoadedDatasets,
   handleFileUpload,
   initFileManager,
+  createJoinedDataset,
   removeDatasetByIndex,
   selectDataset,
   setupFileInputListeners,
@@ -90,6 +93,10 @@ describe('fileManager', () => {
     });
     mocks.parseCsv.mockReturnValue([{ a: '1' }]);
     mocks.parseJson.mockReturnValue([{ a: 1 }]);
+    mocks.joinDatasets.mockReturnValue({
+      rows: [{ id: '1' }],
+      outputColumns: ['id'],
+    });
   });
 
   it('ignora upload vazio e nao limpa erros quando sem arquivos', async () => {
@@ -287,5 +294,49 @@ describe('fileManager', () => {
     // Deve ter chamado addDataset novamente (só é possível porque value foi limpo no handler)
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
     expect(input.value).toBe('');
+  });
+
+  it('cria dataset unido e trata erros de validacao', () => {
+    mocks.getAllDatasets.mockReturnValue([
+      {
+        nome: 'A.csv',
+        dados: [{ id: '1', amount: 10 }],
+        colunas: [{ nome: 'id', tipo: 'texto' }, { nome: 'amount', tipo: 'numero' }],
+      },
+      {
+        nome: 'B.csv',
+        dados: [{ id: '1', target: 99 }],
+        colunas: [{ nome: 'id', tipo: 'texto' }, { nome: 'target', tipo: 'numero' }],
+      },
+    ]);
+
+    mocks.processData.mockReturnValue({
+      dados: [{ id: '1', target: 99 }],
+      colunas: [{ nome: 'id', tipo: 'texto' }, { nome: 'target', tipo: 'numero' }],
+    });
+    mocks.addDataset.mockReturnValue(2);
+
+    const ok = createJoinedDataset({
+      leftIndex: 0,
+      rightIndex: 1,
+      leftKeys: ['id'],
+      rightKeys: ['id'],
+      leftColumns: ['id'],
+      rightColumns: ['target'],
+      joinType: 'inner',
+    });
+
+    expect(ok.ok).toBe(true);
+    expect(mocks.joinDatasets).toHaveBeenCalled();
+    expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+
+    const invalid = createJoinedDataset({
+      leftIndex: 0,
+      rightIndex: 0,
+      leftKeys: ['id'],
+      rightKeys: ['id'],
+    });
+    expect(invalid.ok).toBe(false);
+    expect(invalid.message).toBe('chive-join-error-select-different-files');
   });
 });
