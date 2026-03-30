@@ -161,8 +161,14 @@ export function getLoadedDatasets() {
 }
 
 function buildJoinDatasetName(leftName, rightName) {
-	const leftBase = String(leftName || 'A').replace(/\.[^.]+$/, '').trim() || 'A';
-	const rightBase = String(rightName || 'B').replace(/\.[^.]+$/, '').trim() || 'B';
+	const shorten = (value, max = 24) => {
+		const text = String(value || '').trim();
+		if (text.length <= max) return text;
+		return `${text.slice(0, max - 1)}…`;
+	};
+
+	const leftBase = shorten(String(leftName || 'A').replace(/\.[^.]+$/, '')) || 'A';
+	const rightBase = shorten(String(rightName || 'B').replace(/\.[^.]+$/, '')) || 'B';
 	const stamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
 	return `${t('chive-join-name-prefix')} ${leftBase} + ${rightBase} (${stamp})`;
 }

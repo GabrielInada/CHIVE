@@ -225,3 +225,13 @@
 .join-footer .btn-secundario {
   width: auto;
 }
+
+.join-estimate {
+  margin-top: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: rgba(26, 71, 42, 0.04);
+  color: var(--text);
+  font-size: 12px;
+  padding: 8px 10px;
+}

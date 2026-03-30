@@ -46,6 +46,54 @@ function getCheckedValues(container, selector) {
 		.map(input => input.value);
 }
 
+function normalizeJoinKey(value) {
+	if (value === null || value === undefined) return '';
+	return String(value).trim().toLowerCase();
+}
+
+function buildJoinKey(row, keyColumns) {
+	return keyColumns.map(key => normalizeJoinKey(row?.[key])).join('\u0001');
+}
+
+function estimateJoinRowCount({ leftRows, rightRows, leftKeys, rightKeys, joinType }) {
+	if (!Array.isArray(leftRows) || !Array.isArray(rightRows)) return 0;
+	if (!Array.isArray(leftKeys) || !Array.isArray(rightKeys)) return 0;
+	if (leftKeys.length === 0 || rightKeys.length === 0) return 0;
+	if (leftKeys.length !== rightKeys.length) return 0;
+
+	const normalizedJoinType = ['inner', 'left', 'right', 'full'].includes(joinType) ? joinType : 'inner';
+	const rightIndex = new Map();
+	rightRows.forEach((row, index) => {
+		const key = buildJoinKey(row, rightKeys);
+		const bucket = rightIndex.get(key) || [];
+		bucket.push(index);
+		rightIndex.set(key, bucket);
+	});
+
+	let total = 0;
+	const matchedRight = new Set();
+
+	leftRows.forEach(leftRow => {
+		const key = buildJoinKey(leftRow, leftKeys);
+		const matches = rightIndex.get(key) || [];
+		if (matches.length > 0) {
+			total += matches.length;
+			matches.forEach(index => matchedRight.add(index));
+			return;
+		}
+
+		if (normalizedJoinType === 'left' || normalizedJoinType === 'full') {
+			total += 1;
+		}
+	});
+
+	if (normalizedJoinType === 'right' || normalizedJoinType === 'full') {
+		total += (rightRows.length - matchedRight.size);
+	}
+
+	return total;
+}
+
 function renderDatasetColumnPickers({
 	container,
 	prefix,
@@ -160,6 +208,10 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		columnsGrid.appendChild(rightColumnsContainer);
 		dialog.appendChild(columnsGrid);
 
+		const estimate = document.createElement('div');
+		estimate.className = 'join-estimate';
+		dialog.appendChild(estimate);
+
 		const footer = document.createElement('div');
 		footer.className = 'join-footer';
 		const cancelButton = document.createElement('button');
@@ -209,10 +261,39 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 				isLeft: false,
 				defaultKey: rightDefaultKey,
 			});
+			refreshEstimate();
+		};
+
+		const refreshEstimate = () => {
+			const leftDataset = datasets[Number(leftSelect.value)];
+			const rightDataset = datasets[Number(rightSelect.value)];
+			if (!leftDataset || !rightDataset) {
+				estimate.textContent = translate('chive-join-estimate-empty');
+				return;
+			}
+
+			const leftKeys = getCheckedValues(leftColumnsContainer, '#join-left-keys input[type="checkbox"]');
+			const rightKeys = getCheckedValues(rightColumnsContainer, '#join-right-keys input[type="checkbox"]');
+			if (leftKeys.length === 0 || rightKeys.length === 0 || leftKeys.length !== rightKeys.length) {
+				estimate.textContent = translate('chive-join-estimate-empty');
+				return;
+			}
+
+			const estimatedRows = estimateJoinRowCount({
+				leftRows: leftDataset.dados,
+				rightRows: rightDataset.dados,
+				leftKeys,
+				rightKeys,
+				joinType: typeSelect.value,
+			});
+			estimate.textContent = translate('chive-join-estimate-rows', estimatedRows.toLocaleString());
 		};
 
 		leftSelect.addEventListener('change', refreshColumnPanels);
 		rightSelect.addEventListener('change', refreshColumnPanels);
+		typeSelect.addEventListener('change', refreshEstimate);
+		leftColumnsContainer.addEventListener('change', refreshEstimate);
+		rightColumnsContainer.addEventListener('change', refreshEstimate);
 		cancelButton.addEventListener('click', () => closeDialog(null));
 
 		overlay.addEventListener('click', event => {

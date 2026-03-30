@@ -51,6 +51,8 @@
 	"chive-join-name-prefix": "Prefix used in auto-generated joined dataset file names.",
 	"chive-join-generated-size": "Metadata text used as pseudo-size for generated join datasets. $1 = resulting row count.",
 	"chive-join-success": "Feedback message shown after creating joined dataset. $1 = new dataset name.",
+	"chive-join-estimate-empty": "Hint shown in join dialog estimate area before valid key-column selections are made.",
+	"chive-join-estimate-rows": "Live estimate shown in join dialog. $1 = estimated resulting row count.",
 
 	"chive-section-columns": "Heading for the column selection section.",
 	"chive-section-viz-manage": "Heading for the sidebar section where user enables/disables charts and edits chart parameters.",
@@ -188,6 +190,7 @@
 	"chive-panel-slot-empty": "Placeholder text shown inside an empty panel slot.",
 	"chive-panel-clear-slot": "Aria-label for button that clears one slot assignment.",
 	"chive-panel-remove-chart": "Aria-label for button that removes one saved chart from panel sidebar.",
+	"chive-panel-remove-chart-short": "Visible label for sidebar action button that removes one saved chart snapshot.",
 	"chive-panel-empty-sidebar": "Empty-state message when no charts have been added to panel sidebar yet.",
 	"chive-panel-add-error": "Error shown when adding a chart snapshot to panel fails.",
 	"chive-panel-add-success": "Success toast shown when a chart snapshot is added to panel.",

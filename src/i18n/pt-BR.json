@@ -51,6 +51,8 @@
 	"chive-join-name-prefix": "Join",
 	"chive-join-generated-size": "Gerado · $1 linhas",
 	"chive-join-success": "Arquivo unido criado: $1",
+	"chive-join-estimate-empty": "Estimativa de linhas: selecione colunas chave correspondentes em ambos os lados.",
+	"chive-join-estimate-rows": "Estimativa de linhas: $1",
 
 	"chive-section-columns": "Colunas detectadas",
 	"chive-section-viz-manage": "Gerenciar visualizações",
@@ -188,6 +190,7 @@
 	"chive-panel-slot-empty": "Arraste um chart salvo para este slot",
 	"chive-panel-clear-slot": "Limpar slot",
 	"chive-panel-remove-chart": "Remover chart salvo",
+	"chive-panel-remove-chart-short": "Remover",
 	"chive-panel-empty-sidebar": "Nenhum chart salvo ainda. Use \"Adicionar ao painel\" no menu do gráfico.",
 	"chive-panel-add-error": "Não foi possível adicionar este gráfico ao painel agora.",
 	"chive-panel-add-success": "Chart salvo no painel com sucesso.",

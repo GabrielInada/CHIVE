@@ -51,6 +51,8 @@
 	"chive-join-name-prefix": "Join",
 	"chive-join-generated-size": "Generated · $1 rows",
 	"chive-join-success": "Joined file created: $1",
+	"chive-join-estimate-empty": "Estimated rows: select matching key columns on both sides.",
+	"chive-join-estimate-rows": "Estimated rows: $1",
 
 	"chive-section-columns": "Detected columns",
 	"chive-section-viz-manage": "Manage visualizations",
@@ -188,6 +190,7 @@
 	"chive-panel-slot-empty": "Drag a saved chart into this slot",
 	"chive-panel-clear-slot": "Clear slot",
 	"chive-panel-remove-chart": "Remove saved chart",
+	"chive-panel-remove-chart-short": "Remove",
 	"chive-panel-empty-sidebar": "No saved charts yet. Use \"Add to panel\" from a chart menu.",
 	"chive-panel-add-error": "Unable to add this chart to the panel right now.",
 	"chive-panel-add-success": "Chart saved to panel successfully.",
