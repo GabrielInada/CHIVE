@@ -45,6 +45,7 @@ initFileManager,
 getLoadedDatasets,
 selectDataset,
 removeDatasetByIndex,
+createJoinedDataset,
 initializeAllEventHandlers,
 } from './modules/index.js';
 import {
@@ -166,7 +167,8 @@ renderFileList(
 datasets,
 activeIndex,
 selectDataset,
-removeDatasetByIndex
+removeDatasetByIndex,
+handleJoinDatasetRequest
 );
 
 // Render data preview and stats
@@ -231,6 +233,18 @@ function updatePreviewRows(rows) {
 	} catch {
 		// Ignore invalid values and preserve current preview state.
 	}
+	refreshView();
+}
+
+function handleJoinDatasetRequest(spec) {
+	const result = createJoinedDataset(spec);
+	if (!result?.ok) {
+		showError(result?.message || t('chive-join-error-generic'));
+		return;
+	}
+
+	selectDataset(result.index);
+	showFeedback(t('chive-join-success', [result.datasetName]));
 	refreshView();
 }
 

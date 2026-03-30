@@ -8,6 +8,7 @@ import { renderTablePreview } from './results/tablePreviewView.js';
 import { renderStats } from './results/statsView.js';
 import { renderFileListDOM } from './results/fileListView.js';
 import { renderColumnControlsDOM } from './results/columnControlsView.js';
+import { openJoinBuilderDialog } from './results/joinBuilderView.js';
 
 function translateType(type) {
   if (type === 'numero') return t('chive-type-number');
@@ -25,7 +26,7 @@ export function hideErrorMessage() {
   document.getElementById('mensagem-erro').style.display = 'none';
 }
 
-export function renderFileList(datasets, activeIndex, onSelect, onRemove) {
+export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCreateJoin) {
   const fileInfo = document.getElementById('info-arquivo');
   const summary = document.getElementById('arquivo-resumo-texto');
   const list = document.getElementById('lista-arquivos-conteudo');
@@ -42,6 +43,32 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove) {
     aoSelecionar: onSelect,
     aoRemover: onRemove,
   });
+
+  const joinActionsId = 'join-arquivos-acoes';
+  let joinActions = document.getElementById(joinActionsId);
+  if (!joinActions) {
+    joinActions = document.createElement('div');
+    joinActions.id = joinActionsId;
+    joinActions.className = 'join-arquivos-acoes';
+    list.insertAdjacentElement('afterend', joinActions);
+  }
+
+  joinActions.innerHTML = '';
+  const joinButton = document.createElement('button');
+  joinButton.type = 'button';
+  joinButton.className = 'btn-secundario btn-join-files';
+  joinButton.id = 'btn-join-files';
+  joinButton.textContent = t('chive-btn-join-files');
+  joinButton.disabled = datasets.length < 2;
+  joinButton.addEventListener('click', async () => {
+    const spec = await openJoinBuilderDialog({
+      datasets,
+      translate: t,
+    });
+    if (!spec) return;
+    onCreateJoin?.(spec);
+  });
+  joinActions.appendChild(joinButton);
 }
 
 export function renderEmptyState() {
