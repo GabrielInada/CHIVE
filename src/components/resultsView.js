@@ -72,25 +72,51 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
 }
 
 export function renderEmptyState() {
-  document.getElementById('info-arquivo').style.display = 'none';
-  document.getElementById('painel-colunas').style.display = 'none';
-  document.getElementById('estado-vazio').style.display = 'flex';
-  document.getElementById('estado-dados').style.display = 'none';
-  document.getElementById('resultado-tabs').style.display = 'none';
-  document.getElementById('container-tabela').innerHTML = '';
-  document.getElementById('container-stats').innerHTML = '';
-  document.getElementById('chart-bar-container').innerHTML = '';
-  document.getElementById('chart-scatter-container').innerHTML = '';
-  document.getElementById('chart-network-container').innerHTML = '';
-  document.getElementById('chart-pie-container').innerHTML = '';
-  document.getElementById('badge-charts').textContent = '—';
-  document.getElementById('btn-avancar').disabled = true;
+  const els = {
+    'info-arquivo': document.getElementById('info-arquivo'),
+    'painel-colunas': document.getElementById('painel-colunas'),
+    'estado-vazio': document.getElementById('estado-vazio'),
+    'estado-dados': document.getElementById('estado-dados'),
+    'resultado-tabs': document.getElementById('resultado-tabs'),
+    'container-tabela': document.getElementById('container-tabela'),
+    'container-stats': document.getElementById('container-stats'),
+    'chart-bar-container': document.getElementById('chart-bar-container'),
+    'chart-scatter-container': document.getElementById('chart-scatter-container'),
+    'chart-network-container': document.getElementById('chart-network-container'),
+    'chart-pie-container': document.getElementById('chart-pie-container'),
+    'badge-charts': document.getElementById('badge-charts'),
+    'btn-avancar': document.getElementById('btn-avancar'),
+  };
+
+  // Only update elements that exist (not null)
+  if (els['info-arquivo']) els['info-arquivo'].style.display = 'none';
+  if (els['painel-colunas']) els['painel-colunas'].style.display = 'none';
+  if (els['estado-vazio']) els['estado-vazio'].style.display = 'flex';
+  if (els['estado-dados']) els['estado-dados'].style.display = 'none';
+  if (els['resultado-tabs']) els['resultado-tabs'].style.display = 'none';
+  if (els['container-tabela']) els['container-tabela'].innerHTML = '';
+  if (els['container-stats']) els['container-stats'].innerHTML = '';
+  if (els['chart-bar-container']) els['chart-bar-container'].innerHTML = '';
+  if (els['chart-scatter-container']) els['chart-scatter-container'].innerHTML = '';
+  if (els['chart-network-container']) els['chart-network-container'].innerHTML = '';
+  if (els['chart-pie-container']) els['chart-pie-container'].innerHTML = '';
+  if (els['badge-charts']) els['badge-charts'].textContent = '—';
+  if (els['btn-avancar']) els['btn-avancar'].disabled = true;
+  
   const devNotice = document.getElementById('aviso-dev');
   if (devNotice) devNotice.style.display = 'none';
-  document.getElementById('zona-upload').classList.remove('carregado');
-  document.querySelector('.upload-icone').textContent = '⬆';
-  document.querySelector('.upload-texto-principal').textContent = t('chive-upload-main');
-  document.querySelector('.upload-texto-sub').innerHTML = t('chive-upload-sub');
+  
+  const zonaUpload = document.getElementById('zona-upload');
+  if (zonaUpload) zonaUpload.classList.remove('carregado');
+  
+  const uploadIcone = document.querySelector('.upload-icone');
+  if (uploadIcone) uploadIcone.textContent = '⬆';
+  
+  const uploadTextoMain = document.querySelector('.upload-texto-principal');
+  if (uploadTextoMain) uploadTextoMain.textContent = t('chive-upload-main');
+  
+  const uploadTextoSub = document.querySelector('.upload-texto-sub');
+  if (uploadTextoSub) uploadTextoSub.innerHTML = t('chive-upload-sub');
 }
 
 export function renderDataInterface(

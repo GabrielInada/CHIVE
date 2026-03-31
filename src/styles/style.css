@@ -9,3 +9,86 @@
 @import url('./data-view.css') layer(data-view);
 @import url('./visual-output.css') layer(visual-output);
 @import url('./feedback.css') layer(feedback);
+
+/* Header Navigation */
+.header-nav {
+    display: flex;
+    gap: 18px;
+    margin: 0 20px;
+}
+
+.header-nav a {
+    color: rgba(255, 255, 255, 0.45);
+    text-decoration: none;
+    font-family: var(--fonte-sans);
+    font-weight: 400;
+    font-size: 13px;
+    transition: color 0.2s ease, opacity 0.2s ease, background 0.2s ease;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: transparent;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+}
+
+.header-nav a:hover {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.header-nav a.active {
+    color: #fff;
+    font-weight: 600;
+    background: transparent;
+    border-color: transparent;
+}
+
+.header-nav a.active:hover {
+    opacity: 0.95;
+}
+
+/* Ajuste do header para distribuir melhor os elementos */
+header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.logo {
+    flex-shrink: 0;
+}
+
+.header-lang {
+    flex-shrink: 0;
+}
+
+/* Responsive para telas menores */
+@media (max-width: 768px) {
+    .header-nav {
+        gap: 16px;
+        margin: 0 12px;
+    }
+
+    .header-steps {
+        font-size: 12px;
+    }
+
+    header {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-nav {
+        gap: 12px;
+        order: 3;
+        width: 100%;
+        margin: 8px 0 0 0;
+    }
+
+    header {
+        padding: 12px;
+    }
+}

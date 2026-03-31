@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sobre - CHIVE</title>
+    <link rel="icon" type="image/svg+xml" href="./public/favicon.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="./src/styles/style.css" />
+    <link rel="stylesheet" href="./src/styles/about.css" />
+    <script type="importmap">
+    {
+        "imports": {
+            "d3": "https://esm.sh/d3@7.9.0",
+            "banana-i18n": "https://esm.sh/banana-i18n@2.4.0"
+        }
+    }
+    </script>
+</head>
+<body>
+    <header>
+        <div class="logo" title="Connected Hierarchical Interactive Visualization Engine">
+            CHIVE
+            <span class="logo-badge">Connected Hierarchical Interactive Visualization Engine</span>
+        </div>
+        <nav class="header-nav">
+            <a href="./index.html" data-i18n="chive-nav-home">Início</a>
+            <a href="./about.html" class="active" data-i18n="chive-nav-about">Sobre</a>
+        </nav>
+        <div class="header-lang">
+            <div class="lang-select-wrapper">
+                <button id="lang-display" class="lang-display-btn" type="button" aria-haspopup="listbox">Português</button>
+                <select id="select-lang" class="lang-select" aria-label="Selecionar idioma">
+                    <option value="pt-BR">Português</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
+        </div>
+    </header>
+
+    <div class="about-hero">
+        <h1 class="about-hero-title" data-i18n="chive-about-title">Sobre o CHIVE</h1>
+        <p class="about-hero-copy" data-i18n="chive-about-hero-copy">O CHIVE ajuda você a transformar dados em insights visuais de forma rápida, acessível e colaborativa.</p>
+    </div>
+
+    <div class="about-wrapper">
+        <main class="about-column">
+            <h2 class="about-subtitle" data-i18n="chive-about-subtitle">Uma ferramenta open-source para exploração de dados</h2>
+            
+            <p data-i18n="chive-about-intro">
+                Análise, tratamento e visualização de dados, direto do navegador.
+            </p>
+
+            <p data-i18n="chive-about-description-1">
+                O CHIVE é uma ferramenta web de análise exploratória de dados, desenvolvida como projeto de pesquisa na UFRA. Com ela, qualquer pessoa pode carregar uma base de dados, realizar tratativas básicas e gerar gráficos e dashboards interativos tudo pelo navegador, sem precisar instalar nada.
+            </p>
+
+            <p data-i18n="chive-about-description-2">
+                Buscamos facilitar a visualização de dados para pesquisadores, estudantes, professores e o público em geral, com suporte a exportação em SVG para uso em publicações e apresentações.
+            </p>
+
+            <p data-i18n="chive-about-description-3">
+                Diferente de ferramentas que exigem conhecimento técnico avançado, o CHIVE foca na acessibilidade do processo, atendendo pesquisadores, estudantes, professores e o público em geral.
+            </p>
+
+            <section class="about-team">
+                <h3 data-i18n="chive-about-team-heading">Equipe</h3>
+                <div class="about-team-grid">
+                    <article class="team-card team-card--lead">
+                        <h4>Roberto Yuri da Silva Franco</h4>
+                        <span class="team-role" data-i18n="chive-about-team-role-advisor">Orientador</span>
+                        <p class="team-meta" data-i18n="chive-about-team-meta-ufra">Professor Adjunto da UFRA</p>
+                    </article>
+                    <article class="team-card">
+                        <h4>Lucas André Oliveira Pinheiro</h4>
+                        <span class="team-role" data-i18n="chive-about-team-role-developer">Desenvolvedor</span>
+                        <p class="team-meta" data-i18n="chive-about-team-meta-si">Sistemas de Informação</p>
+                    </article>
+                    <article class="team-card">
+                        <h4>Gabriel Junichiro Soares Inada</h4>
+                        <span class="team-role" data-i18n="chive-about-team-role-developer">Desenvolvedor</span>
+                        <p class="team-meta" data-i18n="chive-about-team-meta-si">Sistemas de Informação</p>
+                    </article>
+                </div>
+            </section>
+        </main>
+
+        <aside class="about-sidebar">
+            <div class="sidebar-section">
+                <h3 data-i18n="chive-sidebar-contact">Contato & Colaboração</h3>
+                <p>Para questões gerais sobre o projeto ou colaborações, <a href="mailto:laoplucas@gmail.com">laoplucas@gmail.com</a>.</p>
+                <p>Para reportar bugs ou solicitar funcionalidades, abra uma issue no <a href="https://github.com/GabrielInada/CHIVE" target="_blank">GitHub</a>.</p>
+            </div>
+
+            <div class="sidebar-section">
+                <h3 data-i18n="chive-tech-title">Tecnologias utilizadas</h3>
+                <ul>
+                    <li data-i18n="chive-about-tech-js">JavaScript (ES6+)</li>
+                    <li data-i18n="chive-about-tech-d3">D3.js</li>
+                    <li data-i18n="chive-about-tech-htmlcss">HTML5 & CSS3</li>
+                    <li data-i18n="chive-about-tech-csvjson">CSV & JSON</li>
+                </ul>
+            </div>
+        </aside>
+    </div>
+
+    <footer class="footer">
+        <p data-i18n="chive-footer-copyright">© 2026 CHIVE. Todos os direitos reservados.</p>
+    </footer>
+
+    <script type="module" src="./src/main.js"></script>
+</body>
+</html>

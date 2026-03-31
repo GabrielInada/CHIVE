@@ -7,6 +7,27 @@
 
 	"chive-page-title": "DataViz — Dia 01: Upload de Dados",
 
+	"chive-nav-home": "Início",
+	"chive-nav-about": "Sobre",
+	"chive-about-title": "Sobre o CHIVE",
+	"chive-about-hero-copy": "O CHIVE ajuda você a transformar dados em insights visuais de forma rápida, acessível e colaborativa.",
+	"chive-about-subtitle": "Uma ferramenta open-source para exploração de dados",
+	"chive-about-intro": "Análise, tratamento e visualização de dados. Tudo no navegador.",
+	"chive-about-description-1": "O CHIVE nasceu como projeto de pesquisa na Universidade Federal Rural da Amazônia (UFRA), a partir de uma necessidade real: simplificar o processo de análise exploratória de dados para quem não tem familiaridade com programação ou ferramentas complexas.",
+	"chive-about-description-2": "Com o CHIVE, é possível carregar uma base de dados, realizar tratamentos básicos e gerar visualizações interativas com poucos cliques. O resultado pode ser exportado em SVG, pronto para uso em publicações, relatórios e apresentações acadêmicas.",
+	"chive-about-description-3": "Diferente de ferramentas que exigem conhecimento técnico avançado, o CHIVE foca na acessibilidade do processo, atendendo pesquisadores, estudantes, professores e o público em geral.",
+	"chive-about-team-heading": "Equipe",
+	"chive-about-team-role-advisor": "Orientador",
+	"chive-about-team-role-developer": "Desenvolvedor",
+	"chive-about-team-meta-ufra": "Professor da UFRA",
+	"chive-about-team-meta-si": "Sistemas de Informação",
+	"chive-sidebar-contact": "Contato & Colaboração",
+	"chive-tech-title": "Tecnologias utilizadas",
+	"chive-about-tech-js": "JavaScript (ES6+)",
+	"chive-about-tech-d3": "D3.js",
+	"chive-about-tech-htmlcss": "HTML5 & CSS3",
+	"chive-about-tech-csvjson": "CSV & JSON",
+
 	"chive-step-upload": "01 · Upload",
 	"chive-step-charts": "02 · Gráficos",
 	"chive-step-publish": "03 · Publicar",
@@ -239,5 +260,8 @@
 	"chive-chart-color-scatter-field": "Codificar por coluna",
 	"chive-chart-color-scatter-numeric": "Campo numérico",
 	"chive-chart-color-scatter-category": "Campo categórico",
-	"chive-chart-color-scheme": "Esquema de cores"
+	"chive-chart-color-scheme": "Esquema de cores",
+
+	"chive-about-page-title": "Sobre — CHIVE",
+	"chive-footer-copyright": "© 2026 CHIVE. Todos os direitos reservados."
 }

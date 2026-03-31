@@ -282,10 +282,15 @@ function setupLanguageSelectorListeners() {
 		'en': 'English'
 	};
 
+	const getLocaleLabel = (locale) => {
+		const option = selectLang?.querySelector(`option[value="${locale}"]`);
+		return option?.textContent?.trim() || localeLabels[locale] || locale;
+	};
+
 	// Update display button text
 	const updateDisplay = (locale) => {
 		if (langDisplay) {
-			langDisplay.textContent = localeLabels[locale] || locale;
+			langDisplay.textContent = getLocaleLabel(locale);
 		}
 	};
 
