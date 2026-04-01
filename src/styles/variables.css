@@ -15,6 +15,7 @@
   --tag-txt: #fef3e2;
   --tag-dat: #e8eaf4;
   --fonte-display: 'Fraunces', serif;
+  --fonte-sans: 'Inter', sans-serif;
   --fonte-mono: 'IBM Plex Mono', monospace;
 }
 
@@ -27,7 +28,7 @@
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: var(--fonte-mono);
+  font-family: var(--fonte-sans);
   font-size: 13px;
   min-height: 100vh;
 }

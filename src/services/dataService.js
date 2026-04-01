@@ -1,6 +1,166 @@
 import { csvParse, max, mean, median, min } from 'd3';
 import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS } from '../config/types.js';
 
+function normalizeKeyValue(value, { trim = true, caseSensitive = false } = {}) {
+	if (value === null || value === undefined) return '';
+
+	if (typeof value === 'number') {
+		if (!Number.isFinite(value)) return '';
+		return `n:${String(value)}`;
+	}
+
+	if (typeof value === 'boolean') {
+		return `b:${String(value)}`;
+	}
+
+	if (value instanceof Date && !Number.isNaN(value.getTime())) {
+		return `d:${value.toISOString()}`;
+	}
+
+	let text = String(value);
+	if (trim) text = text.trim();
+	if (!caseSensitive) text = text.toLowerCase();
+	return `s:${text}`;
+}
+
+function buildCompositeKey(row, keyColumns, normalizationOptions) {
+	return keyColumns
+		.map(columnName => normalizeKeyValue(row?.[columnName], normalizationOptions))
+		.join('\u0001');
+}
+
+function ensureUniqueColumnName(baseName, usedNames) {
+	if (!usedNames.has(baseName)) {
+		usedNames.add(baseName);
+		return baseName;
+	}
+
+	let suffix = 2;
+	let nextName = `${baseName}_${suffix}`;
+	while (usedNames.has(nextName)) {
+		suffix += 1;
+		nextName = `${baseName}_${suffix}`;
+	}
+	usedNames.add(nextName);
+	return nextName;
+}
+
+function sanitizePrefix(fileName, fallback) {
+	const base = String(fileName || '')
+		.replace(/\.[^.]+$/, '')
+		.trim()
+		.replace(/[^\w\- ]+/g, '')
+		.replace(/\s+/g, '-');
+	return base || fallback;
+}
+
+export function joinDatasets({
+	leftRows,
+	rightRows,
+	leftKeys,
+	rightKeys,
+	joinType = 'inner',
+	leftColumns,
+	rightColumns,
+	leftDatasetName,
+	rightDatasetName,
+	normalization = { trim: true, caseSensitive: false },
+}) {
+	if (!Array.isArray(leftRows) || !Array.isArray(rightRows)) {
+		throw new Error('join-invalid-datasets');
+	}
+
+	if (!Array.isArray(leftKeys) || !Array.isArray(rightKeys) || leftKeys.length === 0 || rightKeys.length === 0) {
+		throw new Error('join-keys-required');
+	}
+
+	if (leftKeys.length !== rightKeys.length) {
+		throw new Error('join-keys-mismatch');
+	}
+
+	const normalizedJoinType = ['inner', 'left', 'right', 'full'].includes(joinType) ? joinType : 'inner';
+	const selectedLeftColumns = Array.isArray(leftColumns) ? leftColumns : [];
+	const selectedRightColumns = Array.isArray(rightColumns) ? rightColumns : [];
+
+	const conflicts = new Set(selectedLeftColumns.filter(columnName => selectedRightColumns.includes(columnName)));
+	const usedOutputNames = new Set();
+	const leftPrefix = sanitizePrefix(leftDatasetName, 'left');
+	const rightPrefix = sanitizePrefix(rightDatasetName, 'right');
+
+	const leftColumnMap = selectedLeftColumns.map(columnName => {
+		const baseName = conflicts.has(columnName) ? `${leftPrefix}.${columnName}` : columnName;
+		return {
+			source: columnName,
+			output: ensureUniqueColumnName(baseName, usedOutputNames),
+		};
+	});
+
+	const rightColumnMap = selectedRightColumns.map(columnName => {
+		const baseName = conflicts.has(columnName) ? `${rightPrefix}.${columnName}` : columnName;
+		return {
+			source: columnName,
+			output: ensureUniqueColumnName(baseName, usedOutputNames),
+		};
+	});
+
+	const rightIndex = new Map();
+	rightRows.forEach((row, rowIndex) => {
+		const key = buildCompositeKey(row, rightKeys, normalization);
+		const bucket = rightIndex.get(key) || [];
+		bucket.push({ row, rowIndex });
+		rightIndex.set(key, bucket);
+	});
+
+	const matchedRightIndices = new Set();
+	const outputRows = [];
+
+	const pushMergedRow = (leftRow, rightRow) => {
+		const merged = {};
+
+		leftColumnMap.forEach(({ source, output }) => {
+			merged[output] = leftRow ? leftRow[source] : null;
+		});
+
+		rightColumnMap.forEach(({ source, output }) => {
+			merged[output] = rightRow ? rightRow[source] : null;
+		});
+
+		outputRows.push(merged);
+	};
+
+	leftRows.forEach(leftRow => {
+		const key = buildCompositeKey(leftRow, leftKeys, normalization);
+		const matches = rightIndex.get(key) || [];
+
+		if (matches.length > 0) {
+			matches.forEach(({ row, rowIndex }) => {
+				matchedRightIndices.add(rowIndex);
+				pushMergedRow(leftRow, row);
+			});
+			return;
+		}
+
+		if (normalizedJoinType === 'left' || normalizedJoinType === 'full') {
+			pushMergedRow(leftRow, null);
+		}
+	});
+
+	if (normalizedJoinType === 'right' || normalizedJoinType === 'full') {
+		rightRows.forEach((rightRow, rightIndexValue) => {
+			if (matchedRightIndices.has(rightIndexValue)) return;
+			pushMergedRow(null, rightRow);
+		});
+	}
+
+	return {
+		rows: outputRows,
+		outputColumns: [
+			...leftColumnMap.map(item => item.output),
+			...rightColumnMap.map(item => item.output),
+		],
+	};
+}
+
 export function detectType(values) {
 	const validValues = values
 		.slice(0, TYPE_DETECTION.sampleSize)
@@ -53,6 +213,14 @@ export function parseJson(text) {
 }
 
 export function processData(rawData) {
+	if (!Array.isArray(rawData)) {
+		throw new Error('rawData must be an array');
+	}
+
+	if (rawData.length === 0) {
+		return { dados: [], colunas: [] };
+	}
+
 	const columnNames = Object.keys(rawData[0]);
 
 	const columns = columnNames.map(name => {

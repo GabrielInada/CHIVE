@@ -32,6 +32,7 @@ getActiveDataset,
 onStateChange,
 exposeGlobals,
 initializeStateSync,
+setPreviewRows,
 } from './modules/index.js';
 import {
 initPanelManager,
@@ -44,6 +45,7 @@ initFileManager,
 getLoadedDatasets,
 selectDataset,
 removeDatasetByIndex,
+createJoinedDataset,
 initializeAllEventHandlers,
 } from './modules/index.js';
 import {
@@ -133,6 +135,7 @@ refreshView();
 onStateChange('configUpdated', () => {
 refreshView();
 });
+
 }
 
 // =============================================================================
@@ -164,7 +167,8 @@ renderFileList(
 datasets,
 activeIndex,
 selectDataset,
-removeDatasetByIndex
+removeDatasetByIndex,
+handleJoinDatasetRequest
 );
 
 // Render data preview and stats
@@ -176,6 +180,7 @@ dataset.colunas,
 dataset.nome,
 dataset.tamanho,
 state.ui.previewRows,
+updatePreviewRows,
 dataset.colunasSelecionadas,
 updateDatasetColumns,
 dataset.configGraficos,
@@ -220,6 +225,27 @@ if (dataset) {
 	});
 refreshView();
 }
+}
+
+function updatePreviewRows(rows) {
+	try {
+		setPreviewRows(rows);
+	} catch {
+		// Ignore invalid values and preserve current preview state.
+	}
+	refreshView();
+}
+
+function handleJoinDatasetRequest(spec) {
+	const result = createJoinedDataset(spec);
+	if (!result?.ok) {
+		showError(result?.message || t('chive-join-error-generic'));
+		return;
+	}
+
+	selectDataset(result.index);
+	showFeedback(t('chive-join-success', [result.datasetName]));
+	refreshView();
 }
 
 // =============================================================================

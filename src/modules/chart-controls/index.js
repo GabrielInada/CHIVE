@@ -97,7 +97,7 @@ export function renderChartControlsSidebar(dataset) {
 		t('chive-viz-category-comparison'),
 		t('chive-viz-bar-desc'),
 		PREVIEW_BAR_SVG,
-		() => createBarChartControls(dataset, baseBar)
+		() => createBarChartControls(dataset, baseBar, numericas)
 	);
 
 	// Scatter plot card
@@ -147,7 +147,7 @@ export function renderChartControlsSidebar(dataset) {
  * @private
  */
 function setupChartControlListeners(dataset, baseBar, numericas, basePie, todasColunas) {
-	setupBarChartControlListeners(dataset, baseBar, onChartConfigChangeCallback);
+	setupBarChartControlListeners(dataset, baseBar, numericas, onChartConfigChangeCallback);
 	setupNetworkGraphControlListeners(dataset, todasColunas, onChartConfigChangeCallback);
 	setupScatterPlotControlListeners(dataset, numericas, todasColunas, onChartConfigChangeCallback);
 	setupPieChartControlListeners(dataset, basePie, numericas, onChartConfigChangeCallback);

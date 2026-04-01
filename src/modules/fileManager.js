@@ -9,7 +9,7 @@
  */
 
 import { t } from '../services/i18nService.js';
-import { parseCsv, parseJson, processData, formatFileSize } from '../services/dataService.js';
+import { parseCsv, parseJson, processData, formatFileSize, joinDatasets } from '../services/dataService.js';
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './appState.js';
 import { showError, clearErrors } from './feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/limits.js';
@@ -160,6 +160,102 @@ export function getLoadedDatasets() {
 	return getAllDatasets();
 }
 
+function buildJoinDatasetName(leftName, rightName) {
+	const shorten = (value, max = 24) => {
+		const text = String(value || '').trim();
+		if (text.length <= max) return text;
+		return `${text.slice(0, max - 1)}…`;
+	};
+
+	const leftBase = shorten(String(leftName || 'A').replace(/\.[^.]+$/, '')) || 'A';
+	const rightBase = shorten(String(rightName || 'B').replace(/\.[^.]+$/, '')) || 'B';
+	const stamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
+	return `${t('chive-join-name-prefix')} ${leftBase} + ${rightBase} (${stamp})`;
+}
+
+function normalizeJoinType(value) {
+	return ['inner', 'left', 'right', 'full'].includes(value) ? value : 'inner';
+}
+
+export function createJoinedDataset(spec = {}) {
+	const datasets = getAllDatasets();
+	if (datasets.length < 2) {
+		return { ok: false, message: t('chive-join-error-min-files') };
+	}
+
+	const leftIndex = Number(spec.leftIndex);
+	const rightIndex = Number(spec.rightIndex);
+	if (Number.isNaN(leftIndex) || Number.isNaN(rightIndex) || !datasets[leftIndex] || !datasets[rightIndex]) {
+		return { ok: false, message: t('chive-join-error-invalid-file-selection') };
+	}
+
+	if (leftIndex === rightIndex) {
+		return { ok: false, message: t('chive-join-error-select-different-files') };
+	}
+
+	const leftDataset = datasets[leftIndex];
+	const rightDataset = datasets[rightIndex];
+	const leftKeys = Array.isArray(spec.leftKeys) ? spec.leftKeys.filter(Boolean) : [];
+	const rightKeys = Array.isArray(spec.rightKeys) ? spec.rightKeys.filter(Boolean) : [];
+	if (leftKeys.length === 0 || rightKeys.length === 0) {
+		return { ok: false, message: t('chive-join-error-keys-required') };
+	}
+
+	if (leftKeys.length !== rightKeys.length) {
+		return { ok: false, message: t('chive-join-error-key-count-mismatch') };
+	}
+
+	const leftColumns = Array.isArray(spec.leftColumns)
+		? spec.leftColumns.filter(Boolean)
+		: leftDataset.colunas.map(column => column.nome);
+	const rightColumns = Array.isArray(spec.rightColumns)
+		? spec.rightColumns.filter(Boolean)
+		: rightDataset.colunas.map(column => column.nome);
+
+	if ((leftColumns.length + rightColumns.length) === 0) {
+		return { ok: false, message: t('chive-join-error-columns-required') };
+	}
+
+	try {
+		const result = joinDatasets({
+			leftRows: leftDataset.dados,
+			rightRows: rightDataset.dados,
+			leftKeys,
+			rightKeys,
+			joinType: normalizeJoinType(spec.joinType),
+			leftColumns,
+			rightColumns,
+			leftDatasetName: leftDataset.nome,
+			rightDatasetName: rightDataset.nome,
+			normalization: {
+				trim: true,
+				caseSensitive: false,
+			},
+		});
+
+		const processed = processData(result.rows);
+		const fallbackColumns = result.outputColumns.map(columnName => ({ nome: columnName, tipo: 'texto' }));
+		const datasetName = buildJoinDatasetName(leftDataset.nome, rightDataset.nome);
+		const dataset = {
+			nome: datasetName,
+			tamanho: t('chive-join-generated-size', [result.rows.length]),
+			dados: processed.dados,
+			colunas: processed.colunas.length > 0 ? processed.colunas : fallbackColumns,
+			colunasSelecionadas: (processed.colunas.length > 0 ? processed.colunas : fallbackColumns).map(column => column.nome),
+			configGraficos: createDefaultChartConfig(),
+		};
+
+		const index = addDataset(dataset);
+		if (onDatasetsChangeCallback) {
+			onDatasetsChangeCallback();
+		}
+
+		return { ok: true, index, datasetName };
+	} catch {
+		return { ok: false, message: t('chive-join-error-generic') };
+	}
+}
+
 /**
  * Setup file input listeners
  * Called by main initialization
@@ -169,8 +265,16 @@ export function setupFileInputListeners() {
 	const zonaUpload = document.getElementById('zona-upload');
 
 	if (inputArquivo) {
-		inputArquivo.addEventListener('change', event => {
-			handleFileUpload(event.target.files);
+		inputArquivo.addEventListener('change', async event => {
+			const target = event.target;
+			if (!(target instanceof HTMLInputElement)) return;
+
+			try {
+				await handleFileUpload(target.files);
+			} finally {
+				// Allow selecting the same file again and still trigger `change`.
+				target.value = '';
+			}
 		});
 	} else {
 		showError(t('chive-error-upload-input-missing'));

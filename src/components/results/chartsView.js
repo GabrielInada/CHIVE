@@ -61,6 +61,14 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.bar.enabled) {
 		blocoBar.style.display = 'block';
 		document.getElementById('chart-bar-container').style.minHeight = `${Number(chartConfig.bar.chartHeight || 320)}px`;
+		const barMeasureMode = ['count', 'sum', 'mean'].includes(chartConfig.bar.measureMode)
+			? chartConfig.bar.measureMode
+			: 'count';
+		const barYAxisLabel = barMeasureMode === 'mean'
+			? t('chive-tooltip-mean')
+			: barMeasureMode === 'sum'
+				? t('chive-tooltip-sum')
+				: t('chive-tooltip-count');
 		const barResult = renderBarChart(
 			document.getElementById('chart-bar-container'),
 			rows,
@@ -75,21 +83,30 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				gradientMinColor: chartConfig.bar.gradientMinColor,
 				gradientMaxColor: chartConfig.bar.gradientMaxColor,
 				manualThresholdPct: chartConfig.bar.manualThresholdPct,
+				measureMode: barMeasureMode,
+				valueColumn: chartConfig.bar.valueColumn,
 				showXAxisLabel: chartConfig.bar.showXAxisLabel,
 				showYAxisLabel: chartConfig.bar.showYAxisLabel,
 				axisLabels: {
 					x: chartConfig.bar.category || t('chive-chart-control-bar-category'),
-					y: t('chive-tooltip-count'),
+					y: barYAxisLabel,
 				},
 				locale: getLocale(),
 				labels: {
 					categoria: t('chive-chart-control-bar-category'),
 					contagem: t('chive-tooltip-count'),
+					soma: t('chive-tooltip-sum'),
+					media: t('chive-tooltip-mean'),
 					percentual: t('chive-tooltip-percentage'),
 				},
 			}
 		);
-		if (!barResult.ok) showChartMessage('chart-bar-container', t('chive-chart-empty-bar'));
+		if (!barResult.ok) {
+			const chave = barResult.reason === 'no-numeric' || barResult.reason === 'no-value-column'
+				? 'chive-chart-empty-bar-numeric'
+				: 'chive-chart-empty-bar';
+			showChartMessage('chart-bar-container', t(chave));
+		}
 	} else {
 		blocoBar.style.display = 'none';
 		document.getElementById('chart-bar-container').innerHTML = '';
