@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CHIVE</title>
     <link rel="icon" type="image/svg+xml" href="./public/favicon.svg" />
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./src/styles/style.css" />
     <script type="importmap">
     {
@@ -18,19 +18,15 @@
 </head>
 <body>
     <header>
-        <div class="logo">
+        <div class="logo" title="Connected Hierarchical Interactive Visualization Engine">
             CHIVE
             <span class="logo-badge">Connected Hierarchical Interactive Visualization Engine</span>
         </div>
-        <div class="header-steps">
-            <span class="step atual" data-i18n="chive-step-upload">01 · Upload</span>
-            <span>→</span>
-            <span class="step" data-i18n="chive-step-charts">02 · Gráficos</span>
-            <span>→</span>
-            <span class="step" data-i18n="chive-step-publish">03 · Publicar</span>
-        </div>
+        <nav class="header-nav">
+            <a href="./index.html" class="active" data-i18n="chive-nav-home">Início</a>
+            <a href="./about.html" data-i18n="chive-nav-about">Sobre</a>
+        </nav>
         <div class="header-lang">
-            <label class="lang-label" for="select-lang" data-i18n="chive-lang-label">Idioma</label>
             <div class="lang-select-wrapper">
                 <button id="lang-display" class="lang-display-btn" type="button" aria-haspopup="listbox">Português</button>
                 <select id="select-lang" class="lang-select" aria-label="Select language">

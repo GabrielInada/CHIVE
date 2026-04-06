@@ -7,6 +7,27 @@
 
 	"chive-page-title": "DataViz — Day 01: Data Upload",
 
+	"chive-nav-home": "Home",
+	"chive-nav-about": "About",
+	"chive-about-title": "About CHIVE",
+	"chive-about-hero-copy": "CHIVE helps you turn data into visual insights quickly, accessibly and collaboratively.",
+	"chive-about-subtitle": "An open-source tool for data exploration",
+	"chive-about-intro": "Analysis, data preparation and visualization. All in the browser.",
+	"chive-about-description-1": "CHIVE was born as a research project at the Federal Rural University of the Amazon (UFRA), from a real need: to simplify the exploratory data analysis process for those without familiarity with programming or complex tools.",
+	"chive-about-description-2": "With CHIVE, it's possible to upload a dataset, perform basic treatments, and generate interactive visualizations with just a few clicks. The result can be exported as SVG, ready for use in publications, reports, and academic presentations.",
+	"chive-about-description-3": "Unlike tools that require advanced technical knowledge, CHIVE focuses on process accessibility, serving researchers, students, teachers, and the general public.",
+	"chive-about-team-heading": "Team",
+	"chive-about-team-role-advisor": "Advisor",
+	"chive-about-team-role-developer": "Developer",
+	"chive-about-team-meta-ufra": "UFRA Professor",
+	"chive-about-team-meta-si": "Information Systems",
+	"chive-sidebar-contact": "Contact & Collaboration",
+	"chive-tech-title": "Technologies used",
+	"chive-about-tech-js": "JavaScript (ES6+)",
+	"chive-about-tech-d3": "D3.js",
+	"chive-about-tech-htmlcss": "HTML5 & CSS3",
+	"chive-about-tech-csvjson": "CSV & JSON",
+
 	"chive-step-upload": "01 · Upload",
 	"chive-step-charts": "02 · Charts",
 	"chive-step-publish": "03 · Publish",
@@ -239,5 +260,8 @@
 	"chive-chart-color-scatter-field": "Encode by column",
 	"chive-chart-color-scatter-numeric": "Numeric field",
 	"chive-chart-color-scatter-category": "Category field",
-	"chive-chart-color-scheme": "Color scheme"
+	"chive-chart-color-scheme": "Color scheme",
+
+	"chive-about-page-title": "About — CHIVE",
+	"chive-footer-copyright": "© 2026 CHIVE. All rights reserved."
 }

@@ -6,6 +6,11 @@ import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_STORAGE_KEY } from '../config
 const LOCALES = SUPPORTED_LOCALES;
 const LOCALE_KEY = LOCALE_STORAGE_KEY;
 
+const LOCALE_LABELS = {
+	'pt-BR': 'Português',
+	'en': 'English',
+};
+
 const banana = new Banana(DEFAULT_LOCALE);
 banana.load(ptBR, 'pt-BR');
 banana.load(en, 'en');
@@ -52,11 +57,8 @@ export function initializeI18n() {
 	// Update language display button
 	const langDisplay = document.getElementById('lang-display');
 	if (langDisplay) {
-		const localeLabels = {
-			'pt-BR': 'Português',
-			'en': 'English'
-		};
-		langDisplay.textContent = localeLabels[locale] || locale;
+		const option = selectLang?.querySelector(`option[value="${locale}"]`);
+		langDisplay.textContent = option?.textContent?.trim() || LOCALE_LABELS[locale] || locale;
 	}
 
 	translateStaticPage();
