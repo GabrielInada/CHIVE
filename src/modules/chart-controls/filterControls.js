@@ -199,6 +199,7 @@ export function createChartFilterControls({
     checkbox.type = 'checkbox';
     checkbox.dataset.chartFilterOption = chartKey;
     checkbox.dataset.token = item.token;
+    checkbox.dataset.label = String(item.label || '').toLowerCase();
     checkbox.checked = includeSet.has(item.token);
     checkbox.disabled = disabled;
 
@@ -315,8 +316,39 @@ export function setupChartFilterControlListeners({
 
   const searchInput = document.getElementById(ids.search);
   if (searchInput) {
-    // Avoid full sidebar re-render on every keypress; commit search on change/blur.
+    // Live-filter visible options locally so typing stays smooth and focus is preserved.
+    searchInput.addEventListener('input', () => {
+      const list = document.getElementById(ids.list);
+      if (!list) return;
+
+      const query = String(searchInput.value || '').trim().toLowerCase();
+      const optionRows = Array.from(list.querySelectorAll('.chart-filter-item'));
+
+      let visibleCount = 0;
+      optionRows.forEach(row => {
+        const checkbox = row.querySelector('input[type="checkbox"][data-token]');
+        const label = String(checkbox?.dataset?.label || '').toLowerCase();
+        const matches = query === '' || label.includes(query);
+        row.style.display = matches ? '' : 'none';
+        if (matches) visibleCount += 1;
+      });
+
+      const summary = list.parentElement?.querySelector('.chart-filter-summary');
+      if (summary) {
+        summary.textContent = t('chive-chart-filter-showing', visibleCount, optionRows.length);
+      }
+    });
+
+    // Commit search to config on blur/Enter (avoids full re-render while typing).
     searchInput.addEventListener('change', () => {
+      emit({
+        ...filter,
+        search: searchInput.value,
+      });
+    });
+
+    searchInput.addEventListener('keydown', event => {
+      if (event.key !== 'Enter') return;
       emit({
         ...filter,
         search: searchInput.value,
