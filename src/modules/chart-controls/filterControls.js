@@ -315,7 +315,8 @@ export function setupChartFilterControlListeners({
 
   const searchInput = document.getElementById(ids.search);
   if (searchInput) {
-    searchInput.addEventListener('input', () => {
+    // Avoid full sidebar re-render on every keypress; commit search on change/blur.
+    searchInput.addEventListener('change', () => {
       emit({
         ...filter,
         search: searchInput.value,
@@ -339,13 +340,15 @@ export function setupChartFilterControlListeners({
   const selectAllBtn = document.getElementById(ids.selectAll);
   if (selectAllBtn) {
     selectAllBtn.addEventListener('click', () => {
+      const currentSearch = searchInput?.value ?? filter.search;
       const options = getCategoricalFilterOptions(rows, filter.column, {
-        search: filter.search,
+        search: currentSearch,
         limit: Number.MAX_SAFE_INTEGER,
         missingLabel: t('chive-chart-filter-missing'),
       });
       emit({
         ...filter,
+        search: currentSearch,
         include: options.allTokens,
       });
     });
