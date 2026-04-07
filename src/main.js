@@ -249,6 +249,76 @@ function handleJoinDatasetRequest(spec) {
 }
 
 // =============================================================================
+// PRESET DATASETS
+// =============================================================================
+
+// Importar datasets
+import vendas from './data/dataset-vendas.json' assert { type: 'json' };
+import populacao from './data/dataset-populacao.json' assert { type: 'json' };
+import temperatura from './data/dataset-temperatura.json' assert { type: 'json' };
+import educacao from './data/dataset-educacao.json' assert { type: 'json' };
+import saude from './data/dataset-saude.json' assert { type: 'json' };
+import exportacoes from './data/dataset-exportacoes.json' assert { type: 'json' };
+
+const datasetsMap = {
+    vendas,
+    populacao,
+    temperatura,
+    educacao,
+    saude,
+    exportacoes
+};
+
+function converterParaCSV(data) {
+    if (!Array.isArray(data) || data.length === 0) return '';
+    
+    const headers = Object.keys(data[0]);
+    const csv = [headers.join(',')];
+    
+    data.forEach(row => {
+        csv.push(headers.map(header => {
+            const value = row[header];
+            return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
+        }).join(','));
+    });
+    
+    return csv.join('\n');
+}
+
+function inicializarEventosDatasetsPreset() {
+    const datasetBtns = document.querySelectorAll('.dataset-btn');
+    
+    datasetBtns.forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const datasetName = e.currentTarget.dataset.dataset;
+            const data = datasetsMap[datasetName];
+            
+            if (data) {
+                const csv = converterParaCSV(data);
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const file = new File([blob], `${datasetName}.csv`, { type: 'text/csv' });
+                
+                // Disparar evento simulando upload de arquivo
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(file);
+                
+                // Encontrar função de processar arquivo
+                if (window.processarArquivo) {
+                    window.processarArquivo(file);
+                }
+            }
+        });
+    });
+}
+
+// Adicionar inicialização dos datasets presets após inicializar aplicação
+const originalInitializeApplication = initializeApplication;
+window.initializeApplication = function() {
+    originalInitializeApplication.call(this);
+    inicializarEventosDatasetsPreset();
+};
+
+// =============================================================================
 // DOM READY - START APP
 // =============================================================================
 
