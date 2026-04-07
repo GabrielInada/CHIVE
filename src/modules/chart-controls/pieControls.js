@@ -3,6 +3,7 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
+import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 
 function getPieSectorValues(dataset, config) {
 	if (!config?.category || !Array.isArray(dataset?.dados)) return [];
@@ -30,7 +31,7 @@ function getPieSectorValues(dataset, config) {
 		.map(([category]) => category);
 }
 
-export function createPieChartControls(dataset, categoryOptions, numericOptions) {
+export function createPieChartControls(dataset, categoryOptions, numericOptions, allColumns = []) {
 	const config = dataset.configGraficos.pie;
 	const controls = [];
 	const sectorValues = getPieSectorValues(dataset, config);
@@ -272,6 +273,15 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 		controls.push(colorGridElement);
 	}
 
+	controls.push(...createChartFilterControls({
+		chartKey: 'pie',
+		rows: dataset.dados,
+		allColumns,
+		numericColumns: numericOptions,
+		rawFilter: config.filter,
+		disabled: !dataset.configGraficos.pie.enabled,
+	}));
+
 	return controls;
 }
 
@@ -287,7 +297,10 @@ function updatePieColorPickerGrid(dataset, sectorValues) {
 }
 
 
-export function setupPieChartControlListeners(dataset, basePie, numericas, onConfigChanged) {
+export function setupPieChartControlListeners(dataset, basePie, numericas, allColumnsOrCallback = [], onConfigChangedMaybe) {
+	const onConfigChanged = typeof allColumnsOrCallback === 'function'
+		? allColumnsOrCallback
+		: onConfigChangedMaybe;
 	const sectorValues = getPieSectorValues(dataset, dataset.configGraficos.pie);
 	const togglePie = document.getElementById('viz-toggle-pie');
 	const expandPie = document.getElementById('viz-expand-pie');
@@ -605,4 +618,20 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, onCon
 			onConfigChanged?.();
 		});
 	}
+
+	setupChartFilterControlListeners({
+		chartKey: 'pie',
+		rows: dataset.dados,
+		numericColumns: numericas,
+		rawFilter: dataset.configGraficos.pie?.filter,
+		onFilterChange: nextFilter => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					filter: nextFilter,
+				},
+			});
+			onConfigChanged?.();
+		},
+	});
 }

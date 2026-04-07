@@ -79,6 +79,57 @@
   cursor: not-allowed;
 }
 
+.chart-filter-values-control {
+  gap: 8px;
+}
+
+.chart-filter-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.chart-filter-action-btn {
+  padding: 5px 8px;
+  font-size: 10px;
+}
+
+.chart-filter-list {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  max-height: 150px;
+  overflow: auto;
+  padding: 6px;
+  display: grid;
+  gap: 4px;
+}
+
+.chart-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text);
+}
+
+.chart-filter-item input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.chart-filter-item-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chart-filter-summary {
+  font-size: 10px;
+  color: var(--muted);
+}
+
 .chart-color-input {
   width: 100%;
   height: 34px;

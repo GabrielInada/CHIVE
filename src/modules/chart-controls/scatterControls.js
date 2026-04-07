@@ -3,6 +3,7 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
+import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 
 function createSelectControl(id, labelKey, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
@@ -236,6 +237,15 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled
 	));
 
+	controls.push(...createChartFilterControls({
+		chartKey: 'scatter',
+		rows: dataset.dados,
+		allColumns: allOptions,
+		numericColumns: numericOptions,
+		rawFilter: config.filter,
+		disabled,
+	}));
+
 	return controls;
 }
 
@@ -446,4 +456,20 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 			onConfigChanged?.();
 		});
 	}
+
+	setupChartFilterControlListeners({
+		chartKey: 'scatter',
+		rows: dataset.dados,
+		numericColumns: numericas,
+		rawFilter: dataset.configGraficos.scatter?.filter,
+		onFilterChange: nextFilter => {
+			updateActiveDatasetChartConfig({
+				scatter: {
+					...dataset.configGraficos.scatter,
+					filter: nextFilter,
+				},
+			});
+			onConfigChanged?.();
+		},
+	});
 }

@@ -238,5 +238,21 @@
 	"chive-chart-color-scatter-field": "Label for dropdown to select which column should encode scatter plot point colors.",
 	"chive-chart-color-scatter-numeric": "Option label for encoding scatter plot colors by numeric field (continuous gradient).",
 	"chive-chart-color-scatter-category": "Option label for encoding scatter plot colors by category field (discrete palette).",
-	"chive-chart-color-scheme": "Label for color scheme selector (viridis, plasma, cool, warm, etc)."
+	"chive-chart-color-scheme": "Label for color scheme selector (viridis, plasma, cool, warm, etc).",
+	"chive-chart-filter-column": "Label for selecting which data column should be used as chart filter.",
+	"chive-chart-filter-search": "Label for text input that filters the visible categorical options list.",
+	"chive-chart-filter-values": "Label above checkbox list of categorical values included in chart filter.",
+	"chive-chart-filter-select-all": "Button label to include all categorical values in current chart filter.",
+	"chive-chart-filter-clear": "Button label to clear all selected categorical values in current chart filter.",
+	"chive-chart-filter-showing": "Summary text under categorical filter list. $1 = currently shown options, $2 = total options after search.",
+	"chive-chart-filter-more": "Hint shown when categorical values are truncated to first N options. $1 = hidden count.",
+	"chive-chart-filter-missing": "Label used for checkbox representing null/undefined/empty values in categorical filter.",
+	"chive-chart-filter-operator": "Label for select control choosing numeric filter condition operator.",
+	"chive-chart-filter-op-between": "Option label for numeric filter condition that keeps values between min and max.",
+	"chive-chart-filter-op-lt": "Option label for numeric filter condition that keeps values less than target.",
+	"chive-chart-filter-op-gt": "Option label for numeric filter condition that keeps values greater than target.",
+	"chive-chart-filter-op-eq": "Option label for numeric filter condition that keeps values equal to target.",
+	"chive-chart-filter-min": "Label for minimum numeric input used by between operator.",
+	"chive-chart-filter-max": "Label for maximum numeric input used by between operator.",
+	"chive-chart-filter-value": "Label for single numeric input used by less-than/greater-than/equal operators."
 }

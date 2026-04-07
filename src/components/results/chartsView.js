@@ -1,6 +1,7 @@
 import { t, getLocale } from '../../services/i18nService.js';
 import { renderBarChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
+import { applyChartFilterRows } from '../../utils/chartFilters.js';
 
 function showChartMessage(containerId, message) {
 	const container = document.getElementById(containerId);
@@ -13,6 +14,9 @@ function showChartMessage(containerId, message) {
 
 export function renderCharts(config, rows, visibleColumns, visibleNumericColumns) {
 	const chartConfig = mergeChartConfigWithDefaults(config);
+	const numericColumnNames = Array.isArray(visibleNumericColumns)
+		? visibleNumericColumns.map(column => column?.nome).filter(Boolean)
+		: [];
 	const chartsGrid = document.getElementById('charts-grid');
 	const emptyState = document.getElementById('charts-empty-state');
 	const blocoBar = document.getElementById('chart-block-bar');
@@ -61,6 +65,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.bar.enabled) {
 		blocoBar.style.display = 'block';
 		document.getElementById('chart-bar-container').style.minHeight = `${Number(chartConfig.bar.chartHeight || 320)}px`;
+		const barRows = applyChartFilterRows(rows, chartConfig.bar.filter, numericColumnNames);
 		const barMeasureMode = ['count', 'sum', 'mean'].includes(chartConfig.bar.measureMode)
 			? chartConfig.bar.measureMode
 			: 'count';
@@ -71,7 +76,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				: t('chive-tooltip-count');
 		const barResult = renderBarChart(
 			document.getElementById('chart-bar-container'),
-			rows,
+			barRows,
 			chartConfig.bar.category,
 			{
 				customTitle: chartConfig.bar.customTitle,
@@ -115,9 +120,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.scatter.enabled) {
 		blocoScatter.style.display = 'block';
 		document.getElementById('chart-scatter-container').style.minHeight = `${Number(chartConfig.scatter.chartHeight || 320)}px`;
+		const scatterRows = applyChartFilterRows(rows, chartConfig.scatter.filter, numericColumnNames);
 		const scatterResult = renderScatterPlot(
 			document.getElementById('chart-scatter-container'),
-			rows,
+			scatterRows,
 			chartConfig.scatter.x,
 			chartConfig.scatter.y,
 			{
@@ -161,9 +167,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.network.enabled) {
 		blocoNetwork.style.display = 'block';
 		document.getElementById('chart-network-container').style.minHeight = `${Number(chartConfig.network.chartHeight || 420)}px`;
+		const networkRows = applyChartFilterRows(rows, chartConfig.network.filter, numericColumnNames);
 		const networkResult = renderNetworkGraph(
 			document.getElementById('chart-network-container'),
-			rows,
+			networkRows,
 			chartConfig.network.source,
 			chartConfig.network.target,
 			{
@@ -201,9 +208,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.pie.enabled) {
 		blocoPie.style.display = 'block';
 		document.getElementById('chart-pie-container').style.minHeight = `${Number(chartConfig.pie.chartHeight || 360)}px`;
+		const pieRows = applyChartFilterRows(rows, chartConfig.pie.filter, numericColumnNames);
 		const pieResult = renderPieChart(
 			document.getElementById('chart-pie-container'),
-			rows,
+			pieRows,
 			chartConfig.pie.category,
 			{
 				customTitle: chartConfig.pie.customTitle,

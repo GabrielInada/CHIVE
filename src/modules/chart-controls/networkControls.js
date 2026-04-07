@@ -2,6 +2,7 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS } from './shared.js';
+import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 
 function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
@@ -228,10 +229,23 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		disabled
 	));
 
+	controls.push(...createChartFilterControls({
+		chartKey: 'network',
+		rows: dataset.dados,
+		allColumns: allOptions,
+		numericColumns: numericOptions,
+		rawFilter: config.filter,
+		disabled,
+	}));
+
 	return controls;
 }
 
-export function setupNetworkGraphControlListeners(dataset, allOptions, onConfigChanged) {
+export function setupNetworkGraphControlListeners(dataset, allOptions, numericOptionsOrCallback = [], onConfigChangedMaybe) {
+	const numericOptions = Array.isArray(numericOptionsOrCallback) ? numericOptionsOrCallback : [];
+	const onConfigChanged = typeof numericOptionsOrCallback === 'function'
+		? numericOptionsOrCallback
+		: onConfigChangedMaybe;
 	const toggle = document.getElementById('viz-toggle-network');
 	const expand = document.getElementById('viz-expand-network');
 
@@ -450,4 +464,20 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, onConfigC
 			onConfigChanged?.();
 		});
 	}
+
+	setupChartFilterControlListeners({
+		chartKey: 'network',
+		rows: dataset.dados,
+		numericColumns: numericOptions,
+		rawFilter: dataset.configGraficos.network?.filter,
+		onFilterChange: nextFilter => {
+			updateActiveDatasetChartConfig({
+				network: {
+					...dataset.configGraficos.network,
+					filter: nextFilter,
+				},
+			});
+			onConfigChanged?.();
+		},
+	});
 }

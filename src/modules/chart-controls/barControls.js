@@ -3,6 +3,7 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
+import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 
 function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
@@ -30,7 +31,7 @@ function createSelectControl(id, labelText, optionsArray, selectedValue, disable
 	return div;
 }
 
-export function createBarChartControls(dataset, categoryOptions, numericOptions = []) {
+export function createBarChartControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
 	const config = dataset.configGraficos.bar;
 	const controls = [];
 	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
@@ -296,10 +297,22 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 		!dataset.configGraficos.bar.enabled
 	));
 
+	controls.push(...createChartFilterControls({
+		chartKey: 'bar',
+		rows: dataset.dados,
+		allColumns,
+		numericColumns: numericOptions,
+		rawFilter: config.filter,
+		disabled: !dataset.configGraficos.bar.enabled,
+	}));
+
 	return controls;
 }
 
-export function setupBarChartControlListeners(dataset, baseBar, numericOptions, onConfigChanged) {
+export function setupBarChartControlListeners(dataset, baseBar, numericOptions, allColumnsOrCallback = [], onConfigChangedMaybe) {
+	const onConfigChanged = typeof allColumnsOrCallback === 'function'
+		? allColumnsOrCallback
+		: onConfigChangedMaybe;
 	const toggleBar = document.getElementById('viz-toggle-bar');
 	const expandBar = document.getElementById('viz-expand-bar');
 
@@ -557,4 +570,20 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 			onConfigChanged?.();
 		});
 	}
+
+	setupChartFilterControlListeners({
+		chartKey: 'bar',
+		rows: dataset.dados,
+		numericColumns: numericOptions,
+		rawFilter: dataset.configGraficos.bar?.filter,
+		onFilterChange: nextFilter => {
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					filter: nextFilter,
+				},
+			});
+			onConfigChanged?.();
+		},
+	});
 }
