@@ -3,6 +3,7 @@ import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS } from './shared.js';
 import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
+import { groupControls } from './controlGrouping.js';
 
 function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
@@ -32,15 +33,27 @@ function createSelectControl(id, labelText, optionsArray, selectedValue, disable
 
 export function createNetworkGraphControls(dataset, allOptions, numericOptions, categoryOptions) {
 	const config = dataset.configGraficos.network;
-	const controls = [];
 	const disabled = !dataset.configGraficos.network.enabled;
+
+	// ====== FILTERS SECTION (Top priority, always expanded) ======
+	const filterControls = createChartFilterControls({
+		chartKey: 'network',
+		rows: dataset.dados,
+		allColumns: allOptions,
+		numericColumns: numericOptions,
+		rawFilter: config.filter,
+		disabled,
+	});
+
+	// ====== DATA & AGGREGATION SECTION (Node/edge definitions) ======
+	const dataControls = [];
 
 	const baseOptions = [
 		{ value: '', label: t('chive-chart-option-none') },
 		...allOptions.map(opt => ({ value: opt, label: opt })),
 	];
 
-	controls.push(createSelectControl(
+	dataControls.push(createSelectControl(
 		'viz-select-network-source',
 		t('chive-chart-control-network-source'),
 		baseOptions,
@@ -48,7 +61,7 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		disabled
 	));
 
-	controls.push(createSelectControl(
+	dataControls.push(createSelectControl(
 		'viz-select-network-target',
 		t('chive-chart-control-network-target'),
 		baseOptions,
@@ -56,7 +69,7 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		disabled
 	));
 
-	controls.push(createSelectControl(
+	dataControls.push(createSelectControl(
 		'viz-select-network-weight',
 		t('chive-chart-control-network-weight'),
 		[
@@ -67,7 +80,7 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		disabled
 	));
 
-	controls.push(createSelectControl(
+	dataControls.push(createSelectControl(
 		'viz-select-network-group',
 		t('chive-chart-control-network-group'),
 		[
@@ -78,17 +91,10 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		disabled
 	));
 
-	controls.push(createSliderControl(
-		'viz-slider-network-node-radius',
-		t('chive-chart-control-network-node-radius'),
-		Number(config.nodeRadius),
-		3,
-		12,
-		1,
-		disabled
-	));
+	// ====== DISPLAY SECTION ======
+	const displayControls = [];
 
-	controls.push(createSliderControl(
+	displayControls.push(createSliderControl(
 		'viz-slider-network-link-distance',
 		t('chive-chart-control-network-link-distance'),
 		Number(config.linkDistance),
@@ -98,33 +104,45 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		disabled
 	));
 
-	controls.push(createSliderControl(
-		'viz-slider-network-charge',
-		t('chive-chart-control-network-charge'),
-		Number(config.chargeStrength),
-		-300,
-		-20,
-		10,
-		disabled
-	));
-
-	controls.push(createSliderControl(
-		'viz-slider-network-link-opacity',
-		t('chive-chart-control-network-link-opacity'),
-		Number(config.linkOpacity),
-		0.1,
-		1,
-		0.05,
-		disabled
-	));
-
-	controls.push(createSliderControl(
+	displayControls.push(createSliderControl(
 		'viz-slider-network-zoom',
 		t('chive-chart-control-network-zoom'),
 		Number(config.zoomScale),
 		NETWORK_GRAPH.minZoomScale,
 		NETWORK_GRAPH.maxZoomScale,
 		0.05,
+		disabled
+	));
+
+	displayControls.push(createCheckboxControl(
+		'viz-toggle-network-show-legend',
+		t('chive-chart-control-network-show-legend'),
+		config.showLegend,
+		disabled
+	));
+
+	displayControls.push(createTextControl(
+		'viz-input-network-title',
+		t('chive-chart-control-common-title'),
+		config.customTitle,
+		80,
+		disabled
+	));
+
+	displayControls.push(createSliderControl(
+		'viz-slider-network-height',
+		t('chive-chart-control-common-height'),
+		Number(config.chartHeight || 420),
+		220,
+		720,
+		10,
+		disabled
+	));
+
+	displayControls.push(createCheckboxControl(
+		'viz-toggle-network-node-labels',
+		t('chive-chart-control-network-node-labels'),
+		config.showNodeLabels,
 		disabled
 	));
 
@@ -137,22 +155,28 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 	resetZoomBtn.textContent = t('chive-chart-control-network-reset-zoom');
 	resetZoomBtn.disabled = disabled;
 	resetZoomDiv.appendChild(resetZoomBtn);
-	controls.push(resetZoomDiv);
+	displayControls.push(resetZoomDiv);
 
-	controls.push(createSliderControl(
-		'viz-slider-network-alpha-decay',
-		t('chive-chart-control-network-alpha-decay'),
-		Number(config.alphaDecay),
-		0.01,
-		0.2,
-		0.01,
+	// ====== STYLING SECTION ======
+	const stylingControls = [];
+
+	stylingControls.push(createSliderControl(
+		'viz-slider-network-node-radius',
+		t('chive-chart-control-network-node-radius'),
+		Number(config.nodeRadius),
+		3,
+		12,
+		1,
 		disabled
 	));
 
-	controls.push(createCheckboxControl(
-		'viz-toggle-network-show-legend',
-		t('chive-chart-control-network-show-legend'),
-		config.showLegend,
+	stylingControls.push(createSliderControl(
+		'viz-slider-network-link-opacity',
+		t('chive-chart-control-network-link-opacity'),
+		Number(config.linkOpacity),
+		0.1,
+		1,
+		0.05,
 		disabled
 	));
 
@@ -169,7 +193,7 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 	sourceColorInput.disabled = disabled;
 	sourceColorDiv.appendChild(sourceColorLabel);
 	sourceColorDiv.appendChild(sourceColorInput);
-	controls.push(sourceColorDiv);
+	stylingControls.push(sourceColorDiv);
 
 	const targetColorDiv = document.createElement('div');
 	targetColorDiv.className = 'chart-controle';
@@ -184,9 +208,9 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 	targetColorInput.disabled = disabled;
 	targetColorDiv.appendChild(targetColorLabel);
 	targetColorDiv.appendChild(targetColorInput);
-	controls.push(targetColorDiv);
+	stylingControls.push(targetColorDiv);
 
-	controls.push(createSelectControl(
+	stylingControls.push(createSelectControl(
 		'viz-select-network-edge-color-mode',
 		t('chive-chart-color-mode'),
 		[
@@ -197,48 +221,44 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		disabled
 	));
 
-	controls.push(createColorPresetControl(
+	stylingControls.push(createColorPresetControl(
 		'viz-network-color-preset',
 		t('chive-chart-color-palette'),
 		config.colorScheme || 'Bold',
 		disabled
 	));
 
-	controls.push(createTextControl(
-		'viz-input-network-title',
-		t('chive-chart-control-common-title'),
-		config.customTitle,
-		80,
-		disabled
-	));
+	// ====== ADVANCED SECTION (Force simulation physics) ======
+	const advancedControls = [];
 
-	controls.push(createSliderControl(
-		'viz-slider-network-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 420),
-		220,
-		720,
+	advancedControls.push(createSliderControl(
+		'viz-slider-network-charge',
+		t('chive-chart-control-network-charge'),
+		Number(config.chargeStrength),
+		-300,
+		-20,
 		10,
 		disabled
 	));
 
-	controls.push(createCheckboxControl(
-		'viz-toggle-network-node-labels',
-		t('chive-chart-control-network-node-labels'),
-		config.showNodeLabels,
+	advancedControls.push(createSliderControl(
+		'viz-slider-network-alpha-decay',
+		t('chive-chart-control-network-alpha-decay'),
+		Number(config.alphaDecay),
+		0.01,
+		0.2,
+		0.01,
 		disabled
 	));
 
-	controls.push(...createChartFilterControls({
-		chartKey: 'network',
-		rows: dataset.dados,
-		allColumns: allOptions,
-		numericColumns: numericOptions,
-		rawFilter: config.filter,
-		disabled,
-	}));
-
-	return controls;
+	// ====== Group and return all sections ======
+	return groupControls([
+		{ id: 'filter', title: t('chive-chart-filter-column'), controls: filterControls, expanded: true, icon: 'filter' },
+		{ id: 'data', title: 'Data & Aggregation', controls: dataControls, expanded: true, icon: 'data' },
+		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
+		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
+		{ id: 'advanced', title: 'Advanced', controls: advancedControls, expanded: false, icon: 'advanced' },
+	]);
 }
 
 export function setupNetworkGraphControlListeners(dataset, allOptions, numericOptionsOrCallback = [], onConfigChangedMaybe) {

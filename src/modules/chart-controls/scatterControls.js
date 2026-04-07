@@ -4,6 +4,7 @@ import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
+import { groupControls } from './controlGrouping.js';
 
 function createSelectControl(id, labelKey, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
@@ -33,27 +34,39 @@ function createSelectControl(id, labelKey, optionsArray, selectedValue, disabled
 
 export function createScatterPlotControls(dataset, numericOptions, allOptions = []) {
 	const config = dataset.configGraficos.scatter;
-	const controls = [];
 	const disabled = !dataset.configGraficos.scatter.enabled;
 	const categoryOptions = allOptions.filter(option => !numericOptions.includes(option));
+
+	// ====== FILTERS SECTION (Top priority, always expanded) ======
+	const filterControls = createChartFilterControls({
+		chartKey: 'scatter',
+		rows: dataset.dados,
+		allColumns: allOptions,
+		numericColumns: numericOptions,
+		rawFilter: config.filter,
+		disabled,
+	});
+
+	// ====== DATA & AGGREGATION SECTION (X/Y axes) ======
+	const dataControls = [];
 
 	const xOptions = [
 		{ value: '', label: t('chive-chart-option-none') },
 		...numericOptions.map(opt => ({ value: opt, label: opt })),
 	];
-	controls.push(createSelectControl(
+	dataControls.push(createSelectControl(
 		'viz-select-x',
 		'chive-chart-control-scatter-x',
 		xOptions,
 		config.x,
-		!dataset.configGraficos.scatter.enabled,
+		disabled,
 	));
 
 	const yOptions = [
 		{ value: '', label: t('chive-chart-option-none') },
 		...numericOptions.map(opt => ({ value: opt, label: opt })),
 	];
-	controls.push(createSelectControl(
+	dataControls.push(createSelectControl(
 		'viz-select-y',
 		'chive-chart-control-scatter-y',
 		yOptions,
@@ -65,7 +78,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: 'linear', label: t('chive-chart-scale-linear') },
 		{ value: 'log', label: t('chive-chart-scale-log') },
 	];
-	controls.push(createSelectControl(
+	dataControls.push(createSelectControl(
 		'viz-select-scatter-xscale',
 		'chive-chart-control-scatter-xscale',
 		xScaleOptions,
@@ -77,7 +90,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: 'linear', label: t('chive-chart-scale-linear') },
 		{ value: 'log', label: t('chive-chart-scale-log') },
 	];
-	controls.push(createSelectControl(
+	dataControls.push(createSelectControl(
 		'viz-select-scatter-yscale',
 		'chive-chart-control-scatter-yscale',
 		yScaleOptions,
@@ -85,13 +98,51 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled,
 	));
 
+	// ====== DISPLAY SECTION (Labels and dimensions) ======
+	const displayControls = [];
+
+	displayControls.push(createCheckboxControl(
+		'viz-toggle-scatter-x-label',
+		t('chive-chart-control-axis-label-x'),
+		config.showXAxisLabel,
+		disabled
+	));
+
+	displayControls.push(createCheckboxControl(
+		'viz-toggle-scatter-y-label',
+		t('chive-chart-control-axis-label-y'),
+		config.showYAxisLabel,
+		disabled
+	));
+
+	displayControls.push(createTextControl(
+		'viz-input-scatter-title',
+		t('chive-chart-control-common-title'),
+		config.customTitle,
+		80,
+		disabled
+	));
+
+	displayControls.push(createSliderControl(
+		'viz-slider-scatter-height',
+		t('chive-chart-control-common-height'),
+		Number(config.chartHeight || 320),
+		220,
+		720,
+		10,
+		disabled
+	));
+
+	// ====== STYLING SECTION (Colors and appearance) ======
+	const stylingControls = [];
+
 	const radiusOptions = [
 		{ value: '2', label: '2' },
 		{ value: '3', label: '3' },
 		{ value: '4', label: '4' },
 		{ value: '6', label: '6' },
 	];
-	controls.push(createSelectControl(
+	stylingControls.push(createSelectControl(
 		'viz-select-scatter-radius',
 		'chive-chart-control-scatter-radius',
 		radiusOptions,
@@ -105,7 +156,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: '0.7', label: '70%' },
 		{ value: '1', label: '100%' },
 	];
-	controls.push(createSelectControl(
+	stylingControls.push(createSelectControl(
 		'viz-select-scatter-opacity',
 		'chive-chart-control-scatter-opacity',
 		opacityOptions,
@@ -118,7 +169,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: 'numeric', label: t('chive-chart-color-scatter-numeric') },
 		{ value: 'category', label: t('chive-chart-color-scatter-category') },
 	];
-	controls.push(createSelectControl(
+	stylingControls.push(createSelectControl(
 		'viz-select-scatter-color-mode',
 		'chive-chart-color-mode',
 		colorModeOptions,
@@ -129,7 +180,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	const colorFieldOptions = config.colorMode === 'category'
 		? categoryOptions
 		: numericOptions;
-	controls.push(createSelectControl(
+	stylingControls.push(createSelectControl(
 		'viz-select-scatter-color-field',
 		'chive-chart-color-scatter-field',
 		[
@@ -138,38 +189,6 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		],
 		config.colorField,
 		disabled || config.colorMode === 'uniform',
-	));
-
-	controls.push(createCheckboxControl(
-		'viz-toggle-scatter-x-label',
-		t('chive-chart-control-axis-label-x'),
-		config.showXAxisLabel,
-		disabled
-	));
-
-	controls.push(createCheckboxControl(
-		'viz-toggle-scatter-y-label',
-		t('chive-chart-control-axis-label-y'),
-		config.showYAxisLabel,
-		disabled
-	));
-
-	controls.push(createTextControl(
-		'viz-input-scatter-title',
-		t('chive-chart-control-common-title'),
-		config.customTitle,
-		80,
-		disabled
-	));
-
-	controls.push(createSliderControl(
-		'viz-slider-scatter-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 320),
-		220,
-		720,
-		10,
-		disabled
 	));
 
 	const colorDiv = document.createElement('div');
@@ -188,7 +207,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 
 	colorDiv.appendChild(colorLabel);
 	colorDiv.appendChild(colorInput);
-	controls.push(colorDiv);
+	stylingControls.push(colorDiv);
 
 	const minColorDiv = document.createElement('div');
 	minColorDiv.className = 'chart-controle';
@@ -203,7 +222,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	minColorInput.disabled = disabled || config.colorMode === 'uniform';
 	minColorDiv.appendChild(minColorLabel);
 	minColorDiv.appendChild(minColorInput);
-	controls.push(minColorDiv);
+	stylingControls.push(minColorDiv);
 
 	const maxColorDiv = document.createElement('div');
 	maxColorDiv.className = 'chart-controle';
@@ -218,10 +237,10 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	maxColorInput.disabled = disabled || config.colorMode === 'uniform';
 	maxColorDiv.appendChild(maxColorLabel);
 	maxColorDiv.appendChild(maxColorInput);
-	controls.push(maxColorDiv);
+	stylingControls.push(maxColorDiv);
 
 	if (config.colorMode === 'category') {
-		controls.push(createSelectControl(
+		stylingControls.push(createSelectControl(
 			'viz-select-scatter-color-scheme',
 			'chive-chart-color-scheme',
 			Object.keys(COLOR_PRESETS).map(name => ({ value: name, label: name })),
@@ -230,23 +249,20 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		));
 	}
 
-	controls.push(createColorPresetControl(
+	stylingControls.push(createColorPresetControl(
 		'viz-scatter-color-preset',
 		t('chive-chart-color-palette'),
 		config.colorScheme || 'Bold',
 		disabled
 	));
 
-	controls.push(...createChartFilterControls({
-		chartKey: 'scatter',
-		rows: dataset.dados,
-		allColumns: allOptions,
-		numericColumns: numericOptions,
-		rawFilter: config.filter,
-		disabled,
-	}));
-
-	return controls;
+	// ====== Group and return all sections ======
+	return groupControls([
+		{ id: 'filter', title: t('chive-chart-filter-column'), controls: filterControls, expanded: true, icon: 'filter' },
+		{ id: 'data', title: 'Data & Aggregation', controls: dataControls, expanded: true, icon: 'data' },
+		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
+		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
+	]);
 }
 
 export function setupScatterPlotControlListeners(dataset, numericas, allOptions, onConfigChanged) {

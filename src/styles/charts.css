@@ -266,3 +266,146 @@
 .chart-tooltip strong {
   color: #c8ff4d;
 }
+
+/* Control Grouping & Sections */
+
+.chart-control-section {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(26, 71, 42, 0.02);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.chart-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: linear-gradient(to right, rgba(26, 71, 42, 0.05), transparent);
+  border: none;
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+.chart-section-header:hover {
+  background: linear-gradient(to right, rgba(26, 71, 42, 0.1), rgba(26, 71, 42, 0.02));
+}
+
+.chart-section-header[aria-expanded="false"] {
+  border-bottom: none;
+}
+
+.chart-section-title {
+  flex: 1;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.chart-section-toggle {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 9px;
+  transition: transform 0.2s ease;
+}
+
+.chart-section-content {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  animation: slideDown 0.2s ease forwards;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 2000px;
+  }
+}
+
+/* Section-specific styling */
+.chart-control-section[data-section="filter"] .chart-section-header {
+  background: linear-gradient(to right, rgba(200, 255, 77, 0.1), transparent);
+}
+
+.chart-control-section[data-section="filter"] .chart-section-header:hover {
+  background: linear-gradient(to right, rgba(200, 255, 77, 0.15), rgba(200, 255, 77, 0.05));
+}
+
+.chart-control-section[data-section="data"] .chart-section-header {
+  background: linear-gradient(to right, rgba(100, 150, 255, 0.08), transparent);
+}
+
+.chart-control-section[data-section="data"] .chart-section-header:hover {
+  background: linear-gradient(to right, rgba(100, 150, 255, 0.12), rgba(100, 150, 255, 0.04));
+}
+
+.chart-control-section[data-section="display"] .chart-section-header {
+  background: linear-gradient(to right, rgba(150, 100, 255, 0.08), transparent);
+}
+
+.chart-control-section[data-section="display"] .chart-section-header:hover {
+  background: linear-gradient(to right, rgba(150, 100, 255, 0.12), rgba(150, 100, 255, 0.04));
+}
+
+.chart-control-section[data-section="styling"] .chart-section-header {
+  background: linear-gradient(to right, rgba(255, 150, 100, 0.08), transparent);
+}
+
+.chart-control-section[data-section="styling"] .chart-section-header:hover {
+  background: linear-gradient(to right, rgba(255, 150, 100, 0.12), rgba(255, 150, 100, 0.04));
+}
+
+.chart-control-section[data-section="advanced"] .chart-section-header {
+  background: linear-gradient(to right, rgba(150, 150, 150, 0.06), transparent);
+}
+
+.chart-control-section[data-section="advanced"] .chart-section-header:hover {
+  background: linear-gradient(to right, rgba(150, 150, 150, 0.1), rgba(150, 150, 150, 0.03));
+}
+
+/* SVG Icon Styling */
+
+.svg-icon {
+	display: inline-block;
+	vertical-align: middle;
+	color: inherit;
+	margin-right: 6px;
+	flex-shrink: 0;
+}
+
+.chart-section-header .svg-icon {
+	width: 16px;
+	height: 16px;
+}
+
+.svg-icon-filter {
+	color: #c8ff4d;
+}
+
+.svg-icon-data {
+	color: #6496ff;
+}
+
+.svg-icon-display {
+	color: #9664ff;
+}
+
+.svg-icon-styling {
+	color: #ff9664;
+}
+
+.svg-icon-advanced {
+	color: #999999;
+}
