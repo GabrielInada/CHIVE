@@ -46,6 +46,8 @@ function buildFilterUiIds(chartKey) {
   };
 }
 
+const liveSearchByChartKey = new Map();
+
 export function createChartFilterControls({
   chartKey,
   rows,
@@ -57,6 +59,11 @@ export function createChartFilterControls({
   const controls = [];
   const ids = buildFilterUiIds(chartKey);
   const filter = normalizeFilterConfig(rawFilter, numericColumns);
+  const liveSearch = liveSearchByChartKey.get(chartKey) ?? filter.search ?? '';
+
+  if (!liveSearchByChartKey.has(chartKey)) {
+    liveSearchByChartKey.set(chartKey, liveSearch);
+  }
 
   controls.push(createSelectControl(
     ids.column,
@@ -138,7 +145,7 @@ export function createChartFilterControls({
   }
 
   const options = getCategoricalFilterOptions(rows, filter.column, {
-    search: filter.search,
+    search: liveSearch,
     limit: FILTER_CATEGORY_LIMIT,
     missingLabel: t('chive-chart-filter-missing'),
   });
@@ -153,7 +160,7 @@ export function createChartFilterControls({
   searchInput.id = ids.search;
   searchInput.type = 'text';
   searchInput.className = 'linhas-select';
-  searchInput.value = filter.search || '';
+  searchInput.value = liveSearch;
   searchInput.disabled = disabled;
   searchDiv.appendChild(searchLabel);
   searchDiv.appendChild(searchInput);
@@ -230,6 +237,40 @@ export function createChartFilterControls({
   return controls;
 }
 
+function renderCategoricalFilterList({ list, summaryContainer, rows, column, search, includeSet, disabled }) {
+  const options = getCategoricalFilterOptions(rows, column, {
+    search,
+    limit: search.trim().length > 0 ? Number.MAX_SAFE_INTEGER : FILTER_CATEGORY_LIMIT,
+    missingLabel: t('chive-chart-filter-missing'),
+  });
+
+  list.innerHTML = '';
+
+  options.options.forEach(item => {
+    const row = document.createElement('label');
+    row.className = 'chart-filter-item';
+
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.dataset.token = item.token;
+    checkbox.dataset.label = String(item.label || '').toLowerCase();
+    checkbox.checked = includeSet.has(item.token);
+    checkbox.disabled = disabled;
+
+    const text = document.createElement('span');
+    text.className = 'chart-filter-item-text';
+    text.textContent = `${item.label} (${item.count})`;
+
+    row.appendChild(checkbox);
+    row.appendChild(text);
+    list.appendChild(row);
+  });
+
+  summaryContainer.textContent = t('chive-chart-filter-showing', options.options.length, options.total);
+
+  return options;
+}
+
 export function setupChartFilterControlListeners({
   chartKey,
   rows,
@@ -239,6 +280,7 @@ export function setupChartFilterControlListeners({
 }) {
   const ids = buildFilterUiIds(chartKey);
   const filter = normalizeFilterConfig(rawFilter, numericColumns);
+  const liveSearch = liveSearchByChartKey.get(chartKey) ?? filter.search ?? '';
 
   const emit = nextFilter => {
     if (typeof onFilterChange !== 'function') return;
@@ -316,27 +358,30 @@ export function setupChartFilterControlListeners({
 
   const searchInput = document.getElementById(ids.search);
   if (searchInput) {
-    // Live-filter visible options locally so typing stays smooth and focus is preserved.
+    const list = document.getElementById(ids.list);
+    const summary = list?.parentElement?.querySelector('.chart-filter-summary');
+    const controlsDisabled = searchInput.disabled === true;
+
     searchInput.addEventListener('input', () => {
-      const list = document.getElementById(ids.list);
-      if (!list) return;
+      if (!list || !summary) return;
 
-      const query = String(searchInput.value || '').trim().toLowerCase();
-      const optionRows = Array.from(list.querySelectorAll('.chart-filter-item'));
+      const query = String(searchInput.value || '').trim();
+      liveSearchByChartKey.set(chartKey, query);
+      const includeSet = new Set(
+        Array.from(list.querySelectorAll('input[type="checkbox"][data-token]'))
+          .filter(input => input.checked)
+          .map(input => input.dataset.token || '')
+      );
 
-      let visibleCount = 0;
-      optionRows.forEach(row => {
-        const checkbox = row.querySelector('input[type="checkbox"][data-token]');
-        const label = String(checkbox?.dataset?.label || '').toLowerCase();
-        const matches = query === '' || label.includes(query);
-        row.style.display = matches ? '' : 'none';
-        if (matches) visibleCount += 1;
+      renderCategoricalFilterList({
+        list,
+        summaryContainer: summary,
+        rows,
+        column: filter.column,
+        search: query,
+        includeSet,
+        disabled: controlsDisabled,
       });
-
-      const summary = list.parentElement?.querySelector('.chart-filter-summary');
-      if (summary) {
-        summary.textContent = t('chive-chart-filter-showing', visibleCount, optionRows.length);
-      }
     });
 
     // Commit search to config on blur/Enter (avoids full re-render while typing).
@@ -359,11 +404,13 @@ export function setupChartFilterControlListeners({
   const list = document.getElementById(ids.list);
   if (list) {
     list.addEventListener('change', () => {
+      const currentSearch = liveSearchByChartKey.get(chartKey) ?? filter.search ?? '';
       const checkedTokens = Array.from(list.querySelectorAll('input[type="checkbox"][data-token]'))
         .filter(input => input.checked)
         .map(input => input.dataset.token || '');
       emit({
         ...filter,
+        search: currentSearch,
         include: checkedTokens,
       });
     });
@@ -372,16 +419,30 @@ export function setupChartFilterControlListeners({
   const selectAllBtn = document.getElementById(ids.selectAll);
   if (selectAllBtn) {
     selectAllBtn.addEventListener('click', () => {
-      const currentSearch = searchInput?.value ?? filter.search;
-      const options = getCategoricalFilterOptions(rows, filter.column, {
-        search: currentSearch,
-        limit: Number.MAX_SAFE_INTEGER,
-        missingLabel: t('chive-chart-filter-missing'),
+      const list = document.getElementById(ids.list);
+      if (!list) return;
+      const currentSearch = liveSearchByChartKey.get(chartKey) ?? filter.search ?? '';
+
+      // Select only currently visible checkboxes (respects active search filter)
+      const visibleCheckboxes = Array.from(list.querySelectorAll('input[type="checkbox"][data-token]'))
+        .filter(input => {
+          const row = input.closest('.chart-filter-item');
+          return row && row.style.display !== 'none';
+        });
+
+      visibleCheckboxes.forEach(input => {
+        input.checked = true;
       });
+
+      // Emit change event to persist selection
+      const checkedTokens = Array.from(list.querySelectorAll('input[type="checkbox"][data-token]'))
+        .filter(input => input.checked)
+        .map(input => input.dataset.token || '');
+
       emit({
         ...filter,
         search: currentSearch,
-        include: options.allTokens,
+        include: checkedTokens,
       });
     });
   }
@@ -389,9 +450,30 @@ export function setupChartFilterControlListeners({
   const clearBtn = document.getElementById(ids.clear);
   if (clearBtn) {
     clearBtn.addEventListener('click', () => {
+      const list = document.getElementById(ids.list);
+      if (!list) return;
+      const currentSearch = liveSearchByChartKey.get(chartKey) ?? filter.search ?? '';
+
+      // Uncheck only currently visible checkboxes (respects active search filter)
+      const visibleCheckboxes = Array.from(list.querySelectorAll('input[type="checkbox"][data-token]'))
+        .filter(input => {
+          const row = input.closest('.chart-filter-item');
+          return row && row.style.display !== 'none';
+        });
+
+      visibleCheckboxes.forEach(input => {
+        input.checked = false;
+      });
+
+      // Emit change event to persist selection
+      const checkedTokens = Array.from(list.querySelectorAll('input[type="checkbox"][data-token]'))
+        .filter(input => input.checked)
+        .map(input => input.dataset.token || '');
+
       emit({
         ...filter,
-        include: [],
+        search: currentSearch,
+        include: checkedTokens,
       });
     });
   }
