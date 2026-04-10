@@ -3,221 +3,138 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
+import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
+import { groupControls } from './controlGrouping.js';
+import { createSelectControl } from './shared.js';
 
-function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
-	const div = document.createElement('div');
-	div.className = 'chart-controle';
-
-	const label = document.createElement('label');
-	label.htmlFor = id;
-	label.textContent = labelText;
-
-	const select = document.createElement('select');
-	select.id = id;
-	select.className = 'linhas-select';
-	select.disabled = disabled;
-
-	optionsArray.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt.value;
-		option.textContent = opt.label;
-		option.selected = String(opt.value) === String(selectedValue);
-		select.appendChild(option);
-	});
-
-	div.appendChild(label);
-	div.appendChild(select);
-	return div;
-}
-
-export function createBarChartControls(dataset, categoryOptions, numericOptions = []) {
+export function createBarChartControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
 	const config = dataset.configGraficos.bar;
-	const controls = [];
 	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;
+	const isDisabled = !dataset.configGraficos.bar.enabled;
 
-	const categoryDiv = document.createElement('div');
-	categoryDiv.className = 'chart-controle';
-
-	const categoryLabel = document.createElement('label');
-	categoryLabel.htmlFor = 'viz-select-bar';
-	categoryLabel.textContent = t('chive-chart-control-bar-category');
-
-	const categorySelect = document.createElement('select');
-	categorySelect.id = 'viz-select-bar';
-	categorySelect.className = 'linhas-select';
-	categorySelect.disabled = !dataset.configGraficos.bar.enabled;
-
-	const noneOption = document.createElement('option');
-	noneOption.value = '';
-	noneOption.textContent = t('chive-chart-option-none');
-	categorySelect.appendChild(noneOption);
-
-	categoryOptions.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt;
-		option.textContent = opt;
-		option.selected = opt === config.category;
-		categorySelect.appendChild(option);
+	// ====== FILTERS SECTION (Top priority, always expanded) ======
+	const filterControls = createChartFilterControls({
+		chartKey: 'bar',
+		rows: dataset.dados,
+		allColumns,
+		numericColumns: numericOptions,
+		rawFilter: config.filter,
+		disabled: isDisabled,
 	});
 
-	categoryDiv.appendChild(categoryLabel);
-	categoryDiv.appendChild(categorySelect);
-	controls.push(categoryDiv);
+	// ====== DATA & AGGREGATION SECTION ======
+	const dataControls = [];
 
-	const measureDiv = document.createElement('div');
-	measureDiv.className = 'chart-controle';
+	// Category select
+	const categoryDiv = createSelectControl(
+		'viz-select-bar',
+		t('chive-chart-control-bar-category'),
+		[
+			{ value: '', label: t('chive-chart-option-none') },
+			...categoryOptions.map(opt => ({ value: opt, label: opt })),
+		],
+		config.category,
+		isDisabled
+	);
+	dataControls.push(categoryDiv);
 
-	const measureLabel = document.createElement('label');
-	measureLabel.htmlFor = 'viz-select-bar-measure';
-	measureLabel.textContent = t('chive-chart-control-bar-measure');
+	// Measure mode select
+	const measureDiv = createSelectControl(
+		'viz-select-bar-measure',
+		t('chive-chart-control-bar-measure'),
+		[
+			{ value: 'count', label: t('chive-chart-control-bar-measure-count') },
+			{ value: 'sum', label: t('chive-chart-control-bar-measure-sum') },
+			{ value: 'mean', label: t('chive-chart-control-bar-measure-mean') },
+		],
+		measureMode,
+		isDisabled
+	);
+	dataControls.push(measureDiv);
 
-	const measureSelect = document.createElement('select');
-	measureSelect.id = 'viz-select-bar-measure';
-	measureSelect.className = 'linhas-select';
-	measureSelect.disabled = !dataset.configGraficos.bar.enabled;
+	// Value column select (for sum/mean)
+	const valueColDiv = createSelectControl(
+		'viz-select-bar-value-column',
+		t('chive-chart-control-bar-value-column'),
+		[
+			{ value: '', label: t('chive-chart-option-none') },
+			...numericOptions.map(opt => ({ value: opt, label: opt })),
+		],
+		valueColumn,
+		isDisabled || measureMode === 'count'
+	);
+	dataControls.push(valueColDiv);
 
-	[
-		{ value: 'count', label: t('chive-chart-control-bar-measure-count') },
-		{ value: 'sum', label: t('chive-chart-control-bar-measure-sum') },
-		{ value: 'mean', label: t('chive-chart-control-bar-measure-mean') },
-	].forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt.value;
-		option.textContent = opt.label;
-		option.selected = opt.value === measureMode;
-		measureSelect.appendChild(option);
-	});
+	// Sort order
+	const sortDiv = createSelectControl(
+		'viz-select-bar-sort',
+		t('chive-chart-control-bar-sort'),
+		[
+			{ value: 'count-desc', label: t('chive-chart-sort-count-desc') },
+			{ value: 'count-asc', label: t('chive-chart-sort-count-asc') },
+			{ value: 'label-asc', label: t('chive-chart-sort-label-asc') },
+			{ value: 'label-desc', label: t('chive-chart-sort-label-desc') },
+		],
+		config.sort,
+		isDisabled
+	);
+	dataControls.push(sortDiv);
 
-	measureDiv.appendChild(measureLabel);
-	measureDiv.appendChild(measureSelect);
-	controls.push(measureDiv);
+	// Top N
+	const topnDiv = createSelectControl(
+		'viz-select-bar-topn',
+		t('chive-chart-control-bar-topn'),
+		[
+			{ value: '0', label: t('chive-chart-topn-all') },
+			{ value: '10', label: 'Top 10' },
+			{ value: '20', label: 'Top 20' },
+			{ value: '50', label: 'Top 50' },
+		],
+		String(config.topN),
+		isDisabled
+	);
+	dataControls.push(topnDiv);
 
-	const valueColDiv = document.createElement('div');
-	valueColDiv.className = 'chart-controle';
+	// ====== DISPLAY SECTION (Title, height, axis labels) ======
+	const displayControls = [];
 
-	const valueColLabel = document.createElement('label');
-	valueColLabel.htmlFor = 'viz-select-bar-value-column';
-	valueColLabel.textContent = t('chive-chart-control-bar-value-column');
-
-	const valueColSelect = document.createElement('select');
-	valueColSelect.id = 'viz-select-bar-value-column';
-	valueColSelect.className = 'linhas-select';
-	valueColSelect.disabled = !dataset.configGraficos.bar.enabled || measureMode === 'count';
-
-	const noneOptValue = document.createElement('option');
-	noneOptValue.value = '';
-	noneOptValue.textContent = t('chive-chart-option-none');
-	noneOptValue.selected = valueColumn === null;
-	valueColSelect.appendChild(noneOptValue);
-
-	numericOptions.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt;
-		option.textContent = opt;
-		option.selected = opt === valueColumn;
-		valueColSelect.appendChild(option);
-	});
-
-	valueColDiv.appendChild(valueColLabel);
-	valueColDiv.appendChild(valueColSelect);
-	controls.push(valueColDiv);
-
-	const sortDiv = document.createElement('div');
-	sortDiv.className = 'chart-controle';
-
-	const sortLabel = document.createElement('label');
-	sortLabel.htmlFor = 'viz-select-bar-sort';
-	sortLabel.textContent = t('chive-chart-control-bar-sort');
-
-	const sortSelect = document.createElement('select');
-	sortSelect.id = 'viz-select-bar-sort';
-	sortSelect.className = 'linhas-select';
-	sortSelect.disabled = !dataset.configGraficos.bar.enabled;
-
-	const sortOptions = [
-		{ value: 'count-desc', label: t('chive-chart-sort-count-desc') },
-		{ value: 'count-asc', label: t('chive-chart-sort-count-asc') },
-		{ value: 'label-asc', label: t('chive-chart-sort-label-asc') },
-		{ value: 'label-desc', label: t('chive-chart-sort-label-desc') },
-	];
-
-	sortOptions.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt.value;
-		option.textContent = opt.label;
-		option.selected = opt.value === config.sort;
-		sortSelect.appendChild(option);
-	});
-
-	sortDiv.appendChild(sortLabel);
-	sortDiv.appendChild(sortSelect);
-	controls.push(sortDiv);
-
-	const topnDiv = document.createElement('div');
-	topnDiv.className = 'chart-controle';
-
-	const topnLabel = document.createElement('label');
-	topnLabel.htmlFor = 'viz-select-bar-topn';
-	topnLabel.textContent = t('chive-chart-control-bar-topn');
-
-	const topnSelect = document.createElement('select');
-	topnSelect.id = 'viz-select-bar-topn';
-	topnSelect.className = 'linhas-select';
-	topnSelect.disabled = !dataset.configGraficos.bar.enabled;
-
-	const topnOptions = [
-		{ value: '0', label: t('chive-chart-topn-all') },
-		{ value: '10', label: 'Top 10' },
-		{ value: '20', label: 'Top 20' },
-		{ value: '50', label: 'Top 50' },
-	];
-
-	topnOptions.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt.value;
-		option.textContent = opt.label;
-		option.selected = String(config.topN) === opt.value;
-		topnSelect.appendChild(option);
-	});
-
-	topnDiv.appendChild(topnLabel);
-	topnDiv.appendChild(topnSelect);
-	controls.push(topnDiv);
-
-	controls.push(createCheckboxControl(
-		'viz-toggle-bar-x-label',
-		t('chive-chart-control-axis-label-x'),
-		config.showXAxisLabel,
-		!dataset.configGraficos.bar.enabled
-	));
-
-	controls.push(createCheckboxControl(
-		'viz-toggle-bar-y-label',
-		t('chive-chart-control-axis-label-y'),
-		config.showYAxisLabel,
-		!dataset.configGraficos.bar.enabled
-	));
-
-	controls.push(createTextControl(
+	displayControls.push(createTextControl(
 		'viz-input-bar-title',
 		t('chive-chart-control-common-title'),
 		config.customTitle,
 		80,
-		!dataset.configGraficos.bar.enabled
+		isDisabled
 	));
 
-	controls.push(createSliderControl(
+	displayControls.push(createSliderControl(
 		'viz-slider-bar-height',
 		t('chive-chart-control-common-height'),
 		Number(config.chartHeight || 320),
 		220,
 		720,
 		10,
-		!dataset.configGraficos.bar.enabled
+		isDisabled
 	));
 
-	controls.push(createSelectControl(
+	displayControls.push(createCheckboxControl(
+		'viz-toggle-bar-x-label',
+		t('chive-chart-control-axis-label-x'),
+		config.showXAxisLabel,
+		isDisabled
+	));
+
+	displayControls.push(createCheckboxControl(
+		'viz-toggle-bar-y-label',
+		t('chive-chart-control-axis-label-y'),
+		config.showYAxisLabel,
+		isDisabled
+	));
+
+	// ====== STYLING SECTION (Colors and gradients) ======
+	const stylingControls = [];
+
+	stylingControls.push(createSelectControl(
 		'viz-select-bar-color-mode',
 		t('chive-chart-color-mode'),
 		[
@@ -226,26 +143,23 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 			{ value: 'gradient-manual', label: t('chive-chart-color-gradient-manual') },
 		],
 		config.colorMode,
-		!dataset.configGraficos.bar.enabled
+		isDisabled
 	));
 
 	const colorDiv = document.createElement('div');
 	colorDiv.className = 'chart-controle';
-
 	const colorLabel = document.createElement('label');
 	colorLabel.htmlFor = 'viz-input-bar-color';
 	colorLabel.textContent = t('chive-chart-control-bar-color');
-
 	const colorInput = document.createElement('input');
 	colorInput.id = 'viz-input-bar-color';
 	colorInput.type = 'color';
 	colorInput.className = 'chart-color-input';
 	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.bar);
-	colorInput.disabled = !dataset.configGraficos.bar.enabled || config.colorMode !== 'uniform';
-
+	colorInput.disabled = isDisabled || config.colorMode !== 'uniform';
 	colorDiv.appendChild(colorLabel);
 	colorDiv.appendChild(colorInput);
-	controls.push(colorDiv);
+	stylingControls.push(colorDiv);
 
 	const minColorDiv = document.createElement('div');
 	minColorDiv.className = 'chart-controle';
@@ -257,10 +171,10 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 	minColorInput.type = 'color';
 	minColorInput.className = 'chart-color-input';
 	minColorInput.value = normalizeHexColor(config.gradientMinColor, CHART_COLORS.bar);
-	minColorInput.disabled = !dataset.configGraficos.bar.enabled || config.colorMode === 'uniform';
+	minColorInput.disabled = isDisabled || config.colorMode === 'uniform';
 	minColorDiv.appendChild(minColorLabel);
 	minColorDiv.appendChild(minColorInput);
-	controls.push(minColorDiv);
+	stylingControls.push(minColorDiv);
 
 	const maxColorDiv = document.createElement('div');
 	maxColorDiv.className = 'chart-controle';
@@ -272,34 +186,48 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 	maxColorInput.type = 'color';
 	maxColorInput.className = 'chart-color-input';
 	maxColorInput.value = normalizeHexColor(config.gradientMaxColor, '#ffffff');
-	maxColorInput.disabled = !dataset.configGraficos.bar.enabled || config.colorMode === 'uniform';
+	maxColorInput.disabled = isDisabled || config.colorMode === 'uniform';
 	maxColorDiv.appendChild(maxColorLabel);
 	maxColorDiv.appendChild(maxColorInput);
-	controls.push(maxColorDiv);
+	stylingControls.push(maxColorDiv);
 
+	// Gradient manual threshold (only for gradient-manual mode)
 	if (config.colorMode === 'gradient-manual') {
-		controls.push(createSliderControl(
+		stylingControls.push(createSliderControl(
 			'viz-slider-bar-threshold',
 			t('chive-chart-color-threshold'),
 			Number(config.manualThresholdPct || 50),
 			0,
 			100,
 			5,
-			!dataset.configGraficos.bar.enabled
+			isDisabled
 		));
 	}
 
-	controls.push(createColorPresetControl(
+	// ====== ADVANCED SECTION (Collapsed by default) ======
+	const advancedControls = [];
+
+	advancedControls.push(createColorPresetControl(
 		'viz-bar-color-preset',
 		t('chive-chart-color-palette'),
 		config.colorScheme || 'Bold',
-		!dataset.configGraficos.bar.enabled
+		isDisabled
 	));
 
-	return controls;
+	// ====== Group and return all sections ======
+	return groupControls([
+		{ id: 'filter', title: t('chive-chart-filter-column'), controls: filterControls, expanded: true, icon: 'filter' },
+		{ id: 'data', title: t('chive-chart-control-bar-category'), controls: dataControls, expanded: true, icon: 'data' },
+		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
+		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
+		{ id: 'advanced', title: 'Advanced', controls: advancedControls, expanded: false, icon: 'advanced' },
+	]);
 }
 
-export function setupBarChartControlListeners(dataset, baseBar, numericOptions, onConfigChanged) {
+export function setupBarChartControlListeners(dataset, baseBar, numericOptions, allColumnsOrCallback = [], onConfigChangedMaybe) {
+	const onConfigChanged = typeof allColumnsOrCallback === 'function'
+		? allColumnsOrCallback
+		: onConfigChangedMaybe;
 	const toggleBar = document.getElementById('viz-toggle-bar');
 	const expandBar = document.getElementById('viz-expand-bar');
 
@@ -557,4 +485,20 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 			onConfigChanged?.();
 		});
 	}
+
+	setupChartFilterControlListeners({
+		chartKey: 'bar',
+		rows: dataset.dados,
+		numericColumns: numericOptions,
+		rawFilter: dataset.configGraficos.bar?.filter,
+		onFilterChange: nextFilter => {
+			updateActiveDatasetChartConfig({
+				bar: {
+					...dataset.configGraficos.bar,
+					filter: nextFilter,
+				},
+			});
+			onConfigChanged?.();
+		},
+	});
 }
