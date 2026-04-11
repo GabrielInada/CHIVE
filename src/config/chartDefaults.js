@@ -1,5 +1,18 @@
 import { BAR_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT } from './charts.js';
 
+function createDefaultFilter() {
+	return {
+		column: null,
+		mode: 'categorical',
+		include: [],
+		search: '',
+		operator: 'between',
+		min: '',
+		max: '',
+		value: '',
+	};
+}
+
 export function createDefaultChartConfig() {
 	return {
 		aba: 'preview',
@@ -21,6 +34,7 @@ export function createDefaultChartConfig() {
 			showYAxisLabel: true,
 			measureMode: BAR_CHART.defaultMeasureMode,
 			valueColumn: null,
+			filter: createDefaultFilter(),
 		},
 		scatter: {
 			enabled: false,
@@ -42,6 +56,7 @@ export function createDefaultChartConfig() {
 			colorScheme: 'Bold',
 			showXAxisLabel: true,
 			showYAxisLabel: true,
+			filter: createDefaultFilter(),
 		},
 		network: {
 			enabled: false,
@@ -64,6 +79,7 @@ export function createDefaultChartConfig() {
 			sourceNodeColor: '#e3743d',
 			targetNodeColor: '#6b94c9',
 			edgeColorMode: 'gradient',
+			filter: createDefaultFilter(),
 		},
 		pie: {
 			enabled: false,
@@ -85,6 +101,7 @@ export function createDefaultChartConfig() {
 			colorMode: 'uniform',
 			colorScheme: 'Bold',
 			customSliceColors: {},
+			filter: createDefaultFilter(),
 		},
 	};
 }

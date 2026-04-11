@@ -16,7 +16,7 @@
  * - Main.js handles initialization and orchestration only
  */
 
-import { initializeI18n, t } from './services/index.js';
+import { initializeI18n, t, parseCsv, parseJson, processData } from './services/index.js';
 import { PREVIEW_DEFAULT_ROWS } from './config/limits.js';
 import {
 renderEmptyState,
@@ -24,7 +24,7 @@ renderDataInterface,
 renderFileList,
 } from './components/index.js';
 import { initChartControls, renderChartControlsSidebar } from './features/chartFeatures/index.js';
-import { mergeChartConfigWithDefaults } from './config/chartDefaults.js';
+import { createDefaultChartConfig, mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 
 import {
 getState,
@@ -33,6 +33,7 @@ onStateChange,
 exposeGlobals,
 initializeStateSync,
 setPreviewRows,
+addDataset,
 } from './modules/index.js';
 import {
 initPanelManager,
@@ -155,6 +156,14 @@ const dataset = getActiveDataset();
 
 // Handle empty state
 if (datasets.length === 0) {
+renderFileList(
+datasets,
+activeIndex,
+selectDataset,
+removeDatasetByIndex,
+handleJoinDatasetRequest,
+handlePresetDatasetRequest
+);
 renderEmptyState();
 renderSidebarPanel();
 renderCanvasPanel();
@@ -168,7 +177,8 @@ datasets,
 activeIndex,
 selectDataset,
 removeDatasetByIndex,
-handleJoinDatasetRequest
+handleJoinDatasetRequest,
+handlePresetDatasetRequest
 );
 
 // Render data preview and stats
@@ -246,6 +256,66 @@ function handleJoinDatasetRequest(spec) {
 	selectDataset(result.index);
 	showFeedback(t('chive-join-success', [result.datasetName]));
 	refreshView();
+}
+
+async function loadPresetRows(preset) {
+	if (Array.isArray(preset?.data)) {
+		return preset.data;
+	}
+
+	if (typeof preset?.dataUrl !== 'string' || !preset.dataUrl.trim()) {
+		throw new Error('preset-data-missing');
+	}
+
+	const response = await fetch(preset.dataUrl);
+	if (!response.ok) {
+		throw new Error(`preset-fetch-failed:${response.status}`);
+	}
+
+	const rawText = await response.text();
+	const format = String(preset.dataFormat || '').toLowerCase();
+	const shouldParseJson = format === 'json' || preset.dataUrl.toLowerCase().endsWith('.json');
+	const parsed = shouldParseJson ? parseJson(rawText) : parseCsv(rawText);
+
+	if (!Array.isArray(preset.dropColumns) || preset.dropColumns.length === 0) {
+		return parsed;
+	}
+
+	const columnsToDrop = new Set(preset.dropColumns);
+	return parsed.map(row => {
+		const next = { ...row };
+		columnsToDrop.forEach(columnName => {
+			delete next[columnName];
+		});
+		return next;
+	});
+}
+
+async function handlePresetDatasetRequest(preset) {
+	if (!preset) {
+		showError(t('chive-join-error-generic'));
+		return;
+	}
+
+	try {
+		const presetRows = await loadPresetRows(preset);
+		const processed = processData(presetRows, preset.id);
+		const dataset = {
+			nome: t(preset.nameKey),
+			tamanho: t('chive-preset-generated-size', [preset.rows]),
+			dados: processed.dados,
+			colunas: processed.colunas,
+			colunasSelecionadas: processed.colunas.map(c => c.nome),
+			configGraficos: createDefaultChartConfig(),
+		};
+
+		const index = addDataset(dataset);
+		selectDataset(index);
+		showFeedback(t('chive-preset-load-success', [t(preset.nameKey)]));
+		refreshView();
+	} catch {
+		showError(t('chive-join-error-generic'));
+	}
 }
 
 // =============================================================================

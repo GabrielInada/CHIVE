@@ -3,6 +3,8 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
+import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
+import { groupControls } from './controlGrouping.js';
 
 function getPieSectorValues(dataset, config) {
 	if (!config?.category || !Array.isArray(dataset?.dados)) return [];
@@ -30,10 +32,22 @@ function getPieSectorValues(dataset, config) {
 		.map(([category]) => category);
 }
 
-export function createPieChartControls(dataset, categoryOptions, numericOptions) {
+export function createPieChartControls(dataset, categoryOptions, numericOptions, allColumns = []) {
 	const config = dataset.configGraficos.pie;
-	const controls = [];
 	const sectorValues = getPieSectorValues(dataset, config);
+
+	// ====== FILTERS SECTION (Top priority, always expanded) ======
+	const filterControls = createChartFilterControls({
+		chartKey: 'pie',
+		rows: dataset.dados,
+		allColumns,
+		numericColumns: numericOptions,
+		rawFilter: config.filter,
+		disabled: !dataset.configGraficos.pie.enabled,
+	});
+
+	// ====== DATA & AGGREGATION SECTION ======
+	const dataControls = [];
 
 	const categoryDiv = document.createElement('div');
 	categoryDiv.className = 'chart-controle';
@@ -62,7 +76,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 
 	categoryDiv.appendChild(categoryLabel);
 	categoryDiv.appendChild(categorySelect);
-	controls.push(categoryDiv);
+	dataControls.push(categoryDiv);
 
 	const measureDiv = document.createElement('div');
 	measureDiv.className = 'chart-controle';
@@ -89,7 +103,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 
 	measureDiv.appendChild(measureLabel);
 	measureDiv.appendChild(measureSelect);
-	controls.push(measureDiv);
+	dataControls.push(measureDiv);
 
 	const valueDiv = document.createElement('div');
 	valueDiv.className = 'chart-controle';
@@ -118,9 +132,12 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 
 	valueDiv.appendChild(valueLabel);
 	valueDiv.appendChild(valueSelect);
-	controls.push(valueDiv);
+	dataControls.push(valueDiv);
 
-	controls.push(createSliderControl(
+	// ====== DISPLAY SECTION ======
+	const displayControls = [];
+
+	displayControls.push(createSliderControl(
 		'viz-slider-pie-inner-radius',
 		t('chive-chart-control-pie-inner-radius'),
 		Number(config.innerRadius),
@@ -130,7 +147,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 		!dataset.configGraficos.pie.enabled
 	));
 
-	controls.push(createSliderControl(
+	displayControls.push(createSliderControl(
 		'viz-slider-pie-outer-radius',
 		t('chive-chart-control-pie-outer-radius'),
 		Number(config.outerRadius),
@@ -140,7 +157,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 		!dataset.configGraficos.pie.enabled
 	));
 
-	controls.push(createSliderControl(
+	displayControls.push(createSliderControl(
 		'viz-slider-pie-pad-angle',
 		t('chive-chart-control-pie-pad-angle'),
 		Number(config.padAngle),
@@ -150,7 +167,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 		!dataset.configGraficos.pie.enabled
 	));
 
-	controls.push(createSliderControl(
+	displayControls.push(createSliderControl(
 		'viz-slider-pie-zoom',
 		t('chive-chart-control-pie-zoom'),
 		Number(config.zoomScale),
@@ -160,39 +177,28 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 		!dataset.configGraficos.pie.enabled
 	));
 
-	const resetZoomDiv = document.createElement('div');
-	resetZoomDiv.className = 'chart-controle';
-	const resetZoomBtn = document.createElement('button');
-	resetZoomBtn.type = 'button';
-	resetZoomBtn.id = 'viz-btn-pie-reset-zoom';
-	resetZoomBtn.className = 'chart-control-btn';
-	resetZoomBtn.textContent = t('chive-chart-control-pie-reset-zoom');
-	resetZoomBtn.disabled = !dataset.configGraficos.pie.enabled;
-	resetZoomDiv.appendChild(resetZoomBtn);
-	controls.push(resetZoomDiv);
-
-	controls.push(createCheckboxControl(
+	displayControls.push(createCheckboxControl(
 		'viz-toggle-pie-category-label',
 		t('chive-chart-control-pie-sector-label'),
 		config.showCategoryLabel,
 		!dataset.configGraficos.pie.enabled
 	));
 
-	controls.push(createCheckboxControl(
+	displayControls.push(createCheckboxControl(
 		'viz-toggle-pie-value-label',
 		t('chive-chart-control-pie-sector-value'),
 		config.showValueLabel,
 		!dataset.configGraficos.pie.enabled
 	));
 
-	controls.push(createCheckboxControl(
+	displayControls.push(createCheckboxControl(
 		'viz-toggle-pie-legend',
 		t('chive-chart-control-pie-show-legend'),
 		config.showLegend,
 		!dataset.configGraficos.pie.enabled
 	));
 
-	controls.push(createTextControl(
+	displayControls.push(createTextControl(
 		'viz-input-pie-title',
 		t('chive-chart-control-common-title'),
 		config.customTitle,
@@ -200,7 +206,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 		!dataset.configGraficos.pie.enabled
 	));
 
-	controls.push(createSliderControl(
+	displayControls.push(createSliderControl(
 		'viz-slider-pie-height',
 		t('chive-chart-control-common-height'),
 		Number(config.chartHeight || 360),
@@ -235,7 +241,21 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 
 	labelPositionDiv.appendChild(labelPositionLabel);
 	labelPositionDiv.appendChild(labelPositionSelect);
-	controls.push(labelPositionDiv);
+	displayControls.push(labelPositionDiv);
+
+	const resetZoomDiv = document.createElement('div');
+	resetZoomDiv.className = 'chart-controle';
+	const resetZoomBtn = document.createElement('button');
+	resetZoomBtn.type = 'button';
+	resetZoomBtn.id = 'viz-btn-pie-reset-zoom';
+	resetZoomBtn.className = 'chart-control-btn';
+	resetZoomBtn.textContent = t('chive-chart-control-pie-reset-zoom');
+	resetZoomBtn.disabled = !dataset.configGraficos.pie.enabled;
+	resetZoomDiv.appendChild(resetZoomBtn);
+	displayControls.push(resetZoomDiv);
+
+	// ====== STYLING SECTION ======
+	const stylingControls = [];
 
 	const colorDiv = document.createElement('div');
 	colorDiv.className = 'chart-controle';
@@ -253,12 +273,11 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 
 	colorDiv.appendChild(colorLabel);
 	colorDiv.appendChild(colorInput);
-	controls.push(colorDiv);
-
+	stylingControls.push(colorDiv);
 
 	// Palette presets for quick color application
 	if (sectorValues.length > 0) {
-		controls.push(createColorPresetControl(
+		stylingControls.push(createColorPresetControl(
 			'viz-pie-color-preset',
 			t('chive-chart-color-palette'),
 			config.colorScheme || 'Bold',
@@ -269,10 +288,16 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions)
 	// Per-slice custom color picker grid
 	if (sectorValues.length > 0) {
 		const colorGridElement = updatePieColorPickerGrid(dataset, sectorValues);
-		controls.push(colorGridElement);
+		stylingControls.push(colorGridElement);
 	}
 
-	return controls;
+	// ====== Group and return all sections ======
+	return groupControls([
+		{ id: 'filter', title: t('chive-chart-filter-column'), controls: filterControls, expanded: true, icon: 'filter' },
+		{ id: 'data', title: 'Data & Aggregation', controls: dataControls, expanded: true, icon: 'data' },
+		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
+		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
+	]);
 }
 
 function updatePieColorPickerGrid(dataset, sectorValues) {
@@ -287,7 +312,10 @@ function updatePieColorPickerGrid(dataset, sectorValues) {
 }
 
 
-export function setupPieChartControlListeners(dataset, basePie, numericas, onConfigChanged) {
+export function setupPieChartControlListeners(dataset, basePie, numericas, allColumnsOrCallback = [], onConfigChangedMaybe) {
+	const onConfigChanged = typeof allColumnsOrCallback === 'function'
+		? allColumnsOrCallback
+		: onConfigChangedMaybe;
 	const sectorValues = getPieSectorValues(dataset, dataset.configGraficos.pie);
 	const togglePie = document.getElementById('viz-toggle-pie');
 	const expandPie = document.getElementById('viz-expand-pie');
@@ -605,4 +633,20 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, onCon
 			onConfigChanged?.();
 		});
 	}
+
+	setupChartFilterControlListeners({
+		chartKey: 'pie',
+		rows: dataset.dados,
+		numericColumns: numericas,
+		rawFilter: dataset.configGraficos.pie?.filter,
+		onFilterChange: nextFilter => {
+			updateActiveDatasetChartConfig({
+				pie: {
+					...dataset.configGraficos.pie,
+					filter: nextFilter,
+				},
+			});
+			onConfigChanged?.();
+		},
+	});
 }

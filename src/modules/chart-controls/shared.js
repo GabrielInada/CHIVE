@@ -82,6 +82,32 @@ export function createSliderControl(id, labelText, value, min, max, step, disabl
 	return div;
 }
 
+export function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
+	const div = document.createElement('div');
+	div.className = 'chart-controle';
+
+	const label = document.createElement('label');
+	label.htmlFor = id;
+	label.textContent = labelText;
+
+	const select = document.createElement('select');
+	select.id = id;
+	select.className = 'linhas-select';
+	select.disabled = disabled;
+
+	optionsArray.forEach(opt => {
+		const option = document.createElement('option');
+		option.value = opt.value;
+		option.textContent = opt.label;
+		option.selected = String(opt.value) === String(selectedValue);
+		select.appendChild(option);
+	});
+
+	div.appendChild(label);
+	div.appendChild(select);
+	return div;
+}
+
 // Color Presets for palette quick-apply
 export const COLOR_PRESETS = {
 	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
