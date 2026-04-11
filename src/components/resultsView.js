@@ -9,6 +9,7 @@ import { renderStats } from './results/statsView.js';
 import { renderFileListDOM } from './results/fileListView.js';
 import { renderColumnControlsDOM } from './results/columnControlsView.js';
 import { openJoinBuilderDialog } from './results/joinBuilderView.js';
+import { openPresetDatasetsDialog } from './results/presetDatasetsView.js';
 
 function translateType(type) {
   if (type === 'numero') return t('chive-type-number');
@@ -26,7 +27,7 @@ export function hideErrorMessage() {
   document.getElementById('mensagem-erro').style.display = 'none';
 }
 
-export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCreateJoin) {
+export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCreateJoin, onLoadPreset) {
   const fileInfo = document.getElementById('info-arquivo');
   const summary = document.getElementById('arquivo-resumo-texto');
   const list = document.getElementById('lista-arquivos-conteudo');
@@ -69,6 +70,18 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
     onCreateJoin?.(spec);
   });
   joinActions.appendChild(joinButton);
+
+  const presetButton = document.createElement('button');
+  presetButton.type = 'button';
+  presetButton.className = 'btn-secundario btn-preset-datasets';
+  presetButton.id = 'btn-preset-datasets';
+  presetButton.textContent = t('chive-btn-preset-datasets');
+  presetButton.addEventListener('click', async () => {
+    const selected = await openPresetDatasetsDialog({ translate: t });
+    if (!selected) return;
+    onLoadPreset?.(selected);
+  });
+  joinActions.appendChild(presetButton);
 }
 
 export function renderEmptyState() {
@@ -89,7 +102,7 @@ export function renderEmptyState() {
   };
 
   // Only update elements that exist (not null)
-  if (els['info-arquivo']) els['info-arquivo'].style.display = 'none';
+  if (els['info-arquivo']) els['info-arquivo'].style.display = 'block';
   if (els['painel-colunas']) els['painel-colunas'].style.display = 'none';
   if (els['estado-vazio']) els['estado-vazio'].style.display = 'flex';
   if (els['estado-dados']) els['estado-dados'].style.display = 'none';

@@ -1,8 +1,0 @@
-[
-  {"cidade": "São Paulo", "população": 11895893, "densidade": 7165},
-  {"cidade": "Rio de Janeiro", "população": 6718903, "densidade": 5265},
-  {"cidade": "Brasília", "população": 3108962, "densidade": 434},
-  {"cidade": "Salvador", "população": 2873228, "densidade": 1175},
-  {"cidade": "Fortaleza", "população": 2686612, "densidade": 1884},
-  {"cidade": "Belo Horizonte", "população": 2530701, "densidade": 1433}
-]

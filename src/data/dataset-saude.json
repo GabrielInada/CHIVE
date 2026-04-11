@@ -1,7 +1,0 @@
-[
-  {"hospital": "Hospital A", "leitos": 150, "pacientes": 145, "ocupacao": 96.7},
-  {"hospital": "Hospital B", "leitos": 200, "pacientes": 165, "ocupacao": 82.5},
-  {"hospital": "Hospital C", "leitos": 100, "pacientes": 78, "ocupacao": 78},
-  {"hospital": "Hospital D", "leitos": 250, "pacientes": 220, "ocupacao": 88},
-  {"hospital": "Hospital E", "leitos": 180, "pacientes": 155, "ocupacao": 86.1}
-]

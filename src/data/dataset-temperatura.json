@@ -1,6 +1,0 @@
-[
-  {"estação": "Primavera", "máxima": 28, "mínima": 18, "umidade": 65},
-  {"estação": "Verão", "máxima": 32, "mínima": 22, "umidade": 70},
-  {"estação": "Outono", "máxima": 25, "mínima": 15, "umidade": 60},
-  {"estação": "Inverno", "máxima": 20, "mínima": 10, "umidade": 55}
-]
