@@ -13,6 +13,7 @@ import { parseCsv, parseJson, processData, formatFileSize, joinDatasets } from '
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './appState.js';
 import { showError, clearErrors } from './feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/limits.js';
+import { DELIMITED_EXTENSIONS } from '../config/formats.js';
 import { createDefaultChartConfig } from '../config/chartDefaults.js';
 
 // Callback when dataset list changes
@@ -56,8 +57,12 @@ export async function handleFileUpload(files) {
  */
 async function processFileForDataset(file) {
 	// Validate file format
-	if (!file.name.match(/\.(csv|json)$/i)) {
-		throw new Error(t('chive-error-format'));
+	const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+	const isDelimited = DELIMITED_EXTENSIONS.includes(extension);
+	const isJson = extension === 'json';
+
+	if (!isDelimited && !isJson) {
+		throw new Error(t('chive-error-format', [file.name]));
 	}
 
 	// Check file size
@@ -76,10 +81,11 @@ async function processFileForDataset(file) {
 
 	// Parse based on format
 	try {
-		if (file.name.endsWith('.csv')) {
-			dadosBrutos = parseCsv(content);
-		} else {
+		if (isJson) {
 			dadosBrutos = parseJson(content);
+		} else {
+			// All delimited formats: auto-detects comma, semicolon, tab, pipe
+			dadosBrutos = parseCsv(content);
 		}
 	} catch (err) {
 		throw new Error(`${t('chive-error-parse')}: ${err.message}`);

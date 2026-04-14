@@ -284,7 +284,7 @@ function setupLanguageSelectorListeners() {
 
 	const getLocaleLabel = (locale) => {
 		const option = selectLang?.querySelector(`option[value="${locale}"]`);
-		return option?.textContent?.trim() || localeLabels[locale] || locale;
+		return localeLabels[locale] || option?.textContent?.trim() || locale;
 	};
 
 	// Update display button text

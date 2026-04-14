@@ -6,10 +6,20 @@ export function renderFileListDOM({
 	getLocale,
 	aoSelecionar: onSelect,
 	aoRemover: onRemove,
+	filtro = '',
+	limiteVisivel = 15,
 }) {
 	list.innerHTML = '';
 
-	datasets.forEach((dataset, index) => {
+	const normalizedFilter = String(filtro || '').trim().toLowerCase();
+	const indexedDatasets = datasets.map((dataset, index) => ({ dataset, index }));
+	const filteredDatasets = normalizedFilter
+		? indexedDatasets.filter(({ dataset }) => String(dataset.nome || '').toLowerCase().includes(normalizedFilter))
+		: indexedDatasets;
+	const safeLimit = Number.isFinite(limiteVisivel) && limiteVisivel > 0 ? Math.floor(limiteVisivel) : 15;
+	const visibleDatasets = filteredDatasets.slice(0, safeLimit);
+
+	visibleDatasets.forEach(({ dataset, index }) => {
 		const item = document.createElement('div');
 		item.className = `arquivo-item ${index === activeIndex ? 'ativo' : ''}`;
 		item.dataset.idx = String(index);
@@ -49,6 +59,13 @@ export function renderFileListDOM({
 		list.appendChild(item);
 	});
 
+	if (filteredDatasets.length === 0) {
+		const empty = document.createElement('div');
+		empty.className = 'arquivo-lista-vazia';
+		empty.textContent = translate('chive-files-no-match');
+		list.appendChild(empty);
+	}
+
 	list.onclick = event => {
 		const target = event.target.closest('[data-acao]');
 		if (!target) return;
@@ -61,5 +78,12 @@ export function renderFileListDOM({
 			return;
 		}
 		onSelect(index);
+	};
+
+	return {
+		total: datasets.length,
+		filtered: filteredDatasets.length,
+		rendered: visibleDatasets.length,
+		hasMore: filteredDatasets.length > visibleDatasets.length,
 	};
 }

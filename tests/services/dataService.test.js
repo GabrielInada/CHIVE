@@ -3,6 +3,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   detectType,
+  detectDelimiter,
   parseCsv,
   parseJson,
   processData,
@@ -114,5 +115,38 @@ describe('dataService', () => {
     expect(formatFileSize(100)).toBe('100 B');
     expect(formatFileSize(2048)).toBe('2.0 KB');
     expect(formatFileSize(3 * 1024 * 1024)).toBe('3.0 MB');
+  });
+
+  it('detecta delimitador correto a partir da primeira linha', () => {
+    expect(detectDelimiter('a,b,c')).toBe(',');
+    expect(detectDelimiter('a;b;c')).toBe(';');
+    expect(detectDelimiter('a\tb\tc')).toBe('\t');
+    expect(detectDelimiter('a|b|c')).toBe('|');
+    expect(detectDelimiter('')).toBe(','); // fallback
+    expect(detectDelimiter('nenhum_delimitador')).toBe(','); // fallback
+  });
+
+  it('detecta tiebreaker: prefere virgula quando contagens sao iguais', () => {
+    // one comma and one semicolon — comma has priority
+    expect(detectDelimiter('a,b;c')).toBe(',');
+  });
+
+  it('parseia TSV com auto-deteccao de delimitador', () => {
+    const rows = parseCsv('a\tb\n1\t2\n3\t4');
+    expect(rows.length).toBe(2);
+    expect(rows[0].a).toBe('1');
+    expect(rows[0].b).toBe('2');
+  });
+
+  it('parseia arquivo delimitado por ponto-e-virgula com auto-deteccao', () => {
+    const rows = parseCsv('a;b\n1;2\n3;4');
+    expect(rows.length).toBe(2);
+    expect(rows[0].a).toBe('1');
+  });
+
+  it('parseia arquivo delimitado por pipe com auto-deteccao', () => {
+    const rows = parseCsv('a|b\n1|2\n3|4');
+    expect(rows.length).toBe(2);
+    expect(rows[0].a).toBe('1');
   });
 });
