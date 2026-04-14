@@ -1,4 +1,4 @@
-import { csvParse, max, mean, median, min } from 'd3';
+import { dsvFormat, max, mean, median, min } from 'd3';
 import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS } from '../config/types.js';
 
 function normalizeKeyValue(value, { trim = true, caseSensitive = false } = {}) {
@@ -177,8 +177,46 @@ export function detectType(values) {
 	return TYPE_DEFAULTS.fallback;
 }
 
+/**
+ * Detect the delimiter used in a delimited text file by inspecting the first line.
+ * Counts occurrences of each candidate delimiter and returns the one with the highest count.
+ * In case of a tie, priority order is: comma → semicolon → tab → pipe.
+ *
+ * @param {string} firstLine - The first non-empty line of the file content
+ * @returns {string} The detected delimiter character
+ */
+export function detectDelimiter(firstLine) {
+	const candidates = [',', ';', '\t', '|'];
+	const scores = candidates.map(delimiter => ({
+		delimiter,
+		count: firstLine.split(delimiter).length - 1,
+	}));
+
+	// Find the maximum count
+	const maxCount = Math.max(...scores.map(s => s.count));
+
+	// If nothing scored, fall back to comma
+	if (maxCount === 0) return ',';
+
+	// Return the first (highest-priority) delimiter that achieved the max count
+	return scores.find(s => s.count === maxCount).delimiter;
+}
+
+/**
+ * Parse a delimited text file with automatic delimiter detection.
+ * Inspects the first line to detect the delimiter, then parses the full content.
+ *
+ * @param {string} text - Full file content as a string
+ * @returns {Array<Object>} Parsed rows as plain objects
+ */
 export function parseCsv(text) {
-	const rows = csvParse(text);
+	if (!text || text.trim().length === 0) {
+		throw new Error('O arquivo CSV está vazio.');
+	}
+
+	const firstLine = text.split(/\r?\n/).find(line => line.trim().length > 0) || '';
+	const delimiter = detectDelimiter(firstLine);
+	const rows = dsvFormat(delimiter).parse(text);
 
 	if (rows.columns) delete rows.columns;
 	if (rows.length === 0) throw new Error('O arquivo CSV está vazio.');

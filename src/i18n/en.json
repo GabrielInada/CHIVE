@@ -246,7 +246,7 @@
 	"chive-warn-large-file": "File \"$1\" has size $2, above the recommended limit ($3). Continue anyway?",
 	"chive-warn-large-rows": "File \"$1\" has $2 rows, above the recommended limit ($3). Continue anyway?",
 
-	"chive-error-format": "Format not supported for \"$1\". Please upload a .csv or .json file.",
+	"chive-error-format": "Format not supported for \"$1\". Please upload a CSV, TSV, DSV, TXT, or JSON file.",
 	"chive-error-read": "Error reading file \"$1\".",
 	"chive-error-upload-processing": "Unable to process uploaded file right now.",
 	"chive-error-upload-input-missing": "Upload control is unavailable right now.",

@@ -246,7 +246,7 @@
 	"chive-warn-large-file": "O arquivo \"$1\" tem tamanho $2, acima do recomendado ($3). Deseja continuar?",
 	"chive-warn-large-rows": "O arquivo \"$1\" possui $2 linhas, acima do recomendado ($3). Deseja continuar?",
 
-	"chive-error-format": "Formato não suportado em \"$1\". Envie .csv ou .json.",
+	"chive-error-format": "Formato não suportado em \"$1\". Envie um arquivo CSV, TSV, DSV, TXT ou JSON.",
 	"chive-error-read": "Erro ao ler o arquivo \"$1\".",
 	"chive-error-upload-processing": "Não foi possível processar o arquivo enviado no momento.",
 	"chive-error-upload-input-missing": "O controle de upload está indisponível no momento.",

@@ -125,8 +125,8 @@ describe('fileManager', () => {
   });
 
   it('trata erros de formato e cancelamento de arquivo grande', async () => {
-    await handleFileUpload([csvFile({ name: 'bad.txt' })]);
-    expect(mocks.showError).toHaveBeenCalledWith('chive-error-format');
+    await handleFileUpload([csvFile({ name: 'bad.xyz' })]);
+    expect(mocks.showError).toHaveBeenCalledWith(`chive-error-format:bad.xyz`);
 
     window.confirm = vi.fn(() => false);
     await handleFileUpload([csvFile({ size: 30 })]);
