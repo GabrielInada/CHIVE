@@ -58,7 +58,7 @@ export function initializeI18n() {
 	const langDisplay = document.getElementById('lang-display');
 	if (langDisplay) {
 		const option = selectLang?.querySelector(`option[value="${locale}"]`);
-		langDisplay.textContent = option?.textContent?.trim() || LOCALE_LABELS[locale] || locale;
+		langDisplay.textContent = LOCALE_LABELS[locale] || option?.textContent?.trim() || locale;
 	}
 
 	translateStaticPage();
