@@ -104,9 +104,27 @@
   background: var(--surface);
   color: var(--text);
   border-radius: 4px;
-  padding: 3px 6px;
+  padding: 4px 6px;
   font-family: var(--fonte-mono);
   font-size: 11px;
+  height: 24px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+#select-linhas-preview {
+  font-family: var(--fonte-sans);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: normal;
+  min-height: 24px;
+  height: 24px;
+  padding: 2px 22px 2px 8px;
+  text-align: center;
+  text-align-last: center;
+  -webkit-appearance: menulist;
+  appearance: menulist;
+  transform: translateZ(0);
 }
 
 .card-titulo {

@@ -51,12 +51,20 @@ import {
 // Callback for feedback UI (will be set by main.js)
 let feedbackCallback = null;
 
+// Guard: prevents duplicate listener registration if initPanelManager is called more than once
+let panelManagerInitialized = false;
+
 /**
  * Initialize panel manager
  * @param {Function} feedbackFn - Optional callback for feedback messages
  */
 export function initPanelManager(feedbackFn = null) {
+	// Always update the feedback callback — callers may legitimately
+	// pass a different function without intending to re-register listeners.
 	feedbackCallback = feedbackFn;
+
+	if (panelManagerInitialized) return;
+	panelManagerInitialized = true;
 	
 	// Re-render when state changes
 	onStateChange('chartAdded', handleChartStateChange);
@@ -69,6 +77,15 @@ export function initPanelManager(feedbackFn = null) {
 	onStateChange('panelBlockProportionsUpdated', handleLayoutChange);
 	onStateChange('panelBlockHeightUpdated', handleLayoutChange);
 	onStateChange('panelBlockBorderUpdated', handleLayoutChange);
+}
+
+/**
+ * Reset initialization state for testing purposes only.
+ * Do not call this in production code.
+ * @internal
+ */
+export function _resetPanelManagerForTesting() {
+	panelManagerInitialized = false;
 }
 
 /**
