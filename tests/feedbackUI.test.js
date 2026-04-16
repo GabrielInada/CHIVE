@@ -49,6 +49,62 @@ describe('feedbackUI', () => {
     expect(toast.textContent).toBe('fallback');
   });
 
+  it('auto-dismiss error when duration is specified', () => {
+    const errorsContainer = document.createElement('div');
+    errorsContainer.id = 'erros-container';
+    document.body.appendChild(errorsContainer);
+
+    showError('timed error', 200);
+    expect(errorsContainer.querySelector('.aviso-erro')).toBeTruthy();
+
+    vi.advanceTimersByTime(250);
+    expect(errorsContainer.querySelector('.aviso-erro')).toBeNull();
+  });
+
+  it('reuses existing toast element on repeated calls', () => {
+    showFeedback('first', 500);
+    showFeedback('second', 500);
+    const toasts = document.querySelectorAll('#toast-feedback');
+    expect(toasts.length).toBe(1);
+    expect(toasts[0].textContent).toBe('second');
+  });
+
+  it('showFeedbackMessage alias works', async () => {
+    const { showFeedbackMessage } = await import('../src/modules/feedbackUI.js');
+    showFeedbackMessage('alias test', 100);
+    const toast = document.getElementById('toast-feedback');
+    expect(toast.textContent).toBe('alias test');
+  });
+
+  it('showErrorMessage alias works', async () => {
+    const { showErrorMessage } = await import('../src/modules/feedbackUI.js');
+    const errorsContainer = document.createElement('div');
+    errorsContainer.id = 'erros-container';
+    document.body.appendChild(errorsContainer);
+
+    showErrorMessage('alias error');
+    expect(errorsContainer.querySelector('.aviso-erro')).toBeTruthy();
+  });
+
+  it('hideErrorMessage alias clears errors', async () => {
+    const { hideErrorMessage } = await import('../src/modules/feedbackUI.js');
+    const errorsContainer = document.createElement('div');
+    errorsContainer.id = 'erros-container';
+    document.body.appendChild(errorsContainer);
+
+    showError('x');
+    hideErrorMessage();
+    expect(errorsContainer.innerHTML).toBe('');
+  });
+
+  it('hideLoading does nothing when element missing', () => {
+    expect(() => hideLoading()).not.toThrow();
+  });
+
+  it('clearErrors does nothing when container missing', () => {
+    expect(() => clearErrors()).not.toThrow();
+  });
+
   it('limpa erros e loading em clearAllFeedback', () => {
     const errorsContainer = document.createElement('div');
     errorsContainer.id = 'erros-container';

@@ -293,6 +293,207 @@ describe('dataService', () => {
     expect(result.outputColumns).toContain('right.id');
   });
 
+  it('processData lanca erro quando recebe valor nao-array', () => {
+    expect(() => processData('not an array')).toThrow('rawData must be an array');
+    expect(() => processData(null)).toThrow('rawData must be an array');
+    expect(() => processData({})).toThrow('rawData must be an array');
+  });
+
+  describe('joinDatasets validacao de entrada', () => {
+    it('lanca erro quando datasets nao sao arrays', () => {
+      expect(() => joinDatasets({
+        leftRows: 'not array',
+        rightRows: [],
+        leftKeys: ['id'],
+        rightKeys: ['id'],
+        leftDatasetName: 'a.csv',
+        rightDatasetName: 'b.csv',
+      })).toThrow('join-invalid-datasets');
+    });
+
+    it('lanca erro quando chaves estao ausentes ou vazias', () => {
+      expect(() => joinDatasets({
+        leftRows: [],
+        rightRows: [],
+        leftKeys: [],
+        rightKeys: ['id'],
+        leftDatasetName: 'a.csv',
+        rightDatasetName: 'b.csv',
+      })).toThrow('join-keys-required');
+
+      expect(() => joinDatasets({
+        leftRows: [],
+        rightRows: [],
+        leftKeys: null,
+        rightKeys: ['id'],
+        leftDatasetName: 'a.csv',
+        rightDatasetName: 'b.csv',
+      })).toThrow('join-keys-required');
+    });
+
+    it('lanca erro quando quantidade de chaves nao corresponde', () => {
+      expect(() => joinDatasets({
+        leftRows: [],
+        rightRows: [],
+        leftKeys: ['id', 'name'],
+        rightKeys: ['key'],
+        leftDatasetName: 'a.csv',
+        rightDatasetName: 'b.csv',
+      })).toThrow('join-keys-mismatch');
+    });
+
+    it('suporta left join com linhas sem correspondencia', () => {
+      const result = joinDatasets({
+        leftRows: [{ id: '1', val: 'A' }, { id: '2', val: 'B' }],
+        rightRows: [{ id: '1', score: '10' }],
+        leftKeys: ['id'],
+        rightKeys: ['id'],
+        joinType: 'left',
+        leftColumns: ['id', 'val'],
+        rightColumns: ['score'],
+        leftDatasetName: 'left.csv',
+        rightDatasetName: 'right.csv',
+      });
+      expect(result.rows.length).toBe(2);
+      expect(result.rows[1].score).toBeNull();
+    });
+
+    it('suporta right join com linhas sem correspondencia', () => {
+      const result = joinDatasets({
+        leftRows: [{ id: '1', val: 'A' }],
+        rightRows: [{ id: '1', score: '10' }, { id: '2', score: '20' }],
+        leftKeys: ['id'],
+        rightKeys: ['id'],
+        joinType: 'right',
+        leftColumns: ['val'],
+        rightColumns: ['id', 'score'],
+        leftDatasetName: 'left.csv',
+        rightDatasetName: 'right.csv',
+      });
+      expect(result.rows.length).toBe(2);
+      expect(result.rows[1].val).toBeNull();
+    });
+
+    it('fallback para inner join quando tipo invalido', () => {
+      const result = joinDatasets({
+        leftRows: [{ id: '1' }],
+        rightRows: [{ id: '2' }],
+        leftKeys: ['id'],
+        rightKeys: ['id'],
+        joinType: 'invalid',
+        leftColumns: ['id'],
+        rightColumns: ['id'],
+        leftDatasetName: 'a.csv',
+        rightDatasetName: 'b.csv',
+      });
+      expect(result.rows.length).toBe(0);
+    });
+
+    it('resolve colisao de nomes com sufixo numerico', () => {
+      const result = joinDatasets({
+        leftRows: [{ id: '1', value: 'L', value2: 'extra' }],
+        rightRows: [{ id: '1', value: 'R', value2: 'extra2' }],
+        leftKeys: ['id'],
+        rightKeys: ['id'],
+        joinType: 'inner',
+        leftColumns: ['value', 'value2'],
+        rightColumns: ['value', 'value2'],
+        leftDatasetName: 'a.csv',
+        rightDatasetName: 'b.csv',
+      });
+      expect(result.rows.length).toBe(1);
+      expect(result.outputColumns).toContain('a.value');
+      expect(result.outputColumns).toContain('b.value');
+      expect(result.outputColumns).toContain('a.value2');
+      expect(result.outputColumns).toContain('b.value2');
+    });
+
+    it('sanitiza prefixo de nome de arquivo com caracteres especiais', () => {
+      const result = joinDatasets({
+        leftRows: [{ id: '1', val: 'A' }],
+        rightRows: [{ id: '1', val: 'B' }],
+        leftKeys: ['id'],
+        rightKeys: ['id'],
+        joinType: 'inner',
+        leftColumns: ['val'],
+        rightColumns: ['val'],
+        leftDatasetName: 'my file (2).csv',
+        rightDatasetName: '',
+      });
+      expect(result.rows.length).toBe(1);
+      expect(result.outputColumns).toContain('my-file-2.val');
+      expect(result.outputColumns).toContain('right.val');
+    });
+  });
+
+  describe('parseCsv edge cases', () => {
+    it('lanca erro para CSV com apenas header e sem dados', () => {
+      expect(() => parseCsv('a,b,c\n')).toThrow('O arquivo CSV está vazio.');
+    });
+
+    it('parseia CSV com linhas de dados em branco incluindo-as no resultado', () => {
+      const rows = parseCsv('a,b\n1,2\n\n3,4');
+      expect(rows.length).toBe(3);
+      expect(rows[0].a).toBe('1');
+      expect(rows[2].a).toBe('3');
+    });
+  });
+
+  describe('parseJson edge cases', () => {
+    it('lanca erro para array JSON vazio', () => {
+      expect(() => parseJson('[]')).toThrow('O arquivo JSON está vazio.');
+    });
+
+    it('lanca erro para objeto aninhado com array vazio', () => {
+      expect(() => parseJson('{"items":[]}')).toThrow('O array de dados no JSON está vazio.');
+    });
+  });
+
+  describe('detectType edge cases', () => {
+    it('retorna texto como fallback para valores vazios', () => {
+      expect(detectType([null, undefined, ''])).toBe('texto');
+      expect(detectType([])).toBe('texto');
+    });
+
+    it('detecta datas quando maioria dos valores sao datas validas', () => {
+      expect(detectType(['2024-01-01', '2024-06-15', '2024-12-31'])).toBe('data');
+    });
+
+    it('detecta numeros com separador decimal europeu', () => {
+      expect(detectType(['3,14', '2,71', '1,41'], ',')).toBe('numero');
+    });
+  });
+
+  describe('calculateStatistics edge cases', () => {
+    it('retorna array vazio para colunas sem tipo numero', () => {
+      const stats = calculateStatistics(
+        [{ a: 'x' }, { a: 'y' }],
+        [{ nome: 'a', tipo: 'texto' }],
+      );
+      expect(stats).toEqual([]);
+    });
+
+    it('ignora valores nulos e NaN no calculo de estatisticas', () => {
+      const stats = calculateStatistics(
+        [{ val: 10 }, { val: null }, { val: 20 }, { val: NaN }],
+        [{ nome: 'val', tipo: 'numero' }],
+      );
+      expect(stats.length).toBe(1);
+      expect(stats[0].n).toBe(2);
+      expect(stats[0].min).toBe(10);
+      expect(stats[0].max).toBe(20);
+      expect(stats[0].media).toBe(15);
+    });
+
+    it('ignora colunas numericas onde todos valores sao nulos', () => {
+      const stats = calculateStatistics(
+        [{ val: null }, { val: undefined }],
+        [{ nome: 'val', tipo: 'numero' }],
+      );
+      expect(stats).toEqual([]);
+    });
+  });
+
   it('formata tamanhos de arquivo em B KB e MB', () => {
     expect(formatFileSize(100)).toBe('100 B');
     expect(formatFileSize(2048)).toBe('2.0 KB');
