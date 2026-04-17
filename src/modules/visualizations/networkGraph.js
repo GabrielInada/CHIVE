@@ -10,35 +10,14 @@ import {
 } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
+import { formatNumber, isNullish } from '../../utils/formatters.js';
+import { interpolateColor } from '../../utils/colorUtils.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 
-function hexToRgb(hex) {
-	const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || '').trim());
-	if (!match) return { r: 0, g: 0, b: 0 };
-	return {
-		r: parseInt(match[1], 16),
-		g: parseInt(match[2], 16),
-		b: parseInt(match[3], 16),
-	};
-}
-
-function toHex(value) {
-	return Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, '0');
-}
-
-function interpolateColor(minColor, maxColor, t) {
-	const clamped = Math.max(0, Math.min(1, t));
-	const start = hexToRgb(minColor);
-	const end = hexToRgb(maxColor);
-	return `#${toHex(start.r + ((end.r - start.r) * clamped))}${toHex(start.g + ((end.g - start.g) * clamped))}${toHex(start.b + ((end.b - start.b) * clamped))}`;
-}
-
 function sanitizeNodeValue(value) {
-	if (value === null || value === undefined) return '';
-	const text = String(value).trim();
-	return text;
+	if (isNullish(value)) return '';
+	return String(value).trim();
 }
 
 function buildNetworkData(dados, sourceColumn, targetColumn, weightColumn, groupColumn) {

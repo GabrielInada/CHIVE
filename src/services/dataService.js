@@ -1,8 +1,9 @@
 import { dsvFormat, max, mean, median, min } from 'd3';
 import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS, DECIMAL_DETECTION } from '../config/types.js';
+import { isNullish } from '../utils/formatters.js';
 
 function normalizeKeyValue(value, { trim = true, caseSensitive = false } = {}) {
-	if (value === null || value === undefined) return '';
+	if (isNullish(value)) return '';
 
 	if (typeof value === 'number') {
 		if (!Number.isFinite(value)) return '';

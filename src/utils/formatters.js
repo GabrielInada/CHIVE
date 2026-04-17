@@ -1,4 +1,12 @@
-import { getLocale } from '../services/i18nService.js';
+import { getLocale, t } from '../services/i18nService.js';
+
+export function isNullish(value) {
+	return value === null || value === undefined;
+}
+
+export function isEmptyValue(value) {
+	return value === null || value === undefined || String(value).trim() === '';
+}
 
 /**
  * Escape HTML special characters to prevent injection
@@ -37,4 +45,10 @@ export function formatNumber(value, locale) {
 	
 	// Small numbers: 4 significant digits
 	return numberValue.toPrecision(4);
+}
+
+export function translateType(type) {
+	if (type === 'numero') return t('chive-type-number');
+	if (type === 'texto') return t('chive-type-text');
+	return type;
 }

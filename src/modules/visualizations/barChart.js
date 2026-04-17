@@ -2,27 +2,7 @@ import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
-
-function hexToRgb(hex) {
-	const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || '').trim());
-	if (!match) return { r: 0, g: 0, b: 0 };
-	return {
-		r: parseInt(match[1], 16),
-		g: parseInt(match[2], 16),
-		b: parseInt(match[3], 16),
-	};
-}
-
-function toHex(value) {
-	return Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, '0');
-}
-
-function interpolateColor(minColor, maxColor, t) {
-	const clamped = Math.max(0, Math.min(1, t));
-	const start = hexToRgb(minColor);
-	const end = hexToRgb(maxColor);
-	return `#${toHex(start.r + ((end.r - start.r) * clamped))}${toHex(start.g + ((end.g - start.g) * clamped))}${toHex(start.b + ((end.b - start.b) * clamped))}`;
-}
+import { interpolateColor } from '../../utils/colorUtils.js';
 
 function ordenarCategorias(linhas, ordenacao) {
 	if (ordenacao === 'count-asc') {

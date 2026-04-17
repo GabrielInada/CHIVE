@@ -1,17 +1,5 @@
 import { BAR_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT } from './charts.js';
-
-function createDefaultFilter() {
-	return {
-		column: null,
-		mode: 'categorical',
-		include: [],
-		search: '',
-		operator: 'between',
-		min: '',
-		max: '',
-		value: '',
-	};
-}
+import { createDefaultFilterConfig as createDefaultFilter } from '../utils/chartFilters.js';
 
 export function createDefaultChartConfig() {
 	return {

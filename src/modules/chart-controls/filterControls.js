@@ -5,32 +5,7 @@ import {
   getCategoricalFilterOptions,
   normalizeFilterConfig,
 } from '../../utils/chartFilters.js';
-
-function createSelectControl(id, labelText, options, selectedValue, disabled = false) {
-  const div = document.createElement('div');
-  div.className = 'chart-controle';
-
-  const label = document.createElement('label');
-  label.htmlFor = id;
-  label.textContent = labelText;
-
-  const select = document.createElement('select');
-  select.id = id;
-  select.className = 'linhas-select';
-  select.disabled = disabled;
-
-  options.forEach(optionDef => {
-    const option = document.createElement('option');
-    option.value = optionDef.value;
-    option.textContent = optionDef.label;
-    option.selected = String(optionDef.value) === String(selectedValue);
-    select.appendChild(option);
-  });
-
-  div.appendChild(label);
-  div.appendChild(select);
-  return div;
-}
+import { createSelectControl } from './shared.js';
 
 function buildFilterUiIds(chartKey) {
   return {

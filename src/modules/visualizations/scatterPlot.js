@@ -2,33 +2,13 @@ import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, select } from 'd3'
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
+import { interpolateColor } from '../../utils/colorUtils.js';
 
 const SCATTER_PALETTES = {
 	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
 	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
 	'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
 };
-
-function hexToRgb(hex) {
-	const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || '').trim());
-	if (!match) return { r: 0, g: 0, b: 0 };
-	return {
-		r: parseInt(match[1], 16),
-		g: parseInt(match[2], 16),
-		b: parseInt(match[3], 16),
-	};
-}
-
-function toHex(v) {
-	return Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0');
-}
-
-function interpolateColor(minColor, maxColor, t) {
-	const clamped = Math.max(0, Math.min(1, t));
-	const a = hexToRgb(minColor);
-	const b = hexToRgb(maxColor);
-	return `#${toHex(a.r + ((b.r - a.r) * clamped))}${toHex(a.g + ((b.g - a.g) * clamped))}${toHex(a.b + ((b.b - a.b) * clamped))}`;
-}
 
 function normalizarDominio([minimo, maximo]) {
 	if (!Number.isFinite(minimo) || !Number.isFinite(maximo)) return [0, 1];

@@ -1,35 +1,9 @@
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
-import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS } from './shared.js';
+import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
 import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
-
-function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
-	const div = document.createElement('div');
-	div.className = 'chart-controle';
-
-	const label = document.createElement('label');
-	label.htmlFor = id;
-	label.textContent = labelText;
-
-	const select = document.createElement('select');
-	select.id = id;
-	select.className = 'linhas-select';
-	select.disabled = disabled;
-
-	optionsArray.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt.value;
-		option.textContent = opt.label;
-		option.selected = String(opt.value) === String(selectedValue);
-		select.appendChild(option);
-	});
-
-	div.appendChild(label);
-	div.appendChild(select);
-	return div;
-}
 
 export function createNetworkGraphControls(dataset, allOptions, numericOptions, categoryOptions) {
 	const config = dataset.configGraficos.network;

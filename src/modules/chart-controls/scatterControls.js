@@ -1,36 +1,10 @@
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
+import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createSelectControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
-
-function createSelectControl(id, labelKey, optionsArray, selectedValue, disabled = false) {
-	const div = document.createElement('div');
-	div.className = 'chart-controle';
-
-	const label = document.createElement('label');
-	label.htmlFor = id;
-	label.textContent = t(labelKey);
-
-	const select = document.createElement('select');
-	select.id = id;
-	select.className = 'linhas-select';
-	select.disabled = disabled;
-
-	optionsArray.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt.value;
-		option.textContent = opt.label;
-		option.selected = String(opt.value) === String(selectedValue);
-		select.appendChild(option);
-	});
-
-	div.appendChild(label);
-	div.appendChild(select);
-	return div;
-}
 
 export function createScatterPlotControls(dataset, numericOptions, allOptions = []) {
 	const config = dataset.configGraficos.scatter;
@@ -56,7 +30,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	];
 	dataControls.push(createSelectControl(
 		'viz-select-x',
-		'chive-chart-control-scatter-x',
+		t('chive-chart-control-scatter-x'),
 		xOptions,
 		config.x,
 		disabled,
@@ -68,7 +42,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	];
 	dataControls.push(createSelectControl(
 		'viz-select-y',
-		'chive-chart-control-scatter-y',
+		t('chive-chart-control-scatter-y'),
 		yOptions,
 		config.y,
 		disabled,
@@ -80,7 +54,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	];
 	dataControls.push(createSelectControl(
 		'viz-select-scatter-xscale',
-		'chive-chart-control-scatter-xscale',
+		t('chive-chart-control-scatter-xscale'),
 		xScaleOptions,
 		config.xScale,
 		disabled,
@@ -92,7 +66,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	];
 	dataControls.push(createSelectControl(
 		'viz-select-scatter-yscale',
-		'chive-chart-control-scatter-yscale',
+		t('chive-chart-control-scatter-yscale'),
 		yScaleOptions,
 		config.yScale,
 		disabled,
@@ -144,7 +118,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	];
 	stylingControls.push(createSelectControl(
 		'viz-select-scatter-radius',
-		'chive-chart-control-scatter-radius',
+		t('chive-chart-control-scatter-radius'),
 		radiusOptions,
 		config.radius,
 		disabled,
@@ -158,7 +132,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	];
 	stylingControls.push(createSelectControl(
 		'viz-select-scatter-opacity',
-		'chive-chart-control-scatter-opacity',
+		t('chive-chart-control-scatter-opacity'),
 		opacityOptions,
 		config.opacity,
 		disabled,
@@ -171,7 +145,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	];
 	stylingControls.push(createSelectControl(
 		'viz-select-scatter-color-mode',
-		'chive-chart-color-mode',
+		t('chive-chart-color-mode'),
 		colorModeOptions,
 		config.colorMode,
 		disabled,
@@ -182,7 +156,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		: numericOptions;
 	stylingControls.push(createSelectControl(
 		'viz-select-scatter-color-field',
-		'chive-chart-color-scatter-field',
+		t('chive-chart-color-scatter-field'),
 		[
 			{ value: '', label: t('chive-chart-option-none') },
 			...colorFieldOptions.map(opt => ({ value: opt, label: opt })),
@@ -242,7 +216,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	if (config.colorMode === 'category') {
 		stylingControls.push(createSelectControl(
 			'viz-select-scatter-color-scheme',
-			'chive-chart-color-scheme',
+			t('chive-chart-color-scheme'),
 			Object.keys(COLOR_PRESETS).map(name => ({ value: name, label: name })),
 			config.colorScheme || 'Bold',
 			disabled,
