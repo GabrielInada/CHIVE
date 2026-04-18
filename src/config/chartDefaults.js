@@ -103,6 +103,7 @@ export function createDefaultChartConfig() {
 			valueColumn: null,
 			padding: BUBBLE_CHART.defaultPadding,
 			labelMode: BUBBLE_CHART.defaultLabelMode,
+			nestingMode: BUBBLE_CHART.defaultNestingMode,
 			colorScheme: 'Tableau10',
 			filter: createDefaultFilter(),
 		},

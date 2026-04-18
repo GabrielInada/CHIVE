@@ -29,6 +29,10 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	const autoLabelMinRadius = Number.isFinite(Number(opcoes.autoLabelMinRadius))
 		? Number(opcoes.autoLabelMinRadius)
 		: BUBBLE_CHART.autoLabelMinRadius;
+	const parentLabelMinRadius = BUBBLE_CHART.parentLabelMinRadius;
+	const nestingMode = BUBBLE_CHART.nestingModes.includes(opcoes.nestingMode)
+		? opcoes.nestingMode
+		: BUBBLE_CHART.defaultNestingMode;
 	const groupColumn = opcoes.groupColumn || null;
 	const locale = opcoes.locale || undefined;
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
@@ -42,7 +46,12 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		soma: opcoes.labels?.soma || 'Sum',
 		media: opcoes.labels?.media || 'Mean',
 		grupo: opcoes.labels?.grupo || 'Group',
+		filhos: opcoes.labels?.filhos || 'Children',
 	};
+
+	if (nestingMode === 'grouped' && !groupColumn) {
+		return fail('no-group-column');
+	}
 
 	const hasValueColumn = measureMode === 'count'
 		? true
@@ -135,24 +144,51 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		.append('g')
 		.attr('transform', `translate(${margem.left},${margem.top + titleOffset})`);
 
-	const root = hierarchy({ children: bubbles }).sum(d => d.value);
+	// Build hierarchy based on nesting mode
+	let hierarchyData;
+	if (nestingMode === 'grouped' && groupColumn) {
+		const groups = new Map();
+		for (const bubble of bubbles) {
+			const groupName = bubble.group;
+			if (!groups.has(groupName)) {
+				groups.set(groupName, []);
+			}
+			groups.get(groupName).push(bubble);
+		}
+		hierarchyData = {
+			children: Array.from(groups.entries()).map(([groupName, children]) => ({
+				groupName,
+				children,
+			})),
+		};
+	} else {
+		hierarchyData = { children: bubbles };
+	}
+
+	const root = hierarchy(hierarchyData).sum(d => d.value || 0);
 	const packLayout = pack()
 		.size([larguraInterna, alturaInterna])
-		.padding(Math.max(0, padding));
+		.padding(d => {
+			if (nestingMode === 'grouped' && d.depth === 0) {
+				return Math.max(0, padding) + 2;
+			}
+			return Math.max(0, padding);
+		});
 	packLayout(root);
 
 	const leaves = root.leaves();
 	const colorDomain = Array.from(new Set(leaves.map(item => item.data.group)));
 	const colorScale = scaleOrdinal(getBubblePalette(colorScheme)).domain(colorDomain);
-	let pinnedCategory = null;
+	let pinnedNode = null;
 
-	const createTooltip = item => {
+	const measureLabel = measureMode === 'mean'
+		? labels.media
+		: measureMode === 'sum'
+			? labels.soma
+			: labels.contagem;
+
+	const createLeafTooltip = item => {
 		const wrapper = document.createElement('div');
-		const measureLabel = measureMode === 'mean'
-			? labels.media
-			: measureMode === 'sum'
-				? labels.soma
-				: labels.contagem;
 
 		const makeLine = (label, value) => {
 			const row = document.createElement('div');
@@ -171,10 +207,91 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		return wrapper;
 	};
 
-	const showTooltip = (event, item) => {
-		showChartTooltip(createTooltip(item), event.pageX, event.pageY);
+	const createParentTooltip = item => {
+		const wrapper = document.createElement('div');
+		const makeLine = (label, value) => {
+			const row = document.createElement('div');
+			const strong = document.createElement('strong');
+			strong.textContent = `${label}:`;
+			row.appendChild(strong);
+			row.append(` ${value}`);
+			return row;
+		};
+
+		wrapper.appendChild(makeLine(labels.grupo, item.data.groupName));
+		wrapper.appendChild(makeLine(measureLabel, formatNumber(item.value, locale)));
+		wrapper.appendChild(makeLine(labels.filhos, item.children.length));
+		return wrapper;
 	};
 
+	// Render parent circles in grouped mode
+	if (nestingMode === 'grouped') {
+		const parentNodes = root.children || [];
+		const parentGroup = viewport
+			.selectAll('g.bubble-parent')
+			.data(parentNodes)
+			.enter()
+			.append('g')
+			.attr('class', 'bubble-parent')
+			.attr('transform', d => `translate(${d.x},${d.y})`);
+
+		parentGroup.append('circle')
+			.attr('r', d => d.r)
+			.attr('fill', d => {
+				const firstChild = d.children?.[0];
+				return firstChild ? colorScale(firstChild.data.group) : '#ccc';
+			})
+			.attr('fill-opacity', 0.15)
+			.attr('stroke', d => {
+				const firstChild = d.children?.[0];
+				return firstChild ? colorScale(firstChild.data.group) : '#999';
+			})
+			.attr('stroke-width', 1.5)
+			.attr('stroke-opacity', 0.5);
+
+		// Parent labels (auto-only based on parentLabelMinRadius)
+		parentGroup
+			.filter(d => d.r >= parentLabelMinRadius)
+			.each(function appendParentLabel(d) {
+				const fontSize = Math.max(10, Math.min(14, d.r / 5));
+				select(this)
+					.append('text')
+					.attr('text-anchor', 'middle')
+					.attr('pointer-events', 'none')
+					.attr('font-size', fontSize)
+					.attr('font-weight', 600)
+					.attr('y', -d.r + fontSize + 4)
+					.attr('fill', '#3f3a33')
+					.attr('fill-opacity', 0.7)
+					.text(String(d.data.groupName));
+			});
+
+		parentGroup
+			.on('mouseenter', (event, item) => {
+				if (pinnedNode !== null) return;
+				showChartTooltip(createParentTooltip(item), event.pageX, event.pageY);
+			})
+			.on('mousemove', event => {
+				if (pinnedNode !== null) return;
+				moveChartTooltip(event.pageX, event.pageY);
+			})
+			.on('mouseleave', () => {
+				if (pinnedNode !== null) return;
+				hideChartTooltip();
+			})
+			.on('click', (event, item) => {
+				event.stopPropagation();
+				if (pinnedNode === item) {
+					pinnedNode = null;
+					hideChartTooltip();
+					return;
+				}
+				pinnedNode = item;
+				showChartTooltip(createParentTooltip(item), event.pageX, event.pageY);
+			});
+	}
+
+	// Render leaf circles
 	const node = viewport
 		.selectAll('g.bubble-node')
 		.data(leaves)
@@ -184,11 +301,6 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		.attr('transform', d => `translate(${d.x},${d.y})`);
 
 	node.append('title').text(d => {
-		const measureLabel = measureMode === 'mean'
-			? labels.media
-			: measureMode === 'sum'
-				? labels.soma
-				: labels.contagem;
 		const lines = [
 			`${labels.categoria}: ${d.data.category}`,
 			`${measureLabel}: ${formatNumber(d.data.value, locale)}`,
@@ -234,32 +346,36 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		}
 	});
 
+	const showLeafTooltip = (event, item) => {
+		showChartTooltip(createLeafTooltip(item), event.pageX, event.pageY);
+	};
+
 	node
 		.on('mouseenter', (event, item) => {
-			if (pinnedCategory !== null) return;
-			showTooltip(event, item);
+			if (pinnedNode !== null) return;
+			showLeafTooltip(event, item);
 		})
 		.on('mousemove', event => {
-			if (pinnedCategory !== null) return;
+			if (pinnedNode !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseleave', () => {
-			if (pinnedCategory !== null) return;
+			if (pinnedNode !== null) return;
 			hideChartTooltip();
 		})
 		.on('click', (event, item) => {
 			event.stopPropagation();
-			if (pinnedCategory === item.data.category) {
-				pinnedCategory = null;
+			if (pinnedNode === item) {
+				pinnedNode = null;
 				hideChartTooltip();
 				return;
 			}
-			pinnedCategory = item.data.category;
-			showTooltip(event, item);
+			pinnedNode = item;
+			showLeafTooltip(event, item);
 		});
 
 	svg.on('click', () => {
-		pinnedCategory = null;
+		pinnedNode = null;
 		hideChartTooltip();
 	});
 

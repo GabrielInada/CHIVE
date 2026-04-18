@@ -18,6 +18,9 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 	const measureMode = BUBBLE_CHART.measureModes.includes(config.measureMode)
 		? config.measureMode
 		: BUBBLE_CHART.defaultMeasureMode;
+	const nestingMode = BUBBLE_CHART.nestingModes.includes(config.nestingMode)
+		? config.nestingMode
+		: BUBBLE_CHART.defaultNestingMode;
 	const groupOptions = [
 		{ value: '', label: t('chive-chart-option-none') },
 		...allColumns.map(opt => ({ value: opt, label: opt })),
@@ -45,6 +48,17 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 	));
 
 	dataControls.push(createSelectControl(
+		'viz-select-bubble-nesting-mode',
+		t('chive-chart-control-bubble-nesting-mode'),
+		[
+			{ value: 'flat', label: t('chive-chart-control-bubble-nesting-flat') },
+			{ value: 'grouped', label: t('chive-chart-control-bubble-nesting-grouped') },
+		],
+		nestingMode,
+		disabled
+	));
+
+	dataControls.push(createSelectControl(
 		'viz-select-bubble-measure',
 		t('chive-chart-control-bubble-measure'),
 		[
@@ -67,9 +81,12 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 		disabled || measureMode === 'count'
 	));
 
+	const groupLabel = nestingMode === 'grouped'
+		? t('chive-chart-control-bubble-group-parent')
+		: t('chive-chart-control-bubble-group-color');
 	dataControls.push(createSelectControl(
 		'viz-select-bubble-group-column',
-		t('chive-chart-control-bubble-group'),
+		groupLabel,
 		groupOptions,
 		config.groupColumn,
 		disabled
@@ -176,6 +193,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 
 	setupSelectListeners([
 		{ id: 'viz-select-bubble-category', key: 'category' },
+		{ id: 'viz-select-bubble-nesting-mode', key: 'nestingMode', transform: v => (BUBBLE_CHART.nestingModes.includes(v) ? v : BUBBLE_CHART.defaultNestingMode) },
 		{ id: 'viz-select-bubble-group-column', key: 'groupColumn', transform: v => v || null },
 		{ id: 'viz-select-bubble-topn', key: 'topN', transform: v => Number(v) },
 		{ id: 'viz-select-bubble-label-mode', key: 'labelMode', transform: v => (['all', 'hover', 'auto'].includes(v) ? v : 'auto') },

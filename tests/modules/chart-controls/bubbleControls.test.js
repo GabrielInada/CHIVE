@@ -17,7 +17,7 @@ vi.mock('../../../src/modules/stateSync.js', () => ({
 
 import { createBubbleChartControls, setupBubbleChartControlListeners } from '../../../src/modules/chart-controls/bubbleControls.js';
 
-function createDataset(measureMode = 'count', valueColumn = null) {
+function createDataset(measureMode = 'count', valueColumn = null, nestingMode = 'flat') {
 	return {
 		dados: [
 			{ categoria: 'A', valor: 10, grupo: 'X' },
@@ -36,6 +36,7 @@ function createDataset(measureMode = 'count', valueColumn = null) {
 				valueColumn,
 				padding: 3,
 				labelMode: 'auto',
+				nestingMode,
 				colorScheme: 'Tableau10',
 				filter: {
 					column: null,
@@ -107,5 +108,61 @@ describe('bubbleControls measure mode', () => {
 		});
 
 		expect(onConfigChanged).toHaveBeenCalledTimes(3);
+	});
+});
+
+describe('bubbleControls nesting mode', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('nesting mode control exists and defaults to flat', () => {
+		const controls = createBubbleChartControls(createDataset('count', null, 'flat'), ['categoria'], ['valor'], ['categoria', 'grupo']);
+		controls.forEach(control => document.body.appendChild(control));
+
+		const nestingSelect = document.getElementById('viz-select-bubble-nesting-mode');
+		expect(nestingSelect).not.toBeNull();
+		expect(nestingSelect.value).toBe('flat');
+	});
+
+	it('nesting mode control updates config when changed', () => {
+		const dataset = createDataset('count', null, 'flat');
+		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']);
+		controls.forEach(control => document.body.appendChild(control));
+
+		const onConfigChanged = vi.fn();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], onConfigChanged);
+
+		const nestingSelect = document.getElementById('viz-select-bubble-nesting-mode');
+		nestingSelect.value = 'grouped';
+		nestingSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+			bubble: expect.objectContaining({
+				nestingMode: 'grouped',
+			}),
+		});
+		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+	});
+
+	it('group column control still updates config', () => {
+		const dataset = createDataset('count', null, 'grouped');
+		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']);
+		controls.forEach(control => document.body.appendChild(control));
+
+		const onConfigChanged = vi.fn();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], onConfigChanged);
+
+		const groupSelect = document.getElementById('viz-select-bubble-group-column');
+		groupSelect.value = 'categoria';
+		groupSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+			bubble: expect.objectContaining({
+				groupColumn: 'categoria',
+			}),
+		});
+		expect(onConfigChanged).toHaveBeenCalledTimes(1);
 	});
 });

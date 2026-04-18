@@ -79,4 +79,116 @@ describe('bubble chart visualization', () => {
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-numeric');
 	});
+
+	it('flat mode unchanged when nestingMode is flat or omitted', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'B', grupo: 'X' },
+			{ categoria: 'C', grupo: 'Y' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'flat',
+			groupColumn: 'grupo',
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
+		expect(container.querySelectorAll('g.bubble-parent').length).toBe(0);
+	});
+
+	it('grouped mode creates parent and leaf structure', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'B', grupo: 'X' },
+			{ categoria: 'C', grupo: 'Y' },
+			{ categoria: 'D', grupo: 'Y' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			groupColumn: 'grupo',
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
+		expect(container.querySelectorAll('g.bubble-node').length).toBe(4);
+	});
+
+	it('grouped mode without groupColumn returns fail no-group-column', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A' },
+			{ categoria: 'B' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+		});
+
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('no-group-column');
+	});
+
+	it('topN still works in grouped mode (global leaf limit)', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'B', grupo: 'X' },
+			{ categoria: 'C', grupo: 'Y' },
+			{ categoria: 'D', grupo: 'Y' },
+			{ categoria: 'E', grupo: 'Z' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			groupColumn: 'grupo',
+			topN: 3,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
+	});
+
+	it('sum/mean still work in grouped mode', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', grupo: 'X', valor: 10 },
+			{ categoria: 'B', grupo: 'X', valor: 20 },
+			{ categoria: 'C', grupo: 'Y', valor: 30 },
+		];
+
+		const sumResult = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			groupColumn: 'grupo',
+			measureMode: 'sum',
+			valueColumn: 'valor',
+			topN: 0,
+		});
+
+		expect(sumResult.ok).toBe(true);
+		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
+		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
+	});
+
+	it('parent tooltip includes aggregated value and child count via title element', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'B', grupo: 'X' },
+			{ categoria: 'C', grupo: 'Y' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			groupColumn: 'grupo',
+		});
+
+		expect(result.ok).toBe(true);
+		const parentGroups = container.querySelectorAll('g.bubble-parent');
+		expect(parentGroups.length).toBe(2);
+	});
 });

@@ -120,6 +120,9 @@ export const BUBBLE_CHART = {
   labelModes: ['all', 'hover', 'auto'],
   defaultLabelMode: 'auto',
   autoLabelMinRadius: 20,
+  nestingModes: ['flat', 'grouped'],
+  defaultNestingMode: 'flat',
+  parentLabelMinRadius: 40,
 };
 
 export const CHART_COLOR_PALETTES = {
