@@ -1,3 +1,5 @@
+import { ok, fail } from './result.js';
+
 function sanitizeFileName(value) {
 	return String(value || 'chart')
 		.trim()
@@ -25,19 +27,19 @@ function ensureSvgAttributes(svg) {
 
 export function captureSvgMarkupFromContainer(containerId) {
 	const container = document.getElementById(containerId);
-	if (!container) return { ok: false, reason: 'container-not-found' };
+	if (!container) return fail('container-not-found');
 
 	const sourceSvg = container.querySelector('svg');
-	if (!sourceSvg) return { ok: false, reason: 'svg-not-found' };
+	if (!sourceSvg) return fail('svg-not-found');
 
 	const svg = sourceSvg.cloneNode(true);
 	ensureSvgAttributes(svg);
 	const serializer = new XMLSerializer();
-	return { ok: true, svgMarkup: serializer.serializeToString(svg) };
+	return ok({ svgMarkup: serializer.serializeToString(svg) });
 }
 
 export function downloadSvgMarkup(svgMarkup, fileNameBase) {
-	if (!svgMarkup) return { ok: false, reason: 'empty-markup' };
+	if (!svgMarkup) return fail('empty-markup');
 	const blob = new Blob([svgMarkup], { type: 'image/svg+xml;charset=utf-8' });
 	const url = URL.createObjectURL(blob);
 	const anchor = document.createElement('a');
@@ -47,7 +49,7 @@ export function downloadSvgMarkup(svgMarkup, fileNameBase) {
 	anchor.click();
 	anchor.remove();
 	URL.revokeObjectURL(url);
-	return { ok: true };
+	return ok();
 }
 
 export function downloadSvgFromContainer(containerId, fileNameBase) {

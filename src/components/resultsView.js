@@ -2,6 +2,7 @@ import { t, getLocale } from '../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
 import { renderCharts } from '../features/chartFeatures/index.js';
 import { getNumericColumns } from '../utils/columnHelpers.js';
+import { translateType } from '../utils/formatters.js';
 
 import { updateTabs } from './results/tabsView.js';
 import { renderTablePreview } from './results/tablePreviewView.js';
@@ -14,12 +15,6 @@ import { openPresetDatasetsDialog } from './results/presetDatasetsView.js';
 const FILE_LIST_PAGE_SIZE = 15;
 let fileListQuery = '';
 let fileListVisibleCount = FILE_LIST_PAGE_SIZE;
-
-function translateType(type) {
-  if (type === 'numero') return t('chive-type-number');
-  if (type === 'texto') return t('chive-type-text');
-  return type;
-}
 
 export function showErrorMessage(message) {
   const errorElement = document.getElementById('mensagem-erro');
@@ -214,6 +209,7 @@ export function renderEmptyState() {
     'chart-scatter-container': document.getElementById('chart-scatter-container'),
     'chart-network-container': document.getElementById('chart-network-container'),
     'chart-pie-container': document.getElementById('chart-pie-container'),
+    'chart-bubble-container': document.getElementById('chart-bubble-container'),
     'badge-charts': document.getElementById('badge-charts'),
     'btn-avancar': document.getElementById('btn-avancar'),
   };
@@ -230,6 +226,7 @@ export function renderEmptyState() {
   if (els['chart-scatter-container']) els['chart-scatter-container'].innerHTML = '';
   if (els['chart-network-container']) els['chart-network-container'].innerHTML = '';
   if (els['chart-pie-container']) els['chart-pie-container'].innerHTML = '';
+  if (els['chart-bubble-container']) els['chart-bubble-container'].innerHTML = '';
   if (els['badge-charts']) els['badge-charts'].textContent = '—';
   if (els['btn-avancar']) els['btn-avancar'].disabled = true;
   

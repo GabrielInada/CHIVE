@@ -1,35 +1,18 @@
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
-import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS } from './shared.js';
+import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
 import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
-
-function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
-	const div = document.createElement('div');
-	div.className = 'chart-controle';
-
-	const label = document.createElement('label');
-	label.htmlFor = id;
-	label.textContent = labelText;
-
-	const select = document.createElement('select');
-	select.id = id;
-	select.className = 'linhas-select';
-	select.disabled = disabled;
-
-	optionsArray.forEach(opt => {
-		const option = document.createElement('option');
-		option.value = opt.value;
-		option.textContent = opt.label;
-		option.selected = String(opt.value) === String(selectedValue);
-		select.appendChild(option);
-	});
-
-	div.appendChild(label);
-	div.appendChild(select);
-	return div;
-}
+import {
+	setupExpandListener,
+	setupSelectListeners,
+	setupCheckboxListeners,
+	setupTextInputListener,
+	setupColorInputListener,
+	setupSliderListeners,
+	setupColorPresetListeners,
+} from './controlListenerHelpers.js';
 
 export function createNetworkGraphControls(dataset, allOptions, numericOptions, categoryOptions) {
 	const config = dataset.configGraficos.network;
@@ -290,68 +273,27 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 		});
 	}
 
-	if (expand) {
-		expand.addEventListener('click', () => {
-			const expanded = expand.getAttribute('aria-expanded') === 'true';
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					expanded: !expanded,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupExpandListener('viz-expand-network', dataset, 'network', onConfigChanged);
 
-	const selectControls = [
+	setupSelectListeners([
 		{ id: 'viz-select-network-source', key: 'source' },
 		{ id: 'viz-select-network-target', key: 'target' },
-		{ id: 'viz-select-network-weight', key: 'weight', toNull: true },
-		{ id: 'viz-select-network-group', key: 'group', toNull: true },
-	];
+		{ id: 'viz-select-network-weight', key: 'weight', transform: v => v || null },
+		{ id: 'viz-select-network-group', key: 'group', transform: v => v || null },
+		{ id: 'viz-select-network-edge-color-mode', key: 'edgeColorMode', transform: v => v === 'uniform' ? 'uniform' : 'gradient' },
+	], dataset, 'network', onConfigChanged);
 
-	selectControls.forEach(({ id, key, toNull }) => {
-		const select = document.getElementById(id);
-		if (!select) return;
-		select.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					[key]: toNull ? (select.value || null) : select.value,
-				},
-			});
-			onConfigChanged?.();
-		});
-	});
-
-	const sliderControls = [
+	setupSliderListeners([
 		{ id: 'viz-slider-network-node-radius', key: 'nodeRadius' },
 		{ id: 'viz-slider-network-link-distance', key: 'linkDistance' },
 		{ id: 'viz-slider-network-charge', key: 'chargeStrength' },
 		{ id: 'viz-slider-network-link-opacity', key: 'linkOpacity' },
 		{ id: 'viz-slider-network-zoom', key: 'zoomScale' },
 		{ id: 'viz-slider-network-alpha-decay', key: 'alphaDecay' },
-	];
+		{ id: 'viz-slider-network-height', key: 'chartHeight' },
+	], dataset, 'network', onConfigChanged);
 
-	sliderControls.forEach(({ id, key }) => {
-		const slider = document.getElementById(id);
-		if (!slider) return;
-		const syncOutput = () => {
-			const output = slider.parentElement?.querySelector('output');
-			if (output) output.textContent = slider.value;
-		};
-		slider.addEventListener('input', syncOutput);
-		slider.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					[key]: Number(slider.value),
-				},
-			});
-			onConfigChanged?.();
-		});
-	});
-
+	// Reset zoom button (custom: resets slider DOM + config)
 	const networkZoomSlider = document.getElementById('viz-slider-network-zoom');
 	const resetNetworkZoomButton = document.getElementById('viz-btn-network-reset-zoom');
 	if (resetNetworkZoomButton) {
@@ -371,119 +313,21 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 		});
 	}
 
-	const nodeLabelsToggle = document.getElementById('viz-toggle-network-node-labels');
-	if (nodeLabelsToggle) {
-		nodeLabelsToggle.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					showNodeLabels: nodeLabelsToggle.checked,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupCheckboxListeners([
+		{ id: 'viz-toggle-network-node-labels', key: 'showNodeLabels' },
+		{ id: 'viz-toggle-network-show-legend', key: 'showLegend' },
+	], dataset, 'network', onConfigChanged);
 
-	const legendToggle = document.getElementById('viz-toggle-network-show-legend');
-	if (legendToggle) {
-		legendToggle.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					showLegend: legendToggle.checked,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupColorInputListener('viz-input-network-source-color', 'sourceNodeColor', '#e3743d', dataset, 'network', onConfigChanged);
+	setupColorInputListener('viz-input-network-target-color', 'targetNodeColor', '#6b94c9', dataset, 'network', onConfigChanged);
 
-	const sourceColorInput = document.getElementById('viz-input-network-source-color');
-	if (sourceColorInput) {
-		sourceColorInput.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					sourceNodeColor: normalizeHexColor(sourceColorInput.value, '#e3743d'),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupColorPresetListeners('viz-network-color-preset', {
+		sourceNodeColor: 0, targetNodeColor: 1,
+	}, {
+		sourceNodeColor: '#e3743d', targetNodeColor: '#6b94c9',
+	}, dataset, 'network', onConfigChanged, COLOR_PRESETS);
 
-	const targetColorInput = document.getElementById('viz-input-network-target-color');
-	if (targetColorInput) {
-		targetColorInput.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					targetNodeColor: normalizeHexColor(targetColorInput.value, '#6b94c9'),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const edgeColorModeSelect = document.getElementById('viz-select-network-edge-color-mode');
-	if (edgeColorModeSelect) {
-		edgeColorModeSelect.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					edgeColorMode: edgeColorModeSelect.value === 'uniform' ? 'uniform' : 'gradient',
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const networkPresetButtons = document.querySelectorAll('button[data-color-preset-control="viz-network-color-preset"]');
-	networkPresetButtons.forEach(button => {
-		button.addEventListener('click', () => {
-			const presetName = button.dataset.presetName;
-			const palette = COLOR_PRESETS[presetName] || [];
-			if (palette.length < 2) return;
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					colorScheme: presetName,
-					sourceNodeColor: normalizeHexColor(palette[0], '#e3743d'),
-					targetNodeColor: normalizeHexColor(palette[1], '#6b94c9'),
-				},
-			});
-			onConfigChanged?.();
-		});
-	});
-
-	const inputNetworkTitle = document.getElementById('viz-input-network-title');
-	if (inputNetworkTitle) {
-		inputNetworkTitle.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					customTitle: String(inputNetworkTitle.value || '').trim(),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const sliderNetworkHeight = document.getElementById('viz-slider-network-height');
-	if (sliderNetworkHeight) {
-		const syncOutput = () => {
-			const output = sliderNetworkHeight.parentElement?.querySelector('output');
-			if (output) output.textContent = sliderNetworkHeight.value;
-		};
-		sliderNetworkHeight.addEventListener('input', syncOutput);
-		sliderNetworkHeight.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					chartHeight: Number(sliderNetworkHeight.value),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupTextInputListener('viz-input-network-title', 'customTitle', dataset, 'network', onConfigChanged);
 
 	setupChartFilterControlListeners({
 		chartKey: 'network',

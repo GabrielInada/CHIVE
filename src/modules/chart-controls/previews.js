@@ -43,3 +43,12 @@ export const PREVIEW_PIE_SVG = `
 		<circle cx="56" cy="19" r="5" fill="#fffef9"></circle>
 	</svg>
 `;
+
+export const PREVIEW_BUBBLE_SVG = `
+	<svg viewBox="0 0 84 38" aria-hidden="true">
+		<circle cx="18" cy="22" r="10" fill="#c9b3d7"></circle>
+		<circle cx="36" cy="14" r="7" fill="#a87bc1"></circle>
+		<circle cx="52" cy="24" r="12" fill="#7b4f9d"></circle>
+		<circle cx="67" cy="13" r="5" fill="#d7c4e4"></circle>
+	</svg>
+`;

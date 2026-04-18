@@ -5,6 +5,14 @@ import { createCheckboxControl, createSliderControl, createTextControl, normaliz
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
 import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
+import {
+	setupExpandListener,
+	setupSelectListeners,
+	setupCheckboxListeners,
+	setupTextInputListener,
+	setupColorInputListener,
+	setupSliderListeners,
+} from './controlListenerHelpers.js';
 
 function getPieSectorValues(dataset, config) {
 	if (!config?.category || !Array.isArray(dataset?.dados)) return [];
@@ -343,32 +351,15 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 		});
 	}
 
-	if (expandPie) {
-		expandPie.addEventListener('click', () => {
-			const expanded = expandPie.getAttribute('aria-expanded') === 'true';
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					expanded: !expanded,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupExpandListener('viz-expand-pie', dataset, 'pie', onConfigChanged);
 
-	const categorySelect = document.getElementById('viz-select-pie-category');
-	if (categorySelect) {
-		categorySelect.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					category: categorySelect.value,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupSelectListeners([
+		{ id: 'viz-select-pie-category', key: 'category' },
+		{ id: 'viz-select-pie-value-column', key: 'valueColumn', transform: v => v || null },
+		{ id: 'viz-select-pie-label-position', key: 'labelPosition', transform: v => v === 'outside' ? 'outside' : 'inside' },
+	], dataset, 'pie', onConfigChanged);
 
+	// Measure select (custom: updates valueColumn dependency)
 	const measureSelect = document.getElementById('viz-select-pie-measure');
 	if (measureSelect) {
 		measureSelect.addEventListener('change', () => {
@@ -388,28 +379,12 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 		});
 	}
 
-	const valueSelect = document.getElementById('viz-select-pie-value-column');
-	if (valueSelect) {
-		valueSelect.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					valueColumn: valueSelect.value || null,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
+	// Inner/outer radius sliders (custom: cross-constraint logic)
 	const innerSlider = document.getElementById('viz-slider-pie-inner-radius');
 	const outerSlider = document.getElementById('viz-slider-pie-outer-radius');
-	const padAngleSlider = document.getElementById('viz-slider-pie-pad-angle');
-	const pieZoomSlider = document.getElementById('viz-slider-pie-zoom');
 	const syncSliderOutput = slider => {
 		const output = slider?.parentElement?.querySelector('output');
-		if (output) {
-			output.textContent = slider.value;
-		}
+		if (output) output.textContent = slider.value;
 	};
 
 	if (innerSlider) {
@@ -422,10 +397,7 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 				syncSliderOutput(innerSlider);
 			}
 			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					innerRadius,
-				},
+				pie: { ...dataset.configGraficos.pie, innerRadius },
 			});
 			onConfigChanged?.();
 		});
@@ -442,42 +414,20 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 				syncSliderOutput(innerSlider);
 			}
 			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					outerRadius,
-					innerRadius,
-				},
+				pie: { ...dataset.configGraficos.pie, outerRadius, innerRadius },
 			});
 			onConfigChanged?.();
 		});
 	}
 
-	if (padAngleSlider) {
-		padAngleSlider.addEventListener('input', () => syncSliderOutput(padAngleSlider));
-		padAngleSlider.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					padAngle: Number(padAngleSlider.value),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupSliderListeners([
+		{ id: 'viz-slider-pie-pad-angle', key: 'padAngle' },
+		{ id: 'viz-slider-pie-zoom', key: 'zoomScale' },
+		{ id: 'viz-slider-pie-height', key: 'chartHeight' },
+	], dataset, 'pie', onConfigChanged);
 
-	if (pieZoomSlider) {
-		pieZoomSlider.addEventListener('input', () => syncSliderOutput(pieZoomSlider));
-		pieZoomSlider.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					zoomScale: Number(pieZoomSlider.value),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
+	// Reset zoom button (custom: resets slider DOM + config)
+	const pieZoomSlider = document.getElementById('viz-slider-pie-zoom');
 	const resetPieZoomButton = document.getElementById('viz-btn-pie-reset-zoom');
 	if (resetPieZoomButton) {
 		resetPieZoomButton.addEventListener('click', () => {
@@ -486,81 +436,22 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 				syncSliderOutput(pieZoomSlider);
 			}
 			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					zoomScale: PIE_CHART.defaultZoomScale,
-				},
+				pie: { ...dataset.configGraficos.pie, zoomScale: PIE_CHART.defaultZoomScale },
 			});
 			onConfigChanged?.();
 		});
 	}
 
-	const toggleCategoryLabel = document.getElementById('viz-toggle-pie-category-label');
-	if (toggleCategoryLabel) {
-		toggleCategoryLabel.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					showCategoryLabel: toggleCategoryLabel.checked,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupCheckboxListeners([
+		{ id: 'viz-toggle-pie-category-label', key: 'showCategoryLabel' },
+		{ id: 'viz-toggle-pie-value-label', key: 'showValueLabel' },
+		{ id: 'viz-toggle-pie-legend', key: 'showLegend' },
+	], dataset, 'pie', onConfigChanged);
 
-	const toggleValueLabel = document.getElementById('viz-toggle-pie-value-label');
-	if (toggleValueLabel) {
-		toggleValueLabel.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					showValueLabel: toggleValueLabel.checked,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupColorInputListener('viz-input-pie-color', 'color', CHART_COLORS.pie, dataset, 'pie', onConfigChanged);
+	setupTextInputListener('viz-input-pie-title', 'customTitle', dataset, 'pie', onConfigChanged);
 
-	const toggleLegend = document.getElementById('viz-toggle-pie-legend');
-	if (toggleLegend) {
-		toggleLegend.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					showLegend: toggleLegend.checked,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const labelPositionSelect = document.getElementById('viz-select-pie-label-position');
-	if (labelPositionSelect) {
-		labelPositionSelect.addEventListener('change', () => {
-			const labelPosition = labelPositionSelect.value === 'outside' ? 'outside' : 'inside';
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					labelPosition,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const colorInput = document.getElementById('viz-input-pie-color');
-	if (colorInput) {
-		colorInput.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					color: normalizeHexColor(colorInput.value, CHART_COLORS.pie),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
+	// Pie color presets (custom: maps palette to per-slice colors)
 	const presetButtons = document.querySelectorAll('button[data-color-preset-control="viz-pie-color-preset"]');
 	presetButtons.forEach(button => {
 		button.addEventListener('click', () => {
@@ -584,6 +475,7 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 		});
 	});
 
+	// Per-slice color grid (custom: individual slice colors)
 	const perSliceInputs = document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]');
 	perSliceInputs.forEach(input => {
 		input.addEventListener('change', () => {
@@ -602,37 +494,6 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 			onConfigChanged?.();
 		});
 	});
-
-	const inputPieTitle = document.getElementById('viz-input-pie-title');
-	if (inputPieTitle) {
-		inputPieTitle.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					customTitle: String(inputPieTitle.value || '').trim(),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const sliderPieHeight = document.getElementById('viz-slider-pie-height');
-	if (sliderPieHeight) {
-		const syncOutput = () => {
-			const output = sliderPieHeight.parentElement?.querySelector('output');
-			if (output) output.textContent = sliderPieHeight.value;
-		};
-		sliderPieHeight.addEventListener('input', syncOutput);
-		sliderPieHeight.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					chartHeight: Number(sliderPieHeight.value),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
 
 	setupChartFilterControlListeners({
 		chartKey: 'pie',

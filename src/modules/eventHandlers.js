@@ -200,6 +200,10 @@ function getChartSnapshotTitle(containerId, fallbackTitle) {
 		return String(config.pie?.customTitle || '').trim() || fallbackTitle;
 	}
 
+	if (containerId === 'chart-bubble-container') {
+		return String(config.bubble?.customTitle || '').trim() || fallbackTitle;
+	}
+
 	if (containerId === 'chart-network-container') {
 		return String(config.network?.customTitle || '').trim() || fallbackTitle;
 	}
@@ -248,6 +252,32 @@ function buildChartSnapshotMetadata(containerId) {
 			padAngle: Number(pie.padAngle || 0),
 			labelPosition: pie.labelPosition,
 			summary: `${t('chive-chart-control-pie-category')}: ${category} · ${measureLabel}${valuePart}${padPart}`,
+		};
+	}
+
+	if (containerId === 'chart-bubble-container') {
+		const bubble = config.bubble || {};
+		const measureLabel = bubble.measureMode === 'sum'
+			? t('chive-chart-control-bubble-measure-sum')
+			: bubble.measureMode === 'mean'
+				? t('chive-chart-control-bubble-measure-mean')
+				: t('chive-chart-control-bubble-measure-count');
+		const category = bubble.category || '-';
+		const valuePart = bubble.measureMode === 'count'
+			? ''
+			: ` · ${t('chive-chart-control-bubble-value-column')}: ${bubble.valueColumn || '-'}`;
+		const groupPart = bubble.groupColumn
+			? ` · ${t('chive-chart-control-bubble-group')}: ${bubble.groupColumn}`
+			: '';
+		const topnPart = ` · ${t('chive-chart-control-bubble-topn')}: ${Number(bubble.topN || 0) === 0 ? t('chive-chart-topn-all') : bubble.topN}`;
+		return {
+			type: 'bubble',
+			category,
+			measureMode: bubble.measureMode,
+			valueColumn: bubble.valueColumn || null,
+			groupColumn: bubble.groupColumn || null,
+			topN: bubble.topN,
+			summary: `${t('chive-chart-control-bubble-category')}: ${category} · ${measureLabel}${valuePart}${groupPart}${topnPart}`,
 		};
 	}
 

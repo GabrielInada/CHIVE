@@ -2,36 +2,19 @@ import { arc, pie, select, zoom, zoomIdentity } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
+import { buildSliceColor as _buildSliceColor } from '../../utils/colorUtils.js';
+import { ok, fail } from '../../utils/result.js';
 
 function clamp(value, min, max) {
 	return Math.min(Math.max(value, min), max);
 }
 
-function parseHexColor(color) {
-	const normalized = String(color || '').trim();
-	if (!/^#[0-9a-fA-F]{6}$/.test(normalized)) return null;
-	return {
-		r: parseInt(normalized.slice(1, 3), 16),
-		g: parseInt(normalized.slice(3, 5), 16),
-		b: parseInt(normalized.slice(5, 7), 16),
-	};
-}
-
-function toHexChannel(value) {
-	return Math.round(clamp(value, 0, 255)).toString(16).padStart(2, '0');
-}
-
 function buildSliceColor(baseHex, index) {
-	const rgb = parseHexColor(baseHex) || parseHexColor(CHART_COLORS.pie);
-	const factor = 1 - (Math.min(index, 8) * 0.08);
-	const r = rgb.r * factor;
-	const g = rgb.g * factor;
-	const b = rgb.b * factor;
-	return `#${toHexChannel(r)}${toHexChannel(g)}${toHexChannel(b)}`;
+	return _buildSliceColor(baseHex, index, CHART_COLORS.pie);
 }
 
 export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
-	if (!container || !colunaCategoria) return { ok: false };
+	if (!container || !colunaCategoria) return fail();
 
 	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
@@ -78,7 +61,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		.map(([categoria, valor]) => ({ categoria, valor }))
 		.sort((a, b) => b.valor - a.valor || String(a.categoria).localeCompare(String(b.categoria)));
 	if (linhas.length === 0) {
-		return { ok: false, reason: measureMode === 'sum' ? 'sum-no-numeric' : undefined };
+		return fail(measureMode === 'sum' ? 'sum-no-numeric' : undefined);
 	}
 
 	container.innerHTML = '';
@@ -322,5 +305,5 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		});
 	}
 
-	return { ok: true };
+	return ok();
 }

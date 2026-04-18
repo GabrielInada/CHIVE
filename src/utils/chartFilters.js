@@ -16,8 +16,10 @@ export function createDefaultFilterConfig() {
   };
 }
 
+import { isEmptyValue } from './formatters.js';
+
 export function isMissingCategoryValue(value) {
-  return value === null || value === undefined || String(value).trim() === '';
+  return isEmptyValue(value);
 }
 
 export function toCategoryToken(value) {

@@ -1,17 +1,5 @@
-import { BAR_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT } from './charts.js';
-
-function createDefaultFilter() {
-	return {
-		column: null,
-		mode: 'categorical',
-		include: [],
-		search: '',
-		operator: 'between',
-		min: '',
-		max: '',
-		value: '',
-	};
-}
+import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT } from './charts.js';
+import { createDefaultFilterConfig as createDefaultFilter } from '../utils/chartFilters.js';
 
 export function createDefaultChartConfig() {
 	return {
@@ -103,6 +91,23 @@ export function createDefaultChartConfig() {
 			customSliceColors: {},
 			filter: createDefaultFilter(),
 		},
+		bubble: {
+			enabled: false,
+			expanded: false,
+			category: null,
+			groupColumn: null,
+			nestingColumns: [],
+			customTitle: '',
+			chartHeight: 700,
+			topN: BUBBLE_CHART.defaultTopN,
+			measureMode: BUBBLE_CHART.defaultMeasureMode,
+			valueColumn: null,
+			padding: BUBBLE_CHART.defaultPadding,
+			labelMode: BUBBLE_CHART.defaultLabelMode,
+			nestingMode: BUBBLE_CHART.defaultNestingMode,
+			colorScheme: 'Tableau10',
+			filter: createDefaultFilter(),
+		},
 	};
 }
 
@@ -129,5 +134,17 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 			...defaults.pie,
 			...(config.pie || {}),
 		},
+		bubble: (() => {
+			const merged = { ...defaults.bubble, ...(config.bubble || {}) };
+			// Migration: groupColumn → nestingColumns
+			if (Array.isArray(merged.nestingColumns) && merged.nestingColumns.length > 0) {
+				// nestingColumns already set, keep it
+			} else if (merged.groupColumn && typeof merged.groupColumn === 'string') {
+				merged.nestingColumns = [merged.groupColumn];
+			} else {
+				merged.nestingColumns = [];
+			}
+			return merged;
+		})(),
 	};
 }

@@ -36,13 +36,15 @@ vi.mock('../../../src/modules/appState.js', () => mocks.appState);
 vi.mock('../../../src/utils/svgExport.js', () => mocks.svgExport);
 vi.mock('../../../src/services/i18nService.js', () => mocks.i18n);
 
-import { initPanelManager, addChartToPanel, removeChartFromPanel, getLayoutConfig } from '../../../src/modules/panelManager.js';
+import { initPanelManager, addChartToPanel, removeChartFromPanel, getLayoutConfig, _resetPanelManagerForTesting } from '../../../src/modules/panelManager.js';
 
 /**
  * panelManager branch coverage focusing on error paths and rendering conditions.
  */
 describe('panelManager (branch coverage)', () => {
 	beforeEach(() => {
+		_resetPanelManagerForTesting();
+
 		document.body.innerHTML = `
 			<div id="lista-painel-charts"></div>
 			<div id="painel-canvas"></div>

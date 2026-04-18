@@ -2,27 +2,8 @@ import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
-
-function hexToRgb(hex) {
-	const match = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(String(hex || '').trim());
-	if (!match) return { r: 0, g: 0, b: 0 };
-	return {
-		r: parseInt(match[1], 16),
-		g: parseInt(match[2], 16),
-		b: parseInt(match[3], 16),
-	};
-}
-
-function toHex(value) {
-	return Math.round(Math.max(0, Math.min(255, value))).toString(16).padStart(2, '0');
-}
-
-function interpolateColor(minColor, maxColor, t) {
-	const clamped = Math.max(0, Math.min(1, t));
-	const start = hexToRgb(minColor);
-	const end = hexToRgb(maxColor);
-	return `#${toHex(start.r + ((end.r - start.r) * clamped))}${toHex(start.g + ((end.g - start.g) * clamped))}${toHex(start.b + ((end.b - start.b) * clamped))}`;
-}
+import { interpolateColor } from '../../utils/colorUtils.js';
+import { ok, fail } from '../../utils/result.js';
 
 function ordenarCategorias(linhas, ordenacao) {
 	if (ordenacao === 'count-asc') {
@@ -41,7 +22,7 @@ function ordenarCategorias(linhas, ordenacao) {
 }
 
 export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
-	if (!container || !colunaCategoria) return { ok: false };
+	if (!container || !colunaCategoria) return fail();
 	const ordenacao = opcoes.ordenacao || BAR_CHART.defaultSort;
 	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : BAR_CHART.defaultTopN;
 	const showXAxisLabel = opcoes.showXAxisLabel !== false;
@@ -102,7 +83,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 			contador.set(categoria, (contador.get(categoria) || 0) + 1);
 		});
 	} else {
-		if (!valueColumn || !hasValueColumn) return { ok: false, reason: 'no-value-column' };
+		if (!valueColumn || !hasValueColumn) return fail('no-value-column');
 		dados.forEach(linha => {
 			const valorBruto = linha[colunaCategoria];
 			const categoria = valorBruto === null || valorBruto === undefined || valorBruto === ''
@@ -122,7 +103,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	}
 
 	if ((measureMode === 'sum' || measureMode === 'mean') && contador.size === 0) {
-		return { ok: false, reason: 'no-numeric' };
+		return fail('no-numeric');
 	}
 
 	let linhas = Array.from(contador.entries());
@@ -132,7 +113,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		linhas = linhas.slice(0, topN);
 	}
 
-	if (linhas.length === 0) return { ok: false };
+	if (linhas.length === 0) return fail();
 	const totalContagem = linhas.reduce((acc, item) => acc + item[1], 0);
 
 	container.innerHTML = '';
@@ -300,5 +281,5 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 			.text(axisLabels.y);
 	}
 
-	return { ok: true };
+	return ok();
 }

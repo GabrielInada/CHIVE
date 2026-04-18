@@ -251,6 +251,42 @@ describe('appState (edge cases - branch coverage)', () => {
 		});
 	});
 
+	describe('getState and exposeGlobals', () => {
+		it('getState returns deep clone of state', async () => {
+			const { getState } = await import('../src/modules/appState.js');
+			addDataset({ dados: [{ x: 1 }], colunas: ['x'] });
+			const state = getState();
+			expect(state.data.datasets.length).toBe(1);
+			state.data.datasets.push({ dados: [], colunas: [] });
+			expect(getState().data.datasets.length).toBe(1);
+		});
+
+		it('exposeGlobals sets window properties', async () => {
+			const { exposeGlobals, getAllDatasets } = await import('../src/modules/appState.js');
+			addDataset({ dados: [{ a: 1 }], colunas: ['a'], colunasSelecionadas: ['a'] });
+			exposeGlobals();
+			expect(window.datasetsCarregados).toBe(getAllDatasets());
+			expect(window.dadosCarregados).toBeTruthy();
+			expect(window.chartsPainel).toBeDefined();
+		});
+
+		it('exposeGlobals handles no active dataset', async () => {
+			const { exposeGlobals } = await import('../src/modules/appState.js');
+			exposeGlobals();
+			expect(window.dadosCarregados).toBeNull();
+			expect(window.colunasDetectadas).toBeNull();
+			expect(window.colunasSelecionadasAtivas).toBeNull();
+		});
+	});
+
+	describe('sanitizeChartName', () => {
+		it('trims and truncates chart name', async () => {
+			const { sanitizeChartName } = await import('../src/modules/appState.js');
+			expect(sanitizeChartName('  Test  ')).toBe('Test');
+			expect(sanitizeChartName('a'.repeat(200)).length).toBe(100);
+		});
+	});
+
 	describe('Input validation branches', () => {
 		it('throws on addDataset with missing dados', () => {
 			expect(() => addDataset({ colunas: [] })).toThrow();
