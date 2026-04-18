@@ -173,6 +173,22 @@ describe('bubble chart visualization', () => {
 		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
 	});
 
+	it('leaf labels use bubble-leaf-label class from renderLeafLabels', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A' },
+			{ categoria: 'A' },
+			{ categoria: 'B' },
+		];
+
+		renderBubbleChart(container, dados, 'categoria', {
+			labelMode: 'all',
+		});
+
+		const labels = container.querySelectorAll('text.bubble-leaf-label');
+		expect(labels.length).toBe(2);
+	});
+
 	it('parent tooltip includes aggregated value and child count via title element', () => {
 		const container = document.getElementById('bubble');
 		const dados = [
@@ -190,5 +206,127 @@ describe('bubble chart visualization', () => {
 		expect(result.ok).toBe(true);
 		const parentGroups = container.querySelectorAll('g.bubble-parent');
 		expect(parentGroups.length).toBe(2);
+	});
+});
+
+describe('bubble chart zoom exploration', () => {
+	beforeEach(() => {
+		document.body.innerHTML = '<div id="bubble"></div>';
+	});
+
+	const groupedData = [
+		{ categoria: 'A', grupo: 'X' },
+		{ categoria: 'B', grupo: 'X' },
+		{ categoria: 'C', grupo: 'Y' },
+		{ categoria: 'D', grupo: 'Y' },
+	];
+
+	const groupedOpts = {
+		nestingMode: 'grouped',
+		groupColumn: 'grupo',
+		zoomTransitionDuration: 0,
+	};
+
+	it('double-click on parent circle applies zoom transform', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+
+		const parentGroup = container.querySelector('g.bubble-parent');
+		const viewportG = container.querySelector('svg > g');
+		const originalTransform = viewportG.getAttribute('transform');
+
+		parentGroup.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+		const newTransform = viewportG.getAttribute('transform');
+		expect(newTransform).not.toBe(originalTransform);
+		expect(newTransform).toContain('scale(');
+	});
+
+	it('click on SVG background resets zoom', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+
+		const parentGroup = container.querySelector('g.bubble-parent');
+		const viewportG = container.querySelector('svg > g');
+		const originalTransform = viewportG.getAttribute('transform');
+
+		parentGroup.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+		expect(viewportG.getAttribute('transform')).toContain('scale(');
+
+		container.querySelector('svg').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		expect(viewportG.getAttribute('transform')).toBe(originalTransform);
+	});
+
+	it('flat mode has no parent circles to zoom into', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, groupedData, 'categoria', {
+			nestingMode: 'flat',
+			groupColumn: 'grupo',
+			zoomTransitionDuration: 0,
+		});
+
+		expect(container.querySelectorAll('g.bubble-parent').length).toBe(0);
+		const viewportG = container.querySelector('svg > g');
+		const transform = viewportG.getAttribute('transform');
+		expect(transform).not.toContain('scale(');
+	});
+
+	it('zoom dims non-focused sibling groups', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+
+		const parents = container.querySelectorAll('g.bubble-parent');
+		expect(parents.length).toBe(2);
+
+		parents[0].dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+		expect(parents[0].getAttribute('opacity')).toBe('1');
+		expect(parents[1].getAttribute('opacity')).toBe('0.12');
+	});
+
+	it('zoom disables pointer-events on non-focused siblings', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+
+		const parents = container.querySelectorAll('g.bubble-parent');
+		parents[0].dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+		expect(parents[0].style.pointerEvents).toBe('all');
+		expect(parents[1].style.pointerEvents).toBe('none');
+	});
+
+	it('reset zoom restores sibling opacity and pointer-events', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+
+		const parents = container.querySelectorAll('g.bubble-parent');
+		parents[0].dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+		expect(parents[1].getAttribute('opacity')).toBe('0.12');
+
+		container.querySelector('svg').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		expect(parents[0].getAttribute('opacity')).toBe('1');
+		expect(parents[1].getAttribute('opacity')).toBe('1');
+		expect(parents[1].style.pointerEvents).toBe('all');
+	});
+
+	it('parent circles have pointer cursor in grouped mode', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+
+		const parentCircle = container.querySelector('g.bubble-parent circle');
+		expect(parentCircle.style.cursor).toBe('pointer');
+	});
+
+	it('single-click on leaf node does not trigger zoom', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+
+		const viewportG = container.querySelector('svg > g');
+		const originalTransform = viewportG.getAttribute('transform');
+
+		const leafNode = container.querySelector('g.bubble-node');
+		leafNode.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+		expect(viewportG.getAttribute('transform')).toBe(originalTransform);
 	});
 });

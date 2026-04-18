@@ -199,6 +199,8 @@
 	"chive-chart-control-bubble-children-count": "Children",
 	"chive-chart-empty-bubble-group-required": "Select a group column to use grouped nesting mode.",
 	"chive-chart-control-bubble-padding": "Bubble padding",
+	"chive-chart-bubble-zoom-hint": "Double-click a group to zoom in",
+	"chive-chart-bubble-zoom-back": "Click background to zoom out",
 	"chive-chart-toggle-bar": "Bar chart",
 	"chive-chart-toggle-scatter": "Scatter plot",
 	"chive-chart-toggle-network": "Network graph",

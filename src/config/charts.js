@@ -123,6 +123,8 @@ export const BUBBLE_CHART = {
   nestingModes: ['flat', 'grouped'],
   defaultNestingMode: 'flat',
   parentLabelMinRadius: 40,
+  zoomTransitionDuration: 600,
+  zoomScalePadding: 1.1,
 };
 
 export const CHART_COLOR_PALETTES = {

@@ -199,6 +199,8 @@
 	"chive-chart-control-bubble-children-count": "Filhos",
 	"chive-chart-empty-bubble-group-required": "Selecione uma coluna de grupo para usar o modo agrupado.",
 	"chive-chart-control-bubble-padding": "Espaçamento das bolhas",
+	"chive-chart-bubble-zoom-hint": "Clique duplo em um grupo para ampliar",
+	"chive-chart-bubble-zoom-back": "Clique no fundo para voltar",
 	"chive-chart-toggle-bar": "Gráfico de barras",
 	"chive-chart-toggle-scatter": "Gráfico de dispersão",
 	"chive-chart-toggle-network": "Grafo de rede",

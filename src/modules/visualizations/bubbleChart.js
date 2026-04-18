@@ -180,6 +180,121 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	const colorDomain = Array.from(new Set(leaves.map(item => item.data.group)));
 	const colorScale = scaleOrdinal(getBubblePalette(colorScheme)).domain(colorDomain);
 	let pinnedNode = null;
+	let zoomedParent = null;
+	const zoomDuration = Number.isFinite(Number(opcoes.zoomTransitionDuration))
+		? Number(opcoes.zoomTransitionDuration)
+		: BUBBLE_CHART.zoomTransitionDuration;
+	const zoomPadding = BUBBLE_CHART.zoomScalePadding;
+
+	function renderParentLabels(scale) {
+		viewport.selectAll('text.bubble-parent-label').remove();
+		viewport.selectAll('g.bubble-parent').each(function renderPLabel(d) {
+			const apparentR = d.r * scale;
+			if (apparentR < parentLabelMinRadius) return;
+			const fontSize = Math.max(10, Math.min(14, d.r / 5));
+			select(this)
+				.append('text')
+				.attr('class', 'bubble-parent-label')
+				.attr('text-anchor', 'middle')
+				.attr('pointer-events', 'none')
+				.attr('font-size', fontSize)
+				.attr('font-weight', 600)
+				.attr('y', -d.r + fontSize + 4)
+				.attr('fill', '#3f3a33')
+				.attr('fill-opacity', 0.7)
+				.text(String(d.data.groupName));
+		});
+	}
+
+	function renderLeafLabels(scale) {
+		viewport.selectAll('text.bubble-leaf-label').remove();
+		if (labelMode === 'hover') return;
+
+		viewport.selectAll('g.bubble-node').each(function renderLabel(d) {
+			const apparentR = d.r * scale;
+			const shouldShow = labelMode === 'all' || (labelMode === 'auto' && apparentR >= autoLabelMinRadius);
+			if (!shouldShow) return;
+
+			const fitsInside = apparentR >= autoLabelMinRadius;
+			const fontSize = fitsInside
+				? Math.max(9, Math.min(13, d.r / 3))
+				: Math.max(7, Math.min(10, d.r / 2));
+
+			const textEl = select(this)
+				.append('text')
+				.attr('class', 'bubble-leaf-label')
+				.attr('text-anchor', 'middle')
+				.attr('pointer-events', 'none')
+				.attr('font-size', fontSize);
+
+			if (fitsInside) {
+				textEl
+					.attr('dominant-baseline', 'middle')
+					.attr('fill', '#fff')
+					.style('clip-path', `circle(${d.r}px)`)
+					.text(String(d.data.category));
+			} else {
+				textEl
+					.attr('y', d.r + fontSize + 2)
+					.attr('dominant-baseline', 'hanging')
+					.attr('fill', '#3f3a33')
+					.text(String(d.data.category));
+			}
+		});
+	}
+
+	function applyZoom(parentNode) {
+		pinnedNode = null;
+		hideChartTooltip();
+		zoomedParent = parentNode;
+
+		const scale = Math.min(larguraInterna, alturaInterna) / (2 * parentNode.r * zoomPadding);
+		const tx = larguraInterna / 2 - parentNode.x * scale;
+		const ty = alturaInterna / 2 - parentNode.y * scale;
+		const transform = `translate(${margem.left + tx},${margem.top + titleOffset + ty}) scale(${scale})`;
+
+		if (zoomDuration > 0) {
+			viewport.transition().duration(zoomDuration).attr('transform', transform);
+		} else {
+			viewport.attr('transform', transform);
+		}
+
+		// Dim and disable non-focused siblings
+		viewport.selectAll('g.bubble-parent')
+			.attr('opacity', d => d === parentNode ? 1 : 0.12)
+			.style('pointer-events', d => d === parentNode ? 'all' : 'none');
+		viewport.selectAll('g.bubble-node')
+			.attr('opacity', d => d.parent === parentNode ? 1 : 0.12)
+			.style('pointer-events', d => d.parent === parentNode ? 'all' : 'none');
+
+		renderParentLabels(scale);
+		renderLeafLabels(scale);
+	}
+
+	function resetZoom() {
+		pinnedNode = null;
+		hideChartTooltip();
+		zoomedParent = null;
+
+		const transform = `translate(${margem.left},${margem.top + titleOffset})`;
+
+		if (zoomDuration > 0) {
+			viewport.transition().duration(zoomDuration).attr('transform', transform);
+		} else {
+			viewport.attr('transform', transform);
+		}
+
+		// Restore all siblings
+		viewport.selectAll('g.bubble-parent')
+			.attr('opacity', 1)
+			.style('pointer-events', 'all');
+		viewport.selectAll('g.bubble-node')
+			.attr('opacity', 1)
+			.style('pointer-events', 'all');
+
+		renderParentLabels(1);
+		renderLeafLabels(1);
+	}
 
 	const measureLabel = measureMode === 'mean'
 		? labels.media
@@ -247,36 +362,32 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 				return firstChild ? colorScale(firstChild.data.group) : '#999';
 			})
 			.attr('stroke-width', 1.5)
-			.attr('stroke-opacity', 0.5);
+			.attr('stroke-opacity', 0.5)
+			.style('cursor', 'pointer');
 
-		// Parent labels (auto-only based on parentLabelMinRadius)
-		parentGroup
-			.filter(d => d.r >= parentLabelMinRadius)
-			.each(function appendParentLabel(d) {
-				const fontSize = Math.max(10, Math.min(14, d.r / 5));
-				select(this)
-					.append('text')
-					.attr('text-anchor', 'middle')
-					.attr('pointer-events', 'none')
-					.attr('font-size', fontSize)
-					.attr('font-weight', 600)
-					.attr('y', -d.r + fontSize + 4)
-					.attr('fill', '#3f3a33')
-					.attr('fill-opacity', 0.7)
-					.text(String(d.data.groupName));
-			});
+		renderParentLabels(1);
 
 		parentGroup
-			.on('mouseenter', (event, item) => {
+			.on('mouseenter', function onParentEnter(event, item) {
 				if (pinnedNode !== null) return;
+				if (!zoomedParent) {
+					select(this).select('circle')
+						.attr('fill-opacity', 0.25)
+						.attr('stroke-opacity', 0.8);
+				}
 				showChartTooltip(createParentTooltip(item), event.pageX, event.pageY);
 			})
 			.on('mousemove', event => {
 				if (pinnedNode !== null) return;
 				moveChartTooltip(event.pageX, event.pageY);
 			})
-			.on('mouseleave', () => {
+			.on('mouseleave', function onParentLeave() {
 				if (pinnedNode !== null) return;
+				if (!zoomedParent) {
+					select(this).select('circle')
+						.attr('fill-opacity', 0.15)
+						.attr('stroke-opacity', 0.5);
+				}
 				hideChartTooltip();
 			})
 			.on('click', (event, item) => {
@@ -288,6 +399,10 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 				}
 				pinnedNode = item;
 				showChartTooltip(createParentTooltip(item), event.pageX, event.pageY);
+			})
+			.on('dblclick', (event, item) => {
+				event.stopPropagation();
+				applyZoom(item);
 			});
 	}
 
@@ -318,33 +433,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		.attr('stroke', '#fff')
 		.attr('stroke-width', 1);
 
-	const labelNodes = node.filter(d => labelMode === 'all' || (labelMode === 'auto' && d.r >= autoLabelMinRadius));
-	labelNodes.each(function appendLabel(d) {
-		const fitsInside = d.r >= autoLabelMinRadius;
-		const fontSize = fitsInside
-			? Math.max(9, Math.min(13, d.r / 3))
-			: Math.max(7, Math.min(10, d.r / 2));
-
-		const textEl = select(this)
-			.append('text')
-			.attr('text-anchor', 'middle')
-			.attr('pointer-events', 'none')
-			.attr('font-size', fontSize);
-
-		if (fitsInside) {
-			textEl
-				.attr('dominant-baseline', 'middle')
-				.attr('fill', '#fff')
-				.style('clip-path', `circle(${d.r}px)`)
-				.text(String(d.data.category));
-		} else {
-			textEl
-				.attr('y', d.r + fontSize + 2)
-				.attr('dominant-baseline', 'hanging')
-				.attr('fill', '#3f3a33')
-				.text(String(d.data.category));
-		}
-	});
+	renderLeafLabels(1);
 
 	const showLeafTooltip = (event, item) => {
 		showChartTooltip(createLeafTooltip(item), event.pageX, event.pageY);
@@ -375,6 +464,10 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		});
 
 	svg.on('click', () => {
+		if (zoomedParent) {
+			resetZoom();
+			return;
+		}
 		pinnedNode = null;
 		hideChartTooltip();
 	});
