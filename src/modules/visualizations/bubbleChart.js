@@ -12,6 +12,102 @@ function getBubblePalette(colorScheme) {
 	return CHART_COLOR_PALETTES[colorScheme] || CHART_COLOR_PALETTES.Tableau10;
 }
 
+/**
+ * Resolve nestingColumns from options, with backward-compatible groupColumn fallback.
+ */
+function resolveNestingColumns(opcoes) {
+	if (Array.isArray(opcoes.nestingColumns) && opcoes.nestingColumns.length > 0) {
+		// Deduplicate preserving order
+		return [...new Set(opcoes.nestingColumns.filter(c => c && typeof c === 'string'))];
+	}
+	if (opcoes.groupColumn && typeof opcoes.groupColumn === 'string') {
+		return [opcoes.groupColumn];
+	}
+	return [];
+}
+
+/**
+ * Build a multi-level hierarchy tree from aggregated leaf records.
+ * Each leaf gets a path derived from nestingColumns values.
+ */
+function buildMultiLevelHierarchy(bubbles, nestingColumns) {
+	const root = { children: new Map() };
+
+	for (const bubble of bubbles) {
+		let current = root;
+		for (let depth = 0; depth < nestingColumns.length; depth++) {
+			const segmentValue = bubble.nestingPath[depth];
+			if (!current.children.has(segmentValue)) {
+				current.children.set(segmentValue, {
+					groupName: segmentValue,
+					depth: depth + 1,
+					pathKey: bubble.nestingPath.slice(0, depth + 1).join('→'),
+					children: new Map(),
+				});
+			}
+			current = current.children.get(segmentValue);
+		}
+		// At the deepest intermediate node, store leaf
+		if (!current.leaves) current.leaves = [];
+		current.leaves.push(bubble);
+	}
+
+	// Convert map-based tree to plain hierarchy object
+	function convertNode(mapNode) {
+		if (mapNode.leaves) {
+			// Deepest intermediate: children are leaf bubbles
+			const intermediateChildren = Array.from(mapNode.children.values()).map(convertNode);
+			return {
+				groupName: mapNode.groupName,
+				depth: mapNode.depth,
+				pathKey: mapNode.pathKey,
+				children: [...intermediateChildren, ...mapNode.leaves],
+			};
+		}
+		return {
+			groupName: mapNode.groupName,
+			depth: mapNode.depth,
+			pathKey: mapNode.pathKey,
+			children: Array.from(mapNode.children.values()).map(convertNode),
+		};
+	}
+
+	// Root level
+	const rootChildren = Array.from(root.children.values()).map(convertNode);
+	return { children: rootChildren };
+}
+
+/**
+ * Find the top-level ancestor group name for color assignment.
+ */
+function getTopLevelGroup(node) {
+	// Walk up to depth 1 (first nesting level child of root)
+	let current = node;
+	while (current.parent && current.parent.parent) {
+		current = current.parent;
+	}
+	return current.data.groupName || current.data.group || current.data.category || '—';
+}
+
+/**
+ * Check if a node is an intermediate (non-leaf, non-root) node.
+ */
+function isIntermediate(node) {
+	return node.depth > 0 && node.children && node.children.length > 0;
+}
+
+/**
+ * Check if a d3 hierarchy node is a descendant of another node.
+ */
+function isDescendantOf(node, ancestor) {
+	let current = node.parent;
+	while (current) {
+		if (current === ancestor) return true;
+		current = current.parent;
+	}
+	return false;
+}
+
 export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return fail();
 
@@ -33,7 +129,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	const nestingMode = BUBBLE_CHART.nestingModes.includes(opcoes.nestingMode)
 		? opcoes.nestingMode
 		: BUBBLE_CHART.defaultNestingMode;
-	const groupColumn = opcoes.groupColumn || null;
+	const nestingColumns = resolveNestingColumns(opcoes);
 	const locale = opcoes.locale || undefined;
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
@@ -47,10 +143,14 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		media: opcoes.labels?.media || 'Mean',
 		grupo: opcoes.labels?.grupo || 'Group',
 		filhos: opcoes.labels?.filhos || 'Children',
+		nivel: opcoes.labels?.nivel || 'Level',
 	};
 
-	if (nestingMode === 'grouped' && !groupColumn) {
-		return fail('no-group-column');
+	if (nestingMode === 'grouped' && nestingColumns.length === 0) {
+		// Backward compat: also check legacy groupColumn
+		if (!opcoes.groupColumn) {
+			return fail('no-nesting-columns');
+		}
 	}
 
 	const hasValueColumn = measureMode === 'count'
@@ -61,15 +161,16 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		return fail('no-value-column');
 	}
 
+	// Aggregate by category
 	const aggregated = new Map();
-	const groupByCategory = new Map();
+	const nestingByCategory = new Map();
 
 	if (measureMode === 'count') {
 		dados.forEach(linha => {
 			const category = normalizeCategoryValue(linha[colunaCategoria]);
 			aggregated.set(category, (aggregated.get(category) || 0) + 1);
-			if (groupColumn && !groupByCategory.has(category)) {
-				groupByCategory.set(category, normalizeCategoryValue(linha[groupColumn]));
+			if (nestingColumns.length > 0 && !nestingByCategory.has(category)) {
+				nestingByCategory.set(category, nestingColumns.map(col => normalizeCategoryValue(linha[col])));
 			}
 		});
 	} else {
@@ -81,8 +182,8 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 			if (!Number.isFinite(rawValue)) return;
 			aggregated.set(category, (aggregated.get(category) || 0) + rawValue);
 			counter.set(category, (counter.get(category) || 0) + 1);
-			if (groupColumn && !groupByCategory.has(category)) {
-				groupByCategory.set(category, normalizeCategoryValue(linha[groupColumn]));
+			if (nestingColumns.length > 0 && !nestingByCategory.has(category)) {
+				nestingByCategory.set(category, nestingColumns.map(col => normalizeCategoryValue(linha[col])));
 			}
 		});
 
@@ -100,7 +201,8 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	let bubbles = Array.from(aggregated.entries()).map(([category, value]) => ({
 		category,
 		value,
-		group: groupColumn ? (groupByCategory.get(category) || '—') : category,
+		group: nestingColumns.length > 0 ? (nestingByCategory.get(category)?.[0] || '—') : category,
+		nestingPath: nestingColumns.length > 0 ? (nestingByCategory.get(category) || nestingColumns.map(() => '—')) : [],
 	}));
 
 	bubbles.sort((a, b) => b.value - a.value || String(a.category).localeCompare(String(b.category)));
@@ -146,45 +248,55 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 
 	// Build hierarchy based on nesting mode
 	let hierarchyData;
-	if (nestingMode === 'grouped' && groupColumn) {
-		const groups = new Map();
-		for (const bubble of bubbles) {
-			const groupName = bubble.group;
-			if (!groups.has(groupName)) {
-				groups.set(groupName, []);
-			}
-			groups.get(groupName).push(bubble);
-		}
-		hierarchyData = {
-			children: Array.from(groups.entries()).map(([groupName, children]) => ({
-				groupName,
-				children,
-			})),
-		};
+	const isGrouped = nestingMode === 'grouped' && nestingColumns.length > 0;
+
+	if (isGrouped) {
+		hierarchyData = buildMultiLevelHierarchy(bubbles, nestingColumns);
 	} else {
 		hierarchyData = { children: bubbles };
 	}
 
+	const maxDepth = isGrouped ? nestingColumns.length + 1 : 1;
 	const root = hierarchy(hierarchyData).sum(d => d.value || 0);
 	const packLayout = pack()
 		.size([larguraInterna, alturaInterna])
 		.padding(d => {
-			if (nestingMode === 'grouped' && d.depth === 0) {
-				return Math.max(0, padding) + 2;
+			if (!isGrouped) return Math.max(0, padding);
+			if (d.depth === 0) {
+				return Math.max(0, padding) + BUBBLE_CHART.shallowPaddingBoost;
+			}
+			if (d.depth < maxDepth - 1) {
+				return Math.max(BUBBLE_CHART.deepPaddingMin, padding);
 			}
 			return Math.max(0, padding);
 		});
 	packLayout(root);
 
 	const leaves = root.leaves();
-	const colorDomain = Array.from(new Set(leaves.map(item => item.data.group)));
+
+	// Color domain: by top-level nesting group names (depth 1 children of root)
+	let colorDomain;
+	if (isGrouped && root.children) {
+		colorDomain = root.children.map(c => c.data.groupName || '—');
+	} else {
+		colorDomain = Array.from(new Set(leaves.map(item => item.data.group)));
+	}
 	const colorScale = scaleOrdinal(getBubblePalette(colorScheme)).domain(colorDomain);
+
 	let pinnedNode = null;
-	let zoomedParent = null;
+	const zoomStack = [];
 	const zoomDuration = Number.isFinite(Number(opcoes.zoomTransitionDuration))
 		? Number(opcoes.zoomTransitionDuration)
 		: BUBBLE_CHART.zoomTransitionDuration;
 	const zoomPadding = BUBBLE_CHART.zoomScalePadding;
+
+	/**
+	 * Get color for any node by resolving its top-level ancestor.
+	 */
+	function getNodeColor(node) {
+		const topGroup = getTopLevelGroup(node);
+		return colorScale(topGroup);
+	}
 
 	function renderParentLabels(scale) {
 		viewport.selectAll('text.bubble-parent-label').remove();
@@ -243,14 +355,13 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		});
 	}
 
-	function applyZoom(parentNode) {
+	function applyZoom(targetNode) {
 		pinnedNode = null;
 		hideChartTooltip();
-		zoomedParent = parentNode;
 
-		const scale = Math.min(larguraInterna, alturaInterna) / (2 * parentNode.r * zoomPadding);
-		const tx = larguraInterna / 2 - parentNode.x * scale;
-		const ty = alturaInterna / 2 - parentNode.y * scale;
+		const scale = Math.min(larguraInterna, alturaInterna) / (2 * targetNode.r * zoomPadding);
+		const tx = larguraInterna / 2 - targetNode.x * scale;
+		const ty = alturaInterna / 2 - targetNode.y * scale;
 		const transform = `translate(${margem.left + tx},${margem.top + titleOffset + ty}) scale(${scale})`;
 
 		if (zoomDuration > 0) {
@@ -259,13 +370,13 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 			viewport.attr('transform', transform);
 		}
 
-		// Dim and disable non-focused siblings
+		// Dim and disable non-descendant nodes
 		viewport.selectAll('g.bubble-parent')
-			.attr('opacity', d => d === parentNode ? 1 : 0.12)
-			.style('pointer-events', d => d === parentNode ? 'all' : 'none');
+			.attr('opacity', d => (d === targetNode || isDescendantOf(d, targetNode)) ? 1 : 0.12)
+			.style('pointer-events', d => (d === targetNode || isDescendantOf(d, targetNode)) ? 'all' : 'none');
 		viewport.selectAll('g.bubble-node')
-			.attr('opacity', d => d.parent === parentNode ? 1 : 0.12)
-			.style('pointer-events', d => d.parent === parentNode ? 'all' : 'none');
+			.attr('opacity', d => isDescendantOf(d, targetNode) ? 1 : 0.12)
+			.style('pointer-events', d => isDescendantOf(d, targetNode) ? 'all' : 'none');
 
 		renderParentLabels(scale);
 		renderLeafLabels(scale);
@@ -274,7 +385,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	function resetZoom() {
 		pinnedNode = null;
 		hideChartTooltip();
-		zoomedParent = null;
+		zoomStack.length = 0;
 
 		const transform = `translate(${margem.left},${margem.top + titleOffset})`;
 
@@ -284,7 +395,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 			viewport.attr('transform', transform);
 		}
 
-		// Restore all siblings
+		// Restore all
 		viewport.selectAll('g.bubble-parent')
 			.attr('opacity', 1)
 			.style('pointer-events', 'all');
@@ -294,6 +405,15 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 
 		renderParentLabels(1);
 		renderLeafLabels(1);
+	}
+
+	function zoomToStackTop() {
+		if (zoomStack.length === 0) {
+			resetZoom();
+			return;
+		}
+		const target = zoomStack[zoomStack.length - 1];
+		applyZoom(target);
 	}
 
 	const measureLabel = measureMode === 'mean'
@@ -316,8 +436,8 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 
 		wrapper.appendChild(makeLine(labels.categoria, item.data.category));
 		wrapper.appendChild(makeLine(measureLabel, formatNumber(item.data.value, locale)));
-		if (groupColumn) {
-			wrapper.appendChild(makeLine(labels.grupo, item.data.group));
+		if (isGrouped) {
+			wrapper.appendChild(makeLine(labels.grupo, getTopLevelGroup(item)));
 		}
 		return wrapper;
 	};
@@ -336,33 +456,29 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		wrapper.appendChild(makeLine(labels.grupo, item.data.groupName));
 		wrapper.appendChild(makeLine(measureLabel, formatNumber(item.value, locale)));
 		wrapper.appendChild(makeLine(labels.filhos, item.children.length));
+		wrapper.appendChild(makeLine(labels.nivel, item.depth));
 		return wrapper;
 	};
 
-	// Render parent circles in grouped mode
-	if (nestingMode === 'grouped') {
-		const parentNodes = root.children || [];
+	// Render intermediate (parent) circles at all depths in grouped mode
+	if (isGrouped) {
+		const intermediateNodes = root.descendants().filter(d => isIntermediate(d));
 		const parentGroup = viewport
 			.selectAll('g.bubble-parent')
-			.data(parentNodes)
+			.data(intermediateNodes)
 			.enter()
 			.append('g')
 			.attr('class', 'bubble-parent')
+			.attr('data-depth', d => d.depth)
 			.attr('transform', d => `translate(${d.x},${d.y})`);
 
 		parentGroup.append('circle')
 			.attr('r', d => d.r)
-			.attr('fill', d => {
-				const firstChild = d.children?.[0];
-				return firstChild ? colorScale(firstChild.data.group) : '#ccc';
-			})
-			.attr('fill-opacity', 0.15)
-			.attr('stroke', d => {
-				const firstChild = d.children?.[0];
-				return firstChild ? colorScale(firstChild.data.group) : '#999';
-			})
-			.attr('stroke-width', 1.5)
-			.attr('stroke-opacity', 0.5)
+			.attr('fill', d => getNodeColor(d))
+			.attr('fill-opacity', d => Math.max(0.08, 0.18 - d.depth * 0.03))
+			.attr('stroke', d => getNodeColor(d))
+			.attr('stroke-width', d => Math.max(0.5, 2 - d.depth * 0.4))
+			.attr('stroke-opacity', d => Math.max(0.3, 0.6 - d.depth * 0.1))
 			.style('cursor', 'pointer');
 
 		renderParentLabels(1);
@@ -370,7 +486,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		parentGroup
 			.on('mouseenter', function onParentEnter(event, item) {
 				if (pinnedNode !== null) return;
-				if (!zoomedParent) {
+				if (zoomStack.length === 0) {
 					select(this).select('circle')
 						.attr('fill-opacity', 0.25)
 						.attr('stroke-opacity', 0.8);
@@ -381,12 +497,12 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 				if (pinnedNode !== null) return;
 				moveChartTooltip(event.pageX, event.pageY);
 			})
-			.on('mouseleave', function onParentLeave() {
+			.on('mouseleave', function onParentLeave(event, item) {
 				if (pinnedNode !== null) return;
-				if (!zoomedParent) {
+				if (zoomStack.length === 0) {
 					select(this).select('circle')
-						.attr('fill-opacity', 0.15)
-						.attr('stroke-opacity', 0.5);
+						.attr('fill-opacity', Math.max(0.08, 0.18 - item.depth * 0.03))
+						.attr('stroke-opacity', Math.max(0.3, 0.6 - item.depth * 0.1));
 				}
 				hideChartTooltip();
 			})
@@ -402,6 +518,25 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 			})
 			.on('dblclick', (event, item) => {
 				event.stopPropagation();
+				if (!item.children || item.children.length === 0) return;
+
+				// Check if this node is a descendant of current zoom target
+				const currentTarget = zoomStack.length > 0 ? zoomStack[zoomStack.length - 1] : null;
+				if (currentTarget && !isDescendantOf(item, currentTarget) && item !== currentTarget) {
+					// Rebuild stack to this node's path
+					zoomStack.length = 0;
+					let node = item;
+					const path = [];
+					while (node.parent && node.parent.parent) {
+						path.unshift(node);
+						node = node.parent;
+					}
+					if (node.parent) path.unshift(node);
+					zoomStack.push(...path);
+				} else {
+					// Drill deeper
+					zoomStack.push(item);
+				}
 				applyZoom(item);
 			});
 	}
@@ -420,15 +555,15 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 			`${labels.categoria}: ${d.data.category}`,
 			`${measureLabel}: ${formatNumber(d.data.value, locale)}`,
 		];
-		if (groupColumn) {
-			lines.push(`${labels.grupo}: ${d.data.group}`);
+		if (isGrouped) {
+			lines.push(`${labels.grupo}: ${getTopLevelGroup(d)}`);
 		}
 		return lines.join('\n');
 	});
 
 	node.append('circle')
 		.attr('r', d => d.r)
-		.attr('fill', d => colorScale(d.data.group))
+		.attr('fill', d => isGrouped ? getNodeColor(d) : colorScale(d.data.group))
 		.attr('fill-opacity', 0.7)
 		.attr('stroke', '#fff')
 		.attr('stroke-width', 1);
@@ -464,8 +599,10 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		});
 
 	svg.on('click', () => {
-		if (zoomedParent) {
-			resetZoom();
+		if (zoomStack.length > 0) {
+			// Pop one level
+			zoomStack.pop();
+			zoomToStackTop();
 			return;
 		}
 		pinnedNode = null;

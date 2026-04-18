@@ -117,7 +117,7 @@ describe('bubble chart visualization', () => {
 		expect(container.querySelectorAll('g.bubble-node').length).toBe(4);
 	});
 
-	it('grouped mode without groupColumn returns fail no-group-column', () => {
+	it('grouped mode without groupColumn or nestingColumns returns fail', () => {
 		const container = document.getElementById('bubble');
 		const dados = [
 			{ categoria: 'A' },
@@ -129,7 +129,7 @@ describe('bubble chart visualization', () => {
 		});
 
 		expect(result.ok).toBe(false);
-		expect(result.reason).toBe('no-group-column');
+		expect(result.reason).toBe('no-nesting-columns');
 	});
 
 	it('topN still works in grouped mode (global leaf limit)', () => {
@@ -206,6 +206,183 @@ describe('bubble chart visualization', () => {
 		expect(result.ok).toBe(true);
 		const parentGroups = container.querySelectorAll('g.bubble-parent');
 		expect(parentGroups.length).toBe(2);
+	});
+});
+
+describe('bubble chart multi-level nesting', () => {
+	beforeEach(() => {
+		document.body.innerHTML = '<div id="bubble"></div>';
+	});
+
+	it('nestingColumns length 1 matches current grouped behavior', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'B', grupo: 'X' },
+			{ categoria: 'C', grupo: 'Y' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			nestingColumns: ['grupo'],
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
+		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
+	});
+
+	it('nestingColumns length 2 creates two intermediate depths plus leaves', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', regiao: 'Norte', estado: 'PA' },
+			{ categoria: 'B', regiao: 'Norte', estado: 'PA' },
+			{ categoria: 'C', regiao: 'Norte', estado: 'AM' },
+			{ categoria: 'D', regiao: 'Sul', estado: 'RS' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			nestingColumns: ['regiao', 'estado'],
+		});
+
+		expect(result.ok).toBe(true);
+		// Depth 1: Norte, Sul = 2 parents
+		// Depth 2: PA, AM, RS = 3 parents
+		// Total intermediate: 5
+		expect(container.querySelectorAll('g.bubble-parent').length).toBe(5);
+		expect(container.querySelectorAll('g.bubble-node').length).toBe(4);
+
+		// Check depth attributes
+		const depth1 = container.querySelectorAll('g.bubble-parent[data-depth="1"]');
+		const depth2 = container.querySelectorAll('g.bubble-parent[data-depth="2"]');
+		expect(depth1.length).toBe(2);
+		expect(depth2.length).toBe(3);
+	});
+
+	it('nestingColumns length 3 creates expected depth chain', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', continente: 'America', pais: 'Brasil', regiao: 'Norte' },
+			{ categoria: 'B', continente: 'America', pais: 'Brasil', regiao: 'Sul' },
+			{ categoria: 'C', continente: 'Europa', pais: 'Portugal', regiao: 'Lisboa' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			nestingColumns: ['continente', 'pais', 'regiao'],
+		});
+
+		expect(result.ok).toBe(true);
+		const depth1 = container.querySelectorAll('g.bubble-parent[data-depth="1"]');
+		const depth2 = container.querySelectorAll('g.bubble-parent[data-depth="2"]');
+		const depth3 = container.querySelectorAll('g.bubble-parent[data-depth="3"]');
+		expect(depth1.length).toBe(2); // America, Europa
+		expect(depth2.length).toBe(2); // Brasil, Portugal
+		expect(depth3.length).toBe(3); // Norte, Sul, Lisboa
+		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
+	});
+
+	it('grouped with only groupColumn still works (migration)', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'B', grupo: 'Y' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			groupColumn: 'grupo',
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
+	});
+
+	it('grouped with both nestingColumns and groupColumn prefers nestingColumns', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', regiao: 'Norte', grupo: 'X' },
+			{ categoria: 'B', regiao: 'Sul', grupo: 'Y' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			nestingColumns: ['regiao'],
+			groupColumn: 'grupo',
+		});
+
+		expect(result.ok).toBe(true);
+		// Should group by 'regiao', not 'grupo'
+		const parents = container.querySelectorAll('g.bubble-parent');
+		expect(parents.length).toBe(2);
+	});
+
+	it('null values in nesting columns normalized and rendered', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', grupo: null },
+			{ categoria: 'B', grupo: 'X' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			nestingColumns: ['grupo'],
+		});
+
+		expect(result.ok).toBe(true);
+		// Two groups: '—' and 'X'
+		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
+	});
+
+	it('single-item groups render and zoom without errors', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', grupo: 'X' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			nestingColumns: ['grupo'],
+			zoomTransitionDuration: 0,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelectorAll('g.bubble-parent').length).toBe(1);
+		expect(container.querySelectorAll('g.bubble-node').length).toBe(1);
+	});
+
+	it('empty grouped nesting returns no-nesting-columns fail reason', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			nestingColumns: [],
+		});
+
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('no-nesting-columns');
+	});
+
+	it('intermediate nodes rendered for all depths', () => {
+		const container = document.getElementById('bubble');
+		const dados = [
+			{ categoria: 'A', regiao: 'Norte', estado: 'PA' },
+			{ categoria: 'B', regiao: 'Sul', estado: 'RS' },
+		];
+
+		const result = renderBubbleChart(container, dados, 'categoria', {
+			nestingMode: 'grouped',
+			nestingColumns: ['regiao', 'estado'],
+		});
+
+		expect(result.ok).toBe(true);
+		const allParents = container.querySelectorAll('g.bubble-parent');
+		// 2 regions + 2 states = 4 intermediate nodes
+		expect(allParents.length).toBe(4);
 	});
 });
 
@@ -328,5 +505,148 @@ describe('bubble chart zoom exploration', () => {
 		leafNode.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
 		expect(viewportG.getAttribute('transform')).toBe(originalTransform);
+	});
+});
+
+describe('bubble chart zoom stack (multi-level drill-down)', () => {
+	beforeEach(() => {
+		document.body.innerHTML = '<div id="bubble"></div>';
+	});
+
+	const multiLevelData = [
+		{ categoria: 'A', regiao: 'Norte', estado: 'PA' },
+		{ categoria: 'B', regiao: 'Norte', estado: 'PA' },
+		{ categoria: 'C', regiao: 'Norte', estado: 'AM' },
+		{ categoria: 'D', regiao: 'Sul', estado: 'RS' },
+	];
+
+	const multiLevelOpts = {
+		nestingMode: 'grouped',
+		nestingColumns: ['regiao', 'estado'],
+		zoomTransitionDuration: 0,
+	};
+
+	it('double-click drills from level 1 to level 2', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, multiLevelData, 'categoria', multiLevelOpts);
+
+		const viewportG = container.querySelector('svg > g');
+		const originalTransform = viewportG.getAttribute('transform');
+
+		// Drill into depth-1 parent (region)
+		const depth1Parent = container.querySelector('g.bubble-parent[data-depth="1"]');
+		depth1Parent.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+		const afterDrill1 = viewportG.getAttribute('transform');
+		expect(afterDrill1).toContain('scale(');
+		expect(afterDrill1).not.toBe(originalTransform);
+
+		// Drill deeper into depth-2 parent (state)
+		const depth2Parents = container.querySelectorAll('g.bubble-parent[data-depth="2"]');
+		// Find a depth-2 parent that is visible (opacity 1)
+		let visibleDepth2 = null;
+		for (const p of depth2Parents) {
+			if (p.getAttribute('opacity') === '1') {
+				visibleDepth2 = p;
+				break;
+			}
+		}
+		expect(visibleDepth2).not.toBeNull();
+		visibleDepth2.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+		const afterDrill2 = viewportG.getAttribute('transform');
+		expect(afterDrill2).toContain('scale(');
+		expect(afterDrill2).not.toBe(afterDrill1);
+	});
+
+	it('background click goes back one level, not all levels', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, multiLevelData, 'categoria', multiLevelOpts);
+
+		const viewportG = container.querySelector('svg > g');
+		const originalTransform = viewportG.getAttribute('transform');
+
+		// Drill into depth-1
+		const depth1Parent = container.querySelector('g.bubble-parent[data-depth="1"]');
+		depth1Parent.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+		const afterDrill1 = viewportG.getAttribute('transform');
+
+		// Drill into depth-2
+		const depth2Parents = container.querySelectorAll('g.bubble-parent[data-depth="2"]');
+		let visibleDepth2 = null;
+		for (const p of depth2Parents) {
+			if (p.getAttribute('opacity') === '1') {
+				visibleDepth2 = p;
+				break;
+			}
+		}
+		visibleDepth2.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+		// Click background: should go back to depth-1 zoom, not root
+		container.querySelector('svg').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		const afterBack1 = viewportG.getAttribute('transform');
+		expect(afterBack1).toContain('scale(');
+		expect(afterBack1).toBe(afterDrill1);
+	});
+
+	it('second background click returns to root', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, multiLevelData, 'categoria', multiLevelOpts);
+
+		const viewportG = container.querySelector('svg > g');
+		const originalTransform = viewportG.getAttribute('transform');
+
+		// Drill into depth-1
+		const depth1Parent = container.querySelector('g.bubble-parent[data-depth="1"]');
+		depth1Parent.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+		// Drill into depth-2
+		const depth2Parents = container.querySelectorAll('g.bubble-parent[data-depth="2"]');
+		let visibleDepth2 = null;
+		for (const p of depth2Parents) {
+			if (p.getAttribute('opacity') === '1') {
+				visibleDepth2 = p;
+				break;
+			}
+		}
+		visibleDepth2.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+		// Click background twice
+		container.querySelector('svg').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		container.querySelector('svg').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+		// Should be fully reset
+		expect(viewportG.getAttribute('transform')).toBe(originalTransform);
+	});
+
+	it('non-focused branches dimmed and pointer-events none while zoomed', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, multiLevelData, 'categoria', multiLevelOpts);
+
+		const depth1Parents = container.querySelectorAll('g.bubble-parent[data-depth="1"]');
+		expect(depth1Parents.length).toBe(2);
+
+		// Zoom into first depth-1 parent
+		depth1Parents[0].dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+		expect(depth1Parents[0].getAttribute('opacity')).toBe('1');
+		expect(depth1Parents[1].getAttribute('opacity')).toBe('0.12');
+		expect(depth1Parents[1].style.pointerEvents).toBe('none');
+	});
+
+	it('leaf labels re-evaluated after zoom scale', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, multiLevelData, 'categoria', {
+			...multiLevelOpts,
+			labelMode: 'auto',
+		});
+
+		const labelsBefore = container.querySelectorAll('text.bubble-leaf-label').length;
+
+		// Zoom in
+		const depth1Parent = container.querySelector('g.bubble-parent[data-depth="1"]');
+		depth1Parent.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+
+		const labelsAfter = container.querySelectorAll('text.bubble-leaf-label').length;
+		// After zoom, apparent radius increases, so at least as many labels should show
+		expect(labelsAfter).toBeGreaterThanOrEqual(labelsBefore);
 	});
 });

@@ -12,6 +12,67 @@ import {
 	setupColorPresetListeners,
 } from './controlListenerHelpers.js';
 
+/**
+ * Resolve effective nestingColumns from config, with groupColumn migration.
+ */
+function resolveNestingColumnsFromConfig(config) {
+	if (Array.isArray(config.nestingColumns) && config.nestingColumns.length > 0) {
+		return [...config.nestingColumns];
+	}
+	if (config.groupColumn && typeof config.groupColumn === 'string') {
+		return [config.groupColumn];
+	}
+	return [];
+}
+
+/**
+ * Build progressive nesting level selectors.
+ * Level N+1 only appears if level N has a selected value.
+ */
+function createNestingControls(config, categoryColumn, allColumns, disabled) {
+	const nestingColumns = resolveNestingColumnsFromConfig(config);
+	const nestingMode = BUBBLE_CHART.nestingModes.includes(config.nestingMode)
+		? config.nestingMode
+		: BUBBLE_CHART.defaultNestingMode;
+
+	const controls = [];
+	const isGrouped = nestingMode === 'grouped';
+	const nestingDisabled = disabled || !isGrouped;
+
+	// Determine how many selectors to show: existing levels + 1 empty (if all filled)
+	const levelCount = isGrouped
+		? Math.max(BUBBLE_CHART.maxInitialNestingControlsVisible, nestingColumns.length + (nestingColumns.length > 0 ? 1 : 0))
+		: BUBBLE_CHART.maxInitialNestingControlsVisible;
+
+	for (let i = 0; i < levelCount; i++) {
+		// Exclude already-selected columns at other levels and the category column
+		const excludedColumns = new Set(
+			nestingColumns.filter((_, idx) => idx !== i)
+		);
+		if (categoryColumn) excludedColumns.add(categoryColumn);
+
+		const availableColumns = allColumns.filter(col => !excludedColumns.has(col));
+		const options = [
+			{ value: '', label: t('chive-chart-control-bubble-nesting-empty') },
+			...availableColumns.map(opt => ({ value: opt, label: opt })),
+		];
+
+		const currentValue = nestingColumns[i] || '';
+		controls.push(createSelectControl(
+			`viz-select-bubble-nesting-level-${i}`,
+			t('chive-chart-control-bubble-nesting-level', i + 1),
+			options,
+			currentValue,
+			nestingDisabled
+		));
+
+		// If this level is empty, don't show more levels
+		if (!currentValue) break;
+	}
+
+	return controls;
+}
+
 export function createBubbleChartControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
 	const config = dataset.configGraficos.bubble;
 	const disabled = !dataset.configGraficos.bubble.enabled;
@@ -21,10 +82,6 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 	const nestingMode = BUBBLE_CHART.nestingModes.includes(config.nestingMode)
 		? config.nestingMode
 		: BUBBLE_CHART.defaultNestingMode;
-	const groupOptions = [
-		{ value: '', label: t('chive-chart-option-none') },
-		...allColumns.map(opt => ({ value: opt, label: opt })),
-	];
 
 	const filterControls = createChartFilterControls({
 		chartKey: 'bubble',
@@ -81,16 +138,9 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 		disabled || measureMode === 'count'
 	));
 
-	const groupLabel = nestingMode === 'grouped'
-		? t('chive-chart-control-bubble-group-parent')
-		: t('chive-chart-control-bubble-group-color');
-	dataControls.push(createSelectControl(
-		'viz-select-bubble-group-column',
-		groupLabel,
-		groupOptions,
-		config.groupColumn,
-		disabled
-	));
+	// Progressive nesting level selectors
+	const nestingControls = createNestingControls(config, config.category, allColumns, disabled);
+	dataControls.push(...nestingControls);
 
 	dataControls.push(createSelectControl(
 		'viz-select-bubble-topn',
@@ -160,6 +210,7 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 }
 
 export function setupBubbleChartControlListeners(dataset, baseBubble, numericOptions, allColumnsOrCallback = [], onConfigChangedMaybe) {
+	const allColumns = typeof allColumnsOrCallback === 'function' ? [] : allColumnsOrCallback;
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
@@ -194,10 +245,45 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 	setupSelectListeners([
 		{ id: 'viz-select-bubble-category', key: 'category' },
 		{ id: 'viz-select-bubble-nesting-mode', key: 'nestingMode', transform: v => (BUBBLE_CHART.nestingModes.includes(v) ? v : BUBBLE_CHART.defaultNestingMode) },
-		{ id: 'viz-select-bubble-group-column', key: 'groupColumn', transform: v => v || null },
 		{ id: 'viz-select-bubble-topn', key: 'topN', transform: v => Number(v) },
 		{ id: 'viz-select-bubble-label-mode', key: 'labelMode', transform: v => (['all', 'hover', 'auto'].includes(v) ? v : 'auto') },
 	], dataset, 'bubble', onConfigChanged);
+
+	// Progressive nesting level listeners
+	const nestingColumns = resolveNestingColumnsFromConfig(dataset.configGraficos.bubble);
+	const maxLevels = nestingColumns.length + 1;
+	for (let i = 0; i < maxLevels; i++) {
+		const selectEl = document.getElementById(`viz-select-bubble-nesting-level-${i}`);
+		if (!selectEl) continue;
+		const levelIndex = i;
+		selectEl.addEventListener('change', () => {
+			const currentNesting = resolveNestingColumnsFromConfig(dataset.configGraficos.bubble);
+			const newValue = selectEl.value || null;
+			if (newValue) {
+				// Set this level and truncate deeper levels
+				const updated = currentNesting.slice(0, levelIndex);
+				updated[levelIndex] = newValue;
+				updateActiveDatasetChartConfig({
+					bubble: {
+						...dataset.configGraficos.bubble,
+						nestingColumns: updated,
+						groupColumn: updated[0] || null,
+					},
+				});
+			} else {
+				// Clearing this level: truncate from this level onward
+				const updated = currentNesting.slice(0, levelIndex);
+				updateActiveDatasetChartConfig({
+					bubble: {
+						...dataset.configGraficos.bubble,
+						nestingColumns: updated,
+						groupColumn: updated[0] || null,
+					},
+				});
+			}
+			onConfigChanged?.();
+		});
+	}
 
 	const measureSelect = document.getElementById('viz-select-bubble-measure');
 	if (measureSelect) {

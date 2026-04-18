@@ -17,18 +17,19 @@ vi.mock('../../../src/modules/stateSync.js', () => ({
 
 import { createBubbleChartControls, setupBubbleChartControlListeners } from '../../../src/modules/chart-controls/bubbleControls.js';
 
-function createDataset(measureMode = 'count', valueColumn = null, nestingMode = 'flat') {
+function createDataset(measureMode = 'count', valueColumn = null, nestingMode = 'flat', nestingColumns = []) {
 	return {
 		dados: [
-			{ categoria: 'A', valor: 10, grupo: 'X' },
-			{ categoria: 'B', valor: 20, grupo: 'Y' },
+			{ categoria: 'A', valor: 10, grupo: 'X', regiao: 'Norte' },
+			{ categoria: 'B', valor: 20, grupo: 'Y', regiao: 'Sul' },
 		],
 		configGraficos: {
 			bubble: {
 				enabled: true,
 				expanded: true,
 				category: 'categoria',
-				groupColumn: 'grupo',
+				groupColumn: nestingColumns.length > 0 ? nestingColumns[0] : 'grupo',
+				nestingColumns,
 				customTitle: '',
 				chartHeight: 700,
 				topN: 10,
@@ -145,24 +146,110 @@ describe('bubbleControls nesting mode', () => {
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
 	});
+});
 
-	it('group column control still updates config', () => {
-		const dataset = createDataset('count', null, 'grouped');
-		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']);
+describe('bubbleControls progressive nesting selectors', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('grouped mode shows level 1 selector', () => {
+		const dataset = createDataset('count', null, 'grouped', []);
+		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao']);
+		controls.forEach(control => document.body.appendChild(control));
+
+		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
+		expect(level0).not.toBeNull();
+		expect(level0.disabled).toBe(false);
+	});
+
+	it('selecting level 1 reveals level 2', () => {
+		const dataset = createDataset('count', null, 'grouped', ['grupo']);
+		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao']);
+		controls.forEach(control => document.body.appendChild(control));
+
+		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
+		const level1 = document.getElementById('viz-select-bubble-nesting-level-1');
+
+		expect(level0).not.toBeNull();
+		expect(level0.value).toBe('grupo');
+		expect(level1).not.toBeNull();
+	});
+
+	it('selecting level 2 reveals level 3', () => {
+		const dataset = createDataset('count', null, 'grouped', ['grupo', 'regiao']);
+		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado']);
+		controls.forEach(control => document.body.appendChild(control));
+
+		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
+		const level1 = document.getElementById('viz-select-bubble-nesting-level-1');
+		const level2 = document.getElementById('viz-select-bubble-nesting-level-2');
+
+		expect(level0.value).toBe('grupo');
+		expect(level1.value).toBe('regiao');
+		expect(level2).not.toBeNull();
+	});
+
+	it('options exclude already selected columns and current category column', () => {
+		const dataset = createDataset('count', null, 'grouped', ['grupo']);
+		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao']);
+		controls.forEach(control => document.body.appendChild(control));
+
+		const level1 = document.getElementById('viz-select-bubble-nesting-level-1');
+		const optionValues = Array.from(level1.options).map(o => o.value);
+
+		// Should NOT include 'grupo' (already selected at level 0) or 'categoria' (is category column)
+		expect(optionValues).not.toContain('grupo');
+		expect(optionValues).not.toContain('categoria');
+		// Should include 'regiao'
+		expect(optionValues).toContain('regiao');
+	});
+
+	it('clearing level K truncates deeper levels in config updates', () => {
+		const dataset = createDataset('count', null, 'grouped', ['grupo', 'regiao']);
+		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado']);
 		controls.forEach(control => document.body.appendChild(control));
 
 		const onConfigChanged = vi.fn();
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], onConfigChanged);
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado'], onConfigChanged);
 
-		const groupSelect = document.getElementById('viz-select-bubble-group-column');
-		groupSelect.value = 'categoria';
-		groupSelect.dispatchEvent(new Event('change', { bubbles: true }));
+		// Clear level 0 → should truncate all
+		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
+		level0.value = '';
+		level0.dispatchEvent(new Event('change', { bubbles: true }));
 
 		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
 			bubble: expect.objectContaining({
-				groupColumn: 'categoria',
+				nestingColumns: [],
+				groupColumn: null,
 			}),
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+	});
+
+	it('flat mode nesting selectors are disabled', () => {
+		const dataset = createDataset('count', null, 'flat', []);
+		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao']);
+		controls.forEach(control => document.body.appendChild(control));
+
+		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
+		expect(level0).not.toBeNull();
+		expect(level0.disabled).toBe(true);
+	});
+
+	it('initial config with groupColumn hydrates first nesting level selector correctly', () => {
+		// Simulate old config with only groupColumn, no nestingColumns
+		const dataset = createDataset('count', null, 'grouped', []);
+		dataset.configGraficos.bubble.groupColumn = 'grupo';
+		dataset.configGraficos.bubble.nestingColumns = [];
+
+		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao']);
+		controls.forEach(control => document.body.appendChild(control));
+
+		// The migration in createNestingControls should pick up groupColumn
+		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
+		expect(level0).not.toBeNull();
+		expect(level0.value).toBe('grupo');
 	});
 });

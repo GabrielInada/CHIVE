@@ -96,6 +96,7 @@ export function createDefaultChartConfig() {
 			expanded: false,
 			category: null,
 			groupColumn: null,
+			nestingColumns: [],
 			customTitle: '',
 			chartHeight: 700,
 			topN: BUBBLE_CHART.defaultTopN,
@@ -133,9 +134,17 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 			...defaults.pie,
 			...(config.pie || {}),
 		},
-		bubble: {
-			...defaults.bubble,
-			...(config.bubble || {}),
-		},
+		bubble: (() => {
+			const merged = { ...defaults.bubble, ...(config.bubble || {}) };
+			// Migration: groupColumn → nestingColumns
+			if (Array.isArray(merged.nestingColumns) && merged.nestingColumns.length > 0) {
+				// nestingColumns already set, keep it
+			} else if (merged.groupColumn && typeof merged.groupColumn === 'string') {
+				merged.nestingColumns = [merged.groupColumn];
+			} else {
+				merged.nestingColumns = [];
+			}
+			return merged;
+		})(),
 	};
 }

@@ -271,6 +271,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				topN: chartConfig.bubble.topN,
 				measureMode: bubbleMeasureMode,
 				valueColumn: chartConfig.bubble.valueColumn,
+				nestingColumns: chartConfig.bubble.nestingColumns,
 				groupColumn: chartConfig.bubble.groupColumn,
 				nestingMode: chartConfig.bubble.nestingMode,
 				padding: chartConfig.bubble.padding,
@@ -283,7 +284,8 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					soma: t('chive-tooltip-sum'),
 					media: t('chive-tooltip-mean'),
 					grupo: t('chive-chart-control-bubble-group'),
-					filhos: t('chive-chart-control-bubble-children-count'),
+					filhos: t('chive-chart-control-bubble-node-children-count'),
+					nivel: t('chive-chart-control-bubble-node-depth'),
 				},
 			}
 		);
@@ -291,8 +293,8 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		if (!bubbleResult.ok) {
 			const chave = bubbleResult.reason === 'no-value-column' || bubbleResult.reason === 'no-numeric'
 				? 'chive-chart-empty-bubble-numeric'
-				: bubbleResult.reason === 'no-group-column'
-					? 'chive-chart-empty-bubble-group-required'
+				: bubbleResult.reason === 'no-nesting-columns' || bubbleResult.reason === 'no-group-column'
+					? 'chive-chart-empty-bubble-nesting-required'
 					: 'chive-chart-empty-bubble';
 			showChartMessage(CHART_CONTAINERS.bubble, t(chave));
 		}
