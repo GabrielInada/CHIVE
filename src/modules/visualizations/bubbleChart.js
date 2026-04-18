@@ -144,7 +144,6 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	const leaves = root.leaves();
 	const colorDomain = Array.from(new Set(leaves.map(item => item.data.group)));
 	const colorScale = scaleOrdinal(getBubblePalette(colorScheme)).domain(colorDomain);
-	const defs = svg.append('defs');
 	let pinnedCategory = null;
 
 	const createTooltip = item => {
@@ -208,32 +207,30 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		.attr('stroke-width', 1);
 
 	const labelNodes = node.filter(d => labelMode === 'all' || (labelMode === 'auto' && d.r >= autoLabelMinRadius));
-	labelNodes.each(function appendLabel(d, index) {
+	labelNodes.each(function appendLabel(d) {
 		const fitsInside = d.r >= autoLabelMinRadius;
 		const fontSize = fitsInside
 			? Math.max(9, Math.min(13, d.r / 3))
 			: Math.max(7, Math.min(10, d.r / 2));
+
 		const textEl = select(this)
 			.append('text')
 			.attr('text-anchor', 'middle')
-			.attr('dominant-baseline', 'middle')
 			.attr('pointer-events', 'none')
-			.attr('fill', fitsInside ? '#fff' : '#3f3a33')
-			.attr('font-size', fontSize)
-			.text(String(d.data.category));
+			.attr('font-size', fontSize);
 
 		if (fitsInside) {
-			const clipId = `bubble-clip-${index}-${Math.random().toString(36).slice(2, 8)}`;
-			defs.append('clipPath')
-				.attr('id', clipId)
-				.attr('clipPathUnits', 'userSpaceOnUse')
-				.append('circle')
-				.attr('cx', margem.left + d.x)
-				.attr('cy', margem.top + titleOffset + d.y)
-				.attr('r', d.r);
-			textEl.attr('clip-path', `url(#${clipId})`);
+			textEl
+				.attr('dominant-baseline', 'middle')
+				.attr('fill', '#fff')
+				.style('clip-path', `circle(${d.r}px)`)
+				.text(String(d.data.category));
 		} else {
-			textEl.attr('dy', d.r + fontSize + 2);
+			textEl
+				.attr('y', d.r + fontSize + 2)
+				.attr('dominant-baseline', 'hanging')
+				.attr('fill', '#3f3a33')
+				.text(String(d.data.category));
 		}
 	});
 
