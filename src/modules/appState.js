@@ -34,6 +34,7 @@ const appState = {
 			scatter: false,
 			network: false,
 			pie: false,
+			bubble: false,
 		},
 	},
 };
@@ -246,7 +247,7 @@ export function resetState() {
 	appState.panel.nextChartId = 0;
 	appState.ui.sidebarMode = 'dados';
 	appState.ui.previewRows = 10;
-	appState.ui.expandedCharts = { bar: false, scatter: false, network: false, pie: false };
+	appState.ui.expandedCharts = { bar: false, scatter: false, network: false, pie: false, bubble: false };
 	emitStateChange('stateReset');
 }
 

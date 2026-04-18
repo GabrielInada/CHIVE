@@ -109,11 +109,8 @@ export function createSelectControl(id, labelText, optionsArray, selectedValue, 
 }
 
 // Color Presets for palette quick-apply
-export const COLOR_PRESETS = {
-	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
-	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
-	'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
-};
+import { CHART_COLOR_PALETTES } from '../../config/charts.js';
+export const COLOR_PRESETS = CHART_COLOR_PALETTES;
 
 export { hexToRgb, rgbToHex, interpolateColor } from '../../utils/colorUtils.js';
 

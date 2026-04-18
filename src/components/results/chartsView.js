@@ -1,5 +1,5 @@
 import { t, getLocale } from '../../services/i18nService.js';
-import { renderBarChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
+import { renderBarChart, renderBubbleChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { applyChartFilterRows } from '../../utils/chartFilters.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
@@ -24,6 +24,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const blocoScatter = document.getElementById(CHART_BLOCKS.scatter);
 	const blocoNetwork = document.getElementById(CHART_BLOCKS.network);
 	const blocoPie = document.getElementById(CHART_BLOCKS.pie);
+	const blocoBubble = document.getElementById(CHART_BLOCKS.bubble);
 
 	document.getElementById(BADGE_IDS.charts).textContent = t(
 		'chive-charts-badge',
@@ -38,14 +39,16 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoScatter.style.display = 'block';
 		blocoNetwork.style.display = 'block';
 		blocoPie.style.display = 'block';
+		blocoBubble.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
 		return;
 	}
 
-	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled) {
+	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled) {
 		chartsGrid.style.display = 'none';
 		emptyState.style.display = 'flex';
 		emptyState.textContent = t('chive-chart-empty-none');
@@ -53,10 +56,12 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoScatter.style.display = 'none';
 		blocoNetwork.style.display = 'none';
 		blocoPie.style.display = 'none';
+		blocoBubble.style.display = 'none';
 		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
 		return;
 	}
 
@@ -247,5 +252,48 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	} else {
 		blocoPie.style.display = 'none';
 		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
+	}
+
+	if (chartConfig.bubble.enabled) {
+		blocoBubble.style.display = 'block';
+		document.getElementById(CHART_CONTAINERS.bubble).style.minHeight = `${Number(chartConfig.bubble.chartHeight || 700)}px`;
+		const bubbleRows = applyChartFilterRows(rows, chartConfig.bubble.filter, numericColumnNames);
+		const bubbleMeasureMode = ['count', 'sum', 'mean'].includes(chartConfig.bubble.measureMode)
+			? chartConfig.bubble.measureMode
+			: 'count';
+		const bubbleResult = renderBubbleChart(
+			document.getElementById(CHART_CONTAINERS.bubble),
+			bubbleRows,
+			chartConfig.bubble.category,
+			{
+				customTitle: chartConfig.bubble.customTitle,
+				chartHeight: chartConfig.bubble.chartHeight,
+				topN: chartConfig.bubble.topN,
+				measureMode: bubbleMeasureMode,
+				valueColumn: chartConfig.bubble.valueColumn,
+				groupColumn: chartConfig.bubble.groupColumn,
+				padding: chartConfig.bubble.padding,
+				labelMode: chartConfig.bubble.labelMode,
+				colorScheme: chartConfig.bubble.colorScheme,
+				locale: getLocale(),
+				labels: {
+					categoria: t('chive-chart-control-bubble-category'),
+					contagem: t('chive-tooltip-count'),
+					soma: t('chive-tooltip-sum'),
+					media: t('chive-tooltip-mean'),
+					grupo: t('chive-chart-control-bubble-group'),
+				},
+			}
+		);
+
+		if (!bubbleResult.ok) {
+			const chave = bubbleResult.reason === 'no-value-column' || bubbleResult.reason === 'no-numeric'
+				? 'chive-chart-empty-bubble-numeric'
+				: 'chive-chart-empty-bubble';
+			showChartMessage(CHART_CONTAINERS.bubble, t(chave));
+		}
+	} else {
+		blocoBubble.style.display = 'none';
+		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
 	}
 }

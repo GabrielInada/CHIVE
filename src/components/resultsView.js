@@ -209,6 +209,7 @@ export function renderEmptyState() {
     'chart-scatter-container': document.getElementById('chart-scatter-container'),
     'chart-network-container': document.getElementById('chart-network-container'),
     'chart-pie-container': document.getElementById('chart-pie-container'),
+    'chart-bubble-container': document.getElementById('chart-bubble-container'),
     'badge-charts': document.getElementById('badge-charts'),
     'btn-avancar': document.getElementById('btn-avancar'),
   };
@@ -225,6 +226,7 @@ export function renderEmptyState() {
   if (els['chart-scatter-container']) els['chart-scatter-container'].innerHTML = '';
   if (els['chart-network-container']) els['chart-network-container'].innerHTML = '';
   if (els['chart-pie-container']) els['chart-pie-container'].innerHTML = '';
+  if (els['chart-bubble-container']) els['chart-bubble-container'].innerHTML = '';
   if (els['badge-charts']) els['badge-charts'].textContent = '—';
   if (els['btn-avancar']) els['btn-avancar'].disabled = true;
   

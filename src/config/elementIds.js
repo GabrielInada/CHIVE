@@ -10,6 +10,7 @@ export const CHART_CONTAINERS = {
 	scatter: 'chart-scatter-container',
 	network: 'chart-network-container',
 	pie: 'chart-pie-container',
+	bubble: 'chart-bubble-container',
 };
 
 // Chart block wrappers (visibility containers)
@@ -18,6 +19,7 @@ export const CHART_BLOCKS = {
 	scatter: 'chart-block-scatter',
 	network: 'chart-block-network',
 	pie: 'chart-block-pie',
+	bubble: 'chart-block-bubble',
 };
 
 // Panel elements

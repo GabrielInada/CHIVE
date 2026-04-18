@@ -10,6 +10,7 @@ describe('chartDefaults', () => {
 			expect(config).toHaveProperty('scatter');
 			expect(config).toHaveProperty('network');
 			expect(config).toHaveProperty('pie');
+			expect(config).toHaveProperty('bubble');
 		});
 
 		it('initializes all chart types as disabled', () => {
@@ -18,11 +19,12 @@ describe('chartDefaults', () => {
 			expect(config.scatter.enabled).toBe(false);
 			expect(config.network.enabled).toBe(false);
 			expect(config.pie.enabled).toBe(false);
+			expect(config.bubble.enabled).toBe(false);
 		});
 
 		it('includes default filter objects for each chart type', () => {
 			const config = createDefaultChartConfig();
-			for (const type of ['bar', 'scatter', 'network', 'pie']) {
+			for (const type of ['bar', 'scatter', 'network', 'pie', 'bubble']) {
 				expect(config[type].filter).toEqual(expect.objectContaining({
 					column: null,
 					mode: 'categorical',
@@ -87,6 +89,16 @@ describe('chartDefaults', () => {
 			expect(result.pie.category).toBe('type');
 			expect(result.pie.measureMode).toBe('sum');
 			expect(result.pie.innerRadius).toBeDefined();
+		});
+
+		it('merges partial bubble config with defaults', () => {
+			const result = mergeChartConfigWithDefaults({
+				bubble: { category: 'type', measureMode: 'mean', valueColumn: 'valor' },
+			});
+			expect(result.bubble.category).toBe('type');
+			expect(result.bubble.measureMode).toBe('mean');
+			expect(result.bubble.valueColumn).toBe('valor');
+			expect(result.bubble.padding).toBeDefined();
 		});
 
 		it('preserves top-level overrides like aba', () => {

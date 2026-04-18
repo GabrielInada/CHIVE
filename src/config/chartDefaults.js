@@ -1,4 +1,4 @@
-import { BAR_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT } from './charts.js';
+import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT } from './charts.js';
 import { createDefaultFilterConfig as createDefaultFilter } from '../utils/chartFilters.js';
 
 export function createDefaultChartConfig() {
@@ -91,6 +91,21 @@ export function createDefaultChartConfig() {
 			customSliceColors: {},
 			filter: createDefaultFilter(),
 		},
+		bubble: {
+			enabled: false,
+			expanded: false,
+			category: null,
+			groupColumn: null,
+			customTitle: '',
+			chartHeight: 700,
+			topN: BUBBLE_CHART.defaultTopN,
+			measureMode: BUBBLE_CHART.defaultMeasureMode,
+			valueColumn: null,
+			padding: BUBBLE_CHART.defaultPadding,
+			labelMode: BUBBLE_CHART.defaultLabelMode,
+			colorScheme: 'Tableau10',
+			filter: createDefaultFilter(),
+		},
 	};
 }
 
@@ -116,6 +131,10 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 		pie: {
 			...defaults.pie,
 			...(config.pie || {}),
+		},
+		bubble: {
+			...defaults.bubble,
+			...(config.bubble || {}),
 		},
 	};
 }
