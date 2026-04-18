@@ -5,6 +5,15 @@ import { createCheckboxControl, createSliderControl, createTextControl, normaliz
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
+import {
+	setupExpandListener,
+	setupSelectListeners,
+	setupCheckboxListeners,
+	setupTextInputListener,
+	setupColorInputListener,
+	setupSliderListener,
+	setupColorPresetListeners,
+} from './controlListenerHelpers.js';
 
 export function createScatterPlotControls(dataset, numericOptions, allOptions = []) {
 	const config = dataset.configGraficos.scatter;
@@ -265,67 +274,42 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 		});
 	}
 
-	if (expandScatter) {
-		expandScatter.addEventListener('click', () => {
-			const expanded = expandScatter.getAttribute('aria-expanded') === 'true';
+	setupExpandListener('viz-expand-scatter', dataset, 'scatter', onConfigChanged);
+
+	// Simple selects (no cross-dependency logic)
+	setupSelectListeners([
+		{ id: 'viz-select-x', key: 'x' },
+		{ id: 'viz-select-y', key: 'y' },
+		{ id: 'viz-select-scatter-xscale', key: 'xScale' },
+		{ id: 'viz-select-scatter-yscale', key: 'yScale' },
+		{ id: 'viz-select-scatter-radius', key: 'radius', transform: v => Number(v) },
+		{ id: 'viz-select-scatter-opacity', key: 'opacity', transform: v => Number(v) },
+		{ id: 'viz-select-scatter-color-field', key: 'colorField', transform: v => v || null },
+		{ id: 'viz-select-scatter-color-scheme', key: 'colorScheme' },
+	], dataset, 'scatter', onConfigChanged);
+
+	// colorMode needs custom logic (updates colorField/colorFieldType)
+	const colorModeSelect = document.getElementById('viz-select-scatter-color-mode');
+	if (colorModeSelect) {
+		colorModeSelect.addEventListener('change', () => {
+			const value = colorModeSelect.value;
+			const availableFields = value === 'category' ? categoricas : numericas;
+			const currentField = dataset.configGraficos.scatter.colorField;
 			updateActiveDatasetChartConfig({
 				scatter: {
 					...dataset.configGraficos.scatter,
-					expanded: !expanded,
+					colorMode: value === 'uniform' ? 'uniform' : value,
+					colorField: value === 'uniform'
+						? null
+						: (availableFields.includes(currentField) ? currentField : (availableFields[0] || null)),
+					colorFieldType: value === 'category' ? 'category' : (value === 'numeric' ? 'numeric' : null),
 				},
 			});
 			onConfigChanged?.();
 		});
 	}
 
-	const scatterControls = [
-		{ id: 'viz-select-x', key: 'x' },
-		{ id: 'viz-select-y', key: 'y' },
-		{ id: 'viz-select-scatter-xscale', key: 'xScale' },
-		{ id: 'viz-select-scatter-yscale', key: 'yScale' },
-		{ id: 'viz-select-scatter-radius', key: 'radius', type: 'number' },
-		{ id: 'viz-select-scatter-opacity', key: 'opacity', type: 'number' },
-		{ id: 'viz-select-scatter-color-mode', key: 'colorMode' },
-		{ id: 'viz-select-scatter-color-field', key: 'colorField', toNull: true },
-		{ id: 'viz-select-scatter-color-scheme', key: 'colorScheme' },
-	];
-
-	scatterControls.forEach(({ id, key, type, toNull }) => {
-		const select = document.getElementById(id);
-		if (select) {
-			select.addEventListener('change', () => {
-				const value = type === 'number' ? Number(select.value) : select.value;
-				let nextValue = toNull ? (value || null) : value;
-
-				if (key === 'colorMode') {
-					const availableFields = value === 'category' ? categoricas : numericas;
-					const currentField = dataset.configGraficos.scatter.colorField;
-					nextValue = value === 'uniform' ? 'uniform' : value;
-					updateActiveDatasetChartConfig({
-						scatter: {
-							...dataset.configGraficos.scatter,
-							colorMode: nextValue,
-							colorField: value === 'uniform'
-								? null
-								: (availableFields.includes(currentField) ? currentField : (availableFields[0] || null)),
-							colorFieldType: value === 'category' ? 'category' : (value === 'numeric' ? 'numeric' : null),
-						},
-					});
-					onConfigChanged?.();
-					return;
-				}
-
-				updateActiveDatasetChartConfig({
-					scatter: {
-						...dataset.configGraficos.scatter,
-						[key]: nextValue,
-					},
-				});
-				onConfigChanged?.();
-			});
-		}
-	});
-
+	// Scatter color input (custom: sets colorMode to uniform)
 	const inputScatterColor = document.getElementById('viz-input-scatter-color');
 	if (inputScatterColor) {
 		const applyManualScatterColor = () => {
@@ -344,108 +328,22 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 		inputScatterColor.addEventListener('change', applyManualScatterColor);
 	}
 
-	const inputScatterGradientMin = document.getElementById('viz-input-scatter-gradient-min');
-	if (inputScatterGradientMin) {
-		inputScatterGradientMin.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					gradientMinColor: normalizeHexColor(inputScatterGradientMin.value, CHART_COLORS.scatter),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupColorInputListener('viz-input-scatter-gradient-min', 'gradientMinColor', CHART_COLORS.scatter, dataset, 'scatter', onConfigChanged);
+	setupColorInputListener('viz-input-scatter-gradient-max', 'gradientMaxColor', '#ffffff', dataset, 'scatter', onConfigChanged);
 
-	const inputScatterGradientMax = document.getElementById('viz-input-scatter-gradient-max');
-	if (inputScatterGradientMax) {
-		inputScatterGradientMax.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					gradientMaxColor: normalizeHexColor(inputScatterGradientMax.value, '#ffffff'),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupColorPresetListeners('viz-scatter-color-preset', {
+		color: 0, gradientMinColor: 0, gradientMaxColor: -1,
+	}, {
+		color: CHART_COLORS.scatter, gradientMinColor: CHART_COLORS.scatter, gradientMaxColor: '#ffffff',
+	}, dataset, 'scatter', onConfigChanged, COLOR_PRESETS);
 
-	const scatterPresetButtons = document.querySelectorAll('button[data-color-preset-control="viz-scatter-color-preset"]');
-	scatterPresetButtons.forEach(button => {
-		button.addEventListener('click', () => {
-			const presetName = button.dataset.presetName;
-			const palette = COLOR_PRESETS[presetName] || [];
-			if (palette.length === 0) return;
+	setupCheckboxListeners([
+		{ id: 'viz-toggle-scatter-x-label', key: 'showXAxisLabel' },
+		{ id: 'viz-toggle-scatter-y-label', key: 'showYAxisLabel' },
+	], dataset, 'scatter', onConfigChanged);
 
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					colorScheme: presetName,
-					color: normalizeHexColor(palette[0], CHART_COLORS.scatter),
-					gradientMinColor: normalizeHexColor(palette[0], CHART_COLORS.scatter),
-					gradientMaxColor: normalizeHexColor(palette[palette.length - 1], '#ffffff'),
-				},
-			});
-			onConfigChanged?.();
-		});
-	});
-
-	const toggleScatterXLabel = document.getElementById('viz-toggle-scatter-x-label');
-	if (toggleScatterXLabel) {
-		toggleScatterXLabel.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					showXAxisLabel: toggleScatterXLabel.checked,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const toggleScatterYLabel = document.getElementById('viz-toggle-scatter-y-label');
-	if (toggleScatterYLabel) {
-		toggleScatterYLabel.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					showYAxisLabel: toggleScatterYLabel.checked,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const inputScatterTitle = document.getElementById('viz-input-scatter-title');
-	if (inputScatterTitle) {
-		inputScatterTitle.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					customTitle: String(inputScatterTitle.value || '').trim(),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const sliderScatterHeight = document.getElementById('viz-slider-scatter-height');
-	if (sliderScatterHeight) {
-		const syncOutput = () => {
-			const output = sliderScatterHeight.parentElement?.querySelector('output');
-			if (output) output.textContent = sliderScatterHeight.value;
-		};
-		sliderScatterHeight.addEventListener('input', syncOutput);
-		sliderScatterHeight.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					chartHeight: Number(sliderScatterHeight.value),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupTextInputListener('viz-input-scatter-title', 'customTitle', dataset, 'scatter', onConfigChanged);
+	setupSliderListener('viz-slider-scatter-height', 'chartHeight', dataset, 'scatter', onConfigChanged);
 
 	setupChartFilterControlListeners({
 		chartKey: 'scatter',

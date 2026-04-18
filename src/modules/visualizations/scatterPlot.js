@@ -3,6 +3,7 @@ import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.
 import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
 import { interpolateColor } from '../../utils/colorUtils.js';
+import { ok, fail } from '../../utils/result.js';
 
 const SCATTER_PALETTES = {
 	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
@@ -20,7 +21,7 @@ function normalizarDominio([minimo, maximo]) {
 }
 
 export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
-	if (!container || !eixoX || !eixoY) return { ok: false };
+	if (!container || !eixoX || !eixoY) return fail();
 	const xScale = opcoes.xScale === 'log' ? 'log' : 'linear';
 	const yScale = opcoes.yScale === 'log' ? 'log' : 'linear';
 	const showXAxisLabel = opcoes.showXAxisLabel !== false;
@@ -69,7 +70,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	}
 
 	if (pontos.length === 0) {
-		return { ok: false, reason: xScale === 'log' || yScale === 'log' ? 'log-no-positive' : undefined };
+		return fail(xScale === 'log' || yScale === 'log' ? 'log-no-positive' : undefined);
 	}
 
 	container.innerHTML = '';
@@ -245,5 +246,5 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			.text(axisLabels.y);
 	}
 
-	return { ok: true };
+	return ok();
 }

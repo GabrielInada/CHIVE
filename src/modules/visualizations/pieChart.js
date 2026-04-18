@@ -3,6 +3,7 @@ import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.
 import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
 import { buildSliceColor as _buildSliceColor } from '../../utils/colorUtils.js';
+import { ok, fail } from '../../utils/result.js';
 
 function clamp(value, min, max) {
 	return Math.min(Math.max(value, min), max);
@@ -13,7 +14,7 @@ function buildSliceColor(baseHex, index) {
 }
 
 export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
-	if (!container || !colunaCategoria) return { ok: false };
+	if (!container || !colunaCategoria) return fail();
 
 	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
@@ -60,7 +61,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		.map(([categoria, valor]) => ({ categoria, valor }))
 		.sort((a, b) => b.valor - a.valor || String(a.categoria).localeCompare(String(b.categoria)));
 	if (linhas.length === 0) {
-		return { ok: false, reason: measureMode === 'sum' ? 'sum-no-numeric' : undefined };
+		return fail(measureMode === 'sum' ? 'sum-no-numeric' : undefined);
 	}
 
 	container.innerHTML = '';
@@ -304,5 +305,5 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		});
 	}
 
-	return { ok: true };
+	return ok();
 }

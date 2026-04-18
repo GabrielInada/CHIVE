@@ -12,6 +12,7 @@ import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.
 import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { interpolateColor } from '../../utils/colorUtils.js';
+import { ok, fail } from '../../utils/result.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 
@@ -66,7 +67,7 @@ function stopPreviousSimulation(container) {
 }
 
 export function renderNetworkGraph(container, dados, sourceColumn, targetColumn, opcoes = {}) {
-	if (!container || !sourceColumn || !targetColumn) return { ok: false };
+	if (!container || !sourceColumn || !targetColumn) return fail();
 
 	const weightColumn = opcoes.weightColumn || null;
 	const groupColumn = opcoes.groupColumn || null;
@@ -101,7 +102,7 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 
 	const network = buildNetworkData(dados, sourceColumn, targetColumn, weightColumn, groupColumn);
 	if (network.nodes.length === 0 || network.links.length === 0) {
-		return { ok: false, reason: 'insufficient-data' };
+		return fail('insufficient-data');
 	}
 
 	container.innerHTML = '';
