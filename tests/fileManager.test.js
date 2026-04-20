@@ -86,6 +86,7 @@ describe('fileManager', () => {
     vi.clearAllMocks();
     global.FileReader = FileReaderMock;
     window.confirm = vi.fn(() => true);
+    initFileManager(null);
 
     mocks.processData.mockReturnValue({
       dados: [{ a: 1 }],
@@ -125,8 +126,8 @@ describe('fileManager', () => {
   });
 
   it('trata erros de formato e cancelamento de arquivo grande', async () => {
-    await handleFileUpload([csvFile({ name: 'bad.txt' })]);
-    expect(mocks.showError).toHaveBeenCalledWith('chive-error-format');
+    await handleFileUpload([csvFile({ name: 'bad.xyz' })]);
+    expect(mocks.showError).toHaveBeenCalledWith(`chive-error-format:bad.xyz`);
 
     window.confirm = vi.fn(() => false);
     await handleFileUpload([csvFile({ size: 30 })]);
@@ -338,5 +339,15 @@ describe('fileManager', () => {
     });
     expect(invalid.ok).toBe(false);
     expect(invalid.message).toBe('chive-join-error-select-different-files');
+  });
+
+  it('usa confirmFn injetada no lugar de window.confirm', async () => {
+    const confirmMock = vi.fn(() => false);
+    initFileManager(null, confirmMock);
+
+    await handleFileUpload([csvFile({ size: 30 })]);
+
+    expect(confirmMock).toHaveBeenCalledTimes(1);
+    expect(mocks.showError).toHaveBeenCalledWith('chive-error-cancelled');
   });
 });

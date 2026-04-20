@@ -17,12 +17,17 @@ import {
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { onStateChange } from '../appState.js';
 import { createBarChartControls, setupBarChartControlListeners } from './barControls.js';
+import { createBubbleChartControls, setupBubbleChartControlListeners } from './bubbleControls.js';
 import { createNetworkGraphControls, setupNetworkGraphControlListeners } from './networkControls.js';
 import { createScatterPlotControls, setupScatterPlotControlListeners } from './scatterControls.js';
 import { createPieChartControls, setupPieChartControlListeners } from './pieControls.js';
 import { createTreeMapControls, setupTreeMapControlListeners } from './treemapControls.js';
 import { createChartCard } from './cardFactory.js';
+<<<<<<< HEAD
 import { PREVIEW_BAR_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_SVG, PREVIEW_SCATTER_SVG, PREVIEW_TREEMAP_SVG } from './previews.js';
+=======
+import { PREVIEW_BAR_SVG, PREVIEW_BUBBLE_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_SVG, PREVIEW_SCATTER_SVG } from './previews.js';
+>>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 
 // Callback when chart config changes (will be set by main.js)
 let onChartConfigChangeCallback = null;
@@ -72,6 +77,9 @@ export function renderChartControlsSidebar(dataset) {
 		? categoricas
 		: colunasVisiveis.map(coluna => coluna.nome);
 	const basePie = categoricas.length > 0
+		? categoricas
+		: colunasVisiveis.map(coluna => coluna.nome);
+	const baseBubble = categoricas.length > 0
 		? categoricas
 		: colunasVisiveis.map(coluna => coluna.nome);
 
@@ -126,6 +134,18 @@ export function renderChartControlsSidebar(dataset) {
 		() => createPieChartControls(dataset, basePie, numericas, todasColunas)
 	);
 
+	createChartCard(
+		container,
+		'bubble',
+		config.bubble.enabled,
+		config.bubble.expanded === true,
+		t('chive-chart-toggle-bubble'),
+		t('chive-viz-category-hierarchy'),
+		t('chive-viz-bubble-desc'),
+		PREVIEW_BUBBLE_SVG,
+		() => createBubbleChartControls(dataset, baseBubble, numericas, todasColunas)
+	);
+
 
 	createChartCard(
 		container,
@@ -152,15 +172,16 @@ export function renderChartControlsSidebar(dataset) {
 	);
 
 	// Setup event listeners for all controls
-	setupChartControlListeners(dataset, baseBar, numericas, basePie, todasColunas);
+	setupChartControlListeners(dataset, baseBar, numericas, basePie, baseBubble, todasColunas);
 }
 
 /**
  * Create bar chart control elements
  * @private
  */
-function setupChartControlListeners(dataset, baseBar, numericas, basePie, todasColunas) {
+function setupChartControlListeners(dataset, baseBar, numericas, basePie, baseBubble, todasColunas) {
 	setupBarChartControlListeners(dataset, baseBar, numericas, todasColunas, onChartConfigChangeCallback);
+	setupBubbleChartControlListeners(dataset, baseBubble, numericas, todasColunas, onChartConfigChangeCallback);
 	setupNetworkGraphControlListeners(dataset, todasColunas, numericas, onChartConfigChangeCallback);
 	setupScatterPlotControlListeners(dataset, numericas, todasColunas, onChartConfigChangeCallback);
 	setupPieChartControlListeners(dataset, basePie, numericas, todasColunas, onChartConfigChangeCallback);

@@ -13,17 +13,23 @@ import { parseCsv, parseJson, processData, formatFileSize, joinDatasets } from '
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './appState.js';
 import { showError, clearErrors } from './feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/limits.js';
+import { DELIMITED_EXTENSIONS } from '../config/formats.js';
 import { createDefaultChartConfig } from '../config/chartDefaults.js';
 
 // Callback when dataset list changes
 let onDatasetsChangeCallback = null;
 
+// Confirmation function for user prompts — injectable for testing, defaults to window.confirm
+let confirmFn = message => window.confirm(message);
+
 /**
  * Initialize file manager
  * @param {Function} changeCallback - Called when dataset list changes
+ * @param {Function} [confirmCallback] - Confirmation dialog function, defaults to window.confirm
  */
-export function initFileManager(changeCallback = null) {
+export function initFileManager(changeCallback = null, confirmCallback = null) {
 	onDatasetsChangeCallback = changeCallback;
+	confirmFn = confirmCallback || (message => window.confirm(message));
 }
 
 /**
@@ -56,13 +62,17 @@ export async function handleFileUpload(files) {
  */
 async function processFileForDataset(file) {
 	// Validate file format
-	if (!file.name.match(/\.(csv|json)$/i)) {
-		throw new Error(t('chive-error-format'));
+	const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
+	const isDelimited = DELIMITED_EXTENSIONS.includes(extension);
+	const isJson = extension === 'json';
+
+	if (!isDelimited && !isJson) {
+		throw new Error(t('chive-error-format', [file.name]));
 	}
 
 	// Check file size
 	if (file.size > FILE_SIZE_LIMIT_BYTES) {
-		const confirmarArquivoGrande = window.confirm(
+		const confirmarArquivoGrande = confirmFn(
 			`${t('chive-warn-file-size', [file.name, formatFileSize(FILE_SIZE_LIMIT_BYTES)])} \n${t('chive-warn-file-size-proceed')}`
 		);
 		if (!confirmarArquivoGrande) {
@@ -76,10 +86,11 @@ async function processFileForDataset(file) {
 
 	// Parse based on format
 	try {
-		if (file.name.endsWith('.csv')) {
-			dadosBrutos = parseCsv(content);
-		} else {
+		if (isJson) {
 			dadosBrutos = parseJson(content);
+		} else {
+			// All delimited formats: auto-detects comma, semicolon, tab, pipe
+			dadosBrutos = parseCsv(content);
 		}
 	} catch (err) {
 		throw new Error(`${t('chive-error-parse')}: ${err.message}`);
@@ -87,7 +98,7 @@ async function processFileForDataset(file) {
 
 	// Check row limit
 	if (dadosBrutos.length > ROW_LIMIT) {
-		const confirmarLinhas = window.confirm(
+		const confirmarLinhas = confirmFn(
 			`${t('chive-warn-rows', [dadosBrutos.length, ROW_LIMIT])} \n${t('chive-warn-rows-proceed')}`
 		);
 		if (!confirmarLinhas) {

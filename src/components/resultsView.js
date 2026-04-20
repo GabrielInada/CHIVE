@@ -2,6 +2,7 @@ import { t, getLocale } from '../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
 import { renderCharts } from '../features/chartFeatures/index.js';
 import { getNumericColumns } from '../utils/columnHelpers.js';
+import { translateType } from '../utils/formatters.js';
 
 import { updateTabs } from './results/tabsView.js';
 import { renderTablePreview } from './results/tablePreviewView.js';
@@ -11,11 +12,9 @@ import { renderColumnControlsDOM } from './results/columnControlsView.js';
 import { openJoinBuilderDialog } from './results/joinBuilderView.js';
 import { openPresetDatasetsDialog } from './results/presetDatasetsView.js';
 
-function translateType(type) {
-  if (type === 'numero') return t('chive-type-number');
-  if (type === 'texto') return t('chive-type-text');
-  return type;
-}
+const FILE_LIST_PAGE_SIZE = 15;
+let fileListQuery = '';
+let fileListVisibleCount = FILE_LIST_PAGE_SIZE;
 
 export function showErrorMessage(message) {
   const errorElement = document.getElementById('mensagem-erro');
@@ -33,17 +32,130 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   const list = document.getElementById('lista-arquivos-conteudo');
 
   fileInfo.style.display = 'block';
+  const stickyHeaderId = 'arquivos-topo-fixo';
+  let stickyHeader = document.getElementById(stickyHeaderId);
+  if (!stickyHeader) {
+    stickyHeader = document.createElement('div');
+    stickyHeader.id = stickyHeaderId;
+    stickyHeader.className = 'arquivos-topo-fixo';
+    fileInfo.insertBefore(stickyHeader, summary);
+  }
+
+  if (summary.parentElement !== stickyHeader) {
+    stickyHeader.appendChild(summary);
+  }
+
   summary.textContent = t('chive-files-loaded', datasets.length);
 
-  renderFileListDOM({
-    lista: list,
-    datasets,
-    indiceAtivo: activeIndex,
-    traduzir: t,
-    getLocale,
-    aoSelecionar: onSelect,
-    aoRemover: onRemove,
+  const activeDataset = activeIndex >= 0 && activeIndex < datasets.length ? datasets[activeIndex] : null;
+  const selectedMetaId = 'arquivo-selecionado-meta';
+  let selectedMeta = document.getElementById(selectedMetaId);
+  if (!selectedMeta) {
+    selectedMeta = document.createElement('div');
+    selectedMeta.id = selectedMetaId;
+    selectedMeta.className = 'arquivos-selecionado-meta';
+    stickyHeader.appendChild(selectedMeta);
+  } else if (selectedMeta.parentElement !== stickyHeader) {
+    stickyHeader.appendChild(selectedMeta);
+  }
+
+  if (activeDataset) {
+    const metaText = t(
+      'chive-file-meta',
+      activeDataset.dados.length.toLocaleString(getLocale()),
+      activeDataset.colunas.length,
+      activeDataset.tamanho
+    );
+    selectedMeta.textContent = `${activeDataset.nome} · ${metaText}`;
+    selectedMeta.style.display = 'block';
+    selectedMeta.title = selectedMeta.textContent;
+  } else {
+    selectedMeta.textContent = '';
+    selectedMeta.style.display = 'none';
+    selectedMeta.removeAttribute('title');
+  }
+
+  const toolsId = 'arquivos-ferramentas';
+  let tools = document.getElementById(toolsId);
+  if (!tools) {
+    tools = document.createElement('div');
+    tools.id = toolsId;
+    tools.className = 'arquivos-ferramentas';
+    stickyHeader.appendChild(tools);
+  } else if (tools.parentElement !== stickyHeader) {
+    stickyHeader.appendChild(tools);
+  }
+
+  tools.innerHTML = '';
+  const searchInput = document.createElement('input');
+  searchInput.type = 'search';
+  searchInput.className = 'arquivos-filtro-input';
+  searchInput.id = 'arquivos-filtro-input';
+  searchInput.placeholder = t('chive-files-search-placeholder');
+  searchInput.value = fileListQuery;
+  searchInput.setAttribute('aria-label', t('chive-files-search-placeholder'));
+  tools.appendChild(searchInput);
+
+  const filterStatus = document.createElement('div');
+  filterStatus.className = 'arquivos-filtro-status';
+  tools.appendChild(filterStatus);
+
+  const paginationId = 'arquivos-paginacao';
+  let pagination = document.getElementById(paginationId);
+  if (!pagination) {
+    pagination = document.createElement('div');
+    pagination.id = paginationId;
+    pagination.className = 'arquivos-paginacao';
+    list.insertAdjacentElement('afterend', pagination);
+  }
+
+  const renderList = () => {
+    const renderResult = renderFileListDOM({
+      lista: list,
+      datasets,
+      indiceAtivo: activeIndex,
+      traduzir: t,
+      getLocale,
+      aoSelecionar: onSelect,
+      aoRemover: onRemove,
+      filtro: fileListQuery,
+      limiteVisivel: fileListVisibleCount,
+    });
+
+    filterStatus.textContent = t('chive-files-filter-status', renderResult.filtered, renderResult.total);
+    pagination.innerHTML = '';
+
+    if (renderResult.filtered > FILE_LIST_PAGE_SIZE) {
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'btn-secundario arquivos-paginacao-btn';
+
+      if (renderResult.hasMore) {
+        toggle.textContent = t('chive-files-show-more', renderResult.filtered - renderResult.rendered);
+        toggle.addEventListener('click', () => {
+          fileListVisibleCount += FILE_LIST_PAGE_SIZE;
+          renderList();
+        });
+      } else {
+        toggle.textContent = t('chive-files-show-less');
+        toggle.addEventListener('click', () => {
+          fileListVisibleCount = FILE_LIST_PAGE_SIZE;
+          renderList();
+        });
+      }
+
+      pagination.appendChild(toggle);
+    }
+  };
+
+  searchInput.addEventListener('input', () => {
+    fileListQuery = searchInput.value;
+    fileListVisibleCount = FILE_LIST_PAGE_SIZE;
+    renderList();
   });
+
+  fileListVisibleCount = Math.max(FILE_LIST_PAGE_SIZE, fileListVisibleCount);
+  renderList();
 
   const joinActionsId = 'join-arquivos-acoes';
   let joinActions = document.getElementById(joinActionsId);
@@ -97,6 +209,7 @@ export function renderEmptyState() {
     'chart-scatter-container': document.getElementById('chart-scatter-container'),
     'chart-network-container': document.getElementById('chart-network-container'),
     'chart-pie-container': document.getElementById('chart-pie-container'),
+    'chart-bubble-container': document.getElementById('chart-bubble-container'),
     'badge-charts': document.getElementById('badge-charts'),
     'btn-avancar': document.getElementById('btn-avancar'),
   };
@@ -113,6 +226,7 @@ export function renderEmptyState() {
   if (els['chart-scatter-container']) els['chart-scatter-container'].innerHTML = '';
   if (els['chart-network-container']) els['chart-network-container'].innerHTML = '';
   if (els['chart-pie-container']) els['chart-pie-container'].innerHTML = '';
+  if (els['chart-bubble-container']) els['chart-bubble-container'].innerHTML = '';
   if (els['badge-charts']) els['badge-charts'].textContent = '—';
   if (els['btn-avancar']) els['btn-avancar'].disabled = true;
   

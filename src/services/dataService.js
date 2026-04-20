@@ -1,8 +1,9 @@
-import { csvParse, max, mean, median, min } from 'd3';
-import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS } from '../config/types.js';
+import { dsvFormat, max, mean, median, min } from 'd3';
+import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS, DECIMAL_DETECTION } from '../config/types.js';
+import { isNullish } from '../utils/formatters.js';
 
 function normalizeKeyValue(value, { trim = true, caseSensitive = false } = {}) {
-	if (value === null || value === undefined) return '';
+	if (isNullish(value)) return '';
 
 	if (typeof value === 'number') {
 		if (!Number.isFinite(value)) return '';
@@ -161,14 +162,164 @@ export function joinDatasets({
 	};
 }
 
-export function detectType(values) {
+/**
+ * Normalize a raw numeric string to a form parseable by Number().
+ * Removes thousands separators and converts the decimal separator to dot.
+ *
+ * @param {string} value - Raw string value from the parsed file
+ * @param {string} decimalSeparator - The detected decimal separator: '.' or ','
+ * @returns {string} Normalized string ready for Number()
+ */
+export function normalizeNumericString(value, decimalSeparator) {
+	if (decimalSeparator === ',') {
+		// Comma is decimal: dot is thousands separator
+		// Remove all dots (thousands), replace comma with dot (decimal)
+		return value.replace(/\./g, '').replace(',', '.');
+	}
+	// Dot is decimal: comma is thousands separator
+	// Remove all commas (thousands), dot is already correct for Number()
+	return value.replace(/,/g, '');
+}
+
+/**
+ * Detect the decimal separator used in a dataset by inspecting a sample of raw values.
+ *
+ * Uses a three-stage heuristic:
+ *   Stage 1: Values containing both separators - rightmost is decimal (unambiguous)
+ *   Stage 2: Structural digit-count after the single separator
+ *   Stage 2b: Whole-number thousands heuristic for European integers like "1.000"
+ *   Stage 3: Post-detection NaN validation - if detected separator produces high NaN
+ *            rate on numeric-looking values, try the other separator
+ *
+ * Falls back to '.' (dot) in all ambiguous or empty cases.
+ *
+ * @param {string[]} rawValues - Flat array of raw string values from the dataset sample
+ * @returns {'.' | ','} The detected decimal separator
+ */
+export function detectDecimalSeparator(rawValues) {
+	// Filter to values that look like numbers: digits, dots, commas, optional leading minus
+	const numericLike = rawValues
+		.map(v => String(v ?? '').trim())
+		.filter(v => v.length > 0 && /^-?[\d.,]+$/.test(v));
+
+	if (numericLike.length === 0) return '.';
+
+	let dotDecimalVotes = 0;
+	let commaDecimalVotes = 0;
+
+	for (const value of numericLike) {
+		const hasDot = value.includes('.');
+		const hasComma = value.includes(',');
+
+		// Stage 1: Both separators present - unambiguous vote
+		if (hasDot && hasComma) {
+			if (value.lastIndexOf(',') > value.lastIndexOf('.')) {
+				commaDecimalVotes++;
+			} else {
+				dotDecimalVotes++;
+			}
+			continue;
+		}
+
+		// Stage 2 + 2b: Only dot present
+		if (hasDot) {
+			const afterDot = value.slice(value.lastIndexOf('.') + 1);
+			const digitCount = afterDot.length;
+
+			if (digitCount !== 3) {
+				// 1, 2, or >3 digits after dot: likely decimal
+				dotDecimalVotes++;
+			} else {
+				// Exactly 3 digits after dot
+				// Stage 2b: "1.000" pattern - dot is thousands, so comma would be decimal
+				if (/^\d{1,3}\.\d{3}$/.test(value)) {
+					commaDecimalVotes++;
+				}
+				// Otherwise skip - genuinely ambiguous
+			}
+			continue;
+		}
+
+		// Stage 2: Only comma present
+		if (hasComma) {
+			const afterComma = value.slice(value.lastIndexOf(',') + 1);
+			const digitCount = afterComma.length;
+
+			if (digitCount !== 3) {
+				// 1, 2, or >3 digits after comma: likely decimal
+				commaDecimalVotes++;
+			}
+			// Exactly 3 digits: ambiguous, skip
+			// (no whole-number heuristic for comma - "1,000" is standard US thousands)
+		}
+	}
+
+	// Determine winner from votes
+	const detected = commaDecimalVotes > dotDecimalVotes ? ',' : '.';
+
+	// Stage 3: NaN validation fallback
+	// If the detected separator produces a high NaN rate on the sample,
+	// try the other separator and switch if it performs better.
+	const parseForValidation = (value, sep) => {
+		const hasDot = value.includes('.');
+		const hasComma = value.includes(',');
+
+		if (sep === '.') {
+			if (hasDot && hasComma) {
+				return Number(value.replace(/,/g, ''));
+			}
+			if (hasComma && !hasDot) {
+				// Conservative validation: comma-only values are not dot-decimal by shape.
+				return Number(value);
+			}
+			return Number(value);
+		}
+
+		if (hasDot && hasComma) {
+			return Number(value.replace(/\./g, '').replace(',', '.'));
+		}
+		if (hasComma && !hasDot) {
+			return Number(value.replace(',', '.'));
+		}
+		return Number(value);
+	};
+
+	const nanRate = (sep) => {
+		const results = numericLike.map(v => parseForValidation(v, sep));
+		const nanCount = results.filter(n => isNaN(n)).length;
+		return nanCount / results.length;
+	};
+
+	const detectedNanRate = nanRate(detected);
+	if (detectedNanRate > DECIMAL_DETECTION.nanRateThreshold) {
+		const other = detected === '.' ? ',' : '.';
+		const otherNanRate = nanRate(other);
+		if (otherNanRate < detectedNanRate) {
+			return other;
+		}
+	}
+
+	return detected;
+}
+
+/**
+ * Detect the data type of a column from a sample of its raw values.
+ *
+ * @param {Array} values - Raw values from the column
+ * @param {string} [decimalSeparator='.'] - Decimal separator to use when testing numeric parsing
+ * @returns {string} Column type constant from COLUMN_TYPES
+ */
+export function detectType(values, decimalSeparator = '.') {
 	const validValues = values
 		.slice(0, TYPE_DETECTION.sampleSize)
 		.filter(v => v !== null && v !== undefined && String(v).trim() !== '');
 
 	if (validValues.length === 0) return TYPE_DEFAULTS.fallback;
 
-	const totalNumbers = validValues.filter(v => !isNaN(Number(v))).length;
+	const totalNumbers = validValues.filter(v => {
+		const normalized = normalizeNumericString(String(v), decimalSeparator);
+		return !isNaN(Number(normalized));
+	}).length;
 	if (totalNumbers / validValues.length >= TYPE_DETECTION.numberThreshold) return COLUMN_TYPES.NUMBER;
 
 	const totalDates = validValues.filter(v => !isNaN(Date.parse(v))).length;
@@ -177,8 +328,46 @@ export function detectType(values) {
 	return TYPE_DEFAULTS.fallback;
 }
 
+/**
+ * Detect the delimiter used in a delimited text file by inspecting the first line.
+ * Counts occurrences of each candidate delimiter and returns the one with the highest count.
+ * In case of a tie, priority order is: comma → semicolon → tab → pipe.
+ *
+ * @param {string} firstLine - The first non-empty line of the file content
+ * @returns {string} The detected delimiter character
+ */
+export function detectDelimiter(firstLine) {
+	const candidates = [',', ';', '\t', '|'];
+	const scores = candidates.map(delimiter => ({
+		delimiter,
+		count: firstLine.split(delimiter).length - 1,
+	}));
+
+	// Find the maximum count
+	const maxCount = Math.max(...scores.map(s => s.count));
+
+	// If nothing scored, fall back to comma
+	if (maxCount === 0) return ',';
+
+	// Return the first (highest-priority) delimiter that achieved the max count
+	return scores.find(s => s.count === maxCount).delimiter;
+}
+
+/**
+ * Parse a delimited text file with automatic delimiter detection.
+ * Inspects the first line to detect the delimiter, then parses the full content.
+ *
+ * @param {string} text - Full file content as a string
+ * @returns {Array<Object>} Parsed rows as plain objects
+ */
 export function parseCsv(text) {
-	const rows = csvParse(text);
+	if (!text || text.trim().length === 0) {
+		throw new Error('O arquivo CSV está vazio.');
+	}
+
+	const firstLine = text.split(/\r?\n/).find(line => line.trim().length > 0) || '';
+	const delimiter = detectDelimiter(firstLine);
+	const rows = dsvFormat(delimiter).parse(text);
 
 	if (rows.columns) delete rows.columns;
 	if (rows.length === 0) throw new Error('O arquivo CSV está vazio.');
@@ -221,11 +410,21 @@ export function processData(rawData) {
 		return { dados: [], colunas: [] };
 	}
 
+	// Detect decimal separator once from a flat sample of all raw values.
+	// This is a dataset-level property - all numeric columns in a single file
+	// will use the same decimal convention.
+	const allRawValues = rawData
+		.slice(0, DECIMAL_DETECTION.sampleSize)
+		.flatMap(row => Object.values(row))
+		.map(v => String(v ?? '').trim())
+		.filter(v => v.length > 0);
+	const decimalSeparator = detectDecimalSeparator(allRawValues);
+
 	const columnNames = Object.keys(rawData[0]);
 
 	const columns = columnNames.map(name => {
 		const values = rawData.map(row => row[name]);
-		return { nome: name, tipo: detectType(values) };
+		return { nome: name, tipo: detectType(values, decimalSeparator) };
 	});
 
 	const rows = rawData.map(row => {
@@ -234,7 +433,8 @@ export function processData(rawData) {
 		columns.forEach(({ nome: name, tipo }) => {
 			const value = row[name];
 			if (tipo === 'numero' && value !== '' && value !== null && value !== undefined) {
-				convertedRow[name] = Number(value);
+				const normalized = normalizeNumericString(String(value), decimalSeparator);
+				convertedRow[name] = Number(normalized);
 			} else {
 				convertedRow[name] = value;
 			}

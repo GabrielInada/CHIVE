@@ -7,7 +7,11 @@ export const CHART_TYPES = {
   SCATTER: 'scatter',
   NETWORK: 'network',
   PIE: 'pie',
+<<<<<<< HEAD
   TREEMAP: 'treemap',
+=======
+  BUBBLE: 'bubble',
+>>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 };
 
 export const CHART_COLORS = {
@@ -15,7 +19,11 @@ export const CHART_COLORS = {
   scatter: '#1a472a',
   network: '#3b6a9f',
   pie: '#5f7c33',
+<<<<<<< HEAD
   treemap: '#5a7d99',
+=======
+  bubble: '#7b4f9d',
+>>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 };
 
 export const CHART_DIMENSIONS = {
@@ -47,6 +55,16 @@ export const CHART_DIMENSIONS = {
       right: 16,
       bottom: 16,
       left: 16,
+    },
+  },
+  bubble: {
+    width: 700,
+    height: 700,
+    margins: {
+      top: 10,
+      right: 10,
+      bottom: 10,
+      left: 10,
     },
   },
 };
@@ -101,6 +119,7 @@ export const PIE_CHART = {
   labelPositions: ['inside', 'outside'],
 };
 
+<<<<<<< HEAD
 export const TREEMAP_CHART = {
   measureModes: ['count', 'sum'],
   defaultMeasureMode: 'count',
@@ -108,6 +127,33 @@ export const TREEMAP_CHART = {
   defaultTopN: 20,
   paddingOptions: [1, 2, 4],
   defaultPadding: 2,
+=======
+export const BUBBLE_CHART = {
+  defaultPadding: 3,
+  topNOptions: [0, 10, 20, 50],
+  defaultTopN: 10,
+  measureModes: ['count', 'sum', 'mean'],
+  defaultMeasureMode: 'count',
+  labelModes: ['all', 'hover', 'auto'],
+  defaultLabelMode: 'auto',
+  autoLabelMinRadius: 20,
+  nestingModes: ['flat', 'grouped'],
+  defaultNestingMode: 'flat',
+  defaultNestingColumns: [],
+  parentLabelMinRadius: 40,
+  zoomTransitionDuration: 600,
+  zoomScalePadding: 1.1,
+  shallowPaddingBoost: 2,
+  deepPaddingMin: 1,
+  maxInitialNestingControlsVisible: 1,
+};
+
+export const CHART_COLOR_PALETTES = {
+  Tableau10: ['#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc948', '#b07aa1', '#ff9da7', '#9c755f', '#bab0ac'],
+  Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
+  Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
+  'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
+>>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 };
 
 export const CHART_EMPTY_STATES = {

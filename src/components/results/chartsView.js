@@ -1,7 +1,12 @@
 import { t, getLocale } from '../../services/i18nService.js';
+<<<<<<< HEAD
 import { renderBarChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTreeMap } from '../../modules/visualizations/index.js';
+=======
+import { renderBarChart, renderBubbleChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
+>>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { applyChartFilterRows } from '../../utils/chartFilters.js';
+import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
 
 function showChartMessage(containerId, message) {
 	const container = document.getElementById(containerId);
@@ -17,6 +22,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const numericColumnNames = Array.isArray(visibleNumericColumns)
 		? visibleNumericColumns.map(column => column?.nome).filter(Boolean)
 		: [];
+<<<<<<< HEAD
 	const chartsGrid = document.getElementById('charts-grid');
 	const emptyState = document.getElementById('charts-empty-state');
 	const blocoBar = document.getElementById('chart-block-bar');
@@ -24,8 +30,17 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const blocoNetwork = document.getElementById('chart-block-network');
 	const blocoPie = document.getElementById('chart-block-pie');
 	const blocoTreemap = document.getElementById('chart-block-treemap');
+=======
+	const chartsGrid = document.getElementById(VIEW_IDS.chartsGrid);
+	const emptyState = document.getElementById(VIEW_IDS.chartsEmptyState);
+	const blocoBar = document.getElementById(CHART_BLOCKS.bar);
+	const blocoScatter = document.getElementById(CHART_BLOCKS.scatter);
+	const blocoNetwork = document.getElementById(CHART_BLOCKS.network);
+	const blocoPie = document.getElementById(CHART_BLOCKS.pie);
+	const blocoBubble = document.getElementById(CHART_BLOCKS.bubble);
+>>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 
-	document.getElementById('badge-charts').textContent = t(
+	document.getElementById(BADGE_IDS.charts).textContent = t(
 		'chive-charts-badge',
 		visibleColumns.length,
 		visibleNumericColumns.length
@@ -38,6 +53,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoScatter.style.display = 'block';
 		blocoNetwork.style.display = 'block';
 		blocoPie.style.display = 'block';
+<<<<<<< HEAD
 		blocoTreemap.style.display = 'block';
 		document.getElementById('chart-bar-container').innerHTML = '';
 		document.getElementById('chart-scatter-container').innerHTML = '';
@@ -48,6 +64,18 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	}
 
 	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.treemap.enabled) {
+=======
+		blocoBubble.style.display = 'block';
+		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
+		return;
+	}
+
+	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled) {
+>>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 		chartsGrid.style.display = 'none';
 		emptyState.style.display = 'flex';
 		emptyState.textContent = t('chive-chart-empty-none');
@@ -55,12 +83,21 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoScatter.style.display = 'none';
 		blocoNetwork.style.display = 'none';
 		blocoPie.style.display = 'none';
+<<<<<<< HEAD
 		blocoTreemap.style.display = 'none';
 		document.getElementById('chart-bar-container').innerHTML = '';
 		document.getElementById('chart-scatter-container').innerHTML = '';
 		document.getElementById('chart-network-container').innerHTML = '';
 		document.getElementById('chart-pie-container').innerHTML = '';
 		document.getElementById('chart-treemap-container').innerHTML = '';
+=======
+		blocoBubble.style.display = 'none';
+		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
+>>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 		return;
 	}
 
@@ -69,7 +106,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 
 	if (chartConfig.bar.enabled) {
 		blocoBar.style.display = 'block';
-		document.getElementById('chart-bar-container').style.minHeight = `${Number(chartConfig.bar.chartHeight || 320)}px`;
+		document.getElementById(CHART_CONTAINERS.bar).style.minHeight = `${Number(chartConfig.bar.chartHeight || 320)}px`;
 		const barRows = applyChartFilterRows(rows, chartConfig.bar.filter, numericColumnNames);
 		const barMeasureMode = ['count', 'sum', 'mean'].includes(chartConfig.bar.measureMode)
 			? chartConfig.bar.measureMode
@@ -80,7 +117,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				? t('chive-tooltip-sum')
 				: t('chive-tooltip-count');
 		const barResult = renderBarChart(
-			document.getElementById('chart-bar-container'),
+			document.getElementById(CHART_CONTAINERS.bar),
 			barRows,
 			chartConfig.bar.category,
 			{
@@ -115,19 +152,19 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 			const chave = barResult.reason === 'no-numeric' || barResult.reason === 'no-value-column'
 				? 'chive-chart-empty-bar-numeric'
 				: 'chive-chart-empty-bar';
-			showChartMessage('chart-bar-container', t(chave));
+			showChartMessage(CHART_CONTAINERS.bar, t(chave));
 		}
 	} else {
 		blocoBar.style.display = 'none';
-		document.getElementById('chart-bar-container').innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
 	}
 
 	if (chartConfig.scatter.enabled) {
 		blocoScatter.style.display = 'block';
-		document.getElementById('chart-scatter-container').style.minHeight = `${Number(chartConfig.scatter.chartHeight || 320)}px`;
+		document.getElementById(CHART_CONTAINERS.scatter).style.minHeight = `${Number(chartConfig.scatter.chartHeight || 320)}px`;
 		const scatterRows = applyChartFilterRows(rows, chartConfig.scatter.filter, numericColumnNames);
 		const scatterResult = renderScatterPlot(
-			document.getElementById('chart-scatter-container'),
+			document.getElementById(CHART_CONTAINERS.scatter),
 			scatterRows,
 			chartConfig.scatter.x,
 			chartConfig.scatter.y,
@@ -162,19 +199,19 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 			const chave = scatterResult.reason === 'log-no-positive'
 				? 'chive-chart-empty-scatter-log'
 				: 'chive-chart-empty-scatter';
-			showChartMessage('chart-scatter-container', t(chave));
+			showChartMessage(CHART_CONTAINERS.scatter, t(chave));
 		}
 	} else {
 		blocoScatter.style.display = 'none';
-		document.getElementById('chart-scatter-container').innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
 	}
 
 	if (chartConfig.network.enabled) {
 		blocoNetwork.style.display = 'block';
-		document.getElementById('chart-network-container').style.minHeight = `${Number(chartConfig.network.chartHeight || 420)}px`;
+		document.getElementById(CHART_CONTAINERS.network).style.minHeight = `${Number(chartConfig.network.chartHeight || 420)}px`;
 		const networkRows = applyChartFilterRows(rows, chartConfig.network.filter, numericColumnNames);
 		const networkResult = renderNetworkGraph(
-			document.getElementById('chart-network-container'),
+			document.getElementById(CHART_CONTAINERS.network),
 			networkRows,
 			chartConfig.network.source,
 			chartConfig.network.target,
@@ -203,19 +240,19 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		);
 
 		if (!networkResult.ok) {
-			showChartMessage('chart-network-container', t('chive-chart-empty-network'));
+			showChartMessage(CHART_CONTAINERS.network, t('chive-chart-empty-network'));
 		}
 	} else {
 		blocoNetwork.style.display = 'none';
-		document.getElementById('chart-network-container').innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
 	}
 
 	if (chartConfig.pie.enabled) {
 		blocoPie.style.display = 'block';
-		document.getElementById('chart-pie-container').style.minHeight = `${Number(chartConfig.pie.chartHeight || 360)}px`;
+		document.getElementById(CHART_CONTAINERS.pie).style.minHeight = `${Number(chartConfig.pie.chartHeight || 360)}px`;
 		const pieRows = applyChartFilterRows(rows, chartConfig.pie.filter, numericColumnNames);
 		const pieResult = renderPieChart(
-			document.getElementById('chart-pie-container'),
+			document.getElementById(CHART_CONTAINERS.pie),
 			pieRows,
 			chartConfig.pie.category,
 			{
@@ -246,11 +283,60 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 			const chave = pieResult.reason === 'sum-no-numeric'
 				? 'chive-chart-empty-pie-sum'
 				: 'chive-chart-empty-pie';
-			showChartMessage('chart-pie-container', t(chave));
+			showChartMessage(CHART_CONTAINERS.pie, t(chave));
 		}
 	} else {
 		blocoPie.style.display = 'none';
-		document.getElementById('chart-pie-container').innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
+	}
+
+	if (chartConfig.bubble.enabled) {
+		blocoBubble.style.display = 'block';
+		document.getElementById(CHART_CONTAINERS.bubble).style.minHeight = `${Number(chartConfig.bubble.chartHeight || 700)}px`;
+		const bubbleRows = applyChartFilterRows(rows, chartConfig.bubble.filter, numericColumnNames);
+		const bubbleMeasureMode = ['count', 'sum', 'mean'].includes(chartConfig.bubble.measureMode)
+			? chartConfig.bubble.measureMode
+			: 'count';
+		const bubbleResult = renderBubbleChart(
+			document.getElementById(CHART_CONTAINERS.bubble),
+			bubbleRows,
+			chartConfig.bubble.category,
+			{
+				customTitle: chartConfig.bubble.customTitle,
+				chartHeight: chartConfig.bubble.chartHeight,
+				topN: chartConfig.bubble.topN,
+				measureMode: bubbleMeasureMode,
+				valueColumn: chartConfig.bubble.valueColumn,
+				nestingColumns: chartConfig.bubble.nestingColumns,
+				groupColumn: chartConfig.bubble.groupColumn,
+				nestingMode: chartConfig.bubble.nestingMode,
+				padding: chartConfig.bubble.padding,
+				labelMode: chartConfig.bubble.labelMode,
+				colorScheme: chartConfig.bubble.colorScheme,
+				locale: getLocale(),
+				labels: {
+					categoria: t('chive-chart-control-bubble-category'),
+					contagem: t('chive-tooltip-count'),
+					soma: t('chive-tooltip-sum'),
+					media: t('chive-tooltip-mean'),
+					grupo: t('chive-chart-control-bubble-group'),
+					filhos: t('chive-chart-control-bubble-node-children-count'),
+					nivel: t('chive-chart-control-bubble-node-depth'),
+				},
+			}
+		);
+
+		if (!bubbleResult.ok) {
+			const chave = bubbleResult.reason === 'no-value-column' || bubbleResult.reason === 'no-numeric'
+				? 'chive-chart-empty-bubble-numeric'
+				: bubbleResult.reason === 'no-nesting-columns' || bubbleResult.reason === 'no-group-column'
+					? 'chive-chart-empty-bubble-nesting-required'
+					: 'chive-chart-empty-bubble';
+			showChartMessage(CHART_CONTAINERS.bubble, t(chave));
+		}
+	} else {
+		blocoBubble.style.display = 'none';
+		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
 	}
 
 	if (chartConfig.treemap.enabled) {

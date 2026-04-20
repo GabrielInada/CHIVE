@@ -200,6 +200,10 @@ function getChartSnapshotTitle(containerId, fallbackTitle) {
 		return String(config.pie?.customTitle || '').trim() || fallbackTitle;
 	}
 
+	if (containerId === 'chart-bubble-container') {
+		return String(config.bubble?.customTitle || '').trim() || fallbackTitle;
+	}
+
 	if (containerId === 'chart-network-container') {
 		return String(config.network?.customTitle || '').trim() || fallbackTitle;
 	}
@@ -251,6 +255,32 @@ function buildChartSnapshotMetadata(containerId) {
 		};
 	}
 
+	if (containerId === 'chart-bubble-container') {
+		const bubble = config.bubble || {};
+		const measureLabel = bubble.measureMode === 'sum'
+			? t('chive-chart-control-bubble-measure-sum')
+			: bubble.measureMode === 'mean'
+				? t('chive-chart-control-bubble-measure-mean')
+				: t('chive-chart-control-bubble-measure-count');
+		const category = bubble.category || '-';
+		const valuePart = bubble.measureMode === 'count'
+			? ''
+			: ` · ${t('chive-chart-control-bubble-value-column')}: ${bubble.valueColumn || '-'}`;
+		const groupPart = bubble.groupColumn
+			? ` · ${t('chive-chart-control-bubble-group')}: ${bubble.groupColumn}`
+			: '';
+		const topnPart = ` · ${t('chive-chart-control-bubble-topn')}: ${Number(bubble.topN || 0) === 0 ? t('chive-chart-topn-all') : bubble.topN}`;
+		return {
+			type: 'bubble',
+			category,
+			measureMode: bubble.measureMode,
+			valueColumn: bubble.valueColumn || null,
+			groupColumn: bubble.groupColumn || null,
+			topN: bubble.topN,
+			summary: `${t('chive-chart-control-bubble-category')}: ${category} · ${measureLabel}${valuePart}${groupPart}${topnPart}`,
+		};
+	}
+
 	if (containerId === 'chart-network-container') {
 		const network = config.network || {};
 		const source = network.source || '-';
@@ -284,7 +314,7 @@ function setupLanguageSelectorListeners() {
 
 	const getLocaleLabel = (locale) => {
 		const option = selectLang?.querySelector(`option[value="${locale}"]`);
-		return option?.textContent?.trim() || localeLabels[locale] || locale;
+		return localeLabels[locale] || option?.textContent?.trim() || locale;
 	};
 
 	// Update display button text

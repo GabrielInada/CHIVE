@@ -109,39 +109,10 @@ export function createSelectControl(id, labelText, optionsArray, selectedValue, 
 }
 
 // Color Presets for palette quick-apply
-export const COLOR_PRESETS = {
-	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
-	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
-	'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
-};
+import { CHART_COLOR_PALETTES } from '../../config/charts.js';
+export const COLOR_PRESETS = CHART_COLOR_PALETTES;
 
-export function hexToRgb(hex) {
-	const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-	if (!result) return { r: 0, g: 0, b: 0 };
-	return {
-		r: parseInt(result[1], 16),
-		g: parseInt(result[2], 16),
-		b: parseInt(result[3], 16),
-	};
-}
-
-export function rgbToHex(r, g, b) {
-	const toHex = (val) => Math.round(Math.max(0, Math.min(255, val))).toString(16).padStart(2, '0');
-	return `#${toHex(r)}${toHex(g)}${toHex(b)}`.toUpperCase();
-}
-
-export function interpolateColor(hex1, hex2, t) {
-	// t ranges from 0 to 1
-	const clampT = Math.max(0, Math.min(1, t));
-	const rgb1 = hexToRgb(hex1);
-	const rgb2 = hexToRgb(hex2);
-	
-	const r = rgb1.r + (rgb2.r - rgb1.r) * clampT;
-	const g = rgb1.g + (rgb2.g - rgb1.g) * clampT;
-	const b = rgb1.b + (rgb2.b - rgb1.b) * clampT;
-	
-	return rgbToHex(r, g, b);
-}
+export { hexToRgb, rgbToHex, interpolateColor } from '../../utils/colorUtils.js';
 
 export function createColorPresetControl(id, labelText, presetName, disabled = false, onSelect) {
 	const div = document.createElement('div');

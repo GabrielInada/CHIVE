@@ -1,4 +1,6 @@
 const irisCsvUrl = new URL('./dataset-iris.csv', import.meta.url).href;
+const amazonianTreesCsvUrl = new URL('./dataset-amazonian-trees.csv', import.meta.url).href;
+const amazonMultilevelNestingCsvUrl = new URL('./dataset-amazon-multilevel-nesting.csv', import.meta.url).href;
 
 // Template to append future real datasets from src/data:
 // const yourCsvUrl = new URL('./dataset-your-name.csv', import.meta.url).href;
@@ -30,6 +32,32 @@ export const PRESET_CATALOG = [
     sourceUrl: 'https://en.wikipedia.org/wiki/Iris_flower_data_set',
     sourceLinkLabel: 'Wikipedia',
     dataUrl: irisCsvUrl,
+    dataFormat: 'csv',
+  },
+  {
+    id: 'amazonian-trees',
+    nameKey: 'chive-preset-amazonian-trees-name',
+    descKey: 'chive-preset-amazonian-trees-desc',
+    rows: 40,
+    columns: 4,
+    tags: ['ecology', 'biology'],
+    sourceLabel: 'CHIVE Sample',
+    sourceUrl: '',
+    sourceLinkLabel: '',
+    dataUrl: amazonianTreesCsvUrl,
+    dataFormat: 'csv',
+  },
+  {
+    id: 'amazon-multilevel-nesting',
+    nameKey: 'chive-preset-amazon-multilevel-nesting-name',
+    descKey: 'chive-preset-amazon-multilevel-nesting-desc',
+    rows: 48,
+    columns: 8,
+    tags: ['ecology', 'hierarchy', 'bubble-chart'],
+    sourceLabel: 'CHIVE Sample',
+    sourceUrl: '',
+    sourceLinkLabel: '',
+    dataUrl: amazonMultilevelNestingCsvUrl,
     dataFormat: 'csv',
   },
 ];

@@ -46,8 +46,10 @@ function getCheckedValues(container, selector) {
 		.map(input => input.value);
 }
 
+import { isNullish } from '../../utils/formatters.js';
+
 function normalizeJoinKey(value) {
-	if (value === null || value === undefined) return '';
+	if (isNullish(value)) return '';
 	return String(value).trim().toLowerCase();
 }
 

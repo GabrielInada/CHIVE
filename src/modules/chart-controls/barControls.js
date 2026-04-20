@@ -6,6 +6,15 @@ import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
 import { createSelectControl } from './shared.js';
+import {
+	setupExpandListener,
+	setupSelectListeners,
+	setupCheckboxListeners,
+	setupTextInputListener,
+	setupColorInputListener,
+	setupSliderListener,
+	setupColorPresetListeners,
+} from './controlListenerHelpers.js';
 
 export function createBarChartControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
 	const config = dataset.configGraficos.bar;
@@ -228,9 +237,9 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
-	const toggleBar = document.getElementById('viz-toggle-bar');
-	const expandBar = document.getElementById('viz-expand-bar');
 
+	// --- Toggle (custom logic for default category) ---
+	const toggleBar = document.getElementById('viz-toggle-bar');
 	if (toggleBar) {
 		toggleBar.addEventListener('change', () => {
 			const categoriaAtual = dataset.configGraficos.bar?.category;
@@ -249,58 +258,16 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 		});
 	}
 
-	if (expandBar) {
-		expandBar.addEventListener('click', () => {
-			const expanded = expandBar.getAttribute('aria-expanded') === 'true';
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					expanded: !expanded,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupExpandListener('viz-expand-bar', dataset, 'bar', onConfigChanged);
 
-	const selectBar = document.getElementById('viz-select-bar');
-	if (selectBar) {
-		selectBar.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					category: selectBar.value,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	// --- Data controls ---
+	setupSelectListeners([
+		{ id: 'viz-select-bar', key: 'category' },
+		{ id: 'viz-select-bar-sort', key: 'sort' },
+		{ id: 'viz-select-bar-topn', key: 'topN', transform: v => Number(v) },
+	], dataset, 'bar', onConfigChanged);
 
-	const selectBarSort = document.getElementById('viz-select-bar-sort');
-	if (selectBarSort) {
-		selectBarSort.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					sort: selectBarSort.value,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const selectBarTopN = document.getElementById('viz-select-bar-topn');
-	if (selectBarTopN) {
-		selectBarTopN.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					topN: Number(selectBarTopN.value),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
+	// Measure mode (custom logic for valueColumn dependency)
 	const selectBarMeasure = document.getElementById('viz-select-bar-measure');
 	if (selectBarMeasure) {
 		selectBarMeasure.addEventListener('change', () => {
@@ -321,171 +288,45 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 		});
 	}
 
+	// Value column (custom validation against numericOptions)
 	const selectBarValueColumn = document.getElementById('viz-select-bar-value-column');
 	if (selectBarValueColumn) {
 		selectBarValueColumn.addEventListener('change', () => {
-			const nextValue = numericOptions.includes(selectBarValueColumn.value)
-				? selectBarValueColumn.value
-				: null;
 			updateActiveDatasetChartConfig({
 				bar: {
 					...dataset.configGraficos.bar,
-					valueColumn: nextValue,
+					valueColumn: numericOptions.includes(selectBarValueColumn.value)
+						? selectBarValueColumn.value
+						: null,
 				},
 			});
 			onConfigChanged?.();
 		});
 	}
 
-	const inputBarColor = document.getElementById('viz-input-bar-color');
-	if (inputBarColor) {
-		inputBarColor.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					color: normalizeHexColor(inputBarColor.value, CHART_COLORS.bar),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	// --- Styling controls ---
+	setupColorInputListener('viz-input-bar-color', 'color', CHART_COLORS.bar, dataset, 'bar', onConfigChanged);
+	setupSelectListeners([
+		{ id: 'viz-select-bar-color-mode', key: 'colorMode', transform: v =>
+			['uniform', 'gradient', 'gradient-manual'].includes(v) ? v : 'uniform' },
+	], dataset, 'bar', onConfigChanged);
+	setupColorInputListener('viz-input-bar-gradient-min', 'gradientMinColor', CHART_COLORS.bar, dataset, 'bar', onConfigChanged);
+	setupColorInputListener('viz-input-bar-gradient-max', 'gradientMaxColor', '#ffffff', dataset, 'bar', onConfigChanged);
+	setupSliderListener('viz-slider-bar-threshold', 'manualThresholdPct', dataset, 'bar', onConfigChanged);
+	setupColorPresetListeners('viz-bar-color-preset', {
+		color: 0, gradientMinColor: 0, gradientMaxColor: -1,
+	}, { color: CHART_COLORS.bar, gradientMinColor: CHART_COLORS.bar, gradientMaxColor: '#ffffff' },
+	dataset, 'bar', onConfigChanged, COLOR_PRESETS);
 
-	const selectBarColorMode = document.getElementById('viz-select-bar-color-mode');
-	if (selectBarColorMode) {
-		selectBarColorMode.addEventListener('change', () => {
-			const nextMode = ['uniform', 'gradient', 'gradient-manual'].includes(selectBarColorMode.value)
-				? selectBarColorMode.value
-				: 'uniform';
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					colorMode: nextMode,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	// --- Display controls ---
+	setupCheckboxListeners([
+		{ id: 'viz-toggle-bar-x-label', key: 'showXAxisLabel' },
+		{ id: 'viz-toggle-bar-y-label', key: 'showYAxisLabel' },
+	], dataset, 'bar', onConfigChanged);
+	setupTextInputListener('viz-input-bar-title', 'customTitle', dataset, 'bar', onConfigChanged);
+	setupSliderListener('viz-slider-bar-height', 'chartHeight', dataset, 'bar', onConfigChanged);
 
-	const inputBarGradientMin = document.getElementById('viz-input-bar-gradient-min');
-	if (inputBarGradientMin) {
-		inputBarGradientMin.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					gradientMinColor: normalizeHexColor(inputBarGradientMin.value, CHART_COLORS.bar),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const inputBarGradientMax = document.getElementById('viz-input-bar-gradient-max');
-	if (inputBarGradientMax) {
-		inputBarGradientMax.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					gradientMaxColor: normalizeHexColor(inputBarGradientMax.value, '#ffffff'),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const sliderBarThreshold = document.getElementById('viz-slider-bar-threshold');
-	if (sliderBarThreshold) {
-		const syncOutput = () => {
-			const output = sliderBarThreshold.parentElement?.querySelector('output');
-			if (output) output.textContent = sliderBarThreshold.value;
-		};
-		sliderBarThreshold.addEventListener('input', syncOutput);
-		sliderBarThreshold.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					manualThresholdPct: Number(sliderBarThreshold.value),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const barPresetButtons = document.querySelectorAll('button[data-color-preset-control="viz-bar-color-preset"]');
-	barPresetButtons.forEach(button => {
-		button.addEventListener('click', () => {
-			const presetName = button.dataset.presetName;
-			const palette = COLOR_PRESETS[presetName] || [];
-			if (palette.length === 0) return;
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					colorScheme: presetName,
-					color: normalizeHexColor(palette[0], CHART_COLORS.bar),
-					gradientMinColor: normalizeHexColor(palette[0], CHART_COLORS.bar),
-					gradientMaxColor: normalizeHexColor(palette[palette.length - 1], '#ffffff'),
-				},
-			});
-			onConfigChanged?.();
-		});
-	});
-
-	const toggleBarXLabel = document.getElementById('viz-toggle-bar-x-label');
-	if (toggleBarXLabel) {
-		toggleBarXLabel.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					showXAxisLabel: toggleBarXLabel.checked,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const toggleBarYLabel = document.getElementById('viz-toggle-bar-y-label');
-	if (toggleBarYLabel) {
-		toggleBarYLabel.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					showYAxisLabel: toggleBarYLabel.checked,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const inputBarTitle = document.getElementById('viz-input-bar-title');
-	if (inputBarTitle) {
-		inputBarTitle.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					customTitle: String(inputBarTitle.value || '').trim(),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
-	const sliderBarHeight = document.getElementById('viz-slider-bar-height');
-	if (sliderBarHeight) {
-		const syncOutput = () => {
-			const output = sliderBarHeight.parentElement?.querySelector('output');
-			if (output) output.textContent = sliderBarHeight.value;
-		};
-		sliderBarHeight.addEventListener('input', syncOutput);
-		sliderBarHeight.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					chartHeight: Number(sliderBarHeight.value),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
+	// --- Filter controls ---
 	setupChartFilterControlListeners({
 		chartKey: 'bar',
 		rows: dataset.dados,

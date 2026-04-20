@@ -1,11 +1,5 @@
 import { t } from '../../services/i18nService.js';
-import { formatNumber } from '../../utils/formatters.js';
-
-function translateType(type) {
-	if (type === 'numero') return t('chive-type-number');
-	if (type === 'texto') return t('chive-type-text');
-	return type;
-}
+import { formatNumber, translateType, isEmptyValue } from '../../utils/formatters.js';
 
 export function renderTablePreview(rows, visibleColumns, limit) {
 	const tableContainer = document.getElementById('container-tabela');
@@ -39,7 +33,7 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 			const td = document.createElement('td');
 			if (tipo === 'numero') td.classList.add('num');
 			const value = row[nome];
-			const displayValue = value === null || value === undefined || value === ''
+			const displayValue = isEmptyValue(value)
 				? '—'
 				: (tipo === 'numero' ? formatNumber(value) : String(value));
 			td.textContent = displayValue;
