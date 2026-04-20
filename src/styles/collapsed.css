@@ -33,19 +33,7 @@ body.sidebar-collapsed #btn-voltar-viz {
 }
 
 /* Centraliza e redimensiona a zona de upload no modo colapsado - Lucas */
-body.sidebar-collapsed #zona-upload {
-  padding: 0 !important;
-  border-radius: 7px;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-}
-
-/* Reduz o ícone de upload junto com o botão - Lucas */
+body.sidebar-collapsed #zona-upload,
 body.sidebar-collapsed .upload-icone {
-  margin-bottom: 0;
-  font-size: 13px;
+  display: none;
 }

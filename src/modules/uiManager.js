@@ -123,13 +123,14 @@ export function toggleSidebarCollapsed() {
 		const newCollapsedState = !isCollapsed;
 		
 		document.body.classList.toggle('sidebar-collapsed');
-		
+
 		// Update button accessibility and labels
 		toggleBtn.setAttribute('aria-expanded', String(!newCollapsedState));
 		const labelKey = newCollapsedState ? 'chive-sidebar-expand' : 'chive-sidebar-collapse';
 		const label = t(labelKey);
 		toggleBtn.setAttribute('aria-label', label);
 		toggleBtn.setAttribute('title', label);
+		toggleBtn.textContent = newCollapsedState ? '»' : '«';
 		
 		return newCollapsedState;
 	}

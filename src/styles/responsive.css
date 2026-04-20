@@ -51,13 +51,9 @@
     display: initial !important;
   }
 
-  body.sidebar-collapsed #zona-upload {
-    padding: 32px 20px;
-  }
-
+  body.sidebar-collapsed #zona-upload,
   body.sidebar-collapsed .upload-icone {
-    margin-bottom: 10px;
-    font-size: 28px;
+    display: none;
   }
 
   .area-resultados {
