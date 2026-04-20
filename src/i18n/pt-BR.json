@@ -123,11 +123,8 @@
 	"chive-chart-scatter-title": "Dispersão (X vs Y)",
 	"chive-chart-network-title": "Grafo de rede (ligações origem-destino)",
 	"chive-chart-pie-title": "Pizza/Rosca (composição por categoria)",
-<<<<<<< HEAD
 	"chive-chart-treemap-title": "Treemap (tamanho por valor de categoria)",
-=======
 	"chive-chart-bubble-title": "Bubble (círculos empacotados)",
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 	"chive-chart-control-axis-label-x": "Mostrar rótulo do eixo X",
 	"chive-chart-control-axis-label-y": "Mostrar rótulo do eixo Y",
 	"chive-chart-control-common-title": "Título do gráfico",
@@ -226,11 +223,8 @@
 	"chive-chart-toggle-scatter": "Gráfico de dispersão",
 	"chive-chart-toggle-network": "Grafo de rede",
 	"chive-chart-toggle-pie": "Gráfico de pizza/rosca",
-<<<<<<< HEAD
 	"chive-chart-toggle-treemap": "Treemap",
-=======
 	"chive-chart-toggle-bubble": "Gráfico de bolhas",
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 	"chive-viz-bar-desc": "Compara categorias por frequência ou distribuição.",
 	"chive-viz-scatter-desc": "Relaciona duas variáveis numéricas ponto a ponto.",
 	"chive-viz-network-desc": "Mostra relacionamentos entre entidades por nós conectados.",
@@ -251,13 +245,10 @@
 	"chive-chart-empty-network": "Selecione colunas válidas de origem e destino para renderizar o grafo de rede.",
 	"chive-chart-empty-pie": "Selecione ao menos uma coluna categórica visível para montar o gráfico de pizza/rosca.",
 	"chive-chart-empty-pie-sum": "Selecione uma coluna numérica visível para renderizar pizza/rosca em modo soma.",
-<<<<<<< HEAD
 	"chive-chart-empty-treemap": "Selecione ao menos uma coluna categórica visível para montar o treemap.",
 	"chive-chart-empty-treemap-numeric": "Selecione uma coluna numérica para renderizar o treemap em modo soma.",
-=======
 	"chive-chart-empty-bubble": "Selecione ao menos uma coluna categórica visível para montar o gráfico de bolhas.",
 	"chive-chart-empty-bubble-numeric": "Selecione uma coluna numérica visível para renderizar o gráfico de bolhas em modo soma ou média.",
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 	"chive-chart-empty-none": "Nenhuma visualização selecionada.",
 	"chive-chart-disabled": "Visualização desabilitada no painel lateral.",
 	"chive-chart-no-data": "Sem dados suficientes para este gráfico.",

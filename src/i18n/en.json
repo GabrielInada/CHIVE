@@ -123,11 +123,6 @@
 	"chive-chart-scatter-title": "Scatter plot (X vs Y)",
 	"chive-chart-network-title": "Network graph (source-target links)",
 	"chive-chart-pie-title": "Pie/Donut chart (composition by category)",
-<<<<<<< HEAD
-	"chive-chart-treemap-title": "Treemap (size by category value)",
-=======
-	"chive-chart-bubble-title": "Bubble chart (packed circles)",
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 	"chive-chart-control-axis-label-x": "Show X axis label",
 	"chive-chart-control-axis-label-y": "Show Y axis label",
 	"chive-chart-control-common-title": "Chart title",
@@ -226,11 +221,6 @@
 	"chive-chart-toggle-scatter": "Scatter plot",
 	"chive-chart-toggle-network": "Network graph",
 	"chive-chart-toggle-pie": "Pie/Donut chart",
-<<<<<<< HEAD
-	"chive-chart-toggle-treemap": "Treemap",
-=======
-	"chive-chart-toggle-bubble": "Bubble chart",
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 	"chive-viz-bar-desc": "Compares categories by frequency or distribution.",
 	"chive-viz-scatter-desc": "Relates two numeric variables point by point.",
 	"chive-viz-network-desc": "Shows relationships between entities through linked nodes.",
@@ -251,13 +241,6 @@
 	"chive-chart-empty-network": "Select valid source and target columns to render the network graph.",
 	"chive-chart-empty-pie": "Select at least one visible categorical column to build the pie/donut chart.",
 	"chive-chart-empty-pie-sum": "Select a visible numeric value column to render pie/donut in sum mode.",
-<<<<<<< HEAD
-	"chive-chart-empty-treemap": "Select at least one visible categorical column to build the treemap.",
-	"chive-chart-empty-treemap-numeric": "Select a numeric value column to render the treemap in sum mode.",
-=======
-	"chive-chart-empty-bubble": "Select a visible categorical column to build the bubble chart.",
-	"chive-chart-empty-bubble-numeric": "Select a numeric value column to render the bubble chart in sum or mean mode.",
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 	"chive-chart-empty-none": "No visualization selected.",
 	"chive-chart-disabled": "Visualization disabled in the sidebar.",
 	"chive-chart-no-data": "Not enough data for this chart.",
