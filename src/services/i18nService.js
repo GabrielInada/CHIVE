@@ -62,6 +62,26 @@ export function initializeI18n() {
 	}
 
 	translateStaticPage();
+	setupLanguageSelector();
+	document.body.style.visibility = 'visible';
+}
+
+function setupLanguageSelector() {
+	const selectLang = document.getElementById('select-lang');
+	const langDisplay = document.getElementById('lang-display');
+	if (!selectLang) return;
+
+	const getLabel = (loc) => LOCALE_LABELS[loc] || loc;
+
+	selectLang.addEventListener('change', event => {
+		setLocale(event.target.value);
+	});
+
+	window.addEventListener('chive-locale-changed', () => {
+		const loc = getLocale();
+		selectLang.value = loc;
+		if (langDisplay) langDisplay.textContent = getLabel(loc);
+	});
 }
 
 /**

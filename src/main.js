@@ -70,6 +70,9 @@ async function initializeApplication() {
 // 1. Initialize i18n system
 await initializeI18n();
 
+// Only run app logic on pages that have the main app UI
+if (!document.getElementById('info-arquivo')) return;
+
 // 2. Initialize state management
 initializeStateSync();
 exposeGlobals();
