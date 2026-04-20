@@ -7,6 +7,7 @@ export const CHART_TYPES = {
   SCATTER: 'scatter',
   NETWORK: 'network',
   PIE: 'pie',
+  TREEMAP: 'treemap',
 };
 
 export const CHART_COLORS = {
@@ -14,6 +15,7 @@ export const CHART_COLORS = {
   scatter: '#1a472a',
   network: '#3b6a9f',
   pie: '#5f7c33',
+  treemap: '#5a7d99',
 };
 
 export const CHART_DIMENSIONS = {
@@ -97,6 +99,15 @@ export const PIE_CHART = {
   minOuterRadius: 20,
   measureModes: ['count', 'sum'],
   labelPositions: ['inside', 'outside'],
+};
+
+export const TREEMAP_CHART = {
+  measureModes: ['count', 'sum'],
+  defaultMeasureMode: 'count',
+  topNOptions: [0, 10, 20, 50],
+  defaultTopN: 20,
+  paddingOptions: [1, 2, 4],
+  defaultPadding: 2,
 };
 
 export const CHART_EMPTY_STATES = {

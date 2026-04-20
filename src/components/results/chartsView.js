@@ -1,5 +1,5 @@
 import { t, getLocale } from '../../services/i18nService.js';
-import { renderBarChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
+import { renderBarChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTreeMap } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { applyChartFilterRows } from '../../utils/chartFilters.js';
 
@@ -23,6 +23,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const blocoScatter = document.getElementById('chart-block-scatter');
 	const blocoNetwork = document.getElementById('chart-block-network');
 	const blocoPie = document.getElementById('chart-block-pie');
+	const blocoTreemap = document.getElementById('chart-block-treemap');
 
 	document.getElementById('badge-charts').textContent = t(
 		'chive-charts-badge',
@@ -37,14 +38,16 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoScatter.style.display = 'block';
 		blocoNetwork.style.display = 'block';
 		blocoPie.style.display = 'block';
+		blocoTreemap.style.display = 'block';
 		document.getElementById('chart-bar-container').innerHTML = '';
 		document.getElementById('chart-scatter-container').innerHTML = '';
 		document.getElementById('chart-network-container').innerHTML = '';
 		document.getElementById('chart-pie-container').innerHTML = '';
+		document.getElementById('chart-treemap-container').innerHTML = '';
 		return;
 	}
 
-	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled) {
+	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.treemap.enabled) {
 		chartsGrid.style.display = 'none';
 		emptyState.style.display = 'flex';
 		emptyState.textContent = t('chive-chart-empty-none');
@@ -52,10 +55,12 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoScatter.style.display = 'none';
 		blocoNetwork.style.display = 'none';
 		blocoPie.style.display = 'none';
+		blocoTreemap.style.display = 'none';
 		document.getElementById('chart-bar-container').innerHTML = '';
 		document.getElementById('chart-scatter-container').innerHTML = '';
 		document.getElementById('chart-network-container').innerHTML = '';
 		document.getElementById('chart-pie-container').innerHTML = '';
+		document.getElementById('chart-treemap-container').innerHTML = '';
 		return;
 	}
 
@@ -246,5 +251,46 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	} else {
 		blocoPie.style.display = 'none';
 		document.getElementById('chart-pie-container').innerHTML = '';
+	}
+
+	if (chartConfig.treemap.enabled) {
+		blocoTreemap.style.display = 'block';
+		document.getElementById('chart-treemap-container').style.minHeight = `${Number(chartConfig.treemap.chartHeight || 380)}px`;
+		const treemapRows = applyChartFilterRows(rows, chartConfig.treemap.filter, numericColumnNames);
+		const treemapResult = renderTreeMap(
+			document.getElementById('chart-treemap-container'),
+			treemapRows,
+			chartConfig.treemap.category,
+			{
+				customTitle: chartConfig.treemap.customTitle,
+				chartHeight: chartConfig.treemap.chartHeight,
+				measureMode: chartConfig.treemap.measureMode,
+				valueColumn: chartConfig.treemap.valueColumn,
+				topN: chartConfig.treemap.topN,
+				padding: chartConfig.treemap.padding,
+				showLabels: chartConfig.treemap.showLabels,
+				showValues: chartConfig.treemap.showValues,
+				color: chartConfig.treemap.color,
+				colorMode: chartConfig.treemap.colorMode,
+				colorScheme: chartConfig.treemap.colorScheme,
+				locale: getLocale(),
+				labels: {
+					categoria: t('chive-chart-control-treemap-category'),
+					contagem: t('chive-tooltip-count'),
+					soma: t('chive-tooltip-sum'),
+					percentual: t('chive-tooltip-percentage'),
+				},
+			}
+		);
+
+		if (!treemapResult.ok) {
+			const chave = treemapResult.reason === 'no-value-column'
+				? 'chive-chart-empty-treemap-numeric'
+				: 'chive-chart-empty-treemap';
+			showChartMessage('chart-treemap-container', t(chave));
+		}
+	} else {
+		blocoTreemap.style.display = 'none';
+		document.getElementById('chart-treemap-container').innerHTML = '';
 	}
 }

@@ -1,4 +1,4 @@
-import { BAR_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT } from './charts.js';
+import { BAR_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TREEMAP_CHART } from './charts.js';
 
 function createDefaultFilter() {
 	return {
@@ -103,6 +103,23 @@ export function createDefaultChartConfig() {
 			customSliceColors: {},
 			filter: createDefaultFilter(),
 		},
+		treemap: {
+			enabled: false,
+			category: null,
+			measureMode: TREEMAP_CHART.defaultMeasureMode,
+			valueColumn: null,
+			topN: TREEMAP_CHART.defaultTopN,
+			padding: TREEMAP_CHART.defaultPadding,
+			expanded: false,
+			customTitle: '',
+			chartHeight: 380,
+			color: CHART_COLORS.treemap,
+			colorMode: 'scheme',
+			colorScheme: 'Bold',
+			showLabels: true,
+			showValues: true,
+			filter: createDefaultFilter(),
+		},
 	};
 }
 
@@ -128,6 +145,10 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 		pie: {
 			...defaults.pie,
 			...(config.pie || {}),
+		},
+		treemap: {
+			...defaults.treemap,
+			...(config.treemap || {}),
 		},
 	};
 }

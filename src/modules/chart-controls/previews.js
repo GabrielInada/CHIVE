@@ -43,3 +43,13 @@ export const PREVIEW_PIE_SVG = `
 		<circle cx="56" cy="19" r="5" fill="#fffef9"></circle>
 	</svg>
 `;
+
+export const PREVIEW_TREEMAP_SVG = `
+	<svg viewBox="0 0 84 38" aria-hidden="true">
+		<rect x="2" y="2" width="36" height="34" rx="2" fill="#5a7d99" opacity="0.85"></rect>
+		<rect x="41" y="2" width="20" height="20" rx="2" fill="#4ECDC4" opacity="0.85"></rect>
+		<rect x="64" y="2" width="18" height="20" rx="2" fill="#FF6B6B" opacity="0.85"></rect>
+		<rect x="41" y="25" width="20" height="11" rx="2" fill="#F7DC6F" opacity="0.85"></rect>
+		<rect x="64" y="25" width="18" height="11" rx="2" fill="#BB8FCE" opacity="0.85"></rect>
+	</svg>
+`;
