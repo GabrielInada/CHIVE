@@ -44,7 +44,6 @@ export const PREVIEW_PIE_SVG = `
 	</svg>
 `;
 
-<<<<<<< HEAD
 export const PREVIEW_TREEMAP_SVG = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<rect x="2" y="2" width="36" height="34" rx="2" fill="#5a7d99" opacity="0.85"></rect>
@@ -52,13 +51,14 @@ export const PREVIEW_TREEMAP_SVG = `
 		<rect x="64" y="2" width="18" height="20" rx="2" fill="#FF6B6B" opacity="0.85"></rect>
 		<rect x="41" y="25" width="20" height="11" rx="2" fill="#F7DC6F" opacity="0.85"></rect>
 		<rect x="64" y="25" width="18" height="11" rx="2" fill="#BB8FCE" opacity="0.85"></rect>
-=======
+	</svg>
+`;
+
 export const PREVIEW_BUBBLE_SVG = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<circle cx="18" cy="22" r="10" fill="#c9b3d7"></circle>
 		<circle cx="36" cy="14" r="7" fill="#a87bc1"></circle>
 		<circle cx="52" cy="24" r="12" fill="#7b4f9d"></circle>
 		<circle cx="67" cy="13" r="5" fill="#d7c4e4"></circle>
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 	</svg>
 `;

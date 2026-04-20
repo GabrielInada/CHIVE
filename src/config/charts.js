@@ -7,11 +7,8 @@ export const CHART_TYPES = {
   SCATTER: 'scatter',
   NETWORK: 'network',
   PIE: 'pie',
-<<<<<<< HEAD
   TREEMAP: 'treemap',
-=======
   BUBBLE: 'bubble',
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 };
 
 export const CHART_COLORS = {
@@ -19,11 +16,8 @@ export const CHART_COLORS = {
   scatter: '#1a472a',
   network: '#3b6a9f',
   pie: '#5f7c33',
-<<<<<<< HEAD
   treemap: '#5a7d99',
-=======
   bubble: '#7b4f9d',
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 };
 
 export const CHART_DIMENSIONS = {
@@ -119,7 +113,6 @@ export const PIE_CHART = {
   labelPositions: ['inside', 'outside'],
 };
 
-<<<<<<< HEAD
 export const TREEMAP_CHART = {
   measureModes: ['count', 'sum'],
   defaultMeasureMode: 'count',
@@ -127,7 +120,8 @@ export const TREEMAP_CHART = {
   defaultTopN: 20,
   paddingOptions: [1, 2, 4],
   defaultPadding: 2,
-=======
+};
+
 export const BUBBLE_CHART = {
   defaultPadding: 3,
   topNOptions: [0, 10, 20, 50],
@@ -153,7 +147,6 @@ export const CHART_COLOR_PALETTES = {
   Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
   Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
   'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 };
 
 export const CHART_EMPTY_STATES = {

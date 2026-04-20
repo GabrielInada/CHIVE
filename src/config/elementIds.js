@@ -11,6 +11,7 @@ export const CHART_CONTAINERS = {
 	network: 'chart-network-container',
 	pie: 'chart-pie-container',
 	bubble: 'chart-bubble-container',
+	treemap: 'chart-treemap-container',
 };
 
 // Chart block wrappers (visibility containers)
@@ -20,6 +21,7 @@ export const CHART_BLOCKS = {
 	network: 'chart-block-network',
 	pie: 'chart-block-pie',
 	bubble: 'chart-block-bubble',
+	treemap: 'chart-block-treemap',
 };
 
 // Panel elements

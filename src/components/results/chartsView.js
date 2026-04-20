@@ -1,9 +1,5 @@
 import { t, getLocale } from '../../services/i18nService.js';
-<<<<<<< HEAD
-import { renderBarChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTreeMap } from '../../modules/visualizations/index.js';
-=======
-import { renderBarChart, renderBubbleChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
+import { renderBarChart, renderBubbleChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTreeMap } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { applyChartFilterRows } from '../../utils/chartFilters.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
@@ -22,15 +18,6 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const numericColumnNames = Array.isArray(visibleNumericColumns)
 		? visibleNumericColumns.map(column => column?.nome).filter(Boolean)
 		: [];
-<<<<<<< HEAD
-	const chartsGrid = document.getElementById('charts-grid');
-	const emptyState = document.getElementById('charts-empty-state');
-	const blocoBar = document.getElementById('chart-block-bar');
-	const blocoScatter = document.getElementById('chart-block-scatter');
-	const blocoNetwork = document.getElementById('chart-block-network');
-	const blocoPie = document.getElementById('chart-block-pie');
-	const blocoTreemap = document.getElementById('chart-block-treemap');
-=======
 	const chartsGrid = document.getElementById(VIEW_IDS.chartsGrid);
 	const emptyState = document.getElementById(VIEW_IDS.chartsEmptyState);
 	const blocoBar = document.getElementById(CHART_BLOCKS.bar);
@@ -38,7 +25,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const blocoNetwork = document.getElementById(CHART_BLOCKS.network);
 	const blocoPie = document.getElementById(CHART_BLOCKS.pie);
 	const blocoBubble = document.getElementById(CHART_BLOCKS.bubble);
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
+	const blocoTreemap = document.getElementById(CHART_BLOCKS.treemap);
 
 	document.getElementById(BADGE_IDS.charts).textContent = t(
 		'chive-charts-badge',
@@ -53,29 +40,18 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoScatter.style.display = 'block';
 		blocoNetwork.style.display = 'block';
 		blocoPie.style.display = 'block';
-<<<<<<< HEAD
-		blocoTreemap.style.display = 'block';
-		document.getElementById('chart-bar-container').innerHTML = '';
-		document.getElementById('chart-scatter-container').innerHTML = '';
-		document.getElementById('chart-network-container').innerHTML = '';
-		document.getElementById('chart-pie-container').innerHTML = '';
-		document.getElementById('chart-treemap-container').innerHTML = '';
-		return;
-	}
-
-	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.treemap.enabled) {
-=======
 		blocoBubble.style.display = 'block';
+		blocoTreemap.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
 		return;
 	}
 
-	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled) {
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
+	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled && !chartConfig.treemap.enabled) {
 		chartsGrid.style.display = 'none';
 		emptyState.style.display = 'flex';
 		emptyState.textContent = t('chive-chart-empty-none');
@@ -83,21 +59,14 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoScatter.style.display = 'none';
 		blocoNetwork.style.display = 'none';
 		blocoPie.style.display = 'none';
-<<<<<<< HEAD
-		blocoTreemap.style.display = 'none';
-		document.getElementById('chart-bar-container').innerHTML = '';
-		document.getElementById('chart-scatter-container').innerHTML = '';
-		document.getElementById('chart-network-container').innerHTML = '';
-		document.getElementById('chart-pie-container').innerHTML = '';
-		document.getElementById('chart-treemap-container').innerHTML = '';
-=======
 		blocoBubble.style.display = 'none';
+		blocoTreemap.style.display = 'none';
 		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
+		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
 		return;
 	}
 
@@ -341,10 +310,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 
 	if (chartConfig.treemap.enabled) {
 		blocoTreemap.style.display = 'block';
-		document.getElementById('chart-treemap-container').style.minHeight = `${Number(chartConfig.treemap.chartHeight || 380)}px`;
+		document.getElementById(CHART_CONTAINERS.treemap).style.minHeight = `${Number(chartConfig.treemap.chartHeight || 380)}px`;
 		const treemapRows = applyChartFilterRows(rows, chartConfig.treemap.filter, numericColumnNames);
 		const treemapResult = renderTreeMap(
-			document.getElementById('chart-treemap-container'),
+			document.getElementById(CHART_CONTAINERS.treemap),
 			treemapRows,
 			chartConfig.treemap.category,
 			{
@@ -373,10 +342,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 			const chave = treemapResult.reason === 'no-value-column'
 				? 'chive-chart-empty-treemap-numeric'
 				: 'chive-chart-empty-treemap';
-			showChartMessage('chart-treemap-container', t(chave));
+			showChartMessage(CHART_CONTAINERS.treemap, t(chave));
 		}
 	} else {
 		blocoTreemap.style.display = 'none';
-		document.getElementById('chart-treemap-container').innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
 	}
 }

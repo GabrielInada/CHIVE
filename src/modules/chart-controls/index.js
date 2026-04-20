@@ -23,11 +23,7 @@ import { createScatterPlotControls, setupScatterPlotControlListeners } from './s
 import { createPieChartControls, setupPieChartControlListeners } from './pieControls.js';
 import { createTreeMapControls, setupTreeMapControlListeners } from './treemapControls.js';
 import { createChartCard } from './cardFactory.js';
-<<<<<<< HEAD
-import { PREVIEW_BAR_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_SVG, PREVIEW_SCATTER_SVG, PREVIEW_TREEMAP_SVG } from './previews.js';
-=======
-import { PREVIEW_BAR_SVG, PREVIEW_BUBBLE_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_SVG, PREVIEW_SCATTER_SVG } from './previews.js';
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
+import { PREVIEW_BAR_SVG, PREVIEW_BUBBLE_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_SVG, PREVIEW_SCATTER_SVG, PREVIEW_TREEMAP_SVG } from './previews.js';
 
 // Callback when chart config changes (will be set by main.js)
 let onChartConfigChangeCallback = null;

@@ -1,22 +1,5 @@
-<<<<<<< HEAD
-import { BAR_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TREEMAP_CHART } from './charts.js';
-
-function createDefaultFilter() {
-	return {
-		column: null,
-		mode: 'categorical',
-		include: [],
-		search: '',
-		operator: 'between',
-		min: '',
-		max: '',
-		value: '',
-	};
-}
-=======
-import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT } from './charts.js';
+import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TREEMAP_CHART } from './charts.js';
 import { createDefaultFilterConfig as createDefaultFilter } from '../utils/chartFilters.js';
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 
 export function createDefaultChartConfig() {
 	return {
@@ -108,7 +91,6 @@ export function createDefaultChartConfig() {
 			customSliceColors: {},
 			filter: createDefaultFilter(),
 		},
-<<<<<<< HEAD
 		treemap: {
 			enabled: false,
 			category: null,
@@ -124,7 +106,8 @@ export function createDefaultChartConfig() {
 			colorScheme: 'Bold',
 			showLabels: true,
 			showValues: true,
-=======
+			filter: createDefaultFilter(),
+		},
 		bubble: {
 			enabled: false,
 			expanded: false,
@@ -140,7 +123,6 @@ export function createDefaultChartConfig() {
 			labelMode: BUBBLE_CHART.defaultLabelMode,
 			nestingMode: BUBBLE_CHART.defaultNestingMode,
 			colorScheme: 'Tableau10',
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 			filter: createDefaultFilter(),
 		},
 	};
@@ -169,15 +151,12 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 			...defaults.pie,
 			...(config.pie || {}),
 		},
-<<<<<<< HEAD
 		treemap: {
 			...defaults.treemap,
 			...(config.treemap || {}),
 		},
-=======
 		bubble: (() => {
 			const merged = { ...defaults.bubble, ...(config.bubble || {}) };
-			// Migration: groupColumn → nestingColumns
 			if (Array.isArray(merged.nestingColumns) && merged.nestingColumns.length > 0) {
 				// nestingColumns already set, keep it
 			} else if (merged.groupColumn && typeof merged.groupColumn === 'string') {
@@ -187,6 +166,5 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 			}
 			return merged;
 		})(),
->>>>>>> aaf62f6646e93c88a51408877c51ad22a7e30d83
 	};
 }
