@@ -1,7 +1,7 @@
 import { t, getLocale } from '../../services/i18nService.js';
-import { renderBarChart, renderBubbleChart, renderNetworkGraph, renderPieChart, renderScatterPlot } from '../../modules/visualizations/index.js';
+import { renderBarChart, renderBubbleChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTreeMap } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
-import { applyChartFilterRows } from '../../utils/chartFilters.js';
+import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
 
 function showChartMessage(containerId, message) {
@@ -18,6 +18,11 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const numericColumnNames = Array.isArray(visibleNumericColumns)
 		? visibleNumericColumns.map(column => column?.nome).filter(Boolean)
 		: [];
+	const allColumnNames = Array.isArray(visibleColumns)
+		? visibleColumns.map(column => column?.nome).filter(Boolean)
+		: [];
+	const safeGlobalFilter = resolveGlobalFilterForColumns(chartConfig.globalFilter, allColumnNames);
+	const filteredRows = applyGlobalFilterRules(rows, safeGlobalFilter, numericColumnNames);
 	const chartsGrid = document.getElementById(VIEW_IDS.chartsGrid);
 	const emptyState = document.getElementById(VIEW_IDS.chartsEmptyState);
 	const blocoBar = document.getElementById(CHART_BLOCKS.bar);
@@ -25,6 +30,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const blocoNetwork = document.getElementById(CHART_BLOCKS.network);
 	const blocoPie = document.getElementById(CHART_BLOCKS.pie);
 	const blocoBubble = document.getElementById(CHART_BLOCKS.bubble);
+	const blocoTreemap = document.getElementById(CHART_BLOCKS.treemap);
 
 	document.getElementById(BADGE_IDS.charts).textContent = t(
 		'chive-charts-badge',
@@ -40,15 +46,17 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoNetwork.style.display = 'block';
 		blocoPie.style.display = 'block';
 		blocoBubble.style.display = 'block';
+		blocoTreemap.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
 		return;
 	}
 
-	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled) {
+	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled && !chartConfig.treemap.enabled) {
 		chartsGrid.style.display = 'none';
 		emptyState.style.display = 'flex';
 		emptyState.textContent = t('chive-chart-empty-none');
@@ -57,11 +65,13 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoNetwork.style.display = 'none';
 		blocoPie.style.display = 'none';
 		blocoBubble.style.display = 'none';
+		blocoTreemap.style.display = 'none';
 		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
 		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
 		return;
 	}
 
@@ -71,7 +81,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.bar.enabled) {
 		blocoBar.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.bar).style.minHeight = `${Number(chartConfig.bar.chartHeight || 320)}px`;
-		const barRows = applyChartFilterRows(rows, chartConfig.bar.filter, numericColumnNames);
+		const barRows = filteredRows;
 		const barMeasureMode = ['count', 'sum', 'mean'].includes(chartConfig.bar.measureMode)
 			? chartConfig.bar.measureMode
 			: 'count';
@@ -126,7 +136,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.scatter.enabled) {
 		blocoScatter.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.scatter).style.minHeight = `${Number(chartConfig.scatter.chartHeight || 320)}px`;
-		const scatterRows = applyChartFilterRows(rows, chartConfig.scatter.filter, numericColumnNames);
+		const scatterRows = filteredRows;
 		const scatterResult = renderScatterPlot(
 			document.getElementById(CHART_CONTAINERS.scatter),
 			scatterRows,
@@ -173,7 +183,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.network.enabled) {
 		blocoNetwork.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.network).style.minHeight = `${Number(chartConfig.network.chartHeight || 420)}px`;
-		const networkRows = applyChartFilterRows(rows, chartConfig.network.filter, numericColumnNames);
+		const networkRows = filteredRows;
 		const networkResult = renderNetworkGraph(
 			document.getElementById(CHART_CONTAINERS.network),
 			networkRows,
@@ -214,7 +224,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.pie.enabled) {
 		blocoPie.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.pie).style.minHeight = `${Number(chartConfig.pie.chartHeight || 360)}px`;
-		const pieRows = applyChartFilterRows(rows, chartConfig.pie.filter, numericColumnNames);
+		const pieRows = filteredRows;
 		const pieResult = renderPieChart(
 			document.getElementById(CHART_CONTAINERS.pie),
 			pieRows,
@@ -257,7 +267,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.bubble.enabled) {
 		blocoBubble.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.bubble).style.minHeight = `${Number(chartConfig.bubble.chartHeight || 700)}px`;
-		const bubbleRows = applyChartFilterRows(rows, chartConfig.bubble.filter, numericColumnNames);
+		const bubbleRows = filteredRows;
 		const bubbleMeasureMode = ['count', 'sum', 'mean'].includes(chartConfig.bubble.measureMode)
 			? chartConfig.bubble.measureMode
 			: 'count';
@@ -301,5 +311,46 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	} else {
 		blocoBubble.style.display = 'none';
 		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
+	}
+
+	if (chartConfig.treemap.enabled) {
+		blocoTreemap.style.display = 'block';
+		document.getElementById(CHART_CONTAINERS.treemap).style.minHeight = `${Number(chartConfig.treemap.chartHeight || 380)}px`;
+		const treemapRows = filteredRows;
+		const treemapResult = renderTreeMap(
+			document.getElementById(CHART_CONTAINERS.treemap),
+			treemapRows,
+			chartConfig.treemap.category,
+			{
+				customTitle: chartConfig.treemap.customTitle,
+				chartHeight: chartConfig.treemap.chartHeight,
+				measureMode: chartConfig.treemap.measureMode,
+				valueColumn: chartConfig.treemap.valueColumn,
+				topN: chartConfig.treemap.topN,
+				padding: chartConfig.treemap.padding,
+				showLabels: chartConfig.treemap.showLabels,
+				showValues: chartConfig.treemap.showValues,
+				color: chartConfig.treemap.color,
+				colorMode: chartConfig.treemap.colorMode,
+				colorScheme: chartConfig.treemap.colorScheme,
+				locale: getLocale(),
+				labels: {
+					categoria: t('chive-chart-control-treemap-category'),
+					contagem: t('chive-tooltip-count'),
+					soma: t('chive-tooltip-sum'),
+					percentual: t('chive-tooltip-percentage'),
+				},
+			}
+		);
+
+		if (!treemapResult.ok) {
+			const chave = treemapResult.reason === 'no-value-column'
+				? 'chive-chart-empty-treemap-numeric'
+				: 'chive-chart-empty-treemap';
+			showChartMessage(CHART_CONTAINERS.treemap, t(chave));
+		}
+	} else {
+		blocoTreemap.style.display = 'none';
+		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
 	}
 }

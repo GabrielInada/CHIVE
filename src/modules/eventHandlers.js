@@ -8,7 +8,7 @@
  * - Global keyboard shortcuts
  */
 
-import { t, setLocale, getLocale } from '../services/i18nService.js';
+import { t } from '../services/i18nService.js';
 import { downloadSvgFromContainer } from '../utils/svgExport.js';
 import { addChartToPanel, setupPanelEventListeners } from './panelManager.js';
 import { showError, showFeedback } from './feedbackUI.js';
@@ -27,7 +27,6 @@ export function initializeAllEventHandlers() {
 	setupSidebarNavigationButtons();
 	setupPanelEventListeners();
 	setupChartKebabMenuListeners();
-	setupLanguageSelectorListeners();
 	setupGlobalKeyboardListeners();
 	setupDatasetListeners();
 }
@@ -295,51 +294,6 @@ function buildChartSnapshotMetadata(containerId) {
 	}
 
 	return {};
-}
-
-/**
- * Setup language selector
- * @private
- */
-function setupLanguageSelectorListeners() {
-	const selectLang = document.getElementById('select-lang');
-	const langDisplay = document.getElementById('lang-display');
-	if (!selectLang) return;
-
-	// Map locale codes to display text
-	const localeLabels = {
-		'pt-BR': 'Português',
-		'en': 'English'
-	};
-
-	const getLocaleLabel = (locale) => {
-		const option = selectLang?.querySelector(`option[value="${locale}"]`);
-		return localeLabels[locale] || option?.textContent?.trim() || locale;
-	};
-
-	// Update display button text
-	const updateDisplay = (locale) => {
-		if (langDisplay) {
-			langDisplay.textContent = getLocaleLabel(locale);
-		}
-	};
-
-	selectLang.addEventListener('change', event => {
-		const locale = event.target.value;
-		updateDisplay(locale);
-		setLocale(locale);
-	});
-
-	// Update selector on locale change
-	window.addEventListener('chive-locale-changed', () => {
-		const currentLocale = getLocale();
-		selectLang.value = currentLocale;
-		updateDisplay(currentLocale);
-	});
-
-	// Initialize display with current locale
-	const currentLocale = getLocale();
-	updateDisplay(currentLocale);
 }
 
 /**

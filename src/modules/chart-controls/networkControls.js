@@ -2,7 +2,6 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
-import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
 import {
 	setupExpandListener,
@@ -17,16 +16,6 @@ import {
 export function createNetworkGraphControls(dataset, allOptions, numericOptions, categoryOptions) {
 	const config = dataset.configGraficos.network;
 	const disabled = !dataset.configGraficos.network.enabled;
-
-	// ====== FILTERS SECTION (Top priority, always expanded) ======
-	const filterControls = createChartFilterControls({
-		chartKey: 'network',
-		rows: dataset.dados,
-		allColumns: allOptions,
-		numericColumns: numericOptions,
-		rawFilter: config.filter,
-		disabled,
-	});
 
 	// ====== DATA & AGGREGATION SECTION (Node/edge definitions) ======
 	const dataControls = [];
@@ -236,7 +225,6 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 
 	// ====== Group and return all sections ======
 	return groupControls([
-		{ id: 'filter', title: t('chive-chart-filter-column'), controls: filterControls, expanded: true, icon: 'filter' },
 		{ id: 'data', title: 'Data & Aggregation', controls: dataControls, expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
 		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
@@ -328,20 +316,4 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 	}, dataset, 'network', onConfigChanged, COLOR_PRESETS);
 
 	setupTextInputListener('viz-input-network-title', 'customTitle', dataset, 'network', onConfigChanged);
-
-	setupChartFilterControlListeners({
-		chartKey: 'network',
-		rows: dataset.dados,
-		numericColumns: numericOptions,
-		rawFilter: dataset.configGraficos.network?.filter,
-		onFilterChange: nextFilter => {
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					filter: nextFilter,
-				},
-			});
-			onConfigChanged?.();
-		},
-	});
 }

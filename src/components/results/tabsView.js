@@ -1,5 +1,9 @@
+import { t } from '../../services/i18nService.js';
+import { countGlobalFilterRules, isGlobalFilterActive } from '../../utils/globalFilter.js';
+
 let listenersRegistered = false;
 let currentOnChartConfigChange = null;
+let currentOnGlobalFilterOpen = null;
 
 function getTabElements() {
 	return {
@@ -9,15 +13,18 @@ function getTabElements() {
 		previewPanel: document.getElementById('painel-preview'),
 		chartsPanel: document.getElementById('painel-charts'),
 		dashboardPanel: document.getElementById('painel-panel'),
+		globalFilterTrigger: document.getElementById('btn-global-filter'),
+		globalFilterLabel: document.getElementById('global-filter-trigger-label'),
 	};
 }
 
-export function setupTabListeners(onChartConfigChange) {
+export function setupTabListeners(onChartConfigChange, onGlobalFilterOpen) {
 	currentOnChartConfigChange = onChartConfigChange || null;
+	currentOnGlobalFilterOpen = onGlobalFilterOpen || null;
 
 	if (listenersRegistered) return;
 
-	const { tabPreview, tabCharts, tabPanel } = getTabElements();
+	const { tabPreview, tabCharts, tabPanel, globalFilterTrigger } = getTabElements();
 	if (!tabPreview || !tabCharts || !tabPanel) return;
 
 	tabPreview.addEventListener('click', () => {
@@ -34,6 +41,14 @@ export function setupTabListeners(onChartConfigChange) {
 		if (!currentOnChartConfigChange) return;
 		currentOnChartConfigChange({ aba: 'panel' });
 	});
+
+	if (globalFilterTrigger) {
+		globalFilterTrigger.addEventListener('click', () => {
+			if (globalFilterTrigger.disabled) return;
+			if (!currentOnGlobalFilterOpen) return;
+			currentOnGlobalFilterOpen();
+		});
+	}
 
 	listenersRegistered = true;
 }
@@ -54,7 +69,45 @@ export function updateTabsUI(activeTab) {
 	dashboardPanel.classList.toggle('ativo', panelActive);
 }
 
-export function updateTabs(activeTab, onChartConfigChange) {
-	setupTabListeners(onChartConfigChange);
+export function updateGlobalFilterTrigger({
+	activeTab,
+	hasDataset,
+	globalFilter,
+	filteredCount,
+	totalCount,
+}) {
+	const { globalFilterTrigger, globalFilterLabel } = getTabElements();
+	if (!globalFilterTrigger || !globalFilterLabel) return;
+
+	const showOnCharts = activeTab === 'charts';
+	globalFilterTrigger.hidden = !showOnCharts;
+
+	if (!showOnCharts) {
+		return;
+	}
+
+	const disabled = !hasDataset;
+	globalFilterTrigger.disabled = disabled;
+	globalFilterTrigger.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+
+	const active = hasDataset && isGlobalFilterActive(globalFilter);
+	globalFilterTrigger.dataset.active = active ? 'true' : 'false';
+	globalFilterTrigger.classList.toggle('ativo', active);
+
+	if (active) {
+		const count = countGlobalFilterRules(globalFilter);
+		const shown = Number.isFinite(filteredCount) ? filteredCount : 0;
+		const total = Number.isFinite(totalCount) ? totalCount : 0;
+		globalFilterLabel.textContent = t('chive-global-filter-trigger-active', count, shown, total);
+	} else {
+		globalFilterLabel.textContent = t('chive-global-filter-trigger-inactive');
+	}
+}
+
+export function updateTabs(activeTab, onChartConfigChange, _configIgnored, options = {}) {
+	setupTabListeners(onChartConfigChange, options.onGlobalFilterOpen);
 	updateTabsUI(activeTab);
+	if (options.triggerState) {
+		updateGlobalFilterTrigger({ activeTab, ...options.triggerState });
+	}
 }

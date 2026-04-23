@@ -22,15 +22,18 @@ describe('chartDefaults', () => {
 			expect(config.bubble.enabled).toBe(false);
 		});
 
-		it('includes default filter objects for each chart type', () => {
+		it('includes an empty multi-rule globalFilter at config root', () => {
 			const config = createDefaultChartConfig();
-			for (const type of ['bar', 'scatter', 'network', 'pie', 'bubble']) {
-				expect(config[type].filter).toEqual(expect.objectContaining({
-					column: null,
-					mode: 'categorical',
-					include: [],
-					operator: 'between',
-				}));
+			expect(config.globalFilter).toEqual({
+				rules: [],
+				combine: 'AND',
+			});
+		});
+
+		it('does not duplicate filter shape per chart type', () => {
+			const config = createDefaultChartConfig();
+			for (const type of ['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap']) {
+				expect(config[type].filter).toBeUndefined();
 			}
 		});
 
@@ -110,6 +113,35 @@ describe('chartDefaults', () => {
 			const result = mergeChartConfigWithDefaults({});
 			const defaults = createDefaultChartConfig();
 			expect(result.bar.enabled).toBe(defaults.bar.enabled);
+		});
+
+		it('fills an empty rules globalFilter when missing from legacy configs', () => {
+			const result = mergeChartConfigWithDefaults({ bar: { enabled: true } });
+			expect(result.globalFilter).toEqual({ rules: [], combine: 'AND' });
+		});
+
+		it('migrates a legacy single-filter globalFilter to a one-rule array', () => {
+			const result = mergeChartConfigWithDefaults({
+				globalFilter: { column: 'age', operator: 'gt', value: '30' },
+			});
+			expect(result.globalFilter.rules).toHaveLength(1);
+			expect(result.globalFilter.rules[0].column).toBe('age');
+			expect(result.globalFilter.rules[0].operator).toBe('gt');
+			expect(result.globalFilter.combine).toBe('AND');
+		});
+
+		it('preserves multi-rule globalFilter provided by caller', () => {
+			const result = mergeChartConfigWithDefaults({
+				globalFilter: {
+					rules: [
+						{ column: 'age', operator: 'gt', value: '30' },
+						{ column: 'region', mode: 'categorical', include: ['v:N'] },
+					],
+				},
+			});
+			expect(result.globalFilter.rules).toHaveLength(2);
+			expect(result.globalFilter.rules[0].column).toBe('age');
+			expect(result.globalFilter.rules[1].column).toBe('region');
 		});
 	});
 });

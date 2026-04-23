@@ -2,7 +2,6 @@ import { BUBBLE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createTextControl, createSliderControl, createSelectControl, createColorPresetControl, COLOR_PRESETS } from './shared.js';
-import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
 import {
 	setupExpandListener,
@@ -82,15 +81,6 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 	const nestingMode = BUBBLE_CHART.nestingModes.includes(config.nestingMode)
 		? config.nestingMode
 		: BUBBLE_CHART.defaultNestingMode;
-
-	const filterControls = createChartFilterControls({
-		chartKey: 'bubble',
-		rows: dataset.dados,
-		allColumns,
-		numericColumns: numericOptions,
-		rawFilter: config.filter,
-		disabled,
-	});
 
 	const dataControls = [];
 	dataControls.push(createSelectControl(
@@ -202,7 +192,6 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 	));
 
 	return groupControls([
-		{ id: 'filter', title: t('chive-chart-filter-column'), controls: filterControls, expanded: true, icon: 'filter' },
 		{ id: 'data', title: t('chive-chart-control-bubble-category'), controls: dataControls, expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
 		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
@@ -322,20 +311,4 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 	setupSliderListener('viz-slider-bubble-padding', 'padding', dataset, 'bubble', onConfigChanged);
 	setupTextInputListener('viz-input-bubble-title', 'customTitle', dataset, 'bubble', onConfigChanged);
 	setupColorPresetListeners('viz-bubble-color-preset', {}, {}, dataset, 'bubble', onConfigChanged, COLOR_PRESETS);
-
-	setupChartFilterControlListeners({
-		chartKey: 'bubble',
-		rows: dataset.dados,
-		numericColumns: numericOptions,
-		rawFilter: dataset.configGraficos.bubble?.filter,
-		onFilterChange: nextFilter => {
-			updateActiveDatasetChartConfig({
-				bubble: {
-					...dataset.configGraficos.bubble,
-					filter: nextFilter,
-				},
-			});
-			onConfigChanged?.();
-		},
-	});
 }

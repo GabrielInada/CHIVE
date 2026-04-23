@@ -11,6 +11,8 @@ import { renderFileListDOM } from './results/fileListView.js';
 import { renderColumnControlsDOM } from './results/columnControlsView.js';
 import { openJoinBuilderDialog } from './results/joinBuilderView.js';
 import { openPresetDatasetsDialog } from './results/presetDatasetsView.js';
+import { openGlobalFilterDialog } from './results/globalFilterDialog.js';
+import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
 
 const FILE_LIST_PAGE_SIZE = 15;
 let fileListQuery = '';
@@ -220,6 +222,13 @@ export function renderEmptyState() {
   if (els['estado-vazio']) els['estado-vazio'].style.display = 'flex';
   if (els['estado-dados']) els['estado-dados'].style.display = 'none';
   if (els['resultado-tabs']) els['resultado-tabs'].style.display = 'none';
+  const emptyFilterBtn = document.getElementById('btn-global-filter');
+  if (emptyFilterBtn) {
+    emptyFilterBtn.hidden = true;
+    emptyFilterBtn.disabled = true;
+    emptyFilterBtn.classList.remove('ativo');
+    emptyFilterBtn.dataset.active = 'false';
+  }
   if (els['container-tabela']) els['container-tabela'].innerHTML = '';
   if (els['container-stats']) els['container-stats'].innerHTML = '';
   if (els['chart-bar-container']) els['chart-bar-container'].innerHTML = '';
@@ -298,7 +307,38 @@ export function renderDataInterface(
     aoAlterarSelecaoColuna: onColumnSelectionChange,
   });
 
-  updateTabs(config.aba, onChartConfigChange, config);
+  const allColumnNames = columns.map(column => column.nome);
+  const safeGlobalFilter = resolveGlobalFilterForColumns(config.globalFilter, allColumnNames);
+  const filteredRowsForTrigger = applyGlobalFilterRules(rows, safeGlobalFilter, numericNames);
+
+  const rawRulesCount = Array.isArray(config.globalFilter?.rules) ? config.globalFilter.rules.length : 0;
+  const hadLegacyColumn = Boolean(config.globalFilter && !Array.isArray(config.globalFilter.rules) && config.globalFilter.column);
+  if ((rawRulesCount > safeGlobalFilter.rules.length || hadLegacyColumn) && onChartConfigChange) {
+    onChartConfigChange({ globalFilter: safeGlobalFilter });
+  }
+
+  updateTabs(config.aba, onChartConfigChange, config, {
+    triggerState: {
+      hasDataset: true,
+      globalFilter: safeGlobalFilter,
+      filteredCount: filteredRowsForTrigger.length,
+      totalCount: rows.length,
+    },
+    onGlobalFilterOpen: async () => {
+      if (!onChartConfigChange) return;
+      const result = await openGlobalFilterDialog({
+        rows,
+        allColumns: allColumnNames,
+        numericColumns: numericNames,
+        initialFilter: safeGlobalFilter,
+        translate: t,
+      });
+      if (!result) return;
+      if (result.action === 'apply' || result.action === 'clear') {
+        onChartConfigChange({ globalFilter: result.filter });
+      }
+    },
+  });
 
   const rowLimit = Number(previewRows) > 0 ? Number(previewRows) : 10;
   const rowSelector = document.getElementById('select-linhas-preview');

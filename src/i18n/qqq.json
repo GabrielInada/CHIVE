@@ -309,5 +309,18 @@
 	"chive-chart-filter-op-eq": "Option label for numeric filter condition that keeps values equal to target.",
 	"chive-chart-filter-min": "Label for minimum numeric input used by between operator.",
 	"chive-chart-filter-max": "Label for maximum numeric input used by between operator.",
-	"chive-chart-filter-value": "Label for single numeric input used by less-than/greater-than/equal operators."
+	"chive-chart-filter-value": "Label for single numeric input used by less-than/greater-than/equal operators.",
+	"chive-global-filter-trigger-inactive": "Neutral label for global dataset filter trigger when no filter is active.",
+	"chive-global-filter-trigger-active": "Active-state label for global filter trigger. $1 = number of active rules (uses PLURAL), $2 = filtered row count, $3 = total rows.",
+	"chive-global-filter-dialog-title": "Title of global dataset filter modal dialog.",
+	"chive-global-filter-combine-hint": "Hint shown below the modal title explaining that multiple rules are combined with AND.",
+	"chive-global-filter-apply": "Primary action: save current modal draft filter and close dialog.",
+	"chive-global-filter-clear": "Secondary action: reset filter to default (no filter) and refresh charts.",
+	"chive-global-filter-clear-all": "Secondary action inside the modal that removes every rule and applies an empty filter.",
+	"chive-global-filter-add-rule": "Action button that appends a new empty filter rule to the builder.",
+	"chive-global-filter-remove-rule": "Action inside a rule card that deletes that specific rule.",
+	"chive-global-filter-rule-title": "Per-rule title inside each rule card. $1 = 1-based rule index.",
+	"chive-global-filter-no-rules": "Placeholder shown in the rules container when no rule has been added yet.",
+	"chive-global-filter-cancel": "Secondary action: discard unsaved edits from this modal session.",
+	"chive-global-filter-empty": "Placeholder shown inside a rule body when no filter column is selected yet."
 }

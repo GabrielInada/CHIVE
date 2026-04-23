@@ -1,9 +1,10 @@
-import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT } from './charts.js';
-import { createDefaultFilterConfig as createDefaultFilter } from '../utils/chartFilters.js';
+import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TREEMAP_CHART } from './charts.js';
+import { normalizeGlobalFilter, createEmptyGlobalFilter } from '../utils/globalFilter.js';
 
 export function createDefaultChartConfig() {
 	return {
 		aba: 'preview',
+		globalFilter: createEmptyGlobalFilter(),
 		bar: {
 			enabled: false,
 			category: null,
@@ -22,7 +23,6 @@ export function createDefaultChartConfig() {
 			showYAxisLabel: true,
 			measureMode: BAR_CHART.defaultMeasureMode,
 			valueColumn: null,
-			filter: createDefaultFilter(),
 		},
 		scatter: {
 			enabled: false,
@@ -44,7 +44,6 @@ export function createDefaultChartConfig() {
 			colorScheme: 'Bold',
 			showXAxisLabel: true,
 			showYAxisLabel: true,
-			filter: createDefaultFilter(),
 		},
 		network: {
 			enabled: false,
@@ -67,7 +66,6 @@ export function createDefaultChartConfig() {
 			sourceNodeColor: '#e3743d',
 			targetNodeColor: '#6b94c9',
 			edgeColorMode: 'gradient',
-			filter: createDefaultFilter(),
 		},
 		pie: {
 			enabled: false,
@@ -89,7 +87,22 @@ export function createDefaultChartConfig() {
 			colorMode: 'uniform',
 			colorScheme: 'Bold',
 			customSliceColors: {},
-			filter: createDefaultFilter(),
+		},
+		treemap: {
+			enabled: false,
+			category: null,
+			measureMode: TREEMAP_CHART.defaultMeasureMode,
+			valueColumn: null,
+			topN: TREEMAP_CHART.defaultTopN,
+			padding: TREEMAP_CHART.defaultPadding,
+			expanded: false,
+			customTitle: '',
+			chartHeight: 380,
+			color: CHART_COLORS.treemap,
+			colorMode: 'scheme',
+			colorScheme: 'Bold',
+			showLabels: true,
+			showValues: true,
 		},
 		bubble: {
 			enabled: false,
@@ -106,9 +119,15 @@ export function createDefaultChartConfig() {
 			labelMode: BUBBLE_CHART.defaultLabelMode,
 			nestingMode: BUBBLE_CHART.defaultNestingMode,
 			colorScheme: 'Tableau10',
-			filter: createDefaultFilter(),
 		},
 	};
+}
+
+function pickGlobalFilter(config) {
+	if (!config || typeof config !== 'object') {
+		return createEmptyGlobalFilter();
+	}
+	return normalizeGlobalFilter(config.globalFilter);
 }
 
 export function mergeChartConfigWithDefaults(configGraficos) {
@@ -118,6 +137,7 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 	return {
 		...defaults,
 		...config,
+		globalFilter: pickGlobalFilter(config),
 		bar: {
 			...defaults.bar,
 			...(config.bar || {}),
@@ -134,9 +154,12 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 			...defaults.pie,
 			...(config.pie || {}),
 		},
+		treemap: {
+			...defaults.treemap,
+			...(config.treemap || {}),
+		},
 		bubble: (() => {
 			const merged = { ...defaults.bubble, ...(config.bubble || {}) };
-			// Migration: groupColumn → nestingColumns
 			if (Array.isArray(merged.nestingColumns) && merged.nestingColumns.length > 0) {
 				// nestingColumns already set, keep it
 			} else if (merged.groupColumn && typeof merged.groupColumn === 'string') {

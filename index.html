@@ -7,6 +7,7 @@
     <link rel="icon" type="image/svg+xml" href="./public/favicon.svg" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./src/styles/style.css" />
+    <style>body { visibility: hidden }</style>
     <script type="importmap">
     {
         "imports": {
@@ -102,9 +103,17 @@
 
             <div id="estado-dados">
                 <div class="resultado-tabs" id="resultado-tabs">
-                    <button type="button" class="resultado-tab ativo" id="tab-preview" data-aba="preview" data-i18n="chive-tab-preview">Preview</button>
-                    <button type="button" class="resultado-tab" id="tab-charts" data-aba="charts" data-i18n="chive-tab-charts">Visualizações</button>
-                    <button type="button" class="resultado-tab" id="tab-panel" data-aba="panel" data-i18n="chive-tab-panel">Painel</button>
+                    <div class="resultado-tabs-grupo" id="resultado-tabs-grupo">
+                        <button type="button" class="resultado-tab ativo" id="tab-preview" data-aba="preview" data-i18n="chive-tab-preview">Preview</button>
+                        <button type="button" class="resultado-tab" id="tab-charts" data-aba="charts" data-i18n="chive-tab-charts">Visualizações</button>
+                        <button type="button" class="resultado-tab" id="tab-panel" data-aba="panel" data-i18n="chive-tab-panel">Painel</button>
+                    </div>
+                    <div class="resultado-tabs-acoes" id="resultado-tabs-acoes">
+                        <button type="button" class="global-filter-trigger" id="btn-global-filter" aria-haspopup="dialog" aria-expanded="false" data-active="false" disabled hidden>
+                            <span class="global-filter-trigger-icone" aria-hidden="true">⌕</span>
+                            <span class="global-filter-trigger-label" id="global-filter-trigger-label" data-i18n="chive-global-filter-trigger-inactive">Global filter</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div id="painel-preview" class="resultado-painel ativo">
@@ -359,6 +368,48 @@
                                         </div>
                                     </div>
                                     <div id="chart-network-container" class="chart-container"></div>
+                                </section>
+                                <section class="chart-bloco" id="chart-block-treemap">
+                                    <div class="chart-bloco-topo">
+                                        <h4 class="chart-titulo" data-i18n="chive-chart-treemap-title">Treemap (size by category value)</h4>
+                                        <div class="chart-acoes" data-chart-actions>
+                                            <button
+                                                type="button"
+                                                class="chart-menu-btn"
+                                                data-chart-menu-btn="treemap"
+                                                aria-haspopup="menu"
+                                                aria-expanded="false"
+                                                data-i18n-title="chive-chart-actions-open"
+                                                title="Acoes"
+                                            >
+                                                <span aria-hidden="true">&#8942;</span>
+                                            </button>
+                                            <div class="chart-menu" data-chart-menu="treemap" role="menu" hidden>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="download-svg"
+                                                    data-chart-container="chart-treemap-container"
+                                                    data-chart-filename="treemap-chart"
+                                                    data-i18n="chive-chart-action-download-svg"
+                                                >
+                                                    Download SVG
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    class="chart-menu-item"
+                                                    role="menuitem"
+                                                    data-chart-action="add-panel"
+                                                    data-chart-container="chart-treemap-container"
+                                                    data-i18n="chive-chart-action-add-panel"
+                                                >
+                                                    Add to panel
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div id="chart-treemap-container" class="chart-container"></div>
                                 </section>
                             </div>
                         </div>

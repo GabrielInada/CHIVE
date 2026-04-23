@@ -21,8 +21,9 @@ import { createBubbleChartControls, setupBubbleChartControlListeners } from './b
 import { createNetworkGraphControls, setupNetworkGraphControlListeners } from './networkControls.js';
 import { createScatterPlotControls, setupScatterPlotControlListeners } from './scatterControls.js';
 import { createPieChartControls, setupPieChartControlListeners } from './pieControls.js';
+import { createTreeMapControls, setupTreeMapControlListeners } from './treemapControls.js';
 import { createChartCard } from './cardFactory.js';
-import { PREVIEW_BAR_SVG, PREVIEW_BUBBLE_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_SVG, PREVIEW_SCATTER_SVG } from './previews.js';
+import { PREVIEW_BAR_SVG, PREVIEW_BUBBLE_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_SVG, PREVIEW_SCATTER_SVG, PREVIEW_TREEMAP_SVG } from './previews.js';
 
 // Callback when chart config changes (will be set by main.js)
 let onChartConfigChangeCallback = null;
@@ -154,6 +155,18 @@ export function renderChartControlsSidebar(dataset) {
 		() => createNetworkGraphControls(dataset, todasColunas, numericas, categoricas)
 	);
 
+	createChartCard(
+		container,
+		'treemap',
+		config.treemap.enabled,
+		config.treemap.expanded === true,
+		t('chive-chart-toggle-treemap'),
+		t('chive-viz-category-composition'),
+		t('chive-viz-treemap-desc'),
+		PREVIEW_TREEMAP_SVG,
+		() => createTreeMapControls(dataset, categoricas.length > 0 ? categoricas : todasColunas, numericas, todasColunas)
+	);
+
 	// Setup event listeners for all controls
 	setupChartControlListeners(dataset, baseBar, numericas, basePie, baseBubble, todasColunas);
 }
@@ -168,4 +181,6 @@ function setupChartControlListeners(dataset, baseBar, numericas, basePie, baseBu
 	setupNetworkGraphControlListeners(dataset, todasColunas, numericas, onChartConfigChangeCallback);
 	setupScatterPlotControlListeners(dataset, numericas, todasColunas, onChartConfigChangeCallback);
 	setupPieChartControlListeners(dataset, basePie, numericas, todasColunas, onChartConfigChangeCallback);
+	const categoricasAll = getCategoricalColumnNames(filterVisibleColumns(dataset));
+	setupTreeMapControlListeners(dataset, categoricasAll.length > 0 ? categoricasAll : todasColunas, numericas, todasColunas, onChartConfigChangeCallback);
 }

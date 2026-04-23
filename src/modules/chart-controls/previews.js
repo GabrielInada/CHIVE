@@ -44,6 +44,17 @@ export const PREVIEW_PIE_SVG = `
 	</svg>
 `;
 
+export const PREVIEW_TREEMAP_SVG = `
+	<svg viewBox="0 0 84 38" aria-hidden="true">
+		<rect x="2" y="2" width="38" height="18" rx="2" fill="#E8634A"></rect>
+		<rect x="42" y="2" width="20" height="18" rx="2" fill="#4ECDC4"></rect>
+		<rect x="64" y="2" width="18" height="18" rx="2" fill="#A29BFE"></rect>
+		<rect x="2" y="22" width="24" height="14" rx="2" fill="#F7B731"></rect>
+		<rect x="28" y="22" width="26" height="14" rx="2" fill="#6BCB77"></rect>
+		<rect x="56" y="22" width="26" height="14" rx="2" fill="#45B7D1"></rect>
+	</svg>
+`;
+
 export const PREVIEW_BUBBLE_SVG = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<circle cx="18" cy="22" r="10" fill="#c9b3d7"></circle>

@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./src/styles/style.css" />
     <link rel="stylesheet" href="./src/styles/about.css" />
+    <style>body { visibility: hidden }</style>
     <script type="importmap">
     {
         "imports": {
@@ -66,20 +67,29 @@
             <section class="about-team">
                 <h3 data-i18n="chive-about-team-heading">Equipe</h3>
                 <div class="about-team-grid">
-                    <article class="team-card team-card--lead">
+                    <article class="team-card team-card--lead team-card--advisor">
+                        <div class="team-card-accent"></div>
                         <h4>Roberto Yuri da Silva Franco</h4>
-                        <span class="team-role" data-i18n="chive-about-team-role-advisor">Orientador</span>
+                        <span class="team-role team-role--advisor" data-i18n="chive-about-team-role-advisor">Orientador</span>
                         <p class="team-meta" data-i18n="chive-about-team-meta-ufra">Professor Adjunto da UFRA</p>
                     </article>
                     <article class="team-card">
+                        <div class="team-card-accent"></div>
                         <h4>Lucas André Oliveira Pinheiro</h4>
-                        <span class="team-role" data-i18n="chive-about-team-role-developer">Desenvolvedor</span>
+                        <span class="team-role team-role--researcher" data-i18n="chive-about-team-role-researcher">Pesquisador</span>
                         <p class="team-meta" data-i18n="chive-about-team-meta-si">Sistemas de Informação</p>
                     </article>
                     <article class="team-card">
+                        <div class="team-card-accent"></div>
                         <h4>Gabriel Junichiro Soares Inada</h4>
-                        <span class="team-role" data-i18n="chive-about-team-role-developer">Desenvolvedor</span>
+                        <span class="team-role team-role--researcher" data-i18n="chive-about-team-role-researcher">Pesquisador</span>
                         <p class="team-meta" data-i18n="chive-about-team-meta-si">Sistemas de Informação</p>
+                    </article>
+                    <article class="team-card">
+                        <div class="team-card-accent"></div>
+                        <h4>Ivailton Santos</h4>
+                        <span class="team-role team-role--researcher" data-i18n="chive-about-team-role-researcher">Pesquisador</span>
+                        <p class="team-meta" data-i18n="chive-about-team-meta-bio">Biologia</p>
                     </article>
                 </div>
             </section>
@@ -88,8 +98,8 @@
         <aside class="about-sidebar">
             <div class="sidebar-section">
                 <h3 data-i18n="chive-sidebar-contact">Contato & Colaboração</h3>
-                <p>Para questões gerais sobre o projeto ou colaborações, <a href="mailto:laoplucas@gmail.com">laoplucas@gmail.com</a>.</p>
-                <p>Para reportar bugs ou solicitar funcionalidades, abra uma issue no <a href="https://github.com/GabrielInada/CHIVE" target="_blank">GitHub</a>.</p>
+                <p><span data-i18n="chive-sidebar-contact-general">Para questões gerais sobre o projeto ou colaborações,</span> <a href="mailto:laoplucas@gmail.com">laoplucas@gmail.com</a>.</p>
+                <p><span data-i18n="chive-sidebar-contact-bugs">Para reportar bugs ou solicitar funcionalidades, abra uma issue no</span> <a href="https://github.com/GabrielInada/CHIVE" target="_blank">GitHub</a>.</p>
             </div>
 
             <div class="sidebar-section">
