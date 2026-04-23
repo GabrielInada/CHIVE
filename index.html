@@ -103,9 +103,17 @@
 
             <div id="estado-dados">
                 <div class="resultado-tabs" id="resultado-tabs">
-                    <button type="button" class="resultado-tab ativo" id="tab-preview" data-aba="preview" data-i18n="chive-tab-preview">Preview</button>
-                    <button type="button" class="resultado-tab" id="tab-charts" data-aba="charts" data-i18n="chive-tab-charts">Visualizações</button>
-                    <button type="button" class="resultado-tab" id="tab-panel" data-aba="panel" data-i18n="chive-tab-panel">Painel</button>
+                    <div class="resultado-tabs-grupo" id="resultado-tabs-grupo">
+                        <button type="button" class="resultado-tab ativo" id="tab-preview" data-aba="preview" data-i18n="chive-tab-preview">Preview</button>
+                        <button type="button" class="resultado-tab" id="tab-charts" data-aba="charts" data-i18n="chive-tab-charts">Visualizações</button>
+                        <button type="button" class="resultado-tab" id="tab-panel" data-aba="panel" data-i18n="chive-tab-panel">Painel</button>
+                    </div>
+                    <div class="resultado-tabs-acoes" id="resultado-tabs-acoes">
+                        <button type="button" class="global-filter-trigger" id="btn-global-filter" aria-haspopup="dialog" aria-expanded="false" data-active="false" disabled hidden>
+                            <span class="global-filter-trigger-icone" aria-hidden="true">⌕</span>
+                            <span class="global-filter-trigger-label" id="global-filter-trigger-label" data-i18n="chive-global-filter-trigger-inactive">Global filter</span>
+                        </button>
+                    </div>
                 </div>
 
                 <div id="painel-preview" class="resultado-painel ativo">

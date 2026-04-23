@@ -22,15 +22,20 @@ describe('chartDefaults', () => {
 			expect(config.bubble.enabled).toBe(false);
 		});
 
-		it('includes default filter objects for each chart type', () => {
+		it('includes a default globalFilter at config root', () => {
 			const config = createDefaultChartConfig();
-			for (const type of ['bar', 'scatter', 'network', 'pie', 'bubble']) {
-				expect(config[type].filter).toEqual(expect.objectContaining({
-					column: null,
-					mode: 'categorical',
-					include: [],
-					operator: 'between',
-				}));
+			expect(config.globalFilter).toEqual(expect.objectContaining({
+				column: null,
+				mode: 'categorical',
+				include: [],
+				operator: 'between',
+			}));
+		});
+
+		it('does not duplicate filter shape per chart type', () => {
+			const config = createDefaultChartConfig();
+			for (const type of ['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap']) {
+				expect(config[type].filter).toBeUndefined();
 			}
 		});
 
@@ -110,6 +115,25 @@ describe('chartDefaults', () => {
 			const result = mergeChartConfigWithDefaults({});
 			const defaults = createDefaultChartConfig();
 			expect(result.bar.enabled).toBe(defaults.bar.enabled);
+		});
+
+		it('fills a default globalFilter when missing from legacy configs', () => {
+			const result = mergeChartConfigWithDefaults({ bar: { enabled: true } });
+			expect(result.globalFilter).toEqual(expect.objectContaining({
+				column: null,
+				operator: 'between',
+				include: [],
+			}));
+		});
+
+		it('preserves a provided partial globalFilter over defaults', () => {
+			const result = mergeChartConfigWithDefaults({
+				globalFilter: { column: 'age', operator: 'gt', value: '30' },
+			});
+			expect(result.globalFilter.column).toBe('age');
+			expect(result.globalFilter.operator).toBe('gt');
+			expect(result.globalFilter.value).toBe('30');
+			expect(result.globalFilter.include).toEqual([]);
 		});
 	});
 });

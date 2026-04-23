@@ -3,7 +3,6 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createSelectControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
-import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
 import {
 	setupExpandListener,
@@ -19,16 +18,6 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	const config = dataset.configGraficos.scatter;
 	const disabled = !dataset.configGraficos.scatter.enabled;
 	const categoryOptions = allOptions.filter(option => !numericOptions.includes(option));
-
-	// ====== FILTERS SECTION (Top priority, always expanded) ======
-	const filterControls = createChartFilterControls({
-		chartKey: 'scatter',
-		rows: dataset.dados,
-		allColumns: allOptions,
-		numericColumns: numericOptions,
-		rawFilter: config.filter,
-		disabled,
-	});
 
 	// ====== DATA & AGGREGATION SECTION (X/Y axes) ======
 	const dataControls = [];
@@ -241,7 +230,6 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 
 	// ====== Group and return all sections ======
 	return groupControls([
-		{ id: 'filter', title: t('chive-chart-filter-column'), controls: filterControls, expanded: true, icon: 'filter' },
 		{ id: 'data', title: 'Data & Aggregation', controls: dataControls, expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
 		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
@@ -344,20 +332,4 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 
 	setupTextInputListener('viz-input-scatter-title', 'customTitle', dataset, 'scatter', onConfigChanged);
 	setupSliderListener('viz-slider-scatter-height', 'chartHeight', dataset, 'scatter', onConfigChanged);
-
-	setupChartFilterControlListeners({
-		chartKey: 'scatter',
-		rows: dataset.dados,
-		numericColumns: numericas,
-		rawFilter: dataset.configGraficos.scatter?.filter,
-		onFilterChange: nextFilter => {
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					filter: nextFilter,
-				},
-			});
-			onConfigChanged?.();
-		},
-	});
 }

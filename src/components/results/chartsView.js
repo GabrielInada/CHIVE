@@ -2,6 +2,7 @@ import { t, getLocale } from '../../services/i18nService.js';
 import { renderBarChart, renderBubbleChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTreeMap } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { applyChartFilterRows } from '../../utils/chartFilters.js';
+import { resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
 
 function showChartMessage(containerId, message) {
@@ -18,6 +19,11 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const numericColumnNames = Array.isArray(visibleNumericColumns)
 		? visibleNumericColumns.map(column => column?.nome).filter(Boolean)
 		: [];
+	const allColumnNames = Array.isArray(visibleColumns)
+		? visibleColumns.map(column => column?.nome).filter(Boolean)
+		: [];
+	const safeGlobalFilter = resolveGlobalFilterForColumns(chartConfig.globalFilter, allColumnNames);
+	const filteredRows = applyChartFilterRows(rows, safeGlobalFilter, numericColumnNames);
 	const chartsGrid = document.getElementById(VIEW_IDS.chartsGrid);
 	const emptyState = document.getElementById(VIEW_IDS.chartsEmptyState);
 	const blocoBar = document.getElementById(CHART_BLOCKS.bar);
@@ -76,7 +82,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.bar.enabled) {
 		blocoBar.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.bar).style.minHeight = `${Number(chartConfig.bar.chartHeight || 320)}px`;
-		const barRows = applyChartFilterRows(rows, chartConfig.bar.filter, numericColumnNames);
+		const barRows = filteredRows;
 		const barMeasureMode = ['count', 'sum', 'mean'].includes(chartConfig.bar.measureMode)
 			? chartConfig.bar.measureMode
 			: 'count';
@@ -131,7 +137,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.scatter.enabled) {
 		blocoScatter.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.scatter).style.minHeight = `${Number(chartConfig.scatter.chartHeight || 320)}px`;
-		const scatterRows = applyChartFilterRows(rows, chartConfig.scatter.filter, numericColumnNames);
+		const scatterRows = filteredRows;
 		const scatterResult = renderScatterPlot(
 			document.getElementById(CHART_CONTAINERS.scatter),
 			scatterRows,
@@ -178,7 +184,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.network.enabled) {
 		blocoNetwork.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.network).style.minHeight = `${Number(chartConfig.network.chartHeight || 420)}px`;
-		const networkRows = applyChartFilterRows(rows, chartConfig.network.filter, numericColumnNames);
+		const networkRows = filteredRows;
 		const networkResult = renderNetworkGraph(
 			document.getElementById(CHART_CONTAINERS.network),
 			networkRows,
@@ -219,7 +225,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.pie.enabled) {
 		blocoPie.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.pie).style.minHeight = `${Number(chartConfig.pie.chartHeight || 360)}px`;
-		const pieRows = applyChartFilterRows(rows, chartConfig.pie.filter, numericColumnNames);
+		const pieRows = filteredRows;
 		const pieResult = renderPieChart(
 			document.getElementById(CHART_CONTAINERS.pie),
 			pieRows,
@@ -262,7 +268,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.bubble.enabled) {
 		blocoBubble.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.bubble).style.minHeight = `${Number(chartConfig.bubble.chartHeight || 700)}px`;
-		const bubbleRows = applyChartFilterRows(rows, chartConfig.bubble.filter, numericColumnNames);
+		const bubbleRows = filteredRows;
 		const bubbleMeasureMode = ['count', 'sum', 'mean'].includes(chartConfig.bubble.measureMode)
 			? chartConfig.bubble.measureMode
 			: 'count';
@@ -311,7 +317,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	if (chartConfig.treemap.enabled) {
 		blocoTreemap.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.treemap).style.minHeight = `${Number(chartConfig.treemap.chartHeight || 380)}px`;
-		const treemapRows = applyChartFilterRows(rows, chartConfig.treemap.filter, numericColumnNames);
+		const treemapRows = filteredRows;
 		const treemapResult = renderTreeMap(
 			document.getElementById(CHART_CONTAINERS.treemap),
 			treemapRows,

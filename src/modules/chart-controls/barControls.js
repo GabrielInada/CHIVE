@@ -3,7 +3,6 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
-import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
 import { createSelectControl } from './shared.js';
 import {
@@ -21,16 +20,6 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;
 	const isDisabled = !dataset.configGraficos.bar.enabled;
-
-	// ====== FILTERS SECTION (Top priority, always expanded) ======
-	const filterControls = createChartFilterControls({
-		chartKey: 'bar',
-		rows: dataset.dados,
-		allColumns,
-		numericColumns: numericOptions,
-		rawFilter: config.filter,
-		disabled: isDisabled,
-	});
 
 	// ====== DATA & AGGREGATION SECTION ======
 	const dataControls = [];
@@ -225,7 +214,6 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 
 	// ====== Group and return all sections ======
 	return groupControls([
-		{ id: 'filter', title: t('chive-chart-filter-column'), controls: filterControls, expanded: true, icon: 'filter' },
 		{ id: 'data', title: t('chive-chart-control-bar-category'), controls: dataControls, expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
 		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
@@ -325,21 +313,4 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	], dataset, 'bar', onConfigChanged);
 	setupTextInputListener('viz-input-bar-title', 'customTitle', dataset, 'bar', onConfigChanged);
 	setupSliderListener('viz-slider-bar-height', 'chartHeight', dataset, 'bar', onConfigChanged);
-
-	// --- Filter controls ---
-	setupChartFilterControlListeners({
-		chartKey: 'bar',
-		rows: dataset.dados,
-		numericColumns: numericOptions,
-		rawFilter: dataset.configGraficos.bar?.filter,
-		onFilterChange: nextFilter => {
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					filter: nextFilter,
-				},
-			});
-			onConfigChanged?.();
-		},
-	});
 }

@@ -343,6 +343,14 @@
 	"chive-chart-filter-max": "Maximum",
 	"chive-chart-filter-value": "Value",
 
+	"chive-global-filter-trigger-inactive": "Global filter",
+	"chive-global-filter-trigger-active": "Filter on • $1/$2",
+	"chive-global-filter-dialog-title": "Global dataset filter",
+	"chive-global-filter-apply": "Apply",
+	"chive-global-filter-clear": "Clear filter",
+	"chive-global-filter-cancel": "Cancel",
+	"chive-global-filter-empty": "Select a column to filter by.",
+
 	"chive-about-page-title": "About — CHIVE",
 	"chive-footer-copyright": "© 2026 CHIVE. All rights reserved."
 }

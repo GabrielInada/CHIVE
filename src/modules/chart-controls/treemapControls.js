@@ -3,7 +3,6 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
-import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
 import { createSelectControl } from './shared.js';
 
@@ -12,16 +11,6 @@ export function createTreeMapControls(dataset, categoryOptions, numericOptions =
 	const measureMode = TREEMAP_CHART.measureModes.includes(config.measureMode) ? config.measureMode : 'count';
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;
 	const isDisabled = !config.enabled;
-
-	// ====== FILTERS SECTION ======
-	const filterControls = createChartFilterControls({
-		chartKey: 'treemap',
-		rows: dataset.dados,
-		allColumns,
-		numericColumns: numericOptions,
-		rawFilter: config.filter,
-		disabled: isDisabled,
-	});
 
 	// ====== DATA SECTION ======
 	const dataControls = [];
@@ -157,7 +146,6 @@ export function createTreeMapControls(dataset, categoryOptions, numericOptions =
 	));
 
 	return groupControls([
-		{ id: 'filter', title: t('chive-chart-filter-column'), controls: filterControls, expanded: true, icon: 'filter' },
 		{ id: 'data', title: t('chive-chart-control-treemap-category'), controls: dataControls, expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
 		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
@@ -346,19 +334,6 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 			});
 			onConfigChanged?.();
 		});
-	});
-
-	setupChartFilterControlListeners({
-		chartKey: 'treemap',
-		rows: dataset.dados,
-		numericColumns: numericOptions,
-		rawFilter: dataset.configGraficos.treemap?.filter,
-		onFilterChange: nextFilter => {
-			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, filter: nextFilter },
-			});
-			onConfigChanged?.();
-		},
 	});
 }
 

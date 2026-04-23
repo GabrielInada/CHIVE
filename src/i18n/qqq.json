@@ -309,5 +309,12 @@
 	"chive-chart-filter-op-eq": "Option label for numeric filter condition that keeps values equal to target.",
 	"chive-chart-filter-min": "Label for minimum numeric input used by between operator.",
 	"chive-chart-filter-max": "Label for maximum numeric input used by between operator.",
-	"chive-chart-filter-value": "Label for single numeric input used by less-than/greater-than/equal operators."
+	"chive-chart-filter-value": "Label for single numeric input used by less-than/greater-than/equal operators.",
+	"chive-global-filter-trigger-inactive": "Neutral label for global dataset filter trigger when no filter is active.",
+	"chive-global-filter-trigger-active": "Active-state label for global filter trigger. $1 = filtered row count, $2 = total rows.",
+	"chive-global-filter-dialog-title": "Title of global dataset filter modal dialog.",
+	"chive-global-filter-apply": "Primary action: save current modal draft filter and close dialog.",
+	"chive-global-filter-clear": "Secondary action: reset filter to default (no filter) and refresh charts.",
+	"chive-global-filter-cancel": "Secondary action: discard unsaved edits from this modal session.",
+	"chive-global-filter-empty": "Placeholder shown when no filter column is selected yet."
 }

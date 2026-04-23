@@ -3,7 +3,6 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
-import { createChartFilterControls, setupChartFilterControlListeners } from './filterControls.js';
 import { groupControls } from './controlGrouping.js';
 import {
 	setupExpandListener,
@@ -43,16 +42,6 @@ function getPieSectorValues(dataset, config) {
 export function createPieChartControls(dataset, categoryOptions, numericOptions, allColumns = []) {
 	const config = dataset.configGraficos.pie;
 	const sectorValues = getPieSectorValues(dataset, config);
-
-	// ====== FILTERS SECTION (Top priority, always expanded) ======
-	const filterControls = createChartFilterControls({
-		chartKey: 'pie',
-		rows: dataset.dados,
-		allColumns,
-		numericColumns: numericOptions,
-		rawFilter: config.filter,
-		disabled: !dataset.configGraficos.pie.enabled,
-	});
 
 	// ====== DATA & AGGREGATION SECTION ======
 	const dataControls = [];
@@ -301,7 +290,6 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 
 	// ====== Group and return all sections ======
 	return groupControls([
-		{ id: 'filter', title: t('chive-chart-filter-column'), controls: filterControls, expanded: true, icon: 'filter' },
 		{ id: 'data', title: 'Data & Aggregation', controls: dataControls, expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
 		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
@@ -493,21 +481,5 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 			});
 			onConfigChanged?.();
 		});
-	});
-
-	setupChartFilterControlListeners({
-		chartKey: 'pie',
-		rows: dataset.dados,
-		numericColumns: numericas,
-		rawFilter: dataset.configGraficos.pie?.filter,
-		onFilterChange: nextFilter => {
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					filter: nextFilter,
-				},
-			});
-			onConfigChanged?.();
-		},
 	});
 }

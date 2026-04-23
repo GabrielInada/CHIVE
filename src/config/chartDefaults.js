@@ -4,6 +4,7 @@ import { createDefaultFilterConfig as createDefaultFilter } from '../utils/chart
 export function createDefaultChartConfig() {
 	return {
 		aba: 'preview',
+		globalFilter: createDefaultFilter(),
 		bar: {
 			enabled: false,
 			category: null,
@@ -22,7 +23,6 @@ export function createDefaultChartConfig() {
 			showYAxisLabel: true,
 			measureMode: BAR_CHART.defaultMeasureMode,
 			valueColumn: null,
-			filter: createDefaultFilter(),
 		},
 		scatter: {
 			enabled: false,
@@ -44,7 +44,6 @@ export function createDefaultChartConfig() {
 			colorScheme: 'Bold',
 			showXAxisLabel: true,
 			showYAxisLabel: true,
-			filter: createDefaultFilter(),
 		},
 		network: {
 			enabled: false,
@@ -67,7 +66,6 @@ export function createDefaultChartConfig() {
 			sourceNodeColor: '#e3743d',
 			targetNodeColor: '#6b94c9',
 			edgeColorMode: 'gradient',
-			filter: createDefaultFilter(),
 		},
 		pie: {
 			enabled: false,
@@ -89,7 +87,6 @@ export function createDefaultChartConfig() {
 			colorMode: 'uniform',
 			colorScheme: 'Bold',
 			customSliceColors: {},
-			filter: createDefaultFilter(),
 		},
 		treemap: {
 			enabled: false,
@@ -106,7 +103,6 @@ export function createDefaultChartConfig() {
 			colorScheme: 'Bold',
 			showLabels: true,
 			showValues: true,
-			filter: createDefaultFilter(),
 		},
 		bubble: {
 			enabled: false,
@@ -123,9 +119,15 @@ export function createDefaultChartConfig() {
 			labelMode: BUBBLE_CHART.defaultLabelMode,
 			nestingMode: BUBBLE_CHART.defaultNestingMode,
 			colorScheme: 'Tableau10',
-			filter: createDefaultFilter(),
 		},
 	};
+}
+
+function pickGlobalFilter(config) {
+	if (config && typeof config === 'object' && config.globalFilter && typeof config.globalFilter === 'object') {
+		return { ...createDefaultFilter(), ...config.globalFilter };
+	}
+	return createDefaultFilter();
 }
 
 export function mergeChartConfigWithDefaults(configGraficos) {
@@ -135,6 +137,7 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 	return {
 		...defaults,
 		...config,
+		globalFilter: pickGlobalFilter(config),
 		bar: {
 			...defaults.bar,
 			...(config.bar || {}),
