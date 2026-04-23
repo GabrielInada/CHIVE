@@ -344,10 +344,16 @@
 	"chive-chart-filter-value": "Value",
 
 	"chive-global-filter-trigger-inactive": "Global filter",
-	"chive-global-filter-trigger-active": "Filter on • $1/$2",
+	"chive-global-filter-trigger-active": "{{PLURAL:$1|Filter on • $1 rule|Filter on • $1 rules}} · $2/$3",
 	"chive-global-filter-dialog-title": "Global dataset filter",
+	"chive-global-filter-combine-hint": "Rules are combined with AND — a row must match every rule.",
 	"chive-global-filter-apply": "Apply",
 	"chive-global-filter-clear": "Clear filter",
+	"chive-global-filter-clear-all": "Clear all rules",
+	"chive-global-filter-add-rule": "Add rule",
+	"chive-global-filter-remove-rule": "Remove",
+	"chive-global-filter-rule-title": "Rule $1",
+	"chive-global-filter-no-rules": "No rules yet. Click “Add rule” to start filtering.",
 	"chive-global-filter-cancel": "Cancel",
 	"chive-global-filter-empty": "Select a column to filter by.",
 

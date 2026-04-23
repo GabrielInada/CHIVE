@@ -1,8 +1,7 @@
 import { t, getLocale } from '../../services/i18nService.js';
 import { renderBarChart, renderBubbleChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTreeMap } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
-import { applyChartFilterRows } from '../../utils/chartFilters.js';
-import { resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
+import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
 
 function showChartMessage(containerId, message) {
@@ -23,7 +22,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		? visibleColumns.map(column => column?.nome).filter(Boolean)
 		: [];
 	const safeGlobalFilter = resolveGlobalFilterForColumns(chartConfig.globalFilter, allColumnNames);
-	const filteredRows = applyChartFilterRows(rows, safeGlobalFilter, numericColumnNames);
+	const filteredRows = applyGlobalFilterRules(rows, safeGlobalFilter, numericColumnNames);
 	const chartsGrid = document.getElementById(VIEW_IDS.chartsGrid);
 	const emptyState = document.getElementById(VIEW_IDS.chartsEmptyState);
 	const blocoBar = document.getElementById(CHART_BLOCKS.bar);

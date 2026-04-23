@@ -12,8 +12,7 @@ import { renderColumnControlsDOM } from './results/columnControlsView.js';
 import { openJoinBuilderDialog } from './results/joinBuilderView.js';
 import { openPresetDatasetsDialog } from './results/presetDatasetsView.js';
 import { openGlobalFilterDialog } from './results/globalFilterDialog.js';
-import { applyChartFilterRows } from '../utils/chartFilters.js';
-import { resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
+import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
 
 const FILE_LIST_PAGE_SIZE = 15;
 let fileListQuery = '';
@@ -310,9 +309,11 @@ export function renderDataInterface(
 
   const allColumnNames = columns.map(column => column.nome);
   const safeGlobalFilter = resolveGlobalFilterForColumns(config.globalFilter, allColumnNames);
-  const filteredRowsForTrigger = applyChartFilterRows(rows, safeGlobalFilter, numericNames);
+  const filteredRowsForTrigger = applyGlobalFilterRules(rows, safeGlobalFilter, numericNames);
 
-  if (config.globalFilter?.column && safeGlobalFilter !== config.globalFilter && onChartConfigChange) {
+  const rawRulesCount = Array.isArray(config.globalFilter?.rules) ? config.globalFilter.rules.length : 0;
+  const hadLegacyColumn = Boolean(config.globalFilter && !Array.isArray(config.globalFilter.rules) && config.globalFilter.column);
+  if ((rawRulesCount > safeGlobalFilter.rules.length || hadLegacyColumn) && onChartConfigChange) {
     onChartConfigChange({ globalFilter: safeGlobalFilter });
   }
 

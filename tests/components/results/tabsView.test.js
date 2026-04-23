@@ -5,7 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: (key, ...args) => {
 		if (key === 'chive-global-filter-trigger-active') {
-			return `Filter on • ${args[0]}/${args[1]}`;
+			// args: [ruleCount, filtered, total]
+			return `Filter on • ${args[0]} rules · ${args[1]}/${args[2]}`;
 		}
 		if (key === 'chive-global-filter-trigger-inactive') {
 			return 'Global filter';
@@ -105,13 +106,18 @@ describe('tabsView', () => {
 		expect(trigger.disabled).toBe(true);
 	});
 
-	it('renders active indicator with X/Y when filter is active', async () => {
+	it('renders active indicator with rule count and X/Y when rules exist', async () => {
 		const { updateTabs } = await import('../../../src/components/results/tabsView.js');
 
 		updateTabs('charts', vi.fn(), null, {
 			triggerState: {
 				hasDataset: true,
-				globalFilter: { column: 'region', include: ['v:A'] },
+				globalFilter: {
+					rules: [
+						{ column: 'region', include: ['v:A'] },
+						{ column: 'age', operator: 'gt', value: '10' },
+					],
+				},
 				filteredCount: 7,
 				totalCount: 20,
 			},
@@ -122,16 +128,16 @@ describe('tabsView', () => {
 		expect(trigger.hidden).toBe(false);
 		expect(trigger.disabled).toBe(false);
 		expect(trigger.dataset.active).toBe('true');
-		expect(label.textContent).toBe('Filter on • 7/20');
+		expect(label.textContent).toBe('Filter on • 2 rules · 7/20');
 	});
 
-	it('renders neutral label when no column is selected', async () => {
+	it('renders neutral label when there are no rules', async () => {
 		const { updateTabs } = await import('../../../src/components/results/tabsView.js');
 
 		updateTabs('charts', vi.fn(), null, {
 			triggerState: {
 				hasDataset: true,
-				globalFilter: { column: null },
+				globalFilter: { rules: [] },
 				filteredCount: 20,
 				totalCount: 20,
 			},
@@ -149,7 +155,7 @@ describe('tabsView', () => {
 			onGlobalFilterOpen: onOpen,
 			triggerState: {
 				hasDataset: false,
-				globalFilter: null,
+				globalFilter: { rules: [] },
 				filteredCount: 0,
 				totalCount: 0,
 			},
@@ -162,7 +168,7 @@ describe('tabsView', () => {
 			onGlobalFilterOpen: onOpen,
 			triggerState: {
 				hasDataset: true,
-				globalFilter: { column: null },
+				globalFilter: { rules: [] },
 				filteredCount: 0,
 				totalCount: 10,
 			},

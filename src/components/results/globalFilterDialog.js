@@ -4,9 +4,31 @@ import {
 	getCategoricalFilterOptions,
 	normalizeFilterConfig,
 } from '../../utils/chartFilters.js';
+import { createEmptyGlobalFilter, normalizeGlobalFilter } from '../../utils/globalFilter.js';
 
-function cloneFilter(filter) {
-	return JSON.parse(JSON.stringify(filter || createDefaultFilterConfig()));
+let nextRuleUid = 1;
+
+function cloneRule(rule) {
+	return JSON.parse(JSON.stringify(rule || createDefaultFilterConfig()));
+}
+
+function createEmptyRuleDraft() {
+	return {
+		_uid: nextRuleUid++,
+		...createDefaultFilterConfig(),
+	};
+}
+
+function ruleFromExisting(rule) {
+	return {
+		_uid: nextRuleUid++,
+		...cloneRule(rule),
+	};
+}
+
+function stripUid(rule) {
+	const { _uid, ...rest } = rule;
+	return rest;
 }
 
 function createOption(value, label, selected = false) {
@@ -17,23 +39,21 @@ function createOption(value, label, selected = false) {
 	return option;
 }
 
-function renderNumericBody({ body, draft, translate }) {
+function renderNumericRuleBody({ body, rule, translate }) {
 	body.innerHTML = '';
 
 	const opWrap = document.createElement('div');
 	opWrap.className = 'gf-control';
 	const opLabel = document.createElement('label');
-	opLabel.htmlFor = 'gf-operator';
 	opLabel.textContent = translate('chive-chart-filter-operator');
 	const opSelect = document.createElement('select');
-	opSelect.id = 'gf-operator';
-	opSelect.className = 'linhas-select';
+	opSelect.className = 'linhas-select gf-rule-operator';
 	[
 		{ value: 'between', label: translate('chive-chart-filter-op-between') },
 		{ value: 'lt', label: translate('chive-chart-filter-op-lt') },
 		{ value: 'gt', label: translate('chive-chart-filter-op-gt') },
 		{ value: 'eq', label: translate('chive-chart-filter-op-eq') },
-	].forEach(option => opSelect.appendChild(createOption(option.value, option.label, option.value === draft.operator)));
+	].forEach(option => opSelect.appendChild(createOption(option.value, option.label, option.value === rule.operator)));
 	opWrap.appendChild(opLabel);
 	opWrap.appendChild(opSelect);
 	body.appendChild(opWrap);
@@ -43,18 +63,16 @@ function renderNumericBody({ body, draft, translate }) {
 
 	const renderInputs = () => {
 		inputsWrap.innerHTML = '';
-		if (draft.operator === 'between') {
+		if (rule.operator === 'between') {
 			const minWrap = document.createElement('div');
 			minWrap.className = 'gf-control';
 			const minLabel = document.createElement('label');
-			minLabel.htmlFor = 'gf-min';
 			minLabel.textContent = translate('chive-chart-filter-min');
 			const minInput = document.createElement('input');
-			minInput.id = 'gf-min';
 			minInput.type = 'number';
 			minInput.className = 'linhas-select';
-			minInput.value = String(draft.min ?? '');
-			minInput.addEventListener('input', () => { draft.min = minInput.value; });
+			minInput.value = String(rule.min ?? '');
+			minInput.addEventListener('input', () => { rule.min = minInput.value; });
 			minWrap.appendChild(minLabel);
 			minWrap.appendChild(minInput);
 			inputsWrap.appendChild(minWrap);
@@ -62,14 +80,12 @@ function renderNumericBody({ body, draft, translate }) {
 			const maxWrap = document.createElement('div');
 			maxWrap.className = 'gf-control';
 			const maxLabel = document.createElement('label');
-			maxLabel.htmlFor = 'gf-max';
 			maxLabel.textContent = translate('chive-chart-filter-max');
 			const maxInput = document.createElement('input');
-			maxInput.id = 'gf-max';
 			maxInput.type = 'number';
 			maxInput.className = 'linhas-select';
-			maxInput.value = String(draft.max ?? '');
-			maxInput.addEventListener('input', () => { draft.max = maxInput.value; });
+			maxInput.value = String(rule.max ?? '');
+			maxInput.addEventListener('input', () => { rule.max = maxInput.value; });
 			maxWrap.appendChild(maxLabel);
 			maxWrap.appendChild(maxInput);
 			inputsWrap.appendChild(maxWrap);
@@ -77,14 +93,12 @@ function renderNumericBody({ body, draft, translate }) {
 			const valueWrap = document.createElement('div');
 			valueWrap.className = 'gf-control';
 			const valueLabel = document.createElement('label');
-			valueLabel.htmlFor = 'gf-value';
 			valueLabel.textContent = translate('chive-chart-filter-value');
 			const valueInput = document.createElement('input');
-			valueInput.id = 'gf-value';
 			valueInput.type = 'number';
 			valueInput.className = 'linhas-select';
-			valueInput.value = String(draft.value ?? '');
-			valueInput.addEventListener('input', () => { draft.value = valueInput.value; });
+			valueInput.value = String(rule.value ?? '');
+			valueInput.addEventListener('input', () => { rule.value = valueInput.value; });
 			valueWrap.appendChild(valueLabel);
 			valueWrap.appendChild(valueInput);
 			inputsWrap.appendChild(valueWrap);
@@ -95,24 +109,22 @@ function renderNumericBody({ body, draft, translate }) {
 	body.appendChild(inputsWrap);
 
 	opSelect.addEventListener('change', () => {
-		draft.operator = opSelect.value;
+		rule.operator = opSelect.value;
 		renderInputs();
 	});
 }
 
-function renderCategoricalBody({ body, draft, rows, translate }) {
+function renderCategoricalRuleBody({ body, rule, rows, translate }) {
 	body.innerHTML = '';
 
 	const searchWrap = document.createElement('div');
 	searchWrap.className = 'gf-control';
 	const searchLabel = document.createElement('label');
-	searchLabel.htmlFor = 'gf-search';
 	searchLabel.textContent = translate('chive-chart-filter-search');
 	const searchInput = document.createElement('input');
-	searchInput.id = 'gf-search';
 	searchInput.type = 'search';
-	searchInput.className = 'linhas-select';
-	searchInput.value = draft.search || '';
+	searchInput.className = 'linhas-select gf-rule-search';
+	searchInput.value = rule.search || '';
 	searchWrap.appendChild(searchLabel);
 	searchWrap.appendChild(searchInput);
 	body.appendChild(searchWrap);
@@ -121,13 +133,11 @@ function renderCategoricalBody({ body, draft, rows, translate }) {
 	actions.className = 'gf-actions';
 	const selectAllBtn = document.createElement('button');
 	selectAllBtn.type = 'button';
-	selectAllBtn.className = 'btn-secundario gf-action-btn';
-	selectAllBtn.id = 'gf-select-all';
+	selectAllBtn.className = 'btn-secundario gf-action-btn gf-rule-select-all';
 	selectAllBtn.textContent = translate('chive-chart-filter-select-all');
 	const clearSelectionBtn = document.createElement('button');
 	clearSelectionBtn.type = 'button';
-	clearSelectionBtn.className = 'btn-secundario gf-action-btn';
-	clearSelectionBtn.id = 'gf-clear-selection';
+	clearSelectionBtn.className = 'btn-secundario gf-action-btn gf-rule-clear-selection';
 	clearSelectionBtn.textContent = translate('chive-chart-filter-clear');
 	actions.appendChild(selectAllBtn);
 	actions.appendChild(clearSelectionBtn);
@@ -135,7 +145,6 @@ function renderCategoricalBody({ body, draft, rows, translate }) {
 
 	const list = document.createElement('div');
 	list.className = 'gf-list';
-	list.id = 'gf-list';
 	body.appendChild(list);
 
 	const summary = document.createElement('div');
@@ -144,13 +153,13 @@ function renderCategoricalBody({ body, draft, rows, translate }) {
 
 	const renderList = () => {
 		const query = String(searchInput.value || '').trim();
-		const options = getCategoricalFilterOptions(rows, draft.column, {
+		const options = getCategoricalFilterOptions(rows, rule.column, {
 			search: query,
 			limit: query.length > 0 ? Number.MAX_SAFE_INTEGER : FILTER_CATEGORY_LIMIT,
 			missingLabel: translate('chive-chart-filter-missing'),
 		});
 
-		const includeSet = new Set(draft.include || []);
+		const includeSet = new Set(rule.include || []);
 		list.innerHTML = '';
 		options.options.forEach(item => {
 			const row = document.createElement('label');
@@ -160,10 +169,10 @@ function renderCategoricalBody({ body, draft, rows, translate }) {
 			checkbox.dataset.token = item.token;
 			checkbox.checked = includeSet.has(item.token);
 			checkbox.addEventListener('change', () => {
-				const currentSet = new Set(draft.include || []);
+				const currentSet = new Set(rule.include || []);
 				if (checkbox.checked) currentSet.add(item.token);
 				else currentSet.delete(item.token);
-				draft.include = Array.from(currentSet);
+				rule.include = Array.from(currentSet);
 			});
 			const text = document.createElement('span');
 			text.className = 'gf-list-item-text';
@@ -181,30 +190,30 @@ function renderCategoricalBody({ body, draft, rows, translate }) {
 	};
 
 	searchInput.addEventListener('input', () => {
-		draft.search = searchInput.value;
+		rule.search = searchInput.value;
 		renderList();
 	});
 
 	selectAllBtn.addEventListener('click', () => {
-		const options = getCategoricalFilterOptions(rows, draft.column, {
+		const options = getCategoricalFilterOptions(rows, rule.column, {
 			search: '',
 			limit: Number.MAX_SAFE_INTEGER,
 			missingLabel: translate('chive-chart-filter-missing'),
 		});
-		draft.include = options.allTokens.slice();
+		rule.include = options.allTokens.slice();
 		renderList();
 	});
 
 	clearSelectionBtn.addEventListener('click', () => {
-		draft.include = [];
+		rule.include = [];
 		renderList();
 	});
 
 	renderList();
 }
 
-function renderDialogBody({ body, draft, rows, numericColumns, translate }) {
-	if (!draft.column) {
+function renderRuleBody({ body, rule, rows, numericColumns, translate }) {
+	if (!rule.column) {
 		body.innerHTML = '';
 		const empty = document.createElement('div');
 		empty.className = 'gf-empty';
@@ -213,13 +222,85 @@ function renderDialogBody({ body, draft, rows, numericColumns, translate }) {
 		return;
 	}
 
-	if (numericColumns.includes(draft.column)) {
-		draft.mode = 'numeric';
-		renderNumericBody({ body, draft, translate });
+	if (numericColumns.includes(rule.column)) {
+		rule.mode = 'numeric';
+		renderNumericRuleBody({ body, rule, translate });
 	} else {
-		draft.mode = 'categorical';
-		renderCategoricalBody({ body, draft, rows, translate });
+		rule.mode = 'categorical';
+		renderCategoricalRuleBody({ body, rule, rows, translate });
 	}
+}
+
+function renderRuleCard({ rule, index, rows, allColumns, numericColumns, translate, onRemove }) {
+	const card = document.createElement('div');
+	card.className = 'gf-rule-card';
+	card.dataset.ruleUid = String(rule._uid);
+
+	const header = document.createElement('div');
+	header.className = 'gf-rule-header';
+
+	const title = document.createElement('span');
+	title.className = 'gf-rule-title';
+	title.textContent = translate('chive-global-filter-rule-title', index + 1);
+	header.appendChild(title);
+
+	const removeBtn = document.createElement('button');
+	removeBtn.type = 'button';
+	removeBtn.className = 'btn-secundario gf-rule-remove';
+	removeBtn.textContent = translate('chive-global-filter-remove-rule');
+	removeBtn.addEventListener('click', () => onRemove(rule._uid));
+	header.appendChild(removeBtn);
+
+	card.appendChild(header);
+
+	const columnWrap = document.createElement('div');
+	columnWrap.className = 'gf-control';
+	const columnLabel = document.createElement('label');
+	columnLabel.textContent = translate('chive-chart-filter-column');
+	const columnSelect = document.createElement('select');
+	columnSelect.className = 'linhas-select gf-rule-column';
+	columnSelect.appendChild(createOption('', translate('chive-chart-option-none'), !rule.column));
+	allColumns.forEach(name => columnSelect.appendChild(createOption(name, name, rule.column === name)));
+	columnWrap.appendChild(columnLabel);
+	columnWrap.appendChild(columnSelect);
+	card.appendChild(columnWrap);
+
+	const body = document.createElement('div');
+	body.className = 'gf-rule-body';
+	card.appendChild(body);
+
+	renderRuleBody({ body, rule, rows, numericColumns, translate });
+
+	columnSelect.addEventListener('change', () => {
+		const nextColumn = columnSelect.value || null;
+		if (!nextColumn) {
+			rule.column = null;
+			rule.include = [];
+			rule.search = '';
+			renderRuleBody({ body, rule, rows, numericColumns, translate });
+			return;
+		}
+		rule.column = nextColumn;
+		if (numericColumns.includes(nextColumn)) {
+			rule.mode = 'numeric';
+			rule.operator = 'between';
+			rule.min = '';
+			rule.max = '';
+			rule.value = '';
+		} else {
+			rule.mode = 'categorical';
+			const options = getCategoricalFilterOptions(rows, nextColumn, {
+				search: '',
+				limit: Number.MAX_SAFE_INTEGER,
+				missingLabel: translate('chive-chart-filter-missing'),
+			});
+			rule.include = options.allTokens.slice();
+			rule.search = '';
+		}
+		renderRuleBody({ body, rule, rows, numericColumns, translate });
+	});
+
+	return card;
 }
 
 export function openGlobalFilterDialog({
@@ -245,63 +326,52 @@ export function openGlobalFilterDialog({
 		title.textContent = translate('chive-global-filter-dialog-title');
 		dialog.appendChild(title);
 
-		const safeInitial = normalizeFilterConfig(initialFilter, numericColumns);
-		if (safeInitial.column && !allColumns.includes(safeInitial.column)) {
-			safeInitial.column = null;
-			safeInitial.include = [];
-		}
+		const hint = document.createElement('p');
+		hint.className = 'gf-hint';
+		hint.textContent = translate('chive-global-filter-combine-hint');
+		dialog.appendChild(hint);
 
-		const draft = cloneFilter(safeInitial);
-		if (!draft.column) {
-			// Keep default reset state
-			draft.include = [];
-			draft.search = '';
-		}
+		// Normalize initial filter into a rules array with safe column references.
+		const initialNormalized = normalizeGlobalFilter(initialFilter, numericColumns);
+		const safeInitialRules = initialNormalized.rules.filter(rule => allColumns.includes(rule.column));
+		const draftRules = safeInitialRules.map(rule => ruleFromExisting(rule));
 
-		const controls = document.createElement('div');
-		controls.className = 'gf-controls';
+		const rulesContainer = document.createElement('div');
+		rulesContainer.className = 'gf-rules-container';
+		dialog.appendChild(rulesContainer);
 
-		const columnWrap = document.createElement('div');
-		columnWrap.className = 'gf-control';
-		const columnLabel = document.createElement('label');
-		columnLabel.htmlFor = 'gf-column';
-		columnLabel.textContent = translate('chive-chart-filter-column');
-		const columnSelect = document.createElement('select');
-		columnSelect.id = 'gf-column';
-		columnSelect.className = 'linhas-select';
-		columnSelect.appendChild(createOption('', translate('chive-chart-option-none'), !draft.column));
-		allColumns.forEach(name => {
-			columnSelect.appendChild(createOption(name, name, draft.column === name));
-		});
-		columnWrap.appendChild(columnLabel);
-		columnWrap.appendChild(columnSelect);
-		controls.appendChild(columnWrap);
+		const emptyState = document.createElement('div');
+		emptyState.className = 'gf-empty';
+		emptyState.textContent = translate('chive-global-filter-no-rules');
 
-		dialog.appendChild(controls);
+		const topActions = document.createElement('div');
+		topActions.className = 'gf-top-actions';
 
-		const body = document.createElement('div');
-		body.className = 'gf-body';
-		dialog.appendChild(body);
+		const addRuleBtn = document.createElement('button');
+		addRuleBtn.type = 'button';
+		addRuleBtn.className = 'btn-secundario gf-add-rule';
+		addRuleBtn.textContent = translate('chive-global-filter-add-rule');
+		topActions.appendChild(addRuleBtn);
+
+		const clearAllBtn = document.createElement('button');
+		clearAllBtn.type = 'button';
+		clearAllBtn.className = 'btn-secundario gf-clear-all';
+		clearAllBtn.textContent = translate('chive-global-filter-clear-all');
+		topActions.appendChild(clearAllBtn);
+
+		dialog.appendChild(topActions);
 
 		const footer = document.createElement('div');
 		footer.className = 'join-footer gf-footer';
 		const cancelBtn = document.createElement('button');
 		cancelBtn.type = 'button';
-		cancelBtn.className = 'btn-secundario';
-		cancelBtn.id = 'gf-cancel';
+		cancelBtn.className = 'btn-secundario gf-cancel';
 		cancelBtn.textContent = translate('chive-global-filter-cancel');
-		const clearBtn = document.createElement('button');
-		clearBtn.type = 'button';
-		clearBtn.className = 'btn-secundario';
-		clearBtn.id = 'gf-clear';
-		clearBtn.textContent = translate('chive-global-filter-clear');
 		const applyBtn = document.createElement('button');
 		applyBtn.type = 'button';
-		applyBtn.className = 'btn-primario';
-		applyBtn.id = 'gf-apply';
+		applyBtn.className = 'btn-primario gf-apply';
 		applyBtn.textContent = translate('chive-global-filter-apply');
 		footer.appendChild(cancelBtn);
-		footer.appendChild(clearBtn);
 		footer.appendChild(applyBtn);
 		dialog.appendChild(footer);
 
@@ -319,61 +389,66 @@ export function openGlobalFilterDialog({
 			resolve({ action, filter: filterOut });
 		};
 
-		renderDialogBody({ body, draft, rows, numericColumns, translate });
+		const finalizeRules = () => {
+			return draftRules
+				.filter(rule => rule.column && allColumns.includes(rule.column))
+				.map(rule => stripUid(rule));
+		};
 
-		columnSelect.addEventListener('change', () => {
-			const nextColumn = columnSelect.value || null;
-			if (!nextColumn) {
-				draft.column = null;
-				draft.include = [];
-				draft.search = '';
-				renderDialogBody({ body, draft, rows, numericColumns, translate });
+		const renderRules = () => {
+			rulesContainer.innerHTML = '';
+			if (draftRules.length === 0) {
+				rulesContainer.appendChild(emptyState);
 				return;
 			}
-			draft.column = nextColumn;
-			if (numericColumns.includes(nextColumn)) {
-				draft.mode = 'numeric';
-				draft.operator = 'between';
-				draft.min = '';
-				draft.max = '';
-				draft.value = '';
-			} else {
-				draft.mode = 'categorical';
-				const options = getCategoricalFilterOptions(rows, nextColumn, {
-					search: '',
-					limit: Number.MAX_SAFE_INTEGER,
-					missingLabel: translate('chive-chart-filter-missing'),
+			if (emptyState.parentElement) emptyState.remove();
+			draftRules.forEach((rule, index) => {
+				const card = renderRuleCard({
+					rule,
+					index,
+					rows,
+					allColumns,
+					numericColumns,
+					translate,
+					onRemove: uid => {
+						const idx = draftRules.findIndex(r => r._uid === uid);
+						if (idx >= 0) {
+							draftRules.splice(idx, 1);
+							renderRules();
+						}
+					},
 				});
-				draft.include = options.allTokens.slice();
-				draft.search = '';
-			}
-			renderDialogBody({ body, draft, rows, numericColumns, translate });
+				rulesContainer.appendChild(card);
+			});
+		};
+
+		addRuleBtn.addEventListener('click', () => {
+			draftRules.push(createEmptyRuleDraft());
+			renderRules();
+		});
+
+		clearAllBtn.addEventListener('click', () => {
+			draftRules.splice(0, draftRules.length);
+			renderRules();
+			const cleared = createEmptyGlobalFilter();
+			if (typeof onClear === 'function') onClear(cleared);
+			closeDialog('clear', cleared);
 		});
 
 		cancelBtn.addEventListener('click', () => closeDialog('cancel', null));
 
-		clearBtn.addEventListener('click', () => {
-			const cleared = createDefaultFilterConfig();
-			if (typeof onClear === 'function') {
-				onClear(cleared);
-			}
-			closeDialog('clear', cleared);
-		});
-
 		applyBtn.addEventListener('click', () => {
-			const applied = cloneFilter(draft);
-			if (typeof onApply === 'function') {
-				onApply(applied);
-			}
+			const applied = { rules: finalizeRules(), combine: 'AND' };
+			if (typeof onApply === 'function') onApply(applied);
 			closeDialog('apply', applied);
 		});
 
 		overlay.addEventListener('click', event => {
-			if (event.target === overlay) {
-				closeDialog('cancel', null);
-			}
+			if (event.target === overlay) closeDialog('cancel', null);
 		});
 
 		document.addEventListener('keydown', onEscape);
+
+		renderRules();
 	});
 }

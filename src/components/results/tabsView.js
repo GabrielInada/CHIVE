@@ -1,5 +1,5 @@
 import { t } from '../../services/i18nService.js';
-import { isGlobalFilterActive } from '../../utils/globalFilter.js';
+import { countGlobalFilterRules, isGlobalFilterActive } from '../../utils/globalFilter.js';
 
 let listenersRegistered = false;
 let currentOnChartConfigChange = null;
@@ -95,9 +95,10 @@ export function updateGlobalFilterTrigger({
 	globalFilterTrigger.classList.toggle('ativo', active);
 
 	if (active) {
+		const count = countGlobalFilterRules(globalFilter);
 		const shown = Number.isFinite(filteredCount) ? filteredCount : 0;
 		const total = Number.isFinite(totalCount) ? totalCount : 0;
-		globalFilterLabel.textContent = t('chive-global-filter-trigger-active', shown, total);
+		globalFilterLabel.textContent = t('chive-global-filter-trigger-active', count, shown, total);
 	} else {
 		globalFilterLabel.textContent = t('chive-global-filter-trigger-inactive');
 	}

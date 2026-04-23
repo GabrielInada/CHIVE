@@ -196,6 +196,70 @@
   text-align: center;
 }
 
+.gf-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 10px;
+}
+
+.gf-rules-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 60vh;
+  overflow: auto;
+}
+
+.gf-rule-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  background: var(--bg);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gf-rule-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gf-rule-title {
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.gf-rule-remove {
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+.gf-rule-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gf-top-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-start;
+  margin-top: 10px;
+  flex-wrap: wrap;
+}
+
+.gf-add-rule,
+.gf-clear-all {
+  font-size: 11px;
+  padding: 4px 12px;
+}
+
 @media (max-width: 640px) {
   .resultado-tabs {
     flex-direction: column;

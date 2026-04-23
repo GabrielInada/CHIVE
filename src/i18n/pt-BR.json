@@ -350,10 +350,16 @@
 	"chive-chart-filter-value": "Valor",
 
 	"chive-global-filter-trigger-inactive": "Filtro global",
-	"chive-global-filter-trigger-active": "Filtro ativo • $1/$2",
+	"chive-global-filter-trigger-active": "{{PLURAL:$1|Filtro ativo • $1 regra|Filtro ativo • $1 regras}} · $2/$3",
 	"chive-global-filter-dialog-title": "Filtro global do dataset",
+	"chive-global-filter-combine-hint": "As regras são combinadas com E — uma linha precisa atender todas.",
 	"chive-global-filter-apply": "Aplicar",
 	"chive-global-filter-clear": "Limpar filtro",
+	"chive-global-filter-clear-all": "Limpar todas as regras",
+	"chive-global-filter-add-rule": "Adicionar regra",
+	"chive-global-filter-remove-rule": "Remover",
+	"chive-global-filter-rule-title": "Regra $1",
+	"chive-global-filter-no-rules": "Nenhuma regra ainda. Clique em “Adicionar regra” para começar.",
 	"chive-global-filter-cancel": "Cancelar",
 	"chive-global-filter-empty": "Selecione uma coluna para filtrar.",
 

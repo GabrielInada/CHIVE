@@ -1,10 +1,10 @@
 import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TREEMAP_CHART } from './charts.js';
-import { createDefaultFilterConfig as createDefaultFilter } from '../utils/chartFilters.js';
+import { normalizeGlobalFilter, createEmptyGlobalFilter } from '../utils/globalFilter.js';
 
 export function createDefaultChartConfig() {
 	return {
 		aba: 'preview',
-		globalFilter: createDefaultFilter(),
+		globalFilter: createEmptyGlobalFilter(),
 		bar: {
 			enabled: false,
 			category: null,
@@ -124,10 +124,10 @@ export function createDefaultChartConfig() {
 }
 
 function pickGlobalFilter(config) {
-	if (config && typeof config === 'object' && config.globalFilter && typeof config.globalFilter === 'object') {
-		return { ...createDefaultFilter(), ...config.globalFilter };
+	if (!config || typeof config !== 'object') {
+		return createEmptyGlobalFilter();
 	}
-	return createDefaultFilter();
+	return normalizeGlobalFilter(config.globalFilter);
 }
 
 export function mergeChartConfigWithDefaults(configGraficos) {
