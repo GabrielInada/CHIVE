@@ -5,6 +5,7 @@ import { createCheckboxControl, createSliderControl, createTextControl, normaliz
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import { createSelectControl } from './shared.js';
+import { setupExpandListener } from './controlListenerHelpers.js';
 
 export function createTreeMapControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
 	const config = dataset.configGraficos.treemap;
@@ -175,16 +176,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 		});
 	}
 
-	const expandTreemap = document.getElementById('viz-expand-treemap');
-	if (expandTreemap) {
-		expandTreemap.addEventListener('click', () => {
-			const expanded = expandTreemap.getAttribute('aria-expanded') === 'true';
-			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, expanded: !expanded },
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupExpandListener('viz-expand-treemap', dataset, 'treemap', onConfigChanged);
 
 	const selectCategory = document.getElementById('viz-select-treemap-category');
 	if (selectCategory) {

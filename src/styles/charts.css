@@ -320,6 +320,9 @@
   display: grid;
   gap: 8px;
   padding: 10px;
+}
+
+.chart-section-content--opening {
   animation: slideDown 0.2s ease forwards;
 }
 
