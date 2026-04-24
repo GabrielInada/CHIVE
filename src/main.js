@@ -79,7 +79,7 @@ exposeGlobals();
 
 // 3. Initialize modules
 initFileManager(handleDatasetsChanged);
-initChartControls(handleChartConfigChanged);
+initChartControls();
 initPanelManager(showFeedback);
 
 // 4. Setup event handlers (must be after modules initialized)
@@ -111,13 +111,6 @@ showError(message);
  * Called when datasets list changes (added/removed)
  */
 function handleDatasetsChanged() {
-refreshView();
-}
-
-/**
- * Called when chart configuration changes
- */
-function handleChartConfigChanged() {
 refreshView();
 }
 

@@ -27,6 +27,9 @@ import { PREVIEW_BAR_SVG, PREVIEW_BUBBLE_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_S
 
 // Callback when chart config changes (will be set by main.js)
 let onChartConfigChangeCallback = null;
+const trackedSidebarContainers = new WeakSet();
+let lastSidebarInteractionAnchor = null;
+const SIDEBAR_INTERACTION_MAX_AGE_MS = 2000;
 
 /**
  * Initialize chart controls manager
@@ -48,6 +51,170 @@ function handleChartExpandedChange() {
 	// Main.js will call renderChartControlsSidebar on full refresh
 }
 
+function getChartNameFromExpandButtonId(id) {
+	if (typeof id !== 'string') return null;
+	return id.startsWith('viz-expand-') ? id.slice('viz-expand-'.length) : null;
+}
+
+function captureControlSectionExpansionState(container) {
+	if (!container || typeof container.querySelectorAll !== 'function') return {};
+
+	const state = {};
+	const cards = container.querySelectorAll('.viz-card');
+	cards.forEach(card => {
+		const expandButton = card.querySelector('.viz-expand-btn');
+		const chartName = getChartNameFromExpandButtonId(expandButton?.id);
+		if (!chartName) return;
+
+		const sectionState = {};
+		const sections = card.querySelectorAll('.chart-control-section');
+		sections.forEach(section => {
+			const sectionId = section.dataset.section;
+			const header = section.querySelector('.chart-section-header');
+			if (!sectionId || !header) return;
+			sectionState[sectionId] = header.getAttribute('aria-expanded') === 'true';
+		});
+
+		if (Object.keys(sectionState).length > 0) {
+			state[chartName] = sectionState;
+		}
+	});
+
+	return state;
+}
+
+function applyControlSectionExpansionState(container, state) {
+	if (!container || typeof container.querySelector !== 'function' || !state) return;
+
+	Object.entries(state).forEach(([chartName, sectionState]) => {
+		const expandButton = container.querySelector(`#viz-expand-${chartName}`);
+		const card = expandButton?.closest('.viz-card');
+		if (!card) return;
+
+		Object.entries(sectionState).forEach(([sectionId, expanded]) => {
+			const section = card.querySelector(`.chart-control-section[data-section="${sectionId}"]`);
+			if (!section) return;
+
+			const header = section.querySelector('.chart-section-header');
+			const content = section.querySelector('.chart-section-content');
+			const toggleIcon = section.querySelector('.chart-section-toggle');
+			if (!header || !content) return;
+
+			header.setAttribute('aria-expanded', String(expanded));
+			content.style.display = expanded ? 'block' : 'none';
+			if (toggleIcon) {
+				toggleIcon.textContent = expanded ? '▼' : '▶';
+			}
+		});
+	});
+}
+
+function ensureSidebarInteractionTracking(container) {
+	if (!container || typeof container.addEventListener !== 'function') return;
+	if (trackedSidebarContainers.has(container)) return;
+
+	const captureInteractionAnchor = (event) => {
+		const target = event?.target;
+		if (!(target instanceof HTMLElement)) return;
+		if (typeof container.contains === 'function' && !container.contains(target)) return;
+
+		const activeCard = target.closest('.viz-card');
+		const expandButton = activeCard?.querySelector('.viz-expand-btn');
+		lastSidebarInteractionAnchor = {
+			targetId: target.id || null,
+			targetTop: target.getBoundingClientRect().top,
+			activeCardExpandButtonId: expandButton?.id || null,
+			activeCardTop: activeCard ? activeCard.getBoundingClientRect().top : null,
+			timestamp: Date.now(),
+		};
+	};
+
+	container.addEventListener('change', captureInteractionAnchor, true);
+	container.addEventListener('input', captureInteractionAnchor, true);
+	container.addEventListener('click', captureInteractionAnchor, true);
+	trackedSidebarContainers.add(container);
+}
+
+function getSidebarScrollAnchor(container) {
+	const previousScrollTop = Number(container?.scrollTop || 0);
+	const hasRecentInteraction = lastSidebarInteractionAnchor
+		&& (Date.now() - lastSidebarInteractionAnchor.timestamp) <= SIDEBAR_INTERACTION_MAX_AGE_MS;
+
+	if (hasRecentInteraction) {
+		return {
+			previousScrollTop,
+			activeElementId: lastSidebarInteractionAnchor.targetId || null,
+			activeElementTop: lastSidebarInteractionAnchor.targetTop,
+			activeCardExpandButtonId: lastSidebarInteractionAnchor.activeCardExpandButtonId || null,
+			activeCardTop: lastSidebarInteractionAnchor.activeCardTop,
+		};
+	}
+
+	const activeElement = document.activeElement;
+	const canCheckContainment = typeof container?.contains === 'function';
+	const isAnchoredElement = canCheckContainment
+		&& activeElement instanceof HTMLElement
+		&& container.contains(activeElement);
+
+	if (!isAnchoredElement) {
+		return { previousScrollTop };
+	}
+
+	const activeCard = activeElement.closest('.viz-card');
+	const expandButton = activeCard?.querySelector('.viz-expand-btn');
+
+	return {
+		previousScrollTop,
+		activeElementId: activeElement.id || null,
+		activeElementTop: activeElement.getBoundingClientRect().top,
+		activeCardExpandButtonId: expandButton?.id || null,
+		activeCardTop: activeCard ? activeCard.getBoundingClientRect().top : null,
+	};
+}
+
+function restoreSidebarScrollPosition(container, anchor) {
+	if (!anchor) return;
+
+	const canCheckContainment = typeof container?.contains === 'function';
+	// Baseline must be the CURRENT scrollTop (post-wipe), not the previous one.
+	// Real browsers clamp scrollTop to 0 when innerHTML is wiped (scrollHeight drops
+	// below scrollTop + clientHeight), so the delta from the anchor's captured rect
+	// already accounts for the original scroll offset. jsdom doesn't reset scrollTop,
+	// so this also stays correct there (current == previous).
+	const readCurrentScrollTop = () => Number(container?.scrollTop || 0);
+
+	if (anchor.activeElementId && Number.isFinite(anchor.activeElementTop)) {
+		const nextActiveElement = document.getElementById(anchor.activeElementId);
+		const elementIsInsideContainer = canCheckContainment
+			&& nextActiveElement instanceof HTMLElement
+			&& container.contains(nextActiveElement);
+		if (elementIsInsideContainer) {
+			const delta = nextActiveElement.getBoundingClientRect().top - anchor.activeElementTop;
+			container.scrollTop = readCurrentScrollTop() + delta;
+			if (typeof nextActiveElement.focus === 'function') {
+				try {
+					nextActiveElement.focus({ preventScroll: true });
+				} catch {
+					nextActiveElement.focus();
+				}
+			}
+			return;
+		}
+	}
+
+	if (anchor.activeCardExpandButtonId && Number.isFinite(anchor.activeCardTop)) {
+		const nextExpandButton = document.getElementById(anchor.activeCardExpandButtonId);
+		const nextCard = nextExpandButton?.closest('.viz-card');
+		if (nextCard) {
+			const delta = nextCard.getBoundingClientRect().top - anchor.activeCardTop;
+			container.scrollTop = readCurrentScrollTop() + delta;
+			return;
+		}
+	}
+
+	container.scrollTop = Number(anchor.previousScrollTop || 0);
+}
+
 /**
  * Render chart controls sidebar
  * @param {Object} dataset - Active dataset
@@ -55,6 +222,9 @@ function handleChartExpandedChange() {
 export function renderChartControlsSidebar(dataset) {
 	const container = document.getElementById('lista-visualizacoes-conteudo');
 	if (!container) return;
+	ensureSidebarInteractionTracking(container);
+	const scrollAnchor = getSidebarScrollAnchor(container);
+	const controlSectionState = captureControlSectionExpansionState(container);
 
 	if (!dataset) {
 		container.innerHTML = '';
@@ -62,6 +232,7 @@ export function renderChartControlsSidebar(dataset) {
 		emptyDiv.className = 'tabela-sem-colunas';
 		emptyDiv.textContent = t('chive-chart-sidebar-empty');
 		container.appendChild(emptyDiv);
+		restoreSidebarScrollPosition(container, scrollAnchor);
 		return;
 	}
 
@@ -85,6 +256,7 @@ export function renderChartControlsSidebar(dataset) {
 		emptyDiv.className = 'tabela-sem-colunas';
 		emptyDiv.textContent = t('chive-chart-sidebar-empty');
 		container.appendChild(emptyDiv);
+		restoreSidebarScrollPosition(container, scrollAnchor);
 		return;
 	}
 
@@ -166,9 +338,11 @@ export function renderChartControlsSidebar(dataset) {
 		PREVIEW_TREEMAP_SVG,
 		() => createTreeMapControls(dataset, categoricas.length > 0 ? categoricas : todasColunas, numericas, todasColunas)
 	);
+	applyControlSectionExpansionState(container, controlSectionState);
 
 	// Setup event listeners for all controls
 	setupChartControlListeners(dataset, baseBar, numericas, basePie, baseBubble, todasColunas);
+	restoreSidebarScrollPosition(container, scrollAnchor);
 }
 
 /**

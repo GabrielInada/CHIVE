@@ -35,6 +35,7 @@ export function createDefaultChartConfig() {
 			yScale: SCATTER_PLOT.defaultScale,
 			radius: SCATTER_PLOT.defaultRadius,
 			opacity: SCATTER_PLOT.defaultOpacity,
+			categoricalPairMode: 'jitter',
 			color: CHART_COLORS.scatter,
 			colorMode: 'uniform',
 			colorField: null,
