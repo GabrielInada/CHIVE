@@ -158,6 +158,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				gradientMinColor: chartConfig.scatter.gradientMinColor,
 				gradientMaxColor: chartConfig.scatter.gradientMaxColor,
 				colorScheme: chartConfig.scatter.colorScheme,
+				categoricalPairMode: chartConfig.scatter.categoricalPairMode,
 				showXAxisLabel: chartConfig.scatter.showXAxisLabel,
 				showYAxisLabel: chartConfig.scatter.showYAxisLabel,
 				axisLabels: {
@@ -173,6 +174,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					eixoX: t('chive-chart-control-scatter-x'),
 					eixoY: t('chive-chart-control-scatter-y'),
 					indice: t('chive-tooltip-row'),
+					count: t('chive-tooltip-count'),
 				},
 			}
 		);

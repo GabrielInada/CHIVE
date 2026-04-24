@@ -78,6 +78,79 @@ function truncateCategoryTick(value, maxLength = 20) {
 	return `${text.slice(0, Math.max(1, maxLength - 1))}…`;
 }
 
+function estimateLongestCategoryLength(points, key) {
+	return points.reduce((maxLength, point) => Math.max(maxLength, String(point[key] || '').length), 0);
+}
+
+function computeAdaptiveMargins(baseMargins, points, axisTypes) {
+	const margins = { ...baseMargins };
+
+	if (axisTypes.y === AXIS_TYPE_VALUES.categorical) {
+		const maxYLength = estimateLongestCategoryLength(points, 'yCategory');
+		const estimatedLeft = 28 + (Math.min(maxYLength, 64) * 6.8);
+		margins.left = Math.max(baseMargins.left, Math.min(340, Math.round(estimatedLeft)));
+	}
+
+	if (axisTypes.x === AXIS_TYPE_VALUES.categorical) {
+		const maxXLength = estimateLongestCategoryLength(points, 'xCategory');
+		const estimatedBottom = 48 + (Math.min(maxXLength, 52) * 4.2);
+		margins.bottom = Math.max(baseMargins.bottom, Math.min(250, Math.round(estimatedBottom)));
+	}
+
+	return margins;
+}
+
+function aggregateCategoricalPairs(points) {
+	const groups = new Map();
+
+	points.forEach(point => {
+		const key = `${point.xCategory}\u0001${point.yCategory}`;
+		if (!groups.has(key)) {
+			groups.set(key, {
+				...point,
+				isAggregate: true,
+				count: 0,
+				rawRows: [],
+			});
+		}
+
+		const group = groups.get(key);
+		group.count += 1;
+		group.rawRows.push(point.raw);
+
+		if (point.index < group.index) {
+			group.index = point.index;
+			group.raw = point.raw;
+		}
+	});
+
+	return Array.from(groups.values());
+}
+
+function pickMostFrequentCategory(rows, fieldName) {
+	const categoryCount = new Map();
+
+	rows.forEach(row => {
+		const category = normalizeCategoryValue(row?.[fieldName]);
+		categoryCount.set(category, (categoryCount.get(category) || 0) + 1);
+	});
+
+	let bestCategory = '—';
+	let bestCount = -1;
+	for (const [category, count] of categoryCount.entries()) {
+		if (count > bestCount) {
+			bestCategory = category;
+			bestCount = count;
+			continue;
+		}
+		if (count === bestCount && String(category).localeCompare(String(bestCategory)) < 0) {
+			bestCategory = category;
+		}
+	}
+
+	return bestCategory;
+}
+
 function normalizarDominio([minimo, maximo]) {
 	if (!Number.isFinite(minimo) || !Number.isFinite(maximo)) return [0, 1];
 	if (minimo === maximo) {
@@ -113,10 +186,12 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
 		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
 		: CHART_DIMENSIONS.scatter.height;
+	const categoricalPairMode = opcoes.categoricalPairMode === 'aggregate' ? 'aggregate' : 'jitter';
  	const labels = {
 		eixoX: opcoes.labels?.eixoX || 'X',
 		eixoY: opcoes.labels?.eixoY || 'Y',
 		indice: opcoes.labels?.indice || 'Index',
+		count: opcoes.labels?.count || 'Count',
 	};
 	const axisLabels = {
 		x: opcoes.axisLabels?.x || eixoX,
@@ -165,6 +240,16 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		pontos = pontos.filter(ponto => ponto.y > 0);
 	}
 
+	const shouldAggregateCategoricalPairs = (
+		axisTypes.x === AXIS_TYPE_VALUES.categorical
+		&& axisTypes.y === AXIS_TYPE_VALUES.categorical
+		&& categoricalPairMode === 'aggregate'
+	);
+
+	if (shouldAggregateCategoricalPairs) {
+		pontos = aggregateCategoricalPairs(pontos);
+	}
+
 	if (pontos.length === 0) {
 		return fail(effectiveXScale === 'log' || effectiveYScale === 'log' ? 'log-no-positive' : undefined);
 	}
@@ -173,10 +258,10 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	hideChartTooltip();
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
 	const altura = chartHeight;
-	const margem = CHART_DIMENSIONS.scatter.margins;
+	const margem = computeAdaptiveMargins(CHART_DIMENSIONS.scatter.margins, pontos, axisTypes);
 	const titleOffset = customTitle ? 20 : 0;
-	const larguraInterna = largura - margem.left - margem.right;
-	const alturaInterna = altura - margem.top - margem.bottom - titleOffset;
+	const larguraInterna = Math.max(40, largura - margem.left - margem.right);
+	const alturaInterna = Math.max(40, altura - margem.top - margem.bottom - titleOffset);
 
 	const svg = select(container)
 		.append('svg')
@@ -222,7 +307,11 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 
 		wrapper.appendChild(createLine(labels.eixoX, xValue));
 		wrapper.appendChild(createLine(labels.eixoY, yValue));
-		wrapper.appendChild(createLine(labels.indice, formatNumber(ponto.index + 1, locale)));
+		if (ponto.isAggregate) {
+			wrapper.appendChild(createLine(labels.count, formatNumber(ponto.count, locale)));
+		} else {
+			wrapper.appendChild(createLine(labels.indice, formatNumber(ponto.index + 1, locale)));
+		}
 
 		return wrapper;
 	};
@@ -259,10 +348,10 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			.padding(0.5);
 	}
 
-	const xJitterFor = axisTypes.x === AXIS_TYPE_VALUES.categorical
+	const xJitterFor = axisTypes.x === AXIS_TYPE_VALUES.categorical && !shouldAggregateCategoricalPairs
 		? buildCategoryJitterScale(escalaX)
 		: () => 0;
-	const yJitterFor = axisTypes.y === AXIS_TYPE_VALUES.categorical
+	const yJitterFor = axisTypes.y === AXIS_TYPE_VALUES.categorical && !shouldAggregateCategoricalPairs
 		? buildCategoryJitterScale(escalaY)
 		: () => 0;
 
@@ -276,17 +365,41 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		return (escalaY(ponto.yCategory) || 0) + yJitterFor(ponto.index, 2.3);
 	};
 
+	const aggregatedCounts = pontos
+		.filter(ponto => ponto.isAggregate)
+		.map(ponto => Number(ponto.count) || 0);
+	const minAggregatedCount = aggregatedCounts.length > 0 ? Math.min(...aggregatedCounts) : 1;
+	const maxAggregatedCount = aggregatedCounts.length > 0 ? Math.max(...aggregatedCounts) : 1;
+	const maxAggregateRadius = Math.max(radius + 6, radius * 2.1);
+	const getPointRadius = ponto => {
+		if (!ponto.isAggregate) return radius;
+		if (maxAggregatedCount === minAggregatedCount) return maxAggregateRadius;
+		const progress = ((ponto.count || minAggregatedCount) - minAggregatedCount) / (maxAggregatedCount - minAggregatedCount);
+		return radius + ((maxAggregateRadius - radius) * progress);
+	};
+
 	let getPointColor = () => color;
 	if (colorMode === 'numeric' && colorField) {
+		const getNumericColorValue = ponto => {
+			if (!ponto.isAggregate) {
+				return Number(ponto.raw?.[colorField]);
+			}
+			const values = (ponto.rawRows || [])
+				.map(row => Number(row?.[colorField]))
+				.filter(Number.isFinite);
+			if (values.length === 0) return NaN;
+			return values.reduce((acc, value) => acc + value, 0) / values.length;
+		};
+
 		const numericValues = pontos
-			.map(ponto => Number(ponto.raw?.[colorField]))
+			.map(ponto => getNumericColorValue(ponto))
 			.filter(Number.isFinite);
 		if (numericValues.length > 0) {
 			const min = Math.min(...numericValues);
 			const max = Math.max(...numericValues);
 			const delta = max - min || 1;
 			getPointColor = ponto => {
-				const v = Number(ponto.raw?.[colorField]);
+				const v = getNumericColorValue(ponto);
 				if (!Number.isFinite(v)) return color;
 				return interpolateColor(gradientMinColor, gradientMaxColor, (v - min) / delta);
 			};
@@ -294,20 +407,23 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	}
 
 	if (colorMode === 'category' && colorField) {
+		const getCategoryColorValue = ponto => {
+			if (!ponto.isAggregate) {
+				return normalizeCategoryValue(ponto.raw?.[colorField]);
+			}
+			return pickMostFrequentCategory(ponto.rawRows || [], colorField);
+		};
+
 		const palette = SCATTER_PALETTES[colorScheme];
 		const categoryMap = new Map();
 		pontos.forEach(ponto => {
-			const cat = ponto.raw?.[colorField] === null || ponto.raw?.[colorField] === undefined || ponto.raw?.[colorField] === ''
-				? '—'
-				: String(ponto.raw?.[colorField]);
+			const cat = getCategoryColorValue(ponto);
 			if (!categoryMap.has(cat)) {
 				categoryMap.set(cat, palette[categoryMap.size % palette.length]);
 			}
 		});
 		getPointColor = ponto => {
-			const cat = ponto.raw?.[colorField] === null || ponto.raw?.[colorField] === undefined || ponto.raw?.[colorField] === ''
-				? '—'
-				: String(ponto.raw?.[colorField]);
+			const cat = getCategoryColorValue(ponto);
 			return categoryMap.get(cat) || color;
 		};
 	}
@@ -319,7 +435,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		.append('circle')
 		.attr('cx', ponto => getPointX(ponto))
 		.attr('cy', ponto => getPointY(ponto))
-		.attr('r', radius)
+		.attr('r', ponto => getPointRadius(ponto))
 		.attr('fill', ponto => getPointColor(ponto))
 		.attr('opacity', opacity)
 		.on('mouseenter', (event, ponto) => {
@@ -364,7 +480,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		.call(
 			axisTypes.y === AXIS_TYPE_VALUES.numeric
 				? axisLeft(escalaY).ticks(8)
-				: axisLeft(escalaY).tickFormat(value => truncateCategoryTick(value))
+				: axisLeft(escalaY).tickFormat(value => String(value))
 		);
 
 	if (axisTypes.x === AXIS_TYPE_VALUES.categorical) {

@@ -59,6 +59,45 @@ describe('scatterPlot mixed axis behavior', () => {
 		expect(new Set(xValues).size).toBeGreaterThan(1);
 	});
 
+	it('aggregates duplicated categorical pairs into one point when aggregate mode is enabled', () => {
+		const container = document.getElementById('scatter');
+		const rows = [
+			{ x: 'A', y: 'North' },
+			{ x: 'A', y: 'North' },
+			{ x: 'A', y: 'South' },
+			{ x: 'A', y: 'South' },
+			{ x: 'A', y: 'South' },
+		];
+
+		const result = renderScatterPlot(container, rows, 'x', 'y', {
+			axisTypes: { x: 'texto', y: 'texto' },
+			categoricalPairMode: 'aggregate',
+		});
+
+		expect(result.ok).toBe(true);
+		const circles = Array.from(container.querySelectorAll('circle'));
+		expect(circles).toHaveLength(2);
+
+		const radii = circles.map(circle => Number(circle.getAttribute('r'))).sort((a, b) => a - b);
+		expect(radii[1]).toBeGreaterThan(radii[0]);
+	});
+
+	it('renders full categorical Y labels so long values are visible', () => {
+		const container = document.getElementById('scatter');
+		const longYLabel = 'Extremely long categorical label for y-axis visibility check';
+		const rows = [
+			{ x: 'A', y: longYLabel },
+			{ x: 'B', y: longYLabel },
+		];
+
+		const result = renderScatterPlot(container, rows, 'x', 'y', {
+			axisTypes: { x: 'texto', y: 'texto' },
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.textContent).toContain(longYLabel);
+	});
+
 	it('preserves log validation for numeric axes', () => {
 		const container = document.getElementById('scatter');
 		const rows = [

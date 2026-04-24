@@ -75,6 +75,7 @@ describe('chartDefaults', () => {
 			expect(result.scatter.x).toBe('colA');
 			expect(result.scatter.y).toBe('colB');
 			expect(result.scatter.radius).toBeDefined();
+			expect(result.scatter.categoricalPairMode).toBe('jitter');
 		});
 
 		it('merges partial network config with defaults', () => {

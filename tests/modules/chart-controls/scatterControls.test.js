@@ -27,6 +27,7 @@ function createDataset(scatterOverrides = {}) {
 				y: 'value',
 				xScale: 'log',
 				yScale: 'linear',
+				categoricalPairMode: 'jitter',
 				radius: 3,
 				opacity: 0.7,
 				color: '#1a472a',
@@ -77,6 +78,19 @@ describe('scatterControls axis options', () => {
 
 		expect(document.getElementById('viz-select-scatter-xscale').disabled).toBe(true);
 		expect(document.getElementById('viz-select-scatter-yscale').disabled).toBe(false);
+	});
+
+	it('enables categorical mode selector only when both axes are categorical', () => {
+		const mixedDataset = createDataset({ x: 'category', y: 'value' });
+		const mixedControls = createScatterPlotControls(mixedDataset, ['value'], ['category', 'value']);
+		appendControls(mixedControls);
+		expect(document.getElementById('viz-select-scatter-categorical-mode').disabled).toBe(true);
+
+		document.body.innerHTML = '';
+		const categoricalDataset = createDataset({ x: 'category', y: 'group' });
+		const categoricalControls = createScatterPlotControls(categoricalDataset, ['value'], ['category', 'group', 'value']);
+		appendControls(categoricalControls);
+		expect(document.getElementById('viz-select-scatter-categorical-mode').disabled).toBe(false);
 	});
 });
 
@@ -154,6 +168,26 @@ describe('scatterControls axis listeners', () => {
 				y: 'catB',
 				xScale: 'linear',
 				yScale: 'linear',
+			}),
+		});
+		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+	});
+
+	it('stores categorical pairing mode updates', () => {
+		const dataset = createDataset({ x: 'category', y: 'group', categoricalPairMode: 'jitter' });
+		const controls = createScatterPlotControls(dataset, ['value'], ['category', 'group', 'value']);
+		appendControls(controls);
+
+		const onConfigChanged = vi.fn();
+		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'group', 'value'], onConfigChanged);
+
+		const pairMode = document.getElementById('viz-select-scatter-categorical-mode');
+		pairMode.value = 'aggregate';
+		pairMode.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+			scatter: expect.objectContaining({
+				categoricalPairMode: 'aggregate',
 			}),
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);

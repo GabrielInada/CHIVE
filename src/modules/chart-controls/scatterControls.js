@@ -70,6 +70,24 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || !numericOptions.includes(config.y),
 	));
 
+	const bothAxesCategorical = Boolean(
+		config.x
+		&& config.y
+		&& !numericOptions.includes(config.x)
+		&& !numericOptions.includes(config.y)
+	);
+	const categoricalModeOptions = [
+		{ value: 'jitter', label: t('chive-chart-control-scatter-categorical-mode-jitter') },
+		{ value: 'aggregate', label: t('chive-chart-control-scatter-categorical-mode-aggregate') },
+	];
+	dataControls.push(createSelectControl(
+		'viz-select-scatter-categorical-mode',
+		t('chive-chart-control-scatter-categorical-mode'),
+		categoricalModeOptions,
+		config.categoricalPairMode || 'jitter',
+		disabled || !bothAxesCategorical,
+	));
+
 	// ====== DISPLAY SECTION (Labels and dimensions) ======
 	const displayControls = [];
 
@@ -309,6 +327,11 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 		},
 		{ id: 'viz-select-scatter-radius', key: 'radius', transform: v => Number(v) },
 		{ id: 'viz-select-scatter-opacity', key: 'opacity', transform: v => Number(v) },
+		{
+			id: 'viz-select-scatter-categorical-mode',
+			key: 'categoricalPairMode',
+			transform: value => (value === 'aggregate' ? 'aggregate' : 'jitter'),
+		},
 		{ id: 'viz-select-scatter-color-field', key: 'colorField', transform: v => v || null },
 		{ id: 'viz-select-scatter-color-scheme', key: 'colorScheme' },
 	], dataset, 'scatter', onConfigChanged);
