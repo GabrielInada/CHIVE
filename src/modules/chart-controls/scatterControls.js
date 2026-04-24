@@ -24,7 +24,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 
 	const xOptions = [
 		{ value: '', label: t('chive-chart-option-none') },
-		...numericOptions.map(opt => ({ value: opt, label: opt })),
+		...allOptions.map(opt => ({ value: opt, label: opt })),
 	];
 	dataControls.push(createSelectControl(
 		'viz-select-x',
@@ -36,7 +36,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 
 	const yOptions = [
 		{ value: '', label: t('chive-chart-option-none') },
-		...numericOptions.map(opt => ({ value: opt, label: opt })),
+		...allOptions.map(opt => ({ value: opt, label: opt })),
 	];
 	dataControls.push(createSelectControl(
 		'viz-select-y',
@@ -55,7 +55,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		t('chive-chart-control-scatter-xscale'),
 		xScaleOptions,
 		config.xScale,
-		disabled,
+		disabled || !numericOptions.includes(config.x),
 	));
 
 	const yScaleOptions = [
@@ -67,7 +67,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		t('chive-chart-control-scatter-yscale'),
 		yScaleOptions,
 		config.yScale,
-		disabled,
+		disabled || !numericOptions.includes(config.y),
 	));
 
 	// ====== DISPLAY SECTION (Labels and dimensions) ======
@@ -238,6 +238,13 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 
 export function setupScatterPlotControlListeners(dataset, numericas, allOptions, onConfigChanged) {
 	const categoricas = allOptions.filter(option => !numericas.includes(option));
+	const pickPreferredAxis = (current, preferredIndex = 0, avoid = null) => {
+		if (allOptions.includes(current) && current !== avoid) return current;
+		const preferred = numericas.filter(option => allOptions.includes(option) && option !== avoid);
+		if (preferred[preferredIndex]) return preferred[preferredIndex];
+		return allOptions.find(option => option !== avoid) || null;
+	};
+
 	const toggleScatter = document.getElementById('viz-toggle-scatter');
 	const expandScatter = document.getElementById('viz-expand-scatter');
 
@@ -245,16 +252,20 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 		toggleScatter.addEventListener('change', () => {
 			const xAtual = dataset.configGraficos.scatter?.x;
 			const yAtual = dataset.configGraficos.scatter?.y;
-			const xPadrao = numericas.includes(xAtual) ? xAtual : (numericas[0] || null);
-			const yPadrao = numericas.includes(yAtual)
-				? yAtual
-				: (numericas[1] || numericas[0] || null);
+			const xPadrao = pickPreferredAxis(xAtual, 0, null);
+			const yPadrao = pickPreferredAxis(yAtual, 1, xPadrao) || xPadrao;
+			const currentXScale = dataset.configGraficos.scatter?.xScale === 'log' ? 'log' : 'linear';
+			const currentYScale = dataset.configGraficos.scatter?.yScale === 'log' ? 'log' : 'linear';
+			const xScale = numericas.includes(xPadrao) ? currentXScale : 'linear';
+			const yScale = numericas.includes(yPadrao) ? currentYScale : 'linear';
 			updateActiveDatasetChartConfig({
 				scatter: {
 					...dataset.configGraficos.scatter,
 					enabled: toggleScatter.checked,
 					x: toggleScatter.checked ? xPadrao : xAtual,
 					y: toggleScatter.checked ? yPadrao : yAtual,
+					xScale,
+					yScale,
 					expanded: toggleScatter.checked ? true : dataset.configGraficos.scatter?.expanded === true,
 				},
 			});
@@ -264,12 +275,38 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 
 	setupExpandListener('viz-expand-scatter', dataset, 'scatter', onConfigChanged);
 
+	const attachAxisListener = (selectId, axisKey, scaleKey) => {
+		const select = document.getElementById(selectId);
+		if (!select) return;
+		select.addEventListener('change', () => {
+			const selected = allOptions.includes(select.value) ? select.value : null;
+			const currentScale = dataset.configGraficos.scatter?.[scaleKey] === 'log' ? 'log' : 'linear';
+			updateActiveDatasetChartConfig({
+				scatter: {
+					...dataset.configGraficos.scatter,
+					[axisKey]: selected,
+					[scaleKey]: numericas.includes(selected) ? currentScale : 'linear',
+				},
+			});
+			onConfigChanged?.();
+		});
+	};
+
+	attachAxisListener('viz-select-x', 'x', 'xScale');
+	attachAxisListener('viz-select-y', 'y', 'yScale');
+
 	// Simple selects (no cross-dependency logic)
 	setupSelectListeners([
-		{ id: 'viz-select-x', key: 'x' },
-		{ id: 'viz-select-y', key: 'y' },
-		{ id: 'viz-select-scatter-xscale', key: 'xScale' },
-		{ id: 'viz-select-scatter-yscale', key: 'yScale' },
+		{
+			id: 'viz-select-scatter-xscale',
+			key: 'xScale',
+			transform: v => (numericas.includes(dataset.configGraficos.scatter?.x) && v === 'log' ? 'log' : 'linear'),
+		},
+		{
+			id: 'viz-select-scatter-yscale',
+			key: 'yScale',
+			transform: v => (numericas.includes(dataset.configGraficos.scatter?.y) && v === 'log' ? 'log' : 'linear'),
+		},
 		{ id: 'viz-select-scatter-radius', key: 'radius', transform: v => Number(v) },
 		{ id: 'viz-select-scatter-opacity', key: 'opacity', transform: v => Number(v) },
 		{ id: 'viz-select-scatter-color-field', key: 'colorField', transform: v => v || null },

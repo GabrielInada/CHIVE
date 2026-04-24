@@ -21,6 +21,9 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const allColumnNames = Array.isArray(visibleColumns)
 		? visibleColumns.map(column => column?.nome).filter(Boolean)
 		: [];
+	const columnTypeByName = Array.isArray(visibleColumns)
+		? Object.fromEntries(visibleColumns.map(column => [column?.nome, column?.tipo]))
+		: {};
 	const safeGlobalFilter = resolveGlobalFilterForColumns(chartConfig.globalFilter, allColumnNames);
 	const filteredRows = applyGlobalFilterRules(rows, safeGlobalFilter, numericColumnNames);
 	const chartsGrid = document.getElementById(VIEW_IDS.chartsGrid);
@@ -160,6 +163,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				axisLabels: {
 					x: chartConfig.scatter.x || t('chive-chart-control-scatter-x'),
 					y: chartConfig.scatter.y || t('chive-chart-control-scatter-y'),
+				},
+				axisTypes: {
+					x: columnTypeByName[chartConfig.scatter.x],
+					y: columnTypeByName[chartConfig.scatter.y],
 				},
 				locale: getLocale(),
 				labels: {
