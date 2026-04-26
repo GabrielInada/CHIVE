@@ -25,6 +25,8 @@ import { createTreeMapControls, setupTreeMapControlListeners } from './treemapCo
 import { createChartCard } from './cardFactory.js';
 import { PREVIEW_BAR_SVG, PREVIEW_BUBBLE_SVG, PREVIEW_NETWORK_SVG, PREVIEW_PIE_SVG, PREVIEW_SCATTER_SVG, PREVIEW_TREEMAP_SVG } from './previews.js';
 
+import { setLiveRenderCallback } from './livePreview.js';
+
 // Callback when chart config changes (will be set by main.js)
 let onChartConfigChangeCallback = null;
 const trackedSidebarContainers = new WeakSet();
@@ -34,10 +36,13 @@ const SIDEBAR_INTERACTION_MAX_AGE_MS = 2000;
 /**
  * Initialize chart controls manager
  * @param {Function} configChangeCallback - Called when config changes
+ * @param {Function} liveRenderCallback - Called during live previews (e.g. dragging
+ *   a color picker) to redraw charts without re-rendering the controls sidebar.
  */
-export function initChartControls(configChangeCallback = null) {
+export function initChartControls(configChangeCallback = null, liveRenderCallback = null) {
 	onChartConfigChangeCallback = configChangeCallback;
-	
+	setLiveRenderCallback(liveRenderCallback);
+
 	// Re-render when expanded state changes
 	onStateChange('chartExpandedChanged', handleChartExpandedChange);
 }

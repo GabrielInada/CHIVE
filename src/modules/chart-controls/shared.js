@@ -182,7 +182,7 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
 	return div;
 }
 
-export function createColorPickerGridControl(id, labelText, items, colorMap, disabled = false, onColorChange) {
+export function createColorPickerGridControl(id, labelText, items, colorMap, disabled = false, onColorChange, onColorPreview) {
 	const div = document.createElement('div');
 	div.className = 'chart-controle';
 
@@ -225,6 +225,11 @@ export function createColorPickerGridControl(id, labelText, items, colorMap, dis
 		label2.style.overflow = 'hidden';
 		label2.style.textOverflow = 'ellipsis';
 
+		colorInput.addEventListener('input', () => {
+			if (!disabled && onColorPreview) {
+				onColorPreview(item, colorInput.value);
+			}
+		});
 		colorInput.addEventListener('change', () => {
 			if (!disabled && onColorChange) {
 				onColorChange(item, colorInput.value);

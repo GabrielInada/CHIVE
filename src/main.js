@@ -23,8 +23,9 @@ renderEmptyState,
 renderDataInterface,
 renderFileList,
 } from './components/index.js';
-import { initChartControls, renderChartControlsSidebar } from './features/chartFeatures/index.js';
+import { initChartControls, renderChartControlsSidebar, renderCharts } from './features/chartFeatures/index.js';
 import { createDefaultChartConfig, mergeChartConfigWithDefaults } from './config/chartDefaults.js';
+import { getNumericColumns } from './utils/columnHelpers.js';
 
 import {
 getState,
@@ -79,7 +80,7 @@ exposeGlobals();
 
 // 3. Initialize modules
 initFileManager(handleDatasetsChanged);
-initChartControls();
+initChartControls(null, livePreviewRender);
 initPanelManager(showFeedback);
 
 // 4. Setup event handlers (must be after modules initialized)
@@ -133,6 +134,31 @@ onStateChange('configUpdated', () => {
 refreshView();
 });
 
+}
+
+// =============================================================================
+// LIVE PREVIEW RENDER (no controls re-render)
+// =============================================================================
+
+/**
+ * Re-render only the chart visualizations using the current in-memory dataset
+ * config. Called during live previews (e.g. while a color picker is open) so
+ * the chart updates as the user drags, without rebuilding the controls sidebar
+ * — which would steal focus from the picker.
+ */
+function livePreviewRender() {
+	const dataset = getActiveDataset();
+	if (!dataset || !Array.isArray(dataset.colunas)) return;
+	const columnNames = dataset.colunas.map(column => column.nome);
+	const selectedNames = new Set(
+		Array.isArray(dataset.colunasSelecionadas)
+			? dataset.colunasSelecionadas
+			: columnNames
+	);
+	const visibleColumns = dataset.colunas.filter(column => selectedNames.has(column.nome));
+	const visibleNumericColumns = getNumericColumns(visibleColumns);
+	renderCharts(dataset.configGraficos, dataset.dados, visibleColumns, visibleNumericColumns);
+	renderCanvasPanel();
 }
 
 // =============================================================================

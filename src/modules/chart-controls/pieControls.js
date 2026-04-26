@@ -12,6 +12,7 @@ import {
 	setupColorInputListener,
 	setupSliderListeners,
 } from './controlListenerHelpers.js';
+import { triggerLiveRender } from './livePreview.js';
 
 function getPieSectorValues(dataset, config) {
 	if (!config?.category || !Array.isArray(dataset?.dados)) return [];
@@ -492,6 +493,14 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 	// Per-slice color grid (custom: individual slice colors)
 	const perSliceInputs = document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]');
 	perSliceInputs.forEach(input => {
+		input.addEventListener('input', () => {
+			const sector = input.dataset.colorItem;
+			if (!sector) return;
+			const pieConfig = dataset.configGraficos.pie;
+			if (!pieConfig.customSliceColors) pieConfig.customSliceColors = {};
+			pieConfig.customSliceColors[sector] = normalizeHexColor(input.value, CHART_COLORS.pie);
+			triggerLiveRender();
+		});
 		input.addEventListener('change', () => {
 			const sector = input.dataset.colorItem;
 			if (!sector) return;

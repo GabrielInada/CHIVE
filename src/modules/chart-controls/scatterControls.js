@@ -13,6 +13,7 @@ import {
 	setupSliderListener,
 	setupColorPresetListeners,
 } from './controlListenerHelpers.js';
+import { triggerLiveRender } from './livePreview.js';
 
 export function createScatterPlotControls(dataset, numericOptions, allOptions = []) {
 	const config = dataset.configGraficos.scatter;
@@ -229,6 +230,19 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	maxColorDiv.appendChild(maxColorInput);
 	stylingControls.push(maxColorDiv);
 
+	if (config.colorMode === 'numeric') {
+		stylingControls.push(createSelectControl(
+			'viz-select-scatter-gradient-distribution',
+			t('chive-chart-color-gradient-distribution'),
+			[
+				{ value: 'value', label: t('chive-chart-color-gradient-distribution-value') },
+				{ value: 'rank', label: t('chive-chart-color-gradient-distribution-rank') },
+			],
+			config.gradientDistribution || 'value',
+			disabled,
+		));
+	}
+
 	if (config.colorMode === 'category') {
 		stylingControls.push(createSelectControl(
 			'viz-select-scatter-color-scheme',
@@ -360,7 +374,15 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 	// Scatter color input (custom: sets colorMode to uniform)
 	const inputScatterColor = document.getElementById('viz-input-scatter-color');
 	if (inputScatterColor) {
-		const applyManualScatterColor = () => {
+		inputScatterColor.addEventListener('input', () => {
+			const scatterConfig = dataset.configGraficos.scatter;
+			scatterConfig.colorMode = 'uniform';
+			scatterConfig.colorField = null;
+			scatterConfig.colorFieldType = null;
+			scatterConfig.color = normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter);
+			triggerLiveRender();
+		});
+		inputScatterColor.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
 				scatter: {
 					...dataset.configGraficos.scatter,
@@ -371,13 +393,15 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 				},
 			});
 			onConfigChanged?.();
-		};
-		inputScatterColor.addEventListener('input', applyManualScatterColor);
-		inputScatterColor.addEventListener('change', applyManualScatterColor);
+		});
 	}
 
 	setupColorInputListener('viz-input-scatter-gradient-min', 'gradientMinColor', CHART_COLORS.scatter, dataset, 'scatter', onConfigChanged);
 	setupColorInputListener('viz-input-scatter-gradient-max', 'gradientMaxColor', '#ffffff', dataset, 'scatter', onConfigChanged);
+	setupSelectListeners([
+		{ id: 'viz-select-scatter-gradient-distribution', key: 'gradientDistribution', transform: v =>
+			['value', 'rank'].includes(v) ? v : 'value' },
+	], dataset, 'scatter', onConfigChanged);
 
 	setupColorPresetListeners('viz-scatter-color-preset', {
 		color: 0, gradientMinColor: 0, gradientMaxColor: -1,
