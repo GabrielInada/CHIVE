@@ -1,6 +1,6 @@
 /**
  * SVG Icon Utilities for Chart Control Sections
- * Loads external SVG files from /public/icons/
+ * Loads external SVG files from icons/
  */
 
 /**
@@ -11,7 +11,7 @@
  */
 export function createSvgIcon(iconType, size = 16) {
 	const img = document.createElement('img');
-	img.src = `/public/icons/${iconType}.svg`;
+	img.src = `icons/${iconType}.svg`;
 	img.alt = iconType;
 	img.width = size;
 	img.height = size;

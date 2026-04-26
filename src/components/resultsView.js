@@ -6,7 +6,7 @@ import { translateType } from '../utils/formatters.js';
 
 import { updateTabs } from './results/tabsView.js';
 import { renderTablePreview } from './results/tablePreviewView.js';
-import { renderStats } from './results/statsView.js';
+import { renderStats, renderCategoricalStats } from './results/statsView.js';
 import { renderFileListDOM } from './results/fileListView.js';
 import { renderColumnControlsDOM } from './results/columnControlsView.js';
 import { openJoinBuilderDialog } from './results/joinBuilderView.js';
@@ -207,6 +207,8 @@ export function renderEmptyState() {
     'resultado-tabs': document.getElementById('resultado-tabs'),
     'container-tabela': document.getElementById('container-tabela'),
     'container-stats': document.getElementById('container-stats'),
+    'container-cat-stats': document.getElementById('container-cat-stats'),
+    'card-cat-stats': document.getElementById('card-cat-stats'),
     'chart-bar-container': document.getElementById('chart-bar-container'),
     'chart-scatter-container': document.getElementById('chart-scatter-container'),
     'chart-network-container': document.getElementById('chart-network-container'),
@@ -231,6 +233,8 @@ export function renderEmptyState() {
   }
   if (els['container-tabela']) els['container-tabela'].innerHTML = '';
   if (els['container-stats']) els['container-stats'].innerHTML = '';
+  if (els['container-cat-stats']) els['container-cat-stats'].innerHTML = '';
+  if (els['card-cat-stats']) els['card-cat-stats'].style.display = 'none';
   if (els['chart-bar-container']) els['chart-bar-container'].innerHTML = '';
   if (els['chart-scatter-container']) els['chart-scatter-container'].innerHTML = '';
   if (els['chart-network-container']) els['chart-network-container'].innerHTML = '';
@@ -361,6 +365,7 @@ export function renderDataInterface(
 
   renderTablePreview(rows, visibleColumns, rowLimit);
   renderStats(rows, visibleColumns);
+  renderCategoricalStats(rows, visibleColumns);
   renderCharts(config, rows, visibleColumns, visibleNumericColumns);
 
   document.getElementById('btn-avancar').disabled = false;

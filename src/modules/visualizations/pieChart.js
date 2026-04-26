@@ -25,7 +25,10 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		categoria: opcoes.labels?.categoria || 'Category',
 		contagem: opcoes.labels?.contagem || 'Count',
 		percentual: opcoes.labels?.percentual || 'Percentage',
+		other: opcoes.labels?.other || 'Other',
 	};
+	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : 0;
+	const topNMode = opcoes.topNMode === 'truncate' ? 'truncate' : 'other';
 
 	const rawInner = Number(opcoes.innerRadius);
 	const rawOuter = Number(opcoes.outerRadius);
@@ -62,6 +65,17 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		.sort((a, b) => b.valor - a.valor || String(a.categoria).localeCompare(String(b.categoria)));
 	if (linhas.length === 0) {
 		return fail(measureMode === 'sum' ? 'sum-no-numeric' : undefined);
+	}
+
+	if (topN > 0 && linhas.length > topN) {
+		if (topNMode === 'truncate') {
+			linhas.length = topN;
+		} else {
+			const head = linhas.slice(0, topN);
+			const restValor = linhas.slice(topN).reduce((sum, item) => sum + item.valor, 0);
+			linhas.length = 0;
+			linhas.push(...head, { categoria: labels.other, valor: restValor, isOther: true });
+		}
 	}
 
 	container.innerHTML = '';
@@ -165,6 +179,9 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		.attr('d', arcGenerator)
 		.attr('fill', (item) => {
 			const categoria = item.data.categoria;
+			if (item.data.isOther) {
+				return PIE_CHART.otherSliceColor;
+			}
 			if (customSliceColors[categoria]) {
 				return customSliceColors[categoria];
 			}
@@ -291,11 +308,14 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 
 		linhas.slice(0, 8).forEach((item, index) => {
 			const row = legend.append('g').attr('transform', `translate(0,${index * 16})`);
+			const swatch = item.isOther
+				? PIE_CHART.otherSliceColor
+				: (customSliceColors[item.categoria] || buildSliceColor(color, index));
 			row.append('rect')
 				.attr('width', 10)
 				.attr('height', 10)
 				.attr('rx', 2)
-				.attr('fill', customSliceColors[item.categoria] || buildSliceColor(color, index));
+				.attr('fill', swatch);
 			row.append('text')
 				.attr('x', 14)
 				.attr('y', 9)

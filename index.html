@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CHIVE</title>
-    <link rel="icon" type="image/svg+xml" href="./public/favicon.svg" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@300;400;500&family=Fraunces:opsz,wght@9..144,300;9..144,700&display=swap" rel="stylesheet" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,300;8..60,400;8..60,600;8..60,700&family=Source+Sans+3:wght@400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="./src/styles/style.css" />
     <style>body { visibility: hidden }</style>
     <script type="importmap">
@@ -148,6 +148,16 @@
                             <div class="stats-grid" id="container-stats"></div>
                         </div>
                     </div>
+
+                    <div class="resultado-card animar" id="card-cat-stats" style="display:none">
+                        <div class="card-header">
+                            <span class="card-titulo" data-i18n="chive-card-cat-stats">Estatísticas — colunas categóricas</span>
+                            <span class="card-badge" id="badge-cat-colunas">—</span>
+                        </div>
+                        <div class="card-corpo">
+                            <div class="stats-grid" id="container-cat-stats"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="painel-charts" class="resultado-painel">
@@ -165,38 +175,23 @@
                                         <div class="chart-acoes" data-chart-actions>
                                             <button
                                                 type="button"
-                                                class="chart-menu-btn"
-                                                data-chart-menu-btn="bar"
-                                                aria-haspopup="menu"
-                                                aria-expanded="false"
-                                                data-i18n-title="chive-chart-actions-open"
-                                                title="Acoes"
+                                                class="chart-action-btn"
+                                                data-chart-action="download-svg"
+                                                data-chart-container="chart-bar-container"
+                                                data-chart-filename="bar-chart"
+                                                data-i18n="chive-chart-action-download-svg"
                                             >
-                                                <span aria-hidden="true">&#8942;</span>
+                                                Download SVG
                                             </button>
-                                            <div class="chart-menu" data-chart-menu="bar" role="menu" hidden>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="download-svg"
-                                                    data-chart-container="chart-bar-container"
-                                                    data-chart-filename="bar-chart"
-                                                    data-i18n="chive-chart-action-download-svg"
-                                                >
-                                                    Download SVG
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="add-panel"
-                                                    data-chart-container="chart-bar-container"
-                                                    data-i18n="chive-chart-action-add-panel"
-                                                >
-                                                    Add to panel
-                                                </button>
-                                            </div>
+                                            <button
+                                                type="button"
+                                                class="chart-action-btn"
+                                                data-chart-action="add-panel"
+                                                data-chart-container="chart-bar-container"
+                                                data-i18n="chive-chart-action-add-panel"
+                                            >
+                                                Add to panel
+                                            </button>
                                         </div>
                                     </div>
                                     <div id="chart-bar-container" class="chart-container"></div>
@@ -207,38 +202,23 @@
                                         <div class="chart-acoes" data-chart-actions>
                                             <button
                                                 type="button"
-                                                class="chart-menu-btn"
-                                                data-chart-menu-btn="scatter"
-                                                aria-haspopup="menu"
-                                                aria-expanded="false"
-                                                data-i18n-title="chive-chart-actions-open"
-                                                title="Acoes"
+                                                class="chart-action-btn"
+                                                data-chart-action="download-svg"
+                                                data-chart-container="chart-scatter-container"
+                                                data-chart-filename="scatter-plot"
+                                                data-i18n="chive-chart-action-download-svg"
                                             >
-                                                <span aria-hidden="true">&#8942;</span>
+                                                Download SVG
                                             </button>
-                                            <div class="chart-menu" data-chart-menu="scatter" role="menu" hidden>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="download-svg"
-                                                    data-chart-container="chart-scatter-container"
-                                                    data-chart-filename="scatter-plot"
-                                                    data-i18n="chive-chart-action-download-svg"
-                                                >
-                                                    Download SVG
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="add-panel"
-                                                    data-chart-container="chart-scatter-container"
-                                                    data-i18n="chive-chart-action-add-panel"
-                                                >
-                                                    Add to panel
-                                                </button>
-                                            </div>
+                                            <button
+                                                type="button"
+                                                class="chart-action-btn"
+                                                data-chart-action="add-panel"
+                                                data-chart-container="chart-scatter-container"
+                                                data-i18n="chive-chart-action-add-panel"
+                                            >
+                                                Add to panel
+                                            </button>
                                         </div>
                                     </div>
                                     <div id="chart-scatter-container" class="chart-container"></div>
@@ -249,38 +229,23 @@
                                         <div class="chart-acoes" data-chart-actions>
                                             <button
                                                 type="button"
-                                                class="chart-menu-btn"
-                                                data-chart-menu-btn="pie"
-                                                aria-haspopup="menu"
-                                                aria-expanded="false"
-                                                data-i18n-title="chive-chart-actions-open"
-                                                title="Acoes"
+                                                class="chart-action-btn"
+                                                data-chart-action="download-svg"
+                                                data-chart-container="chart-pie-container"
+                                                data-chart-filename="pie-donut-chart"
+                                                data-i18n="chive-chart-action-download-svg"
                                             >
-                                                <span aria-hidden="true">&#8942;</span>
+                                                Download SVG
                                             </button>
-                                            <div class="chart-menu" data-chart-menu="pie" role="menu" hidden>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="download-svg"
-                                                    data-chart-container="chart-pie-container"
-                                                    data-chart-filename="pie-donut-chart"
-                                                    data-i18n="chive-chart-action-download-svg"
-                                                >
-                                                    Download SVG
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="add-panel"
-                                                    data-chart-container="chart-pie-container"
-                                                    data-i18n="chive-chart-action-add-panel"
-                                                >
-                                                    Add to panel
-                                                </button>
-                                            </div>
+                                            <button
+                                                type="button"
+                                                class="chart-action-btn"
+                                                data-chart-action="add-panel"
+                                                data-chart-container="chart-pie-container"
+                                                data-i18n="chive-chart-action-add-panel"
+                                            >
+                                                Add to panel
+                                            </button>
                                         </div>
                                     </div>
                                     <div id="chart-pie-container" class="chart-container"></div>
@@ -291,38 +256,23 @@
                                         <div class="chart-acoes" data-chart-actions>
                                             <button
                                                 type="button"
-                                                class="chart-menu-btn"
-                                                data-chart-menu-btn="bubble"
-                                                aria-haspopup="menu"
-                                                aria-expanded="false"
-                                                data-i18n-title="chive-chart-actions-open"
-                                                title="Acoes"
+                                                class="chart-action-btn"
+                                                data-chart-action="download-svg"
+                                                data-chart-container="chart-bubble-container"
+                                                data-chart-filename="bubble-chart"
+                                                data-i18n="chive-chart-action-download-svg"
                                             >
-                                                <span aria-hidden="true">&#8942;</span>
+                                                Download SVG
                                             </button>
-                                            <div class="chart-menu" data-chart-menu="bubble" role="menu" hidden>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="download-svg"
-                                                    data-chart-container="chart-bubble-container"
-                                                    data-chart-filename="bubble-chart"
-                                                    data-i18n="chive-chart-action-download-svg"
-                                                >
-                                                    Download SVG
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="add-panel"
-                                                    data-chart-container="chart-bubble-container"
-                                                    data-i18n="chive-chart-action-add-panel"
-                                                >
-                                                    Add to panel
-                                                </button>
-                                            </div>
+                                            <button
+                                                type="button"
+                                                class="chart-action-btn"
+                                                data-chart-action="add-panel"
+                                                data-chart-container="chart-bubble-container"
+                                                data-i18n="chive-chart-action-add-panel"
+                                            >
+                                                Add to panel
+                                            </button>
                                         </div>
                                     </div>
                                     <div id="chart-bubble-container" class="chart-container"></div>
@@ -333,38 +283,23 @@
                                         <div class="chart-acoes" data-chart-actions>
                                             <button
                                                 type="button"
-                                                class="chart-menu-btn"
-                                                data-chart-menu-btn="network"
-                                                aria-haspopup="menu"
-                                                aria-expanded="false"
-                                                data-i18n-title="chive-chart-actions-open"
-                                                title="Acoes"
+                                                class="chart-action-btn"
+                                                data-chart-action="download-svg"
+                                                data-chart-container="chart-network-container"
+                                                data-chart-filename="network-graph"
+                                                data-i18n="chive-chart-action-download-svg"
                                             >
-                                                <span aria-hidden="true">&#8942;</span>
+                                                Download SVG
                                             </button>
-                                            <div class="chart-menu" data-chart-menu="network" role="menu" hidden>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="download-svg"
-                                                    data-chart-container="chart-network-container"
-                                                    data-chart-filename="network-graph"
-                                                    data-i18n="chive-chart-action-download-svg"
-                                                >
-                                                    Download SVG
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="add-panel"
-                                                    data-chart-container="chart-network-container"
-                                                    data-i18n="chive-chart-action-add-panel"
-                                                >
-                                                    Add to panel
-                                                </button>
-                                            </div>
+                                            <button
+                                                type="button"
+                                                class="chart-action-btn"
+                                                data-chart-action="add-panel"
+                                                data-chart-container="chart-network-container"
+                                                data-i18n="chive-chart-action-add-panel"
+                                            >
+                                                Add to panel
+                                            </button>
                                         </div>
                                     </div>
                                     <div id="chart-network-container" class="chart-container"></div>
@@ -375,38 +310,23 @@
                                         <div class="chart-acoes" data-chart-actions>
                                             <button
                                                 type="button"
-                                                class="chart-menu-btn"
-                                                data-chart-menu-btn="treemap"
-                                                aria-haspopup="menu"
-                                                aria-expanded="false"
-                                                data-i18n-title="chive-chart-actions-open"
-                                                title="Acoes"
+                                                class="chart-action-btn"
+                                                data-chart-action="download-svg"
+                                                data-chart-container="chart-treemap-container"
+                                                data-chart-filename="treemap-chart"
+                                                data-i18n="chive-chart-action-download-svg"
                                             >
-                                                <span aria-hidden="true">&#8942;</span>
+                                                Download SVG
                                             </button>
-                                            <div class="chart-menu" data-chart-menu="treemap" role="menu" hidden>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="download-svg"
-                                                    data-chart-container="chart-treemap-container"
-                                                    data-chart-filename="treemap-chart"
-                                                    data-i18n="chive-chart-action-download-svg"
-                                                >
-                                                    Download SVG
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    class="chart-menu-item"
-                                                    role="menuitem"
-                                                    data-chart-action="add-panel"
-                                                    data-chart-container="chart-treemap-container"
-                                                    data-i18n="chive-chart-action-add-panel"
-                                                >
-                                                    Add to panel
-                                                </button>
-                                            </div>
+                                            <button
+                                                type="button"
+                                                class="chart-action-btn"
+                                                data-chart-action="add-panel"
+                                                data-chart-container="chart-treemap-container"
+                                                data-i18n="chive-chart-action-add-panel"
+                                            >
+                                                Add to panel
+                                            </button>
                                         </div>
                                     </div>
                                     <div id="chart-treemap-container" class="chart-container"></div>

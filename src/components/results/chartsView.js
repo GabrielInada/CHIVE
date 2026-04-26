@@ -106,6 +106,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				colorMode: chartConfig.bar.colorMode,
 				gradientMinColor: chartConfig.bar.gradientMinColor,
 				gradientMaxColor: chartConfig.bar.gradientMaxColor,
+				gradientDistribution: chartConfig.bar.gradientDistribution,
 				manualThresholdPct: chartConfig.bar.manualThresholdPct,
 				measureMode: barMeasureMode,
 				valueColumn: chartConfig.bar.valueColumn,
@@ -157,6 +158,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				colorField: chartConfig.scatter.colorField,
 				gradientMinColor: chartConfig.scatter.gradientMinColor,
 				gradientMaxColor: chartConfig.scatter.gradientMaxColor,
+				gradientDistribution: chartConfig.scatter.gradientDistribution,
 				colorScheme: chartConfig.scatter.colorScheme,
 				categoricalPairMode: chartConfig.scatter.categoricalPairMode,
 				showXAxisLabel: chartConfig.scatter.showXAxisLabel,
@@ -218,6 +220,8 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				labels: {
 					node: t('chive-chart-control-network-source'),
 					linkWeight: t('chive-chart-control-network-weight'),
+					source: chartConfig.network.source || t('chive-chart-control-network-source'),
+					target: chartConfig.network.target || t('chive-chart-control-network-target'),
 				},
 			}
 		);
@@ -247,6 +251,8 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				outerRadius: chartConfig.pie.outerRadius,
 				padAngle: chartConfig.pie.padAngle,
 				zoomScale: chartConfig.pie.zoomScale,
+				topN: chartConfig.pie.topN,
+				topNMode: chartConfig.pie.topNMode,
 				color: chartConfig.pie.color,
 				showCategoryLabel: chartConfig.pie.showCategoryLabel,
 				showValueLabel: chartConfig.pie.showValueLabel,
@@ -258,6 +264,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					categoria: t('chive-chart-control-pie-category'),
 					contagem: t('chive-tooltip-count'),
 					percentual: t('chive-tooltip-percentage'),
+					other: t('chive-chart-pie-other'),
 				},
 			}
 		);

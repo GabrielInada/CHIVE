@@ -98,6 +98,8 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 	const labels = {
 		node: opcoes.labels?.node || 'Node',
 		linkWeight: opcoes.labels?.linkWeight || 'Weight',
+		source: opcoes.labels?.source || 'Source',
+		target: opcoes.labels?.target || 'Target',
 	};
 
 	const network = buildNetworkData(dados, sourceColumn, targetColumn, weightColumn, groupColumn);
@@ -191,8 +193,8 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 				row.append(` ${value}`);
 				return row;
 			};
-			content.appendChild(makeLine('Source', String(linkData.source.id || linkData.source)));
-			content.appendChild(makeLine('Target', String(linkData.target.id || linkData.target)));
+			content.appendChild(makeLine(labels.source, String(linkData.source.id || linkData.source)));
+			content.appendChild(makeLine(labels.target, String(linkData.target.id || linkData.target)));
 			content.appendChild(makeLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale)));
 			showChartTooltip(content, event.pageX, event.pageY);
 		})
@@ -293,8 +295,8 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 			.attr('class', 'network-legend');
 
 		[
-			{ label: 'Source', color: sourceNodeColor },
-			{ label: 'Target', color: targetNodeColor },
+			{ label: labels.source, color: sourceNodeColor },
+			{ label: labels.target, color: targetNodeColor },
 		].forEach((item, index) => {
 			const row = legend.append('g').attr('transform', `translate(0,${index * 14})`);
 			row

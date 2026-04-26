@@ -189,6 +189,20 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 	maxColorDiv.appendChild(maxColorInput);
 	stylingControls.push(maxColorDiv);
 
+	// Gradient distribution sub-toggle (only for auto gradient mode)
+	if (config.colorMode === 'gradient') {
+		stylingControls.push(createSelectControl(
+			'viz-select-bar-gradient-distribution',
+			t('chive-chart-color-gradient-distribution'),
+			[
+				{ value: 'value', label: t('chive-chart-color-gradient-distribution-value') },
+				{ value: 'rank', label: t('chive-chart-color-gradient-distribution-rank') },
+			],
+			config.gradientDistribution || 'value',
+			isDisabled
+		));
+	}
+
 	// Gradient manual threshold (only for gradient-manual mode)
 	if (config.colorMode === 'gradient-manual') {
 		stylingControls.push(createSliderControl(
@@ -300,6 +314,10 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	], dataset, 'bar', onConfigChanged);
 	setupColorInputListener('viz-input-bar-gradient-min', 'gradientMinColor', CHART_COLORS.bar, dataset, 'bar', onConfigChanged);
 	setupColorInputListener('viz-input-bar-gradient-max', 'gradientMaxColor', '#ffffff', dataset, 'bar', onConfigChanged);
+	setupSelectListeners([
+		{ id: 'viz-select-bar-gradient-distribution', key: 'gradientDistribution', transform: v =>
+			['value', 'rank'].includes(v) ? v : 'value' },
+	], dataset, 'bar', onConfigChanged);
 	setupSliderListener('viz-slider-bar-threshold', 'manualThresholdPct', dataset, 'bar', onConfigChanged);
 	setupColorPresetListeners('viz-bar-color-preset', {
 		color: 0, gradientMinColor: 0, gradientMaxColor: -1,

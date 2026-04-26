@@ -1,7 +1,7 @@
 let tooltipEl;
 
 function ensureTooltip() {
-	if (tooltipEl) return tooltipEl;
+	if (tooltipEl && tooltipEl.isConnected) return tooltipEl;
 
 	tooltipEl = document.createElement('div');
 	tooltipEl.className = 'chart-tooltip';

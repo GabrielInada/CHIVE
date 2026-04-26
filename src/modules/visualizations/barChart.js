@@ -2,7 +2,7 @@ import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
-import { interpolateColor } from '../../utils/colorUtils.js';
+import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
 function ordenarCategorias(linhas, ordenacao) {
@@ -65,6 +65,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	const manualThresholdPct = Number.isFinite(Number(opcoes.manualThresholdPct))
 		? Math.max(0, Math.min(100, Number(opcoes.manualThresholdPct)))
 		: 50;
+	const gradientDistribution = opcoes.gradientDistribution === 'rank' ? 'rank' : 'value';
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
 		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
@@ -193,10 +194,19 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	const maxValor = Math.max(...linhas.map(item => item[1]));
 	const deltaValor = maxValor - minValor || 1;
 	const thresholdValue = minValor + (deltaValor * (manualThresholdPct / 100));
+	const rankMap = (colorMode === 'gradient' && gradientDistribution === 'rank')
+		? buildRankMap(linhas, item => item[1])
+		: null;
+	const rankDenom = Math.max(linhas.length - 1, 1);
 
 	const getBarColor = (item) => {
 		if (colorMode === 'uniform') return color;
 		if (colorMode === 'gradient') {
+			if (rankMap) {
+				const rank = rankMap.get(item);
+				if (rank === undefined) return gradientMinColor;
+				return interpolateColor(gradientMinColor, gradientMaxColor, rank / rankDenom);
+			}
 			return interpolateColor(gradientMinColor, gradientMaxColor, (item[1] - minValor) / deltaValor);
 		}
 		if (colorMode === 'gradient-manual') {

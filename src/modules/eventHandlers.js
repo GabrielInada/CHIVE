@@ -1,8 +1,8 @@
 /**
  * CHIVE Event Handlers
- * 
+ *
  * Coordinates all application event listeners:
- * - Kebab menu (chart actions: download, add-to-panel)
+ * - Chart action buttons (download SVG, add-to-panel)
  * - Language selector
  * - Sidebar toggle
  * - Global keyboard shortcuts
@@ -26,7 +26,7 @@ export function initializeAllEventHandlers() {
 	setupSidebarToggleListener();
 	setupSidebarNavigationButtons();
 	setupPanelEventListeners();
-	setupChartKebabMenuListeners();
+	setupChartActionListeners();
 	setupGlobalKeyboardListeners();
 	setupDatasetListeners();
 }
@@ -82,73 +82,15 @@ function navigateToTab(tabName) {
 }
 
 /**
- * Setup kebab menu (three dots) chart actions
+ * Setup chart action button listeners
  * Handles: Download SVG, Add to Panel
  * @private
  */
-function setupChartKebabMenuListeners() {
+function setupChartActionListeners() {
 	document.addEventListener('click', event => {
-		// Kebab menu button click
-		const menuBtn = event.target.closest('[data-chart-menu-btn]');
-		if (menuBtn) {
-			event.stopPropagation();
-			toggleChartMenu(menuBtn.dataset.chartMenuBtn);
-			return;
-		}
-
-		// Menu item click (action)
-		const menuItem = event.target.closest('[data-chart-action]');
-		if (menuItem) {
-			event.stopPropagation();
-			handleChartAction(menuItem);
-			closeAllChartMenus();
-			return;
-		}
-
-		// Close menu if clicking outside
-		if (!event.target.closest('[data-chart-actions]')) {
-			closeAllChartMenus();
-		}
-	});
-
-	// Close menu on Escape
-	document.addEventListener('keydown', event => {
-		if (event.key === 'Escape') {
-			closeAllChartMenus();
-		}
-	});
-}
-
-/**
- * Toggle kebab menu visibility
- * @private
- */
-function toggleChartMenu(menuId) {
-	const menu = document.querySelector(`[data-chart-menu="${menuId}"]`);
-	const button = document.querySelector(`[data-chart-menu-btn="${menuId}"]`);
-	if (!menu) return;
-
-	const isHidden = menu.hidden === true;
-	closeAllChartMenus();
-
-	if (isHidden) {
-		menu.hidden = false;
-		if (button) {
-			button.setAttribute('aria-expanded', 'true');
-		}
-	}
-}
-
-/**
- * Close all open kebab menus
- * @private
- */
-function closeAllChartMenus() {
-	document.querySelectorAll('[data-chart-menu]').forEach(menu => {
-		menu.hidden = true;
-	});
-	document.querySelectorAll('[data-chart-menu-btn]').forEach(button => {
-		button.setAttribute('aria-expanded', 'false');
+		const actionBtn = event.target.closest('[data-chart-action]');
+		if (!actionBtn) return;
+		handleChartAction(actionBtn);
 	});
 }
 
@@ -156,19 +98,18 @@ function closeAllChartMenus() {
  * Handle chart action (download-svg or add-panel)
  * @private
  */
-function handleChartAction(menuItem) {
-	const action = menuItem.dataset.chartAction;
-	const containerId = menuItem.dataset.chartContainer;
+function handleChartAction(actionBtn) {
+	const action = actionBtn.dataset.chartAction;
+	const containerId = actionBtn.dataset.chartContainer;
 
 	if (action === 'download-svg') {
-		const filename = menuItem.dataset.chartFilename || 'chart';
+		const filename = actionBtn.dataset.chartFilename || 'chart';
 		const result = downloadSvgFromContainer(containerId, filename);
 		if (!result.ok) {
 			showError(t('chive-chart-download-error'));
 		}
 	} else if (action === 'add-panel') {
-		// Get chart name from DOM
-		const chartBlock = menuItem.closest('.chart-bloco');
+		const chartBlock = actionBtn.closest('.chart-bloco');
 		const fallbackTitle = chartBlock?.querySelector('.chart-titulo')?.textContent?.trim()
 			|| t('chive-card-charts');
 		const titulo = getChartSnapshotTitle(containerId, fallbackTitle);

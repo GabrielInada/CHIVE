@@ -60,10 +60,6 @@
     padding: 24px 20px 40px;
   }
 
-  #painel-charts .card-corpo-charts {
-    max-height: none;
-  }
-
   .header-steps {
     flex-wrap: wrap;
   }

@@ -2,7 +2,7 @@ import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, scalePoint, select
 import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
-import { interpolateColor } from '../../utils/colorUtils.js';
+import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
 const SCATTER_PALETTES = {
@@ -182,6 +182,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		? String(opcoes.gradientMaxColor).trim()
 		: '#ffffff';
 	const colorScheme = SCATTER_PALETTES[opcoes.colorScheme] ? opcoes.colorScheme : 'Bold';
+	const gradientDistribution = opcoes.gradientDistribution === 'rank' ? 'rank' : 'value';
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
 		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
@@ -305,8 +306,8 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			? formatNumber(ponto.y, locale)
 			: ponto.yCategory;
 
-		wrapper.appendChild(createLine(labels.eixoX, xValue));
-		wrapper.appendChild(createLine(labels.eixoY, yValue));
+		wrapper.appendChild(createLine(axisLabels.x, xValue));
+		wrapper.appendChild(createLine(axisLabels.y, yValue));
 		if (ponto.isAggregate) {
 			wrapper.appendChild(createLine(labels.count, formatNumber(ponto.count, locale)));
 		} else {
@@ -398,11 +399,21 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			const min = Math.min(...numericValues);
 			const max = Math.max(...numericValues);
 			const delta = max - min || 1;
-			getPointColor = ponto => {
-				const v = getNumericColorValue(ponto);
-				if (!Number.isFinite(v)) return color;
-				return interpolateColor(gradientMinColor, gradientMaxColor, (v - min) / delta);
-			};
+			if (gradientDistribution === 'rank') {
+				const rankMap = buildRankMap(pontos, ponto => getNumericColorValue(ponto));
+				const rankDenom = Math.max(rankMap.size - 1, 1);
+				getPointColor = ponto => {
+					const rank = rankMap.get(ponto);
+					if (rank === undefined) return color;
+					return interpolateColor(gradientMinColor, gradientMaxColor, rank / rankDenom);
+				};
+			} else {
+				getPointColor = ponto => {
+					const v = getNumericColorValue(ponto);
+					if (!Number.isFinite(v)) return color;
+					return interpolateColor(gradientMinColor, gradientMaxColor, (v - min) / delta);
+				};
+			}
 		}
 	}
 

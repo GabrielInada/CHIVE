@@ -51,3 +51,13 @@ export function buildSliceColor(baseHex, index, fallbackHex) {
 	const b = rgb.b * factor;
 	return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
+
+export function buildRankMap(items, valueAccessor) {
+	const sorted = items
+		.map((item, idx) => ({ item, idx, v: Number(valueAccessor(item)) }))
+		.filter(({ v }) => Number.isFinite(v))
+		.sort((a, b) => a.v - b.v || a.idx - b.idx);
+	const map = new Map();
+	sorted.forEach((entry, rank) => map.set(entry.item, rank));
+	return map;
+}
