@@ -1,11 +1,16 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderScatterPlot } from '../../../src/modules/visualizations/scatterPlot.js';
+import { hideChartTooltip } from '../../../src/modules/visualizations/tooltip.js';
 
 describe('scatterPlot mixed axis behavior', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '<div id="scatter"></div>';
+	});
+
+	afterEach(() => {
+		hideChartTooltip();
 	});
 
 	it('renders with categorical X and numeric Y values', () => {
@@ -113,6 +118,40 @@ describe('scatterPlot mixed axis behavior', () => {
 
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('log-no-positive');
+	});
+
+	it('tooltip uses axis field names instead of generic X/Y', () => {
+		const container = document.getElementById('scatter');
+		const rows = [{ height_cm: 170, weight_kg: 65 }];
+
+		renderScatterPlot(container, rows, 'height_cm', 'weight_kg', {
+			axisTypes: { x: 'numero', y: 'numero' },
+			labels: { eixoX: 'X', eixoY: 'Y', indice: 'Row', count: 'Count' },
+		});
+
+		const circle = container.querySelector('circle');
+		circle.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+		const tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip).not.toBeNull();
+		const tooltipText = tooltip.textContent;
+		expect(tooltipText).toContain('height_cm');
+		expect(tooltipText).toContain('weight_kg');
+	});
+
+	it('tooltip honors explicit axisLabels override', () => {
+		const container = document.getElementById('scatter');
+		const rows = [{ a: 1, b: 2 }];
+
+		renderScatterPlot(container, rows, 'a', 'b', {
+			axisTypes: { x: 'numero', y: 'numero' },
+			axisLabels: { x: 'Altura', y: 'Peso' },
+		});
+
+		const circle = container.querySelector('circle');
+		circle.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+		const tooltipText = document.querySelector('.chart-tooltip').textContent;
+		expect(tooltipText).toContain('Altura');
+		expect(tooltipText).toContain('Peso');
 	});
 
 	it('infers categorical axis when axis type metadata is unavailable', () => {

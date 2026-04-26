@@ -468,6 +468,80 @@ export function calculateStatistics(rows, columns) {
 		.filter(Boolean);
 }
 
+function isMissingValue(value) {
+	if (value === null || value === undefined) return true;
+	if (typeof value === 'string' && value.trim() === '') return true;
+	return false;
+}
+
+export function calculateCategoricalStatistics(rows, columns) {
+	return columns
+		.filter(column => column.tipo !== 'numero')
+		.map(({ nome }) => {
+			const counts = new Map();
+			let missing = 0;
+			let n = 0;
+
+			for (let i = 0; i < rows.length; i++) {
+				const value = rows[i]?.[nome];
+				if (isMissingValue(value)) {
+					missing++;
+					continue;
+				}
+				const key = String(value);
+				counts.set(key, (counts.get(key) || 0) + 1);
+				n++;
+			}
+
+			const total = n + missing;
+			const unique = counts.size;
+
+			if (n === 0) {
+				return {
+					nome,
+					n: 0,
+					missing,
+					missingPct: total > 0 ? missing / total : 0,
+					unique: 0,
+					uniquenessRate: 0,
+					mode: null,
+					modeCount: 0,
+					modePct: 0,
+					top5Pct: 0,
+					empty: true,
+				};
+			}
+
+			let mode = null;
+			let modeCount = 0;
+			for (const [key, count] of counts) {
+				if (count > modeCount || (count === modeCount && (mode === null || key.localeCompare(mode) < 0))) {
+					mode = key;
+					modeCount = count;
+				}
+			}
+
+			const top5Sum = Array.from(counts.values())
+				.sort((a, b) => b - a)
+				.slice(0, 5)
+				.reduce((sum, c) => sum + c, 0);
+
+			return {
+				nome,
+				n,
+				missing,
+				missingPct: total > 0 ? missing / total : 0,
+				unique,
+				uniquenessRate: n > 0 ? unique / n : 0,
+				mode,
+				modeCount,
+				modePct: n > 0 ? modeCount / n : 0,
+				top5Pct: n > 0 ? top5Sum / n : 0,
+				empty: false,
+			};
+		});
+}
+
 export function formatFileSize(sizeBytes) {
 	if (sizeBytes < 1024) return `${sizeBytes} B`;
 	if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`;

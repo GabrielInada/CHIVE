@@ -1,7 +1,7 @@
 import { CHART_COLORS, PIE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
+import { createCheckboxControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
@@ -130,6 +130,30 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 	valueDiv.appendChild(valueLabel);
 	valueDiv.appendChild(valueSelect);
 	dataControls.push(valueDiv);
+
+	dataControls.push(createSelectControl(
+		'viz-select-pie-topn',
+		t('chive-chart-control-pie-topn'),
+		[
+			{ value: '0', label: t('chive-chart-topn-all') },
+			{ value: '10', label: 'Top 10' },
+			{ value: '20', label: 'Top 20' },
+			{ value: '50', label: 'Top 50' },
+		],
+		String(Number.isFinite(Number(config.topN)) ? Number(config.topN) : PIE_CHART.defaultTopN),
+		!dataset.configGraficos.pie.enabled
+	));
+
+	dataControls.push(createSelectControl(
+		'viz-select-pie-topn-mode',
+		t('chive-chart-control-pie-topn-mode'),
+		[
+			{ value: 'other', label: t('chive-chart-pie-topn-mode-other') },
+			{ value: 'truncate', label: t('chive-chart-pie-topn-mode-truncate') },
+		],
+		config.topNMode === 'truncate' ? 'truncate' : 'other',
+		!dataset.configGraficos.pie.enabled
+	));
 
 	// ====== DISPLAY SECTION ======
 	const displayControls = [];
@@ -345,6 +369,8 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 		{ id: 'viz-select-pie-category', key: 'category' },
 		{ id: 'viz-select-pie-value-column', key: 'valueColumn', transform: v => v || null },
 		{ id: 'viz-select-pie-label-position', key: 'labelPosition', transform: v => v === 'outside' ? 'outside' : 'inside' },
+		{ id: 'viz-select-pie-topn', key: 'topN', transform: v => Number(v) },
+		{ id: 'viz-select-pie-topn-mode', key: 'topNMode', transform: v => v === 'truncate' ? 'truncate' : 'other' },
 	], dataset, 'pie', onConfigChanged);
 
 	// Measure select (custom: updates valueColumn dependency)

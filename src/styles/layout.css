@@ -124,6 +124,9 @@ body {
   background: var(--surface);
   border-right: 1px solid var(--border);
   padding: 28px 24px;
+  position: sticky;
+  top: 52px;
+  align-self: start;
   height: calc(100vh - 52px);
   min-height: 0;
   overflow: hidden;
@@ -131,6 +134,14 @@ body {
   flex-direction: column;
   gap: 24px;
   transition: padding 0.24s ease;
+}
+
+.painel-esquerdo:has(#sidebar-panel-dados.ativo) {
+  position: static;
+  align-self: stretch;
+  height: auto;
+  min-height: calc(100vh - 52px);
+  overflow: visible;
 }
 
 .sidebar-panel {
@@ -188,5 +199,4 @@ body {
 
 .area-resultados {
   padding: 28px 32px;
-  overflow-y: auto;
 }

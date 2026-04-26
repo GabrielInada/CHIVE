@@ -54,6 +54,23 @@
   text-align: right;
 }
 
+.tabela-preview .row-index {
+  width: 1%;
+  text-align: right;
+  font-family: var(--fonte-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+  background: var(--bg);
+  padding-left: 10px;
+  padding-right: 10px;
+  border-right: 1px solid var(--border);
+  user-select: none;
+}
+
+.tabela-preview thead th.row-index {
+  color: var(--muted);
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));

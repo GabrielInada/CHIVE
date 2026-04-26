@@ -111,6 +111,11 @@ export const PIE_CHART = {
   minOuterRadius: 20,
   measureModes: ['count', 'sum'],
   labelPositions: ['inside', 'outside'],
+  topNOptions: [0, 10, 20, 50],
+  defaultTopN: 0,
+  topNModes: ['other', 'truncate'],
+  defaultTopNMode: 'other',
+  otherSliceColor: '#9c9690',
 };
 
 export const TREEMAP_CHART = {

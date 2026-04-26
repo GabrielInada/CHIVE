@@ -138,19 +138,6 @@ export function toggleSidebarCollapsed() {
 }
 
 /**
- * Close all open menus/dropdowns
- */
-export function closeAllMenus() {
-	const openMenus = document.querySelectorAll('[data-chart-menu]:not([hidden])');
-	openMenus.forEach(menu => {
-		menu.hidden = true;
-	});
-	document.querySelectorAll('[data-chart-menu-btn]').forEach(button => {
-		button.setAttribute('aria-expanded', 'false');
-	});
-}
-
-/**
  * Setup tab click listeners
  * Called by main initialization
  */

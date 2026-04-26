@@ -89,20 +89,19 @@ function setupDom() {
     <div class="chart-bloco">
       <h3 class="chart-titulo">Meu Grafico</h3>
       <div data-chart-actions>
-        <button data-chart-menu-btn="menu-1" aria-expanded="false" type="button"></button>
-        <div data-chart-menu="menu-1" hidden>
-          <button
-            data-chart-action="download-svg"
-            data-chart-container="chart-1"
-            data-chart-filename="grafico"
-            type="button"
-          ></button>
-          <button
-            data-chart-action="add-panel"
-            data-chart-container="chart-1"
-            type="button"
-          ></button>
-        </div>
+        <button
+          class="chart-action-btn"
+          data-chart-action="download-svg"
+          data-chart-container="chart-1"
+          data-chart-filename="grafico"
+          type="button"
+        ></button>
+        <button
+          class="chart-action-btn"
+          data-chart-action="add-panel"
+          data-chart-container="chart-1"
+          type="button"
+        ></button>
       </div>
     </div>
 
@@ -143,7 +142,6 @@ describe('eventHandlers', () => {
 
     expect(mocks.downloadSvgFromContainer).toHaveBeenCalledWith('chart-1', 'grafico');
     expect(mocks.showError).toHaveBeenCalledWith('tr:chive-chart-download-error');
-    expect(document.querySelector('[data-chart-menu="menu-1"]').hidden).toBe(true);
 
     document.querySelector('[data-chart-action="add-panel"]').click();
     expect(mocks.addChartToPanel).toHaveBeenCalledWith('chart-1', 'Meu Grafico', expect.any(Object));
@@ -170,9 +168,6 @@ describe('eventHandlers', () => {
 
     document.querySelector('[data-dataset-remove="1"]').click();
     expect(mocks.removeDatasetByIndex).toHaveBeenCalledWith(1);
-
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-    expect(document.querySelector('[data-chart-menu="menu-1"]').hidden).toBe(true);
   });
 
   it('setupResultsViewListeners registra listeners sem quebrar fluxo', () => {

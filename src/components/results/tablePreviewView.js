@@ -18,6 +18,10 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 
 	const thead = document.createElement('thead');
 	const trHead = document.createElement('tr');
+	const thIndex = document.createElement('th');
+	thIndex.classList.add('row-index');
+	thIndex.textContent = '#';
+	trHead.appendChild(thIndex);
 	visibleColumns.forEach(({ nome, tipo }) => {
 		const th = document.createElement('th');
 		if (tipo === 'numero') th.classList.add('num');
@@ -27,8 +31,12 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 	thead.appendChild(trHead);
 
 	const tbody = document.createElement('tbody');
-	previewRows.forEach(row => {
+	previewRows.forEach((row, i) => {
 		const tr = document.createElement('tr');
+		const tdIndex = document.createElement('td');
+		tdIndex.classList.add('row-index');
+		tdIndex.textContent = String(i + 1);
+		tr.appendChild(tdIndex);
 		visibleColumns.forEach(({ nome, tipo }) => {
 			const td = document.createElement('td');
 			if (tipo === 'numero') td.classList.add('num');
@@ -44,6 +52,9 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 
 	const tfoot = document.createElement('tfoot');
 	const trFoot = document.createElement('tr');
+	const tdFootIndex = document.createElement('td');
+	tdFootIndex.classList.add('row-index');
+	trFoot.appendChild(tdFootIndex);
 	visibleColumns.forEach(({ tipo }) => {
 		const td = document.createElement('td');
 		td.textContent = translateType(tipo);

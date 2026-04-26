@@ -305,8 +305,8 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			? formatNumber(ponto.y, locale)
 			: ponto.yCategory;
 
-		wrapper.appendChild(createLine(labels.eixoX, xValue));
-		wrapper.appendChild(createLine(labels.eixoY, yValue));
+		wrapper.appendChild(createLine(axisLabels.x, xValue));
+		wrapper.appendChild(createLine(axisLabels.y, yValue));
 		if (ponto.isAggregate) {
 			wrapper.appendChild(createLine(labels.count, formatNumber(ponto.count, locale)));
 		} else {

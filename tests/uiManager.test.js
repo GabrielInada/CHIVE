@@ -16,7 +16,6 @@ vi.mock('../src/modules/appState.js', () => ({
 }));
 
 import {
-  closeAllMenus,
   getActiveTab,
   setTabVisibility,
   setupSidebarToggleListener,
@@ -41,9 +40,6 @@ function setupDom() {
     <aside id="sidebar-panel-panel" class="inativo"></aside>
 
     <button id="btn-toggle-sidebar" aria-expanded="true"></button>
-
-    <button data-chart-menu-btn="menu-a" aria-expanded="true"></button>
-    <div data-chart-menu="menu-a"></div>
   `;
 }
 
@@ -102,16 +98,6 @@ describe('uiManager', () => {
     expect(expanded).toBe(false);
     expect(btn.getAttribute('aria-expanded')).toBe('true');
     expect(btn.getAttribute('aria-label')).toBe('tr:chive-sidebar-collapse');
-  });
-
-  it('fecha menus abertos e reseta botoes', () => {
-    const menu = document.querySelector('[data-chart-menu="menu-a"]');
-    menu.hidden = false;
-
-    closeAllMenus();
-
-    expect(menu.hidden).toBe(true);
-    expect(document.querySelector('[data-chart-menu-btn="menu-a"]').getAttribute('aria-expanded')).toBe('false');
   });
 
   it('registra listeners de aba e toggle da sidebar', () => {

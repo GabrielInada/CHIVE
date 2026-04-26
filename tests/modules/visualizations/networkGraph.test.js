@@ -28,6 +28,41 @@ describe('network graph visualization', () => {
 		expect(container.querySelectorAll('circle').length).toBe(3);
 	});
 
+	it('uses configured source/target labels in the legend', () => {
+		const container = document.getElementById('network');
+		const dados = [
+			{ origem: 'A', destino: 'B' },
+			{ origem: 'B', destino: 'C' },
+		];
+
+		renderNetworkGraph(container, dados, 'origem', 'destino', {
+			showLegend: true,
+			labels: { source: 'Origem', target: 'Destino' },
+		});
+
+		const legendTexts = Array.from(container.querySelectorAll('.network-legend text'))
+			.map(node => node.textContent);
+		expect(legendTexts).toContain('Origem');
+		expect(legendTexts).toContain('Destino');
+		expect(legendTexts).not.toContain('Source');
+		expect(legendTexts).not.toContain('Target');
+	});
+
+	it('falls back to "Source" / "Target" when labels are absent', () => {
+		const container = document.getElementById('network');
+		const dados = [
+			{ origem: 'A', destino: 'B' },
+			{ origem: 'B', destino: 'C' },
+		];
+
+		renderNetworkGraph(container, dados, 'origem', 'destino', { showLegend: true });
+
+		const legendTexts = Array.from(container.querySelectorAll('.network-legend text'))
+			.map(node => node.textContent);
+		expect(legendTexts).toContain('Source');
+		expect(legendTexts).toContain('Target');
+	});
+
 	it('returns explicit failure when there is no valid source-target data', () => {
 		const container = document.getElementById('network');
 		const dados = [

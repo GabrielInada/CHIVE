@@ -97,6 +97,60 @@ describe('pie chart and axis labels', () => {
 		expect(container.textContent).toContain('TinyB (1)');
 	});
 
+	it('aggregates remaining categories into Other when topN is set with mode "other"', () => {
+		const container = document.getElementById('pie');
+		const dados = [];
+		['A', 'A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'D', 'E', 'F'].forEach(c => dados.push({ categoria: c }));
+
+		const result = renderPieChart(container, dados, 'categoria', {
+			topN: 2,
+			topNMode: 'other',
+			showLegend: true,
+			labels: { other: 'Outros' },
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.textContent).toContain('A (4)');
+		expect(container.textContent).toContain('B (3)');
+		expect(container.textContent).toContain('Outros (5)');
+		const slices = container.querySelectorAll('path');
+		expect(slices.length).toBe(3);
+	});
+
+	it('truncates remaining categories when topN mode is "truncate"', () => {
+		const container = document.getElementById('pie');
+		const dados = [];
+		['A', 'A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'D', 'E', 'F'].forEach(c => dados.push({ categoria: c }));
+
+		const result = renderPieChart(container, dados, 'categoria', {
+			topN: 2,
+			topNMode: 'truncate',
+			showLegend: true,
+		});
+
+		expect(result.ok).toBe(true);
+		const slices = container.querySelectorAll('path');
+		expect(slices.length).toBe(2);
+		expect(container.textContent).not.toContain('Other');
+		expect(container.textContent).not.toContain('Outros');
+		expect(container.textContent).toContain('A (4)');
+		expect(container.textContent).toContain('B (3)');
+	});
+
+	it('does not change behavior when topN is 0 (all categories)', () => {
+		const container = document.getElementById('pie');
+		const dados = [
+			{ categoria: 'A' },
+			{ categoria: 'B' },
+			{ categoria: 'C' },
+			{ categoria: 'D' },
+		];
+
+		const result = renderPieChart(container, dados, 'categoria', { topN: 0 });
+		expect(result.ok).toBe(true);
+		expect(container.querySelectorAll('path').length).toBe(4);
+	});
+
 	it('returns explicit failure reason for sum mode without valid numeric column', () => {
 		const container = document.getElementById('pie');
 		const dados = [

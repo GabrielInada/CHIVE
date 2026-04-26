@@ -110,9 +110,24 @@ export function createSelectControl(id, labelText, optionsArray, selectedValue, 
 
 // Color Presets for palette quick-apply
 import { CHART_COLOR_PALETTES } from '../../config/charts.js';
+import { t } from '../../services/i18nService.js';
 export const COLOR_PRESETS = CHART_COLOR_PALETTES;
 
 export { hexToRgb, rgbToHex, interpolateColor } from '../../utils/colorUtils.js';
+
+const PALETTE_LABEL_KEYS = {
+	Tableau10: 'chive-chart-palette-tableau10',
+	Bold: 'chive-chart-palette-bold',
+	Pastel: 'chive-chart-palette-pastel',
+	'Colorblind-Safe': 'chive-chart-palette-colorblind-safe',
+};
+
+function localizedPaletteName(paletteId) {
+	const key = PALETTE_LABEL_KEYS[paletteId];
+	if (!key) return paletteId;
+	const localized = t(key);
+	return localized && localized !== key ? localized : paletteId;
+}
 
 export function createColorPresetControl(id, labelText, presetName, disabled = false, onSelect) {
 	const div = document.createElement('div');
@@ -133,7 +148,8 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
 		btn.type = 'button';
 		btn.dataset.colorPresetControl = id;
 		btn.dataset.presetName = name;
-		btn.textContent = name;
+		btn.textContent = localizedPaletteName(name);
+		btn.title = localizedPaletteName(name);
 		btn.className = 'chart-preset-btn';
 		btn.disabled = disabled;
 		btn.style.padding = '4px 8px';
@@ -142,7 +158,7 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
 		btn.style.backgroundColor = '#f9f9f9';
 		btn.style.cursor = disabled ? 'not-allowed' : 'pointer';
 		btn.style.opacity = disabled ? '0.5' : '1';
-		
+
 		btn.addEventListener('click', () => {
 			if (!disabled && onSelect) {
 				onSelect(name, colors);
@@ -151,9 +167,18 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
 
 		presetButtons.appendChild(btn);
 	});
-	
+
+	const helpText = document.createElement('p');
+	helpText.className = 'chart-control-help';
+	helpText.textContent = t('chive-chart-color-palette-help');
+	helpText.style.fontSize = '11px';
+	helpText.style.color = 'var(--muted)';
+	helpText.style.marginTop = '6px';
+	helpText.style.lineHeight = '1.4';
+
 	div.appendChild(label);
 	div.appendChild(presetButtons);
+	div.appendChild(helpText);
 	return div;
 }
 

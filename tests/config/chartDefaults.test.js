@@ -43,6 +43,21 @@ describe('chartDefaults', () => {
 			a.bar.color = '#000';
 			expect(b.bar.color).not.toBe('#000');
 		});
+
+		it('uses Colorblind-Safe as the accessibility-first default palette', () => {
+			const config = createDefaultChartConfig();
+			expect(config.bar.colorScheme).toBe('Colorblind-Safe');
+			expect(config.scatter.colorScheme).toBe('Colorblind-Safe');
+			expect(config.network.colorScheme).toBe('Colorblind-Safe');
+			expect(config.pie.colorScheme).toBe('Colorblind-Safe');
+			expect(config.treemap.colorScheme).toBe('Colorblind-Safe');
+		});
+
+		it('includes pie topN/topNMode defaults that preserve existing behavior', () => {
+			const config = createDefaultChartConfig();
+			expect(config.pie.topN).toBe(0);
+			expect(config.pie.topNMode).toBe('other');
+		});
 	});
 
 	describe('mergeChartConfigWithDefaults', () => {
@@ -129,6 +144,15 @@ describe('chartDefaults', () => {
 			expect(result.globalFilter.rules[0].column).toBe('age');
 			expect(result.globalFilter.rules[0].operator).toBe('gt');
 			expect(result.globalFilter.combine).toBe('AND');
+		});
+
+		it('preserves a previously-saved Bold colorScheme without migrating it', () => {
+			const result = mergeChartConfigWithDefaults({
+				bar: { colorScheme: 'Bold' },
+				pie: { colorScheme: 'Bold' },
+			});
+			expect(result.bar.colorScheme).toBe('Bold');
+			expect(result.pie.colorScheme).toBe('Bold');
 		});
 
 		it('preserves multi-rule globalFilter provided by caller', () => {

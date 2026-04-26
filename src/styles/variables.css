@@ -14,9 +14,9 @@
   --tag-num: #e8f4ed;
   --tag-txt: #fef3e2;
   --tag-dat: #e8eaf4;
-  --fonte-display: 'Fraunces', serif;
-  --fonte-sans: 'Inter', sans-serif;
-  --fonte-mono: 'IBM Plex Mono', monospace;
+  --fonte-display: 'Source Serif 4', Georgia, serif;
+  --fonte-sans: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --fonte-mono: 'JetBrains Mono', 'Courier New', monospace;
 }
 
 *, *::before, *::after {
@@ -29,6 +29,9 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--fonte-sans);
-  font-size: 13px;
+  font-size: 14px;
+  line-height: 1.5;
   min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
