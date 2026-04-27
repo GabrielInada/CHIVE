@@ -1,7 +1,14 @@
 import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
-import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
+import {
+	createTooltipFilterAction,
+	hideChartTooltip,
+	moveChartTooltip,
+	pinTooltip,
+	showChartTooltip,
+} from './tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
 import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
@@ -33,6 +40,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		soma: opcoes.labels?.soma || 'Sum',
 		media: opcoes.labels?.media || 'Mean',
 		percentual: opcoes.labels?.percentual || 'Percentage',
+		addToFilter: opcoes.labels?.addToFilter || 'Add to global filter',
 	};
 	const measureMode = BAR_CHART.measureModes.includes(opcoes.measureMode)
 		? opcoes.measureMode
@@ -180,6 +188,22 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		showChartTooltip(montarConteudoTooltip(item), event.pageX, event.pageY);
 	};
 
+	const onAddToGlobalFilter = typeof opcoes.onAddToGlobalFilter === 'function'
+		? opcoes.onAddToGlobalFilter
+		: null;
+
+	const exibirTooltipFixado = (event, item) => {
+		const wrapper = montarConteudoTooltip(item);
+		if (onAddToGlobalFilter) {
+			wrapper.appendChild(createTooltipFilterAction({
+				label: labels.addToFilter,
+				onClick: () => onAddToGlobalFilter(colunaCategoria, toCategoryToken(item[0])),
+			}));
+		}
+		showChartTooltip(wrapper, event.pageX, event.pageY);
+		pinTooltip(null);
+	};
+
 	const escalaX = scaleBand()
 		.domain(linhas.map(item => item[0]))
 		.range([0, larguraInterna])
@@ -246,7 +270,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 				return;
 			}
 			pinnedCategoria = item[0];
-			exibirTooltip(event, item);
+			exibirTooltipFixado(event, item);
 		});
 
 	svg.on('click', () => {

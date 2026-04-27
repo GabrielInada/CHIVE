@@ -8,7 +8,13 @@ import {
 	zoom,
 	zoomIdentity,
 } from 'd3';
-import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
+import {
+	hideChartTooltip,
+	moveChartTooltip,
+	pinTooltip,
+	repositionPinnedTooltip,
+	showChartTooltip,
+} from './tooltip.js';
 import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { interpolateColor } from '../../utils/colorUtils.js';
@@ -155,8 +161,8 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 
 	container[SIMULATION_KEY] = simulation;
 
-	let pinnedNode = null;
-	const showNodeTooltip = (event, nodeData) => {
+	let pinnedNodeDatum = null;
+	const buildNodeTooltipContent = (nodeData) => {
 		const content = document.createElement('div');
 		const line = document.createElement('div');
 		const strong = document.createElement('strong');
@@ -164,7 +170,36 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		line.appendChild(strong);
 		line.append(` ${nodeData.id}`);
 		content.appendChild(line);
-		showChartTooltip(content, event.pageX, event.pageY);
+		return content;
+	};
+	const showNodeTooltip = (event, nodeData) => {
+		showChartTooltip(buildNodeTooltipContent(nodeData), event.pageX, event.pageY);
+	};
+	const nodeScreenPoint = (nodeData) => {
+		if (!nodeData) return null;
+		const svgNode = svg.node();
+		const viewportNode = viewport.node();
+		if (!svgNode || !viewportNode) return null;
+		const ctm = typeof viewportNode.getScreenCTM === 'function'
+			? viewportNode.getScreenCTM()
+			: null;
+		if (!ctm) return null;
+		let screen;
+		if (typeof svgNode.createSVGPoint === 'function') {
+			const pt = svgNode.createSVGPoint();
+			pt.x = Number(nodeData.x) || 0;
+			pt.y = Number(nodeData.y) || 0;
+			screen = pt.matrixTransform(ctm);
+		} else {
+			screen = {
+				x: ctm.a * (Number(nodeData.x) || 0) + ctm.c * (Number(nodeData.y) || 0) + ctm.e,
+				y: ctm.b * (Number(nodeData.x) || 0) + ctm.d * (Number(nodeData.y) || 0) + ctm.f,
+			};
+		}
+		return {
+			x: screen.x + (typeof window !== 'undefined' ? window.scrollX : 0),
+			y: screen.y + (typeof window !== 'undefined' ? window.scrollY : 0),
+		};
 	};
 
 	const defs = svg.append('defs');
@@ -216,30 +251,34 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		.attr('r', nodeRadius)
 		.attr('fill', d => getNodeColor(d))
 		.on('mouseenter', (event, nodeData) => {
-			if (pinnedNode !== null) return;
+			if (pinnedNodeDatum !== null) return;
 			showNodeTooltip(event, nodeData);
 		})
 		.on('mousemove', event => {
-			if (pinnedNode !== null) return;
+			if (pinnedNodeDatum !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseleave', () => {
-			if (pinnedNode !== null) return;
+			if (pinnedNodeDatum !== null) return;
 			hideChartTooltip();
 		})
 		.on('click', (event, nodeData) => {
 			event.stopPropagation();
-			if (pinnedNode === nodeData.id) {
-				pinnedNode = null;
+			if (pinnedNodeDatum && pinnedNodeDatum.id === nodeData.id) {
+				pinnedNodeDatum = null;
 				hideChartTooltip();
 				return;
 			}
-			pinnedNode = nodeData.id;
-			showNodeTooltip(event, nodeData);
+			pinnedNodeDatum = nodeData;
+			const anchorPoint = nodeScreenPoint(nodeData);
+			const startX = anchorPoint ? anchorPoint.x : event.pageX;
+			const startY = anchorPoint ? anchorPoint.y : event.pageY;
+			showChartTooltip(buildNodeTooltipContent(nodeData), startX, startY);
+			pinTooltip(() => nodeScreenPoint(pinnedNodeDatum));
 		});
 
 	svg.on('click', () => {
-		pinnedNode = null;
+		pinnedNodeDatum = null;
 		hideChartTooltip();
 	});
 
@@ -280,6 +319,7 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		.scaleExtent([NETWORK_GRAPH.minZoomScale, NETWORK_GRAPH.maxZoomScale])
 		.on('zoom', event => {
 			viewport.attr('transform', event.transform);
+			repositionPinnedTooltip();
 		});
 
 	svg.call(zoomBehavior);
@@ -351,6 +391,8 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 				.attr('x', d => d.x)
 				.attr('y', d => d.y);
 		}
+
+		repositionPinnedTooltip();
 	});
 
 	return {

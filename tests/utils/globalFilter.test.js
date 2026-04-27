@@ -4,6 +4,7 @@ import {
 	countGlobalFilterRules,
 	createEmptyGlobalFilter,
 	isGlobalFilterActive,
+	mergeIncludeTokenIntoFilter,
 	normalizeGlobalFilter,
 	resolveGlobalFilterForColumns,
 } from '../../src/utils/globalFilter.js';
@@ -147,6 +148,59 @@ describe('globalFilter utils', () => {
 				{ region: 'North', age: 18 },
 				{ region: 'North', age: 30 },
 			]);
+		});
+	});
+
+	describe('mergeIncludeTokenIntoFilter', () => {
+		it('creates a new categorical rule when no rule for the column exists', () => {
+			const merged = mergeIncludeTokenIntoFilter(createEmptyGlobalFilter(), 'region', 'v:North');
+			expect(merged.rules).toHaveLength(1);
+			expect(merged.rules[0].column).toBe('region');
+			expect(merged.rules[0].mode).toBe('categorical');
+			expect(merged.rules[0].include).toEqual(['v:North']);
+		});
+
+		it('appends a new token to an existing categorical rule for the same column', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'] }] };
+			const merged = mergeIncludeTokenIntoFilter(initial, 'region', 'v:South');
+			expect(merged.rules).toHaveLength(1);
+			expect(merged.rules[0].include).toEqual(['v:North', 'v:South']);
+		});
+
+		it('does not duplicate a token already present in the include list', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'] }] };
+			const merged = mergeIncludeTokenIntoFilter(initial, 'region', 'v:North');
+			expect(merged.rules).toHaveLength(1);
+			expect(merged.rules[0].include).toEqual(['v:North']);
+		});
+
+		it('preserves existing rules for other columns when merging', () => {
+			const initial = {
+				rules: [
+					{ column: 'age', mode: 'numeric', operator: 'gt', value: '20' },
+					{ column: 'region', mode: 'categorical', include: ['v:North'] },
+				],
+			};
+			const merged = mergeIncludeTokenIntoFilter(initial, 'region', 'v:South');
+			expect(merged.rules).toHaveLength(2);
+			expect(merged.rules.find(r => r.column === 'age').operator).toBe('gt');
+			expect(merged.rules.find(r => r.column === 'region').include).toEqual(['v:North', 'v:South']);
+		});
+
+		it('migrates legacy single-filter input then adds the token', () => {
+			const legacy = { column: 'region', mode: 'categorical', include: ['v:North'] };
+			const merged = mergeIncludeTokenIntoFilter(legacy, 'region', 'v:South');
+			expect(merged.combine).toBe('AND');
+			expect(merged.rules).toHaveLength(1);
+			expect(merged.rules[0].include).toEqual(['v:North', 'v:South']);
+		});
+
+		it('returns the normalized filter unchanged when column or token is missing', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'] }] };
+			const noColumn = mergeIncludeTokenIntoFilter(initial, '', 'v:South');
+			const noToken = mergeIncludeTokenIntoFilter(initial, 'region', '');
+			expect(noColumn.rules[0].include).toEqual(['v:North']);
+			expect(noToken.rules[0].include).toEqual(['v:North']);
 		});
 	});
 });

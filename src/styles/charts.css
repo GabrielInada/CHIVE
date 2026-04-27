@@ -236,6 +236,31 @@
   color: #c8ff4d;
 }
 
+.chart-tooltip--fixado {
+  pointer-events: auto;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.32);
+}
+
+.chart-tooltip__action {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 4px 8px;
+  background: rgba(200, 255, 77, 0.12);
+  color: #c8ff4d;
+  border: 1px solid rgba(200, 255, 77, 0.45);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.chart-tooltip__action:hover,
+.chart-tooltip__action:focus-visible {
+  background: rgba(200, 255, 77, 0.24);
+  outline: none;
+}
+
 /* Control Grouping & Sections */
 
 .chart-control-section {

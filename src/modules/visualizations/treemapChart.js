@@ -1,7 +1,14 @@
 import { hierarchy, select, treemap, treemapSquarify } from 'd3';
-import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
+import {
+	createTooltipFilterAction,
+	hideChartTooltip,
+	moveChartTooltip,
+	pinTooltip,
+	showChartTooltip,
+} from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, TREEMAP_CHART } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
 
 const COLOR_PALETTE = {
 	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
@@ -47,6 +54,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 		contagem: opcoes.labels?.contagem || 'Count',
 		soma: opcoes.labels?.soma || 'Sum',
 		percentual: opcoes.labels?.percentual || 'Percentage',
+		addToFilter: opcoes.labels?.addToFilter || 'Add to global filter',
 	};
 
 	// Aggregate data
@@ -135,6 +143,9 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 	};
 
 	let pinnedName = null;
+	const onAddToGlobalFilter = typeof opcoes.onAddToGlobalFilter === 'function'
+		? opcoes.onAddToGlobalFilter
+		: null;
 
 	const buildTooltipContent = (d, pct) => {
 		const wrapper = document.createElement('div');
@@ -200,7 +211,15 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 			}
 			pinnedName = d.data.name;
 			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
-			showChartTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY);
+			const wrapper = buildTooltipContent(d, pct);
+			if (onAddToGlobalFilter) {
+				wrapper.appendChild(createTooltipFilterAction({
+					label: labels.addToFilter,
+					onClick: () => onAddToGlobalFilter(colunaCategoria, toCategoryToken(d.data.name)),
+				}));
+			}
+			showChartTooltip(wrapper, event.pageX, event.pageY);
+			pinTooltip(null);
 		});
 
 	if (showLabels || showValues) {

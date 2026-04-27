@@ -12,7 +12,11 @@ import { renderColumnControlsDOM } from './results/columnControlsView.js';
 import { openJoinBuilderDialog } from './results/joinBuilderView.js';
 import { openPresetDatasetsDialog } from './results/presetDatasetsView.js';
 import { openGlobalFilterDialog } from './results/globalFilterDialog.js';
-import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
+import {
+  applyGlobalFilterRules,
+  mergeIncludeTokenIntoFilter,
+  resolveGlobalFilterForColumns,
+} from '../utils/globalFilter.js';
 
 const FILE_LIST_PAGE_SIZE = 15;
 let fileListQuery = '';
@@ -321,6 +325,15 @@ export function renderDataInterface(
     onChartConfigChange({ globalFilter: safeGlobalFilter });
   }
 
+  const handleAddToGlobalFilter = onChartConfigChange
+    ? (column, token) => {
+      if (typeof column !== 'string' || typeof token !== 'string') return;
+      if (!allColumnNames.includes(column)) return;
+      const merged = mergeIncludeTokenIntoFilter(config.globalFilter, column, token);
+      onChartConfigChange({ globalFilter: merged });
+    }
+    : null;
+
   updateTabs(config.aba, onChartConfigChange, config, {
     triggerState: {
       hasDataset: true,
@@ -366,7 +379,9 @@ export function renderDataInterface(
   renderTablePreview(rows, visibleColumns, rowLimit);
   renderStats(rows, visibleColumns);
   renderCategoricalStats(rows, visibleColumns);
-  renderCharts(config, rows, visibleColumns, visibleNumericColumns);
+  renderCharts(config, rows, visibleColumns, visibleNumericColumns, {
+    onAddToGlobalFilter: handleAddToGlobalFilter,
+  });
 
   document.getElementById('btn-avancar').disabled = false;
   const devNotice = document.getElementById('aviso-dev');

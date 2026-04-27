@@ -1,7 +1,14 @@
 import { arc, pie, select, zoom, zoomIdentity } from 'd3';
-import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
+import {
+	createTooltipFilterAction,
+	hideChartTooltip,
+	moveChartTooltip,
+	pinTooltip,
+	showChartTooltip,
+} from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
 import { buildSliceColor as _buildSliceColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
@@ -26,6 +33,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		contagem: opcoes.labels?.contagem || 'Count',
 		percentual: opcoes.labels?.percentual || 'Percentage',
 		other: opcoes.labels?.other || 'Other',
+		addToFilter: opcoes.labels?.addToFilter || 'Add to global filter',
 	};
 	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : 0;
 	const topNMode = opcoes.topNMode === 'truncate' ? 'truncate' : 'other';
@@ -171,6 +179,22 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		showChartTooltip(montarConteudoTooltip(item), event.pageX, event.pageY);
 	};
 
+	const onAddToGlobalFilter = typeof opcoes.onAddToGlobalFilter === 'function'
+		? opcoes.onAddToGlobalFilter
+		: null;
+
+	const exibirTooltipFixado = (event, item) => {
+		const wrapper = montarConteudoTooltip(item);
+		if (onAddToGlobalFilter && !item.isOther) {
+			wrapper.appendChild(createTooltipFilterAction({
+				label: labels.addToFilter,
+				onClick: () => onAddToGlobalFilter(colunaCategoria, toCategoryToken(item.categoria)),
+			}));
+		}
+		showChartTooltip(wrapper, event.pageX, event.pageY);
+		pinTooltip(null);
+	};
+
 	grupo
 		.selectAll('path')
 		.data(pieGenerator(linhas))
@@ -209,7 +233,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 				return;
 			}
 			pinnedCategoria = item.data.categoria;
-			exibirTooltip(event, item.data);
+			exibirTooltipFixado(event, item.data);
 		});
 
 	svg.on('click', () => {

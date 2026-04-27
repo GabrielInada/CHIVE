@@ -83,6 +83,28 @@ export function applyGlobalFilterRules(rows, rawFilter, numericColumns = []) {
 	}, rows);
 }
 
+export function mergeIncludeTokenIntoFilter(rawFilter, column, token) {
+	const normalized = normalizeGlobalFilter(rawFilter);
+	if (typeof column !== 'string' || column.trim().length === 0) return normalized;
+	if (typeof token !== 'string' || token.length === 0) return normalized;
+
+	const idx = normalized.rules.findIndex(
+		rule => rule.column === column && rule.mode === 'categorical',
+	);
+
+	if (idx === -1) {
+		normalized.rules.push({ column, mode: 'categorical', include: [token] });
+		return normalized;
+	}
+
+	const rule = normalized.rules[idx];
+	const include = Array.isArray(rule.include) ? rule.include : [];
+	if (include.includes(token)) return normalized;
+
+	normalized.rules[idx] = { ...rule, include: [...include, token] };
+	return normalized;
+}
+
 // Compatibility alias: create a new empty filter config (for reset).
 export function createDefaultGlobalFilter() {
 	return createEmptyGlobalFilter();

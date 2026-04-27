@@ -300,6 +300,7 @@
 	"chive-tooltip-mean": "Média",
 	"chive-tooltip-percentage": "Percentual",
 	"chive-tooltip-row": "Linha",
+	"chive-tooltip-add-to-filter": "Adicionar ao filtro global",
 	"chive-stats-badge": "{{PLURAL:$1|$1 coluna numérica|$1 colunas numéricas}}",
 	"chive-stat-valid": "n válidos",
 	"chive-stat-min": "mínimo",

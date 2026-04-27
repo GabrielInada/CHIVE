@@ -263,6 +263,7 @@
 	"chive-tooltip-mean": "Tooltip label for bar-chart mean value.",
 	"chive-tooltip-percentage": "Tooltip label for bar-chart percentage value.",
 	"chive-tooltip-row": "Tooltip label for scatter point source row index.",
+	"chive-tooltip-add-to-filter": "Action button label inside a pinned chart tooltip that adds the clicked category to the global filter.",
 	"chive-stats-badge": "Badge in the stats card. $1 = number of numeric columns. Uses PLURAL.",
 	"chive-stat-valid": "Label for the count of non-null numeric values in a column.",
 	"chive-stat-min": "Label for the minimum value.",

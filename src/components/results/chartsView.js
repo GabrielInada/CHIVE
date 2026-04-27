@@ -13,7 +13,10 @@ function showChartMessage(containerId, message) {
 	container.appendChild(empty);
 }
 
-export function renderCharts(config, rows, visibleColumns, visibleNumericColumns) {
+export function renderCharts(config, rows, visibleColumns, visibleNumericColumns, options = {}) {
+	const onAddToGlobalFilter = typeof options.onAddToGlobalFilter === 'function'
+		? options.onAddToGlobalFilter
+		: null;
 	const chartConfig = mergeChartConfigWithDefaults(config);
 	const numericColumnNames = Array.isArray(visibleNumericColumns)
 		? visibleNumericColumns.map(column => column?.nome).filter(Boolean)
@@ -123,7 +126,9 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					soma: t('chive-tooltip-sum'),
 					media: t('chive-tooltip-mean'),
 					percentual: t('chive-tooltip-percentage'),
+					addToFilter: t('chive-tooltip-add-to-filter'),
 				},
+				onAddToGlobalFilter,
 			}
 		);
 		if (!barResult.ok) {
@@ -265,7 +270,9 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					contagem: t('chive-tooltip-count'),
 					percentual: t('chive-tooltip-percentage'),
 					other: t('chive-chart-pie-other'),
+					addToFilter: t('chive-tooltip-add-to-filter'),
 				},
+				onAddToGlobalFilter,
 			}
 		);
 
@@ -355,7 +362,9 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					contagem: t('chive-tooltip-count'),
 					soma: t('chive-tooltip-sum'),
 					percentual: t('chive-tooltip-percentage'),
+					addToFilter: t('chive-tooltip-add-to-filter'),
 				},
+				onAddToGlobalFilter,
 			}
 		);
 
