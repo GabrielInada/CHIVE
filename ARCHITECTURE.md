@@ -4,7 +4,7 @@ This document is the canonical tour of how CHIVE is organized internally. Read i
 
 ## 1. Overview
 
-CHIVE uses the **Observer pattern over a centralized mutable state singleton, mediated by a Facade layer that owns all writes.** The closest classical analogue is a Backbone-style Model + Events: one in-memory object holds all application state, three facades expose every legal mutation, and an event bus broadcasts every change to subscribers that re-render.
+CHIVE uses the **Observer pattern over a single, mutable state object held in module scope, with all writes mediated by a Facade layer.** The closest classical analogue is a Backbone-style Model + Events: one in-memory object holds all application state, three facades expose every legal mutation, and an event bus broadcasts every change to subscribers that re-render.
 
 It is **not** Flux (no actions, no dispatcher, no reducers), and **not** MobX or signals (no auto-tracking — every subscription is manual and named). The pattern fits CHIVE because we deliberately keep the runtime surface small. The chart layer is D3, which mutates DOM imperatively and resists virtual-DOM abstractions. The contributor base is small enough that a pattern readable cold and debuggable with `console.log` beats one that demands learning a framework. And the async we will eventually need — IndexedDB persistence is on the roadmap — fits the existing facade boundary; it doesn't justify pulling in a framework today.
 
@@ -25,7 +25,7 @@ Against those constraints, here is how the obvious alternatives compare:
 | Alternative | What it would buy us | What it would cost | Verdict |
 |---|---|---|---|
 | **No central state** (each module owns its slice; pass via DOM events) | Less ceremony for tiny features. | Datasets + panel + UI are shared across many renderers; we'd duplicate state or thread props through every call. Reactivity becomes ad-hoc. | Rejected — a shared data model demands a single source of truth. |
-| **Plain singleton, direct mutation** (no facades) | Fewer files. | Every callsite must remember to emit a change event after writing. The first one that forgets silently breaks reactivity, and there's no static signal. | Rejected — facades buy us the "write ⇒ emit" invariant for free. |
+| **Plain shared state, direct mutation** (no facades) | Fewer files. | Every callsite must remember to emit a change event after writing. The first one that forgets silently breaks reactivity, and there's no static signal. | Rejected — facades buy us the "write ⇒ emit" invariant for free. |
 | **Flux / Redux** (actions, reducers, immutable store) | Pure reducers, time-travel devtools, predictable updates. | Reducer + action ceremony for ~25 mutations is overkill. Immutability fights D3 — charts mutate DOM imperatively, so the store's snapshot purity buys nothing downstream. The async paths we have planned (IndexedDB) want a single facade method that emits when the write resolves, not a reducer pipeline plus middleware. | Rejected — ceremony cost outweighs benefit at this surface size. |
 | **MobX / signals / proxies** (auto-tracking) | Zero subscription boilerplate; transparent reactivity. | Reactivity becomes opaque — a re-render fires because some property was read in some computed somewhere. Hard to debug, hard to onboard new contributors. We lose explicit control over re-render granularity. | Rejected — auto-magic is the wrong tradeoff for a research codebase that prizes readability. |
 | **A framework (React / Vue / Svelte)** | Component model, virtual DOM diffing, ecosystem. | D3 + VDOM is a known friction point — escape hatches and refs everywhere, or a rewrite of the chart layer. Adds a heavy build dep and a deep tree of transitive dependencies to a project whose appeal is "open `index.html`, see the app" — and whose minimal footprint is part of its privacy story. | Rejected — vanilla JS + D3 is a deliberate stack choice; a framework would invert it. |
@@ -86,7 +86,7 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 | Layer | Owns | Key files |
 |---|---|---|
 | **Controllers** | DOM event capture and translation into facade calls. No state, no rendering. | `eventHandlers.js`, `fileManager.js`, `panelManager.js`, `chart-controls/` |
-| **State Management Core** | The only place state mutates. Three facades wrap one singleton; an event bus broadcasts every mutation. | `appState.js`, `dataStateFacade.js`, `uiStateFacade.js`, `panelStateFacade.js`, `stateEvents.js`, `stateSync.js` |
+| **State Management Core** | The only place state mutates. Three facades wrap one module-scoped state object; an event bus broadcasts every mutation. | `appState.js`, `dataStateFacade.js`, `uiStateFacade.js`, `panelStateFacade.js`, `stateEvents.js`, `stateSync.js` |
 | **Orchestrator** | Bootstrap plus `refreshView` — the broadest subscriber, handling dataset/columns/config events with a full view refresh. Other modules handle their own events independently. | `main.js` |
 | **Presentation** | Stateless renderers. Read state via getters; never mutate. D3 visualizations live here. | `components/`, `modules/visualizations/` |
 | **Foundations** | Pure helpers — parsing, formatting, color, result wrappers, i18n, constants. No state, no DOM. | `services/`, `config/`, `utils/` |
@@ -103,9 +103,9 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 
 ## 5. State Management Core — deep dive
 
-### The singleton
+### The state object
 
-`appState` is a single in-memory object with three domains, defined in [src/modules/appState.js](src/modules/appState.js):
+`appState` is a single in-memory object with three domains, declared at module scope in [src/modules/appState.js](src/modules/appState.js) and never exported:
 
 ```js
 const appState = {
@@ -117,7 +117,7 @@ const appState = {
 };
 ```
 
-The object is **never mutated directly outside this module**. Each facade is created with closure-injected access to it.
+The object is **never mutated directly outside this module**. Each facade is created with closure-injected access to it. This is a *module-scoped state object*, not a GoF Singleton — there is no class, no `getInstance()`, and no instance-control mechanism. Uniqueness is provided by ES module semantics, and encapsulation by closure injection into the facades.
 
 ### The Facades
 
