@@ -76,13 +76,18 @@ flowchart TB
 
 > Solid arrows: synchronous calls / writes. Dashed arrows: observer notifications and passive reads. The State Core is the only mutation path and the only source of change events.
 
+The diagram is a faithful abstraction, not a literal call graph. Two simplifications worth knowing:
+
+- **The "main.js · refreshView" node represents the dominant subscriber path.** In practice **four** modules subscribe to the event bus — `main.js`, `panelManager.js`, `chart-controls/index.js`, and `stateSync.js`. §5 lists which events each one handles.
+- **`panelManager` and `chart-controls` appear inside Controllers, but they also subscribe to events.** They wear two hats: translating user input into facade calls *and* re-rendering their own UI slice in response to bus notifications. The diagram shows only the first hat to keep the picture readable.
+
 ## 4. Layers
 
 | Layer | Owns | Key files |
 |---|---|---|
 | **Controllers** | DOM event capture and translation into facade calls. No state, no rendering. | `eventHandlers.js`, `fileManager.js`, `panelManager.js`, `chart-controls/` |
 | **State Management Core** | The only place state mutates. Three facades wrap one singleton; an event bus broadcasts every mutation. | `appState.js`, `dataStateFacade.js`, `uiStateFacade.js`, `panelStateFacade.js`, `stateEvents.js`, `stateSync.js` |
-| **Orchestrator** | Bootstrap plus `refreshView` — the single subscriber that turns "state changed" into "rerender". | `main.js` |
+| **Orchestrator** | Bootstrap plus `refreshView` — the broadest subscriber, handling dataset/columns/config events with a full view refresh. Other modules handle their own events independently. | `main.js` |
 | **Presentation** | Stateless renderers. Read state via getters; never mutate. D3 visualizations live here. | `components/`, `modules/visualizations/` |
 | **Foundations** | Pure helpers — parsing, formatting, color, result wrappers, i18n, constants. No state, no DOM. | `services/`, `config/`, `utils/` |
 
@@ -90,7 +95,7 @@ flowchart TB
 
 **State Management Core** is the heart of the application. It is the only layer permitted to mutate state, and the only producer of change events. Section 5 covers its internals.
 
-**Orchestrator** is one file: [src/main.js](src/main.js). It bootstraps modules at load time, subscribes to the change events that warrant a full re-render, and exposes `refreshView` — the function every subscriber routes through.
+**Orchestrator** is one file: [src/main.js](src/main.js). It bootstraps modules at load time and subscribes to the three events that warrant rebuilding the dataset and chart-controls views (`ACTIVE_DATASET`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`), routing each into `refreshView`. It is the broadest subscriber but not the only one — `panelManager`, `chart-controls`, and `stateSync` subscribe to their own slices independently (see §5).
 
 **Presentation** is stateless. Renderers receive data, read state via getters, and produce DOM. They never call a facade. They never emit. If a renderer needs to react to user input, it accepts a callback from the controller layer instead.
 
@@ -129,6 +134,13 @@ There is **one deliberate exception**: `normalizeActiveDatasetConfig(normalizer)
 - `emitStateChange(eventType, data)` — fans out to typed listeners, then to wildcard (`'*'`) listeners, then dispatches a `chive-state-changed` `CustomEvent` on `window` for legacy hooks.
 - A 100-entry ring-buffer logger toggleable at runtime via `window.chiveDebug.enableStateLog()`. When enabled, every emission is printed as `[chive:state] <type> <data>` and pushed into the buffer. When disabled, it is a single boolean check — zero overhead.
 
+**The four production subscribers** (verified by grepping `onStateChange(` in `src/`):
+
+- **`main.js`** → `ACTIVE_DATASET`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`. Handler calls `refreshView` to rebuild the file list, dataset preview, stats, chart-controls sidebar, and panel UI.
+- **`panelManager.js`** → `CHART_ADDED`, `CHART_REMOVED`, `PANEL_BLOCK_SLOT_ASSIGNED`, plus six panel-block layout events (`PANEL_BLOCK_ADDED`/`REMOVED`/`MOVED`/`TEMPLATE_CHANGED`/`PROPORTIONS_UPDATED`/`HEIGHT_UPDATED`/`BORDER_UPDATED`). Re-renders the sidebar list and the panel canvas in place — does **not** route through `refreshView`.
+- **`chart-controls/index.js`** → `CHART_EXPANDED_CHANGED`. Updates one chart card's expand/collapse UI without rebuilding the whole sidebar.
+- **`stateSync.js`** → `WILDCARD` (`'*'`). On every emission, calls `exposeGlobals` to mirror current state into `window.*` properties (`window.dadosCarregados`, `window.datasetAtivo`, etc.) for backwards-compatibility hooks. **Note:** despite the name, `stateSync` does *not* persist to `localStorage` today — IndexedDB persistence is on the roadmap and will land here.
+
 ## 6. Reactive flow — concrete walkthrough
 
 Trace one end-to-end cycle and the architecture clicks:
@@ -142,6 +154,8 @@ Trace one end-to-end cycle and the architecture clicks:
 > 5. Renderers produce DOM; D3 charts redraw. None of them emit anything — the cycle ends.
 
 The punchline: **mutations never originate in renderers, and renderers never run except in response to an event bus notification.** That single sentence is the whole architecture.
+
+Not every event takes the path above. A panel-layout change (e.g. `PANEL_BLOCK_PROPORTIONS_UPDATED`) does **not** route through `main.js` — `panelManager` is the subscriber and it redraws only the panel canvas. A `CHART_EXPANDED_CHANGED` event is handled by `chart-controls/index.js`, which mutates one card's expand UI in place. The shape is identical — facade emits, subscriber reacts — but the subscriber set varies per event, and the response varies from "rebuild the world" (main.js) to "toggle one button" (chart-controls).
 
 ## 7. Invariants — do not break
 
