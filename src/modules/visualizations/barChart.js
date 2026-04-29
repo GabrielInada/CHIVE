@@ -1,10 +1,12 @@
 import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
 import {
-	createTooltipFilterAction,
+	buildCategoricalFilterActions,
+	createFilterStateBadge,
+	createTooltipActionGroup,
 	hideChartTooltip,
 	moveChartTooltip,
-	pinTooltip,
 	showChartTooltip,
+	showPinnedChartTooltip,
 } from './tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
@@ -40,6 +42,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		soma: opcoes.labels?.soma || 'Sum',
 		media: opcoes.labels?.media || 'Mean',
 		percentual: opcoes.labels?.percentual || 'Percentage',
+		focusOnThis: opcoes.labels?.focusOnThis || 'Show only this',
 		addToFilter: opcoes.labels?.addToFilter || 'Add to global filter',
 	};
 	const measureMode = BAR_CHART.measureModes.includes(opcoes.measureMode)
@@ -188,20 +191,50 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		showChartTooltip(montarConteudoTooltip(item), event.pageX, event.pageY);
 	};
 
-	const onAddToGlobalFilter = typeof opcoes.onAddToGlobalFilter === 'function'
-		? opcoes.onAddToGlobalFilter
-		: null;
+	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterLabels = filterCallbacks.filterActionLabels || {};
+	const actionLabels = {
+		focus: filterLabels.focus || labels.focusOnThis,
+		add: filterLabels.add || labels.addToFilter,
+		exclude: filterLabels.exclude || 'Hide this',
+		remove: filterLabels.remove || 'Remove from filter',
+		bringBack: filterLabels.bringBack || 'Bring back',
+	};
 
-	const exibirTooltipFixado = (event, item) => {
-		const wrapper = montarConteudoTooltip(item);
-		if (onAddToGlobalFilter) {
-			wrapper.appendChild(createTooltipFilterAction({
-				label: labels.addToFilter,
-				onClick: () => onAddToGlobalFilter(colunaCategoria, toCategoryToken(item[0])),
-			}));
-		}
-		showChartTooltip(wrapper, event.pageX, event.pageY);
-		pinTooltip(null);
+	const exibirTooltipFixado = (event, item, onDismiss) => {
+		const content = montarConteudoTooltip(item);
+		const token = toCategoryToken(item[0]);
+		const state = typeof filterCallbacks.getTokenFilterState === 'function'
+			? filterCallbacks.getTokenFilterState(colunaCategoria, token)
+			: null;
+		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
+			? !!filterCallbacks.isShowOnlyThisRedundant(colunaCategoria, token)
+			: false;
+		const actions = buildCategoricalFilterActions({
+			column: colunaCategoria,
+			token,
+			state,
+			labels: actionLabels,
+			omitFocus,
+			onFocus: filterCallbacks.onFocusGlobalFilter,
+			onAdd: filterCallbacks.onAddToGlobalFilter,
+			onExclude: filterCallbacks.onExcludeGlobalFilter,
+			onRemove: filterCallbacks.onRemoveFromGlobalFilter,
+			onBringBack: filterCallbacks.onBringBackGlobalFilter,
+		});
+		const stateBadge = createFilterStateBadge({
+			state,
+			includedLabel: filterLabels.stateIncluded,
+			excludedLabel: filterLabels.stateExcluded,
+		});
+		const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
+		showPinnedChartTooltip(content, event.pageX, event.pageY, {
+			headerTitle: String(item[0]),
+			closeLabel: filterLabels.close,
+			onDismiss,
+			actionSets: actionSet ? [actionSet] : [],
+			stateBadge,
+		});
 	};
 
 	const escalaX = scaleBand()
@@ -270,7 +303,10 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 				return;
 			}
 			pinnedCategoria = item[0];
-			exibirTooltipFixado(event, item);
+			exibirTooltipFixado(event, item, () => {
+				pinnedCategoria = null;
+				hideChartTooltip();
+			});
 		});
 
 	svg.on('click', () => {

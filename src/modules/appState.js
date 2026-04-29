@@ -1,10 +1,10 @@
-import { emitStateChange, onStateChange } from './stateEvents.js';
+import { emitStateChange, onStateChange, STATE_EVENTS } from './stateEvents.js';
 import { createPanelBlock as buildPanelBlock } from './panel/blockStateHelpers.js';
 import { createDataStateFacade } from './dataStateFacade.js';
 import { createUiStateFacade } from './uiStateFacade.js';
 import { createPanelStateFacade } from './panelStateFacade.js';
 
-export { onStateChange };
+export { onStateChange, STATE_EVENTS };
 
 /**
  * CHIVE Application State Management
@@ -121,6 +121,10 @@ export function updateActiveDatasetConfig(updates) {
 
 export function updateActiveDatasetColumns(columnNames) {
 	return dataState.updateActiveDatasetColumns(columnNames);
+}
+
+export function normalizeActiveDatasetConfig(normalizer) {
+	return dataState.normalizeActiveDatasetConfig(normalizer);
 }
 
 /**
@@ -248,7 +252,7 @@ export function resetState() {
 	appState.ui.sidebarMode = 'dados';
 	appState.ui.previewRows = 10;
 	appState.ui.expandedCharts = { bar: false, scatter: false, network: false, pie: false, bubble: false };
-	emitStateChange('stateReset');
+	emitStateChange(STATE_EVENTS.STATE_RESET);
 }
 
 /**

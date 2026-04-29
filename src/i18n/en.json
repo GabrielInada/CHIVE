@@ -5,7 +5,7 @@
 		"message-documentation": "qqq"
 	},
 
-	"chive-page-title": "DataViz — Day 01: Data Upload",
+	"chive-page-title": "CHIVE",
 
 	"chive-nav-home": "Home",
 	"chive-nav-about": "About",
@@ -294,7 +294,16 @@
 	"chive-tooltip-mean": "Mean",
 	"chive-tooltip-percentage": "Percentage",
 	"chive-tooltip-row": "Row",
+	"chive-tooltip-show-only-this": "Show only this",
 	"chive-tooltip-add-to-filter": "Add to global filter",
+	"chive-tooltip-exclude": "Hide this",
+	"chive-tooltip-remove-from-filter": "Remove from filter",
+	"chive-tooltip-bring-back": "Bring back",
+	"chive-tooltip-state-included": "In filter",
+	"chive-tooltip-state-excluded": "Excluded",
+	"chive-tooltip-close": "Close",
+	"chive-tooltip-filter-by-source": "Filter source",
+	"chive-tooltip-filter-by-target": "Filter target",
 	"chive-stats-badge": "{{PLURAL:$1|$1 numeric column|$1 numeric columns}}",
 	"chive-stat-valid": "valid n",
 	"chive-stat-min": "minimum",

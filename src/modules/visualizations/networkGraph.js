@@ -9,12 +9,16 @@ import {
 	zoomIdentity,
 } from 'd3';
 import {
+	buildCategoricalFilterActions,
+	createFilterStateBadge,
+	createTooltipActionGroup,
 	hideChartTooltip,
 	moveChartTooltip,
-	pinTooltip,
 	repositionPinnedTooltip,
 	showChartTooltip,
+	showPinnedChartTooltip,
 } from './tooltip.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
 import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { interpolateColor } from '../../utils/colorUtils.js';
@@ -162,6 +166,16 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 	container[SIMULATION_KEY] = simulation;
 
 	let pinnedNodeDatum = null;
+	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterLabels = filterCallbacks.filterActionLabels || {};
+	const actionLabels = {
+		focus: filterLabels.focus || 'Show only this',
+		add: filterLabels.add || 'Add to filter',
+		exclude: filterLabels.exclude || 'Hide this',
+		remove: filterLabels.remove || 'Remove from filter',
+		bringBack: filterLabels.bringBack || 'Bring back',
+	};
+
 	const buildNodeTooltipContent = (nodeData) => {
 		const content = document.createElement('div');
 		const line = document.createElement('div');
@@ -171,6 +185,40 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		line.append(` ${nodeData.id}`);
 		content.appendChild(line);
 		return content;
+	};
+
+	const buildNodeActionSet = (column, rawValue, headingLabel) => {
+		if (!column || rawValue === null || rawValue === undefined || rawValue === '') return null;
+		const token = toCategoryToken(rawValue);
+		const state = typeof filterCallbacks.getTokenFilterState === 'function'
+			? filterCallbacks.getTokenFilterState(column, token)
+			: null;
+		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
+			? !!filterCallbacks.isShowOnlyThisRedundant(column, token)
+			: false;
+		const actions = buildCategoricalFilterActions({
+			column,
+			token,
+			state,
+			labels: actionLabels,
+			omitFocus,
+			onFocus: filterCallbacks.onFocusGlobalFilter,
+			onAdd: filterCallbacks.onAddToGlobalFilter,
+			onExclude: filterCallbacks.onExcludeGlobalFilter,
+			onRemove: filterCallbacks.onRemoveFromGlobalFilter,
+			onBringBack: filterCallbacks.onBringBackGlobalFilter,
+		});
+		if (actions.length === 0) return null;
+		const wrap = document.createElement('div');
+		wrap.className = 'chart-tooltip__action-set-wrap';
+		if (headingLabel) {
+			const heading = document.createElement('div');
+			heading.className = 'chart-tooltip__action-set-label';
+			heading.textContent = headingLabel;
+			wrap.appendChild(heading);
+		}
+		wrap.appendChild(createTooltipActionGroup(actions));
+		return { node: wrap, state };
 	};
 	const showNodeTooltip = (event, nodeData) => {
 		showChartTooltip(buildNodeTooltipContent(nodeData), event.pageX, event.pageY);
@@ -273,8 +321,55 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 			const anchorPoint = nodeScreenPoint(nodeData);
 			const startX = anchorPoint ? anchorPoint.x : event.pageX;
 			const startY = anchorPoint ? anchorPoint.y : event.pageY;
-			showChartTooltip(buildNodeTooltipContent(nodeData), startX, startY);
-			pinTooltip(() => nodeScreenPoint(pinnedNodeDatum));
+
+			const content = buildNodeTooltipContent(nodeData);
+			const actionSets = [];
+			let primaryState = null;
+
+			if (sourceColumn && targetColumn && sourceColumn === targetColumn) {
+				const set = buildNodeActionSet(sourceColumn, nodeData.id, sourceColumn);
+				if (set) {
+					actionSets.push(set.node);
+					primaryState = set.state;
+				}
+			} else {
+				if (sourceColumn) {
+					const headingPrefix = filterLabels.filterBySource || 'Filter source';
+					const set = buildNodeActionSet(sourceColumn, nodeData.id, `${headingPrefix} (${sourceColumn})`);
+					if (set) {
+						actionSets.push(set.node);
+						primaryState = primaryState || set.state;
+					}
+				}
+				if (targetColumn) {
+					const headingPrefix = filterLabels.filterByTarget || 'Filter target';
+					const set = buildNodeActionSet(targetColumn, nodeData.id, `${headingPrefix} (${targetColumn})`);
+					if (set) {
+						actionSets.push(set.node);
+						primaryState = primaryState || set.state;
+					}
+				}
+			}
+
+			const stateBadge = actionSets.length === 1 && primaryState
+				? createFilterStateBadge({
+					state: primaryState,
+					includedLabel: filterLabels.stateIncluded,
+					excludedLabel: filterLabels.stateExcluded,
+				})
+				: null;
+
+			showPinnedChartTooltip(content, startX, startY, {
+				headerTitle: String(nodeData.id),
+				closeLabel: filterLabels.close,
+				onDismiss: () => {
+					pinnedNodeDatum = null;
+					hideChartTooltip();
+				},
+				anchor: () => nodeScreenPoint(pinnedNodeDatum),
+				actionSets,
+				stateBadge,
+			});
 		});
 
 	svg.on('click', () => {

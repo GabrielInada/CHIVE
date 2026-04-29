@@ -1,3 +1,5 @@
+import { STATE_EVENTS } from './stateEvents.js';
+
 export function createDataStateFacade({ appState, emitStateChange }) {
 	function getActiveDataset() {
 		if (appState.data.activeIndex === -1 || !appState.data.datasets[appState.data.activeIndex]) {
@@ -19,7 +21,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 			throw new Error(`Invalid dataset index: ${index}`);
 		}
 		appState.data.activeIndex = index;
-		emitStateChange('activeDataset', index);
+		emitStateChange(STATE_EVENTS.ACTIVE_DATASET, index);
 	}
 
 	function addDataset(dataset) {
@@ -31,7 +33,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (appState.data.activeIndex === -1) {
 			appState.data.activeIndex = index;
 		}
-		emitStateChange('datasetAdded', { index, dataset });
+		emitStateChange(STATE_EVENTS.DATASET_ADDED, { index, dataset });
 		return index;
 	}
 
@@ -49,7 +51,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		appState.panel.charts = [];
 		appState.panel.slots = {};
 
-		emitStateChange('datasetRemoved', index);
+		emitStateChange(STATE_EVENTS.DATASET_REMOVED, index);
 	}
 
 	function updateActiveDatasetConfig(updates) {
@@ -60,7 +62,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 			...dataset.configGraficos,
 			...updates,
 		};
-		emitStateChange('configUpdated', updates);
+		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, updates);
 	}
 
 	function updateActiveDatasetColumns(columnNames) {
@@ -68,7 +70,16 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (!dataset) return;
 
 		dataset.colunasSelecionadas = columnNames;
-		emitStateChange('columnsUpdated', columnNames);
+		emitStateChange(STATE_EVENTS.COLUMNS_UPDATED, columnNames);
+	}
+
+	// Non-emitting config write for normalize-on-read paths (e.g. applying
+	// defaults during render). Emitting here would re-enter refreshView via
+	// the CONFIG_UPDATED subscription and loop.
+	function normalizeActiveDatasetConfig(normalizer) {
+		const dataset = getActiveDataset();
+		if (!dataset) return;
+		dataset.configGraficos = normalizer(dataset.configGraficos);
 	}
 
 	return {
@@ -80,5 +91,6 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		removeDataset,
 		updateActiveDatasetConfig,
 		updateActiveDatasetColumns,
+		normalizeActiveDatasetConfig,
 	};
 }

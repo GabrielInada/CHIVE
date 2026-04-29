@@ -79,20 +79,23 @@
 .global-filter-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  border: 1px solid var(--border);
+  gap: 8px;
+  border: 1.5px solid var(--accent);
   background: var(--surface);
-  color: var(--muted);
+  color: var(--accent);
   border-radius: 999px;
-  padding: 6px 12px;
+  padding: 8px 14px;
   font-family: var(--fonte-mono);
-  font-size: 11px;
+  font-size: 12px;
+  font-weight: 600;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
 }
 
 .global-filter-trigger:hover:not(:disabled) {
-  border-color: var(--accent);
-  color: var(--accent);
+  background: rgba(26, 71, 42, 0.08);
+  box-shadow: 0 2px 6px rgba(26, 71, 42, 0.15);
 }
 
 .global-filter-trigger[hidden] {
@@ -106,14 +109,40 @@
 
 .global-filter-trigger.ativo,
 .global-filter-trigger[data-active="true"] {
+  background: var(--accent);
+  color: var(--surface);
   border-color: var(--accent);
-  background: rgba(26, 71, 42, 0.1);
-  color: var(--accent);
+}
+
+.global-filter-trigger.ativo:hover:not(:disabled),
+.global-filter-trigger[data-active="true"]:hover:not(:disabled) {
+  background: var(--accent);
+  filter: brightness(1.1);
 }
 
 .global-filter-trigger-icone {
-  font-size: 12px;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.global-filter-trigger-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
   line-height: 1;
+}
+
+.global-filter-trigger-badge[hidden] {
+  display: none;
 }
 
 /* Global filter modal body */

@@ -10,6 +10,7 @@ import {
 	getActiveDataset,
 	getAllDatasets,
 	onStateChange,
+	STATE_EVENTS,
 	updateActiveDatasetConfig,
 	updateActiveDatasetColumns,
 	setSidebarMode,
@@ -22,7 +23,7 @@ import {
  */
 export function initializeStateSync() {
 	// Sync globals whenever state changes
-	onStateChange('*', () => {
+	onStateChange(STATE_EVENTS.WILDCARD, () => {
 		syncWindowGlobals();
 	});
 	

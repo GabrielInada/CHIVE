@@ -276,6 +276,7 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
 		if (!nextColumn) {
 			rule.column = null;
 			rule.include = [];
+			rule.exclude = [];
 			rule.search = '';
 			renderRuleBody({ body, rule, rows, numericColumns, translate });
 			return;
@@ -287,6 +288,7 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
 			rule.min = '';
 			rule.max = '';
 			rule.value = '';
+			rule.exclude = [];
 		} else {
 			rule.mode = 'categorical';
 			const options = getCategoricalFilterOptions(rows, nextColumn, {
@@ -295,6 +297,7 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
 				missingLabel: translate('chive-chart-filter-missing'),
 			});
 			rule.include = options.allTokens.slice();
+			rule.exclude = [];
 			rule.search = '';
 		}
 		renderRuleBody({ body, rule, rows, numericColumns, translate });

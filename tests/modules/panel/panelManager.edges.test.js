@@ -22,6 +22,18 @@ const mocks = vi.hoisted(() => ({
 		assignChartToPanelBlockSlot: vi.fn(),
 		validatePanelSlots: vi.fn(),
 		onStateChange: vi.fn(),
+		STATE_EVENTS: {
+			CHART_ADDED: 'chartAdded',
+			CHART_REMOVED: 'chartRemoved',
+			PANEL_BLOCK_SLOT_ASSIGNED: 'panelBlockSlotAssigned',
+			PANEL_BLOCK_ADDED: 'panelBlockAdded',
+			PANEL_BLOCK_REMOVED: 'panelBlockRemoved',
+			PANEL_BLOCK_MOVED: 'panelBlockMoved',
+			PANEL_BLOCK_TEMPLATE_CHANGED: 'panelBlockTemplateChanged',
+			PANEL_BLOCK_PROPORTIONS_UPDATED: 'panelBlockProportionsUpdated',
+			PANEL_BLOCK_HEIGHT_UPDATED: 'panelBlockHeightUpdated',
+			PANEL_BLOCK_BORDER_UPDATED: 'panelBlockBorderUpdated',
+		},
 	},
 	svgExport: {
 		captureSvgMarkupFromContainer: vi.fn(() => ({ ok: true, svgMarkup: '<svg/>' })),

@@ -3,9 +3,15 @@ import {
 	applyGlobalFilterRules,
 	countGlobalFilterRules,
 	createEmptyGlobalFilter,
+	createSingleCategoryGlobalFilter,
+	excludeTokenFromFilter,
+	getTokenFilterState,
 	isGlobalFilterActive,
+	isShowOnlyThisRedundant,
 	mergeIncludeTokenIntoFilter,
 	normalizeGlobalFilter,
+	removeExcludeTokenFromFilter,
+	removeIncludeTokenFromFilter,
 	resolveGlobalFilterForColumns,
 } from '../../src/utils/globalFilter.js';
 
@@ -15,6 +21,21 @@ describe('globalFilter utils', () => {
 			const empty = createEmptyGlobalFilter();
 			expect(empty.rules).toEqual([]);
 			expect(empty.combine).toBe('AND');
+		});
+	});
+
+	describe('createSingleCategoryGlobalFilter', () => {
+		it('creates a one-rule categorical filter for the supplied column and token', () => {
+			const filter = createSingleCategoryGlobalFilter('region', 'v:North');
+			expect(filter.combine).toBe('AND');
+			expect(filter.rules).toEqual([
+				{ column: 'region', mode: 'categorical', include: ['v:North'] },
+			]);
+		});
+
+		it('falls back to an empty filter when the column or token is invalid', () => {
+			expect(createSingleCategoryGlobalFilter('', 'v:North').rules).toEqual([]);
+			expect(createSingleCategoryGlobalFilter('region', '').rules).toEqual([]);
 		});
 	});
 
@@ -201,6 +222,188 @@ describe('globalFilter utils', () => {
 			const noToken = mergeIncludeTokenIntoFilter(initial, 'region', '');
 			expect(noColumn.rules[0].include).toEqual(['v:North']);
 			expect(noToken.rules[0].include).toEqual(['v:North']);
+		});
+
+		it('removes token from exclude when adding to include', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:North'] }] };
+			const merged = mergeIncludeTokenIntoFilter(initial, 'region', 'v:North');
+			expect(merged.rules[0].include).toEqual(['v:North']);
+			expect(merged.rules[0].exclude).toEqual([]);
+		});
+	});
+
+	describe('excludeTokenFromFilter', () => {
+		it('creates a new categorical rule with the token in exclude when no rule exists', () => {
+			const next = excludeTokenFromFilter(createEmptyGlobalFilter(), 'region', 'v:North');
+			expect(next.rules).toHaveLength(1);
+			expect(next.rules[0].column).toBe('region');
+			expect(next.rules[0].mode).toBe('categorical');
+			expect(next.rules[0].include).toEqual([]);
+			expect(next.rules[0].exclude).toEqual(['v:North']);
+		});
+
+		it('appends to exclude on an existing categorical rule', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:North'] }] };
+			const next = excludeTokenFromFilter(initial, 'region', 'v:South');
+			expect(next.rules[0].exclude).toEqual(['v:North', 'v:South']);
+		});
+
+		it('does not duplicate a token already excluded', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:North'] }] };
+			const next = excludeTokenFromFilter(initial, 'region', 'v:North');
+			expect(next.rules[0].exclude).toEqual(['v:North']);
+		});
+
+		it('removes token from include when adding to exclude', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North', 'v:South'], exclude: [] }] };
+			const next = excludeTokenFromFilter(initial, 'region', 'v:North');
+			expect(next.rules[0].include).toEqual(['v:South']);
+			expect(next.rules[0].exclude).toEqual(['v:North']);
+		});
+
+		it('returns the filter unchanged for invalid column or token', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'], exclude: [] }] };
+			expect(excludeTokenFromFilter(initial, '', 'v:X').rules[0].exclude).toEqual([]);
+			expect(excludeTokenFromFilter(initial, 'region', '').rules[0].exclude).toEqual([]);
+		});
+	});
+
+	describe('removeIncludeTokenFromFilter', () => {
+		it('removes a token from include', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North', 'v:South'], exclude: [] }] };
+			const next = removeIncludeTokenFromFilter(initial, 'region', 'v:North');
+			expect(next.rules[0].include).toEqual(['v:South']);
+		});
+
+		it('drops the rule entirely when both arrays end up empty', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'], exclude: [] }] };
+			const next = removeIncludeTokenFromFilter(initial, 'region', 'v:North');
+			expect(next.rules).toEqual([]);
+		});
+
+		it('keeps the rule when exclude still has entries', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'], exclude: ['v:East'] }] };
+			const next = removeIncludeTokenFromFilter(initial, 'region', 'v:North');
+			expect(next.rules).toHaveLength(1);
+			expect(next.rules[0].include).toEqual([]);
+			expect(next.rules[0].exclude).toEqual(['v:East']);
+		});
+
+		it('is a no-op when the token is not in include', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'], exclude: [] }] };
+			const next = removeIncludeTokenFromFilter(initial, 'region', 'v:Other');
+			expect(next.rules[0].include).toEqual(['v:North']);
+		});
+	});
+
+	describe('removeExcludeTokenFromFilter', () => {
+		it('removes a token from exclude', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:North', 'v:South'] }] };
+			const next = removeExcludeTokenFromFilter(initial, 'region', 'v:North');
+			expect(next.rules[0].exclude).toEqual(['v:South']);
+		});
+
+		it('drops the rule when both arrays end up empty', () => {
+			const initial = { rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:North'] }] };
+			const next = removeExcludeTokenFromFilter(initial, 'region', 'v:North');
+			expect(next.rules).toEqual([]);
+		});
+	});
+
+	describe('getTokenFilterState', () => {
+		it('returns null when no rule for column', () => {
+			expect(getTokenFilterState({ rules: [] }, 'region', 'v:North')).toBeNull();
+		});
+
+		it('returns "included" when token is in include', () => {
+			const filter = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'], exclude: [] }] };
+			expect(getTokenFilterState(filter, 'region', 'v:North')).toBe('included');
+		});
+
+		it('returns "excluded" when token is in exclude', () => {
+			const filter = { rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:North'] }] };
+			expect(getTokenFilterState(filter, 'region', 'v:North')).toBe('excluded');
+		});
+
+		it('prefers excluded when token is somehow in both arrays', () => {
+			const filter = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'], exclude: ['v:North'] }] };
+			expect(getTokenFilterState(filter, 'region', 'v:North')).toBe('excluded');
+		});
+
+		it('returns null for missing column or token', () => {
+			const filter = { rules: [{ column: 'region', mode: 'categorical', include: ['v:North'], exclude: [] }] };
+			expect(getTokenFilterState(filter, '', 'v:North')).toBeNull();
+			expect(getTokenFilterState(filter, 'region', '')).toBeNull();
+		});
+	});
+
+	describe('isShowOnlyThisRedundant', () => {
+		it('returns true on an empty filter (Show only this would equal Add)', () => {
+			expect(isShowOnlyThisRedundant(createEmptyGlobalFilter(), 'region', 'v:N')).toBe(true);
+			expect(isShowOnlyThisRedundant(null, 'region', 'v:N')).toBe(true);
+		});
+
+		it('returns true when the only rule is this column with include=[token]', () => {
+			const filter = { rules: [{ column: 'region', mode: 'categorical', include: ['v:N'], exclude: [] }] };
+			expect(isShowOnlyThisRedundant(filter, 'region', 'v:N')).toBe(true);
+		});
+
+		it('returns true when the only rule is this column with exclude=[token]', () => {
+			const filter = { rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:N'] }] };
+			expect(isShowOnlyThisRedundant(filter, 'region', 'v:N')).toBe(true);
+		});
+
+		it('returns false when there are rules for other columns', () => {
+			const filter = {
+				rules: [
+					{ column: 'region', mode: 'categorical', include: ['v:N'], exclude: [] },
+					{ column: 'age', mode: 'numeric', operator: 'gt', value: '20' },
+				],
+			};
+			expect(isShowOnlyThisRedundant(filter, 'region', 'v:N')).toBe(false);
+		});
+
+		it('returns false when this column has more than one included token', () => {
+			const filter = { rules: [{ column: 'region', mode: 'categorical', include: ['v:N', 'v:S'], exclude: [] }] };
+			expect(isShowOnlyThisRedundant(filter, 'region', 'v:N')).toBe(false);
+		});
+
+		it('returns false when this column has an exclude for a different token', () => {
+			const filter = { rules: [{ column: 'region', mode: 'categorical', include: ['v:N'], exclude: ['v:E'] }] };
+			expect(isShowOnlyThisRedundant(filter, 'region', 'v:N')).toBe(false);
+		});
+
+		it('returns false for invalid input', () => {
+			expect(isShowOnlyThisRedundant(createEmptyGlobalFilter(), '', 'v:N')).toBe(false);
+			expect(isShowOnlyThisRedundant(createEmptyGlobalFilter(), 'region', '')).toBe(false);
+		});
+	});
+
+	describe('applyGlobalFilterRules with exclude', () => {
+		const rows = [
+			{ region: 'North', age: 18 },
+			{ region: 'North', age: 30 },
+			{ region: 'South', age: 45 },
+			{ region: 'East', age: 55 },
+		];
+
+		it('drops rows whose token is in exclude when include is empty', () => {
+			const filter = {
+				rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:North'] }],
+			};
+			expect(applyGlobalFilterRules(rows, filter)).toEqual([
+				{ region: 'South', age: 45 },
+				{ region: 'East', age: 55 },
+			]);
+		});
+
+		it('drops rows in exclude even when they would otherwise match include', () => {
+			const filter = {
+				rules: [{ column: 'region', mode: 'categorical', include: ['v:North', 'v:South'], exclude: ['v:North'] }],
+			};
+			expect(applyGlobalFilterRules(rows, filter)).toEqual([
+				{ region: 'South', age: 45 },
+			]);
 		});
 	});
 });

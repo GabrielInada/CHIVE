@@ -14,7 +14,13 @@ import { openPresetDatasetsDialog } from './results/presetDatasetsView.js';
 import { openGlobalFilterDialog } from './results/globalFilterDialog.js';
 import {
   applyGlobalFilterRules,
+  createSingleCategoryGlobalFilter,
+  excludeTokenFromFilter,
+  getTokenFilterState,
+  isShowOnlyThisRedundant,
   mergeIncludeTokenIntoFilter,
+  removeExcludeTokenFromFilter,
+  removeIncludeTokenFromFilter,
   resolveGlobalFilterForColumns,
 } from '../utils/globalFilter.js';
 
@@ -334,6 +340,44 @@ export function renderDataInterface(
     }
     : null;
 
+  const handleShowOnlyThis = onChartConfigChange
+    ? (column, token) => {
+      if (typeof column !== 'string' || typeof token !== 'string') return;
+      if (!allColumnNames.includes(column)) return;
+      onChartConfigChange({ globalFilter: createSingleCategoryGlobalFilter(column, token) });
+    }
+    : null;
+
+  const handleExcludeFromGlobalFilter = onChartConfigChange
+    ? (column, token) => {
+      if (typeof column !== 'string' || typeof token !== 'string') return;
+      if (!allColumnNames.includes(column)) return;
+      const next = excludeTokenFromFilter(config.globalFilter, column, token);
+      onChartConfigChange({ globalFilter: next });
+    }
+    : null;
+
+  const handleRemoveFromGlobalFilter = onChartConfigChange
+    ? (column, token) => {
+      if (typeof column !== 'string' || typeof token !== 'string') return;
+      if (!allColumnNames.includes(column)) return;
+      const next = removeIncludeTokenFromFilter(config.globalFilter, column, token);
+      onChartConfigChange({ globalFilter: next });
+    }
+    : null;
+
+  const handleBringBackFromGlobalFilter = onChartConfigChange
+    ? (column, token) => {
+      if (typeof column !== 'string' || typeof token !== 'string') return;
+      if (!allColumnNames.includes(column)) return;
+      const next = removeExcludeTokenFromFilter(config.globalFilter, column, token);
+      onChartConfigChange({ globalFilter: next });
+    }
+    : null;
+
+  const lookupTokenFilterState = (column, token) => getTokenFilterState(safeGlobalFilter, column, token);
+  const lookupShowOnlyThisRedundant = (column, token) => isShowOnlyThisRedundant(safeGlobalFilter, column, token);
+
   updateTabs(config.aba, onChartConfigChange, config, {
     triggerState: {
       hasDataset: true,
@@ -381,6 +425,12 @@ export function renderDataInterface(
   renderCategoricalStats(rows, visibleColumns);
   renderCharts(config, rows, visibleColumns, visibleNumericColumns, {
     onAddToGlobalFilter: handleAddToGlobalFilter,
+    onFocusGlobalFilter: handleShowOnlyThis,
+    onExcludeGlobalFilter: handleExcludeFromGlobalFilter,
+    onRemoveFromGlobalFilter: handleRemoveFromGlobalFilter,
+    onBringBackGlobalFilter: handleBringBackFromGlobalFilter,
+    getTokenFilterState: lookupTokenFilterState,
+    isShowOnlyThisRedundant: lookupShowOnlyThisRedundant,
   });
 
   document.getElementById('btn-avancar').disabled = false;

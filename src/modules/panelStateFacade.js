@@ -21,6 +21,7 @@ import {
 	getTemplateSlots,
 	normalizeTemplateId,
 } from './panel/blockStateHelpers.js';
+import { STATE_EVENTS } from './stateEvents.js';
 
 export function createPanelStateFacade({
 	appState,
@@ -38,14 +39,14 @@ export function createPanelStateFacade({
 
 	function addChartSnapshot(chartSnapshot) {
 		const { id, snapshot } = addChartSnapshotToState(appState.panel, chartSnapshot, sanitizeChartName);
-		emitStateChange('chartAdded', { id, snapshot });
+		emitStateChange(STATE_EVENTS.CHART_ADDED, { id, snapshot });
 		return id;
 	}
 
 	function removeChartSnapshot(chartId) {
 		const normalizedId = removeChartSnapshotFromState(appState, chartId, ensureDefaultPanelBlock);
 		if (normalizedId === null) return;
-		emitStateChange('chartRemoved', normalizedId);
+		emitStateChange(STATE_EVENTS.CHART_REMOVED, normalizedId);
 	}
 
 	function getChartSnapshot(chartId) {
@@ -63,7 +64,7 @@ export function createPanelStateFacade({
 
 	function assignChartToSlot(slotId, chartId) {
 		assignChartToSlotInState(appState, slotId, chartId, getChartSnapshot);
-		emitStateChange('slotAssigned', { slotId, chartId });
+		emitStateChange(STATE_EVENTS.SLOT_ASSIGNED, { slotId, chartId });
 	}
 
 	function getPanelLayout() {
@@ -72,12 +73,12 @@ export function createPanelStateFacade({
 
 	function setPanelLayout(layoutId) {
 		appState.panel.layout = layoutId;
-		emitStateChange('layoutChanged', layoutId);
+		emitStateChange(STATE_EVENTS.LAYOUT_CHANGED, layoutId);
 	}
 
 	function clearPanel() {
 		clearPanelState(appState, createPanelBlock);
-		emitStateChange('panelCleared');
+		emitStateChange(STATE_EVENTS.PANEL_CLEARED);
 	}
 
 	function validatePanelSlots() {
@@ -87,19 +88,19 @@ export function createPanelStateFacade({
 	function addPanelBlock(templateId = 'layout-2col') {
 		const block = addPanelBlockState(appState, templateId, ensureDefaultPanelBlock, createPanelBlock, panelBlockLimit);
 		if (!block) return null;
-		emitStateChange('panelBlockAdded', block);
+		emitStateChange(STATE_EVENTS.PANEL_BLOCK_ADDED, block);
 		return block.id;
 	}
 
 	function removePanelBlock(blockId) {
 		removePanelBlockState(appState, blockId, ensureDefaultPanelBlock, createPanelBlock);
-		emitStateChange('panelBlockRemoved', blockId);
+		emitStateChange(STATE_EVENTS.PANEL_BLOCK_REMOVED, blockId);
 	}
 
 	function movePanelBlock(blockId, targetIndex) {
 		const boundedTarget = movePanelBlockState(appState, blockId, targetIndex, ensureDefaultPanelBlock);
 		if (boundedTarget === null) return;
-		emitStateChange('panelBlockMoved', { blockId, targetIndex: boundedTarget });
+		emitStateChange(STATE_EVENTS.PANEL_BLOCK_MOVED, { blockId, targetIndex: boundedTarget });
 	}
 
 	function updatePanelBlockProportions(blockId, partialProportions) {
@@ -111,7 +112,7 @@ export function createPanelStateFacade({
 			clampPercentage,
 		);
 		if (!proportions) return;
-		emitStateChange('panelBlockProportionsUpdated', { blockId, proportions });
+		emitStateChange(STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED, { blockId, proportions });
 	}
 
 	function updatePanelBlockHeight(blockId, heightPx) {
@@ -124,13 +125,13 @@ export function createPanelStateFacade({
 			panelBlockMaxHeight,
 		);
 		if (nextHeight === null) return;
-		emitStateChange('panelBlockHeightUpdated', { blockId, heightPx: nextHeight });
+		emitStateChange(STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED, { blockId, heightPx: nextHeight });
 	}
 
 	function updatePanelBlockBorder(blockId, options = {}) {
 		const nextBorder = updatePanelBlockBorderState(appState, blockId, options, ensureDefaultPanelBlock);
 		if (!nextBorder) return;
-		emitStateChange('panelBlockBorderUpdated', {
+		emitStateChange(STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED, {
 			blockId,
 			enabled: nextBorder.enabled,
 			color: nextBorder.color,
@@ -149,7 +150,7 @@ export function createPanelStateFacade({
 		);
 		if (!result.ok) return false;
 
-		emitStateChange('panelBlockTemplateChanged', {
+		emitStateChange(STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED, {
 			blockId,
 			templateId: result.templateId,
 		});
@@ -166,12 +167,12 @@ export function createPanelStateFacade({
 			getChartSnapshot,
 		);
 		if (!result.ok) return;
-		emitStateChange('panelBlockSlotAssigned', { blockId, slotId, chartId: result.normalizedId });
+		emitStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, { blockId, slotId, chartId: result.normalizedId });
 	}
 
 	function migrateLegacyPanelState() {
 		const migration = migrateLegacyPanelStateState(appState, createPanelBlock);
-		emitStateChange('panelMigratedToBlocks', migration);
+		emitStateChange(STATE_EVENTS.PANEL_MIGRATED_TO_BLOCKS, migration);
 	}
 
 	return {

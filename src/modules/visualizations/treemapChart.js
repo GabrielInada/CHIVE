@@ -1,10 +1,12 @@
 import { hierarchy, select, treemap, treemapSquarify } from 'd3';
 import {
-	createTooltipFilterAction,
+	buildCategoricalFilterActions,
+	createFilterStateBadge,
+	createTooltipActionGroup,
 	hideChartTooltip,
 	moveChartTooltip,
-	pinTooltip,
 	showChartTooltip,
+	showPinnedChartTooltip,
 } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, TREEMAP_CHART } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
@@ -54,6 +56,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 		contagem: opcoes.labels?.contagem || 'Count',
 		soma: opcoes.labels?.soma || 'Sum',
 		percentual: opcoes.labels?.percentual || 'Percentage',
+		focusOnThis: opcoes.labels?.focusOnThis || 'Show only this',
 		addToFilter: opcoes.labels?.addToFilter || 'Add to global filter',
 	};
 
@@ -143,9 +146,15 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 	};
 
 	let pinnedName = null;
-	const onAddToGlobalFilter = typeof opcoes.onAddToGlobalFilter === 'function'
-		? opcoes.onAddToGlobalFilter
-		: null;
+	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterLabels = filterCallbacks.filterActionLabels || {};
+	const actionLabels = {
+		focus: filterLabels.focus || labels.focusOnThis,
+		add: filterLabels.add || labels.addToFilter,
+		exclude: filterLabels.exclude || 'Hide this',
+		remove: filterLabels.remove || 'Remove from filter',
+		bringBack: filterLabels.bringBack || 'Bring back',
+	};
 
 	const buildTooltipContent = (d, pct) => {
 		const wrapper = document.createElement('div');
@@ -211,15 +220,42 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 			}
 			pinnedName = d.data.name;
 			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
-			const wrapper = buildTooltipContent(d, pct);
-			if (onAddToGlobalFilter) {
-				wrapper.appendChild(createTooltipFilterAction({
-					label: labels.addToFilter,
-					onClick: () => onAddToGlobalFilter(colunaCategoria, toCategoryToken(d.data.name)),
-				}));
-			}
-			showChartTooltip(wrapper, event.pageX, event.pageY);
-			pinTooltip(null);
+			const content = buildTooltipContent(d, pct);
+			const token = toCategoryToken(d.data.name);
+			const state = typeof filterCallbacks.getTokenFilterState === 'function'
+				? filterCallbacks.getTokenFilterState(colunaCategoria, token)
+				: null;
+			const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
+				? !!filterCallbacks.isShowOnlyThisRedundant(colunaCategoria, token)
+				: false;
+			const actions = buildCategoricalFilterActions({
+				column: colunaCategoria,
+				token,
+				state,
+				labels: actionLabels,
+				omitFocus,
+				onFocus: filterCallbacks.onFocusGlobalFilter,
+				onAdd: filterCallbacks.onAddToGlobalFilter,
+				onExclude: filterCallbacks.onExcludeGlobalFilter,
+				onRemove: filterCallbacks.onRemoveFromGlobalFilter,
+				onBringBack: filterCallbacks.onBringBackGlobalFilter,
+			});
+			const stateBadge = createFilterStateBadge({
+				state,
+				includedLabel: filterLabels.stateIncluded,
+				excludedLabel: filterLabels.stateExcluded,
+			});
+			const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
+			showPinnedChartTooltip(content, event.pageX, event.pageY, {
+				headerTitle: String(d.data.name),
+				closeLabel: filterLabels.close,
+				onDismiss: () => {
+					pinnedName = null;
+					hideChartTooltip();
+				},
+				actionSets: actionSet ? [actionSet] : [],
+				stateBadge,
+			});
 		});
 
 	if (showLabels || showValues) {

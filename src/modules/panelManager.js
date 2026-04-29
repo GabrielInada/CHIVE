@@ -27,6 +27,7 @@ import {
 	validatePanelSlots,
 	clearPanel,
 	onStateChange,
+	STATE_EVENTS,
 } from './appState.js';
 import {
 	renderSidebarPanel as renderSidebar,
@@ -54,16 +55,16 @@ export function initPanelManager(feedbackFn = null) {
 	panelManagerInitialized = true;
 
 	// Re-render when state changes
-	onStateChange('chartAdded', handleChartStateChange);
-	onStateChange('chartRemoved', handleChartStateChange);
-	onStateChange('panelBlockSlotAssigned', handleChartStateChange);
-	onStateChange('panelBlockAdded', handleLayoutChange);
-	onStateChange('panelBlockRemoved', handleLayoutChange);
-	onStateChange('panelBlockMoved', handleLayoutChange);
-	onStateChange('panelBlockTemplateChanged', handleLayoutChange);
-	onStateChange('panelBlockProportionsUpdated', handleLayoutChange);
-	onStateChange('panelBlockHeightUpdated', handleLayoutChange);
-	onStateChange('panelBlockBorderUpdated', handleLayoutChange);
+	onStateChange(STATE_EVENTS.CHART_ADDED, handleChartStateChange);
+	onStateChange(STATE_EVENTS.CHART_REMOVED, handleChartStateChange);
+	onStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, handleChartStateChange);
+	onStateChange(STATE_EVENTS.PANEL_BLOCK_ADDED, handleLayoutChange);
+	onStateChange(STATE_EVENTS.PANEL_BLOCK_REMOVED, handleLayoutChange);
+	onStateChange(STATE_EVENTS.PANEL_BLOCK_MOVED, handleLayoutChange);
+	onStateChange(STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED, handleLayoutChange);
+	onStateChange(STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED, handleLayoutChange);
+	onStateChange(STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED, handleLayoutChange);
+	onStateChange(STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED, handleLayoutChange);
 }
 
 /**

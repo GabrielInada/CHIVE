@@ -17,6 +17,46 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const onAddToGlobalFilter = typeof options.onAddToGlobalFilter === 'function'
 		? options.onAddToGlobalFilter
 		: null;
+	const onFocusGlobalFilter = typeof options.onFocusGlobalFilter === 'function'
+		? options.onFocusGlobalFilter
+		: null;
+	const onExcludeGlobalFilter = typeof options.onExcludeGlobalFilter === 'function'
+		? options.onExcludeGlobalFilter
+		: null;
+	const onRemoveFromGlobalFilter = typeof options.onRemoveFromGlobalFilter === 'function'
+		? options.onRemoveFromGlobalFilter
+		: null;
+	const onBringBackGlobalFilter = typeof options.onBringBackGlobalFilter === 'function'
+		? options.onBringBackGlobalFilter
+		: null;
+	const getTokenFilterState = typeof options.getTokenFilterState === 'function'
+		? options.getTokenFilterState
+		: null;
+	const isShowOnlyThisRedundant = typeof options.isShowOnlyThisRedundant === 'function'
+		? options.isShowOnlyThisRedundant
+		: null;
+	const filterActionLabels = {
+		focus: t('chive-tooltip-show-only-this'),
+		add: t('chive-tooltip-add-to-filter'),
+		exclude: t('chive-tooltip-exclude'),
+		remove: t('chive-tooltip-remove-from-filter'),
+		bringBack: t('chive-tooltip-bring-back'),
+		stateIncluded: t('chive-tooltip-state-included'),
+		stateExcluded: t('chive-tooltip-state-excluded'),
+		close: t('chive-tooltip-close'),
+		filterBySource: t('chive-tooltip-filter-by-source'),
+		filterByTarget: t('chive-tooltip-filter-by-target'),
+	};
+	const filterCallbacks = {
+		onAddToGlobalFilter,
+		onFocusGlobalFilter,
+		onExcludeGlobalFilter,
+		onRemoveFromGlobalFilter,
+		onBringBackGlobalFilter,
+		getTokenFilterState,
+		isShowOnlyThisRedundant,
+		filterActionLabels,
+	};
 	const chartConfig = mergeChartConfigWithDefaults(config);
 	const numericColumnNames = Array.isArray(visibleNumericColumns)
 		? visibleNumericColumns.map(column => column?.nome).filter(Boolean)
@@ -126,9 +166,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					soma: t('chive-tooltip-sum'),
 					media: t('chive-tooltip-mean'),
 					percentual: t('chive-tooltip-percentage'),
+					focusOnThis: t('chive-tooltip-show-only-this'),
 					addToFilter: t('chive-tooltip-add-to-filter'),
 				},
-				onAddToGlobalFilter,
+				filterCallbacks,
 			}
 		);
 		if (!barResult.ok) {
@@ -183,6 +224,9 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					indice: t('chive-tooltip-row'),
 					count: t('chive-tooltip-count'),
 				},
+				xColumn: chartConfig.scatter.x,
+				yColumn: chartConfig.scatter.y,
+				filterCallbacks,
 			}
 		);
 		if (!scatterResult.ok) {
@@ -228,6 +272,9 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					source: chartConfig.network.source || t('chive-chart-control-network-source'),
 					target: chartConfig.network.target || t('chive-chart-control-network-target'),
 				},
+				sourceColumn: chartConfig.network.source,
+				targetColumn: chartConfig.network.target,
+				filterCallbacks,
 			}
 		);
 
@@ -270,9 +317,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					contagem: t('chive-tooltip-count'),
 					percentual: t('chive-tooltip-percentage'),
 					other: t('chive-chart-pie-other'),
+					focusOnThis: t('chive-tooltip-show-only-this'),
 					addToFilter: t('chive-tooltip-add-to-filter'),
 				},
-				onAddToGlobalFilter,
+				filterCallbacks,
 			}
 		);
 
@@ -320,6 +368,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					filhos: t('chive-chart-control-bubble-node-children-count'),
 					nivel: t('chive-chart-control-bubble-node-depth'),
 				},
+				filterCallbacks,
 			}
 		);
 
@@ -362,9 +411,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					contagem: t('chive-tooltip-count'),
 					soma: t('chive-tooltip-sum'),
 					percentual: t('chive-tooltip-percentage'),
+					focusOnThis: t('chive-tooltip-show-only-this'),
 					addToFilter: t('chive-tooltip-add-to-filter'),
 				},
-				onAddToGlobalFilter,
+				filterCallbacks,
 			}
 		);
 

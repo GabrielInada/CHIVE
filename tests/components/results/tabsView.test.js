@@ -27,6 +27,7 @@ function mountTabsDom() {
 			<div id="resultado-tabs-acoes">
 				<button id="btn-global-filter" hidden disabled>
 					<span id="global-filter-trigger-label">Global filter</span>
+					<span id="global-filter-trigger-badge" hidden></span>
 				</button>
 			</div>
 		</div>
@@ -125,10 +126,30 @@ describe('tabsView', () => {
 
 		const trigger = document.getElementById('btn-global-filter');
 		const label = document.getElementById('global-filter-trigger-label');
+		const badge = document.getElementById('global-filter-trigger-badge');
 		expect(trigger.hidden).toBe(false);
 		expect(trigger.disabled).toBe(false);
 		expect(trigger.dataset.active).toBe('true');
 		expect(label.textContent).toBe('Filter on • 2 rules · 7/20');
+		expect(badge.hidden).toBe(false);
+		expect(badge.textContent).toBe('2');
+	});
+
+	it('hides badge when no rules are active on charts tab', async () => {
+		const { updateTabs } = await import('../../../src/components/results/tabsView.js');
+
+		updateTabs('charts', vi.fn(), null, {
+			triggerState: {
+				hasDataset: true,
+				globalFilter: { rules: [] },
+				filteredCount: 20,
+				totalCount: 20,
+			},
+		});
+
+		const badge = document.getElementById('global-filter-trigger-badge');
+		expect(badge.hidden).toBe(true);
+		expect(badge.textContent).toBe('');
 	});
 
 	it('renders neutral label when there are no rules', async () => {

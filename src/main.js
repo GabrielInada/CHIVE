@@ -31,11 +31,21 @@ import {
 getState,
 getActiveDataset,
 onStateChange,
+STATE_EVENTS,
 exposeGlobals,
 initializeStateSync,
 setPreviewRows,
 addDataset,
+normalizeActiveDatasetConfig,
+updateActiveDatasetColumns,
+updateActiveDatasetConfig,
 } from './modules/index.js';
+import {
+enableStateLog,
+disableStateLog,
+getStateLog,
+clearStateLog,
+} from './modules/stateEvents.js';
 import {
 initPanelManager,
 initializeLayoutSelector,
@@ -120,17 +130,17 @@ refreshView();
  */
 function setupStateSubscriptions() {
 // Re-render when active dataset changes
-onStateChange('activeDataset', () => {
+onStateChange(STATE_EVENTS.ACTIVE_DATASET, () => {
 refreshView();
 });
 
 // Re-render when columns change
-onStateChange('columnsUpdated', () => {
+onStateChange(STATE_EVENTS.COLUMNS_UPDATED, () => {
 refreshView();
 });
 
 // Re-render when config changes
-onStateChange('configUpdated', () => {
+onStateChange(STATE_EVENTS.CONFIG_UPDATED, () => {
 refreshView();
 });
 
@@ -205,7 +215,7 @@ handlePresetDatasetRequest
 
 // Render data preview and stats
 if (dataset) {
-	dataset.configGraficos = mergeChartConfigWithDefaults(dataset.configGraficos);
+	normalizeActiveDatasetConfig(mergeChartConfigWithDefaults);
 renderDataInterface(
 dataset.dados,
 dataset.colunas,
@@ -234,29 +244,20 @@ exposeGlobals();
 
 /**
  * Update dataset column selection
- * Delegates to module
+ * Delegates to facade; the COLUMNS_UPDATED subscription drives refreshView.
  */
 function updateDatasetColumns(columns) {
-const dataset = getActiveDataset();
-if (dataset) {
-dataset.colunasSelecionadas = columns;
-refreshView();
-}
+updateActiveDatasetColumns(columns);
 }
 
 /**
  * Update dataset chart configuration
- * Delegates to module
+ * Delegates to facade; the CONFIG_UPDATED subscription drives refreshView.
+ * The merge-with-defaults step lives in refreshView's normalize-on-read path
+ * (normalizeActiveDatasetConfig), so we don't repeat it here.
  */
 function updateDatasetConfig(config) {
-const dataset = getActiveDataset();
-if (dataset) {
-	dataset.configGraficos = mergeChartConfigWithDefaults({
-		...dataset.configGraficos,
-		...config,
-	});
-refreshView();
-}
+updateActiveDatasetConfig(config);
 }
 
 function updatePreviewRows(rows) {
@@ -361,4 +362,8 @@ switchTab,
 refreshView,
 showFeedback: showFeedbackMessage,
 showError: showErrorMessage,
+enableStateLog,
+disableStateLog,
+getStateLog,
+clearStateLog,
 };

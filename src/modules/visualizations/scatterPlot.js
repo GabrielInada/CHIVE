@@ -1,5 +1,14 @@
 import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, scalePoint, select } from 'd3';
-import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
+import {
+	buildCategoricalFilterActions,
+	createFilterStateBadge,
+	createTooltipActionGroup,
+	hideChartTooltip,
+	moveChartTooltip,
+	showChartTooltip,
+	showPinnedChartTooltip,
+} from './tooltip.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
 import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
 import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
@@ -286,6 +295,17 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	}
 
 	let pinnedIndex = null;
+	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterLabels = filterCallbacks.filterActionLabels || {};
+	const xColumn = typeof opcoes.xColumn === 'string' ? opcoes.xColumn : null;
+	const yColumn = typeof opcoes.yColumn === 'string' ? opcoes.yColumn : null;
+	const actionLabels = {
+		focus: filterLabels.focus || 'Show only this',
+		add: filterLabels.add || 'Add to filter',
+		exclude: filterLabels.exclude || 'Hide this',
+		remove: filterLabels.remove || 'Remove from filter',
+		bringBack: filterLabels.bringBack || 'Bring back',
+	};
 
 	const montarConteudoTooltip = ponto => {
 		const wrapper = document.createElement('div');
@@ -319,6 +339,95 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 
 	const exibirTooltip = (event, ponto) => {
 		showChartTooltip(montarConteudoTooltip(ponto), event.pageX, event.pageY);
+	};
+
+	const buildAxisActionSet = (column, rawValue, headingLabel) => {
+		if (!column || rawValue === null || rawValue === undefined || rawValue === '') return null;
+		const token = toCategoryToken(rawValue);
+		const state = typeof filterCallbacks.getTokenFilterState === 'function'
+			? filterCallbacks.getTokenFilterState(column, token)
+			: null;
+		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
+			? !!filterCallbacks.isShowOnlyThisRedundant(column, token)
+			: false;
+		const actions = buildCategoricalFilterActions({
+			column,
+			token,
+			state,
+			labels: actionLabels,
+			omitFocus,
+			onFocus: filterCallbacks.onFocusGlobalFilter,
+			onAdd: filterCallbacks.onAddToGlobalFilter,
+			onExclude: filterCallbacks.onExcludeGlobalFilter,
+			onRemove: filterCallbacks.onRemoveFromGlobalFilter,
+			onBringBack: filterCallbacks.onBringBackGlobalFilter,
+		});
+		if (actions.length === 0) return null;
+		const wrap = document.createElement('div');
+		wrap.className = 'chart-tooltip__action-set-wrap';
+		if (headingLabel) {
+			const heading = document.createElement('div');
+			heading.className = 'chart-tooltip__action-set-label';
+			heading.textContent = headingLabel;
+			wrap.appendChild(heading);
+		}
+		wrap.appendChild(createTooltipActionGroup(actions));
+		return { node: wrap, state };
+	};
+
+	const exibirTooltipFixado = (event, ponto, onDismiss) => {
+		const content = montarConteudoTooltip(ponto);
+		const actionSets = [];
+		let primaryState = null;
+		let primaryColumn = null;
+		let primaryToken = null;
+
+		if (axisTypes.x === AXIS_TYPE_VALUES.categorical && xColumn) {
+			const xResult = buildAxisActionSet(xColumn, ponto.xCategory, `${axisLabels.x}`);
+			if (xResult) {
+				actionSets.push(xResult.node);
+				primaryState = xResult.state;
+				primaryColumn = xColumn;
+				primaryToken = toCategoryToken(ponto.xCategory);
+			}
+		}
+		if (axisTypes.y === AXIS_TYPE_VALUES.categorical && yColumn) {
+			const yResult = buildAxisActionSet(yColumn, ponto.yCategory, `${axisLabels.y}`);
+			if (yResult) {
+				actionSets.push(yResult.node);
+				if (!primaryState) {
+					primaryState = yResult.state;
+					primaryColumn = yColumn;
+					primaryToken = toCategoryToken(ponto.yCategory);
+				}
+			}
+		}
+
+		const stateBadge = actionSets.length === 1 && primaryState
+			? createFilterStateBadge({
+				state: primaryState,
+				includedLabel: filterLabels.stateIncluded,
+				excludedLabel: filterLabels.stateExcluded,
+			})
+			: null;
+
+		const headerTitle = axisTypes.x === AXIS_TYPE_VALUES.categorical
+			? String(ponto.xCategory ?? '')
+			: axisTypes.y === AXIS_TYPE_VALUES.categorical
+				? String(ponto.yCategory ?? '')
+				: '';
+
+		showPinnedChartTooltip(content, event.pageX, event.pageY, {
+			headerTitle,
+			closeLabel: filterLabels.close,
+			onDismiss,
+			actionSets,
+			stateBadge,
+		});
+		// Reference primaryColumn/primaryToken to silence unused-var warnings; they document
+		// the per-axis context for future enhancements.
+		void primaryColumn;
+		void primaryToken;
 	};
 
 	let escalaX;
@@ -469,7 +578,10 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 				return;
 			}
 			pinnedIndex = ponto.index;
-			exibirTooltip(event, ponto);
+			exibirTooltipFixado(event, ponto, () => {
+				pinnedIndex = null;
+				hideChartTooltip();
+			});
 		});
 
 	svg.on('click', () => {

@@ -18,6 +18,7 @@ vi.mock('../src/modules/appState.js', () => ({
   getActiveDataset: mocks.getActiveDataset,
   getAllDatasets: mocks.getAllDatasets,
   onStateChange: mocks.onStateChange,
+  STATE_EVENTS: { WILDCARD: '*' },
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
   updateActiveDatasetColumns: mocks.updateActiveDatasetColumns,
   setSidebarMode: mocks.setSidebarMode,

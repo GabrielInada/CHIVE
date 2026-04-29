@@ -11,6 +11,11 @@ describe('tooltip', () => {
 	let repositionPinnedTooltip;
 	let isTooltipPinned;
 	let createTooltipFilterAction;
+	let createTooltipActionGroup;
+	let createTooltipExcludeAction;
+	let showPinnedChartTooltip;
+	let buildCategoricalFilterActions;
+	let createFilterStateBadge;
 
 	const originalInnerWidth = window.innerWidth;
 	const originalInnerHeight = window.innerHeight;
@@ -28,6 +33,11 @@ describe('tooltip', () => {
 		repositionPinnedTooltip = mod.repositionPinnedTooltip;
 		isTooltipPinned = mod.isTooltipPinned;
 		createTooltipFilterAction = mod.createTooltipFilterAction;
+		createTooltipActionGroup = mod.createTooltipActionGroup;
+		createTooltipExcludeAction = mod.createTooltipExcludeAction;
+		showPinnedChartTooltip = mod.showPinnedChartTooltip;
+		buildCategoricalFilterActions = mod.buildCategoricalFilterActions;
+		createFilterStateBadge = mod.createFilterStateBadge;
 	});
 
 	afterEach(() => {
@@ -204,5 +214,184 @@ describe('tooltip', () => {
 	it('createTooltipFilterAction is safe when no onClick is provided', () => {
 		const button = createTooltipFilterAction({ label: 'Add' });
 		expect(() => button.click()).not.toThrow();
+	});
+
+	it('createTooltipActionGroup renders multiple keyboard-focusable actions', () => {
+		const calls = [];
+		const group = createTooltipActionGroup([
+			{ label: 'Focus', variant: 'primary', onClick: () => calls.push('focus') },
+			{ label: 'Add', onClick: () => calls.push('add') },
+		]);
+
+		expect(group.className).toBe('chart-tooltip__actions');
+		expect(group.getAttribute('role')).toBe('group');
+		expect(group.querySelectorAll('button')).toHaveLength(2);
+
+		group.querySelectorAll('button')[0].click();
+		group.querySelectorAll('button')[1].click();
+		expect(calls).toEqual(['focus', 'add']);
+	});
+
+	it('createTooltipExcludeAction returns a danger-variant button', () => {
+		const button = createTooltipExcludeAction({ label: 'Hide', onClick: () => {} });
+		expect(button.className).toContain('chart-tooltip__action');
+		expect(button.className).toContain('chart-tooltip__action--danger');
+	});
+
+	it('createTooltipActionGroup renders disabled buttons that do not invoke onClick', () => {
+		const calls = [];
+		const group = createTooltipActionGroup([
+			{ label: 'Off', disabled: true, onClick: () => calls.push('off') },
+		]);
+		const button = group.querySelector('button');
+		expect(button.disabled).toBe(true);
+		expect(button.getAttribute('aria-disabled')).toBe('true');
+		button.click();
+		expect(calls).toEqual([]);
+	});
+
+	it('showPinnedChartTooltip renders a header with title and a working close button', () => {
+		const onDismiss = vi.fn();
+		const content = document.createElement('div');
+		content.textContent = 'category info';
+		showPinnedChartTooltip(content, 100, 100, {
+			headerTitle: 'My Category',
+			onDismiss,
+			closeLabel: 'Close',
+			actionSets: [],
+		});
+
+		const tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip.classList.contains('chart-tooltip--fixado')).toBe(true);
+		const titleEl = tooltip.querySelector('.chart-tooltip__header-title');
+		expect(titleEl.textContent).toBe('My Category');
+		const closeBtn = tooltip.querySelector('.chart-tooltip__close');
+		expect(closeBtn).not.toBeNull();
+		closeBtn.click();
+		expect(onDismiss).toHaveBeenCalledTimes(1);
+	});
+
+	it('Escape key dismisses a pinned tooltip with onDismiss', () => {
+		const onDismiss = vi.fn();
+		showPinnedChartTooltip(document.createElement('div'), 100, 100, {
+			headerTitle: 'X',
+			onDismiss,
+		});
+		const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+		document.dispatchEvent(event);
+		expect(onDismiss).toHaveBeenCalledTimes(1);
+	});
+
+	it('Escape on an unpinned tooltip is a no-op', () => {
+		showChartTooltip('hover', 0, 0);
+		const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+		// should not throw and should not dismiss
+		document.dispatchEvent(event);
+		const tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip.style.display).toBe('block');
+	});
+
+	it('mousedown outside the pinned tooltip dismisses it', () => {
+		const onDismiss = vi.fn();
+		showPinnedChartTooltip(document.createElement('div'), 100, 100, {
+			headerTitle: 'Y',
+			onDismiss,
+		});
+		const outside = document.createElement('div');
+		document.body.appendChild(outside);
+		const event = new MouseEvent('mousedown', { bubbles: true });
+		outside.dispatchEvent(event);
+		expect(onDismiss).toHaveBeenCalledTimes(1);
+	});
+
+	it('mousedown inside the pinned tooltip does not dismiss it', () => {
+		const onDismiss = vi.fn();
+		showPinnedChartTooltip(document.createElement('div'), 100, 100, {
+			headerTitle: 'Z',
+			onDismiss,
+		});
+		const tooltip = document.querySelector('.chart-tooltip');
+		const event = new MouseEvent('mousedown', { bubbles: true });
+		tooltip.dispatchEvent(event);
+		expect(onDismiss).not.toHaveBeenCalled();
+	});
+
+	it('buildCategoricalFilterActions returns Show only / Add / Hide for unfiltered token', () => {
+		const calls = [];
+		const actions = buildCategoricalFilterActions({
+			column: 'col',
+			token: 'v:apple',
+			state: null,
+			labels: { focus: 'Focus', add: 'Add', exclude: 'Hide', remove: 'Rm', bringBack: 'Back' },
+			onFocus: (c, t) => calls.push(['focus', c, t]),
+			onAdd: (c, t) => calls.push(['add', c, t]),
+			onExclude: (c, t) => calls.push(['excl', c, t]),
+			onRemove: (c, t) => calls.push(['rm', c, t]),
+			onBringBack: (c, t) => calls.push(['back', c, t]),
+		});
+		expect(actions.map(a => a.label)).toEqual(['Focus', 'Add', 'Hide']);
+		actions[0].onClick();
+		actions[1].onClick();
+		actions[2].onClick();
+		expect(calls).toEqual([
+			['focus', 'col', 'v:apple'],
+			['add', 'col', 'v:apple'],
+			['excl', 'col', 'v:apple'],
+		]);
+		expect(actions[0].variant).toBe('primary');
+		expect(actions[2].variant).toBe('danger');
+	});
+
+	it('buildCategoricalFilterActions swaps Add for Remove when token is included', () => {
+		const actions = buildCategoricalFilterActions({
+			column: 'col',
+			token: 'v:apple',
+			state: 'included',
+			labels: { focus: 'Focus', add: 'Add', exclude: 'Hide', remove: 'Rm', bringBack: 'Back' },
+			onFocus: () => {},
+			onAdd: () => {},
+			onExclude: () => {},
+			onRemove: () => {},
+			onBringBack: () => {},
+		});
+		expect(actions.map(a => a.label)).toEqual(['Focus', 'Rm']);
+	});
+
+	it('buildCategoricalFilterActions omits the focus action when omitFocus is true', () => {
+		const actions = buildCategoricalFilterActions({
+			column: 'col',
+			token: 'v:apple',
+			state: null,
+			omitFocus: true,
+			labels: { focus: 'Focus', add: 'Add', exclude: 'Hide', remove: 'Rm', bringBack: 'Back' },
+			onFocus: () => {},
+			onAdd: () => {},
+			onExclude: () => {},
+		});
+		expect(actions.map(a => a.label)).toEqual(['Add', 'Hide']);
+	});
+
+	it('buildCategoricalFilterActions shows Bring back when token is excluded', () => {
+		const actions = buildCategoricalFilterActions({
+			column: 'col',
+			token: 'v:apple',
+			state: 'excluded',
+			labels: { focus: 'Focus', add: 'Add', exclude: 'Hide', remove: 'Rm', bringBack: 'Back' },
+			onFocus: () => {},
+			onAdd: () => {},
+			onExclude: () => {},
+			onRemove: () => {},
+			onBringBack: () => {},
+		});
+		expect(actions.map(a => a.label)).toEqual(['Focus', 'Back']);
+	});
+
+	it('createFilterStateBadge returns null when state is null and a styled element when set', () => {
+		expect(createFilterStateBadge({ state: null })).toBeNull();
+		const included = createFilterStateBadge({ state: 'included', includedLabel: 'In filter' });
+		expect(included.className).toContain('chart-tooltip__filter-state--included');
+		expect(included.textContent).toContain('In filter');
+		const excluded = createFilterStateBadge({ state: 'excluded', excludedLabel: 'Excluded' });
+		expect(excluded.className).toContain('chart-tooltip__filter-state--excluded');
 	});
 });

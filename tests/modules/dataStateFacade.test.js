@@ -147,6 +147,34 @@ describe('dataStateFacade', () => {
 		expect(() => facade.removeDataset(5)).toThrow();
 	});
 
+	it('normalizeActiveDatasetConfig writes config without emitting configUpdated', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: { datasets: [{ dados: [{}], colunas: [], configGraficos: { color: 'red' } }], activeIndex: 0 },
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		facade.normalizeActiveDatasetConfig(prev => ({ ...prev, normalized: true }));
+
+		expect(appState.data.datasets[0].configGraficos).toEqual({ color: 'red', normalized: true });
+		expect(emitStateChange).not.toHaveBeenCalledWith('configUpdated', expect.anything());
+	});
+
+	it('normalizeActiveDatasetConfig is a no-op when no dataset is active', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: { datasets: [], activeIndex: -1 },
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		expect(() => facade.normalizeActiveDatasetConfig(() => ({ x: 1 }))).not.toThrow();
+		expect(emitStateChange).not.toHaveBeenCalled();
+	});
+
 	it('removing dataset clears panel snapshots and slots', () => {
 		const emitStateChange = vi.fn();
 		const appState = {

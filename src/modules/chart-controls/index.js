@@ -15,7 +15,7 @@ import {
 	getCategoricalColumnNames,
 } from '../../utils/columnHelpers.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
-import { onStateChange } from '../appState.js';
+import { onStateChange, STATE_EVENTS } from '../appState.js';
 import { createBarChartControls, setupBarChartControlListeners } from './barControls.js';
 import { createBubbleChartControls, setupBubbleChartControlListeners } from './bubbleControls.js';
 import { createNetworkGraphControls, setupNetworkGraphControlListeners } from './networkControls.js';
@@ -44,7 +44,7 @@ export function initChartControls(configChangeCallback = null, liveRenderCallbac
 	setLiveRenderCallback(liveRenderCallback);
 
 	// Re-render when expanded state changes
-	onStateChange('chartExpandedChanged', handleChartExpandedChange);
+	onStateChange(STATE_EVENTS.CHART_EXPANDED_CHANGED, handleChartExpandedChange);
 }
 
 /**
@@ -265,8 +265,9 @@ export function renderChartControlsSidebar(dataset) {
 		return;
 	}
 
+	// Caller (main.js refreshView) normalizes dataset.configGraficos via
+	// normalizeActiveDatasetConfig before invoking us, so we just read it.
 	const config = mergeChartConfigWithDefaults(dataset.configGraficos);
-	dataset.configGraficos = config;
 	container.innerHTML = '';
 
 	// Bar chart card
