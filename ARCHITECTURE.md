@@ -53,7 +53,7 @@ flowchart TB
         FAC -- emit --> EB
     end
     MAIN["main.js · refreshView"]
-    subgraph PRES["Presentation"]
+    subgraph PRES["Visualization Layer"]
         direction LR
         COMP["components/"]
         VIZ["visualizations/"]
@@ -88,7 +88,7 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 | **Controllers** | DOM event capture and translation into facade calls. No state, no rendering. | `eventHandlers.js`, `fileManager.js`, `panelManager.js`, `chart-controls/` |
 | **State Management Core** | The only place state mutates. Three facades wrap one module-scoped state object; an event bus broadcasts every mutation. | `appState.js`, `dataStateFacade.js`, `uiStateFacade.js`, `panelStateFacade.js`, `stateEvents.js`, `stateSync.js` |
 | **Orchestrator** | Bootstrap plus `refreshView` — the broadest subscriber, handling dataset/columns/config events with a full view refresh. Other modules handle their own events independently. | `main.js` |
-| **Presentation** | Stateless renderers. Read state via getters; never mutate. D3 visualizations live here. | `components/`, `modules/visualizations/` |
+| **Visualization Layer** | Stateless renderers. Read state via getters; never mutate. D3 visualizations live here. | `components/`, `modules/visualizations/` |
 | **Utilities** | Pure helpers — parsing, formatting, color, result wrappers, i18n, constants. No state, no DOM. | `services/`, `config/`, `utils/` |
 
 **Controllers** translate user intent into mutations. They listen to DOM events, validate input, and call a facade method. They never touch `appState` directly and never render — if a controller wants the UI to change, it mutates state and lets the event bus drive the render.
@@ -97,7 +97,7 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 
 **Orchestrator** is one file: [src/main.js](src/main.js). It bootstraps modules at load time and subscribes to the three events that warrant rebuilding the dataset and chart-controls views (`ACTIVE_DATASET`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`), routing each into `refreshView`. It is the broadest subscriber but not the only one — `panelManager`, `chart-controls`, and `stateSync` subscribe to their own slices independently (see §5).
 
-**Presentation** is stateless. Renderers receive data, read state via getters, and produce DOM. They never call a facade. They never emit. If a renderer needs to react to user input, it accepts a callback from the controller layer instead.
+**Visualization Layer** is stateless. Renderers receive data, read state via getters, and produce DOM. They never call a facade. They never emit. If a renderer needs to react to user input, it accepts a callback from the controller layer instead.
 
 **Utilities** are leaf helpers — pure functions and constants. No state imports, no DOM access. Safe to call from any layer.
 
