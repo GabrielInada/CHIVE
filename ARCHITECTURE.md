@@ -58,20 +58,20 @@ flowchart TB
         COMP["components/"]
         VIZ["visualizations/"]
     end
-    FOUND["Foundations<br/>services · config · utils"]
+    UTIL["Utilities<br/>services · config · utils"]
     U -- DOM events --> CTRL
     CTRL -- call --> FAC
     EB -. notify .-> MAIN
     MAIN -- render --> PRES
     PRES -. read .-> AS
-    FOUND -.- CTRL
-    FOUND -.- PRES
+    UTIL -.- CTRL
+    UTIL -.- PRES
     classDef core fill:#fff5d6,stroke:#b8860b,stroke-width:2px,color:#000
     classDef layer fill:#e8f4f8,stroke:#2c7da0,color:#000
     classDef plain fill:#fafafa,stroke:#999,color:#000
     class CORE core
     class CTRL,PRES layer
-    class FOUND plain
+    class UTIL plain
 ```
 
 > Solid arrows: synchronous calls / writes. Dashed arrows: observer notifications and passive reads. The State Core is the only mutation path and the only source of change events.
@@ -89,7 +89,7 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 | **State Management Core** | The only place state mutates. Three facades wrap one module-scoped state object; an event bus broadcasts every mutation. | `appState.js`, `dataStateFacade.js`, `uiStateFacade.js`, `panelStateFacade.js`, `stateEvents.js`, `stateSync.js` |
 | **Orchestrator** | Bootstrap plus `refreshView` — the broadest subscriber, handling dataset/columns/config events with a full view refresh. Other modules handle their own events independently. | `main.js` |
 | **Presentation** | Stateless renderers. Read state via getters; never mutate. D3 visualizations live here. | `components/`, `modules/visualizations/` |
-| **Foundations** | Pure helpers — parsing, formatting, color, result wrappers, i18n, constants. No state, no DOM. | `services/`, `config/`, `utils/` |
+| **Utilities** | Pure helpers — parsing, formatting, color, result wrappers, i18n, constants. No state, no DOM. | `services/`, `config/`, `utils/` |
 
 **Controllers** translate user intent into mutations. They listen to DOM events, validate input, and call a facade method. They never touch `appState` directly and never render — if a controller wants the UI to change, it mutates state and lets the event bus drive the render.
 
@@ -99,7 +99,7 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 
 **Presentation** is stateless. Renderers receive data, read state via getters, and produce DOM. They never call a facade. They never emit. If a renderer needs to react to user input, it accepts a callback from the controller layer instead.
 
-**Foundations** are leaf utilities — pure functions and constants. No state imports, no DOM access. They are safe to call from any layer.
+**Utilities** are leaf helpers — pure functions and constants. No state imports, no DOM access. Safe to call from any layer.
 
 ## 5. State Management Core — deep dive
 
