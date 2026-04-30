@@ -78,7 +78,7 @@ flowchart TB
 
 The diagram is a faithful abstraction, not a literal call graph. Two simplifications worth knowing:
 
-- **The "main.js · refreshView" node represents the dominant subscriber path.** In practice **four** modules subscribe to the event bus — `main.js`, `panelManager.js`, `chart-controls/index.js`, and `stateSync.js`. §5 lists which events each one handles.
+- **The "main.js · refreshView" node represents the broadest re-render path** — it rebuilds the largest UI surface, not the largest number of subscriptions. In practice **four** modules subscribe to the event bus: `main.js`, `panelManager.js`, `chart-controls/index.js`, and `stateSync.js`. `panelManager` actually subscribes to more events than `main.js` (10 vs. 3), but its responses are scoped to the panel UI. §5 lists which events each subscriber handles.
 - **`panelManager` and `chart-controls` appear inside Controllers, but they also subscribe to events.** They wear two hats: translating user input into facade calls *and* re-rendering their own UI slice in response to bus notifications. The diagram shows only the first hat to keep the picture readable.
 
 ## 4. Layers
@@ -137,7 +137,7 @@ There is **one deliberate exception**: `normalizeActiveDatasetConfig(normalizer)
 **The four production subscribers** (verified by grepping `onStateChange(` in `src/`):
 
 - **`main.js`** → `ACTIVE_DATASET`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`. Handler calls `refreshView` to rebuild the file list, dataset preview, stats, chart-controls sidebar, and panel UI.
-- **`panelManager.js`** → `CHART_ADDED`, `CHART_REMOVED`, `PANEL_BLOCK_SLOT_ASSIGNED`, plus six panel-block layout events (`PANEL_BLOCK_ADDED`/`REMOVED`/`MOVED`/`TEMPLATE_CHANGED`/`PROPORTIONS_UPDATED`/`HEIGHT_UPDATED`/`BORDER_UPDATED`). Re-renders the sidebar list and the panel canvas in place — does **not** route through `refreshView`.
+- **`panelManager.js`** → `CHART_ADDED`, `CHART_REMOVED`, `PANEL_BLOCK_SLOT_ASSIGNED`, plus seven panel-block layout events (`PANEL_BLOCK_ADDED`/`REMOVED`/`MOVED`/`TEMPLATE_CHANGED`/`PROPORTIONS_UPDATED`/`HEIGHT_UPDATED`/`BORDER_UPDATED`) — ten subscriptions total. Re-renders the sidebar list and the panel canvas in place — does **not** route through `refreshView`.
 - **`chart-controls/index.js`** → `CHART_EXPANDED_CHANGED`. Updates one chart card's expand/collapse UI without rebuilding the whole sidebar.
 - **`stateSync.js`** → `WILDCARD` (`'*'`). On every emission, calls `exposeGlobals` to mirror current state into `window.*` properties (`window.dadosCarregados`, `window.datasetAtivo`, etc.) for backwards-compatibility hooks. **Note:** despite the name, `stateSync` does *not* persist to `localStorage` today — IndexedDB persistence is on the roadmap and will land here.
 
@@ -150,7 +150,7 @@ Trace one end-to-end cycle and the architecture clicks:
 > 1. `eventHandlers.js` receives the DOM `change` event, computes the new column list, and calls `updateActiveDatasetColumns(columns)` (the facade).
 > 2. The facade writes `dataset.colunasSelecionadas` and emits `STATE_EVENTS.COLUMNS_UPDATED`.
 > 3. `main.js` is subscribed to that event and calls `refreshView()`.
-> 4. `refreshView` reads the current state via getters (`getActiveDataset`, `getLoadedDatasets`, `getState`) and calls each renderer (`renderDataInterface`, `renderChartControlsSidebar`, `renderSidebarPanel`, `renderCanvasPanel`).
+> 4. `refreshView` reads the current state via getters (`getActiveDataset`, `getLoadedDatasets`, `getState`) and calls each renderer (`renderFileList`, `renderDataInterface`, `renderChartControlsSidebar`, `renderSidebarPanel`, `renderCanvasPanel`).
 > 5. Renderers produce DOM; D3 charts redraw. None of them emit anything — the cycle ends.
 
 The punchline: **mutations never originate in renderers, and renderers never run except in response to an event bus notification.** That single sentence is the whole architecture.
@@ -181,6 +181,6 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 
 ## 9. Debugging
 
-- `window.chiveDebug` exposes `getState`, `getActiveDataset`, `refreshView`, and four state-log helpers.
+- `window.chiveDebug` exposes thirteen entries grouped as: state getters (`getState`, `getActiveDataset`, `getLoadedDatasets`), facade mutators (`updateDatasetColumns`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`, `showError`), and four state-log helpers (`enableStateLog`, `disableStateLog`, `getStateLog`, `clearStateLog`).
 - `chiveDebug.enableStateLog()` prints every emit as `[chive:state] <type> <data>` and stores the last 100 entries; `getStateLog()` returns them, `clearStateLog()` resets the buffer, `disableStateLog()` turns it off.
 - To diagnose a surprising re-render: enable the log, perform the action, then read `getStateLog()` to see the exact event chain that fired.
