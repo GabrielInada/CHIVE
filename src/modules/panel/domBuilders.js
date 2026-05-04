@@ -189,7 +189,6 @@ export function createPanelSlotElement({
 
 		const svgDiv = document.createElement('div');
 		svgDiv.className = 'painel-slot-svg';
-		svgDiv.innerHTML = chart.svgMarkup;
 
 		slot.appendChild(clearBtn);
 		slot.appendChild(svgDiv);
