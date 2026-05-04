@@ -337,6 +337,17 @@
 	"chive-error-upload-processing": "Não foi possível processar o arquivo enviado no momento.",
 	"chive-error-upload-input-missing": "O controle de upload está indisponível no momento.",
 	"chive-error-upload-zone-missing": "A área de upload está indisponível no momento.",
+	"chive-error-cancelled": "Operação cancelada.",
+	"chive-error-parse": "Não foi possível processar o arquivo",
+	"chive-error-empty-file": "O arquivo parece estar vazio.",
+
+	"chive-progress-parsing": "Lendo $1…",
+	"chive-progress-detecting-types": "Detectando tipos de coluna…",
+	"chive-progress-normalizing": "Normalizando valores…",
+	"chive-progress-computing-stats": "Calculando estatísticas…",
+	"chive-progress-ready": "$1 pronto",
+	"chive-progress-ready-truncated": "$1 pronto ($2 linhas truncadas para $3)",
+	"chive-progress-failed": "Falha ao carregar: $1",
 
 	"chive-error-internal": "Ocorreu um erro interno na aplicação.",
 	"chive-chart-color-palette": "Paleta de cores",

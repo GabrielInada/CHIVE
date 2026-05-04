@@ -1,6 +1,35 @@
 import { calculateStatistics, calculateCategoricalStatistics } from '../../services/dataService.js';
+import { getActiveDataset } from '../../modules/appState.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { formatNumber } from '../../utils/formatters.js';
+
+// Reuse stats computed by the ingest worker when the rows we're rendering
+// are the active dataset's full unfiltered rows. Falls back to live calc
+// for joined datasets (no worker pass) or whenever the row reference
+// doesn't match (would only happen if a caller passed a filtered slice).
+function getNumericStats(rows, visibleColumns) {
+	const dataset = getActiveDataset();
+	const precomputed = dataset?.precomputedStats?.numeric;
+	if (Array.isArray(precomputed) && dataset.dados === rows) {
+		const visibleNames = new Set(
+			visibleColumns.filter(c => c.tipo === 'numero').map(c => c.nome),
+		);
+		return precomputed.filter(stat => visibleNames.has(stat.nome));
+	}
+	return calculateStatistics(rows, visibleColumns);
+}
+
+function getCategoricalStats(rows, visibleColumns) {
+	const dataset = getActiveDataset();
+	const precomputed = dataset?.precomputedStats?.categorical;
+	if (Array.isArray(precomputed) && dataset.dados === rows) {
+		const visibleNames = new Set(
+			visibleColumns.filter(c => c.tipo !== 'numero').map(c => c.nome),
+		);
+		return precomputed.filter(stat => visibleNames.has(stat.nome));
+	}
+	return calculateCategoricalStatistics(rows, visibleColumns);
+}
 
 function createStatLine(label, valor) {
 	const linha = document.createElement('div');
@@ -25,7 +54,7 @@ function truncateText(text, maxLength = 18) {
 }
 
 export function renderStats(rows, visibleColumns) {
-	const stats = calculateStatistics(rows, visibleColumns);
+	const stats = getNumericStats(rows, visibleColumns);
 	const cardStats = document.getElementById('card-stats');
 
 	if (stats.length > 0) {
@@ -63,7 +92,7 @@ export function renderCategoricalStats(rows, visibleColumns) {
 	const card = document.getElementById('card-cat-stats');
 	if (!card) return;
 
-	const stats = calculateCategoricalStatistics(rows, visibleColumns);
+	const stats = getCategoricalStats(rows, visibleColumns);
 	const container = document.getElementById('container-cat-stats');
 	const badge = document.getElementById('badge-cat-colunas');
 

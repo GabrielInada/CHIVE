@@ -299,6 +299,17 @@
 	"chive-error-upload-processing": "Fallback error shown when file upload processing fails and no specific message is available.",
 	"chive-error-upload-input-missing": "Error shown when the hidden file input element is missing from the DOM during setup.",
 	"chive-error-upload-zone-missing": "Error shown when the upload drop zone element is missing from the DOM during setup.",
+	"chive-error-cancelled": "Generic message thrown when the user cancels an in-progress operation (e.g. a worker-driven file ingest).",
+	"chive-error-parse": "Prefix shown before a parser error message when a CSV/JSON file fails to parse.",
+	"chive-error-empty-file": "Error shown when an uploaded file has no rows after parsing.",
+
+	"chive-progress-parsing": "Progress-toast label while the ingest worker is reading a file. $1 = file or preset name.",
+	"chive-progress-detecting-types": "Progress-toast label while the ingest worker is auto-detecting column types and decimal separator.",
+	"chive-progress-normalizing": "Progress-toast label while the ingest worker is converting numeric strings to numbers.",
+	"chive-progress-computing-stats": "Progress-toast label while the ingest worker is computing per-column descriptive statistics.",
+	"chive-progress-ready": "Success message shown briefly in the progress toast after a file finishes loading. $1 = file or preset name.",
+	"chive-progress-ready-truncated": "Success message when row-limit truncation occurred. $1 = file name, $2 = original row count, $3 = truncated-to row count.",
+	"chive-progress-failed": "Failure message shown in the progress toast when the ingest worker errors out. $1 = error reason.",
 
 	"chive-error-internal": "Fallback error message for unexpected internal application failures.",
 	"chive-chart-color-palette": "Label for quick-apply color palette preset buttons (Pastel, Bold, Colorblind-Safe).",

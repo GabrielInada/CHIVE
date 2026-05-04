@@ -4,17 +4,18 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   t: vi.fn((key, params) => `${key}${params ? `:${params.join('|')}` : ''}`),
-  parseCsv: vi.fn(),
-  parseJson: vi.fn(),
   processData: vi.fn(),
   joinDatasets: vi.fn(),
   formatFileSize: vi.fn(size => `${size}B`),
+  ingestFile: vi.fn(),
+  progressLabelForStage: vi.fn(stage => `label:${stage}`),
   addDataset: vi.fn(),
   removeDataset: vi.fn(),
   setActiveDataset: vi.fn(),
   getAllDatasets: vi.fn(),
   showError: vi.fn(),
   clearErrors: vi.fn(),
+  showProgress: vi.fn(),
 }));
 
 vi.mock('../src/services/i18nService.js', () => ({
@@ -22,11 +23,14 @@ vi.mock('../src/services/i18nService.js', () => ({
 }));
 
 vi.mock('../src/services/dataService.js', () => ({
-  parseCsv: mocks.parseCsv,
-  parseJson: mocks.parseJson,
   processData: mocks.processData,
   joinDatasets: mocks.joinDatasets,
   formatFileSize: mocks.formatFileSize,
+}));
+
+vi.mock('../src/services/dataIngestService.js', () => ({
+  ingestFile: mocks.ingestFile,
+  progressLabelForStage: mocks.progressLabelForStage,
 }));
 
 vi.mock('../src/modules/appState.js', () => ({
@@ -39,6 +43,7 @@ vi.mock('../src/modules/appState.js', () => ({
 vi.mock('../src/modules/feedbackUI.js', () => ({
   showError: mocks.showError,
   clearErrors: mocks.clearErrors,
+  showProgress: mocks.showProgress,
 }));
 
 vi.mock('../src/config/limits.js', () => ({
@@ -92,8 +97,24 @@ describe('fileManager', () => {
       dados: [{ a: 1 }],
       colunas: [{ nome: 'a', tipo: 'numero' }],
     });
-    mocks.parseCsv.mockReturnValue([{ a: '1' }]);
-    mocks.parseJson.mockReturnValue([{ a: 1 }]);
+    mocks.ingestFile.mockResolvedValue({
+      ok: true,
+      value: {
+        dados: [{ a: 1 }],
+        colunas: [{ nome: 'a', tipo: 'numero' }],
+        decimalSeparator: '.',
+        statsNumeric: [],
+        statsCategorical: [],
+        truncatedFrom: null,
+      },
+    });
+    mocks.showProgress.mockImplementation(() => ({
+      update: vi.fn(),
+      succeed: vi.fn(),
+      fail: vi.fn(),
+      close: vi.fn(),
+      onCancel: vi.fn(),
+    }));
     mocks.joinDatasets.mockReturnValue({
       rows: [{ id: '1' }],
       outputColumns: ['id'],
@@ -115,13 +136,17 @@ describe('fileManager', () => {
     await handleFileUpload([csvFile()]);
 
     expect(mocks.clearErrors).toHaveBeenCalledTimes(1);
-    expect(mocks.parseCsv).toHaveBeenCalledWith('a,b\\n1,2');
+    expect(mocks.ingestFile).toHaveBeenCalledTimes(1);
+    const [input] = mocks.ingestFile.mock.calls[0];
+    expect(input).toEqual(expect.objectContaining({ kind: 'csv', text: 'a,b\\n1,2' }));
+    expect(input.options).toEqual(expect.objectContaining({ rowLimit: 2 }));
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
 
     const added = mocks.addDataset.mock.calls[0][0];
     expect(added.nome).toBe('ok.csv');
     expect(added.colunasSelecionadas).toEqual(['a']);
     expect(added.configGraficos.bar.enabled).toBe(false);
+    expect(added.precomputedStats).toEqual({ numeric: [], categorical: [] });
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
@@ -134,18 +159,30 @@ describe('fileManager', () => {
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-cancelled');
   });
 
-  it('trata erro de parse e limita linhas quando ultrapassa ROW_LIMIT', async () => {
-    mocks.parseCsv.mockImplementationOnce(() => {
-      throw new Error('parse fail');
-    });
+  it('surfaces ingest worker errors via showError and the progress toast', async () => {
+    mocks.ingestFile.mockResolvedValueOnce({ ok: false, reason: 'parse fail' });
     await handleFileUpload([csvFile()]);
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-parse: parse fail');
+  });
 
-    mocks.parseCsv.mockReturnValueOnce([{ x: 1 }, { x: 2 }, { x: 3 }]);
+  it('forwards ROW_LIMIT to the worker; truncation is handled there, not in fileManager', async () => {
+    mocks.ingestFile.mockResolvedValueOnce({
+      ok: true,
+      value: {
+        dados: [{ x: 1 }, { x: 2 }],
+        colunas: [{ nome: 'x', tipo: 'numero' }],
+        decimalSeparator: '.',
+        statsNumeric: [],
+        statsCategorical: [],
+        truncatedFrom: 3,
+      },
+    });
     await handleFileUpload([csvFile({ content: 'x\\n1\\n2\\n3' })]);
 
-    expect(window.confirm).toHaveBeenCalled();
-    expect(mocks.processData).toHaveBeenCalledWith([{ x: 1 }, { x: 2 }], 'ok.csv');
+    expect(mocks.ingestFile).toHaveBeenCalledTimes(1);
+    expect(mocks.ingestFile.mock.calls[0][0].options).toEqual(expect.objectContaining({ rowLimit: 2 }));
+    expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+    expect(mocks.addDataset.mock.calls[0][0].dados).toHaveLength(2);
   });
 
   it('select/remove/get datasets encaminham para appState com tratamento de erro', () => {
