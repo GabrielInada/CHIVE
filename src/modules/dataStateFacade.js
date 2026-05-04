@@ -1,5 +1,14 @@
 import { STATE_EVENTS } from './stateEvents.js';
 
+let datasetIdCounter = 0;
+function generateDatasetId() {
+	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+		return crypto.randomUUID();
+	}
+	datasetIdCounter += 1;
+	return `dataset-${Date.now()}-${datasetIdCounter}`;
+}
+
 export function createDataStateFacade({ appState, emitStateChange }) {
 	function getActiveDataset() {
 		if (appState.data.activeIndex === -1 || !appState.data.datasets[appState.data.activeIndex]) {
@@ -27,6 +36,11 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	function addDataset(dataset) {
 		if (!dataset || !Array.isArray(dataset.dados)) {
 			throw new Error('Invalid dataset: must have "dados" array');
+		}
+		// Stamp a stable id so persistence can address datasets across reloads.
+		// Tests in environments without crypto.randomUUID fall back to a counter.
+		if (!dataset.id) {
+			dataset.id = generateDatasetId();
 		}
 		appState.data.datasets.push(dataset);
 		const index = appState.data.datasets.length - 1;

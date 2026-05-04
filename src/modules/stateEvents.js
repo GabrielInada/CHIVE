@@ -37,6 +37,7 @@ export const STATE_EVENTS = Object.freeze({
 
 	// meta
 	STATE_RESET: 'stateReset',
+	STATE_HYDRATED: 'stateHydrated',
 	WILDCARD: '*',
 });
 
