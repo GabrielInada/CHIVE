@@ -6,7 +6,7 @@ This document is the canonical tour of how CHIVE is organized internally. Read i
 
 CHIVE uses the **Observer pattern over a single, mutable state object held in module scope, with all writes mediated by a Facade layer.** The closest classical analogue is a Backbone-style Model + Events: one in-memory object holds all application state, three facades expose every legal mutation, and an event bus broadcasts every change to subscribers that re-render.
 
-It is **not** Flux (no actions, no dispatcher, no reducers), and **not** MobX or signals (no auto-tracking — every subscription is manual and named). The pattern fits CHIVE because we deliberately keep the runtime surface small. The chart layer is D3, which mutates DOM imperatively and resists virtual-DOM abstractions. The contributor base is small enough that a pattern readable cold and debuggable with `console.log` beats one that demands learning a framework. And the async we will eventually need — IndexedDB persistence is on the roadmap — fits the existing facade boundary; it doesn't justify pulling in a framework today.
+It is **not** Flux (no actions, no dispatcher, no reducers), and **not** MobX or signals (no auto-tracking — every subscription is manual and named). The pattern fits CHIVE because we deliberately keep the runtime surface small. The chart layer is D3, which mutates DOM imperatively and resists virtual-DOM abstractions. The contributor base is small enough that a pattern readable cold and debuggable with `console.log` beats one that demands learning a framework. And the async surface we needed — IndexedDB persistence — landed through the existing facade boundary (`replaceAllState` for hydration; debounced wildcard subscription for save) without justifying a framework.
 
 ## 2. Why this pattern (and not the alternatives)
 
@@ -14,7 +14,7 @@ A new contributor's first question is usually "why didn't you use React / Redux 
 
 The constraints that drove the choice:
 
-- Browser-only, no backend. The data layer is fully synchronous **today**; **IndexedDB persistence is on the roadmap**, so the architecture must remain async-friendly. Async machinery isn't in place yet for a simple reason — the team is small and time-constrained — not because we plan to stay synchronous forever. Features land when the team has bandwidth to build and test them.
+- Browser-only, no backend. The data layer is mostly synchronous, with one async surface: **IndexedDB persistence** (hydrate on boot via `persistenceService.hydrateState`; debounced save on every state emission). The architecture is async-friendly at the facade boundary and absorbs new async surfaces (workers, etc.) the same way.
 - D3 owns chart rendering and is inherently imperative. Anything that hides DOM from us fights D3.
 - **Minimum dependency footprint, on principle.** A framework or library lands only when clearly necessary. Two reasons: the project should stay readable end-to-end without chasing transitive dependencies, and CHIVE processes user-uploaded data — a small, auditable codebase is part of how we honor user privacy.
 - Small contributor base (research project, students). The pattern must be readable cold, not require learning a framework.
@@ -26,12 +26,12 @@ Against those constraints, here is how the obvious alternatives compare:
 |---|---|---|---|
 | **No central state** (each module owns its slice; pass via DOM events) | Less ceremony for tiny features. | Datasets + panel + UI are shared across many renderers; we'd duplicate state or thread props through every call. Reactivity becomes ad-hoc. | Rejected — a shared data model demands a single source of truth. |
 | **Plain shared state, direct mutation** (no facades) | Fewer files. | Every callsite must remember to emit a change event after writing. The first one that forgets silently breaks reactivity, and there's no static signal. | Rejected — facades buy us the "write ⇒ emit" invariant for free. |
-| **Flux / Redux** (actions, reducers, immutable store) | Pure reducers, time-travel devtools, predictable updates. | Reducer + action ceremony for ~25 mutations is overkill. Immutability fights D3 — charts mutate DOM imperatively, so the store's snapshot purity buys nothing downstream. The async paths we have planned (IndexedDB) want a single facade method that emits when the write resolves, not a reducer pipeline plus middleware. | Rejected — ceremony cost outweighs benefit at this surface size. |
+| **Flux / Redux** (actions, reducers, immutable store) | Pure reducers, time-travel devtools, predictable updates. | Reducer + action ceremony for ~25 mutations is overkill. Immutability fights D3 — charts mutate DOM imperatively, so the store's snapshot purity buys nothing downstream. The async path we have (IndexedDB persistence) is a single wildcard subscriber that debounces saves — not a reducer pipeline plus middleware. | Rejected — ceremony cost outweighs benefit at this surface size. |
 | **MobX / signals / proxies** (auto-tracking) | Zero subscription boilerplate; transparent reactivity. | Reactivity becomes opaque — a re-render fires because some property was read in some computed somewhere. Hard to debug, hard to onboard new contributors. We lose explicit control over re-render granularity. | Rejected — auto-magic is the wrong tradeoff for a research codebase that prizes readability. |
 | **A framework (React / Vue / Svelte)** | Component model, virtual DOM diffing, ecosystem. | D3 + VDOM is a known friction point — escape hatches and refs everywhere, or a rewrite of the chart layer. Adds a heavy build dep and a deep tree of transitive dependencies to a project whose appeal is "open `index.html`, see the app" — and whose minimal footprint is part of its privacy story. | Rejected — vanilla JS + D3 is a deliberate stack choice; a framework would invert it. |
 | **Just custom DOM events** (`window.dispatchEvent` everywhere) | No new code. | No registry of event names → typos silently kill subscriptions. No central store → every listener must read DOM or chase another listener's state. | Rejected — unstructured events scale poorly past a handful of types. |
 
-The chosen pattern is the **minimum viable structure** that gives us a single source of truth, a static event registry, and a clean read/write boundary — without adopting a framework or inventing one. Keeping the dependency footprint small is a deliberate stance, not a temporary state: a codebase that fits in one head is also a codebase that can be audited end-to-end, which matters when users hand it their data. Async surfaces (IndexedDB, future workers) will be introduced through the same facade boundary as the team finds bandwidth to build them — the architecture is built to absorb them, not to forestall them.
+The chosen pattern is the **minimum viable structure** that gives us a single source of truth, a static event registry, and a clean read/write boundary — without adopting a framework or inventing one. Keeping the dependency footprint small is a deliberate stance, not a temporary state: a codebase that fits in one head is also a codebase that can be audited end-to-end, which matters when users hand it their data. Async surfaces (IndexedDB persistence shipped through `persistenceService`; future workers, network) plug in through the same facade and event-bus boundaries — the architecture absorbs them rather than forestalling them.
 
 ## 3. Diagram
 
@@ -78,7 +78,7 @@ flowchart TB
 
 The diagram is a faithful abstraction, not a literal call graph. Two simplifications worth knowing:
 
-- **The "main.js · refreshView" node represents the broadest re-render path** — it rebuilds the largest UI surface, not the largest number of subscriptions. In practice **four** modules subscribe to the event bus: `main.js`, `panelManager.js`, `chart-controls/index.js`, and `stateSync.js`. `panelManager` actually subscribes to more events than `main.js` (10 vs. 3), but its responses are scoped to the panel UI. §5 lists which events each subscriber handles.
+- **The "main.js · refreshView" node represents the broadest re-render path** — it rebuilds the largest UI surface, not the largest number of subscriptions. In practice **five** modules subscribe to the event bus: `main.js`, `panelManager.js`, `chart-controls/index.js`, `stateSync.js`, and `persistenceService.js`. `panelManager` actually subscribes to more events than `main.js` (10 vs. 3), but its responses are scoped to the panel UI. §5 lists which events each subscriber handles.
 - **`panelManager` and `chart-controls` appear inside Controllers, but they also subscribe to events.** They wear two hats: translating user input into facade calls *and* re-rendering their own UI slice in response to bus notifications. The diagram shows only the first hat to keep the picture readable.
 
 ## 4. Layers
@@ -86,7 +86,7 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 | Layer | Owns | Key files |
 |---|---|---|
 | **Controllers** | DOM event capture and translation into facade calls. No state, no rendering. | `eventHandlers.js`, `fileManager.js`, `panelManager.js`, `chart-controls/` |
-| **State Management Core** | The only place state mutates. Three facades wrap one module-scoped state object; an event bus broadcasts every mutation. | `appState.js`, `dataStateFacade.js`, `uiStateFacade.js`, `panelStateFacade.js`, `stateEvents.js`, `stateSync.js` |
+| **State Management Core** | The only place state mutates. Three facades wrap one module-scoped state object; an event bus broadcasts every mutation. Persistence subscribes to the bus and writes a debounced snapshot to IndexedDB. | `appState.js`, `dataStateFacade.js`, `uiStateFacade.js`, `panelStateFacade.js`, `stateEvents.js`, `stateSync.js`, `services/persistenceService.js` |
 | **Orchestrator** | Bootstrap plus `refreshView` — the broadest subscriber, handling dataset/columns/config events with a full view refresh. Other modules handle their own events independently. | `main.js` |
 | **Visualization Layer** | Stateless renderers. Read state via getters; never mutate. D3 visualizations live here. | `components/`, `modules/visualizations/` |
 | **Utilities** | Pure helpers — parsing, formatting, color, result wrappers, i18n, constants. No state, no DOM. | `services/`, `config/`, `utils/` |
@@ -123,7 +123,12 @@ The object is **never mutated directly outside this module**. Each facade is cre
 
 Three of them — [dataStateFacade.js](src/modules/dataStateFacade.js), [uiStateFacade.js](src/modules/uiStateFacade.js), [panelStateFacade.js](src/modules/panelStateFacade.js) — composed in [appState.js](src/modules/appState.js) and re-exported from there. Every public mutator follows the same shape: validate, write, emit. The emit step uses a `STATE_EVENTS.*` constant; never a string literal.
 
-There is **one deliberate exception**: `normalizeActiveDatasetConfig(normalizer)` writes without emitting. It is used during render to apply chart-config defaults; routing it through the emitting `updateActiveDatasetConfig` would re-enter `refreshView` via the `CONFIG_UPDATED` subscription and loop. If you find yourself wanting another non-emitting write path, stop and reconsider — re-entrancy is the bug it exists to avoid.
+There are **two deliberate exceptions** to the validate-write-emit shape:
+
+1. `normalizeActiveDatasetConfig(normalizer)` writes without emitting. It is used during render to apply chart-config defaults; routing it through the emitting `updateActiveDatasetConfig` would re-enter `refreshView` via the `CONFIG_UPDATED` subscription and loop.
+2. `replaceAllState({ data, panel, ui })` (in `appState.js`) bypasses the per-domain facades and rewrites all three slices in one shot, then emits a single `STATE_HYDRATED`. It exists for `persistenceService.hydrateState` — emitting one event per restored field would fan out into N `refreshView` calls and a redundant save burst. Hydration runs once at boot, before any subscriber is wired, so the consolidated emission is harmless.
+
+If you find yourself wanting another non-emitting or bypass write path, stop and reconsider — re-entrancy and surprise emission are the bugs these exceptions exist to avoid.
 
 ### The Event Bus
 
@@ -134,12 +139,13 @@ There is **one deliberate exception**: `normalizeActiveDatasetConfig(normalizer)
 - `emitStateChange(eventType, data)` — fans out to typed listeners, then to wildcard (`'*'`) listeners, then dispatches a `chive-state-changed` `CustomEvent` on `window` for legacy hooks.
 - A 100-entry ring-buffer logger toggleable at runtime via `window.chiveDebug.enableStateLog()`. When enabled, every emission is printed as `[chive:state] <type> <data>` and pushed into the buffer. When disabled, it is a single boolean check — zero overhead.
 
-**The four production subscribers** (verified by grepping `onStateChange(` in `src/`):
+**The five production subscribers** (verified by grepping `onStateChange(` in `src/`):
 
 - **`main.js`** → `ACTIVE_DATASET`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`. Handler calls `refreshView` to rebuild the file list, dataset preview, stats, chart-controls sidebar, and panel UI.
 - **`panelManager.js`** → `CHART_ADDED`, `CHART_REMOVED`, `PANEL_BLOCK_SLOT_ASSIGNED`, plus seven panel-block layout events (`PANEL_BLOCK_ADDED`/`REMOVED`/`MOVED`/`TEMPLATE_CHANGED`/`PROPORTIONS_UPDATED`/`HEIGHT_UPDATED`/`BORDER_UPDATED`) — ten subscriptions total. Re-renders the sidebar list and the panel canvas in place — does **not** route through `refreshView`.
 - **`chart-controls/index.js`** → `CHART_EXPANDED_CHANGED`. Updates one chart card's expand/collapse UI without rebuilding the whole sidebar.
-- **`stateSync.js`** → `WILDCARD` (`'*'`). On every emission, calls `exposeGlobals` to mirror current state into `window.*` properties (`window.dadosCarregados`, `window.datasetAtivo`, etc.) for backwards-compatibility hooks. **Note:** despite the name, `stateSync` does *not* persist to `localStorage` today — IndexedDB persistence is on the roadmap and will land here.
+- **`stateSync.js`** → `WILDCARD` (`'*'`). On every emission, calls `exposeGlobals` to mirror current state into `window.*` properties (`window.dadosCarregados`, `window.datasetAtivo`, etc.) for backwards-compatibility hooks.
+- **`persistenceService.js`** → `WILDCARD` (`'*'`). On every emission (skipping its own `STATE_HYDRATED` echo), calls a debounced `persistState(getState())` that writes datasets and the panel singleton to IndexedDB and UI prefs to `localStorage`. Hydration runs once at boot via `replaceAllState` *before* any subscriber is wired, so the act of restoring does not schedule a redundant save.
 
 ## 6. Reactive flow — concrete walkthrough
 
@@ -166,7 +172,7 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 - Subscribers must not synchronously emit a state event from inside their callback (re-entrancy loop). Defer with `queueMicrotask` if you need a follow-up mutation.
 - For normalize-on-read paths (e.g. applying chart-config defaults during render), use `normalizeActiveDatasetConfig` — it writes without emitting, which is the only safe shape for that case.
 - Renderers are stateless. They read via getters and never mutate.
-- `STATE_EVENTS.WILDCARD === '*'` is reserved for `stateSync.js`. Do not subscribe to it from anywhere else.
+- `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`stateSync.js`, `persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js` — use a typed subscription.
 
 ## 8. Where do I put new code?
 

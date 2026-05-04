@@ -17,6 +17,11 @@
  */
 
 import { initializeI18n, t, parseCsv, parseJson, processData } from './services/index.js';
+import {
+	isPersistenceAvailable,
+	hydrateState,
+	enablePersistenceAutoSave,
+} from './services/persistenceService.js';
 import { PREVIEW_DEFAULT_ROWS } from './config/limits.js';
 import {
 renderEmptyState,
@@ -39,6 +44,7 @@ addDataset,
 normalizeActiveDatasetConfig,
 updateActiveDatasetColumns,
 updateActiveDatasetConfig,
+replaceAllState,
 } from './modules/index.js';
 import {
 enableStateLog,
@@ -84,34 +90,65 @@ await initializeI18n();
 // Only run app logic on pages that have the main app UI
 if (!document.getElementById('info-arquivo')) return;
 
-// 2. Initialize state management
+// 2. Hydrate persisted state BEFORE any subscriber (incl. stateSync) is wired,
+//    so the act of restoring doesn't immediately schedule a redundant save and
+//    refreshView sees the restored state on first paint.
+if (isPersistenceAvailable()) {
+	await hydrateState({
+		replaceAllState,
+		transformPanel: rehydratePanelChartSpecs,
+	});
+}
+
+// 3. Initialize state management
 initializeStateSync();
 exposeGlobals();
 
-// 3. Initialize modules
+// 4. Initialize modules
 initFileManager(handleDatasetsChanged);
 initChartControls(null, livePreviewRender);
 initPanelManager(showFeedback);
 
-// 4. Setup event handlers (must be after modules initialized)
+// 5. Setup event handlers (must be after modules initialized)
 initializeAllEventHandlers();
 
-// 5. Setup UI subscriptions
+// 6. Setup UI subscriptions
 setupStateSubscriptions();
 
-// 6. Initial view render
+// 7. Wire debounced auto-save AFTER subscriptions; flush on tab close so
+//    the last in-flight change survives. enablePersistenceAutoSave skips
+//    the STATE_HYDRATED event internally to avoid resaving the load.
+const persistenceHandle = enablePersistenceAutoSave(getState);
+window.addEventListener('beforeunload', () => persistenceHandle.flush());
+
+// 8. Initial view render
 refreshView();
 
-// 7. Re-render dynamic content on locale changes
+// 9. Re-render dynamic content on locale changes
 window.addEventListener('chive-locale-changed', () => {
 refreshView();
 });
 
-// 8. Surface internal module errors in UI feedback
+// 10. Surface internal module errors in UI feedback
 window.addEventListener('chive-internal-error', event => {
 const message = event?.detail?.message || t('chive-error-internal');
 showError(message);
 });
+}
+
+/**
+ * Re-merge each persisted chart spec against the current chart defaults so
+ * old specs absorb any new keys added to chartDefaults.js since they were
+ * saved. Cheap; runs once on hydration.
+ */
+function rehydratePanelChartSpecs(panel) {
+	if (!panel || !Array.isArray(panel.charts)) return panel;
+	const charts = panel.charts.map(spec => {
+		if (!spec || !spec.type) return spec;
+		const merged = mergeChartConfigWithDefaults({ [spec.type]: spec.config || {} });
+		return { ...spec, config: merged[spec.type] };
+	});
+	return { ...panel, charts };
 }
 
 // =============================================================================
