@@ -24,10 +24,13 @@ import {
 	validatePanelSlots,
 } from '../appState.js';
 import { applyBlockProportions, renderGuidedResizeHandles, startBlockHeightResizeDrag } from './panelResize.js';
+import { mountSlot, teardownAllSlots } from './slotLifecycle.js';
 
 export function renderSidebarPanel(removeChartFromPanel) {
 	const lista = document.getElementById('lista-painel-charts');
 	if (!lista) return;
+
+	teardownAllSlots(lista);
 
 	const charts = getPanelCharts();
 	if (charts.length === 0) {
@@ -78,14 +81,15 @@ export function renderSidebarPanel(removeChartFromPanel) {
 		topo.appendChild(titleWrap);
 		topo.appendChild(removeBtn);
 
-		// Preview section (SVG content)
+		// Preview section (live D3 render)
 		const preview = document.createElement('div');
 		preview.className = 'panel-item-preview';
-		preview.innerHTML = chart.svgMarkup;
 
 		article.appendChild(topo);
 		article.appendChild(preview);
 		lista.appendChild(article);
+
+		mountSlot(preview, chart);
 
 		// Drag event
 		if (desktopDnd) {
@@ -110,6 +114,7 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 	const blocks = getPanelBlocks();
 	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
 
+	teardownAllSlots(canvas);
 	canvas.innerHTML = '';
 
 	const stack = document.createElement('div');
@@ -248,6 +253,14 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 
 	canvas.appendChild(stack);
 	canvas.appendChild(addControls);
+
+	canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]').forEach(slotEl => {
+		const chart = getChartSnapshot(slotEl.dataset.panelChartId);
+		if (!chart) return;
+		const svgContainer = slotEl.querySelector('.painel-slot-svg');
+		if (!svgContainer) return;
+		mountSlot(svgContainer, chart);
+	});
 }
 
 export function fillLayoutSelect() {

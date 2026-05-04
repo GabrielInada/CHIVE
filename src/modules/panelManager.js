@@ -12,14 +12,17 @@
  */
 
 import { t } from '../services/i18nService.js';
-import { captureSvgMarkupFromContainer } from '../utils/svgExport.js';
 import { ok, fail } from '../utils/result.js';
+import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
+import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
+import { getNumericColumnNames } from '../utils/columnHelpers.js';
 import {
 	LAYOUTS_PAINEL,
 	getLayoutConfig as getPanelLayoutConfig,
 } from './panel/layoutConfig.js';
 import {
 	getPanelBlocks,
+	getActiveDataset,
 	addChartSnapshot,
 	removeChartSnapshot,
 	getChartSnapshot,
@@ -35,6 +38,7 @@ import {
 	fillLayoutSelect,
 } from './panel/panelRenderer.js';
 import { exportPanelLayoutSvg as exportSvg } from './panel/panelExporter.js';
+import { SUPPORTED_PANEL_CHART_TYPES } from './panel/renderChartFromSpec.js';
 
 // Callback for feedback UI (will be set by main.js)
 let feedbackCallback = null;
@@ -103,14 +107,28 @@ function handleLayoutChange() {
  */
 export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 	try {
-		const captured = captureSvgMarkupFromContainer(containerId);
-		if (!captured.ok) {
-			return captured;
+		const type = metadata?.type;
+		if (!type || !SUPPORTED_PANEL_CHART_TYPES.includes(type)) {
+			return fail('unknown-type');
 		}
+
+		const dataset = getActiveDataset();
+		if (!dataset) return fail('no-dataset');
+
+		const mergedConfig = mergeChartConfigWithDefaults(dataset.configGraficos);
+		const allColumnNames = Array.isArray(dataset.colunas)
+			? dataset.colunas.map(column => column?.nome).filter(Boolean)
+			: [];
+		const numericColumnNames = getNumericColumnNames(dataset.colunas || []);
+		const safeGlobalFilter = resolveGlobalFilterForColumns(mergedConfig.globalFilter, allColumnNames);
+		const filteredRows = applyGlobalFilterRules(dataset.dados || [], safeGlobalFilter, numericColumnNames);
 
 		const chartId = addChartSnapshot({
 			nome: chartBaseName,
-			svgMarkup: captured.svgMarkup,
+			type,
+			config: structuredClone(mergedConfig[type] || {}),
+			dataSnapshot: structuredClone(filteredRows),
+			columnsSnapshot: structuredClone(dataset.colunas || []),
 			metadata,
 			metaSummary: typeof metadata?.summary === 'string' ? metadata.summary : '',
 		});

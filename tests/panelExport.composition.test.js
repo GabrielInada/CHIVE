@@ -14,6 +14,9 @@ const baixarSvgMarkupMock = vi.fn((svgMarkup, fileNameBase) => {
 vi.mock('../src/utils/svgExport.js', () => ({
   captureSvgMarkupFromContainer: vi.fn(() => ({ ok: false, reason: 'not-used' })),
   downloadSvgMarkup: (...args) => baixarSvgMarkupMock(...args),
+  ensureSvgAttributes: (svg) => {
+    if (!svg.getAttribute('xmlns')) svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  },
 }));
 
 const { renderCanvasPanel, exportPanelLayoutSvg } = await import('../src/modules/panelManager.js');
@@ -39,6 +42,27 @@ function rect(left, top, width, height) {
   };
 }
 
+/**
+ * Inject a live <svg> into each chart-bearing slot's .painel-slot-svg container.
+ * After Phase 1, the exporter clones the LIVE SVG from the DOM (no longer reads
+ * a serialized svgMarkup string from state). Tests that exercise export geometry
+ * therefore need to put real SVG elements in the slots before calling export.
+ */
+function injectLiveSlotSvgs() {
+  document.querySelectorAll('[data-panel-slot][data-panel-chart-id] .painel-slot-svg').forEach(slotSvgEl => {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    // Intentionally NO width/height/x/y here — the exporter sets those fresh,
+    // and tests rely on them appearing in canonical x y width height order in
+    // the serialized output.
+    svg.setAttribute('viewBox', '0 0 10 10');
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('width', '10');
+    rect.setAttribute('height', '10');
+    svg.appendChild(rect);
+    slotSvgEl.appendChild(svg);
+  });
+}
+
 describe('panel export composition (phase 2)', () => {
   beforeEach(() => {
     appState.resetState();
@@ -60,6 +84,7 @@ describe('panel export composition (phase 2)', () => {
     const canvas = document.getElementById('panel-layout-canvas');
     canvas.getBoundingClientRect = () => rect(0, 0, 0, 0);
 
+    injectLiveSlotSvgs();
     const result = exportPanelLayoutSvg();
 
     expect(result.ok).toBe(false);
@@ -90,6 +115,7 @@ describe('panel export composition (phase 2)', () => {
     filledSlot.getBoundingClientRect = () => rect(20, 30, 260, 150);
     emptySlot.getBoundingClientRect = () => rect(300, 30, 260, 150);
 
+    injectLiveSlotSvgs();
     const result = exportPanelLayoutSvg();
     expect(result.ok).toBe(true);
 
@@ -129,6 +155,7 @@ describe('panel export composition (phase 2)', () => {
     slotA.getBoundingClientRect = () => rect(150, 110, 300, 200);
     slotB.getBoundingClientRect = () => rect(500, 460, 400, 250);
 
+    injectLiveSlotSvgs();
     const result = exportPanelLayoutSvg();
 
     expect(result.ok).toBe(true);
@@ -175,6 +202,7 @@ describe('panel export composition (phase 2)', () => {
     slotA2.getBoundingClientRect = () => rect(130, 10, 222, 102);
     slotB1.getBoundingClientRect = () => rect(10, 200, 333, 103);
 
+    injectLiveSlotSvgs();
     const result = exportPanelLayoutSvg();
     expect(result.ok).toBe(true);
 
@@ -223,6 +251,7 @@ describe('panel export composition (phase 2)', () => {
     slot2.getBoundingClientRect = () => rect(620, 80, 280, 240);
     slot3.getBoundingClientRect = () => rect(620, 340, 280, 260);
 
+    injectLiveSlotSvgs();
     const result = exportPanelLayoutSvg();
     expect(result.ok).toBe(true);
 
@@ -289,6 +318,7 @@ describe('panel export composition (phase 2)', () => {
     b3.getBoundingClientRect = () => rect(560, 500, 400, 160);
     c2slot.getBoundingClientRect = () => rect(60, 700, 900, 170);
 
+    injectLiveSlotSvgs();
     const result = exportPanelLayoutSvg();
     expect(result.ok).toBe(true);
 
@@ -323,6 +353,7 @@ describe('panel export composition (phase 2)', () => {
     );
     keptSlot.getBoundingClientRect = () => rect(20, 30, 300, 200);
 
+    injectLiveSlotSvgs();
     const result = exportPanelLayoutSvg();
     expect(result.ok).toBe(true);
 

@@ -13,6 +13,13 @@ const mocks = vi.hoisted(() => ({
 				proportions: { split: 50 },
 			},
 		]),
+		getActiveDataset: vi.fn(() => ({
+			nome: 'fixture.csv',
+			dados: [{ a: 1 }, { a: 2 }],
+			colunas: [{ nome: 'a', tipo: 'numero' }],
+			colunasSelecionadas: ['a'],
+			configGraficos: {},
+		})),
 		addChartSnapshot: vi.fn((snap) => {
 			const id = Math.random();
 			return id;
@@ -35,17 +42,35 @@ const mocks = vi.hoisted(() => ({
 			PANEL_BLOCK_BORDER_UPDATED: 'panelBlockBorderUpdated',
 		},
 	},
-	svgExport: {
-		captureSvgMarkupFromContainer: vi.fn(() => ({ ok: true, svgMarkup: '<svg/>' })),
-		downloadSvgMarkup: vi.fn(),
+	chartDefaults: {
+		mergeChartConfigWithDefaults: vi.fn((cfg) => ({
+			bar: { category: 'a', enabled: true },
+			scatter: {},
+			network: {},
+			pie: {},
+			bubble: {},
+			treemap: {},
+			globalFilter: null,
+			...(cfg || {}),
+		})),
+	},
+	globalFilter: {
+		resolveGlobalFilterForColumns: vi.fn(() => null),
+		applyGlobalFilterRules: vi.fn((rows) => rows),
+	},
+	columnHelpers: {
+		getNumericColumnNames: vi.fn(() => ['a']),
 	},
 	i18n: {
 		t: vi.fn((k) => `txt:${k}`),
+		getLocale: vi.fn(() => 'en'),
 	},
 }));
 
 vi.mock('../../../src/modules/appState.js', () => mocks.appState);
-vi.mock('../../../src/utils/svgExport.js', () => mocks.svgExport);
+vi.mock('../../../src/config/chartDefaults.js', () => mocks.chartDefaults);
+vi.mock('../../../src/utils/globalFilter.js', () => mocks.globalFilter);
+vi.mock('../../../src/utils/columnHelpers.js', () => mocks.columnHelpers);
 vi.mock('../../../src/services/i18nService.js', () => mocks.i18n);
 
 import { initPanelManager, addChartToPanel, removeChartFromPanel, getLayoutConfig, _resetPanelManagerForTesting } from '../../../src/modules/panelManager.js';
@@ -68,7 +93,18 @@ describe('panelManager (branch coverage)', () => {
 		mocks.appState.addChartSnapshot.mockClear();
 		mocks.appState.removeChartSnapshot.mockClear();
 		mocks.appState.onStateChange.mockClear();
-		mocks.svgExport.captureSvgMarkupFromContainer.mockClear();
+		mocks.appState.getActiveDataset.mockClear();
+		mocks.appState.getActiveDataset.mockReturnValue({
+			nome: 'fixture.csv',
+			dados: [{ a: 1 }, { a: 2 }],
+			colunas: [{ nome: 'a', tipo: 'numero' }],
+			colunasSelecionadas: ['a'],
+			configGraficos: {},
+		});
+		mocks.chartDefaults.mergeChartConfigWithDefaults.mockClear();
+		mocks.globalFilter.resolveGlobalFilterForColumns.mockClear();
+		mocks.globalFilter.applyGlobalFilterRules.mockClear();
+		mocks.columnHelpers.getNumericColumnNames.mockClear();
 		mocks.i18n.t.mockClear();
 	});
 
@@ -106,88 +142,92 @@ describe('panelManager (branch coverage)', () => {
 	});
 
 	describe('addChartToPanel() success path', () => {
-		it('captures SVG and adds to panel on success', () => {
+		it('builds spec from active dataset and adds to panel on success', () => {
 			initPanelManager();
 
-			mocks.svgExport.captureSvgMarkupFromContainer.mockReturnValue({
-				ok: true,
-				svgMarkup: '<svg></svg>',
-			});
-
-			const result = addChartToPanel('container-id', 'My Chart');
+			const result = addChartToPanel('container-id', 'My Chart', { type: 'bar', summary: 'cat: a' });
 
 			expect(result.ok).toBe(true);
 			expect(result.chartId).toBeDefined();
 			expect(mocks.appState.addChartSnapshot).toHaveBeenCalled();
+			const snap = mocks.appState.addChartSnapshot.mock.calls[0][0];
+			expect(snap.type).toBe('bar');
+			expect(snap.config).toBeDefined();
+			expect(Array.isArray(snap.dataSnapshot)).toBe(true);
+			expect(Array.isArray(snap.columnsSnapshot)).toBe(true);
 		});
 
 		it('passes chart name to snapshot preserving content', () => {
 			initPanelManager();
 
-			mocks.svgExport.captureSvgMarkupFromContainer.mockReturnValue({
-				ok: true,
-				svgMarkup: '<svg/>',
-			});
-
-			addChartToPanel('container', 'My Bar Chart');
+			addChartToPanel('container', 'My Bar Chart', { type: 'bar' });
 
 			const call = mocks.appState.addChartSnapshot.mock.calls[0][0];
-			// Chart name is passed as-is (sanitization happens internally)
-			expect(call.nome).toBeDefined();
+			expect(call.nome).toBe('My Bar Chart');
 			expect(typeof call.nome).toBe('string');
 		});
 	});
 
 	describe('addChartToPanel() error paths', () => {
-		it('returns error when SVG capture fails', () => {
+		it('returns unknown-type when metadata.type is missing', () => {
 			initPanelManager();
 
-			mocks.svgExport.captureSvgMarkupFromContainer.mockReturnValue({
-				ok: false,
-				reason: 'not-found',
-			});
-
-			const result = addChartToPanel('bad-id', 'Chart');
+			const result = addChartToPanel('container', 'Chart', null);
 
 			expect(result.ok).toBe(false);
-			expect(result.reason).toBe('not-found');
+			expect(result.reason).toBe('unknown-type');
 		});
 
-		it('catches exception during SVG capture', () => {
+		it('returns unknown-type when metadata.type is not a supported renderer', () => {
 			initPanelManager();
 
-			mocks.svgExport.captureSvgMarkupFromContainer.mockImplementation(() => {
-				throw new Error('SVG error');
+			const result = addChartToPanel('container', 'Chart', { type: 'sankey' });
+
+			expect(result.ok).toBe(false);
+			expect(result.reason).toBe('unknown-type');
+		});
+
+		it('returns no-dataset when there is no active dataset', () => {
+			initPanelManager();
+			mocks.appState.getActiveDataset.mockReturnValueOnce(null);
+
+			const result = addChartToPanel('container', 'Chart', { type: 'bar' });
+
+			expect(result.ok).toBe(false);
+			expect(result.reason).toBe('no-dataset');
+		});
+
+		it('catches unexpected exceptions and returns add-error', () => {
+			initPanelManager();
+			mocks.chartDefaults.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
+				throw new Error('boom');
 			});
 
-			const result = addChartToPanel('container', 'Chart');
+			const result = addChartToPanel('container', 'Chart', { type: 'bar' });
 
 			expect(result.ok).toBe(false);
 			expect(result.reason).toBe('add-error');
 		});
 
-		it('calls feedback callback on error if provided', () => {
+		it('calls feedback callback on add-error if provided', () => {
 			const feedbackCb = vi.fn();
 			initPanelManager(feedbackCb);
-
-			mocks.svgExport.captureSvgMarkupFromContainer.mockImplementation(() => {
-				throw new Error('SVG error');
+			mocks.chartDefaults.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
+				throw new Error('boom');
 			});
 
-			addChartToPanel('container', 'Chart');
+			addChartToPanel('container', 'Chart', { type: 'bar' });
 
-			// Should call feedback with translated error message
 			expect(feedbackCb).toHaveBeenCalledWith(expect.any(String), 'error');
 		});
 
 		it('does not throw on unhandled error', () => {
 			initPanelManager();
-
-			mocks.svgExport.captureSvgMarkupFromContainer.mockImplementation(() => {
+			mocks.chartDefaults.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
 				throw new Error('Unexpected');
 			});
 
-			expect(() => addChartToPanel('x', 'y')).not.toThrow();
+			expect(() => addChartToPanel('x', 'y', { type: 'bar' })).not.toThrow();
 		});
 	});
 
