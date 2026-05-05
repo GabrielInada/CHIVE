@@ -331,6 +331,17 @@
 	"chive-error-upload-processing": "Unable to process uploaded file right now.",
 	"chive-error-upload-input-missing": "Upload control is unavailable right now.",
 	"chive-error-upload-zone-missing": "Upload area is unavailable right now.",
+	"chive-error-cancelled": "Operation cancelled.",
+	"chive-error-parse": "Could not parse file",
+	"chive-error-empty-file": "The file appears to be empty.",
+
+	"chive-progress-parsing": "Parsing $1…",
+	"chive-progress-detecting-types": "Detecting column types…",
+	"chive-progress-normalizing": "Normalizing values…",
+	"chive-progress-computing-stats": "Computing statistics…",
+	"chive-progress-ready": "$1 ready",
+	"chive-progress-ready-truncated": "$1 ready ($2 rows truncated to $3)",
+	"chive-progress-failed": "Upload failed: $1",
 
 	"chive-error-internal": "An internal application error occurred.",
 	"chive-chart-color-palette": "Color palette",

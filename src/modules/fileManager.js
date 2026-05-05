@@ -9,9 +9,10 @@
  */
 
 import { t } from '../services/i18nService.js';
-import { parseCsv, parseJson, processData, formatFileSize, joinDatasets } from '../services/dataService.js';
+import { processData, formatFileSize, joinDatasets } from '../services/dataService.js';
+import { ingestFile, progressLabelForStage } from '../services/dataIngestService.js';
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './appState.js';
-import { showError, clearErrors } from './feedbackUI.js';
+import { showError, clearErrors, showProgress } from './feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/limits.js';
 import { DELIMITED_EXTENSIONS } from '../config/formats.js';
 import { createDefaultChartConfig } from '../config/chartDefaults.js';
@@ -80,44 +81,58 @@ async function processFileForDataset(file) {
 		}
 	}
 
-	// Read file
+	// Read file (FileReader stays on the main thread; ~100-200ms even for 50MB,
+	// dominated by disk I/O. Worker handles the parse/normalize/stats CPU work.)
 	const content = await readFile(file);
-	let dadosBrutos;
+	const kind = isJson ? 'json' : 'csv';
 
-	// Parse based on format
-	try {
-		if (isJson) {
-			dadosBrutos = parseJson(content);
-		} else {
-			// All delimited formats: auto-detects comma, semicolon, tab, pipe
-			dadosBrutos = parseCsv(content);
-		}
-	} catch (err) {
-		throw new Error(`${t('chive-error-parse')}: ${err.message}`);
-	}
+	const progress = showProgress(t('chive-progress-parsing', [file.name]));
+	const abortController = new AbortController();
+	progress.onCancel(() => abortController.abort());
 
-	// Check row limit
-	if (dadosBrutos.length > ROW_LIMIT) {
-		const confirmarLinhas = confirmFn(
-			`${t('chive-warn-rows', [dadosBrutos.length, ROW_LIMIT])} \n${t('chive-warn-rows-proceed')}`
-		);
-		if (!confirmarLinhas) {
+	const result = await ingestFile(
+		{ kind, text: content, options: { rowLimit: ROW_LIMIT } },
+		{
+			signal: abortController.signal,
+			onProgress: ({ stage, percent }) => {
+				progress.update(percent, progressLabelForStage(stage, file.name));
+			},
+		},
+	);
+
+	if (!result.ok) {
+		if (result.reason === 'cancelled') {
+			progress.close();
 			throw new Error(t('chive-error-cancelled'));
 		}
-		dadosBrutos = dadosBrutos.slice(0, ROW_LIMIT);
+		progress.fail(t('chive-progress-failed', [result.reason]));
+		throw new Error(`${t('chive-error-parse')}: ${result.reason}`);
 	}
 
-	// Process dataset and normalize to app shape
-	const processado = processData(dadosBrutos, file.name);
+	const { dados, colunas, statsNumeric, statsCategorical, truncatedFrom } = result.value;
+
+	if (dados.length === 0) {
+		progress.fail(t('chive-progress-failed', [t('chive-error-empty-file')]));
+		throw new Error(t('chive-error-empty-file'));
+	}
+
 	const dataset = {
 		nome: file.name,
 		tamanho: formatFileSize(file.size),
-		dados: processado.dados,
-		colunas: processado.colunas,
-		colunasSelecionadas: processado.colunas.map(coluna => coluna.nome),
+		dados,
+		colunas,
+		colunasSelecionadas: colunas.map(coluna => coluna.nome),
 		configGraficos: createDefaultChartConfig(),
+		// Stats computed in the worker — statsView reads these instead of recomputing
+		// on every DATASET_ADDED event. See `services/dataIngestService.js`.
+		precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
 	};
 	addDataset(dataset);
+
+	const successLabel = truncatedFrom
+		? t('chive-progress-ready-truncated', [file.name, truncatedFrom, ROW_LIMIT])
+		: t('chive-progress-ready', [file.name]);
+	progress.succeed(successLabel);
 }
 
 /**

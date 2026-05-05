@@ -16,12 +16,13 @@
  * - Main.js handles initialization and orchestration only
  */
 
-import { initializeI18n, t, parseCsv, parseJson, processData } from './services/index.js';
+import { initializeI18n, t, processData } from './services/index.js';
 import {
 	isPersistenceAvailable,
 	hydrateState,
 	enablePersistenceAutoSave,
 } from './services/persistenceService.js';
+import { ingestFile, progressLabelForStage } from './services/dataIngestService.js';
 import { PREVIEW_DEFAULT_ROWS } from './config/limits.js';
 import {
 renderEmptyState,
@@ -72,6 +73,7 @@ showFeedbackMessage,
 showError,
 showErrorMessage,
 hideErrorMessage,
+showProgress,
 switchTab,
 } from './modules/index.js';
 
@@ -318,9 +320,9 @@ function handleJoinDatasetRequest(spec) {
 	refreshView();
 }
 
-async function loadPresetRows(preset) {
+async function loadPresetSource(preset) {
 	if (Array.isArray(preset?.data)) {
-		return preset.data;
+		return { mode: 'inline', rows: preset.data, dropColumns: preset.dropColumns || [] };
 	}
 
 	if (typeof preset?.dataUrl !== 'string' || !preset.dataUrl.trim()) {
@@ -334,21 +336,8 @@ async function loadPresetRows(preset) {
 
 	const rawText = await response.text();
 	const format = String(preset.dataFormat || '').toLowerCase();
-	const shouldParseJson = format === 'json' || preset.dataUrl.toLowerCase().endsWith('.json');
-	const parsed = shouldParseJson ? parseJson(rawText) : parseCsv(rawText);
-
-	if (!Array.isArray(preset.dropColumns) || preset.dropColumns.length === 0) {
-		return parsed;
-	}
-
-	const columnsToDrop = new Set(preset.dropColumns);
-	return parsed.map(row => {
-		const next = { ...row };
-		columnsToDrop.forEach(columnName => {
-			delete next[columnName];
-		});
-		return next;
-	});
+	const kind = format === 'json' || preset.dataUrl.toLowerCase().endsWith('.json') ? 'json' : 'csv';
+	return { mode: 'fetched', kind, text: rawText, dropColumns: preset.dropColumns || [] };
 }
 
 async function handlePresetDatasetRequest(preset) {
@@ -357,23 +346,70 @@ async function handlePresetDatasetRequest(preset) {
 		return;
 	}
 
+	const presetName = t(preset.nameKey);
+	const progress = showProgress(t('chive-progress-parsing', [presetName]));
+	const abortController = new AbortController();
+	progress.onCancel(() => abortController.abort());
+
 	try {
-		const presetRows = await loadPresetRows(preset);
-		const processed = processData(presetRows, preset.id);
+		const source = await loadPresetSource(preset);
+
+		let dados;
+		let colunas;
+		let statsNumeric = [];
+		let statsCategorical = [];
+
+		if (source.mode === 'inline') {
+			// Inline presets are tiny demo arrays — sync processData is cheap.
+			let rows = source.rows;
+			if (source.dropColumns.length > 0) {
+				const dropSet = new Set(source.dropColumns);
+				rows = rows.map(row => {
+					const next = { ...row };
+					dropSet.forEach(key => { delete next[key]; });
+					return next;
+				});
+			}
+			const processed = processData(rows);
+			dados = processed.dados;
+			colunas = processed.colunas;
+			progress.update(100);
+		} else {
+			const result = await ingestFile(
+				{ kind: source.kind, text: source.text, options: { dropColumns: source.dropColumns } },
+				{
+					signal: abortController.signal,
+					onProgress: ({ stage, percent }) => {
+						progress.update(percent, progressLabelForStage(stage, presetName));
+					},
+				},
+			);
+
+			if (!result.ok) {
+				if (result.reason === 'cancelled') progress.close();
+				else progress.fail(t('chive-progress-failed', [result.reason]));
+				return;
+			}
+
+			({ dados, colunas, statsNumeric, statsCategorical } = result.value);
+		}
+
 		const dataset = {
-			nome: t(preset.nameKey),
+			nome: presetName,
 			tamanho: t('chive-preset-generated-size', [preset.rows]),
-			dados: processed.dados,
-			colunas: processed.colunas,
-			colunasSelecionadas: processed.colunas.map(c => c.nome),
+			dados,
+			colunas,
+			colunasSelecionadas: colunas.map(c => c.nome),
 			configGraficos: createDefaultChartConfig(),
+			precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
 		};
 
 		const index = addDataset(dataset);
 		selectDataset(index);
-		showFeedback(t('chive-preset-load-success', [t(preset.nameKey)]));
+		progress.succeed(t('chive-preset-load-success', [presetName]));
 		refreshView();
-	} catch {
+	} catch (err) {
+		progress.fail(t('chive-progress-failed', [err?.message || 'error']));
 		showError(t('chive-join-error-generic'));
 	}
 }
