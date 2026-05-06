@@ -46,6 +46,8 @@ normalizeActiveDatasetConfig,
 updateActiveDatasetColumns,
 updateActiveDatasetConfig,
 replaceAllState,
+getDirtyDatasetIds,
+clearDirtyDatasetIds,
 } from './modules/index.js';
 import {
 enableStateLog,
@@ -120,7 +122,13 @@ setupStateSubscriptions();
 // 7. Wire debounced auto-save AFTER subscriptions; flush on tab close so
 //    the last in-flight change survives. enablePersistenceAutoSave skips
 //    the STATE_HYDRATED event internally to avoid resaving the load.
-const persistenceHandle = enablePersistenceAutoSave(getState);
+//    getDiff/clearDiff thread per-dataset dirty tracking through so the
+//    save writes only changed dataset records (huge win for 200k-row datasets
+//    where the old "clear + put all" path rewrote ~30 MB on every config tweak).
+const persistenceHandle = enablePersistenceAutoSave(getState, {
+	getDiff: getDirtyDatasetIds,
+	clearDiff: clearDirtyDatasetIds,
+});
 window.addEventListener('beforeunload', () => persistenceHandle.flush());
 
 // 8. Initial view render

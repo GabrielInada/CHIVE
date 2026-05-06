@@ -127,6 +127,14 @@ export function normalizeActiveDatasetConfig(normalizer) {
 	return dataState.normalizeActiveDatasetConfig(normalizer);
 }
 
+export function getDirtyDatasetIds() {
+	return dataState.getDirtyDatasetIds();
+}
+
+export function clearDirtyDatasetIds() {
+	return dataState.clearDirtyDatasetIds();
+}
+
 /**
  * Panel domain exports
  */
