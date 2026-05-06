@@ -77,16 +77,39 @@ function readPanel(db) {
 	});
 }
 
-function writeAll(db, datasets, panelRecord) {
+/**
+ * Write a snapshot to IndexedDB.
+ *
+ * - `diff == null` → "clear and put all" (back-compat for callers that don't
+ *   track per-dataset dirtiness; also the safe path for tests).
+ * - `diff != null` → only put() ids in `diff.dirty` and delete() ids in
+ *   `diff.removed`. The store is **not** cleared, so unrelated dataset
+ *   records stay untouched on disk. After a 200k-row upload settles, this
+ *   means subsequent config tweaks write zero dataset records — only the
+ *   small panel singleton.
+ */
+function writeAll(db, datasets, panelRecord, diff) {
 	return new Promise((resolve, reject) => {
 		const tx = db.transaction([STORE_DATASETS, STORE_PANEL], 'readwrite');
 		const dsStore = tx.objectStore(STORE_DATASETS);
 		const panelStore = tx.objectStore(STORE_PANEL);
 
-		dsStore.clear();
-		datasets.forEach(dataset => {
-			if (dataset && dataset.id) dsStore.put(dataset);
-		});
+		if (diff && Array.isArray(diff.dirty) && Array.isArray(diff.removed)) {
+			diff.removed.forEach(id => {
+				if (id) dsStore.delete(id);
+			});
+			const dirtySet = new Set(diff.dirty);
+			datasets.forEach(dataset => {
+				if (dataset && dataset.id && dirtySet.has(dataset.id)) {
+					dsStore.put(dataset);
+				}
+			});
+		} else {
+			dsStore.clear();
+			datasets.forEach(dataset => {
+				if (dataset && dataset.id) dsStore.put(dataset);
+			});
+		}
 
 		panelStore.put({ key: PANEL_KEY, ...panelRecord });
 
@@ -177,8 +200,13 @@ export async function hydrateState({ replaceAllState, transformPanel } = {}) {
  * Persist a state snapshot. Returns the in-flight save Promise.
  * Concurrent calls during an in-flight save are coalesced — the next call
  * after settle will pick up the latest snapshot.
+ *
+ * @param {object} snapshot — full state shape { data, panel, ui }
+ * @param {{ dirty: string[], removed: string[] } | null} [diff] — if provided,
+ *   writes only the listed dirty datasets and deletes the listed removed ids.
+ *   Omit (or pass null) to fall back to the legacy "clear + put all" path.
  */
-export async function persistState(snapshot) {
+export async function persistState(snapshot, diff = null) {
 	if (!isPersistenceAvailable() || !snapshot || typeof snapshot !== 'object') return;
 
 	const datasets = Array.isArray(snapshot.data?.datasets) ? snapshot.data.datasets : [];
@@ -205,7 +233,7 @@ export async function persistState(snapshot) {
 		let db;
 		try {
 			db = await openDb();
-			await writeAll(db, datasets, panelRecord);
+			await writeAll(db, datasets, panelRecord, diff);
 			writeUiPrefs(ui);
 		} catch (err) {
 			console.warn('[chive:persist] save failed:', err);
@@ -242,17 +270,36 @@ export async function clearPersistedState() {
  * Wildcard subscription is OK here: per ARCHITECTURE.md §7, the wildcard slot
  * is reserved for state-bus consumers (stateSync, persistenceService). UI code
  * still subscribes only to typed events.
+ *
+ * @param {Function} getStateFn — returns the current state snapshot
+ * @param {object}   [opts]
+ * @param {number}   [opts.debounceMs=300]
+ * @param {Function} [opts.getDiff] — returns `{ dirty, removed }`. If provided,
+ *   only those dataset records are written/deleted per save.
+ * @param {Function} [opts.clearDiff] — invoked after a successful save (and on
+ *   STATE_HYDRATED) to drain the dirty/removed sets the caller maintains.
  */
-export function enablePersistenceAutoSave(getStateFn, { debounceMs = 300 } = {}) {
+export function enablePersistenceAutoSave(getStateFn, { debounceMs = 300, getDiff = null, clearDiff = null } = {}) {
 	const noop = { flush: () => {}, cancel: () => {} };
 	if (!isPersistenceAvailable() || typeof getStateFn !== 'function') return noop;
 
-	const save = debounce(() => persistState(getStateFn()), debounceMs);
+	const save = debounce(async () => {
+		const diff = typeof getDiff === 'function' ? getDiff() : null;
+		await persistState(getStateFn(), diff);
+		// Drain the diff *after* the save resolves so any state event that
+		// landed during the IDB transaction keeps its dirty mark for the
+		// next save.
+		if (typeof clearDiff === 'function') clearDiff();
+	}, debounceMs);
 
 	const unsubscribe = onStateChange(STATE_EVENTS.WILDCARD, payload => {
 		// Skip our own hydration emission — otherwise we'd schedule a save
-		// for the snapshot we just loaded.
-		if (payload?.type === STATE_EVENTS.STATE_HYDRATED) return;
+		// for the snapshot we just loaded. Also discard any dirty marks
+		// accumulated during hydration so the next real edit starts clean.
+		if (payload?.type === STATE_EVENTS.STATE_HYDRATED) {
+			if (typeof clearDiff === 'function') clearDiff();
+			return;
+		}
 		save();
 	});
 

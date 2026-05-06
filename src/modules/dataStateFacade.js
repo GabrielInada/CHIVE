@@ -10,6 +10,42 @@ function generateDatasetId() {
 }
 
 export function createDataStateFacade({ appState, emitStateChange }) {
+	// Per-dataset dirty/removed tracking so persistenceService can write only
+	// changed records instead of clearing + rewriting every dataset on every
+	// save. Mutators below mark dataset ids as they change. The autosave
+	// subscriber drains and resets these sets after each successful IDB write
+	// (and on STATE_HYDRATED, to discard marks set during hydration).
+	const dirtyDatasetIds = new Set();
+	const removedDatasetIds = new Set();
+
+	function markDatasetDirty(id) {
+		if (!id) return;
+		dirtyDatasetIds.add(id);
+		// A pending removal is cancelled if the same id is dirtied again.
+		removedDatasetIds.delete(id);
+	}
+
+	function markDatasetRemoved(id) {
+		if (!id) return;
+		removedDatasetIds.add(id);
+		// A dataset added then removed within one debounce window was never
+		// persisted — drop the dirty mark so we don't try to put() a record
+		// that no longer exists in state.
+		dirtyDatasetIds.delete(id);
+	}
+
+	function getDirtyDatasetIds() {
+		return {
+			dirty: Array.from(dirtyDatasetIds),
+			removed: Array.from(removedDatasetIds),
+		};
+	}
+
+	function clearDirtyDatasetIds() {
+		dirtyDatasetIds.clear();
+		removedDatasetIds.clear();
+	}
+
 	function getActiveDataset() {
 		if (appState.data.activeIndex === -1 || !appState.data.datasets[appState.data.activeIndex]) {
 			return null;
@@ -47,6 +83,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (appState.data.activeIndex === -1) {
 			appState.data.activeIndex = index;
 		}
+		markDatasetDirty(dataset.id);
 		emitStateChange(STATE_EVENTS.DATASET_ADDED, { index, dataset });
 		return index;
 	}
@@ -55,6 +92,8 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (index < 0 || index >= appState.data.datasets.length) {
 			throw new Error(`Invalid dataset index: ${index}`);
 		}
+		// Capture the id before splice so we can mark it removed for IDB.
+		const removedId = appState.data.datasets[index]?.id;
 		appState.data.datasets.splice(index, 1);
 
 		if (appState.data.activeIndex >= index) {
@@ -65,6 +104,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		appState.panel.charts = [];
 		appState.panel.slots = {};
 
+		markDatasetRemoved(removedId);
 		emitStateChange(STATE_EVENTS.DATASET_REMOVED, index);
 	}
 
@@ -76,6 +116,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 			...dataset.configGraficos,
 			...updates,
 		};
+		markDatasetDirty(dataset.id);
 		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, updates);
 	}
 
@@ -84,6 +125,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (!dataset) return;
 
 		dataset.colunasSelecionadas = columnNames;
+		markDatasetDirty(dataset.id);
 		emitStateChange(STATE_EVENTS.COLUMNS_UPDATED, columnNames);
 	}
 
@@ -94,6 +136,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
 		dataset.configGraficos = normalizer(dataset.configGraficos);
+		markDatasetDirty(dataset.id);
 	}
 
 	return {
@@ -106,5 +149,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		updateActiveDatasetConfig,
 		updateActiveDatasetColumns,
 		normalizeActiveDatasetConfig,
+		getDirtyDatasetIds,
+		clearDirtyDatasetIds,
 	};
 }
