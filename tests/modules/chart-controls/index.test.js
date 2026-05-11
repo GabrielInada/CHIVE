@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
 	})),
 	onStateChange: vi.fn(),
 	setActiveChartType: vi.fn(),
+	openChartTypePickerDialog: vi.fn(() => Promise.resolve(null)),
 	createBarChartControls: vi.fn(() => []),
 	setupBarChartControlListeners: vi.fn(),
 	createBubbleChartControls: vi.fn(() => []),
@@ -91,6 +92,10 @@ vi.mock('../../../src/modules/chart-controls/previews.js', () => ({
 	PREVIEW_TREEMAP_SVG: '<svg id="prev-treemap" />',
 }));
 
+vi.mock('../../../src/components/results/chartTypePickerDialog.js', () => ({
+	openChartTypePickerDialog: mocks.openChartTypePickerDialog,
+}));
+
 import {
 	renderChartControlsSidebar,
 	computeActivationDefaults,
@@ -99,40 +104,50 @@ import {
 
 function setupSidebarDOM() {
 	document.body.innerHTML = `
-		<div id="viz-chart-list"></div>
 		<div id="viz-chart-params"></div>
 	`;
+}
+
+function configWithActive(activeType) {
+	return {
+		bar: { enabled: activeType === 'bar' },
+		scatter: { enabled: activeType === 'scatter' },
+		pie: { enabled: activeType === 'pie' },
+		bubble: { enabled: activeType === 'bubble' },
+		network: { enabled: activeType === 'network' },
+		treemap: { enabled: activeType === 'treemap' },
+	};
 }
 
 describe('renderChartControlsSidebar', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		mocks.openChartTypePickerDialog.mockImplementation(() => Promise.resolve(null));
 		setupSidebarDOM();
 	});
 
-	it('renders 6 chart rows in the chart-list pane', () => {
+	it('renders a chart-picker trigger inside the params pane', () => {
 		renderChartControlsSidebar({ configGraficos: {} });
-		const rows = document.querySelectorAll('#viz-chart-list .viz-chart-row');
-		expect(rows.length).toBe(6);
+		const trigger = document.querySelector('#viz-chart-params .viz-chart-picker-trigger');
+		expect(trigger).not.toBeNull();
 	});
 
-	it('marks the active chart row with .ativo class', () => {
-		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce({
-			bar: { enabled: false }, scatter: { enabled: true },
-			pie: { enabled: false }, bubble: { enabled: false },
-			network: { enabled: false }, treemap: { enabled: false },
-		});
+	it('trigger shows placeholder when no chart is active', () => {
 		renderChartControlsSidebar({ configGraficos: {} });
-		const activeRow = document.querySelector('#viz-chart-list .viz-chart-row.ativo');
-		expect(activeRow?.dataset.chartType).toBe('scatter');
+		const label = document.querySelector('.viz-chart-picker-trigger-label');
+		expect(label?.classList.contains('placeholder')).toBe(true);
+	});
+
+	it('trigger shows the active chart name when a chart is active', () => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('scatter'));
+		renderChartControlsSidebar({ configGraficos: {} });
+		const label = document.querySelector('.viz-chart-picker-trigger-label');
+		expect(label?.classList.contains('placeholder')).toBe(false);
+		expect(label?.textContent).toBe('chive-chart-toggle-scatter');
 	});
 
 	it('renders only the active chart\'s controls in the params pane', () => {
-		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce({
-			bar: { enabled: false }, scatter: { enabled: true },
-			pie: { enabled: false }, bubble: { enabled: false },
-			network: { enabled: false }, treemap: { enabled: false },
-		});
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('scatter'));
 		renderChartControlsSidebar({ configGraficos: {} });
 		expect(mocks.createScatterPlotControls).toHaveBeenCalledTimes(1);
 		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
@@ -144,7 +159,6 @@ describe('renderChartControlsSidebar', () => {
 		renderChartControlsSidebar({ configGraficos: {} });
 		const empty = document.querySelector('#viz-chart-params .viz-params-empty');
 		expect(empty).not.toBeNull();
-		// None of the per-chart control builders should run when nothing is active.
 		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
 		expect(mocks.createScatterPlotControls).not.toHaveBeenCalled();
 	});
@@ -153,42 +167,54 @@ describe('renderChartControlsSidebar', () => {
 		renderChartControlsSidebar(null);
 		const empty = document.querySelector('#viz-chart-params .tabela-sem-colunas');
 		expect(empty).not.toBeNull();
-		expect(document.querySelectorAll('#viz-chart-list .viz-chart-row').length).toBe(0);
+		expect(document.querySelector('.viz-chart-picker-trigger')).toBeNull();
 	});
 
-	it('clicking a non-active row activates that chart with defaults', () => {
-		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce({
-			bar: { enabled: true }, scatter: { enabled: false },
-			pie: { enabled: false }, bubble: { enabled: false },
-			network: { enabled: false }, treemap: { enabled: false },
-		});
+	it('clicking the trigger opens the picker with current activeChartType', () => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('bar'));
 		renderChartControlsSidebar({ configGraficos: { bar: { category: 'categoria' } } });
-		const scatterRow = document.querySelector('[data-chart-type="scatter"]');
-		scatterRow.click();
+		document.querySelector('.viz-chart-picker-trigger').click();
+		expect(mocks.openChartTypePickerDialog).toHaveBeenCalledTimes(1);
+		expect(mocks.openChartTypePickerDialog).toHaveBeenCalledWith(
+			expect.objectContaining({ activeChartType: 'bar' })
+		);
+	});
+
+	it('picker resolving with a chartType activates that chart with defaults', async () => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('bar'));
+		mocks.openChartTypePickerDialog.mockReturnValueOnce(Promise.resolve({ chartType: 'scatter' }));
+		renderChartControlsSidebar({ configGraficos: { bar: { category: 'categoria' } } });
+		document.querySelector('.viz-chart-picker-trigger').click();
+		await Promise.resolve();
+		await Promise.resolve();
 		expect(mocks.setActiveChartType).toHaveBeenCalledWith(
 			'scatter',
 			expect.objectContaining({ expanded: true })
 		);
 	});
 
-	it('clicking the active row deselects (passes null)', () => {
-		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce({
-			bar: { enabled: true }, scatter: { enabled: false },
-			pie: { enabled: false }, bubble: { enabled: false },
-			network: { enabled: false }, treemap: { enabled: false },
-		});
+	it('picker resolving with { chartType: null } deselects', async () => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('bar'));
+		mocks.openChartTypePickerDialog.mockReturnValueOnce(Promise.resolve({ chartType: null }));
 		renderChartControlsSidebar({ configGraficos: {} });
-		const activeRow = document.querySelector('.viz-chart-row.ativo');
-		activeRow.click();
+		document.querySelector('.viz-chart-picker-trigger').click();
+		await Promise.resolve();
+		await Promise.resolve();
 		expect(mocks.setActiveChartType).toHaveBeenCalledWith(null);
 	});
 
+	it('picker resolving with null (cancel) does not change state', async () => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('bar'));
+		mocks.openChartTypePickerDialog.mockReturnValueOnce(Promise.resolve(null));
+		renderChartControlsSidebar({ configGraficos: {} });
+		document.querySelector('.viz-chart-picker-trigger').click();
+		await Promise.resolve();
+		await Promise.resolve();
+		expect(mocks.setActiveChartType).not.toHaveBeenCalled();
+	});
+
 	it('preserves expanded state of control sections across rerenders', () => {
-		mocks.mergeChartConfigWithDefaults.mockReturnValue({
-			bar: { enabled: true }, scatter: { enabled: false },
-			pie: { enabled: false }, bubble: { enabled: false },
-			network: { enabled: false }, treemap: { enabled: false },
-		});
+		mocks.mergeChartConfigWithDefaults.mockReturnValue(configWithActive('bar'));
 
 		mocks.createBarChartControls.mockImplementation(() => {
 			const section = document.createElement('div');
@@ -211,7 +237,6 @@ describe('renderChartControlsSidebar', () => {
 
 		renderChartControlsSidebar({ configGraficos: {} });
 
-		// Simulate user expanding the styling section
 		const header = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-header');
 		const content = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-content');
 		const toggleIcon = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-toggle');
