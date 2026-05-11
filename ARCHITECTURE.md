@@ -163,30 +163,4 @@ The punchline: **mutations never originate in renderers, and renderers never run
 
 Not every event takes the path above. A panel-layout change (e.g. `PANEL_BLOCK_PROPORTIONS_UPDATED`) does **not** route through `main.js` — `panelManager` is the subscriber and it redraws only the panel canvas. A `CHART_EXPANDED_CHANGED` event is handled by `chart-controls/index.js`, which mutates one card's expand UI in place. The shape is identical — facade emits, subscriber reacts — but the subscriber set varies per event, and the response varies from "rebuild the world" (main.js) to "toggle one button" (chart-controls).
 
-## 7. Invariants — do not break
-
-Hard rules. Breaking any of them silently degrades reactivity, and the failure mode is "the UI looks fine until the day it doesn't."
-
-- All writes to application state go through a facade. Never assign to `dataset.*`, `appState.*`, or anything returned from a getter (`getActiveDataset()`, `getAllDatasets()`, `getPanelCharts()`, …).
-- Event names live in `STATE_EVENTS`. Never use string literals in `src/`. (Tests intentionally keep literals to exercise the wire format — leave them alone.)
-- Subscribers must not synchronously emit a state event from inside their callback (re-entrancy loop). Defer with `queueMicrotask` if you need a follow-up mutation.
-- For normalize-on-read paths (e.g. applying chart-config defaults during render), use `normalizeActiveDatasetConfig` — it writes without emitting, which is the only safe shape for that case.
-- Renderers are stateless. They read via getters and never mutate.
-- `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`stateSync.js`, `persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js` — use a typed subscription.
-
-## 8. Where do I put new code?
-
-| If you're adding… | Put it in | Notes |
-|---|---|---|
-| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chart-controls/{name}Controls.js` | Register in `chart-controls/index.js` and `config/chartDefaults.js`. |
-| A new state field | The relevant domain in `appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
-| A new DOM event handler | `src/modules/eventHandlers.js` (or an existing controller) | Translate the event into a facade call. Never mutate state directly. |
-| A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
-| A pure helper (formatting, parsing, color) | `src/utils/` | No DOM access. No state imports. |
-| A new derived selector | The facade that owns the underlying domain | Keep getters thin; don't compute heavy aggregates inside them. |
-
-## 9. Debugging
-
-- `window.chiveDebug` exposes thirteen entries grouped as: state getters (`getState`, `getActiveDataset`, `getLoadedDatasets`), facade mutators (`updateDatasetColumns`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`, `showError`), and four state-log helpers (`enableStateLog`, `disableStateLog`, `getStateLog`, `clearStateLog`).
-- `chiveDebug.enableStateLog()` prints every emit as `[chive:state] <type> <data>` and stores the last 100 entries; `getStateLog()` returns them, `clearStateLog()` resets the buffer, `disableStateLog()` turns it off.
-- To diagnose a surprising re-render: enable the log, perform the action, then read `getStateLog()` to see the exact event chain that fired.
+> Hard rules for contributors — invariants, where new code goes, code conventions, debugging helpers — live in [CONTRIBUTING.md](CONTRIBUTING.md). Read those before opening a PR.
