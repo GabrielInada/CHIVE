@@ -61,7 +61,7 @@ export function renderStats(rows, visibleColumns) {
 		cardStats.style.display = 'block';
 		document.getElementById('badge-num-colunas').textContent = t('chive-stats-badge', stats.length);
 		const containerStats = document.getElementById('container-stats');
-		containerStats.innerHTML = '';
+		containerStats.replaceChildren();
 
 		stats.forEach(stat => {
 			const coluna = document.createElement('div');
@@ -85,7 +85,7 @@ export function renderStats(rows, visibleColumns) {
 	}
 
 	cardStats.style.display = 'none';
-	document.getElementById('container-stats').innerHTML = '';
+	document.getElementById('container-stats').replaceChildren();
 }
 
 export function renderCategoricalStats(rows, visibleColumns) {
@@ -98,14 +98,14 @@ export function renderCategoricalStats(rows, visibleColumns) {
 
 	if (stats.length === 0) {
 		card.style.display = 'none';
-		if (container) container.innerHTML = '';
+		if (container) container.replaceChildren();
 		return;
 	}
 
 	card.style.display = 'block';
 	if (badge) badge.textContent = t('chive-cat-stats-badge', stats.length);
 	if (!container) return;
-	container.innerHTML = '';
+	container.replaceChildren();
 
 	const locale = getLocale();
 

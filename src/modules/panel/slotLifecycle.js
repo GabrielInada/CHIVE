@@ -64,7 +64,7 @@ export function teardownSlot(container) {
 		slotState.delete(container);
 	}
 	stopNetworkSimulation(container);
-	container.innerHTML = '';
+	container.replaceChildren();
 }
 
 export function teardownAllSlots(rootEl) {

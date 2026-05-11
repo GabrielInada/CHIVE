@@ -4,7 +4,7 @@ import { formatNumber, translateType, isEmptyValue } from '../../utils/formatter
 export function renderTablePreview(rows, visibleColumns, limit) {
 	const tableContainer = document.getElementById('container-tabela');
 	if (visibleColumns.length === 0) {
-		tableContainer.innerHTML = '';
+		tableContainer.replaceChildren();
 		const empty = document.createElement('div');
 		empty.className = 'tabela-sem-colunas';
 		empty.textContent = t('chive-no-columns-selected');
@@ -66,6 +66,6 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 	table.appendChild(tbody);
 	table.appendChild(tfoot);
 
-	tableContainer.innerHTML = '';
+	tableContainer.replaceChildren();
 	tableContainer.appendChild(table);
 }

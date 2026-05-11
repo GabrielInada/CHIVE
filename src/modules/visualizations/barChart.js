@@ -128,7 +128,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (linhas.length === 0) return fail();
 	const totalContagem = linhas.reduce((acc, item) => acc + item[1], 0);
 
-	container.innerHTML = '';
+	container.replaceChildren();
  	hideChartTooltip();
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.bar.width, 320);
 	const altura = chartHeight;

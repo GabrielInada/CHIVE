@@ -89,7 +89,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		}
 	}
 
-	container.innerHTML = '';
+	container.replaceChildren();
 	hideChartTooltip();
 
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.pie.width, 320);

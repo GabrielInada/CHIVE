@@ -95,7 +95,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 
 	const total = entradas.reduce((acc, [, v]) => acc + v, 0);
 
-	container.innerHTML = '';
+	container.replaceChildren();
 	hideChartTooltip();
 
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.bar?.width || 700, 320);

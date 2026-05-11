@@ -117,7 +117,7 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		return fail('insufficient-data');
 	}
 
-	container.innerHTML = '';
+	container.replaceChildren();
 	hideChartTooltip();
 	stopPreviousSimulation(container);
 

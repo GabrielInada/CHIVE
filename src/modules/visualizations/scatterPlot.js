@@ -264,7 +264,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		return fail(effectiveXScale === 'log' || effectiveYScale === 'log' ? 'log-no-positive' : undefined);
 	}
 
-	container.innerHTML = '';
+	container.replaceChildren();
 	hideChartTooltip();
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
 	const altura = chartHeight;

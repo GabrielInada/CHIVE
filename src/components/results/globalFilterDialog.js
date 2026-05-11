@@ -40,7 +40,7 @@ function createOption(value, label, selected = false) {
 }
 
 function renderNumericRuleBody({ body, rule, translate }) {
-	body.innerHTML = '';
+	body.replaceChildren();
 
 	const opWrap = document.createElement('div');
 	opWrap.className = 'gf-control';
@@ -62,7 +62,7 @@ function renderNumericRuleBody({ body, rule, translate }) {
 	inputsWrap.className = 'gf-numeric-inputs';
 
 	const renderInputs = () => {
-		inputsWrap.innerHTML = '';
+		inputsWrap.replaceChildren();
 		if (rule.operator === 'between') {
 			const minWrap = document.createElement('div');
 			minWrap.className = 'gf-control';
@@ -115,7 +115,7 @@ function renderNumericRuleBody({ body, rule, translate }) {
 }
 
 function renderCategoricalRuleBody({ body, rule, rows, translate }) {
-	body.innerHTML = '';
+	body.replaceChildren();
 
 	const searchWrap = document.createElement('div');
 	searchWrap.className = 'gf-control';
@@ -160,7 +160,7 @@ function renderCategoricalRuleBody({ body, rule, rows, translate }) {
 		});
 
 		const includeSet = new Set(rule.include || []);
-		list.innerHTML = '';
+		list.replaceChildren();
 		options.options.forEach(item => {
 			const row = document.createElement('label');
 			row.className = 'gf-list-item';
@@ -214,7 +214,7 @@ function renderCategoricalRuleBody({ body, rule, rows, translate }) {
 
 function renderRuleBody({ body, rule, rows, numericColumns, translate }) {
 	if (!rule.column) {
-		body.innerHTML = '';
+		body.replaceChildren();
 		const empty = document.createElement('div');
 		empty.className = 'gf-empty';
 		empty.textContent = translate('chive-global-filter-empty');
@@ -399,7 +399,7 @@ export function openGlobalFilterDialog({
 		};
 
 		const renderRules = () => {
-			rulesContainer.innerHTML = '';
+			rulesContainer.replaceChildren();
 			if (draftRules.length === 0) {
 				rulesContainer.appendChild(emptyState);
 				return;

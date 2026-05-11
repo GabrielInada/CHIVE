@@ -329,7 +329,7 @@ export function renderChartControlsSidebar(dataset) {
 	const controlSectionState = captureControlSectionExpansionState(paramsContainer);
 
 	const emptyState = (message) => {
-		paramsContainer.innerHTML = '';
+		paramsContainer.replaceChildren();
 		const emptyDiv = document.createElement('div');
 		emptyDiv.className = 'tabela-sem-colunas';
 		emptyDiv.textContent = message;

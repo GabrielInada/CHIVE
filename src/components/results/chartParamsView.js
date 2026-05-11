@@ -9,6 +9,7 @@ function buildTriggerButton({ activeChartType, chartTitle, translate, onClick })
 	const preview = document.createElement('span');
 	preview.className = 'viz-chart-picker-trigger-preview';
 	if (activeChartType && PREVIEW_SVGS[activeChartType]) {
+		// innerHTML: static SVG markup from PREVIEW_SVGS; not user input.
 		preview.innerHTML = PREVIEW_SVGS[activeChartType];
 	}
 	trigger.appendChild(preview);
@@ -44,7 +45,7 @@ export function renderChartParamsDOM({
 	translate,
 	onChartTypeTriggerClick,
 }) {
-	container.innerHTML = '';
+	container.replaceChildren();
 
 	container.appendChild(buildTriggerButton({
 		activeChartType,

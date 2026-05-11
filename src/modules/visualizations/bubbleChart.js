@@ -223,7 +223,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		return fail();
 	}
 
-	container.innerHTML = '';
+	container.replaceChildren();
 	hideChartTooltip();
 
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.bubble.width, 320);
