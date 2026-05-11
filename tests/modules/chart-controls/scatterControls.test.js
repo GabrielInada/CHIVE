@@ -141,38 +141,6 @@ describe('scatterControls axis listeners', () => {
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
 	});
 
-	it('chooses categorical defaults when no numeric columns are available', () => {
-		const dataset = createDataset({
-			enabled: false,
-			x: null,
-			y: null,
-			xScale: 'log',
-			yScale: 'log',
-		});
-
-		const toggle = document.createElement('input');
-		toggle.type = 'checkbox';
-		toggle.id = 'viz-toggle-scatter';
-		document.body.appendChild(toggle);
-
-		const onConfigChanged = vi.fn();
-		setupScatterPlotControlListeners(dataset, [], ['catA', 'catB'], onConfigChanged);
-
-		toggle.checked = true;
-		toggle.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
-			scatter: expect.objectContaining({
-				enabled: true,
-				x: 'catA',
-				y: 'catB',
-				xScale: 'linear',
-				yScale: 'linear',
-			}),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
-	});
-
 	it('stores categorical pairing mode updates', () => {
 		const dataset = createDataset({ x: 'category', y: 'group', categoricalPairMode: 'jitter' });
 		const controls = createScatterPlotControls(dataset, ['value'], ['category', 'group', 'value']);

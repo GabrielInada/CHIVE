@@ -8,6 +8,7 @@ export function createDefaultFilterConfig() {
     column: null,
     mode: 'categorical',
     include: [],
+    exclude: [],
     search: '',
     operator: 'between',
     min: '',
@@ -45,6 +46,9 @@ export function normalizeFilterConfig(rawFilter, numericColumns = []) {
     mode,
     include: Array.isArray(filter.include)
       ? Array.from(new Set(filter.include.map(item => String(item))))
+      : [],
+    exclude: Array.isArray(filter.exclude)
+      ? Array.from(new Set(filter.exclude.map(item => String(item))))
       : [],
     search: typeof filter.search === 'string' ? filter.search : '',
     operator,
@@ -143,7 +147,18 @@ export function applyChartFilterRows(rows, rawFilter, numericColumns = []) {
   }
 
   const includeSet = new Set(filter.include.map(value => String(value)));
-  if (includeSet.size === 0) return [];
+  const excludeSet = new Set(filter.exclude.map(value => String(value)));
 
-  return rows.filter(row => includeSet.has(toCategoryToken(row?.[filter.column])));
+  if (includeSet.size === 0 && excludeSet.size === 0) return [];
+
+  if (includeSet.size === 0) {
+    return rows.filter(row => !excludeSet.has(toCategoryToken(row?.[filter.column])));
+  }
+
+  return rows.filter(row => {
+    const token = toCategoryToken(row?.[filter.column]);
+    if (!includeSet.has(token)) return false;
+    if (excludeSet.has(token)) return false;
+    return true;
+  });
 }

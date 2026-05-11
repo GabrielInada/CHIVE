@@ -15,6 +15,7 @@ function getTabElements() {
 		dashboardPanel: document.getElementById('painel-panel'),
 		globalFilterTrigger: document.getElementById('btn-global-filter'),
 		globalFilterLabel: document.getElementById('global-filter-trigger-label'),
+		globalFilterBadge: document.getElementById('global-filter-trigger-badge'),
 	};
 }
 
@@ -76,7 +77,7 @@ export function updateGlobalFilterTrigger({
 	filteredCount,
 	totalCount,
 }) {
-	const { globalFilterTrigger, globalFilterLabel } = getTabElements();
+	const { globalFilterTrigger, globalFilterLabel, globalFilterBadge } = getTabElements();
 	if (!globalFilterTrigger || !globalFilterLabel) return;
 
 	const showOnCharts = activeTab === 'charts';
@@ -99,8 +100,16 @@ export function updateGlobalFilterTrigger({
 		const shown = Number.isFinite(filteredCount) ? filteredCount : 0;
 		const total = Number.isFinite(totalCount) ? totalCount : 0;
 		globalFilterLabel.textContent = t('chive-global-filter-trigger-active', count, shown, total);
+		if (globalFilterBadge) {
+			globalFilterBadge.hidden = false;
+			globalFilterBadge.textContent = String(count);
+		}
 	} else {
 		globalFilterLabel.textContent = t('chive-global-filter-trigger-inactive');
+		if (globalFilterBadge) {
+			globalFilterBadge.hidden = true;
+			globalFilterBadge.textContent = '';
+		}
 	}
 }
 

@@ -270,40 +270,6 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 
 export function setupScatterPlotControlListeners(dataset, numericas, allOptions, onConfigChanged) {
 	const categoricas = allOptions.filter(option => !numericas.includes(option));
-	const pickPreferredAxis = (current, preferredIndex = 0, avoid = null) => {
-		if (allOptions.includes(current) && current !== avoid) return current;
-		const preferred = numericas.filter(option => allOptions.includes(option) && option !== avoid);
-		if (preferred[preferredIndex]) return preferred[preferredIndex];
-		return allOptions.find(option => option !== avoid) || null;
-	};
-
-	const toggleScatter = document.getElementById('viz-toggle-scatter');
-	const expandScatter = document.getElementById('viz-expand-scatter');
-
-	if (toggleScatter) {
-		toggleScatter.addEventListener('change', () => {
-			const xAtual = dataset.configGraficos.scatter?.x;
-			const yAtual = dataset.configGraficos.scatter?.y;
-			const xPadrao = pickPreferredAxis(xAtual, 0, null);
-			const yPadrao = pickPreferredAxis(yAtual, 1, xPadrao) || xPadrao;
-			const currentXScale = dataset.configGraficos.scatter?.xScale === 'log' ? 'log' : 'linear';
-			const currentYScale = dataset.configGraficos.scatter?.yScale === 'log' ? 'log' : 'linear';
-			const xScale = numericas.includes(xPadrao) ? currentXScale : 'linear';
-			const yScale = numericas.includes(yPadrao) ? currentYScale : 'linear';
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					enabled: toggleScatter.checked,
-					x: toggleScatter.checked ? xPadrao : xAtual,
-					y: toggleScatter.checked ? yPadrao : yAtual,
-					xScale,
-					yScale,
-					expanded: toggleScatter.checked ? true : dataset.configGraficos.scatter?.expanded === true,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
 
 	setupExpandListener('viz-expand-scatter', dataset, 'scatter', onConfigChanged);
 

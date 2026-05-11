@@ -10,7 +10,7 @@ function sanitizeFileName(value) {
 		.replace(/^[-.]+|[-.]+$/g, '') || 'chart';
 }
 
-function ensureSvgAttributes(svg) {
+export function ensureSvgAttributes(svg) {
 	if (!svg.getAttribute('xmlns')) {
 		svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
 	}

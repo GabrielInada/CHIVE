@@ -11,7 +11,10 @@ export function addChartSnapshotToState(panelState, chartSnapshot, sanitizeChart
 	const snapshot = {
 		id,
 		nome: sanitizeChartName(chartSnapshot.nome),
-		svgMarkup: chartSnapshot.svgMarkup,
+		type: chartSnapshot.type || null,
+		config: chartSnapshot.config || null,
+		dataSnapshot: Array.isArray(chartSnapshot.dataSnapshot) ? chartSnapshot.dataSnapshot : [],
+		columnsSnapshot: Array.isArray(chartSnapshot.columnsSnapshot) ? chartSnapshot.columnsSnapshot : [],
 		metadata: chartSnapshot.metadata || null,
 		metaSummary,
 		createdAt: chartSnapshot.createdAt || new Date().toISOString(),

@@ -6,14 +6,57 @@ import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../confi
 
 function showChartMessage(containerId, message) {
 	const container = document.getElementById(containerId);
-	container.innerHTML = '';
+	container.replaceChildren();
 	const empty = document.createElement('div');
 	empty.className = 'chart-vazio';
 	empty.textContent = message;
 	container.appendChild(empty);
 }
 
-export function renderCharts(config, rows, visibleColumns, visibleNumericColumns) {
+export function renderCharts(config, rows, visibleColumns, visibleNumericColumns, options = {}) {
+	const onAddToGlobalFilter = typeof options.onAddToGlobalFilter === 'function'
+		? options.onAddToGlobalFilter
+		: null;
+	const onFocusGlobalFilter = typeof options.onFocusGlobalFilter === 'function'
+		? options.onFocusGlobalFilter
+		: null;
+	const onExcludeGlobalFilter = typeof options.onExcludeGlobalFilter === 'function'
+		? options.onExcludeGlobalFilter
+		: null;
+	const onRemoveFromGlobalFilter = typeof options.onRemoveFromGlobalFilter === 'function'
+		? options.onRemoveFromGlobalFilter
+		: null;
+	const onBringBackGlobalFilter = typeof options.onBringBackGlobalFilter === 'function'
+		? options.onBringBackGlobalFilter
+		: null;
+	const getTokenFilterState = typeof options.getTokenFilterState === 'function'
+		? options.getTokenFilterState
+		: null;
+	const isShowOnlyThisRedundant = typeof options.isShowOnlyThisRedundant === 'function'
+		? options.isShowOnlyThisRedundant
+		: null;
+	const filterActionLabels = {
+		focus: t('chive-tooltip-show-only-this'),
+		add: t('chive-tooltip-add-to-filter'),
+		exclude: t('chive-tooltip-exclude'),
+		remove: t('chive-tooltip-remove-from-filter'),
+		bringBack: t('chive-tooltip-bring-back'),
+		stateIncluded: t('chive-tooltip-state-included'),
+		stateExcluded: t('chive-tooltip-state-excluded'),
+		close: t('chive-tooltip-close'),
+		filterBySource: t('chive-tooltip-filter-by-source'),
+		filterByTarget: t('chive-tooltip-filter-by-target'),
+	};
+	const filterCallbacks = {
+		onAddToGlobalFilter,
+		onFocusGlobalFilter,
+		onExcludeGlobalFilter,
+		onRemoveFromGlobalFilter,
+		onBringBackGlobalFilter,
+		getTokenFilterState,
+		isShowOnlyThisRedundant,
+		filterActionLabels,
+	};
 	const chartConfig = mergeChartConfigWithDefaults(config);
 	const numericColumnNames = Array.isArray(visibleNumericColumns)
 		? visibleNumericColumns.map(column => column?.nome).filter(Boolean)
@@ -50,12 +93,12 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoPie.style.display = 'block';
 		blocoBubble.style.display = 'block';
 		blocoTreemap.style.display = 'block';
-		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.pie).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
 		return;
 	}
 
@@ -69,14 +112,24 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoPie.style.display = 'none';
 		blocoBubble.style.display = 'none';
 		blocoTreemap.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.pie).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
 		return;
 	}
+
+	// Single-chart-at-a-time: only the first enabled type renders. Legacy
+	// configs with multiple enabled flags converge to one on the next toggle.
+	const CHART_TYPE_ORDER = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
+	const activeChartType = CHART_TYPE_ORDER.find(type => chartConfig[type].enabled) || null;
+	CHART_TYPE_ORDER.forEach(type => {
+		if (type !== activeChartType) {
+			chartConfig[type] = { ...chartConfig[type], enabled: false };
+		}
+	});
 
 	chartsGrid.style.display = 'grid';
 	emptyState.style.display = 'none';
@@ -123,7 +176,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					soma: t('chive-tooltip-sum'),
 					media: t('chive-tooltip-mean'),
 					percentual: t('chive-tooltip-percentage'),
+					focusOnThis: t('chive-tooltip-show-only-this'),
+					addToFilter: t('chive-tooltip-add-to-filter'),
 				},
+				filterCallbacks,
 			}
 		);
 		if (!barResult.ok) {
@@ -134,7 +190,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoBar.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
 	}
 
 	if (chartConfig.scatter.enabled) {
@@ -178,6 +234,9 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					indice: t('chive-tooltip-row'),
 					count: t('chive-tooltip-count'),
 				},
+				xColumn: chartConfig.scatter.x,
+				yColumn: chartConfig.scatter.y,
+				filterCallbacks,
 			}
 		);
 		if (!scatterResult.ok) {
@@ -188,7 +247,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoScatter.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
 	}
 
 	if (chartConfig.network.enabled) {
@@ -223,6 +282,9 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					source: chartConfig.network.source || t('chive-chart-control-network-source'),
 					target: chartConfig.network.target || t('chive-chart-control-network-target'),
 				},
+				sourceColumn: chartConfig.network.source,
+				targetColumn: chartConfig.network.target,
+				filterCallbacks,
 			}
 		);
 
@@ -231,7 +293,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoNetwork.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
 	}
 
 	if (chartConfig.pie.enabled) {
@@ -265,7 +327,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					contagem: t('chive-tooltip-count'),
 					percentual: t('chive-tooltip-percentage'),
 					other: t('chive-chart-pie-other'),
+					focusOnThis: t('chive-tooltip-show-only-this'),
+					addToFilter: t('chive-tooltip-add-to-filter'),
 				},
+				filterCallbacks,
 			}
 		);
 
@@ -277,7 +342,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoPie.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.pie).replaceChildren();
 	}
 
 	if (chartConfig.bubble.enabled) {
@@ -313,6 +378,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					filhos: t('chive-chart-control-bubble-node-children-count'),
 					nivel: t('chive-chart-control-bubble-node-depth'),
 				},
+				filterCallbacks,
 			}
 		);
 
@@ -326,7 +392,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoBubble.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
 	}
 
 	if (chartConfig.treemap.enabled) {
@@ -355,7 +421,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					contagem: t('chive-tooltip-count'),
 					soma: t('chive-tooltip-sum'),
 					percentual: t('chive-tooltip-percentage'),
+					focusOnThis: t('chive-tooltip-show-only-this'),
+					addToFilter: t('chive-tooltip-add-to-filter'),
 				},
+				filterCallbacks,
 			}
 		);
 
@@ -367,6 +436,6 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoTreemap.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
 	}
 }

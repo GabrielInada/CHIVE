@@ -1,7 +1,14 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from 'vitest';
-import { onStateChange, emitStateChange } from '../../src/modules/stateEvents.js';
+import {
+	onStateChange,
+	emitStateChange,
+	enableStateLog,
+	disableStateLog,
+	getStateLog,
+	clearStateLog,
+} from '../../src/modules/stateEvents.js';
 
 describe('stateEvents', () => {
 	it('registers listener and calls it on emit', () => {
@@ -87,6 +94,34 @@ describe('stateEvents', () => {
 
 	it('does not fail when emitting event with no listeners', () => {
 		expect(() => emitStateChange('noListenersEvent', 'data')).not.toThrow();
+	});
+
+	it('debug log records emissions only while enabled', () => {
+		const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+		clearStateLog();
+
+		emitStateChange('logBefore', { x: 1 });
+		expect(getStateLog()).toHaveLength(0);
+
+		enableStateLog();
+		emitStateChange('logDuring', { x: 2 });
+		const afterEnable = getStateLog();
+		expect(afterEnable).toHaveLength(1);
+		expect(afterEnable[0]).toMatchObject({ type: 'logDuring', data: { x: 2 } });
+		expect(consoleSpy).toHaveBeenCalledWith('[chive:state]', 'logDuring', { x: 2 });
+
+		clearStateLog();
+		expect(getStateLog()).toHaveLength(0);
+
+		emitStateChange('logCleared', { x: 3 });
+		expect(getStateLog()).toHaveLength(1);
+
+		disableStateLog();
+		emitStateChange('logAfter', { x: 4 });
+		expect(getStateLog()).toHaveLength(1);
+
+		clearStateLog();
+		consoleSpy.mockRestore();
 	});
 
 	it('supports multiple listeners on the same event', () => {

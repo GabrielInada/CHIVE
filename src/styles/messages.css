@@ -50,3 +50,99 @@
   opacity: 1;
   transform: translateY(0);
 }
+
+.toast-progress {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  z-index: 12100;
+  min-width: 320px;
+  max-width: 420px;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  font-family: var(--fonte-sans);
+  font-size: 13px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas:
+    "label percent close"
+    "bar bar bar";
+  column-gap: 10px;
+  row-gap: 8px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.toast-progress.visivel {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-progress-label {
+  grid-area: label;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.toast-progress-percent {
+  grid-area: percent;
+  font-family: var(--fonte-mono);
+  font-size: 11px;
+  color: var(--muted);
+  align-self: center;
+}
+
+.toast-progress-cancel {
+  grid-area: close;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+}
+
+.toast-progress-cancel:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text);
+}
+
+.toast-progress-bar {
+  grid-area: bar;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+}
+
+.toast-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 0.18s ease;
+  border-radius: 3px;
+}
+
+.toast-progress.success .toast-progress-fill {
+  background: var(--success);
+}
+
+.toast-progress.failure {
+  border-color: #fca5a5;
+}
+
+.toast-progress.failure .toast-progress-fill {
+  background: #b91c1c;
+}

@@ -80,6 +80,8 @@
     font-size: 15px;
     line-height: 1.85;
     color: var(--muted);
+    text-align: justify;
+    hyphens: auto;
 }
 
 /* Team section */

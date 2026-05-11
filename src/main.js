@@ -16,7 +16,13 @@
  * - Main.js handles initialization and orchestration only
  */
 
-import { initializeI18n, t, parseCsv, parseJson, processData } from './services/index.js';
+import { initializeI18n, t, processData } from './services/index.js';
+import {
+	isPersistenceAvailable,
+	hydrateState,
+	enablePersistenceAutoSave,
+} from './services/persistenceService.js';
+import { ingestFile, progressLabelForStage } from './services/dataIngestService.js';
 import { PREVIEW_DEFAULT_ROWS } from './config/limits.js';
 import {
 renderEmptyState,
@@ -31,11 +37,22 @@ import {
 getState,
 getActiveDataset,
 onStateChange,
+STATE_EVENTS,
 exposeGlobals,
 initializeStateSync,
 setPreviewRows,
 addDataset,
+normalizeActiveDatasetConfig,
+updateActiveDatasetColumns,
+updateActiveDatasetConfig,
+replaceAllState,
 } from './modules/index.js';
+import {
+enableStateLog,
+disableStateLog,
+getStateLog,
+clearStateLog,
+} from './modules/stateEvents.js';
 import {
 initPanelManager,
 initializeLayoutSelector,
@@ -56,6 +73,7 @@ showFeedbackMessage,
 showError,
 showErrorMessage,
 hideErrorMessage,
+showProgress,
 switchTab,
 } from './modules/index.js';
 
@@ -74,34 +92,65 @@ await initializeI18n();
 // Only run app logic on pages that have the main app UI
 if (!document.getElementById('info-arquivo')) return;
 
-// 2. Initialize state management
+// 2. Hydrate persisted state BEFORE any subscriber (incl. stateSync) is wired,
+//    so the act of restoring doesn't immediately schedule a redundant save and
+//    refreshView sees the restored state on first paint.
+if (isPersistenceAvailable()) {
+	await hydrateState({
+		replaceAllState,
+		transformPanel: rehydratePanelChartSpecs,
+	});
+}
+
+// 3. Initialize state management
 initializeStateSync();
 exposeGlobals();
 
-// 3. Initialize modules
+// 4. Initialize modules
 initFileManager(handleDatasetsChanged);
 initChartControls(null, livePreviewRender);
 initPanelManager(showFeedback);
 
-// 4. Setup event handlers (must be after modules initialized)
+// 5. Setup event handlers (must be after modules initialized)
 initializeAllEventHandlers();
 
-// 5. Setup UI subscriptions
+// 6. Setup UI subscriptions
 setupStateSubscriptions();
 
-// 6. Initial view render
+// 7. Wire debounced auto-save AFTER subscriptions; flush on tab close so
+//    the last in-flight change survives. enablePersistenceAutoSave skips
+//    the STATE_HYDRATED event internally to avoid resaving the load.
+const persistenceHandle = enablePersistenceAutoSave(getState);
+window.addEventListener('beforeunload', () => persistenceHandle.flush());
+
+// 8. Initial view render
 refreshView();
 
-// 7. Re-render dynamic content on locale changes
+// 9. Re-render dynamic content on locale changes
 window.addEventListener('chive-locale-changed', () => {
 refreshView();
 });
 
-// 8. Surface internal module errors in UI feedback
+// 10. Surface internal module errors in UI feedback
 window.addEventListener('chive-internal-error', event => {
 const message = event?.detail?.message || t('chive-error-internal');
 showError(message);
 });
+}
+
+/**
+ * Re-merge each persisted chart spec against the current chart defaults so
+ * old specs absorb any new keys added to chartDefaults.js since they were
+ * saved. Cheap; runs once on hydration.
+ */
+function rehydratePanelChartSpecs(panel) {
+	if (!panel || !Array.isArray(panel.charts)) return panel;
+	const charts = panel.charts.map(spec => {
+		if (!spec || !spec.type) return spec;
+		const merged = mergeChartConfigWithDefaults({ [spec.type]: spec.config || {} });
+		return { ...spec, config: merged[spec.type] };
+	});
+	return { ...panel, charts };
 }
 
 // =============================================================================
@@ -120,17 +169,17 @@ refreshView();
  */
 function setupStateSubscriptions() {
 // Re-render when active dataset changes
-onStateChange('activeDataset', () => {
+onStateChange(STATE_EVENTS.ACTIVE_DATASET, () => {
 refreshView();
 });
 
 // Re-render when columns change
-onStateChange('columnsUpdated', () => {
+onStateChange(STATE_EVENTS.COLUMNS_UPDATED, () => {
 refreshView();
 });
 
 // Re-render when config changes
-onStateChange('configUpdated', () => {
+onStateChange(STATE_EVENTS.CONFIG_UPDATED, () => {
 refreshView();
 });
 
@@ -205,7 +254,7 @@ handlePresetDatasetRequest
 
 // Render data preview and stats
 if (dataset) {
-	dataset.configGraficos = mergeChartConfigWithDefaults(dataset.configGraficos);
+	normalizeActiveDatasetConfig(mergeChartConfigWithDefaults);
 renderDataInterface(
 dataset.dados,
 dataset.colunas,
@@ -234,29 +283,20 @@ exposeGlobals();
 
 /**
  * Update dataset column selection
- * Delegates to module
+ * Delegates to facade; the COLUMNS_UPDATED subscription drives refreshView.
  */
 function updateDatasetColumns(columns) {
-const dataset = getActiveDataset();
-if (dataset) {
-dataset.colunasSelecionadas = columns;
-refreshView();
-}
+updateActiveDatasetColumns(columns);
 }
 
 /**
  * Update dataset chart configuration
- * Delegates to module
+ * Delegates to facade; the CONFIG_UPDATED subscription drives refreshView.
+ * The merge-with-defaults step lives in refreshView's normalize-on-read path
+ * (normalizeActiveDatasetConfig), so we don't repeat it here.
  */
 function updateDatasetConfig(config) {
-const dataset = getActiveDataset();
-if (dataset) {
-	dataset.configGraficos = mergeChartConfigWithDefaults({
-		...dataset.configGraficos,
-		...config,
-	});
-refreshView();
-}
+updateActiveDatasetConfig(config);
 }
 
 function updatePreviewRows(rows) {
@@ -280,9 +320,9 @@ function handleJoinDatasetRequest(spec) {
 	refreshView();
 }
 
-async function loadPresetRows(preset) {
+async function loadPresetSource(preset) {
 	if (Array.isArray(preset?.data)) {
-		return preset.data;
+		return { mode: 'inline', rows: preset.data, dropColumns: preset.dropColumns || [] };
 	}
 
 	if (typeof preset?.dataUrl !== 'string' || !preset.dataUrl.trim()) {
@@ -296,21 +336,8 @@ async function loadPresetRows(preset) {
 
 	const rawText = await response.text();
 	const format = String(preset.dataFormat || '').toLowerCase();
-	const shouldParseJson = format === 'json' || preset.dataUrl.toLowerCase().endsWith('.json');
-	const parsed = shouldParseJson ? parseJson(rawText) : parseCsv(rawText);
-
-	if (!Array.isArray(preset.dropColumns) || preset.dropColumns.length === 0) {
-		return parsed;
-	}
-
-	const columnsToDrop = new Set(preset.dropColumns);
-	return parsed.map(row => {
-		const next = { ...row };
-		columnsToDrop.forEach(columnName => {
-			delete next[columnName];
-		});
-		return next;
-	});
+	const kind = format === 'json' || preset.dataUrl.toLowerCase().endsWith('.json') ? 'json' : 'csv';
+	return { mode: 'fetched', kind, text: rawText, dropColumns: preset.dropColumns || [] };
 }
 
 async function handlePresetDatasetRequest(preset) {
@@ -319,23 +346,70 @@ async function handlePresetDatasetRequest(preset) {
 		return;
 	}
 
+	const presetName = t(preset.nameKey);
+	const progress = showProgress(t('chive-progress-parsing', [presetName]));
+	const abortController = new AbortController();
+	progress.onCancel(() => abortController.abort());
+
 	try {
-		const presetRows = await loadPresetRows(preset);
-		const processed = processData(presetRows, preset.id);
+		const source = await loadPresetSource(preset);
+
+		let dados;
+		let colunas;
+		let statsNumeric = [];
+		let statsCategorical = [];
+
+		if (source.mode === 'inline') {
+			// Inline presets are tiny demo arrays — sync processData is cheap.
+			let rows = source.rows;
+			if (source.dropColumns.length > 0) {
+				const dropSet = new Set(source.dropColumns);
+				rows = rows.map(row => {
+					const next = { ...row };
+					dropSet.forEach(key => { delete next[key]; });
+					return next;
+				});
+			}
+			const processed = processData(rows);
+			dados = processed.dados;
+			colunas = processed.colunas;
+			progress.update(100);
+		} else {
+			const result = await ingestFile(
+				{ kind: source.kind, text: source.text, options: { dropColumns: source.dropColumns } },
+				{
+					signal: abortController.signal,
+					onProgress: ({ stage, percent }) => {
+						progress.update(percent, progressLabelForStage(stage, presetName));
+					},
+				},
+			);
+
+			if (!result.ok) {
+				if (result.reason === 'cancelled') progress.close();
+				else progress.fail(t('chive-progress-failed', [result.reason]));
+				return;
+			}
+
+			({ dados, colunas, statsNumeric, statsCategorical } = result.value);
+		}
+
 		const dataset = {
-			nome: t(preset.nameKey),
+			nome: presetName,
 			tamanho: t('chive-preset-generated-size', [preset.rows]),
-			dados: processed.dados,
-			colunas: processed.colunas,
-			colunasSelecionadas: processed.colunas.map(c => c.nome),
+			dados,
+			colunas,
+			colunasSelecionadas: colunas.map(c => c.nome),
 			configGraficos: createDefaultChartConfig(),
+			precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
 		};
 
 		const index = addDataset(dataset);
 		selectDataset(index);
-		showFeedback(t('chive-preset-load-success', [t(preset.nameKey)]));
+		progress.succeed(t('chive-preset-load-success', [presetName]));
 		refreshView();
-	} catch {
+	} catch (err) {
+		progress.fail(t('chive-progress-failed', [err?.message || 'error']));
 		showError(t('chive-join-error-generic'));
 	}
 }
@@ -361,4 +435,8 @@ switchTab,
 refreshView,
 showFeedback: showFeedbackMessage,
 showError: showErrorMessage,
+enableStateLog,
+disableStateLog,
+getStateLog,
+clearStateLog,
 };

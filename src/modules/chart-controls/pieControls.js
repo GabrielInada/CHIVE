@@ -338,31 +338,6 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
 	const sectorValues = getPieSectorValues(dataset, dataset.configGraficos.pie);
-	const togglePie = document.getElementById('viz-toggle-pie');
-	const expandPie = document.getElementById('viz-expand-pie');
-
-	if (togglePie) {
-		togglePie.addEventListener('change', () => {
-			const categoriaAtual = dataset.configGraficos.pie?.category;
-			const valueAtual = dataset.configGraficos.pie?.valueColumn;
-			const categoriaPadrao = basePie.includes(categoriaAtual)
-				? categoriaAtual
-				: (basePie[0] || null);
-			const valuePadrao = numericas.includes(valueAtual)
-				? valueAtual
-				: (numericas[0] || null);
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					enabled: togglePie.checked,
-					category: togglePie.checked ? categoriaPadrao : categoriaAtual,
-					valueColumn: togglePie.checked ? valuePadrao : valueAtual,
-					expanded: togglePie.checked ? true : dataset.configGraficos.pie?.expanded === true,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
 
 	setupExpandListener('viz-expand-pie', dataset, 'pie', onConfigChanged);
 

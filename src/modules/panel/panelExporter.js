@@ -1,8 +1,7 @@
 import { t } from '../../services/i18nService.js';
-import { downloadSvgMarkup } from '../../utils/svgExport.js';
+import { downloadSvgMarkup, ensureSvgAttributes } from '../../utils/svgExport.js';
 import { normalizeHexColor } from './resizeMath.js';
-import { getChartSnapshot } from '../appState.js';
-import { ok, fail } from '../../utils/result.js';
+import { fail } from '../../utils/result.js';
 
 export function exportPanelLayoutSvg(feedbackCallback) {
 	const canvas = document.getElementById('panel-layout-canvas');
@@ -16,7 +15,6 @@ export function exportPanelLayoutSvg(feedbackCallback) {
 	}
 
 	try {
-		const parser = new DOMParser();
 		const serializer = new XMLSerializer();
 		const docSvg = document.implementation.createDocument(
 			'http://www.w3.org/2000/svg',
@@ -69,11 +67,11 @@ export function exportPanelLayoutSvg(feedbackCallback) {
 				svgRoot.appendChild(border);
 		});
 
-		// Add each chart in rendered slots (all blocks)
+		// Add each chart in rendered slots (all blocks) — clone the LIVE SVG from the DOM
 		const slotElements = canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]');
 		slotElements.forEach(slotEl => {
-			const chart = getChartSnapshot(slotEl.dataset.panelChartId);
-			if (!chart) return;
+			const liveSvg = slotEl.querySelector('svg');
+			if (!liveSvg) return;
 
 			const slotRect = slotEl.getBoundingClientRect();
 			const x = slotRect.left - rectCanvas.left;
@@ -81,8 +79,8 @@ export function exportPanelLayoutSvg(feedbackCallback) {
 			const w = slotRect.width;
 			const h = slotRect.height;
 
-			const parsed = parser.parseFromString(chart.svgMarkup, 'image/svg+xml');
-			const chartSvg = parsed.documentElement;
+			const chartSvg = liveSvg.cloneNode(true);
+			ensureSvgAttributes(chartSvg);
 
 			chartSvg.setAttribute('x', String(x));
 			chartSvg.setAttribute('y', String(y));

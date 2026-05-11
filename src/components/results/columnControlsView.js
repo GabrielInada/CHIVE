@@ -11,7 +11,7 @@ export function renderColumnControlsDOM({
 	translateType,
 	aoAlterarSelecaoColuna,
 }) {
-	acoesContainer.innerHTML = '';
+	acoesContainer.replaceChildren();
 
 	const createActionButton = (acao, texto, ativo = false) => {
 		const botao = document.createElement('button');
@@ -48,7 +48,7 @@ export function renderColumnControlsDOM({
 		}
 	};
 
-	listaColunas.innerHTML = '';
+	listaColunas.replaceChildren();
 	colunas.forEach(({ nome, tipo }) => {
 		const label = document.createElement('label');
 		label.className = 'coluna-item';

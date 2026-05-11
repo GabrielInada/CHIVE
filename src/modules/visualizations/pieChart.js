@@ -1,7 +1,16 @@
 import { arc, pie, select, zoom, zoomIdentity } from 'd3';
-import { hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
+import {
+	buildCategoricalFilterActions,
+	createFilterStateBadge,
+	createTooltipActionGroup,
+	hideChartTooltip,
+	moveChartTooltip,
+	showChartTooltip,
+	showPinnedChartTooltip,
+} from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
 import { buildSliceColor as _buildSliceColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
@@ -26,6 +35,8 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		contagem: opcoes.labels?.contagem || 'Count',
 		percentual: opcoes.labels?.percentual || 'Percentage',
 		other: opcoes.labels?.other || 'Other',
+		focusOnThis: opcoes.labels?.focusOnThis || 'Show only this',
+		addToFilter: opcoes.labels?.addToFilter || 'Add to global filter',
 	};
 	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : 0;
 	const topNMode = opcoes.topNMode === 'truncate' ? 'truncate' : 'other';
@@ -78,7 +89,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		}
 	}
 
-	container.innerHTML = '';
+	container.replaceChildren();
 	hideChartTooltip();
 
 	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.pie.width, 320);
@@ -171,6 +182,61 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		showChartTooltip(montarConteudoTooltip(item), event.pageX, event.pageY);
 	};
 
+	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterLabels = filterCallbacks.filterActionLabels || {};
+	const actionLabels = {
+		focus: filterLabels.focus || labels.focusOnThis,
+		add: filterLabels.add || labels.addToFilter,
+		exclude: filterLabels.exclude || 'Hide this',
+		remove: filterLabels.remove || 'Remove from filter',
+		bringBack: filterLabels.bringBack || 'Bring back',
+	};
+
+	const exibirTooltipFixado = (event, item, onDismiss) => {
+		const content = montarConteudoTooltip(item);
+		if (item.isOther) {
+			showPinnedChartTooltip(content, event.pageX, event.pageY, {
+				headerTitle: String(item.categoria),
+				closeLabel: filterLabels.close,
+				onDismiss,
+				actionSets: [],
+			});
+			return;
+		}
+		const token = toCategoryToken(item.categoria);
+		const state = typeof filterCallbacks.getTokenFilterState === 'function'
+			? filterCallbacks.getTokenFilterState(colunaCategoria, token)
+			: null;
+		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
+			? !!filterCallbacks.isShowOnlyThisRedundant(colunaCategoria, token)
+			: false;
+		const actions = buildCategoricalFilterActions({
+			column: colunaCategoria,
+			token,
+			state,
+			labels: actionLabels,
+			omitFocus,
+			onFocus: filterCallbacks.onFocusGlobalFilter,
+			onAdd: filterCallbacks.onAddToGlobalFilter,
+			onExclude: filterCallbacks.onExcludeGlobalFilter,
+			onRemove: filterCallbacks.onRemoveFromGlobalFilter,
+			onBringBack: filterCallbacks.onBringBackGlobalFilter,
+		});
+		const stateBadge = createFilterStateBadge({
+			state,
+			includedLabel: filterLabels.stateIncluded,
+			excludedLabel: filterLabels.stateExcluded,
+		});
+		const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
+		showPinnedChartTooltip(content, event.pageX, event.pageY, {
+			headerTitle: String(item.categoria),
+			closeLabel: filterLabels.close,
+			onDismiss,
+			actionSets: actionSet ? [actionSet] : [],
+			stateBadge,
+		});
+	};
+
 	grupo
 		.selectAll('path')
 		.data(pieGenerator(linhas))
@@ -209,7 +275,10 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 				return;
 			}
 			pinnedCategoria = item.data.categoria;
-			exibirTooltip(event, item.data);
+			exibirTooltipFixado(event, item.data, () => {
+				pinnedCategoria = null;
+				hideChartTooltip();
+			});
 		});
 
 	svg.on('click', () => {

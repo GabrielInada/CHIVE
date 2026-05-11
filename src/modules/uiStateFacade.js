@@ -1,3 +1,5 @@
+import { STATE_EVENTS } from './stateEvents.js';
+
 export function createUiStateFacade({ appState, emitStateChange }) {
 	function getSidebarMode() {
 		return appState.ui.sidebarMode;
@@ -11,7 +13,7 @@ export function createUiStateFacade({ appState, emitStateChange }) {
 			return;
 		}
 		appState.ui.sidebarMode = mode;
-		emitStateChange('sidebarModeChanged', mode);
+		emitStateChange(STATE_EVENTS.SIDEBAR_MODE_CHANGED, mode);
 	}
 
 	function getExpandedCharts() {
@@ -20,7 +22,7 @@ export function createUiStateFacade({ appState, emitStateChange }) {
 
 	function setChartExpanded(chartName, expanded) {
 		appState.ui.expandedCharts[chartName] = expanded;
-		emitStateChange('chartExpandedChanged', { chartName, expanded });
+		emitStateChange(STATE_EVENTS.CHART_EXPANDED_CHANGED, { chartName, expanded });
 	}
 
 	function getPreviewRows() {
@@ -30,7 +32,7 @@ export function createUiStateFacade({ appState, emitStateChange }) {
 	function setPreviewRows(rows) {
 		if (rows < 1) throw new Error('Preview rows must be >= 1');
 		appState.ui.previewRows = rows;
-		emitStateChange('previewRowsChanged', rows);
+		emitStateChange(STATE_EVENTS.PREVIEW_ROWS_CHANGED, rows);
 	}
 
 	return {

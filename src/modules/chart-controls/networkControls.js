@@ -237,30 +237,6 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 	const onConfigChanged = typeof numericOptionsOrCallback === 'function'
 		? numericOptionsOrCallback
 		: onConfigChangedMaybe;
-	const toggle = document.getElementById('viz-toggle-network');
-	const expand = document.getElementById('viz-expand-network');
-
-	if (toggle) {
-		toggle.addEventListener('change', () => {
-			const sourceAtual = dataset.configGraficos.network?.source;
-			const targetAtual = dataset.configGraficos.network?.target;
-			const sourcePadrao = allOptions.includes(sourceAtual) ? sourceAtual : (allOptions[0] || null);
-			const targetPadrao = allOptions.includes(targetAtual)
-				? targetAtual
-				: (allOptions[1] || allOptions[0] || null);
-			updateActiveDatasetChartConfig({
-				network: {
-					...dataset.configGraficos.network,
-					enabled: toggle.checked,
-					source: toggle.checked ? sourcePadrao : sourceAtual,
-					target: toggle.checked ? targetPadrao : targetAtual,
-					expanded: toggle.checked ? true : dataset.configGraficos.network?.expanded === true,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
 	setupExpandListener('viz-expand-network', dataset, 'network', onConfigChanged);
 
 	setupSelectListeners([

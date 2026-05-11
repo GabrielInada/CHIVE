@@ -159,23 +159,6 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
 
-	const toggleTreemap = document.getElementById('viz-toggle-treemap');
-	if (toggleTreemap) {
-		toggleTreemap.addEventListener('change', () => {
-			const categoriaAtual = dataset.configGraficos.treemap?.category;
-			const categoriaPadrao = baseCat.includes(categoriaAtual) ? categoriaAtual : (baseCat[0] || null);
-			updateActiveDatasetChartConfig({
-				treemap: {
-					...dataset.configGraficos.treemap,
-					enabled: toggleTreemap.checked,
-					category: toggleTreemap.checked ? categoriaPadrao : categoriaAtual,
-					expanded: toggleTreemap.checked ? true : dataset.configGraficos.treemap?.expanded === true,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
 	setupExpandListener('viz-expand-treemap', dataset, 'treemap', onConfigChanged);
 
 	const selectCategory = document.getElementById('viz-select-treemap-category');

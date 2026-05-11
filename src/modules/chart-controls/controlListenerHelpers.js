@@ -102,7 +102,8 @@ export function setupTextInputListener(elementId, configKey, dataset, chartKey, 
  *   (no sidebar rebuild) so the user sees the color update live without
  *   the picker losing focus.
  * - 'change' — fires when the picker closes. We commit through the canonical
- *   state path (which persists to localStorage and refreshes the sidebar).
+ *   state path so the change emits CONFIG_UPDATED, which the auto-save
+ *   subscription then debounces into IndexedDB and refreshes the sidebar.
  */
 export function setupColorInputListener(elementId, configKey, defaultColor, dataset, chartKey, onConfigChanged) {
 	const el = document.getElementById(elementId);

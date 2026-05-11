@@ -1,12 +1,6 @@
 /* @feature: panel > visualizations
    D3-specific styles for bar charts, scatter plots, axes, legends */
 
-.viz-cards {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
 #sidebar-panel-viz {
   min-height: 0;
   overflow: hidden;
@@ -19,92 +13,159 @@
   flex: 1;
 }
 
-#painel-visualizacoes-sidebar .viz-cards {
+#sidebar-panel-viz > .btn-primario {
+  flex-shrink: 0;
+}
+
+.viz-chart-params {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   padding-right: 2px;
-}
-
-.viz-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
-  padding: 10px;
-}
-
-.viz-card.enabled {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px rgba(26, 71, 42, 0.12);
-}
-
-.viz-card-header {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
-.viz-toggle-linha {
+.viz-chart-picker-trigger {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-  min-width: 0;
-}
-
-.viz-category-tag {
-  font-size: 9px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: rgba(26, 71, 42, 0.08);
-  border: 1px solid rgba(26, 71, 42, 0.2);
-  border-radius: 999px;
-  padding: 2px 6px;
-}
-
-.viz-card-desc {
-  margin: 8px 0 0;
-  font-size: 10px;
-  line-height: 1.4;
-  color: var(--muted);
-}
-
-.viz-preview {
-  width: 84px;
-  height: 38px;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: var(--surface);
-  display: flex;
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text);
+  width: 100%;
+  text-align: left;
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.viz-chart-picker-trigger:hover {
+  background: rgba(26, 71, 42, 0.04);
+}
+
+.viz-chart-picker-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.viz-chart-picker-trigger-preview {
+  width: 36px;
+  height: 18px;
+  flex-shrink: 0;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-.viz-preview svg {
-  width: 84px;
-  height: 38px;
+.viz-chart-picker-trigger-preview svg {
+  width: 100%;
+  height: 100%;
 }
 
-.viz-preview rect,
-.viz-preview circle {
+.viz-chart-picker-trigger-preview rect,
+.viz-chart-picker-trigger-preview circle {
   fill: var(--accent-2);
   opacity: 0.85;
 }
 
-.viz-preview .no-fill {
+.viz-chart-picker-trigger-preview .no-fill {
   fill: none !important;
 }
 
-.viz-card-body {
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--border);
-  display: grid;
-  gap: 8px;
+.viz-chart-picker-trigger-label {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.viz-card-body[hidden] {
-  display: none;
+.viz-chart-picker-trigger-label.placeholder {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.viz-chart-picker-trigger-caret {
+  font-size: 10px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.viz-params-desc {
+  margin: 0 0 4px;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.viz-params-empty {
+  font-size: 11px;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  padding: 16px 10px;
+  text-align: center;
+  background: var(--surface);
+}
+
+.chart-picker-dialog {
+  width: min(640px, 92vw);
+}
+
+.chart-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.chart-picker-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-height: 140px;
+}
+
+.chart-picker-card-preview {
+  display: block;
+  width: 100%;
+  height: 48px;
+  background: var(--surface);
+  border-radius: 4px;
+  padding: 4px;
+  box-sizing: border-box;
+}
+
+.chart-picker-card-preview svg {
+  width: 100%;
+  height: 100%;
+}
+
+.chart-picker-card-preview rect,
+.chart-picker-card-preview circle {
+  fill: var(--accent-2);
+  opacity: 0.85;
+}
+
+.chart-picker-card-preview .no-fill {
+  fill: none !important;
+}
+
+.chart-picker-card-category {
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent);
+  align-self: flex-start;
+  background: rgba(26, 71, 42, 0.08);
+  border: 1px solid rgba(26, 71, 42, 0.2);
+  border-radius: 999px;
+  padding: 2px 6px;
 }

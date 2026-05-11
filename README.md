@@ -12,8 +12,8 @@ The app runtime uses:
 1. Serve files over HTTP/HTTPS (do not use `file://`).
 2. Serve these files/folders at minimum:
 	1. `index.html`
-	2. `src/`
-	3. `public/`
+	2. `about.html`
+	3. `src/` (includes app code, styles, and icon assets under `src/icons/`)
 3. Allow access to these external origins (default setup):
 	1. `https://esm.sh`
 	2. `https://fonts.googleapis.com`
@@ -21,7 +21,7 @@ The app runtime uses:
 
 ### Deploy Steps
 
-1. Upload the project files as static content (at least `index.html`, `src/`, and `public/` if used).
+1. Upload the project files as static content (at least `index.html`, `about.html`, and `src/`).
 2. Serve with any static web server (Nginx, Apache, Caddy, IIS, etc.).
 3. Open `index.html` through HTTP/HTTPS (not `file://`).
 

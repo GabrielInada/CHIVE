@@ -12,7 +12,17 @@ import { renderColumnControlsDOM } from './results/columnControlsView.js';
 import { openJoinBuilderDialog } from './results/joinBuilderView.js';
 import { openPresetDatasetsDialog } from './results/presetDatasetsView.js';
 import { openGlobalFilterDialog } from './results/globalFilterDialog.js';
-import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
+import {
+  applyGlobalFilterRules,
+  createSingleCategoryGlobalFilter,
+  excludeTokenFromFilter,
+  getTokenFilterState,
+  isShowOnlyThisRedundant,
+  mergeIncludeTokenIntoFilter,
+  removeExcludeTokenFromFilter,
+  removeIncludeTokenFromFilter,
+  resolveGlobalFilterForColumns,
+} from '../utils/globalFilter.js';
 
 const FILE_LIST_PAGE_SIZE = 15;
 let fileListQuery = '';
@@ -88,7 +98,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
     stickyHeader.appendChild(tools);
   }
 
-  tools.innerHTML = '';
+  tools.replaceChildren();
   const searchInput = document.createElement('input');
   searchInput.type = 'search';
   searchInput.className = 'arquivos-filtro-input';
@@ -125,7 +135,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
     });
 
     filterStatus.textContent = t('chive-files-filter-status', renderResult.filtered, renderResult.total);
-    pagination.innerHTML = '';
+    pagination.replaceChildren();
 
     if (renderResult.filtered > FILE_LIST_PAGE_SIZE) {
       const toggle = document.createElement('button');
@@ -168,7 +178,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
     list.insertAdjacentElement('afterend', joinActions);
   }
 
-  joinActions.innerHTML = '';
+  joinActions.replaceChildren();
   const joinButton = document.createElement('button');
   joinButton.type = 'button';
   joinButton.className = 'btn-secundario btn-join-files';
@@ -231,15 +241,15 @@ export function renderEmptyState() {
     emptyFilterBtn.classList.remove('ativo');
     emptyFilterBtn.dataset.active = 'false';
   }
-  if (els['container-tabela']) els['container-tabela'].innerHTML = '';
-  if (els['container-stats']) els['container-stats'].innerHTML = '';
-  if (els['container-cat-stats']) els['container-cat-stats'].innerHTML = '';
+  if (els['container-tabela']) els['container-tabela'].replaceChildren();
+  if (els['container-stats']) els['container-stats'].replaceChildren();
+  if (els['container-cat-stats']) els['container-cat-stats'].replaceChildren();
   if (els['card-cat-stats']) els['card-cat-stats'].style.display = 'none';
-  if (els['chart-bar-container']) els['chart-bar-container'].innerHTML = '';
-  if (els['chart-scatter-container']) els['chart-scatter-container'].innerHTML = '';
-  if (els['chart-network-container']) els['chart-network-container'].innerHTML = '';
-  if (els['chart-pie-container']) els['chart-pie-container'].innerHTML = '';
-  if (els['chart-bubble-container']) els['chart-bubble-container'].innerHTML = '';
+  if (els['chart-bar-container']) els['chart-bar-container'].replaceChildren();
+  if (els['chart-scatter-container']) els['chart-scatter-container'].replaceChildren();
+  if (els['chart-network-container']) els['chart-network-container'].replaceChildren();
+  if (els['chart-pie-container']) els['chart-pie-container'].replaceChildren();
+  if (els['chart-bubble-container']) els['chart-bubble-container'].replaceChildren();
   if (els['badge-charts']) els['badge-charts'].textContent = '—';
   if (els['btn-avancar']) els['btn-avancar'].disabled = true;
   
@@ -256,6 +266,7 @@ export function renderEmptyState() {
   if (uploadTextoMain) uploadTextoMain.textContent = t('chive-upload-main');
   
   const uploadTextoSub = document.querySelector('.upload-texto-sub');
+  // innerHTML: translation contains <br>/<strong>; source is i18n JSON, not user input.
   if (uploadTextoSub) uploadTextoSub.innerHTML = t('chive-upload-sub');
 }
 
@@ -321,6 +332,53 @@ export function renderDataInterface(
     onChartConfigChange({ globalFilter: safeGlobalFilter });
   }
 
+  const handleAddToGlobalFilter = onChartConfigChange
+    ? (column, token) => {
+      if (typeof column !== 'string' || typeof token !== 'string') return;
+      if (!allColumnNames.includes(column)) return;
+      const merged = mergeIncludeTokenIntoFilter(config.globalFilter, column, token);
+      onChartConfigChange({ globalFilter: merged });
+    }
+    : null;
+
+  const handleShowOnlyThis = onChartConfigChange
+    ? (column, token) => {
+      if (typeof column !== 'string' || typeof token !== 'string') return;
+      if (!allColumnNames.includes(column)) return;
+      onChartConfigChange({ globalFilter: createSingleCategoryGlobalFilter(column, token) });
+    }
+    : null;
+
+  const handleExcludeFromGlobalFilter = onChartConfigChange
+    ? (column, token) => {
+      if (typeof column !== 'string' || typeof token !== 'string') return;
+      if (!allColumnNames.includes(column)) return;
+      const next = excludeTokenFromFilter(config.globalFilter, column, token);
+      onChartConfigChange({ globalFilter: next });
+    }
+    : null;
+
+  const handleRemoveFromGlobalFilter = onChartConfigChange
+    ? (column, token) => {
+      if (typeof column !== 'string' || typeof token !== 'string') return;
+      if (!allColumnNames.includes(column)) return;
+      const next = removeIncludeTokenFromFilter(config.globalFilter, column, token);
+      onChartConfigChange({ globalFilter: next });
+    }
+    : null;
+
+  const handleBringBackFromGlobalFilter = onChartConfigChange
+    ? (column, token) => {
+      if (typeof column !== 'string' || typeof token !== 'string') return;
+      if (!allColumnNames.includes(column)) return;
+      const next = removeExcludeTokenFromFilter(config.globalFilter, column, token);
+      onChartConfigChange({ globalFilter: next });
+    }
+    : null;
+
+  const lookupTokenFilterState = (column, token) => getTokenFilterState(safeGlobalFilter, column, token);
+  const lookupShowOnlyThisRedundant = (column, token) => isShowOnlyThisRedundant(safeGlobalFilter, column, token);
+
   updateTabs(config.aba, onChartConfigChange, config, {
     triggerState: {
       hasDataset: true,
@@ -366,7 +424,15 @@ export function renderDataInterface(
   renderTablePreview(rows, visibleColumns, rowLimit);
   renderStats(rows, visibleColumns);
   renderCategoricalStats(rows, visibleColumns);
-  renderCharts(config, rows, visibleColumns, visibleNumericColumns);
+  renderCharts(config, rows, visibleColumns, visibleNumericColumns, {
+    onAddToGlobalFilter: handleAddToGlobalFilter,
+    onFocusGlobalFilter: handleShowOnlyThis,
+    onExcludeGlobalFilter: handleExcludeFromGlobalFilter,
+    onRemoveFromGlobalFilter: handleRemoveFromGlobalFilter,
+    onBringBackGlobalFilter: handleBringBackFromGlobalFilter,
+    getTokenFilterState: lookupTokenFilterState,
+    isShowOnlyThisRedundant: lookupShowOnlyThisRedundant,
+  });
 
   document.getElementById('btn-avancar').disabled = false;
   const devNotice = document.getElementById('aviso-dev');

@@ -240,26 +240,6 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
 
-	// --- Toggle (custom logic for default category) ---
-	const toggleBar = document.getElementById('viz-toggle-bar');
-	if (toggleBar) {
-		toggleBar.addEventListener('change', () => {
-			const categoriaAtual = dataset.configGraficos.bar?.category;
-			const categoriaPadrao = baseBar.includes(categoriaAtual)
-				? categoriaAtual
-				: (baseBar[0] || null);
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					enabled: toggleBar.checked,
-					category: toggleBar.checked ? categoriaPadrao : categoriaAtual,
-					expanded: toggleBar.checked ? true : dataset.configGraficos.bar?.expanded === true,
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
-
 	setupExpandListener('viz-expand-bar', dataset, 'bar', onConfigChanged);
 
 	// --- Data controls ---

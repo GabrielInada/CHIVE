@@ -1,0 +1,112 @@
+# Contributing to CHIVE
+
+Welcome. This document is the contributor's rulebook — read it before opening your first PR.
+
+For end-user setup and deployment, see [README.md](README.md). For the architectural shape of the codebase, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
+> [!CAUTION]
+> Issues and PRs that don't follow the guidelines below may be closed until they match the expected shape.
+
+## Bug report
+
+Open a [bug report issue](https://github.com/GabrielInada/CHIVE/issues/new?template=bug_report.md) and fill in the template — what you observed, what you expected, and the smallest reproduction you can capture (steps, dataset, browser). The `bug` label is attached automatically.
+
+## Feature proposal
+
+Open a [feature proposal issue](https://github.com/GabrielInada/CHIVE/issues/new?template=feature_request.md) and fill in the template — the problem it solves, the user it serves, and how you'd expect it to behave. The `feature` label is attached automatically.
+
+## Question
+
+Not a bug or a feature? Start a [Q&A discussion](https://github.com/GabrielInada/CHIVE/discussions/new) instead of opening an issue.
+
+## Documentation update
+
+Open a [documentation issue](https://github.com/GabrielInada/CHIVE/issues/new?template=documentation-update.md) pointing at the section that needs work and what's wrong (stale, missing, unclear). The `documentation` label is attached automatically.
+
+## Development
+
+CHIVE is plain JavaScript (ES modules, no TypeScript) built with Vite and tested with Vitest. Before opening a PR, follow these steps:
+
+1. Make sure your PR has a bug report or feature proposal issue associated with it. If not, open one first.
+2. Fork the repo and clone your fork to your machine.
+3. Install the NPM dependencies with `npm install`.
+4. Create a branch from `develop` using the pattern `feat/<short-name>` (see [Branching workflow](#branching-workflow) below).
+5. Make your changes in `src/`, then add or update tests in `tests/` mirroring the file structure.
+6. Run `npm test` and verify all tests pass.
+7. Run `npm run dev` and smoke-check the affected feature in a browser at <http://localhost:5173>.
+8. Open a pull request against the **[`develop`](https://github.com/GabrielInada/CHIVE/tree/develop)** branch.
+
+Common commands:
+
+```bash
+npm run dev          # Start Vite dev server (http://localhost:5173)
+npm run build        # Production build -> dist/
+npm run preview      # Preview production build
+npm test             # Run all tests once (vitest run)
+npm run test:watch   # Tests in watch mode
+```
+
+## Branching workflow
+
+- `main` — production/stable branch (default)
+- `develop` — integration/staging branch for testing before main
+- `feat/*` — feature branches; each new feature uses pattern `feat/branchName`
+- **Workflow:** Feature branches → PR to `develop` → tested → PR to `main`
+
+## Commit & PR conventions
+
+- Commit messages mix Portuguese and English — match the existing repo style.
+- PRs target `develop`, never `main` directly. The only thing that lands on `main` is a merge from `develop` after it has been tested.
+- Keep PRs scoped; if you discover unrelated cleanup, open a separate branch.
+
+## Code conventions
+
+- **CSS class names use Portuguese:** `.painel-`, `.tabela-`, `.grafico-`, modifiers like `.ativo`, `.desativado`
+- **CSS architecture:** Cascade layers ordered: foundation → controls → data-view → visual-output → feedback. See `src/styles/STYLES_ORGANIZATION.md` for details.
+- **Module exports:** camelCase for functions, PascalCase for classes
+- **Dependency injection:** Event handlers and render functions are passed as callbacks for testability and to avoid circular dependencies
+- **Result pattern:** Functions returning success/failure use `ok(data)` / `fail(reason)` from `src/utils/result.js`
+- **DOM IDs:** Use constants from `src/config/elementIds.js` instead of hardcoded strings
+- **Color utilities:** Use shared functions from `src/utils/colorUtils.js` — never duplicate hex/rgb conversion logic
+- **Chart control listeners:** Use helpers from `src/modules/chart-controls/controlListenerHelpers.js` for common patterns (select, checkbox, slider, etc.) — only write inline listeners when cross-dependency logic is needed
+- **Join and preset dataset UIs:** Keep orchestration in modules/components and reuse existing event-driven patterns
+- **No TypeScript, no linter config** — plain JS with ES modules
+
+## Architecture invariants — do not break
+
+Hard rules. Breaking any of them silently degrades reactivity, and the failure mode is "the UI looks fine until the day it doesn't." See [ARCHITECTURE.md](ARCHITECTURE.md) for the why.
+
+- All writes to application state go through a facade. Never assign to `dataset.*`, `appState.*`, or anything returned from a getter (`getActiveDataset()`, `getAllDatasets()`, `getPanelCharts()`, …).
+- Event names live in `STATE_EVENTS`. Never use string literals in `src/`. (Tests intentionally keep literals to exercise the wire format — leave them alone.)
+- Subscribers must not synchronously emit a state event from inside their callback (re-entrancy loop). Defer with `queueMicrotask` if you need a follow-up mutation.
+- For normalize-on-read paths (e.g. applying chart-config defaults during render), use `normalizeActiveDatasetConfig` — it writes without emitting, which is the only safe shape for that case.
+- Renderers are stateless. They read via getters and never mutate.
+- `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`stateSync.js`, `persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js` — use a typed subscription.
+
+## Where do I put new code?
+
+| If you're adding… | Put it in | Notes |
+|---|---|---|
+| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chart-controls/{name}Controls.js` | Register in `chart-controls/index.js` and `config/chartDefaults.js`. |
+| A new state field | The relevant domain in `appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
+| A new DOM event handler | `src/modules/eventHandlers.js` (or an existing controller) | Translate the event into a facade call. Never mutate state directly. |
+| A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
+| A pure helper (formatting, parsing, color) | `src/utils/` | No DOM access. No state imports. |
+| A new derived selector | The facade that owns the underlying domain | Keep getters thin; don't compute heavy aggregates inside them. |
+
+## Testing
+
+- Framework: Vitest with jsdom environment
+- Files needing DOM must declare `// @vitest-environment jsdom` at the top
+- Tests live in `tests/` mirroring `src/` structure
+- Patterns: `describe`/`it`/`expect`, `beforeEach` for state reset, `vi.mock()` for mocking
+- **Windows stale cache issue:** Vitest on Windows may fail all suites with `Cannot read properties of undefined (reading 'config')` after file changes.
+  - PowerShell fix: `Remove-Item -Recurse -Force node_modules/.vite, node_modules/.vitest`
+  - Bash fix: `rm -rf node_modules/.vite node_modules/.vitest`
+  - Then rerun: `npm test`
+
+## Debugging
+
+- `window.chiveDebug` exposes thirteen entries grouped as: state getters (`getState`, `getActiveDataset`, `getLoadedDatasets`), facade mutators (`updateDatasetColumns`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`, `showError`), and four state-log helpers (`enableStateLog`, `disableStateLog`, `getStateLog`, `clearStateLog`).
+- `chiveDebug.enableStateLog()` prints every emit as `[chive:state] <type> <data>` and stores the last 100 entries; `getStateLog()` returns them, `clearStateLog()` resets the buffer, `disableStateLog()` turns it off.
+- To diagnose a surprising re-render: enable the log, perform the action, then read `getStateLog()` to see the exact event chain that fired.

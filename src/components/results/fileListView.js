@@ -9,7 +9,7 @@ export function renderFileListDOM({
 	filtro = '',
 	limiteVisivel = 15,
 }) {
-	list.innerHTML = '';
+	list.replaceChildren();
 
 	const normalizedFilter = String(filtro || '').trim().toLowerCase();
 	const indexedDatasets = datasets.map((dataset, index) => ({ dataset, index }));
