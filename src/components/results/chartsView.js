@@ -121,6 +121,16 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		return;
 	}
 
+	// Single-chart-at-a-time: only the first enabled type renders. Legacy
+	// configs with multiple enabled flags converge to one on the next toggle.
+	const CHART_TYPE_ORDER = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
+	const activeChartType = CHART_TYPE_ORDER.find(type => chartConfig[type].enabled) || null;
+	CHART_TYPE_ORDER.forEach(type => {
+		if (type !== activeChartType) {
+			chartConfig[type] = { ...chartConfig[type], enabled: false };
+		}
+	});
+
 	chartsGrid.style.display = 'grid';
 	emptyState.style.display = 'none';
 

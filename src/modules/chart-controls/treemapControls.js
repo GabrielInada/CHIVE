@@ -1,6 +1,7 @@
 import { CHART_COLORS, TREEMAP_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
+import { setActiveChartType } from '../appState.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -162,16 +163,16 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	const toggleTreemap = document.getElementById('viz-toggle-treemap');
 	if (toggleTreemap) {
 		toggleTreemap.addEventListener('change', () => {
-			const categoriaAtual = dataset.configGraficos.treemap?.category;
-			const categoriaPadrao = baseCat.includes(categoriaAtual) ? categoriaAtual : (baseCat[0] || null);
-			updateActiveDatasetChartConfig({
-				treemap: {
-					...dataset.configGraficos.treemap,
-					enabled: toggleTreemap.checked,
-					category: toggleTreemap.checked ? categoriaPadrao : categoriaAtual,
-					expanded: toggleTreemap.checked ? true : dataset.configGraficos.treemap?.expanded === true,
-				},
-			});
+			if (toggleTreemap.checked) {
+				const categoriaAtual = dataset.configGraficos.treemap?.category;
+				const categoriaPadrao = baseCat.includes(categoriaAtual) ? categoriaAtual : (baseCat[0] || null);
+				setActiveChartType('treemap', {
+					category: categoriaPadrao,
+					expanded: true,
+				});
+			} else {
+				setActiveChartType(null);
+			}
 			onConfigChanged?.();
 		});
 	}

@@ -1,6 +1,7 @@
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
+import { setActiveChartType } from '../appState.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -240,22 +241,19 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
 
-	// --- Toggle (custom logic for default category) ---
+	// --- Toggle (radio-style activation + default category on enable) ---
 	const toggleBar = document.getElementById('viz-toggle-bar');
 	if (toggleBar) {
 		toggleBar.addEventListener('change', () => {
-			const categoriaAtual = dataset.configGraficos.bar?.category;
-			const categoriaPadrao = baseBar.includes(categoriaAtual)
-				? categoriaAtual
-				: (baseBar[0] || null);
-			updateActiveDatasetChartConfig({
-				bar: {
-					...dataset.configGraficos.bar,
-					enabled: toggleBar.checked,
-					category: toggleBar.checked ? categoriaPadrao : categoriaAtual,
-					expanded: toggleBar.checked ? true : dataset.configGraficos.bar?.expanded === true,
-				},
-			});
+			if (toggleBar.checked) {
+				const categoriaAtual = dataset.configGraficos.bar?.category;
+				const categoriaPadrao = baseBar.includes(categoriaAtual)
+					? categoriaAtual
+					: (baseBar[0] || null);
+				setActiveChartType('bar', { category: categoriaPadrao, expanded: true });
+			} else {
+				setActiveChartType(null);
+			}
 			onConfigChanged?.();
 		});
 	}

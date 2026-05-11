@@ -1,6 +1,7 @@
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
+import { setActiveChartType } from '../appState.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createSelectControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -282,25 +283,25 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 
 	if (toggleScatter) {
 		toggleScatter.addEventListener('change', () => {
-			const xAtual = dataset.configGraficos.scatter?.x;
-			const yAtual = dataset.configGraficos.scatter?.y;
-			const xPadrao = pickPreferredAxis(xAtual, 0, null);
-			const yPadrao = pickPreferredAxis(yAtual, 1, xPadrao) || xPadrao;
-			const currentXScale = dataset.configGraficos.scatter?.xScale === 'log' ? 'log' : 'linear';
-			const currentYScale = dataset.configGraficos.scatter?.yScale === 'log' ? 'log' : 'linear';
-			const xScale = numericas.includes(xPadrao) ? currentXScale : 'linear';
-			const yScale = numericas.includes(yPadrao) ? currentYScale : 'linear';
-			updateActiveDatasetChartConfig({
-				scatter: {
-					...dataset.configGraficos.scatter,
-					enabled: toggleScatter.checked,
-					x: toggleScatter.checked ? xPadrao : xAtual,
-					y: toggleScatter.checked ? yPadrao : yAtual,
+			if (toggleScatter.checked) {
+				const xAtual = dataset.configGraficos.scatter?.x;
+				const yAtual = dataset.configGraficos.scatter?.y;
+				const xPadrao = pickPreferredAxis(xAtual, 0, null);
+				const yPadrao = pickPreferredAxis(yAtual, 1, xPadrao) || xPadrao;
+				const currentXScale = dataset.configGraficos.scatter?.xScale === 'log' ? 'log' : 'linear';
+				const currentYScale = dataset.configGraficos.scatter?.yScale === 'log' ? 'log' : 'linear';
+				const xScale = numericas.includes(xPadrao) ? currentXScale : 'linear';
+				const yScale = numericas.includes(yPadrao) ? currentYScale : 'linear';
+				setActiveChartType('scatter', {
+					x: xPadrao,
+					y: yPadrao,
 					xScale,
 					yScale,
-					expanded: toggleScatter.checked ? true : dataset.configGraficos.scatter?.expanded === true,
-				},
-			});
+					expanded: true,
+				});
+			} else {
+				setActiveChartType(null);
+			}
 			onConfigChanged?.();
 		});
 	}

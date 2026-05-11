@@ -137,7 +137,28 @@ function ensureSidebarInteractionTracking(container) {
 	container.addEventListener('change', captureInteractionAnchor, true);
 	container.addEventListener('input', captureInteractionAnchor, true);
 	container.addEventListener('click', captureInteractionAnchor, true);
+	container.addEventListener('click', handleSidebarCardClick);
 	trackedSidebarContainers.add(container);
+}
+
+// Card-level click → synthesize a click on the card's enable toggle so the
+// per-chart toggle handler (which knows the chart's default category/columns)
+// runs and calls setActiveChartType with the right overrides. Inputs/buttons
+// inside the card keep their own behavior.
+function handleSidebarCardClick(event) {
+	const target = event.target;
+	if (!(target instanceof HTMLElement)) return;
+	if (target.closest('.viz-expand-btn')) return;
+	if (target.closest('.viz-card-body')) return;
+	if (target.closest('.viz-toggle-linha')) return;
+	const card = target.closest('.viz-card');
+	if (!card) return;
+	const chartName = card.dataset.chartName;
+	if (!chartName) return;
+	const checkbox = document.getElementById(`viz-toggle-${chartName}`);
+	if (!checkbox) return;
+	checkbox.checked = !checkbox.checked;
+	checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
 function getSidebarScrollAnchor(container) {

@@ -4,7 +4,8 @@
  */
 export function createChartCard(container, chartName, enabled, expanded, label, category, description, previewSvg, controlsBuilder) {
 	const article = document.createElement('article');
-	article.className = enabled ? 'viz-card enabled' : 'viz-card';
+	article.className = enabled ? 'viz-card enabled ativo' : 'viz-card';
+	article.dataset.chartName = chartName;
 
 	const header = document.createElement('div');
 	header.className = 'viz-card-header';
