@@ -1,6 +1,5 @@
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { setActiveChartType } from '../appState.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -238,30 +237,6 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 	const onConfigChanged = typeof numericOptionsOrCallback === 'function'
 		? numericOptionsOrCallback
 		: onConfigChangedMaybe;
-	const toggle = document.getElementById('viz-toggle-network');
-	const expand = document.getElementById('viz-expand-network');
-
-	if (toggle) {
-		toggle.addEventListener('change', () => {
-			if (toggle.checked) {
-				const sourceAtual = dataset.configGraficos.network?.source;
-				const targetAtual = dataset.configGraficos.network?.target;
-				const sourcePadrao = allOptions.includes(sourceAtual) ? sourceAtual : (allOptions[0] || null);
-				const targetPadrao = allOptions.includes(targetAtual)
-					? targetAtual
-					: (allOptions[1] || allOptions[0] || null);
-				setActiveChartType('network', {
-					source: sourcePadrao,
-					target: targetPadrao,
-					expanded: true,
-				});
-			} else {
-				setActiveChartType(null);
-			}
-			onConfigChanged?.();
-		});
-	}
-
 	setupExpandListener('viz-expand-network', dataset, 'network', onConfigChanged);
 
 	setupSelectListeners([

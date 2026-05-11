@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
 	updateActiveDatasetChartConfig: vi.fn(),
-	setActiveChartType: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -14,10 +13,6 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 vi.mock('../../../src/modules/stateSync.js', () => ({
 	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
-}));
-
-vi.mock('../../../src/modules/appState.js', () => ({
-	setActiveChartType: mocks.setActiveChartType,
 }));
 
 import { createScatterPlotControls, setupScatterPlotControlListeners } from '../../../src/modules/chart-controls/scatterControls.js';
@@ -143,35 +138,6 @@ describe('scatterControls axis listeners', () => {
 				xScale: 'linear',
 			}),
 		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
-	});
-
-	it('chooses categorical defaults when no numeric columns are available', () => {
-		const dataset = createDataset({
-			enabled: false,
-			x: null,
-			y: null,
-			xScale: 'log',
-			yScale: 'log',
-		});
-
-		const toggle = document.createElement('input');
-		toggle.type = 'checkbox';
-		toggle.id = 'viz-toggle-scatter';
-		document.body.appendChild(toggle);
-
-		const onConfigChanged = vi.fn();
-		setupScatterPlotControlListeners(dataset, [], ['catA', 'catB'], onConfigChanged);
-
-		toggle.checked = true;
-		toggle.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(mocks.setActiveChartType).toHaveBeenCalledWith('scatter', expect.objectContaining({
-			x: 'catA',
-			y: 'catB',
-			xScale: 'linear',
-			yScale: 'linear',
-		}));
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
 	});
 

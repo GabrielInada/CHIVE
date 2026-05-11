@@ -251,6 +251,7 @@
 	"chive-viz-toggle-expand": "Mostrar opções",
 	"chive-viz-toggle-collapse": "Ocultar opções",
 	"chive-chart-sidebar-empty": "Selecione ao menos uma coluna para gerenciar visualizações.",
+	"chive-chart-params-empty": "Selecione um tipo de gráfico acima para configurá-lo.",
 	"chive-chart-option-none": "— selecionar —",
 	"chive-chart-empty-bar": "Selecione ao menos uma coluna visível para montar o gráfico de barras.",
 	"chive-chart-empty-bar-numeric": "Selecione uma coluna numérica para renderizar o gráfico de barras em modo soma ou média.",

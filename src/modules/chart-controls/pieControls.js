@@ -1,7 +1,6 @@
 import { CHART_COLORS, PIE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { setActiveChartType } from '../appState.js';
 import { createCheckboxControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -339,31 +338,6 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
 	const sectorValues = getPieSectorValues(dataset, dataset.configGraficos.pie);
-	const togglePie = document.getElementById('viz-toggle-pie');
-	const expandPie = document.getElementById('viz-expand-pie');
-
-	if (togglePie) {
-		togglePie.addEventListener('change', () => {
-			if (togglePie.checked) {
-				const categoriaAtual = dataset.configGraficos.pie?.category;
-				const valueAtual = dataset.configGraficos.pie?.valueColumn;
-				const categoriaPadrao = basePie.includes(categoriaAtual)
-					? categoriaAtual
-					: (basePie[0] || null);
-				const valuePadrao = numericas.includes(valueAtual)
-					? valueAtual
-					: (numericas[0] || null);
-				setActiveChartType('pie', {
-					category: categoriaPadrao,
-					valueColumn: valuePadrao,
-					expanded: true,
-				});
-			} else {
-				setActiveChartType(null);
-			}
-			onConfigChanged?.();
-		});
-	}
 
 	setupExpandListener('viz-expand-pie', dataset, 'pie', onConfigChanged);
 
