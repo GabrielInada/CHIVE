@@ -219,7 +219,7 @@ function renderCategoricalFilterList({ list, summaryContainer, rows, column, sea
     missingLabel: t('chive-chart-filter-missing'),
   });
 
-  list.innerHTML = '';
+  list.replaceChildren();
 
   options.options.forEach(item => {
     const row = document.createElement('label');

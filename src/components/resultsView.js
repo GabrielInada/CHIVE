@@ -98,7 +98,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
     stickyHeader.appendChild(tools);
   }
 
-  tools.innerHTML = '';
+  tools.replaceChildren();
   const searchInput = document.createElement('input');
   searchInput.type = 'search';
   searchInput.className = 'arquivos-filtro-input';
@@ -135,7 +135,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
     });
 
     filterStatus.textContent = t('chive-files-filter-status', renderResult.filtered, renderResult.total);
-    pagination.innerHTML = '';
+    pagination.replaceChildren();
 
     if (renderResult.filtered > FILE_LIST_PAGE_SIZE) {
       const toggle = document.createElement('button');
@@ -178,7 +178,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
     list.insertAdjacentElement('afterend', joinActions);
   }
 
-  joinActions.innerHTML = '';
+  joinActions.replaceChildren();
   const joinButton = document.createElement('button');
   joinButton.type = 'button';
   joinButton.className = 'btn-secundario btn-join-files';
@@ -241,15 +241,15 @@ export function renderEmptyState() {
     emptyFilterBtn.classList.remove('ativo');
     emptyFilterBtn.dataset.active = 'false';
   }
-  if (els['container-tabela']) els['container-tabela'].innerHTML = '';
-  if (els['container-stats']) els['container-stats'].innerHTML = '';
-  if (els['container-cat-stats']) els['container-cat-stats'].innerHTML = '';
+  if (els['container-tabela']) els['container-tabela'].replaceChildren();
+  if (els['container-stats']) els['container-stats'].replaceChildren();
+  if (els['container-cat-stats']) els['container-cat-stats'].replaceChildren();
   if (els['card-cat-stats']) els['card-cat-stats'].style.display = 'none';
-  if (els['chart-bar-container']) els['chart-bar-container'].innerHTML = '';
-  if (els['chart-scatter-container']) els['chart-scatter-container'].innerHTML = '';
-  if (els['chart-network-container']) els['chart-network-container'].innerHTML = '';
-  if (els['chart-pie-container']) els['chart-pie-container'].innerHTML = '';
-  if (els['chart-bubble-container']) els['chart-bubble-container'].innerHTML = '';
+  if (els['chart-bar-container']) els['chart-bar-container'].replaceChildren();
+  if (els['chart-scatter-container']) els['chart-scatter-container'].replaceChildren();
+  if (els['chart-network-container']) els['chart-network-container'].replaceChildren();
+  if (els['chart-pie-container']) els['chart-pie-container'].replaceChildren();
+  if (els['chart-bubble-container']) els['chart-bubble-container'].replaceChildren();
   if (els['badge-charts']) els['badge-charts'].textContent = '—';
   if (els['btn-avancar']) els['btn-avancar'].disabled = true;
   
@@ -266,6 +266,7 @@ export function renderEmptyState() {
   if (uploadTextoMain) uploadTextoMain.textContent = t('chive-upload-main');
   
   const uploadTextoSub = document.querySelector('.upload-texto-sub');
+  // innerHTML: translation contains <br>/<strong>; source is i18n JSON, not user input.
   if (uploadTextoSub) uploadTextoSub.innerHTML = t('chive-upload-sub');
 }
 

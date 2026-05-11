@@ -34,7 +34,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
 
 	const charts = getPanelCharts();
 	if (charts.length === 0) {
-		lista.innerHTML = '';
+		lista.replaceChildren();
 		const emptyDiv = document.createElement('div');
 		emptyDiv.className = 'painel-vazio';
 		emptyDiv.textContent = t('chive-panel-empty-sidebar');
@@ -43,7 +43,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
 	}
 
 	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
-	lista.innerHTML = '';
+	lista.replaceChildren();
 
 	charts.forEach(chart => {
 		const article = document.createElement('article');
@@ -115,7 +115,7 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
 
 	teardownAllSlots(canvas);
-	canvas.innerHTML = '';
+	canvas.replaceChildren();
 
 	const stack = document.createElement('div');
 	stack.className = 'painel-block-stack';
@@ -268,7 +268,7 @@ export function fillLayoutSelect() {
 	if (!select) return;
 	const blocks = getPanelBlocks();
 	const currentLayout = blocks[0]?.templateId || 'layout-2col';
-	select.innerHTML = '';
+	select.replaceChildren();
 
 	Object.entries(LAYOUTS_PAINEL).forEach(([id, layout]) => {
 		const option = document.createElement('option');

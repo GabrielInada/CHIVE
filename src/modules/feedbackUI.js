@@ -96,7 +96,7 @@ export function showErrorMessage(message, duration = 0) {
 export function clearErrors() {
 	const errorsContainer = document.getElementById('erros-container');
 	if (errorsContainer) {
-		errorsContainer.innerHTML = '';
+		errorsContainer.replaceChildren();
 	}
 	if (errorTimer) window.clearTimeout(errorTimer);
 }
@@ -115,7 +115,7 @@ export function hideErrorMessage() {
 export function showLoading(message) {
 	const loadingEl = document.getElementById('loading-estado');
 	if (loadingEl) {
-		loadingEl.innerHTML = '';
+		loadingEl.replaceChildren();
 		const spinner = document.createElement('div');
 		spinner.className = 'loading-spinner';
 		const text = document.createElement('p');

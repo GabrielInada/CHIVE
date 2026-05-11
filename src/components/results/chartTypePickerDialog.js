@@ -8,6 +8,7 @@ function buildChartCard(type, translate, isActive) {
 
 	const preview = document.createElement('span');
 	preview.className = 'chart-picker-card-preview';
+	// innerHTML: static SVG markup from PREVIEW_SVGS; not user input.
 	preview.innerHTML = PREVIEW_SVGS[type];
 	card.appendChild(preview);
 

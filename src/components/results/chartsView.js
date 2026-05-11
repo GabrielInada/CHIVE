@@ -6,7 +6,7 @@ import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../confi
 
 function showChartMessage(containerId, message) {
 	const container = document.getElementById(containerId);
-	container.innerHTML = '';
+	container.replaceChildren();
 	const empty = document.createElement('div');
 	empty.className = 'chart-vazio';
 	empty.textContent = message;
@@ -93,12 +93,12 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoPie.style.display = 'block';
 		blocoBubble.style.display = 'block';
 		blocoTreemap.style.display = 'block';
-		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.pie).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
 		return;
 	}
 
@@ -112,12 +112,12 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoPie.style.display = 'none';
 		blocoBubble.style.display = 'none';
 		blocoTreemap.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
-		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.pie).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
 		return;
 	}
 
@@ -190,7 +190,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoBar.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.bar).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
 	}
 
 	if (chartConfig.scatter.enabled) {
@@ -247,7 +247,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoScatter.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.scatter).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
 	}
 
 	if (chartConfig.network.enabled) {
@@ -293,7 +293,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoNetwork.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.network).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
 	}
 
 	if (chartConfig.pie.enabled) {
@@ -342,7 +342,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoPie.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.pie).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.pie).replaceChildren();
 	}
 
 	if (chartConfig.bubble.enabled) {
@@ -392,7 +392,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoBubble.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.bubble).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
 	}
 
 	if (chartConfig.treemap.enabled) {
@@ -436,6 +436,6 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	} else {
 		blocoTreemap.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.treemap).innerHTML = '';
+		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
 	}
 }

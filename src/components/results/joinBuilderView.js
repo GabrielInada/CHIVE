@@ -104,7 +104,7 @@ function renderDatasetColumnPickers({
 	isLeft,
 	defaultKey,
 }) {
-	container.innerHTML = '';
+	container.replaceChildren();
 
 	if (!dataset) return;
 
