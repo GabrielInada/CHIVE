@@ -405,18 +405,21 @@
   border-radius: 6px;
   background: rgba(26, 71, 42, 0.02);
   margin-bottom: 8px;
-  overflow: hidden;
 }
 
 .chart-section-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: linear-gradient(to right, rgba(26, 71, 42, 0.05), transparent);
+  background: linear-gradient(to right, rgba(26, 71, 42, 0.05), transparent) var(--surface);
   border: none;
   border-bottom: 1px solid var(--border);
+  border-radius: 6px 6px 0 0;
   padding: 8px 10px;
   cursor: pointer;
   font-size: 11px;
@@ -427,11 +430,12 @@
 }
 
 .chart-section-header:hover {
-  background: linear-gradient(to right, rgba(26, 71, 42, 0.1), rgba(26, 71, 42, 0.02));
+  background: linear-gradient(to right, rgba(26, 71, 42, 0.1), rgba(26, 71, 42, 0.02)) var(--surface);
 }
 
 .chart-section-header[aria-expanded="false"] {
   border-bottom: none;
+  border-radius: 6px;
 }
 
 .chart-section-title {
@@ -451,6 +455,8 @@
   display: grid;
   gap: 8px;
   padding: 10px;
+  overflow: hidden;
+  border-radius: 0 0 6px 6px;
 }
 
 .chart-section-content--opening {
@@ -470,43 +476,43 @@
 
 /* Section-specific styling */
 .chart-control-section[data-section="filter"] .chart-section-header {
-  background: linear-gradient(to right, rgba(200, 255, 77, 0.1), transparent);
+  background: linear-gradient(to right, rgba(200, 255, 77, 0.1), transparent) var(--surface);
 }
 
 .chart-control-section[data-section="filter"] .chart-section-header:hover {
-  background: linear-gradient(to right, rgba(200, 255, 77, 0.15), rgba(200, 255, 77, 0.05));
+  background: linear-gradient(to right, rgba(200, 255, 77, 0.15), rgba(200, 255, 77, 0.05)) var(--surface);
 }
 
 .chart-control-section[data-section="data"] .chart-section-header {
-  background: linear-gradient(to right, rgba(100, 150, 255, 0.08), transparent);
+  background: linear-gradient(to right, rgba(100, 150, 255, 0.08), transparent) var(--surface);
 }
 
 .chart-control-section[data-section="data"] .chart-section-header:hover {
-  background: linear-gradient(to right, rgba(100, 150, 255, 0.12), rgba(100, 150, 255, 0.04));
+  background: linear-gradient(to right, rgba(100, 150, 255, 0.12), rgba(100, 150, 255, 0.04)) var(--surface);
 }
 
 .chart-control-section[data-section="display"] .chart-section-header {
-  background: linear-gradient(to right, rgba(150, 100, 255, 0.08), transparent);
+  background: linear-gradient(to right, rgba(150, 100, 255, 0.08), transparent) var(--surface);
 }
 
 .chart-control-section[data-section="display"] .chart-section-header:hover {
-  background: linear-gradient(to right, rgba(150, 100, 255, 0.12), rgba(150, 100, 255, 0.04));
+  background: linear-gradient(to right, rgba(150, 100, 255, 0.12), rgba(150, 100, 255, 0.04)) var(--surface);
 }
 
 .chart-control-section[data-section="styling"] .chart-section-header {
-  background: linear-gradient(to right, rgba(255, 150, 100, 0.08), transparent);
+  background: linear-gradient(to right, rgba(255, 150, 100, 0.08), transparent) var(--surface);
 }
 
 .chart-control-section[data-section="styling"] .chart-section-header:hover {
-  background: linear-gradient(to right, rgba(255, 150, 100, 0.12), rgba(255, 150, 100, 0.04));
+  background: linear-gradient(to right, rgba(255, 150, 100, 0.12), rgba(255, 150, 100, 0.04)) var(--surface);
 }
 
 .chart-control-section[data-section="advanced"] .chart-section-header {
-  background: linear-gradient(to right, rgba(150, 150, 150, 0.06), transparent);
+  background: linear-gradient(to right, rgba(150, 150, 150, 0.06), transparent) var(--surface);
 }
 
 .chart-control-section[data-section="advanced"] .chart-section-header:hover {
-  background: linear-gradient(to right, rgba(150, 150, 150, 0.1), rgba(150, 150, 150, 0.03));
+  background: linear-gradient(to right, rgba(150, 150, 150, 0.1), rgba(150, 150, 150, 0.03)) var(--surface);
 }
 
 /* SVG Icon Styling */
