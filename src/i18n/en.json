@@ -249,6 +249,7 @@
 	"chive-viz-toggle-expand": "Show options",
 	"chive-viz-toggle-collapse": "Hide options",
 	"chive-chart-sidebar-empty": "Select at least one column to manage visualizations.",
+	"chive-chart-params-empty": "Select a chart type above to configure it.",
 	"chive-chart-option-none": "— select —",
 	"chive-chart-empty-bar": "Select at least one visible column to build the bar chart.",
 	"chive-chart-empty-bar-numeric": "Select a numeric value column to render the bar chart in sum or mean mode.",

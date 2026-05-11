@@ -8,15 +8,16 @@ const mocks = vi.hoisted(() => ({
 	getNumericColumnNames: vi.fn(() => ['valor']),
 	getCategoricalColumnNames: vi.fn(() => ['categoria']),
 	mergeChartConfigWithDefaults: vi.fn(config => ({
-		bar: { enabled: true, expanded: false },
-		scatter: { enabled: true, expanded: false },
-		pie: { enabled: true, expanded: false },
-		bubble: { enabled: true, expanded: false },
-		network: { enabled: true, expanded: false },
-		treemap: { enabled: true, expanded: false },
-		...config,
+		bar: { enabled: false, expanded: false },
+		scatter: { enabled: false, expanded: false },
+		pie: { enabled: false, expanded: false },
+		bubble: { enabled: false, expanded: false },
+		network: { enabled: false, expanded: false },
+		treemap: { enabled: false, expanded: false },
+		...(config || {}),
 	})),
 	onStateChange: vi.fn(),
+	setActiveChartType: vi.fn(),
 	createBarChartControls: vi.fn(() => []),
 	setupBarChartControlListeners: vi.fn(),
 	createBubbleChartControls: vi.fn(() => []),
@@ -29,7 +30,6 @@ const mocks = vi.hoisted(() => ({
 	setupPieChartControlListeners: vi.fn(),
 	createTreeMapControls: vi.fn(() => []),
 	setupTreeMapControlListeners: vi.fn(),
-	createChartCard: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -48,9 +48,8 @@ vi.mock('../../../src/config/chartDefaults.js', () => ({
 
 vi.mock('../../../src/modules/appState.js', () => ({
 	onStateChange: mocks.onStateChange,
-	STATE_EVENTS: {
-		CHART_EXPANDED_CHANGED: 'chartExpandedChanged',
-	},
+	STATE_EVENTS: { CHART_EXPANDED_CHANGED: 'chartExpandedChanged' },
+	setActiveChartType: mocks.setActiveChartType,
 }));
 
 vi.mock('../../../src/modules/chart-controls/barControls.js', () => ({
@@ -83,222 +82,248 @@ vi.mock('../../../src/modules/chart-controls/treemapControls.js', () => ({
 	setupTreeMapControlListeners: mocks.setupTreeMapControlListeners,
 }));
 
-vi.mock('../../../src/modules/chart-controls/cardFactory.js', () => ({
-	createChartCard: mocks.createChartCard,
-}));
-
 vi.mock('../../../src/modules/chart-controls/previews.js', () => ({
-	PREVIEW_BAR_SVG: '<svg />',
-	PREVIEW_BUBBLE_SVG: '<svg />',
-	PREVIEW_NETWORK_SVG: '<svg />',
-	PREVIEW_PIE_SVG: '<svg />',
-	PREVIEW_SCATTER_SVG: '<svg />',
-	PREVIEW_TREEMAP_SVG: '<svg />',
+	PREVIEW_BAR_SVG: '<svg id="prev-bar" />',
+	PREVIEW_BUBBLE_SVG: '<svg id="prev-bubble" />',
+	PREVIEW_NETWORK_SVG: '<svg id="prev-network" />',
+	PREVIEW_PIE_SVG: '<svg id="prev-pie" />',
+	PREVIEW_SCATTER_SVG: '<svg id="prev-scatter" />',
+	PREVIEW_TREEMAP_SVG: '<svg id="prev-treemap" />',
 }));
 
-import { renderChartControlsSidebar } from '../../../src/modules/chart-controls/index.js';
+import {
+	renderChartControlsSidebar,
+	computeActivationDefaults,
+	handleChartTypeSelect,
+} from '../../../src/modules/chart-controls/index.js';
 
-function createScrollResettingContainer() {
-	let html = '';
-	let scrollTop = 180;
-
-	return {
-		get innerHTML() {
-			return html;
-		},
-		set innerHTML(value) {
-			html = value;
-			scrollTop = 0;
-		},
-		get scrollTop() {
-			return scrollTop;
-		},
-		set scrollTop(value) {
-			scrollTop = value;
-		},
-		appendChild: vi.fn(),
-	};
+function setupSidebarDOM() {
+	document.body.innerHTML = `
+		<div id="viz-chart-list"></div>
+		<div id="viz-chart-params"></div>
+	`;
 }
 
 describe('renderChartControlsSidebar', () => {
 	beforeEach(() => {
-		vi.restoreAllMocks();
 		vi.clearAllMocks();
-		document.body.innerHTML = '';
-		mocks.createChartCard.mockReset();
+		setupSidebarDOM();
 	});
 
-	it('restores the sidebar scroll position after rerendering', () => {
-		const container = createScrollResettingContainer();
-		vi.spyOn(document, 'getElementById').mockReturnValue(container);
+	it('renders 6 chart rows in the chart-list pane', () => {
+		renderChartControlsSidebar({ configGraficos: {} });
+		const rows = document.querySelectorAll('#viz-chart-list .viz-chart-row');
+		expect(rows.length).toBe(6);
+	});
 
-		renderChartControlsSidebar({
-			configGraficos: {},
+	it('marks the active chart row with .ativo class', () => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce({
+			bar: { enabled: false }, scatter: { enabled: true },
+			pie: { enabled: false }, bubble: { enabled: false },
+			network: { enabled: false }, treemap: { enabled: false },
+		});
+		renderChartControlsSidebar({ configGraficos: {} });
+		const activeRow = document.querySelector('#viz-chart-list .viz-chart-row.ativo');
+		expect(activeRow?.dataset.chartType).toBe('scatter');
+	});
+
+	it('renders only the active chart\'s controls in the params pane', () => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce({
+			bar: { enabled: false }, scatter: { enabled: true },
+			pie: { enabled: false }, bubble: { enabled: false },
+			network: { enabled: false }, treemap: { enabled: false },
+		});
+		renderChartControlsSidebar({ configGraficos: {} });
+		expect(mocks.createScatterPlotControls).toHaveBeenCalledTimes(1);
+		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
+		expect(mocks.setupScatterPlotControlListeners).toHaveBeenCalledTimes(1);
+		expect(mocks.setupBarChartControlListeners).not.toHaveBeenCalled();
+	});
+
+	it('shows the params empty-state placeholder when no chart is active', () => {
+		renderChartControlsSidebar({ configGraficos: {} });
+		const empty = document.querySelector('#viz-chart-params .viz-params-empty');
+		expect(empty).not.toBeNull();
+		// None of the per-chart control builders should run when nothing is active.
+		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
+		expect(mocks.createScatterPlotControls).not.toHaveBeenCalled();
+	});
+
+	it('shows global empty-state when no dataset is provided', () => {
+		renderChartControlsSidebar(null);
+		const empty = document.querySelector('#viz-chart-params .tabela-sem-colunas');
+		expect(empty).not.toBeNull();
+		expect(document.querySelectorAll('#viz-chart-list .viz-chart-row').length).toBe(0);
+	});
+
+	it('clicking a non-active row activates that chart with defaults', () => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce({
+			bar: { enabled: true }, scatter: { enabled: false },
+			pie: { enabled: false }, bubble: { enabled: false },
+			network: { enabled: false }, treemap: { enabled: false },
+		});
+		renderChartControlsSidebar({ configGraficos: { bar: { category: 'categoria' } } });
+		const scatterRow = document.querySelector('[data-chart-type="scatter"]');
+		scatterRow.click();
+		expect(mocks.setActiveChartType).toHaveBeenCalledWith(
+			'scatter',
+			expect.objectContaining({ expanded: true })
+		);
+	});
+
+	it('clicking the active row deselects (passes null)', () => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce({
+			bar: { enabled: true }, scatter: { enabled: false },
+			pie: { enabled: false }, bubble: { enabled: false },
+			network: { enabled: false }, treemap: { enabled: false },
+		});
+		renderChartControlsSidebar({ configGraficos: {} });
+		const activeRow = document.querySelector('.viz-chart-row.ativo');
+		activeRow.click();
+		expect(mocks.setActiveChartType).toHaveBeenCalledWith(null);
+	});
+
+	it('preserves expanded state of control sections across rerenders', () => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValue({
+			bar: { enabled: true }, scatter: { enabled: false },
+			pie: { enabled: false }, bubble: { enabled: false },
+			network: { enabled: false }, treemap: { enabled: false },
 		});
 
-		expect(container.scrollTop).toBe(180);
-		expect(mocks.createChartCard).toHaveBeenCalledTimes(6);
-		expect(mocks.setupBarChartControlListeners).toHaveBeenCalledTimes(1);
-	});
-
-	it('restores relative viewport when active control position changes after rerender', () => {
-		document.body.innerHTML = '<div id="lista-visualizacoes-conteudo" class="viz-cards"></div>';
-		const container = document.getElementById('lista-visualizacoes-conteudo');
-
-		let topAtCreation = 220;
-		mocks.createChartCard.mockImplementation((parent, chartName) => {
-			const card = document.createElement('article');
-			card.className = 'viz-card';
-			const expandBtn = document.createElement('button');
-			expandBtn.className = 'viz-expand-btn';
-			expandBtn.id = `viz-expand-${chartName}`;
-			card.appendChild(expandBtn);
-
-			const body = document.createElement('div');
-			body.id = `viz-body-${chartName}`;
-			const control = document.createElement('select');
-			control.id = `viz-anchor-${chartName}`;
-			const elementTop = topAtCreation;
-			control.getBoundingClientRect = () => ({ top: elementTop });
-			card.getBoundingClientRect = () => ({ top: elementTop - 20 });
-			body.appendChild(control);
-			card.appendChild(body);
-			parent.appendChild(card);
-		});
-
-		renderChartControlsSidebar({ configGraficos: {} });
-
-		container.scrollTop = 100;
-		const activeControl = document.getElementById('viz-anchor-scatter');
-		activeControl.focus();
-
-		topAtCreation = 280;
-		renderChartControlsSidebar({ configGraficos: {} });
-
-		expect(container.scrollTop).toBe(160);
-	});
-
-	it('restores viewport correctly when scrollTop resets during rerender (real browser behavior)', () => {
-		document.body.innerHTML = '<div id="lista-visualizacoes-conteudo" class="viz-cards"></div>';
-		const container = document.getElementById('lista-visualizacoes-conteudo');
-
-		let topAtCreation = 220;
-		let simulateWipeScrollReset = false;
-		let firstCardInRender = true;
-
-		mocks.createChartCard.mockImplementation((parent, chartName) => {
-			// Real browsers clamp scrollTop to 0 when innerHTML drops below clientHeight.
-			// Simulate that once per render, on the first card after the wipe.
-			if (simulateWipeScrollReset && firstCardInRender) {
-				container.scrollTop = 0;
-				firstCardInRender = false;
-			}
-
-			const card = document.createElement('article');
-			card.className = 'viz-card';
-			const expandBtn = document.createElement('button');
-			expandBtn.className = 'viz-expand-btn';
-			expandBtn.id = `viz-expand-${chartName}`;
-			card.appendChild(expandBtn);
-
-			const body = document.createElement('div');
-			body.id = `viz-body-${chartName}`;
-			const control = document.createElement('select');
-			control.id = `viz-anchor-${chartName}`;
-			const elementTop = topAtCreation;
-			control.getBoundingClientRect = () => ({ top: elementTop });
-			card.getBoundingClientRect = () => ({ top: elementTop - 20 });
-			body.appendChild(control);
-			card.appendChild(body);
-			parent.appendChild(card);
-		});
-
-		renderChartControlsSidebar({ configGraficos: {} });
-
-		container.scrollTop = 100;
-		const activeControl = document.getElementById('viz-anchor-scatter');
-		activeControl.focus();
-
-		topAtCreation = 280;
-		simulateWipeScrollReset = true;
-		firstCardInRender = true;
-		renderChartControlsSidebar({ configGraficos: {} });
-
-		// Anchor captured at scrollTop=100 had rect.top=220. In a real browser the wipe
-		// resets scrollTop to 0, and at scrollTop=0 the new element's rect.top=280.
-		// To return the element to its original viewport Y (220) we adjust by delta=60
-		// against the CURRENT scrollTop (0), giving 60. The previous-scrollTop baseline
-		// would have overshot to 160.
-		expect(container.scrollTop).toBe(60);
-	});
-
-	it('preserves expanded state of control sections after rerender', () => {
-		document.body.innerHTML = '<div id="lista-visualizacoes-conteudo" class="viz-cards"></div>';
-		const container = document.getElementById('lista-visualizacoes-conteudo');
-
-		mocks.createChartCard.mockImplementation((parent, chartName) => {
-			const card = document.createElement('article');
-			card.className = 'viz-card';
-			const expandBtn = document.createElement('button');
-			expandBtn.className = 'viz-expand-btn';
-			expandBtn.id = `viz-expand-${chartName}`;
-			card.appendChild(expandBtn);
-
-			const body = document.createElement('div');
-			body.id = `viz-body-${chartName}`;
-
+		mocks.createBarChartControls.mockImplementation(() => {
 			const section = document.createElement('div');
 			section.className = 'chart-control-section';
 			section.dataset.section = 'styling';
-
 			const header = document.createElement('button');
 			header.className = 'chart-section-header';
 			header.setAttribute('aria-expanded', 'false');
-
-			const toggle = document.createElement('span');
-			toggle.className = 'chart-section-toggle';
-			toggle.textContent = '▶';
-			header.appendChild(toggle);
-
+			const toggleIcon = document.createElement('span');
+			toggleIcon.className = 'chart-section-toggle';
+			toggleIcon.textContent = '▶';
+			header.appendChild(toggleIcon);
 			const content = document.createElement('div');
 			content.className = 'chart-section-content';
 			content.style.display = 'none';
-
-			const control = document.createElement('select');
-			control.id = `viz-anchor-${chartName}`;
-			content.appendChild(control);
-
 			section.appendChild(header);
 			section.appendChild(content);
-			body.appendChild(section);
-			card.appendChild(body);
-			parent.appendChild(card);
+			return [section];
 		});
 
 		renderChartControlsSidebar({ configGraficos: {} });
 
-		const initialSection = container.querySelector('#viz-expand-scatter')
-			?.closest('.viz-card')
-			?.querySelector('.chart-control-section[data-section="styling"]');
-		const initialHeader = initialSection?.querySelector('.chart-section-header');
-		const initialContent = initialSection?.querySelector('.chart-section-content');
-		const initialToggle = initialSection?.querySelector('.chart-section-toggle');
-
-		initialHeader?.setAttribute('aria-expanded', 'true');
-		if (initialContent) initialContent.style.display = 'block';
-		if (initialToggle) initialToggle.textContent = '▼';
+		// Simulate user expanding the styling section
+		const header = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-header');
+		const content = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-content');
+		const toggleIcon = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-toggle');
+		header.setAttribute('aria-expanded', 'true');
+		content.style.display = 'block';
+		toggleIcon.textContent = '▼';
 
 		renderChartControlsSidebar({ configGraficos: {} });
 
-		const nextSection = container.querySelector('#viz-expand-scatter')
-			?.closest('.viz-card')
-			?.querySelector('.chart-control-section[data-section="styling"]');
-		const nextHeader = nextSection?.querySelector('.chart-section-header');
-		const nextContent = nextSection?.querySelector('.chart-section-content');
-		const nextToggle = nextSection?.querySelector('.chart-section-toggle');
-
+		const nextHeader = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-header');
+		const nextContent = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-content');
+		const nextToggle = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-toggle');
 		expect(nextHeader?.getAttribute('aria-expanded')).toBe('true');
 		expect(nextContent?.style.display).toBe('block');
 		expect(nextToggle?.textContent).toBe('▼');
+	});
+});
+
+describe('computeActivationDefaults', () => {
+	const numericas = ['n1', 'n2'];
+	const categoricas = ['c1', 'c2'];
+	const todasColunas = ['c1', 'c2', 'n1', 'n2'];
+
+	function makeDataset(config = {}) {
+		return { configGraficos: config };
+	}
+
+	it('bar: picks first categorical when current is invalid', () => {
+		const defaults = computeActivationDefaults('bar', makeDataset(), { numericas, categoricas, todasColunas });
+		expect(defaults).toEqual({ category: 'c1' });
+	});
+
+	it('bar: keeps current category when still valid', () => {
+		const defaults = computeActivationDefaults(
+			'bar',
+			makeDataset({ bar: { category: 'c2' } }),
+			{ numericas, categoricas, todasColunas }
+		);
+		expect(defaults).toEqual({ category: 'c2' });
+	});
+
+	it('scatter: prefers two numeric columns and forces linear scale on categorical fallback', () => {
+		const defaults = computeActivationDefaults(
+			'scatter',
+			makeDataset({ scatter: { xScale: 'log', yScale: 'log' } }),
+			{ numericas, categoricas, todasColunas }
+		);
+		expect(defaults.x).toBe('n1');
+		expect(defaults.y).toBe('n2');
+		expect(defaults.xScale).toBe('log');
+		expect(defaults.yScale).toBe('log');
+	});
+
+	it('scatter: falls back to categorical and forces linear when no numerics', () => {
+		const defaults = computeActivationDefaults(
+			'scatter',
+			makeDataset({ scatter: { xScale: 'log', yScale: 'log' } }),
+			{ numericas: [], categoricas, todasColunas: categoricas }
+		);
+		expect(defaults.xScale).toBe('linear');
+		expect(defaults.yScale).toBe('linear');
+		expect(defaults.x).not.toBeNull();
+		expect(defaults.y).not.toBeNull();
+		expect(defaults.x).not.toBe(defaults.y);
+	});
+
+	it('pie: returns category + first-numeric valueColumn', () => {
+		const defaults = computeActivationDefaults('pie', makeDataset(), { numericas, categoricas, todasColunas });
+		expect(defaults).toEqual({ category: 'c1', valueColumn: 'n1' });
+	});
+
+	it('network: picks source and target from todasColunas', () => {
+		const defaults = computeActivationDefaults('network', makeDataset(), { numericas, categoricas, todasColunas });
+		expect(defaults.source).toBe('c1');
+		expect(defaults.target).toBe('c2');
+	});
+
+	it('bubble: respects measureMode=count by leaving valueColumn alone', () => {
+		const defaults = computeActivationDefaults(
+			'bubble',
+			makeDataset({ bubble: { measureMode: 'count', valueColumn: 'unused' } }),
+			{ numericas, categoricas, todasColunas }
+		);
+		expect(defaults.valueColumn).toBe('unused');
+	});
+
+	it('treemap: picks first categorical', () => {
+		const defaults = computeActivationDefaults('treemap', makeDataset(), { numericas, categoricas, todasColunas });
+		expect(defaults).toEqual({ category: 'c1' });
+	});
+
+	it('returns {} for unknown chart types', () => {
+		const defaults = computeActivationDefaults('histogram', makeDataset(), { numericas, categoricas, todasColunas });
+		expect(defaults).toEqual({});
+	});
+});
+
+describe('handleChartTypeSelect', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('calls setActiveChartType(null) when given null', () => {
+		handleChartTypeSelect(null, { configGraficos: {} });
+		expect(mocks.setActiveChartType).toHaveBeenCalledWith(null);
+	});
+
+	it('forwards computed defaults + expanded:true when activating a chart', () => {
+		handleChartTypeSelect('bar', { configGraficos: {} });
+		expect(mocks.setActiveChartType).toHaveBeenCalledWith(
+			'bar',
+			expect.objectContaining({ category: 'categoria', expanded: true })
+		);
 	});
 });

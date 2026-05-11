@@ -1,7 +1,6 @@
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { setActiveChartType } from '../appState.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createSelectControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -271,40 +270,6 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 
 export function setupScatterPlotControlListeners(dataset, numericas, allOptions, onConfigChanged) {
 	const categoricas = allOptions.filter(option => !numericas.includes(option));
-	const pickPreferredAxis = (current, preferredIndex = 0, avoid = null) => {
-		if (allOptions.includes(current) && current !== avoid) return current;
-		const preferred = numericas.filter(option => allOptions.includes(option) && option !== avoid);
-		if (preferred[preferredIndex]) return preferred[preferredIndex];
-		return allOptions.find(option => option !== avoid) || null;
-	};
-
-	const toggleScatter = document.getElementById('viz-toggle-scatter');
-	const expandScatter = document.getElementById('viz-expand-scatter');
-
-	if (toggleScatter) {
-		toggleScatter.addEventListener('change', () => {
-			if (toggleScatter.checked) {
-				const xAtual = dataset.configGraficos.scatter?.x;
-				const yAtual = dataset.configGraficos.scatter?.y;
-				const xPadrao = pickPreferredAxis(xAtual, 0, null);
-				const yPadrao = pickPreferredAxis(yAtual, 1, xPadrao) || xPadrao;
-				const currentXScale = dataset.configGraficos.scatter?.xScale === 'log' ? 'log' : 'linear';
-				const currentYScale = dataset.configGraficos.scatter?.yScale === 'log' ? 'log' : 'linear';
-				const xScale = numericas.includes(xPadrao) ? currentXScale : 'linear';
-				const yScale = numericas.includes(yPadrao) ? currentYScale : 'linear';
-				setActiveChartType('scatter', {
-					x: xPadrao,
-					y: yPadrao,
-					xScale,
-					yScale,
-					expanded: true,
-				});
-			} else {
-				setActiveChartType(null);
-			}
-			onConfigChanged?.();
-		});
-	}
 
 	setupExpandListener('viz-expand-scatter', dataset, 'scatter', onConfigChanged);
 
