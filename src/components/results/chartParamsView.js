@@ -1,3 +1,40 @@
+import { PREVIEW_SVGS } from '../../modules/chart-controls/chartTypes.js';
+
+function buildTriggerButton({ activeChartType, chartTitle, translate, onClick }) {
+	const trigger = document.createElement('button');
+	trigger.type = 'button';
+	trigger.className = 'viz-chart-picker-trigger';
+	trigger.id = 'viz-chart-picker-trigger';
+
+	const preview = document.createElement('span');
+	preview.className = 'viz-chart-picker-trigger-preview';
+	if (activeChartType && PREVIEW_SVGS[activeChartType]) {
+		preview.innerHTML = PREVIEW_SVGS[activeChartType];
+	}
+	trigger.appendChild(preview);
+
+	const label = document.createElement('span');
+	label.className = 'viz-chart-picker-trigger-label';
+	if (activeChartType) {
+		label.textContent = chartTitle;
+	} else {
+		label.classList.add('placeholder');
+		label.textContent = translate('chive-chart-picker-trigger-placeholder');
+	}
+	trigger.appendChild(label);
+
+	const caret = document.createElement('span');
+	caret.className = 'viz-chart-picker-trigger-caret';
+	caret.textContent = '▾';
+	trigger.appendChild(caret);
+
+	if (typeof onClick === 'function') {
+		trigger.addEventListener('click', onClick);
+	}
+
+	return trigger;
+}
+
 export function renderChartParamsDOM({
 	container,
 	activeChartType,
@@ -5,8 +42,16 @@ export function renderChartParamsDOM({
 	chartDescription,
 	controls,
 	translate,
+	onChartTypeTriggerClick,
 }) {
 	container.innerHTML = '';
+
+	container.appendChild(buildTriggerButton({
+		activeChartType,
+		chartTitle,
+		translate,
+		onClick: onChartTypeTriggerClick,
+	}));
 
 	if (!activeChartType) {
 		const empty = document.createElement('div');
@@ -16,21 +61,12 @@ export function renderChartParamsDOM({
 		return;
 	}
 
-	const header = document.createElement('div');
-	header.className = 'viz-params-header';
-
-	const title = document.createElement('p');
-	title.className = 'secao-titulo viz-params-title';
-	title.textContent = chartTitle;
-	header.appendChild(title);
-
 	if (chartDescription) {
 		const desc = document.createElement('p');
 		desc.className = 'viz-params-desc';
 		desc.textContent = chartDescription;
-		header.appendChild(desc);
+		container.appendChild(desc);
 	}
 
-	container.appendChild(header);
 	controls.forEach(control => container.appendChild(control));
 }

@@ -21,8 +21,9 @@ import { createNetworkGraphControls, setupNetworkGraphControlListeners } from '.
 import { createScatterPlotControls, setupScatterPlotControlListeners } from './scatterControls.js';
 import { createPieChartControls, setupPieChartControlListeners } from './pieControls.js';
 import { createTreeMapControls, setupTreeMapControlListeners } from './treemapControls.js';
-import { CHART_TYPES, renderChartListDOM } from '../../components/results/chartListView.js';
+import { CHART_TYPES } from './chartTypes.js';
 import { renderChartParamsDOM } from '../../components/results/chartParamsView.js';
+import { openChartTypePickerDialog } from '../../components/results/chartTypePickerDialog.js';
 
 import { setLiveRenderCallback } from './livePreview.js';
 
@@ -312,17 +313,22 @@ function handleChartTypeSelect(chartType, dataset) {
 // without bootstrapping a full sidebar render.
 export { computeActivationDefaults, handleChartTypeSelect };
 
+function openPickerForDataset(activeChartType, dataset) {
+	openChartTypePickerDialog({ activeChartType, translate: t }).then(result => {
+		if (result === null) return;
+		handleChartTypeSelect(result.chartType, dataset);
+	});
+}
+
 export function renderChartControlsSidebar(dataset) {
-	const listContainer = document.getElementById('viz-chart-list');
 	const paramsContainer = document.getElementById('viz-chart-params');
-	if (!listContainer || !paramsContainer) return;
+	if (!paramsContainer) return;
 
 	ensureSidebarInteractionTracking(paramsContainer);
 	const scrollAnchor = getSidebarScrollAnchor(paramsContainer);
 	const controlSectionState = captureControlSectionExpansionState(paramsContainer);
 
 	const emptyState = (message) => {
-		listContainer.innerHTML = '';
 		paramsContainer.innerHTML = '';
 		const emptyDiv = document.createElement('div');
 		emptyDiv.className = 'tabela-sem-colunas';
@@ -346,13 +352,6 @@ export function renderChartControlsSidebar(dataset) {
 	const config = mergeChartConfigWithDefaults(dataset.configGraficos);
 	const activeChartType = CHART_TYPES.find(type => config[type].enabled) || null;
 
-	renderChartListDOM({
-		container: listContainer,
-		activeChartType,
-		translate: t,
-		onSelect: nextType => handleChartTypeSelect(nextType, dataset),
-	});
-
 	const controls = activeChartType ? buildControlsForChart(activeChartType, dataset) : [];
 
 	renderChartParamsDOM({
@@ -362,6 +361,7 @@ export function renderChartControlsSidebar(dataset) {
 		chartDescription: activeChartType ? t(`chive-viz-${activeChartType}-desc`) : '',
 		controls,
 		translate: t,
+		onChartTypeTriggerClick: () => openPickerForDataset(activeChartType, dataset),
 	});
 
 	if (activeChartType) {
