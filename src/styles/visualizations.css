@@ -38,11 +38,22 @@
   box-shadow: inset 0 0 0 1px rgba(26, 71, 42, 0.12);
 }
 
+.viz-card.ativo {
+  background: rgba(26, 71, 42, 0.04);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
 .viz-card-header {
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
+}
+
+.viz-card-header .viz-expand-btn,
+.viz-card-header .viz-toggle-linha {
+  cursor: auto;
 }
 
 .viz-toggle-linha {

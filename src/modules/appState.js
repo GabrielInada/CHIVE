@@ -127,6 +127,10 @@ export function normalizeActiveDatasetConfig(normalizer) {
 	return dataState.normalizeActiveDatasetConfig(normalizer);
 }
 
+export function setActiveChartType(chartType, activatedOverrides) {
+	return dataState.setActiveChartType(chartType, activatedOverrides);
+}
+
 /**
  * Panel domain exports
  */

@@ -1,6 +1,7 @@
 import { BUBBLE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
+import { setActiveChartType } from '../appState.js';
 import { createTextControl, createSliderControl, createSelectControl, createColorPresetControl, COLOR_PRESETS } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
@@ -207,24 +208,25 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 	const toggleBubble = document.getElementById('viz-toggle-bubble');
 	if (toggleBubble) {
 		toggleBubble.addEventListener('change', () => {
-			const categoriaAtual = dataset.configGraficos.bubble?.category;
-			const categoriaPadrao = baseBubble.includes(categoriaAtual)
-				? categoriaAtual
-				: (baseBubble[0] || null);
-			const currentValueColumn = numericOptions.includes(dataset.configGraficos.bubble?.valueColumn)
-				? dataset.configGraficos.bubble?.valueColumn
-				: null;
-			updateActiveDatasetChartConfig({
-				bubble: {
-					...dataset.configGraficos.bubble,
-					enabled: toggleBubble.checked,
-					category: toggleBubble.checked ? categoriaPadrao : categoriaAtual,
-					valueColumn: toggleBubble.checked && dataset.configGraficos.bubble?.measureMode !== 'count'
-						? (currentValueColumn || numericOptions[0] || null)
-						: dataset.configGraficos.bubble?.valueColumn,
-					expanded: toggleBubble.checked ? true : dataset.configGraficos.bubble?.expanded === true,
-				},
-			});
+			if (toggleBubble.checked) {
+				const categoriaAtual = dataset.configGraficos.bubble?.category;
+				const categoriaPadrao = baseBubble.includes(categoriaAtual)
+					? categoriaAtual
+					: (baseBubble[0] || null);
+				const currentValueColumn = numericOptions.includes(dataset.configGraficos.bubble?.valueColumn)
+					? dataset.configGraficos.bubble?.valueColumn
+					: null;
+				const valueColumnNext = dataset.configGraficos.bubble?.measureMode !== 'count'
+					? (currentValueColumn || numericOptions[0] || null)
+					: dataset.configGraficos.bubble?.valueColumn;
+				setActiveChartType('bubble', {
+					category: categoriaPadrao,
+					valueColumn: valueColumnNext,
+					expanded: true,
+				});
+			} else {
+				setActiveChartType(null);
+			}
 			onConfigChanged?.();
 		});
 	}

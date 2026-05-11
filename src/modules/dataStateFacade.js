@@ -1,5 +1,7 @@
 import { STATE_EVENTS } from './stateEvents.js';
 
+const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
+
 let datasetIdCounter = 0;
 function generateDatasetId() {
 	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -96,6 +98,28 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		dataset.configGraficos = normalizer(dataset.configGraficos);
 	}
 
+	// Radio-style activation: enable exactly one chart type (or none if null).
+	// Backs the single-chart-at-a-time viz tab UX. The optional `activatedOverrides`
+	// are merged into the activated chart's config in the same mutation, so per-chart
+	// toggle handlers can pass defaults (e.g. category) without firing a second event.
+	function setActiveChartType(chartType, activatedOverrides = null) {
+		const dataset = getActiveDataset();
+		if (!dataset) return;
+		if (chartType !== null && !CHART_TYPES.includes(chartType)) return;
+
+		const current = dataset.configGraficos || {};
+		const next = { ...current };
+		CHART_TYPES.forEach(type => {
+			const previous = current[type] || {};
+			next[type] = { ...previous, enabled: type === chartType };
+		});
+		if (chartType && activatedOverrides && typeof activatedOverrides === 'object') {
+			next[chartType] = { ...next[chartType], ...activatedOverrides };
+		}
+		dataset.configGraficos = next;
+		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { activeChartType: chartType });
+	}
+
 	return {
 		getActiveDataset,
 		getAllDatasets,
@@ -106,5 +130,6 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		updateActiveDatasetConfig,
 		updateActiveDatasetColumns,
 		normalizeActiveDatasetConfig,
+		setActiveChartType,
 	};
 }

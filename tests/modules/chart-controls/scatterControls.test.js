@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
 	updateActiveDatasetChartConfig: vi.fn(),
+	setActiveChartType: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -13,6 +14,10 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 vi.mock('../../../src/modules/stateSync.js', () => ({
 	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
+}));
+
+vi.mock('../../../src/modules/appState.js', () => ({
+	setActiveChartType: mocks.setActiveChartType,
 }));
 
 import { createScatterPlotControls, setupScatterPlotControlListeners } from '../../../src/modules/chart-controls/scatterControls.js';
@@ -161,15 +166,12 @@ describe('scatterControls axis listeners', () => {
 		toggle.checked = true;
 		toggle.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
-			scatter: expect.objectContaining({
-				enabled: true,
-				x: 'catA',
-				y: 'catB',
-				xScale: 'linear',
-				yScale: 'linear',
-			}),
-		});
+		expect(mocks.setActiveChartType).toHaveBeenCalledWith('scatter', expect.objectContaining({
+			x: 'catA',
+			y: 'catB',
+			xScale: 'linear',
+			yScale: 'linear',
+		}));
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
 	});
 

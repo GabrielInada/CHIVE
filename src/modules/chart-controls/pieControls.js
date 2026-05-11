@@ -1,6 +1,7 @@
 import { CHART_COLORS, PIE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
+import { setActiveChartType } from '../appState.js';
 import { createCheckboxControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -343,23 +344,23 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 
 	if (togglePie) {
 		togglePie.addEventListener('change', () => {
-			const categoriaAtual = dataset.configGraficos.pie?.category;
-			const valueAtual = dataset.configGraficos.pie?.valueColumn;
-			const categoriaPadrao = basePie.includes(categoriaAtual)
-				? categoriaAtual
-				: (basePie[0] || null);
-			const valuePadrao = numericas.includes(valueAtual)
-				? valueAtual
-				: (numericas[0] || null);
-			updateActiveDatasetChartConfig({
-				pie: {
-					...dataset.configGraficos.pie,
-					enabled: togglePie.checked,
-					category: togglePie.checked ? categoriaPadrao : categoriaAtual,
-					valueColumn: togglePie.checked ? valuePadrao : valueAtual,
-					expanded: togglePie.checked ? true : dataset.configGraficos.pie?.expanded === true,
-				},
-			});
+			if (togglePie.checked) {
+				const categoriaAtual = dataset.configGraficos.pie?.category;
+				const valueAtual = dataset.configGraficos.pie?.valueColumn;
+				const categoriaPadrao = basePie.includes(categoriaAtual)
+					? categoriaAtual
+					: (basePie[0] || null);
+				const valuePadrao = numericas.includes(valueAtual)
+					? valueAtual
+					: (numericas[0] || null);
+				setActiveChartType('pie', {
+					category: categoriaPadrao,
+					valueColumn: valuePadrao,
+					expanded: true,
+				});
+			} else {
+				setActiveChartType(null);
+			}
 			onConfigChanged?.();
 		});
 	}
