@@ -1,4 +1,4 @@
-import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TREEMAP_CHART } from './charts.js';
+import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, LINE_CHART, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TREEMAP_CHART } from './charts.js';
 import { normalizeGlobalFilter, createEmptyGlobalFilter } from '../utils/globalFilter.js';
 
 export function createDefaultChartConfig() {
@@ -125,6 +125,24 @@ export function createDefaultChartConfig() {
 			nestingMode: BUBBLE_CHART.defaultNestingMode,
 			colorScheme: 'Tableau10',
 		},
+		line: {
+			enabled: false,
+			expanded: false,
+			x: null,
+			y: null,
+			customTitle: '',
+			chartHeight: 320,
+			curve: LINE_CHART.defaultCurve,
+			missingMode: LINE_CHART.defaultMissingMode,
+			strokeWidth: LINE_CHART.defaultStrokeWidth,
+			color: CHART_COLORS.line,
+			ghostStrokeColor: LINE_CHART.defaultGhostStrokeColor,
+			showPoints: LINE_CHART.defaultPointsVisible,
+			sortX: LINE_CHART.defaultSortX,
+			aggregateMode: LINE_CHART.defaultAggregateMode,
+			showXAxisLabel: true,
+			showYAxisLabel: true,
+		},
 	};
 }
 
@@ -174,5 +192,9 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 			}
 			return merged;
 		})(),
+		line: {
+			...defaults.line,
+			...(config.line || {}),
+		},
 	};
 }

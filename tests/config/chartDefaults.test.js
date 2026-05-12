@@ -11,6 +11,16 @@ describe('chartDefaults', () => {
 			expect(config).toHaveProperty('network');
 			expect(config).toHaveProperty('pie');
 			expect(config).toHaveProperty('bubble');
+			expect(config).toHaveProperty('line');
+		});
+
+		it('initializes line chart with curve/missingMode defaults and disabled', () => {
+			const config = createDefaultChartConfig();
+			expect(config.line.enabled).toBe(false);
+			expect(config.line.curve).toBe('linear');
+			expect(config.line.missingMode).toBe('connect');
+			expect(config.line.sortX).toBe(true);
+			expect(config.line.aggregateMode).toBe('none');
 		});
 
 		it('initializes all chart types as disabled', () => {
@@ -118,6 +128,17 @@ describe('chartDefaults', () => {
 			expect(result.bubble.measureMode).toBe('mean');
 			expect(result.bubble.valueColumn).toBe('valor');
 			expect(result.bubble.padding).toBeDefined();
+		});
+
+		it('merges partial line config with defaults', () => {
+			const result = mergeChartConfigWithDefaults({
+				line: { x: 'date', y: 'visits', curve: 'monotone' },
+			});
+			expect(result.line.x).toBe('date');
+			expect(result.line.y).toBe('visits');
+			expect(result.line.curve).toBe('monotone');
+			expect(result.line.missingMode).toBe('connect');
+			expect(result.line.strokeWidth).toBeDefined();
 		});
 
 		it('preserves top-level overrides like aba', () => {

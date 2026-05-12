@@ -1,6 +1,7 @@
 const irisCsvUrl = new URL('./dataset-iris.csv', import.meta.url).href;
 const amazonianTreesCsvUrl = new URL('./dataset-amazonian-trees.csv', import.meta.url).href;
 const amazonMultilevelNestingCsvUrl = new URL('./dataset-amazon-multilevel-nesting.csv', import.meta.url).href;
+const monthlyVisitsCsvUrl = new URL('./dataset-monthly-visits.csv', import.meta.url).href;
 
 // Template to append future real datasets from src/data:
 // const yourCsvUrl = new URL('./dataset-your-name.csv', import.meta.url).href;
@@ -58,6 +59,19 @@ export const PRESET_CATALOG = [
     sourceUrl: '',
     sourceLinkLabel: '',
     dataUrl: amazonMultilevelNestingCsvUrl,
+    dataFormat: 'csv',
+  },
+  {
+    id: 'monthly-visits',
+    nameKey: 'chive-preset-monthly-visits-name',
+    descKey: 'chive-preset-monthly-visits-desc',
+    rows: 24,
+    columns: 3,
+    tags: ['time-series', 'line-chart'],
+    sourceLabel: 'CHIVE Sample',
+    sourceUrl: '',
+    sourceLinkLabel: '',
+    dataUrl: monthlyVisitsCsvUrl,
     dataFormat: 'csv',
   },
 ];

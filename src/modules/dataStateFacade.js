@@ -1,6 +1,6 @@
 import { STATE_EVENTS } from './stateEvents.js';
 
-const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
+const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'line'];
 
 let datasetIdCounter = 0;
 function generateDatasetId() {

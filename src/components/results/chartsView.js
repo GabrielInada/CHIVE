@@ -1,5 +1,5 @@
 import { t, getLocale } from '../../services/i18nService.js';
-import { renderBarChart, renderBubbleChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTreeMap } from '../../modules/visualizations/index.js';
+import { renderBarChart, renderBubbleChart, renderLineChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTreeMap } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
@@ -77,6 +77,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const blocoPie = document.getElementById(CHART_BLOCKS.pie);
 	const blocoBubble = document.getElementById(CHART_BLOCKS.bubble);
 	const blocoTreemap = document.getElementById(CHART_BLOCKS.treemap);
+	const blocoLine = document.getElementById(CHART_BLOCKS.line);
 
 	document.getElementById(BADGE_IDS.charts).textContent = t(
 		'chive-charts-badge',
@@ -93,16 +94,18 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoPie.style.display = 'block';
 		blocoBubble.style.display = 'block';
 		blocoTreemap.style.display = 'block';
+		blocoLine.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.pie).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.line).replaceChildren();
 		return;
 	}
 
-	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled && !chartConfig.treemap.enabled) {
+	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled && !chartConfig.treemap.enabled && !chartConfig.line.enabled) {
 		chartsGrid.style.display = 'none';
 		emptyState.style.display = 'flex';
 		emptyState.textContent = t('chive-chart-empty-none');
@@ -112,18 +115,20 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoPie.style.display = 'none';
 		blocoBubble.style.display = 'none';
 		blocoTreemap.style.display = 'none';
+		blocoLine.style.display = 'none';
 		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.pie).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.line).replaceChildren();
 		return;
 	}
 
 	// Single-chart-at-a-time: only the first enabled type renders. Legacy
 	// configs with multiple enabled flags converge to one on the next toggle.
-	const CHART_TYPE_ORDER = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
+	const CHART_TYPE_ORDER = ['bar', 'line', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
 	const activeChartType = CHART_TYPE_ORDER.find(type => chartConfig[type].enabled) || null;
 	CHART_TYPE_ORDER.forEach(type => {
 		if (type !== activeChartType) {
@@ -393,6 +398,53 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	} else {
 		blocoBubble.style.display = 'none';
 		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
+	}
+
+	if (chartConfig.line.enabled) {
+		blocoLine.style.display = 'block';
+		document.getElementById(CHART_CONTAINERS.line).style.minHeight = `${Number(chartConfig.line.chartHeight || 320)}px`;
+		const lineRows = filteredRows;
+		const lineResult = renderLineChart(
+			document.getElementById(CHART_CONTAINERS.line),
+			lineRows,
+			chartConfig.line.x,
+			chartConfig.line.y,
+			{
+				customTitle: chartConfig.line.customTitle,
+				chartHeight: chartConfig.line.chartHeight,
+				curve: chartConfig.line.curve,
+				missingMode: chartConfig.line.missingMode,
+				strokeWidth: chartConfig.line.strokeWidth,
+				color: chartConfig.line.color,
+				ghostStrokeColor: chartConfig.line.ghostStrokeColor,
+				showPoints: chartConfig.line.showPoints,
+				sortX: chartConfig.line.sortX,
+				aggregateMode: chartConfig.line.aggregateMode,
+				showXAxisLabel: chartConfig.line.showXAxisLabel,
+				showYAxisLabel: chartConfig.line.showYAxisLabel,
+				axisLabels: {
+					x: chartConfig.line.x || t('chive-chart-control-line-x'),
+					y: chartConfig.line.y || t('chive-chart-control-line-y'),
+				},
+				axisTypes: {
+					x: columnTypeByName[chartConfig.line.x],
+					y: columnTypeByName[chartConfig.line.y],
+				},
+				locale: getLocale(),
+				filterCallbacks,
+			}
+		);
+		if (!lineResult.ok) {
+			const chave = lineResult.reason === 'no-numeric'
+				? 'chive-chart-empty-line-numeric'
+				: lineResult.reason === 'no-x-values'
+					? 'chive-chart-empty-line-x'
+					: 'chive-chart-empty-line';
+			showChartMessage(CHART_CONTAINERS.line, t(chave));
+		}
+	} else {
+		blocoLine.style.display = 'none';
+		document.getElementById(CHART_CONTAINERS.line).replaceChildren();
 	}
 
 	if (chartConfig.treemap.enabled) {
