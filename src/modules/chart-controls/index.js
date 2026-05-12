@@ -12,11 +12,13 @@ import {
 	filterVisibleColumns,
 	getNumericColumnNames,
 	getCategoricalColumnNames,
+	getDateColumnNames,
 } from '../../utils/columnHelpers.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { onStateChange, STATE_EVENTS, setActiveChartType } from '../appState.js';
 import { createBarChartControls, setupBarChartControlListeners } from './barControls.js';
 import { createBubbleChartControls, setupBubbleChartControlListeners } from './bubbleControls.js';
+import { createLineChartControls, setupLineChartControlListeners } from './lineControls.js';
 import { createNetworkGraphControls, setupNetworkGraphControlListeners } from './networkControls.js';
 import { createScatterPlotControls, setupScatterPlotControlListeners } from './scatterControls.js';
 import { createPieChartControls, setupPieChartControlListeners } from './pieControls.js';
@@ -155,7 +157,7 @@ function pickPreferred(options, preferredIndex = 0, avoid = null) {
 // chart's existing config wins when still valid; falls back to first available
 // column otherwise. Mirrors the per-chart defaulting that used to live in each
 // toggle-change handler.
-function computeActivationDefaults(chartType, dataset, { numericas, categoricas, todasColunas }) {
+function computeActivationDefaults(chartType, dataset, { numericas, categoricas, todasColunas, datas = [] }) {
 	const config = dataset.configGraficos || {};
 	const baseCategoricalOrAll = categoricas.length > 0 ? categoricas : todasColunas;
 
@@ -235,6 +237,19 @@ function computeActivationDefaults(chartType, dataset, { numericas, categoricas,
 			};
 		}
 
+		case 'line': {
+			const currentX = config.line?.x;
+			const currentY = config.line?.y;
+			const xDefault = todasColunas.includes(currentX)
+				? currentX
+				: (datas[0] ?? numericas[0] ?? todasColunas[0] ?? null);
+			const yCandidates = numericas.filter(name => name !== xDefault);
+			const yDefault = numericas.includes(currentY) && currentY !== xDefault
+				? currentY
+				: (yCandidates[0] ?? numericas[0] ?? null);
+			return { x: xDefault, y: yDefault };
+		}
+
 		default:
 			return {};
 	}
@@ -244,6 +259,7 @@ function buildControlsForChart(chartType, dataset) {
 	const colunasVisiveis = filterVisibleColumns(dataset);
 	const numericas = getNumericColumnNames(colunasVisiveis);
 	const categoricas = getCategoricalColumnNames(colunasVisiveis);
+	const datas = getDateColumnNames(colunasVisiveis);
 	const todasColunas = colunasVisiveis.map(c => c.nome);
 	const baseCategoricalOrAll = categoricas.length > 0 ? categoricas : todasColunas;
 
@@ -260,6 +276,8 @@ function buildControlsForChart(chartType, dataset) {
 			return createNetworkGraphControls(dataset, todasColunas, numericas, categoricas);
 		case 'treemap':
 			return createTreeMapControls(dataset, baseCategoricalOrAll, numericas, todasColunas);
+		case 'line':
+			return createLineChartControls(dataset, numericas, datas, todasColunas);
 		default:
 			return [];
 	}
@@ -269,6 +287,7 @@ function setupListenersForChart(chartType, dataset) {
 	const colunasVisiveis = filterVisibleColumns(dataset);
 	const numericas = getNumericColumnNames(colunasVisiveis);
 	const categoricas = getCategoricalColumnNames(colunasVisiveis);
+	const datas = getDateColumnNames(colunasVisiveis);
 	const todasColunas = colunasVisiveis.map(c => c.nome);
 	const baseCategoricalOrAll = categoricas.length > 0 ? categoricas : todasColunas;
 	const cb = onChartConfigChangeCallback;
@@ -291,6 +310,9 @@ function setupListenersForChart(chartType, dataset) {
 			return;
 		case 'treemap':
 			setupTreeMapControlListeners(dataset, baseCategoricalOrAll, numericas, todasColunas, cb);
+			return;
+		case 'line':
+			setupLineChartControlListeners(dataset, numericas, datas, todasColunas, cb);
 	}
 }
 
@@ -303,8 +325,9 @@ function handleChartTypeSelect(chartType, dataset) {
 	const colunasVisiveis = filterVisibleColumns(dataset);
 	const numericas = getNumericColumnNames(colunasVisiveis);
 	const categoricas = getCategoricalColumnNames(colunasVisiveis);
+	const datas = getDateColumnNames(colunasVisiveis);
 	const todasColunas = colunasVisiveis.map(c => c.nome);
-	const defaults = computeActivationDefaults(chartType, dataset, { numericas, categoricas, todasColunas });
+	const defaults = computeActivationDefaults(chartType, dataset, { numericas, categoricas, todasColunas, datas });
 	setActiveChartType(chartType, { ...defaults, expanded: true });
 	onChartConfigChangeCallback?.();
 }

@@ -40,6 +40,20 @@ describe('chunkedNormalize', () => {
 		expect(out[1]).toEqual({ a: 5, b: undefined });
 	});
 
+	it('parses date columns into Date instances and null for invalid', () => {
+		const rows = [
+			{ d: '2024-01-15' },
+			{ d: 'not-a-date' },
+			{ d: '' },
+		];
+		const colunas = [{ nome: 'd', tipo: 'data' }];
+		const out = chunkedNormalize(rows, colunas, '.');
+		expect(out[0].d).toBeInstanceOf(Date);
+		expect(out[0].d.getUTCFullYear()).toBe(2024);
+		expect(out[1].d).toBeNull();
+		expect(out[2].d).toBe('');
+	});
+
 	it('invokes onChunk between batches with running counts', () => {
 		const rows = Array.from({ length: 50 }, (_, i) => ({ a: String(i) }));
 		const colunas = [{ nome: 'a', tipo: 'numero' }];

@@ -32,7 +32,10 @@ export function getNumericColumnNames(colunas) {
 }
 
 /**
- * Filter categorical (non-numeric) columns from a list
+ * Filter categorical (non-numeric) columns from a list.
+ * NOTE: date columns ('data') are included here for backwards-compatibility
+ * with bar/pie/treemap/scatter — they treat dates as categorical buckets.
+ * Use {@link getDateColumns} when you want only date columns.
  * @param {Array} colunas - Array of column objects with tipo property
  * @returns {Array} - Column objects where tipo !== 'numero'
  */
@@ -47,4 +50,22 @@ export function getCategoricalColumns(colunas) {
  */
 export function getCategoricalColumnNames(colunas) {
 	return getCategoricalColumns(colunas).map(coluna => coluna.nome);
+}
+
+/**
+ * Filter date columns from a list
+ * @param {Array} colunas - Array of column objects with tipo property
+ * @returns {Array} - Column objects where tipo === 'data'
+ */
+export function getDateColumns(colunas) {
+	return colunas.filter(coluna => coluna.tipo === 'data');
+}
+
+/**
+ * Filter date columns and return just their names
+ * @param {Array} colunas - Array of column objects
+ * @returns {Array} - Array of date column names
+ */
+export function getDateColumnNames(colunas) {
+	return getDateColumns(colunas).map(coluna => coluna.nome);
 }

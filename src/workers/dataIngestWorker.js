@@ -44,6 +44,9 @@ export function chunkedNormalize(rawData, colunas, decimalSeparator, onChunk, ch
 				const value = row[nome];
 				if (tipo === COLUMN_TYPES.NUMBER && value !== '' && value !== null && value !== undefined) {
 					converted[nome] = Number(normalizeNumericString(String(value), decimalSeparator));
+				} else if (tipo === COLUMN_TYPES.DATE && value !== '' && value !== null && value !== undefined) {
+					const parsed = value instanceof Date ? value : new Date(value);
+					converted[nome] = Number.isFinite(parsed?.getTime?.()) ? parsed : null;
 				} else {
 					converted[nome] = value;
 				}
