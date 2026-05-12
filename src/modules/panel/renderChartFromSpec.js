@@ -2,6 +2,7 @@ import { t, getLocale } from '../../services/i18nService.js';
 import {
 	renderBarChart,
 	renderBubbleChart,
+	renderLineChart,
 	renderNetworkGraph,
 	renderPieChart,
 	renderScatterPlot,
@@ -226,6 +227,35 @@ function renderTreemap(container, spec) {
 	});
 }
 
+function renderLine(container, spec) {
+	const config = spec.config || {};
+	const columnTypeByName = buildColumnTypeIndex(spec.columnsSnapshot);
+	return renderLineChart(container, spec.dataSnapshot, config.x, config.y, {
+		customTitle: config.customTitle,
+		chartHeight: config.chartHeight,
+		curve: config.curve,
+		missingMode: config.missingMode,
+		strokeWidth: config.strokeWidth,
+		color: config.color,
+		ghostStrokeColor: config.ghostStrokeColor,
+		showPoints: config.showPoints,
+		sortX: config.sortX,
+		aggregateMode: config.aggregateMode,
+		showXAxisLabel: config.showXAxisLabel,
+		showYAxisLabel: config.showYAxisLabel,
+		axisLabels: {
+			x: config.x || t('chive-chart-control-line-x'),
+			y: config.y || t('chive-chart-control-line-y'),
+		},
+		axisTypes: {
+			x: columnTypeByName[config.x],
+			y: columnTypeByName[config.y],
+		},
+		locale: getLocale(),
+		filterCallbacks: EMPTY_FILTER_CALLBACKS,
+	});
+}
+
 const RENDERERS = {
 	bar: renderBar,
 	scatter: renderScatter,
@@ -233,6 +263,7 @@ const RENDERERS = {
 	pie: renderPie,
 	bubble: renderBubble,
 	treemap: renderTreemap,
+	line: renderLine,
 };
 
 export const SUPPORTED_PANEL_CHART_TYPES = Object.freeze(Object.keys(RENDERERS));

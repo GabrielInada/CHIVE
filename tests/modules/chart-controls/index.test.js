@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
 	filterVisibleColumns: vi.fn(() => [{ nome: 'categoria' }, { nome: 'valor' }]),
 	getNumericColumnNames: vi.fn(() => ['valor']),
 	getCategoricalColumnNames: vi.fn(() => ['categoria']),
+	getDateColumnNames: vi.fn(() => []),
 	mergeChartConfigWithDefaults: vi.fn(config => ({
 		bar: { enabled: false, expanded: false },
 		scatter: { enabled: false, expanded: false },
@@ -14,6 +15,7 @@ const mocks = vi.hoisted(() => ({
 		bubble: { enabled: false, expanded: false },
 		network: { enabled: false, expanded: false },
 		treemap: { enabled: false, expanded: false },
+		line: { enabled: false, expanded: false },
 		...(config || {}),
 	})),
 	onStateChange: vi.fn(),
@@ -31,6 +33,8 @@ const mocks = vi.hoisted(() => ({
 	setupPieChartControlListeners: vi.fn(),
 	createTreeMapControls: vi.fn(() => []),
 	setupTreeMapControlListeners: vi.fn(),
+	createLineChartControls: vi.fn(() => []),
+	setupLineChartControlListeners: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -41,6 +45,7 @@ vi.mock('../../../src/utils/columnHelpers.js', () => ({
 	filterVisibleColumns: mocks.filterVisibleColumns,
 	getNumericColumnNames: mocks.getNumericColumnNames,
 	getCategoricalColumnNames: mocks.getCategoricalColumnNames,
+	getDateColumnNames: mocks.getDateColumnNames,
 }));
 
 vi.mock('../../../src/config/chartDefaults.js', () => ({
@@ -83,6 +88,11 @@ vi.mock('../../../src/modules/chart-controls/treemapControls.js', () => ({
 	setupTreeMapControlListeners: mocks.setupTreeMapControlListeners,
 }));
 
+vi.mock('../../../src/modules/chart-controls/lineControls.js', () => ({
+	createLineChartControls: mocks.createLineChartControls,
+	setupLineChartControlListeners: mocks.setupLineChartControlListeners,
+}));
+
 vi.mock('../../../src/modules/chart-controls/previews.js', () => ({
 	PREVIEW_BAR_SVG: '<svg id="prev-bar" />',
 	PREVIEW_BUBBLE_SVG: '<svg id="prev-bubble" />',
@@ -90,6 +100,7 @@ vi.mock('../../../src/modules/chart-controls/previews.js', () => ({
 	PREVIEW_PIE_SVG: '<svg id="prev-pie" />',
 	PREVIEW_SCATTER_SVG: '<svg id="prev-scatter" />',
 	PREVIEW_TREEMAP_SVG: '<svg id="prev-treemap" />',
+	PREVIEW_LINE_SVG: '<svg id="prev-line" />',
 }));
 
 vi.mock('../../../src/components/results/chartTypePickerDialog.js', () => ({
@@ -116,6 +127,7 @@ function configWithActive(activeType) {
 		bubble: { enabled: activeType === 'bubble' },
 		network: { enabled: activeType === 'network' },
 		treemap: { enabled: activeType === 'treemap' },
+		line: { enabled: activeType === 'line' },
 	};
 }
 

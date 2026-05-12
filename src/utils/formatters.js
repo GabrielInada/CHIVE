@@ -50,5 +50,24 @@ export function formatNumber(value, locale) {
 export function translateType(type) {
 	if (type === 'numero') return t('chive-type-number');
 	if (type === 'texto') return t('chive-type-text');
+	if (type === 'data') return t('chive-type-date');
 	return type;
+}
+
+/**
+ * Format a date with locale awareness. Accepts Date instances or
+ * date-parseable strings (ISO is the canonical CHIVE shape after ingest).
+ * Returns '' for nullish/invalid values.
+ * @param {Date|string|number|null|undefined} value
+ * @param {string} [locale] - Optional locale override
+ * @param {Intl.DateTimeFormatOptions} [options] - Override formatter options
+ * @returns {string}
+ */
+export function formatDate(value, locale, options) {
+	if (value === null || value === undefined || value === '') return '';
+	const date = value instanceof Date ? value : new Date(value);
+	if (!Number.isFinite(date.getTime())) return '';
+	const localeToUse = locale || getLocale();
+	const formatOptions = options || { year: 'numeric', month: 'short', day: '2-digit' };
+	return new Intl.DateTimeFormat(localeToUse, formatOptions).format(date);
 }

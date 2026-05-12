@@ -7,6 +7,8 @@ import {
   getNumericColumnNames,
   getCategoricalColumns,
   getCategoricalColumnNames,
+  getDateColumns,
+  getDateColumnNames,
 } from '../../src/utils/columnHelpers.js';
 
 describe('columnHelpers', () => {
@@ -14,6 +16,7 @@ describe('columnHelpers', () => {
     { nome: 'a', tipo: 'numero' },
     { nome: 'b', tipo: 'texto' },
     { nome: 'c', tipo: 'numero' },
+    { nome: 'd', tipo: 'data' },
   ];
 
   it('filtra colunas visiveis por selecao explicita ou dataset default', () => {
@@ -27,8 +30,13 @@ describe('columnHelpers', () => {
     expect(getNumericColumnNames(columns)).toEqual(['a', 'c']);
   });
 
-  it('retorna colunas categoricas e nomes categoricos', () => {
-    expect(getCategoricalColumns(columns).map(c => c.nome)).toEqual(['b']);
-    expect(getCategoricalColumnNames(columns)).toEqual(['b']);
+  it('retorna colunas categoricas (inclui datas) e nomes', () => {
+    expect(getCategoricalColumns(columns).map(c => c.nome)).toEqual(['b', 'd']);
+    expect(getCategoricalColumnNames(columns)).toEqual(['b', 'd']);
+  });
+
+  it('retorna colunas de data e nomes de data', () => {
+    expect(getDateColumns(columns).map(c => c.nome)).toEqual(['d']);
+    expect(getDateColumnNames(columns)).toEqual(['d']);
   });
 });

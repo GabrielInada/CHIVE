@@ -63,3 +63,16 @@ export const PREVIEW_BUBBLE_SVG = `
 		<circle cx="67" cy="13" r="5" fill="#d7c4e4"></circle>
 	</svg>
 `;
+
+export const PREVIEW_LINE_SVG = `
+	<svg viewBox="0 0 84 38" aria-hidden="true">
+		<polyline class="no-fill" points="6,28 18,22 28,24 40,14 52,18 64,8 78,12" stroke="#4e79a7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></polyline>
+		<circle cx="6" cy="28" r="1.6" fill="#4e79a7"></circle>
+		<circle cx="18" cy="22" r="1.6" fill="#4e79a7"></circle>
+		<circle cx="28" cy="24" r="1.6" fill="#4e79a7"></circle>
+		<circle cx="40" cy="14" r="1.6" fill="#4e79a7"></circle>
+		<circle cx="52" cy="18" r="1.6" fill="#4e79a7"></circle>
+		<circle cx="64" cy="8" r="1.6" fill="#4e79a7"></circle>
+		<circle cx="78" cy="12" r="1.6" fill="#4e79a7"></circle>
+	</svg>
+`;

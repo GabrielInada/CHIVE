@@ -5,6 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const renderers = vi.hoisted(() => ({
 	renderBarChart: vi.fn(() => ({ ok: true })),
 	renderBubbleChart: vi.fn(() => ({ ok: true })),
+	renderLineChart: vi.fn(() => ({ ok: true })),
 	renderNetworkGraph: vi.fn(() => ({ ok: true })),
 	renderPieChart: vi.fn(() => ({ ok: true })),
 	renderScatterPlot: vi.fn(() => ({ ok: true })),
@@ -46,7 +47,7 @@ describe('renderChartFromSpec', () => {
 	});
 
 	it('exposes the supported renderer types', () => {
-		expect(SUPPORTED_PANEL_CHART_TYPES).toEqual(['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap']);
+		expect(SUPPORTED_PANEL_CHART_TYPES).toEqual(['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap', 'line']);
 	});
 
 	it('returns invalid-args when container or spec is missing', () => {
@@ -117,5 +118,17 @@ describe('renderChartFromSpec', () => {
 		const [, , category, opts] = renderers.renderTreeMap.mock.calls[0];
 		expect(category).toBe('a');
 		expect(opts.topN).toBe(5);
+	});
+
+	it('dispatches line with x, y as positional args and resolves axisTypes from columnsSnapshot', () => {
+		renderChartFromSpec(container, makeSpec('line', { x: 'a', y: 'a', curve: 'monotone', missingMode: 'gap' }));
+		expect(renderers.renderLineChart).toHaveBeenCalledTimes(1);
+		const [, rows, x, y, opts] = renderers.renderLineChart.mock.calls[0];
+		expect(rows).toBe(baseRows);
+		expect(x).toBe('a');
+		expect(y).toBe('a');
+		expect(opts.axisTypes).toEqual({ x: 'numero', y: 'numero' });
+		expect(opts.curve).toBe('monotone');
+		expect(opts.missingMode).toBe('gap');
 	});
 });

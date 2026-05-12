@@ -9,6 +9,7 @@ export const CHART_TYPES = {
   PIE: 'pie',
   TREEMAP: 'treemap',
   BUBBLE: 'bubble',
+  LINE: 'line',
 };
 
 export const CHART_COLORS = {
@@ -18,6 +19,7 @@ export const CHART_COLORS = {
   pie: '#5f7c33',
   treemap: '#5a7d99',
   bubble: '#7b4f9d',
+  line: '#4e79a7',
 };
 
 export const CHART_DIMENSIONS = {
@@ -59,6 +61,16 @@ export const CHART_DIMENSIONS = {
       right: 10,
       bottom: 10,
       left: 10,
+    },
+  },
+  line: {
+    width: 700,
+    height: 320,
+    margins: {
+      top: 20,
+      right: 30,
+      bottom: 44,
+      left: 52,
     },
   },
 };
@@ -125,6 +137,21 @@ export const TREEMAP_CHART = {
   defaultTopN: 20,
   paddingOptions: [1, 2, 4],
   defaultPadding: 2,
+};
+
+export const LINE_CHART = {
+  curveOptions: ['linear', 'monotone', 'step', 'step-before', 'step-after', 'basis', 'cardinal'],
+  defaultCurve: 'linear',
+  missingModes: ['connect', 'gap', 'interpolate'],
+  defaultMissingMode: 'connect',
+  strokeWidthOptions: [1, 1.5, 2, 3, 4],
+  defaultStrokeWidth: 1.5,
+  aggregateModes: ['none', 'mean', 'sum', 'count'],
+  defaultAggregateMode: 'none',
+  defaultPointsVisible: false,
+  defaultSortX: true,
+  defaultGhostStrokeColor: '#cccccc',
+  pointRadius: 3,
 };
 
 export const BUBBLE_CHART = {
