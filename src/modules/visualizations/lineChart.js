@@ -23,7 +23,8 @@ import {
 	showChartTooltip,
 } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, LINE_CHART } from '../../config/charts.js';
-import { formatDate, formatNumber } from '../../utils/formatters.js';
+import { formatDate, formatNumber, isNullish } from '../../utils/formatters.js';
+import { isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
 const CURVE_BY_KEY = {
@@ -46,7 +47,7 @@ function resolveXAxisKind(configuredAxisType) {
 }
 
 function toDateOrNull(value) {
-	if (value === null || value === undefined || value === '') return null;
+	if (isNullish(value) || value === '') return null;
 	const date = value instanceof Date ? value : new Date(value);
 	return Number.isFinite(date.getTime()) ? date : null;
 }
@@ -57,18 +58,18 @@ function buildPoints(dados, eixoX, eixoY, xKind) {
 		const row = dados[index];
 		const xRaw = row?.[eixoX];
 		const yRaw = row?.[eixoY];
-		const yIsMissing = yRaw === null || yRaw === undefined || yRaw === '';
+		const yIsMissing = isNullish(yRaw) || yRaw === '';
 		const yNum = yIsMissing ? NaN : Number(yRaw);
 		const y = Number.isFinite(yNum) ? yNum : NaN;
 		let x;
 		if (xKind === AXIS_KIND.date) {
 			x = toDateOrNull(xRaw);
 		} else if (xKind === AXIS_KIND.numeric) {
-			const xIsMissing = xRaw === null || xRaw === undefined || xRaw === '';
+			const xIsMissing = isNullish(xRaw) || xRaw === '';
 			const n = xIsMissing ? NaN : Number(xRaw);
 			x = Number.isFinite(n) ? n : null;
 		} else {
-			x = xRaw === null || xRaw === undefined ? null : String(xRaw);
+			x = isNullish(xRaw) ? null : String(xRaw);
 		}
 		if (x === null || x === '') continue;
 		points.push({ x, y, raw: row, index });
@@ -148,7 +149,7 @@ function truncateCategoryTick(value, maxLength = 18) {
 
 function normalizeHex(value, fallback) {
 	const trimmed = String(value || '').trim();
-	return /^#[0-9a-fA-F]{6}$/.test(trimmed) ? trimmed : fallback;
+	return isValidHexColor(trimmed) ? trimmed : fallback;
 }
 
 export function renderLineChart(container, dados, eixoX, eixoY, opcoes = {}) {

@@ -10,8 +10,8 @@ import {
 } from './tooltip.js';
 import { toCategoryToken } from '../../utils/chartFilters.js';
 import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
-import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
+import { formatNumber, isNullish } from '../../utils/formatters.js';
+import { interpolateColor, buildRankMap, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
 const SCATTER_PALETTES = {
@@ -26,7 +26,7 @@ const AXIS_TYPE_VALUES = {
 };
 
 function normalizeCategoryValue(value) {
-	if (value === null || value === undefined || value === '') return '—';
+	if (isNullish(value) || value === '') return '—';
 	return String(value);
 }
 
@@ -177,17 +177,17 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const radius = Number.isFinite(Number(opcoes.radius)) ? Number(opcoes.radius) : SCATTER_PLOT.defaultRadius;
 	const opacity = Number.isFinite(Number(opcoes.opacity)) ? Number(opcoes.opacity) : SCATTER_PLOT.defaultOpacity;
-	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+	const color = isValidHexColor(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.scatter;
 	const colorMode = ['uniform', 'numeric', 'category'].includes(opcoes.colorMode)
 		? opcoes.colorMode
 		: 'uniform';
 	const colorField = opcoes.colorField || null;
-	const gradientMinColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.gradientMinColor || '').trim())
+	const gradientMinColor = isValidHexColor(String(opcoes.gradientMinColor || '').trim())
 		? String(opcoes.gradientMinColor).trim()
 		: color;
-	const gradientMaxColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.gradientMaxColor || '').trim())
+	const gradientMaxColor = isValidHexColor(String(opcoes.gradientMaxColor || '').trim())
 		? String(opcoes.gradientMaxColor).trim()
 		: '#ffffff';
 	const colorScheme = SCATTER_PALETTES[opcoes.colorScheme] ? opcoes.colorScheme : 'Bold';
@@ -342,7 +342,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	};
 
 	const buildAxisActionSet = (column, rawValue, headingLabel) => {
-		if (!column || rawValue === null || rawValue === undefined || rawValue === '') return null;
+		if (!column || isNullish(rawValue) || rawValue === '') return null;
 		const token = toCategoryToken(rawValue);
 		const state = typeof filterCallbacks.getTokenFilterState === 'function'
 			? filterCallbacks.getTokenFilterState(column, token)

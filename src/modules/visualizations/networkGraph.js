@@ -21,7 +21,7 @@ import {
 import { toCategoryToken } from '../../utils/chartFilters.js';
 import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
-import { interpolateColor } from '../../utils/colorUtils.js';
+import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
@@ -93,10 +93,10 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		: NETWORK_GRAPH.defaultAlphaDecay;
 	const showLegend = opcoes.showLegend !== false;
 	const showNodeLabels = opcoes.showNodeLabels === true;
-	const sourceNodeColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.sourceNodeColor || '').trim())
+	const sourceNodeColor = isValidHexColor(String(opcoes.sourceNodeColor || '').trim())
 		? String(opcoes.sourceNodeColor).trim()
 		: '#e3743d';
-	const targetNodeColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.targetNodeColor || '').trim())
+	const targetNodeColor = isValidHexColor(String(opcoes.targetNodeColor || '').trim())
 		? String(opcoes.targetNodeColor).trim()
 		: '#6b94c9';
 	const edgeColorMode = opcoes.edgeColorMode === 'uniform' ? 'uniform' : 'gradient';
@@ -188,7 +188,7 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 	};
 
 	const buildNodeActionSet = (column, rawValue, headingLabel) => {
-		if (!column || rawValue === null || rawValue === undefined || rawValue === '') return null;
+		if (!column || isNullish(rawValue) || rawValue === '') return null;
 		const token = toCategoryToken(rawValue);
 		const state = typeof filterCallbacks.getTokenFilterState === 'function'
 			? filterCallbacks.getTokenFilterState(column, token)

@@ -15,7 +15,7 @@ import {
 	getDateColumnNames,
 } from '../../utils/columnHelpers.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
-import { onStateChange, STATE_EVENTS, setActiveChartType } from '../appState.js';
+import { setActiveChartType } from '../appState.js';
 import { createBarChartControls, setupBarChartControlListeners } from './barControls.js';
 import { createBubbleChartControls, setupBubbleChartControlListeners } from './bubbleControls.js';
 import { createLineChartControls, setupLineChartControlListeners } from './lineControls.js';
@@ -37,7 +37,6 @@ const SIDEBAR_INTERACTION_MAX_AGE_MS = 2000;
 export function initChartControls(configChangeCallback = null, liveRenderCallback = null) {
 	onChartConfigChangeCallback = configChangeCallback;
 	setLiveRenderCallback(liveRenderCallback);
-	onStateChange(STATE_EVENTS.CHART_EXPANDED_CHANGED, () => {});
 }
 
 function captureControlSectionExpansionState(container) {

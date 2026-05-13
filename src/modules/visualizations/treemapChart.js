@@ -9,8 +9,9 @@ import {
 	showPinnedChartTooltip,
 } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, TREEMAP_CHART } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
+import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { toCategoryToken } from '../../utils/chartFilters.js';
+import { isValidHexColor } from '../../utils/colorUtils.js';
 
 const COLOR_PALETTE = {
 	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
@@ -47,7 +48,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 		: 380;
 	const colorMode = opcoes.colorMode || 'scheme';
 	const colorScheme = opcoes.colorScheme || 'Bold';
-	const uniformColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+	const uniformColor = isValidHexColor(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.treemap;
 	const locale = opcoes.locale || undefined;
@@ -72,7 +73,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 	const contador = new Map();
 	dados.forEach(linha => {
 		const valorBruto = linha[colunaCategoria];
-		const categoria = valorBruto === null || valorBruto === undefined || valorBruto === ''
+		const categoria = isNullish(valorBruto) || valorBruto === ''
 			? '—'
 			: String(valorBruto);
 		if (measureMode === 'sum') {

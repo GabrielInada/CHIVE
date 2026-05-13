@@ -1,4 +1,5 @@
 import { CHART_COLORS, PIE_CHART } from '../../config/charts.js';
+import { isNullish } from '../../utils/formatters.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
@@ -20,7 +21,7 @@ function getPieSectorValues(dataset, config) {
 	const counter = new Map();
 	dataset.dados.forEach(row => {
 		const rawValue = row[config.category];
-		const category = rawValue === null || rawValue === undefined || rawValue === ''
+		const category = isNullish(rawValue) || rawValue === ''
 			? '—'
 			: String(rawValue);
 

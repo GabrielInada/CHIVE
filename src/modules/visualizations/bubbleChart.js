@@ -9,12 +9,12 @@ import {
 	showPinnedChartTooltip,
 } from './tooltip.js';
 import { BUBBLE_CHART, CHART_COLOR_PALETTES, CHART_DIMENSIONS } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
+import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { toCategoryToken } from '../../utils/chartFilters.js';
 import { ok, fail } from '../../utils/result.js';
 
 function normalizeCategoryValue(value) {
-	return value === null || value === undefined || value === '' ? '—' : String(value);
+	return isNullish(value) || value === '' ? '—' : String(value);
 }
 
 function getBubblePalette(colorScheme) {
@@ -304,7 +304,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	};
 
 	const buildPinnedFilterTooltip = (event, content, headerTitle, filterColumn, rawValue, onDismiss) => {
-		if (!filterColumn || rawValue === null || rawValue === undefined || rawValue === '') {
+		if (!filterColumn || isNullish(rawValue) || rawValue === '') {
 			showPinnedChartTooltip(content, event.pageX, event.pageY, {
 				headerTitle,
 				closeLabel: filterLabels.close,

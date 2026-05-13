@@ -9,9 +9,9 @@ import {
 	showPinnedChartTooltip,
 } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
+import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { toCategoryToken } from '../../utils/chartFilters.js';
-import { buildSliceColor as _buildSliceColor } from '../../utils/colorUtils.js';
+import { buildSliceColor as _buildSliceColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
 function clamp(value, min, max) {
@@ -25,7 +25,7 @@ function buildSliceColor(baseHex, index) {
 export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return fail();
 
-	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+	const color = isValidHexColor(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.pie;
 	const locale = opcoes.locale || undefined;
@@ -58,7 +58,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	const contador = new Map();
 	dados.forEach(linha => {
 		const valorBruto = linha[colunaCategoria];
-		const categoria = valorBruto === null || valorBruto === undefined || valorBruto === ''
+		const categoria = isNullish(valorBruto) || valorBruto === ''
 			? '—'
 			: String(valorBruto);
 		if (measureMode === 'sum') {

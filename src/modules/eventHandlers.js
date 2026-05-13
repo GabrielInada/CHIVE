@@ -148,6 +148,14 @@ function getChartSnapshotTitle(containerId, fallbackTitle) {
 		return String(config.network?.customTitle || '').trim() || fallbackTitle;
 	}
 
+	if (containerId === 'chart-treemap-container') {
+		return String(config.treemap?.customTitle || '').trim() || fallbackTitle;
+	}
+
+	if (containerId === 'chart-line-container') {
+		return String(config.line?.customTitle || '').trim() || fallbackTitle;
+	}
+
 	return fallbackTitle;
 }
 
@@ -231,6 +239,38 @@ function buildChartSnapshotMetadata(containerId) {
 			target,
 			weight: network.weight || null,
 			summary: `${t('chive-chart-control-network-source')}: ${source} · ${t('chive-chart-control-network-target')}: ${target}`,
+		};
+	}
+
+	if (containerId === 'chart-treemap-container') {
+		const treemap = config.treemap || {};
+		const measureLabel = treemap.measureMode === 'sum'
+			? t('chive-chart-control-bar-measure-sum')
+			: t('chive-chart-control-bar-measure-count');
+		const category = treemap.category || '-';
+		const valuePart = treemap.measureMode === 'sum'
+			? ` · ${t('chive-chart-control-treemap-value-column')}: ${treemap.valueColumn || '-'}`
+			: '';
+		return {
+			type: 'treemap',
+			category,
+			measureMode: treemap.measureMode,
+			valueColumn: treemap.valueColumn || null,
+			topN: treemap.topN,
+			summary: `${t('chive-chart-control-treemap-category')}: ${category} · ${measureLabel}${valuePart}`,
+		};
+	}
+
+	if (containerId === 'chart-line-container') {
+		const line = config.line || {};
+		const x = line.x || '-';
+		const y = line.y || '-';
+		return {
+			type: 'line',
+			x,
+			y,
+			curve: line.curve || null,
+			summary: `${t('chive-chart-control-line-x')}: ${x} · ${t('chive-chart-control-line-y')}: ${y}`,
 		};
 	}
 

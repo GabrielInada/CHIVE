@@ -9,9 +9,9 @@ import {
 	showPinnedChartTooltip,
 } from './tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
+import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { toCategoryToken } from '../../utils/chartFilters.js';
-import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
+import { interpolateColor, buildRankMap, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
 function ordenarCategorias(linhas, ordenacao) {
@@ -61,16 +61,16 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 					? labels.soma
 					: labels.contagem),
 	};
-	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+	const color = isValidHexColor(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.bar;
 	const colorMode = ['uniform', 'gradient', 'gradient-manual'].includes(opcoes.colorMode)
 		? opcoes.colorMode
 		: 'uniform';
-	const gradientMinColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.gradientMinColor || '').trim())
+	const gradientMinColor = isValidHexColor(String(opcoes.gradientMinColor || '').trim())
 		? String(opcoes.gradientMinColor).trim()
 		: color;
-	const gradientMaxColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.gradientMaxColor || '').trim())
+	const gradientMaxColor = isValidHexColor(String(opcoes.gradientMaxColor || '').trim())
 		? String(opcoes.gradientMaxColor).trim()
 		: '#ffffff';
 	const manualThresholdPct = Number.isFinite(Number(opcoes.manualThresholdPct))
@@ -89,7 +89,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (measureMode === 'count') {
 		dados.forEach(linha => {
 			const valorBruto = linha[colunaCategoria];
-			const categoria = valorBruto === null || valorBruto === undefined || valorBruto === ''
+			const categoria = isNullish(valorBruto) || valorBruto === ''
 				? '—'
 				: String(valorBruto);
 			contador.set(categoria, (contador.get(categoria) || 0) + 1);
@@ -98,7 +98,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		if (!valueColumn || !hasValueColumn) return fail('no-value-column');
 		dados.forEach(linha => {
 			const valorBruto = linha[colunaCategoria];
-			const categoria = valorBruto === null || valorBruto === undefined || valorBruto === ''
+			const categoria = isNullish(valorBruto) || valorBruto === ''
 				? '—'
 				: String(valorBruto);
 			const valor = Number(linha[valueColumn]);
