@@ -16,6 +16,7 @@ import {
 	setSidebarMode,
 	exposeGlobals,
 } from './appState.js';
+import { updateSidebarUI } from './uiManager.js';
 
 /**
  * Initialize state synchronization
@@ -64,22 +65,6 @@ export function updateActiveDatasetChartConfig(configUpdates) {
 export function switchSidebarMode(mode) {
 	setSidebarMode(mode);
 	updateSidebarUI(mode);
-}
-
-/**
- * Update sidebar UI visibility based on current mode
- * Called by switchSidebarMode
- * @private
- * @param {string} mode - Current sidebar mode
- */
-function updateSidebarUI(mode) {
-	const dadosPanel = document.getElementById('sidebar-panel-dados');
-	const vizPanel = document.getElementById('sidebar-panel-viz');
-	const painelPanel = document.getElementById('sidebar-panel-panel');
-	
-	if (dadosPanel) dadosPanel.classList.toggle('ativo', mode === 'dados');
-	if (vizPanel) vizPanel.classList.toggle('ativo', mode === 'viz');
-	if (painelPanel) painelPanel.classList.toggle('ativo', mode === 'panel');
 }
 
 /**
