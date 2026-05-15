@@ -3,6 +3,7 @@ import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
@@ -169,19 +170,10 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 				? labels.soma
 				: labels.contagem;
 
-		const createLine = (rotulo, valor) => {
-			const linha = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${rotulo}:`;
-			linha.appendChild(strong);
-			linha.append(` ${valor}`);
-			return linha;
-		};
-
-		wrapper.appendChild(createLine(labels.categoria, String(item[0])));
-		wrapper.appendChild(createLine(valorLabel, formatNumber(item[1], locale)));
+		wrapper.appendChild(createTooltipLine(labels.categoria, String(item[0])));
+		wrapper.appendChild(createTooltipLine(valorLabel, formatNumber(item[1], locale)));
 		if (measureMode !== 'mean') {
-			wrapper.appendChild(createLine(labels.percentual, `${percentual.toFixed(1)}%`));
+			wrapper.appendChild(createTooltipLine(labels.percentual, `${percentual.toFixed(1)}%`));
 		}
 
 		return wrapper;
