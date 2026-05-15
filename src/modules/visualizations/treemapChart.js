@@ -3,6 +3,7 @@ import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
@@ -157,18 +158,9 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 		const wrapper = document.createElement('div');
 		const valorLabel = measureMode === 'sum' ? labels.soma : labels.contagem;
 
-		const createLine = (rotulo, valor) => {
-			const linha = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${rotulo}:`;
-			linha.appendChild(strong);
-			linha.append(` ${valor}`);
-			return linha;
-		};
-
-		wrapper.appendChild(createLine(labels.categoria, String(d.data.name)));
-		wrapper.appendChild(createLine(valorLabel, formatNumber(d.data.value, locale)));
-		wrapper.appendChild(createLine(labels.percentual, `${pct.toFixed(1)}%`));
+		wrapper.appendChild(createTooltipLine(labels.categoria, String(d.data.name)));
+		wrapper.appendChild(createTooltipLine(valorLabel, formatNumber(d.data.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.percentual, `${pct.toFixed(1)}%`));
 		return wrapper;
 	};
 
