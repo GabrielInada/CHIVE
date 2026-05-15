@@ -9,14 +9,10 @@ import {
 	showPinnedChartTooltip,
 } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
-import { formatNumber, isNullish } from '../../utils/formatters.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
+import { formatNumber, isNullish, clamp } from '../../utils/formatters.js';
+import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
 import { buildSliceColor as _buildSliceColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
-
-function clamp(value, min, max) {
-	return Math.min(Math.max(value, min), max);
-}
 
 function buildSliceColor(baseHex, index) {
 	return _buildSliceColor(baseHex, index, CHART_COLORS.pie);
@@ -73,7 +69,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 
 	const linhas = Array.from(contador.entries())
 		.map(([categoria, valor]) => ({ categoria, valor }))
-		.sort((a, b) => b.valor - a.valor || String(a.categoria).localeCompare(String(b.categoria)));
+		.sort((a, b) => b.valor - a.valor || compareStrings(a.categoria, b.categoria));
 	if (linhas.length === 0) {
 		return fail(measureMode === 'sum' ? 'sum-no-numeric' : undefined);
 	}

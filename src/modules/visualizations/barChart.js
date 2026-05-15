@@ -10,24 +10,24 @@ import {
 } from './tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
+import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
 import { interpolateColor, buildRankMap, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
 function ordenarCategorias(linhas, ordenacao) {
 	if (ordenacao === 'count-asc') {
-		return linhas.sort((a, b) => a[1] - b[1] || String(a[0]).localeCompare(String(b[0])));
+		return linhas.sort((a, b) => a[1] - b[1] || compareStrings(a[0], b[0]));
 	}
 
 	if (ordenacao === 'label-asc') {
-		return linhas.sort((a, b) => String(a[0]).localeCompare(String(b[0])));
+		return linhas.sort((a, b) => compareStrings(a[0], b[0]));
 	}
 
 	if (ordenacao === 'label-desc') {
-		return linhas.sort((a, b) => String(b[0]).localeCompare(String(a[0])));
+		return linhas.sort((a, b) => compareStrings(b[0], a[0]));
 	}
 
-	return linhas.sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+	return linhas.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]));
 }
 
 export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {

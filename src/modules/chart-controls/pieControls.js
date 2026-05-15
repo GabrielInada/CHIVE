@@ -1,5 +1,6 @@
 import { CHART_COLORS, PIE_CHART } from '../../config/charts.js';
 import { isNullish } from '../../utils/formatters.js';
+import { compareStrings } from '../../utils/chartFilters.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
@@ -37,7 +38,7 @@ function getPieSectorValues(dataset, config) {
 	});
 
 	return Array.from(counter.entries())
-		.sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))
+		.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]))
 		.map(([category]) => category);
 }
 

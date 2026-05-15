@@ -17,7 +17,7 @@ export function createDefaultFilterConfig() {
   };
 }
 
-import { isEmptyValue } from './formatters.js';
+import { isEmptyValue, isNullish } from './formatters.js';
 
 export function isMissingCategoryValue(value) {
   return isEmptyValue(value);
@@ -26,6 +26,20 @@ export function isMissingCategoryValue(value) {
 export function toCategoryToken(value) {
   if (isMissingCategoryValue(value)) return FILTER_MISSING_TOKEN;
   return `v:${String(value)}`;
+}
+
+// String comparator used as a sort tiebreaker across chart renderers. Coerces
+// to String so undefined/null inputs are ordered deterministically instead of
+// throwing.
+export function compareStrings(a, b) {
+  return String(a).localeCompare(String(b));
+}
+
+// Shared "missing-category" placeholder used by scatter/bubble when grouping
+// rows by a categorical column. Null, undefined, and empty-string all collapse
+// to the same em-dash bucket so they don't fragment series.
+export function normalizeCategoryValue(value) {
+  return isNullish(value) || value === '' ? '—' : String(value);
 }
 
 export function normalizeFilterConfig(rawFilter, numericColumns = []) {

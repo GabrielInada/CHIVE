@@ -9,8 +9,8 @@ import {
 	showPinnedChartTooltip,
 } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, TREEMAP_CHART } from '../../config/charts.js';
-import { formatNumber, isNullish } from '../../utils/formatters.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
+import { formatNumber, isNullish, clamp } from '../../utils/formatters.js';
+import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 
 const COLOR_PALETTE = {
@@ -21,10 +21,6 @@ const COLOR_PALETTE = {
 
 function getSchemeColors(schemeName) {
 	return COLOR_PALETTE[schemeName] || COLOR_PALETTE['Bold'];
-}
-
-function clamp(value, min, max) {
-	return Math.min(Math.max(value, min), max);
 }
 
 function truncate(text, maxLen) {
@@ -89,7 +85,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 
 	let entradas = Array.from(contador.entries())
 		.filter(([, v]) => v > 0)
-		.sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+		.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]));
 
 	if (topN > 0) entradas = entradas.slice(0, topN);
 	if (entradas.length === 0) return { ok: false };

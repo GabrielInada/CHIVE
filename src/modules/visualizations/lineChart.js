@@ -24,6 +24,7 @@ import {
 } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, LINE_CHART } from '../../config/charts.js';
 import { formatDate, formatNumber, isNullish } from '../../utils/formatters.js';
+import { compareStrings } from '../../utils/chartFilters.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
@@ -108,7 +109,7 @@ function sortByX(points, xKind) {
 	cloned.sort((a, b) => {
 		if (xKind === AXIS_KIND.date) return a.x.getTime() - b.x.getTime();
 		if (xKind === AXIS_KIND.numeric) return a.x - b.x;
-		return String(a.x).localeCompare(String(b.x));
+		return compareStrings(a.x, b.x);
 	});
 	return cloned;
 }

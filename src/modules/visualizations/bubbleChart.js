@@ -10,12 +10,8 @@ import {
 } from './tooltip.js';
 import { BUBBLE_CHART, CHART_COLOR_PALETTES, CHART_DIMENSIONS } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
+import { toCategoryToken, compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
 import { ok, fail } from '../../utils/result.js';
-
-function normalizeCategoryValue(value) {
-	return isNullish(value) || value === '' ? '—' : String(value);
-}
 
 function getBubblePalette(colorScheme) {
 	return CHART_COLOR_PALETTES[colorScheme] || CHART_COLOR_PALETTES.Tableau10;
@@ -214,7 +210,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		nestingPath: nestingColumns.length > 0 ? (nestingByCategory.get(category) || nestingColumns.map(() => '—')) : [],
 	}));
 
-	bubbles.sort((a, b) => b.value - a.value || String(a.category).localeCompare(String(b.category)));
+	bubbles.sort((a, b) => b.value - a.value || compareStrings(a.category, b.category));
 	if (topN > 0) {
 		bubbles = bubbles.slice(0, topN);
 	}

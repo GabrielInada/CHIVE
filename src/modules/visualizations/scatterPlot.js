@@ -8,7 +8,7 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from './tooltip.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
+import { toCategoryToken, compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
 import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { interpolateColor, buildRankMap, isValidHexColor } from '../../utils/colorUtils.js';
@@ -24,11 +24,6 @@ const AXIS_TYPE_VALUES = {
 	numeric: 'numeric',
 	categorical: 'categorical',
 };
-
-function normalizeCategoryValue(value) {
-	if (isNullish(value) || value === '') return '—';
-	return String(value);
-}
 
 function isNumericLikeAxisType(axisType) {
 	const value = String(axisType || '').toLowerCase();
@@ -152,7 +147,7 @@ function pickMostFrequentCategory(rows, fieldName) {
 			bestCount = count;
 			continue;
 		}
-		if (count === bestCount && String(category).localeCompare(String(bestCategory)) < 0) {
+		if (count === bestCount && compareStrings(category, bestCategory) < 0) {
 			bestCategory = category;
 		}
 	}
