@@ -3,6 +3,7 @@ import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
@@ -159,18 +160,9 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	const montarConteudoTooltip = item => {
 		const percentual = total > 0 ? ((item.valor / total) * 100) : 0;
 		const wrapper = document.createElement('div');
-		const createLine = (rotulo, valor) => {
-			const linha = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${rotulo}:`;
-			linha.appendChild(strong);
-			linha.append(` ${valor}`);
-			return linha;
-		};
-
-		wrapper.appendChild(createLine(labels.categoria, item.categoria));
-		wrapper.appendChild(createLine(labels.contagem, formatNumber(item.valor, locale)));
-		wrapper.appendChild(createLine(labels.percentual, `${percentual.toFixed(1)}%`));
+		wrapper.appendChild(createTooltipLine(labels.categoria, item.categoria));
+		wrapper.appendChild(createTooltipLine(labels.contagem, formatNumber(item.valor, locale)));
+		wrapper.appendChild(createTooltipLine(labels.percentual, `${percentual.toFixed(1)}%`));
 		return wrapper;
 	};
 
