@@ -3,6 +3,7 @@ import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
@@ -305,15 +306,6 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const montarConteudoTooltip = ponto => {
 		const wrapper = document.createElement('div');
 
-		const createLine = (rotulo, valor) => {
-			const linha = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${rotulo}:`;
-			linha.appendChild(strong);
-			linha.append(` ${valor}`);
-			return linha;
-		};
-
 		const xValue = axisTypes.x === AXIS_TYPE_VALUES.numeric
 			? formatNumber(ponto.x, locale)
 			: ponto.xCategory;
@@ -321,12 +313,12 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			? formatNumber(ponto.y, locale)
 			: ponto.yCategory;
 
-		wrapper.appendChild(createLine(axisLabels.x, xValue));
-		wrapper.appendChild(createLine(axisLabels.y, yValue));
+		wrapper.appendChild(createTooltipLine(axisLabels.x, xValue));
+		wrapper.appendChild(createTooltipLine(axisLabels.y, yValue));
 		if (ponto.isAggregate) {
-			wrapper.appendChild(createLine(labels.count, formatNumber(ponto.count, locale)));
+			wrapper.appendChild(createTooltipLine(labels.count, formatNumber(ponto.count, locale)));
 		} else {
-			wrapper.appendChild(createLine(labels.indice, formatNumber(ponto.index + 1, locale)));
+			wrapper.appendChild(createTooltipLine(labels.indice, formatNumber(ponto.index + 1, locale)));
 		}
 
 		return wrapper;
