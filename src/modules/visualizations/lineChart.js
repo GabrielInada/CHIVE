@@ -18,6 +18,7 @@ import {
 	select,
 } from 'd3';
 import {
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
@@ -350,17 +351,7 @@ export function renderLineChart(container, dados, eixoX, eixoY, opcoes = {}) {
 
 function buildTooltipContent(point, axisLabels, xKind, locale) {
 	const wrapper = document.createElement('div');
-
-	const createLine = (label, value) => {
-		const row = document.createElement('div');
-		const strong = document.createElement('strong');
-		strong.textContent = `${label}:`;
-		row.appendChild(strong);
-		row.append(` ${value}`);
-		return row;
-	};
-
-	wrapper.appendChild(createLine(axisLabels.x, formatXValue(point.x, xKind, locale)));
-	wrapper.appendChild(createLine(axisLabels.y, formatNumber(point.y, locale)));
+	wrapper.appendChild(createTooltipLine(axisLabels.x, formatXValue(point.x, xKind, locale)));
+	wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(point.y, locale)));
 	return wrapper;
 }
