@@ -3,6 +3,7 @@ import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
@@ -492,39 +493,20 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 
 	const createLeafTooltip = item => {
 		const wrapper = document.createElement('div');
-
-		const makeLine = (label, value) => {
-			const row = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${label}:`;
-			row.appendChild(strong);
-			row.append(` ${value}`);
-			return row;
-		};
-
-		wrapper.appendChild(makeLine(labels.categoria, item.data.category));
-		wrapper.appendChild(makeLine(measureLabel, formatNumber(item.data.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.categoria, item.data.category));
+		wrapper.appendChild(createTooltipLine(measureLabel, formatNumber(item.data.value, locale)));
 		if (isGrouped) {
-			wrapper.appendChild(makeLine(labels.grupo, getTopLevelGroup(item)));
+			wrapper.appendChild(createTooltipLine(labels.grupo, getTopLevelGroup(item)));
 		}
 		return wrapper;
 	};
 
 	const createParentTooltip = item => {
 		const wrapper = document.createElement('div');
-		const makeLine = (label, value) => {
-			const row = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${label}:`;
-			row.appendChild(strong);
-			row.append(` ${value}`);
-			return row;
-		};
-
-		wrapper.appendChild(makeLine(labels.grupo, item.data.groupName));
-		wrapper.appendChild(makeLine(measureLabel, formatNumber(item.value, locale)));
-		wrapper.appendChild(makeLine(labels.filhos, item.children.length));
-		wrapper.appendChild(makeLine(labels.nivel, item.depth));
+		wrapper.appendChild(createTooltipLine(labels.grupo, item.data.groupName));
+		wrapper.appendChild(createTooltipLine(measureLabel, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.filhos, item.children.length));
+		wrapper.appendChild(createTooltipLine(labels.nivel, item.depth));
 		return wrapper;
 	};
 
