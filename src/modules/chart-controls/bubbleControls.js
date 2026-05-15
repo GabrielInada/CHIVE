@@ -287,3 +287,18 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 	setupTextInputListener('viz-input-bubble-title', 'customTitle', dataset, 'bubble', onConfigChanged);
 	setupColorPresetListeners('viz-bubble-color-preset', {}, {}, dataset, 'bubble', onConfigChanged, COLOR_PRESETS);
 }
+
+export function computeDefaults(dataset, ctx) {
+	const currentCat = dataset.configGraficos?.bubble?.category;
+	const currentVal = dataset.configGraficos?.bubble?.valueColumn;
+	const measureMode = dataset.configGraficos?.bubble?.measureMode;
+	const valueColumn = measureMode !== 'count'
+		? (ctx.numericas.includes(currentVal) ? currentVal : (ctx.numericas[0] || null))
+		: currentVal;
+	return {
+		category: ctx.baseCategoricalOrAll.includes(currentCat)
+			? currentCat
+			: (ctx.baseCategoricalOrAll[0] || null),
+		valueColumn,
+	};
+}

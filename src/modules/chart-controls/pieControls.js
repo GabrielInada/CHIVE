@@ -494,3 +494,14 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 		});
 	});
 }
+
+export function computeDefaults(dataset, ctx) {
+	const currentCat = dataset.configGraficos?.pie?.category;
+	const currentVal = dataset.configGraficos?.pie?.valueColumn;
+	return {
+		category: ctx.baseCategoricalOrAll.includes(currentCat)
+			? currentCat
+			: (ctx.baseCategoricalOrAll[0] || null),
+		valueColumn: ctx.numericas.includes(currentVal) ? currentVal : (ctx.numericas[0] || null),
+	};
+}

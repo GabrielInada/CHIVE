@@ -383,3 +383,29 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 	setupTextInputListener('viz-input-scatter-title', 'customTitle', dataset, 'scatter', onConfigChanged);
 	setupSliderListener('viz-slider-scatter-height', 'chartHeight', dataset, 'scatter', onConfigChanged);
 }
+
+function pickPreferred(options, preferredIndex = 0, avoid = null) {
+	const filtered = options.filter(opt => opt !== avoid);
+	return filtered[preferredIndex] ?? filtered[0] ?? null;
+}
+
+export function computeDefaults(dataset, ctx) {
+	const config = dataset.configGraficos || {};
+	const currentX = config.scatter?.x;
+	const currentY = config.scatter?.y;
+	const numericInAll = ctx.numericas.filter(opt => ctx.todasColunas.includes(opt));
+	const xPadrao = ctx.todasColunas.includes(currentX)
+		? currentX
+		: (numericInAll[0] ?? ctx.todasColunas[0] ?? null);
+	const yPadrao = ctx.todasColunas.includes(currentY) && currentY !== xPadrao
+		? currentY
+		: (pickPreferred(numericInAll, 1, xPadrao) ?? pickPreferred(ctx.todasColunas, 0, xPadrao) ?? xPadrao);
+	const currentXScale = config.scatter?.xScale === 'log' ? 'log' : 'linear';
+	const currentYScale = config.scatter?.yScale === 'log' ? 'log' : 'linear';
+	return {
+		x: xPadrao,
+		y: yPadrao,
+		xScale: ctx.numericas.includes(xPadrao) ? currentXScale : 'linear',
+		yScale: ctx.numericas.includes(yPadrao) ? currentYScale : 'linear',
+	};
+}

@@ -312,3 +312,11 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	setupTextInputListener('viz-input-bar-title', 'customTitle', dataset, 'bar', onConfigChanged);
 	setupSliderListener('viz-slider-bar-height', 'chartHeight', dataset, 'bar', onConfigChanged);
 }
+
+export function computeDefaults(dataset, ctx) {
+	const current = dataset.configGraficos?.bar?.category;
+	const category = ctx.baseCategoricalOrAll.includes(current)
+		? current
+		: (ctx.baseCategoricalOrAll[0] || null);
+	return { category };
+}

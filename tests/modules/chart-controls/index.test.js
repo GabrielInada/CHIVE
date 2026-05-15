@@ -58,37 +58,44 @@ vi.mock('../../../src/modules/appState.js', () => ({
 	setActiveChartType: mocks.setActiveChartType,
 }));
 
-vi.mock('../../../src/modules/chart-controls/barControls.js', () => ({
+vi.mock('../../../src/modules/chart-controls/barControls.js', async (importOriginal) => ({
+	...await importOriginal(),
 	createBarChartControls: mocks.createBarChartControls,
 	setupBarChartControlListeners: mocks.setupBarChartControlListeners,
 }));
 
-vi.mock('../../../src/modules/chart-controls/bubbleControls.js', () => ({
+vi.mock('../../../src/modules/chart-controls/bubbleControls.js', async (importOriginal) => ({
+	...await importOriginal(),
 	createBubbleChartControls: mocks.createBubbleChartControls,
 	setupBubbleChartControlListeners: mocks.setupBubbleChartControlListeners,
 }));
 
-vi.mock('../../../src/modules/chart-controls/networkControls.js', () => ({
+vi.mock('../../../src/modules/chart-controls/networkControls.js', async (importOriginal) => ({
+	...await importOriginal(),
 	createNetworkGraphControls: mocks.createNetworkGraphControls,
 	setupNetworkGraphControlListeners: mocks.setupNetworkGraphControlListeners,
 }));
 
-vi.mock('../../../src/modules/chart-controls/scatterControls.js', () => ({
+vi.mock('../../../src/modules/chart-controls/scatterControls.js', async (importOriginal) => ({
+	...await importOriginal(),
 	createScatterPlotControls: mocks.createScatterPlotControls,
 	setupScatterPlotControlListeners: mocks.setupScatterPlotControlListeners,
 }));
 
-vi.mock('../../../src/modules/chart-controls/pieControls.js', () => ({
+vi.mock('../../../src/modules/chart-controls/pieControls.js', async (importOriginal) => ({
+	...await importOriginal(),
 	createPieChartControls: mocks.createPieChartControls,
 	setupPieChartControlListeners: mocks.setupPieChartControlListeners,
 }));
 
-vi.mock('../../../src/modules/chart-controls/treemapControls.js', () => ({
+vi.mock('../../../src/modules/chart-controls/treemapControls.js', async (importOriginal) => ({
+	...await importOriginal(),
 	createTreeMapControls: mocks.createTreeMapControls,
 	setupTreeMapControlListeners: mocks.setupTreeMapControlListeners,
 }));
 
-vi.mock('../../../src/modules/chart-controls/lineControls.js', () => ({
+vi.mock('../../../src/modules/chart-controls/lineControls.js', async (importOriginal) => ({
+	...await importOriginal(),
 	createLineChartControls: mocks.createLineChartControls,
 	setupLineChartControlListeners: mocks.setupLineChartControlListeners,
 }));
