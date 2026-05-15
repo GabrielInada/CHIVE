@@ -12,6 +12,7 @@ import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	repositionPinnedTooltip,
@@ -178,12 +179,7 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 
 	const buildNodeTooltipContent = (nodeData) => {
 		const content = document.createElement('div');
-		const line = document.createElement('div');
-		const strong = document.createElement('strong');
-		strong.textContent = `${labels.node}:`;
-		line.appendChild(strong);
-		line.append(` ${nodeData.id}`);
-		content.appendChild(line);
+		content.appendChild(createTooltipLine(labels.node, nodeData.id));
 		return content;
 	};
 
@@ -268,17 +264,9 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		.attr('stroke-width', d => Math.max(1, Math.sqrt(Number(d.value) || 1)))
 		.on('mouseenter', (event, linkData) => {
 			const content = document.createElement('div');
-			const makeLine = (label, value) => {
-				const row = document.createElement('div');
-				const strong = document.createElement('strong');
-				strong.textContent = `${label}:`;
-				row.appendChild(strong);
-				row.append(` ${value}`);
-				return row;
-			};
-			content.appendChild(makeLine(labels.source, String(linkData.source.id || linkData.source)));
-			content.appendChild(makeLine(labels.target, String(linkData.target.id || linkData.target)));
-			content.appendChild(makeLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale)));
+			content.appendChild(createTooltipLine(labels.source, String(linkData.source.id || linkData.source)));
+			content.appendChild(createTooltipLine(labels.target, String(linkData.target.id || linkData.target)));
+			content.appendChild(createTooltipLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale)));
 			showChartTooltip(content, event.pageX, event.pageY);
 		})
 		.on('mousemove', event => {
