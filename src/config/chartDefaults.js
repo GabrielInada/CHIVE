@@ -155,6 +155,7 @@ export function createDefaultChartConfig() {
 			z: null,
 			customTitle: '',
 			chartHeight: 460,
+			fillMode: TIN_CHART.defaultFillMode,
 			subdivisionDepth: TIN_CHART.defaultSubdivisionDepth,
 			gradientMinColor: CHART_COLORS.tin,
 			gradientMaxColor: '#ffffff',

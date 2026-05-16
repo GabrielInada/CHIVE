@@ -266,6 +266,7 @@ function renderTin(container, spec) {
 	return renderTinChart(container, spec.dataSnapshot, config.x, config.y, config.z, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
+		fillMode: config.fillMode,
 		subdivisionDepth: config.subdivisionDepth,
 		gradientMinColor: config.gradientMinColor,
 		gradientMaxColor: config.gradientMaxColor,

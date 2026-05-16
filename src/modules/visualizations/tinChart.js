@@ -39,6 +39,58 @@ function emitSubdivided(triangle, depth, colorAt, outPolygons) {
 	emitSubdivided([ab, bc, ca], depth - 1, colorAt, outPolygons);
 }
 
+// Computes the iso-segment crossings for a single Z level across an array of
+// triangles in screen coordinates. Returns the visible segments plus a
+// descriptor of the longest one (used to anchor a label or any per-level
+// annotation). Pure function — extracted so the regular-isoline pass, the
+// threshold contour, and any per-segment styling all consume one source of
+// truth for level-crossing geometry.
+function computeIsolineSegments(triangleVerts, level) {
+	const edgePairs = [[0, 1], [1, 2], [2, 0]];
+	const segments = [];
+	let longest = null;
+	for (const verts of triangleVerts) {
+		const crossings = [];
+		for (let k = 0; k < edgePairs.length; k++) {
+			const v1 = verts[edgePairs[k][0]];
+			const v2 = verts[edgePairs[k][1]];
+			const d1 = v1.z - level;
+			const d2 = v2.z - level;
+			if ((d1 < 0 && d2 >= 0) || (d1 >= 0 && d2 < 0)) {
+				const t = d1 / (d1 - d2);
+				crossings.push({
+					x: v1.sx + t * (v2.sx - v1.sx),
+					y: v1.sy + t * (v2.sy - v1.sy),
+				});
+			}
+		}
+		if (crossings.length === 2) {
+			const dx = crossings[0].x - crossings[1].x;
+			const dy = crossings[0].y - crossings[1].y;
+			const len2 = dx * dx + dy * dy;
+			if (len2 < 1e-9) continue;
+			segments.push({
+				x1: crossings[0].x,
+				y1: crossings[0].y,
+				x2: crossings[1].x,
+				y2: crossings[1].y,
+			});
+			if (longest === null || len2 > longest.length2) {
+				let angleDeg = Math.atan2(crossings[1].y - crossings[0].y, crossings[1].x - crossings[0].x) * 180 / Math.PI;
+				if (angleDeg > 90) angleDeg -= 180;
+				else if (angleDeg < -90) angleDeg += 180;
+				longest = {
+					length2: len2,
+					midX: (crossings[0].x + crossings[1].x) / 2,
+					midY: (crossings[0].y + crossings[1].y) / 2,
+					angleDeg,
+				};
+			}
+		}
+	}
+	return { segments, longest };
+}
+
 function collectUniqueEdges(delaunay) {
 	const tris = delaunay.triangles;
 	const edges = new Set();
@@ -60,7 +112,9 @@ function collectUniqueEdges(delaunay) {
 export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {}) {
 	if (!container || !eixoX || !eixoY || !eixoZ) return fail();
 
+	const fillMode = opcoes.fillMode === 'flat' ? 'flat' : 'smooth';
 	const subdivisionDepth = clampDepth(opcoes.subdivisionDepth);
+	const effectiveSubdivisionDepth = fillMode === 'flat' ? 0 : subdivisionDepth;
 	const gradientMin = normalizeColor(opcoes.gradientMinColor, CHART_COLORS.tin);
 	const gradientMax = normalizeColor(opcoes.gradientMaxColor, '#ffffff');
 	const gradientDistribution = opcoes.gradientDistribution === 'rank' ? 'rank' : 'value';
@@ -202,7 +256,7 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 			{ x: b.sx, y: b.sy, z: b.z },
 			{ x: c.sx, y: c.sy, z: c.z },
 		];
-		emitSubdivided(triangle, subdivisionDepth, colorAt, polygons);
+		emitSubdivided(triangle, effectiveSubdivisionDepth, colorAt, polygons);
 	}
 
 	trianglesGroup
@@ -228,56 +282,27 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 	if (showIsolines && zMin !== zMax) {
 		const isolinesGroup = grupo.append('g').attr('class', 'tin-isolines');
 		const levels = scaleLinear().domain([zMin, zMax]).nice().ticks(isolineCount);
-		const edgePairs = [[0, 1], [1, 2], [2, 0]];
+		const triangleVerts = [];
+		for (let i = 0; i < tris.length; i += 3) {
+			triangleVerts.push([
+				screenPoints[tris[i]],
+				screenPoints[tris[i + 1]],
+				screenPoints[tris[i + 2]],
+			]);
+		}
 		let labelGroup = null;
 		levels.forEach(level => {
-			let longest = null;
-			for (let i = 0; i < tris.length; i += 3) {
-				const verts = [
-					screenPoints[tris[i]],
-					screenPoints[tris[i + 1]],
-					screenPoints[tris[i + 2]],
-				];
-				const crossings = [];
-				for (let k = 0; k < edgePairs.length; k++) {
-					const v1 = verts[edgePairs[k][0]];
-					const v2 = verts[edgePairs[k][1]];
-					const d1 = v1.z - level;
-					const d2 = v2.z - level;
-					if ((d1 < 0 && d2 >= 0) || (d1 >= 0 && d2 < 0)) {
-						const t = d1 / (d1 - d2);
-						crossings.push({
-							x: v1.sx + t * (v2.sx - v1.sx),
-							y: v1.sy + t * (v2.sy - v1.sy),
-						});
-					}
-				}
-				if (crossings.length === 2) {
-					const dx = crossings[0].x - crossings[1].x;
-					const dy = crossings[0].y - crossings[1].y;
-					const len2 = dx * dx + dy * dy;
-					if (len2 < 1e-9) continue;
-					isolinesGroup.append('line')
-						.attr('x1', crossings[0].x)
-						.attr('y1', crossings[0].y)
-						.attr('x2', crossings[1].x)
-						.attr('y2', crossings[1].y)
-						.attr('stroke', isolineColor)
-						.attr('stroke-width', isolineWidth)
-						.attr('fill', 'none');
-					if (longest === null || len2 > longest.length2) {
-						let angleDeg = Math.atan2(crossings[1].y - crossings[0].y, crossings[1].x - crossings[0].x) * 180 / Math.PI;
-						if (angleDeg > 90) angleDeg -= 180;
-						else if (angleDeg < -90) angleDeg += 180;
-						longest = {
-							length2: len2,
-							midX: (crossings[0].x + crossings[1].x) / 2,
-							midY: (crossings[0].y + crossings[1].y) / 2,
-							angleDeg,
-						};
-					}
-				}
-			}
+			const { segments, longest } = computeIsolineSegments(triangleVerts, level);
+			segments.forEach(seg => {
+				isolinesGroup.append('line')
+					.attr('x1', seg.x1)
+					.attr('y1', seg.y1)
+					.attr('x2', seg.x2)
+					.attr('y2', seg.y2)
+					.attr('stroke', isolineColor)
+					.attr('stroke-width', isolineWidth)
+					.attr('fill', 'none');
+			});
 			if (showIsolineLabels && longest) {
 				if (!labelGroup) labelGroup = grupo.append('g').attr('class', 'tin-isoline-labels');
 				labelGroup.append('text')

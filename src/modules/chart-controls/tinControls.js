@@ -88,6 +88,17 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 	));
 
 	const surfaceControls = [];
+	const fillMode = config.fillMode === 'flat' ? 'flat' : 'smooth';
+	surfaceControls.push(createSelectControl(
+		'viz-select-tin-fill-mode',
+		t('chive-chart-control-tin-fill-mode'),
+		[
+			{ value: 'smooth', label: t('chive-chart-control-tin-fill-smooth') },
+			{ value: 'flat', label: t('chive-chart-control-tin-fill-flat') },
+		],
+		fillMode,
+		disabled,
+	));
 	surfaceControls.push(createSliderControl(
 		'viz-slider-tin-subdivision',
 		t('chive-chart-control-tin-subdivision'),
@@ -95,7 +106,7 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		TIN_CHART.minSubdivisionDepth,
 		TIN_CHART.maxSubdivisionDepth,
 		1,
-		disabled,
+		disabled || fillMode === 'flat',
 	));
 
 	const minColorDiv = document.createElement('div');
@@ -311,6 +322,11 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 			id: 'viz-select-tin-gradient-distribution',
 			key: 'gradientDistribution',
 			transform: v => (['value', 'rank'].includes(v) ? v : 'value'),
+		},
+		{
+			id: 'viz-select-tin-fill-mode',
+			key: 'fillMode',
+			transform: v => (v === 'flat' ? 'flat' : 'smooth'),
 		},
 	], dataset, 'tin', onConfigChanged);
 
