@@ -177,6 +177,14 @@ export const TIN_CHART = {
   defaultShowPoints: true,
   defaultShowZLabels: false,
   defaultShowHull: false,
+  defaultShowIsolines: false,
+  defaultIsolineCount: 5,
+  minIsolineCount: 2,
+  maxIsolineCount: 20,
+  defaultIsolineColor: '#1f2937',
+  defaultIsolineWidth: 0.8,
+  minIsolineWidth: 0.5,
+  maxIsolineWidth: 2,
 };
 
 export const BUBBLE_CHART = {

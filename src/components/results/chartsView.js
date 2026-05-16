@@ -525,6 +525,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					showZLabels: chartConfig.tin.showZLabels,
 					showHull: chartConfig.tin.showHull,
 					hullColor: chartConfig.tin.hullColor,
+					showIsolines: chartConfig.tin.showIsolines,
+					isolineCount: chartConfig.tin.isolineCount,
+					isolineColor: chartConfig.tin.isolineColor,
+					isolineWidth: chartConfig.tin.isolineWidth,
 					showXAxisLabel: chartConfig.tin.showXAxisLabel,
 					showYAxisLabel: chartConfig.tin.showYAxisLabel,
 					axisLabels: {

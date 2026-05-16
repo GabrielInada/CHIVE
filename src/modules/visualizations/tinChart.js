@@ -73,6 +73,16 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 	const showZLabels = opcoes.showZLabels === true;
 	const showHull = opcoes.showHull === true;
 	const hullColor = normalizeColor(opcoes.hullColor, TIN_CHART.defaultHullColor);
+	const showIsolines = opcoes.showIsolines === true;
+	const isolineCountRaw = Math.round(Number(opcoes.isolineCount));
+	const isolineCount = Number.isFinite(isolineCountRaw)
+		? Math.max(TIN_CHART.minIsolineCount, Math.min(TIN_CHART.maxIsolineCount, isolineCountRaw))
+		: TIN_CHART.defaultIsolineCount;
+	const isolineColor = normalizeColor(opcoes.isolineColor, TIN_CHART.defaultIsolineColor);
+	const isolineWidthRaw = Number(opcoes.isolineWidth);
+	const isolineWidth = Number.isFinite(isolineWidthRaw)
+		? Math.max(TIN_CHART.minIsolineWidth, Math.min(TIN_CHART.maxIsolineWidth, isolineWidthRaw))
+		: TIN_CHART.defaultIsolineWidth;
 	const showXAxisLabel = opcoes.showXAxisLabel !== false;
 	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
@@ -207,6 +217,48 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 				.attr('stroke', hullColor)
 				.attr('stroke-width', 1.5);
 		}
+	}
+
+	if (showIsolines && zMin !== zMax) {
+		const isolinesGroup = grupo.append('g').attr('class', 'tin-isolines');
+		const levels = scaleLinear().domain([zMin, zMax]).nice().ticks(isolineCount);
+		const edgePairs = [[0, 1], [1, 2], [2, 0]];
+		levels.forEach(level => {
+			for (let i = 0; i < tris.length; i += 3) {
+				const verts = [
+					screenPoints[tris[i]],
+					screenPoints[tris[i + 1]],
+					screenPoints[tris[i + 2]],
+				];
+				const crossings = [];
+				for (let k = 0; k < edgePairs.length; k++) {
+					const v1 = verts[edgePairs[k][0]];
+					const v2 = verts[edgePairs[k][1]];
+					const d1 = v1.z - level;
+					const d2 = v2.z - level;
+					if ((d1 < 0 && d2 >= 0) || (d1 >= 0 && d2 < 0)) {
+						const t = d1 / (d1 - d2);
+						crossings.push({
+							x: v1.sx + t * (v2.sx - v1.sx),
+							y: v1.sy + t * (v2.sy - v1.sy),
+						});
+					}
+				}
+				if (crossings.length === 2) {
+					const dx = crossings[0].x - crossings[1].x;
+					const dy = crossings[0].y - crossings[1].y;
+					if (dx * dx + dy * dy < 1e-9) continue;
+					isolinesGroup.append('line')
+						.attr('x1', crossings[0].x)
+						.attr('y1', crossings[0].y)
+						.attr('x2', crossings[1].x)
+						.attr('y2', crossings[1].y)
+						.attr('stroke', isolineColor)
+						.attr('stroke-width', isolineWidth)
+						.attr('fill', 'none');
+				}
+			}
+		});
 	}
 
 	if (showEdges) {

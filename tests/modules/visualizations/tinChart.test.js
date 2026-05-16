@@ -93,6 +93,58 @@ describe('renderTinChart', () => {
 		expect(container.querySelectorAll('.tin-points circle').length).toBe(VALID_ROWS.length);
 	});
 
+	it('does not render an isolines group when showIsolines is false', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: false,
+		});
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('.tin-isolines')).toBeNull();
+	});
+
+	it('renders at least one isoline segment when enabled on varied Z data', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 5,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		const lines = container.querySelectorAll('.tin-isolines line');
+		expect(lines.length).toBeGreaterThan(0);
+	});
+
+	it('emits one isoline segment per cutting level for a single triangle', () => {
+		const container = document.getElementById('tin');
+		// 3 vertices form a single triangle. Z values: two at 0, one at 10.
+		// d3 ticks([0,10], 3) -> [0, 5, 10]. At level 0 and 10 the crossings
+		// collapse onto a vertex (degenerate, filtered). Only level 5 cuts.
+		const rows = [
+			{ x: 0, y: 0, z: 0 },
+			{ x: 10, y: 0, z: 0 },
+			{ x: 5, y: 10, z: 10 },
+		];
+		const result = renderTinChart(container, rows, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 3,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		const lines = container.querySelectorAll('.tin-isolines line');
+		expect(lines.length).toBe(1);
+		// The two data-Y crossings both lie at data-Y = 5 (the iso-level at z=5
+		// cuts the two non-baseline edges at their midpoints), so the segment
+		// is horizontal in screen space.
+		const y1 = Number(lines[0].getAttribute('y1'));
+		const y2 = Number(lines[0].getAttribute('y2'));
+		expect(Math.abs(y1 - y2)).toBeLessThan(1e-6);
+	});
+
 	it('shows tooltip with X/Y/Z values on point hover', () => {
 		const container = document.getElementById('tin');
 		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {

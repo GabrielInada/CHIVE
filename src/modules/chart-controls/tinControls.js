@@ -210,6 +210,45 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 	hullColorDiv.appendChild(hullColorInput);
 	overlayControls.push(hullColorDiv);
 
+	overlayControls.push(createCheckboxControl(
+		'viz-toggle-tin-isolines',
+		t('chive-chart-control-tin-show-isolines'),
+		config.showIsolines,
+		disabled,
+	));
+	overlayControls.push(createSliderControl(
+		'viz-slider-tin-isoline-count',
+		t('chive-chart-control-tin-isoline-count'),
+		Number(config.isolineCount ?? TIN_CHART.defaultIsolineCount),
+		TIN_CHART.minIsolineCount,
+		TIN_CHART.maxIsolineCount,
+		1,
+		disabled || !config.showIsolines,
+	));
+	const isolineColorDiv = document.createElement('div');
+	isolineColorDiv.className = 'chart-controle';
+	const isolineColorLabel = document.createElement('label');
+	isolineColorLabel.htmlFor = 'viz-input-tin-isoline-color';
+	isolineColorLabel.textContent = t('chive-chart-control-tin-isoline-color');
+	const isolineColorInput = document.createElement('input');
+	isolineColorInput.id = 'viz-input-tin-isoline-color';
+	isolineColorInput.type = 'color';
+	isolineColorInput.className = 'chart-color-input';
+	isolineColorInput.value = normalizeHexColor(config.isolineColor, TIN_CHART.defaultIsolineColor);
+	isolineColorInput.disabled = disabled || !config.showIsolines;
+	isolineColorDiv.appendChild(isolineColorLabel);
+	isolineColorDiv.appendChild(isolineColorInput);
+	overlayControls.push(isolineColorDiv);
+	overlayControls.push(createSliderControl(
+		'viz-slider-tin-isoline-width',
+		t('chive-chart-control-tin-isoline-width'),
+		Number(config.isolineWidth ?? TIN_CHART.defaultIsolineWidth),
+		TIN_CHART.minIsolineWidth,
+		TIN_CHART.maxIsolineWidth,
+		0.1,
+		disabled || !config.showIsolines,
+	));
+
 	return groupControls([
 		{ id: 'data', title: 'Data', controls: dataControls, expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
@@ -252,17 +291,21 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 		{ id: 'viz-toggle-tin-points', key: 'showPoints' },
 		{ id: 'viz-toggle-tin-z-labels', key: 'showZLabels' },
 		{ id: 'viz-toggle-tin-hull', key: 'showHull' },
+		{ id: 'viz-toggle-tin-isolines', key: 'showIsolines' },
 	], dataset, 'tin', onConfigChanged);
 
 	setupTextInputListener('viz-input-tin-title', 'customTitle', dataset, 'tin', onConfigChanged);
 	setupSliderListener('viz-slider-tin-height', 'chartHeight', dataset, 'tin', onConfigChanged);
 	setupSliderListener('viz-slider-tin-subdivision', 'subdivisionDepth', dataset, 'tin', onConfigChanged);
 	setupSliderListener('viz-slider-tin-point-radius', 'pointRadius', dataset, 'tin', onConfigChanged);
+	setupSliderListener('viz-slider-tin-isoline-count', 'isolineCount', dataset, 'tin', onConfigChanged);
+	setupSliderListener('viz-slider-tin-isoline-width', 'isolineWidth', dataset, 'tin', onConfigChanged);
 
 	setupColorInputListener('viz-input-tin-gradient-min', 'gradientMinColor', CHART_COLORS.tin, dataset, 'tin', onConfigChanged);
 	setupColorInputListener('viz-input-tin-gradient-max', 'gradientMaxColor', '#ffffff', dataset, 'tin', onConfigChanged);
 	setupColorInputListener('viz-input-tin-edge-color', 'edgeColor', TIN_CHART.defaultEdgeColor, dataset, 'tin', onConfigChanged);
 	setupColorInputListener('viz-input-tin-hull-color', 'hullColor', TIN_CHART.defaultHullColor, dataset, 'tin', onConfigChanged);
+	setupColorInputListener('viz-input-tin-isoline-color', 'isolineColor', TIN_CHART.defaultIsolineColor, dataset, 'tin', onConfigChanged);
 
 	setupColorPresetListeners(
 		'viz-tin-color-preset',

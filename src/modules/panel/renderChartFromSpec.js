@@ -277,6 +277,10 @@ function renderTin(container, spec) {
 		showZLabels: config.showZLabels,
 		showHull: config.showHull,
 		hullColor: config.hullColor,
+		showIsolines: config.showIsolines,
+		isolineCount: config.isolineCount,
+		isolineColor: config.isolineColor,
+		isolineWidth: config.isolineWidth,
 		showXAxisLabel: config.showXAxisLabel,
 		showYAxisLabel: config.showYAxisLabel,
 		axisLabels: {
