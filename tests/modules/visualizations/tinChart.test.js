@@ -51,6 +51,17 @@ describe('renderTinChart', () => {
 		expect(polygons2).toBe(depth2.triangles * Math.pow(4, 2));
 	});
 
+	it('renders one polygon per triangle in flat fill mode regardless of subdivisionDepth', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			fillMode: 'flat',
+			subdivisionDepth: 2,
+		});
+		expect(result.ok).toBe(true);
+		const polygons = container.querySelectorAll('.tin-triangles polygon').length;
+		expect(polygons).toBe(result.triangles);
+	});
+
 	it('respects overlay toggles', () => {
 		const container = document.getElementById('tin');
 		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {

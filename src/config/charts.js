@@ -167,6 +167,7 @@ export const LINE_CHART = {
 };
 
 export const TIN_CHART = {
+  defaultFillMode: 'smooth',
   defaultSubdivisionDepth: 3,
   minSubdivisionDepth: 0,
   maxSubdivisionDepth: 4,

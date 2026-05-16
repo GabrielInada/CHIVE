@@ -514,6 +514,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				{
 					customTitle: chartConfig.tin.customTitle,
 					chartHeight: chartConfig.tin.chartHeight,
+					fillMode: chartConfig.tin.fillMode,
 					subdivisionDepth: chartConfig.tin.subdivisionDepth,
 					gradientMinColor: chartConfig.tin.gradientMinColor,
 					gradientMaxColor: chartConfig.tin.gradientMaxColor,
