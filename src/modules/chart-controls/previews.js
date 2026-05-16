@@ -64,6 +64,25 @@ export const PREVIEW_BUBBLE_SVG = `
 	</svg>
 `;
 
+export const PREVIEW_TIN_SVG = `
+	<svg viewBox="0 0 84 38" aria-hidden="true">
+		<polygon points="8,32 26,18 44,30" fill="#9ec1d9"></polygon>
+		<polygon points="26,18 44,30 50,14" fill="#7aa5c2"></polygon>
+		<polygon points="26,18 50,14 42,6" fill="#a8c8df"></polygon>
+		<polygon points="50,14 70,8 64,28" fill="#5d8aa8"></polygon>
+		<polygon points="50,14 44,30 64,28" fill="#85aac5"></polygon>
+		<polygon points="64,28 70,8 78,22" fill="#3f6f8e"></polygon>
+		<circle cx="8" cy="32" r="1.6" fill="#3f3a33"></circle>
+		<circle cx="26" cy="18" r="1.6" fill="#3f3a33"></circle>
+		<circle cx="44" cy="30" r="1.6" fill="#3f3a33"></circle>
+		<circle cx="42" cy="6" r="1.6" fill="#3f3a33"></circle>
+		<circle cx="50" cy="14" r="1.6" fill="#3f3a33"></circle>
+		<circle cx="70" cy="8" r="1.6" fill="#3f3a33"></circle>
+		<circle cx="64" cy="28" r="1.6" fill="#3f3a33"></circle>
+		<circle cx="78" cy="22" r="1.6" fill="#3f3a33"></circle>
+	</svg>
+`;
+
 export const PREVIEW_LINE_SVG = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<polyline class="no-fill" points="6,28 18,22 28,24 40,14 52,18 64,8 78,12" stroke="#4e79a7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></polyline>

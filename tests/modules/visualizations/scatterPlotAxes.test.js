@@ -154,6 +154,54 @@ describe('scatterPlot mixed axis behavior', () => {
 		expect(tooltipText).toContain('Peso');
 	});
 
+	it('encodes per-point radius by numeric field when sizeMode is "numeric"', () => {
+		const container = document.getElementById('scatter');
+		const rows = [
+			{ x: 1, y: 10, z: 1 },
+			{ x: 2, y: 20, z: 5 },
+			{ x: 3, y: 30, z: 10 },
+		];
+
+		const result = renderScatterPlot(container, rows, 'x', 'y', {
+			axisTypes: { x: 'numero', y: 'numero' },
+			sizeMode: 'numeric',
+			sizeField: 'z',
+			sizeMin: 2,
+			sizeMax: 20,
+		});
+
+		expect(result.ok).toBe(true);
+		const radii = Array.from(container.querySelectorAll('circle'))
+			.map(c => Number(c.getAttribute('r')));
+		expect(radii).toHaveLength(3);
+		expect(new Set(radii).size).toBe(3);
+		const sorted = [...radii].sort((a, b) => a - b);
+		expect(sorted[0]).toBeCloseTo(2, 5);
+		expect(sorted[2]).toBeCloseTo(20, 5);
+	});
+
+	it('falls back to uniform radius when sizeMode is "uniform"', () => {
+		const container = document.getElementById('scatter');
+		const rows = [
+			{ x: 1, y: 10, z: 1 },
+			{ x: 2, y: 20, z: 5 },
+			{ x: 3, y: 30, z: 10 },
+		];
+
+		const result = renderScatterPlot(container, rows, 'x', 'y', {
+			axisTypes: { x: 'numero', y: 'numero' },
+			sizeMode: 'uniform',
+			sizeField: 'z',
+			radius: 4,
+		});
+
+		expect(result.ok).toBe(true);
+		const radii = Array.from(container.querySelectorAll('circle'))
+			.map(c => Number(c.getAttribute('r')));
+		expect(new Set(radii).size).toBe(1);
+		expect(radii[0]).toBeCloseTo(4, 5);
+	});
+
 	it('infers categorical axis when axis type metadata is unavailable', () => {
 		const container = document.getElementById('scatter');
 		const rows = [

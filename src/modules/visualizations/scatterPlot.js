@@ -1,4 +1,4 @@
-import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, scalePoint, select } from 'd3';
+import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from 'd3';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -173,6 +173,10 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const radius = Number.isFinite(Number(opcoes.radius)) ? Number(opcoes.radius) : SCATTER_PLOT.defaultRadius;
 	const opacity = Number.isFinite(Number(opcoes.opacity)) ? Number(opcoes.opacity) : SCATTER_PLOT.defaultOpacity;
+	const sizeMode = opcoes.sizeMode === 'numeric' ? 'numeric' : 'uniform';
+	const sizeField = opcoes.sizeField || null;
+	const sizeMin = Number.isFinite(Number(opcoes.sizeMin)) ? Math.max(0.5, Number(opcoes.sizeMin)) : 2;
+	const sizeMax = Number.isFinite(Number(opcoes.sizeMax)) ? Math.max(sizeMin, Number(opcoes.sizeMax)) : 12;
 	const color = isValidHexColor(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.scatter;
@@ -468,11 +472,32 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const minAggregatedCount = aggregatedCounts.length > 0 ? Math.min(...aggregatedCounts) : 1;
 	const maxAggregatedCount = aggregatedCounts.length > 0 ? Math.max(...aggregatedCounts) : 1;
 	const maxAggregateRadius = Math.max(radius + 6, radius * 2.1);
+
+	let sizeScale = null;
+	if (sizeMode === 'numeric' && sizeField && !shouldAggregateCategoricalPairs) {
+		const sizeValues = pontos
+			.map(ponto => Number(ponto.raw?.[sizeField]))
+			.filter(Number.isFinite);
+		if (sizeValues.length > 0) {
+			const minV = Math.min(...sizeValues);
+			const maxV = Math.max(...sizeValues);
+			// scaleSqrt so visual area scales with value (correct human perception).
+			const domain = minV === maxV ? [minV - 1, maxV + 1] : [minV, maxV];
+			sizeScale = scaleSqrt().domain(domain).range([sizeMin, sizeMax]);
+		}
+	}
+
 	const getPointRadius = ponto => {
-		if (!ponto.isAggregate) return radius;
-		if (maxAggregatedCount === minAggregatedCount) return maxAggregateRadius;
-		const progress = ((ponto.count || minAggregatedCount) - minAggregatedCount) / (maxAggregatedCount - minAggregatedCount);
-		return radius + ((maxAggregateRadius - radius) * progress);
+		if (ponto.isAggregate) {
+			if (maxAggregatedCount === minAggregatedCount) return maxAggregateRadius;
+			const progress = ((ponto.count || minAggregatedCount) - minAggregatedCount) / (maxAggregatedCount - minAggregatedCount);
+			return radius + ((maxAggregateRadius - radius) * progress);
+		}
+		if (sizeScale) {
+			const v = Number(ponto.raw?.[sizeField]);
+			if (Number.isFinite(v)) return sizeScale(v);
+		}
+		return radius;
 	};
 
 	let getPointColor = () => color;

@@ -47,7 +47,7 @@ describe('renderChartFromSpec', () => {
 	});
 
 	it('exposes the supported renderer types', () => {
-		expect(SUPPORTED_PANEL_CHART_TYPES).toEqual(['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap', 'line']);
+		expect(SUPPORTED_PANEL_CHART_TYPES).toEqual(['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin']);
 	});
 
 	it('returns invalid-args when container or spec is missing', () => {

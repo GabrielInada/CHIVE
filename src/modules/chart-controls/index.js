@@ -23,6 +23,7 @@ import { createNetworkGraphControls, setupNetworkGraphControlListeners, computeD
 import { createScatterPlotControls, setupScatterPlotControlListeners, computeDefaults as computeScatterDefaults } from './scatterControls.js';
 import { createPieChartControls, setupPieChartControlListeners, computeDefaults as computePieDefaults } from './pieControls.js';
 import { createTreeMapControls, setupTreeMapControlListeners, computeDefaults as computeTreemapDefaults } from './treemapControls.js';
+import { createTinControls, setupTinControlListeners, computeDefaults as computeTinDefaults } from './tinControls.js';
 import { CHART_TYPES } from './chartTypes.js';
 import { renderChartParamsDOM } from '../../components/results/chartParamsView.js';
 import { openChartTypePickerDialog } from '../../components/results/chartTypePickerDialog.js';
@@ -198,6 +199,11 @@ const CHART_CONTROL_REGISTRY = {
 		build: (ds, ctx) => createLineChartControls(ds, ctx.numericas, ctx.datas, ctx.todasColunas),
 		attachListeners: (ds, ctx, cb) => setupLineChartControlListeners(ds, ctx.numericas, ctx.datas, ctx.todasColunas, cb),
 		computeDefaults: computeLineDefaults,
+	},
+	tin: {
+		build: (ds, ctx) => createTinControls(ds, ctx.numericas, ctx.todasColunas),
+		attachListeners: (ds, ctx, cb) => setupTinControlListeners(ds, ctx.numericas, ctx.todasColunas, cb),
+		computeDefaults: computeTinDefaults,
 	},
 };
 

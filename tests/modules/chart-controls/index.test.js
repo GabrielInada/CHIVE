@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
 		network: { enabled: false, expanded: false },
 		treemap: { enabled: false, expanded: false },
 		line: { enabled: false, expanded: false },
+		tin: { enabled: false, expanded: false },
 		...(config || {}),
 	})),
 	onStateChange: vi.fn(),
@@ -108,6 +109,7 @@ vi.mock('../../../src/modules/chart-controls/previews.js', () => ({
 	PREVIEW_SCATTER_SVG: '<svg id="prev-scatter" />',
 	PREVIEW_TREEMAP_SVG: '<svg id="prev-treemap" />',
 	PREVIEW_LINE_SVG: '<svg id="prev-line" />',
+	PREVIEW_TIN_SVG: '<svg id="prev-tin" />',
 }));
 
 vi.mock('../../../src/components/results/chartTypePickerDialog.js', () => ({
@@ -135,6 +137,7 @@ function configWithActive(activeType) {
 		network: { enabled: activeType === 'network' },
 		treemap: { enabled: activeType === 'treemap' },
 		line: { enabled: activeType === 'line' },
+		tin: { enabled: activeType === 'tin' },
 	};
 }
 
