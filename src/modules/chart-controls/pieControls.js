@@ -1,4 +1,6 @@
 import { CHART_COLORS, PIE_CHART } from '../../config/charts.js';
+import { isNullish } from '../../utils/formatters.js';
+import { compareStrings } from '../../utils/chartFilters.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createCheckboxControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
@@ -20,7 +22,7 @@ function getPieSectorValues(dataset, config) {
 	const counter = new Map();
 	dataset.dados.forEach(row => {
 		const rawValue = row[config.category];
-		const category = rawValue === null || rawValue === undefined || rawValue === ''
+		const category = isNullish(rawValue) || rawValue === ''
 			? '—'
 			: String(rawValue);
 
@@ -36,7 +38,7 @@ function getPieSectorValues(dataset, config) {
 	});
 
 	return Array.from(counter.entries())
-		.sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))
+		.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]))
 		.map(([category]) => category);
 }
 
@@ -492,4 +494,15 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 			onConfigChanged?.();
 		});
 	});
+}
+
+export function computeDefaults(dataset, ctx) {
+	const currentCat = dataset.configGraficos?.pie?.category;
+	const currentVal = dataset.configGraficos?.pie?.valueColumn;
+	return {
+		category: ctx.baseCategoricalOrAll.includes(currentCat)
+			? currentCat
+			: (ctx.baseCategoricalOrAll[0] || null),
+		valueColumn: ctx.numericas.includes(currentVal) ? currentVal : (ctx.numericas[0] || null),
+	};
 }

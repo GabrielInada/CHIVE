@@ -1,0 +1,328 @@
+import { Delaunay, axisBottom, axisLeft, extent, scaleLinear, select } from 'd3';
+import { CHART_COLORS, CHART_DIMENSIONS, TIN_CHART } from '../../config/charts.js';
+import { formatNumber } from '../../utils/formatters.js';
+import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
+import { ok, fail } from '../../utils/result.js';
+import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
+
+function normalizeColor(value, fallback) {
+	const v = String(value || '').trim();
+	return isValidHexColor(v) ? v : fallback;
+}
+
+function clampDepth(value) {
+	const n = Math.round(Number(value));
+	if (!Number.isFinite(n)) return TIN_CHART.defaultSubdivisionDepth;
+	return Math.max(TIN_CHART.minSubdivisionDepth, Math.min(TIN_CHART.maxSubdivisionDepth, n));
+}
+
+function midpoint(a, b) {
+	return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, z: (a.z + b.z) / 2 };
+}
+
+// Recursively subdivides a triangle into 4^depth flat-colored sub-triangles.
+// Each leaf gets the mean-Z color of its 3 vertices — this approximates a
+// Gouraud-shaded fill in pure SVG so the chart still exports cleanly.
+function emitSubdivided(triangle, depth, colorAt, outPolygons) {
+	if (depth <= 0) {
+		const meanZ = (triangle[0].z + triangle[1].z + triangle[2].z) / 3;
+		outPolygons.push({ vertices: triangle, fill: colorAt(meanZ) });
+		return;
+	}
+	const [a, b, c] = triangle;
+	const ab = midpoint(a, b);
+	const bc = midpoint(b, c);
+	const ca = midpoint(c, a);
+	emitSubdivided([a, ab, ca], depth - 1, colorAt, outPolygons);
+	emitSubdivided([b, bc, ab], depth - 1, colorAt, outPolygons);
+	emitSubdivided([c, ca, bc], depth - 1, colorAt, outPolygons);
+	emitSubdivided([ab, bc, ca], depth - 1, colorAt, outPolygons);
+}
+
+function collectUniqueEdges(delaunay) {
+	const tris = delaunay.triangles;
+	const edges = new Set();
+	const pairs = [];
+	for (let i = 0; i < tris.length; i += 3) {
+		const a = tris[i];
+		const b = tris[i + 1];
+		const c = tris[i + 2];
+		[[a, b], [b, c], [c, a]].forEach(([p, q]) => {
+			const key = p < q ? `${p}:${q}` : `${q}:${p}`;
+			if (edges.has(key)) return;
+			edges.add(key);
+			pairs.push([p, q]);
+		});
+	}
+	return pairs;
+}
+
+export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {}) {
+	if (!container || !eixoX || !eixoY || !eixoZ) return fail();
+
+	const subdivisionDepth = clampDepth(opcoes.subdivisionDepth);
+	const gradientMin = normalizeColor(opcoes.gradientMinColor, CHART_COLORS.tin);
+	const gradientMax = normalizeColor(opcoes.gradientMaxColor, '#ffffff');
+	const gradientDistribution = opcoes.gradientDistribution === 'rank' ? 'rank' : 'value';
+	const showEdges = opcoes.showEdges !== false;
+	const edgeColor = normalizeColor(opcoes.edgeColor, TIN_CHART.defaultEdgeColor);
+	const showPoints = opcoes.showPoints !== false;
+	const pointRadius = Number.isFinite(Number(opcoes.pointRadius))
+		? Math.max(1, Number(opcoes.pointRadius))
+		: TIN_CHART.defaultPointRadius;
+	const showZLabels = opcoes.showZLabels === true;
+	const showHull = opcoes.showHull === true;
+	const hullColor = normalizeColor(opcoes.hullColor, TIN_CHART.defaultHullColor);
+	const showXAxisLabel = opcoes.showXAxisLabel !== false;
+	const showYAxisLabel = opcoes.showYAxisLabel !== false;
+	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
+		? Math.max(220, Math.min(900, Number(opcoes.chartHeight)))
+		: CHART_DIMENSIONS.tin.height;
+	const locale = opcoes.locale || undefined;
+	const axisLabels = {
+		x: opcoes.axisLabels?.x || eixoX,
+		y: opcoes.axisLabels?.y || eixoY,
+		z: opcoes.axisLabels?.z || eixoZ,
+	};
+
+	const isMissing = v => v === null || v === undefined || v === '';
+	const pontos = (Array.isArray(dados) ? dados : [])
+		.filter(row => row && !isMissing(row[eixoX]) && !isMissing(row[eixoY]) && !isMissing(row[eixoZ]))
+		.map((row, index) => ({
+			x: Number(row[eixoX]),
+			y: Number(row[eixoY]),
+			z: Number(row[eixoZ]),
+			raw: row,
+			index,
+		}))
+		.filter(p => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z));
+
+	if (pontos.length < 3) return fail('insufficient-points');
+
+	container.replaceChildren();
+	hideChartTooltip();
+
+	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.tin.width, 320);
+	const altura = chartHeight;
+	const margem = { ...CHART_DIMENSIONS.tin.margins };
+	const titleOffset = customTitle ? 20 : 0;
+	const legendHeight = 14;
+	const legendGap = 22;
+	const larguraInterna = Math.max(40, largura - margem.left - margem.right);
+	const alturaInterna = Math.max(40, altura - margem.top - margem.bottom - titleOffset - legendGap);
+
+	const svg = select(container)
+		.append('svg')
+		.attr('width', largura)
+		.attr('height', altura);
+
+	if (customTitle) {
+		svg.append('text')
+			.attr('x', largura / 2)
+			.attr('y', 16)
+			.attr('text-anchor', 'middle')
+			.attr('font-size', 13)
+			.attr('font-weight', 600)
+			.attr('fill', '#3f3a33')
+			.text(customTitle);
+	}
+
+	const grupo = svg.append('g')
+		.attr('transform', `translate(${margem.left},${margem.top + titleOffset})`);
+
+	const [xMin, xMax] = extent(pontos, p => p.x);
+	const [yMin, yMax] = extent(pontos, p => p.y);
+	const [zMin, zMax] = extent(pontos, p => p.z);
+
+	const escalaX = scaleLinear()
+		.domain(xMin === xMax ? [xMin - 1, xMax + 1] : [xMin, xMax])
+		.nice()
+		.range([0, larguraInterna]);
+	const escalaY = scaleLinear()
+		.domain(yMin === yMax ? [yMin - 1, yMax + 1] : [yMin, yMax])
+		.nice()
+		.range([alturaInterna, 0]);
+
+	let colorAt;
+	if (gradientDistribution === 'rank') {
+		const sortedZ = [...pontos.map(p => p.z)].sort((a, b) => a - b);
+		const rankFor = z => {
+			let lo = 0;
+			let hi = sortedZ.length;
+			while (lo < hi) {
+				const mid = (lo + hi) >>> 1;
+				if (sortedZ[mid] < z) lo = mid + 1;
+				else hi = mid;
+			}
+			return lo / Math.max(sortedZ.length - 1, 1);
+		};
+		colorAt = z => interpolateColor(gradientMin, gradientMax, Math.max(0, Math.min(1, rankFor(z))));
+	} else {
+		const zDelta = zMax - zMin || 1;
+		colorAt = z => interpolateColor(gradientMin, gradientMax, (z - zMin) / zDelta);
+	}
+
+	// In screen coordinates so the Delaunay triangulation matches what the
+	// user sees (otherwise scale flipping on Y can change which triangles form).
+	const screenPoints = pontos.map(p => ({
+		sx: escalaX(p.x),
+		sy: escalaY(p.y),
+		z: p.z,
+		raw: p.raw,
+		index: p.index,
+	}));
+	const delaunay = Delaunay.from(screenPoints, d => d.sx, d => d.sy);
+
+	const trianglesGroup = grupo.append('g').attr('class', 'tin-triangles');
+	const polygons = [];
+	const tris = delaunay.triangles;
+	for (let i = 0; i < tris.length; i += 3) {
+		const a = screenPoints[tris[i]];
+		const b = screenPoints[tris[i + 1]];
+		const c = screenPoints[tris[i + 2]];
+		const triangle = [
+			{ x: a.sx, y: a.sy, z: a.z },
+			{ x: b.sx, y: b.sy, z: b.z },
+			{ x: c.sx, y: c.sy, z: c.z },
+		];
+		emitSubdivided(triangle, subdivisionDepth, colorAt, polygons);
+	}
+
+	trianglesGroup
+		.selectAll('polygon')
+		.data(polygons)
+		.enter()
+		.append('polygon')
+		.attr('points', d => d.vertices.map(v => `${v.x},${v.y}`).join(' '))
+		.attr('fill', d => d.fill)
+		.attr('stroke', 'none');
+
+	if (showHull) {
+		const hull = delaunay.hullPolygon();
+		if (hull && hull.length > 0) {
+			grupo.append('path')
+				.attr('d', `M${hull.map(pt => `${pt[0]},${pt[1]}`).join('L')}Z`)
+				.attr('fill', 'none')
+				.attr('stroke', hullColor)
+				.attr('stroke-width', 1.5);
+		}
+	}
+
+	if (showEdges) {
+		const edges = collectUniqueEdges(delaunay);
+		const edgeGroup = grupo.append('g').attr('class', 'tin-edges');
+		edges.forEach(([p, q]) => {
+			const a = screenPoints[p];
+			const b = screenPoints[q];
+			edgeGroup.append('line')
+				.attr('x1', a.sx)
+				.attr('y1', a.sy)
+				.attr('x2', b.sx)
+				.attr('y2', b.sy)
+				.attr('stroke', edgeColor)
+				.attr('stroke-width', 0.6)
+				.attr('opacity', 0.5);
+		});
+	}
+
+	if (showPoints) {
+		const pointsGroup = grupo.append('g').attr('class', 'tin-points');
+		const circles = pointsGroup
+			.selectAll('circle')
+			.data(screenPoints)
+			.enter()
+			.append('circle')
+			.attr('cx', d => d.sx)
+			.attr('cy', d => d.sy)
+			.attr('r', pointRadius)
+			.attr('fill', '#3f3a33')
+			.attr('stroke', '#fffef9')
+			.attr('stroke-width', 0.8);
+
+		circles
+			.on('mouseenter', (event, d) => {
+				const wrapper = document.createElement('div');
+				wrapper.appendChild(createTooltipLine(axisLabels.x, formatNumber(Number(d.raw?.[eixoX]), locale)));
+				wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(Number(d.raw?.[eixoY]), locale)));
+				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(Number(d.raw?.[eixoZ]), locale)));
+				showChartTooltip(wrapper, event.pageX, event.pageY);
+			})
+			.on('mousemove', event => moveChartTooltip(event.pageX, event.pageY))
+			.on('mouseleave', () => hideChartTooltip());
+	}
+
+	if (showZLabels) {
+		const labelGroup = grupo.append('g').attr('class', 'tin-z-labels');
+		screenPoints.forEach(d => {
+			labelGroup.append('text')
+				.attr('x', d.sx + 5)
+				.attr('y', d.sy - 5)
+				.attr('font-size', 9)
+				.attr('fill', '#3f3a33')
+				.attr('pointer-events', 'none')
+				.text(formatNumber(d.z, locale));
+		});
+	}
+
+	grupo.append('g')
+		.attr('transform', `translate(0,${alturaInterna})`)
+		.call(axisBottom(escalaX).ticks(6));
+
+	grupo.append('g')
+		.call(axisLeft(escalaY).ticks(6));
+
+	if (showXAxisLabel) {
+		grupo.append('text')
+			.attr('x', larguraInterna / 2)
+			.attr('y', alturaInterna + margem.bottom - 14)
+			.attr('text-anchor', 'middle')
+			.attr('fill', '#5f5a53')
+			.attr('font-size', 11)
+			.text(axisLabels.x);
+	}
+
+	if (showYAxisLabel) {
+		grupo.append('text')
+			.attr('transform', 'rotate(-90)')
+			.attr('x', -alturaInterna / 2)
+			.attr('y', -margem.left + 16)
+			.attr('text-anchor', 'middle')
+			.attr('fill', '#5f5a53')
+			.attr('font-size', 11)
+			.text(axisLabels.y);
+	}
+
+	const legendY = margem.top + titleOffset + alturaInterna + legendGap - legendHeight;
+	const legendLeft = margem.left;
+	const legendWidth = Math.min(180, larguraInterna);
+	const legend = svg.append('g')
+		.attr('class', 'tin-legend')
+		.attr('transform', `translate(${legendLeft},${legendY})`);
+	const stops = 12;
+	for (let i = 0; i < stops; i++) {
+		const t0 = i / stops;
+		const t1 = (i + 1) / stops;
+		legend.append('rect')
+			.attr('x', t0 * legendWidth)
+			.attr('y', 0)
+			.attr('width', (t1 - t0) * legendWidth + 0.5)
+			.attr('height', legendHeight)
+			.attr('fill', interpolateColor(gradientMin, gradientMax, t0));
+	}
+	legend.append('text')
+		.attr('x', 0)
+		.attr('y', legendHeight + 10)
+		.attr('font-size', 10)
+		.attr('fill', '#5f5a53')
+		.text(`${axisLabels.z}: ${formatNumber(zMin, locale)}`);
+	legend.append('text')
+		.attr('x', legendWidth)
+		.attr('y', legendHeight + 10)
+		.attr('text-anchor', 'end')
+		.attr('font-size', 10)
+		.attr('fill', '#5f5a53')
+		.text(formatNumber(zMax, locale));
+
+	return ok({ triangles: tris.length / 3, polygons: polygons.length });
+}

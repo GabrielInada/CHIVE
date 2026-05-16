@@ -15,6 +15,11 @@ import { showError, showFeedback } from './feedbackUI.js';
 import { setupFileInputListeners, selectDataset, removeDatasetByIndex } from './fileManager.js';
 import { setupTabListeners, setupSidebarToggleListener, switchTab } from './uiManager.js';
 import { getActiveDataset, updateActiveDatasetConfig } from './appState.js';
+import { CHART_CONTAINERS } from '../config/elementIds.js';
+
+const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
+	Object.entries(CHART_CONTAINERS).map(([type, id]) => [id, type])
+);
 
 /**
  * Initialize all event handlers
@@ -124,56 +129,25 @@ function handleChartAction(actionBtn) {
 	}
 }
 
-function getChartSnapshotTitle(containerId, fallbackTitle) {
-	const dataset = getActiveDataset();
-	const config = dataset?.configGraficos || {};
-
-	if (containerId === 'chart-bar-container') {
-		return String(config.bar?.customTitle || '').trim() || fallbackTitle;
-	}
-
-	if (containerId === 'chart-scatter-container') {
-		return String(config.scatter?.customTitle || '').trim() || fallbackTitle;
-	}
-
-	if (containerId === 'chart-pie-container') {
-		return String(config.pie?.customTitle || '').trim() || fallbackTitle;
-	}
-
-	if (containerId === 'chart-bubble-container') {
-		return String(config.bubble?.customTitle || '').trim() || fallbackTitle;
-	}
-
-	if (containerId === 'chart-network-container') {
-		return String(config.network?.customTitle || '').trim() || fallbackTitle;
-	}
-
-	return fallbackTitle;
-}
-
-function buildChartSnapshotMetadata(containerId) {
-	const dataset = getActiveDataset();
-	const config = dataset?.configGraficos;
-	if (!config || !containerId) return {};
-
-	if (containerId === 'chart-bar-container') {
+const CHART_SNAPSHOT_BUILDERS = {
+	bar: (config) => {
 		const category = config.bar?.category || '-';
 		return {
 			type: 'bar',
 			summary: `${t('chive-chart-control-bar-category')}: ${category}`,
 		};
-	}
+	},
 
-	if (containerId === 'chart-scatter-container') {
+	scatter: (config) => {
 		const x = config.scatter?.x || '-';
 		const y = config.scatter?.y || '-';
 		return {
 			type: 'scatter',
 			summary: `X: ${x} · Y: ${y}`,
 		};
-	}
+	},
 
-	if (containerId === 'chart-pie-container') {
+	pie: (config) => {
 		const pie = config.pie || {};
 		const measureLabel = pie.measureMode === 'sum'
 			? t('chive-chart-control-pie-measure-sum')
@@ -193,9 +167,9 @@ function buildChartSnapshotMetadata(containerId) {
 			labelPosition: pie.labelPosition,
 			summary: `${t('chive-chart-control-pie-category')}: ${category} · ${measureLabel}${valuePart}${padPart}`,
 		};
-	}
+	},
 
-	if (containerId === 'chart-bubble-container') {
+	bubble: (config) => {
 		const bubble = config.bubble || {};
 		const measureLabel = bubble.measureMode === 'sum'
 			? t('chive-chart-control-bubble-measure-sum')
@@ -219,9 +193,9 @@ function buildChartSnapshotMetadata(containerId) {
 			topN: bubble.topN,
 			summary: `${t('chive-chart-control-bubble-category')}: ${category} · ${measureLabel}${valuePart}${groupPart}${topnPart}`,
 		};
-	}
+	},
 
-	if (containerId === 'chart-network-container') {
+	network: (config) => {
 		const network = config.network || {};
 		const source = network.source || '-';
 		const target = network.target || '-';
@@ -232,9 +206,54 @@ function buildChartSnapshotMetadata(containerId) {
 			weight: network.weight || null,
 			summary: `${t('chive-chart-control-network-source')}: ${source} · ${t('chive-chart-control-network-target')}: ${target}`,
 		};
-	}
+	},
 
-	return {};
+	treemap: (config) => {
+		const treemap = config.treemap || {};
+		const measureLabel = treemap.measureMode === 'sum'
+			? t('chive-chart-control-bar-measure-sum')
+			: t('chive-chart-control-bar-measure-count');
+		const category = treemap.category || '-';
+		const valuePart = treemap.measureMode === 'sum'
+			? ` · ${t('chive-chart-control-treemap-value-column')}: ${treemap.valueColumn || '-'}`
+			: '';
+		return {
+			type: 'treemap',
+			category,
+			measureMode: treemap.measureMode,
+			valueColumn: treemap.valueColumn || null,
+			topN: treemap.topN,
+			summary: `${t('chive-chart-control-treemap-category')}: ${category} · ${measureLabel}${valuePart}`,
+		};
+	},
+
+	line: (config) => {
+		const line = config.line || {};
+		const x = line.x || '-';
+		const y = line.y || '-';
+		return {
+			type: 'line',
+			x,
+			y,
+			curve: line.curve || null,
+			summary: `${t('chive-chart-control-line-x')}: ${x} · ${t('chive-chart-control-line-y')}: ${y}`,
+		};
+	},
+};
+
+function getChartSnapshotTitle(containerId, fallbackTitle) {
+	const type = CONTAINER_ID_TO_CHART_TYPE[containerId];
+	if (!type) return fallbackTitle;
+	const config = getActiveDataset()?.configGraficos || {};
+	return String(config[type]?.customTitle || '').trim() || fallbackTitle;
+}
+
+function buildChartSnapshotMetadata(containerId) {
+	const type = CONTAINER_ID_TO_CHART_TYPE[containerId];
+	const config = getActiveDataset()?.configGraficos;
+	if (!type || !config) return {};
+	const builder = CHART_SNAPSHOT_BUILDERS[type];
+	return builder ? builder(config) : {};
 }
 
 /**

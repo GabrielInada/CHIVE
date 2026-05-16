@@ -1,17 +1,18 @@
-import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, scalePoint, select } from 'd3';
+import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from 'd3';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from './tooltip.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
+import { toCategoryToken, compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
 import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
-import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
+import { formatNumber, isNullish } from '../../utils/formatters.js';
+import { interpolateColor, buildRankMap, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
 const SCATTER_PALETTES = {
@@ -24,11 +25,6 @@ const AXIS_TYPE_VALUES = {
 	numeric: 'numeric',
 	categorical: 'categorical',
 };
-
-function normalizeCategoryValue(value) {
-	if (value === null || value === undefined || value === '') return '—';
-	return String(value);
-}
 
 function isNumericLikeAxisType(axisType) {
 	const value = String(axisType || '').toLowerCase();
@@ -152,7 +148,7 @@ function pickMostFrequentCategory(rows, fieldName) {
 			bestCount = count;
 			continue;
 		}
-		if (count === bestCount && String(category).localeCompare(String(bestCategory)) < 0) {
+		if (count === bestCount && compareStrings(category, bestCategory) < 0) {
 			bestCategory = category;
 		}
 	}
@@ -177,17 +173,21 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const radius = Number.isFinite(Number(opcoes.radius)) ? Number(opcoes.radius) : SCATTER_PLOT.defaultRadius;
 	const opacity = Number.isFinite(Number(opcoes.opacity)) ? Number(opcoes.opacity) : SCATTER_PLOT.defaultOpacity;
-	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+	const sizeMode = opcoes.sizeMode === 'numeric' ? 'numeric' : 'uniform';
+	const sizeField = opcoes.sizeField || null;
+	const sizeMin = Number.isFinite(Number(opcoes.sizeMin)) ? Math.max(0.5, Number(opcoes.sizeMin)) : 2;
+	const sizeMax = Number.isFinite(Number(opcoes.sizeMax)) ? Math.max(sizeMin, Number(opcoes.sizeMax)) : 12;
+	const color = isValidHexColor(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.scatter;
 	const colorMode = ['uniform', 'numeric', 'category'].includes(opcoes.colorMode)
 		? opcoes.colorMode
 		: 'uniform';
 	const colorField = opcoes.colorField || null;
-	const gradientMinColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.gradientMinColor || '').trim())
+	const gradientMinColor = isValidHexColor(String(opcoes.gradientMinColor || '').trim())
 		? String(opcoes.gradientMinColor).trim()
 		: color;
-	const gradientMaxColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.gradientMaxColor || '').trim())
+	const gradientMaxColor = isValidHexColor(String(opcoes.gradientMaxColor || '').trim())
 		? String(opcoes.gradientMaxColor).trim()
 		: '#ffffff';
 	const colorScheme = SCATTER_PALETTES[opcoes.colorScheme] ? opcoes.colorScheme : 'Bold';
@@ -310,15 +310,6 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const montarConteudoTooltip = ponto => {
 		const wrapper = document.createElement('div');
 
-		const createLine = (rotulo, valor) => {
-			const linha = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${rotulo}:`;
-			linha.appendChild(strong);
-			linha.append(` ${valor}`);
-			return linha;
-		};
-
 		const xValue = axisTypes.x === AXIS_TYPE_VALUES.numeric
 			? formatNumber(ponto.x, locale)
 			: ponto.xCategory;
@@ -326,12 +317,12 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			? formatNumber(ponto.y, locale)
 			: ponto.yCategory;
 
-		wrapper.appendChild(createLine(axisLabels.x, xValue));
-		wrapper.appendChild(createLine(axisLabels.y, yValue));
+		wrapper.appendChild(createTooltipLine(axisLabels.x, xValue));
+		wrapper.appendChild(createTooltipLine(axisLabels.y, yValue));
 		if (ponto.isAggregate) {
-			wrapper.appendChild(createLine(labels.count, formatNumber(ponto.count, locale)));
+			wrapper.appendChild(createTooltipLine(labels.count, formatNumber(ponto.count, locale)));
 		} else {
-			wrapper.appendChild(createLine(labels.indice, formatNumber(ponto.index + 1, locale)));
+			wrapper.appendChild(createTooltipLine(labels.indice, formatNumber(ponto.index + 1, locale)));
 		}
 
 		return wrapper;
@@ -342,7 +333,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	};
 
 	const buildAxisActionSet = (column, rawValue, headingLabel) => {
-		if (!column || rawValue === null || rawValue === undefined || rawValue === '') return null;
+		if (!column || isNullish(rawValue) || rawValue === '') return null;
 		const token = toCategoryToken(rawValue);
 		const state = typeof filterCallbacks.getTokenFilterState === 'function'
 			? filterCallbacks.getTokenFilterState(column, token)
@@ -481,11 +472,32 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	const minAggregatedCount = aggregatedCounts.length > 0 ? Math.min(...aggregatedCounts) : 1;
 	const maxAggregatedCount = aggregatedCounts.length > 0 ? Math.max(...aggregatedCounts) : 1;
 	const maxAggregateRadius = Math.max(radius + 6, radius * 2.1);
+
+	let sizeScale = null;
+	if (sizeMode === 'numeric' && sizeField && !shouldAggregateCategoricalPairs) {
+		const sizeValues = pontos
+			.map(ponto => Number(ponto.raw?.[sizeField]))
+			.filter(Number.isFinite);
+		if (sizeValues.length > 0) {
+			const minV = Math.min(...sizeValues);
+			const maxV = Math.max(...sizeValues);
+			// scaleSqrt so visual area scales with value (correct human perception).
+			const domain = minV === maxV ? [minV - 1, maxV + 1] : [minV, maxV];
+			sizeScale = scaleSqrt().domain(domain).range([sizeMin, sizeMax]);
+		}
+	}
+
 	const getPointRadius = ponto => {
-		if (!ponto.isAggregate) return radius;
-		if (maxAggregatedCount === minAggregatedCount) return maxAggregateRadius;
-		const progress = ((ponto.count || minAggregatedCount) - minAggregatedCount) / (maxAggregatedCount - minAggregatedCount);
-		return radius + ((maxAggregateRadius - radius) * progress);
+		if (ponto.isAggregate) {
+			if (maxAggregatedCount === minAggregatedCount) return maxAggregateRadius;
+			const progress = ((ponto.count || minAggregatedCount) - minAggregatedCount) / (maxAggregatedCount - minAggregatedCount);
+			return radius + ((maxAggregateRadius - radius) * progress);
+		}
+		if (sizeScale) {
+			const v = Number(ponto.raw?.[sizeField]);
+			if (Number.isFinite(v)) return sizeScale(v);
+		}
+		return radius;
 	};
 
 	let getPointColor = () => color;

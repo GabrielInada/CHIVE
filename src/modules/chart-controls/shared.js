@@ -1,6 +1,8 @@
+import { isValidHexColor } from '../../utils/colorUtils.js';
+
 export function normalizeHexColor(value, fallback) {
 	const color = String(value || '').trim();
-	return /^#[0-9a-fA-F]{6}$/.test(color) ? color : fallback;
+	return isValidHexColor(color) ? color : fallback;
 }
 
 export function createCheckboxControl(id, labelText, checked, disabled = false) {

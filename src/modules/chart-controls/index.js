@@ -15,14 +15,15 @@ import {
 	getDateColumnNames,
 } from '../../utils/columnHelpers.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
-import { onStateChange, STATE_EVENTS, setActiveChartType } from '../appState.js';
-import { createBarChartControls, setupBarChartControlListeners } from './barControls.js';
-import { createBubbleChartControls, setupBubbleChartControlListeners } from './bubbleControls.js';
-import { createLineChartControls, setupLineChartControlListeners } from './lineControls.js';
-import { createNetworkGraphControls, setupNetworkGraphControlListeners } from './networkControls.js';
-import { createScatterPlotControls, setupScatterPlotControlListeners } from './scatterControls.js';
-import { createPieChartControls, setupPieChartControlListeners } from './pieControls.js';
-import { createTreeMapControls, setupTreeMapControlListeners } from './treemapControls.js';
+import { setActiveChartType } from '../appState.js';
+import { createBarChartControls, setupBarChartControlListeners, computeDefaults as computeBarDefaults } from './barControls.js';
+import { createBubbleChartControls, setupBubbleChartControlListeners, computeDefaults as computeBubbleDefaults } from './bubbleControls.js';
+import { createLineChartControls, setupLineChartControlListeners, computeDefaults as computeLineDefaults } from './lineControls.js';
+import { createNetworkGraphControls, setupNetworkGraphControlListeners, computeDefaults as computeNetworkDefaults } from './networkControls.js';
+import { createScatterPlotControls, setupScatterPlotControlListeners, computeDefaults as computeScatterDefaults } from './scatterControls.js';
+import { createPieChartControls, setupPieChartControlListeners, computeDefaults as computePieDefaults } from './pieControls.js';
+import { createTreeMapControls, setupTreeMapControlListeners, computeDefaults as computeTreemapDefaults } from './treemapControls.js';
+import { createTinControls, setupTinControlListeners, computeDefaults as computeTinDefaults } from './tinControls.js';
 import { CHART_TYPES } from './chartTypes.js';
 import { renderChartParamsDOM } from '../../components/results/chartParamsView.js';
 import { openChartTypePickerDialog } from '../../components/results/chartTypePickerDialog.js';
@@ -37,7 +38,6 @@ const SIDEBAR_INTERACTION_MAX_AGE_MS = 2000;
 export function initChartControls(configChangeCallback = null, liveRenderCallback = null) {
 	onChartConfigChangeCallback = configChangeCallback;
 	setLiveRenderCallback(liveRenderCallback);
-	onStateChange(STATE_EVENTS.CHART_EXPANDED_CHANGED, () => {});
 }
 
 function captureControlSectionExpansionState(container) {
@@ -148,172 +148,85 @@ function restoreSidebarScrollPosition(container, anchor) {
 	container.scrollTop = Number(anchor.previousScrollTop || 0);
 }
 
-function pickPreferred(options, preferredIndex = 0, avoid = null) {
-	const filtered = options.filter(opt => opt !== avoid);
-	return filtered[preferredIndex] ?? filtered[0] ?? null;
+// Derives the column buckets each per-chart controls file needs. Computed once
+// per call site so the registry entries below stay small.
+function getColumnContext(dataset) {
+	const colunasVisiveis = filterVisibleColumns(dataset);
+	const numericas = getNumericColumnNames(colunasVisiveis);
+	const categoricas = getCategoricalColumnNames(colunasVisiveis);
+	const datas = getDateColumnNames(colunasVisiveis);
+	const todasColunas = colunasVisiveis.map(c => c.nome);
+	const baseCategoricalOrAll = categoricas.length > 0 ? categoricas : todasColunas;
+	return { numericas, categoricas, datas, todasColunas, baseCategoricalOrAll };
 }
+
+// Per-chart wiring table: adapts the unified `(dataset, ctx, cb?)` shape to
+// each per-chart file's factory signature, and points at the file's own
+// activation-defaults resolver. The per-chart files own the chart-specific
+// logic; this table is pure wiring.
+const CHART_CONTROL_REGISTRY = {
+	bar: {
+		build: (ds, ctx) => createBarChartControls(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas),
+		attachListeners: (ds, ctx, cb) => setupBarChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas, cb),
+		computeDefaults: computeBarDefaults,
+	},
+	scatter: {
+		build: (ds, ctx) => createScatterPlotControls(ds, ctx.numericas, ctx.todasColunas),
+		attachListeners: (ds, ctx, cb) => setupScatterPlotControlListeners(ds, ctx.numericas, ctx.todasColunas, cb),
+		computeDefaults: computeScatterDefaults,
+	},
+	pie: {
+		build: (ds, ctx) => createPieChartControls(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas),
+		attachListeners: (ds, ctx, cb) => setupPieChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas, cb),
+		computeDefaults: computePieDefaults,
+	},
+	bubble: {
+		build: (ds, ctx) => createBubbleChartControls(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas),
+		attachListeners: (ds, ctx, cb) => setupBubbleChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas, cb),
+		computeDefaults: computeBubbleDefaults,
+	},
+	network: {
+		build: (ds, ctx) => createNetworkGraphControls(ds, ctx.todasColunas, ctx.numericas, ctx.categoricas),
+		attachListeners: (ds, ctx, cb) => setupNetworkGraphControlListeners(ds, ctx.todasColunas, ctx.numericas, cb),
+		computeDefaults: computeNetworkDefaults,
+	},
+	treemap: {
+		build: (ds, ctx) => createTreeMapControls(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas),
+		attachListeners: (ds, ctx, cb) => setupTreeMapControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas, cb),
+		computeDefaults: computeTreemapDefaults,
+	},
+	line: {
+		build: (ds, ctx) => createLineChartControls(ds, ctx.numericas, ctx.datas, ctx.todasColunas),
+		attachListeners: (ds, ctx, cb) => setupLineChartControlListeners(ds, ctx.numericas, ctx.datas, ctx.todasColunas, cb),
+		computeDefaults: computeLineDefaults,
+	},
+	tin: {
+		build: (ds, ctx) => createTinControls(ds, ctx.numericas, ctx.todasColunas),
+		attachListeners: (ds, ctx, cb) => setupTinControlListeners(ds, ctx.numericas, ctx.todasColunas, cb),
+		computeDefaults: computeTinDefaults,
+	},
+};
 
 // Resolves "first-time activation" defaults for each chart type. The active
 // chart's existing config wins when still valid; falls back to first available
-// column otherwise. Mirrors the per-chart defaulting that used to live in each
-// toggle-change handler.
+// column otherwise. Test entry point — accepts a pre-built column context.
 function computeActivationDefaults(chartType, dataset, { numericas, categoricas, todasColunas, datas = [] }) {
-	const config = dataset.configGraficos || {};
+	const entry = CHART_CONTROL_REGISTRY[chartType];
+	if (!entry) return {};
 	const baseCategoricalOrAll = categoricas.length > 0 ? categoricas : todasColunas;
-
-	switch (chartType) {
-		case 'bar': {
-			const current = config.bar?.category;
-			const category = baseCategoricalOrAll.includes(current)
-				? current
-				: (baseCategoricalOrAll[0] || null);
-			return { category };
-		}
-
-		case 'pie': {
-			const currentCat = config.pie?.category;
-			const currentVal = config.pie?.valueColumn;
-			return {
-				category: baseCategoricalOrAll.includes(currentCat)
-					? currentCat
-					: (baseCategoricalOrAll[0] || null),
-				valueColumn: numericas.includes(currentVal) ? currentVal : (numericas[0] || null),
-			};
-		}
-
-		case 'bubble': {
-			const currentCat = config.bubble?.category;
-			const currentVal = config.bubble?.valueColumn;
-			const measureMode = config.bubble?.measureMode;
-			const valueColumn = measureMode !== 'count'
-				? (numericas.includes(currentVal) ? currentVal : (numericas[0] || null))
-				: currentVal;
-			return {
-				category: baseCategoricalOrAll.includes(currentCat)
-					? currentCat
-					: (baseCategoricalOrAll[0] || null),
-				valueColumn,
-			};
-		}
-
-		case 'scatter': {
-			const currentX = config.scatter?.x;
-			const currentY = config.scatter?.y;
-			const numericInAll = numericas.filter(opt => todasColunas.includes(opt));
-			const xPadrao = todasColunas.includes(currentX)
-				? currentX
-				: (numericInAll[0] ?? todasColunas[0] ?? null);
-			const yPadrao = todasColunas.includes(currentY) && currentY !== xPadrao
-				? currentY
-				: (pickPreferred(numericInAll, 1, xPadrao) ?? pickPreferred(todasColunas, 0, xPadrao) ?? xPadrao);
-			const currentXScale = config.scatter?.xScale === 'log' ? 'log' : 'linear';
-			const currentYScale = config.scatter?.yScale === 'log' ? 'log' : 'linear';
-			return {
-				x: xPadrao,
-				y: yPadrao,
-				xScale: numericas.includes(xPadrao) ? currentXScale : 'linear',
-				yScale: numericas.includes(yPadrao) ? currentYScale : 'linear',
-			};
-		}
-
-		case 'network': {
-			const currentSource = config.network?.source;
-			const currentTarget = config.network?.target;
-			const sourcePadrao = todasColunas.includes(currentSource)
-				? currentSource
-				: (todasColunas[0] || null);
-			const targetPadrao = todasColunas.includes(currentTarget)
-				? currentTarget
-				: (todasColunas[1] || todasColunas[0] || null);
-			return { source: sourcePadrao, target: targetPadrao };
-		}
-
-		case 'treemap': {
-			const current = config.treemap?.category;
-			return {
-				category: baseCategoricalOrAll.includes(current)
-					? current
-					: (baseCategoricalOrAll[0] || null),
-			};
-		}
-
-		case 'line': {
-			const currentX = config.line?.x;
-			const currentY = config.line?.y;
-			const xDefault = todasColunas.includes(currentX)
-				? currentX
-				: (datas[0] ?? numericas[0] ?? todasColunas[0] ?? null);
-			const yCandidates = numericas.filter(name => name !== xDefault);
-			const yDefault = numericas.includes(currentY) && currentY !== xDefault
-				? currentY
-				: (yCandidates[0] ?? numericas[0] ?? null);
-			return { x: xDefault, y: yDefault };
-		}
-
-		default:
-			return {};
-	}
+	return entry.computeDefaults(dataset, { numericas, categoricas, todasColunas, datas, baseCategoricalOrAll });
 }
 
 function buildControlsForChart(chartType, dataset) {
-	const colunasVisiveis = filterVisibleColumns(dataset);
-	const numericas = getNumericColumnNames(colunasVisiveis);
-	const categoricas = getCategoricalColumnNames(colunasVisiveis);
-	const datas = getDateColumnNames(colunasVisiveis);
-	const todasColunas = colunasVisiveis.map(c => c.nome);
-	const baseCategoricalOrAll = categoricas.length > 0 ? categoricas : todasColunas;
-
-	switch (chartType) {
-		case 'bar':
-			return createBarChartControls(dataset, baseCategoricalOrAll, numericas, todasColunas);
-		case 'scatter':
-			return createScatterPlotControls(dataset, numericas, todasColunas);
-		case 'pie':
-			return createPieChartControls(dataset, baseCategoricalOrAll, numericas, todasColunas);
-		case 'bubble':
-			return createBubbleChartControls(dataset, baseCategoricalOrAll, numericas, todasColunas);
-		case 'network':
-			return createNetworkGraphControls(dataset, todasColunas, numericas, categoricas);
-		case 'treemap':
-			return createTreeMapControls(dataset, baseCategoricalOrAll, numericas, todasColunas);
-		case 'line':
-			return createLineChartControls(dataset, numericas, datas, todasColunas);
-		default:
-			return [];
-	}
+	const entry = CHART_CONTROL_REGISTRY[chartType];
+	if (!entry) return [];
+	return entry.build(dataset, getColumnContext(dataset));
 }
 
 function setupListenersForChart(chartType, dataset) {
-	const colunasVisiveis = filterVisibleColumns(dataset);
-	const numericas = getNumericColumnNames(colunasVisiveis);
-	const categoricas = getCategoricalColumnNames(colunasVisiveis);
-	const datas = getDateColumnNames(colunasVisiveis);
-	const todasColunas = colunasVisiveis.map(c => c.nome);
-	const baseCategoricalOrAll = categoricas.length > 0 ? categoricas : todasColunas;
-	const cb = onChartConfigChangeCallback;
-
-	switch (chartType) {
-		case 'bar':
-			setupBarChartControlListeners(dataset, baseCategoricalOrAll, numericas, todasColunas, cb);
-			return;
-		case 'scatter':
-			setupScatterPlotControlListeners(dataset, numericas, todasColunas, cb);
-			return;
-		case 'pie':
-			setupPieChartControlListeners(dataset, baseCategoricalOrAll, numericas, todasColunas, cb);
-			return;
-		case 'bubble':
-			setupBubbleChartControlListeners(dataset, baseCategoricalOrAll, numericas, todasColunas, cb);
-			return;
-		case 'network':
-			setupNetworkGraphControlListeners(dataset, todasColunas, numericas, cb);
-			return;
-		case 'treemap':
-			setupTreeMapControlListeners(dataset, baseCategoricalOrAll, numericas, todasColunas, cb);
-			return;
-		case 'line':
-			setupLineChartControlListeners(dataset, numericas, datas, todasColunas, cb);
-	}
+	const entry = CHART_CONTROL_REGISTRY[chartType];
+	if (!entry) return;
+	entry.attachListeners(dataset, getColumnContext(dataset), onChartConfigChangeCallback);
 }
 
 function handleChartTypeSelect(chartType, dataset) {
@@ -322,12 +235,8 @@ function handleChartTypeSelect(chartType, dataset) {
 		onChartConfigChangeCallback?.();
 		return;
 	}
-	const colunasVisiveis = filterVisibleColumns(dataset);
-	const numericas = getNumericColumnNames(colunasVisiveis);
-	const categoricas = getCategoricalColumnNames(colunasVisiveis);
-	const datas = getDateColumnNames(colunasVisiveis);
-	const todasColunas = colunasVisiveis.map(c => c.nome);
-	const defaults = computeActivationDefaults(chartType, dataset, { numericas, categoricas, todasColunas, datas });
+	const entry = CHART_CONTROL_REGISTRY[chartType];
+	const defaults = entry ? entry.computeDefaults(dataset, getColumnContext(dataset)) : {};
 	setActiveChartType(chartType, { ...defaults, expanded: true });
 	onChartConfigChangeCallback?.();
 }

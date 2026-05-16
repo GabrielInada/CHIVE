@@ -6,6 +6,7 @@ import {
 	renderNetworkGraph,
 	renderPieChart,
 	renderScatterPlot,
+	renderTinChart,
 	renderTreeMap,
 } from '../visualizations/index.js';
 import { fail } from '../../utils/result.js';
@@ -75,6 +76,10 @@ function renderScatter(container, spec) {
 		yScale: config.yScale,
 		radius: config.radius,
 		opacity: config.opacity,
+		sizeMode: config.sizeMode,
+		sizeField: config.sizeField,
+		sizeMin: config.sizeMin,
+		sizeMax: config.sizeMax,
 		color: config.color,
 		colorMode: config.colorMode,
 		colorField: config.colorField,
@@ -256,6 +261,33 @@ function renderLine(container, spec) {
 	});
 }
 
+function renderTin(container, spec) {
+	const config = spec.config || {};
+	return renderTinChart(container, spec.dataSnapshot, config.x, config.y, config.z, {
+		customTitle: config.customTitle,
+		chartHeight: config.chartHeight,
+		subdivisionDepth: config.subdivisionDepth,
+		gradientMinColor: config.gradientMinColor,
+		gradientMaxColor: config.gradientMaxColor,
+		gradientDistribution: config.gradientDistribution,
+		showEdges: config.showEdges,
+		edgeColor: config.edgeColor,
+		showPoints: config.showPoints,
+		pointRadius: config.pointRadius,
+		showZLabels: config.showZLabels,
+		showHull: config.showHull,
+		hullColor: config.hullColor,
+		showXAxisLabel: config.showXAxisLabel,
+		showYAxisLabel: config.showYAxisLabel,
+		axisLabels: {
+			x: config.x || t('chive-chart-control-tin-x'),
+			y: config.y || t('chive-chart-control-tin-y'),
+			z: config.z || t('chive-chart-control-tin-z'),
+		},
+		locale: getLocale(),
+	});
+}
+
 const RENDERERS = {
 	bar: renderBar,
 	scatter: renderScatter,
@@ -264,6 +296,7 @@ const RENDERERS = {
 	bubble: renderBubble,
 	treemap: renderTreemap,
 	line: renderLine,
+	tin: renderTin,
 };
 
 export const SUPPORTED_PANEL_CHART_TYPES = Object.freeze(Object.keys(RENDERERS));

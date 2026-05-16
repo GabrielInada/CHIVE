@@ -3,19 +3,16 @@ import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from './tooltip.js';
 import { BUBBLE_CHART, CHART_COLOR_PALETTES, CHART_DIMENSIONS } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
+import { formatNumber, isNullish } from '../../utils/formatters.js';
+import { toCategoryToken, compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
 import { ok, fail } from '../../utils/result.js';
-
-function normalizeCategoryValue(value) {
-	return value === null || value === undefined || value === '' ? '—' : String(value);
-}
 
 function getBubblePalette(colorScheme) {
 	return CHART_COLOR_PALETTES[colorScheme] || CHART_COLOR_PALETTES.Tableau10;
@@ -214,7 +211,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		nestingPath: nestingColumns.length > 0 ? (nestingByCategory.get(category) || nestingColumns.map(() => '—')) : [],
 	}));
 
-	bubbles.sort((a, b) => b.value - a.value || String(a.category).localeCompare(String(b.category)));
+	bubbles.sort((a, b) => b.value - a.value || compareStrings(a.category, b.category));
 	if (topN > 0) {
 		bubbles = bubbles.slice(0, topN);
 	}
@@ -304,7 +301,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	};
 
 	const buildPinnedFilterTooltip = (event, content, headerTitle, filterColumn, rawValue, onDismiss) => {
-		if (!filterColumn || rawValue === null || rawValue === undefined || rawValue === '') {
+		if (!filterColumn || isNullish(rawValue) || rawValue === '') {
 			showPinnedChartTooltip(content, event.pageX, event.pageY, {
 				headerTitle,
 				closeLabel: filterLabels.close,
@@ -496,39 +493,20 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 
 	const createLeafTooltip = item => {
 		const wrapper = document.createElement('div');
-
-		const makeLine = (label, value) => {
-			const row = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${label}:`;
-			row.appendChild(strong);
-			row.append(` ${value}`);
-			return row;
-		};
-
-		wrapper.appendChild(makeLine(labels.categoria, item.data.category));
-		wrapper.appendChild(makeLine(measureLabel, formatNumber(item.data.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.categoria, item.data.category));
+		wrapper.appendChild(createTooltipLine(measureLabel, formatNumber(item.data.value, locale)));
 		if (isGrouped) {
-			wrapper.appendChild(makeLine(labels.grupo, getTopLevelGroup(item)));
+			wrapper.appendChild(createTooltipLine(labels.grupo, getTopLevelGroup(item)));
 		}
 		return wrapper;
 	};
 
 	const createParentTooltip = item => {
 		const wrapper = document.createElement('div');
-		const makeLine = (label, value) => {
-			const row = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${label}:`;
-			row.appendChild(strong);
-			row.append(` ${value}`);
-			return row;
-		};
-
-		wrapper.appendChild(makeLine(labels.grupo, item.data.groupName));
-		wrapper.appendChild(makeLine(measureLabel, formatNumber(item.value, locale)));
-		wrapper.appendChild(makeLine(labels.filhos, item.children.length));
-		wrapper.appendChild(makeLine(labels.nivel, item.depth));
+		wrapper.appendChild(createTooltipLine(labels.grupo, item.data.groupName));
+		wrapper.appendChild(createTooltipLine(measureLabel, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.filhos, item.children.length));
+		wrapper.appendChild(createTooltipLine(labels.nivel, item.depth));
 		return wrapper;
 	};
 

@@ -3,20 +3,17 @@ import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
-import { buildSliceColor as _buildSliceColor } from '../../utils/colorUtils.js';
+import { formatNumber, isNullish, clamp } from '../../utils/formatters.js';
+import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
+import { buildSliceColor as _buildSliceColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
-
-function clamp(value, min, max) {
-	return Math.min(Math.max(value, min), max);
-}
 
 function buildSliceColor(baseHex, index) {
 	return _buildSliceColor(baseHex, index, CHART_COLORS.pie);
@@ -25,7 +22,7 @@ function buildSliceColor(baseHex, index) {
 export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return fail();
 
-	const color = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+	const color = isValidHexColor(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.pie;
 	const locale = opcoes.locale || undefined;
@@ -58,7 +55,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	const contador = new Map();
 	dados.forEach(linha => {
 		const valorBruto = linha[colunaCategoria];
-		const categoria = valorBruto === null || valorBruto === undefined || valorBruto === ''
+		const categoria = isNullish(valorBruto) || valorBruto === ''
 			? '—'
 			: String(valorBruto);
 		if (measureMode === 'sum') {
@@ -73,7 +70,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 
 	const linhas = Array.from(contador.entries())
 		.map(([categoria, valor]) => ({ categoria, valor }))
-		.sort((a, b) => b.valor - a.valor || String(a.categoria).localeCompare(String(b.categoria)));
+		.sort((a, b) => b.valor - a.valor || compareStrings(a.categoria, b.categoria));
 	if (linhas.length === 0) {
 		return fail(measureMode === 'sum' ? 'sum-no-numeric' : undefined);
 	}
@@ -163,18 +160,9 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	const montarConteudoTooltip = item => {
 		const percentual = total > 0 ? ((item.valor / total) * 100) : 0;
 		const wrapper = document.createElement('div');
-		const createLine = (rotulo, valor) => {
-			const linha = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${rotulo}:`;
-			linha.appendChild(strong);
-			linha.append(` ${valor}`);
-			return linha;
-		};
-
-		wrapper.appendChild(createLine(labels.categoria, item.categoria));
-		wrapper.appendChild(createLine(labels.contagem, formatNumber(item.valor, locale)));
-		wrapper.appendChild(createLine(labels.percentual, `${percentual.toFixed(1)}%`));
+		wrapper.appendChild(createTooltipLine(labels.categoria, item.categoria));
+		wrapper.appendChild(createTooltipLine(labels.contagem, formatNumber(item.valor, locale)));
+		wrapper.appendChild(createTooltipLine(labels.percentual, `${percentual.toFixed(1)}%`));
 		return wrapper;
 	};
 

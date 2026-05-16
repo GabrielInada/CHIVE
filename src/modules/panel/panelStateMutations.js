@@ -1,3 +1,5 @@
+import { isValidHexColor } from '../../utils/colorUtils.js';
+
 export function normalizePanelChartId(chartId) {
 	const normalized = Number(chartId);
 	return Number.isFinite(normalized) ? normalized : null;
@@ -165,7 +167,7 @@ export function updatePanelBlockBorderState(appState, blockId, options, ensureDe
 
 	if (typeof options.color === 'string') {
 		const color = options.color.trim();
-		if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+		if (isValidHexColor(color)) {
 			block.borderColor = color;
 		}
 	}

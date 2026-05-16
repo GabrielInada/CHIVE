@@ -10,6 +10,7 @@ export const CHART_TYPES = {
   TREEMAP: 'treemap',
   BUBBLE: 'bubble',
   LINE: 'line',
+  TIN: 'tin',
 };
 
 export const CHART_COLORS = {
@@ -20,6 +21,7 @@ export const CHART_COLORS = {
   treemap: '#5a7d99',
   bubble: '#7b4f9d',
   line: '#4e79a7',
+  tin: '#5d8aa8',
 };
 
 export const CHART_DIMENSIONS = {
@@ -71,6 +73,16 @@ export const CHART_DIMENSIONS = {
       right: 30,
       bottom: 44,
       left: 52,
+    },
+  },
+  tin: {
+    width: 700,
+    height: 460,
+    margins: {
+      top: 16,
+      right: 16,
+      bottom: 44,
+      left: 56,
     },
   },
 };
@@ -152,6 +164,19 @@ export const LINE_CHART = {
   defaultSortX: true,
   defaultGhostStrokeColor: '#cccccc',
   pointRadius: 3,
+};
+
+export const TIN_CHART = {
+  defaultSubdivisionDepth: 3,
+  minSubdivisionDepth: 0,
+  maxSubdivisionDepth: 4,
+  defaultPointRadius: 3,
+  defaultEdgeColor: '#5f5a53',
+  defaultHullColor: '#3f3a33',
+  defaultShowEdges: true,
+  defaultShowPoints: true,
+  defaultShowZLabels: false,
+  defaultShowHull: false,
 };
 
 export const BUBBLE_CHART = {
