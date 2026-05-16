@@ -191,6 +191,12 @@ export const TIN_CHART = {
   minIsolineLabelSize: 8,
   maxIsolineLabelSize: 14,
   defaultIsolineLabelColor: '#1f2937',
+  defaultShowThreshold: false,
+  defaultThresholdValue: 0,
+  defaultThresholdColor: '#dc2626',
+  defaultThresholdWidth: 2,
+  minThresholdWidth: 0.5,
+  maxThresholdWidth: 4,
 };
 
 export const BUBBLE_CHART = {

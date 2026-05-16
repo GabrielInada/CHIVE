@@ -2,6 +2,7 @@ import { CHART_COLORS, TIN_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import {
 	createCheckboxControl,
+	createNumberInputControl,
 	createSelectControl,
 	createSliderControl,
 	createTextControl,
@@ -16,6 +17,7 @@ import {
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
+	setupNumberInputListener,
 	setupSliderListener,
 	setupColorPresetListeners,
 } from './controlListenerHelpers.js';
@@ -290,6 +292,42 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 	isolineLabelColorDiv.appendChild(isolineLabelColorInput);
 	overlayControls.push(isolineLabelColorDiv);
 
+	overlayControls.push(createCheckboxControl(
+		'viz-toggle-tin-threshold',
+		t('chive-chart-control-tin-show-threshold'),
+		config.showThreshold === true,
+		disabled,
+	));
+	overlayControls.push(createNumberInputControl(
+		'viz-input-tin-threshold-value',
+		t('chive-chart-control-tin-threshold-value'),
+		Number.isFinite(Number(config.thresholdValue)) ? Number(config.thresholdValue) : TIN_CHART.defaultThresholdValue,
+		{ step: 'any', disabled: disabled || !config.showThreshold },
+	));
+	const thresholdColorDiv = document.createElement('div');
+	thresholdColorDiv.className = 'chart-controle';
+	const thresholdColorLabel = document.createElement('label');
+	thresholdColorLabel.htmlFor = 'viz-input-tin-threshold-color';
+	thresholdColorLabel.textContent = t('chive-chart-control-tin-threshold-color');
+	const thresholdColorInput = document.createElement('input');
+	thresholdColorInput.id = 'viz-input-tin-threshold-color';
+	thresholdColorInput.type = 'color';
+	thresholdColorInput.className = 'chart-color-input';
+	thresholdColorInput.value = normalizeHexColor(config.thresholdColor, TIN_CHART.defaultThresholdColor);
+	thresholdColorInput.disabled = disabled || !config.showThreshold;
+	thresholdColorDiv.appendChild(thresholdColorLabel);
+	thresholdColorDiv.appendChild(thresholdColorInput);
+	overlayControls.push(thresholdColorDiv);
+	overlayControls.push(createSliderControl(
+		'viz-slider-tin-threshold-width',
+		t('chive-chart-control-tin-threshold-width'),
+		Number(config.thresholdWidth ?? TIN_CHART.defaultThresholdWidth),
+		TIN_CHART.minThresholdWidth,
+		TIN_CHART.maxThresholdWidth,
+		0.1,
+		disabled || !config.showThreshold,
+	));
+
 	return groupControls([
 		{ id: 'data', title: 'Data', controls: dataControls, expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
@@ -339,6 +377,7 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 		{ id: 'viz-toggle-tin-hull', key: 'showHull' },
 		{ id: 'viz-toggle-tin-isolines', key: 'showIsolines' },
 		{ id: 'viz-toggle-tin-isoline-labels', key: 'showIsolineLabels' },
+		{ id: 'viz-toggle-tin-threshold', key: 'showThreshold' },
 	], dataset, 'tin', onConfigChanged);
 
 	setupTextInputListener('viz-input-tin-title', 'customTitle', dataset, 'tin', onConfigChanged);
@@ -348,6 +387,8 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 	setupSliderListener('viz-slider-tin-isoline-count', 'isolineCount', dataset, 'tin', onConfigChanged);
 	setupSliderListener('viz-slider-tin-isoline-width', 'isolineWidth', dataset, 'tin', onConfigChanged);
 	setupSliderListener('viz-slider-tin-isoline-label-size', 'isolineLabelSize', dataset, 'tin', onConfigChanged);
+	setupSliderListener('viz-slider-tin-threshold-width', 'thresholdWidth', dataset, 'tin', onConfigChanged);
+	setupNumberInputListener('viz-input-tin-threshold-value', 'thresholdValue', TIN_CHART.defaultThresholdValue, dataset, 'tin', onConfigChanged);
 
 	setupColorInputListener('viz-input-tin-gradient-min', 'gradientMinColor', CHART_COLORS.tin, dataset, 'tin', onConfigChanged);
 	setupColorInputListener('viz-input-tin-gradient-max', 'gradientMaxColor', '#ffffff', dataset, 'tin', onConfigChanged);
@@ -355,6 +396,7 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 	setupColorInputListener('viz-input-tin-hull-color', 'hullColor', TIN_CHART.defaultHullColor, dataset, 'tin', onConfigChanged);
 	setupColorInputListener('viz-input-tin-isoline-color', 'isolineColor', TIN_CHART.defaultIsolineColor, dataset, 'tin', onConfigChanged);
 	setupColorInputListener('viz-input-tin-isoline-label-color', 'isolineLabelColor', TIN_CHART.defaultIsolineLabelColor, dataset, 'tin', onConfigChanged);
+	setupColorInputListener('viz-input-tin-threshold-color', 'thresholdColor', TIN_CHART.defaultThresholdColor, dataset, 'tin', onConfigChanged);
 
 	setupColorPresetListeners(
 		'viz-tin-color-preset',

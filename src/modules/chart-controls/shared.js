@@ -50,6 +50,29 @@ export function createTextControl(id, labelText, value, maxLength = 80, disabled
 	return div;
 }
 
+export function createNumberInputControl(id, labelText, value, { min, max, step, disabled } = {}) {
+	const div = document.createElement('div');
+	div.className = 'chart-controle';
+
+	const label = document.createElement('label');
+	label.htmlFor = id;
+	label.textContent = labelText;
+
+	const input = document.createElement('input');
+	input.id = id;
+	input.type = 'number';
+	input.className = 'linhas-select';
+	if (min !== undefined && min !== null) input.min = String(min);
+	if (max !== undefined && max !== null) input.max = String(max);
+	if (step !== undefined && step !== null) input.step = String(step);
+	input.value = String(value ?? '');
+	input.disabled = disabled === true;
+
+	div.appendChild(label);
+	div.appendChild(input);
+	return div;
+}
+
 export function createSliderControl(id, labelText, value, min, max, step, disabled = false) {
 	const div = document.createElement('div');
 	div.className = 'chart-controle';

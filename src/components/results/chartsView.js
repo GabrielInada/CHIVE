@@ -533,6 +533,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					showIsolineLabels: chartConfig.tin.showIsolineLabels,
 					isolineLabelSize: chartConfig.tin.isolineLabelSize,
 					isolineLabelColor: chartConfig.tin.isolineLabelColor,
+					showThreshold: chartConfig.tin.showThreshold,
+					thresholdValue: chartConfig.tin.thresholdValue,
+					thresholdColor: chartConfig.tin.thresholdColor,
+					thresholdWidth: chartConfig.tin.thresholdWidth,
 					showXAxisLabel: chartConfig.tin.showXAxisLabel,
 					showYAxisLabel: chartConfig.tin.showYAxisLabel,
 					axisLabels: {

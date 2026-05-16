@@ -207,6 +207,55 @@ describe('renderTinChart', () => {
 		expect(labels.length).toBeLessThanOrEqual(5);
 	});
 
+	it('does not render a threshold contour when showThreshold is false', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showThreshold: false,
+			thresholdValue: 4,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('.tin-threshold-contour')).toBeNull();
+	});
+
+	it('renders exactly one threshold segment cutting a single triangle at thresholdValue=5', () => {
+		const container = document.getElementById('tin');
+		const rows = [
+			{ x: 0, y: 0, z: 0 },
+			{ x: 10, y: 0, z: 0 },
+			{ x: 5, y: 10, z: 10 },
+		];
+		const result = renderTinChart(container, rows, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: false,
+			showThreshold: true,
+			thresholdValue: 5,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		const lines = container.querySelectorAll('.tin-threshold-contour line');
+		expect(lines.length).toBe(1);
+		const y1 = Number(lines[0].getAttribute('y1'));
+		const y2 = Number(lines[0].getAttribute('y2'));
+		expect(Math.abs(y1 - y2)).toBeLessThan(1e-6);
+	});
+
+	it('does not render a threshold contour when thresholdValue is outside [zMin,zMax]', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showThreshold: true,
+			thresholdValue: 999,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('.tin-threshold-contour')).toBeNull();
+	});
+
 	it('shows tooltip with X/Y/Z values on point hover', () => {
 		const container = document.getElementById('tin');
 		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {

@@ -285,6 +285,10 @@ function renderTin(container, spec) {
 		showIsolineLabels: config.showIsolineLabels,
 		isolineLabelSize: config.isolineLabelSize,
 		isolineLabelColor: config.isolineLabelColor,
+		showThreshold: config.showThreshold,
+		thresholdValue: config.thresholdValue,
+		thresholdColor: config.thresholdColor,
+		thresholdWidth: config.thresholdWidth,
 		showXAxisLabel: config.showXAxisLabel,
 		showYAxisLabel: config.showYAxisLabel,
 		axisLabels: {

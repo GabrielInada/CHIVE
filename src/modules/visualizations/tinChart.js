@@ -143,6 +143,16 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 		? Math.max(TIN_CHART.minIsolineLabelSize, Math.min(TIN_CHART.maxIsolineLabelSize, isolineLabelSizeRaw))
 		: TIN_CHART.defaultIsolineLabelSize;
 	const isolineLabelColor = normalizeColor(opcoes.isolineLabelColor, TIN_CHART.defaultIsolineLabelColor);
+	const showThreshold = opcoes.showThreshold === true;
+	const thresholdValueRaw = Number(opcoes.thresholdValue);
+	const thresholdValue = Number.isFinite(thresholdValueRaw)
+		? thresholdValueRaw
+		: TIN_CHART.defaultThresholdValue;
+	const thresholdColor = normalizeColor(opcoes.thresholdColor, TIN_CHART.defaultThresholdColor);
+	const thresholdWidthRaw = Number(opcoes.thresholdWidth);
+	const thresholdWidth = Number.isFinite(thresholdWidthRaw)
+		? Math.max(TIN_CHART.minThresholdWidth, Math.min(TIN_CHART.maxThresholdWidth, thresholdWidthRaw))
+		: TIN_CHART.defaultThresholdWidth;
 	const showXAxisLabel = opcoes.showXAxisLabel !== false;
 	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
@@ -279,17 +289,18 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 		}
 	}
 
+	const triangleVerts = [];
+	for (let i = 0; i < tris.length; i += 3) {
+		triangleVerts.push([
+			screenPoints[tris[i]],
+			screenPoints[tris[i + 1]],
+			screenPoints[tris[i + 2]],
+		]);
+	}
+
 	if (showIsolines && zMin !== zMax) {
 		const isolinesGroup = grupo.append('g').attr('class', 'tin-isolines');
 		const levels = scaleLinear().domain([zMin, zMax]).nice().ticks(isolineCount);
-		const triangleVerts = [];
-		for (let i = 0; i < tris.length; i += 3) {
-			triangleVerts.push([
-				screenPoints[tris[i]],
-				screenPoints[tris[i + 1]],
-				screenPoints[tris[i + 2]],
-			]);
-		}
 		let labelGroup = null;
 		levels.forEach(level => {
 			const { segments, longest } = computeIsolineSegments(triangleVerts, level);
@@ -318,6 +329,23 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 					.text(formatNumber(level, locale));
 			}
 		});
+	}
+
+	if (showThreshold && thresholdValue >= zMin && thresholdValue <= zMax) {
+		const { segments } = computeIsolineSegments(triangleVerts, thresholdValue);
+		if (segments.length > 0) {
+			const thresholdGroup = grupo.append('g').attr('class', 'tin-threshold-contour');
+			segments.forEach(seg => {
+				thresholdGroup.append('line')
+					.attr('x1', seg.x1)
+					.attr('y1', seg.y1)
+					.attr('x2', seg.x2)
+					.attr('y2', seg.y2)
+					.attr('stroke', thresholdColor)
+					.attr('stroke-width', thresholdWidth)
+					.attr('fill', 'none');
+			});
+		}
 	}
 
 	if (showEdges) {
