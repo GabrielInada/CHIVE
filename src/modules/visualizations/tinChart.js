@@ -83,6 +83,12 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 	const isolineWidth = Number.isFinite(isolineWidthRaw)
 		? Math.max(TIN_CHART.minIsolineWidth, Math.min(TIN_CHART.maxIsolineWidth, isolineWidthRaw))
 		: TIN_CHART.defaultIsolineWidth;
+	const showIsolineLabels = opcoes.showIsolineLabels === true;
+	const isolineLabelSizeRaw = Math.round(Number(opcoes.isolineLabelSize));
+	const isolineLabelSize = Number.isFinite(isolineLabelSizeRaw)
+		? Math.max(TIN_CHART.minIsolineLabelSize, Math.min(TIN_CHART.maxIsolineLabelSize, isolineLabelSizeRaw))
+		: TIN_CHART.defaultIsolineLabelSize;
+	const isolineLabelColor = normalizeColor(opcoes.isolineLabelColor, TIN_CHART.defaultIsolineLabelColor);
 	const showXAxisLabel = opcoes.showXAxisLabel !== false;
 	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
@@ -223,7 +229,9 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 		const isolinesGroup = grupo.append('g').attr('class', 'tin-isolines');
 		const levels = scaleLinear().domain([zMin, zMax]).nice().ticks(isolineCount);
 		const edgePairs = [[0, 1], [1, 2], [2, 0]];
+		let labelGroup = null;
 		levels.forEach(level => {
+			let longest = null;
 			for (let i = 0; i < tris.length; i += 3) {
 				const verts = [
 					screenPoints[tris[i]],
@@ -247,7 +255,8 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 				if (crossings.length === 2) {
 					const dx = crossings[0].x - crossings[1].x;
 					const dy = crossings[0].y - crossings[1].y;
-					if (dx * dx + dy * dy < 1e-9) continue;
+					const len2 = dx * dx + dy * dy;
+					if (len2 < 1e-9) continue;
 					isolinesGroup.append('line')
 						.attr('x1', crossings[0].x)
 						.attr('y1', crossings[0].y)
@@ -256,7 +265,32 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 						.attr('stroke', isolineColor)
 						.attr('stroke-width', isolineWidth)
 						.attr('fill', 'none');
+					if (longest === null || len2 > longest.length2) {
+						let angleDeg = Math.atan2(crossings[1].y - crossings[0].y, crossings[1].x - crossings[0].x) * 180 / Math.PI;
+						if (angleDeg > 90) angleDeg -= 180;
+						else if (angleDeg < -90) angleDeg += 180;
+						longest = {
+							length2: len2,
+							midX: (crossings[0].x + crossings[1].x) / 2,
+							midY: (crossings[0].y + crossings[1].y) / 2,
+							angleDeg,
+						};
+					}
 				}
+			}
+			if (showIsolineLabels && longest) {
+				if (!labelGroup) labelGroup = grupo.append('g').attr('class', 'tin-isoline-labels');
+				labelGroup.append('text')
+					.attr('transform', `translate(${longest.midX},${longest.midY}) rotate(${longest.angleDeg})`)
+					.attr('text-anchor', 'middle')
+					.attr('dominant-baseline', 'middle')
+					.attr('font-size', isolineLabelSize)
+					.attr('fill', isolineLabelColor)
+					.attr('stroke', '#fffef9')
+					.attr('stroke-width', 2.5)
+					.attr('paint-order', 'stroke')
+					.attr('pointer-events', 'none')
+					.text(formatNumber(level, locale));
 			}
 		});
 	}

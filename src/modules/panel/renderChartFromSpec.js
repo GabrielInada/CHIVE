@@ -281,6 +281,9 @@ function renderTin(container, spec) {
 		isolineCount: config.isolineCount,
 		isolineColor: config.isolineColor,
 		isolineWidth: config.isolineWidth,
+		showIsolineLabels: config.showIsolineLabels,
+		isolineLabelSize: config.isolineLabelSize,
+		isolineLabelColor: config.isolineLabelColor,
 		showXAxisLabel: config.showXAxisLabel,
 		showYAxisLabel: config.showYAxisLabel,
 		axisLabels: {

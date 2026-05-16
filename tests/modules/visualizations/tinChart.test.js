@@ -145,6 +145,57 @@ describe('renderTinChart', () => {
 		expect(Math.abs(y1 - y2)).toBeLessThan(1e-6);
 	});
 
+	it('does not render an isoline-labels group when showIsolineLabels is false', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 5,
+			showIsolineLabels: false,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('.tin-isoline-labels')).toBeNull();
+	});
+
+	it('emits exactly one isoline label for a single triangle cut by one level', () => {
+		const container = document.getElementById('tin');
+		const rows = [
+			{ x: 0, y: 0, z: 0 },
+			{ x: 10, y: 0, z: 0 },
+			{ x: 5, y: 10, z: 10 },
+		];
+		const result = renderTinChart(container, rows, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 3,
+			showIsolineLabels: true,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		const labels = container.querySelectorAll('.tin-isoline-labels text');
+		expect(labels.length).toBe(1);
+		expect(labels[0].textContent).toBe('5');
+	});
+
+	it('emits between 1 and isolineCount labels for varied Z data', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 5,
+			showIsolineLabels: true,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		const labels = container.querySelectorAll('.tin-isoline-labels text');
+		expect(labels.length).toBeGreaterThan(0);
+		expect(labels.length).toBeLessThanOrEqual(5);
+	});
+
 	it('shows tooltip with X/Y/Z values on point hover', () => {
 		const container = document.getElementById('tin');
 		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {

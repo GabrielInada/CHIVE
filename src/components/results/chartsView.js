@@ -529,6 +529,9 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 					isolineCount: chartConfig.tin.isolineCount,
 					isolineColor: chartConfig.tin.isolineColor,
 					isolineWidth: chartConfig.tin.isolineWidth,
+					showIsolineLabels: chartConfig.tin.showIsolineLabels,
+					isolineLabelSize: chartConfig.tin.isolineLabelSize,
+					isolineLabelColor: chartConfig.tin.isolineLabelColor,
 					showXAxisLabel: chartConfig.tin.showXAxisLabel,
 					showYAxisLabel: chartConfig.tin.showYAxisLabel,
 					axisLabels: {
