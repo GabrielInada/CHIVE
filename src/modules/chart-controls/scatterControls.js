@@ -155,6 +155,49 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled,
 	));
 
+	const sizeModeOptions = [
+		{ value: 'uniform', label: t('chive-chart-size-uniform') },
+		{ value: 'numeric', label: t('chive-chart-size-numeric') },
+	];
+	stylingControls.push(createSelectControl(
+		'viz-select-scatter-size-mode',
+		t('chive-chart-control-scatter-size-mode'),
+		sizeModeOptions,
+		config.sizeMode || 'uniform',
+		disabled,
+	));
+
+	stylingControls.push(createSelectControl(
+		'viz-select-scatter-size-field',
+		t('chive-chart-control-scatter-size-field'),
+		[
+			{ value: '', label: t('chive-chart-option-none') },
+			...numericOptions.map(opt => ({ value: opt, label: opt })),
+		],
+		config.sizeField,
+		disabled || config.sizeMode !== 'numeric',
+	));
+
+	stylingControls.push(createSliderControl(
+		'viz-slider-scatter-size-min',
+		t('chive-chart-control-scatter-size-min'),
+		Number(config.sizeMin || 2),
+		1,
+		10,
+		1,
+		disabled || config.sizeMode !== 'numeric',
+	));
+
+	stylingControls.push(createSliderControl(
+		'viz-slider-scatter-size-max',
+		t('chive-chart-control-scatter-size-max'),
+		Number(config.sizeMax || 12),
+		5,
+		30,
+		1,
+		disabled || config.sizeMode !== 'numeric',
+	));
+
 	const colorModeOptions = [
 		{ value: 'uniform', label: t('chive-chart-color-uniform') },
 		{ value: 'numeric', label: t('chive-chart-color-scatter-numeric') },
@@ -308,6 +351,16 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 		{ id: 'viz-select-scatter-radius', key: 'radius', transform: v => Number(v) },
 		{ id: 'viz-select-scatter-opacity', key: 'opacity', transform: v => Number(v) },
 		{
+			id: 'viz-select-scatter-size-mode',
+			key: 'sizeMode',
+			transform: v => (v === 'numeric' ? 'numeric' : 'uniform'),
+		},
+		{
+			id: 'viz-select-scatter-size-field',
+			key: 'sizeField',
+			transform: v => (numericas.includes(v) ? v : null),
+		},
+		{
 			id: 'viz-select-scatter-categorical-mode',
 			key: 'categoricalPairMode',
 			transform: value => (value === 'aggregate' ? 'aggregate' : 'jitter'),
@@ -382,4 +435,32 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 
 	setupTextInputListener('viz-input-scatter-title', 'customTitle', dataset, 'scatter', onConfigChanged);
 	setupSliderListener('viz-slider-scatter-height', 'chartHeight', dataset, 'scatter', onConfigChanged);
+	setupSliderListener('viz-slider-scatter-size-min', 'sizeMin', dataset, 'scatter', onConfigChanged);
+	setupSliderListener('viz-slider-scatter-size-max', 'sizeMax', dataset, 'scatter', onConfigChanged);
+}
+
+function pickPreferred(options, preferredIndex = 0, avoid = null) {
+	const filtered = options.filter(opt => opt !== avoid);
+	return filtered[preferredIndex] ?? filtered[0] ?? null;
+}
+
+export function computeDefaults(dataset, ctx) {
+	const config = dataset.configGraficos || {};
+	const currentX = config.scatter?.x;
+	const currentY = config.scatter?.y;
+	const numericInAll = ctx.numericas.filter(opt => ctx.todasColunas.includes(opt));
+	const xPadrao = ctx.todasColunas.includes(currentX)
+		? currentX
+		: (numericInAll[0] ?? ctx.todasColunas[0] ?? null);
+	const yPadrao = ctx.todasColunas.includes(currentY) && currentY !== xPadrao
+		? currentY
+		: (pickPreferred(numericInAll, 1, xPadrao) ?? pickPreferred(ctx.todasColunas, 0, xPadrao) ?? xPadrao);
+	const currentXScale = config.scatter?.xScale === 'log' ? 'log' : 'linear';
+	const currentYScale = config.scatter?.yScale === 'log' ? 'log' : 'linear';
+	return {
+		x: xPadrao,
+		y: yPadrao,
+		xScale: ctx.numericas.includes(xPadrao) ? currentXScale : 'linear',
+		yScale: ctx.numericas.includes(yPadrao) ? currentYScale : 'linear',
+	};
 }

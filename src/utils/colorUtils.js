@@ -32,9 +32,13 @@ export function interpolateColor(minColor, maxColor, t) {
 	);
 }
 
+export function isValidHexColor(value) {
+	return /^#[0-9a-fA-F]{6}$/.test(value);
+}
+
 export function parseHexColor(color) {
 	const normalized = String(color || '').trim();
-	if (!/^#[0-9a-fA-F]{6}$/.test(normalized)) return null;
+	if (!isValidHexColor(normalized)) return null;
 	return {
 		r: parseInt(normalized.slice(1, 3), 16),
 		g: parseInt(normalized.slice(3, 5), 16),

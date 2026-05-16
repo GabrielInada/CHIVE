@@ -256,3 +256,16 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	setupColorInputListener('viz-input-line-color', 'color', CHART_COLORS.line, dataset, 'line', onConfigChanged);
 	setupColorInputListener('viz-input-line-ghost-color', 'ghostStrokeColor', LINE_CHART.defaultGhostStrokeColor, dataset, 'line', onConfigChanged);
 }
+
+export function computeDefaults(dataset, ctx) {
+	const currentX = dataset.configGraficos?.line?.x;
+	const currentY = dataset.configGraficos?.line?.y;
+	const xDefault = ctx.todasColunas.includes(currentX)
+		? currentX
+		: (ctx.datas[0] ?? ctx.numericas[0] ?? ctx.todasColunas[0] ?? null);
+	const yCandidates = ctx.numericas.filter(name => name !== xDefault);
+	const yDefault = ctx.numericas.includes(currentY) && currentY !== xDefault
+		? currentY
+		: (yCandidates[0] ?? ctx.numericas[0] ?? null);
+	return { x: xDefault, y: yDefault };
+}

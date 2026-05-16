@@ -1,5 +1,5 @@
 import { t, getLocale } from '../../services/i18nService.js';
-import { renderBarChart, renderBubbleChart, renderLineChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTreeMap } from '../../modules/visualizations/index.js';
+import { renderBarChart, renderBubbleChart, renderLineChart, renderNetworkGraph, renderPieChart, renderScatterPlot, renderTinChart, renderTreeMap } from '../../modules/visualizations/index.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
@@ -78,6 +78,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const blocoBubble = document.getElementById(CHART_BLOCKS.bubble);
 	const blocoTreemap = document.getElementById(CHART_BLOCKS.treemap);
 	const blocoLine = document.getElementById(CHART_BLOCKS.line);
+	const blocoTin = document.getElementById(CHART_BLOCKS.tin);
 
 	document.getElementById(BADGE_IDS.charts).textContent = t(
 		'chive-charts-badge',
@@ -95,6 +96,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoBubble.style.display = 'block';
 		blocoTreemap.style.display = 'block';
 		blocoLine.style.display = 'block';
+		if (blocoTin) blocoTin.style.display = 'block';
 		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
@@ -102,10 +104,11 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.line).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.tin)?.replaceChildren();
 		return;
 	}
 
-	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled && !chartConfig.treemap.enabled && !chartConfig.line.enabled) {
+	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled && !chartConfig.treemap.enabled && !chartConfig.line.enabled && !chartConfig.tin.enabled) {
 		chartsGrid.style.display = 'none';
 		emptyState.style.display = 'flex';
 		emptyState.textContent = t('chive-chart-empty-none');
@@ -116,6 +119,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoBubble.style.display = 'none';
 		blocoTreemap.style.display = 'none';
 		blocoLine.style.display = 'none';
+		if (blocoTin) blocoTin.style.display = 'none';
 		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
@@ -123,12 +127,13 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
 		document.getElementById(CHART_CONTAINERS.line).replaceChildren();
+		document.getElementById(CHART_CONTAINERS.tin)?.replaceChildren();
 		return;
 	}
 
 	// Single-chart-at-a-time: only the first enabled type renders. Legacy
 	// configs with multiple enabled flags converge to one on the next toggle.
-	const CHART_TYPE_ORDER = ['bar', 'line', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
+	const CHART_TYPE_ORDER = ['bar', 'line', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'tin'];
 	const activeChartType = CHART_TYPE_ORDER.find(type => chartConfig[type].enabled) || null;
 	CHART_TYPE_ORDER.forEach(type => {
 		if (type !== activeChartType) {
@@ -214,6 +219,10 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 				yScale: chartConfig.scatter.yScale,
 				radius: chartConfig.scatter.radius,
 				opacity: chartConfig.scatter.opacity,
+				sizeMode: chartConfig.scatter.sizeMode,
+				sizeField: chartConfig.scatter.sizeField,
+				sizeMin: chartConfig.scatter.sizeMin,
+				sizeMax: chartConfig.scatter.sizeMax,
 				color: chartConfig.scatter.color,
 				colorMode: chartConfig.scatter.colorMode,
 				colorField: chartConfig.scatter.colorField,
@@ -489,5 +498,52 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	} else {
 		blocoTreemap.style.display = 'none';
 		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
+	}
+
+	if (chartConfig.tin && chartConfig.tin.enabled) {
+		if (blocoTin) blocoTin.style.display = 'block';
+		const tinContainer = document.getElementById(CHART_CONTAINERS.tin);
+		if (tinContainer) {
+			tinContainer.style.minHeight = `${Number(chartConfig.tin.chartHeight || 460)}px`;
+			const tinResult = renderTinChart(
+				tinContainer,
+				filteredRows,
+				chartConfig.tin.x,
+				chartConfig.tin.y,
+				chartConfig.tin.z,
+				{
+					customTitle: chartConfig.tin.customTitle,
+					chartHeight: chartConfig.tin.chartHeight,
+					subdivisionDepth: chartConfig.tin.subdivisionDepth,
+					gradientMinColor: chartConfig.tin.gradientMinColor,
+					gradientMaxColor: chartConfig.tin.gradientMaxColor,
+					gradientDistribution: chartConfig.tin.gradientDistribution,
+					showEdges: chartConfig.tin.showEdges,
+					edgeColor: chartConfig.tin.edgeColor,
+					showPoints: chartConfig.tin.showPoints,
+					pointRadius: chartConfig.tin.pointRadius,
+					showZLabels: chartConfig.tin.showZLabels,
+					showHull: chartConfig.tin.showHull,
+					hullColor: chartConfig.tin.hullColor,
+					showXAxisLabel: chartConfig.tin.showXAxisLabel,
+					showYAxisLabel: chartConfig.tin.showYAxisLabel,
+					axisLabels: {
+						x: chartConfig.tin.x || t('chive-chart-control-tin-x'),
+						y: chartConfig.tin.y || t('chive-chart-control-tin-y'),
+						z: chartConfig.tin.z || t('chive-chart-control-tin-z'),
+					},
+					locale: getLocale(),
+				}
+			);
+			if (!tinResult.ok) {
+				const chave = tinResult.reason === 'insufficient-points'
+					? 'chive-chart-empty-tin-insufficient-points'
+					: 'chive-chart-empty-tin';
+				showChartMessage(CHART_CONTAINERS.tin, t(chave));
+			}
+		}
+	} else if (blocoTin) {
+		blocoTin.style.display = 'none';
+		document.getElementById(CHART_CONTAINERS.tin)?.replaceChildren();
 	}
 }

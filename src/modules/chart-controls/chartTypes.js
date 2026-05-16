@@ -5,10 +5,11 @@ import {
 	PREVIEW_NETWORK_SVG,
 	PREVIEW_PIE_SVG,
 	PREVIEW_SCATTER_SVG,
+	PREVIEW_TIN_SVG,
 	PREVIEW_TREEMAP_SVG,
 } from './previews.js';
 
-export const CHART_TYPES = ['bar', 'line', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
+export const CHART_TYPES = ['bar', 'line', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'tin'];
 
 export const PREVIEW_SVGS = {
 	bar: PREVIEW_BAR_SVG,
@@ -18,6 +19,7 @@ export const PREVIEW_SVGS = {
 	network: PREVIEW_NETWORK_SVG,
 	treemap: PREVIEW_TREEMAP_SVG,
 	line: PREVIEW_LINE_SVG,
+	tin: PREVIEW_TIN_SVG,
 };
 
 export const CATEGORY_KEYS = {
@@ -28,4 +30,5 @@ export const CATEGORY_KEYS = {
 	network: 'chive-viz-category-relationship',
 	treemap: 'chive-viz-category-composition',
 	line: 'chive-viz-category-trend',
+	tin: 'chive-viz-category-spatial',
 };

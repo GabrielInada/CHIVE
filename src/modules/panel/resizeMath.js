@@ -1,3 +1,5 @@
+import { isValidHexColor } from '../../utils/colorUtils.js';
+
 export function clampPercent(value, min = 20, max = 80) {
 	const n = Number(value);
 	if (!Number.isFinite(n)) return min;
@@ -6,7 +8,7 @@ export function clampPercent(value, min = 20, max = 80) {
 
 export function normalizeHexColor(color, fallback = '#5d645d') {
 	const value = String(color || '').trim();
-	return /^#[0-9a-fA-F]{6}$/.test(value) ? value : fallback;
+	return isValidHexColor(value) ? value : fallback;
 }
 
 export function computeDynamicMinHeight(templateId, proportions) {

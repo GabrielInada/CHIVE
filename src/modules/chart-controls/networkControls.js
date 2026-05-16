@@ -293,3 +293,15 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 
 	setupTextInputListener('viz-input-network-title', 'customTitle', dataset, 'network', onConfigChanged);
 }
+
+export function computeDefaults(dataset, ctx) {
+	const currentSource = dataset.configGraficos?.network?.source;
+	const currentTarget = dataset.configGraficos?.network?.target;
+	const sourcePadrao = ctx.todasColunas.includes(currentSource)
+		? currentSource
+		: (ctx.todasColunas[0] || null);
+	const targetPadrao = ctx.todasColunas.includes(currentTarget)
+		? currentTarget
+		: (ctx.todasColunas[1] || ctx.todasColunas[0] || null);
+	return { source: sourcePadrao, target: targetPadrao };
+}

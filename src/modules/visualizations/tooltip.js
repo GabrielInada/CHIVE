@@ -177,6 +177,20 @@ export function isTooltipPinned() {
 	return ensureTooltip().classList.contains(PINNED_CLASS);
 }
 
+// Builds a single "label: value" row used inside chart tooltip bodies. Every
+// visualization renders these rows identically (<div><strong>{label}:</strong>
+// {value}</div>), so the construction lives here instead of being duplicated
+// per chart. Use textContent / append for both label and value to keep XSS
+// prevention semantics.
+export function createTooltipLine(label, value) {
+	const row = document.createElement('div');
+	const strong = document.createElement('strong');
+	strong.textContent = `${label}:`;
+	row.appendChild(strong);
+	row.append(` ${value}`);
+	return row;
+}
+
 export function createTooltipFilterAction({ label, onClick }) {
 	return createTooltipAction({ label, onClick });
 }

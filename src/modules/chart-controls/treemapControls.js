@@ -312,3 +312,12 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	});
 }
 
+export function computeDefaults(dataset, ctx) {
+	const current = dataset.configGraficos?.treemap?.category;
+	return {
+		category: ctx.baseCategoricalOrAll.includes(current)
+			? current
+			: (ctx.baseCategoricalOrAll[0] || null),
+	};
+}
+

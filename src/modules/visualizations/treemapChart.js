@@ -3,14 +3,16 @@ import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, TREEMAP_CHART } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
+import { formatNumber, isNullish, clamp } from '../../utils/formatters.js';
+import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
+import { isValidHexColor } from '../../utils/colorUtils.js';
 
 const COLOR_PALETTE = {
 	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
@@ -20,10 +22,6 @@ const COLOR_PALETTE = {
 
 function getSchemeColors(schemeName) {
 	return COLOR_PALETTE[schemeName] || COLOR_PALETTE['Bold'];
-}
-
-function clamp(value, min, max) {
-	return Math.min(Math.max(value, min), max);
 }
 
 function truncate(text, maxLen) {
@@ -47,7 +45,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 		: 380;
 	const colorMode = opcoes.colorMode || 'scheme';
 	const colorScheme = opcoes.colorScheme || 'Bold';
-	const uniformColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.color || '').trim())
+	const uniformColor = isValidHexColor(String(opcoes.color || '').trim())
 		? String(opcoes.color).trim()
 		: CHART_COLORS.treemap;
 	const locale = opcoes.locale || undefined;
@@ -72,7 +70,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 	const contador = new Map();
 	dados.forEach(linha => {
 		const valorBruto = linha[colunaCategoria];
-		const categoria = valorBruto === null || valorBruto === undefined || valorBruto === ''
+		const categoria = isNullish(valorBruto) || valorBruto === ''
 			? '—'
 			: String(valorBruto);
 		if (measureMode === 'sum') {
@@ -88,7 +86,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 
 	let entradas = Array.from(contador.entries())
 		.filter(([, v]) => v > 0)
-		.sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])));
+		.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]));
 
 	if (topN > 0) entradas = entradas.slice(0, topN);
 	if (entradas.length === 0) return { ok: false };
@@ -160,18 +158,9 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 		const wrapper = document.createElement('div');
 		const valorLabel = measureMode === 'sum' ? labels.soma : labels.contagem;
 
-		const createLine = (rotulo, valor) => {
-			const linha = document.createElement('div');
-			const strong = document.createElement('strong');
-			strong.textContent = `${rotulo}:`;
-			linha.appendChild(strong);
-			linha.append(` ${valor}`);
-			return linha;
-		};
-
-		wrapper.appendChild(createLine(labels.categoria, String(d.data.name)));
-		wrapper.appendChild(createLine(valorLabel, formatNumber(d.data.value, locale)));
-		wrapper.appendChild(createLine(labels.percentual, `${pct.toFixed(1)}%`));
+		wrapper.appendChild(createTooltipLine(labels.categoria, String(d.data.name)));
+		wrapper.appendChild(createTooltipLine(valorLabel, formatNumber(d.data.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.percentual, `${pct.toFixed(1)}%`));
 		return wrapper;
 	};
 

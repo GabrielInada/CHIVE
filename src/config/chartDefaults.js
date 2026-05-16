@@ -1,4 +1,4 @@
-import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, LINE_CHART, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TREEMAP_CHART } from './charts.js';
+import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, LINE_CHART, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TIN_CHART, TREEMAP_CHART } from './charts.js';
 import { normalizeGlobalFilter, createEmptyGlobalFilter } from '../utils/globalFilter.js';
 
 export function createDefaultChartConfig() {
@@ -36,6 +36,10 @@ export function createDefaultChartConfig() {
 			yScale: SCATTER_PLOT.defaultScale,
 			radius: SCATTER_PLOT.defaultRadius,
 			opacity: SCATTER_PLOT.defaultOpacity,
+			sizeMode: 'uniform',
+			sizeField: null,
+			sizeMin: 2,
+			sizeMax: 12,
 			categoricalPairMode: 'jitter',
 			color: CHART_COLORS.scatter,
 			colorMode: 'uniform',
@@ -143,6 +147,29 @@ export function createDefaultChartConfig() {
 			showXAxisLabel: true,
 			showYAxisLabel: true,
 		},
+		tin: {
+			enabled: false,
+			expanded: false,
+			x: null,
+			y: null,
+			z: null,
+			customTitle: '',
+			chartHeight: 460,
+			subdivisionDepth: TIN_CHART.defaultSubdivisionDepth,
+			gradientMinColor: CHART_COLORS.tin,
+			gradientMaxColor: '#ffffff',
+			gradientDistribution: 'value',
+			colorScheme: 'Colorblind-Safe',
+			showEdges: TIN_CHART.defaultShowEdges,
+			edgeColor: TIN_CHART.defaultEdgeColor,
+			showPoints: TIN_CHART.defaultShowPoints,
+			pointRadius: TIN_CHART.defaultPointRadius,
+			showZLabels: TIN_CHART.defaultShowZLabels,
+			showHull: TIN_CHART.defaultShowHull,
+			hullColor: TIN_CHART.defaultHullColor,
+			showXAxisLabel: true,
+			showYAxisLabel: true,
+		},
 	};
 }
 
@@ -195,6 +222,10 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 		line: {
 			...defaults.line,
 			...(config.line || {}),
+		},
+		tin: {
+			...defaults.tin,
+			...(config.tin || {}),
 		},
 	};
 }

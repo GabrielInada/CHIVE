@@ -8,6 +8,10 @@ export function isEmptyValue(value) {
 	return value === null || value === undefined || String(value).trim() === '';
 }
 
+export function clamp(value, min, max) {
+	return Math.min(Math.max(value, min), max);
+}
+
 /**
  * Escape HTML special characters to prevent injection
  * @param {*} text - Value to escape

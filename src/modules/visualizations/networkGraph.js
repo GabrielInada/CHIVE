@@ -12,6 +12,7 @@ import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
 	createTooltipActionGroup,
+	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	repositionPinnedTooltip,
@@ -21,7 +22,7 @@ import {
 import { toCategoryToken } from '../../utils/chartFilters.js';
 import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
-import { interpolateColor } from '../../utils/colorUtils.js';
+import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
@@ -93,10 +94,10 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		: NETWORK_GRAPH.defaultAlphaDecay;
 	const showLegend = opcoes.showLegend !== false;
 	const showNodeLabels = opcoes.showNodeLabels === true;
-	const sourceNodeColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.sourceNodeColor || '').trim())
+	const sourceNodeColor = isValidHexColor(String(opcoes.sourceNodeColor || '').trim())
 		? String(opcoes.sourceNodeColor).trim()
 		: '#e3743d';
-	const targetNodeColor = /^#[0-9a-fA-F]{6}$/.test(String(opcoes.targetNodeColor || '').trim())
+	const targetNodeColor = isValidHexColor(String(opcoes.targetNodeColor || '').trim())
 		? String(opcoes.targetNodeColor).trim()
 		: '#6b94c9';
 	const edgeColorMode = opcoes.edgeColorMode === 'uniform' ? 'uniform' : 'gradient';
@@ -178,17 +179,12 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 
 	const buildNodeTooltipContent = (nodeData) => {
 		const content = document.createElement('div');
-		const line = document.createElement('div');
-		const strong = document.createElement('strong');
-		strong.textContent = `${labels.node}:`;
-		line.appendChild(strong);
-		line.append(` ${nodeData.id}`);
-		content.appendChild(line);
+		content.appendChild(createTooltipLine(labels.node, nodeData.id));
 		return content;
 	};
 
 	const buildNodeActionSet = (column, rawValue, headingLabel) => {
-		if (!column || rawValue === null || rawValue === undefined || rawValue === '') return null;
+		if (!column || isNullish(rawValue) || rawValue === '') return null;
 		const token = toCategoryToken(rawValue);
 		const state = typeof filterCallbacks.getTokenFilterState === 'function'
 			? filterCallbacks.getTokenFilterState(column, token)
@@ -268,17 +264,9 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		.attr('stroke-width', d => Math.max(1, Math.sqrt(Number(d.value) || 1)))
 		.on('mouseenter', (event, linkData) => {
 			const content = document.createElement('div');
-			const makeLine = (label, value) => {
-				const row = document.createElement('div');
-				const strong = document.createElement('strong');
-				strong.textContent = `${label}:`;
-				row.appendChild(strong);
-				row.append(` ${value}`);
-				return row;
-			};
-			content.appendChild(makeLine(labels.source, String(linkData.source.id || linkData.source)));
-			content.appendChild(makeLine(labels.target, String(linkData.target.id || linkData.target)));
-			content.appendChild(makeLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale)));
+			content.appendChild(createTooltipLine(labels.source, String(linkData.source.id || linkData.source)));
+			content.appendChild(createTooltipLine(labels.target, String(linkData.target.id || linkData.target)));
+			content.appendChild(createTooltipLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale)));
 			showChartTooltip(content, event.pageX, event.pageY);
 		})
 		.on('mousemove', event => {

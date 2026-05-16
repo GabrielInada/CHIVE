@@ -10,6 +10,7 @@ vi.mock('../../../src/modules/chart-controls/previews.js', () => ({
 	PREVIEW_NETWORK_SVG: '<svg data-prev="network" />',
 	PREVIEW_TREEMAP_SVG: '<svg data-prev="treemap" />',
 	PREVIEW_LINE_SVG: '<svg data-prev="line" />',
+	PREVIEW_TIN_SVG: '<svg data-prev="tin" />',
 }));
 
 import { openChartTypePickerDialog } from '../../../src/components/results/chartTypePickerDialog.js';

@@ -121,122 +121,13 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 	stack.className = 'painel-block-stack';
 
 	blocks.forEach((block, index) => {
-		const layout = getTemplateForBlock(block);
-		const blockEl = document.createElement('section');
-		blockEl.className = 'painel-block';
-		blockEl.dataset.panelBlockId = block.id;
-
-		const header = createBlockHeader({
-			blockId: block.id,
+		const { blockEl, gridDiv } = createBlockElement(block, {
 			index,
 			totalBlocks: blocks.length,
-			onMoveUp: () => movePanelBlock(block.id, index - 1),
-			onMoveDown: () => movePanelBlock(block.id, index + 1),
-			onRemove: () => removePanelBlock(block.id),
+			desktopDnd,
+			renderCanvasPanelFn,
 		});
-
-		const templateSelect = createBlockTemplateSelect({
-			blockId: block.id,
-			templateId: block.templateId,
-			layouts: LAYOUTS_PAINEL,
-			translate: t,
-			onTemplateChange: e => {
-				setPanelBlockTemplate(block.id, e.target.value);
-				fillLayoutSelect();
-				renderCanvasPanelFn();
-			},
-		});
-
-		const gridDiv = document.createElement('div');
-		gridDiv.className = `painel-layout ${layout.classe}`;
-		gridDiv.dataset.panelLayoutBlock = block.id;
-		const borderColor = normalizeHexColor(block.borderColor);
-		if (block.borderEnabled) {
-			gridDiv.classList.add('slot-borders-enabled');
-			gridDiv.style.setProperty('--panel-slot-border-color', borderColor);
-		}
-		applyBlockProportions(gridDiv, block);
-		renderGuidedResizeHandles(gridDiv, block, renderCanvasPanelFn);
-
-		const borderControls = createBlockBorderControls({
-			blockId: block.id,
-			borderEnabled: block.borderEnabled,
-			borderColor: block.borderColor,
-			translate: t,
-			normalizeHexColor,
-			onToggleBorder: enabled => {
-				updatePanelBlockBorder(block.id, { enabled });
-				renderCanvasPanelFn();
-			},
-			onPreviewColor: previewColor => {
-				gridDiv.style.setProperty('--panel-slot-border-color', previewColor);
-				gridDiv.querySelectorAll('[data-panel-slot]').forEach(slotEl => {
-					slotEl.dataset.panelBorderColor = previewColor;
-				});
-			},
-			onChangeColor: color => {
-				updatePanelBlockBorder(block.id, { color });
-				renderCanvasPanelFn();
-			},
-		});
-
-		layout.slots.forEach(slotId => {
-			const chart = getChartSnapshot(block.slots?.[slotId]);
-			const slot = createPanelSlotElement({
-				slotId,
-				blockId: block.id,
-				chart,
-				borderEnabled: Boolean(block.borderEnabled),
-				borderColor,
-				desktopDnd,
-				translate: t,
-				onClearSlot: () => {
-					assignChartToPanelBlockSlot(block.id, slotId, null);
-					renderCanvasPanelFn();
-				},
-				onDropData: ({ targetSlotId, targetBlockId, sourceSlotId, sourceBlockId, chartId }) => {
-					if (!chartId || !getChartSnapshot(chartId)) return;
-
-					if (sourceSlotId && sourceBlockId) {
-						if (sourceSlotId === targetSlotId && sourceBlockId === targetBlockId) return;
-
-						const stateBlocks = getPanelBlocks();
-						const targetBlock = stateBlocks.find(item => item.id === targetBlockId);
-						const targetChartId = targetBlock?.slots?.[targetSlotId] ?? null;
-
-						assignChartToPanelBlockSlot(targetBlockId, targetSlotId, chartId);
-						if (targetChartId !== null && targetChartId !== undefined) {
-							assignChartToPanelBlockSlot(sourceBlockId, sourceSlotId, targetChartId);
-						} else {
-							assignChartToPanelBlockSlot(sourceBlockId, sourceSlotId, null);
-						}
-					} else {
-						assignChartToPanelBlockSlot(targetBlockId, targetSlotId, chartId);
-					}
-
-					renderCanvasPanelFn();
-				},
-			});
-
-			gridDiv.appendChild(slot);
-		});
-
-		blockEl.appendChild(header);
-		blockEl.appendChild(templateSelect);
-		blockEl.appendChild(borderControls);
-		blockEl.appendChild(gridDiv);
-
-		const blockResizeHandle = document.createElement('button');
-		blockResizeHandle.type = 'button';
-		blockResizeHandle.className = 'painel-block-size-handle';
-		blockResizeHandle.dataset.panelBlockResize = block.id;
-		blockResizeHandle.setAttribute('aria-label', t('chive-panel-resize-block-height'));
-		blockResizeHandle.addEventListener('mousedown', event => {
-			event.preventDefault();
-			startBlockHeightResizeDrag(block.id, gridDiv, event.clientY, renderCanvasPanelFn);
-		});
-
-		blockEl.appendChild(blockResizeHandle);
+		attachBlockResizeListener(blockEl, block, gridDiv, renderCanvasPanelFn);
 		stack.appendChild(blockEl);
 	});
 
@@ -261,6 +152,132 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 		if (!svgContainer) return;
 		mountSlot(svgContainer, chart);
 	});
+}
+
+// Assembles a single panel block's <section> element with header, template
+// select, border controls, and the grid + slot children. Returns both the
+// block element and its grid so attachBlockResizeListener can wire to the grid
+// without a DOM query.
+function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanvasPanelFn }) {
+	const layout = getTemplateForBlock(block);
+	const blockEl = document.createElement('section');
+	blockEl.className = 'painel-block';
+	blockEl.dataset.panelBlockId = block.id;
+
+	const header = createBlockHeader({
+		blockId: block.id,
+		index,
+		totalBlocks,
+		onMoveUp: () => movePanelBlock(block.id, index - 1),
+		onMoveDown: () => movePanelBlock(block.id, index + 1),
+		onRemove: () => removePanelBlock(block.id),
+	});
+
+	const templateSelect = createBlockTemplateSelect({
+		blockId: block.id,
+		templateId: block.templateId,
+		layouts: LAYOUTS_PAINEL,
+		translate: t,
+		onTemplateChange: e => {
+			setPanelBlockTemplate(block.id, e.target.value);
+			fillLayoutSelect();
+			renderCanvasPanelFn();
+		},
+	});
+
+	const gridDiv = document.createElement('div');
+	gridDiv.className = `painel-layout ${layout.classe}`;
+	gridDiv.dataset.panelLayoutBlock = block.id;
+	const borderColor = normalizeHexColor(block.borderColor);
+	if (block.borderEnabled) {
+		gridDiv.classList.add('slot-borders-enabled');
+		gridDiv.style.setProperty('--panel-slot-border-color', borderColor);
+	}
+	applyBlockProportions(gridDiv, block);
+	renderGuidedResizeHandles(gridDiv, block, renderCanvasPanelFn);
+
+	const borderControls = createBlockBorderControls({
+		blockId: block.id,
+		borderEnabled: block.borderEnabled,
+		borderColor: block.borderColor,
+		translate: t,
+		normalizeHexColor,
+		onToggleBorder: enabled => {
+			updatePanelBlockBorder(block.id, { enabled });
+			renderCanvasPanelFn();
+		},
+		onPreviewColor: previewColor => {
+			gridDiv.style.setProperty('--panel-slot-border-color', previewColor);
+			gridDiv.querySelectorAll('[data-panel-slot]').forEach(slotEl => {
+				slotEl.dataset.panelBorderColor = previewColor;
+			});
+		},
+		onChangeColor: color => {
+			updatePanelBlockBorder(block.id, { color });
+			renderCanvasPanelFn();
+		},
+	});
+
+	layout.slots.forEach(slotId => {
+		const chart = getChartSnapshot(block.slots?.[slotId]);
+		const slot = createPanelSlotElement({
+			slotId,
+			blockId: block.id,
+			chart,
+			borderEnabled: Boolean(block.borderEnabled),
+			borderColor,
+			desktopDnd,
+			translate: t,
+			onClearSlot: () => {
+				assignChartToPanelBlockSlot(block.id, slotId, null);
+				renderCanvasPanelFn();
+			},
+			onDropData: ({ targetSlotId, targetBlockId, sourceSlotId, sourceBlockId, chartId }) => {
+				if (!chartId || !getChartSnapshot(chartId)) return;
+
+				if (sourceSlotId && sourceBlockId) {
+					if (sourceSlotId === targetSlotId && sourceBlockId === targetBlockId) return;
+
+					const stateBlocks = getPanelBlocks();
+					const targetBlock = stateBlocks.find(item => item.id === targetBlockId);
+					const targetChartId = targetBlock?.slots?.[targetSlotId] ?? null;
+
+					assignChartToPanelBlockSlot(targetBlockId, targetSlotId, chartId);
+					if (targetChartId !== null && targetChartId !== undefined) {
+						assignChartToPanelBlockSlot(sourceBlockId, sourceSlotId, targetChartId);
+					} else {
+						assignChartToPanelBlockSlot(sourceBlockId, sourceSlotId, null);
+					}
+				} else {
+					assignChartToPanelBlockSlot(targetBlockId, targetSlotId, chartId);
+				}
+
+				renderCanvasPanelFn();
+			},
+		});
+
+		gridDiv.appendChild(slot);
+	});
+
+	blockEl.appendChild(header);
+	blockEl.appendChild(templateSelect);
+	blockEl.appendChild(borderControls);
+	blockEl.appendChild(gridDiv);
+
+	return { blockEl, gridDiv };
+}
+
+function attachBlockResizeListener(blockEl, block, gridDiv, renderCanvasPanelFn) {
+	const handle = document.createElement('button');
+	handle.type = 'button';
+	handle.className = 'painel-block-size-handle';
+	handle.dataset.panelBlockResize = block.id;
+	handle.setAttribute('aria-label', t('chive-panel-resize-block-height'));
+	handle.addEventListener('mousedown', event => {
+		event.preventDefault();
+		startBlockHeightResizeDrag(block.id, gridDiv, event.clientY, renderCanvasPanelFn);
+	});
+	blockEl.appendChild(handle);
 }
 
 export function fillLayoutSelect() {
