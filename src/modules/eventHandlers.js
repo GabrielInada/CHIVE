@@ -239,6 +239,20 @@ const CHART_SNAPSHOT_BUILDERS = {
 			summary: `${t('chive-chart-control-line-x')}: ${x} · ${t('chive-chart-control-line-y')}: ${y}`,
 		};
 	},
+
+	tin: (config) => {
+		const tin = config.tin || {};
+		const x = tin.x || '-';
+		const y = tin.y || '-';
+		const z = tin.z || '-';
+		return {
+			type: 'tin',
+			x,
+			y,
+			z,
+			summary: `${t('chive-chart-control-tin-x')}: ${x} · ${t('chive-chart-control-tin-y')}: ${y} · ${t('chive-chart-control-tin-z')}: ${z}`,
+		};
+	},
 };
 
 function getChartSnapshotTitle(containerId, fallbackTitle) {
