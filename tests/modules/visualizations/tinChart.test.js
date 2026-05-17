@@ -207,6 +207,45 @@ describe('renderTinChart', () => {
 		expect(labels.length).toBeLessThanOrEqual(5);
 	});
 
+	it('emits one segment per step-mode level that cuts the triangle (step=5 on z=[0,0,10])', () => {
+		const container = document.getElementById('tin');
+		const rows = [
+			{ x: 0, y: 0, z: 0 },
+			{ x: 10, y: 0, z: 0 },
+			{ x: 5, y: 10, z: 10 },
+		];
+		// Levels with step=5 from zMin=0 to zMax=10: [0, 5, 10]. Only level 5 cuts;
+		// levels 0 and 10 are degenerate (filtered).
+		const result = renderTinChart(container, rows, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineMode: 'step',
+			isolineStep: 5,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		const lines = container.querySelectorAll('.tin-isolines line');
+		expect(lines.length).toBe(1);
+	});
+
+	it('caps step-mode at maxIsolineLevels when step is extremely small', () => {
+		const container = document.getElementById('tin');
+		// VALID_ROWS z range is 1..7; with step 0.001 uncapped levels would be ~6000.
+		// The 200-level cap bounds total segments at 200 * triangle_count.
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineMode: 'step',
+			isolineStep: 0.001,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		const lines = container.querySelectorAll('.tin-isolines line');
+		expect(lines.length).toBeLessThanOrEqual(200 * result.triangles);
+	});
+
 	it('does not render a threshold contour when showThreshold is false', () => {
 		const container = document.getElementById('tin');
 		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {

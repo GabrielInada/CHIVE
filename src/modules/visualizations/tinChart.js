@@ -128,10 +128,15 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 	const showHull = opcoes.showHull === true;
 	const hullColor = normalizeColor(opcoes.hullColor, TIN_CHART.defaultHullColor);
 	const showIsolines = opcoes.showIsolines === true;
+	const isolineMode = opcoes.isolineMode === 'step' ? 'step' : 'count';
 	const isolineCountRaw = Math.round(Number(opcoes.isolineCount));
 	const isolineCount = Number.isFinite(isolineCountRaw)
 		? Math.max(TIN_CHART.minIsolineCount, Math.min(TIN_CHART.maxIsolineCount, isolineCountRaw))
 		: TIN_CHART.defaultIsolineCount;
+	const isolineStepRaw = Number(opcoes.isolineStep);
+	const isolineStep = Number.isFinite(isolineStepRaw) && isolineStepRaw > 0
+		? isolineStepRaw
+		: TIN_CHART.defaultIsolineStep;
 	const isolineColor = normalizeColor(opcoes.isolineColor, TIN_CHART.defaultIsolineColor);
 	const isolineWidthRaw = Number(opcoes.isolineWidth);
 	const isolineWidth = Number.isFinite(isolineWidthRaw)
@@ -300,7 +305,17 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 
 	if (showIsolines && zMin !== zMax) {
 		const isolinesGroup = grupo.append('g').attr('class', 'tin-isolines');
-		const levels = scaleLinear().domain([zMin, zMax]).nice().ticks(isolineCount);
+		let levels;
+		if (isolineMode === 'step') {
+			levels = [];
+			let level = Math.ceil(zMin / isolineStep) * isolineStep;
+			while (level <= zMax && levels.length < TIN_CHART.maxIsolineLevels) {
+				levels.push(level);
+				level += isolineStep;
+			}
+		} else {
+			levels = scaleLinear().domain([zMin, zMax]).nice().ticks(isolineCount);
+		}
 		let labelGroup = null;
 		levels.forEach(level => {
 			const { segments, longest } = computeIsolineSegments(triangleVerts, level);

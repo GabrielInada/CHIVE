@@ -229,6 +229,17 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		config.showIsolines,
 		disabled,
 	));
+	const isolineMode = config.isolineMode === 'step' ? 'step' : 'count';
+	overlayControls.push(createSelectControl(
+		'viz-select-tin-isoline-mode',
+		t('chive-chart-control-tin-isoline-mode'),
+		[
+			{ value: 'count', label: t('chive-chart-control-tin-isoline-mode-count') },
+			{ value: 'step', label: t('chive-chart-control-tin-isoline-mode-step') },
+		],
+		isolineMode,
+		disabled || !config.showIsolines,
+	));
 	overlayControls.push(createSliderControl(
 		'viz-slider-tin-isoline-count',
 		t('chive-chart-control-tin-isoline-count'),
@@ -236,7 +247,15 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		TIN_CHART.minIsolineCount,
 		TIN_CHART.maxIsolineCount,
 		1,
-		disabled || !config.showIsolines,
+		disabled || !config.showIsolines || isolineMode === 'step',
+	));
+	overlayControls.push(createNumberInputControl(
+		'viz-input-tin-isoline-step',
+		t('chive-chart-control-tin-isoline-step'),
+		Number.isFinite(Number(config.isolineStep)) && Number(config.isolineStep) > 0
+			? Number(config.isolineStep)
+			: TIN_CHART.defaultIsolineStep,
+		{ min: 0, step: 'any', disabled: disabled || !config.showIsolines || isolineMode === 'count' },
 	));
 	const isolineColorDiv = document.createElement('div');
 	isolineColorDiv.className = 'chart-controle';
@@ -366,6 +385,11 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 			key: 'fillMode',
 			transform: v => (v === 'flat' ? 'flat' : 'smooth'),
 		},
+		{
+			id: 'viz-select-tin-isoline-mode',
+			key: 'isolineMode',
+			transform: v => (v === 'step' ? 'step' : 'count'),
+		},
 	], dataset, 'tin', onConfigChanged);
 
 	setupCheckboxListeners([
@@ -389,6 +413,7 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 	setupSliderListener('viz-slider-tin-isoline-label-size', 'isolineLabelSize', dataset, 'tin', onConfigChanged);
 	setupSliderListener('viz-slider-tin-threshold-width', 'thresholdWidth', dataset, 'tin', onConfigChanged);
 	setupNumberInputListener('viz-input-tin-threshold-value', 'thresholdValue', TIN_CHART.defaultThresholdValue, dataset, 'tin', onConfigChanged);
+	setupNumberInputListener('viz-input-tin-isoline-step', 'isolineStep', TIN_CHART.defaultIsolineStep, dataset, 'tin', onConfigChanged);
 
 	setupColorInputListener('viz-input-tin-gradient-min', 'gradientMinColor', CHART_COLORS.tin, dataset, 'tin', onConfigChanged);
 	setupColorInputListener('viz-input-tin-gradient-max', 'gradientMaxColor', '#ffffff', dataset, 'tin', onConfigChanged);
