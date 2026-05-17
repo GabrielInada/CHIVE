@@ -49,6 +49,10 @@ function generateId() {
 	return `ingest-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function isFiniteNumber(value) {
+	return typeof value === 'number' && Number.isFinite(value);
+}
+
 /**
  * Run the ingest pipeline in a worker.
  *
@@ -93,13 +97,25 @@ export async function ingestFile(input, config = {}) {
 			if (message.id !== id) return;
 
 			if (message.type === 'progress') {
+				const stageOk = typeof message.stage === 'string' && message.stage.length > 0;
+				const percentOk = isFiniteNumber(message.percent) && message.percent >= 0 && message.percent <= 100;
+				if (!stageOk || !percentOk) {
+					console.warn('[chive:ingest] skipping malformed progress message', message);
+					return;
+				}
 				if (typeof onProgress === 'function') {
-					onProgress({ stage: message.stage, percent: message.percent, label: message.label });
+					const label = typeof message.label === 'string' ? message.label : undefined;
+					onProgress({ stage: message.stage, percent: message.percent, label });
 				}
 				return;
 			}
 
 			if (message.type === 'done') {
+				if (!message.result || typeof message.result !== 'object' || Array.isArray(message.result)) {
+					finalize();
+					resolve(fail('ingest-malformed-result'));
+					return;
+				}
 				finalize();
 				resolve(ok({ value: message.result }));
 				return;
