@@ -268,6 +268,7 @@ function renderTin(container, spec) {
 		chartHeight: config.chartHeight,
 		fillMode: config.fillMode,
 		subdivisionDepth: config.subdivisionDepth,
+		colorRamp: config.colorRamp,
 		gradientMinColor: config.gradientMinColor,
 		gradientMaxColor: config.gradientMaxColor,
 		gradientDistribution: config.gradientDistribution,

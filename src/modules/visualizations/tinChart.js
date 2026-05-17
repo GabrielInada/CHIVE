@@ -1,5 +1,19 @@
-import { Delaunay, axisBottom, axisLeft, extent, scaleLinear, select } from 'd3';
-import { CHART_COLORS, CHART_DIMENSIONS, TIN_CHART } from '../../config/charts.js';
+import {
+	Delaunay,
+	axisBottom,
+	axisLeft,
+	extent,
+	interpolateGreys,
+	interpolateInferno,
+	interpolateMagma,
+	interpolatePlasma,
+	interpolateRgbBasis,
+	interpolateTurbo,
+	interpolateViridis,
+	scaleLinear,
+	select,
+} from 'd3';
+import { CHART_COLORS, CHART_DIMENSIONS, TIN_CHART, TIN_COLOR_RAMPS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
 import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
@@ -8,6 +22,32 @@ import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip
 function normalizeColor(value, fallback) {
 	const v = String(value || '').trim();
 	return isValidHexColor(v) ? v : fallback;
+}
+
+// d3 ships sequential interpolators for the common scientific ramps. Terrain
+// isn't built in, so we synthesize one with interpolateRgbBasis through a
+// canonical low-to-high-elevation gradient (deep water → shore → grass →
+// foothills → mountain → snow). Keys must match TIN_COLOR_RAMPS minus 'custom'.
+const D3_RAMP_BY_NAME = {
+	viridis: interpolateViridis,
+	plasma: interpolatePlasma,
+	magma: interpolateMagma,
+	inferno: interpolateInferno,
+	turbo: interpolateTurbo,
+	grays: interpolateGreys,
+	terrain: interpolateRgbBasis([
+		'#3b6797',
+		'#5e9cba',
+		'#92c0a8',
+		'#c8d9a5',
+		'#b1a877',
+		'#8a6f4a',
+		'#ffffff',
+	]),
+};
+
+function resolveColorRamp(rampName) {
+	return TIN_COLOR_RAMPS.includes(rampName) ? rampName : 'custom';
 }
 
 function clampDepth(value) {
@@ -118,6 +158,7 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 	const gradientMin = normalizeColor(opcoes.gradientMinColor, CHART_COLORS.tin);
 	const gradientMax = normalizeColor(opcoes.gradientMaxColor, '#ffffff');
 	const gradientDistribution = opcoes.gradientDistribution === 'rank' ? 'rank' : 'value';
+	const colorRamp = resolveColorRamp(opcoes.colorRamp);
 	const showEdges = opcoes.showEdges !== false;
 	const edgeColor = normalizeColor(opcoes.edgeColor, TIN_CHART.defaultEdgeColor);
 	const showPoints = opcoes.showPoints !== false;
@@ -232,6 +273,11 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 		.nice()
 		.range([alturaInterna, 0]);
 
+	const rampInterp = colorRamp === 'custom' ? null : D3_RAMP_BY_NAME[colorRamp];
+	const sampleRamp = rampInterp
+		? t => rampInterp(Math.max(0, Math.min(1, t)))
+		: t => interpolateColor(gradientMin, gradientMax, Math.max(0, Math.min(1, t)));
+
 	let colorAt;
 	if (gradientDistribution === 'rank') {
 		const sortedZ = [...pontos.map(p => p.z)].sort((a, b) => a - b);
@@ -245,10 +291,10 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 			}
 			return lo / Math.max(sortedZ.length - 1, 1);
 		};
-		colorAt = z => interpolateColor(gradientMin, gradientMax, Math.max(0, Math.min(1, rankFor(z))));
+		colorAt = z => sampleRamp(rankFor(z));
 	} else {
 		const zDelta = zMax - zMin || 1;
-		colorAt = z => interpolateColor(gradientMin, gradientMax, (z - zMin) / zDelta);
+		colorAt = z => sampleRamp((z - zMin) / zDelta);
 	}
 
 	// In screen coordinates so the Delaunay triangulation matches what the
@@ -520,7 +566,7 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 			.attr('y', 0)
 			.attr('width', (t1 - t0) * legendWidth + 0.5)
 			.attr('height', legendHeight)
-			.attr('fill', interpolateColor(gradientMin, gradientMax, t0));
+			.attr('fill', sampleRamp(t0));
 	}
 	legend.append('text')
 		.attr('x', 0)
