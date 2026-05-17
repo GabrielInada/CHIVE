@@ -83,6 +83,8 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 - Renderers are stateless. They read via getters and never mutate.
 - `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`stateSync.js`, `persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js` — use a typed subscription.
 
+**Renderer statelessness is enforced by lint.** ESLint (`npm run lint`) restricts files under `src/components/` and `src/features/` to read-only imports from `modules/appState.js` — the `get*` functions, `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing any write function from those directories is an error. If you need a write from a renderer, you're writing it in the wrong layer — route it through a chart-controls listener or `eventHandlers.js`, both outside the linted scope. When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
+
 ## Where do I put new code?
 
 | If you're adding… | Put it in | Notes |
