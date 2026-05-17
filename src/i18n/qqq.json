@@ -63,6 +63,7 @@
 	"chive-preset-load": "Primary button label in sample datasets dialog that confirms loading selected dataset.",
 	"chive-preset-cancel": "Cancel button label in sample datasets dialog.",
 	"chive-preset-load-success": "Feedback shown after loading a sample dataset. $1 = localized dataset name.",
+	"chive-preset-fetch-timeout": "Failure message shown when fetching a remote preset dataset exceeds the 10s timeout. $1 = preset display name.",
 	"chive-preset-generated-size": "Pseudo-size label used for generated sample datasets in file list metadata. $1 = row count.",
 	"chive-preset-card-meta": "Metadata line in each sample dataset card. $1 = row count, $2 = column count.",
 	"chive-preset-source-label": "Label prefix displayed before source information in each sample dataset card.",

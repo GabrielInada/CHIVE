@@ -1,6 +1,7 @@
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
+import { normalizeActiveDatasetConfig } from '../appState.js';
 import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createSelectControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -394,11 +395,17 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 	const inputScatterColor = document.getElementById('viz-input-scatter-color');
 	if (inputScatterColor) {
 		inputScatterColor.addEventListener('input', () => {
-			const scatterConfig = dataset.configGraficos.scatter;
-			scatterConfig.colorMode = 'uniform';
-			scatterConfig.colorField = null;
-			scatterConfig.colorFieldType = null;
-			scatterConfig.color = normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter);
+			const next = normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter);
+			normalizeActiveDatasetConfig(prev => ({
+				...prev,
+				scatter: {
+					...prev.scatter,
+					colorMode: 'uniform',
+					colorField: null,
+					colorFieldType: null,
+					color: next,
+				},
+			}));
 			triggerLiveRender();
 		});
 		inputScatterColor.addEventListener('change', () => {

@@ -83,6 +83,12 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 - Renderers are stateless. They read via getters and never mutate.
 - `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`stateSync.js`, `persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js` — use a typed subscription.
 
+**Renderer statelessness is enforced by lint.** ESLint (`npm run lint`) restricts files under `src/components/` and `src/features/` to read-only imports from `modules/appState.js` — the `get*` functions, `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing any write function from those directories is an error. If you need a write from a renderer, you're writing it in the wrong layer — route it through a chart-controls listener or `eventHandlers.js`, both outside the linted scope. When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
+
+**Inline mutation of facade getter returns is blocked across all of `src/`.** A second lint rule (`no-restricted-syntax` in `eslint.config.js`) catches patterns like `getActiveDataset().X = y` and `getActiveDataset().X.Y = z` at depths 1–3 against the mutable-ref getters (`getActiveDataset`, `getAllDatasets`, `getPanelCharts`, `getChartSnapshot`, `getPanelSlots`, `getPanelBlocks`, `getExpandedCharts`, `getState`). The rule has one known blind spot: aliased mutations (`const ds = getActiveDataset(); ds.X = y`) pass static analysis. Don't write that pattern — go through a facade write method. When a new mutable-ref getter is added to `appState.js`, update `FACADE_MUTABLE_GETTERS` in `eslint.config.js`.
+
+**CI runs lint + tests on every push and PR** (`.github/workflows/lint-and-test.yml`, targeting `main` and `develop`). Even if you forget `npm run lint` locally, the merge gate catches it.
+
 ## Where do I put new code?
 
 | If you're adding… | Put it in | Notes |

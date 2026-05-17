@@ -88,6 +88,7 @@
 	"chive-preset-load": "Carregar dataset",
 	"chive-preset-cancel": "Cancelar",
 	"chive-preset-load-success": "Dataset de exemplo \"$1\" carregado.",
+	"chive-preset-fetch-timeout": "Dataset de exemplo \"$1\" demorou demais para carregar. O servidor pode estar lento ou indisponível. Tente novamente mais tarde.",
 	"chive-preset-generated-size": "Exemplo · $1 linhas",
 	"chive-preset-card-meta": "$1 linhas · $2 colunas",
 	"chive-preset-source-label": "Fonte:",

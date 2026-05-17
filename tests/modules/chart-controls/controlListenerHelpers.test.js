@@ -4,10 +4,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	updateActiveDatasetChartConfig: vi.fn(),
+	normalizeActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/modules/stateSync.js', () => ({
 	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
+}));
+
+vi.mock('../../../src/modules/appState.js', () => ({
+	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
 }));
 
 import { setupExpandListener, setupColorInputListener } from '../../../src/modules/chart-controls/controlListenerHelpers.js';
@@ -68,7 +73,7 @@ describe('controlListenerHelpers setupColorInputListener', () => {
 		};
 	}
 
-	it('mutates config in-place and calls live-render on input event without committing state', () => {
+	it('routes input writes through the non-emitting facade and triggers a chart-only re-render', () => {
 		const dataset = makeDataset('#000000');
 		const liveRender = vi.fn();
 		setLiveRenderCallback(liveRender);
@@ -78,12 +83,21 @@ describe('controlListenerHelpers setupColorInputListener', () => {
 		input.value = '#ff0000';
 		input.dispatchEvent(new Event('input'));
 
-		expect(dataset.configGraficos.bar.color.toLowerCase()).toBe('#ff0000');
-		expect(liveRender).toHaveBeenCalledTimes(1);
+		// No emitting facade call (would rebuild the sidebar and disrupt the picker).
 		expect(mocks.updateActiveDatasetChartConfig).not.toHaveBeenCalled();
+
+		// Non-emitting facade write happened with a normalizer that produces the new color.
+		expect(mocks.normalizeActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		const normalizer = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
+		const result = normalizer({ bar: { color: '#000000', other: 'keep' } });
+		expect(result.bar.color.toLowerCase()).toBe('#ff0000');
+		expect(result.bar.other).toBe('keep');
+
+		// Chart-only re-render fired so the user sees the new color live.
+		expect(liveRender).toHaveBeenCalledTimes(1);
 	});
 
-	it('commits via canonical state path on change event', () => {
+	it('commits via the emitting facade on the change event', () => {
 		const dataset = makeDataset('#000000');
 		setupColorInputListener('viz-input-bar-color', 'color', '#abcdef', dataset, 'bar');
 
@@ -96,16 +110,18 @@ describe('controlListenerHelpers setupColorInputListener', () => {
 		expect(callArg.bar.color.toLowerCase()).toBe('#00ff00');
 	});
 
-	it('falls back to default color when the input value is invalid', () => {
+	it('falls back to the default color when the input value is not a valid hex', () => {
 		const dataset = makeDataset('#000000');
 		setLiveRenderCallback(vi.fn());
 		setupColorInputListener('viz-input-bar-color', 'color', '#abcdef', dataset, 'bar');
 
 		const input = document.getElementById('viz-input-bar-color');
-		// jsdom forces a sanitized value, but we can override directly to simulate a bad value
+		// jsdom sanitizes the value automatically, but we can override directly.
 		Object.defineProperty(input, 'value', { value: 'not-a-color', configurable: true });
 		input.dispatchEvent(new Event('input'));
 
-		expect(dataset.configGraficos.bar.color).toBe('#abcdef');
+		const normalizer = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
+		const result = normalizer({ bar: { color: '#000000' } });
+		expect(result.bar.color).toBe('#abcdef');
 	});
 });

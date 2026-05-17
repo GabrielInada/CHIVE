@@ -113,6 +113,42 @@ function writeUiPrefs(ui) {
 	}
 }
 
+function isPlainObject(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+// Drop chart-spec entries that aren't plain objects — renderers read sub-keys
+// (.color, .category, …) and would explode on a string/number/array. Missing
+// keys are absorbed downstream by mergeChartConfigWithDefaults.
+function sanitizeConfigGraficos(configGraficos) {
+	if (!isPlainObject(configGraficos)) return {};
+	const sanitized = {};
+	for (const [chartKey, chartConfig] of Object.entries(configGraficos)) {
+		if (isPlainObject(chartConfig)) {
+			sanitized[chartKey] = chartConfig;
+		}
+	}
+	return sanitized;
+}
+
+// Drop records the renderers can't trust. Returns a (shallow) sanitized copy
+// or null when the record is unrecoverable.
+function validateDatasetRecord(record) {
+	if (!isPlainObject(record)) return null;
+	if (!record.id) return null;
+	if (typeof record.nome !== 'string') return null;
+	if (!Array.isArray(record.dados)) return null;
+	if (!Array.isArray(record.colunas)) return null;
+	const colunasOk = record.colunas.every(
+		col => isPlainObject(col) && typeof col.nome === 'string' && typeof col.tipo === 'string'
+	);
+	if (!colunasOk) return null;
+	return {
+		...record,
+		configGraficos: sanitizeConfigGraficos(record.configGraficos),
+	};
+}
+
 /**
  * Restore persisted state into appState. No-op on first visit.
  * @param {Object} hooks
@@ -144,6 +180,12 @@ export async function hydrateState({ replaceAllState, transformPanel } = {}) {
 		return;
 	}
 	db.close();
+
+	const rawCount = datasets.length;
+	datasets = datasets.map(validateDatasetRecord).filter(Boolean);
+	if (datasets.length < rawCount) {
+		console.warn(`[chive:persist] dropped ${rawCount - datasets.length} malformed dataset record(s) at hydrate`);
+	}
 
 	const ui = readUiPrefs();
 	if (datasets.length === 0 && !panelRecord && !ui) return;

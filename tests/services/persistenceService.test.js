@@ -153,6 +153,121 @@ describe('persistenceService', () => {
 		});
 	});
 
+	describe('hydrateState() snapshot validation', () => {
+		// The validator is the trust boundary between IDB and the renderers.
+		// persistState writes through writeAll without shape checks, so each
+		// test persists a deliberately malformed record alongside a good one
+		// and asserts that only the good one reaches replaceAllState.
+
+		function goodRecord(id = 'good') {
+			return {
+				id,
+				nome: `${id}.csv`,
+				dados: [{ x: 1 }],
+				colunas: [{ nome: 'x', tipo: 'numero' }],
+				colunasSelecionadas: ['x'],
+				configGraficos: {},
+			};
+		}
+
+		async function hydrateWith(badRecord) {
+			await persistState({
+				data: { datasets: [goodRecord(), badRecord], activeIndex: 0 },
+				panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+				ui: {},
+			});
+			const replaceAllState = vi.fn();
+			const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			await hydrateState({ replaceAllState });
+			warn.mockRestore();
+			return replaceAllState.mock.calls[0][0];
+		}
+
+		it('drops datasets where nome is not a string', async () => {
+			const restored = await hydrateWith({ ...goodRecord('bad'), nome: 123 });
+			expect(restored.data.datasets).toHaveLength(1);
+			expect(restored.data.datasets[0].id).toBe('good');
+		});
+
+		it('drops datasets where colunas is not an array', async () => {
+			const restored = await hydrateWith({ ...goodRecord('bad'), colunas: 'oops' });
+			expect(restored.data.datasets).toHaveLength(1);
+			expect(restored.data.datasets[0].id).toBe('good');
+		});
+
+		it('drops datasets where a colunas entry is malformed', async () => {
+			const restored = await hydrateWith({
+				...goodRecord('bad'),
+				colunas: [{ nome: 'x' /* tipo missing */ }],
+			});
+			expect(restored.data.datasets).toHaveLength(1);
+			expect(restored.data.datasets[0].id).toBe('good');
+		});
+
+		it('drops datasets where dados is not an array', async () => {
+			const restored = await hydrateWith({ ...goodRecord('bad'), dados: { 0: { x: 1 } } });
+			expect(restored.data.datasets).toHaveLength(1);
+			expect(restored.data.datasets[0].id).toBe('good');
+		});
+
+		it('sanitizes configGraficos: drops chart-spec entries that are not plain objects', async () => {
+			await persistState({
+				data: {
+					datasets: [{
+						...goodRecord('with-mixed-config'),
+						configGraficos: { bar: 'oops', scatter: { color: '#abc' }, pie: 42 },
+					}],
+					activeIndex: 0,
+				},
+				panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+				ui: {},
+			});
+			const replaceAllState = vi.fn();
+			await hydrateState({ replaceAllState });
+
+			const restored = replaceAllState.mock.calls[0][0].data.datasets[0];
+			expect(restored.configGraficos).toEqual({ scatter: { color: '#abc' } });
+		});
+
+		it('replaces a non-object configGraficos with an empty object', async () => {
+			await persistState({
+				data: {
+					datasets: [{ ...goodRecord('nullish-config'), configGraficos: null }],
+					activeIndex: 0,
+				},
+				panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+				ui: {},
+			});
+			const replaceAllState = vi.fn();
+			await hydrateState({ replaceAllState });
+
+			const restored = replaceAllState.mock.calls[0][0].data.datasets[0];
+			expect(restored.configGraficos).toEqual({});
+		});
+
+		it('console-warns with a drop count when records are dropped', async () => {
+			await persistState({
+				data: {
+					datasets: [
+						goodRecord('keep'),
+						{ ...goodRecord('drop1'), nome: 123 },
+						{ ...goodRecord('drop2'), colunas: 'oops' },
+					],
+					activeIndex: 0,
+				},
+				panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+				ui: {},
+			});
+			const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+			const replaceAllState = vi.fn();
+			await hydrateState({ replaceAllState });
+
+			expect(warn).toHaveBeenCalledWith(expect.stringContaining('dropped 2 malformed dataset record'));
+			expect(replaceAllState.mock.calls[0][0].data.datasets).toHaveLength(1);
+			warn.mockRestore();
+		});
+	});
+
 	describe('persistState() guards', () => {
 		it('is a no-op for null/undefined snapshot', async () => {
 			await expect(persistState(null)).resolves.not.toThrow();

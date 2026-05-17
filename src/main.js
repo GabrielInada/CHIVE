@@ -23,6 +23,7 @@ import {
 	enablePersistenceAutoSave,
 } from './services/persistenceService.js';
 import { ingestFile, progressLabelForStage } from './services/dataIngestService.js';
+import { loadPresetSource, PresetFetchTimeoutError } from './services/presetService.js';
 import { PREVIEW_DEFAULT_ROWS } from './config/limits.js';
 import {
 renderEmptyState,
@@ -320,26 +321,6 @@ function handleJoinDatasetRequest(spec) {
 	refreshView();
 }
 
-async function loadPresetSource(preset) {
-	if (Array.isArray(preset?.data)) {
-		return { mode: 'inline', rows: preset.data, dropColumns: preset.dropColumns || [] };
-	}
-
-	if (typeof preset?.dataUrl !== 'string' || !preset.dataUrl.trim()) {
-		throw new Error('preset-data-missing');
-	}
-
-	const response = await fetch(preset.dataUrl);
-	if (!response.ok) {
-		throw new Error(`preset-fetch-failed:${response.status}`);
-	}
-
-	const rawText = await response.text();
-	const format = String(preset.dataFormat || '').toLowerCase();
-	const kind = format === 'json' || preset.dataUrl.toLowerCase().endsWith('.json') ? 'json' : 'csv';
-	return { mode: 'fetched', kind, text: rawText, dropColumns: preset.dropColumns || [] };
-}
-
 async function handlePresetDatasetRequest(preset) {
 	if (!preset) {
 		showError(t('chive-join-error-generic'));
@@ -352,7 +333,7 @@ async function handlePresetDatasetRequest(preset) {
 	progress.onCancel(() => abortController.abort());
 
 	try {
-		const source = await loadPresetSource(preset);
+		const source = await loadPresetSource(preset, { signal: abortController.signal });
 
 		let dados;
 		let colunas;
@@ -409,7 +390,11 @@ async function handlePresetDatasetRequest(preset) {
 		progress.succeed(t('chive-preset-load-success', [presetName]));
 		refreshView();
 	} catch (err) {
-		progress.fail(t('chive-progress-failed', [err?.message || 'error']));
+		if (err instanceof PresetFetchTimeoutError) {
+			progress.fail(t('chive-preset-fetch-timeout', [presetName]));
+		} else {
+			progress.fail(t('chive-progress-failed', [err?.message || 'error']));
+		}
 		showError(t('chive-join-error-generic'));
 	}
 }

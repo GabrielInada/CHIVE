@@ -162,6 +162,139 @@ describe('ingestFile', () => {
 	});
 });
 
+describe('ingestFile message validation', () => {
+	let worker;
+
+	beforeEach(() => {
+		worker = new MockWorker();
+		__setIngestWorkerFactoryForTesting(() => worker);
+	});
+
+	afterEach(() => {
+		__setIngestWorkerFactoryForTesting(null);
+	});
+
+	function validResult() {
+		return { dados: [], colunas: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null };
+	}
+
+	it('skips a progress message with a non-string stage', async () => {
+		const onProgress = vi.fn();
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({ id: data.id, type: 'progress', stage: 42, percent: 50 });
+				w.emit({ id: data.id, type: 'done', result: validResult() });
+			});
+		});
+
+		const result = await ingestFile({ kind: 'csv', text: 'x' }, { onProgress });
+
+		expect(result.ok).toBe(true);
+		expect(onProgress).not.toHaveBeenCalled();
+		expect(warn).toHaveBeenCalledWith('[chive:ingest] skipping malformed progress message', expect.any(Object));
+		warn.mockRestore();
+	});
+
+	it('skips a progress message with non-finite percent', async () => {
+		const onProgress = vi.fn();
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({ id: data.id, type: 'progress', stage: 'parsing', percent: NaN });
+				w.emit({ id: data.id, type: 'done', result: validResult() });
+			});
+		});
+
+		const result = await ingestFile({ kind: 'csv', text: 'x' }, { onProgress });
+
+		expect(result.ok).toBe(true);
+		expect(onProgress).not.toHaveBeenCalled();
+		expect(warn).toHaveBeenCalled();
+		warn.mockRestore();
+	});
+
+	it('skips a progress message with out-of-range percent', async () => {
+		const onProgress = vi.fn();
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({ id: data.id, type: 'progress', stage: 'parsing', percent: 150 });
+				w.emit({ id: data.id, type: 'done', result: validResult() });
+			});
+		});
+
+		const result = await ingestFile({ kind: 'csv', text: 'x' }, { onProgress });
+
+		expect(result.ok).toBe(true);
+		expect(onProgress).not.toHaveBeenCalled();
+		expect(warn).toHaveBeenCalled();
+		warn.mockRestore();
+	});
+
+	it('forwards a progress message with a non-string label but coerces label to undefined', async () => {
+		const onProgress = vi.fn();
+
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({ id: data.id, type: 'progress', stage: 'parsing', percent: 30, label: 42 });
+				w.emit({ id: data.id, type: 'done', result: validResult() });
+			});
+		});
+
+		const result = await ingestFile({ kind: 'csv', text: 'x' }, { onProgress });
+
+		expect(result.ok).toBe(true);
+		expect(onProgress).toHaveBeenCalledTimes(1);
+		expect(onProgress).toHaveBeenCalledWith({ stage: 'parsing', percent: 30, label: undefined });
+	});
+
+	it('resolves fail when done.result is null', async () => {
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({ id: data.id, type: 'done', result: null });
+			});
+		});
+
+		const result = await ingestFile({ kind: 'csv', text: 'x' });
+
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('ingest-malformed-result');
+		expect(worker.terminated).toBe(true);
+	});
+
+	it('resolves fail when done.result is a non-object', async () => {
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({ id: data.id, type: 'done', result: 'oops' });
+			});
+		});
+
+		const result = await ingestFile({ kind: 'csv', text: 'x' });
+
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('ingest-malformed-result');
+		expect(worker.terminated).toBe(true);
+	});
+
+	it('resolves fail when done.result is an array', async () => {
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({ id: data.id, type: 'done', result: [{ x: 1 }] });
+			});
+		});
+
+		const result = await ingestFile({ kind: 'csv', text: 'x' });
+
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('ingest-malformed-result');
+		expect(worker.terminated).toBe(true);
+	});
+});
+
 describe('progressLabelForStage', () => {
 	it('maps each known stage to a non-empty string', () => {
 		const fileName = 'iris.csv';
