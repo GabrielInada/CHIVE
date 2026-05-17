@@ -1,4 +1,4 @@
-import { CHART_COLORS, TIN_CHART } from '../../config/charts.js';
+import { CHART_COLORS, TIN_CHART, TIN_COLOR_RAMPS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import {
 	createCheckboxControl,
@@ -111,6 +111,19 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		disabled || fillMode === 'flat',
 	));
 
+	const colorRamp = TIN_COLOR_RAMPS.includes(config.colorRamp) ? config.colorRamp : TIN_CHART.defaultColorRamp;
+	const isCustomRamp = colorRamp === 'custom';
+	surfaceControls.push(createSelectControl(
+		'viz-select-tin-color-ramp',
+		t('chive-chart-color-ramp'),
+		TIN_COLOR_RAMPS.map(name => ({
+			value: name,
+			label: name === 'custom' ? t('chive-chart-color-ramp-custom') : name.charAt(0).toUpperCase() + name.slice(1),
+		})),
+		colorRamp,
+		disabled,
+	));
+
 	const minColorDiv = document.createElement('div');
 	minColorDiv.className = 'chart-controle';
 	const minColorLabel = document.createElement('label');
@@ -121,7 +134,7 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 	minColorInput.type = 'color';
 	minColorInput.className = 'chart-color-input';
 	minColorInput.value = normalizeHexColor(config.gradientMinColor, CHART_COLORS.tin);
-	minColorInput.disabled = disabled;
+	minColorInput.disabled = disabled || !isCustomRamp;
 	minColorDiv.appendChild(minColorLabel);
 	minColorDiv.appendChild(minColorInput);
 	surfaceControls.push(minColorDiv);
@@ -136,7 +149,7 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 	maxColorInput.type = 'color';
 	maxColorInput.className = 'chart-color-input';
 	maxColorInput.value = normalizeHexColor(config.gradientMaxColor, '#ffffff');
-	maxColorInput.disabled = disabled;
+	maxColorInput.disabled = disabled || !isCustomRamp;
 	maxColorDiv.appendChild(maxColorLabel);
 	maxColorDiv.appendChild(maxColorInput);
 	surfaceControls.push(maxColorDiv);
@@ -156,7 +169,7 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		'viz-tin-color-preset',
 		t('chive-chart-color-palette'),
 		config.colorScheme || 'Colorblind-Safe',
-		disabled,
+		disabled || !isCustomRamp,
 	));
 
 	const overlayControls = [];
@@ -424,6 +437,11 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 			id: 'viz-select-tin-isoline-mode',
 			key: 'isolineMode',
 			transform: v => (v === 'step' ? 'step' : 'count'),
+		},
+		{
+			id: 'viz-select-tin-color-ramp',
+			key: 'colorRamp',
+			transform: v => (TIN_COLOR_RAMPS.includes(v) ? v : TIN_CHART.defaultColorRamp),
 		},
 	], dataset, 'tin', onConfigChanged);
 

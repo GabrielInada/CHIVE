@@ -439,6 +439,8 @@
 	"chive-chart-color-gradient-manual": "Gradiente manual",
 	"chive-chart-color-by-field": "Por coluna",
 	"chive-chart-color-per-item": "Por item",
+	"chive-chart-color-ramp": "Paleta de cores",
+	"chive-chart-color-ramp-custom": "Personalizada (duas cores)",
 	"chive-chart-color-gradient-min": "Cor inicial (mínimo)",
 	"chive-chart-color-gradient-max": "Cor final (máximo)",
 	"chive-chart-color-gradient-distribution": "Distribuir cores por",

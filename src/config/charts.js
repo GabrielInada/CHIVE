@@ -166,8 +166,20 @@ export const LINE_CHART = {
   pointRadius: 3,
 };
 
+export const TIN_COLOR_RAMPS = Object.freeze([
+  'custom',
+  'viridis',
+  'plasma',
+  'magma',
+  'inferno',
+  'turbo',
+  'terrain',
+  'grays',
+]);
+
 export const TIN_CHART = {
   defaultFillMode: 'smooth',
+  defaultColorRamp: 'custom',
   defaultSubdivisionDepth: 3,
   minSubdivisionDepth: 0,
   maxSubdivisionDepth: 4,
