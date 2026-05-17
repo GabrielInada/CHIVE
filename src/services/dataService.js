@@ -375,6 +375,27 @@ export function parseCsv(text) {
 	return rows;
 }
 
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+// Defense-in-depth against prototype pollution: JSON.parse does not pollute
+// Object.prototype, but the parsed value can carry __proto__/constructor/
+// prototype as own enumerable keys, which would leak through any downstream
+// Object.assign / spread / recursive merge.
+function stripDangerousKeys(value) {
+	if (Array.isArray(value)) {
+		return value.map(stripDangerousKeys);
+	}
+	if (value !== null && typeof value === 'object') {
+		const cleaned = {};
+		for (const [key, val] of Object.entries(value)) {
+			if (DANGEROUS_KEYS.has(key)) continue;
+			cleaned[key] = stripDangerousKeys(val);
+		}
+		return cleaned;
+	}
+	return value;
+}
+
 export function parseJson(text) {
 	let parsed;
 
@@ -386,7 +407,7 @@ export function parseJson(text) {
 
 	if (Array.isArray(parsed)) {
 		if (parsed.length === 0) throw new Error('O arquivo JSON está vazio.');
-		return parsed;
+		return stripDangerousKeys(parsed);
 	}
 
 	if (typeof parsed === 'object' && parsed !== null) {
@@ -394,7 +415,7 @@ export function parseJson(text) {
 		if (chaveArray) {
 			const arr = parsed[chaveArray];
 			if (arr.length === 0) throw new Error('O array de dados no JSON está vazio.');
-			return arr;
+			return stripDangerousKeys(arr);
 		}
 	}
 

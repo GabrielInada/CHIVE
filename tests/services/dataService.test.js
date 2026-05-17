@@ -449,6 +449,40 @@ describe('dataService', () => {
     });
   });
 
+  describe('parseJson dangerous-key stripping', () => {
+    it('strips __proto__ at the top level of each row', () => {
+      const result = parseJson('[{"a":1,"__proto__":"polluted"}]');
+      expect(result).toEqual([{ a: 1 }]);
+      expect(Object.prototype.hasOwnProperty.call(result[0], '__proto__')).toBe(false);
+      expect({}.polluted).toBeUndefined();
+    });
+
+    it('strips constructor and prototype keys', () => {
+      const result = parseJson('[{"name":"x","constructor":"y","prototype":"z"}]');
+      expect(result).toEqual([{ name: 'x' }]);
+    });
+
+    it('strips dangerous keys at nested depth', () => {
+      const result = parseJson('[{"a":{"__proto__":"polluted","b":1}}]');
+      expect(result).toEqual([{ a: { b: 1 } }]);
+    });
+
+    it('strips dangerous keys inside nested arrays', () => {
+      const result = parseJson('[{"items":[{"__proto__":"polluted","ok":true}]}]');
+      expect(result).toEqual([{ items: [{ ok: true }] }]);
+    });
+
+    it('strips dangerous keys from the nested-array root form', () => {
+      const result = parseJson('{"rows":[{"__proto__":"polluted","x":1}]}');
+      expect(result).toEqual([{ x: 1 }]);
+    });
+
+    it('preserves null, primitives, and keys with similar-but-different names', () => {
+      const result = parseJson('[{"a":null,"b":0,"c":"","__proto__":"x","_proto_":"keep"}]');
+      expect(result).toEqual([{ a: null, b: 0, c: '', _proto_: 'keep' }]);
+    });
+  });
+
   describe('detectType edge cases', () => {
     it('retorna texto como fallback para valores vazios', () => {
       expect(detectType([null, undefined, ''])).toBe('texto');
