@@ -125,7 +125,7 @@ describe('renderTinChart', () => {
 			showPoints: false,
 		});
 		expect(result.ok).toBe(true);
-		const lines = container.querySelectorAll('.tin-isolines line');
+		const lines = container.querySelectorAll('.tin-isolines line:not(.tin-isoline-hit)');
 		expect(lines.length).toBeGreaterThan(0);
 	});
 
@@ -147,7 +147,7 @@ describe('renderTinChart', () => {
 			showPoints: false,
 		});
 		expect(result.ok).toBe(true);
-		const lines = container.querySelectorAll('.tin-isolines line');
+		const lines = container.querySelectorAll('.tin-isolines line:not(.tin-isoline-hit)');
 		expect(lines.length).toBe(1);
 		// The two data-Y crossings both lie at data-Y = 5 (the iso-level at z=5
 		// cuts the two non-baseline edges at their midpoints), so the segment
@@ -220,7 +220,7 @@ describe('renderTinChart', () => {
 			showPoints: false,
 		});
 		expect(result.ok).toBe(true);
-		const lines = container.querySelectorAll('.tin-isolines line');
+		const lines = container.querySelectorAll('.tin-isolines line:not(.tin-isoline-hit)');
 		expect(lines.length).toBeGreaterThan(0);
 		for (const line of lines) {
 			expect(line.getAttribute('stroke')).toBe('#abcdef');
@@ -240,7 +240,7 @@ describe('renderTinChart', () => {
 			showPoints: false,
 		});
 		expect(result.ok).toBe(true);
-		const lines = container.querySelectorAll('.tin-isolines line');
+		const lines = container.querySelectorAll('.tin-isolines line:not(.tin-isoline-hit)');
 		expect(lines.length).toBeGreaterThan(0);
 		const uniqueStrokes = new Set(Array.from(lines).map(l => l.getAttribute('stroke')));
 		expect(uniqueStrokes.size).toBeGreaterThan(1);
@@ -266,7 +266,7 @@ describe('renderTinChart', () => {
 			showEdges: false,
 			showPoints: false,
 		});
-		const lines = container.querySelectorAll('.tin-isolines line');
+		const lines = container.querySelectorAll('.tin-isolines line:not(.tin-isoline-hit)');
 		expect(lines.length).toBe(1);
 		const expected = interpolateColor('#0000ff', '#ff0000', 0.5);
 		expect(lines[0].getAttribute('stroke')).toBe(expected);
@@ -290,7 +290,7 @@ describe('renderTinChart', () => {
 			showPoints: false,
 		});
 		expect(result.ok).toBe(true);
-		const lines = container.querySelectorAll('.tin-isolines line');
+		const lines = container.querySelectorAll('.tin-isolines line:not(.tin-isoline-hit)');
 		expect(lines.length).toBe(1);
 	});
 
@@ -307,7 +307,7 @@ describe('renderTinChart', () => {
 			showPoints: false,
 		});
 		expect(result.ok).toBe(true);
-		const lines = container.querySelectorAll('.tin-isolines line');
+		const lines = container.querySelectorAll('.tin-isolines line:not(.tin-isoline-hit)');
 		expect(lines.length).toBeLessThanOrEqual(200 * result.triangles);
 	});
 
@@ -340,7 +340,7 @@ describe('renderTinChart', () => {
 			showPoints: false,
 		});
 		expect(result.ok).toBe(true);
-		const lines = container.querySelectorAll('.tin-threshold-contour line');
+		const lines = container.querySelectorAll('.tin-threshold-contour line:not(.tin-isoline-hit)');
 		expect(lines.length).toBe(1);
 		const y1 = Number(lines[0].getAttribute('y1'));
 		const y2 = Number(lines[0].getAttribute('y2'));
@@ -373,5 +373,62 @@ describe('renderTinChart', () => {
 		expect(tooltip.textContent).toContain('x');
 		expect(tooltip.textContent).toContain('y');
 		expect(tooltip.textContent).toContain('z');
+	});
+
+	it('emits one hit line per visible isoline segment', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 5,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		const visible = container.querySelectorAll('.tin-isolines line:not(.tin-isoline-hit)');
+		const hits = container.querySelectorAll('.tin-isolines line.tin-isoline-hit');
+		expect(visible.length).toBeGreaterThan(0);
+		expect(hits.length).toBe(visible.length);
+	});
+
+	it('hit lines are transparent, fattened, and carry data-z for tooltip lookup', () => {
+		const container = document.getElementById('tin');
+		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 5,
+			isolineWidth: 0.8,
+			showEdges: false,
+			showPoints: false,
+		});
+		const hits = container.querySelectorAll('.tin-isolines line.tin-isoline-hit');
+		expect(hits.length).toBeGreaterThan(0);
+		for (const hit of hits) {
+			expect(hit.getAttribute('stroke')).toBe('transparent');
+			expect(Number(hit.getAttribute('stroke-width'))).toBeGreaterThanOrEqual(6);
+			expect(hit.getAttribute('pointer-events')).toBe('stroke');
+			expect(Number.isFinite(Number(hit.dataset.z))).toBe(true);
+		}
+	});
+
+	it('threshold contour also gets a hit line with data-z = thresholdValue', () => {
+		const container = document.getElementById('tin');
+		const rows = [
+			{ x: 0, y: 0, z: 0 },
+			{ x: 10, y: 0, z: 0 },
+			{ x: 5, y: 10, z: 10 },
+		];
+		renderTinChart(container, rows, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: false,
+			showThreshold: true,
+			thresholdValue: 5,
+			showEdges: false,
+			showPoints: false,
+		});
+		const hits = container.querySelectorAll('.tin-threshold-contour line.tin-isoline-hit');
+		expect(hits.length).toBe(1);
+		expect(hits[0].getAttribute('stroke')).toBe('transparent');
+		expect(Number(hits[0].dataset.z)).toBe(5);
 	});
 });
