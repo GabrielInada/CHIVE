@@ -88,6 +88,7 @@
 	"chive-preset-load": "Load dataset",
 	"chive-preset-cancel": "Cancel",
 	"chive-preset-load-success": "Sample dataset \"$1\" loaded.",
+	"chive-preset-fetch-timeout": "Sample dataset \"$1\" took too long to load. The server may be slow or unreachable. Try again later.",
 	"chive-preset-generated-size": "Sample · $1 rows",
 	"chive-preset-card-meta": "$1 rows · $2 columns",
 	"chive-preset-source-label": "Source:",
