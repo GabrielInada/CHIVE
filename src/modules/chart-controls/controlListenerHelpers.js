@@ -122,6 +122,22 @@ export function setupColorInputListener(elementId, configKey, defaultColor, data
 }
 
 /**
+ * Setup a free numeric input listener. Falls back to defaultValue when the
+ * parsed value isn't finite (covers empty string and arbitrary garbage).
+ */
+export function setupNumberInputListener(elementId, configKey, defaultValue, dataset, chartKey, onConfigChanged) {
+	const el = document.getElementById(elementId);
+	if (!el) return;
+	el.addEventListener('change', () => {
+		const parsed = parseFloat(el.value);
+		const next = Number.isFinite(parsed) ? parsed : defaultValue;
+		makeUpdater(dataset, chartKey, onConfigChanged)({
+			[configKey]: next,
+		});
+	});
+}
+
+/**
  * Setup a slider with output sync and config update.
  * The slider's sibling <output> element gets synced on input.
  */

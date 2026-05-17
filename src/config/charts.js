@@ -167,6 +167,7 @@ export const LINE_CHART = {
 };
 
 export const TIN_CHART = {
+  defaultFillMode: 'smooth',
   defaultSubdivisionDepth: 3,
   minSubdivisionDepth: 0,
   maxSubdivisionDepth: 4,
@@ -177,6 +178,31 @@ export const TIN_CHART = {
   defaultShowPoints: true,
   defaultShowZLabels: false,
   defaultShowHull: false,
+  defaultShowIsolines: false,
+  defaultIsolineMode: 'count',
+  defaultIsolineCount: 5,
+  minIsolineCount: 2,
+  maxIsolineCount: 20,
+  defaultIsolineStep: 1,
+  maxIsolineLevels: 200,
+  defaultIsolineColor: '#1f2937',
+  defaultIsolineWidth: 0.8,
+  minIsolineWidth: 0.5,
+  maxIsolineWidth: 2,
+  defaultColorIsolinesByZ: false,
+  defaultIsolineMinColor: '#1e40af',
+  defaultIsolineMaxColor: '#dc2626',
+  defaultShowIsolineLabels: false,
+  defaultIsolineLabelSize: 10,
+  minIsolineLabelSize: 8,
+  maxIsolineLabelSize: 14,
+  defaultIsolineLabelColor: '#1f2937',
+  defaultShowThreshold: false,
+  defaultThresholdValue: 0,
+  defaultThresholdColor: '#dc2626',
+  defaultThresholdWidth: 2,
+  minThresholdWidth: 0.5,
+  maxThresholdWidth: 4,
 };
 
 export const BUBBLE_CHART = {

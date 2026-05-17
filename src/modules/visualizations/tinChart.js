@@ -39,6 +39,58 @@ function emitSubdivided(triangle, depth, colorAt, outPolygons) {
 	emitSubdivided([ab, bc, ca], depth - 1, colorAt, outPolygons);
 }
 
+// Computes the iso-segment crossings for a single Z level across an array of
+// triangles in screen coordinates. Returns the visible segments plus a
+// descriptor of the longest one (used to anchor a label or any per-level
+// annotation). Pure function — extracted so the regular-isoline pass, the
+// threshold contour, and any per-segment styling all consume one source of
+// truth for level-crossing geometry.
+function computeIsolineSegments(triangleVerts, level) {
+	const edgePairs = [[0, 1], [1, 2], [2, 0]];
+	const segments = [];
+	let longest = null;
+	for (const verts of triangleVerts) {
+		const crossings = [];
+		for (let k = 0; k < edgePairs.length; k++) {
+			const v1 = verts[edgePairs[k][0]];
+			const v2 = verts[edgePairs[k][1]];
+			const d1 = v1.z - level;
+			const d2 = v2.z - level;
+			if ((d1 < 0 && d2 >= 0) || (d1 >= 0 && d2 < 0)) {
+				const t = d1 / (d1 - d2);
+				crossings.push({
+					x: v1.sx + t * (v2.sx - v1.sx),
+					y: v1.sy + t * (v2.sy - v1.sy),
+				});
+			}
+		}
+		if (crossings.length === 2) {
+			const dx = crossings[0].x - crossings[1].x;
+			const dy = crossings[0].y - crossings[1].y;
+			const len2 = dx * dx + dy * dy;
+			if (len2 < 1e-9) continue;
+			segments.push({
+				x1: crossings[0].x,
+				y1: crossings[0].y,
+				x2: crossings[1].x,
+				y2: crossings[1].y,
+			});
+			if (longest === null || len2 > longest.length2) {
+				let angleDeg = Math.atan2(crossings[1].y - crossings[0].y, crossings[1].x - crossings[0].x) * 180 / Math.PI;
+				if (angleDeg > 90) angleDeg -= 180;
+				else if (angleDeg < -90) angleDeg += 180;
+				longest = {
+					length2: len2,
+					midX: (crossings[0].x + crossings[1].x) / 2,
+					midY: (crossings[0].y + crossings[1].y) / 2,
+					angleDeg,
+				};
+			}
+		}
+	}
+	return { segments, longest };
+}
+
 function collectUniqueEdges(delaunay) {
 	const tris = delaunay.triangles;
 	const edges = new Set();
@@ -60,7 +112,9 @@ function collectUniqueEdges(delaunay) {
 export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {}) {
 	if (!container || !eixoX || !eixoY || !eixoZ) return fail();
 
+	const fillMode = opcoes.fillMode === 'flat' ? 'flat' : 'smooth';
 	const subdivisionDepth = clampDepth(opcoes.subdivisionDepth);
+	const effectiveSubdivisionDepth = fillMode === 'flat' ? 0 : subdivisionDepth;
 	const gradientMin = normalizeColor(opcoes.gradientMinColor, CHART_COLORS.tin);
 	const gradientMax = normalizeColor(opcoes.gradientMaxColor, '#ffffff');
 	const gradientDistribution = opcoes.gradientDistribution === 'rank' ? 'rank' : 'value';
@@ -73,6 +127,40 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 	const showZLabels = opcoes.showZLabels === true;
 	const showHull = opcoes.showHull === true;
 	const hullColor = normalizeColor(opcoes.hullColor, TIN_CHART.defaultHullColor);
+	const showIsolines = opcoes.showIsolines === true;
+	const isolineMode = opcoes.isolineMode === 'step' ? 'step' : 'count';
+	const isolineCountRaw = Math.round(Number(opcoes.isolineCount));
+	const isolineCount = Number.isFinite(isolineCountRaw)
+		? Math.max(TIN_CHART.minIsolineCount, Math.min(TIN_CHART.maxIsolineCount, isolineCountRaw))
+		: TIN_CHART.defaultIsolineCount;
+	const isolineStepRaw = Number(opcoes.isolineStep);
+	const isolineStep = Number.isFinite(isolineStepRaw) && isolineStepRaw > 0
+		? isolineStepRaw
+		: TIN_CHART.defaultIsolineStep;
+	const isolineColor = normalizeColor(opcoes.isolineColor, TIN_CHART.defaultIsolineColor);
+	const isolineWidthRaw = Number(opcoes.isolineWidth);
+	const isolineWidth = Number.isFinite(isolineWidthRaw)
+		? Math.max(TIN_CHART.minIsolineWidth, Math.min(TIN_CHART.maxIsolineWidth, isolineWidthRaw))
+		: TIN_CHART.defaultIsolineWidth;
+	const showIsolineLabels = opcoes.showIsolineLabels === true;
+	const isolineLabelSizeRaw = Math.round(Number(opcoes.isolineLabelSize));
+	const isolineLabelSize = Number.isFinite(isolineLabelSizeRaw)
+		? Math.max(TIN_CHART.minIsolineLabelSize, Math.min(TIN_CHART.maxIsolineLabelSize, isolineLabelSizeRaw))
+		: TIN_CHART.defaultIsolineLabelSize;
+	const isolineLabelColor = normalizeColor(opcoes.isolineLabelColor, TIN_CHART.defaultIsolineLabelColor);
+	const colorIsolinesByZ = opcoes.colorIsolinesByZ === true;
+	const isolineMinColor = normalizeColor(opcoes.isolineMinColor, TIN_CHART.defaultIsolineMinColor);
+	const isolineMaxColor = normalizeColor(opcoes.isolineMaxColor, TIN_CHART.defaultIsolineMaxColor);
+	const showThreshold = opcoes.showThreshold === true;
+	const thresholdValueRaw = Number(opcoes.thresholdValue);
+	const thresholdValue = Number.isFinite(thresholdValueRaw)
+		? thresholdValueRaw
+		: TIN_CHART.defaultThresholdValue;
+	const thresholdColor = normalizeColor(opcoes.thresholdColor, TIN_CHART.defaultThresholdColor);
+	const thresholdWidthRaw = Number(opcoes.thresholdWidth);
+	const thresholdWidth = Number.isFinite(thresholdWidthRaw)
+		? Math.max(TIN_CHART.minThresholdWidth, Math.min(TIN_CHART.maxThresholdWidth, thresholdWidthRaw))
+		: TIN_CHART.defaultThresholdWidth;
 	const showXAxisLabel = opcoes.showXAxisLabel !== false;
 	const showYAxisLabel = opcoes.showYAxisLabel !== false;
 	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
@@ -186,7 +274,7 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 			{ x: b.sx, y: b.sy, z: b.z },
 			{ x: c.sx, y: c.sy, z: c.z },
 		];
-		emitSubdivided(triangle, subdivisionDepth, colorAt, polygons);
+		emitSubdivided(triangle, effectiveSubdivisionDepth, colorAt, polygons);
 	}
 
 	trianglesGroup
@@ -206,6 +294,130 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 				.attr('fill', 'none')
 				.attr('stroke', hullColor)
 				.attr('stroke-width', 1.5);
+		}
+	}
+
+	const triangleVerts = [];
+	for (let i = 0; i < tris.length; i += 3) {
+		triangleVerts.push([
+			screenPoints[tris[i]],
+			screenPoints[tris[i + 1]],
+			screenPoints[tris[i + 2]],
+		]);
+	}
+
+	const attachIsolineHoverHandlers = (group) => {
+		group
+			.on('pointerover', event => {
+				const target = event.target;
+				if (!target?.classList?.contains?.('tin-isoline-hit')) return;
+				const z = Number(target.dataset.z);
+				if (!Number.isFinite(z)) return;
+				const wrapper = document.createElement('div');
+				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(z, locale)));
+				showChartTooltip(wrapper, event.pageX, event.pageY);
+			})
+			.on('pointermove', event => {
+				if (event.target?.classList?.contains?.('tin-isoline-hit')) {
+					moveChartTooltip(event.pageX, event.pageY);
+				}
+			})
+			.on('pointerout', event => {
+				if (event.target?.classList?.contains?.('tin-isoline-hit')) {
+					hideChartTooltip();
+				}
+			});
+	};
+
+	if (showIsolines && zMin !== zMax) {
+		const isolinesGroup = grupo.append('g').attr('class', 'tin-isolines');
+		let levels;
+		if (isolineMode === 'step') {
+			levels = [];
+			let level = Math.ceil(zMin / isolineStep) * isolineStep;
+			while (level <= zMax && levels.length < TIN_CHART.maxIsolineLevels) {
+				levels.push(level);
+				level += isolineStep;
+			}
+		} else {
+			levels = scaleLinear().domain([zMin, zMax]).nice().ticks(isolineCount);
+		}
+		let labelGroup = null;
+		const zDeltaForIsolines = zMax - zMin;
+		const hitStrokeWidth = Math.max(6, isolineWidth);
+		levels.forEach(level => {
+			const { segments, longest } = computeIsolineSegments(triangleVerts, level);
+			const strokeColor = colorIsolinesByZ
+				? interpolateColor(isolineMinColor, isolineMaxColor, (level - zMin) / zDeltaForIsolines)
+				: isolineColor;
+			segments.forEach(seg => {
+				isolinesGroup.append('line')
+					.attr('x1', seg.x1)
+					.attr('y1', seg.y1)
+					.attr('x2', seg.x2)
+					.attr('y2', seg.y2)
+					.attr('stroke', strokeColor)
+					.attr('stroke-width', isolineWidth)
+					.attr('fill', 'none')
+					.attr('pointer-events', 'none');
+				isolinesGroup.append('line')
+					.attr('class', 'tin-isoline-hit')
+					.attr('x1', seg.x1)
+					.attr('y1', seg.y1)
+					.attr('x2', seg.x2)
+					.attr('y2', seg.y2)
+					.attr('stroke', 'transparent')
+					.attr('stroke-width', hitStrokeWidth)
+					.attr('fill', 'none')
+					.attr('pointer-events', 'stroke')
+					.attr('data-z', level);
+			});
+			if (showIsolineLabels && longest) {
+				if (!labelGroup) labelGroup = grupo.append('g').attr('class', 'tin-isoline-labels');
+				labelGroup.append('text')
+					.attr('transform', `translate(${longest.midX},${longest.midY}) rotate(${longest.angleDeg})`)
+					.attr('text-anchor', 'middle')
+					.attr('dominant-baseline', 'middle')
+					.attr('font-size', isolineLabelSize)
+					.attr('fill', colorIsolinesByZ ? strokeColor : isolineLabelColor)
+					.attr('stroke', '#fffef9')
+					.attr('stroke-width', 2.5)
+					.attr('paint-order', 'stroke')
+					.attr('pointer-events', 'none')
+					.text(formatNumber(level, locale));
+			}
+		});
+		attachIsolineHoverHandlers(isolinesGroup);
+	}
+
+	if (showThreshold && thresholdValue >= zMin && thresholdValue <= zMax) {
+		const { segments } = computeIsolineSegments(triangleVerts, thresholdValue);
+		if (segments.length > 0) {
+			const thresholdGroup = grupo.append('g').attr('class', 'tin-threshold-contour');
+			const thresholdHitWidth = Math.max(6, thresholdWidth);
+			segments.forEach(seg => {
+				thresholdGroup.append('line')
+					.attr('x1', seg.x1)
+					.attr('y1', seg.y1)
+					.attr('x2', seg.x2)
+					.attr('y2', seg.y2)
+					.attr('stroke', thresholdColor)
+					.attr('stroke-width', thresholdWidth)
+					.attr('fill', 'none')
+					.attr('pointer-events', 'none');
+				thresholdGroup.append('line')
+					.attr('class', 'tin-isoline-hit')
+					.attr('x1', seg.x1)
+					.attr('y1', seg.y1)
+					.attr('x2', seg.x2)
+					.attr('y2', seg.y2)
+					.attr('stroke', 'transparent')
+					.attr('stroke-width', thresholdHitWidth)
+					.attr('fill', 'none')
+					.attr('pointer-events', 'stroke')
+					.attr('data-z', thresholdValue);
+			});
+			attachIsolineHoverHandlers(thresholdGroup);
 		}
 	}
 
