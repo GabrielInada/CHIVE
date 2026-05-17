@@ -306,6 +306,29 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 		]);
 	}
 
+	const attachIsolineHoverHandlers = (group) => {
+		group
+			.on('pointerover', event => {
+				const target = event.target;
+				if (!target?.classList?.contains?.('tin-isoline-hit')) return;
+				const z = Number(target.dataset.z);
+				if (!Number.isFinite(z)) return;
+				const wrapper = document.createElement('div');
+				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(z, locale)));
+				showChartTooltip(wrapper, event.pageX, event.pageY);
+			})
+			.on('pointermove', event => {
+				if (event.target?.classList?.contains?.('tin-isoline-hit')) {
+					moveChartTooltip(event.pageX, event.pageY);
+				}
+			})
+			.on('pointerout', event => {
+				if (event.target?.classList?.contains?.('tin-isoline-hit')) {
+					hideChartTooltip();
+				}
+			});
+	};
+
 	if (showIsolines && zMin !== zMax) {
 		const isolinesGroup = grupo.append('g').attr('class', 'tin-isolines');
 		let levels;
@@ -321,6 +344,7 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 		}
 		let labelGroup = null;
 		const zDeltaForIsolines = zMax - zMin;
+		const hitStrokeWidth = Math.max(6, isolineWidth);
 		levels.forEach(level => {
 			const { segments, longest } = computeIsolineSegments(triangleVerts, level);
 			const strokeColor = colorIsolinesByZ
@@ -334,7 +358,19 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 					.attr('y2', seg.y2)
 					.attr('stroke', strokeColor)
 					.attr('stroke-width', isolineWidth)
-					.attr('fill', 'none');
+					.attr('fill', 'none')
+					.attr('pointer-events', 'none');
+				isolinesGroup.append('line')
+					.attr('class', 'tin-isoline-hit')
+					.attr('x1', seg.x1)
+					.attr('y1', seg.y1)
+					.attr('x2', seg.x2)
+					.attr('y2', seg.y2)
+					.attr('stroke', 'transparent')
+					.attr('stroke-width', hitStrokeWidth)
+					.attr('fill', 'none')
+					.attr('pointer-events', 'stroke')
+					.attr('data-z', level);
 			});
 			if (showIsolineLabels && longest) {
 				if (!labelGroup) labelGroup = grupo.append('g').attr('class', 'tin-isoline-labels');
@@ -351,12 +387,14 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 					.text(formatNumber(level, locale));
 			}
 		});
+		attachIsolineHoverHandlers(isolinesGroup);
 	}
 
 	if (showThreshold && thresholdValue >= zMin && thresholdValue <= zMax) {
 		const { segments } = computeIsolineSegments(triangleVerts, thresholdValue);
 		if (segments.length > 0) {
 			const thresholdGroup = grupo.append('g').attr('class', 'tin-threshold-contour');
+			const thresholdHitWidth = Math.max(6, thresholdWidth);
 			segments.forEach(seg => {
 				thresholdGroup.append('line')
 					.attr('x1', seg.x1)
@@ -365,8 +403,21 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 					.attr('y2', seg.y2)
 					.attr('stroke', thresholdColor)
 					.attr('stroke-width', thresholdWidth)
-					.attr('fill', 'none');
+					.attr('fill', 'none')
+					.attr('pointer-events', 'none');
+				thresholdGroup.append('line')
+					.attr('class', 'tin-isoline-hit')
+					.attr('x1', seg.x1)
+					.attr('y1', seg.y1)
+					.attr('x2', seg.x2)
+					.attr('y2', seg.y2)
+					.attr('stroke', 'transparent')
+					.attr('stroke-width', thresholdHitWidth)
+					.attr('fill', 'none')
+					.attr('pointer-events', 'stroke')
+					.attr('data-z', thresholdValue);
 			});
+			attachIsolineHoverHandlers(thresholdGroup);
 		}
 	}
 
