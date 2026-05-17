@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
 	updateActiveDatasetChartConfig: vi.fn(),
+	normalizeActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -13,6 +14,10 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 vi.mock('../../../src/modules/stateSync.js', () => ({
 	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
+}));
+
+vi.mock('../../../src/modules/appState.js', () => ({
+	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
 }));
 
 vi.mock('../../../src/modules/chart-controls/livePreview.js', () => ({
@@ -147,11 +152,15 @@ describe('pieControls listeners', () => {
 		expect(Object.keys(call.pie.customSliceColors).sort()).toEqual(['East', 'North', 'South']);
 	});
 
-	// Regression guard for the P0 fix: per-slice color picker must commit through the
-	// facade on `change` only. An `input` event must NOT call the facade and must NOT
-	// mutate the dataset directly. If someone re-introduces the bypass listener that
-	// existed before the P0 fix, this test fails.
-	it('does not commit per-slice color on input, only on change', () => {
+	// Regression guard for the P0 fix and the wider color-helper fix:
+	// per-slice color writes must NEVER mutate dataset.configGraficos directly.
+	// On `input`, the write goes through the non-emitting facade
+	// (normalizeActiveDatasetConfig) — no CONFIG_UPDATED emit, no sidebar
+	// rebuild, but state stays consistent. On `change`, the emitting facade
+	// commits the final value. If anyone re-introduces a bypass listener
+	// (direct assignment to dataset.configGraficos.pie.customSliceColors), the
+	// `normalizeActiveDatasetConfig` mock won't be called and this test fails.
+	it('routes input writes through the non-emitting facade and commits via the emitting facade on change', () => {
 		const dataset = createDataset();
 		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
@@ -164,10 +173,14 @@ describe('pieControls listeners', () => {
 		sliceInput.value = '#ff0000';
 		sliceInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-		// No facade call on input
+		// No emitting facade call on input.
 		expect(mocks.updateActiveDatasetChartConfig).not.toHaveBeenCalled();
-		// And no direct bypass mutation on the dataset
-		expect(dataset.configGraficos.pie.customSliceColors.North).toBeUndefined();
+
+		// Non-emitting facade write happened; the normalizer sets customSliceColors[North].
+		expect(mocks.normalizeActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		const normalizer = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
+		const result = normalizer({ pie: { customSliceColors: {} } });
+		expect(result.pie.customSliceColors.North).toBe('#ff0000');
 
 		sliceInput.dispatchEvent(new Event('change', { bubbles: true }));
 

@@ -1,4 +1,5 @@
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
+import { normalizeActiveDatasetConfig } from '../appState.js';
 import { normalizeHexColor } from './shared.js';
 import { triggerLiveRender } from './livePreview.js';
 
@@ -97,21 +98,25 @@ export function setupTextInputListener(elementId, configKey, dataset, chartKey, 
  * Setup a color input listener with hex normalization.
  *
  * Two events are wired:
- * - 'input' — fires continuously while the picker is open. We mutate the
- *   in-memory dataset config directly and trigger a chart-only re-render
- *   (no sidebar rebuild) so the user sees the color update live without
- *   the picker losing focus.
- * - 'change' — fires when the picker closes. We commit through the canonical
- *   state path so the change emits CONFIG_UPDATED, which the auto-save
- *   subscription then debounces into IndexedDB and refreshes the sidebar.
+ * - 'input' — fires continuously while the picker is open. The write goes
+ *   through `normalizeActiveDatasetConfig` (the non-emitting facade path)
+ *   so the state stays consistent without firing CONFIG_UPDATED — that
+ *   would trigger `refreshView` and rebuild the controls sidebar,
+ *   stealing focus from the picker. After the write, the registered
+ *   live-render callback re-paints only the chart visualizations.
+ * - 'change' — fires when the picker closes. We commit through the emitting
+ *   facade so CONFIG_UPDATED fires, the auto-save subscription debounces
+ *   the write into IndexedDB, and the sidebar refreshes.
  */
 export function setupColorInputListener(elementId, configKey, defaultColor, dataset, chartKey, onConfigChanged) {
 	const el = document.getElementById(elementId);
 	if (!el) return;
 	el.addEventListener('input', () => {
 		const next = normalizeHexColor(el.value, defaultColor);
-		const chartConfig = dataset.configGraficos?.[chartKey];
-		if (chartConfig) chartConfig[configKey] = next;
+		normalizeActiveDatasetConfig(prev => ({
+			...prev,
+			[chartKey]: { ...prev[chartKey], [configKey]: next },
+		}));
 		triggerLiveRender();
 	});
 	el.addEventListener('change', () => {

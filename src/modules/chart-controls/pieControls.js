@@ -3,6 +3,8 @@ import { isNullish } from '../../utils/formatters.js';
 import { compareStrings } from '../../utils/chartFilters.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
+import { normalizeActiveDatasetConfig } from '../appState.js';
+import { triggerLiveRender } from './livePreview.js';
 import { createCheckboxControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -466,11 +468,27 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 		});
 	});
 
-	// Per-slice color grid: writes go through the facade on `change` only.
-	// Drag-time live preview is intentionally absent — restoring it requires
-	// a debounced facade call so the write path stays facade-routed.
+	// Per-slice color grid: live drag-preview writes go through the
+	// non-emitting facade path (no sidebar rebuild during drag); `change`
+	// commits through the emitting facade for the final state.
 	const perSliceInputs = document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]');
 	perSliceInputs.forEach(input => {
+		input.addEventListener('input', () => {
+			const sector = input.dataset.colorItem;
+			if (!sector) return;
+			const next = normalizeHexColor(input.value, CHART_COLORS.pie);
+			normalizeActiveDatasetConfig(prev => ({
+				...prev,
+				pie: {
+					...prev.pie,
+					customSliceColors: {
+						...(prev.pie?.customSliceColors || {}),
+						[sector]: next,
+					},
+				},
+			}));
+			triggerLiveRender();
+		});
 		input.addEventListener('change', () => {
 			const sector = input.dataset.colorItem;
 			if (!sector) return;
