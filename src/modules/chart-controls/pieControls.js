@@ -466,9 +466,9 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 		});
 	});
 
-	// Per-slice color grid (custom: individual slice colors)
-	// Writes go through the facade on `change` only; live drag-preview was
-	// removed to keep the input path facade-routed (see IMPROVEMENTS.md).
+	// Per-slice color grid: writes go through the facade on `change` only.
+	// Drag-time live preview is intentionally absent — restoring it requires
+	// a debounced facade call so the write path stays facade-routed.
 	const perSliceInputs = document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]');
 	perSliceInputs.forEach(input => {
 		input.addEventListener('change', () => {
