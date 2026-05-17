@@ -367,6 +367,8 @@
 	"chive-chart-color-gradient-manual": "Option label for manual threshold-based gradient color mode.",
 	"chive-chart-color-by-field": "Option label for coloring by data field/column values.",
 	"chive-chart-color-per-item": "Option label for individual per-category or per-item custom coloring.",
+	"chive-chart-color-ramp": "Label for the select that picks a named multi-stop color ramp (Viridis, Plasma, Terrain, etc.) or 'Custom' to fall back to the two-color gradient endpoints. When a named ramp is selected, the two endpoint pickers and the 2-endpoint palette preset are disabled.",
+	"chive-chart-color-ramp-custom": "Option label for the color-ramp select that keeps the legacy two-color custom gradient (controlled by the start/end color pickers below).",
 	"chive-chart-color-gradient-min": "Label for color picker for the start/minimum value in gradient.",
 	"chive-chart-color-gradient-max": "Label for color picker for the end/maximum value in gradient.",
 	"chive-chart-color-gradient-distribution": "Label for selector that controls how gradient colors are distributed across items: by absolute value or by sort rank.",

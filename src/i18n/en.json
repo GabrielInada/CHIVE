@@ -433,6 +433,8 @@
 	"chive-chart-color-gradient-manual": "Manual gradient",
 	"chive-chart-color-by-field": "By column",
 	"chive-chart-color-per-item": "Per item",
+	"chive-chart-color-ramp": "Color ramp",
+	"chive-chart-color-ramp-custom": "Custom (two colors)",
 	"chive-chart-color-gradient-min": "Start color (minimum)",
 	"chive-chart-color-gradient-max": "End color (maximum)",
 	"chive-chart-color-gradient-distribution": "Color distribution",

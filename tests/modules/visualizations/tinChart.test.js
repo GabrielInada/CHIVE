@@ -375,6 +375,45 @@ describe('renderTinChart', () => {
 		expect(tooltip.textContent).toContain('z');
 	});
 
+	it('legend gradient swaps when a named color ramp is selected', () => {
+		const container = document.getElementById('tin');
+		const customOpts = {
+			subdivisionDepth: 0,
+			colorRamp: 'custom',
+			gradientMinColor: '#000000',
+			gradientMaxColor: '#ffffff',
+		};
+		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', customOpts);
+		const customStops = Array.from(container.querySelectorAll('.tin-legend rect'))
+			.map(r => r.getAttribute('fill'));
+
+		document.body.innerHTML = '<div id="tin"></div>';
+		const container2 = document.getElementById('tin');
+		renderTinChart(container2, VALID_ROWS, 'x', 'y', 'z', { ...customOpts, colorRamp: 'viridis' });
+		const viridisStops = Array.from(container2.querySelectorAll('.tin-legend rect'))
+			.map(r => r.getAttribute('fill'));
+
+		expect(customStops.length).toBe(12);
+		expect(viridisStops.length).toBe(12);
+		expect(viridisStops.join('|')).not.toBe(customStops.join('|'));
+	});
+
+	it('preserves the custom two-color gradient when colorRamp is custom (regression guard)', () => {
+		const container = document.getElementById('tin');
+		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			colorRamp: 'custom',
+			gradientMinColor: '#000000',
+			gradientMaxColor: '#ffffff',
+		});
+		// In custom mode the first legend stop is exactly the min color and the
+		// last stop interpolates close to (but not exactly) the max color (12 stops, t at 11/12).
+		const stops = container.querySelectorAll('.tin-legend rect');
+		expect(stops[0].getAttribute('fill')).toBe('#000000');
+		// Middle stop t=6/12=0.5 → '#808080' (gray midpoint of black/white).
+		expect(stops[6].getAttribute('fill')).toBe('#808080');
+	});
+
 	it('emits one hit line per visible isoline segment', () => {
 		const container = document.getElementById('tin');
 		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
