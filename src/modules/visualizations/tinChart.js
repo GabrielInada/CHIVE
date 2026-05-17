@@ -148,6 +148,9 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 		? Math.max(TIN_CHART.minIsolineLabelSize, Math.min(TIN_CHART.maxIsolineLabelSize, isolineLabelSizeRaw))
 		: TIN_CHART.defaultIsolineLabelSize;
 	const isolineLabelColor = normalizeColor(opcoes.isolineLabelColor, TIN_CHART.defaultIsolineLabelColor);
+	const colorIsolinesByZ = opcoes.colorIsolinesByZ === true;
+	const isolineMinColor = normalizeColor(opcoes.isolineMinColor, TIN_CHART.defaultIsolineMinColor);
+	const isolineMaxColor = normalizeColor(opcoes.isolineMaxColor, TIN_CHART.defaultIsolineMaxColor);
 	const showThreshold = opcoes.showThreshold === true;
 	const thresholdValueRaw = Number(opcoes.thresholdValue);
 	const thresholdValue = Number.isFinite(thresholdValueRaw)
@@ -317,15 +320,19 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 			levels = scaleLinear().domain([zMin, zMax]).nice().ticks(isolineCount);
 		}
 		let labelGroup = null;
+		const zDeltaForIsolines = zMax - zMin;
 		levels.forEach(level => {
 			const { segments, longest } = computeIsolineSegments(triangleVerts, level);
+			const strokeColor = colorIsolinesByZ
+				? interpolateColor(isolineMinColor, isolineMaxColor, (level - zMin) / zDeltaForIsolines)
+				: isolineColor;
 			segments.forEach(seg => {
 				isolinesGroup.append('line')
 					.attr('x1', seg.x1)
 					.attr('y1', seg.y1)
 					.attr('x2', seg.x2)
 					.attr('y2', seg.y2)
-					.attr('stroke', isolineColor)
+					.attr('stroke', strokeColor)
 					.attr('stroke-width', isolineWidth)
 					.attr('fill', 'none');
 			});
@@ -336,7 +343,7 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 					.attr('text-anchor', 'middle')
 					.attr('dominant-baseline', 'middle')
 					.attr('font-size', isolineLabelSize)
-					.attr('fill', isolineLabelColor)
+					.attr('fill', colorIsolinesByZ ? strokeColor : isolineLabelColor)
 					.attr('stroke', '#fffef9')
 					.attr('stroke-width', 2.5)
 					.attr('paint-order', 'stroke')

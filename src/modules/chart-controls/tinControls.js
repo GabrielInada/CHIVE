@@ -267,7 +267,7 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 	isolineColorInput.type = 'color';
 	isolineColorInput.className = 'chart-color-input';
 	isolineColorInput.value = normalizeHexColor(config.isolineColor, TIN_CHART.defaultIsolineColor);
-	isolineColorInput.disabled = disabled || !config.showIsolines;
+	isolineColorInput.disabled = disabled || !config.showIsolines || config.colorIsolinesByZ === true;
 	isolineColorDiv.appendChild(isolineColorLabel);
 	isolineColorDiv.appendChild(isolineColorInput);
 	overlayControls.push(isolineColorDiv);
@@ -280,6 +280,41 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		0.1,
 		disabled || !config.showIsolines,
 	));
+
+	overlayControls.push(createCheckboxControl(
+		'viz-toggle-tin-color-isolines-by-z',
+		t('chive-chart-control-tin-color-isolines-by-z'),
+		config.colorIsolinesByZ === true,
+		disabled || !config.showIsolines,
+	));
+	const isolineMinColorDiv = document.createElement('div');
+	isolineMinColorDiv.className = 'chart-controle';
+	const isolineMinColorLabel = document.createElement('label');
+	isolineMinColorLabel.htmlFor = 'viz-input-tin-isoline-min-color';
+	isolineMinColorLabel.textContent = t('chive-chart-control-tin-isoline-min-color');
+	const isolineMinColorInput = document.createElement('input');
+	isolineMinColorInput.id = 'viz-input-tin-isoline-min-color';
+	isolineMinColorInput.type = 'color';
+	isolineMinColorInput.className = 'chart-color-input';
+	isolineMinColorInput.value = normalizeHexColor(config.isolineMinColor, TIN_CHART.defaultIsolineMinColor);
+	isolineMinColorInput.disabled = disabled || !config.showIsolines || config.colorIsolinesByZ !== true;
+	isolineMinColorDiv.appendChild(isolineMinColorLabel);
+	isolineMinColorDiv.appendChild(isolineMinColorInput);
+	overlayControls.push(isolineMinColorDiv);
+	const isolineMaxColorDiv = document.createElement('div');
+	isolineMaxColorDiv.className = 'chart-controle';
+	const isolineMaxColorLabel = document.createElement('label');
+	isolineMaxColorLabel.htmlFor = 'viz-input-tin-isoline-max-color';
+	isolineMaxColorLabel.textContent = t('chive-chart-control-tin-isoline-max-color');
+	const isolineMaxColorInput = document.createElement('input');
+	isolineMaxColorInput.id = 'viz-input-tin-isoline-max-color';
+	isolineMaxColorInput.type = 'color';
+	isolineMaxColorInput.className = 'chart-color-input';
+	isolineMaxColorInput.value = normalizeHexColor(config.isolineMaxColor, TIN_CHART.defaultIsolineMaxColor);
+	isolineMaxColorInput.disabled = disabled || !config.showIsolines || config.colorIsolinesByZ !== true;
+	isolineMaxColorDiv.appendChild(isolineMaxColorLabel);
+	isolineMaxColorDiv.appendChild(isolineMaxColorInput);
+	overlayControls.push(isolineMaxColorDiv);
 
 	overlayControls.push(createCheckboxControl(
 		'viz-toggle-tin-isoline-labels',
@@ -401,6 +436,7 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 		{ id: 'viz-toggle-tin-hull', key: 'showHull' },
 		{ id: 'viz-toggle-tin-isolines', key: 'showIsolines' },
 		{ id: 'viz-toggle-tin-isoline-labels', key: 'showIsolineLabels' },
+		{ id: 'viz-toggle-tin-color-isolines-by-z', key: 'colorIsolinesByZ' },
 		{ id: 'viz-toggle-tin-threshold', key: 'showThreshold' },
 	], dataset, 'tin', onConfigChanged);
 
@@ -421,6 +457,8 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 	setupColorInputListener('viz-input-tin-hull-color', 'hullColor', TIN_CHART.defaultHullColor, dataset, 'tin', onConfigChanged);
 	setupColorInputListener('viz-input-tin-isoline-color', 'isolineColor', TIN_CHART.defaultIsolineColor, dataset, 'tin', onConfigChanged);
 	setupColorInputListener('viz-input-tin-isoline-label-color', 'isolineLabelColor', TIN_CHART.defaultIsolineLabelColor, dataset, 'tin', onConfigChanged);
+	setupColorInputListener('viz-input-tin-isoline-min-color', 'isolineMinColor', TIN_CHART.defaultIsolineMinColor, dataset, 'tin', onConfigChanged);
+	setupColorInputListener('viz-input-tin-isoline-max-color', 'isolineMaxColor', TIN_CHART.defaultIsolineMaxColor, dataset, 'tin', onConfigChanged);
 	setupColorInputListener('viz-input-tin-threshold-color', 'thresholdColor', TIN_CHART.defaultThresholdColor, dataset, 'tin', onConfigChanged);
 
 	setupColorPresetListeners(

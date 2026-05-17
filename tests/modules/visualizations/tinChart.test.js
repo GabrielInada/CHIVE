@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderTinChart } from '../../../src/modules/visualizations/tinChart.js';
 import { hideChartTooltip } from '../../../src/modules/visualizations/tooltip.js';
+import { interpolateColor } from '../../../src/utils/colorUtils.js';
 
 const VALID_ROWS = [
 	{ x: 0, y: 0, z: 1 },
@@ -205,6 +206,70 @@ describe('renderTinChart', () => {
 		const labels = container.querySelectorAll('.tin-isoline-labels text');
 		expect(labels.length).toBeGreaterThan(0);
 		expect(labels.length).toBeLessThanOrEqual(5);
+	});
+
+	it('colors all isoline segments with isolineColor when colorIsolinesByZ is off', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 5,
+			isolineColor: '#abcdef',
+			colorIsolinesByZ: false,
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		const lines = container.querySelectorAll('.tin-isolines line');
+		expect(lines.length).toBeGreaterThan(0);
+		for (const line of lines) {
+			expect(line.getAttribute('stroke')).toBe('#abcdef');
+		}
+	});
+
+	it('emits multiple distinct stroke colors when colorIsolinesByZ is on', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 5,
+			colorIsolinesByZ: true,
+			isolineMinColor: '#0000ff',
+			isolineMaxColor: '#ff0000',
+			showEdges: false,
+			showPoints: false,
+		});
+		expect(result.ok).toBe(true);
+		const lines = container.querySelectorAll('.tin-isolines line');
+		expect(lines.length).toBeGreaterThan(0);
+		const uniqueStrokes = new Set(Array.from(lines).map(l => l.getAttribute('stroke')));
+		expect(uniqueStrokes.size).toBeGreaterThan(1);
+	});
+
+	it('uses the gradient midpoint for a contour at the middle of the Z range', () => {
+		const container = document.getElementById('tin');
+		// z=[0,0,10] with step=5 gives a single non-degenerate contour at level 5,
+		// which is exactly halfway between zMin=0 and zMax=10.
+		const rows = [
+			{ x: 0, y: 0, z: 0 },
+			{ x: 10, y: 0, z: 0 },
+			{ x: 5, y: 10, z: 10 },
+		];
+		renderTinChart(container, rows, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineMode: 'step',
+			isolineStep: 5,
+			colorIsolinesByZ: true,
+			isolineMinColor: '#0000ff',
+			isolineMaxColor: '#ff0000',
+			showEdges: false,
+			showPoints: false,
+		});
+		const lines = container.querySelectorAll('.tin-isolines line');
+		expect(lines.length).toBe(1);
+		const expected = interpolateColor('#0000ff', '#ff0000', 0.5);
+		expect(lines[0].getAttribute('stroke')).toBe(expected);
 	});
 
 	it('emits one segment per step-mode level that cuts the triangle (step=5 on z=[0,0,10])', () => {
