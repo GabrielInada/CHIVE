@@ -2,7 +2,7 @@ import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { normalizeActiveDatasetConfig } from '../appState.js';
-import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createSelectControl } from './shared.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor, createSelectControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
@@ -226,53 +226,29 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || config.colorMode === 'uniform',
 	));
 
-	const colorDiv = document.createElement('div');
-	colorDiv.className = 'chart-controle';
+	stylingControls.push(createColorInputControl(
+		'viz-input-scatter-color',
+		t('chive-chart-control-scatter-color'),
+		config.color,
+		CHART_COLORS.scatter,
+		disabled || config.colorMode !== 'uniform',
+	));
 
-	const colorLabel = document.createElement('label');
-	colorLabel.htmlFor = 'viz-input-scatter-color';
-	colorLabel.textContent = t('chive-chart-control-scatter-color');
+	stylingControls.push(createColorInputControl(
+		'viz-input-scatter-gradient-min',
+		t('chive-chart-color-gradient-min'),
+		config.gradientMinColor,
+		CHART_COLORS.scatter,
+		disabled || config.colorMode === 'uniform',
+	));
 
-	const colorInput = document.createElement('input');
-	colorInput.id = 'viz-input-scatter-color';
-	colorInput.type = 'color';
-	colorInput.className = 'chart-color-input';
-	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.scatter);
-	colorInput.disabled = disabled || config.colorMode !== 'uniform';
-
-	colorDiv.appendChild(colorLabel);
-	colorDiv.appendChild(colorInput);
-	stylingControls.push(colorDiv);
-
-	const minColorDiv = document.createElement('div');
-	minColorDiv.className = 'chart-controle';
-	const minColorLabel = document.createElement('label');
-	minColorLabel.htmlFor = 'viz-input-scatter-gradient-min';
-	minColorLabel.textContent = t('chive-chart-color-gradient-min');
-	const minColorInput = document.createElement('input');
-	minColorInput.id = 'viz-input-scatter-gradient-min';
-	minColorInput.type = 'color';
-	minColorInput.className = 'chart-color-input';
-	minColorInput.value = normalizeHexColor(config.gradientMinColor, CHART_COLORS.scatter);
-	minColorInput.disabled = disabled || config.colorMode === 'uniform';
-	minColorDiv.appendChild(minColorLabel);
-	minColorDiv.appendChild(minColorInput);
-	stylingControls.push(minColorDiv);
-
-	const maxColorDiv = document.createElement('div');
-	maxColorDiv.className = 'chart-controle';
-	const maxColorLabel = document.createElement('label');
-	maxColorLabel.htmlFor = 'viz-input-scatter-gradient-max';
-	maxColorLabel.textContent = t('chive-chart-color-gradient-max');
-	const maxColorInput = document.createElement('input');
-	maxColorInput.id = 'viz-input-scatter-gradient-max';
-	maxColorInput.type = 'color';
-	maxColorInput.className = 'chart-color-input';
-	maxColorInput.value = normalizeHexColor(config.gradientMaxColor, '#ffffff');
-	maxColorInput.disabled = disabled || config.colorMode === 'uniform';
-	maxColorDiv.appendChild(maxColorLabel);
-	maxColorDiv.appendChild(maxColorInput);
-	stylingControls.push(maxColorDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-scatter-gradient-max',
+		t('chive-chart-color-gradient-max'),
+		config.gradientMaxColor,
+		'#ffffff',
+		disabled || config.colorMode === 'uniform',
+	));
 
 	if (config.colorMode === 'numeric') {
 		stylingControls.push(createSelectControl(

@@ -1,7 +1,7 @@
 import { CHART_COLORS, TREEMAP_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import { createSelectControl } from './shared.js';
@@ -121,20 +121,13 @@ export function createTreeMapControls(dataset, categoryOptions, numericOptions =
 		isDisabled
 	));
 
-	const colorDiv = document.createElement('div');
-	colorDiv.className = 'chart-controle';
-	const colorLabel = document.createElement('label');
-	colorLabel.htmlFor = 'viz-input-treemap-color';
-	colorLabel.textContent = t('chive-chart-control-bar-color');
-	const colorInput = document.createElement('input');
-	colorInput.id = 'viz-input-treemap-color';
-	colorInput.type = 'color';
-	colorInput.className = 'chart-color-input';
-	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.treemap);
-	colorInput.disabled = isDisabled || config.colorMode !== 'uniform';
-	colorDiv.appendChild(colorLabel);
-	colorDiv.appendChild(colorInput);
-	stylingControls.push(colorDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-treemap-color',
+		t('chive-chart-control-bar-color'),
+		config.color,
+		CHART_COLORS.treemap,
+		isDisabled || config.colorMode !== 'uniform',
+	));
 
 	// ====== ADVANCED SECTION ======
 	const advancedControls = [];

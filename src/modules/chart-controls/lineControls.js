@@ -3,6 +3,7 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import {
 	createCheckboxControl,
+	createColorInputControl,
 	createSelectControl,
 	createSliderControl,
 	createTextControl,
@@ -114,35 +115,21 @@ export function createLineChartControls(dataset, numericOptions = [], dateOption
 		disabled,
 	));
 
-	const colorDiv = document.createElement('div');
-	colorDiv.className = 'chart-controle';
-	const colorLabel = document.createElement('label');
-	colorLabel.htmlFor = 'viz-input-line-color';
-	colorLabel.textContent = t('chive-chart-control-line-color');
-	const colorInput = document.createElement('input');
-	colorInput.id = 'viz-input-line-color';
-	colorInput.type = 'color';
-	colorInput.className = 'chart-color-input';
-	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.line);
-	colorInput.disabled = disabled;
-	colorDiv.appendChild(colorLabel);
-	colorDiv.appendChild(colorInput);
-	stylingControls.push(colorDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-line-color',
+		t('chive-chart-control-line-color'),
+		config.color,
+		CHART_COLORS.line,
+		disabled,
+	));
 
-	const ghostDiv = document.createElement('div');
-	ghostDiv.className = 'chart-controle';
-	const ghostLabel = document.createElement('label');
-	ghostLabel.htmlFor = 'viz-input-line-ghost-color';
-	ghostLabel.textContent = t('chive-chart-control-line-ghost-color');
-	const ghostInput = document.createElement('input');
-	ghostInput.id = 'viz-input-line-ghost-color';
-	ghostInput.type = 'color';
-	ghostInput.className = 'chart-color-input';
-	ghostInput.value = normalizeHexColor(config.ghostStrokeColor, LINE_CHART.defaultGhostStrokeColor);
-	ghostInput.disabled = disabled || config.missingMode !== 'interpolate';
-	ghostDiv.appendChild(ghostLabel);
-	ghostDiv.appendChild(ghostInput);
-	stylingControls.push(ghostDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-line-ghost-color',
+		t('chive-chart-control-line-ghost-color'),
+		config.ghostStrokeColor,
+		LINE_CHART.defaultGhostStrokeColor,
+		disabled || config.missingMode !== 'interpolate',
+	));
 
 	stylingControls.push(createCheckboxControl(
 		'viz-toggle-line-show-points',
