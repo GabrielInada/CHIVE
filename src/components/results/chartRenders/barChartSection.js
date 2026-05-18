@@ -1,0 +1,66 @@
+import { t, getLocale } from '../../../services/i18nService.js';
+import { renderBarChart } from '../../../modules/visualizations/index.js';
+import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
+import { showChartMessage } from './sharedRenderHelpers.js';
+
+export function renderBarChartSection({ config, rows, filterCallbacks }) {
+	const block = document.getElementById(CHART_BLOCKS.bar);
+	const container = document.getElementById(CHART_CONTAINERS.bar);
+	if (!config.enabled) {
+		block.style.display = 'none';
+		container.replaceChildren();
+		return;
+	}
+	block.style.display = 'block';
+	container.style.minHeight = `${Number(config.chartHeight || 320)}px`;
+	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode)
+		? config.measureMode
+		: 'count';
+	const yAxisLabel = measureMode === 'mean'
+		? t('chive-tooltip-mean')
+		: measureMode === 'sum'
+			? t('chive-tooltip-sum')
+			: t('chive-tooltip-count');
+	const result = renderBarChart(
+		container,
+		rows,
+		config.category,
+		{
+			customTitle: config.customTitle,
+			chartHeight: config.chartHeight,
+			ordenacao: config.sort,
+			topN: config.topN,
+			color: config.color,
+			colorMode: config.colorMode,
+			gradientMinColor: config.gradientMinColor,
+			gradientMaxColor: config.gradientMaxColor,
+			gradientDistribution: config.gradientDistribution,
+			manualThresholdPct: config.manualThresholdPct,
+			measureMode,
+			valueColumn: config.valueColumn,
+			showXAxisLabel: config.showXAxisLabel,
+			showYAxisLabel: config.showYAxisLabel,
+			axisLabels: {
+				x: config.category || t('chive-chart-control-bar-category'),
+				y: yAxisLabel,
+			},
+			locale: getLocale(),
+			labels: {
+				categoria: t('chive-chart-control-bar-category'),
+				contagem: t('chive-tooltip-count'),
+				soma: t('chive-tooltip-sum'),
+				media: t('chive-tooltip-mean'),
+				percentual: t('chive-tooltip-percentage'),
+				focusOnThis: t('chive-tooltip-show-only-this'),
+				addToFilter: t('chive-tooltip-add-to-filter'),
+			},
+			filterCallbacks,
+		}
+	);
+	if (!result.ok) {
+		const chave = result.reason === 'no-numeric' || result.reason === 'no-value-column'
+			? 'chive-chart-empty-bar-numeric'
+			: 'chive-chart-empty-bar';
+		showChartMessage(CHART_CONTAINERS.bar, t(chave));
+	}
+}
