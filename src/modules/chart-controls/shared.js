@@ -133,6 +133,26 @@ export function createSelectControl(id, labelText, optionsArray, selectedValue, 
 	return div;
 }
 
+export function createColorInputControl(id, labelText, value, fallback, disabled = false) {
+	const div = document.createElement('div');
+	div.className = 'chart-controle';
+
+	const label = document.createElement('label');
+	label.htmlFor = id;
+	label.textContent = labelText;
+
+	const input = document.createElement('input');
+	input.id = id;
+	input.type = 'color';
+	input.className = 'chart-color-input';
+	input.value = normalizeHexColor(value, fallback);
+	input.disabled = disabled === true;
+
+	div.appendChild(label);
+	div.appendChild(input);
+	return div;
+}
+
 // Color Presets for palette quick-apply
 import { CHART_COLOR_PALETTES } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';

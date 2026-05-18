@@ -7,6 +7,7 @@ import {
 	createTextControl,
 	createSliderControl,
 	createSelectControl,
+	createColorInputControl,
 	COLOR_PRESETS,
 	hexToRgb,
 	rgbToHex,
@@ -159,6 +160,46 @@ describe('createSelectControl', () => {
 	it('creates disabled select', () => {
 		const el = createSelectControl('sel-dis', 'X', [], '', true);
 		expect(el.querySelector('select').disabled).toBe(true);
+	});
+});
+
+describe('createColorInputControl', () => {
+	it('creates wrapper, label, and color input with correct ids and classes', () => {
+		const el = createColorInputControl('color-test', 'My Color', '#abcdef', '#000000');
+		expect(el.className).toBe('chart-controle');
+		const label = el.querySelector('label');
+		expect(label.htmlFor).toBe('color-test');
+		expect(label.textContent).toBe('My Color');
+		const input = el.querySelector('input');
+		expect(input.type).toBe('color');
+		expect(input.id).toBe('color-test');
+		expect(input.className).toBe('chart-color-input');
+	});
+
+	it('normalizes a valid hex value through unchanged', () => {
+		const el = createColorInputControl('color-valid', 'X', '#123456', '#ffffff');
+		expect(el.querySelector('input').value).toBe('#123456');
+	});
+
+	it('falls back when the value is not a valid hex', () => {
+		const el = createColorInputControl('color-bad', 'X', 'not-a-color', '#abcdef');
+		expect(el.querySelector('input').value).toBe('#abcdef');
+	});
+
+	it('defaults disabled to false', () => {
+		const el = createColorInputControl('color-default', 'X', '#000000', '#000000');
+		expect(el.querySelector('input').disabled).toBe(false);
+	});
+
+	it('sets disabled only when the argument is strictly true', () => {
+		const enabledA = createColorInputControl('a', 'X', '#000000', '#000000', false);
+		const enabledB = createColorInputControl('b', 'X', '#000000', '#000000', 'yes');
+		const enabledC = createColorInputControl('c', 'X', '#000000', '#000000', 1);
+		const disabled = createColorInputControl('d', 'X', '#000000', '#000000', true);
+		expect(enabledA.querySelector('input').disabled).toBe(false);
+		expect(enabledB.querySelector('input').disabled).toBe(false);
+		expect(enabledC.querySelector('input').disabled).toBe(false);
+		expect(disabled.querySelector('input').disabled).toBe(true);
 	});
 });
 
