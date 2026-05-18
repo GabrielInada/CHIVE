@@ -1,4 +1,4 @@
-import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from 'd3';
+import { area as d3area, axisBottom, axisLeft, extent, line as d3line, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from 'd3';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -25,6 +25,13 @@ import {
 	pickMostFrequentCategory,
 	normalizarDominio,
 } from './scatterPlotAxisHelpers.js';
+import {
+	computeRegression,
+	formatRegressionEquation,
+	formatR2,
+} from './scatterPlotRegression.js';
+
+let scatterClipIdCounter = 0;
 
 const SCATTER_PALETTES = {
 	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
@@ -69,6 +76,11 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		eixoY: opcoes.labels?.eixoY || 'Y',
 		indice: opcoes.labels?.indice || 'Index',
 		count: opcoes.labels?.count || 'Count',
+		regressionSlope: opcoes.labels?.regressionSlope || 'Slope',
+		regressionIntercept: opcoes.labels?.regressionIntercept || 'Intercept',
+		regressionR2: opcoes.labels?.regressionR2 || 'R²',
+		regressionN: opcoes.labels?.regressionN || 'Points',
+		regressionGroup: opcoes.labels?.regressionGroup || 'Group',
 	};
 	const axisLabels = {
 		x: opcoes.axisLabels?.x || eixoX,
@@ -405,8 +417,10 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		}
 	}
 
+	let getCategoryColorValue = null;
+	let categoryMap = null;
 	if (colorMode === 'category' && colorField) {
-		const getCategoryColorValue = ponto => {
+		getCategoryColorValue = ponto => {
 			if (!ponto.isAggregate) {
 				return normalizeCategoryValue(ponto.raw?.[colorField]);
 			}
@@ -414,7 +428,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		};
 
 		const palette = SCATTER_PALETTES[colorScheme];
-		const categoryMap = new Map();
+		categoryMap = new Map();
 		pontos.forEach(ponto => {
 			const cat = getCategoryColorValue(ponto);
 			if (!categoryMap.has(cat)) {
@@ -426,6 +440,26 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			return categoryMap.get(cat) || color;
 		};
 	}
+
+	const regressionRender = renderRegressionLayer({
+		opcoes,
+		pontos,
+		axisTypes,
+		effectiveXScale,
+		effectiveYScale,
+		colorMode,
+		colorField,
+		categoryMap,
+		getCategoryColorValue,
+		grupo,
+		escalaX,
+		escalaY,
+		larguraInterna,
+		alturaInterna,
+		color,
+		labels,
+		isPinned: () => pinnedIndex !== null,
+	});
 
 	grupo
 		.selectAll('circle')
@@ -523,5 +557,209 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			.text(axisLabels.y);
 	}
 
+	if (regressionRender) {
+		renderRegressionAnnotation({
+			grupo,
+			larguraInterna,
+			regressionRender,
+			xScale: effectiveXScale,
+			yScale: effectiveYScale,
+		});
+	}
+
 	return ok();
+}
+
+function renderRegressionLayer({
+	opcoes,
+	pontos,
+	axisTypes,
+	effectiveXScale,
+	effectiveYScale,
+	colorMode,
+	colorField,
+	categoryMap,
+	getCategoryColorValue,
+	grupo,
+	escalaX,
+	escalaY,
+	larguraInterna,
+	alturaInterna,
+	color,
+	labels,
+	isPinned,
+}) {
+	const config = opcoes.regression;
+	if (!config || config.enabled !== true) return null;
+	if (axisTypes.x !== AXIS_TYPE_VALUES.numeric || axisTypes.y !== AXIS_TYPE_VALUES.numeric) return null;
+	if (pontos.length < 2) return null;
+
+	const perCategoryRequested = config.mode === 'perCategory';
+	const canDoPerCategory = perCategoryRequested
+		&& colorMode === 'category'
+		&& !!colorField
+		&& typeof getCategoryColorValue === 'function'
+		&& categoryMap instanceof Map;
+	const effectiveMode = canDoPerCategory ? 'perCategory' : 'overall';
+
+	const groupBy = effectiveMode === 'perCategory' ? getCategoryColorValue : null;
+	const xDomain = escalaX.domain();
+
+	const results = computeRegression({
+		pontos,
+		xScale: effectiveXScale,
+		yScale: effectiveYScale,
+		xDomain,
+		groupBy,
+	}).filter(r => r.fit && r.fit.ok && Array.isArray(r.sampleLine));
+
+	if (results.length === 0) return null;
+
+	const showCI = config.showCI !== false;
+	const showLine = config.showLine !== false;
+	const lineWidth = Number.isFinite(Number(config.lineWidth)) ? Number(config.lineWidth) : 2;
+	const lineOpacity = Number.isFinite(Number(config.lineOpacity)) ? Number(config.lineOpacity) : 0.9;
+	const bandOpacity = Number.isFinite(Number(config.bandOpacity)) ? Number(config.bandOpacity) : 0.18;
+	const overallColor = (typeof config.overallColor === 'string' && config.overallColor)
+		? config.overallColor
+		: '#3f3a33';
+
+	const clipId = `scatter-clip-${++scatterClipIdCounter}`;
+	let defs = grupo.select('defs');
+	if (defs.empty()) defs = grupo.append('defs');
+	defs.append('clipPath')
+		.attr('id', clipId)
+		.append('rect')
+		.attr('x', 0)
+		.attr('y', 0)
+		.attr('width', larguraInterna)
+		.attr('height', alturaInterna);
+
+	const yDomain = escalaY.domain();
+	const yLog = effectiveYScale === 'log';
+	const yClampLow = yLog ? Math.max(yDomain[0] * 1e-6, Number.MIN_VALUE) : null;
+	const clampY = value => {
+		if (!yLog) return value;
+		if (!Number.isFinite(value) || value <= 0) return yClampLow;
+		return Math.max(value, yClampLow);
+	};
+
+	const layer = grupo.append('g')
+		.attr('class', 'scatter-regression-layer')
+		.attr('clip-path', `url(#${clipId})`);
+
+	const lineGenerator = d3line()
+		.x(d => escalaX(d.x))
+		.y(d => escalaY(d.y));
+
+	const areaGenerator = d3area()
+		.x(d => escalaX(d.x))
+		.y0(d => escalaY(clampY(d.yLow)))
+		.y1(d => escalaY(clampY(d.yHigh)));
+
+	const resultsWithColor = results.map(r => {
+		const groupColor = effectiveMode === 'perCategory'
+			? (categoryMap && categoryMap.get(r.groupKey)) || overallColor
+			: overallColor;
+		return { ...r, groupColor };
+	});
+
+	if (showCI) {
+		layer.selectAll('path.scatter-regression-band')
+			.data(resultsWithColor.filter(r => Array.isArray(r.sampleBand)))
+			.enter()
+			.append('path')
+			.attr('class', 'scatter-regression-band')
+			.attr('d', d => areaGenerator(d.sampleBand))
+			.attr('fill', d => d.groupColor)
+			.attr('fill-opacity', bandOpacity)
+			.attr('stroke', 'none')
+			.attr('pointer-events', 'none');
+	}
+
+	if (showLine) {
+		const lineSelection = layer.selectAll('path.scatter-regression-line')
+			.data(resultsWithColor)
+			.enter()
+			.append('path')
+			.attr('class', 'scatter-regression-line')
+			.attr('d', d => lineGenerator(d.sampleLine))
+			.attr('stroke', d => d.groupColor)
+			.attr('stroke-width', lineWidth)
+			.attr('stroke-opacity', lineOpacity)
+			.attr('stroke-dasharray', '5,4')
+			.attr('fill', 'none')
+			.style('cursor', 'default')
+			.style('pointer-events', 'stroke');
+
+		lineSelection
+			.on('mouseenter', (event, d) => {
+				if (isPinned()) return;
+				showRegressionTooltip(event, d, effectiveMode, labels);
+			})
+			.on('mousemove', event => {
+				if (isPinned()) return;
+				moveChartTooltip(event.pageX, event.pageY);
+			})
+			.on('mouseleave', () => {
+				if (isPinned()) return;
+				hideChartTooltip();
+			});
+	}
+
+	return { results: resultsWithColor, mode: effectiveMode, config };
+}
+
+function showRegressionTooltip(event, regressionResult, mode, labels) {
+	const lines = document.createDocumentFragment();
+	if (mode === 'perCategory') {
+		lines.appendChild(createTooltipLine(labels.regressionGroup, String(regressionResult.groupKey)));
+	}
+	const { slope, intercept, r2, n } = regressionResult.fit;
+	lines.appendChild(createTooltipLine(labels.regressionSlope, formatRegressionNumber(slope)));
+	lines.appendChild(createTooltipLine(labels.regressionIntercept, formatRegressionNumber(intercept)));
+	lines.appendChild(createTooltipLine(labels.regressionR2, formatR2(r2)));
+	lines.appendChild(createTooltipLine(labels.regressionN, String(n)));
+	showChartTooltip(lines, event.pageX, event.pageY);
+}
+
+function formatRegressionNumber(value) {
+	if (!Number.isFinite(value)) return 'NaN';
+	const abs = Math.abs(value);
+	if (abs === 0) return '0';
+	if (abs >= 10000 || abs < 0.001) return value.toExponential(2);
+	return Number(value.toPrecision(4)).toString();
+}
+
+function renderRegressionAnnotation({ grupo, larguraInterna, regressionRender, xScale, yScale }) {
+	const { results, mode, config } = regressionRender;
+	if (mode !== 'overall') return;
+	if (results.length === 0) return;
+	const showEquation = config.showEquation !== false;
+	const showR2 = config.showR2 !== false;
+	if (!showEquation && !showR2) return;
+	const overall = results[0];
+	const { slope, intercept, r2 } = overall.fit;
+
+	const annotation = grupo.append('g').attr('class', 'scatter-regression-annotation');
+	let yOffset = 12;
+	if (showEquation) {
+		annotation.append('text')
+			.attr('x', larguraInterna - 6)
+			.attr('y', yOffset)
+			.attr('text-anchor', 'end')
+			.attr('font-size', 11)
+			.attr('fill', '#3f3a33')
+			.text(formatRegressionEquation({ slope, intercept, xScale, yScale }));
+		yOffset += 14;
+	}
+	if (showR2) {
+		annotation.append('text')
+			.attr('x', larguraInterna - 6)
+			.attr('y', yOffset)
+			.attr('text-anchor', 'end')
+			.attr('font-size', 11)
+			.attr('fill', '#5f5a53')
+			.text(`R² = ${formatR2(r2)}`);
+	}
 }
