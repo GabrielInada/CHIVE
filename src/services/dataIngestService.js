@@ -6,8 +6,10 @@
  * with an ok/fail result when the worker reports `done` or `error` (or when
  * the caller's AbortSignal fires).
  *
- * The worker constructor is loaded lazily via a dynamic `?worker` import so
- * tests can pre-empt it via `__setIngestWorkerFactoryForTesting`.
+ * The worker is spawned lazily with the browser-native
+ * `new Worker(new URL(...), { type: 'module' })` pattern so the app runs
+ * unchanged under both raw static hosting (nginx) and Vite dev. Tests
+ * pre-empt the spawn via `__setIngestWorkerFactoryForTesting`.
  */
 
 import { ok, fail } from '../utils/result.js';
@@ -38,8 +40,10 @@ export function __setIngestWorkerFactoryForTesting(factory) {
 
 async function spawnIngestWorker() {
 	if (workerFactory) return workerFactory();
-	const module = await import('../workers/dataIngestWorker.js?worker');
-	return new module.default();
+	return new Worker(
+		new URL('../workers/dataIngestWorker.js', import.meta.url),
+		{ type: 'module' },
+	);
 }
 
 function generateId() {

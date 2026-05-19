@@ -1,4 +1,4 @@
-import { arc, pie, select, zoom, zoomIdentity } from 'd3';
+import { arc, pie, select, zoom, zoomIdentity } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,

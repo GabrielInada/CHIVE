@@ -1,4 +1,4 @@
-import { hierarchy, pack, scaleOrdinal, select } from 'd3';
+import { hierarchy, pack, scaleOrdinal, select } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,

@@ -1,4 +1,4 @@
-import { hierarchy, select, treemap, treemapSquarify } from 'd3';
+import { hierarchy, select, treemap, treemapSquarify } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,

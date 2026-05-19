@@ -12,7 +12,7 @@ import {
 	interpolateViridis,
 	scaleLinear,
 	select,
-} from 'd3';
+} from 'https://esm.sh/d3@7.9.0';
 import { CHART_COLORS, CHART_DIMENSIONS, TIN_CHART, TIN_COLOR_RAMPS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
 import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
