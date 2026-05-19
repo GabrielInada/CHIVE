@@ -1,7 +1,7 @@
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
-import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import { createSelectControl } from './shared.js';
@@ -144,50 +144,29 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 		isDisabled
 	));
 
-	const colorDiv = document.createElement('div');
-	colorDiv.className = 'chart-controle';
-	const colorLabel = document.createElement('label');
-	colorLabel.htmlFor = 'viz-input-bar-color';
-	colorLabel.textContent = t('chive-chart-control-bar-color');
-	const colorInput = document.createElement('input');
-	colorInput.id = 'viz-input-bar-color';
-	colorInput.type = 'color';
-	colorInput.className = 'chart-color-input';
-	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.bar);
-	colorInput.disabled = isDisabled || config.colorMode !== 'uniform';
-	colorDiv.appendChild(colorLabel);
-	colorDiv.appendChild(colorInput);
-	stylingControls.push(colorDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-bar-color',
+		t('chive-chart-control-bar-color'),
+		config.color,
+		CHART_COLORS.bar,
+		isDisabled || config.colorMode !== 'uniform',
+	));
 
-	const minColorDiv = document.createElement('div');
-	minColorDiv.className = 'chart-controle';
-	const minColorLabel = document.createElement('label');
-	minColorLabel.htmlFor = 'viz-input-bar-gradient-min';
-	minColorLabel.textContent = t('chive-chart-color-gradient-min');
-	const minColorInput = document.createElement('input');
-	minColorInput.id = 'viz-input-bar-gradient-min';
-	minColorInput.type = 'color';
-	minColorInput.className = 'chart-color-input';
-	minColorInput.value = normalizeHexColor(config.gradientMinColor, CHART_COLORS.bar);
-	minColorInput.disabled = isDisabled || config.colorMode === 'uniform';
-	minColorDiv.appendChild(minColorLabel);
-	minColorDiv.appendChild(minColorInput);
-	stylingControls.push(minColorDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-bar-gradient-min',
+		t('chive-chart-color-gradient-min'),
+		config.gradientMinColor,
+		CHART_COLORS.bar,
+		isDisabled || config.colorMode === 'uniform',
+	));
 
-	const maxColorDiv = document.createElement('div');
-	maxColorDiv.className = 'chart-controle';
-	const maxColorLabel = document.createElement('label');
-	maxColorLabel.htmlFor = 'viz-input-bar-gradient-max';
-	maxColorLabel.textContent = t('chive-chart-color-gradient-max');
-	const maxColorInput = document.createElement('input');
-	maxColorInput.id = 'viz-input-bar-gradient-max';
-	maxColorInput.type = 'color';
-	maxColorInput.className = 'chart-color-input';
-	maxColorInput.value = normalizeHexColor(config.gradientMaxColor, '#ffffff');
-	maxColorInput.disabled = isDisabled || config.colorMode === 'uniform';
-	maxColorDiv.appendChild(maxColorLabel);
-	maxColorDiv.appendChild(maxColorInput);
-	stylingControls.push(maxColorDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-bar-gradient-max',
+		t('chive-chart-color-gradient-max'),
+		config.gradientMaxColor,
+		'#ffffff',
+		isDisabled || config.colorMode === 'uniform',
+	));
 
 	// Gradient distribution sub-toggle (only for auto gradient mode)
 	if (config.colorMode === 'gradient') {

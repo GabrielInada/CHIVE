@@ -51,6 +51,18 @@ export function createDefaultChartConfig() {
 			colorScheme: 'Colorblind-Safe',
 			showXAxisLabel: true,
 			showYAxisLabel: true,
+			regression: {
+				enabled: false,
+				mode: 'overall',
+				showLine: true,
+				showCI: true,
+				showEquation: true,
+				showR2: true,
+				lineWidth: 2,
+				lineOpacity: 0.9,
+				bandOpacity: 0.18,
+				overallColor: null,
+			},
 		},
 		network: {
 			enabled: false,
@@ -213,6 +225,10 @@ export function mergeChartConfigWithDefaults(configGraficos) {
 		scatter: {
 			...defaults.scatter,
 			...(config.scatter || {}),
+			regression: {
+				...defaults.scatter.regression,
+				...((config.scatter && config.scatter.regression) || {}),
+			},
 		},
 		network: {
 			...defaults.network,

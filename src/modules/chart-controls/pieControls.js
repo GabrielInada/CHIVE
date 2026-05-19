@@ -5,7 +5,7 @@ import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { normalizeActiveDatasetConfig } from '../appState.js';
 import { triggerLiveRender } from './livePreview.js';
-import { createCheckboxControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
+import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
@@ -282,23 +282,13 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 	// ====== STYLING SECTION ======
 	const stylingControls = [];
 
-	const colorDiv = document.createElement('div');
-	colorDiv.className = 'chart-controle';
-
-	const colorLabel = document.createElement('label');
-	colorLabel.htmlFor = 'viz-input-pie-color';
-	colorLabel.textContent = t('chive-chart-control-pie-color');
-
-	const colorInput = document.createElement('input');
-	colorInput.id = 'viz-input-pie-color';
-	colorInput.type = 'color';
-	colorInput.className = 'chart-color-input';
-	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.pie);
-	colorInput.disabled = !dataset.configGraficos.pie.enabled;
-
-	colorDiv.appendChild(colorLabel);
-	colorDiv.appendChild(colorInput);
-	stylingControls.push(colorDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-pie-color',
+		t('chive-chart-control-pie-color'),
+		config.color,
+		CHART_COLORS.pie,
+		!dataset.configGraficos.pie.enabled,
+	));
 
 	// Palette presets for quick color application
 	if (sectorValues.length > 0) {

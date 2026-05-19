@@ -1,4 +1,4 @@
-import { axisBottom, axisLeft, extent, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from 'd3';
+import { area as d3area, axisBottom, axisLeft, extent, line as d3line, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -9,161 +9,35 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from './tooltip.js';
-import { toCategoryToken, compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
+import { toCategoryToken, normalizeCategoryValue } from '../../utils/chartFilters.js';
 import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { interpolateColor, buildRankMap, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
+import {
+	AXIS_TYPE_VALUES,
+	inferAxisType,
+	buildCategoryDomain,
+	buildCategoryJitterScale,
+	truncateCategoryTick,
+	computeAdaptiveMargins,
+	aggregateCategoricalPairs,
+	pickMostFrequentCategory,
+	normalizarDominio,
+} from './scatterPlotAxisHelpers.js';
+import {
+	computeRegression,
+	formatRegressionEquation,
+	formatR2,
+} from './scatterPlotRegression.js';
+
+let scatterClipIdCounter = 0;
 
 const SCATTER_PALETTES = {
 	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
 	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
 	'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
 };
-
-const AXIS_TYPE_VALUES = {
-	numeric: 'numeric',
-	categorical: 'categorical',
-};
-
-function isNumericLikeAxisType(axisType) {
-	const value = String(axisType || '').toLowerCase();
-	return value === 'numeric' || value === 'number' || value === 'numero';
-}
-
-function isCategoricalLikeAxisType(axisType) {
-	const value = String(axisType || '').toLowerCase();
-	return value === 'categorical' || value === 'category' || value === 'text' || value === 'texto' || value === 'date' || value === 'data';
-}
-
-function inferAxisType(axisValues, configuredAxisType) {
-	if (isNumericLikeAxisType(configuredAxisType)) return AXIS_TYPE_VALUES.numeric;
-	if (isCategoricalLikeAxisType(configuredAxisType)) return AXIS_TYPE_VALUES.categorical;
-
-	const validValues = axisValues
-		.filter(value => value !== null && value !== undefined && String(value).trim() !== '');
-	if (validValues.length === 0) return AXIS_TYPE_VALUES.categorical;
-
-	const numericCount = validValues
-		.filter(value => Number.isFinite(Number(value)))
-		.length;
-
-	return (numericCount / validValues.length) >= 0.8
-		? AXIS_TYPE_VALUES.numeric
-		: AXIS_TYPE_VALUES.categorical;
-}
-
-function deterministicJitter(index, axisSeed) {
-	const raw = Math.sin((index + 1) * 12.9898 * axisSeed) * 43758.5453123;
-	const fraction = raw - Math.floor(raw);
-	return (fraction * 2) - 1;
-}
-
-function buildCategoryDomain(pontos, key) {
-	const seen = new Set();
-	const domain = [];
-	pontos.forEach(ponto => {
-		const value = ponto[key];
-		if (seen.has(value)) return;
-		seen.add(value);
-		domain.push(value);
-	});
-	return domain;
-}
-
-function buildCategoryJitterScale(scale, maxJitterCap = 16) {
-	const baseStep = Number.isFinite(scale?.step?.()) ? scale.step() : 0;
-	const jitterMax = Math.max(0, Math.min(maxJitterCap, baseStep * 0.24));
-	return (index, axisSeed) => deterministicJitter(index, axisSeed) * jitterMax;
-}
-
-function truncateCategoryTick(value, maxLength = 20) {
-	const text = String(value);
-	if (text.length <= maxLength) return text;
-	return `${text.slice(0, Math.max(1, maxLength - 1))}…`;
-}
-
-function estimateLongestCategoryLength(points, key) {
-	return points.reduce((maxLength, point) => Math.max(maxLength, String(point[key] || '').length), 0);
-}
-
-function computeAdaptiveMargins(baseMargins, points, axisTypes) {
-	const margins = { ...baseMargins };
-
-	if (axisTypes.y === AXIS_TYPE_VALUES.categorical) {
-		const maxYLength = estimateLongestCategoryLength(points, 'yCategory');
-		const estimatedLeft = 28 + (Math.min(maxYLength, 64) * 6.8);
-		margins.left = Math.max(baseMargins.left, Math.min(340, Math.round(estimatedLeft)));
-	}
-
-	if (axisTypes.x === AXIS_TYPE_VALUES.categorical) {
-		const maxXLength = estimateLongestCategoryLength(points, 'xCategory');
-		const estimatedBottom = 48 + (Math.min(maxXLength, 52) * 4.2);
-		margins.bottom = Math.max(baseMargins.bottom, Math.min(250, Math.round(estimatedBottom)));
-	}
-
-	return margins;
-}
-
-function aggregateCategoricalPairs(points) {
-	const groups = new Map();
-
-	points.forEach(point => {
-		const key = `${point.xCategory}\u0001${point.yCategory}`;
-		if (!groups.has(key)) {
-			groups.set(key, {
-				...point,
-				isAggregate: true,
-				count: 0,
-				rawRows: [],
-			});
-		}
-
-		const group = groups.get(key);
-		group.count += 1;
-		group.rawRows.push(point.raw);
-
-		if (point.index < group.index) {
-			group.index = point.index;
-			group.raw = point.raw;
-		}
-	});
-
-	return Array.from(groups.values());
-}
-
-function pickMostFrequentCategory(rows, fieldName) {
-	const categoryCount = new Map();
-
-	rows.forEach(row => {
-		const category = normalizeCategoryValue(row?.[fieldName]);
-		categoryCount.set(category, (categoryCount.get(category) || 0) + 1);
-	});
-
-	let bestCategory = '—';
-	let bestCount = -1;
-	for (const [category, count] of categoryCount.entries()) {
-		if (count > bestCount) {
-			bestCategory = category;
-			bestCount = count;
-			continue;
-		}
-		if (count === bestCount && compareStrings(category, bestCategory) < 0) {
-			bestCategory = category;
-		}
-	}
-
-	return bestCategory;
-}
-
-function normalizarDominio([minimo, maximo]) {
-	if (!Number.isFinite(minimo) || !Number.isFinite(maximo)) return [0, 1];
-	if (minimo === maximo) {
-		const delta = minimo === 0 ? 1 : Math.abs(minimo * 0.1);
-		return [minimo - delta, maximo + delta];
-	}
-	return [minimo, maximo];
-}
 
 export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	if (!container || !eixoX || !eixoY) return fail();
@@ -202,6 +76,11 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		eixoY: opcoes.labels?.eixoY || 'Y',
 		indice: opcoes.labels?.indice || 'Index',
 		count: opcoes.labels?.count || 'Count',
+		regressionSlope: opcoes.labels?.regressionSlope || 'Slope',
+		regressionIntercept: opcoes.labels?.regressionIntercept || 'Intercept',
+		regressionR2: opcoes.labels?.regressionR2 || 'R²',
+		regressionN: opcoes.labels?.regressionN || 'Points',
+		regressionGroup: opcoes.labels?.regressionGroup || 'Group',
 	};
 	const axisLabels = {
 		x: opcoes.axisLabels?.x || eixoX,
@@ -538,8 +417,10 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		}
 	}
 
+	let getCategoryColorValue = null;
+	let categoryMap = null;
 	if (colorMode === 'category' && colorField) {
-		const getCategoryColorValue = ponto => {
+		getCategoryColorValue = ponto => {
 			if (!ponto.isAggregate) {
 				return normalizeCategoryValue(ponto.raw?.[colorField]);
 			}
@@ -547,7 +428,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		};
 
 		const palette = SCATTER_PALETTES[colorScheme];
-		const categoryMap = new Map();
+		categoryMap = new Map();
 		pontos.forEach(ponto => {
 			const cat = getCategoryColorValue(ponto);
 			if (!categoryMap.has(cat)) {
@@ -559,6 +440,26 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			return categoryMap.get(cat) || color;
 		};
 	}
+
+	const regressionRender = renderRegressionLayer({
+		opcoes,
+		pontos,
+		axisTypes,
+		effectiveXScale,
+		effectiveYScale,
+		colorMode,
+		colorField,
+		categoryMap,
+		getCategoryColorValue,
+		grupo,
+		escalaX,
+		escalaY,
+		larguraInterna,
+		alturaInterna,
+		color,
+		labels,
+		isPinned: () => pinnedIndex !== null,
+	});
 
 	grupo
 		.selectAll('circle')
@@ -656,5 +557,209 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			.text(axisLabels.y);
 	}
 
+	if (regressionRender) {
+		renderRegressionAnnotation({
+			grupo,
+			larguraInterna,
+			regressionRender,
+			xScale: effectiveXScale,
+			yScale: effectiveYScale,
+		});
+	}
+
 	return ok();
+}
+
+function renderRegressionLayer({
+	opcoes,
+	pontos,
+	axisTypes,
+	effectiveXScale,
+	effectiveYScale,
+	colorMode,
+	colorField,
+	categoryMap,
+	getCategoryColorValue,
+	grupo,
+	escalaX,
+	escalaY,
+	larguraInterna,
+	alturaInterna,
+	color,
+	labels,
+	isPinned,
+}) {
+	const config = opcoes.regression;
+	if (!config || config.enabled !== true) return null;
+	if (axisTypes.x !== AXIS_TYPE_VALUES.numeric || axisTypes.y !== AXIS_TYPE_VALUES.numeric) return null;
+	if (pontos.length < 2) return null;
+
+	const perCategoryRequested = config.mode === 'perCategory';
+	const canDoPerCategory = perCategoryRequested
+		&& colorMode === 'category'
+		&& !!colorField
+		&& typeof getCategoryColorValue === 'function'
+		&& categoryMap instanceof Map;
+	const effectiveMode = canDoPerCategory ? 'perCategory' : 'overall';
+
+	const groupBy = effectiveMode === 'perCategory' ? getCategoryColorValue : null;
+	const xDomain = escalaX.domain();
+
+	const results = computeRegression({
+		pontos,
+		xScale: effectiveXScale,
+		yScale: effectiveYScale,
+		xDomain,
+		groupBy,
+	}).filter(r => r.fit && r.fit.ok && Array.isArray(r.sampleLine));
+
+	if (results.length === 0) return null;
+
+	const showCI = config.showCI !== false;
+	const showLine = config.showLine !== false;
+	const lineWidth = Number.isFinite(Number(config.lineWidth)) ? Number(config.lineWidth) : 2;
+	const lineOpacity = Number.isFinite(Number(config.lineOpacity)) ? Number(config.lineOpacity) : 0.9;
+	const bandOpacity = Number.isFinite(Number(config.bandOpacity)) ? Number(config.bandOpacity) : 0.18;
+	const overallColor = (typeof config.overallColor === 'string' && config.overallColor)
+		? config.overallColor
+		: '#3f3a33';
+
+	const clipId = `scatter-clip-${++scatterClipIdCounter}`;
+	let defs = grupo.select('defs');
+	if (defs.empty()) defs = grupo.append('defs');
+	defs.append('clipPath')
+		.attr('id', clipId)
+		.append('rect')
+		.attr('x', 0)
+		.attr('y', 0)
+		.attr('width', larguraInterna)
+		.attr('height', alturaInterna);
+
+	const yDomain = escalaY.domain();
+	const yLog = effectiveYScale === 'log';
+	const yClampLow = yLog ? Math.max(yDomain[0] * 1e-6, Number.MIN_VALUE) : null;
+	const clampY = value => {
+		if (!yLog) return value;
+		if (!Number.isFinite(value) || value <= 0) return yClampLow;
+		return Math.max(value, yClampLow);
+	};
+
+	const layer = grupo.append('g')
+		.attr('class', 'scatter-regression-layer')
+		.attr('clip-path', `url(#${clipId})`);
+
+	const lineGenerator = d3line()
+		.x(d => escalaX(d.x))
+		.y(d => escalaY(d.y));
+
+	const areaGenerator = d3area()
+		.x(d => escalaX(d.x))
+		.y0(d => escalaY(clampY(d.yLow)))
+		.y1(d => escalaY(clampY(d.yHigh)));
+
+	const resultsWithColor = results.map(r => {
+		const groupColor = effectiveMode === 'perCategory'
+			? (categoryMap && categoryMap.get(r.groupKey)) || overallColor
+			: overallColor;
+		return { ...r, groupColor };
+	});
+
+	if (showCI) {
+		layer.selectAll('path.scatter-regression-band')
+			.data(resultsWithColor.filter(r => Array.isArray(r.sampleBand)))
+			.enter()
+			.append('path')
+			.attr('class', 'scatter-regression-band')
+			.attr('d', d => areaGenerator(d.sampleBand))
+			.attr('fill', d => d.groupColor)
+			.attr('fill-opacity', bandOpacity)
+			.attr('stroke', 'none')
+			.attr('pointer-events', 'none');
+	}
+
+	if (showLine) {
+		const lineSelection = layer.selectAll('path.scatter-regression-line')
+			.data(resultsWithColor)
+			.enter()
+			.append('path')
+			.attr('class', 'scatter-regression-line')
+			.attr('d', d => lineGenerator(d.sampleLine))
+			.attr('stroke', d => d.groupColor)
+			.attr('stroke-width', lineWidth)
+			.attr('stroke-opacity', lineOpacity)
+			.attr('stroke-dasharray', '5,4')
+			.attr('fill', 'none')
+			.style('cursor', 'default')
+			.style('pointer-events', 'stroke');
+
+		lineSelection
+			.on('mouseenter', (event, d) => {
+				if (isPinned()) return;
+				showRegressionTooltip(event, d, effectiveMode, labels);
+			})
+			.on('mousemove', event => {
+				if (isPinned()) return;
+				moveChartTooltip(event.pageX, event.pageY);
+			})
+			.on('mouseleave', () => {
+				if (isPinned()) return;
+				hideChartTooltip();
+			});
+	}
+
+	return { results: resultsWithColor, mode: effectiveMode, config };
+}
+
+function showRegressionTooltip(event, regressionResult, mode, labels) {
+	const lines = document.createDocumentFragment();
+	if (mode === 'perCategory') {
+		lines.appendChild(createTooltipLine(labels.regressionGroup, String(regressionResult.groupKey)));
+	}
+	const { slope, intercept, r2, n } = regressionResult.fit;
+	lines.appendChild(createTooltipLine(labels.regressionSlope, formatRegressionNumber(slope)));
+	lines.appendChild(createTooltipLine(labels.regressionIntercept, formatRegressionNumber(intercept)));
+	lines.appendChild(createTooltipLine(labels.regressionR2, formatR2(r2)));
+	lines.appendChild(createTooltipLine(labels.regressionN, String(n)));
+	showChartTooltip(lines, event.pageX, event.pageY);
+}
+
+function formatRegressionNumber(value) {
+	if (!Number.isFinite(value)) return 'NaN';
+	const abs = Math.abs(value);
+	if (abs === 0) return '0';
+	if (abs >= 10000 || abs < 0.001) return value.toExponential(2);
+	return Number(value.toPrecision(4)).toString();
+}
+
+function renderRegressionAnnotation({ grupo, larguraInterna, regressionRender, xScale, yScale }) {
+	const { results, mode, config } = regressionRender;
+	if (mode !== 'overall') return;
+	if (results.length === 0) return;
+	const showEquation = config.showEquation !== false;
+	const showR2 = config.showR2 !== false;
+	if (!showEquation && !showR2) return;
+	const overall = results[0];
+	const { slope, intercept, r2 } = overall.fit;
+
+	const annotation = grupo.append('g').attr('class', 'scatter-regression-annotation');
+	let yOffset = 12;
+	if (showEquation) {
+		annotation.append('text')
+			.attr('x', larguraInterna - 6)
+			.attr('y', yOffset)
+			.attr('text-anchor', 'end')
+			.attr('font-size', 11)
+			.attr('fill', '#3f3a33')
+			.text(formatRegressionEquation({ slope, intercept, xScale, yScale }));
+		yOffset += 14;
+	}
+	if (showR2) {
+		annotation.append('text')
+			.attr('x', larguraInterna - 6)
+			.attr('y', yOffset)
+			.attr('text-anchor', 'end')
+			.attr('font-size', 11)
+			.attr('fill', '#5f5a53')
+			.text(`R² = ${formatR2(r2)}`);
+	}
 }

@@ -2,7 +2,7 @@ import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { normalizeActiveDatasetConfig } from '../appState.js';
-import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createSelectControl } from './shared.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor, createSelectControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
@@ -226,53 +226,29 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || config.colorMode === 'uniform',
 	));
 
-	const colorDiv = document.createElement('div');
-	colorDiv.className = 'chart-controle';
+	stylingControls.push(createColorInputControl(
+		'viz-input-scatter-color',
+		t('chive-chart-control-scatter-color'),
+		config.color,
+		CHART_COLORS.scatter,
+		disabled || config.colorMode !== 'uniform',
+	));
 
-	const colorLabel = document.createElement('label');
-	colorLabel.htmlFor = 'viz-input-scatter-color';
-	colorLabel.textContent = t('chive-chart-control-scatter-color');
+	stylingControls.push(createColorInputControl(
+		'viz-input-scatter-gradient-min',
+		t('chive-chart-color-gradient-min'),
+		config.gradientMinColor,
+		CHART_COLORS.scatter,
+		disabled || config.colorMode === 'uniform',
+	));
 
-	const colorInput = document.createElement('input');
-	colorInput.id = 'viz-input-scatter-color';
-	colorInput.type = 'color';
-	colorInput.className = 'chart-color-input';
-	colorInput.value = normalizeHexColor(config.color, CHART_COLORS.scatter);
-	colorInput.disabled = disabled || config.colorMode !== 'uniform';
-
-	colorDiv.appendChild(colorLabel);
-	colorDiv.appendChild(colorInput);
-	stylingControls.push(colorDiv);
-
-	const minColorDiv = document.createElement('div');
-	minColorDiv.className = 'chart-controle';
-	const minColorLabel = document.createElement('label');
-	minColorLabel.htmlFor = 'viz-input-scatter-gradient-min';
-	minColorLabel.textContent = t('chive-chart-color-gradient-min');
-	const minColorInput = document.createElement('input');
-	minColorInput.id = 'viz-input-scatter-gradient-min';
-	minColorInput.type = 'color';
-	minColorInput.className = 'chart-color-input';
-	minColorInput.value = normalizeHexColor(config.gradientMinColor, CHART_COLORS.scatter);
-	minColorInput.disabled = disabled || config.colorMode === 'uniform';
-	minColorDiv.appendChild(minColorLabel);
-	minColorDiv.appendChild(minColorInput);
-	stylingControls.push(minColorDiv);
-
-	const maxColorDiv = document.createElement('div');
-	maxColorDiv.className = 'chart-controle';
-	const maxColorLabel = document.createElement('label');
-	maxColorLabel.htmlFor = 'viz-input-scatter-gradient-max';
-	maxColorLabel.textContent = t('chive-chart-color-gradient-max');
-	const maxColorInput = document.createElement('input');
-	maxColorInput.id = 'viz-input-scatter-gradient-max';
-	maxColorInput.type = 'color';
-	maxColorInput.className = 'chart-color-input';
-	maxColorInput.value = normalizeHexColor(config.gradientMaxColor, '#ffffff');
-	maxColorInput.disabled = disabled || config.colorMode === 'uniform';
-	maxColorDiv.appendChild(maxColorLabel);
-	maxColorDiv.appendChild(maxColorInput);
-	stylingControls.push(maxColorDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-scatter-gradient-max',
+		t('chive-chart-color-gradient-max'),
+		config.gradientMaxColor,
+		'#ffffff',
+		disabled || config.colorMode === 'uniform',
+	));
 
 	if (config.colorMode === 'numeric') {
 		stylingControls.push(createSelectControl(
@@ -304,10 +280,62 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled
 	));
 
+	// ====== ANALYTICS SECTION (Trendline / regression) ======
+	const regressionConfig = config.regression || {};
+	const bothAxesNumeric = Boolean(
+		config.x
+		&& config.y
+		&& numericOptions.includes(config.x)
+		&& numericOptions.includes(config.y)
+	);
+	const regressionEnabled = regressionConfig.enabled === true;
+	const hasCategoricalColumns = categoryOptions.length > 0;
+	const analyticsControls = [];
+
+	analyticsControls.push(createCheckboxControl(
+		'viz-toggle-scatter-regression-enabled',
+		t('chive-chart-control-scatter-regression-enabled'),
+		regressionEnabled,
+		disabled || !bothAxesNumeric,
+	));
+
+	analyticsControls.push(createSelectControl(
+		'viz-select-scatter-regression-mode',
+		t('chive-chart-control-scatter-regression-mode'),
+		[
+			{ value: 'overall', label: t('chive-chart-control-scatter-regression-mode-overall') },
+			{ value: 'perCategory', label: t('chive-chart-control-scatter-regression-mode-per-category') },
+		],
+		regressionConfig.mode === 'perCategory' ? 'perCategory' : 'overall',
+		disabled || !regressionEnabled || !hasCategoricalColumns,
+	));
+
+	analyticsControls.push(createCheckboxControl(
+		'viz-toggle-scatter-regression-ci',
+		t('chive-chart-control-scatter-regression-show-ci'),
+		regressionConfig.showCI !== false,
+		disabled || !regressionEnabled,
+	));
+
+	analyticsControls.push(createCheckboxControl(
+		'viz-toggle-scatter-regression-equation',
+		t('chive-chart-control-scatter-regression-show-equation'),
+		regressionConfig.showEquation !== false,
+		disabled || !regressionEnabled,
+	));
+
+	analyticsControls.push(createCheckboxControl(
+		'viz-toggle-scatter-regression-r2',
+		t('chive-chart-control-scatter-regression-show-r2'),
+		regressionConfig.showR2 !== false,
+		disabled || !regressionEnabled,
+	));
+
 	// ====== Group and return all sections ======
 	return groupControls([
 		{ id: 'data', title: 'Data & Aggregation', controls: dataControls, expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
+		{ id: 'analytics', title: t('chive-chart-control-scatter-regression-section'), controls: analyticsControls, expanded: false, icon: 'advanced' },
 		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
 	]);
 }
@@ -377,6 +405,8 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 			const value = colorModeSelect.value;
 			const availableFields = value === 'category' ? categoricas : numericas;
 			const currentField = dataset.configGraficos.scatter.colorField;
+			const currentRegression = dataset.configGraficos.scatter.regression || {};
+			const nextRegressionMode = value === 'category' ? currentRegression.mode : 'overall';
 			updateActiveDatasetChartConfig({
 				scatter: {
 					...dataset.configGraficos.scatter,
@@ -385,6 +415,7 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 						? null
 						: (availableFields.includes(currentField) ? currentField : (availableFields[0] || null)),
 					colorFieldType: value === 'category' ? 'category' : (value === 'numeric' ? 'numeric' : null),
+					regression: { ...currentRegression, mode: nextRegressionMode || 'overall' },
 				},
 			});
 			onConfigChanged?.();
@@ -444,6 +475,56 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 	setupSliderListener('viz-slider-scatter-height', 'chartHeight', dataset, 'scatter', onConfigChanged);
 	setupSliderListener('viz-slider-scatter-size-min', 'sizeMin', dataset, 'scatter', onConfigChanged);
 	setupSliderListener('viz-slider-scatter-size-max', 'sizeMax', dataset, 'scatter', onConfigChanged);
+
+	const updateRegression = patch => {
+		const currentScatter = dataset.configGraficos.scatter || {};
+		const currentRegression = currentScatter.regression || {};
+		updateActiveDatasetChartConfig({
+			scatter: {
+				...currentScatter,
+				regression: { ...currentRegression, ...patch },
+			},
+		});
+		onConfigChanged?.();
+	};
+
+	const attachRegressionCheckbox = (id, key) => {
+		const el = document.getElementById(id);
+		if (!el) return;
+		el.addEventListener('change', () => {
+			updateRegression({ [key]: Boolean(el.checked) });
+		});
+	};
+
+	attachRegressionCheckbox('viz-toggle-scatter-regression-enabled', 'enabled');
+	attachRegressionCheckbox('viz-toggle-scatter-regression-ci', 'showCI');
+	attachRegressionCheckbox('viz-toggle-scatter-regression-equation', 'showEquation');
+	attachRegressionCheckbox('viz-toggle-scatter-regression-r2', 'showR2');
+
+	const regressionModeSelect = document.getElementById('viz-select-scatter-regression-mode');
+	if (regressionModeSelect) {
+		regressionModeSelect.addEventListener('change', () => {
+			const value = regressionModeSelect.value === 'perCategory' ? 'perCategory' : 'overall';
+			const currentScatter = dataset.configGraficos.scatter || {};
+			const nextScatter = {
+				...currentScatter,
+				regression: { ...(currentScatter.regression || {}), mode: value },
+			};
+			if (value === 'perCategory') {
+				const needsField = currentScatter.colorMode !== 'category' || !currentScatter.colorField;
+				if (needsField) {
+					const firstCategorical = categoricas[0] || null;
+					if (firstCategorical) {
+						nextScatter.colorMode = 'category';
+						nextScatter.colorField = firstCategorical;
+						nextScatter.colorFieldType = 'category';
+					}
+				}
+			}
+			updateActiveDatasetChartConfig({ scatter: nextScatter });
+			onConfigChanged?.();
+		});
+	}
 }
 
 function pickPreferred(options, preferredIndex = 0, avoid = null) {

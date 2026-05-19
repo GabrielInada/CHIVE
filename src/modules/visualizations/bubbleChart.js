@@ -1,4 +1,4 @@
-import { hierarchy, pack, scaleOrdinal, select } from 'd3';
+import { hierarchy, pack, scaleOrdinal, select } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -11,107 +11,19 @@ import {
 } from './tooltip.js';
 import { BUBBLE_CHART, CHART_COLOR_PALETTES, CHART_DIMENSIONS } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
-import { toCategoryToken, compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
 import { ok, fail } from '../../utils/result.js';
+import {
+	resolveNestingColumns,
+	aggregateBubbles,
+	buildMultiLevelHierarchy,
+	getTopLevelGroup,
+	isIntermediate,
+	isDescendantOf,
+} from './bubbleChartHierarchy.js';
 
 function getBubblePalette(colorScheme) {
 	return CHART_COLOR_PALETTES[colorScheme] || CHART_COLOR_PALETTES.Tableau10;
-}
-
-/**
- * Resolve nestingColumns from options, with backward-compatible groupColumn fallback.
- */
-function resolveNestingColumns(opcoes) {
-	if (Array.isArray(opcoes.nestingColumns) && opcoes.nestingColumns.length > 0) {
-		// Deduplicate preserving order
-		return [...new Set(opcoes.nestingColumns.filter(c => c && typeof c === 'string'))];
-	}
-	if (opcoes.groupColumn && typeof opcoes.groupColumn === 'string') {
-		return [opcoes.groupColumn];
-	}
-	return [];
-}
-
-/**
- * Build a multi-level hierarchy tree from aggregated leaf records.
- * Each leaf gets a path derived from nestingColumns values.
- */
-function buildMultiLevelHierarchy(bubbles, nestingColumns) {
-	const root = { children: new Map() };
-
-	for (const bubble of bubbles) {
-		let current = root;
-		for (let depth = 0; depth < nestingColumns.length; depth++) {
-			const segmentValue = bubble.nestingPath[depth];
-			if (!current.children.has(segmentValue)) {
-				current.children.set(segmentValue, {
-					groupName: segmentValue,
-					depth: depth + 1,
-					pathKey: bubble.nestingPath.slice(0, depth + 1).join('→'),
-					children: new Map(),
-				});
-			}
-			current = current.children.get(segmentValue);
-		}
-		// At the deepest intermediate node, store leaf
-		if (!current.leaves) current.leaves = [];
-		current.leaves.push(bubble);
-	}
-
-	// Convert map-based tree to plain hierarchy object
-	function convertNode(mapNode) {
-		if (mapNode.leaves) {
-			// Deepest intermediate: children are leaf bubbles
-			const intermediateChildren = Array.from(mapNode.children.values()).map(convertNode);
-			return {
-				groupName: mapNode.groupName,
-				depth: mapNode.depth,
-				pathKey: mapNode.pathKey,
-				children: [...intermediateChildren, ...mapNode.leaves],
-			};
-		}
-		return {
-			groupName: mapNode.groupName,
-			depth: mapNode.depth,
-			pathKey: mapNode.pathKey,
-			children: Array.from(mapNode.children.values()).map(convertNode),
-		};
-	}
-
-	// Root level
-	const rootChildren = Array.from(root.children.values()).map(convertNode);
-	return { children: rootChildren };
-}
-
-/**
- * Find the top-level ancestor group name for color assignment.
- */
-function getTopLevelGroup(node) {
-	// Walk up to depth 1 (first nesting level child of root)
-	let current = node;
-	while (current.parent && current.parent.parent) {
-		current = current.parent;
-	}
-	return current.data.groupName || current.data.group || current.data.category || '—';
-}
-
-/**
- * Check if a node is an intermediate (non-leaf, non-root) node.
- */
-function isIntermediate(node) {
-	return node.depth > 0 && node.children && node.children.length > 0;
-}
-
-/**
- * Check if a d3 hierarchy node is a descendant of another node.
- */
-function isDescendantOf(node, ancestor) {
-	let current = node.parent;
-	while (current) {
-		if (current === ancestor) return true;
-		current = current.parent;
-	}
-	return false;
 }
 
 export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}) {
@@ -159,62 +71,16 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		}
 	}
 
-	const hasValueColumn = measureMode === 'count'
-		? true
-		: dados.some(linha => Object.prototype.hasOwnProperty.call(linha, valueColumn));
-
-	if (measureMode !== 'count' && !valueColumn) {
-		return fail('no-value-column');
-	}
-
-	// Aggregate by category
-	const aggregated = new Map();
-	const nestingByCategory = new Map();
-
-	if (measureMode === 'count') {
-		dados.forEach(linha => {
-			const category = normalizeCategoryValue(linha[colunaCategoria]);
-			aggregated.set(category, (aggregated.get(category) || 0) + 1);
-			if (nestingColumns.length > 0 && !nestingByCategory.has(category)) {
-				nestingByCategory.set(category, nestingColumns.map(col => normalizeCategoryValue(linha[col])));
-			}
-		});
-	} else {
-		if (!hasValueColumn) return fail('no-value-column');
-		const counter = new Map();
-		dados.forEach(linha => {
-			const category = normalizeCategoryValue(linha[colunaCategoria]);
-			const rawValue = Number(linha[valueColumn]);
-			if (!Number.isFinite(rawValue)) return;
-			aggregated.set(category, (aggregated.get(category) || 0) + rawValue);
-			counter.set(category, (counter.get(category) || 0) + 1);
-			if (nestingColumns.length > 0 && !nestingByCategory.has(category)) {
-				nestingByCategory.set(category, nestingColumns.map(col => normalizeCategoryValue(linha[col])));
-			}
-		});
-
-		if (measureMode === 'mean') {
-			for (const [category, sum] of aggregated.entries()) {
-				aggregated.set(category, sum / (counter.get(category) || 1));
-			}
-		}
-	}
-
-	if ((measureMode === 'sum' || measureMode === 'mean') && aggregated.size === 0) {
-		return fail('no-numeric');
-	}
-
-	let bubbles = Array.from(aggregated.entries()).map(([category, value]) => ({
-		category,
-		value,
-		group: nestingColumns.length > 0 ? (nestingByCategory.get(category)?.[0] || '—') : category,
-		nestingPath: nestingColumns.length > 0 ? (nestingByCategory.get(category) || nestingColumns.map(() => '—')) : [],
-	}));
-
-	bubbles.sort((a, b) => b.value - a.value || compareStrings(a.category, b.category));
-	if (topN > 0) {
-		bubbles = bubbles.slice(0, topN);
-	}
+	const aggregation = aggregateBubbles({
+		rows: dados,
+		categoryColumn: colunaCategoria,
+		measureMode,
+		valueColumn,
+		nestingColumns,
+		topN,
+	});
+	if (aggregation.reason) return fail(aggregation.reason);
+	const bubbles = aggregation.bubbles;
 
 	if (bubbles.length === 0) {
 		return fail();

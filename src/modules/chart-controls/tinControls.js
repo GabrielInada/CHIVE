@@ -2,13 +2,13 @@ import { CHART_COLORS, TIN_CHART, TIN_COLOR_RAMPS } from '../../config/charts.js
 import { t } from '../../services/i18nService.js';
 import {
 	createCheckboxControl,
+	createColorInputControl,
 	createNumberInputControl,
 	createSelectControl,
 	createSliderControl,
 	createTextControl,
 	createColorPresetControl,
 	COLOR_PRESETS,
-	normalizeHexColor,
 } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
@@ -124,35 +124,21 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		disabled,
 	));
 
-	const minColorDiv = document.createElement('div');
-	minColorDiv.className = 'chart-controle';
-	const minColorLabel = document.createElement('label');
-	minColorLabel.htmlFor = 'viz-input-tin-gradient-min';
-	minColorLabel.textContent = t('chive-chart-color-gradient-min');
-	const minColorInput = document.createElement('input');
-	minColorInput.id = 'viz-input-tin-gradient-min';
-	minColorInput.type = 'color';
-	minColorInput.className = 'chart-color-input';
-	minColorInput.value = normalizeHexColor(config.gradientMinColor, CHART_COLORS.tin);
-	minColorInput.disabled = disabled || !isCustomRamp;
-	minColorDiv.appendChild(minColorLabel);
-	minColorDiv.appendChild(minColorInput);
-	surfaceControls.push(minColorDiv);
+	surfaceControls.push(createColorInputControl(
+		'viz-input-tin-gradient-min',
+		t('chive-chart-color-gradient-min'),
+		config.gradientMinColor,
+		CHART_COLORS.tin,
+		disabled || !isCustomRamp,
+	));
 
-	const maxColorDiv = document.createElement('div');
-	maxColorDiv.className = 'chart-controle';
-	const maxColorLabel = document.createElement('label');
-	maxColorLabel.htmlFor = 'viz-input-tin-gradient-max';
-	maxColorLabel.textContent = t('chive-chart-color-gradient-max');
-	const maxColorInput = document.createElement('input');
-	maxColorInput.id = 'viz-input-tin-gradient-max';
-	maxColorInput.type = 'color';
-	maxColorInput.className = 'chart-color-input';
-	maxColorInput.value = normalizeHexColor(config.gradientMaxColor, '#ffffff');
-	maxColorInput.disabled = disabled || !isCustomRamp;
-	maxColorDiv.appendChild(maxColorLabel);
-	maxColorDiv.appendChild(maxColorInput);
-	surfaceControls.push(maxColorDiv);
+	surfaceControls.push(createColorInputControl(
+		'viz-input-tin-gradient-max',
+		t('chive-chart-color-gradient-max'),
+		config.gradientMaxColor,
+		'#ffffff',
+		disabled || !isCustomRamp,
+	));
 
 	surfaceControls.push(createSelectControl(
 		'viz-select-tin-gradient-distribution',
@@ -179,20 +165,13 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		config.showEdges,
 		disabled,
 	));
-	const edgeColorDiv = document.createElement('div');
-	edgeColorDiv.className = 'chart-controle';
-	const edgeColorLabel = document.createElement('label');
-	edgeColorLabel.htmlFor = 'viz-input-tin-edge-color';
-	edgeColorLabel.textContent = t('chive-chart-control-tin-edge-color');
-	const edgeColorInput = document.createElement('input');
-	edgeColorInput.id = 'viz-input-tin-edge-color';
-	edgeColorInput.type = 'color';
-	edgeColorInput.className = 'chart-color-input';
-	edgeColorInput.value = normalizeHexColor(config.edgeColor, TIN_CHART.defaultEdgeColor);
-	edgeColorInput.disabled = disabled || !config.showEdges;
-	edgeColorDiv.appendChild(edgeColorLabel);
-	edgeColorDiv.appendChild(edgeColorInput);
-	overlayControls.push(edgeColorDiv);
+	overlayControls.push(createColorInputControl(
+		'viz-input-tin-edge-color',
+		t('chive-chart-control-tin-edge-color'),
+		config.edgeColor,
+		TIN_CHART.defaultEdgeColor,
+		disabled || !config.showEdges,
+	));
 
 	overlayControls.push(createCheckboxControl(
 		'viz-toggle-tin-points',
@@ -221,20 +200,13 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		config.showHull,
 		disabled,
 	));
-	const hullColorDiv = document.createElement('div');
-	hullColorDiv.className = 'chart-controle';
-	const hullColorLabel = document.createElement('label');
-	hullColorLabel.htmlFor = 'viz-input-tin-hull-color';
-	hullColorLabel.textContent = t('chive-chart-control-tin-hull-color');
-	const hullColorInput = document.createElement('input');
-	hullColorInput.id = 'viz-input-tin-hull-color';
-	hullColorInput.type = 'color';
-	hullColorInput.className = 'chart-color-input';
-	hullColorInput.value = normalizeHexColor(config.hullColor, TIN_CHART.defaultHullColor);
-	hullColorInput.disabled = disabled || !config.showHull;
-	hullColorDiv.appendChild(hullColorLabel);
-	hullColorDiv.appendChild(hullColorInput);
-	overlayControls.push(hullColorDiv);
+	overlayControls.push(createColorInputControl(
+		'viz-input-tin-hull-color',
+		t('chive-chart-control-tin-hull-color'),
+		config.hullColor,
+		TIN_CHART.defaultHullColor,
+		disabled || !config.showHull,
+	));
 
 	overlayControls.push(createCheckboxControl(
 		'viz-toggle-tin-isolines',
@@ -270,20 +242,13 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 			: TIN_CHART.defaultIsolineStep,
 		{ min: 0, step: 'any', disabled: disabled || !config.showIsolines || isolineMode === 'count' },
 	));
-	const isolineColorDiv = document.createElement('div');
-	isolineColorDiv.className = 'chart-controle';
-	const isolineColorLabel = document.createElement('label');
-	isolineColorLabel.htmlFor = 'viz-input-tin-isoline-color';
-	isolineColorLabel.textContent = t('chive-chart-control-tin-isoline-color');
-	const isolineColorInput = document.createElement('input');
-	isolineColorInput.id = 'viz-input-tin-isoline-color';
-	isolineColorInput.type = 'color';
-	isolineColorInput.className = 'chart-color-input';
-	isolineColorInput.value = normalizeHexColor(config.isolineColor, TIN_CHART.defaultIsolineColor);
-	isolineColorInput.disabled = disabled || !config.showIsolines || config.colorIsolinesByZ === true;
-	isolineColorDiv.appendChild(isolineColorLabel);
-	isolineColorDiv.appendChild(isolineColorInput);
-	overlayControls.push(isolineColorDiv);
+	overlayControls.push(createColorInputControl(
+		'viz-input-tin-isoline-color',
+		t('chive-chart-control-tin-isoline-color'),
+		config.isolineColor,
+		TIN_CHART.defaultIsolineColor,
+		disabled || !config.showIsolines || config.colorIsolinesByZ === true,
+	));
 	overlayControls.push(createSliderControl(
 		'viz-slider-tin-isoline-width',
 		t('chive-chart-control-tin-isoline-width'),
@@ -300,34 +265,20 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		config.colorIsolinesByZ === true,
 		disabled || !config.showIsolines,
 	));
-	const isolineMinColorDiv = document.createElement('div');
-	isolineMinColorDiv.className = 'chart-controle';
-	const isolineMinColorLabel = document.createElement('label');
-	isolineMinColorLabel.htmlFor = 'viz-input-tin-isoline-min-color';
-	isolineMinColorLabel.textContent = t('chive-chart-control-tin-isoline-min-color');
-	const isolineMinColorInput = document.createElement('input');
-	isolineMinColorInput.id = 'viz-input-tin-isoline-min-color';
-	isolineMinColorInput.type = 'color';
-	isolineMinColorInput.className = 'chart-color-input';
-	isolineMinColorInput.value = normalizeHexColor(config.isolineMinColor, TIN_CHART.defaultIsolineMinColor);
-	isolineMinColorInput.disabled = disabled || !config.showIsolines || config.colorIsolinesByZ !== true;
-	isolineMinColorDiv.appendChild(isolineMinColorLabel);
-	isolineMinColorDiv.appendChild(isolineMinColorInput);
-	overlayControls.push(isolineMinColorDiv);
-	const isolineMaxColorDiv = document.createElement('div');
-	isolineMaxColorDiv.className = 'chart-controle';
-	const isolineMaxColorLabel = document.createElement('label');
-	isolineMaxColorLabel.htmlFor = 'viz-input-tin-isoline-max-color';
-	isolineMaxColorLabel.textContent = t('chive-chart-control-tin-isoline-max-color');
-	const isolineMaxColorInput = document.createElement('input');
-	isolineMaxColorInput.id = 'viz-input-tin-isoline-max-color';
-	isolineMaxColorInput.type = 'color';
-	isolineMaxColorInput.className = 'chart-color-input';
-	isolineMaxColorInput.value = normalizeHexColor(config.isolineMaxColor, TIN_CHART.defaultIsolineMaxColor);
-	isolineMaxColorInput.disabled = disabled || !config.showIsolines || config.colorIsolinesByZ !== true;
-	isolineMaxColorDiv.appendChild(isolineMaxColorLabel);
-	isolineMaxColorDiv.appendChild(isolineMaxColorInput);
-	overlayControls.push(isolineMaxColorDiv);
+	overlayControls.push(createColorInputControl(
+		'viz-input-tin-isoline-min-color',
+		t('chive-chart-control-tin-isoline-min-color'),
+		config.isolineMinColor,
+		TIN_CHART.defaultIsolineMinColor,
+		disabled || !config.showIsolines || config.colorIsolinesByZ !== true,
+	));
+	overlayControls.push(createColorInputControl(
+		'viz-input-tin-isoline-max-color',
+		t('chive-chart-control-tin-isoline-max-color'),
+		config.isolineMaxColor,
+		TIN_CHART.defaultIsolineMaxColor,
+		disabled || !config.showIsolines || config.colorIsolinesByZ !== true,
+	));
 
 	overlayControls.push(createCheckboxControl(
 		'viz-toggle-tin-isoline-labels',
@@ -344,20 +295,13 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		1,
 		disabled || !config.showIsolines || !config.showIsolineLabels,
 	));
-	const isolineLabelColorDiv = document.createElement('div');
-	isolineLabelColorDiv.className = 'chart-controle';
-	const isolineLabelColorLabel = document.createElement('label');
-	isolineLabelColorLabel.htmlFor = 'viz-input-tin-isoline-label-color';
-	isolineLabelColorLabel.textContent = t('chive-chart-control-tin-isoline-label-color');
-	const isolineLabelColorInput = document.createElement('input');
-	isolineLabelColorInput.id = 'viz-input-tin-isoline-label-color';
-	isolineLabelColorInput.type = 'color';
-	isolineLabelColorInput.className = 'chart-color-input';
-	isolineLabelColorInput.value = normalizeHexColor(config.isolineLabelColor, TIN_CHART.defaultIsolineLabelColor);
-	isolineLabelColorInput.disabled = disabled || !config.showIsolines || !config.showIsolineLabels;
-	isolineLabelColorDiv.appendChild(isolineLabelColorLabel);
-	isolineLabelColorDiv.appendChild(isolineLabelColorInput);
-	overlayControls.push(isolineLabelColorDiv);
+	overlayControls.push(createColorInputControl(
+		'viz-input-tin-isoline-label-color',
+		t('chive-chart-control-tin-isoline-label-color'),
+		config.isolineLabelColor,
+		TIN_CHART.defaultIsolineLabelColor,
+		disabled || !config.showIsolines || !config.showIsolineLabels,
+	));
 
 	overlayControls.push(createCheckboxControl(
 		'viz-toggle-tin-threshold',
@@ -371,20 +315,13 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		Number.isFinite(Number(config.thresholdValue)) ? Number(config.thresholdValue) : TIN_CHART.defaultThresholdValue,
 		{ step: 'any', disabled: disabled || !config.showThreshold },
 	));
-	const thresholdColorDiv = document.createElement('div');
-	thresholdColorDiv.className = 'chart-controle';
-	const thresholdColorLabel = document.createElement('label');
-	thresholdColorLabel.htmlFor = 'viz-input-tin-threshold-color';
-	thresholdColorLabel.textContent = t('chive-chart-control-tin-threshold-color');
-	const thresholdColorInput = document.createElement('input');
-	thresholdColorInput.id = 'viz-input-tin-threshold-color';
-	thresholdColorInput.type = 'color';
-	thresholdColorInput.className = 'chart-color-input';
-	thresholdColorInput.value = normalizeHexColor(config.thresholdColor, TIN_CHART.defaultThresholdColor);
-	thresholdColorInput.disabled = disabled || !config.showThreshold;
-	thresholdColorDiv.appendChild(thresholdColorLabel);
-	thresholdColorDiv.appendChild(thresholdColorInput);
-	overlayControls.push(thresholdColorDiv);
+	overlayControls.push(createColorInputControl(
+		'viz-input-tin-threshold-color',
+		t('chive-chart-control-tin-threshold-color'),
+		config.thresholdColor,
+		TIN_CHART.defaultThresholdColor,
+		disabled || !config.showThreshold,
+	));
 	overlayControls.push(createSliderControl(
 		'viz-slider-tin-threshold-width',
 		t('chive-chart-control-tin-threshold-width'),

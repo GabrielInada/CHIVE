@@ -1,7 +1,7 @@
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
-import { createCheckboxControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
 	setupExpandListener,
@@ -152,35 +152,21 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		disabled
 	));
 
-	const sourceColorDiv = document.createElement('div');
-	sourceColorDiv.className = 'chart-controle';
-	const sourceColorLabel = document.createElement('label');
-	sourceColorLabel.htmlFor = 'viz-input-network-source-color';
-	sourceColorLabel.textContent = t('chive-chart-color-source-node');
-	const sourceColorInput = document.createElement('input');
-	sourceColorInput.id = 'viz-input-network-source-color';
-	sourceColorInput.type = 'color';
-	sourceColorInput.className = 'chart-color-input';
-	sourceColorInput.value = normalizeHexColor(config.sourceNodeColor, '#e3743d');
-	sourceColorInput.disabled = disabled;
-	sourceColorDiv.appendChild(sourceColorLabel);
-	sourceColorDiv.appendChild(sourceColorInput);
-	stylingControls.push(sourceColorDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-network-source-color',
+		t('chive-chart-color-source-node'),
+		config.sourceNodeColor,
+		'#e3743d',
+		disabled,
+	));
 
-	const targetColorDiv = document.createElement('div');
-	targetColorDiv.className = 'chart-controle';
-	const targetColorLabel = document.createElement('label');
-	targetColorLabel.htmlFor = 'viz-input-network-target-color';
-	targetColorLabel.textContent = t('chive-chart-color-target-node');
-	const targetColorInput = document.createElement('input');
-	targetColorInput.id = 'viz-input-network-target-color';
-	targetColorInput.type = 'color';
-	targetColorInput.className = 'chart-color-input';
-	targetColorInput.value = normalizeHexColor(config.targetNodeColor, '#6b94c9');
-	targetColorInput.disabled = disabled;
-	targetColorDiv.appendChild(targetColorLabel);
-	targetColorDiv.appendChild(targetColorInput);
-	stylingControls.push(targetColorDiv);
+	stylingControls.push(createColorInputControl(
+		'viz-input-network-target-color',
+		t('chive-chart-color-target-node'),
+		config.targetNodeColor,
+		'#6b94c9',
+		disabled,
+	));
 
 	stylingControls.push(createSelectControl(
 		'viz-select-network-edge-color-mode',
