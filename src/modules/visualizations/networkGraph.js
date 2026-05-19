@@ -7,7 +7,7 @@ import {
 	drag,
 	zoom,
 	zoomIdentity,
-} from 'd3';
+} from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,

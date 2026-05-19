@@ -1,4 +1,4 @@
-import { area as d3area, axisBottom, axisLeft, extent, line as d3line, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from 'd3';
+import { area as d3area, axisBottom, axisLeft, extent, line as d3line, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,

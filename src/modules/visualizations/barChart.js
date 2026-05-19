@@ -1,4 +1,4 @@
-import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'd3';
+import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
