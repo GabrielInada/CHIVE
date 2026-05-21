@@ -1,8 +1,5 @@
 /* @feature: foundation
-   Base tokens, layout, and global behavior
-   No feature ownership - used by all modules */
-@import url('./variables.css');
-@import url('./layout.css');
+   Composes the shared chrome plus app-only foundation pieces. */
+@import url('./chrome.css');
 @import url('./animations.css');
 @import url('./collapsed.css');
-@import url('./responsive.css');

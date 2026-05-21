@@ -5,8 +5,9 @@ This document describes the organizational structure of stylesheets and their al
 ## Architecture
 
 All stylesheets are imported through a bundler pattern with cascade layers:
-- **Main entry**: `style.css` (declares layer order and imports feature bundles)
+- **Main entry**: `style.css` (declares layer order and imports feature bundles) — used by `index.html`
 - **Feature bundles**: `base.css`, `data-view.css`, `visual-output.css`, `controls.css`, `feedback.css`
+- **Shared chrome bundle**: `chrome.css` — the foundation subset both `index.html` and `about.html` need (variables, layout, responsive, header-nav). Loaded directly by `about.html`; transitively included in `style.css` via `base.css`.
 - **Individual styles**: Feature-specific CSS files
 
 ### Cascade Layer Order
@@ -26,13 +27,25 @@ This keeps overrides intentional and avoids accidental specificity fights betwee
 ### Foundation (`@feature: foundation`)
 Shared infrastructure used by all features. No single feature owns these.
 
+Foundation is split into two sub-bundles so the about page can load only what it needs:
+
+**Shared chrome** (needed by every HTML page):
+
 | File | Purpose |
 |------|---------|
 | `variables.css` | Global design tokens (colors, fonts, spacing, shadows) |
-| `layout.css` | Grid layout, flexbox, header, sidebar structure |
-| `animations.css` | Keyframe animations, transitions, motion utilities |
-| `collapsed.css` | Collapsible element state and behavior |
-| `responsive.css` | Media queries and responsive breakpoints |
+| `layout.css` | Header, logo, language switcher, body padding, plus main-app workspace/sidebar (inert when those elements aren't present) |
+| `responsive.css` | Header @ 900px, plus main-app responsive rules (inert when those elements aren't present) |
+| `header-nav.css` | Top navigation pills and header layout, with 768px/480px reflow rules |
+
+**Bundle via**: `chrome.css` → `base.css` → `style.css` (for `index.html`) or directly via `<link>` (for `about.html`)
+
+**App-only foundation** (only needed by the main app):
+
+| File | Purpose |
+|------|---------|
+| `animations.css` | `.animar` keyframe used by app feature reveals |
+| `collapsed.css` | `body.sidebar-collapsed` state styles for the main-app sidebar |
 
 **Bundle via**: `base.css` → `style.css`
 
@@ -92,30 +105,37 @@ Main stylesheet orchestrator.
 
 | File | Purpose |
 |------|---------|
-| `style.css` | Master entry point, composes all feature bundles |
-
-In addition to bundling, `style.css` also holds direct rules for the cross-page header chrome: `.header-nav`, `header`, `.logo`, `.header-lang`, plus two header-specific media queries (768px, 480px). These live in `style.css` rather than a feature bundle because they style the layout chrome that wraps every page, not any single feature.
+| `style.css` | Master entry point for `index.html`. Declares cascade layer order and `@import`s every feature bundle. Holds no direct rules. |
 
 ### Per-Page Stylesheets
 
-Some pages load stylesheets directly via `<link rel="stylesheet">` instead of going through the cascade-layer bundle in `style.css`. These live outside the layered system and are scoped to one HTML entry point.
+Pages load stylesheets directly via `<link rel="stylesheet">`. `index.html` loads only `style.css`, which transitively pulls in everything. `about.html` loads `chrome.css` + `about.css` — skipping the controls, data-view, visual-output, and feedback layers entirely.
+
+| Page | Loads |
+|------|-------|
+| `index.html` | `style.css` (~62 KB raw, transitively) |
+| `about.html` | `chrome.css` (~8 KB raw, transitively) + `about.css` (~6 KB) |
 
 | File | Purpose | Loaded by |
 |------|---------|-----------|
 | `about.css` | About page hero, team grid, sidebar card, page-specific footer | `about.html` only (direct `<link>`, not via `style.css`) |
 
-The cascade-layer system governs only the styles imported through `style.css`. Page-specific stylesheets loaded directly by an HTML page sit outside it and can override the bundled styles freely on that page.
+The cascade-layer system governs only the styles imported through `style.css`. Page-specific stylesheets loaded directly by an HTML page sit outside it and can override the bundled styles freely on that page. `chrome.css` declares its own `foundation` layer, so when about.html loads it alongside about.css, the same precedence (about.css overrides chrome) is preserved.
 
 ## Import Hierarchy
+
+**index.html** loads `style.css`:
 
 ```
 style.css (app)
 ├── base.css (foundation layer)
-│   ├── variables.css
-│   ├── layout.css
+│   ├── chrome.css
+│   │   ├── variables.css
+│   │   ├── layout.css
+│   │   ├── responsive.css
+│   │   └── header-nav.css
 │   ├── animations.css
-│   ├── collapsed.css
-│   └── responsive.css
+│   └── collapsed.css
 ├── controls.css (controls layer)
 │   ├── buttons.css (foundation)
 │   ├── upload.css (file-manager)
@@ -129,6 +149,18 @@ style.css (app)
 │   └── panel.css (panel)
 └── feedback.css (feedback layer)
     └── messages.css (cross-cutting)
+```
+
+**about.html** loads `chrome.css` + `about.css` directly:
+
+```
+chrome.css (foundation layer)
+├── variables.css
+├── layout.css
+├── responsive.css
+└── header-nav.css
+
+about.css (no layer — page-specific, wins over chrome on ties)
 ```
 
 ## Adding New Styles
@@ -233,6 +265,3 @@ If usability testing reveals gaps:
 - **1200px**: Large desktop optimizations (wider sidebars, three-column workspace)
 - **360px**: Smallest phones (single-width modals, stacked inputs)
 
-## Next Steps (Optional Improvements)
-
-- Consider splitting `controls.css` imports to avoid loading `columns.css` and `visualizations.css` to pages that don't need them (Quando eu tiver tempo eu faço! @GabrielInada)
