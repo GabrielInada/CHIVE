@@ -39,12 +39,14 @@ Shared infrastructure used by all features. No single feature owns these.
 ### Controls (`@feature: foundation + file-manager + results + panel`)
 Generic reusable controls and sidebar card patterns.
 
-| File | Purpose |
-|------|---------|
-| `buttons.css` | Button styles and variants (primary, secondary, danger) |
-| `upload.css` | Upload drop zone and file upload interactions |
-| `columns.css` | Column selection controls and filter actions |
-| `visualizations.css` | Visualization card controls and preview UI |
+| File | Owner | Purpose |
+|------|-------|---------|
+| `buttons.css` | foundation | Button styles and variants (primary, secondary, danger) |
+| `upload.css` | file-manager | Upload drop zone and file upload interactions |
+| `columns.css` | results | Column selection controls and filter actions |
+| `visualizations.css` † | panel | Visualization card controls and preview UI |
+
+† Owned by the Panel feature but bundled through the `controls` layer so chart controls cascade below visual output. See Panel/Visualization below.
 
 **Bundle via**: `controls.css` → `style.css`
 
@@ -62,34 +64,28 @@ Dataset presentation, column management, and data summaries.
 ### Panel/Visualization (`@feature: panel`)
 Canvas layout, chart placement, and block management.
 
-| File | Purpose |
-|------|---------|
-| `panel.css` | Panel layout, block styling, slot borders, drag-drop |
-| `charts.css` | Chart controls, D3 containers, SVG base styles |
-| `visualizations.css` | D3-specific: bar charts, scatter plots, axes, legends |
+| File | Bundled via | Purpose |
+|------|-------------|---------|
+| `panel.css` | `visual-output.css` | Panel layout, block styling, slot borders, drag-drop |
+| `charts.css` | `visual-output.css` | Chart controls, D3 containers, SVG base styles |
+| `visualizations.css` † | `controls.css` | D3-specific: bar charts, scatter plots, axes, legends |
+
+† Listed here because the Panel feature owns it, but it is imported via `controls.css` (not `visual-output.css`) so its rules cascade in the `controls` layer.
 
 **Sub-feature**: `panel > visualizations` — Visualization-specific styling
 
-**Bundle via**: `visual-output.css` → `style.css`
+**Bundle via**: `visual-output.css` → `style.css` (except `visualizations.css`, see above)
 
 ### Cross-Cutting (`@feature: cross-cutting`)
 Shared UI patterns used across multiple features.
 
 | File | Purpose |
 |------|---------|
-| `feedback.css` | Toast notifications, status messages UI |
-| `messages.css` | Error messages, warning displays, info alerts |
+| `messages.css` | Toast notifications, error/warning/info alerts, status displays |
+
+`feedback.css` itself is just the bundle file (a single `@import` for `messages.css`) — same shape as `base.css`, `controls.css`, `data-view.css`, and `visual-output.css`.
 
 **Bundle via**: `feedback.css` → `style.css`
-
-### File Management (`@feature: file-manager`)
-File upload and selection UI.
-
-| File | Purpose |
-|------|---------|
-| `upload.css` | Upload drop zone, file list presentation |
-
-**Bundle via**: `controls.css` → `style.css` (layer: `controls`)
 
 ### App Orchestration (`@feature: app`)
 Main stylesheet orchestrator.
@@ -97,6 +93,18 @@ Main stylesheet orchestrator.
 | File | Purpose |
 |------|---------|
 | `style.css` | Master entry point, composes all feature bundles |
+
+In addition to bundling, `style.css` also holds direct rules for the cross-page header chrome: `.header-nav`, `header`, `.logo`, `.header-lang`, plus two header-specific media queries (768px, 480px). These live in `style.css` rather than a feature bundle because they style the layout chrome that wraps every page, not any single feature.
+
+### Per-Page Stylesheets
+
+Some pages load stylesheets directly via `<link rel="stylesheet">` instead of going through the cascade-layer bundle in `style.css`. These live outside the layered system and are scoped to one HTML entry point.
+
+| File | Purpose | Loaded by |
+|------|---------|-----------|
+| `about.css` | About page hero, team grid, sidebar card, page-specific footer | `about.html` only (direct `<link>`, not via `style.css`) |
+
+The cascade-layer system governs only the styles imported through `style.css`. Page-specific stylesheets loaded directly by an HTML page sit outside it and can override the bundled styles freely on that page.
 
 ## Import Hierarchy
 
@@ -156,32 +164,37 @@ Examples:
 All colors, fonts, and spacing are defined in `variables.css`:
 
 ```css
---bg           /* Background */
---surface      /* Surface/surface elements */
---border       /* Border color */
---accent       /* Primary brand color */
---accent-2     /* Secondary brand color */
---text         /* Text color */
---muted        /* Muted/secondary text */
---success      /* Success state */
---tag-num      /* Numeric data tag background */
---tag-txt      /* Text data tag background */
---tag-dat      /* Date data tag background */
---fonte-display /* Display font (Fraunces) */
---fonte-mono    /* Monospace font (IBM Plex Mono) */
+--bg            /* Background */
+--surface       /* Surface/card elements */
+--border        /* Border color */
+--accent        /* Primary brand color */
+--accent-2      /* Secondary brand color */
+--text          /* Text color */
+--muted         /* Muted/secondary text */
+--success       /* Success state */
+--tag-num       /* Numeric data tag background */
+--tag-txt       /* Text data tag background */
+--tag-dat       /* Date data tag background */
+--fonte-display /* Display font (Source Serif 4) */
+--fonte-sans    /* UI/body font (Source Sans 3) */
+--fonte-mono    /* Monospace font (JetBrains Mono) */
 ```
 
 ## Responsive Breakpoints Strategy
 
-All responsive behavior is defined in `responsive.css` with a mobile-first approach using `max-width` media queries.
+Responsive behavior uses `max-width` (desktop-first) media queries. The main-app layout has one canonical breakpoint at 900px in `responsive.css`, but other scopes have their own:
 
-### Breakpoints
+### Breakpoints in use
 
-| Breakpoint | Viewport | Purpose | When It Triggers |
-|------------|----------|---------|------------------|
-| **900px** | Tablet & smaller | Layout stacking | `@media (max-width: 900px)` |
+| Breakpoint | Scope | File(s) | What changes |
+|------------|-------|---------|--------------|
+| **1024px** | About page | [about.css:261](src/styles/about.css#L261) | About-page grid collapses from 2-column to 1-column; hero padding shrinks |
+| **900px** | Main app layout | [responsive.css:5](src/styles/responsive.css#L5), [panel.css:489](src/styles/panel.css#L489) | Workspace stacks; header switches to column; sidebar narrows; panel block adjustments |
+| **768px** | Header chrome | [style.css:68](src/styles/style.css#L68) | Header nav gap/margins shrink; header wraps |
+| **640px** | About page + results | [about.css:286](src/styles/about.css#L286), [results.css:292](src/styles/results.css#L292) | About hero compresses; team grid becomes 1-column; results-area tweaks |
+| **480px** | Header chrome | [style.css:83](src/styles/style.css#L83) | Header nav reflows to full-width row below logo |
 
-### Breakpoint Details: 900px (Tablet/Mobile)
+### Main-app breakpoint: 900px
 
 **When it applies**: Screens 900px wide or less (iPads in portrait, tablets, phones)
 
@@ -190,7 +203,6 @@ All responsive behavior is defined in `responsive.css` with a mobile-first appro
 - **Workspace**: Changes from 2-column (`340px sidebar | 1fr main`) to single-column stacked layout
 - **Sidebar**: Narrows layout when collapsed; text labels show/hide more aggressively
 - **Content padding**: Reduces from `28px 32px` to `24px 20px 40px` to maximize usable space
-- **Header navigation**: Footer steps wrap instead of staying inline
 
 **Component behavior**:
 - When sidebar is collapsed, all text labels (`upload-texto-principal`, `secao-titulo`, etc.) are forcibly shown with `display: initial !important` to prevent content hiding
@@ -199,23 +211,27 @@ All responsive behavior is defined in `responsive.css` with a mobile-first appro
 
 ### Design Rationale
 
-- **Single breakpoint strategy**: Simpler to maintain; most responsive patterns work for all smaller devices
+- **Scoped breakpoints over one global breakpoint**: The main app collapses at 900px, but the about page is more text-heavy and benefits from collapsing earlier (1024px). Header chrome (nav, logo, language switcher) reflows at its own thresholds because it's not feature-scoped.
 - **Mobile-first semantics**: Uses `max-width` (desktop-first) but focuses UX on smaller screens first
 - **Sidebar optimization**: Collapsed state becomes default visual treatment on tablets to maximize chart/table space
 - **Touch-friendly spacing**: 900px breakpoint gives enough room for mouse interactions; below that prioritizes vertical real estate
 
 ### Adding New Responsive Rules
 
-1. Add rules in `responsive.css` under the existing `@media (max-width: 900px)` block
-2. Use **state-based selectors** when possible (`.sidebar-collapsed`, `.ativo`)
-3. Avoid creating new breakpoints without team discussion (maintain single-breakpoint discipline)
-4. Test on: Desktop (1440px+), Tablet (768px-900px), Mobile (375px-480px)
+Pick the home that matches the scope of the rule:
+
+1. **Main-app layout** (workspace, sidebar, content area) → `responsive.css` under the existing `@media (max-width: 900px)` block
+2. **Feature-internal** (e.g., panel slot rearrangement, results table) → the feature's own file (`panel.css`, `results.css`) at the breakpoint already in use there
+3. **About page** → `about.css` (1024px or 640px blocks)
+4. **Header chrome** (nav, logo, language switcher) → `style.css` (768px or 480px blocks)
+5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.ativo`) over new breakpoints when the difference is interaction-driven, not viewport-driven
+6. Test on: Desktop (1440px+), Tablet (768px–900px), Mobile (375px–480px)
 
 ### Future Breakpoint Candidates
 
-If the app expands or usability testing reveals gaps:
-- **1200px**: Large desktop optimizations (wider sidebars, three-column layouts)
-- **600px**: Small phones optimization (single-width modals, stacked inputs)
+If usability testing reveals gaps:
+- **1200px**: Large desktop optimizations (wider sidebars, three-column workspace)
+- **360px**: Smallest phones (single-width modals, stacked inputs)
 
 ## Next Steps (Optional Improvements)
 
