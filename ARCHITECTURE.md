@@ -121,7 +121,7 @@ const appState = {
 
 The object is **never mutated directly outside this module**. Each facade is created with closure-injected access to it. This is a *module-scoped state object*, not a GoF Singleton — there is no class, no `getInstance()`, and no instance-control mechanism. Uniqueness is provided by ES module semantics, and encapsulation by closure injection into the facades.
 
-One small but load-bearing detail: every dataset gets a stable `id` (UUID, with a counter fallback when `crypto.randomUUID` is unavailable) stamped in `dataStateFacade.addDataset` ([src/modules/dataStateFacade.js:38-54](src/modules/dataStateFacade.js#L38-L54)). The id is what `persistenceService` uses to address datasets across reloads — without it, the snapshot couldn't round-trip.
+One small but load-bearing detail: every dataset gets a stable `id` (UUID, with a counter fallback when `crypto.randomUUID` is unavailable) stamped in `dataStateFacade.addDataset` ([src/modules/dataStateFacade.js:34-50](src/modules/dataStateFacade.js#L34-L50)). The id is what `persistenceService` uses to address datasets across reloads — without it, the snapshot couldn't round-trip.
 
 ### The Facades
 
