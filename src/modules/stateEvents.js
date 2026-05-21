@@ -17,8 +17,6 @@ export const STATE_EVENTS = Object.freeze({
 	// panel domain
 	CHART_ADDED: 'chartAdded',
 	CHART_REMOVED: 'chartRemoved',
-	SLOT_ASSIGNED: 'slotAssigned',
-	LAYOUT_CHANGED: 'layoutChanged',
 	PANEL_CLEARED: 'panelCleared',
 	PANEL_BLOCK_ADDED: 'panelBlockAdded',
 	PANEL_BLOCK_REMOVED: 'panelBlockRemoved',
@@ -28,15 +26,12 @@ export const STATE_EVENTS = Object.freeze({
 	PANEL_BLOCK_BORDER_UPDATED: 'panelBlockBorderUpdated',
 	PANEL_BLOCK_TEMPLATE_CHANGED: 'panelBlockTemplateChanged',
 	PANEL_BLOCK_SLOT_ASSIGNED: 'panelBlockSlotAssigned',
-	PANEL_MIGRATED_TO_BLOCKS: 'panelMigratedToBlocks',
 
 	// ui domain
 	SIDEBAR_MODE_CHANGED: 'sidebarModeChanged',
-	CHART_EXPANDED_CHANGED: 'chartExpandedChanged',
 	PREVIEW_ROWS_CHANGED: 'previewRowsChanged',
 
 	// meta
-	STATE_RESET: 'stateReset',
 	STATE_HYDRATED: 'stateHydrated',
 	WILDCARD: '*',
 });

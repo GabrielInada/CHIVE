@@ -47,19 +47,3 @@
   color: var(--accent);
   background: rgba(26, 71, 42, 0.05);
 }
-
-.viz-expand-btn {
-  width: 26px;
-  height: 26px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  color: var(--accent);
-  cursor: pointer;
-  font-size: 12px;
-  line-height: 1;
-}
-
-.viz-expand-btn:hover {
-  border-color: var(--accent);
-}

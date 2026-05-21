@@ -55,7 +55,7 @@ vi.mock('../../../src/config/chartDefaults.js', () => ({
 
 vi.mock('../../../src/modules/appState.js', () => ({
 	onStateChange: mocks.onStateChange,
-	STATE_EVENTS: { CHART_EXPANDED_CHANGED: 'chartExpandedChanged' },
+	STATE_EVENTS: {},
 	setActiveChartType: mocks.setActiveChartType,
 }));
 

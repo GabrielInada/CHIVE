@@ -2,10 +2,8 @@ import {
 	addChartSnapshotToState,
 	addPanelBlockState,
 	assignChartToPanelBlockSlotState,
-	assignChartToSlotInState,
 	clearPanelState,
 	getChartSnapshotFromState,
-	migrateLegacyPanelStateState,
 	movePanelBlockState,
 	removeChartSnapshotFromState,
 	removePanelBlockState,
@@ -53,27 +51,9 @@ export function createPanelStateFacade({
 		return getChartSnapshotFromState(appState.panel, chartId);
 	}
 
-	function getPanelSlots() {
-		return appState.panel.slots;
-	}
-
 	function getPanelBlocks() {
 		ensureDefaultPanelBlock();
 		return appState.panel.blocks;
-	}
-
-	function assignChartToSlot(slotId, chartId) {
-		assignChartToSlotInState(appState, slotId, chartId, getChartSnapshot);
-		emitStateChange(STATE_EVENTS.SLOT_ASSIGNED, { slotId, chartId });
-	}
-
-	function getPanelLayout() {
-		return appState.panel.layout;
-	}
-
-	function setPanelLayout(layoutId) {
-		appState.panel.layout = layoutId;
-		emitStateChange(STATE_EVENTS.LAYOUT_CHANGED, layoutId);
 	}
 
 	function clearPanel() {
@@ -170,21 +150,12 @@ export function createPanelStateFacade({
 		emitStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, { blockId, slotId, chartId: result.normalizedId });
 	}
 
-	function migrateLegacyPanelState() {
-		const migration = migrateLegacyPanelStateState(appState, createPanelBlock);
-		emitStateChange(STATE_EVENTS.PANEL_MIGRATED_TO_BLOCKS, migration);
-	}
-
 	return {
 		getPanelCharts,
 		addChartSnapshot,
 		removeChartSnapshot,
 		getChartSnapshot,
-		getPanelSlots,
 		getPanelBlocks,
-		assignChartToSlot,
-		getPanelLayout,
-		setPanelLayout,
 		clearPanel,
 		validatePanelSlots,
 		addPanelBlock,
@@ -195,6 +166,5 @@ export function createPanelStateFacade({
 		updatePanelBlockBorder,
 		setPanelBlockTemplate,
 		assignChartToPanelBlockSlot,
-		migrateLegacyPanelState,
 	};
 }

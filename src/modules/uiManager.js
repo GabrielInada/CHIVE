@@ -8,7 +8,7 @@
  */
 
 import { t } from '../services/i18nService.js';
-import { getSidebarMode, setSidebarMode } from './appState.js';
+import { setSidebarMode } from './appState.js';
 
 /**
  * Get active tab name from user selection

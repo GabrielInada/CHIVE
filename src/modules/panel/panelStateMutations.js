@@ -54,25 +54,6 @@ export function getChartSnapshotFromState(panelState, chartId) {
 	return panelState.charts.find(c => c.id === normalizedId) || null;
 }
 
-export function assignChartToSlotInState(appState, slotId, chartId, getChartSnapshot) {
-	if (chartId === null) {
-		delete appState.panel.slots[slotId];
-		return;
-	}
-
-	const normalizedId = normalizePanelChartId(chartId);
-	if (normalizedId === null) {
-		throw new Error(`Chart ${chartId} not found`);
-	}
-
-	const chart = getChartSnapshot(normalizedId);
-	if (!chart) {
-		throw new Error(`Chart ${chartId} not found`);
-	}
-
-	appState.panel.slots[slotId] = normalizedId;
-}
-
 export function clearPanelState(appState, createPanelBlock) {
 	appState.panel.charts = [];
 	appState.panel.slots = {};
@@ -243,15 +224,4 @@ export function assignChartToPanelBlockSlotState(
 
 	block.slots[slotId] = normalizedId;
 	return { ok: true, normalizedId };
-}
-
-export function migrateLegacyPanelStateState(appState, createPanelBlock) {
-	const legacyLayout = appState.panel.layout || 'layout-2col';
-	const legacySlots = appState.panel.slots || {};
-
-	const firstBlock = createPanelBlock(legacyLayout);
-	firstBlock.slots = { ...legacySlots };
-	appState.panel.blocks = [firstBlock];
-	delete appState.panel.layout;
-	return { blockId: firstBlock.id, templateId: firstBlock.templateId };
 }

@@ -4,16 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	addDataset,
 	getActiveDataset,
-	getActiveDatasetIndex,
 	getAllDatasets,
 	getPanelBlocks,
 	getPanelCharts,
-	getPanelLayout,
-	getPreviewRows,
-	getSidebarMode,
+	getState,
 	onStateChange,
 	replaceAllState,
-	resetState,
 	STATE_EVENTS,
 } from '../../src/modules/appState.js';
 
@@ -29,9 +25,17 @@ function makeDataset(overrides = {}) {
 	};
 }
 
+function resetAppStateForTest() {
+	replaceAllState({
+		data: { datasets: [], activeIndex: -1 },
+		panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+		ui: { sidebarMode: 'dados', previewRows: 10 },
+	});
+}
+
 describe('replaceAllState()', () => {
 	beforeEach(() => {
-		resetState();
+		resetAppStateForTest();
 	});
 
 	it('replaces datasets, activeIndex, panel, and ui in one shot', () => {
@@ -51,21 +55,20 @@ describe('replaceAllState()', () => {
 			ui: {
 				sidebarMode: 'panel',
 				previewRows: 25,
-				expandedCharts: { bar: true },
 			},
 		});
 
 		expect(getAllDatasets()).toHaveLength(2);
-		expect(getActiveDatasetIndex()).toBe(1);
+		expect(getState().data.activeIndex).toBe(1);
 		expect(getActiveDataset().id).toBe('b');
 
 		expect(getPanelCharts()).toHaveLength(1);
-		expect(getPanelLayout()).toBe('layout-3col');
+		expect(getState().panel.layout).toBe('layout-3col');
 		expect(getPanelBlocks()).toHaveLength(1);
 		expect(getPanelBlocks()[0].id).toBe(7);
 
-		expect(getSidebarMode()).toBe('panel');
-		expect(getPreviewRows()).toBe(25);
+		expect(getState().ui.sidebarMode).toBe('panel');
+		expect(getState().ui.previewRows).toBe(25);
 	});
 
 	it('emits exactly one STATE_HYDRATED event', () => {
@@ -85,7 +88,7 @@ describe('replaceAllState()', () => {
 		replaceAllState({
 			data: { datasets: [makeDataset()], activeIndex: 99 },
 		});
-		expect(getActiveDatasetIndex()).toBe(-1);
+		expect(getState().data.activeIndex).toBe(-1);
 	});
 
 	it('falls back to a default block when persisted blocks are empty', () => {
@@ -96,24 +99,15 @@ describe('replaceAllState()', () => {
 	it('ignores invalid sidebarMode and previewRows values', () => {
 		// Seed valid values first.
 		addDataset(makeDataset());
-		const initialMode = getSidebarMode();
-		const initialRows = getPreviewRows();
+		const initialMode = getState().ui.sidebarMode;
+		const initialRows = getState().ui.previewRows;
 
 		replaceAllState({
 			ui: { sidebarMode: 'not-a-mode', previewRows: 0 },
 		});
 
-		expect(getSidebarMode()).toBe(initialMode);
-		expect(getPreviewRows()).toBe(initialRows);
-	});
-
-	it('merges expandedCharts onto current state instead of replacing wholesale', () => {
-		replaceAllState({
-			ui: { expandedCharts: { bar: true } },
-		});
-		// scatter et al. should still be present from the default shape
-		// (the test passes if no exception and the merged value is present).
-		// We just exercise the merge path here.
+		expect(getState().ui.sidebarMode).toBe(initialMode);
+		expect(getState().ui.previewRows).toBe(initialRows);
 	});
 
 	it('addDataset stamps an id on datasets that lack one', () => {

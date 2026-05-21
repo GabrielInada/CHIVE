@@ -6,7 +6,6 @@ import {
 	removeDataset,
 	setActiveDataset,
 	getActiveDataset,
-	getActiveDatasetIndex,
 	addChartSnapshot,
 	removeChartSnapshot,
 	getChartSnapshot,
@@ -15,21 +14,30 @@ import {
 	updateActiveDatasetConfig,
 	updateActiveDatasetColumns,
 	onStateChange,
-	resetState,
+	replaceAllState,
+	getState,
 } from '../src/modules/appState.js';
+
+function resetAppStateForTest() {
+	replaceAllState({
+		data: { datasets: [], activeIndex: -1 },
+		panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+		ui: { sidebarMode: 'dados', previewRows: 10 },
+	});
+}
 
 /**
  * Extended appState edge cases and branch coverage.
  */
 describe('appState (edge cases - branch coverage)', () => {
 	beforeEach(() => {
-		resetState();
+		resetAppStateForTest();
 	});
 
 	describe('Dataset management branches', () => {
 		it('returns null when no active dataset', () => {
 			expect(getActiveDataset()).toBeNull();
-			expect(getActiveDatasetIndex()).toBe(-1);
+			expect(getState().data.activeIndex).toBe(-1);
 		});
 
 		it('throws on invalid dataset index in setActiveDataset', () => {
@@ -40,13 +48,13 @@ describe('appState (edge cases - branch coverage)', () => {
 
 		it('auto-selects first added dataset', () => {
 			const idx = addDataset({ dados: [{ x: 1 }], colunas: ['x'] });
-			expect(getActiveDatasetIndex()).toBe(idx);
+			expect(getState().data.activeIndex).toBe(idx);
 		});
 
 		it('does not override activeIndex on subsequent adds', () => {
 			addDataset({ dados: [{}], colunas: [] });
 			addDataset({ dados: [{}], colunas: [] });
-			expect(getActiveDatasetIndex()).toBe(0);
+			expect(getState().data.activeIndex).toBe(0);
 		});
 
 		it('adjusts activeIndex down when earlier dataset removed', () => {
@@ -57,13 +65,13 @@ describe('appState (edge cases - branch coverage)', () => {
 			setActiveDataset(2);
 			removeDataset(0);
 
-			expect(getActiveDatasetIndex()).toBe(1); // was 2, shifted to 1
+			expect(getState().data.activeIndex).toBe(1); // was 2, shifted to 1
 		});
 
 		it('sets activeIndex to -1 when last dataset removed', () => {
 			addDataset({ dados: [{}], colunas: [] });
 			removeDataset(0);
-			expect(getActiveDatasetIndex()).toBe(-1);
+			expect(getState().data.activeIndex).toBe(-1);
 		});
 
 		it('does not change activeIndex when removed after active', () => {
@@ -71,7 +79,7 @@ describe('appState (edge cases - branch coverage)', () => {
 			addDataset({ dados: [{}], colunas: [] });
 			setActiveDataset(0);
 			removeDataset(1);
-			expect(getActiveDatasetIndex()).toBe(0);
+			expect(getState().data.activeIndex).toBe(0);
 		});
 
 		it('clears panel charts when dataset removed', () => {

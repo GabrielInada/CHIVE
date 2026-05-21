@@ -3,20 +3,6 @@ import { normalizeActiveDatasetConfig } from '../appState.js';
 import { normalizeHexColor } from './shared.js';
 import { triggerLiveRender } from './livePreview.js';
 
-function syncExpandedUi(chartKey, expanded) {
-	const body = document.getElementById(`viz-body-${chartKey}`);
-	const expandButton = document.getElementById(`viz-expand-${chartKey}`);
-
-	if (body) {
-		body.hidden = !expanded;
-	}
-
-	if (expandButton) {
-		expandButton.setAttribute('aria-expanded', String(expanded));
-		expandButton.textContent = expanded ? '▾' : '▸';
-	}
-}
-
 /**
  * Create a config updater function for a given chart key.
  * Returns a function that merges partial updates into the current chart config.
@@ -31,20 +17,6 @@ function makeUpdater(dataset, chartKey, onConfigChanged) {
 		});
 		onConfigChanged?.();
 	};
-}
-
-/**
- * Setup expand button listener for a chart section.
- */
-export function setupExpandListener(elementId, dataset, chartKey, onConfigChanged) {
-	const el = document.getElementById(elementId);
-	if (!el) return;
-	el.addEventListener('click', () => {
-		const expanded = el.getAttribute('aria-expanded') === 'true';
-		const nextExpanded = !expanded;
-		syncExpandedUi(chartKey, nextExpanded);
-		makeUpdater(dataset, chartKey, onConfigChanged)({ expanded: nextExpanded });
-	});
 }
 
 /**

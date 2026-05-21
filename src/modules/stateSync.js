@@ -80,7 +80,6 @@ export function getStateSummary() {
 		panelChartsCount: state.panel.charts.length,
 		panelLayout: state.panel.layout,
 		sidebarMode: state.ui.sidebarMode,
-		expandedCharts: state.ui.expandedCharts,
 	};
 }
 

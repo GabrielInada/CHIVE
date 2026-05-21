@@ -23,10 +23,6 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		return appState.data.datasets;
 	}
 
-	function getActiveDatasetIndex() {
-		return appState.data.activeIndex;
-	}
-
 	function setActiveDataset(index) {
 		if (index < -1 || index >= appState.data.datasets.length) {
 			throw new Error(`Invalid dataset index: ${index}`);
@@ -123,7 +119,6 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	return {
 		getActiveDataset,
 		getAllDatasets,
-		getActiveDatasetIndex,
 		setActiveDataset,
 		addDataset,
 		removeDataset,

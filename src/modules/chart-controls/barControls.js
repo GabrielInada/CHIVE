@@ -6,7 +6,6 @@ import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import { createSelectControl } from './shared.js';
 import {
-	setupExpandListener,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
@@ -218,8 +217,6 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
-
-	setupExpandListener('viz-expand-bar', dataset, 'bar', onConfigChanged);
 
 	// --- Data controls ---
 	setupSelectListeners([

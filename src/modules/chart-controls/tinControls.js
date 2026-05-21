@@ -12,7 +12,6 @@ import {
 } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
-	setupExpandListener,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
@@ -342,7 +341,6 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 
 export function setupTinControlListeners(dataset, numericOptions, allColumns, onConfigChanged) {
 	void allColumns;
-	setupExpandListener('viz-expand-tin', dataset, 'tin', onConfigChanged);
 
 	setupSelectListeners([
 		{

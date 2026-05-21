@@ -14,7 +14,7 @@ describe('dataStateFacade', () => {
 		const index = facade.addDataset({ dados: [{ a: 1 }], colunas: ['a'] });
 
 		expect(index).toBe(0);
-		expect(facade.getActiveDatasetIndex()).toBe(0);
+		expect(appState.data.activeIndex).toBe(0);
 		expect(emitStateChange).toHaveBeenCalledWith('datasetAdded', expect.objectContaining({ index: 0 }));
 	});
 
@@ -42,7 +42,7 @@ describe('dataStateFacade', () => {
 
 		facade.addDataset({ dados: [{}], colunas: [] });
 		facade.addDataset({ dados: [{}], colunas: [] });
-		expect(facade.getActiveDatasetIndex()).toBe(0);
+		expect(appState.data.activeIndex).toBe(0);
 	});
 
 	it('setActiveDataset throws for out-of-range index', () => {
@@ -131,7 +131,7 @@ describe('dataStateFacade', () => {
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
 		facade.removeDataset(0);
-		expect(facade.getActiveDatasetIndex()).toBe(1);
+		expect(appState.data.activeIndex).toBe(1);
 	});
 
 	it('removeDataset throws for invalid index', () => {

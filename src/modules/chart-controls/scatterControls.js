@@ -6,7 +6,6 @@ import { createCheckboxControl, createColorInputControl, createSliderControl, cr
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
-	setupExpandListener,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
@@ -342,8 +341,6 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 
 export function setupScatterPlotControlListeners(dataset, numericas, allOptions, onConfigChanged) {
 	const categoricas = allOptions.filter(option => !numericas.includes(option));
-
-	setupExpandListener('viz-expand-scatter', dataset, 'scatter', onConfigChanged);
 
 	const attachAxisListener = (selectId, axisKey, scaleKey) => {
 		const select = document.getElementById(selectId);

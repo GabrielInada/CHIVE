@@ -47,7 +47,6 @@ function buildState() {
     },
     ui: {
       sidebarMode: 'viz',
-      expandedCharts: { bar: true },
     },
   };
 }
@@ -110,7 +109,6 @@ describe('stateSync', () => {
       panelChartsCount: 3,
       panelLayout: 'layout-2col',
       sidebarMode: 'viz',
-      expandedCharts: { bar: true },
     });
 
     mocks.getActiveDataset.mockReturnValue(undefined);

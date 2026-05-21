@@ -30,7 +30,6 @@ function makeSnapshot(overrides = {}) {
 		ui: {
 			sidebarMode: 'panel',
 			previewRows: 25,
-			expandedCharts: { bar: true, scatter: false },
 		},
 		...overrides,
 	};
@@ -79,7 +78,6 @@ describe('persistenceService', () => {
 			expect(restored.ui).toEqual({
 				sidebarMode: 'panel',
 				previewRows: 25,
-				expandedCharts: { bar: true, scatter: false },
 			});
 		});
 

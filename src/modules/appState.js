@@ -29,15 +29,6 @@ const appState = {
 	ui: {
 		sidebarMode: 'dados',
 		previewRows: 10,
-		expandedCharts: {
-			bar: false,
-			scatter: false,
-			network: false,
-			pie: false,
-			bubble: false,
-			line: false,
-			tin: false,
-		},
 	},
 };
 
@@ -101,10 +92,6 @@ export function getAllDatasets() {
 	return dataState.getAllDatasets();
 }
 
-export function getActiveDatasetIndex() {
-	return dataState.getActiveDatasetIndex();
-}
-
 export function setActiveDataset(index) {
 	return dataState.setActiveDataset(index);
 }
@@ -152,24 +139,8 @@ export function getChartSnapshot(chartId) {
 	return panelState.getChartSnapshot(chartId);
 }
 
-export function getPanelSlots() {
-	return panelState.getPanelSlots();
-}
-
 export function getPanelBlocks() {
 	return panelState.getPanelBlocks();
-}
-
-export function assignChartToSlot(slotId, chartId) {
-	return panelState.assignChartToSlot(slotId, chartId);
-}
-
-export function getPanelLayout() {
-	return panelState.getPanelLayout();
-}
-
-export function setPanelLayout(layoutId) {
-	return panelState.setPanelLayout(layoutId);
 }
 
 export function clearPanel() {
@@ -212,31 +183,11 @@ export function assignChartToPanelBlockSlot(blockId, slotId, chartId) {
 	return panelState.assignChartToPanelBlockSlot(blockId, slotId, chartId);
 }
 
-export function migrateLegacyPanelState() {
-	return panelState.migrateLegacyPanelState();
-}
-
 /**
  * UI domain exports
  */
-export function getSidebarMode() {
-	return uiState.getSidebarMode();
-}
-
 export function setSidebarMode(mode) {
 	return uiState.setSidebarMode(mode);
-}
-
-export function getExpandedCharts() {
-	return uiState.getExpandedCharts();
-}
-
-export function setChartExpanded(chartName, expanded) {
-	return uiState.setChartExpanded(chartName, expanded);
-}
-
-export function getPreviewRows() {
-	return uiState.getPreviewRows();
 }
 
 export function setPreviewRows(rows) {
@@ -261,12 +212,21 @@ export function replaceAllState({ data, panel, ui } = {}) {
 		appState.panel.charts = Array.isArray(panel.charts) ? panel.charts : [];
 		appState.panel.slots = panel.slots && typeof panel.slots === 'object' ? panel.slots : {};
 		appState.panel.layout = typeof panel.layout === 'string' ? panel.layout : 'layout-2col';
+
+		// Seed nextBlockId BEFORE synthesizing the fallback default block, so the
+		// synthesized block uses the requested id (and nextBlockId auto-increments
+		// past it) rather than whatever value leaked in from a prior call.
+		const hasProvidedNextBlockId = Number.isInteger(panel.nextBlockId) && panel.nextBlockId > 0;
+		if (hasProvidedNextBlockId) {
+			appState.panel.nextBlockId = panel.nextBlockId;
+		}
 		appState.panel.blocks = Array.isArray(panel.blocks) && panel.blocks.length > 0
 			? panel.blocks
 			: [createPanelBlock('layout-2col')];
-		appState.panel.nextBlockId = Number.isInteger(panel.nextBlockId) && panel.nextBlockId > 0
-			? panel.nextBlockId
-			: appState.panel.blocks.length + 1;
+		if (!hasProvidedNextBlockId) {
+			appState.panel.nextBlockId = appState.panel.blocks.length + 1;
+		}
+
 		appState.panel.nextChartId = Number.isInteger(panel.nextChartId) && panel.nextChartId >= 0
 			? panel.nextChartId
 			: (appState.panel.charts.reduce((max, c) => Math.max(max, c.id ?? -1), -1) + 1);
@@ -279,33 +239,9 @@ export function replaceAllState({ data, panel, ui } = {}) {
 		if (Number.isInteger(ui.previewRows) && ui.previewRows >= 1) {
 			appState.ui.previewRows = ui.previewRows;
 		}
-		if (ui.expandedCharts && typeof ui.expandedCharts === 'object') {
-			appState.ui.expandedCharts = {
-				...appState.ui.expandedCharts,
-				...ui.expandedCharts,
-			};
-		}
 	}
 
 	emitStateChange(STATE_EVENTS.STATE_HYDRATED);
-}
-
-/**
- * Reset state to initial values (for testing)
- */
-export function resetState() {
-	appState.data.datasets = [];
-	appState.data.activeIndex = -1;
-	appState.panel.charts = [];
-	appState.panel.slots = {};
-	appState.panel.layout = 'layout-2col';
-	appState.panel.nextBlockId = 1;
-	appState.panel.blocks = [createPanelBlock('layout-2col')];
-	appState.panel.nextChartId = 0;
-	appState.ui.sidebarMode = 'dados';
-	appState.ui.previewRows = 10;
-	appState.ui.expandedCharts = { bar: false, scatter: false, network: false, pie: false, bubble: false, line: false, tin: false };
-	emitStateChange(STATE_EVENTS.STATE_RESET);
 }
 
 /**

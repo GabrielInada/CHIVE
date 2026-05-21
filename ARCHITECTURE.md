@@ -115,9 +115,7 @@ const appState = {
     data:  { datasets: [], activeIndex: -1 },
     panel: { charts: [], slots: {}, layout: 'layout-2col',
              blocks: [], nextBlockId: 1, nextChartId: 0 },
-    ui:    { sidebarMode: 'dados', previewRows: 10,
-             expandedCharts: { bar: false, scatter: false, network: false,
-                               pie: false, bubble: false, line: false, tin: false } },
+    ui:    { sidebarMode: 'dados', previewRows: 10 },
 };
 ```
 

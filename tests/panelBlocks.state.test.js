@@ -3,9 +3,17 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as appState from '../src/modules/appState.js';
 
+function resetAppStateForTest() {
+  appState.replaceAllState({
+    data: { datasets: [], activeIndex: -1 },
+    panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+    ui: { sidebarMode: 'dados', previewRows: 10 },
+  });
+}
+
 describe('panel blocks state model (phase 1)', () => {
   beforeEach(() => {
-    appState.resetState();
+    resetAppStateForTest();
   });
 
   it('exposes panel block management APIs', () => {
@@ -80,16 +88,5 @@ describe('panel blocks state model (phase 1)', () => {
 
     expect(a.slots['slot-1']).toBe(chartId);
     expect(b.slots['slot-1']).toBeUndefined();
-  });
-
-  it('migrates legacy panel layout + slots to blocks[0]', () => {
-    appState.setPanelLayout('layout-hero2');
-    appState.assignChartToSlot('slot-1', null);
-
-    appState.migrateLegacyPanelState();
-
-    const state = appState.getState();
-    expect(state.panel.blocks[0].templateId).toBe('layout-hero2');
-    expect(state.panel.layout).toBeUndefined();
   });
 });
