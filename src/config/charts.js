@@ -244,7 +244,3 @@ export const CHART_COLOR_PALETTES = {
   'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
 };
 
-export const CHART_EMPTY_STATES = {
-  noData: 'Sem dados suficientes para este gráfico.',
-  logNoPositive: 'Sem valores positivos suficientes para escala log nas colunas selecionadas.',
-};

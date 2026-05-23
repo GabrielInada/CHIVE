@@ -84,7 +84,7 @@ describe('dataService', () => {
     expect(rows.length).toBe(2);
     expect(rows[0].a).toBe('1');
 
-    expect(() => parseCsv('')).toThrow('O arquivo CSV está vazio.');
+    expect(() => parseCsv('')).toThrow('The CSV file is empty.');
   });
 
   it('parseia JSON em formatos suportados e rejeita inválido', () => {
@@ -94,8 +94,8 @@ describe('dataService', () => {
     const nested = parseJson('{"items":[{"x":1}]}');
     expect(nested.length).toBe(1);
 
-    expect(() => parseJson('{')).toThrow('O arquivo JSON contém erros de sintaxe. Verifique o formato.');
-    expect(() => parseJson('{"foo":1}')).toThrow('Formato JSON não reconhecido. O arquivo deve ser um array de objetos: [{...}, {...}]');
+    expect(() => parseJson('{')).toThrow('JSON file contains syntax errors. Verify the format.');
+    expect(() => parseJson('{"foo":1}')).toThrow('Unrecognized JSON format. The file must be an array of objects: [{...}, {...}]');
   });
 
   it('processa dados convertendo colunas numericas e calcula estatisticas', () => {
@@ -428,7 +428,7 @@ describe('dataService', () => {
 
   describe('parseCsv edge cases', () => {
     it('lanca erro para CSV com apenas header e sem dados', () => {
-      expect(() => parseCsv('a,b,c\n')).toThrow('O arquivo CSV está vazio.');
+      expect(() => parseCsv('a,b,c\n')).toThrow('The CSV file is empty.');
     });
 
     it('parseia CSV com linhas de dados em branco incluindo-as no resultado', () => {
@@ -441,11 +441,11 @@ describe('dataService', () => {
 
   describe('parseJson edge cases', () => {
     it('lanca erro para array JSON vazio', () => {
-      expect(() => parseJson('[]')).toThrow('O arquivo JSON está vazio.');
+      expect(() => parseJson('[]')).toThrow('The JSON file is empty.');
     });
 
     it('lanca erro para objeto aninhado com array vazio', () => {
-      expect(() => parseJson('{"items":[]}')).toThrow('O array de dados no JSON está vazio.');
+      expect(() => parseJson('{"items":[]}')).toThrow('The data array in the JSON is empty.');
     });
   });
 
