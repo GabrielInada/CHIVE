@@ -1,3 +1,17 @@
+/**
+ * Top-level results-pane view.
+ *
+ * Orchestrates the right-hand pane: tabs (preview/stats/charts), the file
+ * list + tools (search, join, preset), the column-controls strip, and the
+ * chart-rendering flow. Most rendering is delegated to per-view modules
+ * in `./results/`; this file wires them together and owns the global-filter
+ * action handlers that the chart layer dispatches.
+ *
+ * @typedef {import('../types.js').Dataset} Dataset
+ * @typedef {import('../types.js').ColumnSpec} ColumnSpec
+ * @typedef {import('../types.js').ChartConfig} ChartConfig
+ */
+
 import { t, getLocale } from '../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
 import { renderCharts } from '../features/chartFeatures/index.js';
@@ -28,16 +42,43 @@ const FILE_LIST_PAGE_SIZE = 15;
 let fileListQuery = '';
 let fileListVisibleCount = FILE_LIST_PAGE_SIZE;
 
+/**
+ * Show the top-banner error message. Prefixes with a warning glyph.
+ *
+ * @param {string} message
+ * @returns {void}
+ */
 export function showErrorMessage(message) {
   const errorElement = document.getElementById('mensagem-erro');
   errorElement.textContent = '⚠ ' + message;
   errorElement.style.display = 'block';
 }
 
+/**
+ * Hide the top-banner error message.
+ *
+ * @returns {void}
+ */
 export function hideErrorMessage() {
   document.getElementById('mensagem-erro').style.display = 'none';
 }
 
+/**
+ * Render the dataset file list with search, "show more/less" pagination,
+ * the active-dataset metadata row, and the Join/Preset tool buttons.
+ *
+ * Filter query and visible-count state are module-local — re-rendering
+ * resets visible-count when the query changes, but preserves it across
+ * paginations of the same query.
+ *
+ * @param {Dataset[]} datasets
+ * @param {number} activeIndex - `-1` when no dataset is active.
+ * @param {(index: number) => void} onSelect
+ * @param {(index: number) => void} onRemove
+ * @param {(spec: Object) => void} [onCreateJoin] - Fired with the join-builder dialog's resolved spec.
+ * @param {(presetId: string) => void} [onLoadPreset] - Fired with the chosen preset id.
+ * @returns {void}
+ */
 export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCreateJoin, onLoadPreset) {
   const fileInfo = document.getElementById('info-arquivo');
   const summary = document.getElementById('arquivo-resumo-texto');
@@ -208,6 +249,13 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   joinActions.appendChild(presetButton);
 }
 
+/**
+ * Render the "no dataset loaded" empty state. Hides the data interface,
+ * clears every chart container, and resets the upload-zone UI to its
+ * initial state.
+ *
+ * @returns {void}
+ */
 export function renderEmptyState() {
   const els = {
     'info-arquivo': document.getElementById('info-arquivo'),
@@ -270,6 +318,27 @@ export function renderEmptyState() {
   if (uploadTextoSub) uploadTextoSub.innerHTML = t('chive-upload-sub');
 }
 
+/**
+ * Render the main data-interface for the active dataset: tabs, table
+ * preview, stats, charts, and the column-controls strip. Wires the
+ * global-filter action handlers passed down into the chart layer's
+ * tooltip actions.
+ *
+ * Side effects: enables the "Next" button, toggles the upload zone to
+ * its loaded state, and updates the file-meta tooltip.
+ *
+ * @param {Array<Object<string, *>>} rows
+ * @param {ColumnSpec[]} columns
+ * @param {string} fileName
+ * @param {string} fileSize
+ * @param {number} [previewRows=10] - Number of rows to show in the table preview.
+ * @param {(rows: number) => void} [onPreviewRowsChange]
+ * @param {string[] | null} [selectedColumns] - Visible columns; defaults to all when null.
+ * @param {(names: string[]) => void} [onColumnSelectionChange]
+ * @param {Partial<ChartConfig> | null} [chartConfig] - Merged with defaults before rendering.
+ * @param {(partial: Partial<ChartConfig>) => void} [onChartConfigChange]
+ * @returns {void}
+ */
 export function renderDataInterface(
   rows,
   columns,

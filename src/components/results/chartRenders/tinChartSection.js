@@ -1,8 +1,22 @@
+/**
+ * TIN-chart section adapter. See `barChartSection.js` for the pattern.
+ * TIN does not currently expose filter actions, so no `filterCallbacks`
+ * parameter.
+ */
+
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderTinChart } from '../../../modules/visualizations/index.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
 import { showChartMessage } from './sharedRenderHelpers.js';
 
+/**
+ * Render the TIN-chart section.
+ *
+ * @param {Object} args
+ * @param {Object} args.config
+ * @param {Array<Object<string, *>>} args.rows
+ * @returns {void}
+ */
 export function renderTinChartSection({ config, rows }) {
 	const block = document.getElementById(CHART_BLOCKS.tin);
 	const container = document.getElementById(CHART_CONTAINERS.tin);

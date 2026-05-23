@@ -1,3 +1,14 @@
+/**
+ * Treemap renderer.
+ *
+ * Renders a D3 treemap with squarified tiling. Sizes can come from row
+ * count or a numeric sum; coloring is palette-derived ('scheme' mode) or
+ * a single uniform color.
+ *
+ * Internal D3 helpers (treemap layout, label truncation, palette lookup)
+ * are intentionally undocumented per the Tier 5 plan.
+ */
+
 import { hierarchy, select, treemap, treemapSquarify } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
@@ -20,14 +31,32 @@ const COLOR_PALETTE = {
 	'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
 };
 
+/** @private */
 function getSchemeColors(schemeName) {
 	return COLOR_PALETTE[schemeName] || COLOR_PALETTE['Bold'];
 }
 
+/** @private */
 function truncate(text, maxLen) {
 	return text.length > maxLen ? `${text.slice(0, maxLen - 1)}…` : text;
 }
 
+/**
+ * Render a treemap into `container`. Unlike the other renderers, this one
+ * returns nothing (`void`) — failure modes are handled by early returns
+ * that leave the container empty.
+ *
+ * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
+ * `topN`, `padding`, `showLabels`/`showValues`, `colorMode` ('scheme' |
+ * 'uniform'), `colorScheme`, `color`, `customTitle`, `chartHeight`,
+ * `locale`.
+ *
+ * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
+ * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {string} colunaCategoria - Categorical column name (required).
+ * @param {Object} [opcoes={}] - Render options bag.
+ * @returns {void}
+ */
 export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return { ok: false };
 

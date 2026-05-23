@@ -1,3 +1,16 @@
+/**
+ * Bubble-chart renderer.
+ *
+ * Renders a D3 circle-pack layout. Supports flat aggregation (one bubble
+ * per category) and progressive multi-level nesting (groups of bubbles
+ * inside parent bubbles). Tooltip actions filter rows on click.
+ *
+ * Internal D3 helpers (pack layout, label placement, palette interpolation)
+ * are intentionally undocumented per the Tier 5 plan.
+ *
+ * @typedef {import('../../types.js').Result} Result
+ */
+
 import { hierarchy, pack, scaleOrdinal, select } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
@@ -22,10 +35,30 @@ import {
 	isDescendantOf,
 } from './bubbleChartHierarchy.js';
 
+/** @private */
 function getBubblePalette(colorScheme) {
 	return CHART_COLOR_PALETTES[colorScheme] || CHART_COLOR_PALETTES.Tableau10;
 }
 
+/**
+ * Render a bubble chart into `container`. Returns `ok()` on success, or
+ * `fail()` when `colunaCategoria` is missing, when sum/mean aggregation
+ * is requested without a usable `valueColumn`, or when no rows remain
+ * after aggregation.
+ *
+ * Common option keys: `measureMode` ('count' | 'sum' | 'mean'),
+ * `valueColumn`, `topN`, `padding`, `labelMode` ('all' | 'hover' | 'auto'),
+ * `nestingMode` ('flat' | 'grouped'), `nestingColumns` (progressive
+ * hierarchy column names), `groupColumn` (legacy single-group fallback),
+ * `colorScheme`, `customTitle`, `chartHeight`, `locale`, and the localized
+ * `labels` bag.
+ *
+ * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
+ * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {string} colunaCategoria - Root category column name (required).
+ * @param {Object} [opcoes={}] - Render options bag.
+ * @returns {Result}
+ */
 export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return fail();
 

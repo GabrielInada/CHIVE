@@ -1,5 +1,18 @@
+/**
+ * Preset datasets picker dialog. Modal grid of bundled-preset cards;
+ * resolves with the chosen `PresetCatalogEntry` or `null` on cancel.
+ *
+ * @typedef {import('../../types.js').PresetCatalogEntry} PresetCatalogEntry
+ */
+
 import { PRESET_CATALOG } from '../../data/presetCatalog.js';
 
+/**
+ * Build one preset card: name, description, row/column counts, optional
+ * source attribution + link.
+ *
+ * @private
+ */
 function buildPresetCard(entry, translate) {
 	const card = document.createElement('button');
 	card.type = 'button';
@@ -54,6 +67,15 @@ function buildPresetCard(entry, translate) {
 	return card;
 }
 
+/**
+ * Open the preset datasets picker dialog. Returns a Promise that
+ * resolves with the chosen catalog entry or `null` on cancel /
+ * Escape / backdrop click. The "Load" button is disabled until a card
+ * is selected.
+ *
+ * @param {{ translate: (key: string, ...args: *) => string }} args
+ * @returns {Promise<PresetCatalogEntry | null>}
+ */
 export function openPresetDatasetsDialog({ translate }) {
 	return new Promise(resolve => {
 		const overlay = document.createElement('div');

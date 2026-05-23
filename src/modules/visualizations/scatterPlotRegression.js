@@ -1,3 +1,17 @@
+/**
+ * Scatter-plot regression math.
+ *
+ * Pure utilities for OLS linear regression with 95% confidence-band
+ * sampling. Hooks into `scatterPlot.js`'s analytics section.
+ *
+ * Log scales are honored by fitting the regression in `log(x)`/`log(y)`
+ * space and exponentiating the sample line/band on output.
+ */
+
+/**
+ * Critical t-values for a 95% two-tailed confidence interval, df 1–30.
+ * Lookup falls back to `1.96` for df > 30 (large-sample approximation).
+ */
 export const T_CRIT_95 = {
 	1: 12.706,
 	2: 4.303,
@@ -31,12 +45,30 @@ export const T_CRIT_95 = {
 	30: 2.042,
 };
 
+/**
+ * Critical t-value (95% two-tailed) for `df` degrees of freedom. Returns
+ * `NaN` for `df < 1`; `1.96` for `df > 30`; otherwise the table entry.
+ *
+ * @param {number} df
+ * @returns {number}
+ */
 export function tCrit95(df) {
 	if (!Number.isFinite(df) || df < 1) return NaN;
 	if (df > 30) return 1.96;
 	return T_CRIT_95[df];
 }
 
+/**
+ * Fit a least-squares regression `y = slope·x + intercept` over the given
+ * `(x, y)` pairs. Returns the fit plus the moments needed for the
+ * confidence-band math (`xMean`, `sxx`, residual standard error).
+ *
+ * Failure modes: fewer than 2 points → `'too-few-points'`; all x values
+ * equal → `'zero-variance'`.
+ *
+ * @param {Array<{ x: number, y: number }>} pairs
+ * @returns {{ ok: true, slope: number, intercept: number, r2: number, n: number, xMean: number, sxx: number, ssRes: number, seResidual: number } | { ok: false, reason: 'too-few-points' | 'zero-variance' }}
+ */
 export function fitLinearRegression(pairs) {
 	const n = pairs.length;
 	if (n < 2) return { ok: false, reason: 'too-few-points' };
@@ -72,6 +104,17 @@ export function fitLinearRegression(pairs) {
 	return { ok: true, slope, intercept, r2, n, xMean, sxx, ssRes, seResidual };
 }
 
+/**
+ * Apply the configured log transforms to a single point. Returns `null`
+ * when either coordinate becomes non-finite (e.g. log of zero or
+ * negative).
+ *
+ * @private
+ * @param {{ x: number, y: number }} ponto
+ * @param {boolean} xLog
+ * @param {boolean} yLog
+ * @returns {{ x: number, y: number } | null}
+ */
 function transformPoint(ponto, xLog, yLog) {
 	const xFit = xLog ? Math.log(ponto.x) : ponto.x;
 	const yFit = yLog ? Math.log(ponto.y) : ponto.y;
@@ -79,6 +122,23 @@ function transformPoint(ponto, xLog, yLog) {
 	return { x: xFit, y: yFit };
 }
 
+/**
+ * Compute one or more regression lines + 95% CI bands sampled across
+ * `xDomain`. When `groupBy` is provided, fits a separate regression per
+ * group; otherwise returns a single overall fit (keyed as `'__overall__'`).
+ *
+ * Sample line is always produced when the fit succeeds. Sample band is
+ * `null` when `n < 3` or residual SE is non-finite/zero (CI undefined).
+ *
+ * @param {Object} args
+ * @param {Array<Object<string, *>>} args.pontos - Each must have numeric `x`/`y`.
+ * @param {'linear' | 'log'} [args.xScale]
+ * @param {'linear' | 'log'} [args.yScale]
+ * @param {[number, number]} args.xDomain - X-axis extent in raw (non-log) units.
+ * @param {(ponto: Object) => string} [args.groupBy] - Returns a group key per point.
+ * @param {number} [args.sampleCount=80] - Number of evenly-spaced sample points along the line.
+ * @returns {Array<{ groupKey: string, fit: Object, sampleLine: Array<{x: number, y: number}> | null, sampleBand: Array<{x: number, yLow: number, yHigh: number}> | null }>}
+ */
 export function computeRegression({
 	pontos,
 	xScale,
@@ -153,6 +213,14 @@ export function computeRegression({
 	return results;
 }
 
+/**
+ * Display-format a regression coefficient. Falls back to exponential
+ * notation outside `[0.001, 10000)`.
+ *
+ * @private
+ * @param {number} value
+ * @returns {string}
+ */
 function formatCoefficient(value) {
 	if (!Number.isFinite(value)) return 'NaN';
 	const abs = Math.abs(value);
@@ -162,6 +230,14 @@ function formatCoefficient(value) {
 	return Number(value.toPrecision(precision)).toString();
 }
 
+/**
+ * Format a regression equation for display, e.g.
+ * `'y = 0.42·x + 1.2'` or `'log(y) = 1.3·log(x) − 0.6'` when the
+ * corresponding scales are logarithmic.
+ *
+ * @param {{ slope: number, intercept: number, xScale: 'linear' | 'log', yScale: 'linear' | 'log' }} args
+ * @returns {string}
+ */
 export function formatRegressionEquation({ slope, intercept, xScale, yScale }) {
 	const xLog = xScale === 'log';
 	const yLog = yScale === 'log';
@@ -173,6 +249,12 @@ export function formatRegressionEquation({ slope, intercept, xScale, yScale }) {
 	return `${yTerm} = ${slopeStr}·${xTerm} ${interceptSign} ${interceptStr}`;
 }
 
+/**
+ * Format an R² value for display (3 decimals; `'NaN'` for non-finite).
+ *
+ * @param {number} r2
+ * @returns {string}
+ */
 export function formatR2(r2) {
 	if (!Number.isFinite(r2)) return 'NaN';
 	return r2.toFixed(3);

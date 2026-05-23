@@ -1,5 +1,17 @@
+/**
+ * Chart-params pane view. Owns the chart-type picker trigger (the button
+ * that opens the picker dialog) and the chart-specific control sections
+ * built by the `chart-controls` registry.
+ */
+
 import { PREVIEW_SVGS } from '../../modules/chart-controls/chartTypes.js';
 
+/**
+ * Build the chart-type trigger button: a preview SVG, the chart title (or
+ * placeholder), and a dropdown caret. Clicking opens the picker dialog.
+ *
+ * @private
+ */
 function buildTriggerButton({ activeChartType, chartTitle, translate, onClick }) {
 	const trigger = document.createElement('button');
 	trigger.type = 'button';
@@ -36,6 +48,20 @@ function buildTriggerButton({ activeChartType, chartTitle, translate, onClick })
 	return trigger;
 }
 
+/**
+ * Render the params pane: trigger button + (when a chart type is active)
+ * the description paragraph and the per-chart control sections.
+ *
+ * @param {Object} args
+ * @param {HTMLElement} args.container
+ * @param {string | null} args.activeChartType
+ * @param {string} [args.chartTitle]
+ * @param {string} [args.chartDescription]
+ * @param {HTMLElement[]} args.controls - Section elements returned by `create*ChartControls`.
+ * @param {(key: string) => string} args.translate
+ * @param {() => void} [args.onChartTypeTriggerClick]
+ * @returns {void}
+ */
 export function renderChartParamsDOM({
 	container,
 	activeChartType,

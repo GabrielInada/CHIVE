@@ -1,3 +1,24 @@
+/**
+ * Column-controls strip view. Renders the action buttons (All / Clear /
+ * Only numeric / Only text) plus the per-column checkboxes.
+ *
+ * The action buttons swap the entire selection; the per-column checkboxes
+ * emit the resolved set every time one is toggled.
+ *
+ * @param {Object} args
+ * @param {HTMLElement} args.acoesContainer - Container for the action buttons.
+ * @param {HTMLElement} args.listaColunas - Container for the per-column checkboxes.
+ * @param {Array<{ nome: string, tipo: string }>} args.colunas
+ * @param {Set<string>} args.nomesSelecionados - Names of currently selected columns.
+ * @param {'todas' | 'numericas' | 'texto' | null} args.filtroAtivo - Drives the "active" highlight on the action buttons.
+ * @param {string[]} args.nomesColunas - All column names.
+ * @param {string[]} args.nomesNumericas
+ * @param {string[]} args.nomesTexto
+ * @param {(key: string, ...args: *) => string} args.traduzir
+ * @param {(tipo: string) => string} args.translateType
+ * @param {(names: string[]) => void} args.aoAlterarSelecaoColuna - Fired with the new selection list.
+ * @returns {void}
+ */
 export function renderColumnControlsDOM({
 	acoesContainer,
 	listaColunas,
