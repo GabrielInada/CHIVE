@@ -1,5 +1,5 @@
 /**
- * CHIVE Persistence Service
+ * CHIVE Persistence Service.
  *
  * Saves application state to IndexedDB on a debounced wildcard subscription
  * and restores it on boot. UI preferences live in localStorage (small payload,
@@ -15,6 +15,9 @@
  *
  * Cross-tab note: two tabs writing the same DB → last-writer-wins. Acceptable
  * for the current single-user / single-tab usage pattern.
+ *
+ * @typedef {import('../types.js').AppState} AppState
+ * @typedef {import('../types.js').UnsubscribeFn} UnsubscribeFn
  */
 
 import { onStateChange, STATE_EVENTS } from '../modules/stateEvents.js';
@@ -32,6 +35,9 @@ const UI_LOCAL_STORAGE_KEY = 'chive.ui';
 // state event (or beforeunload flush) will write the latest snapshot.
 let saveInFlight = null;
 
+/**
+ * @returns {boolean} `true` when `indexedDB` is reachable from the current context (browser with IndexedDB support, or jsdom with `fake-indexeddb` installed). Sandboxed contexts that throw on `indexedDB` access return `false`.
+ */
 export function isPersistenceAvailable() {
 	try {
 		return typeof indexedDB !== 'undefined' && indexedDB !== null;
@@ -150,11 +156,17 @@ function validateDatasetRecord(record) {
 }
 
 /**
- * Restore persisted state into appState. No-op on first visit.
+ * Restore persisted state into appState. No-op on first visit, when
+ * IndexedDB is unavailable, or when `replaceAllState` is not a function.
+ *
+ * Dataset records that fail validation (missing `id`, malformed `colunas`,
+ * non-array `dados`, …) are dropped with a console warning; the remaining
+ * datasets are still hydrated.
+ *
  * @param {Object} hooks
- * @param {Function} hooks.replaceAllState - mutates appState in place + emits STATE_HYDRATED
- * @param {Function} [hooks.transformPanel] - optional hook to migrate/upgrade the panel record
- *   (e.g. re-merging chart spec configs against current chartDefaults to absorb new keys)
+ * @param {(snapshot: Partial<AppState>) => void} hooks.replaceAllState - Mutates appState in place + emits STATE_HYDRATED.
+ * @param {(panel: Object) => Object} [hooks.transformPanel] - Optional migration hook. Receives the raw panel record (sans `key`/`activeDatasetId`); returns the upgraded one. A common use is re-merging chart spec configs against current `chartDefaults` to absorb newly-added keys.
+ * @returns {Promise<void>}
  */
 export async function hydrateState({ replaceAllState, transformPanel } = {}) {
 	if (!isPersistenceAvailable() || typeof replaceAllState !== 'function') return;
@@ -216,9 +228,18 @@ export async function hydrateState({ replaceAllState, transformPanel } = {}) {
 }
 
 /**
- * Persist a state snapshot. Returns the in-flight save Promise.
- * Concurrent calls during an in-flight save are coalesced — the next call
- * after settle will pick up the latest snapshot.
+ * Persist a state snapshot to IndexedDB (datasets + panel singleton) and
+ * UI prefs to localStorage. Returns the in-flight save Promise.
+ *
+ * Coalescing: if a previous save is still in flight when this is called,
+ * the new call returns that previous Promise instead of starting another
+ * write. The next state event (or `beforeunload` flush) will capture
+ * whatever changed in the meantime — last-writer-wins semantics, by design.
+ *
+ * No-op when IndexedDB is unavailable or `snapshot` is not an object.
+ *
+ * @param {Partial<AppState>} snapshot
+ * @returns {Promise<void>}
  */
 export async function persistState(snapshot) {
 	if (!isPersistenceAvailable() || !snapshot || typeof snapshot !== 'object') return;
@@ -260,6 +281,13 @@ export async function persistState(snapshot) {
 	return saveInFlight;
 }
 
+/**
+ * Wipe all persisted state — UI prefs from localStorage and the entire
+ * IndexedDB database. Best-effort: resolves even if individual deletions
+ * fail or are blocked by another tab.
+ *
+ * @returns {Promise<void>}
+ */
 export async function clearPersistedState() {
 	try {
 		localStorage.removeItem(UI_LOCAL_STORAGE_KEY);
@@ -284,6 +312,13 @@ export async function clearPersistedState() {
  * Wildcard subscription is OK here: per ARCHITECTURE.md §7, the wildcard slot
  * is reserved for state-bus consumers (stateSync, persistenceService). UI code
  * still subscribes only to typed events.
+ *
+ * `STATE_HYDRATED` is skipped — saving the snapshot we just loaded would be
+ * a no-op write at best and a race condition at worst.
+ *
+ * @param {() => Partial<AppState>} getStateFn - Snapshot accessor; usually `getState` from appState.
+ * @param {{ debounceMs?: number }} [options]
+ * @returns {{ flush: () => void, cancel: () => void, unsubscribe?: UnsubscribeFn }} When persistence is unavailable, returns no-op `flush`/`cancel` and omits `unsubscribe`.
  */
 export function enablePersistenceAutoSave(getStateFn, { debounceMs = 300 } = {}) {
 	const noop = { flush: () => {}, cancel: () => {} };
