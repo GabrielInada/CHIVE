@@ -7,7 +7,7 @@
  * always win on overlap, missing fields fall back to the default.
  *
  * The chart-specific sub-shapes live alongside the defaults here; each
- * mirrors what `chart-controls/<type>Controls.js` writes. Reach for
+ * mirrors what `chartControls/<type>Controls.js` writes. Reach for
  * `src/config/charts.js` for the per-chart constants that feed these.
  *
  * @typedef {import('../types.js').ChartConfig} ChartConfig

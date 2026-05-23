@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../../src/modules/chart-controls/previews.js', () => ({
+vi.mock('../../../src/modules/chartControls/previews.js', () => ({
 	PREVIEW_BAR_SVG: '<svg data-prev="bar" />',
 	PREVIEW_SCATTER_SVG: '<svg data-prev="scatter" />',
 	PREVIEW_PIE_SVG: '<svg data-prev="pie" />',
@@ -14,7 +14,7 @@ vi.mock('../../../src/modules/chart-controls/previews.js', () => ({
 }));
 
 import { openChartTypePickerDialog } from '../../../src/components/results/chartTypePickerDialog.js';
-import { CHART_TYPES } from '../../../src/modules/chart-controls/chartTypes.js';
+import { CHART_TYPES } from '../../../src/modules/chartControls/chartTypes.js';
 
 const translate = key => `t:${key}`;
 

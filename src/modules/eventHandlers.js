@@ -17,7 +17,7 @@ import { addChartToPanel, setupPanelEventListeners } from './panelManager.js';
 import { showError, showFeedback } from './feedbackUI.js';
 import { setupFileInputListeners, selectDataset, removeDatasetByIndex } from './fileManager.js';
 import { setupTabListeners, setupSidebarToggleListener, switchTab } from './uiManager.js';
-import { getActiveDataset, updateActiveDatasetConfig } from './appState.js';
+import { getActiveDataset, updateActiveDatasetConfig } from './state/appState.js';
 import { CHART_CONTAINERS } from '../config/elementIds.js';
 
 const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(

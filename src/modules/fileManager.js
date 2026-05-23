@@ -16,7 +16,7 @@
 import { t } from '../services/i18nService.js';
 import { processData, formatFileSize, joinDatasets } from '../services/dataService.js';
 import { ingestFile, progressLabelForStage } from '../services/dataIngestService.js';
-import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './appState.js';
+import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './state/appState.js';
 import { showError, clearErrors, showProgress } from './feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/limits.js';
 import { DELIMITED_EXTENSIONS } from '../config/formats.js';

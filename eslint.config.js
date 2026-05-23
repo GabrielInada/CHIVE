@@ -3,7 +3,7 @@ import js from '@eslint/js';
 const STATELESS_RENDERER_MESSAGE =
 	'Renderers (src/components/, src/features/) must be stateless ' +
 	'(ARCHITECTURE.md §4). Only read-only facade members are importable here. ' +
-	'Route writes through chart-controls listeners or modules/eventHandlers.';
+	'Route writes through chartControls listeners or modules/eventHandlers.';
 
 // Read-only facade surface that renderers may import from appState.js.
 // If you add a new READ function to appState.js, add it here too. Anything
@@ -46,7 +46,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				patterns: [{
-					group: ['**/modules/appState.js'],
+					group: ['**/modules/state/appState.js'],
 					allowImportNames: APP_STATE_READS,
 					message: STATELESS_RENDERER_MESSAGE,
 				}],

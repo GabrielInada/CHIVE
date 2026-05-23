@@ -8,7 +8,7 @@
  *      so restoration does not trigger a redundant save and the first
  *      render sees the restored state.
  *   3. Initialize state sync + expose backwards-compat globals.
- *   4. Initialize fileManager / chart-controls / panelManager.
+ *   4. Initialize fileManager / chartControls / panelManager.
  *   5. Wire global DOM listeners via `eventHandlers`.
  *   6. Subscribe `refreshView` to dataset/columns/config state events.
  *   7. Enable debounced auto-save; flush on `beforeunload`.
@@ -33,7 +33,7 @@ renderEmptyState,
 renderDataInterface,
 renderFileList,
 } from './components/index.js';
-import { initChartControls, renderChartControlsSidebar, renderCharts } from './features/chartFeatures/index.js';
+import { initChartControls, renderChartControlsSidebar, renderCharts } from './features/chartFeatures.js';
 import { createDefaultChartConfig, mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 import { getNumericColumns } from './utils/columnHelpers.js';
 
@@ -56,7 +56,7 @@ enableStateLog,
 disableStateLog,
 getStateLog,
 clearStateLog,
-} from './modules/stateEvents.js';
+} from './modules/state/stateEvents.js';
 import {
 initPanelManager,
 initializeLayoutSelector,

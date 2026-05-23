@@ -14,7 +14,7 @@
 
 import { t, getLocale } from '../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
-import { renderCharts } from '../features/chartFeatures/index.js';
+import { renderCharts } from '../features/chartFeatures.js';
 import { getNumericColumns } from '../utils/columnHelpers.js';
 import { translateType } from '../utils/formatters.js';
 

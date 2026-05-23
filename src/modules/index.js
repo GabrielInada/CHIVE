@@ -10,8 +10,8 @@
  *
  * @see CONTRIBUTING.md "Documentation Conventions"
  */
-export * from './appState.js';
-export * from './stateSync.js';
+export * from './state/appState.js';
+export * from './state/stateSync.js';
 export * from './panelManager.js';
 export * from './fileManager.js';
 export * from './eventHandlers.js';

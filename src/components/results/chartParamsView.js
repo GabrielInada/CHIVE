@@ -1,10 +1,10 @@
 /**
  * Chart-params pane view. Owns the chart-type picker trigger (the button
  * that opens the picker dialog) and the chart-specific control sections
- * built by the `chart-controls` registry.
+ * built by the `chartControls` registry.
  */
 
-import { PREVIEW_SVGS } from '../../modules/chart-controls/chartTypes.js';
+import { PREVIEW_SVGS } from '../../modules/chartControls/chartTypes.js';
 
 /**
  * Build the chart-type trigger button: a preview SVG, the chart title (or

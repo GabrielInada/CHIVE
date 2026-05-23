@@ -33,7 +33,7 @@ vi.mock('../src/services/dataIngestService.js', () => ({
   progressLabelForStage: mocks.progressLabelForStage,
 }));
 
-vi.mock('../src/modules/appState.js', () => ({
+vi.mock('../src/modules/state/appState.js', () => ({
   addDataset: mocks.addDataset,
   removeDataset: mocks.removeDataset,
   setActiveDataset: mocks.setActiveDataset,

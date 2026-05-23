@@ -68,7 +68,7 @@ npm run test:watch   # Tests in watch mode
 - **Result pattern:** Functions returning success/failure use `ok(data)` / `fail(reason)` from `src/utils/result.js`
 - **DOM IDs:** Use constants from `src/config/elementIds.js` instead of hardcoded strings
 - **Color utilities:** Use shared functions from `src/utils/colorUtils.js` — never duplicate hex/rgb conversion logic
-- **Chart control listeners:** Use helpers from `src/modules/chart-controls/controlListenerHelpers.js` for common patterns (select, checkbox, slider, etc.) — only write inline listeners when cross-dependency logic is needed
+- **Chart control listeners:** Use helpers from `src/modules/chartControls/controlListenerHelpers.js` for common patterns (select, checkbox, slider, etc.) — only write inline listeners when cross-dependency logic is needed
 - **Join and preset dataset UIs:** Keep orchestration in modules/components and reuse existing event-driven patterns
 - **No TypeScript, no linter config** — plain JS with ES modules
 
@@ -79,9 +79,9 @@ Public functions on the state core, services, and orchestrators carry JSDoc so t
 - **Format**: `/** ... */` blocks, tab-indented. `@param {Type} name - description`. `@returns {Type} description` (omit only when the function is `void`).
 - **Minimum verbosity**: a 1-line summary plus `@param`/`@returns`. Add `@example`, `@fires`, `@throws`, `@deprecated`, or `@private` only where they convey something a reader could not infer from the signature.
 - **Project typedefs** live in [`src/types.js`](src/types.js) (`AppState`, `Dataset`, `ChartConfig`, `PanelBlock`, `ChartSnapshot`, `StateEventType`, …). Import via `@typedef {import('../types.js').Foo} Foo` at the top of the consuming file, then reference `Foo` unqualified downstream. Barrels do not propagate typedefs — always import from `src/types.js` directly.
-- **Mutable vs cloned returns**: functions that return a live state reference must say `"Live reference, do not mutate."` in the `@returns` description. Cloned returns say `"Deep clone."`. This footgun is real — mutating a getter return bypasses the facade and breaks reactivity. See [`appState.js`](src/modules/appState.js) for examples.
+- **Mutable vs cloned returns**: functions that return a live state reference must say `"Live reference, do not mutate."` in the `@returns` description. Cloned returns say `"Deep clone."`. This footgun is real — mutating a getter return bypasses the facade and breaks reactivity. See [`appState.js`](src/modules/state/appState.js) for examples.
 - **Events**: use `@fires STATE_EVENTS.FOO` (the constant name, not the string literal `'foo'`). Functions that conditionally emit must say so in the description.
-- **Facade-only-write invariant**: facade module banners reference `@see ARCHITECTURE.md`. Mutation helpers under `src/modules/panel/*` and similar are `@internal` and must not be imported from outside the module that backs them.
+- **Facade-only-write invariant**: facade module banners reference `@see ARCHITECTURE.md`. Mutation helpers under `src/modules/panelSubsystem/*` and similar are `@internal` and must not be imported from outside the module that backs them.
 - **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only; the editor and Claude use it for hover/intellisense without type validation.
 - **No HTML site generation** (no typedoc / no jsdoc CLI). Hover and source reading are the deliverable.
 
@@ -96,7 +96,7 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 - Renderers are stateless. They read via getters and never mutate.
 - `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`stateSync.js`, `persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js` — use a typed subscription.
 
-**Renderer statelessness is enforced by lint.** ESLint (`npm run lint`) restricts files under `src/components/` and `src/features/` to read-only imports from `modules/appState.js` — the `get*` functions, `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing any write function from those directories is an error. If you need a write from a renderer, you're writing it in the wrong layer — route it through a chart-controls listener or `eventHandlers.js`, both outside the linted scope. When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
+**Renderer statelessness is enforced by lint.** ESLint (`npm run lint`) restricts files under `src/components/` and `src/features/` to read-only imports from `modules/state/appState.js` — the `get*` functions, `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing any write function from those directories is an error. If you need a write from a renderer, you're writing it in the wrong layer — route it through a chartControls listener or `eventHandlers.js`, both outside the linted scope. When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
 
 **Inline mutation of facade getter returns is blocked across all of `src/`.** A second lint rule (`no-restricted-syntax` in `eslint.config.js`) catches patterns like `getActiveDataset().X = y` and `getActiveDataset().X.Y = z` at depths 1–3 against the mutable-ref getters (`getActiveDataset`, `getAllDatasets`, `getPanelCharts`, `getChartSnapshot`, `getPanelBlocks`, `getState`). The rule has one known blind spot: aliased mutations (`const ds = getActiveDataset(); ds.X = y`) pass static analysis. Don't write that pattern — go through a facade write method. When a new mutable-ref getter is added to `appState.js`, update `FACADE_MUTABLE_GETTERS` in `eslint.config.js`.
 
@@ -106,7 +106,7 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 
 | If you're adding… | Put it in | Notes |
 |---|---|---|
-| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chart-controls/{name}Controls.js` | Register in `chart-controls/index.js` and `config/chartDefaults.js`. |
+| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. |
 | A new state field | The relevant domain in `appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
 | A new DOM event handler | `src/modules/eventHandlers.js` (or an existing controller) | Translate the event into a facade call. Never mutate state directly. |
 | A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |

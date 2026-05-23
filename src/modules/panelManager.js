@@ -23,7 +23,7 @@ import { getNumericColumnNames } from '../utils/columnHelpers.js';
 import {
 	LAYOUTS_PAINEL,
 	getLayoutConfig as getPanelLayoutConfig,
-} from './panel/layoutConfig.js';
+} from './panelSubsystem/layoutConfig.js';
 import {
 	getPanelBlocks,
 	getActiveDataset,
@@ -35,14 +35,14 @@ import {
 	clearPanel,
 	onStateChange,
 	STATE_EVENTS,
-} from './appState.js';
+} from './state/appState.js';
 import {
 	renderSidebarPanel as renderSidebar,
 	renderCanvasPanel as renderCanvas,
 	fillLayoutSelect,
-} from './panel/panelRenderer.js';
-import { exportPanelLayoutSvg as exportSvg } from './panel/panelExporter.js';
-import { SUPPORTED_PANEL_CHART_TYPES } from './panel/renderChartFromSpec.js';
+} from './panelSubsystem/panelRenderer.js';
+import { exportPanelLayoutSvg as exportSvg } from './panelSubsystem/panelExporter.js';
+import { SUPPORTED_PANEL_CHART_TYPES } from './panelSubsystem/renderChartFromSpec.js';
 
 // Callback for feedback UI (will be set by main.js)
 let feedbackCallback = null;

@@ -11,11 +11,11 @@ vi.mock('../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../src/modules/stateSync.js', () => ({
+vi.mock('../../src/modules/state/stateSync.js', () => ({
 	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
 }));
 
-import { createBarChartControls, setupBarChartControlListeners } from '../../src/modules/chart-controls/barControls.js';
+import { createBarChartControls, setupBarChartControlListeners } from '../../src/modules/chartControls/barControls.js';
 
 function createDataset(measureMode = 'count', valueColumn = null) {
 	return {

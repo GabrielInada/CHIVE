@@ -6,7 +6,7 @@
  */
 
 import { calculateStatistics, calculateCategoricalStatistics } from '../../services/dataService.js';
-import { getActiveDataset } from '../../modules/appState.js';
+import { getActiveDataset } from '../../modules/state/appState.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { formatNumber } from '../../utils/formatters.js';
 

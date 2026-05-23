@@ -61,7 +61,7 @@ vi.mock('../src/modules/uiManager.js', () => ({
   switchTab: mocks.switchTab,
 }));
 
-vi.mock('../src/modules/appState.js', () => ({
+vi.mock('../src/modules/state/appState.js', () => ({
   getActiveDataset: mocks.getActiveDataset,
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));

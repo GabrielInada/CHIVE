@@ -16,7 +16,7 @@ import {
 	onStateChange,
 	replaceAllState,
 	getState,
-} from '../src/modules/appState.js';
+} from '../src/modules/state/appState.js';
 
 function resetAppStateForTest() {
 	replaceAllState({
@@ -261,7 +261,7 @@ describe('appState (edge cases - branch coverage)', () => {
 
 	describe('getState and exposeGlobals', () => {
 		it('getState returns deep clone of state', async () => {
-			const { getState } = await import('../src/modules/appState.js');
+			const { getState } = await import('../src/modules/state/appState.js');
 			addDataset({ dados: [{ x: 1 }], colunas: ['x'] });
 			const state = getState();
 			expect(state.data.datasets.length).toBe(1);
@@ -270,7 +270,7 @@ describe('appState (edge cases - branch coverage)', () => {
 		});
 
 		it('exposeGlobals sets window properties', async () => {
-			const { exposeGlobals, getAllDatasets } = await import('../src/modules/appState.js');
+			const { exposeGlobals, getAllDatasets } = await import('../src/modules/state/appState.js');
 			addDataset({ dados: [{ a: 1 }], colunas: ['a'], colunasSelecionadas: ['a'] });
 			exposeGlobals();
 			expect(window.datasetsCarregados).toBe(getAllDatasets());
@@ -279,7 +279,7 @@ describe('appState (edge cases - branch coverage)', () => {
 		});
 
 		it('exposeGlobals handles no active dataset', async () => {
-			const { exposeGlobals } = await import('../src/modules/appState.js');
+			const { exposeGlobals } = await import('../src/modules/state/appState.js');
 			exposeGlobals();
 			expect(window.dadosCarregados).toBeNull();
 			expect(window.colunasDetectadas).toBeNull();
@@ -289,7 +289,7 @@ describe('appState (edge cases - branch coverage)', () => {
 
 	describe('sanitizeChartName', () => {
 		it('trims and truncates chart name', async () => {
-			const { sanitizeChartName } = await import('../src/modules/appState.js');
+			const { sanitizeChartName } = await import('../src/modules/state/appState.js');
 			expect(sanitizeChartName('  Test  ')).toBe('Test');
 			expect(sanitizeChartName('a'.repeat(200)).length).toBe(100);
 		});

@@ -4,7 +4,7 @@
  * `{ chartType: null }` for the explicit "Clear" action.
  */
 
-import { CHART_TYPES, PREVIEW_SVGS, CATEGORY_KEYS } from '../../modules/chart-controls/chartTypes.js';
+import { CHART_TYPES, PREVIEW_SVGS, CATEGORY_KEYS } from '../../modules/chartControls/chartTypes.js';
 
 /**
  * Build one chart-type card: preview SVG, name, category tag,

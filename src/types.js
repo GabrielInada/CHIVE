@@ -136,9 +136,9 @@
 
 /**
  * Column-name buckets passed into per-chart `build`/`attachListeners`/
- * `computeDefaults` by the chart-controls registry. Derived from the active
+ * `computeDefaults` by the chartControls registry. Derived from the active
  * dataset's visible columns by `getColumnContext()` in
- * `chart-controls/index.js`.
+ * `chartControls/chartControlsManager.js`.
  *
  * `baseCategoricalOrAll` is the fallback list when no categorical columns
  * exist (the chart-picker still needs to offer *something*).
@@ -251,7 +251,7 @@
 
 /**
  * Canonical event-name string emitted by the state bus. Values match
- * `STATE_EVENTS` in `src/modules/stateEvents.js`. The wildcard `'*'` is
+ * `STATE_EVENTS` in `src/modules/state/stateEvents.js`. The wildcard `'*'` is
  * reserved for sink-style subscribers (`stateSync`, `persistenceService`).
  *
  * @typedef {(

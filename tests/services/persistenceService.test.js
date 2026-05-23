@@ -8,7 +8,7 @@ import {
 	clearPersistedState,
 	enablePersistenceAutoSave,
 } from '../../src/services/persistenceService.js';
-import { emitStateChange, STATE_EVENTS } from '../../src/modules/stateEvents.js';
+import { emitStateChange, STATE_EVENTS } from '../../src/modules/state/stateEvents.js';
 
 function makeSnapshot(overrides = {}) {
 	return {

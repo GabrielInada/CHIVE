@@ -7,7 +7,7 @@
  *
  * `flush()` is the reason this exists instead of an inline `setTimeout`:
  * the `beforeunload` handler needs to commit the last save before the
- * tab dies. Used by `persistenceService` and the chart-controls writers.
+ * tab dies. Used by `persistenceService` and the chartControls writers.
  *
  * @template {(...args: *) => *} F
  * @param {F} fn

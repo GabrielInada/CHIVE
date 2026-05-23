@@ -43,7 +43,7 @@ flowchart TB
         EH["eventHandlers"]
         FM["fileManager"]
         PM["panelManager"]
-        CC["chart-controls"]
+        CC["chartControls"]
     end
     subgraph CORE["State Management Core"]
         FAC{{"Facades<br/>data · ui · panel"}}
@@ -88,17 +88,17 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 
 | Layer | Owns | Key files |
 |---|---|---|
-| **Controllers** | DOM event capture and translation into facade calls. Never mutate state directly; never render as part of the input path. One of them (`panelManager`) also subscribes to the event bus and re-renders its own UI slice — see the dual-hat caveat in §3. | `eventHandlers.js`, `fileManager.js`, `panelManager.js`, `chart-controls/` |
-| **State Management Core** | The only place state mutates. Three facades wrap one module-scoped state object; an event bus broadcasts every mutation. Persistence subscribes to the bus and writes a debounced snapshot to IndexedDB. | `appState.js`, `dataStateFacade.js`, `uiStateFacade.js`, `panelStateFacade.js`, `stateEvents.js`, `stateSync.js`, `services/persistenceService.js`, plus panel mutation helpers in `modules/panel/panelStateMutations.js` and `modules/panel/blockStateHelpers.js` |
+| **Controllers** | DOM event capture and translation into facade calls. Never mutate state directly; never render as part of the input path. One of them (`panelManager`) also subscribes to the event bus and re-renders its own UI slice — see the dual-hat caveat in §3. | `eventHandlers.js`, `fileManager.js`, `panelManager.js`, `chartControls/` |
+| **State Management Core** | The only place state mutates. Three facades wrap one module-scoped state object; an event bus broadcasts every mutation. Persistence subscribes to the bus and writes a debounced snapshot to IndexedDB. | `appState.js`, `dataStateFacade.js`, `uiStateFacade.js`, `panelStateFacade.js`, `stateEvents.js`, `stateSync.js`, `services/persistenceService.js`, plus panel mutation helpers in `modules/panelSubsystem/panelStateMutations.js` and `modules/panelSubsystem/blockStateHelpers.js` |
 | **Orchestrator** | Bootstrap plus `refreshView` — the broadest subscriber, handling dataset/columns/config events with a full view refresh. Other modules handle their own events independently. | `main.js` |
-| **Visualization Layer** | Stateless renderers. Read state via getters; never mutate. D3 visualizations and the dashboard `panel/` subsystem (live-mounted slots, snapshot rendering, SVG export) live here. | `components/`, `modules/visualizations/`, `modules/panel/` *(except `panelStateMutations.js` and `blockStateHelpers.js`, which back the panel facade and belong to the State Management Core)* |
+| **Visualization Layer** | Stateless renderers. Read state via getters; never mutate. D3 visualizations and the dashboard `panelSubsystem/` subsystem (live-mounted slots, snapshot rendering, SVG export) live here. | `components/`, `modules/visualizations/`, `modules/panelSubsystem/` *(except `panelStateMutations.js` and `blockStateHelpers.js`, which back the panel facade and belong to the State Management Core)* |
 | **Utilities & side-effecting services** | `config/` and `utils/` are pure leaf helpers — no state, no DOM. `services/` sits at the utility layer but contains side-effecting modules: `persistenceService` subscribes to the bus and performs async IndexedDB I/O, `i18nService.setLocale` mutates `document.documentElement.lang` and `[data-i18n]` nodes, `dataIngestService` wraps the ingest worker. | `services/`, `config/`, `utils/` |
 
-**Controllers** translate user intent into mutations. They listen to DOM events, validate input, and call a facade method. They never touch `appState` directly. If a controller wants the UI to change because of *user input*, it mutates state and lets the event bus drive the render — controllers do not render on the input path. Two controllers (`panelManager`, `chart-controls`) wear a second hat as event-bus subscribers and re-render their own UI slice in response to notifications; the input-path rule still holds.
+**Controllers** translate user intent into mutations. They listen to DOM events, validate input, and call a facade method. They never touch `appState` directly. If a controller wants the UI to change because of *user input*, it mutates state and lets the event bus drive the render — controllers do not render on the input path. Two controllers (`panelManager`, `chartControls`) wear a second hat as event-bus subscribers and re-render their own UI slice in response to notifications; the input-path rule still holds.
 
 **State Management Core** is the heart of the application. It is the only layer permitted to mutate state, and the only producer of change events. Section 5 covers its internals.
 
-**Orchestrator** is one file: [src/main.js](src/main.js). It bootstraps modules at load time and subscribes to the three events that warrant rebuilding the dataset and chart-controls views (`ACTIVE_DATASET`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`), routing each into `refreshView`. It is the broadest subscriber but not the only one — `panelManager`, `stateSync`, and `persistenceService` subscribe to their own slices independently (see §5).
+**Orchestrator** is one file: [src/main.js](src/main.js). It bootstraps modules at load time and subscribes to the three events that warrant rebuilding the dataset and chartControls views (`ACTIVE_DATASET`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`), routing each into `refreshView`. It is the broadest subscriber but not the only one — `panelManager`, `stateSync`, and `persistenceService` subscribe to their own slices independently (see §5).
 
 **Visualization Layer** is stateless. Renderers receive data, read state via getters, and produce DOM. They never call a facade. They never emit. If a renderer needs to react to user input, it accepts a callback from the controller layer instead.
 
@@ -108,7 +108,7 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 
 ### The state object
 
-`appState` is a single in-memory object with three domains, declared at module scope in [src/modules/appState.js](src/modules/appState.js) and never exported:
+`appState` is a single in-memory object with three domains, declared at module scope in [src/modules/state/appState.js](src/modules/state/appState.js) and never exported:
 
 ```js
 const appState = {
@@ -121,11 +121,11 @@ const appState = {
 
 The object is **never mutated directly outside this module**. Each facade is created with closure-injected access to it. This is a *module-scoped state object*, not a GoF Singleton — there is no class, no `getInstance()`, and no instance-control mechanism. Uniqueness is provided by ES module semantics, and encapsulation by closure injection into the facades.
 
-One small but load-bearing detail: every dataset gets a stable `id` (UUID, with a counter fallback when `crypto.randomUUID` is unavailable) stamped in `dataStateFacade.addDataset` ([src/modules/dataStateFacade.js:34-50](src/modules/dataStateFacade.js#L34-L50)). The id is what `persistenceService` uses to address datasets across reloads — without it, the snapshot couldn't round-trip.
+One small but load-bearing detail: every dataset gets a stable `id` (UUID, with a counter fallback when `crypto.randomUUID` is unavailable) stamped in `dataStateFacade.addDataset` ([src/modules/state/dataStateFacade.js:34-50](src/modules/state/dataStateFacade.js#L34-L50)). The id is what `persistenceService` uses to address datasets across reloads — without it, the snapshot couldn't round-trip.
 
 ### The Facades
 
-Three of them — [dataStateFacade.js](src/modules/dataStateFacade.js), [uiStateFacade.js](src/modules/uiStateFacade.js), [panelStateFacade.js](src/modules/panelStateFacade.js) — composed in [appState.js](src/modules/appState.js) and re-exported from there. Every public mutator follows the same shape: validate, write, emit. The emit step uses a `STATE_EVENTS.*` constant; never a string literal.
+Three of them — [dataStateFacade.js](src/modules/state/dataStateFacade.js), [uiStateFacade.js](src/modules/state/uiStateFacade.js), [panelStateFacade.js](src/modules/state/panelStateFacade.js) — composed in [appState.js](src/modules/state/appState.js) and re-exported from there. Every public mutator follows the same shape: validate, write, emit. The emit step uses a `STATE_EVENTS.*` constant; never a string literal.
 
 There are **two deliberate exceptions** to the validate-write-emit shape:
 
@@ -136,7 +136,7 @@ If you find yourself wanting another non-emitting or bypass write path, stop and
 
 ### The Event Bus
 
-[stateEvents.js](src/modules/stateEvents.js) holds the whole mechanism in one short file:
+[stateEvents.js](src/modules/state/stateEvents.js) holds the whole mechanism in one short file:
 
 - `STATE_EVENTS` — a `Object.freeze`-d registry of every event name, grouped by domain (data, panel, ui, meta). Tests intentionally keep using string literals to exercise the wire format independently of the registry; production code in `src/` must always reference the constants.
 - `onStateChange(eventType, callback)` — registers a listener and returns an unsubscribe function.
@@ -145,7 +145,7 @@ If you find yourself wanting another non-emitting or bypass write path, stop and
 
 **The four production subscribers** (verified by grepping `onStateChange(` in `src/`):
 
-- **`main.js`** → `ACTIVE_DATASET`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`. Handler calls `refreshView` to rebuild the file list, dataset preview, stats, chart-controls sidebar, and panel UI. `refreshView` also has two non-bus drivers worth knowing: `fileManager` invokes a `handleDatasetsChanged` callback (passed at init) when datasets are added/removed, and a `chive-locale-changed` `window` event triggers a re-render after locale switches ([src/main.js:110, :130-132, :163-165](src/main.js#L110)). Same handler, different entry points.
+- **`main.js`** → `ACTIVE_DATASET`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`. Handler calls `refreshView` to rebuild the file list, dataset preview, stats, chartControls sidebar, and panel UI. `refreshView` also has two non-bus drivers worth knowing: `fileManager` invokes a `handleDatasetsChanged` callback (passed at init) when datasets are added/removed, and a `chive-locale-changed` `window` event triggers a re-render after locale switches ([src/main.js:110, :130-132, :163-165](src/main.js#L110)). Same handler, different entry points.
 - **`panelManager.js`** → `CHART_ADDED`, `CHART_REMOVED`, `PANEL_BLOCK_SLOT_ASSIGNED`, plus seven panel-block layout events (`PANEL_BLOCK_ADDED`/`REMOVED`/`MOVED`/`TEMPLATE_CHANGED`/`PROPORTIONS_UPDATED`/`HEIGHT_UPDATED`/`BORDER_UPDATED`) — ten subscriptions total. Re-renders the sidebar list and the panel canvas in place — does **not** route through `refreshView`.
 - **`stateSync.js`** → `WILDCARD` (`'*'`). On every emission, calls `exposeGlobals` to mirror current state into `window.*` properties (`window.dadosCarregados`, `window.datasetAtivo`, etc.) for backwards-compatibility hooks.
 - **`persistenceService.js`** → `WILDCARD` (`'*'`). On every emission (skipping its own `STATE_HYDRATED` echo), calls a debounced `persistState(getState())` that writes datasets and the panel singleton to IndexedDB and UI prefs to `localStorage`. Hydration runs once at boot via `replaceAllState` *before* any subscriber is wired, so the act of restoring does not schedule a redundant save.
@@ -154,9 +154,9 @@ If you find yourself wanting another non-emitting or bypass write path, stop and
 
 Panel charts are not stored as pre-rendered SVG. Each chart is a **snapshot spec** — `{ id, nome, type, config, dataSnapshot, columnsSnapshot, metadata, metaSummary, createdAt }` — kept in `appState.panel.charts` and persisted as-is. The four load-bearing fields for rendering are `type`, `config`, `dataSnapshot`, and `columnsSnapshot`; `id` is what `persistenceService` addresses across reloads, and `metaSummary` (truncated to 180 chars) plus `createdAt` are surfaced in the panel UI. Three pieces drive rendering from a spec:
 
-- **`renderChartFromSpec.js`** ([src/modules/panel/renderChartFromSpec.js](src/modules/panel/renderChartFromSpec.js)) — a type→renderer dispatcher. Maps `spec.type` to the appropriate D3 renderer (bar / scatter / pie / bubble / network / treemap / line / tin) and produces SVG into the given container. The frozen list is exported as `SUPPORTED_PANEL_CHART_TYPES`.
-- **`slotLifecycle.js`** ([src/modules/panel/slotLifecycle.js](src/modules/panel/slotLifecycle.js)) — `mountSlot(container, spec)` renders the chart and attaches a `ResizeObserver`; on each resize the next paint is scheduled via `requestAnimationFrame` and any pending frame is cancelled (RAF coalescing). `teardownSlot` disconnects the observer, cancels in-flight frames, stops network-graph simulations, and clears the DOM. `panelManager` uses this to mount/unmount slots when the layout changes.
-- **`panelExporter.js`** ([src/modules/panel/panelExporter.js](src/modules/panel/panelExporter.js)) — clones the *live* SVG nodes out of the DOM at export time (deliberately not `DOMParser.parseFromString` over a serialized blob, which lost fidelity on D3-bound state).
+- **`renderChartFromSpec.js`** ([src/modules/panelSubsystem/renderChartFromSpec.js](src/modules/panelSubsystem/renderChartFromSpec.js)) — a type→renderer dispatcher. Maps `spec.type` to the appropriate D3 renderer (bar / scatter / pie / bubble / network / treemap / line / tin) and produces SVG into the given container. The frozen list is exported as `SUPPORTED_PANEL_CHART_TYPES`.
+- **`slotLifecycle.js`** ([src/modules/panelSubsystem/slotLifecycle.js](src/modules/panelSubsystem/slotLifecycle.js)) — `mountSlot(container, spec)` renders the chart and attaches a `ResizeObserver`; on each resize the next paint is scheduled via `requestAnimationFrame` and any pending frame is cancelled (RAF coalescing). `teardownSlot` disconnects the observer, cancels in-flight frames, stops network-graph simulations, and clears the DOM. `panelManager` uses this to mount/unmount slots when the layout changes.
+- **`panelExporter.js`** ([src/modules/panelSubsystem/panelExporter.js](src/modules/panelSubsystem/panelExporter.js)) — clones the *live* SVG nodes out of the DOM at export time (deliberately not `DOMParser.parseFromString` over a serialized blob, which lost fidelity on D3-bound state).
 
 The snapshot-spec design is what makes persistence and live re-render cheap: hydration writes specs into state, the layout mounts slots, slots render on-demand, and resize re-renders in place without touching state.
 

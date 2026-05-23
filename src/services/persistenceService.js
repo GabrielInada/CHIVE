@@ -20,7 +20,7 @@
  * @typedef {import('../types.js').UnsubscribeFn} UnsubscribeFn
  */
 
-import { onStateChange, STATE_EVENTS } from '../modules/stateEvents.js';
+import { onStateChange, STATE_EVENTS } from '../modules/state/stateEvents.js';
 import { debounce } from '../utils/debounce.js';
 
 const DB_NAME = 'chive-state';

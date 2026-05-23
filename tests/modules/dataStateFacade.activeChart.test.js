@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDataStateFacade } from '../../src/modules/dataStateFacade.js';
+import { createDataStateFacade } from '../../src/modules/state/dataStateFacade.js';
 
 const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
 

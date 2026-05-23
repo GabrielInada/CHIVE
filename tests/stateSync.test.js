@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   exposeGlobals: vi.fn(),
 }));
 
-vi.mock('../src/modules/appState.js', () => ({
+vi.mock('../src/modules/state/appState.js', () => ({
   getState: mocks.getState,
   getActiveDataset: mocks.getActiveDataset,
   getAllDatasets: mocks.getAllDatasets,
@@ -33,7 +33,7 @@ import {
   syncWindowGlobals,
   updateActiveDatasetChartConfig,
   updateActiveDatasetColumnSelection,
-} from '../src/modules/stateSync.js';
+} from '../src/modules/state/stateSync.js';
 
 function buildState() {
   return {

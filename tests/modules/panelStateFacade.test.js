@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createPanelStateFacade } from '../../src/modules/panelStateFacade.js';
+import { createPanelStateFacade } from '../../src/modules/state/panelStateFacade.js';
 
 function createPanelBlockFactory(appState) {
 	return (templateId = 'layout-2col') => {
