@@ -94,7 +94,7 @@ describe('panelStateFacade', () => {
 		expect(emitStateChange).toHaveBeenCalledWith('chartRemoved', id);
 	});
 
-	it('gets panel charts, slots, and layout', () => {
+	it('exposes panel charts via getPanelCharts', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
 			data: { datasets: [], activeIndex: -1 },
@@ -126,44 +126,6 @@ describe('panelStateFacade', () => {
 		});
 
 		expect(facade.getPanelCharts()).toEqual([{ id: 0, nome: 'X' }]);
-		expect(facade.getPanelSlots()).toEqual({ 'slot-1': 0 });
-		expect(facade.getPanelLayout()).toBe('layout-3col');
-	});
-
-	it('sets panel layout and emits layoutChanged', () => {
-		const emitStateChange = vi.fn();
-		const appState = {
-			data: { datasets: [], activeIndex: -1 },
-			panel: {
-				charts: [],
-				slots: {},
-				layout: 'layout-2col',
-				blocks: [],
-				nextBlockId: 1,
-				nextChartId: 0,
-			},
-			ui: {},
-		};
-		const createPanelBlock = createPanelBlockFactory(appState);
-		const ensureDefaultPanelBlock = () => {
-			if (!Array.isArray(appState.panel.blocks)) appState.panel.blocks = [];
-			if (appState.panel.blocks.length === 0) appState.panel.blocks.push(createPanelBlock());
-		};
-
-		const facade = createPanelStateFacade({
-			appState,
-			emitStateChange,
-			createPanelBlock,
-			ensureDefaultPanelBlock,
-			sanitizeChartName: name => String(name).trim(),
-			panelBlockLimit: 4,
-			panelBlockMinHeight: 220,
-			panelBlockMaxHeight: 760,
-		});
-
-		facade.setPanelLayout('layout-1col');
-		expect(appState.panel.layout).toBe('layout-1col');
-		expect(emitStateChange).toHaveBeenCalledWith('layoutChanged', 'layout-1col');
 	});
 
 	it('clears panel and emits panelCleared', () => {

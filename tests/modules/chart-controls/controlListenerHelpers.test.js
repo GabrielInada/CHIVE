@@ -15,46 +15,8 @@ vi.mock('../../../src/modules/appState.js', () => ({
 	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
 }));
 
-import { setupExpandListener, setupColorInputListener } from '../../../src/modules/chart-controls/controlListenerHelpers.js';
+import { setupColorInputListener } from '../../../src/modules/chart-controls/controlListenerHelpers.js';
 import { setLiveRenderCallback } from '../../../src/modules/chart-controls/livePreview.js';
-
-function createDataset() {
-	return {
-		configGraficos: {
-			bar: {
-				expanded: false,
-			},
-		},
-	};
-}
-
-describe('controlListenerHelpers setupExpandListener', () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-		document.body.innerHTML = `
-			<button id="viz-expand-bar" aria-expanded="false" type="button">▸</button>
-			<div id="viz-body-bar" hidden></div>
-		`;
-	});
-
-	it('opens the parameters body immediately and persists expanded state', () => {
-		const dataset = createDataset();
-		setupExpandListener('viz-expand-bar', dataset, 'bar');
-
-		const expandButton = document.getElementById('viz-expand-bar');
-		const body = document.getElementById('viz-body-bar');
-		expandButton.click();
-
-		expect(expandButton.getAttribute('aria-expanded')).toBe('true');
-		expect(expandButton.textContent).toBe('▾');
-		expect(body.hidden).toBe(false);
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
-			bar: {
-				expanded: true,
-			},
-		});
-	});
-});
 
 describe('controlListenerHelpers setupColorInputListener', () => {
 	beforeEach(() => {

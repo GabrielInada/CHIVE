@@ -1,11 +1,24 @@
 # CHIVE - Connected Hierarchical Interactive Visualization Engine
 
+## Live deployments
+
+CHIVE is hosted in two places:
+
+| Environment | URL | Branch | Host |
+|---|---|---|---|
+| **Stable** | https://apps.roberto.eti.br/chive/ | `main` | Self hosted server |
+| **Preview** | https://gabrielinada.github.io/CHIVE/ | `develop` | GitHub Pages |
+
+- **Stable** reflects the released state of the project. It is our "Ready-To-Use" and reliable version of the project.
+- **Preview** reflects `develop` and is intended for trying out upcoming features before they are merged into `main`. It is our "beta" version of the project. We do not guarantee that everything is working "fine" here, but it usually has some extra features which are being tested.
+
+Both deployments serve the **same source files unchanged** (`index.html`, `about.html`, `src/`). No build step runs at deploy time — the app uses native browser ES modules and loads `d3` and `banana-i18n` from the `esm.sh` CDN, so any host that can serve static files (nginx, Apache, GitHub Pages, `python -m http.server`) works.
 
 ## Static Server Deployment
 The app runtime uses:
 
 1. Native browser ES modules (`<script type="module">`)
-2. An HTML `importmap` (in `index.html`) for external dependencies (`d3`, `banana-i18n`)
+2. External dependencies (`d3`, `banana-i18n`) loaded directly from the `esm.sh` CDN via full URLs in the source files
 
 ### Deploy Requirements
 

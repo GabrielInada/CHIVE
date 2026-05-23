@@ -15,9 +15,17 @@ function setupDom() {
   `;
 }
 
+function resetAppStateForTest() {
+  appState.replaceAllState({
+    data: { datasets: [], activeIndex: -1 },
+    panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+    ui: { sidebarMode: 'dados', previewRows: 10 },
+  });
+}
+
 describe('panelManager multi-block canvas (phase 2)', () => {
   beforeEach(() => {
-    appState.resetState();
+    resetAppStateForTest();
     setupDom();
 
     window.matchMedia = window.matchMedia || (() => ({

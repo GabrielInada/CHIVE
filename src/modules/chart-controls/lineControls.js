@@ -13,7 +13,6 @@ import { groupControls } from './controlGrouping.js';
 import {
 	setupCheckboxListeners,
 	setupColorInputListener,
-	setupExpandListener,
 	setupSelectListeners,
 	setupSliderListener,
 	setupTextInputListener,
@@ -186,8 +185,6 @@ export function createLineChartControls(dataset, numericOptions = [], dateOption
 
 export function setupLineChartControlListeners(dataset, numericOptions, dateOptions, allOptions, onConfigChanged) {
 	void dateOptions;
-
-	setupExpandListener('viz-expand-line', dataset, 'line', onConfigChanged);
 
 	const xSelect = document.getElementById('viz-select-line-x');
 	if (xSelect) {

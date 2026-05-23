@@ -9,7 +9,6 @@ import { createCheckboxControl, createColorInputControl, createSelectControl, cr
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
-	setupExpandListener,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
@@ -331,8 +330,6 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
 	const sectorValues = getPieSectorValues(dataset, dataset.configGraficos.pie);
-
-	setupExpandListener('viz-expand-pie', dataset, 'pie', onConfigChanged);
 
 	setupSelectListeners([
 		{ id: 'viz-select-pie-category', key: 'category' },

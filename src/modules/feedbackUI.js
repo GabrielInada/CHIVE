@@ -1,10 +1,13 @@
 /**
- * CHIVE Feedback UI
- * 
+ * CHIVE Feedback UI.
+ *
  * Manages user-facing feedback:
- * - Toast notifications (success, info)
- * - Error messages
- * - Loading states
+ *   - Toast notifications (success, info)
+ *   - Error messages
+ *   - Loading states
+ *   - Cancellable progress toast (see {@link showProgress})
+ *
+ * @typedef {import('../types.js').ProgressHandle} ProgressHandle
  */
 
 import { t } from '../services/i18nService.js';
@@ -36,7 +39,9 @@ export function showFeedback(message, duration = 2200) {
 }
 
 /**
- * Alias for showFeedback (backwards compatibility)
+ * @deprecated Use {@link showFeedback} instead. Kept as a backwards-compat alias.
+ * @param {string} message
+ * @param {number} [duration=2200]
  */
 export function showFeedbackMessage(message, duration = 2200) {
 	showFeedback(message, duration);
@@ -84,7 +89,9 @@ export function showError(message, duration = 0) {
 }
 
 /**
- * Alias for showError (backwards compatibility)
+ * @deprecated Use {@link showError} instead. Kept as a backwards-compat alias.
+ * @param {string} message
+ * @param {number} [duration=0]
  */
 export function showErrorMessage(message, duration = 0) {
 	showError(message, duration);
@@ -102,7 +109,7 @@ export function clearErrors() {
 }
 
 /**
- * Alias for clearErrors (backwards compatibility)
+ * @deprecated Use {@link clearErrors} instead. Kept as a backwards-compat alias.
  */
 export function hideErrorMessage() {
 	clearErrors();
@@ -155,19 +162,13 @@ let activeProgressHandle = null;
 /**
  * Show a non-modal progress toast with a cancellable progress bar.
  *
- * Single-instance: a second call closes the previous toast first. The handle
- * lets callers report progress, then transition into success or failure
- * states. Failure persists until the × button is clicked; success
- * auto-closes after `autoCloseMs`.
+ * Single-instance: a second call closes the previous toast first. The
+ * returned handle lets callers report progress, then transition into
+ * success or failure states. Failure persists until the × button is
+ * clicked; success auto-closes after `autoCloseMs`.
  *
  * @param {string} initialLabel - Text shown above the bar at 0% progress.
- * @returns {{
- *   update: (percent: number, label?: string) => void,
- *   succeed: (message?: string, autoCloseMs?: number) => void,
- *   fail: (message?: string) => void,
- *   close: () => void,
- *   onCancel: (handler: () => void) => void,
- * }}
+ * @returns {ProgressHandle}
  */
 export function showProgress(initialLabel = '') {
 	if (activeProgressHandle) activeProgressHandle.close();
@@ -208,7 +209,9 @@ export function showProgress(initialLabel = '') {
 	toast.appendChild(bar);
 
 	document.body.appendChild(toast);
-	// Force reflow so the visivel transition runs.
+	// WHY: rAF defers the class-add to the next frame, which forces a layout
+	// pass between the initial mount and the transition trigger. Without this,
+	// the .visivel transition runs on the initial style (no visual fade-in).
 	requestAnimationFrame(() => toast.classList.add('visivel'));
 
 	let cancelHandler = null;
@@ -241,6 +244,10 @@ export function showProgress(initialLabel = '') {
 			percentEl.textContent = '100%';
 			bar.setAttribute('aria-valuenow', '100');
 			if (message) labelEl.textContent = message;
+			// WHY: succeed flips cancelMode to 'close' (× now dismisses; it no longer
+			// invokes the host's cancel handler) and auto-closes after autoCloseMs.
+			// Symmetric with fail() — except fail does NOT auto-close, since an error
+			// must stay visible until the user has read it.
 			cancelMode = 'close';
 			if (autoCloseTimer) window.clearTimeout(autoCloseTimer);
 			autoCloseTimer = window.setTimeout(() => handle.close(), autoCloseMs);

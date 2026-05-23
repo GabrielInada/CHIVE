@@ -11,7 +11,6 @@ vi.mock('../src/services/i18nService.js', () => ({
 }));
 
 vi.mock('../src/modules/appState.js', () => ({
-  getSidebarMode: () => 'dados',
   setSidebarMode: mocks.setSidebarMode,
 }));
 

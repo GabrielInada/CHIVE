@@ -1,0 +1,8 @@
+/* @feature: foundation (shared chrome)
+   Variables, layout primitives, responsive header, and header-nav.
+   Loaded by every HTML page (directly by about.html, transitively via base.css by index.html). */
+@layer foundation;
+@import url('./variables.css') layer(foundation);
+@import url('./layout.css') layer(foundation);
+@import url('./responsive.css') layer(foundation);
+@import url('./header-nav.css') layer(foundation);

@@ -1,8 +1,13 @@
 /**
- * CHIVE State Synchronization
- * 
- * Bridges appState mutations with UI updates and global object sync.
- * Coordinates state changes across the application.
+ * CHIVE State Synchronization.
+ *
+ * Backwards-compatibility shim that mirrors `appState` into `window.*`
+ * globals on every emission, plus a handful of pass-through wrappers for
+ * legacy callers. New code should read state via the getters in
+ * `appState.js` and write via the facade methods directly.
+ *
+ * @typedef {import('../types.js').AppState} AppState
+ * @typedef {import('../types.js').SidebarMode} SidebarMode
  */
 
 import {
@@ -19,30 +24,34 @@ import {
 import { updateSidebarUI } from './uiManager.js';
 
 /**
- * Initialize state synchronization
- * Sets up listeners for state changes and performs initial sync
+ * Subscribe wildcard to {@link syncWindowGlobals} and run an initial
+ * sync. Called once during app boot from `main.js`. Wildcard
+ * subscription is sanctioned for state-bus consumers — see
+ * `ARCHITECTURE.md`.
  */
 export function initializeStateSync() {
 	// Sync globals whenever state changes
 	onStateChange(STATE_EVENTS.WILDCARD, () => {
 		syncWindowGlobals();
 	});
-	
+
 	// Initial sync
 	syncWindowGlobals();
 }
 
 /**
- * Synchronize app state to window globals for backwards compatibility
- * Call this after any state mutation
+ * Mirror app state to `window.*` globals via `appState.exposeGlobals`.
+ * Invoked from the wildcard subscriber above.
+ *
+ * @deprecated Window-global mirroring is a backwards-compat shim. New code should read via the getters exported from {@link appState}.
  */
 export function syncWindowGlobals() {
 	exposeGlobals();
 }
 
 /**
- * Update active dataset column selection and trigger UI refresh
- * @param {Array<string>} columnNames - Selected column names
+ * @deprecated Call {@link updateActiveDatasetColumns} from `appState.js` directly.
+ * @param {string[]} columnNames
  */
 export function updateActiveDatasetColumnSelection(columnNames) {
 	updateActiveDatasetColumns(columnNames);
@@ -50,8 +59,8 @@ export function updateActiveDatasetColumnSelection(columnNames) {
 }
 
 /**
- * Update active dataset chart configuration and trigger UI refresh
- * @param {Object} configUpdates - Configuration updates to merge
+ * @deprecated Call {@link updateActiveDatasetConfig} from `appState.js` directly.
+ * @param {Object} configUpdates
  */
 export function updateActiveDatasetChartConfig(configUpdates) {
 	updateActiveDatasetConfig(configUpdates);
@@ -59,8 +68,8 @@ export function updateActiveDatasetChartConfig(configUpdates) {
 }
 
 /**
- * Switch to a sidebar mode and sync UI
- * @param {string} mode - 'dados' | 'viz' | 'panel'
+ * @deprecated Call {@link setSidebarMode} from `appState.js` followed by {@link updateSidebarUI} if a DOM refresh is needed.
+ * @param {SidebarMode} mode
  */
 export function switchSidebarMode(mode) {
 	setSidebarMode(mode);
@@ -68,8 +77,10 @@ export function switchSidebarMode(mode) {
 }
 
 /**
- * Get formatted state summary for debugging
- * @returns {Object} State summary
+ * Compact state digest for debugging — feeds the `window.chiveDebug`
+ * surface in `main.js`. Not a stable API.
+ *
+ * @returns {{ datasetsCount: number, activeDatasetIndex: number, activeDatasetName: string, panelChartsCount: number, panelLayout: string, sidebarMode: SidebarMode }}
  */
 export function getStateSummary() {
 	const state = getState();
@@ -80,12 +91,14 @@ export function getStateSummary() {
 		panelChartsCount: state.panel.charts.length,
 		panelLayout: state.panel.layout,
 		sidebarMode: state.ui.sidebarMode,
-		expandedCharts: state.ui.expandedCharts,
 	};
 }
 
 /**
- * Return current state debug payload without console output.
+ * Return both {@link getStateSummary} and the full state as a debug
+ * payload. Not a stable API.
+ *
+ * @returns {{ summary: ReturnType<getStateSummary>, state: AppState }}
  */
 export function debugLogState() {
 	return {

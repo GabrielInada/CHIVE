@@ -72,6 +72,19 @@ npm run test:watch   # Tests in watch mode
 - **Join and preset dataset UIs:** Keep orchestration in modules/components and reuse existing event-driven patterns
 - **No TypeScript, no linter config** — plain JS with ES modules
 
+## Documentation conventions
+
+Public functions on the state core, services, and orchestrators carry JSDoc so the IDE can read each function's contract without re-reading the file. The conventions below match the existing style; please match them rather than inventing a new one.
+
+- **Format**: `/** ... */` blocks, tab-indented. `@param {Type} name - description`. `@returns {Type} description` (omit only when the function is `void`).
+- **Minimum verbosity**: a 1-line summary plus `@param`/`@returns`. Add `@example`, `@fires`, `@throws`, `@deprecated`, or `@private` only where they convey something a reader could not infer from the signature.
+- **Project typedefs** live in [`src/types.js`](src/types.js) (`AppState`, `Dataset`, `ChartConfig`, `PanelBlock`, `ChartSnapshot`, `StateEventType`, …). Import via `@typedef {import('../types.js').Foo} Foo` at the top of the consuming file, then reference `Foo` unqualified downstream. Barrels do not propagate typedefs — always import from `src/types.js` directly.
+- **Mutable vs cloned returns**: functions that return a live state reference must say `"Live reference, do not mutate."` in the `@returns` description. Cloned returns say `"Deep clone."`. This footgun is real — mutating a getter return bypasses the facade and breaks reactivity. See [`appState.js`](src/modules/appState.js) for examples.
+- **Events**: use `@fires STATE_EVENTS.FOO` (the constant name, not the string literal `'foo'`). Functions that conditionally emit must say so in the description.
+- **Facade-only-write invariant**: facade module banners reference `@see ARCHITECTURE.md`. Mutation helpers under `src/modules/panel/*` and similar are `@internal` and must not be imported from outside the module that backs them.
+- **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only; the editor and Claude use it for hover/intellisense without type validation.
+- **No HTML site generation** (no typedoc / no jsdoc CLI). Hover and source reading are the deliverable.
+
 ## Architecture invariants — do not break
 
 Hard rules. Breaking any of them silently degrades reactivity, and the failure mode is "the UI looks fine until the day it doesn't." See [ARCHITECTURE.md](ARCHITECTURE.md) for the why.
@@ -85,7 +98,7 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 
 **Renderer statelessness is enforced by lint.** ESLint (`npm run lint`) restricts files under `src/components/` and `src/features/` to read-only imports from `modules/appState.js` — the `get*` functions, `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing any write function from those directories is an error. If you need a write from a renderer, you're writing it in the wrong layer — route it through a chart-controls listener or `eventHandlers.js`, both outside the linted scope. When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
 
-**Inline mutation of facade getter returns is blocked across all of `src/`.** A second lint rule (`no-restricted-syntax` in `eslint.config.js`) catches patterns like `getActiveDataset().X = y` and `getActiveDataset().X.Y = z` at depths 1–3 against the mutable-ref getters (`getActiveDataset`, `getAllDatasets`, `getPanelCharts`, `getChartSnapshot`, `getPanelSlots`, `getPanelBlocks`, `getExpandedCharts`, `getState`). The rule has one known blind spot: aliased mutations (`const ds = getActiveDataset(); ds.X = y`) pass static analysis. Don't write that pattern — go through a facade write method. When a new mutable-ref getter is added to `appState.js`, update `FACADE_MUTABLE_GETTERS` in `eslint.config.js`.
+**Inline mutation of facade getter returns is blocked across all of `src/`.** A second lint rule (`no-restricted-syntax` in `eslint.config.js`) catches patterns like `getActiveDataset().X = y` and `getActiveDataset().X.Y = z` at depths 1–3 against the mutable-ref getters (`getActiveDataset`, `getAllDatasets`, `getPanelCharts`, `getChartSnapshot`, `getPanelBlocks`, `getState`). The rule has one known blind spot: aliased mutations (`const ds = getActiveDataset(); ds.X = y`) pass static analysis. Don't write that pattern — go through a facade write method. When a new mutable-ref getter is added to `appState.js`, update `FACADE_MUTABLE_GETTERS` in `eslint.config.js`.
 
 **CI runs lint + tests on every push and PR** (`.github/workflows/lint-and-test.yml`, targeting `main` and `develop`). Even if you forget `npm run lint` locally, the merge gate catches it.
 

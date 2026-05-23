@@ -63,9 +63,17 @@ function injectLiveSlotSvgs() {
   });
 }
 
+function resetAppStateForTest() {
+  appState.replaceAllState({
+    data: { datasets: [], activeIndex: -1 },
+    panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+    ui: { sidebarMode: 'dados', previewRows: 10 },
+  });
+}
+
 describe('panel export composition (phase 2)', () => {
   beforeEach(() => {
-    appState.resetState();
+    resetAppStateForTest();
     setupDom();
     baixarSvgMarkupMock.mockClear();
     window.matchMedia = () => ({

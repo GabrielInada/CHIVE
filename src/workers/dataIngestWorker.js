@@ -1,16 +1,24 @@
 /**
- * CHIVE Data Ingest Worker
+ * CHIVE Data Ingest Worker.
  *
  * Runs parse + type detection + numeric normalization + stats off the main
  * thread so a 200k-row upload no longer freezes the tab. Posts progress
  * messages between stages so the host can drive a corner-toast progress bar.
  *
  * Pure logic comes from `services/dataService.js` (no DOM deps). The
- * row-normalization loop is duplicated here as `chunkedNormalize` so it can
- * yield progress between batches; the canonical sync `processData` in
- * dataService.js stays untouched (still used by the join builder + tests).
+ * row-normalization loop is duplicated here as {@link chunkedNormalize} so
+ * it can yield progress between batches; the canonical sync `processData`
+ * in `dataService.js` stays untouched (still used by the join builder +
+ * tests).
  *
- * Message protocol — see `services/dataIngestService.js` for the host side.
+ * Message protocol — see `services/dataIngestService.js` for the host side
+ * and the {@link IngestWorkerRequest} / {@link IngestWorkerResponse}
+ * typedefs in `src/types.js`.
+ *
+ * @typedef {import('../types.js').ColumnSpec} ColumnSpec
+ * @typedef {import('../types.js').IngestWorkerRequest} IngestWorkerRequest
+ * @typedef {import('../types.js').IngestWorkerResponse} IngestWorkerResponse
+ * @typedef {import('../types.js').IngestWorkerDoneResult} IngestWorkerDoneResult
  */
 
 import {
@@ -31,6 +39,13 @@ const NORMALIZE_CHUNK_SIZE = 20000;
  * between each chunk so callers can post progress messages.
  *
  * Exported so tests can exercise the loop without spawning a real Worker.
+ *
+ * @param {Array<Object<string, *>>} rawData
+ * @param {ColumnSpec[]} colunas
+ * @param {string} decimalSeparator - `'.'` or `','`.
+ * @param {((done: number, total: number) => void) | null | undefined} onChunk
+ * @param {number} [chunkSize=20000]
+ * @returns {Array<Object<string, *>>}
  */
 export function chunkedNormalize(rawData, colunas, decimalSeparator, onChunk, chunkSize = NORMALIZE_CHUNK_SIZE) {
 	const out = new Array(rawData.length);
@@ -63,7 +78,12 @@ export function chunkedNormalize(rawData, colunas, decimalSeparator, onChunk, ch
  * Run the full ingest pipeline. Throws on parse/empty-file errors; the
  * onmessage wrapper catches and posts an `error` message.
  *
- * Exported so tests can drive the pipeline directly with a synthetic post fn.
+ * Exported so tests can drive the pipeline directly with a synthetic
+ * `post` function.
+ *
+ * @param {IngestWorkerRequest} payload - Inbound request body.
+ * @param {(msg: IngestWorkerResponse) => void} post - Sink for outgoing messages (`self.postMessage` in worker context, a mock in tests).
+ * @throws {Error} When the parser fails or the file is malformed.
  */
 export function runIngest({ id, kind, text, options = {} }, post) {
 	const rowLimit = Number.isFinite(options.rowLimit) ? options.rowLimit : Infinity;
@@ -143,8 +163,10 @@ export function runIngest({ id, kind, text, options = {} }, post) {
 	});
 }
 
-// Worker-context entry point. Guarded so this module can be imported as a
-// regular ES module by tests without registering a global onmessage handler.
+// WHY: guarded by `DedicatedWorkerGlobalScope` so this module can be imported as
+// a regular ES module by tests (jsdom is not a worker context) without registering
+// a global onmessage handler. Without the guard the import would have side effects
+// that break tests.
 if (typeof DedicatedWorkerGlobalScope !== 'undefined' && self instanceof DedicatedWorkerGlobalScope) {
 	self.onmessage = (event) => {
 		const data = event.data || {};

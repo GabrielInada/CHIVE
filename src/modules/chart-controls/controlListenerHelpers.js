@@ -1,25 +1,25 @@
+/**
+ * CHIVE chart-control listener helpers.
+ *
+ * Wires DOM elements built by `shared.js` (selects, checkboxes, sliders,
+ * color inputs) to writes against the active dataset's `configGraficos`.
+ * Every helper takes the dataset reference, the chart-type key, and an
+ * optional `onConfigChanged` callback that fires after the state write.
+ *
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
+ */
+
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { normalizeActiveDatasetConfig } from '../appState.js';
 import { normalizeHexColor } from './shared.js';
 import { triggerLiveRender } from './livePreview.js';
 
-function syncExpandedUi(chartKey, expanded) {
-	const body = document.getElementById(`viz-body-${chartKey}`);
-	const expandButton = document.getElementById(`viz-expand-${chartKey}`);
-
-	if (body) {
-		body.hidden = !expanded;
-	}
-
-	if (expandButton) {
-		expandButton.setAttribute('aria-expanded', String(expanded));
-		expandButton.textContent = expanded ? '▾' : '▸';
-	}
-}
-
 /**
- * Create a config updater function for a given chart key.
- * Returns a function that merges partial updates into the current chart config.
+ * Build a `(partialUpdate) => void` updater that merges fields into the
+ * chart-type's config block and fires the change callback.
+ *
+ * @private
  */
 function makeUpdater(dataset, chartKey, onConfigChanged) {
 	return (partialUpdate) => {
@@ -34,25 +34,14 @@ function makeUpdater(dataset, chartKey, onConfigChanged) {
 }
 
 /**
- * Setup expand button listener for a chart section.
- */
-export function setupExpandListener(elementId, dataset, chartKey, onConfigChanged) {
-	const el = document.getElementById(elementId);
-	if (!el) return;
-	el.addEventListener('click', () => {
-		const expanded = el.getAttribute('aria-expanded') === 'true';
-		const nextExpanded = !expanded;
-		syncExpandedUi(chartKey, nextExpanded);
-		makeUpdater(dataset, chartKey, onConfigChanged)({ expanded: nextExpanded });
-	});
-}
-
-/**
- * Batch setup select control listeners.
- * Each entry: { id, key, transform? }
- * - id: DOM element ID
- * - key: config property name to update
- * - transform: optional fn(value) => transformed value (default: identity)
+ * Wire `change` listeners on a batch of `<select>` elements. Each entry's
+ * `transform` (when present) maps the raw `value` to the stored config
+ * value (e.g. parseInt, lookup table).
+ *
+ * @param {Array<{ id: string, key: string, transform?: (value: string) => *  }>} controls
+ * @param {Dataset} dataset
+ * @param {ChartTypeKey} chartKey
+ * @param {(() => void) | null | undefined} onConfigChanged
  */
 export function setupSelectListeners(controls, dataset, chartKey, onConfigChanged) {
 	const update = makeUpdater(dataset, chartKey, onConfigChanged);
@@ -67,8 +56,13 @@ export function setupSelectListeners(controls, dataset, chartKey, onConfigChange
 }
 
 /**
- * Batch setup checkbox toggle listeners.
- * Each entry: { id, key }
+ * Wire `change` listeners on a batch of checkbox inputs. Stored value is
+ * the checkbox's boolean `checked` state.
+ *
+ * @param {Array<{ id: string, key: string }>} controls
+ * @param {Dataset} dataset
+ * @param {ChartTypeKey} chartKey
+ * @param {(() => void) | null | undefined} onConfigChanged
  */
 export function setupCheckboxListeners(controls, dataset, chartKey, onConfigChanged) {
 	const update = makeUpdater(dataset, chartKey, onConfigChanged);
@@ -82,7 +76,14 @@ export function setupCheckboxListeners(controls, dataset, chartKey, onConfigChan
 }
 
 /**
- * Setup a text input listener that trims the value.
+ * Wire a `change` listener on a single text input. Trims the value
+ * before writing.
+ *
+ * @param {string} elementId
+ * @param {string} configKey
+ * @param {Dataset} dataset
+ * @param {ChartTypeKey} chartKey
+ * @param {(() => void) | null | undefined} onConfigChanged
  */
 export function setupTextInputListener(elementId, configKey, dataset, chartKey, onConfigChanged) {
 	const el = document.getElementById(elementId);
@@ -95,18 +96,29 @@ export function setupTextInputListener(elementId, configKey, dataset, chartKey, 
 }
 
 /**
- * Setup a color input listener with hex normalization.
+ * Wire a color input. Two events are wired so live painting works
+ * without disrupting the picker:
  *
- * Two events are wired:
- * - 'input' — fires continuously while the picker is open. The write goes
- *   through `normalizeActiveDatasetConfig` (the non-emitting facade path)
- *   so the state stays consistent without firing CONFIG_UPDATED — that
- *   would trigger `refreshView` and rebuild the controls sidebar,
- *   stealing focus from the picker. After the write, the registered
- *   live-render callback re-paints only the chart visualizations.
- * - 'change' — fires when the picker closes. We commit through the emitting
- *   facade so CONFIG_UPDATED fires, the auto-save subscription debounces
- *   the write into IndexedDB, and the sidebar refreshes.
+ *   - `input` — fires continuously while the picker is open. Goes
+ *     through `normalizeActiveDatasetConfig` (the non-emitting facade
+ *     path) so the state stays consistent without firing
+ *     `CONFIG_UPDATED`. That event would trigger `refreshView` and
+ *     rebuild the controls sidebar, stealing focus from the picker.
+ *     After the write, the registered live-render callback re-paints
+ *     only the chart visualizations.
+ *   - `change` — fires when the picker closes. Goes through the emitting
+ *     facade so `CONFIG_UPDATED` fires, the auto-save subscription
+ *     debounces the write into IndexedDB, and the sidebar refreshes.
+ *
+ * Values are normalized via {@link normalizeHexColor} with the provided
+ * `defaultColor` as the fallback.
+ *
+ * @param {string} elementId
+ * @param {string} configKey
+ * @param {string} defaultColor - Fallback for invalid hex values.
+ * @param {Dataset} dataset
+ * @param {ChartTypeKey} chartKey
+ * @param {(() => void) | null | undefined} onConfigChanged
  */
 export function setupColorInputListener(elementId, configKey, defaultColor, dataset, chartKey, onConfigChanged) {
 	const el = document.getElementById(elementId);
@@ -127,8 +139,16 @@ export function setupColorInputListener(elementId, configKey, defaultColor, data
 }
 
 /**
- * Setup a free numeric input listener. Falls back to defaultValue when the
- * parsed value isn't finite (covers empty string and arbitrary garbage).
+ * Wire a `change` listener on a free numeric input. Falls back to
+ * `defaultValue` when the parsed value is not finite (covers empty
+ * strings and arbitrary garbage).
+ *
+ * @param {string} elementId
+ * @param {string} configKey
+ * @param {number} defaultValue
+ * @param {Dataset} dataset
+ * @param {ChartTypeKey} chartKey
+ * @param {(() => void) | null | undefined} onConfigChanged
  */
 export function setupNumberInputListener(elementId, configKey, defaultValue, dataset, chartKey, onConfigChanged) {
 	const el = document.getElementById(elementId);
@@ -143,8 +163,15 @@ export function setupNumberInputListener(elementId, configKey, defaultValue, dat
 }
 
 /**
- * Setup a slider with output sync and config update.
- * The slider's sibling <output> element gets synced on input.
+ * Wire a slider input. The slider's sibling `<output>` element gets
+ * synced on every `input` event (for live tick display); the config
+ * write goes through on `change` (when the user releases the slider).
+ *
+ * @param {string} elementId
+ * @param {string} configKey
+ * @param {Dataset} dataset
+ * @param {ChartTypeKey} chartKey
+ * @param {(() => void) | null | undefined} onConfigChanged
  */
 export function setupSliderListener(elementId, configKey, dataset, chartKey, onConfigChanged) {
 	const el = document.getElementById(elementId);
@@ -164,8 +191,12 @@ export function setupSliderListener(elementId, configKey, dataset, chartKey, onC
 }
 
 /**
- * Batch setup slider listeners.
- * Each entry: { id, key }
+ * Wire `change`/`input` listeners on a batch of sliders.
+ *
+ * @param {Array<{ id: string, key: string }>} controls
+ * @param {Dataset} dataset
+ * @param {ChartTypeKey} chartKey
+ * @param {(() => void) | null | undefined} onConfigChanged
  */
 export function setupSliderListeners(controls, dataset, chartKey, onConfigChanged) {
 	controls.forEach(({ id, key }) => {
@@ -174,10 +205,23 @@ export function setupSliderListeners(controls, dataset, chartKey, onConfigChange
 }
 
 /**
- * Setup color preset button listeners.
- * colorKeys maps preset palette positions to config keys:
- *   { color: 0, gradientMinColor: 0, gradientMaxColor: -1 }
- *   where 0 = first palette color, -1 = last palette color
+ * Wire click listeners on color-preset buttons. Each button's click
+ * writes the corresponding palette positions to the config keys named
+ * in `colorKeys`.
+ *
+ * `colorKeys` maps config keys → palette indices. Negative indices count
+ * from the end (`-1` = last color), matching JS slice semantics.
+ *
+ * @example
+ *   setupColorPresetListeners('bar-color', { color: 0, gradientMaxColor: -1 }, …);
+ *
+ * @param {string} controlId
+ * @param {Object<string, number>} colorKeys
+ * @param {Object<string, string>} defaultColors - Fallback per config key when the palette lookup fails.
+ * @param {Dataset} dataset
+ * @param {ChartTypeKey} chartKey
+ * @param {(() => void) | null | undefined} onConfigChanged
+ * @param {Object<string, string[]>} COLOR_PRESETS - Palette name → color array.
  */
 export function setupColorPresetListeners(controlId, colorKeys, defaultColors, dataset, chartKey, onConfigChanged, COLOR_PRESETS) {
 	const update = makeUpdater(dataset, chartKey, onConfigChanged);

@@ -4,7 +4,6 @@ import {
 	addChartSnapshotToState,
 	removeChartSnapshotFromState,
 	getChartSnapshotFromState,
-	assignChartToSlotInState,
 	clearPanelState,
 	validatePanelSlotsState,
 	addPanelBlockState,
@@ -15,7 +14,6 @@ import {
 	updatePanelBlockBorderState,
 	setPanelBlockTemplateState,
 	assignChartToPanelBlockSlotState,
-	migrateLegacyPanelStateState,
 } from '../../../src/modules/panel/panelStateMutations.js';
 
 function makeBlock(id, templateId = 'layout-2col') {
@@ -123,31 +121,6 @@ describe('getChartSnapshotFromState', () => {
 
 	it('returns null for invalid id', () => {
 		expect(getChartSnapshotFromState({ charts: [] }, 'abc')).toBeNull();
-	});
-});
-
-describe('assignChartToSlotInState', () => {
-	it('assigns chart to slot', () => {
-		const appState = makeAppState({ charts: [{ id: 0 }] });
-		const getSnapshot = (id) => appState.panel.charts.find(c => c.id === id) || null;
-		assignChartToSlotInState(appState, 'slot-1', 0, getSnapshot);
-		expect(appState.panel.slots['slot-1']).toBe(0);
-	});
-
-	it('removes slot when chartId is null', () => {
-		const appState = makeAppState({ slots: { 'slot-1': 0 } });
-		assignChartToSlotInState(appState, 'slot-1', null, () => null);
-		expect(appState.panel.slots['slot-1']).toBeUndefined();
-	});
-
-	it('throws for invalid chart id', () => {
-		const appState = makeAppState();
-		expect(() => assignChartToSlotInState(appState, 'slot-1', 'abc', () => null)).toThrow('not found');
-	});
-
-	it('throws for non-existent chart', () => {
-		const appState = makeAppState();
-		expect(() => assignChartToSlotInState(appState, 'slot-1', 99, () => null)).toThrow('not found');
 	});
 });
 
@@ -389,12 +362,3 @@ describe('assignChartToPanelBlockSlotState', () => {
 	});
 });
 
-describe('migrateLegacyPanelStateState', () => {
-	it('migrates legacy slots to first block', () => {
-		const appState = makeAppState({ layout: 'layout-3col', slots: { 'slot-1': 0, 'slot-2': 1 } });
-		const result = migrateLegacyPanelStateState(appState, createPanelBlock);
-		expect(result.templateId).toBe('layout-3col');
-		expect(appState.panel.blocks[0].slots).toEqual({ 'slot-1': 0, 'slot-2': 1 });
-		expect(appState.panel.layout).toBeUndefined();
-	});
-});

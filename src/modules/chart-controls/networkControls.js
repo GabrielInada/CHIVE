@@ -4,7 +4,6 @@ import { NETWORK_GRAPH } from '../../config/charts.js';
 import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
-	setupExpandListener,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
@@ -223,7 +222,6 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 	const onConfigChanged = typeof numericOptionsOrCallback === 'function'
 		? numericOptionsOrCallback
 		: onConfigChangedMaybe;
-	setupExpandListener('viz-expand-network', dataset, 'network', onConfigChanged);
 
 	setupSelectListeners([
 		{ id: 'viz-select-network-source', key: 'source' },

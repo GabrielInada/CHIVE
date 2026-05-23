@@ -4,7 +4,6 @@ import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { createTextControl, createSliderControl, createSelectControl, createColorPresetControl, COLOR_PRESETS } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
-	setupExpandListener,
 	setupSelectListeners,
 	setupSliderListener,
 	setupTextInputListener,
@@ -203,8 +202,6 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
-
-	setupExpandListener('viz-expand-bubble', dataset, 'bubble', onConfigChanged);
 
 	setupSelectListeners([
 		{ id: 'viz-select-bubble-category', key: 'category' },

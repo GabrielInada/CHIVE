@@ -3,16 +3,24 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   addChartSnapshot,
-  assignChartToSlot,
+  assignChartToPanelBlockSlot,
   getChartSnapshot,
-  getPanelSlots,
+  getPanelBlocks,
   removeChartSnapshot,
-  resetState,
+  replaceAllState,
 } from '../src/modules/appState.js';
+
+function resetAppStateForTest() {
+  replaceAllState({
+    data: { datasets: [], activeIndex: -1 },
+    panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+    ui: { sidebarMode: 'dados', previewRows: 10 },
+  });
+}
 
 describe('appState panel chart IDs', () => {
   beforeEach(() => {
-    resetState();
+    resetAppStateForTest();
   });
 
   it('stores first chart with id 0 and resolves string id lookups', () => {
@@ -23,21 +31,23 @@ describe('appState panel chart IDs', () => {
     expect(getChartSnapshot('0')?.nome).toBe('Chart A');
   });
 
-  it('assigns string chart IDs to slots with normalization', () => {
+  it('assigns string chart IDs to block slots with normalization', () => {
     addChartSnapshot({ nome: 'Chart A', svgMarkup: '<svg />' });
+    const block = getPanelBlocks()[0];
 
-    assignChartToSlot('slot-1', '0');
+    assignChartToPanelBlockSlot(block.id, 'slot-1', '0');
 
-    expect(getPanelSlots()['slot-1']).toBe(0);
+    expect(getPanelBlocks()[0].slots['slot-1']).toBe(0);
   });
 
-  it('clears slot assignment when chart is removed', () => {
+  it('clears block slot assignment when chart is removed', () => {
     const id = addChartSnapshot({ nome: 'Chart A', svgMarkup: '<svg />' });
-    assignChartToSlot('slot-1', id);
+    const block = getPanelBlocks()[0];
+    assignChartToPanelBlockSlot(block.id, 'slot-1', id);
 
     removeChartSnapshot(id);
 
-    expect(getPanelSlots()['slot-1']).toBeUndefined();
+    expect(getPanelBlocks()[0].slots['slot-1']).toBeUndefined();
     expect(getChartSnapshot(id)).toBeNull();
   });
 });

@@ -11,15 +11,9 @@ const STATELESS_RENDERER_MESSAGE =
 const APP_STATE_READS = [
 	'getActiveDataset',
 	'getAllDatasets',
-	'getActiveDatasetIndex',
 	'getPanelCharts',
 	'getChartSnapshot',
-	'getPanelSlots',
 	'getPanelBlocks',
-	'getPanelLayout',
-	'getSidebarMode',
-	'getExpandedCharts',
-	'getPreviewRows',
 	'getState',
 	'onStateChange',
 	'STATE_EVENTS',
@@ -28,15 +22,13 @@ const APP_STATE_READS = [
 
 // Facade getters that return mutable refs (objects/arrays). The mutation guard
 // below blocks inline `getXxx().a.b = c` assignments across all of src/. If a
-// new mutable-ref getter is added to appState.js, add it here too. Primitives
-// (getActiveDatasetIndex, getPanelLayout, getSidebarMode, getPreviewRows) are
-// excluded — there's nothing to mutate.
-const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelSlots|getPanelBlocks|getExpandedCharts|getState)';
+// new mutable-ref getter is added to appState.js, add it here too.
+const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState)';
 
 const FACADE_MUTATION_MESSAGE =
 	'Mutating a facade getter return is forbidden — these are read-only views. ' +
 	'Use the corresponding facade write method (updateActiveDatasetConfig, ' +
-	'setChartExpanded, addChartSnapshot, …). See CONTRIBUTING.md §Architecture invariants.';
+	'addChartSnapshot, …). See CONTRIBUTING.md §Architecture invariants.';
 
 export default [
 	js.configs.recommended,
