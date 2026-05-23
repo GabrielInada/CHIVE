@@ -1,11 +1,14 @@
 /**
- * CHIVE Event Handlers
+ * CHIVE Event Handlers.
  *
  * Coordinates all application event listeners:
- * - Chart action buttons (download SVG, add-to-panel)
- * - Language selector
- * - Sidebar toggle
- * - Global keyboard shortcuts
+ *   - Chart action buttons (download SVG, add-to-panel)
+ *   - Sidebar navigation buttons
+ *   - Tab navigation
+ *   - Sidebar toggle
+ *   - Panel layout/export controls
+ *   - Global keyboard shortcuts
+ *   - Dataset row interactions
  */
 
 import { t } from '../services/i18nService.js';
@@ -22,8 +25,17 @@ const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
 );
 
 /**
- * Initialize all event handlers
- * Called once during app startup
+ * Wire all DOM listeners. Calls eight setup functions in sequence:
+ *   - `setupFileInputListeners` (fileManager)
+ *   - `setupTabListeners` (uiManager)
+ *   - `setupSidebarToggleListener` (uiManager)
+ *   - `setupSidebarNavigationButtons` (here, private)
+ *   - `setupPanelEventListeners` (panelManager)
+ *   - `setupChartActionListeners` (here, private — download SVG + add-to-panel buttons)
+ *   - `setupGlobalKeyboardListeners` (here, private — Esc + Ctrl/Cmd+O)
+ *   - `setupDatasetListeners` (here, private — delegated select/remove)
+ *
+ * Called once during app startup from `main.js`.
  */
 export function initializeAllEventHandlers() {
 	setupFileInputListeners();
@@ -129,6 +141,18 @@ function handleChartAction(actionBtn) {
 	}
 }
 
+/**
+ * Map from `ChartTypeKey` → builder function that derives the snapshot
+ * metadata (and a short `summary` string) from the active dataset's
+ * `configGraficos`. Consumed by {@link buildChartSnapshotMetadata} when
+ * an "add to panel" button is clicked.
+ *
+ * Each builder returns at minimum `{ type, summary }`; chart-specific
+ * builders may include axis bindings or config snapshots used by the
+ * panel renderer.
+ *
+ * @private
+ */
 const CHART_SNAPSHOT_BUILDERS = {
 	bar: (config) => {
 		const category = config.bar?.category || '-';
@@ -255,6 +279,12 @@ const CHART_SNAPSHOT_BUILDERS = {
 	},
 };
 
+/**
+ * Resolve the snapshot title: prefer the user's `customTitle` for the
+ * chart type behind `containerId`, falling back to `fallbackTitle`.
+ *
+ * @private
+ */
 function getChartSnapshotTitle(containerId, fallbackTitle) {
 	const type = CONTAINER_ID_TO_CHART_TYPE[containerId];
 	if (!type) return fallbackTitle;
@@ -262,6 +292,13 @@ function getChartSnapshotTitle(containerId, fallbackTitle) {
 	return String(config[type]?.customTitle || '').trim() || fallbackTitle;
 }
 
+/**
+ * Build the metadata object for an `addChartToPanel` call from the
+ * active dataset's current config. Returns `{}` when the type or config
+ * cannot be resolved.
+ *
+ * @private
+ */
 function buildChartSnapshotMetadata(containerId) {
 	const type = CONTAINER_ID_TO_CHART_TYPE[containerId];
 	const config = getActiveDataset()?.configGraficos;
@@ -317,8 +354,11 @@ function setupDatasetListeners() {
 }
 
 /**
- * Setup result preview table interactions
- * @private
+ * Wire delegated listeners on the results view (column list, column
+ * action buttons). Note: the inner callbacks reference TODO comments
+ * pointing at `resultsView.js` for the actual wiring — this function
+ * currently sets up the delegation skeleton but the callbacks are not
+ * yet routed. Tracked as a follow-up refactor; documented as-is.
  */
 export function setupResultsViewListeners() {
 	// Column selection
