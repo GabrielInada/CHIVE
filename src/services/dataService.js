@@ -2,6 +2,26 @@ import { dsvFormat, max, mean, median, min } from 'https://esm.sh/d3@7.9.0';
 import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS, DECIMAL_DETECTION } from '../config/types.js';
 import { isNullish } from '../utils/formatters.js';
 
+/**
+ * CHIVE data service.
+ *
+ * Pure functions for CSV/JSON parsing, type/decimal detection, row
+ * normalization, dataset joins, and per-column statistics. No DOM, no
+ * state, no I/O — safe to use in workers and tests.
+ *
+ * @typedef {import('../types.js').ColumnSpec} ColumnSpec
+ * @typedef {import('../types.js').JoinDatasetsOptions} JoinDatasetsOptions
+ * @typedef {import('../types.js').JoinResult} JoinResult
+ * @typedef {import('../types.js').NumericColumnStats} NumericColumnStats
+ * @typedef {import('../types.js').CategoricalColumnStats} CategoricalColumnStats
+ */
+
+/**
+ * Encode a join-key value into a type-tagged string so distinct types
+ * cannot collide (e.g. number `42` vs string `'42'`).
+ *
+ * @private
+ */
 function normalizeKeyValue(value, { trim = true, caseSensitive = false } = {}) {
 	if (isNullish(value)) return '';
 
@@ -24,12 +44,24 @@ function normalizeKeyValue(value, { trim = true, caseSensitive = false } = {}) {
 	return `s:${text}`;
 }
 
+/**
+ * Build a composite join-key string from `keyColumns` joined with a U+0001
+ * separator (low enough that natural data never produces it).
+ *
+ * @private
+ */
 function buildCompositeKey(row, keyColumns, normalizationOptions) {
 	return keyColumns
 		.map(columnName => normalizeKeyValue(row?.[columnName], normalizationOptions))
 		.join('\u0001');
 }
 
+/**
+ * Ensure `baseName` is unique within `usedNames`; append `_2`, `_3`, …
+ * until it is. Mutates `usedNames` to record the chosen name.
+ *
+ * @private
+ */
 function ensureUniqueColumnName(baseName, usedNames) {
 	if (!usedNames.has(baseName)) {
 		usedNames.add(baseName);
@@ -46,6 +78,13 @@ function ensureUniqueColumnName(baseName, usedNames) {
 	return nextName;
 }
 
+/**
+ * Strip the extension from a filename and reduce to safe chars
+ * (`[A-Za-z0-9_\- ]`), collapsing whitespace to dashes. Returns `fallback`
+ * when the result is empty.
+ *
+ * @private
+ */
 function sanitizePrefix(fileName, fallback) {
 	const base = String(fileName || '')
 		.replace(/\.[^.]+$/, '')
@@ -55,6 +94,42 @@ function sanitizePrefix(fileName, fallback) {
 	return base || fallback;
 }
 
+/**
+ * Join two datasets on a composite key.
+ *
+ * `leftKeys[i]` is matched against `rightKeys[i]` after type-tagged
+ * normalization (numbers, booleans, and dates do not collide with strings;
+ * trimming and case-folding are configurable via `normalization`).
+ *
+ * Column-name conflicts are resolved by prefixing both sides with their
+ * dataset name (sanitized): a conflict on `salary` from `sales-q1.csv`
+ * and `sales-q2.csv` becomes `sales-q1.salary` and `sales-q2.salary`.
+ * Further conflicts (same column carried twice on the same side) get
+ * `_2`, `_3`, … suffixes.
+ *
+ * Unmatched cells in left/right/full joins are emitted as `null`.
+ *
+ * @param {JoinDatasetsOptions} options
+ * @returns {JoinResult}
+ * @throws {Error} `'join-invalid-datasets'` — `leftRows` or `rightRows` is not an array.
+ * @throws {Error} `'join-keys-required'` — either key array is missing or empty.
+ * @throws {Error} `'join-keys-mismatch'` — key arrays have different lengths.
+ *
+ * @example
+ *   const result = joinDatasets({
+ *       leftRows: ordersDataset.dados,
+ *       rightRows: customersDataset.dados,
+ *       leftKeys: ['customerId'],
+ *       rightKeys: ['id'],
+ *       joinType: 'left',
+ *       leftColumns: ['orderId', 'total'],
+ *       rightColumns: ['name', 'country'],
+ *       leftDatasetName: 'orders.csv',
+ *       rightDatasetName: 'customers.csv',
+ *   });
+ *   // result.rows: [{ orderId: 1, total: 99, name: 'Ana', country: 'BR' }, …]
+ *   // result.outputColumns: ['orderId', 'total', 'name', 'country']
+ */
 export function joinDatasets({
 	leftRows,
 	rightRows,
@@ -377,10 +452,15 @@ export function parseCsv(text) {
 
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
-// Defense-in-depth against prototype pollution: JSON.parse does not pollute
-// Object.prototype, but the parsed value can carry __proto__/constructor/
-// prototype as own enumerable keys, which would leak through any downstream
-// Object.assign / spread / recursive merge.
+/**
+ * Defense-in-depth against prototype pollution: JSON.parse does not
+ * pollute Object.prototype, but the parsed value can carry
+ * `__proto__`/`constructor`/`prototype` as own enumerable keys, which
+ * would leak through any downstream Object.assign / spread / recursive
+ * merge. Recursively strips them.
+ *
+ * @private
+ */
 function stripDangerousKeys(value) {
 	if (Array.isArray(value)) {
 		return value.map(stripDangerousKeys);
@@ -396,6 +476,23 @@ function stripDangerousKeys(value) {
 	return value;
 }
 
+/**
+ * Parse a JSON file's content into an array of row objects.
+ *
+ * Accepted shapes:
+ *   - Top-level array: `[{...}, {...}]` → returned as-is.
+ *   - Object with one array-valued key: `{ items: [{...}] }` → the first
+ *     array-valued key wins (object key order, not name).
+ *
+ * Dangerous keys (`__proto__`, `constructor`, `prototype`) are stripped
+ * recursively from every row.
+ *
+ * @param {string} text - Raw file content.
+ * @returns {Array<Object<string, *>>} Parsed rows.
+ * @throws {Error} `'O arquivo JSON contém erros de sintaxe…'` — `JSON.parse` failed.
+ * @throws {Error} `'O arquivo JSON está vazio.'` / `'O array de dados no JSON está vazio.'` — zero rows.
+ * @throws {Error} `'Formato JSON não reconhecido…'` — root is neither an array nor an object with an array-valued key.
+ */
 export function parseJson(text) {
 	let parsed;
 
@@ -422,6 +519,18 @@ export function parseJson(text) {
 	throw new Error('Formato JSON não reconhecido. O arquivo deve ser um array de objetos: [{...}, {...}]');
 }
 
+/**
+ * Detect column types and normalize numeric values in a single pass.
+ *
+ * The decimal separator is detected once for the whole dataset (it is a
+ * file-level property — all numeric columns in one upload share the same
+ * convention). Then each column gets a `tipo` from `detectType`, and
+ * numeric cells are parsed into actual numbers via `normalizeNumericString`.
+ *
+ * @param {Array<Object<string, *>>} rawData - Rows as produced by `parseCsv` or `parseJson`.
+ * @returns {{ dados: Array<Object<string, *>>, colunas: ColumnSpec[] }} - `dados` is the normalized row set; `colunas` lists `{ nome, tipo }` in source order. Empty input returns empty arrays.
+ * @throws {Error} When `rawData` is not an array.
+ */
 export function processData(rawData) {
 	if (!Array.isArray(rawData)) {
 		throw new Error('rawData must be an array');
@@ -467,6 +576,16 @@ export function processData(rawData) {
 	return { dados: rows, colunas: columns };
 }
 
+/**
+ * Compute per-column numeric statistics (n, min, max, mean, median).
+ * Columns with `tipo !== 'numero'` are skipped; numeric columns with no
+ * finite values are also skipped (the function does not return null
+ * placeholders).
+ *
+ * @param {Array<Object<string, *>>} rows
+ * @param {ColumnSpec[]} columns
+ * @returns {NumericColumnStats[]}
+ */
 export function calculateStatistics(rows, columns) {
 	return columns
 		.filter(column => column.tipo === 'numero')
@@ -489,12 +608,27 @@ export function calculateStatistics(rows, columns) {
 		.filter(Boolean);
 }
 
+/**
+ * Treat null, undefined, and whitespace-only strings as missing.
+ *
+ * @private
+ */
 function isMissingValue(value) {
 	if (isNullish(value)) return true;
 	if (typeof value === 'string' && value.trim() === '') return true;
 	return false;
 }
 
+/**
+ * Compute per-column categorical statistics (mode, top-5 share,
+ * missingness) for every non-numeric column. Columns where every value
+ * is missing return `empty: true` with zeroed counts so renderers can
+ * draw a uniform "no data" state.
+ *
+ * @param {Array<Object<string, *>>} rows
+ * @param {ColumnSpec[]} columns
+ * @returns {CategoricalColumnStats[]} One entry per non-numeric column, in source order.
+ */
 export function calculateCategoricalStatistics(rows, columns) {
 	return columns
 		.filter(column => column.tipo !== 'numero')
@@ -563,6 +697,15 @@ export function calculateCategoricalStatistics(rows, columns) {
 		});
 }
 
+/**
+ * Format a byte count as a human-readable label. Three tiers:
+ *   - `< 1 KB`  → `"<N> B"`
+ *   - `< 1 MB`  → `"<N.N> KB"` (1 decimal)
+ *   - otherwise → `"<N.N> MB"` (1 decimal)
+ *
+ * @param {number} sizeBytes
+ * @returns {string}
+ */
 export function formatFileSize(sizeBytes) {
 	if (sizeBytes < 1024) return `${sizeBytes} B`;
 	if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`;

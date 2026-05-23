@@ -262,4 +262,123 @@
  * @typedef {{ ok: true, [key: string]: * } | { ok: false, reason?: string }} Result
  */
 
+// ─── Ingest pipeline (worker → service → fileManager) ───────────────────
+
+/**
+ * Resolved payload from the data-ingest worker. Lives at `result.value`
+ * when `ingestFile` resolves successfully.
+ *
+ * @typedef {Object} IngestPayload
+ * @property {Array<Object<string, *>>} dados - Normalized rows (numeric columns parsed; missing values preserved).
+ * @property {ColumnSpec[]} colunas - Detected columns in source order.
+ * @property {Object<string, Object>} statsNumeric - Per-column numeric stats (n, min, max, mean, median).
+ * @property {Object<string, Object>} statsCategorical - Per-column categorical stats (mode, top-N, missingness).
+ * @property {number} [truncatedFrom] - Original row count before the worker capped to `rowLimit`. Absent when no truncation occurred.
+ */
+
+/**
+ * One progress tick emitted by the worker. Stages run roughly in this
+ * order: `'parsing'` → `'decimal-detection'` → `'type-detection'` →
+ * `'normalize'` → `'stats'`. `percent` is the overall pipeline progress
+ * (0–100), not a per-stage value.
+ *
+ * @typedef {Object} IngestProgress
+ * @property {string} stage
+ * @property {number} percent - 0–100 inclusive.
+ * @property {string} [label] - Localized label when the worker chose to send one; otherwise the host derives one via `progressLabelForStage`.
+ */
+
+// ─── Join (dataService.joinDatasets) ────────────────────────────────────
+
+/**
+ * @typedef {'inner' | 'left' | 'right' | 'full'} JoinType
+ */
+
+/**
+ * Options bag passed to `joinDatasets`. The left/right key arrays form a
+ * composite key — `leftKeys[i]` is matched against `rightKeys[i]`.
+ *
+ * Key normalization is applied before comparison: by default values are
+ * trimmed and case-insensitive. Numbers, booleans, and Dates are encoded
+ * with type tags (e.g. `'n:42'`, `'d:2024-01-01T…'`) so type-distinct
+ * values do not collide as strings.
+ *
+ * @typedef {Object} JoinDatasetsOptions
+ * @property {Array<Object<string, *>>} leftRows
+ * @property {Array<Object<string, *>>} rightRows
+ * @property {string[]} leftKeys
+ * @property {string[]} rightKeys - Must be the same length as `leftKeys`.
+ * @property {JoinType} [joinType='inner'] - Unknown values silently fall back to `'inner'`.
+ * @property {string[]} leftColumns - Columns from the left side to include in the output.
+ * @property {string[]} rightColumns - Columns from the right side to include in the output.
+ * @property {string} [leftDatasetName] - Used to derive the prefix for column-name conflicts (`leftPrefix.col`). Falls back to `'left'`.
+ * @property {string} [rightDatasetName]
+ * @property {{ trim?: boolean, caseSensitive?: boolean }} [normalization]
+ */
+
+/**
+ * @typedef {Object} JoinResult
+ * @property {Array<Object<string, *>>} rows - Merged rows. Unmatched cells (in left/right/full joins) are `null`.
+ * @property {string[]} outputColumns - Output column names in left-then-right order, with conflicts renamed (e.g. `'a.salary'`, `'b.salary'`, plus `_2`, `_3` suffixes for further collisions).
+ */
+
+// ─── Stats (dataService.calculate*) ─────────────────────────────────────
+
+/**
+ * Output of `calculateStatistics` for one numeric column.
+ *
+ * @typedef {Object} NumericColumnStats
+ * @property {string} nome
+ * @property {number} n
+ * @property {number} min
+ * @property {number} max
+ * @property {number} media - Arithmetic mean.
+ * @property {number} mediana
+ */
+
+/**
+ * Output of `calculateCategoricalStatistics` for one non-numeric column.
+ *
+ * When every value is missing, the entry returns `empty: true` with zeroed
+ * counts so downstream renderers can render a uniform "no data" state.
+ *
+ * @typedef {Object} CategoricalColumnStats
+ * @property {string} nome
+ * @property {number} n - Count of non-missing values.
+ * @property {number} missing
+ * @property {number} missingPct - 0–1 inclusive.
+ * @property {number} unique - Distinct value count.
+ * @property {number} uniquenessRate - `unique / n` (0 when `n === 0`).
+ * @property {string | null} mode - Most-frequent value as a string; `null` only when `n === 0`. Ties broken by `localeCompare`.
+ * @property {number} modeCount
+ * @property {number} modePct - `modeCount / n`.
+ * @property {number} top5Pct - Sum of the top 5 frequencies divided by `n`.
+ * @property {boolean} empty - `true` when `n === 0`.
+ */
+
+// ─── Preset loading (presetService) ─────────────────────────────────────
+
+/**
+ * Descriptor for a bundled preset dataset. Either `data` (inline) or
+ * `dataUrl` (remote) must be present; if both are, `data` wins.
+ *
+ * @typedef {Object} PresetDescriptor
+ * @property {string} [id]
+ * @property {string} [nome]
+ * @property {Array<Object<string, *>>} [data] - Inline rows.
+ * @property {string} [dataUrl] - Remote source. Resolved with a 10s timeout.
+ * @property {string} [dataFormat] - Wins over URL extension when distinguishing CSV vs JSON.
+ * @property {string[]} [dropColumns] - Columns the loader strips after parse.
+ */
+
+/**
+ * Resolved preset source. Discriminated by `mode` — callers should narrow
+ * before reading fields specific to one variant.
+ *
+ * @typedef {(
+ *   { mode: 'inline', rows: Array<Object<string, *>>, dropColumns: string[] }
+ *   | { mode: 'fetched', kind: 'csv' | 'json', text: string, dropColumns: string[] }
+ * )} PresetSource
+ */
+
 export {};

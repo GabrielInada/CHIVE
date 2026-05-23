@@ -1,3 +1,13 @@
+/**
+ * CHIVE i18n service.
+ *
+ * Thin wrapper around banana-i18n. Loads `pt-BR` and `en` message
+ * bundles at import time, exposes `t()` for translations, and provides
+ * a `setLocale` that persists the choice, re-translates the static
+ * page, and broadcasts a `'chive-locale-changed'` CustomEvent on
+ * `window` so dynamic UI can refresh.
+ */
+
 import Banana from 'https://esm.sh/banana-i18n@2.4.0';
 import ptBR from '../i18n/pt-BR.json' with { type: 'json' };
 import en from '../i18n/en.json' with { type: 'json' };
@@ -16,21 +26,36 @@ banana.load(ptBR, 'pt-BR');
 banana.load(en, 'en');
 
 /**
- * Translate a message key with optional positional parameters ($1, $2, …).
- * Supports banana-i18n markup: {{PLURAL:$1|one|other}}, etc.
+ * Translate a message key. Supports banana-i18n positional substitution
+ * (`$1`, `$2`, …) and inline plural markup (`{{PLURAL:$1|one|other}}`).
+ *
+ * @param {string} key - Message key as declared in `src/i18n/<locale>.json`.
+ * @param {...*} params - Positional substitutions for `$1`, `$2`, …
+ * @returns {string} The translated string. Falls back to `key` itself when the message is missing.
  */
 export function t(key, ...params) {
 	return banana.i18n(key, ...params);
 }
 
-/** Returns the currently active locale code, e.g. 'pt-BR' or 'en'. */
+/**
+ * @returns {string} The currently active locale code (e.g. `'pt-BR'` or `'en'`).
+ */
 export function getLocale() {
 	return banana.locale;
 }
 
 /**
- * Switch the active locale, persist it, re-translate static [data-i18n] nodes,
- * and fire 'chive-locale-changed' so the app can re-render dynamic content.
+ * Switch the active locale and apply it everywhere it shows. Side effects:
+ *   1. Banana switches active locale.
+ *   2. `<html lang>` is updated.
+ *   3. The chosen locale is persisted to localStorage.
+ *   4. Every static `[data-i18n]` node in the page is re-translated.
+ *   5. A `'chive-locale-changed'` CustomEvent is dispatched on `window` so
+ *      dynamic views can refresh their own content.
+ *
+ * No-op when `locale` is not in `SUPPORTED_LOCALES`.
+ *
+ * @param {string} locale
  */
 export function setLocale(locale) {
 	if (!LOCALES.includes(locale)) return;
@@ -42,8 +67,13 @@ export function setLocale(locale) {
 }
 
 /**
- * Call once on startup. Reads the persisted locale (defaults to 'pt-BR'),
- * syncs <html lang>, updates the selector value, and translates static nodes.
+ * Boot-time initialization. Reads the persisted locale (falling back to
+ * `'pt-BR'`), syncs `<html lang>`, populates the language selector,
+ * translates every static `[data-i18n]` node, wires the selector's
+ * `change` listener, and reveals `document.body` (which is hidden until
+ * translation completes to avoid a flash of untranslated keys).
+ *
+ * Call exactly once on startup.
  */
 export function initializeI18n() {
 	const savedLocale = localStorage.getItem(LOCALE_KEY);
@@ -66,6 +96,9 @@ export function initializeI18n() {
 	document.body.style.visibility = 'visible';
 }
 
+/**
+ * @private
+ */
 function setupLanguageSelector() {
 	const selectLang = document.getElementById('select-lang');
 	const langDisplay = document.getElementById('lang-display');

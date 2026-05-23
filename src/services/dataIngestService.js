@@ -1,5 +1,5 @@
 /**
- * CHIVE Data Ingest Service
+ * CHIVE Data Ingest Service.
  *
  * Host-side wrapper for the data-ingest Web Worker. Spawns one worker per
  * call, forwards progress messages via the supplied callback, and resolves
@@ -10,6 +10,10 @@
  * `new Worker(new URL(...), { type: 'module' })` pattern so the app runs
  * unchanged under both raw static hosting (nginx) and Vite dev. Tests
  * pre-empt the spawn via `__setIngestWorkerFactoryForTesting`.
+ *
+ * @typedef {import('../types.js').IngestPayload} IngestPayload
+ * @typedef {import('../types.js').IngestProgress} IngestProgress
+ * @typedef {import('../types.js').Result} Result
  */
 
 import { ok, fail } from '../utils/result.js';
@@ -18,6 +22,10 @@ import { t } from './i18nService.js';
 /**
  * Map a worker progress stage to a localized user-facing label.
  * Caller passes the file (or preset) name so the parsing label can include it.
+ *
+ * @param {string} stage - One of `'parsing'`, `'decimal-detection'`, `'type-detection'`, `'normalize'`, `'stats'`.
+ * @param {string} fileName - Used to interpolate into the `'parsing'` label.
+ * @returns {string | undefined} Localized label, or `undefined` for unknown stages so the caller can keep the previous label visible.
  */
 export function progressLabelForStage(stage, fileName) {
 	if (stage === 'parsing') return t('chive-progress-parsing', [fileName]);
@@ -33,11 +41,17 @@ let workerFactory = null;
  * Test seam — replace the worker constructor with a stub that mimics the
  * postMessage / onmessage / terminate surface. Called by Vitest suites; not
  * used in production code.
+ *
+ * @internal
+ * @param {(() => Worker) | null} factory - Pass `null` to restore the real spawner.
  */
 export function __setIngestWorkerFactoryForTesting(factory) {
 	workerFactory = factory;
 }
 
+/**
+ * @private
+ */
 async function spawnIngestWorker() {
 	if (workerFactory) return workerFactory();
 	return new Worker(
@@ -46,6 +60,9 @@ async function spawnIngestWorker() {
 	);
 }
 
+/**
+ * @private
+ */
 function generateId() {
 	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
 		return crypto.randomUUID();
@@ -53,16 +70,26 @@ function generateId() {
 	return `ingest-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+/**
+ * @private
+ */
 function isFiniteNumber(value) {
 	return typeof value === 'number' && Number.isFinite(value);
 }
 
 /**
- * Run the ingest pipeline in a worker.
+ * Run the ingest pipeline in a worker. On success, the resolved
+ * {@link Result} carries the parsed payload at `result.value` (an
+ * {@link IngestPayload}). On failure, `result.reason` is a stable string
+ * id (`'cancelled'`, `'worker-spawn-failed'`, `'worker-error'`,
+ * `'ingest-error'`, `'ingest-malformed-result'`, …).
+ *
+ * The worker is terminated and the abort listener is removed before the
+ * Promise settles, regardless of outcome.
  *
  * @param {{ kind: 'csv' | 'json', text: string, options?: { rowLimit?: number } }} input
- * @param {{ onProgress?: (p: { stage: string, percent: number, label?: string }) => void, signal?: AbortSignal }} [config]
- * @returns {Promise<{ ok: true, value: object } | { ok: false, reason: string }>}
+ * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal }} [config]
+ * @returns {Promise<Result>} `{ ok: true, value: IngestPayload }` on success; `{ ok: false, reason }` otherwise.
  */
 export async function ingestFile(input, config = {}) {
 	const { onProgress, signal } = config;
