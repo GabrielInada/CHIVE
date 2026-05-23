@@ -1,3 +1,20 @@
+/**
+ * Bar-chart controls module.
+ *
+ * Builds the right-sidebar control group for the bar chart and wires its
+ * listeners. Listeners mutate the active dataset's `configGraficos.bar` via
+ * {@link updateActiveDatasetChartConfig} and call back into the host so the
+ * chart re-renders.
+ *
+ * Consumed by the registry in `chart-controls/index.js`. The three exports
+ * (`createBarChartControls`, `setupBarChartControlListeners`,
+ * `computeDefaults`) line up 1:1 with the registry's
+ * `{build, attachListeners, computeDefaults}` slots.
+ *
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
+ */
+
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
@@ -14,6 +31,19 @@ import {
 	setupColorPresetListeners,
 } from './controlListenerHelpers.js';
 
+/**
+ * Build the bar-chart control sections (Data, Display, Styling, Advanced).
+ *
+ * Reads from `dataset.configGraficos.bar`; the resulting elements expose
+ * the standard input ids that {@link setupBarChartControlListeners}
+ * later attaches listeners to.
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} categoryOptions - Categorical (or fallback "all") columns for the X-axis select.
+ * @param {string[]} [numericOptions=[]] - Numeric columns for the sum/mean value-column select.
+ * @param {string[]} [allColumns=[]] - All visible column names (kept for API parity; not used here).
+ * @returns {HTMLElement[]} Array of `chart-control-section` elements ready to append to the params pane.
+ */
 export function createBarChartControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
 	const config = dataset.configGraficos.bar;
 	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
@@ -213,6 +243,22 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 	]);
 }
 
+/**
+ * Wire listeners for every bar-chart control element produced by
+ * {@link createBarChartControls}. Mutates `dataset.configGraficos.bar`
+ * via {@link updateActiveDatasetChartConfig} and invokes the
+ * `onConfigChanged` callback so the host can re-render.
+ *
+ * The `allColumnsOrCallback` parameter is overloaded for backward
+ * compatibility: callers may pass the callback in either the 4th or 5th slot.
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} baseBar - Categorical (or fallback "all") column names; kept for parity with the listener signature, currently unused.
+ * @param {string[]} numericOptions - Numeric column names; used to validate the value-column select.
+ * @param {string[] | (() => void)} [allColumnsOrCallback] - Either all-columns array (legacy) or the change callback.
+ * @param {() => void} [onConfigChangedMaybe] - Callback when arg 4 is the all-columns array.
+ * @returns {void}
+ */
 export function setupBarChartControlListeners(dataset, baseBar, numericOptions, allColumnsOrCallback = [], onConfigChangedMaybe) {
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
@@ -289,6 +335,15 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	setupSliderListener('viz-slider-bar-height', 'chartHeight', dataset, 'bar', onConfigChanged);
 }
 
+/**
+ * Compute the bar chart's activation defaults. Preserves the user's
+ * current `category` if it still matches a visible categorical column;
+ * otherwise falls back to the first available column (or `null`).
+ *
+ * @param {Dataset} dataset
+ * @param {ChartControlContext} ctx
+ * @returns {{ category: string | null }}
+ */
 export function computeDefaults(dataset, ctx) {
 	const current = dataset.configGraficos?.bar?.category;
 	const category = ctx.baseCategoricalOrAll.includes(current)

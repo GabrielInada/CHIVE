@@ -1,3 +1,20 @@
+/**
+ * Render the dataset file list with case-insensitive name filtering and a
+ * visible-count cap. Returns counts so the caller can render pagination
+ * ("Show more / show less") above or below the list.
+ *
+ * @param {Object} args
+ * @param {HTMLElement} args.lista
+ * @param {Array<{ nome: string, dados: Array<*>, colunas: Array<*>, tamanho: string }>} args.datasets
+ * @param {number} args.indiceAtivo - Active dataset index; `-1` if none.
+ * @param {(key: string, ...args: *) => string} args.traduzir
+ * @param {() => string} args.getLocale
+ * @param {(index: number) => void} args.aoSelecionar
+ * @param {(index: number) => void} args.aoRemover
+ * @param {string} [args.filtro=''] - Name substring filter; case-insensitive.
+ * @param {number} [args.limiteVisivel=15] - Cap on rendered items.
+ * @returns {{ total: number, filtered: number, rendered: number, hasMore: boolean }}
+ */
 export function renderFileListDOM({
 	lista: list,
 	datasets,

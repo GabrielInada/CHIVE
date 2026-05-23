@@ -1,3 +1,14 @@
+/**
+ * Join-builder dialog. Two dataset selects + composite-key pickers + per-
+ * side column checklists + join type. Resolves with a join-spec
+ * `{ leftIndex, rightIndex, joinType, leftKeys, rightKeys, leftColumns,
+ * rightColumns }` or `null` on cancel.
+ *
+ * Internal helpers are unexported; the entry point is
+ * {@link openJoinBuilderDialog}.
+ */
+
+/** @private */
 function createOption(value, label, selected = false) {
 	const option = document.createElement('option');
 	option.value = String(value);
@@ -6,6 +17,7 @@ function createOption(value, label, selected = false) {
 	return option;
 }
 
+/** @private */
 function createCheckboxList(listId, items, selectedValues, title) {
 	const wrapper = document.createElement('div');
 	wrapper.className = 'join-list-wrapper';
@@ -40,6 +52,7 @@ function createCheckboxList(listId, items, selectedValues, title) {
 	return wrapper;
 }
 
+/** @private */
 function getCheckedValues(container, selector) {
 	return Array.from(container.querySelectorAll(selector))
 		.filter(input => input.checked)
@@ -48,15 +61,24 @@ function getCheckedValues(container, selector) {
 
 import { isNullish } from '../../utils/formatters.js';
 
+/** @private */
 function normalizeJoinKey(value) {
 	if (isNullish(value)) return '';
 	return String(value).trim().toLowerCase();
 }
 
+/** @private */
 function buildJoinKey(row, keyColumns) {
 	return keyColumns.map(key => normalizeJoinKey(row?.[key])).join('\u0001');
 }
 
+/**
+ * Estimate the resulting row count for the current join spec without
+ * actually performing the join. Used to keep the dialog's preview counter
+ * accurate as the user tweaks keys/type.
+ *
+ * @private
+ */
 function estimateJoinRowCount({ leftRows, rightRows, leftKeys, rightKeys, joinType }) {
 	if (!Array.isArray(leftRows) || !Array.isArray(rightRows)) return 0;
 	if (!Array.isArray(leftKeys) || !Array.isArray(rightKeys)) return 0;
@@ -96,6 +118,7 @@ function estimateJoinRowCount({ leftRows, rightRows, leftKeys, rightKeys, joinTy
 	return total;
 }
 
+/** @private */
 function renderDatasetColumnPickers({
 	container,
 	prefix,
@@ -127,6 +150,20 @@ function renderDatasetColumnPickers({
 	);
 }
 
+/**
+ * Open the join-builder dialog. Resolves with a join spec or `null` on
+ * cancel.
+ *
+ * Spec shape:
+ *   `{ leftIndex, rightIndex, joinType, leftKeys, rightKeys, leftColumns,
+ *      rightColumns, normalization: { trim, caseSensitive } }`
+ *
+ * Disabled when fewer than 2 datasets exist (the trigger button enforces
+ * this; the dialog assumes `datasets.length >= 2` on open).
+ *
+ * @param {{ datasets: Array<{ nome: string, dados: Array<*>, colunas: Array<{ nome: string }> }>, translate: (key: string, ...args: *) => string }} args
+ * @returns {Promise<Object | null>}
+ */
 export function openJoinBuilderDialog({ datasets, translate }) {
 	if (!Array.isArray(datasets) || datasets.length < 2) {
 		window.alert(translate('chive-join-error-min-files'));

@@ -1,3 +1,18 @@
+/**
+ * Line-chart renderer.
+ *
+ * Renders a 2-D line series with one of seven curve interpolations
+ * (linear, monotone, step variants, basis, cardinal). Accepts numeric,
+ * categorical, or date X-axes — date detection happens via the row's value
+ * type. Missing-data handling: `missingMode` selects how gaps are drawn
+ * (skip / connect / break).
+ *
+ * Internal D3 helpers (scale construction, curve resolution, tooltip
+ * tracking) are intentionally undocumented per the Tier 5 plan.
+ *
+ * @typedef {import('../../types.js').Result} Result
+ */
+
 import {
 	axisBottom,
 	axisLeft,
@@ -154,6 +169,23 @@ function normalizeHex(value, fallback) {
 	return isValidHexColor(trimmed) ? trimmed : fallback;
 }
 
+/**
+ * Render a line chart into `container`. Returns `ok()` on success, or
+ * `fail()` when required arguments are missing or the data resolves to
+ * fewer than two finite points.
+ *
+ * Common option keys: `curve` (one of `LINE_CHART.curveOptions`), `missingMode`
+ * ('skip' | 'connect' | 'break'), `aggregateMode` ('none' | 'mean' | 'sum'),
+ * `sortX`, `showPoints`, `strokeWidth`, `color`, `ghostStrokeColor`,
+ * axis-label toggles, `customTitle`, `chartHeight`, `locale`.
+ *
+ * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
+ * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {string} eixoX - X-axis column name (any type).
+ * @param {string} eixoY - Y-axis column name (numeric).
+ * @param {Object} [opcoes={}] - Render options bag.
+ * @returns {Result}
+ */
 export function renderLineChart(container, dados, eixoX, eixoY, opcoes = {}) {
 	if (!container || !eixoX || !eixoY) return fail('invalid-args');
 	if (!Array.isArray(dados) || dados.length === 0) return fail();

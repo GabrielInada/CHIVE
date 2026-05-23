@@ -1,8 +1,22 @@
+/**
+ * Scatter-plot section adapter. See `barChartSection.js` for the pattern.
+ */
+
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderScatterPlot } from '../../../modules/visualizations/index.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
 import { showChartMessage } from './sharedRenderHelpers.js';
 
+/**
+ * Render the scatter-plot section.
+ *
+ * @param {Object} args
+ * @param {Object} args.config
+ * @param {Array<Object<string, *>>} args.rows
+ * @param {Object<string, string>} args.columnTypeByName - Column name → `ColumnType`.
+ * @param {Object} args.filterCallbacks
+ * @returns {void}
+ */
 export function renderScatterChartSection({ config, rows, columnTypeByName, filterCallbacks }) {
 	const block = document.getElementById(CHART_BLOCKS.scatter);
 	const container = document.getElementById(CHART_CONTAINERS.scatter);

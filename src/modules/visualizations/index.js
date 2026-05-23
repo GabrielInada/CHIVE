@@ -1,3 +1,12 @@
+/**
+ * Visualization barrel. Re-exports the 8 chart-render entry points; the
+ * full option bags are documented on each entry function. Internal D3
+ * helpers within each chart file are intentionally undocumented.
+ *
+ * Consumers: `modules/panel/renderChartFromSpec.js`, `components/results/
+ * chartRenders/*` chart sections.
+ */
+
 export { renderBarChart } from './barChart.js';
 export { renderBubbleChart } from './bubbleChart.js';
 export { renderLineChart } from './lineChart.js';

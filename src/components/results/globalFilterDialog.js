@@ -1,3 +1,20 @@
+/**
+ * Global-filter dialog. The largest component file in the project (~450
+ * lines). Lets the user compose multiple rules (categorical or numeric)
+ * that are AND-combined, with a live preview row count below the rules
+ * list.
+ *
+ * The dialog works on draft copies of the rules; commits return one of
+ * three actions:
+ *   - `{ action: 'apply', filter }` — Apply was clicked.
+ *   - `{ action: 'clear', filter }` — Clear was clicked (filter is empty).
+ *   - `null` — Cancel / Escape / backdrop click.
+ *
+ * Rules get a transient `_uid` field while in the dialog (stripped on
+ * commit) so DOM event handlers can identify cards across re-renders
+ * without relying on array index.
+ */
+
 import {
 	FILTER_CATEGORY_LIMIT,
 	createDefaultFilterConfig,
@@ -8,10 +25,12 @@ import { createEmptyGlobalFilter, normalizeGlobalFilter } from '../../utils/glob
 
 let nextRuleUid = 1;
 
+/** @private */
 function cloneRule(rule) {
 	return JSON.parse(JSON.stringify(rule || createDefaultFilterConfig()));
 }
 
+/** @private */
 function createEmptyRuleDraft() {
 	return {
 		_uid: nextRuleUid++,
@@ -19,6 +38,7 @@ function createEmptyRuleDraft() {
 	};
 }
 
+/** @private */
 function ruleFromExisting(rule) {
 	return {
 		_uid: nextRuleUid++,
@@ -26,11 +46,13 @@ function ruleFromExisting(rule) {
 	};
 }
 
+/** @private */
 function stripUid(rule) {
 	const { _uid, ...rest } = rule;
 	return rest;
 }
 
+/** @private */
 function createOption(value, label, selected = false) {
 	const option = document.createElement('option');
 	option.value = String(value);
@@ -39,6 +61,13 @@ function createOption(value, label, selected = false) {
 	return option;
 }
 
+/**
+ * Build the body of a numeric rule card: operator select + value
+ * input(s). The "between" operator shows two inputs; everything else
+ * shows one.
+ *
+ * @private
+ */
 function renderNumericRuleBody({ body, rule, translate }) {
 	body.replaceChildren();
 
@@ -114,6 +143,13 @@ function renderNumericRuleBody({ body, rule, translate }) {
 	});
 }
 
+/**
+ * Build the body of a categorical rule card: searchable include/exclude
+ * chip lists with token suggestions sourced from the underlying rows.
+ * Caps the unique-token list at `FILTER_CATEGORY_LIMIT` for performance.
+ *
+ * @private
+ */
 function renderCategoricalRuleBody({ body, rule, rows, translate }) {
 	body.replaceChildren();
 
@@ -212,6 +248,12 @@ function renderCategoricalRuleBody({ body, rule, rows, translate }) {
 	renderList();
 }
 
+/**
+ * Dispatch to the numeric or categorical body builder based on the rule's
+ * mode (auto-detected by whether the column is in `numericColumns`).
+ *
+ * @private
+ */
 function renderRuleBody({ body, rule, rows, numericColumns, translate }) {
 	if (!rule.column) {
 		body.replaceChildren();
@@ -231,6 +273,12 @@ function renderRuleBody({ body, rule, rows, numericColumns, translate }) {
 	}
 }
 
+/**
+ * Build one rule card: header (column select + remove button) + body
+ * (numeric or categorical, swapped when the column changes type).
+ *
+ * @private
+ */
 function renderRuleCard({ rule, index, rows, allColumns, numericColumns, translate, onRemove }) {
 	const card = document.createElement('div');
 	card.className = 'gf-rule-card';
@@ -306,6 +354,27 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
 	return card;
 }
 
+/**
+ * Open the global-filter dialog. Returns a Promise that resolves with
+ * the user's action:
+ *
+ *   - `{ action: 'apply', filter }` — Apply was clicked. `filter` is the
+ *     normalized `GlobalFilter` (possibly empty if all rules were
+ *     deleted).
+ *   - `{ action: 'clear', filter: GlobalFilter }` — Clear was clicked;
+ *     `filter` is an empty filter.
+ *   - `null` — Cancel / Escape / backdrop click.
+ *
+ * The dialog renders a live row-count preview as the user edits rules.
+ *
+ * @param {Object} args
+ * @param {Array<Object<string, *>>} args.rows
+ * @param {string[]} args.allColumns
+ * @param {string[]} args.numericColumns
+ * @param {Object} args.initialFilter - Existing global filter; normalized on open.
+ * @param {(key: string, ...args: *) => string} args.translate
+ * @returns {Promise<{ action: 'apply' | 'clear', filter: Object } | null>}
+ */
 export function openGlobalFilterDialog({
 	rows,
 	allColumns,

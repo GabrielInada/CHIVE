@@ -1,3 +1,23 @@
+/**
+ * Shared chart-tooltip rendering.
+ *
+ * One persistent tooltip element is appended to `document.body` and
+ * reused across all charts via {@link ensureTooltip}. Tooltips have two
+ * modes:
+ *
+ * - **Hover** — `showChartTooltip` + `moveChartTooltip` track the cursor.
+ * - **Pinned** — `showPinnedChartTooltip` (or `pinTooltip` after a hover)
+ *   sticks the tooltip in place, traps Tab focus, and listens for Escape /
+ *   outside-click to dismiss.
+ *
+ * The pinned shell renders a header with optional title + close button,
+ * the chart-provided content, an optional filter-state badge, and grouped
+ * action buttons (built via {@link buildCategoricalFilterActions} on the
+ * chart side).
+ *
+ * Highest-traffic helper in the viz layer — imported by every chart.
+ */
+
 const TOOLTIP_OFFSET = 12;
 const VIEWPORT_PADDING = 8;
 const PINNED_CLASS = 'chart-tooltip--fixado';
@@ -16,6 +36,14 @@ let pinnedDismissHandler = null;
 let pinnedKeydownHandler = null;
 let pinnedDocClickHandler = null;
 
+/**
+ * Lazily create (or recover) the singleton tooltip element. Re-attaches
+ * if a previous element was removed from the DOM (e.g. by full-page
+ * re-renders).
+ *
+ * @private
+ * @returns {HTMLElement}
+ */
 function ensureTooltip() {
 	if (tooltipEl && tooltipEl.isConnected) return tooltipEl;
 
@@ -27,6 +55,7 @@ function ensureTooltip() {
 	return tooltipEl;
 }
 
+/** @private */
 function clearPinState(el) {
 	el.classList.remove(PINNED_CLASS);
 	pinnedAnchor = null;
@@ -41,12 +70,28 @@ function clearPinState(el) {
 	pinnedDismissHandler = null;
 }
 
+/**
+ * Hide the tooltip and clear any pinned state (focus traps, document
+ * listeners). Idempotent.
+ *
+ * @returns {void}
+ */
 export function hideChartTooltip() {
 	const el = ensureTooltip();
 	el.style.display = 'none';
 	clearPinState(el);
 }
 
+/**
+ * Show the tooltip with `content` at viewport coordinates `(x, y)`. The
+ * content may be a DOM Node (replaces children) or a string
+ * (`textContent`).
+ *
+ * @param {Node | string} content
+ * @param {number} x
+ * @param {number} y
+ * @returns {void}
+ */
 export function showChartTooltip(content, x, y) {
 	const el = ensureTooltip();
 	if (content instanceof Node) {
@@ -58,6 +103,16 @@ export function showChartTooltip(content, x, y) {
 	moveChartTooltip(x, y);
 }
 
+/**
+ * Reposition the (already-shown) tooltip to viewport `(x, y)` with
+ * automatic viewport clamping: flips to the opposite side when it would
+ * overflow right/bottom, then clamps to viewport padding so the tooltip
+ * is always fully visible.
+ *
+ * @param {number} x
+ * @param {number} y
+ * @returns {void}
+ */
 export function moveChartTooltip(x, y) {
 	const el = ensureTooltip();
 	const rect = el.getBoundingClientRect();
@@ -89,11 +144,19 @@ export function moveChartTooltip(x, y) {
 	el.style.top = `${top}px`;
 }
 
+/** @private */
 function getFocusableActions() {
 	if (!tooltipEl) return [];
 	return Array.from(tooltipEl.querySelectorAll(`button.${ACTION_CLASS}:not([disabled]), button.${CLOSE_CLASS}`));
 }
 
+/**
+ * Invoke the registered dismiss handler if any; otherwise hide the
+ * tooltip outright. The handler is cleared before invocation to prevent
+ * recursive dismissal.
+ *
+ * @private
+ */
 function dismissPinned() {
 	if (typeof pinnedDismissHandler === 'function') {
 		const fn = pinnedDismissHandler;
@@ -104,6 +167,13 @@ function dismissPinned() {
 	hideChartTooltip();
 }
 
+/**
+ * Wire Escape-to-dismiss, Tab focus-trap, and outside-click dismiss on
+ * the document. Stored handler references are cleared by
+ * {@link clearPinState}.
+ *
+ * @private
+ */
 function attachPinnedListeners() {
 	pinnedKeydownHandler = (event) => {
 		if (event.key === 'Escape') {
@@ -138,6 +208,17 @@ function attachPinnedListeners() {
 	document.addEventListener('mousedown', pinnedDocClickHandler, true);
 }
 
+/**
+ * Pin the (currently shown) tooltip in place. Attaches Escape / Tab /
+ * outside-click handlers and optionally moves keyboard focus to the
+ * first action button.
+ *
+ * @param {(() => { x: number, y: number }) | null} anchor - Returns the desired pinned coordinates; used by {@link repositionPinnedTooltip} when the chart re-flows.
+ * @param {Object} [options]
+ * @param {() => void} [options.onDismiss] - Replaces the default `hideChartTooltip` dismissal.
+ * @param {boolean} [options.autoFocus=true] - Set to `false` to keep current focus.
+ * @returns {void}
+ */
 export function pinTooltip(anchor, options = {}) {
 	const el = ensureTooltip();
 	el.classList.add(PINNED_CLASS);
@@ -161,11 +242,23 @@ export function pinTooltip(anchor, options = {}) {
 	}
 }
 
+/**
+ * Remove pinned state without hiding the tooltip. Removes document
+ * listeners but keeps the element visible.
+ *
+ * @returns {void}
+ */
 export function unpinTooltip() {
 	const el = ensureTooltip();
 	clearPinState(el);
 }
 
+/**
+ * Call after the chart has re-flowed (zoom, drag, layout change) so the
+ * pinned tooltip stays anchored. No-op when no anchor was provided.
+ *
+ * @returns {void}
+ */
 export function repositionPinnedTooltip() {
 	if (!pinnedAnchor) return;
 	const point = pinnedAnchor();
@@ -173,15 +266,24 @@ export function repositionPinnedTooltip() {
 	moveChartTooltip(point.x, point.y);
 }
 
+/**
+ * True when the tooltip is currently in pinned mode.
+ *
+ * @returns {boolean}
+ */
 export function isTooltipPinned() {
 	return ensureTooltip().classList.contains(PINNED_CLASS);
 }
 
-// Builds a single "label: value" row used inside chart tooltip bodies. Every
-// visualization renders these rows identically (<div><strong>{label}:</strong>
-// {value}</div>), so the construction lives here instead of being duplicated
-// per chart. Use textContent / append for both label and value to keep XSS
-// prevention semantics.
+/**
+ * Build a single `<div><strong>{label}:</strong> {value}</div>` row used
+ * inside chart tooltip bodies. Uses `textContent`/`append` (no innerHTML)
+ * so the row is XSS-safe with arbitrary user data.
+ *
+ * @param {string} label
+ * @param {string | number} value
+ * @returns {HTMLDivElement}
+ */
 export function createTooltipLine(label, value) {
 	const row = document.createElement('div');
 	const strong = document.createElement('strong');
@@ -191,14 +293,27 @@ export function createTooltipLine(label, value) {
 	return row;
 }
 
+/**
+ * Build a primary (default-style) filter action button.
+ *
+ * @param {{ label: string, onClick: () => void }} args
+ * @returns {HTMLButtonElement}
+ */
 export function createTooltipFilterAction({ label, onClick }) {
 	return createTooltipAction({ label, onClick });
 }
 
+/**
+ * Build a danger-style exclude action button.
+ *
+ * @param {{ label: string, onClick: () => void }} args
+ * @returns {HTMLButtonElement}
+ */
 export function createTooltipExcludeAction({ label, onClick }) {
 	return createTooltipAction({ label, onClick, variant: 'danger' });
 }
 
+/** @private */
 function createTooltipAction({ label, onClick, title, variant, disabled, ariaLabel }) {
 	const action = document.createElement('button');
 	action.type = 'button';
@@ -219,6 +334,14 @@ function createTooltipAction({ label, onClick, title, variant, disabled, ariaLab
 	return action;
 }
 
+/**
+ * Build a `<div role="group">` wrapping a series of action buttons. Each
+ * `actionDef` is `{ label, onClick, title?, variant?, disabled?, ariaLabel? }`.
+ * Entries with empty/whitespace `label` are skipped.
+ *
+ * @param {Array<Object>} [actions=[]]
+ * @returns {HTMLDivElement}
+ */
 export function createTooltipActionGroup(actions = []) {
 	const group = document.createElement('div');
 	group.className = ACTIONS_CLASS;
@@ -233,6 +356,7 @@ export function createTooltipActionGroup(actions = []) {
 	return group;
 }
 
+/** @private */
 function createCloseButton(label, onDismiss) {
 	const btn = document.createElement('button');
 	btn.type = 'button';
@@ -248,6 +372,13 @@ function createCloseButton(label, onDismiss) {
 	return btn;
 }
 
+/**
+ * Compose the pinned tooltip's DOM shell: header + body + state badge +
+ * action groups (separated by a divider). Used by
+ * {@link showPinnedChartTooltip}.
+ *
+ * @private
+ */
 function buildPinnedShell({ headerTitle, content, actionSets, stateBadge, closeLabel, onDismiss }) {
 	const wrapper = document.createElement('div');
 
@@ -291,6 +422,14 @@ function buildPinnedShell({ headerTitle, content, actionSets, stateBadge, closeL
 	return wrapper;
 }
 
+/**
+ * Build the "included"/"excluded" badge shown inside pinned tooltips when
+ * the token participates in the global filter. Returns `null` (no badge)
+ * for any other state.
+ *
+ * @param {{ state: 'included' | 'excluded' | null, includedLabel?: string, excludedLabel?: string }} args
+ * @returns {HTMLDivElement | null}
+ */
 export function createFilterStateBadge({ state, includedLabel, excludedLabel }) {
 	if (state !== 'included' && state !== 'excluded') return null;
 	const badge = document.createElement('div');
@@ -305,6 +444,14 @@ export function createFilterStateBadge({ state, includedLabel, excludedLabel }) 
 	return badge;
 }
 
+/**
+ * Build an action group with an optional label heading above it. Without
+ * a label, behaves identically to {@link createTooltipActionGroup}.
+ *
+ * @param {Array<Object>} actions
+ * @param {string} [label]
+ * @returns {HTMLElement}
+ */
 export function createNamedActionGroup(actions, label) {
 	const group = createTooltipActionGroup(actions);
 	group.classList.add(ACTION_GROUP_CLASS);
@@ -321,6 +468,23 @@ export function createNamedActionGroup(actions, label) {
 	return group;
 }
 
+/**
+ * Show a pinned tooltip at `(x, y)`: builds the shell + applies pin state
+ * in one call. Most charts call this directly after a click rather than
+ * combining `showChartTooltip` + `pinTooltip`.
+ *
+ * @param {Node | string} content
+ * @param {number} x
+ * @param {number} y
+ * @param {Object} [options]
+ * @param {string} [options.headerTitle]
+ * @param {() => void} [options.onDismiss]
+ * @param {() => { x: number, y: number }} [options.anchor]
+ * @param {Array<Node>} [options.actionSets]
+ * @param {Node | null} [options.stateBadge]
+ * @param {string} [options.closeLabel]
+ * @returns {void}
+ */
 export function showPinnedChartTooltip(content, x, y, options = {}) {
 	const {
 		headerTitle,

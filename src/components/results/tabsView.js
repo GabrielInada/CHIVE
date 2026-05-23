@@ -1,3 +1,12 @@
+/**
+ * Tabs view — preview / charts / dashboard switcher plus the global-filter
+ * trigger button that only shows on the charts tab.
+ *
+ * Listeners are wired exactly once (module-local flag); subsequent
+ * `updateTabs` calls just swap the current callbacks. This avoids
+ * accumulating duplicate listeners across re-renders.
+ */
+
 import { t } from '../../services/i18nService.js';
 import { countGlobalFilterRules, isGlobalFilterActive } from '../../utils/globalFilter.js';
 
@@ -5,6 +14,7 @@ let listenersRegistered = false;
 let currentOnChartConfigChange = null;
 let currentOnGlobalFilterOpen = null;
 
+/** @private */
 function getTabElements() {
 	return {
 		tabPreview: document.getElementById('tab-preview'),
@@ -19,6 +29,15 @@ function getTabElements() {
 	};
 }
 
+/**
+ * Wire tab + global-filter button click handlers. Idempotent — listeners
+ * are attached once, and subsequent calls only swap the currently-active
+ * callbacks.
+ *
+ * @param {(partial: Object) => void} onChartConfigChange
+ * @param {() => void} [onGlobalFilterOpen]
+ * @returns {void}
+ */
 export function setupTabListeners(onChartConfigChange, onGlobalFilterOpen) {
 	currentOnChartConfigChange = onChartConfigChange || null;
 	currentOnGlobalFilterOpen = onGlobalFilterOpen || null;
@@ -54,6 +73,13 @@ export function setupTabListeners(onChartConfigChange, onGlobalFilterOpen) {
 	listenersRegistered = true;
 }
 
+/**
+ * Apply the active-tab class to the right tab button + its panel. Hides
+ * the other panels via the same toggle.
+ *
+ * @param {'preview' | 'charts' | 'panel'} activeTab
+ * @returns {void}
+ */
 export function updateTabsUI(activeTab) {
 	const { tabPreview, tabCharts, tabPanel, previewPanel, chartsPanel, dashboardPanel } = getTabElements();
 	if (!tabPreview || !tabCharts || !tabPanel || !previewPanel || !chartsPanel || !dashboardPanel) return;
@@ -70,6 +96,19 @@ export function updateTabsUI(activeTab) {
 	dashboardPanel.classList.toggle('ativo', panelActive);
 }
 
+/**
+ * Update the global-filter trigger button: visibility (charts tab only),
+ * disabled state, active-class, and the label/badge text that reflect
+ * the current filter rule count and filtered-row counts.
+ *
+ * @param {Object} args
+ * @param {'preview' | 'charts' | 'panel'} args.activeTab
+ * @param {boolean} args.hasDataset
+ * @param {Object} args.globalFilter
+ * @param {number} args.filteredCount
+ * @param {number} args.totalCount
+ * @returns {void}
+ */
 export function updateGlobalFilterTrigger({
 	activeTab,
 	hasDataset,
@@ -113,6 +152,19 @@ export function updateGlobalFilterTrigger({
 	}
 }
 
+/**
+ * Public entry: combined `setupTabListeners` + `updateTabsUI` +
+ * (optional) `updateGlobalFilterTrigger`. Called once per render of the
+ * data interface.
+ *
+ * @param {'preview' | 'charts' | 'panel'} activeTab
+ * @param {(partial: Object) => void} onChartConfigChange
+ * @param {*} _configIgnored - Kept for backward signature compatibility.
+ * @param {Object} [options]
+ * @param {() => void} [options.onGlobalFilterOpen]
+ * @param {{ hasDataset: boolean, globalFilter: Object, filteredCount: number, totalCount: number }} [options.triggerState]
+ * @returns {void}
+ */
 export function updateTabs(activeTab, onChartConfigChange, _configIgnored, options = {}) {
 	setupTabListeners(onChartConfigChange, options.onGlobalFilterOpen);
 	updateTabsUI(activeTab);

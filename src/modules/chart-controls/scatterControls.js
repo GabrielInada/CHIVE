@@ -1,3 +1,15 @@
+/**
+ * Scatter-plot controls module.
+ *
+ * Builds the right-sidebar control group for the scatter plot and wires
+ * its listeners. Largest of the per-chart modules (~550 lines) because of
+ * the axis-scale (linear/log) cross-constraints, size-field/color-field
+ * mappings, and the optional OLS regression section.
+ *
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
+ */
+
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
@@ -15,6 +27,17 @@ import {
 } from './controlListenerHelpers.js';
 import { triggerLiveRender } from './livePreview.js';
 
+/**
+ * Build the scatter-plot control sections (Data, Display, Analytics, Styling).
+ *
+ * The Analytics section (collapsed by default) hosts the OLS regression
+ * toggles and confidence-interval controls.
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} numericOptions - Numeric column names; populates X/Y axes and size/color field selects.
+ * @param {string[]} [allOptions=[]] - All visible column names; categorical axes are derived as `allOptions - numericOptions`.
+ * @returns {HTMLElement[]} Array of `chart-control-section` elements.
+ */
 export function createScatterPlotControls(dataset, numericOptions, allOptions = []) {
 	const config = dataset.configGraficos.scatter;
 	const disabled = !dataset.configGraficos.scatter.enabled;
@@ -339,6 +362,17 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	]);
 }
 
+/**
+ * Wire listeners for every scatter-plot control. The X/Y axis selects have
+ * custom listeners that lock the corresponding scale to `'linear'` when
+ * the user picks a non-numeric column.
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} numericas
+ * @param {string[]} allOptions
+ * @param {() => void} [onConfigChanged]
+ * @returns {void}
+ */
 export function setupScatterPlotControlListeners(dataset, numericas, allOptions, onConfigChanged) {
 	const categoricas = allOptions.filter(option => !numericas.includes(option));
 
@@ -524,11 +558,32 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 	}
 }
 
+/**
+ * Pick the `preferredIndex`th option, excluding `avoid`. Falls back to the
+ * first available option, then `null`. Used by {@link computeDefaults} to
+ * choose Y as the second numeric column (or first when only one exists).
+ *
+ * @private
+ * @param {string[]} options
+ * @param {number} [preferredIndex=0]
+ * @param {string | null} [avoid=null]
+ * @returns {string | null}
+ */
 function pickPreferred(options, preferredIndex = 0, avoid = null) {
 	const filtered = options.filter(opt => opt !== avoid);
 	return filtered[preferredIndex] ?? filtered[0] ?? null;
 }
 
+/**
+ * Compute the scatter plot's activation defaults. X prefers the user's
+ * current pick → first numeric → first column. Y picks the second numeric
+ * column that is not also X. Each axis scale falls back to `'linear'` when
+ * its column is non-numeric.
+ *
+ * @param {Dataset} dataset
+ * @param {ChartControlContext} ctx
+ * @returns {{ x: string | null, y: string | null, xScale: 'linear' | 'log', yScale: 'linear' | 'log' }}
+ */
 export function computeDefaults(dataset, ctx) {
 	const config = dataset.configGraficos || {};
 	const currentX = config.scatter?.x;

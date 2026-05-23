@@ -1,3 +1,17 @@
+/**
+ * Pie-chart controls module.
+ *
+ * Builds the right-sidebar control group for the pie chart and wires its
+ * listeners. Notable: per-slice color picker grid (one color input per
+ * category), palette presets that map an N-color palette to N sectors,
+ * and cross-constraint logic between inner/outer radius sliders.
+ *
+ * Slice colors persist as `config.customSliceColors[categoryToken]`.
+ *
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
+ */
+
 import { CHART_COLORS, PIE_CHART } from '../../config/charts.js';
 import { isNullish } from '../../utils/formatters.js';
 import { compareStrings } from '../../utils/chartFilters.js';
@@ -16,6 +30,17 @@ import {
 	setupSliderListeners,
 } from './controlListenerHelpers.js';
 
+/**
+ * Compute the category-token order that will appear in the rendered pie
+ * (descending by aggregate, with a string tiebreaker so order is stable).
+ * Used to drive the per-slice color picker grid and the palette-preset
+ * mapping. Missing values bucket under `'—'`.
+ *
+ * @private
+ * @param {Dataset} dataset
+ * @param {Object} config - The pie config block.
+ * @returns {string[]}
+ */
 function getPieSectorValues(dataset, config) {
 	if (!config?.category || !Array.isArray(dataset?.dados)) return [];
 
@@ -42,6 +67,19 @@ function getPieSectorValues(dataset, config) {
 		.map(([category]) => category);
 }
 
+/**
+ * Build the pie-chart control sections (Data, Display, Styling).
+ *
+ * The Styling section conditionally includes the palette preset and
+ * per-slice color picker grid — they appear only when the chart has
+ * sectors to color (i.e. a non-empty category column).
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} categoryOptions - Categorical (or fallback "all") column names for the category select.
+ * @param {string[]} numericOptions - Numeric column names; populates the sum value-column select.
+ * @param {string[]} [allColumns=[]] - All visible column names; kept for API parity.
+ * @returns {HTMLElement[]} Array of `chart-control-section` elements.
+ */
 export function createPieChartControls(dataset, categoryOptions, numericOptions, allColumns = []) {
 	const config = dataset.configGraficos.pie;
 	const sectorValues = getPieSectorValues(dataset, config);
@@ -313,6 +351,15 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 	]);
 }
 
+/**
+ * Build the per-slice color picker grid for the pie chart. One color
+ * input per sector value; commits write into `customSliceColors`.
+ *
+ * @private
+ * @param {Dataset} dataset
+ * @param {string[]} sectorValues - Category tokens in the order they appear in the rendered pie.
+ * @returns {HTMLElement}
+ */
 function updatePieColorPickerGrid(dataset, sectorValues) {
 	return createColorPickerGridControl(
 		'viz-pie-color-grid',
@@ -325,6 +372,23 @@ function updatePieColorPickerGrid(dataset, sectorValues) {
 }
 
 
+/**
+ * Wire listeners for every pie-chart control. Handles cross-constraints
+ * between inner/outer radius sliders, the `measureMode` ↔ `valueColumn`
+ * dependency, the Reset Zoom button, palette-preset → per-slice color
+ * mapping, and per-slice color picker grid (live `input` writes via the
+ * non-emitting facade, `change` commits through the emitting facade).
+ *
+ * The `allColumnsOrCallback` parameter is overloaded for backward
+ * compatibility (callback in arg 4 or arg 5).
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} basePie - Categorical (or fallback "all") column names; kept for parity.
+ * @param {string[]} numericas - Numeric column names; used to validate the value-column select.
+ * @param {string[] | (() => void)} [allColumnsOrCallback]
+ * @param {() => void} [onConfigChangedMaybe]
+ * @returns {void}
+ */
 export function setupPieChartControlListeners(dataset, basePie, numericas, allColumnsOrCallback = [], onConfigChangedMaybe) {
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
@@ -494,6 +558,15 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 	});
 }
 
+/**
+ * Compute the pie chart's activation defaults. Preserves the user's
+ * current `category` and `valueColumn` when they still match visible
+ * columns; otherwise falls back to the first available column.
+ *
+ * @param {Dataset} dataset
+ * @param {ChartControlContext} ctx
+ * @returns {{ category: string | null, valueColumn: string | null }}
+ */
 export function computeDefaults(dataset, ctx) {
 	const currentCat = dataset.configGraficos?.pie?.category;
 	const currentVal = dataset.configGraficos?.pie?.valueColumn;

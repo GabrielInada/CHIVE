@@ -1,3 +1,17 @@
+/**
+ * Treemap controls module.
+ *
+ * Builds the right-sidebar control group for the treemap chart and wires
+ * its listeners. The treemap squarifies categories by a count/sum measure.
+ *
+ * Note: this module wires listeners by hand (per-element `addEventListener`)
+ * rather than via the `setupSelectListeners`/etc. helpers used by other
+ * modules — same effect, more verbose.
+ *
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
+ */
+
 import { CHART_COLORS, TREEMAP_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
@@ -6,6 +20,15 @@ import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import { createSelectControl } from './shared.js';
 
+/**
+ * Build the treemap control sections (Data, Display, Styling, Advanced).
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} categoryOptions - Categorical (or fallback "all") column names for the category select.
+ * @param {string[]} [numericOptions=[]] - Numeric column names; populates the sum value-column select.
+ * @param {string[]} [allColumns=[]] - All visible column names; kept for API parity.
+ * @returns {HTMLElement[]} Array of `chart-control-section` elements.
+ */
 export function createTreeMapControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
 	const config = dataset.configGraficos.treemap;
 	const measureMode = TREEMAP_CHART.measureModes.includes(config.measureMode) ? config.measureMode : 'count';
@@ -146,6 +169,20 @@ export function createTreeMapControls(dataset, categoryOptions, numericOptions =
 	]);
 }
 
+/**
+ * Wire listeners for every treemap control. Handles the `measureMode` ↔
+ * `valueColumn` cross-constraint and color-preset → primary-color mapping.
+ *
+ * The `allColumnsOrCallback` parameter is overloaded for backward
+ * compatibility (callback in arg 4 or arg 5).
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} baseCat - Categorical (or fallback "all") column names; kept for parity.
+ * @param {string[]} numericOptions
+ * @param {string[] | (() => void)} [allColumnsOrCallback]
+ * @param {() => void} [onConfigChangedMaybe]
+ * @returns {void}
+ */
 export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, allColumnsOrCallback = [], onConfigChangedMaybe) {
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
@@ -302,6 +339,15 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	});
 }
 
+/**
+ * Compute the treemap's activation defaults. Preserves the user's
+ * current `category` if it still matches a visible categorical column;
+ * otherwise falls back to the first available column.
+ *
+ * @param {Dataset} dataset
+ * @param {ChartControlContext} ctx
+ * @returns {{ category: string | null }}
+ */
 export function computeDefaults(dataset, ctx) {
 	const current = dataset.configGraficos?.treemap?.category;
 	return {

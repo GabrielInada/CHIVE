@@ -1,3 +1,14 @@
+/**
+ * Line-chart controls module.
+ *
+ * Builds the right-sidebar control group for the line chart and wires its
+ * listeners. The X-axis accepts any column type (numeric, categorical, or
+ * date) — date detection happens inside {@link computeDefaults}.
+ *
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
+ */
+
 import { CHART_COLORS, LINE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
@@ -18,6 +29,7 @@ import {
 	setupTextInputListener,
 } from './controlListenerHelpers.js';
 
+/** @private */
 function buildCurveOptions() {
 	return LINE_CHART.curveOptions.map(value => ({
 		value,
@@ -25,6 +37,7 @@ function buildCurveOptions() {
 	}));
 }
 
+/** @private */
 function buildMissingModeOptions() {
 	return LINE_CHART.missingModes.map(value => ({
 		value,
@@ -32,6 +45,7 @@ function buildMissingModeOptions() {
 	}));
 }
 
+/** @private */
 function buildAggregateOptions() {
 	return LINE_CHART.aggregateModes.map(value => ({
 		value,
@@ -39,6 +53,15 @@ function buildAggregateOptions() {
 	}));
 }
 
+/**
+ * Build the line-chart control sections (Data, Styling, Display).
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} [numericOptions=[]] - Numeric column names; populates the Y-axis select.
+ * @param {string[]} [dateOptions=[]] - Date column names; reserved for future date-axis-only mode (not currently restricted).
+ * @param {string[]} [allOptions=[]] - All visible column names; populates the X-axis select.
+ * @returns {HTMLElement[]} Array of `chart-control-section` elements.
+ */
 export function createLineChartControls(dataset, numericOptions = [], dateOptions = [], allOptions = []) {
 	const config = dataset.configGraficos.line;
 	const disabled = !config.enabled;
@@ -183,6 +206,17 @@ export function createLineChartControls(dataset, numericOptions = [], dateOption
 	]);
 }
 
+/**
+ * Wire listeners for every line-chart control element. The X-axis accepts
+ * any column from `allOptions`; the Y-axis is restricted to `numericOptions`.
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} numericOptions
+ * @param {string[]} dateOptions - Currently unused (reserved for date-axis mode).
+ * @param {string[]} allOptions - All visible columns; used to validate the X-axis select.
+ * @param {() => void} [onConfigChanged]
+ * @returns {void}
+ */
 export function setupLineChartControlListeners(dataset, numericOptions, dateOptions, allOptions, onConfigChanged) {
 	void dateOptions;
 
@@ -241,6 +275,15 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	setupColorInputListener('viz-input-line-ghost-color', 'ghostStrokeColor', LINE_CHART.defaultGhostStrokeColor, dataset, 'line', onConfigChanged);
 }
 
+/**
+ * Compute the line chart's activation defaults. The X-axis prefers the
+ * user's current pick → first date column → first numeric → first
+ * available. The Y-axis picks the first numeric column that is not also X.
+ *
+ * @param {Dataset} dataset
+ * @param {ChartControlContext} ctx
+ * @returns {{ x: string | null, y: string | null }}
+ */
 export function computeDefaults(dataset, ctx) {
 	const currentX = dataset.configGraficos?.line?.x;
 	const currentY = dataset.configGraficos?.line?.y;

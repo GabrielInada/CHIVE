@@ -1,8 +1,21 @@
+/**
+ * Pie-chart section adapter. See `barChartSection.js` for the pattern.
+ */
+
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderPieChart } from '../../../modules/visualizations/index.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
 import { showChartMessage } from './sharedRenderHelpers.js';
 
+/**
+ * Render the pie-chart section.
+ *
+ * @param {Object} args
+ * @param {Object} args.config
+ * @param {Array<Object<string, *>>} args.rows
+ * @param {Object} args.filterCallbacks
+ * @returns {void}
+ */
 export function renderPieChartSection({ config, rows, filterCallbacks }) {
 	const block = document.getElementById(CHART_BLOCKS.pie);
 	const container = document.getElementById(CHART_CONTAINERS.pie);

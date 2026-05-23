@@ -1,8 +1,25 @@
+/**
+ * Bar-chart section adapter. Validates the bar config, looks up the section
+ * DOM, builds the localized labels bag, delegates to {@link renderBarChart},
+ * and surfaces a friendly "no data" message when the renderer fails.
+ *
+ * Mirror of the other `*ChartSection` modules in this directory.
+ */
+
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderBarChart } from '../../../modules/visualizations/index.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
 import { showChartMessage } from './sharedRenderHelpers.js';
 
+/**
+ * Render the bar-chart section for the current dataset.
+ *
+ * @param {Object} args
+ * @param {Object} args.config - The bar config block (`configGraficos.bar`).
+ * @param {Array<Object<string, *>>} args.rows - Already filtered by the global filter.
+ * @param {Object} args.filterCallbacks - Bag of tooltip filter action handlers.
+ * @returns {void}
+ */
 export function renderBarChartSection({ config, rows, filterCallbacks }) {
 	const block = document.getElementById(CHART_BLOCKS.bar);
 	const container = document.getElementById(CHART_CONTAINERS.bar);

@@ -1,3 +1,17 @@
+/**
+ * Pie-chart renderer.
+ *
+ * Renders a D3 pie/donut with Top-N truncation, optional pad-angle gaps,
+ * inside/outside slice labels, zoom, and pinned tooltips for filter
+ * actions. Slice colors can be palette-derived (auto) or per-slice overrides
+ * (`customSliceColors`).
+ *
+ * Internal D3 helpers (arc/pie generators, label placement, zoom integration)
+ * are intentionally undocumented per the Tier 5 plan.
+ *
+ * @typedef {import('../../types.js').Result} Result
+ */
+
 import { arc, pie, select, zoom, zoomIdentity } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
@@ -15,10 +29,29 @@ import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
 import { buildSliceColor as _buildSliceColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
+/** @private */
 function buildSliceColor(baseHex, index) {
 	return _buildSliceColor(baseHex, index, CHART_COLORS.pie);
 }
 
+/**
+ * Render a pie chart into `container`. Returns `ok()` on success, or
+ * `fail()` when required arguments are missing or the data has no
+ * non-zero sectors.
+ *
+ * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
+ * `topN`, `topNMode` ('other' | 'truncate'), `innerRadius`/`outerRadius`,
+ * `padAngle`, `zoomScale`, `showCategoryLabel`/`showValueLabel`/
+ * `showLegend`, `labelPosition` ('inside' | 'outside'), `color`,
+ * `customSliceColors` (per-token overrides), `colorScheme`, `customTitle`,
+ * `chartHeight`, `locale`.
+ *
+ * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
+ * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {string} colunaCategoria - Categorical column name (required).
+ * @param {Object} [opcoes={}] - Render options bag.
+ * @returns {Result}
+ */
 export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return fail();
 

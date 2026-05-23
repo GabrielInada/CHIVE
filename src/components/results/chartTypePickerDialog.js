@@ -1,5 +1,17 @@
+/**
+ * Chart-type picker dialog. A modal grid of cards (one per chart type)
+ * that resolves with the chosen chart type, `null` for cancel, or
+ * `{ chartType: null }` for the explicit "Clear" action.
+ */
+
 import { CHART_TYPES, PREVIEW_SVGS, CATEGORY_KEYS } from '../../modules/chart-controls/chartTypes.js';
 
+/**
+ * Build one chart-type card: preview SVG, name, category tag,
+ * description. `isActive` styles the currently selected card.
+ *
+ * @private
+ */
 function buildChartCard(type, translate, isActive) {
 	const card = document.createElement('button');
 	card.type = 'button';
@@ -30,6 +42,19 @@ function buildChartCard(type, translate, isActive) {
 	return card;
 }
 
+/**
+ * Open the chart-type picker dialog. Returns a Promise that resolves
+ * with the user's choice:
+ *
+ *   - `{ chartType: 'bar' | 'scatter' | ... }` — a chart card was clicked.
+ *   - `{ chartType: null }` — the "Clear" button was clicked.
+ *   - `null` — cancel, Escape, or backdrop click.
+ *
+ * @param {Object} args
+ * @param {string | null} [args.activeChartType=null] - Pre-selected card.
+ * @param {(key: string) => string} args.translate
+ * @returns {Promise<{ chartType: string | null } | null>}
+ */
 export function openChartTypePickerDialog({ activeChartType = null, translate }) {
 	return new Promise(resolve => {
 		const overlay = document.createElement('div');

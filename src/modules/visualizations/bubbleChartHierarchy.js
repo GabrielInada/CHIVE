@@ -1,5 +1,21 @@
+/**
+ * Bubble-chart hierarchy helpers.
+ *
+ * Pure utilities that turn rows into bubble nodes, then group them into a
+ * multi-level hierarchy ready for D3's `pack` layout. Used by
+ * `bubbleChart.js` and covered by unit tests.
+ */
+
 import { compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
 
+/**
+ * Resolve the effective nesting-column list from a bubble options bag.
+ * Prefers the canonical `nestingColumns` array; falls back to the legacy
+ * single `groupColumn`. De-duplicates while preserving order.
+ *
+ * @param {Object} opcoes
+ * @returns {string[]}
+ */
 export function resolveNestingColumns(opcoes) {
 	if (Array.isArray(opcoes.nestingColumns) && opcoes.nestingColumns.length > 0) {
 		return [...new Set(opcoes.nestingColumns.filter(c => c && typeof c === 'string'))];
@@ -10,6 +26,25 @@ export function resolveNestingColumns(opcoes) {
 	return [];
 }
 
+/**
+ * Aggregate rows into bubbles (one per distinct category value). Each
+ * bubble carries its measured value, top-level group, and the full
+ * nesting-path through the configured nesting columns.
+ *
+ * Failure modes: sum/mean without `valueColumn` → `'no-value-column'`;
+ * sum/mean over rows with no parseable values → `'no-numeric'`. On
+ * success, sorts bubbles descending by value (alphabetical tiebreak) and
+ * applies the `topN` cap.
+ *
+ * @param {Object} args
+ * @param {Array<Object<string, *>>} args.rows
+ * @param {string} args.categoryColumn
+ * @param {'count' | 'sum' | 'mean'} args.measureMode
+ * @param {string | null} args.valueColumn
+ * @param {string[]} args.nestingColumns
+ * @param {number} args.topN - `0` or negative → keep all bubbles.
+ * @returns {{ bubbles: Array<{ category: string, value: number, group: string, nestingPath: string[] }>, reason: 'no-value-column' | 'no-numeric' | null }}
+ */
 export function aggregateBubbles({ rows, categoryColumn, measureMode, valueColumn, nestingColumns, topN }) {
 	if (measureMode !== 'count' && !valueColumn) {
 		return { bubbles: [], reason: 'no-value-column' };
@@ -70,6 +105,15 @@ export function aggregateBubbles({ rows, categoryColumn, measureMode, valueColum
 	return { bubbles, reason: null };
 }
 
+/**
+ * Convert flat bubbles into the nested tree shape D3's `hierarchy()`
+ * expects. Inserts intermediate group nodes at each nesting level; leaves
+ * are appended as children of their innermost ancestor.
+ *
+ * @param {Array<{ nestingPath: string[] }>} bubbles
+ * @param {string[]} nestingColumns
+ * @returns {{ children: Array<{ groupName: string, depth: number, pathKey: string, children: Array<*> }> }}
+ */
 export function buildMultiLevelHierarchy(bubbles, nestingColumns) {
 	const root = { children: new Map() };
 
@@ -91,6 +135,7 @@ export function buildMultiLevelHierarchy(bubbles, nestingColumns) {
 		current.leaves.push(bubble);
 	}
 
+	/** @private */
 	function convertNode(mapNode) {
 		if (mapNode.leaves) {
 			const intermediateChildren = Array.from(mapNode.children.values()).map(convertNode);
@@ -113,6 +158,14 @@ export function buildMultiLevelHierarchy(bubbles, nestingColumns) {
 	return { children: rootChildren };
 }
 
+/**
+ * Walk up the D3 hierarchy node's parent chain to find the top-level
+ * group node (one level below the root). Used to color bubbles by their
+ * outermost group.
+ *
+ * @param {*} node - A D3 `hierarchy()` node with `.parent` and `.data`.
+ * @returns {string}
+ */
 export function getTopLevelGroup(node) {
 	let current = node;
 	while (current.parent && current.parent.parent) {
@@ -121,10 +174,24 @@ export function getTopLevelGroup(node) {
 	return current.data.groupName || current.data.group || current.data.category || '—';
 }
 
+/**
+ * True when `node` is an intermediate group (has children, not at root).
+ *
+ * @param {*} node - A D3 `hierarchy()` node.
+ * @returns {boolean}
+ */
 export function isIntermediate(node) {
 	return node.depth > 0 && node.children && node.children.length > 0;
 }
 
+/**
+ * True when `node` lives somewhere beneath `ancestor` in the hierarchy.
+ * O(depth) — walks up via `.parent`.
+ *
+ * @param {*} node
+ * @param {*} ancestor
+ * @returns {boolean}
+ */
 export function isDescendantOf(node, ancestor) {
 	let current = node.parent;
 	while (current) {

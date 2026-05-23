@@ -1,3 +1,15 @@
+/**
+ * Bar-chart renderer.
+ *
+ * Renders a vertical bar chart with count/sum/mean aggregation, Top-N
+ * trimming, color modes (uniform / auto gradient / manual threshold), and
+ * click-to-filter tooltip actions. Internal D3 helpers (scale setup, label
+ * positioning, gradient interpolation) are intentionally undocumented per
+ * the Tier 5 plan — only the entry signature is part of the public API.
+ *
+ * @typedef {import('../../types.js').Result} Result
+ */
+
 import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
@@ -35,6 +47,28 @@ function ordenarCategorias(linhas, ordenacao) {
 	return linhas.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]));
 }
 
+/**
+ * Render a bar chart into `container`. Returns `ok()` on success, or
+ * `fail(reason)` on early exit:
+ *   - no `colunaCategoria` or no container → `fail()`
+ *   - `measureMode` is sum/mean but `valueColumn` is missing → `fail('no-value-column')`
+ *   - sum/mean over no parseable numbers → `fail('no-numeric')`
+ *   - empty data → `fail()`
+ *
+ * The full option bag varies; see `BAR_CHART` and `CHART_DIMENSIONS` in
+ * `config/charts.js` for the field set and defaults. Frequently used keys
+ * include `ordenacao` (count-desc/asc, label-asc/desc), `topN`, `measureMode`
+ * ('count' | 'sum' | 'mean'), `valueColumn`, `colorMode`
+ * ('uniform' | 'gradient' | 'gradient-manual'), color stops, axis label
+ * toggles, `customTitle`, `chartHeight`, `locale`, and the localized
+ * `labels`/`axisLabels` bags.
+ *
+ * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
+ * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {string} colunaCategoria - Categorical column name (required).
+ * @param {Object} [opcoes={}] - Render options bag.
+ * @returns {Result}
+ */
 export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return fail();
 	const ordenacao = opcoes.ordenacao || BAR_CHART.defaultSort;

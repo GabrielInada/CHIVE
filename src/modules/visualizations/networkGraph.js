@@ -1,3 +1,20 @@
+/**
+ * Network-graph renderer.
+ *
+ * Builds a D3 force-directed graph from row-encoded edges. Nodes are
+ * derived from the union of source/target columns; edge weights and node
+ * groups are optional accessors. Supports pan/zoom and node drag.
+ *
+ * The simulation instance is cached on the container under
+ * `SIMULATION_KEY` so re-renders can reuse the same force layout (avoids
+ * the visual jump that a fresh simulation would cause).
+ *
+ * Internal D3 helpers (force setup, drag handlers, zoom integration) are
+ * intentionally undocumented per the Tier 5 plan.
+ *
+ * @typedef {import('../../types.js').Result} Result
+ */
+
 import {
 	forceCenter,
 	forceLink,
@@ -77,6 +94,24 @@ function stopPreviousSimulation(container) {
 	}
 }
 
+/**
+ * Render a network graph into `container`. Returns `ok()` on success, or
+ * `fail()` when required arguments are missing or no edges resolve from
+ * the data.
+ *
+ * Common option keys: `weight` (numeric column for edge thickness), `group`
+ * (categorical column for node coloring), `nodeRadius`, `linkDistance`,
+ * `chargeStrength`, `linkOpacity`, `zoomScale`, `alphaDecay`,
+ * `showNodeLabels`, `showLegend`, color and palette inputs, axis-style
+ * inputs, `customTitle`, `chartHeight`, `locale`.
+ *
+ * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
+ * @param {Array<Object<string, *>>} dados - Source rows (one row per edge).
+ * @param {string} sourceColumn - Column holding the source node identifier.
+ * @param {string} targetColumn - Column holding the target node identifier.
+ * @param {Object} [opcoes={}] - Render options bag.
+ * @returns {Result}
+ */
 export function renderNetworkGraph(container, dados, sourceColumn, targetColumn, opcoes = {}) {
 	if (!container || !sourceColumn || !targetColumn) return fail();
 
