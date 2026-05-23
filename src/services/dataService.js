@@ -446,7 +446,7 @@ export function detectDelimiter(firstLine) {
  */
 export function parseCsv(text) {
 	if (!text || text.trim().length === 0) {
-		throw new Error('O arquivo CSV está vazio.');
+		throw new Error('The CSV file is empty.');
 	}
 
 	const firstLine = text.split(/\r?\n/).find(line => line.trim().length > 0) || '';
@@ -454,7 +454,7 @@ export function parseCsv(text) {
 	const rows = dsvFormat(delimiter).parse(text);
 
 	if (rows.columns) delete rows.columns;
-	if (rows.length === 0) throw new Error('O arquivo CSV está vazio.');
+	if (rows.length === 0) throw new Error('The CSV file is empty.');
 
 	return rows;
 }
@@ -498,9 +498,9 @@ function stripDangerousKeys(value) {
  *
  * @param {string} text - Raw file content.
  * @returns {Array<Object<string, *>>} Parsed rows.
- * @throws {Error} `'O arquivo JSON contém erros de sintaxe…'` — `JSON.parse` failed.
- * @throws {Error} `'O arquivo JSON está vazio.'` / `'O array de dados no JSON está vazio.'` — zero rows.
- * @throws {Error} `'Formato JSON não reconhecido…'` — root is neither an array nor an object with an array-valued key.
+ * @throws {Error} `'JSON file contains syntax errors…'` — `JSON.parse` failed.
+ * @throws {Error} `'The JSON file is empty.'` / `'The data array in the JSON is empty.'` — zero rows.
+ * @throws {Error} `'Unrecognized JSON format…'` — root is neither an array nor an object with an array-valued key.
  */
 export function parseJson(text) {
 	let parsed;
@@ -508,11 +508,11 @@ export function parseJson(text) {
 	try {
 		parsed = JSON.parse(text);
 	} catch {
-		throw new Error('O arquivo JSON contém erros de sintaxe. Verifique o formato.');
+		throw new Error('JSON file contains syntax errors. Verify the format.');
 	}
 
 	if (Array.isArray(parsed)) {
-		if (parsed.length === 0) throw new Error('O arquivo JSON está vazio.');
+		if (parsed.length === 0) throw new Error('The JSON file is empty.');
 		return stripDangerousKeys(parsed);
 	}
 
@@ -520,12 +520,12 @@ export function parseJson(text) {
 		const chaveArray = Object.keys(parsed).find(chave => Array.isArray(parsed[chave]));
 		if (chaveArray) {
 			const arr = parsed[chaveArray];
-			if (arr.length === 0) throw new Error('O array de dados no JSON está vazio.');
+			if (arr.length === 0) throw new Error('The data array in the JSON is empty.');
 			return stripDangerousKeys(arr);
 		}
 	}
 
-	throw new Error('Formato JSON não reconhecido. O arquivo deve ser um array de objetos: [{...}, {...}]');
+	throw new Error('Unrecognized JSON format. The file must be an array of objects: [{...}, {...}]');
 }
 
 /**

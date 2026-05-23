@@ -363,7 +363,7 @@ export function renderDataInterface(
 
   const config = mergeChartConfigWithDefaults(chartConfig);
 
-  // Detecta filtro ativo
+  // Detect active filter
   const numericNames = columns.filter(c => c.tipo === 'numero').map(c => c.nome);
   const textNames = columns.filter(c => c.tipo === 'texto').map(c => c.nome);
   const selectedArray = [...selectedNames];
@@ -373,7 +373,7 @@ export function renderDataInterface(
         : selectedArray.length === textNames.length && selectedArray.every(n => textNames.includes(n)) ? 'texto'
           : null;
 
-  // Renderiza botões fora do scroll
+  // Render buttons outside the scroll container
   const actionsContainer = document.getElementById('colunas-acoes');
   const columnsList = document.getElementById('lista-colunas-conteudo');
 
