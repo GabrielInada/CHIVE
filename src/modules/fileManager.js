@@ -1,11 +1,16 @@
 /**
- * CHIVE File Manager
- * 
+ * CHIVE File Manager.
+ *
  * Handles file upload and dataset management:
- * - File selection and parsing
- * - Dataset add/remove/select
- * - File validation
- * - Row limit handling
+ *   - File selection (input or drag-and-drop) and parsing via the worker
+ *   - Dataset add/remove/select
+ *   - File-format and size validation
+ *   - Row-limit handling
+ *   - Dataset joins (`createJoinedDataset`)
+ *
+ * @typedef {import('../types.js').Dataset} Dataset
+ * @typedef {import('../types.js').JoinDatasetResult} JoinDatasetResult
+ * @typedef {import('../types.js').JoinType} JoinType
  */
 
 import { t } from '../services/i18nService.js';
@@ -24,9 +29,13 @@ let onDatasetsChangeCallback = null;
 let confirmFn = message => window.confirm(message);
 
 /**
- * Initialize file manager
- * @param {Function} changeCallback - Called when dataset list changes
- * @param {Function} [confirmCallback] - Confirmation dialog function, defaults to window.confirm
+ * Initialize the file manager. Wire the change callback (invoked after
+ * each successful add/remove/select) and the confirmation function used
+ * for the over-limit file-size prompt. The confirmation hook is
+ * injectable for testing — production callers can omit it.
+ *
+ * @param {(() => void) | null} [changeCallback] - Called when the dataset list changes.
+ * @param {((message: string) => boolean) | null} [confirmCallback] - Defaults to `window.confirm`.
  */
 export function initFileManager(changeCallback = null, confirmCallback = null) {
 	onDatasetsChangeCallback = changeCallback;
@@ -34,8 +43,13 @@ export function initFileManager(changeCallback = null, confirmCallback = null) {
 }
 
 /**
- * Handle file selection (from input or drop)
- * @param {FileList} files - Files to process
+ * Process every file from the input or drop event. Failures on
+ * individual files are caught and routed to `showError`; the loop
+ * continues so a single bad file does not block the rest of the batch.
+ *
+ * The change callback fires once after the entire batch (not per file).
+ *
+ * @param {FileList | File[] | null | undefined} files
  * @returns {Promise<void>}
  */
 export async function handleFileUpload(files) {
@@ -58,8 +72,12 @@ export async function handleFileUpload(files) {
 }
 
 /**
- * Process a single file and add to datasets
+ * Process a single file in four stages: validate extension → confirm
+ * over-limit size → read via FileReader → ingest in the worker → assemble
+ * and add the Dataset. Throws on any non-recoverable error.
+ *
  * @private
+ * @param {File} file
  */
 async function processFileForDataset(file) {
 	// Validate file format
@@ -179,13 +197,20 @@ export function removeDatasetByIndex(index) {
 }
 
 /**
- * Get all loaded datasets
- * @returns {Array} Datasets
+ * @returns {Dataset[]} Live reference to the datasets array. Do not mutate.
  */
 export function getLoadedDatasets() {
 	return getAllDatasets();
 }
 
+/**
+ * Build a human-readable name for a joined dataset:
+ * `"<i18n prefix> <leftBase> + <rightBase> (<timestamp>)"`. Both bases
+ * are stripped of file extensions and truncated to 24 chars with an
+ * ellipsis when longer.
+ *
+ * @private
+ */
 function buildJoinDatasetName(leftName, rightName) {
 	const shorten = (value, max = 24) => {
 		const text = String(value || '').trim();
@@ -199,10 +224,35 @@ function buildJoinDatasetName(leftName, rightName) {
 	return `${t('chive-join-name-prefix')} ${leftBase} + ${rightBase} (${stamp})`;
 }
 
+/**
+ * Clamp `value` to a recognized join type; unknown values fall back to
+ * `'inner'`.
+ *
+ * @private
+ */
 function normalizeJoinType(value) {
 	return ['inner', 'left', 'right', 'full'].includes(value) ? value : 'inner';
 }
 
+/**
+ * Build a new dataset by joining two existing datasets. Reads the
+ * datasets by index from app state, runs `joinDatasets`, normalizes the
+ * resulting rows via `processData`, and adds the new dataset.
+ *
+ * Failure messages are translated i18n keys (`'chive-join-error-*'`)
+ * suitable for piping straight into `showError`.
+ *
+ * @param {Object} [spec]
+ * @param {number} spec.leftIndex - Index into `appState.data.datasets`.
+ * @param {number} spec.rightIndex
+ * @param {string[]} spec.leftKeys - Composite key columns from the left dataset.
+ * @param {string[]} spec.rightKeys - Same length as `leftKeys`.
+ * @param {string[]} [spec.leftColumns] - Columns from left to include; defaults to all.
+ * @param {string[]} [spec.rightColumns] - Columns from right to include; defaults to all.
+ * @param {JoinType} [spec.joinType='inner'] - Unknown values silently fall back to `'inner'`.
+ * @returns {JoinDatasetResult} On success: `{ ok: true, index, datasetName }`. On failure: `{ ok: false, message }`.
+ * @fires STATE_EVENTS.DATASET_ADDED - On success.
+ */
 export function createJoinedDataset(spec = {}) {
 	const datasets = getAllDatasets();
 	if (datasets.length < 2) {
@@ -283,8 +333,11 @@ export function createJoinedDataset(spec = {}) {
 }
 
 /**
- * Setup file input listeners
- * Called by main initialization
+ * Wire the file input + drop-zone listeners. Handles click-to-open,
+ * keyboard activation (Enter/Space), drag hover styling, and drop
+ * delegation into {@link handleFileUpload}. The input's `value` is
+ * cleared after each upload so re-selecting the same file still fires.
+ * Surfaces an error toast if either expected DOM element is missing.
  */
 export function setupFileInputListeners() {
 	const inputArquivo = document.getElementById('input-arquivo');

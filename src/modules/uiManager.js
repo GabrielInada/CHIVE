@@ -1,18 +1,24 @@
 /**
- * CHIVE UI Manager
- * 
+ * CHIVE UI Manager.
+ *
  * Manages UI state:
- * - Active tab switching (preview, charts, panel)
- * - Sidebar mode (dados, viz, panel)
- * - UI element visibility and states
+ *   - Active tab switching (preview, charts, panel)
+ *   - Sidebar mode (dados, viz, panel)
+ *   - UI element visibility and states
+ *
+ * @typedef {import('../types.js').SidebarMode} SidebarMode
+ * @typedef {'preview' | 'charts' | 'panel'} TabName
  */
 
 import { t } from '../services/i18nService.js';
 import { setSidebarMode } from './appState.js';
 
 /**
- * Get active tab name from user selection
- * @returns {string} Tab name: 'preview', 'charts', or 'panel'
+ * Read the currently-active tab from the DOM (whichever `[data-aba]`
+ * element carries the `ativo` class). Falls back to `'preview'` when no
+ * tab is marked active.
+ *
+ * @returns {TabName}
  */
 export function getActiveTab() {
 	const tabs = document.querySelectorAll('[data-aba]');
@@ -25,8 +31,15 @@ export function getActiveTab() {
 }
 
 /**
- * Switch to a tab and update UI
- * @param {string} tabName - Tab: 'preview', 'charts', or 'panel'
+ * Switch to a tab and apply the side-effect chain:
+ *   1. Toggle `ativo`/`inativo` classes on `[data-aba]` buttons.
+ *   2. Hide all `painel-*` panels except the one matching `tabName`.
+ *   3. Update the sidebar mode to match (`preview → dados`, `charts → viz`, `panel → panel`) via `setSidebarMode`.
+ *
+ * No-op when `tabName` is not a valid tab name.
+ *
+ * @param {TabName} tabName
+ * @fires STATE_EVENTS.SIDEBAR_MODE_CHANGED - Via `setSidebarMode` when the mode actually changes.
  */
 export function switchTab(tabName) {
 	const validTabs = ['preview', 'charts', 'panel'];
@@ -60,8 +73,10 @@ export function switchTab(tabName) {
 }
 
 /**
- * Update sidebar mode based on active tab
+ * Map a tab name to its sidebar mode and apply the change.
+ *
  * @private
+ * @param {TabName} tabName
  */
 function updateSidebarForTab(tabName) {
 	const sidebarMap = {
@@ -76,8 +91,11 @@ function updateSidebarForTab(tabName) {
 }
 
 /**
- * Update sidebar visibility based on current mode
- * @private
+ * Apply a sidebar mode to the DOM by toggling `ativo`/`inativo` classes
+ * on the three `sidebar-panel-*` containers. Pure DOM update — does not
+ * write to state.
+ *
+ * @param {SidebarMode} mode
  */
 export function updateSidebarUI(mode) {
 	const sidebars = {
@@ -95,9 +113,10 @@ export function updateSidebarUI(mode) {
 }
 
 /**
- * Show/hide tab panel
- * @param {string} tabName - Tab name
- * @param {boolean} visible - Show or hide
+ * Show or hide a single tab panel without touching the active-tab state.
+ *
+ * @param {TabName} tabName
+ * @param {boolean} visible
  */
 export function setTabVisibility(tabName, visible) {
 	const panelMap = {
@@ -113,7 +132,11 @@ export function setTabVisibility(tabName, visible) {
 }
 
 /**
- * Toggle sidebar collapsed state
+ * Toggle the `sidebar-collapsed` class on `<body>` and update the toggle
+ * button's `aria-expanded`, label, and visible chevron. No-op (returns
+ * `false`) when the toggle button is missing from the DOM.
+ *
+ * @returns {boolean} The new collapsed state, or `false` when the button is missing.
  */
 export function toggleSidebarCollapsed() {
 	const toggleBtn = document.getElementById('btn-toggle-sidebar');
@@ -138,8 +161,9 @@ export function toggleSidebarCollapsed() {
 }
 
 /**
- * Setup tab click listeners
- * Called by main initialization
+ * Wire click handlers on every `[data-aba]` element so clicking a tab
+ * delegates to {@link switchTab}. Called once during app boot from
+ * `eventHandlers.initializeAllEventHandlers`.
  */
 export function setupTabListeners() {
 	const tabs = document.querySelectorAll('[data-aba]');
@@ -152,7 +176,8 @@ export function setupTabListeners() {
 }
 
 /**
- * Setup sidebar toggle button listener
+ * Wire the click handler on the sidebar-toggle button to
+ * {@link toggleSidebarCollapsed}. No-op when the button is absent.
  */
 export function setupSidebarToggleListener() {
 	const toggleBtn = document.getElementById('btn-toggle-sidebar');

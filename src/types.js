@@ -381,4 +381,43 @@
  * )} PresetSource
  */
 
+// ─── UI feedback (feedbackUI.showProgress) ──────────────────────────────
+
+/**
+ * Imperative handle returned by `feedbackUI.showProgress` for driving a
+ * non-modal progress toast. The toast has three terminal states:
+ *   - **In flight** — `update()` reports percent/label progress.
+ *   - **Succeeded** — `succeed()` flips the toast to its success style and
+ *     auto-closes after `autoCloseMs` (default 1500).
+ *   - **Failed**    — `fail()` flips the toast to its failure style and
+ *     stays open until the user dismisses it.
+ *
+ * `close()` is idempotent and removes the toast from the DOM.
+ * `onCancel(handler)` wires the toast's × button to the host's cancel
+ * path while the toast is in-flight; after `succeed()`/`fail()`, × just
+ * closes the toast.
+ *
+ * @typedef {Object} ProgressHandle
+ * @property {(percent: number, label?: string) => void} update
+ * @property {(message?: string, autoCloseMs?: number) => void} succeed
+ * @property {(message?: string) => void} fail
+ * @property {() => void} close
+ * @property {(handler: () => void) => void} onCancel
+ */
+
+// ─── Join workflow (fileManager.createJoinedDataset) ────────────────────
+
+/**
+ * Result returned by `fileManager.createJoinedDataset`. Uses `message`
+ * rather than `reason` (the generic `Result` shape's failure field), so
+ * callers route failures into `showError` directly. On success the new
+ * dataset's index in `appState.data.datasets` and the generated name
+ * are returned.
+ *
+ * @typedef {(
+ *   { ok: true, index: number, datasetName: string }
+ *   | { ok: false, message: string }
+ * )} JoinDatasetResult
+ */
+
 export {};

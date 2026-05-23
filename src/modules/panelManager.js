@@ -1,14 +1,18 @@
 /**
- * CHIVE Panel Manager
+ * CHIVE Panel Manager.
  *
  * Orchestrator module that coordinates panel composition:
- * - Adding/removing charts
- * - Managing slots and layouts
- * - Delegating rendering to panelRenderer
- * - Delegating resize to panelResize
- * - Delegating export to panelExporter
+ *   - Adding/removing chart snapshots
+ *   - Managing block slots and layouts
+ *   - Delegating rendering to `panel/panelRenderer.js`
+ *   - Delegating resize to `panel/panelResize.js`
+ *   - Delegating export to `panel/panelExporter.js`
  *
- * Security note: Uses textContent for all user-provided names to prevent XSS.
+ * Security note: uses `textContent` for all user-provided names to prevent XSS.
+ *
+ * @typedef {import('../types.js').ChartSnapshot} ChartSnapshot
+ * @typedef {import('../types.js').Result} Result
+ * @typedef {import('../types.js').PanelTemplateId} PanelTemplateId
  */
 
 import { t } from '../services/i18nService.js';
@@ -47,8 +51,10 @@ let feedbackCallback = null;
 let panelManagerInitialized = false;
 
 /**
- * Initialize panel manager
- * @param {Function} feedbackFn - Optional callback for feedback messages
+ * Initialize the panel manager. Wires panel-related state-event listeners
+ * exactly once; subsequent calls update only the feedback callback.
+ *
+ * @param {((message: string, kind?: 'success' | 'error') => void) | null} [feedbackFn] - Callback for user feedback. When `null`, panel actions fall back to silent operation.
  */
 export function initPanelManager(feedbackFn = null) {
 	// Always update the feedback callback — callers may legitimately
@@ -100,10 +106,16 @@ function handleLayoutChange() {
 }
 
 /**
- * Add chart snapshot from visualization
- * @param {string} containerId - DOM element ID of chart container
- * @param {string} chartBaseName - Chart display name
- * @returns {Object} { ok: boolean, reason?: string }
+ * Capture a chart's current state as a snapshot and add it to the panel.
+ * Reads the active dataset, merges its `configGraficos` with chart defaults,
+ * applies the global filter, and stores a {@link ChartSnapshot} via the
+ * panel facade.
+ *
+ * @param {string} containerId - DOM element ID of the chart container (unused inside the function; preserved for caller traceability).
+ * @param {string} chartBaseName - Display name for the snapshot.
+ * @param {Object | null} [metadata] - Chart-specific metadata (must include `type: ChartTypeKey`). When the type is missing or not supported, the call fails with `'unknown-type'`.
+ * @returns {Result} On success: `{ ok: true, chartId }` with the new snapshot id. On failure: `{ ok: false, reason }` where reason is `'unknown-type'`, `'no-dataset'`, or `'add-error'`.
+ * @fires STATE_EVENTS.CHART_ADDED - On success.
  */
 export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 	try {
@@ -145,8 +157,11 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 }
 
 /**
- * Remove chart from panel
- * @param {string} chartId - Chart identifier
+ * Remove a chart snapshot from the panel. Delegates to the panel facade,
+ * then re-renders sidebar + canvas.
+ *
+ * @param {number | string} chartId
+ * @fires STATE_EVENTS.CHART_REMOVED - When the snapshot existed.
  */
 export function removeChartFromPanel(chartId) {
 	removeChartSnapshot(chartId);
@@ -155,40 +170,51 @@ export function removeChartFromPanel(chartId) {
 }
 
 /**
- * Get chart snapshot by ID
- * @param {string} chartId - Chart identifier
- * @returns {Object|null} Chart snapshot or null
+ * Look up a chart snapshot by id.
+ *
+ * @param {number | string} chartId
+ * @returns {ChartSnapshot | null} Live reference, or `null` when not found.
  */
 export function getChartById(chartId) {
 	return getChartSnapshot(chartId);
 }
 
 /**
- * Get layout configuration by ID
- * @param {string} layoutId - Layout identifier
- * @returns {Object} Layout configuration
+ * Look up a layout descriptor from `panel/layoutConfig.js`.
+ *
+ * @param {PanelTemplateId} layoutId
+ * @returns {Object} Layout configuration (template definition, slot list, defaults).
  */
 export function getLayoutConfig(layoutId) {
 	return getPanelLayoutConfig(layoutId);
 }
 
 /**
- * Render panel sidebar (list of saved charts)
+ * Render the panel sidebar (list of saved chart snapshots). The actual
+ * rendering lives in `panel/panelRenderer.js`; this entry passes the
+ * `removeChartFromPanel` callback so sidebar items can be deleted.
  */
 export function renderSidebarPanel() {
 	renderSidebar(removeChartFromPanel);
 }
 
 /**
- * Render panel canvas (layout with slots)
+ * Render the panel canvas (layout templates with mounted chart slots).
+ * Re-rendering is recursive: the rendered canvas calls `renderCanvasPanel`
+ * itself when blocks mutate, which is why the function passes its own
+ * reference into the renderer.
  */
 export function renderCanvasPanel() {
 	renderCanvas(renderCanvasPanel, feedbackCallback);
 }
 
 /**
- * Change panel layout and re-render
- * @param {string} layoutId - Layout identifier
+ * Change the panel's first-block layout template and re-render.
+ * No-op when `layoutId` is not a known layout, or when the panel has no
+ * blocks.
+ *
+ * @param {PanelTemplateId} layoutId
+ * @fires STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED - When the change applies.
  */
 export function changeLayout(layoutId) {
 	if (!LAYOUTS_PAINEL[layoutId]) {
@@ -200,15 +226,19 @@ export function changeLayout(layoutId) {
 }
 
 /**
- * Export panel layout as SVG
- * @returns {Object} { ok: boolean, reason?: string }
+ * Export the rendered panel as an SVG file. Delegates to
+ * `panel/panelExporter.js`.
+ *
+ * @returns {Result} `{ ok: true }` on success; `{ ok: false, reason }` where reason is `'canvas-not-found'` or `'empty-canvas'`.
  */
 export function exportPanelLayoutSvg() {
 	return exportSvg(feedbackCallback);
 }
 
 /**
- * Setup panel event listeners (layout selector, export button)
+ * Wire change/click listeners on the layout `<select>` and the export
+ * button. Idempotent in practice — both elements get a fresh listener
+ * each call, so callers should invoke this at most once.
  */
 export function setupPanelEventListeners() {
 	const selectLayout = document.getElementById('select-panel-layout');
@@ -244,14 +274,18 @@ export function setupPanelEventListeners() {
 }
 
 /**
- * Initialize layout selector dropdown
+ * Populate the layout `<select>` with the available templates and the
+ * currently-active layout pre-selected. Pure rendering call; safe to
+ * invoke on every state change.
  */
 export function initializeLayoutSelector() {
 	fillLayoutSelect();
 }
 
 /**
- * Clear all panel data
+ * Reset the panel to a single fresh `layout-2col` block and re-render.
+ *
+ * @fires STATE_EVENTS.PANEL_CLEARED
  */
 export function clearPanelData() {
 	clearPanel();

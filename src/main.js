@@ -1,19 +1,22 @@
 /**
  * CHIVE (Connected Hierarchical Interactive Visualization Engine)
- * Main Application Orchestrator
- * 
- * This refactored main.js coordinates all modularized components:
- * - appState: Centralized state management
- * - Modules: panelManager, uiManager, fileManager, eventHandlers, feedbackUI
- * - Features: chartFeatures
- * - Services: dataService, i18nService
- * - Components: resultsView
- * 
- * Architecture:
- * - All state in appState module
- * - Event coordination in eventHandlers module
- * - UI rendering delegated to specialized modules
- * - Main.js handles initialization and orchestration only
+ * — Main Application Orchestrator.
+ *
+ * Boot sequence (see {@link initializeApplication}):
+ *   1. Initialize i18n (await — must precede any translated render).
+ *   2. Hydrate persisted state from IndexedDB BEFORE wiring subscribers,
+ *      so restoration does not trigger a redundant save and the first
+ *      render sees the restored state.
+ *   3. Initialize state sync + expose backwards-compat globals.
+ *   4. Initialize fileManager / chart-controls / panelManager.
+ *   5. Wire global DOM listeners via `eventHandlers`.
+ *   6. Subscribe `refreshView` to dataset/columns/config state events.
+ *   7. Enable debounced auto-save; flush on `beforeunload`.
+ *   8. Initial render.
+ *   9. Re-render on locale changes.
+ *   10. Surface internal module errors via feedback toast.
+ *
+ * @typedef {import('./types.js').AppState} AppState
  */
 
 import { initializeI18n, t, processData } from './services/index.js';
@@ -83,8 +86,13 @@ switchTab,
 // =============================================================================
 
 /**
- * Master initialization function
- * Called once when DOM is ready
+ * Master initialization. Called once when the DOM is ready (or
+ * immediately if already past `DOMContentLoaded`). Short-circuits on
+ * pages that lack the main app UI (e.g. `about.html`) after i18n is set
+ * up, since those pages still need translated text but no app logic.
+ *
+ * @private
+ * @returns {Promise<void>}
  */
 async function initializeApplication() {
 // 1. Initialize i18n system
@@ -140,9 +148,14 @@ showError(message);
 }
 
 /**
- * Re-merge each persisted chart spec against the current chart defaults so
- * old specs absorb any new keys added to chartDefaults.js since they were
- * saved. Cheap; runs once on hydration.
+ * Re-merge each persisted chart spec against the current chart defaults
+ * so old specs absorb any new keys added to `chartDefaults.js` since
+ * they were saved. Cheap; runs once on hydration. Passed as the
+ * `transformPanel` hook into `persistenceService.hydrateState`.
+ *
+ * @private
+ * @param {Object} panel - Raw panel record from IndexedDB.
+ * @returns {Object} Same shape with `charts` upgraded.
  */
 function rehydratePanelChartSpecs(panel) {
 	if (!panel || !Array.isArray(panel.charts)) return panel;
@@ -159,14 +172,20 @@ function rehydratePanelChartSpecs(panel) {
 // =============================================================================
 
 /**
- * Called when datasets list changes (added/removed)
+ * Callback fileManager invokes after any add/remove/select. Triggers a
+ * full re-render.
+ *
+ * @private
  */
 function handleDatasetsChanged() {
 refreshView();
 }
 
 /**
- * Subscribe to state changes and trigger UI updates
+ * Subscribe `refreshView` to the three state events whose payloads
+ * affect what's rendered: active dataset, columns, and config.
+ *
+ * @private
  */
 function setupStateSubscriptions() {
 // Re-render when active dataset changes
@@ -191,10 +210,13 @@ refreshView();
 // =============================================================================
 
 /**
- * Re-render only the chart visualizations using the current in-memory dataset
- * config. Called during live previews (e.g. while a color picker is open) so
- * the chart updates as the user drags, without rebuilding the controls sidebar
- * — which would steal focus from the picker.
+ * Re-render only the chart visualizations using the current in-memory
+ * dataset config. Called during live previews (e.g. while a color
+ * picker is open) so the chart updates as the user drags, without
+ * rebuilding the controls sidebar — which would steal focus from the
+ * picker.
+ *
+ * @private
  */
 function livePreviewRender() {
 	const dataset = getActiveDataset();
@@ -216,9 +238,16 @@ function livePreviewRender() {
 // =============================================================================
 
 /**
- * Master view update function
- * Orchestrates all UI rendering based on current state
- * Called after any state change or user action
+ * Master view update. Reads state via getters, normalizes the active
+ * dataset's config in place via {@link normalizeActiveDatasetConfig}
+ * (no-emit by design — emitting would re-enter via CONFIG_UPDATED and
+ * loop), then delegates rendering to specialized modules.
+ *
+ * Called after any state change the file subscribes to (active dataset,
+ * columns, config) and after explicit user actions like preset/join
+ * imports.
+ *
+ * @private
  */
 function refreshView() {
 const state = getState();
@@ -283,23 +312,37 @@ exposeGlobals();
 }
 
 /**
- * Update dataset column selection
- * Delegates to facade; the COLUMNS_UPDATED subscription drives refreshView.
+ * Apply a column-selection change. Delegates to the data facade; the
+ * COLUMNS_UPDATED subscription drives `refreshView` automatically.
+ *
+ * @private
+ * @param {string[]} columns
  */
 function updateDatasetColumns(columns) {
 updateActiveDatasetColumns(columns);
 }
 
 /**
- * Update dataset chart configuration
- * Delegates to facade; the CONFIG_UPDATED subscription drives refreshView.
- * The merge-with-defaults step lives in refreshView's normalize-on-read path
- * (normalizeActiveDatasetConfig), so we don't repeat it here.
+ * Apply a chart-config change. Delegates to the data facade; the
+ * CONFIG_UPDATED subscription drives `refreshView`. The merge-with-
+ * defaults step lives in `refreshView`'s normalize-on-read path
+ * ({@link normalizeActiveDatasetConfig}), so this function does not
+ * repeat it.
+ *
+ * @private
+ * @param {Object} config
  */
 function updateDatasetConfig(config) {
 updateActiveDatasetConfig(config);
 }
 
+/**
+ * Set the preview-table row count. Invalid values are ignored
+ * (`setPreviewRows` throws when `rows < 1`).
+ *
+ * @private
+ * @param {number} rows
+ */
 function updatePreviewRows(rows) {
 	try {
 		setPreviewRows(rows);
@@ -309,6 +352,15 @@ function updatePreviewRows(rows) {
 	refreshView();
 }
 
+/**
+ * Handle a join request from the dataset-list UI. Delegates to
+ * `fileManager.createJoinedDataset`; on success, activates the new
+ * dataset and shows a success toast. Failures surface as error toasts
+ * with the translated message.
+ *
+ * @private
+ * @param {Object} spec - Forwarded to `createJoinedDataset`.
+ */
 function handleJoinDatasetRequest(spec) {
 	const result = createJoinedDataset(spec);
 	if (!result?.ok) {
@@ -321,6 +373,18 @@ function handleJoinDatasetRequest(spec) {
 	refreshView();
 }
 
+/**
+ * Handle a preset dataset request. Resolves the preset source (inline
+ * or fetched), runs the ingest pipeline (worker for fetched / `processData`
+ * sync for inline), and adds the resulting dataset. The progress toast
+ * carries the cancellation signal for both the fetch and the worker.
+ *
+ * `PresetFetchTimeoutError` surfaces a dedicated timeout message;
+ * everything else is reported as a generic join/preset error.
+ *
+ * @private
+ * @param {import('./types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
+ */
 async function handlePresetDatasetRequest(preset) {
 	if (!preset) {
 		showError(t('chive-join-error-generic'));
@@ -409,7 +473,9 @@ document.addEventListener('DOMContentLoaded', initializeApplication);
 initializeApplication();
 }
 
-// Expose key functions to window for debugging/testing
+// Debugging surface exposed on `window.chiveDebug`. NOT a stable API —
+// production code must not depend on these handles. Useful from the
+// browser console for poking at state + toggling the in-memory state log.
 window.chiveDebug = {
 getState,
 getActiveDataset,
