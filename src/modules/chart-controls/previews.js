@@ -1,3 +1,15 @@
+/**
+ * Hardcoded preview SVG markup for each chart type. Each export is a
+ * template-literal string of SVG markup, sized to fit the picker dialog's
+ * 84×38 preview slot.
+ *
+ * Aggregated in `chart-types.js`'s `PREVIEW_SVGS` map — consumers should
+ * reach for that rather than importing individual constants.
+ *
+ * Markup is rendered via `innerHTML`; values originate in this file
+ * (no user input ever flows into these strings).
+ */
+
 export const PREVIEW_BAR_SVG = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<rect x="6" y="18" width="10" height="14" rx="2"></rect>

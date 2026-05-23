@@ -1,10 +1,18 @@
 /**
- * Debounce a function. The wrapper exposes:
- * - cancel(): drop the pending invocation, if any
- * - flush(): invoke immediately with the most recent args, if pending
+ * Debounce `fn` so it fires only `wait` ms after the last call. The
+ * returned wrapper exposes:
  *
- * flush() is the reason this exists instead of an inline setTimeout —
- * beforeunload needs to commit the last save before the tab dies.
+ *   - `cancel()` — drop the pending invocation, if any.
+ *   - `flush()`  — invoke immediately with the most recent args, if pending.
+ *
+ * `flush()` is the reason this exists instead of an inline `setTimeout`:
+ * the `beforeunload` handler needs to commit the last save before the
+ * tab dies. Used by `persistenceService` and the chart-controls writers.
+ *
+ * @template {(...args: *) => *} F
+ * @param {F} fn
+ * @param {number} wait - Quiet-period in milliseconds.
+ * @returns {F & { cancel: () => void, flush: () => void }}
  */
 export function debounce(fn, wait) {
 	let timer = null;

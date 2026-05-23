@@ -53,6 +53,9 @@ export function __setIngestWorkerFactoryForTesting(factory) {
  * @private
  */
 async function spawnIngestWorker() {
+	// WHY: lazy spawn — workers are only created on the first ingest call, not at
+	// module load. A user who never uploads a file should never pay for the
+	// worker thread. This is intentional async init, not a missed `init()` call.
 	if (workerFactory) return workerFactory();
 	return new Worker(
 		new URL('../workers/dataIngestWorker.js', import.meta.url),

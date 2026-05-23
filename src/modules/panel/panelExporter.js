@@ -1,8 +1,31 @@
+/**
+ * CHIVE panel SVG exporter.
+ *
+ * Walks the rendered `#panel-layout-canvas` and composes a single
+ * standalone SVG file containing every visible slot's chart plus the
+ * block borders. The output is positioned in absolute coordinates
+ * relative to the canvas — what you see is what you save.
+ *
+ * @typedef {import('../../types.js').Result} Result
+ */
+
 import { t } from '../../services/i18nService.js';
 import { downloadSvgMarkup, ensureSvgAttributes } from '../../utils/svgExport.js';
 import { normalizeHexColor } from './resizeMath.js';
 import { fail } from '../../utils/result.js';
 
+/**
+ * Export the live panel canvas as a single SVG file. Clones each slot's
+ * live SVG, positions clones at their on-screen coordinates relative to
+ * the canvas, adds border rectangles for blocks with borders enabled,
+ * and triggers a browser download via {@link downloadSvgMarkup}.
+ *
+ * Catches unexpected serialization errors so the caller can surface a
+ * translated message via `feedbackCallback`.
+ *
+ * @param {((message: string, kind?: 'success' | 'error') => void) | null | undefined} feedbackCallback - Used to surface unexpected errors; ignored when null.
+ * @returns {Result} `{ ok: true }` on success. `{ ok: false, reason }` where reason is `'canvas-not-found'`, `'empty-canvas'`, or `'export-error'`.
+ */
 export function exportPanelLayoutSvg(feedbackCallback) {
 	const canvas = document.getElementById('panel-layout-canvas');
 	if (!canvas) {

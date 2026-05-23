@@ -1,3 +1,18 @@
+/**
+ * CHIVE bundled preset-dataset catalog.
+ *
+ * The authoritative list of pre-bundled sample datasets shown in the
+ * preset picker dialog. Loaded by `presetService.js` when the user picks
+ * an entry. Asset URLs are resolved at module-load time via
+ * `new URL(..., import.meta.url)` so they work under any Vite base path.
+ *
+ * To add a new preset, drop the file into `src/data/`, register a URL
+ * constant below, and push an entry onto {@link PRESET_CATALOG} (see
+ * the commented template).
+ *
+ * @typedef {import('../types.js').PresetCatalogEntry} PresetCatalogEntry
+ */
+
 const irisCsvUrl = new URL('./dataset-iris.csv', import.meta.url).href;
 const amazonianTreesCsvUrl = new URL('./dataset-amazonian-trees.csv', import.meta.url).href;
 const amazonMultilevelNestingCsvUrl = new URL('./dataset-amazon-multilevel-nesting.csv', import.meta.url).href;
@@ -21,6 +36,16 @@ const monthlyVisitsCsvUrl = new URL('./dataset-monthly-visits.csv', import.meta.
 // });
 // JSON variant: use dataUrl: yourJsonUrl and dataFormat: 'json'.
 
+/**
+ * The bundled preset catalog. Entries are rendered in array order in the
+ * picker dialog.
+ *
+ * The `PresetCatalogEntry` typedef notes its fields don't include `rows`/`columns`
+ * as derived — these are author-asserted metadata used by the picker dialog
+ * to show expected dimensions before the user commits to a load.
+ *
+ * @type {PresetCatalogEntry[]}
+ */
 export const PRESET_CATALOG = [
   {
     id: 'iris',

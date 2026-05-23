@@ -209,7 +209,9 @@ export function showProgress(initialLabel = '') {
 	toast.appendChild(bar);
 
 	document.body.appendChild(toast);
-	// Force reflow so the visivel transition runs.
+	// WHY: rAF defers the class-add to the next frame, which forces a layout
+	// pass between the initial mount and the transition trigger. Without this,
+	// the .visivel transition runs on the initial style (no visual fade-in).
 	requestAnimationFrame(() => toast.classList.add('visivel'));
 
 	let cancelHandler = null;
@@ -242,6 +244,10 @@ export function showProgress(initialLabel = '') {
 			percentEl.textContent = '100%';
 			bar.setAttribute('aria-valuenow', '100');
 			if (message) labelEl.textContent = message;
+			// WHY: succeed flips cancelMode to 'close' (× now dismisses; it no longer
+			// invokes the host's cancel handler) and auto-closes after autoCloseMs.
+			// Symmetric with fail() — except fail does NOT auto-close, since an error
+			// must stay visible until the user has read it.
 			cancelMode = 'close';
 			if (autoCloseTimer) window.clearTimeout(autoCloseTimer);
 			autoCloseTimer = window.setTimeout(() => handle.close(), autoCloseMs);

@@ -1,3 +1,13 @@
+/**
+ * CHIVE panel block resize interactions.
+ *
+ * Mouse-driven proportion and height resizing for panel blocks. Each
+ * drag handler attaches `mousemove`/`mouseup` to `window` (not the grid)
+ * so the drag tracks the cursor even outside the grid bounds.
+ *
+ * @typedef {import('../../types.js').PanelBlock} PanelBlock
+ */
+
 import {
 	clampPercent,
 	computeDynamicMinHeight,
@@ -9,6 +19,16 @@ import {
 } from '../appState.js';
 import { t } from '../../services/i18nService.js';
 
+/**
+ * Apply a block's proportions to its grid element as CSS custom
+ * properties (e.g. `--split: 50%`), then update the grid's `min-height`
+ * via {@link applyDynamicBlockHeight}.
+ *
+ * No-op when the block has no proportions object.
+ *
+ * @param {HTMLElement} gridDiv
+ * @param {PanelBlock} block
+ */
 export function applyBlockProportions(gridDiv, block) {
 	if (!block?.proportions) return;
 	Object.entries(block.proportions).forEach(([key, value]) => {
@@ -17,7 +37,17 @@ export function applyBlockProportions(gridDiv, block) {
 	applyDynamicBlockHeight(gridDiv, block);
 }
 
+/**
+ * Compute and apply a block's `min-height`. Two layers of clamping are
+ * intentional — see the inline comment below.
+ *
+ * @private
+ */
 function applyDynamicBlockHeight(gridDiv, block) {
+	// WHY: 220 is the floor when the layout makes no extra demand; 760 caps user-driven
+	// heights so an aggressive drag can't push a block off-screen. The dynamicMinHeight
+	// from computeDynamicMinHeight overrides the floor when a small split percentage
+	// would otherwise crush a row below SLOT_MIN_HEIGHT.
 	const BASE_MIN_HEIGHT = 220;
 	const dynamicMinHeight = computeDynamicMinHeight(block.templateId, block.proportions);
 	const userHeight = Number(block.heightPx);
@@ -28,6 +58,19 @@ function applyDynamicBlockHeight(gridDiv, block) {
 	gridDiv.style.minHeight = `${Math.round(bounded)}px`;
 }
 
+/**
+ * Render the proportion-drag handles overlaid on a block's grid. Each
+ * template gets a different set of handles — vertical splits on the
+ * x-axis, horizontal splits on the y-axis. `layout-hero2`'s right-column
+ * y-handle is positioned on a rail that follows the main split.
+ *
+ * Each handle's `mousedown` starts a drag via {@link startGuidedResizeDrag}.
+ * No-op when grid or proportions are missing.
+ *
+ * @param {HTMLElement} gridDiv
+ * @param {PanelBlock} block
+ * @param {() => void} renderCanvasPanel - Self-reference invoked after each proportion mutation so the canvas redraws.
+ */
 export function renderGuidedResizeHandles(gridDiv, block, renderCanvasPanel) {
 	if (!gridDiv || !block?.proportions) return;
 
@@ -91,12 +134,23 @@ export function renderGuidedResizeHandles(gridDiv, block, renderCanvasPanel) {
 	});
 }
 
+/**
+ * Begin a guided proportion drag. Attaches `mousemove`/`mouseup` to
+ * `window` so the drag survives the cursor leaving the grid. The
+ * `mousemove` handler maps cursor position to a new proportion and
+ * writes it via {@link updatePanelBlockProportions}.
+ *
+ * @private
+ */
 function startGuidedResizeDrag(blockId, templateId, key, gridDiv, renderCanvasPanel) {
 	const rect = gridDiv.getBoundingClientRect();
 	if (!rect.width || !rect.height) return;
 	gridDiv.classList.add('is-resizing');
 
 	const onMove = event => {
+		// WHY: re-read state on every move so a concurrent block removal does not
+		// crash the drag. The block reference captured at drag start could become
+		// stale (e.g. user removes the block via the header button mid-drag).
 		const currentBlock = getPanelBlocks().find(item => item.id === blockId);
 		if (!currentBlock) return;
 
@@ -142,6 +196,17 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv, renderCanvasPa
 	window.addEventListener('mouseup', onUp);
 }
 
+/**
+ * Begin a block-height drag (the bottom resize handle). Like the guided
+ * proportion drag, attaches listeners to `window` so the drag tracks
+ * outside the grid. Each `mousemove` writes the new height via
+ * {@link updatePanelBlockHeight} (which clamps).
+ *
+ * @param {string} blockId
+ * @param {HTMLElement} gridDiv
+ * @param {number} startClientY - The `event.clientY` at drag start.
+ * @param {() => void} renderCanvasPanel
+ */
 export function startBlockHeightResizeDrag(blockId, gridDiv, startClientY, renderCanvasPanel) {
 	const rect = gridDiv.getBoundingClientRect();
 	if (!rect.height) return;

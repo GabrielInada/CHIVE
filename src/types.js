@@ -169,6 +169,16 @@
  */
 
 /**
+ * Partial border-options bag accepted by `updatePanelBlockBorder`. Either
+ * or both fields may be present; missing fields leave the block's existing
+ * value untouched. Invalid hex strings are silently ignored.
+ *
+ * @typedef {Object} PanelBlockBorderOptions
+ * @property {boolean} [enabled] - When set, replaces `block.borderEnabled`.
+ * @property {string} [color] - Hex color (e.g. `'#5d645d'`). Validated via {@link isValidHexColor}; invalid values are dropped.
+ */
+
+/**
  * Frozen capture of a chart at the moment it was added to the panel.
  * Stores data + config + metadata so the panel can re-render after the
  * underlying dataset changes (or is removed) without losing the chart.
@@ -288,6 +298,46 @@
  * @property {string} [label] - Localized label when the worker chose to send one; otherwise the host derives one via `progressLabelForStage`.
  */
 
+/**
+ * Wire shape posted to the data-ingest Worker via `postMessage`. The `id`
+ * field is reflected in every response so the host can correlate concurrent
+ * ingests. The host side lives in `services/dataIngestService.js`; the
+ * worker side lives in `workers/dataIngestWorker.js`.
+ *
+ * @typedef {Object} IngestWorkerRequest
+ * @property {number} id - Correlation id; mirrored on every response.
+ * @property {'csv' | 'json'} kind - Parser to use.
+ * @property {string} text - Raw file contents.
+ * @property {Object} [options]
+ * @property {number} [options.rowLimit] - Cap rows after parse; surplus rows trigger `truncatedFrom` in the done payload.
+ * @property {string[]} [options.dropColumns] - Column names to strip before normalization (preset use case).
+ */
+
+/**
+ * Done-state result body posted back by the Worker. Distinct from
+ * {@link IngestPayload} — this is the wire shape; the host service may
+ * reshape it before exposing to callers.
+ *
+ * @typedef {Object} IngestWorkerDoneResult
+ * @property {Array<Object<string, *>>} dados
+ * @property {ColumnSpec[]} colunas
+ * @property {string} decimalSeparator - Detected separator (`'.'` or `','`).
+ * @property {NumericColumnStats[] | []} statsNumeric - Empty array when no rows.
+ * @property {CategoricalColumnStats[] | []} statsCategorical - Empty array when no rows.
+ * @property {number | null} truncatedFrom - Original row count when `options.rowLimit` truncated; `null` otherwise.
+ */
+
+/**
+ * Discriminated union covering every message the Worker can post back.
+ * Discriminate via `type` (`'progress'` | `'done'` | `'error'`).
+ *
+ * @typedef {(
+ *   { id: number, type: 'progress', stage: string, percent: number }
+ *   | { id: number, type: 'done', result: IngestWorkerDoneResult }
+ *   | { id: number, type: 'error', message: string }
+ * )} IngestWorkerResponse
+ */
+
 // ─── Join (dataService.joinDatasets) ────────────────────────────────────
 
 /**
@@ -379,6 +429,25 @@
  *   { mode: 'inline', rows: Array<Object<string, *>>, dropColumns: string[] }
  *   | { mode: 'fetched', kind: 'csv' | 'json', text: string, dropColumns: string[] }
  * )} PresetSource
+ */
+
+/**
+ * One entry in the bundled preset catalog (`data/presetCatalog.js`).
+ * Catalog entries are the authoritative metadata used to render the preset
+ * picker dialog and resolve a loaded preset via `presetService`.
+ *
+ * @typedef {Object} PresetCatalogEntry
+ * @property {string} id - Stable identifier (e.g. `'iris'`).
+ * @property {string} nameKey - i18n key resolving to the display name.
+ * @property {string} descKey - i18n key resolving to the description.
+ * @property {number} rows - Expected row count after parse.
+ * @property {number} columns - Expected column count after parse.
+ * @property {string[]} tags - Searchable category tags.
+ * @property {string} sourceLabel - Human-readable attribution.
+ * @property {string} sourceUrl - Link to the original source; may be empty.
+ * @property {string} sourceLinkLabel - Anchor text for `sourceUrl`; may be empty.
+ * @property {string} dataUrl - Bundled file URL resolved at module-load time.
+ * @property {'csv' | 'json'} dataFormat
  */
 
 // ─── UI feedback (feedbackUI.showProgress) ──────────────────────────────

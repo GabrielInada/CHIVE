@@ -1,6 +1,32 @@
+/**
+ * CHIVE per-dataset chart configuration defaults.
+ *
+ * `createDefaultChartConfig` returns the canonical fresh shape that every
+ * new dataset starts with; `mergeChartConfigWithDefaults` deep-merges a
+ * (possibly-partial) saved config onto the defaults — user-set fields
+ * always win on overlap, missing fields fall back to the default.
+ *
+ * The chart-specific sub-shapes live alongside the defaults here; each
+ * mirrors what `chart-controls/<type>Controls.js` writes. Reach for
+ * `src/config/charts.js` for the per-chart constants that feed these.
+ *
+ * @typedef {import('../types.js').ChartConfig} ChartConfig
+ */
+
 import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, LINE_CHART, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TIN_CHART, TREEMAP_CHART } from './charts.js';
 import { normalizeGlobalFilter, createEmptyGlobalFilter } from '../utils/globalFilter.js';
 
+/**
+ * Build a fresh {@link ChartConfig}. Every new dataset starts with this
+ * shape; chart-specific configs default to `enabled: false`, with column
+ * bindings (`category`, `x`, `y`, …) `null` until the user picks one in
+ * the sidebar.
+ *
+ * Mutating the returned object is safe — it is freshly constructed on
+ * each call.
+ *
+ * @returns {ChartConfig}
+ */
 export function createDefaultChartConfig() {
 	return {
 		aba: 'preview',
@@ -203,6 +229,13 @@ export function createDefaultChartConfig() {
 	};
 }
 
+/**
+ * Pull the global filter out of a saved config, normalizing legacy shapes.
+ *
+ * @private
+ * @param {*} config
+ * @returns {import('../types.js').GlobalFilter}
+ */
 function pickGlobalFilter(config) {
 	if (!config || typeof config !== 'object') {
 		return createEmptyGlobalFilter();
@@ -210,6 +243,20 @@ function pickGlobalFilter(config) {
 	return normalizeGlobalFilter(config.globalFilter);
 }
 
+/**
+ * Deep-merge `configGraficos` onto the defaults. User-set fields always
+ * win; missing fields fall back to defaults. The merge is per-chart-type
+ * (each `bar`, `scatter`, … block is independently shallow-merged), with
+ * one nested case (`scatter.regression`) handled explicitly.
+ *
+ * The `bubble` block has special handling: if the saved config lacks
+ * `nestingColumns` but has a legacy single `groupColumn`, it is promoted
+ * into a one-element `nestingColumns` array. This preserves pre-multilevel
+ * bubble configs across reloads.
+ *
+ * @param {*} configGraficos - Saved (possibly partial) chart config, or `null`/`undefined`.
+ * @returns {ChartConfig} Merged, fully-populated config.
+ */
 export function mergeChartConfigWithDefaults(configGraficos) {
 	const defaults = createDefaultChartConfig();
 	const config = configGraficos || {};

@@ -1,8 +1,17 @@
 /**
- * Get columns visible based on selection and dataset columns
- * @param {Object} dataset - Dataset object with colunas and colunasSelecionadas
- * @param {Array} [selectedNames] - Optional array of column names to use instead of dataset.colunasSelecionadas
- * @returns {Array} - Array of visible column objects
+ * CHIVE column-classification helpers. Pure functions over `colunas`
+ * arrays. Used by chart controls, services, and components.
+ *
+ * @typedef {import('../types.js').Dataset} Dataset
+ * @typedef {import('../types.js').ColumnSpec} ColumnSpec
+ */
+
+/**
+ * Get columns visible based on selection and dataset columns.
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} [selectedNames] - Override `dataset.colunasSelecionadas`. Useful for previewing a hypothetical selection.
+ * @returns {ColumnSpec[]} Subset of `dataset.colunas` whose `nome` appears in the resolved selection.
  */
 export function filterVisibleColumns(dataset, selectedNames) {
 	const nomesSelecionados = selectedNames || (
@@ -14,57 +23,64 @@ export function filterVisibleColumns(dataset, selectedNames) {
 }
 
 /**
- * Filter numeric columns from a list
- * @param {Array} colunas - Array of column objects with tipo property
- * @returns {Array} - Column objects where tipo === 'numero'
+ * Numeric columns only.
+ *
+ * @param {ColumnSpec[]} colunas
+ * @returns {ColumnSpec[]}
  */
 export function getNumericColumns(colunas) {
 	return colunas.filter(coluna => coluna.tipo === 'numero');
 }
 
 /**
- * Filter numeric columns and return just their names
- * @param {Array} colunas - Array of column objects
- * @returns {Array} - Array of numeric column names
+ * Names of numeric columns.
+ *
+ * @param {ColumnSpec[]} colunas
+ * @returns {string[]}
  */
 export function getNumericColumnNames(colunas) {
 	return getNumericColumns(colunas).map(coluna => coluna.nome);
 }
 
 /**
- * Filter categorical (non-numeric) columns from a list.
- * NOTE: date columns ('data') are included here for backwards-compatibility
- * with bar/pie/treemap/scatter — they treat dates as categorical buckets.
- * Use {@link getDateColumns} when you want only date columns.
- * @param {Array} colunas - Array of column objects with tipo property
- * @returns {Array} - Column objects where tipo !== 'numero'
+ * Categorical (non-numeric) columns.
+ *
+ * Note: date columns are included here for backwards-compatibility with
+ * bar/pie/treemap/scatter — they treat dates as categorical buckets. Use
+ * {@link getDateColumns} when you want only date columns.
+ *
+ * @param {ColumnSpec[]} colunas
+ * @returns {ColumnSpec[]}
  */
 export function getCategoricalColumns(colunas) {
 	return colunas.filter(coluna => coluna.tipo !== 'numero');
 }
 
 /**
- * Filter categorical columns and return just their names
- * @param {Array} colunas - Array of column objects
- * @returns {Array} - Array of categorical column names
+ * Names of categorical columns.
+ *
+ * @param {ColumnSpec[]} colunas
+ * @returns {string[]}
  */
 export function getCategoricalColumnNames(colunas) {
 	return getCategoricalColumns(colunas).map(coluna => coluna.nome);
 }
 
 /**
- * Filter date columns from a list
- * @param {Array} colunas - Array of column objects with tipo property
- * @returns {Array} - Column objects where tipo === 'data'
+ * Date columns only.
+ *
+ * @param {ColumnSpec[]} colunas
+ * @returns {ColumnSpec[]}
  */
 export function getDateColumns(colunas) {
 	return colunas.filter(coluna => coluna.tipo === 'data');
 }
 
 /**
- * Filter date columns and return just their names
- * @param {Array} colunas - Array of column objects
- * @returns {Array} - Array of date column names
+ * Names of date columns.
+ *
+ * @param {ColumnSpec[]} colunas
+ * @returns {string[]}
  */
 export function getDateColumnNames(colunas) {
 	return getDateColumns(colunas).map(coluna => coluna.nome);
