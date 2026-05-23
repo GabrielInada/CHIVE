@@ -53,6 +53,9 @@ function normalizeKeyValue(value, { trim = true, caseSensitive = false } = {}) {
 function buildCompositeKey(row, keyColumns, normalizationOptions) {
 	return keyColumns
 		.map(columnName => normalizeKeyValue(row?.[columnName], normalizationOptions))
+		// WHY: U+0001 (SOH control char) never appears in natural text data, so it
+		// can't collide with a real value. A printable separator like ',' or '|'
+		// would risk a false match between e.g. ['a,b','c'] and ['a','b,c'].
 		.join('\u0001');
 }
 
@@ -279,6 +282,12 @@ export function detectDecimalSeparator(rawValues) {
 
 	if (numericLike.length === 0) return '.';
 
+	// WHY: stages are ordered so each handles a different international-format gotcha.
+	// Stage 1 (both separators) is unambiguous → trust the position. Stage 2 (one
+	// separator) uses digit-count heuristics, with Stage 2b ("1.000") catching the
+	// classic European-thousands trap. Stage 3 (NaN-rate validation) is the safety
+	// net for the rare case where the votes were misleading. Reordering breaks
+	// real-world data.
 	let dotDecimalVotes = 0;
 	let commaDecimalVotes = 0;
 

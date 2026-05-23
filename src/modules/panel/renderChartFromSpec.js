@@ -1,3 +1,24 @@
+/**
+ * CHIVE panel chart-rendering bridge.
+ *
+ * The single path through which panel slots render. `panelRenderer.js`
+ * delegates here via {@link renderChartFromSpec} when mounting a slot;
+ * this module then dispatches to the appropriate `render*Chart` function
+ * in `modules/visualizations/`. Panel snapshots come into this module as
+ * `{ type, config, dataSnapshot, columnsSnapshot, metadata }` — see
+ * {@link ChartSnapshot} for the full shape.
+ *
+ * Panel-rendered charts intentionally pass an empty filter-callbacks bag
+ * so tooltips do not surface filter actions: tooltip-driven filter writes
+ * would mutate the live dataset, but the snapshot is frozen.
+ *
+ * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
+ * @typedef {import('../../types.js').Result} Result
+ * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
+ * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
+ * @typedef {import('../../types.js').ColumnType} ColumnType
+ */
+
 import { t, getLocale } from '../../services/i18nService.js';
 import {
 	renderBarChart,
@@ -13,6 +34,15 @@ import { fail } from '../../utils/result.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 
+/**
+ * Build a `Record<columnName, ColumnType>` lookup from a snapshot's
+ * columns array. Used by scatter/line/TIN to know which axes are
+ * categorical vs numeric without scanning the rows.
+ *
+ * @private
+ * @param {ColumnSpec[] | null | undefined} columnsSnapshot
+ * @returns {Object<string, ColumnType>}
+ */
 function buildColumnTypeIndex(columnsSnapshot) {
 	if (!Array.isArray(columnsSnapshot)) return {};
 	const index = {};
@@ -22,6 +52,7 @@ function buildColumnTypeIndex(columnsSnapshot) {
 	return index;
 }
 
+/** @private */
 function renderBar(container, spec) {
 	const config = spec.config || {};
 	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode)
@@ -66,6 +97,7 @@ function renderBar(container, spec) {
 	});
 }
 
+/** @private */
 function renderScatter(container, spec) {
 	const config = spec.config || {};
 	const columnTypeByName = buildColumnTypeIndex(spec.columnsSnapshot);
@@ -117,6 +149,7 @@ function renderScatter(container, spec) {
 	});
 }
 
+/** @private */
 function renderNetwork(container, spec) {
 	const config = spec.config || {};
 	return renderNetworkGraph(container, spec.dataSnapshot, config.source, config.target, {
@@ -148,6 +181,7 @@ function renderNetwork(container, spec) {
 	});
 }
 
+/** @private */
 function renderPie(container, spec) {
 	const config = spec.config || {};
 	return renderPieChart(container, spec.dataSnapshot, config.category, {
@@ -180,6 +214,7 @@ function renderPie(container, spec) {
 	});
 }
 
+/** @private */
 function renderBubble(container, spec) {
 	const config = spec.config || {};
 	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode)
@@ -211,6 +246,7 @@ function renderBubble(container, spec) {
 	});
 }
 
+/** @private */
 function renderTreemap(container, spec) {
 	const config = spec.config || {};
 	return renderTreeMap(container, spec.dataSnapshot, config.category, {
@@ -238,6 +274,7 @@ function renderTreemap(container, spec) {
 	});
 }
 
+/** @private */
 function renderLine(container, spec) {
 	const config = spec.config || {};
 	const columnTypeByName = buildColumnTypeIndex(spec.columnsSnapshot);
@@ -267,6 +304,7 @@ function renderLine(container, spec) {
 	});
 }
 
+/** @private */
 function renderTin(container, spec) {
 	const config = spec.config || {};
 	return renderTinChart(container, spec.dataSnapshot, config.x, config.y, config.z, {
@@ -323,8 +361,22 @@ const RENDERERS = {
 	tin: renderTin,
 };
 
+/**
+ * Chart types supported by panel rendering. Frozen tuple of {@link ChartTypeKey}
+ * values keyed in `RENDERERS`. `panelManager.addChartToPanel` validates
+ * incoming snapshot types against this list before adding to the panel.
+ *
+ * @type {ReadonlyArray<ChartTypeKey>}
+ */
 export const SUPPORTED_PANEL_CHART_TYPES = Object.freeze(Object.keys(RENDERERS));
 
+/**
+ * Render a chart snapshot into `container` by dispatching on `spec.type`.
+ *
+ * @param {HTMLElement} container - Mount point for the chart's `<svg>`.
+ * @param {ChartSnapshot} spec - Frozen snapshot built by `addChartSnapshot`.
+ * @returns {Result} `{ ok: true }` on success; `{ ok: false, reason: 'invalid-args' }` when container or spec are missing; `{ ok: false, reason: 'unknown-type' }` when `spec.type` is not in {@link SUPPORTED_PANEL_CHART_TYPES}.
+ */
 export function renderChartFromSpec(container, spec) {
 	if (!container || !spec) return fail('invalid-args');
 	const renderer = RENDERERS[spec.type];

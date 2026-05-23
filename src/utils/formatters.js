@@ -1,13 +1,43 @@
+/**
+ * CHIVE shared formatters and small predicates. Locale-aware number/date
+ * formatting + HTML escaping + a handful of value-shape helpers used
+ * everywhere.
+ *
+ * @typedef {import('../types.js').ColumnType} ColumnType
+ */
+
 import { getLocale, t } from '../services/i18nService.js';
 
+/**
+ * `true` for `null` and `undefined` only. Distinct from
+ * {@link isEmptyValue}, which also returns `true` for blank strings.
+ *
+ * @param {*} value
+ * @returns {boolean}
+ */
 export function isNullish(value) {
 	return value === null || value === undefined;
 }
 
+/**
+ * `true` for `null`, `undefined`, or strings that are blank after trimming.
+ * Used to detect "missing" cells in user data.
+ *
+ * @param {*} value
+ * @returns {boolean}
+ */
 export function isEmptyValue(value) {
 	return value === null || value === undefined || String(value).trim() === '';
 }
 
+/**
+ * Clamp a number to `[min, max]`. Does not validate that `min <= max`.
+ *
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
+ * @returns {number}
+ */
 export function clamp(value, min, max) {
 	return Math.min(Math.max(value, min), max);
 }
@@ -51,6 +81,14 @@ export function formatNumber(value, locale) {
 	return numberValue.toPrecision(4);
 }
 
+/**
+ * Translate a {@link ColumnType} code into its localized label. Unknown
+ * codes pass through unchanged so the function never throws on legacy
+ * data.
+ *
+ * @param {ColumnType | string} type
+ * @returns {string}
+ */
 export function translateType(type) {
 	if (type === 'numero') return t('chive-type-number');
 	if (type === 'texto') return t('chive-type-text');

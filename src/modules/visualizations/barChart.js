@@ -15,6 +15,10 @@ import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
 import { interpolateColor, buildRankMap, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 
+// WHY: every count-based sort uses `|| compareStrings(a[0], b[0])` as a tiebreaker
+// so categories with equal counts have a deterministic visual order. Without the
+// secondary string compare, sort stability varies by browser engine and the bar
+// order can flicker between renders on identical data.
 function ordenarCategorias(linhas, ordenacao) {
 	if (ordenacao === 'count-asc') {
 		return linhas.sort((a, b) => a[1] - b[1] || compareStrings(a[0], b[0]));

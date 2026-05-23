@@ -1,3 +1,13 @@
+/**
+ * CHIVE chart-type registry.
+ *
+ * Single source of truth for the supported chart types and their display
+ * metadata. The ordering in {@link CHART_TYPES} is the canonical visual
+ * order used by the chart-type picker dialog.
+ *
+ * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
+ */
+
 import {
 	PREVIEW_BAR_SVG,
 	PREVIEW_BUBBLE_SVG,
@@ -9,8 +19,20 @@ import {
 	PREVIEW_TREEMAP_SVG,
 } from './previews.js';
 
+/**
+ * Chart-type ids in canonical visual order. Used by the picker dialog
+ * and by the sidebar's "first match wins" active-chart detection.
+ *
+ * @type {ReadonlyArray<ChartTypeKey>}
+ */
 export const CHART_TYPES = ['bar', 'line', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'tin'];
 
+/**
+ * Hardcoded preview SVG markup, keyed by {@link ChartTypeKey}. Consumed
+ * by the picker dialog and other chart-type-presentation UI.
+ *
+ * @type {Object<ChartTypeKey, string>}
+ */
 export const PREVIEW_SVGS = {
 	bar: PREVIEW_BAR_SVG,
 	scatter: PREVIEW_SCATTER_SVG,
@@ -22,6 +44,13 @@ export const PREVIEW_SVGS = {
 	tin: PREVIEW_TIN_SVG,
 };
 
+/**
+ * Map of chart type → i18n key for its high-level category label
+ * (`'comparison'`, `'relationship'`, …). Used by the picker dialog to
+ * group similar charts.
+ *
+ * @type {Object<ChartTypeKey, string>}
+ */
 export const CATEGORY_KEYS = {
 	bar: 'chive-viz-category-comparison',
 	scatter: 'chive-viz-category-relationship',

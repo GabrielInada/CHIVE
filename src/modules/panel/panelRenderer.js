@@ -1,3 +1,17 @@
+/**
+ * CHIVE panel renderer.
+ *
+ * Renders both panel surfaces — the sidebar list of saved chart snapshots
+ * and the canvas grid of layout blocks. Both surfaces are rendered from
+ * scratch on every call; teardown/re-mount lifecycles for slot SVGs go
+ * through `slotLifecycle.js` so D3 resources (network simulations,
+ * ResizeObservers, RAF handles) get cleaned up before each re-render.
+ *
+ * Caller wiring lives in `panelManager.js`. The exports here are pure
+ * rendering — they do not subscribe to state changes; the manager
+ * decides when to call them.
+ */
+
 import { t } from '../../services/i18nService.js';
 import {
 	LAYOUTS_PAINEL,
@@ -26,6 +40,15 @@ import {
 import { applyBlockProportions, renderGuidedResizeHandles, startBlockHeightResizeDrag } from './panelResize.js';
 import { mountSlot, teardownAllSlots } from './slotLifecycle.js';
 
+/**
+ * Render the sidebar list of saved chart snapshots into
+ * `#lista-painel-charts`. Each item gets a thumbnail (live D3 render via
+ * {@link mountSlot}) and a remove button wired to the provided callback.
+ *
+ * No-op when the container element is missing.
+ *
+ * @param {(chartId: number | string) => void} removeChartFromPanel - Callback for the per-item remove button; usually `panelManager.removeChartFromPanel`.
+ */
 export function renderSidebarPanel(removeChartFromPanel) {
 	const lista = document.getElementById('lista-painel-charts');
 	if (!lista) return;
@@ -107,6 +130,21 @@ export function renderSidebarPanel(removeChartFromPanel) {
 	});
 }
 
+/**
+ * Render the panel canvas (layout grid + block stack) into
+ * `#panel-layout-canvas`. Walks every block, builds its DOM via
+ * {@link createBlockElement}, wires resize listeners, and mounts each
+ * slot's chart via {@link mountSlot}.
+ *
+ * `renderCanvasPanelFn` is passed back into per-block listeners so they
+ * can trigger their own re-render in response to a block mutation —
+ * this avoids importing back through `panelManager.js`.
+ *
+ * No-op when the canvas element is missing.
+ *
+ * @param {() => void} renderCanvasPanelFn - Self-reference passed through to listeners that need to re-render.
+ * @param {((message: string, kind?: 'success' | 'error') => void) | null | undefined} feedbackCallback - Used for max-blocks errors; ignored when null.
+ */
 export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 	validatePanelSlots();
 	const canvas = document.getElementById('panel-layout-canvas');
@@ -154,10 +192,14 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 	});
 }
 
-// Assembles a single panel block's <section> element with header, template
-// select, border controls, and the grid + slot children. Returns both the
-// block element and its grid so attachBlockResizeListener can wire to the grid
-// without a DOM query.
+/**
+ * Assemble a single panel block's `<section>` element with header,
+ * template select, border controls, and grid + slots. Returns both the
+ * block element and its grid so {@link attachBlockResizeListener} can
+ * wire to the grid without a DOM query.
+ *
+ * @private
+ */
 function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanvasPanelFn }) {
 	const layout = getTemplateForBlock(block);
 	const blockEl = document.createElement('section');
@@ -267,6 +309,12 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 	return { blockEl, gridDiv };
 }
 
+/**
+ * Append a block-height resize handle and wire its mousedown to
+ * {@link startBlockHeightResizeDrag}.
+ *
+ * @private
+ */
 function attachBlockResizeListener(blockEl, block, gridDiv, renderCanvasPanelFn) {
 	const handle = document.createElement('button');
 	handle.type = 'button';
@@ -280,6 +328,13 @@ function attachBlockResizeListener(blockEl, block, gridDiv, renderCanvasPanelFn)
 	blockEl.appendChild(handle);
 }
 
+/**
+ * Populate the layout `<select>` (in the panel header) with the available
+ * templates, pre-selecting the first block's template. Safe to call on
+ * every state change.
+ *
+ * No-op when the select element is missing.
+ */
 export function fillLayoutSelect() {
 	const select = document.getElementById('select-panel-layout');
 	if (!select) return;

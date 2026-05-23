@@ -1,3 +1,29 @@
+/**
+ * CHIVE panel DOM builders.
+ *
+ * Stateless factories that assemble panel-block DOM elements with their
+ * listeners pre-wired. The caller passes click/change handlers in via the
+ * options bag; this module owns the markup only.
+ *
+ * Note: there is also a `createPanelBlock` in `blockStateHelpers.js` —
+ * that builds the state-shape object that lives in `appState`. This file
+ * is DOM-only.
+ */
+
+/**
+ * Build a block header row with title and up/down/remove buttons. Up is
+ * disabled on the first block, down on the last, and remove when only
+ * one block exists.
+ *
+ * @param {Object} params
+ * @param {string} params.blockId
+ * @param {number} params.index - Position in the block stack (0-based).
+ * @param {number} params.totalBlocks
+ * @param {() => void} params.onMoveUp
+ * @param {() => void} params.onMoveDown
+ * @param {() => void} params.onRemove
+ * @returns {HTMLElement}
+ */
 export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMoveDown, onRemove }) {
 	const header = document.createElement('div');
 	header.className = 'painel-block-header';
@@ -42,6 +68,19 @@ export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMov
 	return header;
 }
 
+/**
+ * Build a `<select>` for switching a block's layout template. Pre-selects
+ * the current `templateId`. The change handler fires the `change` DOM
+ * event payload — read `e.target.value` to get the new template id.
+ *
+ * @param {Object} params
+ * @param {string} params.blockId
+ * @param {string} params.templateId - Initial selection.
+ * @param {Object<string, { labelKey: string }>} params.layouts
+ * @param {(key: string) => string} params.translate
+ * @param {(event: Event) => void} params.onTemplateChange
+ * @returns {HTMLSelectElement}
+ */
 export function createBlockTemplateSelect({ blockId, templateId, layouts, translate, onTemplateChange }) {
 	const templateSelect = document.createElement('select');
 	templateSelect.className = 'painel-block-template';
@@ -59,6 +98,18 @@ export function createBlockTemplateSelect({ blockId, templateId, layouts, transl
 	return templateSelect;
 }
 
+/**
+ * Build the "add block" row at the bottom of the panel: a template
+ * picker `<select>` and an "add" button. The button passes the picker's
+ * current value to the handler; `'layout-2col'` is used as a fallback
+ * when the picker has no value.
+ *
+ * @param {Object} params
+ * @param {Object<string, { labelKey: string }>} params.layouts
+ * @param {(key: string) => string} params.translate
+ * @param {(templateId: string) => void} params.onAddBlock
+ * @returns {HTMLElement}
+ */
 export function createAddBlockControls({ layouts, translate, onAddBlock }) {
 	const addBlockButton = document.createElement('button');
 	const addTemplateSelect = document.createElement('select');
@@ -91,6 +142,24 @@ export function createAddBlockControls({ layouts, translate, onAddBlock }) {
 	return addControls;
 }
 
+/**
+ * Build the border-toggle + color-picker row for a single block. The
+ * color picker is disabled when the toggle is off. `onPreviewColor`
+ * fires on every input change (intended for cheap CSS-variable updates);
+ * `onChangeColor` fires only on the `change` event (intended for state
+ * writes that should land once, not on every drag tick).
+ *
+ * @param {Object} params
+ * @param {string} params.blockId
+ * @param {boolean} params.borderEnabled
+ * @param {string} params.borderColor - Initial hex color (may be invalid; sanitized via `normalizeHexColor`).
+ * @param {(key: string) => string} params.translate
+ * @param {(color: string, fallback?: string) => string} params.normalizeHexColor
+ * @param {(enabled: boolean) => void} params.onToggleBorder
+ * @param {(color: string) => void} params.onPreviewColor
+ * @param {(color: string) => void} params.onChangeColor
+ * @returns {HTMLElement}
+ */
 export function createBlockBorderControls({
 	blockId,
 	borderEnabled,
@@ -157,6 +226,27 @@ export function createBlockBorderControls({
 	return borderControls;
 }
 
+/**
+ * Build a single slot's DOM element. The element is either a "filled"
+ * slot (when `chart` is provided) — with a clear button, an empty `<div>`
+ * placeholder for the chart's SVG, and drag-source listeners — or an
+ * "empty" slot with a translated placeholder text.
+ *
+ * Drag-and-drop is wired only when `desktopDnd` is `true`. Mobile and
+ * narrow layouts use a tap-to-pick UX (handled at the renderer level).
+ *
+ * @param {Object} params
+ * @param {string} params.slotId
+ * @param {string} params.blockId
+ * @param {{ id: number | string } | null} params.chart - Snapshot or `null` for empty.
+ * @param {boolean} params.borderEnabled
+ * @param {string} params.borderColor
+ * @param {boolean} params.desktopDnd
+ * @param {(key: string) => string} params.translate
+ * @param {() => void} params.onClearSlot
+ * @param {(payload: { targetSlotId: string, targetBlockId: string, sourceSlotId: string, sourceBlockId: string, chartId: string }) => void} params.onDropData
+ * @returns {HTMLElement}
+ */
 export function createPanelSlotElement({
 	slotId,
 	blockId,

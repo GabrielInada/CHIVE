@@ -1,10 +1,39 @@
+/**
+ * CHIVE chart-control element factories.
+ *
+ * DOM-only helpers that build the per-control widgets used by every
+ * chart-controls module (`barControls.js`, `pieControls.js`, …). Each
+ * factory returns a `<div>` containing a label plus the input element;
+ * listeners are wired separately via `controlListenerHelpers.js`.
+ *
+ * Also re-exports a handful of color utilities so per-chart files only
+ * need to import from one place.
+ */
+
 import { isValidHexColor } from '../../utils/colorUtils.js';
 
+/**
+ * Validate and normalize a hex color string. Trims whitespace; returns
+ * `fallback` when the input is not a valid `#RRGGBB`.
+ *
+ * @param {*} value
+ * @param {string} fallback
+ * @returns {string}
+ */
 export function normalizeHexColor(value, fallback) {
 	const color = String(value || '').trim();
 	return isValidHexColor(color) ? color : fallback;
 }
 
+/**
+ * Build a labeled checkbox control.
+ *
+ * @param {string} id
+ * @param {string} labelText
+ * @param {boolean} checked
+ * @param {boolean} [disabled=false]
+ * @returns {HTMLElement}
+ */
 export function createCheckboxControl(id, labelText, checked, disabled = false) {
 	const div = document.createElement('div');
 	div.className = 'chart-controle chart-controle-inline';
@@ -29,6 +58,16 @@ export function createCheckboxControl(id, labelText, checked, disabled = false) 
 	return div;
 }
 
+/**
+ * Build a labeled text input.
+ *
+ * @param {string} id
+ * @param {string} labelText
+ * @param {string | null | undefined} value
+ * @param {number} [maxLength=80]
+ * @param {boolean} [disabled=false]
+ * @returns {HTMLElement}
+ */
 export function createTextControl(id, labelText, value, maxLength = 80, disabled = false) {
 	const div = document.createElement('div');
 	div.className = 'chart-controle';
@@ -50,6 +89,16 @@ export function createTextControl(id, labelText, value, maxLength = 80, disabled
 	return div;
 }
 
+/**
+ * Build a labeled numeric input. Any of `min`/`max`/`step` may be omitted
+ * to leave the input unconstrained on that axis.
+ *
+ * @param {string} id
+ * @param {string} labelText
+ * @param {number | null | undefined} value
+ * @param {{ min?: number, max?: number, step?: number, disabled?: boolean }} [options]
+ * @returns {HTMLElement}
+ */
 export function createNumberInputControl(id, labelText, value, { min, max, step, disabled } = {}) {
 	const div = document.createElement('div');
 	div.className = 'chart-controle';
@@ -73,6 +122,20 @@ export function createNumberInputControl(id, labelText, value, { min, max, step,
 	return div;
 }
 
+/**
+ * Build a labeled range slider with a live-value `<output>` element.
+ * The output mirrors the slider value; sync wiring happens in
+ * `controlListenerHelpers.js#setupSliderListener`.
+ *
+ * @param {string} id
+ * @param {string} labelText
+ * @param {number} value
+ * @param {number} min
+ * @param {number} max
+ * @param {number} step
+ * @param {boolean} [disabled=false]
+ * @returns {HTMLElement}
+ */
 export function createSliderControl(id, labelText, value, min, max, step, disabled = false) {
 	const div = document.createElement('div');
 	div.className = 'chart-controle';
@@ -107,6 +170,18 @@ export function createSliderControl(id, labelText, value, min, max, step, disabl
 	return div;
 }
 
+/**
+ * Build a labeled `<select>` populated from `optionsArray`. Each entry
+ * is `{ value, label }`; the entry whose `value` matches `selectedValue`
+ * (string-compared) is pre-selected.
+ *
+ * @param {string} id
+ * @param {string} labelText
+ * @param {Array<{ value: *, label: string }>} optionsArray
+ * @param {*} selectedValue
+ * @param {boolean} [disabled=false]
+ * @returns {HTMLElement}
+ */
 export function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
 	div.className = 'chart-controle';
@@ -133,6 +208,17 @@ export function createSelectControl(id, labelText, optionsArray, selectedValue, 
 	return div;
 }
 
+/**
+ * Build a labeled color input. Value is sanitized via
+ * {@link normalizeHexColor}.
+ *
+ * @param {string} id
+ * @param {string} labelText
+ * @param {*} value
+ * @param {string} fallback - Hex color used when `value` is invalid.
+ * @param {boolean} [disabled=false]
+ * @returns {HTMLElement}
+ */
 export function createColorInputControl(id, labelText, value, fallback, disabled = false) {
 	const div = document.createElement('div');
 	div.className = 'chart-controle';
@@ -153,9 +239,16 @@ export function createColorInputControl(id, labelText, value, fallback, disabled
 	return div;
 }
 
-// Color Presets for palette quick-apply
+// Color Presets for palette quick-apply.
 import { CHART_COLOR_PALETTES } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
+
+/**
+ * Pre-built color palettes, exposed by the chart-controls layer so per-
+ * chart files do not need to import directly from `config/charts.js`.
+ *
+ * @type {Object<string, string[]>}
+ */
 export const COLOR_PRESETS = CHART_COLOR_PALETTES;
 
 export { hexToRgb, rgbToHex, interpolateColor } from '../../utils/colorUtils.js';
@@ -167,6 +260,7 @@ const PALETTE_LABEL_KEYS = {
 	'Colorblind-Safe': 'chive-chart-palette-colorblind-safe',
 };
 
+/** @private */
 function localizedPaletteName(paletteId) {
 	const key = PALETTE_LABEL_KEYS[paletteId];
 	if (!key) return paletteId;
@@ -174,6 +268,18 @@ function localizedPaletteName(paletteId) {
 	return localized && localized !== key ? localized : paletteId;
 }
 
+/**
+ * Build a row of palette-preset buttons. Buttons share
+ * `data-color-preset-control={id}` so the listener helper
+ * `setupColorPresetListeners` can wire them in batch.
+ *
+ * @param {string} id
+ * @param {string} labelText
+ * @param {string} presetName - Currently-active preset; gets a highlighted border.
+ * @param {boolean} [disabled=false]
+ * @param {((name: string, colors: string[]) => void) | undefined} onSelect - Per-button click handler.
+ * @returns {HTMLElement}
+ */
 export function createColorPresetControl(id, labelText, presetName, disabled = false, onSelect) {
 	const div = document.createElement('div');
 	div.className = 'chart-controle';
@@ -227,6 +333,21 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
 	return div;
 }
 
+/**
+ * Build a grid of per-item color pickers (e.g. one swatch per slice in a
+ * pie chart). `onColorPreview` fires on every `input` event (live
+ * painting); `onColorChange` fires on `change` (committed write). Both
+ * are skipped when the control is disabled.
+ *
+ * @param {string} id
+ * @param {string} labelText
+ * @param {Array<string | number>} items - Per-item identifiers.
+ * @param {Object<string, string>} colorMap - Current hex value per item.
+ * @param {boolean} [disabled=false]
+ * @param {((item: string | number, color: string) => void) | undefined} onColorChange
+ * @param {((item: string | number, color: string) => void) | undefined} onColorPreview
+ * @returns {HTMLElement}
+ */
 export function createColorPickerGridControl(id, labelText, items, colorMap, disabled = false, onColorChange, onColorPreview) {
 	const div = document.createElement('div');
 	div.className = 'chart-controle';
