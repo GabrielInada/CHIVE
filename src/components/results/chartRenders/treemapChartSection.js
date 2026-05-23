@@ -1,8 +1,22 @@
+/**
+ * Treemap section adapter. See `barChartSection.js` for the pattern.
+ */
+
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderTreeMap } from '../../../modules/visualizations/index.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
 import { showChartMessage } from './sharedRenderHelpers.js';
 
+/**
+ * Render the treemap section. The underlying renderer returns `void`, so
+ * this section does not surface a friendly fail message (unlike the others).
+ *
+ * @param {Object} args
+ * @param {Object} args.config
+ * @param {Array<Object<string, *>>} args.rows
+ * @param {Object} args.filterCallbacks
+ * @returns {void}
+ */
 export function renderTreemapChartSection({ config, rows, filterCallbacks }) {
 	const block = document.getElementById(CHART_BLOCKS.treemap);
 	const container = document.getElementById(CHART_CONTAINERS.treemap);

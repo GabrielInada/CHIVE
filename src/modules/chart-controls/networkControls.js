@@ -1,3 +1,14 @@
+/**
+ * Network-graph controls module.
+ *
+ * Builds the right-sidebar control group for the network graph (source/target
+ * column bindings, weight/group accessors, D3 force-simulation parameters)
+ * and wires its listeners.
+ *
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
+ */
+
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
@@ -12,6 +23,15 @@ import {
 	setupColorPresetListeners,
 } from './controlListenerHelpers.js';
 
+/**
+ * Build the network-graph control sections (Data, Display, Styling, Advanced).
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} allOptions - All visible column names; populates source/target/weight/group selects.
+ * @param {string[]} numericOptions - Numeric column names; reserved for future numeric-only selects.
+ * @param {string[]} categoryOptions - Categorical column names; reserved for future categorical-only selects.
+ * @returns {HTMLElement[]} Array of `chart-control-section` elements.
+ */
 export function createNetworkGraphControls(dataset, allOptions, numericOptions, categoryOptions) {
 	const config = dataset.configGraficos.network;
 	const disabled = !dataset.configGraficos.network.enabled;
@@ -217,6 +237,17 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 	]);
 }
 
+/**
+ * Wire listeners for every network-graph control. Includes the Reset Zoom
+ * button (resets both slider DOM and config). `numericOptionsOrCallback`
+ * is overloaded: callers may pass the callback in arg 3 or arg 4.
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} allOptions
+ * @param {string[] | (() => void)} [numericOptionsOrCallback]
+ * @param {() => void} [onConfigChangedMaybe]
+ * @returns {void}
+ */
 export function setupNetworkGraphControlListeners(dataset, allOptions, numericOptionsOrCallback = [], onConfigChangedMaybe) {
 	const numericOptions = Array.isArray(numericOptionsOrCallback) ? numericOptionsOrCallback : [];
 	const onConfigChanged = typeof numericOptionsOrCallback === 'function'
@@ -278,6 +309,15 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 	setupTextInputListener('viz-input-network-title', 'customTitle', dataset, 'network', onConfigChanged);
 }
 
+/**
+ * Compute the network graph's activation defaults. Preserves the user's
+ * current `source`/`target` if they still match visible columns;
+ * otherwise falls back to the first two visible columns.
+ *
+ * @param {Dataset} dataset
+ * @param {ChartControlContext} ctx
+ * @returns {{ source: string | null, target: string | null }}
+ */
 export function computeDefaults(dataset, ctx) {
 	const currentSource = dataset.configGraficos?.network?.source;
 	const currentTarget = dataset.configGraficos?.network?.target;

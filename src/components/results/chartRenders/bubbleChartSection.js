@@ -1,8 +1,23 @@
+/**
+ * Bubble-chart section adapter. See `barChartSection.js` for the pattern.
+ */
+
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderBubbleChart } from '../../../modules/visualizations/index.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
 import { showChartMessage } from './sharedRenderHelpers.js';
 
+/**
+ * Render the bubble-chart section. Surfaces `'no-value-column'`,
+ * `'no-numeric'`, `'no-nesting-columns'`, and `'no-group-column'` as
+ * distinct empty messages.
+ *
+ * @param {Object} args
+ * @param {Object} args.config
+ * @param {Array<Object<string, *>>} args.rows
+ * @param {Object} args.filterCallbacks
+ * @returns {void}
+ */
 export function renderBubbleChartSection({ config, rows, filterCallbacks }) {
 	const block = document.getElementById(CHART_BLOCKS.bubble);
 	const container = document.getElementById(CHART_CONTAINERS.bubble);

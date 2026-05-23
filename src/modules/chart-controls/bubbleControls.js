@@ -1,3 +1,18 @@
+/**
+ * Bubble-chart controls module.
+ *
+ * Builds the right-sidebar control group for the bubble chart and wires
+ * listeners. Notable: the bubble chart supports *progressive nesting* — a
+ * variable-depth column hierarchy ({@link createNestingControls}) that
+ * appends one new select per filled level.
+ *
+ * Legacy `groupColumn` is migrated to the canonical `nestingColumns` array
+ * on read via {@link resolveNestingColumnsFromConfig}.
+ *
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
+ */
+
 import { BUBBLE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../stateSync.js';
@@ -11,7 +26,13 @@ import {
 } from './controlListenerHelpers.js';
 
 /**
- * Resolve effective nestingColumns from config, with groupColumn migration.
+ * Resolve the effective nesting-column list for a bubble config. Reads
+ * `nestingColumns` when present; otherwise falls back to legacy
+ * `groupColumn` so old persisted configs still work.
+ *
+ * @private
+ * @param {Object} config - The bubble chart config block.
+ * @returns {string[]}
  */
 function resolveNestingColumnsFromConfig(config) {
 	if (Array.isArray(config.nestingColumns) && config.nestingColumns.length > 0) {
@@ -24,8 +45,16 @@ function resolveNestingColumnsFromConfig(config) {
 }
 
 /**
- * Build progressive nesting level selectors.
- * Level N+1 only appears if level N has a selected value.
+ * Build progressive nesting-level selectors. Each filled level appends a
+ * fresh empty selector below it (up to the configured max). Selecting an
+ * empty value truncates all deeper levels.
+ *
+ * @private
+ * @param {Object} config
+ * @param {string | null} categoryColumn - Currently selected category column (excluded from nesting options).
+ * @param {string[]} allColumns - All visible column names.
+ * @param {boolean} disabled - Forces every select disabled when true.
+ * @returns {HTMLElement[]}
  */
 function createNestingControls(config, categoryColumn, allColumns, disabled) {
 	const nestingColumns = resolveNestingColumnsFromConfig(config);
@@ -71,6 +100,15 @@ function createNestingControls(config, categoryColumn, allColumns, disabled) {
 	return controls;
 }
 
+/**
+ * Build the bubble-chart control sections (Data + nesting, Display, Styling).
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} categoryOptions - Categorical (or fallback "all") column names for the root category select.
+ * @param {string[]} [numericOptions=[]] - Numeric column names for the sum/mean value-column select.
+ * @param {string[]} [allColumns=[]] - All visible column names; used to populate the progressive nesting selects.
+ * @returns {HTMLElement[]} Array of `chart-control-section` elements.
+ */
 export function createBubbleChartControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
 	const config = dataset.configGraficos.bubble;
 	const disabled = !dataset.configGraficos.bubble.enabled;
@@ -197,6 +235,21 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 	]);
 }
 
+/**
+ * Wire listeners for every bubble-chart control. Handles the progressive
+ * nesting selects (level N+1 appears only after level N is filled) and the
+ * `measureMode` ↔ `valueColumn` cross-constraint.
+ *
+ * The `allColumnsOrCallback` parameter is overloaded for backward
+ * compatibility: callers may pass the callback in the 4th or 5th slot.
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} baseBubble - Categorical (or fallback "all") column names; kept for parity.
+ * @param {string[]} numericOptions - Numeric column names; used to validate the value-column select.
+ * @param {string[] | (() => void)} [allColumnsOrCallback]
+ * @param {() => void} [onConfigChangedMaybe]
+ * @returns {void}
+ */
 export function setupBubbleChartControlListeners(dataset, baseBubble, numericOptions, allColumnsOrCallback = [], onConfigChangedMaybe) {
 	const allColumns = typeof allColumnsOrCallback === 'function' ? [] : allColumnsOrCallback;
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
@@ -285,6 +338,16 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 	setupColorPresetListeners('viz-bubble-color-preset', {}, {}, dataset, 'bubble', onConfigChanged, COLOR_PRESETS);
 }
 
+/**
+ * Compute the bubble chart's activation defaults. Preserves the user's
+ * current `category` and `valueColumn` when they still match visible
+ * columns; otherwise falls back to the first available column. In
+ * `measureMode === 'count'` the `valueColumn` is left untouched.
+ *
+ * @param {Dataset} dataset
+ * @param {ChartControlContext} ctx
+ * @returns {{ category: string | null, valueColumn: string | null }}
+ */
 export function computeDefaults(dataset, ctx) {
 	const currentCat = dataset.configGraficos?.bubble?.category;
 	const currentVal = dataset.configGraficos?.bubble?.valueColumn;

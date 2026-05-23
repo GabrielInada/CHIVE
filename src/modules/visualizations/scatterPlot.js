@@ -1,3 +1,18 @@
+/**
+ * Scatter-plot renderer.
+ *
+ * Renders a 2-D scatter with optional categorical axes (jittered or
+ * aggregated), log scaling, numeric size/color encoding, and an optional
+ * OLS regression line + confidence band. Axis-type detection is delegated
+ * to {@link scatterPlotAxisHelpers}; regression math to
+ * {@link scatterPlotRegression}.
+ *
+ * Internal D3 helpers (scale construction, point rendering, regression
+ * overlay) are intentionally undocumented per the Tier 5 plan.
+ *
+ * @typedef {import('../../types.js').Result} Result
+ */
+
 import { area as d3area, axisBottom, axisLeft, extent, line as d3line, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from 'https://esm.sh/d3@7.9.0';
 import {
 	buildCategoricalFilterActions,
@@ -39,6 +54,24 @@ const SCATTER_PALETTES = {
 	'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
 };
 
+/**
+ * Render a scatter plot into `container`. Returns `ok()` on success, or
+ * `fail()` when required arguments are missing or no points resolve.
+ *
+ * Common option keys: `xScale`/`yScale` ('linear' | 'log'), `radius`,
+ * `opacity`, `sizeMode` ('uniform' | 'numeric'), `sizeField`,
+ * `categoricalPairMode` ('jitter' | 'aggregate'), `colorField`,
+ * `regressionEnabled` (with `showCIBand`, `regressionLineColor`, …),
+ * axis-label toggles, palette/color inputs, `customTitle`, `chartHeight`,
+ * `locale`.
+ *
+ * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
+ * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {string} eixoX - X-axis column name.
+ * @param {string} eixoY - Y-axis column name.
+ * @param {Object} [opcoes={}] - Render options bag.
+ * @returns {Result}
+ */
 export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	if (!container || !eixoX || !eixoY) return fail();
 	const xScale = opcoes.xScale === 'log' ? 'log' : 'linear';

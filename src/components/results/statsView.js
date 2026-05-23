@@ -1,12 +1,22 @@
+/**
+ * Stats view — renders the numeric and categorical stat strips below the
+ * table preview. Reuses worker-precomputed stats when possible (see
+ * {@link getNumericStats}); falls back to live computation for joined
+ * datasets or filtered slices.
+ */
+
 import { calculateStatistics, calculateCategoricalStatistics } from '../../services/dataService.js';
 import { getActiveDataset } from '../../modules/appState.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { formatNumber } from '../../utils/formatters.js';
 
-// Reuse stats computed by the ingest worker when the rows we're rendering
-// are the active dataset's full unfiltered rows. Falls back to live calc
-// for joined datasets (no worker pass) or whenever the row reference
-// doesn't match (would only happen if a caller passed a filtered slice).
+/**
+ * Reuse worker-computed numeric stats when the rows we're rendering are
+ * the active dataset's full unfiltered rows. Falls back to live calc for
+ * joined datasets (no worker pass) or filtered slices.
+ *
+ * @private
+ */
 function getNumericStats(rows, visibleColumns) {
 	const dataset = getActiveDataset();
 	const precomputed = dataset?.precomputedStats?.numeric;
@@ -19,6 +29,7 @@ function getNumericStats(rows, visibleColumns) {
 	return calculateStatistics(rows, visibleColumns);
 }
 
+/** @private */
 function getCategoricalStats(rows, visibleColumns) {
 	const dataset = getActiveDataset();
 	const precomputed = dataset?.precomputedStats?.categorical;
@@ -31,6 +42,7 @@ function getCategoricalStats(rows, visibleColumns) {
 	return calculateCategoricalStatistics(rows, visibleColumns);
 }
 
+/** @private */
 function createStatLine(label, valor) {
 	const linha = document.createElement('div');
 	linha.className = 'stat-linha';
@@ -43,16 +55,27 @@ function createStatLine(label, valor) {
 	return linha;
 }
 
+/** @private */
 function formatPct(rate) {
 	if (!Number.isFinite(rate)) return '0%';
 	return `${(rate * 100).toFixed(1)}%`;
 }
 
+/** @private */
 function truncateText(text, maxLength = 18) {
 	const str = String(text ?? '');
 	return str.length > maxLength ? `${str.slice(0, maxLength - 1)}…` : str;
 }
 
+/**
+ * Render the numeric stats card (one column per numeric field with N,
+ * min, max, mean, median). Hides the card when no numeric columns are
+ * visible.
+ *
+ * @param {Array<Object<string, *>>} rows
+ * @param {Array<{ nome: string, tipo: string }>} visibleColumns
+ * @returns {void}
+ */
 export function renderStats(rows, visibleColumns) {
 	const stats = getNumericStats(rows, visibleColumns);
 	const cardStats = document.getElementById('card-stats');
@@ -88,6 +111,16 @@ export function renderStats(rows, visibleColumns) {
 	document.getElementById('container-stats').replaceChildren();
 }
 
+/**
+ * Render the categorical stats card (one column per non-numeric field
+ * with non-empty count, missing count, distinct count, mode, top-5%).
+ * Hides the card when no categorical columns are visible. Empty columns
+ * render an "empty" placeholder line.
+ *
+ * @param {Array<Object<string, *>>} rows
+ * @param {Array<{ nome: string, tipo: string }>} visibleColumns
+ * @returns {void}
+ */
 export function renderCategoricalStats(rows, visibleColumns) {
 	const card = document.getElementById('card-cat-stats');
 	if (!card) return;

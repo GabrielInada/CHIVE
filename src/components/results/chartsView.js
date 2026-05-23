@@ -1,3 +1,15 @@
+/**
+ * Charts-tab controller.
+ *
+ * Decides which chart section to render (single-chart-at-a-time), applies
+ * the global filter to rows, and dispatches to per-chart `chartRenders/*`
+ * modules. When the active tab is not `'charts'` (or no chart type is
+ * enabled), clears every container and shows the empty state.
+ *
+ * @typedef {import('../../types.js').ChartConfig} ChartConfig
+ * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
+ */
+
 import { t } from '../../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
@@ -11,6 +23,28 @@ import { renderNetworkChartSection } from './chartRenders/networkChartSection.js
 import { renderTreemapChartSection } from './chartRenders/treemapChartSection.js';
 import { renderTinChartSection } from './chartRenders/tinChartSection.js';
 
+/**
+ * Render the active chart into its container. Single-chart-at-a-time: if
+ * the config has multiple enabled flags (legacy), the first one in
+ * canonical order wins — the rest are coerced to disabled before render.
+ *
+ * The `options` callbacks all share the same `(column, token) => void`
+ * signature and are wired into the per-chart tooltip actions.
+ *
+ * @param {Partial<ChartConfig>} config
+ * @param {Array<Object<string, *>>} rows - Pre-filter rows; the global filter is applied inside.
+ * @param {ColumnSpec[]} visibleColumns
+ * @param {ColumnSpec[]} visibleNumericColumns
+ * @param {Object} [options]
+ * @param {(column: string, token: string) => void} [options.onAddToGlobalFilter]
+ * @param {(column: string, token: string) => void} [options.onFocusGlobalFilter]
+ * @param {(column: string, token: string) => void} [options.onExcludeGlobalFilter]
+ * @param {(column: string, token: string) => void} [options.onRemoveFromGlobalFilter]
+ * @param {(column: string, token: string) => void} [options.onBringBackGlobalFilter]
+ * @param {(column: string, token: string) => 'included' | 'excluded' | null} [options.getTokenFilterState]
+ * @param {(column: string, token: string) => boolean} [options.isShowOnlyThisRedundant]
+ * @returns {void}
+ */
 export function renderCharts(config, rows, visibleColumns, visibleNumericColumns, options = {}) {
 	const onAddToGlobalFilter = typeof options.onAddToGlobalFilter === 'function'
 		? options.onAddToGlobalFilter

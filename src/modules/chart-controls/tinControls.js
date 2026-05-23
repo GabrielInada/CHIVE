@@ -1,3 +1,17 @@
+/**
+ * TIN-chart controls module.
+ *
+ * Builds the right-sidebar control group for the TIN (Triangulated
+ * Irregular Network) surface chart and wires its listeners. The TIN chart
+ * is the most option-dense — surface fill mode, subdivision depth,
+ * isolines, threshold line, multi-color gradient ramps.
+ *
+ * X/Y/Z axes are all numeric-only.
+ *
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
+ */
+
 import { CHART_COLORS, TIN_CHART, TIN_COLOR_RAMPS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import {
@@ -23,6 +37,7 @@ import {
 
 const NONE_VALUE = '';
 
+/** @private */
 function buildColumnSelectOptions(columns) {
 	return [
 		{ value: NONE_VALUE, label: t('chive-chart-option-none') },
@@ -30,6 +45,18 @@ function buildColumnSelectOptions(columns) {
 	];
 }
 
+/**
+ * Build the TIN-chart control sections (Data, Display, Surface, Overlays).
+ *
+ * X/Y/Z axes are all numeric-only. The Surface section hosts subdivision
+ * depth and the color-ramp picker. The Overlays section hosts isolines and
+ * the optional threshold line.
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} numericOptions - Numeric column names; populates the X/Y/Z axis selects.
+ * @param {string[]} [allColumns=[]] - All visible column names; unused (X/Y/Z are numeric-only).
+ * @returns {HTMLElement[]} Array of `chart-control-section` elements.
+ */
 export function createTinControls(dataset, numericOptions, allColumns = []) {
 	void allColumns;
 	const config = dataset.configGraficos.tin;
@@ -339,6 +366,16 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 	]);
 }
 
+/**
+ * Wire listeners for every TIN-chart control. X/Y/Z selects clamp to
+ * `numericOptions`; out-of-list values reset to `null`.
+ *
+ * @param {Dataset} dataset
+ * @param {string[]} numericOptions
+ * @param {string[]} allColumns - Currently unused.
+ * @param {() => void} [onConfigChanged]
+ * @returns {void}
+ */
 export function setupTinControlListeners(dataset, numericOptions, allColumns, onConfigChanged) {
 	void allColumns;
 
@@ -425,11 +462,32 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 	);
 }
 
+/**
+ * Pick the `preferredIndex`th option, excluding all values in `avoid`.
+ * Falls back to the first available option, then `null`. Used by
+ * {@link computeDefaults} to choose three distinct numeric columns for
+ * X/Y/Z.
+ *
+ * @private
+ * @param {string[]} options
+ * @param {number} preferredIndex
+ * @param {string[]} [avoid=[]]
+ * @returns {string | null}
+ */
 function pickPreferred(options, preferredIndex, avoid = []) {
 	const filtered = options.filter(opt => !avoid.includes(opt));
 	return filtered[preferredIndex] ?? filtered[0] ?? null;
 }
 
+/**
+ * Compute the TIN chart's activation defaults. Picks the first three
+ * distinct numeric columns for X/Y/Z, preserving any user pick that still
+ * matches.
+ *
+ * @param {Dataset} dataset
+ * @param {ChartControlContext} ctx
+ * @returns {{ x: string | null, y: string | null, z: string | null }}
+ */
 export function computeDefaults(dataset, ctx) {
 	const config = dataset.configGraficos?.tin || {};
 	const numerics = ctx.numericas || [];

@@ -134,6 +134,23 @@
  * @property {ChartTypeConfig} tin
  */
 
+/**
+ * Column-name buckets passed into per-chart `build`/`attachListeners`/
+ * `computeDefaults` by the chart-controls registry. Derived from the active
+ * dataset's visible columns by `getColumnContext()` in
+ * `chart-controls/index.js`.
+ *
+ * `baseCategoricalOrAll` is the fallback list when no categorical columns
+ * exist (the chart-picker still needs to offer *something*).
+ *
+ * @typedef {Object} ChartControlContext
+ * @property {string[]} numericas - Numeric (`'numero'`) column names.
+ * @property {string[]} categoricas - Categorical (non-numeric) column names.
+ * @property {string[]} datas - Date (`'data'`) column names.
+ * @property {string[]} todasColunas - All currently visible column names.
+ * @property {string[]} baseCategoricalOrAll - `categoricas` when non-empty, else `todasColunas`.
+ */
+
 // ─── Panel domain ───────────────────────────────────────────────────────
 
 /**

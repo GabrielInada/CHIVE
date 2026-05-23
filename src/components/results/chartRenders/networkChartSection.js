@@ -1,8 +1,21 @@
+/**
+ * Network-graph section adapter. See `barChartSection.js` for the pattern.
+ */
+
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderNetworkGraph } from '../../../modules/visualizations/index.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
 import { showChartMessage } from './sharedRenderHelpers.js';
 
+/**
+ * Render the network-graph section.
+ *
+ * @param {Object} args
+ * @param {Object} args.config
+ * @param {Array<Object<string, *>>} args.rows
+ * @param {Object} args.filterCallbacks
+ * @returns {void}
+ */
 export function renderNetworkChartSection({ config, rows, filterCallbacks }) {
 	const block = document.getElementById(CHART_BLOCKS.network);
 	const container = document.getElementById(CHART_CONTAINERS.network);

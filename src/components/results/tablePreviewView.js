@@ -1,6 +1,21 @@
+/**
+ * Table preview view. Builds the `<table>` element with row index, typed
+ * cells (numeric/text), and a footer row showing per-column type tags.
+ */
+
 import { t } from '../../services/i18nService.js';
 import { formatNumber, translateType, isEmptyValue } from '../../utils/formatters.js';
 
+/**
+ * Render the preview table into `#container-tabela`. Caps rows at `limit`.
+ * Renders a "no columns selected" placeholder when `visibleColumns` is
+ * empty.
+ *
+ * @param {Array<Object<string, *>>} rows
+ * @param {Array<{ nome: string, tipo: string }>} visibleColumns
+ * @param {number} limit
+ * @returns {void}
+ */
 export function renderTablePreview(rows, visibleColumns, limit) {
 	const tableContainer = document.getElementById('container-tabela');
 	if (visibleColumns.length === 0) {

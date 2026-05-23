@@ -1,3 +1,17 @@
+/**
+ * TIN (Triangulated Irregular Network) surface renderer.
+ *
+ * Renders a Z surface over X/Y points using Delaunay triangulation, with
+ * configurable subdivision, color ramps (Viridis/Inferno/Plasma/etc.),
+ * isolines, hull outline, and an optional threshold line. The most
+ * option-dense of the chart renderers.
+ *
+ * Internal D3 helpers (Delaunay setup, isoline extraction, color-ramp
+ * resolution) are intentionally undocumented per the Tier 5 plan.
+ *
+ * @typedef {import('../../types.js').Result} Result
+ */
+
 import {
 	Delaunay,
 	axisBottom,
@@ -19,6 +33,7 @@ import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
 
+/** @private */
 function normalizeColor(value, fallback) {
 	const v = String(value || '').trim();
 	return isValidHexColor(v) ? v : fallback;
@@ -149,6 +164,27 @@ function collectUniqueEdges(delaunay) {
 	return pairs;
 }
 
+/**
+ * Render a TIN surface chart into `container`. Returns `ok()` on success,
+ * or `fail()` when required arguments are missing or no triangulation can
+ * be built from the data.
+ *
+ * Common option keys: `fillMode` ('smooth' | 'flat'), `subdivisionDepth`,
+ * `gradientMinColor`/`gradientMaxColor`, `gradientDistribution` ('value' |
+ * 'rank'), `colorRamp` (one of `TIN_COLOR_RAMPS`), `showEdges`/`edgeColor`,
+ * `showPoints`/`pointRadius`, `showZLabels`, `showHull`/`hullColor`,
+ * `showIsolines`/`isolineMode` ('count' | 'step')/`isolineCount`/`isolineStep`,
+ * `colorIsolinesByZ`, `showThreshold`/`thresholdValue`, axis-label toggles,
+ * `customTitle`, `chartHeight`, `locale`.
+ *
+ * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
+ * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {string} eixoX - Numeric X column.
+ * @param {string} eixoY - Numeric Y column.
+ * @param {string} eixoZ - Numeric Z column (the surface height).
+ * @param {Object} [opcoes={}] - Render options bag.
+ * @returns {Result}
+ */
 export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {}) {
 	if (!container || !eixoX || !eixoY || !eixoZ) return fail();
 
