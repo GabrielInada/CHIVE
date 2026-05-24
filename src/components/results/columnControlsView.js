@@ -34,9 +34,9 @@ export function renderColumnControlsDOM({
 }) {
 	acoesContainer.replaceChildren();
 
-	const createActionButton = (acao, texto, ativo = false) => {
+	const createActionButton = (acao, texto, active = false) => {
 		const botao = document.createElement('button');
-		botao.className = `column-action${ativo ? ' active' : ''}`;
+		botao.className = `column-action${active ? ' active' : ''}`;
 		botao.type = 'button';
 		botao.dataset.acaoColuna = acao;
 		botao.textContent = texto;

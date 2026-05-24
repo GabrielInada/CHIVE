@@ -368,13 +368,13 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
  * the user picks a non-numeric column.
  *
  * @param {Dataset} dataset
- * @param {string[]} numericas
+ * @param {string[]} numeric
  * @param {string[]} allOptions
  * @param {() => void} [onConfigChanged]
  * @returns {void}
  */
-export function setupScatterPlotControlListeners(dataset, numericas, allOptions, onConfigChanged) {
-	const categoricas = allOptions.filter(option => !numericas.includes(option));
+export function setupScatterPlotControlListeners(dataset, numeric, allOptions, onConfigChanged) {
+	const categorical = allOptions.filter(option => !numeric.includes(option));
 
 	const attachAxisListener = (selectId, axisKey, scaleKey) => {
 		const select = document.getElementById(selectId);
@@ -386,7 +386,7 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 				scatter: {
 					...dataset.configGraficos.scatter,
 					[axisKey]: selected,
-					[scaleKey]: numericas.includes(selected) ? currentScale : 'linear',
+					[scaleKey]: numeric.includes(selected) ? currentScale : 'linear',
 				},
 			});
 			onConfigChanged?.();
@@ -401,12 +401,12 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 		{
 			id: 'viz-select-scatter-xscale',
 			key: 'xScale',
-			transform: v => (numericas.includes(dataset.configGraficos.scatter?.x) && v === 'log' ? 'log' : 'linear'),
+			transform: v => (numeric.includes(dataset.configGraficos.scatter?.x) && v === 'log' ? 'log' : 'linear'),
 		},
 		{
 			id: 'viz-select-scatter-yscale',
 			key: 'yScale',
-			transform: v => (numericas.includes(dataset.configGraficos.scatter?.y) && v === 'log' ? 'log' : 'linear'),
+			transform: v => (numeric.includes(dataset.configGraficos.scatter?.y) && v === 'log' ? 'log' : 'linear'),
 		},
 		{ id: 'viz-select-scatter-radius', key: 'radius', transform: v => Number(v) },
 		{ id: 'viz-select-scatter-opacity', key: 'opacity', transform: v => Number(v) },
@@ -418,7 +418,7 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 		{
 			id: 'viz-select-scatter-size-field',
 			key: 'sizeField',
-			transform: v => (numericas.includes(v) ? v : null),
+			transform: v => (numeric.includes(v) ? v : null),
 		},
 		{
 			id: 'viz-select-scatter-categorical-mode',
@@ -434,7 +434,7 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 	if (colorModeSelect) {
 		colorModeSelect.addEventListener('change', () => {
 			const value = colorModeSelect.value;
-			const availableFields = value === 'category' ? categoricas : numericas;
+			const availableFields = value === 'category' ? categorical : numeric;
 			const currentField = dataset.configGraficos.scatter.colorField;
 			const currentRegression = dataset.configGraficos.scatter.regression || {};
 			const nextRegressionMode = value === 'category' ? currentRegression.mode : 'overall';
@@ -544,7 +544,7 @@ export function setupScatterPlotControlListeners(dataset, numericas, allOptions,
 			if (value === 'perCategory') {
 				const needsField = currentScatter.colorMode !== 'category' || !currentScatter.colorField;
 				if (needsField) {
-					const firstCategorical = categoricas[0] || null;
+					const firstCategorical = categorical[0] || null;
 					if (firstCategorical) {
 						nextScatter.colorMode = 'category';
 						nextScatter.colorField = firstCategorical;
@@ -588,19 +588,19 @@ export function computeDefaults(dataset, ctx) {
 	const config = dataset.configGraficos || {};
 	const currentX = config.scatter?.x;
 	const currentY = config.scatter?.y;
-	const numericInAll = ctx.numericas.filter(opt => ctx.todasColunas.includes(opt));
-	const xPadrao = ctx.todasColunas.includes(currentX)
+	const numericInAll = ctx.numeric.filter(opt => ctx.allColumns.includes(opt));
+	const xPadrao = ctx.allColumns.includes(currentX)
 		? currentX
-		: (numericInAll[0] ?? ctx.todasColunas[0] ?? null);
-	const yPadrao = ctx.todasColunas.includes(currentY) && currentY !== xPadrao
+		: (numericInAll[0] ?? ctx.allColumns[0] ?? null);
+	const yPadrao = ctx.allColumns.includes(currentY) && currentY !== xPadrao
 		? currentY
-		: (pickPreferred(numericInAll, 1, xPadrao) ?? pickPreferred(ctx.todasColunas, 0, xPadrao) ?? xPadrao);
+		: (pickPreferred(numericInAll, 1, xPadrao) ?? pickPreferred(ctx.allColumns, 0, xPadrao) ?? xPadrao);
 	const currentXScale = config.scatter?.xScale === 'log' ? 'log' : 'linear';
 	const currentYScale = config.scatter?.yScale === 'log' ? 'log' : 'linear';
 	return {
 		x: xPadrao,
 		y: yPadrao,
-		xScale: ctx.numericas.includes(xPadrao) ? currentXScale : 'linear',
-		yScale: ctx.numericas.includes(yPadrao) ? currentYScale : 'linear',
+		xScale: ctx.numeric.includes(xPadrao) ? currentXScale : 'linear',
+		yScale: ctx.numeric.includes(yPadrao) ? currentYScale : 'linear',
 	};
 }

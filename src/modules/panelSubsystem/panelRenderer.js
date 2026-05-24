@@ -14,7 +14,7 @@
 
 import { t } from '../../services/i18nService.js';
 import {
-	LAYOUTS_PAINEL,
+	PANEL_LAYOUTS,
 	getTemplateForBlock,
 } from './layoutConfig.js';
 import { normalizeHexColor } from './resizeMath.js';
@@ -170,7 +170,7 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 	});
 
 	const addControls = createAddBlockControls({
-		layouts: LAYOUTS_PAINEL,
+		layouts: PANEL_LAYOUTS,
 		translate: t,
 		onAddBlock: templateId => {
 			const newBlockId = addPanelBlock(templateId);
@@ -218,7 +218,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 	const templateSelect = createBlockTemplateSelect({
 		blockId: block.id,
 		templateId: block.templateId,
-		layouts: LAYOUTS_PAINEL,
+		layouts: PANEL_LAYOUTS,
 		translate: t,
 		onTemplateChange: e => {
 			setPanelBlockTemplate(block.id, e.target.value);
@@ -228,7 +228,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 	});
 
 	const gridDiv = document.createElement('div');
-	gridDiv.className = `panel-layout ${layout.classe}`;
+	gridDiv.className = `panel-layout ${layout.cssClass}`;
 	gridDiv.dataset.panelLayoutBlock = block.id;
 	const borderColor = normalizeHexColor(block.borderColor);
 	if (block.borderEnabled) {
@@ -342,7 +342,7 @@ export function fillLayoutSelect() {
 	const currentLayout = blocks[0]?.templateId || 'layout-2col';
 	select.replaceChildren();
 
-	Object.entries(LAYOUTS_PAINEL).forEach(([id, layout]) => {
+	Object.entries(PANEL_LAYOUTS).forEach(([id, layout]) => {
 		const option = document.createElement('option');
 		option.value = id;
 		option.textContent = t(layout.labelKey);

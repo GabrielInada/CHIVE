@@ -218,16 +218,16 @@ function restoreSidebarScrollPosition(container, anchor) {
  *
  * @private
  * @param {Dataset} dataset
- * @returns {{ numericas: string[], categoricas: string[], datas: string[], todasColunas: string[], baseCategoricalOrAll: string[] }} `baseCategoricalOrAll` falls back to all columns when no categoricals exist.
+ * @returns {{ numeric: string[], categorical: string[], dates: string[], allColumns: string[], baseCategoricalOrAll: string[] }} `baseCategoricalOrAll` falls back to all columns when no categoricals exist.
  */
 function getColumnContext(dataset) {
-	const colunasVisiveis = filterVisibleColumns(dataset);
-	const numericas = getNumericColumnNames(colunasVisiveis);
-	const categoricas = getCategoricalColumnNames(colunasVisiveis);
-	const datas = getDateColumnNames(colunasVisiveis);
-	const todasColunas = colunasVisiveis.map(c => c.nome);
-	const baseCategoricalOrAll = categoricas.length > 0 ? categoricas : todasColunas;
-	return { numericas, categoricas, datas, todasColunas, baseCategoricalOrAll };
+	const visibleColumns = filterVisibleColumns(dataset);
+	const numeric = getNumericColumnNames(visibleColumns);
+	const categorical = getCategoricalColumnNames(visibleColumns);
+	const dates = getDateColumnNames(visibleColumns);
+	const allColumns = visibleColumns.map(c => c.nome);
+	const baseCategoricalOrAll = categorical.length > 0 ? categorical : allColumns;
+	return { numeric, categorical, dates, allColumns, baseCategoricalOrAll };
 }
 
 /**
@@ -245,43 +245,43 @@ function getColumnContext(dataset) {
  */
 const CHART_CONTROL_REGISTRY = {
 	bar: {
-		build: (ds, ctx) => createBarChartControls(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas),
-		attachListeners: (ds, ctx, cb) => setupBarChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas, cb),
+		build: (ds, ctx) => createBarChartControls(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns),
+		attachListeners: (ds, ctx, cb) => setupBarChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns, cb),
 		computeDefaults: computeBarDefaults,
 	},
 	scatter: {
-		build: (ds, ctx) => createScatterPlotControls(ds, ctx.numericas, ctx.todasColunas),
-		attachListeners: (ds, ctx, cb) => setupScatterPlotControlListeners(ds, ctx.numericas, ctx.todasColunas, cb),
+		build: (ds, ctx) => createScatterPlotControls(ds, ctx.numeric, ctx.allColumns),
+		attachListeners: (ds, ctx, cb) => setupScatterPlotControlListeners(ds, ctx.numeric, ctx.allColumns, cb),
 		computeDefaults: computeScatterDefaults,
 	},
 	pie: {
-		build: (ds, ctx) => createPieChartControls(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas),
-		attachListeners: (ds, ctx, cb) => setupPieChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas, cb),
+		build: (ds, ctx) => createPieChartControls(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns),
+		attachListeners: (ds, ctx, cb) => setupPieChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns, cb),
 		computeDefaults: computePieDefaults,
 	},
 	bubble: {
-		build: (ds, ctx) => createBubbleChartControls(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas),
-		attachListeners: (ds, ctx, cb) => setupBubbleChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas, cb),
+		build: (ds, ctx) => createBubbleChartControls(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns),
+		attachListeners: (ds, ctx, cb) => setupBubbleChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns, cb),
 		computeDefaults: computeBubbleDefaults,
 	},
 	network: {
-		build: (ds, ctx) => createNetworkGraphControls(ds, ctx.todasColunas, ctx.numericas, ctx.categoricas),
-		attachListeners: (ds, ctx, cb) => setupNetworkGraphControlListeners(ds, ctx.todasColunas, ctx.numericas, cb),
+		build: (ds, ctx) => createNetworkGraphControls(ds, ctx.allColumns, ctx.numeric, ctx.categorical),
+		attachListeners: (ds, ctx, cb) => setupNetworkGraphControlListeners(ds, ctx.allColumns, ctx.numeric, cb),
 		computeDefaults: computeNetworkDefaults,
 	},
 	treemap: {
-		build: (ds, ctx) => createTreeMapControls(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas),
-		attachListeners: (ds, ctx, cb) => setupTreeMapControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numericas, ctx.todasColunas, cb),
+		build: (ds, ctx) => createTreeMapControls(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns),
+		attachListeners: (ds, ctx, cb) => setupTreeMapControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns, cb),
 		computeDefaults: computeTreemapDefaults,
 	},
 	line: {
-		build: (ds, ctx) => createLineChartControls(ds, ctx.numericas, ctx.datas, ctx.todasColunas),
-		attachListeners: (ds, ctx, cb) => setupLineChartControlListeners(ds, ctx.numericas, ctx.datas, ctx.todasColunas, cb),
+		build: (ds, ctx) => createLineChartControls(ds, ctx.numeric, ctx.dates, ctx.allColumns),
+		attachListeners: (ds, ctx, cb) => setupLineChartControlListeners(ds, ctx.numeric, ctx.dates, ctx.allColumns, cb),
 		computeDefaults: computeLineDefaults,
 	},
 	tin: {
-		build: (ds, ctx) => createTinControls(ds, ctx.numericas, ctx.todasColunas),
-		attachListeners: (ds, ctx, cb) => setupTinControlListeners(ds, ctx.numericas, ctx.todasColunas, cb),
+		build: (ds, ctx) => createTinControls(ds, ctx.numeric, ctx.allColumns),
+		attachListeners: (ds, ctx, cb) => setupTinControlListeners(ds, ctx.numeric, ctx.allColumns, cb),
 		computeDefaults: computeTinDefaults,
 	},
 };
@@ -296,14 +296,14 @@ const CHART_CONTROL_REGISTRY = {
  *
  * @param {ChartTypeKey} chartType
  * @param {Dataset} dataset
- * @param {{ numericas: string[], categoricas: string[], todasColunas: string[], datas?: string[] }} columnContext
+ * @param {{ numeric: string[], categorical: string[], allColumns: string[], dates?: string[] }} columnContext
  * @returns {Object} Partial chart-type config; empty when the type is unknown.
  */
-function computeActivationDefaults(chartType, dataset, { numericas, categoricas, todasColunas, datas = [] }) {
+function computeActivationDefaults(chartType, dataset, { numeric, categorical, allColumns, dates = [] }) {
 	const entry = CHART_CONTROL_REGISTRY[chartType];
 	if (!entry) return {};
-	const baseCategoricalOrAll = categoricas.length > 0 ? categoricas : todasColunas;
-	return entry.computeDefaults(dataset, { numericas, categoricas, todasColunas, datas, baseCategoricalOrAll });
+	const baseCategoricalOrAll = categorical.length > 0 ? categorical : allColumns;
+	return entry.computeDefaults(dataset, { numeric, categorical, allColumns, dates, baseCategoricalOrAll });
 }
 
 /** @private */

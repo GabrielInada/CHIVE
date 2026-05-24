@@ -321,11 +321,11 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 export function computeDefaults(dataset, ctx) {
 	const currentSource = dataset.configGraficos?.network?.source;
 	const currentTarget = dataset.configGraficos?.network?.target;
-	const sourcePadrao = ctx.todasColunas.includes(currentSource)
+	const sourcePadrao = ctx.allColumns.includes(currentSource)
 		? currentSource
-		: (ctx.todasColunas[0] || null);
-	const targetPadrao = ctx.todasColunas.includes(currentTarget)
+		: (ctx.allColumns[0] || null);
+	const targetPadrao = ctx.allColumns.includes(currentTarget)
 		? currentTarget
-		: (ctx.todasColunas[1] || ctx.todasColunas[0] || null);
+		: (ctx.allColumns[1] || ctx.allColumns[0] || null);
 	return { source: sourcePadrao, target: targetPadrao };
 }

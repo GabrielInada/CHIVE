@@ -10,31 +10,31 @@
  */
 
 /**
- * @type {Object<PanelTemplateId, { classe: string, slots: string[], labelKey: string }>}
+ * @type {Object<PanelTemplateId, { cssClass: string, slots: string[], labelKey: string }>}
  */
-export const LAYOUTS_PAINEL = {
+export const PANEL_LAYOUTS = {
 	'layout-single': {
-		classe: 'layout-single',
+		cssClass: 'layout-single',
 		slots: ['slot-1'],
 		labelKey: 'chive-panel-layout-single',
 	},
 	'layout-2col': {
-		classe: 'layout-2col',
+		cssClass: 'layout-2col',
 		slots: ['slot-1', 'slot-2'],
 		labelKey: 'chive-panel-layout-2col',
 	},
 	'layout-hero2': {
-		classe: 'layout-hero2',
+		cssClass: 'layout-hero2',
 		slots: ['slot-1', 'slot-2', 'slot-3'],
 		labelKey: 'chive-panel-layout-hero2',
 	},
 	'layout-3col': {
-		classe: 'layout-3col',
+		cssClass: 'layout-3col',
 		slots: ['slot-1', 'slot-2', 'slot-3'],
 		labelKey: 'chive-panel-layout-3col',
 	},
 	'layout-1x2': {
-		classe: 'layout-1x2',
+		cssClass: 'layout-1x2',
 		slots: ['slot-1', 'slot-2'],
 		labelKey: 'chive-panel-layout-1x2',
 	},
@@ -44,10 +44,10 @@ export const LAYOUTS_PAINEL = {
  * Look up a layout config by id. Unknown ids fall back to `'layout-2col'`.
  *
  * @param {*} layoutId
- * @returns {{ classe: string, slots: string[], labelKey: string }}
+ * @returns {{ cssClass: string, slots: string[], labelKey: string }}
  */
 export function getLayoutConfig(layoutId) {
-	return LAYOUTS_PAINEL[layoutId] || LAYOUTS_PAINEL['layout-2col'];
+	return PANEL_LAYOUTS[layoutId] || PANEL_LAYOUTS['layout-2col'];
 }
 
 /**
@@ -55,7 +55,7 @@ export function getLayoutConfig(layoutId) {
  * pulls `block.templateId` and delegates to {@link getLayoutConfig}.
  *
  * @param {{ templateId?: PanelTemplateId } | null | undefined} block
- * @returns {{ classe: string, slots: string[], labelKey: string }}
+ * @returns {{ cssClass: string, slots: string[], labelKey: string }}
  */
 export function getTemplateForBlock(block) {
 	return getLayoutConfig(block?.templateId);

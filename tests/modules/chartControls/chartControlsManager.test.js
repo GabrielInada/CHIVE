@@ -278,16 +278,16 @@ describe('renderChartControlsSidebar', () => {
 });
 
 describe('computeActivationDefaults', () => {
-	const numericas = ['n1', 'n2'];
-	const categoricas = ['c1', 'c2'];
-	const todasColunas = ['c1', 'c2', 'n1', 'n2'];
+	const numeric = ['n1', 'n2'];
+	const categorical = ['c1', 'c2'];
+	const allColumns = ['c1', 'c2', 'n1', 'n2'];
 
 	function makeDataset(config = {}) {
 		return { configGraficos: config };
 	}
 
 	it('bar: picks first categorical when current is invalid', () => {
-		const defaults = computeActivationDefaults('bar', makeDataset(), { numericas, categoricas, todasColunas });
+		const defaults = computeActivationDefaults('bar', makeDataset(), { numeric, categorical, allColumns });
 		expect(defaults).toEqual({ category: 'c1' });
 	});
 
@@ -295,7 +295,7 @@ describe('computeActivationDefaults', () => {
 		const defaults = computeActivationDefaults(
 			'bar',
 			makeDataset({ bar: { category: 'c2' } }),
-			{ numericas, categoricas, todasColunas }
+			{ numeric, categorical, allColumns }
 		);
 		expect(defaults).toEqual({ category: 'c2' });
 	});
@@ -304,7 +304,7 @@ describe('computeActivationDefaults', () => {
 		const defaults = computeActivationDefaults(
 			'scatter',
 			makeDataset({ scatter: { xScale: 'log', yScale: 'log' } }),
-			{ numericas, categoricas, todasColunas }
+			{ numeric, categorical, allColumns }
 		);
 		expect(defaults.x).toBe('n1');
 		expect(defaults.y).toBe('n2');
@@ -316,7 +316,7 @@ describe('computeActivationDefaults', () => {
 		const defaults = computeActivationDefaults(
 			'scatter',
 			makeDataset({ scatter: { xScale: 'log', yScale: 'log' } }),
-			{ numericas: [], categoricas, todasColunas: categoricas }
+			{ numeric: [], categorical, allColumns: categorical }
 		);
 		expect(defaults.xScale).toBe('linear');
 		expect(defaults.yScale).toBe('linear');
@@ -326,12 +326,12 @@ describe('computeActivationDefaults', () => {
 	});
 
 	it('pie: returns category + first-numeric valueColumn', () => {
-		const defaults = computeActivationDefaults('pie', makeDataset(), { numericas, categoricas, todasColunas });
+		const defaults = computeActivationDefaults('pie', makeDataset(), { numeric, categorical, allColumns });
 		expect(defaults).toEqual({ category: 'c1', valueColumn: 'n1' });
 	});
 
-	it('network: picks source and target from todasColunas', () => {
-		const defaults = computeActivationDefaults('network', makeDataset(), { numericas, categoricas, todasColunas });
+	it('network: picks source and target from allColumns', () => {
+		const defaults = computeActivationDefaults('network', makeDataset(), { numeric, categorical, allColumns });
 		expect(defaults.source).toBe('c1');
 		expect(defaults.target).toBe('c2');
 	});
@@ -340,18 +340,18 @@ describe('computeActivationDefaults', () => {
 		const defaults = computeActivationDefaults(
 			'bubble',
 			makeDataset({ bubble: { measureMode: 'count', valueColumn: 'unused' } }),
-			{ numericas, categoricas, todasColunas }
+			{ numeric, categorical, allColumns }
 		);
 		expect(defaults.valueColumn).toBe('unused');
 	});
 
 	it('treemap: picks first categorical', () => {
-		const defaults = computeActivationDefaults('treemap', makeDataset(), { numericas, categoricas, todasColunas });
+		const defaults = computeActivationDefaults('treemap', makeDataset(), { numeric, categorical, allColumns });
 		expect(defaults).toEqual({ category: 'c1' });
 	});
 
 	it('returns {} for unknown chart types', () => {
-		const defaults = computeActivationDefaults('histogram', makeDataset(), { numericas, categoricas, todasColunas });
+		const defaults = computeActivationDefaults('histogram', makeDataset(), { numeric, categorical, allColumns });
 		expect(defaults).toEqual({});
 	});
 });

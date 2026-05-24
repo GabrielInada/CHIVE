@@ -264,7 +264,7 @@ describe('panelManager (branch coverage)', () => {
 		it('defaults to layout-2col for invalid layout', () => {
 			const config = getLayoutConfig('invalid');
 
-			expect(config.classe).toContain('2col');
+			expect(config.cssClass).toContain('2col');
 		});
 
 		it('has correct slot counts per layout', () => {

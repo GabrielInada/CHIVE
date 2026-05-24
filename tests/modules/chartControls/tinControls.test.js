@@ -226,7 +226,7 @@ describe('tinControls listeners', () => {
 describe('tinControls computeDefaults', () => {
 	it('returns three distinct numeric columns when available', () => {
 		const dataset = createDataset({ x: null, y: null, z: null });
-		const result = computeDefaults(dataset, { numericas: ['a', 'b', 'c', 'd'] });
+		const result = computeDefaults(dataset, { numeric: ['a', 'b', 'c', 'd'] });
 		// Picks must be distinct (the helper avoids already-picked values).
 		expect(new Set([result.x, result.y, result.z]).size).toBe(3);
 		// x is always the first element; y/z are picked via pickPreferred so
@@ -236,13 +236,13 @@ describe('tinControls computeDefaults', () => {
 
 	it('preserves an existing valid triple without rotating it', () => {
 		const dataset = createDataset({ x: 'lon', y: 'lat', z: 'elev' });
-		const result = computeDefaults(dataset, { numericas: ['lon', 'lat', 'elev', 'extra'] });
+		const result = computeDefaults(dataset, { numeric: ['lon', 'lat', 'elev', 'extra'] });
 		expect(result).toEqual({ x: 'lon', y: 'lat', z: 'elev' });
 	});
 
 	it('returns nulls for y and z when only one numeric column is available', () => {
 		const dataset = createDataset({ x: null, y: null, z: null });
-		const result = computeDefaults(dataset, { numericas: ['only'] });
+		const result = computeDefaults(dataset, { numeric: ['only'] });
 		expect(result.x).toBe('only');
 		// pickPreferred filters out already-picked values; with only one column,
 		// the avoid list empties the candidate pool and y/z fall back to null.

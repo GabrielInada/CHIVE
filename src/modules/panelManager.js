@@ -21,7 +21,7 @@ import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
 import { getNumericColumnNames } from '../utils/columnHelpers.js';
 import {
-	LAYOUTS_PAINEL,
+	PANEL_LAYOUTS,
 	getLayoutConfig as getPanelLayoutConfig,
 } from './panelSubsystem/layoutConfig.js';
 import {
@@ -217,7 +217,7 @@ export function renderCanvasPanel() {
  * @fires STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED - When the change applies.
  */
 export function changeLayout(layoutId) {
-	if (!LAYOUTS_PAINEL[layoutId]) {
+	if (!PANEL_LAYOUTS[layoutId]) {
 		return;
 	}
 	const blocks = getPanelBlocks();

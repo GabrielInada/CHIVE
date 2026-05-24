@@ -384,12 +384,12 @@ function updatePieColorPickerGrid(dataset, sectorValues) {
  *
  * @param {Dataset} dataset
  * @param {string[]} basePie - Categorical (or fallback "all") column names; kept for parity.
- * @param {string[]} numericas - Numeric column names; used to validate the value-column select.
+ * @param {string[]} numeric - Numeric column names; used to validate the value-column select.
  * @param {string[] | (() => void)} [allColumnsOrCallback]
  * @param {() => void} [onConfigChangedMaybe]
  * @returns {void}
  */
-export function setupPieChartControlListeners(dataset, basePie, numericas, allColumnsOrCallback = [], onConfigChangedMaybe) {
+export function setupPieChartControlListeners(dataset, basePie, numeric, allColumnsOrCallback = [], onConfigChangedMaybe) {
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
@@ -410,7 +410,7 @@ export function setupPieChartControlListeners(dataset, basePie, numericas, allCo
 			const measureMode = measureSelect.value === 'sum' ? 'sum' : 'count';
 			const currentValueColumn = dataset.configGraficos.pie?.valueColumn;
 			const nextValueColumn = measureMode === 'sum'
-				? (numericas.includes(currentValueColumn) ? currentValueColumn : (numericas[0] || null))
+				? (numeric.includes(currentValueColumn) ? currentValueColumn : (numeric[0] || null))
 				: currentValueColumn;
 			updateActiveDatasetChartConfig({
 				pie: {
@@ -574,6 +574,6 @@ export function computeDefaults(dataset, ctx) {
 		category: ctx.baseCategoricalOrAll.includes(currentCat)
 			? currentCat
 			: (ctx.baseCategoricalOrAll[0] || null),
-		valueColumn: ctx.numericas.includes(currentVal) ? currentVal : (ctx.numericas[0] || null),
+		valueColumn: ctx.numeric.includes(currentVal) ? currentVal : (ctx.numeric[0] || null),
 	};
 }
