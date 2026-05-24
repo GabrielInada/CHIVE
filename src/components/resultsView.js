@@ -49,7 +49,7 @@ let fileListVisibleCount = FILE_LIST_PAGE_SIZE;
  * @returns {void}
  */
 export function showErrorMessage(message) {
-  const errorElement = document.getElementById('mensagem-erro');
+  const errorElement = document.getElementById('error-message');
   errorElement.textContent = '⚠ ' + message;
   errorElement.style.display = 'block';
 }
@@ -60,7 +60,7 @@ export function showErrorMessage(message) {
  * @returns {void}
  */
 export function hideErrorMessage() {
-  document.getElementById('mensagem-erro').style.display = 'none';
+  document.getElementById('error-message').style.display = 'none';
 }
 
 /**
@@ -80,12 +80,12 @@ export function hideErrorMessage() {
  * @returns {void}
  */
 export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCreateJoin, onLoadPreset) {
-  const fileInfo = document.getElementById('info-arquivo');
-  const summary = document.getElementById('arquivo-resumo-texto');
-  const list = document.getElementById('lista-arquivos-conteudo');
+  const fileInfo = document.getElementById('file-info');
+  const summary = document.getElementById('file-summary-text');
+  const list = document.getElementById('file-list-content');
 
   fileInfo.style.display = 'block';
-  const stickyHeaderId = 'arquivos-topo-fixo';
+  const stickyHeaderId = 'files-top-fixed';
   let stickyHeader = document.getElementById(stickyHeaderId);
   if (!stickyHeader) {
     stickyHeader = document.createElement('div');
@@ -101,7 +101,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   summary.textContent = t('chive-files-loaded', datasets.length);
 
   const activeDataset = activeIndex >= 0 && activeIndex < datasets.length ? datasets[activeIndex] : null;
-  const selectedMetaId = 'arquivo-selecionado-meta';
+  const selectedMetaId = 'file-selected-meta';
   let selectedMeta = document.getElementById(selectedMetaId);
   if (!selectedMeta) {
     selectedMeta = document.createElement('div');
@@ -128,7 +128,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
     selectedMeta.removeAttribute('title');
   }
 
-  const toolsId = 'arquivos-ferramentas';
+  const toolsId = 'files-tools';
   let tools = document.getElementById(toolsId);
   if (!tools) {
     tools = document.createElement('div');
@@ -143,7 +143,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   const searchInput = document.createElement('input');
   searchInput.type = 'search';
   searchInput.className = 'files-filter-input';
-  searchInput.id = 'arquivos-filtro-input';
+  searchInput.id = 'files-filter-input';
   searchInput.placeholder = t('chive-files-search-placeholder');
   searchInput.value = fileListQuery;
   searchInput.setAttribute('aria-label', t('chive-files-search-placeholder'));
@@ -153,7 +153,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   filterStatus.className = 'files-filter-status';
   tools.appendChild(filterStatus);
 
-  const paginationId = 'arquivos-paginacao';
+  const paginationId = 'files-pagination';
   let pagination = document.getElementById(paginationId);
   if (!pagination) {
     pagination = document.createElement('div');
@@ -258,12 +258,12 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
  */
 export function renderEmptyState() {
   const els = {
-    'info-arquivo': document.getElementById('info-arquivo'),
-    'painel-colunas': document.getElementById('painel-colunas'),
-    'estado-vazio': document.getElementById('estado-vazio'),
-    'estado-dados': document.getElementById('estado-dados'),
-    'resultado-tabs': document.getElementById('resultado-tabs'),
-    'container-tabela': document.getElementById('container-tabela'),
+    'file-info': document.getElementById('file-info'),
+    'columns-panel': document.getElementById('columns-panel'),
+    'empty-state': document.getElementById('empty-state'),
+    'data-state': document.getElementById('data-state'),
+    'result-tabs': document.getElementById('result-tabs'),
+    'table-container': document.getElementById('table-container'),
     'container-stats': document.getElementById('container-stats'),
     'container-cat-stats': document.getElementById('container-cat-stats'),
     'card-cat-stats': document.getElementById('card-cat-stats'),
@@ -273,15 +273,15 @@ export function renderEmptyState() {
     'chart-pie-container': document.getElementById('chart-pie-container'),
     'chart-bubble-container': document.getElementById('chart-bubble-container'),
     'badge-charts': document.getElementById('badge-charts'),
-    'btn-avancar': document.getElementById('btn-avancar'),
+    'btn-advance': document.getElementById('btn-advance'),
   };
 
   // Only update elements that exist (not null)
-  if (els['info-arquivo']) els['info-arquivo'].style.display = 'block';
-  if (els['painel-colunas']) els['painel-colunas'].style.display = 'none';
-  if (els['estado-vazio']) els['estado-vazio'].style.display = 'flex';
-  if (els['estado-dados']) els['estado-dados'].style.display = 'none';
-  if (els['resultado-tabs']) els['resultado-tabs'].style.display = 'none';
+  if (els['file-info']) els['file-info'].style.display = 'block';
+  if (els['columns-panel']) els['columns-panel'].style.display = 'none';
+  if (els['empty-state']) els['empty-state'].style.display = 'flex';
+  if (els['data-state']) els['data-state'].style.display = 'none';
+  if (els['result-tabs']) els['result-tabs'].style.display = 'none';
   const emptyFilterBtn = document.getElementById('btn-global-filter');
   if (emptyFilterBtn) {
     emptyFilterBtn.hidden = true;
@@ -289,7 +289,7 @@ export function renderEmptyState() {
     emptyFilterBtn.classList.remove('active');
     emptyFilterBtn.dataset.active = 'false';
   }
-  if (els['container-tabela']) els['container-tabela'].replaceChildren();
+  if (els['table-container']) els['table-container'].replaceChildren();
   if (els['container-stats']) els['container-stats'].replaceChildren();
   if (els['container-cat-stats']) els['container-cat-stats'].replaceChildren();
   if (els['card-cat-stats']) els['card-cat-stats'].style.display = 'none';
@@ -299,13 +299,13 @@ export function renderEmptyState() {
   if (els['chart-pie-container']) els['chart-pie-container'].replaceChildren();
   if (els['chart-bubble-container']) els['chart-bubble-container'].replaceChildren();
   if (els['badge-charts']) els['badge-charts'].textContent = '—';
-  if (els['btn-avancar']) els['btn-avancar'].disabled = true;
-  
-  const devNotice = document.getElementById('aviso-dev');
+  if (els['btn-advance']) els['btn-advance'].disabled = true;
+
+  const devNotice = document.getElementById('dev-warning');
   if (devNotice) devNotice.style.display = 'none';
-  
-  const zonaUpload = document.getElementById('zona-upload');
-  if (zonaUpload) zonaUpload.classList.remove('loaded');
+
+  const uploadZone = document.getElementById('upload-zone');
+  if (uploadZone) uploadZone.classList.remove('loaded');
   
   const uploadIcone = document.querySelector('.upload-icon');
   if (uploadIcone) uploadIcone.textContent = '⬆';
@@ -351,10 +351,10 @@ export function renderDataInterface(
   chartConfig = null,
   onChartConfigChange = null
 ) {
-  document.getElementById('painel-colunas').style.display = 'block';
-  document.getElementById('resultado-tabs').style.display = 'flex';
-  document.getElementById('estado-vazio').style.display = 'none';
-  document.getElementById('estado-dados').style.display = 'flex';
+  document.getElementById('columns-panel').style.display = 'block';
+  document.getElementById('result-tabs').style.display = 'flex';
+  document.getElementById('empty-state').style.display = 'none';
+  document.getElementById('data-state').style.display = 'flex';
 
   const columnNames = columns.map(column => column.nome);
   const selectedNames = new Set(Array.isArray(selectedColumns) ? selectedColumns : columnNames);
@@ -374,8 +374,8 @@ export function renderDataInterface(
           : null;
 
   // Render buttons outside the scroll container
-  const actionsContainer = document.getElementById('colunas-acoes');
-  const columnsList = document.getElementById('lista-colunas-conteudo');
+  const actionsContainer = document.getElementById('column-actions-bar');
+  const columnsList = document.getElementById('column-list-content');
 
   renderColumnControlsDOM({
     acoesContainer: actionsContainer,
@@ -472,7 +472,7 @@ export function renderDataInterface(
   });
 
   const rowLimit = Number(previewRows) > 0 ? Number(previewRows) : 10;
-  const rowSelector = document.getElementById('select-linhas-preview');
+  const rowSelector = document.getElementById('select-preview-rows');
   if (rowSelector) {
     rowSelector.value = String(rowLimit);
     rowSelector.onchange = event => {
@@ -482,7 +482,7 @@ export function renderDataInterface(
       onPreviewRowsChange(nextRows);
     };
   }
-  document.getElementById('badge-linhas').textContent = t(
+  document.getElementById('badge-rows').textContent = t(
     'chive-badge-preview',
     rows.length.toLocaleString(getLocale()),
     Math.min(rowLimit, rows.length),
@@ -503,13 +503,13 @@ export function renderDataInterface(
     isShowOnlyThisRedundant: lookupShowOnlyThisRedundant,
   });
 
-  document.getElementById('btn-avancar').disabled = false;
-  const devNotice = document.getElementById('aviso-dev');
+  document.getElementById('btn-advance').disabled = false;
+  const devNotice = document.getElementById('dev-warning');
   if (devNotice) devNotice.style.display = 'block';
-  document.getElementById('zona-upload').classList.add('loaded');
+  document.getElementById('upload-zone').classList.add('loaded');
   document.querySelector('.upload-icon').textContent = '✓';
   document.querySelector('.upload-text-main').textContent = t('chive-upload-loaded-main');
   document.querySelector('.upload-text-sub').textContent = t('chive-upload-loaded-sub');
-  document.getElementById('arquivo-resumo-texto').title =
+  document.getElementById('file-summary-text').title =
     `${fileName} · ${rows.length.toLocaleString(getLocale())} linhas · ${columns.length} colunas · ${fileSize}`;
 }

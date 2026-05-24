@@ -28,7 +28,7 @@ describe('feedbackUI', () => {
 
   it('mostra erro no container quando existe e permite fechar', () => {
     const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'erros-container';
+    errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
     showError('boom');
@@ -51,7 +51,7 @@ describe('feedbackUI', () => {
 
   it('auto-dismiss error when duration is specified', () => {
     const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'erros-container';
+    errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
     showError('timed error', 200);
@@ -79,7 +79,7 @@ describe('feedbackUI', () => {
   it('showErrorMessage alias works', async () => {
     const { showErrorMessage } = await import('../src/modules/feedbackUI.js');
     const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'erros-container';
+    errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
     showErrorMessage('alias error');
@@ -89,7 +89,7 @@ describe('feedbackUI', () => {
   it('hideErrorMessage alias clears errors', async () => {
     const { hideErrorMessage } = await import('../src/modules/feedbackUI.js');
     const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'erros-container';
+    errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
     showError('x');
@@ -107,11 +107,11 @@ describe('feedbackUI', () => {
 
   it('limpa erros e loading em clearAllFeedback', () => {
     const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'erros-container';
+    errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
     const loading = document.createElement('div');
-    loading.id = 'loading-estado';
+    loading.id = 'loading-state';
     loading.hidden = true;
     document.body.appendChild(loading);
 

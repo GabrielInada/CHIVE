@@ -1,7 +1,7 @@
 /* @feature: results
    Column control buttons, column selection UI, filter toggles */
 
-#painel-colunas {
+#columns-panel {
   display: none;
 }
 

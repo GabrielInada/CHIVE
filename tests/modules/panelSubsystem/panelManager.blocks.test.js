@@ -10,8 +10,8 @@ function setupDom() {
     <input type="checkbox" id="toggle-panel-slot-borders" />
     <input type="color" id="input-panel-slot-border-color" value="#5d645d" />
     <div id="panel-layout-canvas"></div>
-    <div id="lista-painel-charts"></div>
-    <button id="btn-exportar-painel" type="button"></button>
+    <div id="panel-chart-list"></div>
+    <button id="btn-export-panel" type="button"></button>
   `;
 }
 

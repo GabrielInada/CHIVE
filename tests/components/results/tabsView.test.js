@@ -18,22 +18,22 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 function mountTabsDom() {
 	document.body.innerHTML = `
-		<div id="resultado-tabs">
-			<div id="resultado-tabs-grupo">
+		<div id="result-tabs">
+			<div id="result-tabs-group">
 				<button id="tab-preview"></button>
 				<button id="tab-charts"></button>
 				<button id="tab-panel"></button>
 			</div>
-			<div id="resultado-tabs-acoes">
+			<div id="result-tabs-actions">
 				<button id="btn-global-filter" hidden disabled>
 					<span id="global-filter-trigger-label">Global filter</span>
 					<span id="global-filter-trigger-badge" hidden></span>
 				</button>
 			</div>
 		</div>
-		<section id="painel-preview"></section>
-		<section id="painel-charts"></section>
-		<section id="painel-panel"></section>
+		<section id="tab-content-preview"></section>
+		<section id="tab-content-charts"></section>
+		<section id="tab-content-dashboard"></section>
 	`;
 }
 
@@ -49,11 +49,11 @@ describe('tabsView', () => {
 		updateTabs('charts', vi.fn());
 
 		expect(document.getElementById('tab-charts').classList.contains('active')).toBe(true);
-		expect(document.getElementById('painel-charts').classList.contains('active')).toBe(true);
+		expect(document.getElementById('tab-content-charts').classList.contains('active')).toBe(true);
 		expect(document.getElementById('tab-preview').classList.contains('active')).toBe(false);
-		expect(document.getElementById('painel-preview').classList.contains('active')).toBe(false);
+		expect(document.getElementById('tab-content-preview').classList.contains('active')).toBe(false);
 		expect(document.getElementById('tab-panel').classList.contains('active')).toBe(false);
-		expect(document.getElementById('painel-panel').classList.contains('active')).toBe(false);
+		expect(document.getElementById('tab-content-dashboard').classList.contains('active')).toBe(false);
 	});
 
 	it('registers listeners once and always uses latest callback', async () => {

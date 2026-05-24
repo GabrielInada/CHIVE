@@ -136,7 +136,7 @@ body {
   transition: padding 0.24s ease;
 }
 
-.panel-left:has(#sidebar-panel-dados.active) {
+.panel-left:has(#sidebar-panel-data.active) {
   position: static;
   align-self: stretch;
   height: auto;

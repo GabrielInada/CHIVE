@@ -218,9 +218,9 @@ describe('fileManager', () => {
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-upload-zone-missing');
 
     const input = document.createElement('input');
-    input.id = 'input-arquivo';
+    input.id = 'file-input';
     const zone = document.createElement('div');
-    zone.id = 'zona-upload';
+    zone.id = 'upload-zone';
     document.body.innerHTML = '';
     document.body.appendChild(input);
     document.body.appendChild(zone);
@@ -261,7 +261,7 @@ describe('fileManager', () => {
     initFileManager(onChange);
 
     const input = document.createElement('input');
-    input.id = 'input-arquivo';
+    input.id = 'file-input';
     input.type = 'file';
 
     // Cria um getter/setter para value que funcione

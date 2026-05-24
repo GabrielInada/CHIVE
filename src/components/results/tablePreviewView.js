@@ -7,7 +7,7 @@ import { t } from '../../services/i18nService.js';
 import { formatNumber, translateType, isEmptyValue } from '../../utils/formatters.js';
 
 /**
- * Render the preview table into `#container-tabela`. Caps rows at `limit`.
+ * Render the preview table into `#table-container`. Caps rows at `limit`.
  * Renders a "no columns selected" placeholder when `visibleColumns` is
  * empty.
  *
@@ -17,7 +17,7 @@ import { formatNumber, translateType, isEmptyValue } from '../../utils/formatter
  * @returns {void}
  */
 export function renderTablePreview(rows, visibleColumns, limit) {
-	const tableContainer = document.getElementById('container-tabela');
+	const tableContainer = document.getElementById('table-container');
 	if (visibleColumns.length === 0) {
 		tableContainer.replaceChildren();
 		const empty = document.createElement('div');

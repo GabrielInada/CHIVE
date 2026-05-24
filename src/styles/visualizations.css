@@ -6,7 +6,7 @@
   overflow: hidden;
 }
 
-#painel-visualizacoes-sidebar {
+#viz-sidebar-panel {
   display: flex;
   flex-direction: column;
   min-height: 0;

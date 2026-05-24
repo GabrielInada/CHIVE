@@ -53,7 +53,7 @@ export function showFeedbackMessage(message, duration = 2200) {
  * @param {number} duration - Auto-dismiss duration in ms (0 = no autodismiss)
  */
 export function showError(message, duration = 0) {
-	const errorsContainer = document.getElementById('erros-container');
+	const errorsContainer = document.getElementById('errors-container');
 	if (!errorsContainer) {
 		showFeedback(message, duration || 2200);
 		return;
@@ -101,7 +101,7 @@ export function showErrorMessage(message, duration = 0) {
  * Clear all error messages
  */
 export function clearErrors() {
-	const errorsContainer = document.getElementById('erros-container');
+	const errorsContainer = document.getElementById('errors-container');
 	if (errorsContainer) {
 		errorsContainer.replaceChildren();
 	}
@@ -120,7 +120,7 @@ export function hideErrorMessage() {
  * @param {string} message - Loading message
  */
 export function showLoading(message) {
-	const loadingEl = document.getElementById('loading-estado');
+	const loadingEl = document.getElementById('loading-state');
 	if (loadingEl) {
 		loadingEl.replaceChildren();
 		const spinner = document.createElement('div');
@@ -137,7 +137,7 @@ export function showLoading(message) {
  * Hide loading state
  */
 export function hideLoading() {
-	const loadingEl = document.getElementById('loading-estado');
+	const loadingEl = document.getElementById('loading-state');
 	if (loadingEl) {
 		loadingEl.hidden = true;
 	}

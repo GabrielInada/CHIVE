@@ -30,13 +30,13 @@ function setupDom() {
     <button id="tab-charts" data-aba="charts" class="inactive"></button>
     <button id="tab-panel" data-aba="panel" class="inactive"></button>
 
-    <section id="painel-preview"></section>
-    <section id="painel-charts" hidden></section>
-    <section id="painel-panel" hidden></section>
+    <section id="tab-content-preview"></section>
+    <section id="tab-content-charts" hidden></section>
+    <section id="tab-content-dashboard" hidden></section>
 
-    <aside id="sidebar-panel-dados" class="active"></aside>
+    <aside id="sidebar-panel-data" class="active"></aside>
     <aside id="sidebar-panel-viz" class="inactive"></aside>
-    <aside id="sidebar-panel-panel" class="inactive"></aside>
+    <aside id="sidebar-panel-dashboard" class="inactive"></aside>
 
     <button id="btn-toggle-sidebar" aria-expanded="true"></button>
   `;
@@ -60,8 +60,8 @@ describe('uiManager', () => {
     switchTab('charts');
 
     expect(document.getElementById('tab-charts').classList.contains('active')).toBe(true);
-    expect(document.getElementById('painel-charts').hidden).toBe(false);
-    expect(document.getElementById('painel-preview').hidden).toBe(true);
+    expect(document.getElementById('tab-content-charts').hidden).toBe(false);
+    expect(document.getElementById('tab-content-preview').hidden).toBe(true);
     expect(mocks.setSidebarMode).toHaveBeenCalledWith('viz');
     expect(document.getElementById('sidebar-panel-viz').classList.contains('active')).toBe(true);
   });
@@ -74,14 +74,14 @@ describe('uiManager', () => {
 
   it('setTabVisibility e updateSidebarUI aplicam visibilidade correta', () => {
     setTabVisibility('panel', true);
-    expect(document.getElementById('painel-panel').hidden).toBe(false);
+    expect(document.getElementById('tab-content-dashboard').hidden).toBe(false);
 
     setTabVisibility('panel', false);
-    expect(document.getElementById('painel-panel').hidden).toBe(true);
+    expect(document.getElementById('tab-content-dashboard').hidden).toBe(true);
 
     updateSidebarUI('panel');
-    expect(document.getElementById('sidebar-panel-panel').classList.contains('active')).toBe(true);
-    expect(document.getElementById('sidebar-panel-dados').classList.contains('inactive')).toBe(true);
+    expect(document.getElementById('sidebar-panel-dashboard').classList.contains('active')).toBe(true);
+    expect(document.getElementById('sidebar-panel-data').classList.contains('inactive')).toBe(true);
   });
 
   it('toggleSidebarCollapsed alterna classe e atributos de acessibilidade', () => {
@@ -104,7 +104,7 @@ describe('uiManager', () => {
     setupSidebarToggleListener();
 
     document.getElementById('tab-panel').click();
-    expect(document.getElementById('painel-panel').hidden).toBe(false);
+    expect(document.getElementById('tab-content-dashboard').hidden).toBe(false);
     expect(mocks.setSidebarMode).toHaveBeenCalledWith('panel');
 
     const before = document.body.classList.contains('sidebar-collapsed');

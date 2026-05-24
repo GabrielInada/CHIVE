@@ -99,7 +99,7 @@ async function initializeApplication() {
 await initializeI18n();
 
 // Only run app logic on pages that have the main app UI
-if (!document.getElementById('info-arquivo')) return;
+if (!document.getElementById('file-info')) return;
 
 // 2. Hydrate persisted state BEFORE any subscriber (incl. stateSync) is wired,
 //    so the act of restoring doesn't immediately schedule a redundant save and

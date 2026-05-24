@@ -82,10 +82,15 @@ describe('panelManager (branch coverage)', () => {
 	beforeEach(() => {
 		_resetPanelManagerForTesting();
 
+		// WHY: renderCanvasPanel calls window.matchMedia; jsdom doesn't implement it.
+		if (!window.matchMedia) {
+			window.matchMedia = () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} });
+		}
+
 		document.body.innerHTML = `
-			<div id="lista-painel-charts"></div>
-			<div id="painel-canvas"></div>
-			<div id="painel-layout-selector"><select id="select-painel-layout"></select></div>
+			<div id="panel-chart-list"></div>
+			<div id="panel-layout-canvas"></div>
+			<div id="panel-layout-selector"><select id="select-panel-layout"></select></div>
 		`;
 
 		mocks.appState.getPanelCharts.mockClear();
@@ -280,21 +285,21 @@ describe('panelManager (branch coverage)', () => {
 	});
 
 	describe('DOM element handling', () => {
-		it('handles missing lista-painel-charts', () => {
+		it('handles missing panel-chart-list', () => {
 			initPanelManager();
-			document.getElementById('lista-painel-charts')?.remove();
+			document.getElementById('panel-chart-list')?.remove();
 			expect(() => initPanelManager()).not.toThrow();
 		});
 
-		it('handles missing painel-canvas', () => {
+		it('handles missing panel-layout-canvas', () => {
 			initPanelManager();
-			document.getElementById('painel-canvas')?.remove();
+			document.getElementById('panel-layout-canvas')?.remove();
 			expect(() => initPanelManager()).not.toThrow();
 		});
 
-		it('handles missing select-painel-layout', () => {
+		it('handles missing select-panel-layout', () => {
 			initPanelManager();
-			document.getElementById('select-painel-layout')?.remove();
+			document.getElementById('select-panel-layout')?.remove();
 			expect(() => initPanelManager()).not.toThrow();
 		});
 	});

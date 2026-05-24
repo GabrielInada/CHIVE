@@ -188,7 +188,7 @@ Examples:
 - `.panel-block` — Panel block container
 - `.table-preview` — Preview table
 - `.column-actions` — Column action buttons
-- `#estado-vazio` — Empty state container (Portuguese IDs slated for rename in PR 3)
+- `#empty-state` — Empty state container
 
 ## Common Variables
 

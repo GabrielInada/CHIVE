@@ -242,7 +242,7 @@ export function exportPanelLayoutSvg() {
  */
 export function setupPanelEventListeners() {
 	const selectLayout = document.getElementById('select-panel-layout');
-	const btnExportar = document.getElementById('btn-exportar-painel');
+	const btnExportar = document.getElementById('btn-export-panel');
 
 	if (selectLayout) {
 		selectLayout.addEventListener('change', e => {
