@@ -20,17 +20,17 @@ describe('resizeMath helpers', () => {
 	});
 
 	it('computes default dynamic min height for non-vertical templates', () => {
-		expect(computeDynamicMinHeight('layout-2col', { split: 50 })).toBe(220);
+		expect(computeDynamicMinHeight('template-2col', { split: 50 })).toBe(220);
 	});
 
-	it('computes larger min height for extreme layout-1x2 split', () => {
-		const minHeight = computeDynamicMinHeight('layout-1x2', { split: 80 });
+	it('computes larger min height for extreme template-1x2 split', () => {
+		const minHeight = computeDynamicMinHeight('template-1x2', { split: 80 });
 		expect(minHeight).toBeGreaterThan(220);
 		expect(minHeight).toBeLessThanOrEqual(620);
 	});
 
-	it('computes larger min height for extreme layout-hero2 splitRight', () => {
-		const minHeight = computeDynamicMinHeight('layout-hero2', { splitRight: 80 });
+	it('computes larger min height for extreme template-hero2 splitRight', () => {
+		const minHeight = computeDynamicMinHeight('template-hero2', { splitRight: 80 });
 		expect(minHeight).toBeGreaterThan(220);
 		expect(minHeight).toBeLessThanOrEqual(620);
 	});

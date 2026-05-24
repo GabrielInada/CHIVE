@@ -27,7 +27,7 @@ import {
 
 function createDataset(overrides = {}) {
 	return {
-		configGraficos: {
+		chartConfig: {
 			bar: {
 				enabled: true,
 				expanded: true,
@@ -154,7 +154,7 @@ describe('barControls listeners', () => {
 		appendControls(controls);
 
 		const onConfigChanged = vi.fn();
-		setupBarChartControlListeners(dataset, dataset.configGraficos.bar, ['sales'], ['region', 'sales'], onConfigChanged);
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], onConfigChanged);
 
 		const measureSelect = document.getElementById('viz-select-bar-measure');
 		measureSelect.value = 'sum';
@@ -171,7 +171,7 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupBarChartControlListeners(dataset, dataset.configGraficos.bar, ['sales'], ['region', 'sales'], vi.fn());
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], vi.fn());
 
 		const measureSelect = document.getElementById('viz-select-bar-measure');
 		measureSelect.value = 'count';
@@ -187,7 +187,7 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupBarChartControlListeners(dataset, dataset.configGraficos.bar, ['sales'], ['region', 'sales'], vi.fn());
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], vi.fn());
 
 		const select = document.getElementById('viz-select-bar-color-mode');
 		// jsdom select rejects values not in the option set, so add a sentinel option first.
@@ -207,7 +207,7 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupBarChartControlListeners(dataset, dataset.configGraficos.bar, ['sales'], ['region', 'sales'], vi.fn());
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], vi.fn());
 
 		const valueColumnSelect = document.getElementById('viz-select-bar-value-column');
 		valueColumnSelect.value = '';
@@ -223,7 +223,7 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupBarChartControlListeners(dataset, dataset.configGraficos.bar, ['sales'], ['region', 'sales'], vi.fn());
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], vi.fn());
 
 		const topnSelect = document.getElementById('viz-select-bar-topn');
 		topnSelect.value = '20';
@@ -240,7 +240,7 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupBarChartControlListeners(dataset, dataset.configGraficos.bar, ['sales'], ['region', 'sales'], vi.fn());
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], vi.fn());
 
 		const checkbox = document.getElementById('viz-toggle-bar-x-label');
 		checkbox.checked = false;

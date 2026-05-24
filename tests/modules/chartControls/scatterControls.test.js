@@ -19,7 +19,7 @@ import { createScatterPlotControls, setupScatterPlotControlListeners } from '../
 
 function createDataset(scatterOverrides = {}) {
 	return {
-		configGraficos: {
+		chartConfig: {
 			scatter: {
 				enabled: true,
 				expanded: true,

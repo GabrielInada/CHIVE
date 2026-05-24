@@ -131,7 +131,7 @@ function renderDatasetColumnPickers({
 
 	if (!dataset) return;
 
-	const columnNames = dataset.colunas.map(column => column.nome);
+	const columnNames = dataset.columns.map(column => column.name);
 	const keySelection = new Set(defaultKey ? [defaultKey] : []);
 	const allColumns = new Set(columnNames);
 
@@ -161,7 +161,7 @@ function renderDatasetColumnPickers({
  * Disabled when fewer than 2 datasets exist (the trigger button enforces
  * this; the dialog assumes `datasets.length >= 2` on open).
  *
- * @param {{ datasets: Array<{ nome: string, dados: Array<*>, colunas: Array<{ nome: string }> }>, translate: (key: string, ...args: *) => string }} args
+ * @param {{ datasets: Array<{ name: string, rows: Array<*>, columns: Array<{ name: string }> }>, translate: (key: string, ...args: *) => string }} args
  * @returns {Promise<Object | null>}
  */
 export function openJoinBuilderDialog({ datasets, translate }) {
@@ -196,7 +196,7 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		leftSelect.id = 'join-left-file';
 		leftSelect.className = 'rows-select';
 		datasets.forEach((dataset, index) => {
-			leftSelect.appendChild(createOption(index, dataset.nome, index === 0));
+			leftSelect.appendChild(createOption(index, dataset.name, index === 0));
 		});
 		leftGroup.appendChild(leftLabel);
 		leftGroup.appendChild(leftSelect);
@@ -210,7 +210,7 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		rightSelect.id = 'join-right-file';
 		rightSelect.className = 'rows-select';
 		datasets.forEach((dataset, index) => {
-			rightSelect.appendChild(createOption(index, dataset.nome, index === 1));
+			rightSelect.appendChild(createOption(index, dataset.name, index === 1));
 		});
 		rightGroup.appendChild(rightLabel);
 		rightGroup.appendChild(rightSelect);
@@ -282,8 +282,8 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		const refreshColumnPanels = () => {
 			const leftDataset = datasets[Number(leftSelect.value)];
 			const rightDataset = datasets[Number(rightSelect.value)];
-			const leftDefaultKey = leftDataset?.colunas?.[0]?.nome || null;
-			const rightDefaultKey = rightDataset?.colunas?.[0]?.nome || null;
+			const leftDefaultKey = leftDataset?.columns?.[0]?.name || null;
+			const rightDefaultKey = rightDataset?.columns?.[0]?.name || null;
 			renderDatasetColumnPickers({
 				container: leftColumnsContainer,
 				prefix: 'join-left',
@@ -319,8 +319,8 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 			}
 
 			const estimatedRows = estimateJoinRowCount({
-				leftRows: leftDataset.dados,
-				rightRows: rightDataset.dados,
+				leftRows: leftDataset.rows,
+				rightRows: rightDataset.rows,
 				leftKeys,
 				rightKeys,
 				joinType: typeSelect.value,

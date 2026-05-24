@@ -16,10 +16,10 @@ import {
 } from '../../../src/modules/visualizations/scatterPlotAxisHelpers.js';
 
 describe('isNumericLikeAxisType', () => {
-	it('accepts "numeric", "number", "numero" (case-insensitive)', () => {
+	it('accepts "numeric" and "number" (case-insensitive)', () => {
 		expect(isNumericLikeAxisType('numeric')).toBe(true);
 		expect(isNumericLikeAxisType('NUMBER')).toBe(true);
-		expect(isNumericLikeAxisType('Numero')).toBe(true);
+		expect(isNumericLikeAxisType('Number')).toBe(true);
 	});
 
 	it('rejects other strings and falsy values', () => {
@@ -35,9 +35,9 @@ describe('isCategoricalLikeAxisType', () => {
 		expect(isCategoricalLikeAxisType('categorical')).toBe(true);
 		expect(isCategoricalLikeAxisType('CATEGORY')).toBe(true);
 		expect(isCategoricalLikeAxisType('text')).toBe(true);
-		expect(isCategoricalLikeAxisType('Texto')).toBe(true);
+		expect(isCategoricalLikeAxisType('TEXT')).toBe(true);
 		expect(isCategoricalLikeAxisType('date')).toBe(true);
-		expect(isCategoricalLikeAxisType('data')).toBe(true);
+		expect(isCategoricalLikeAxisType('DATE')).toBe(true);
 	});
 
 	it('rejects numeric synonyms and unknown strings', () => {

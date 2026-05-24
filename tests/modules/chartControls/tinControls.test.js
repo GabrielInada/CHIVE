@@ -27,7 +27,7 @@ import {
 
 function createDataset(overrides = {}) {
 	return {
-		configGraficos: {
+		chartConfig: {
 			tin: {
 				enabled: true,
 				expanded: true,

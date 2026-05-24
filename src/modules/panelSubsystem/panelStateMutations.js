@@ -42,7 +42,7 @@ export function normalizePanelChartId(chartId) {
  * it.
  *
  * @param {AppStatePanel} panelState
- * @param {Partial<ChartSnapshot> & { nome: string, type: ChartSnapshot['type'] }} chartSnapshot - Pre-snapshot data; fields are normalized into the canonical {@link ChartSnapshot} shape.
+ * @param {Partial<ChartSnapshot> & { name: string, type: ChartSnapshot['type'] }} chartSnapshot - Pre-snapshot data; fields are normalized into the canonical {@link ChartSnapshot} shape.
  * @param {(name: string) => string} sanitizeChartName - Closure-bound sanitizer from `appState.js`.
  * @returns {{ id: number, snapshot: ChartSnapshot }}
  */
@@ -53,7 +53,7 @@ export function addChartSnapshotToState(panelState, chartSnapshot, sanitizeChart
 		: '';
 	const snapshot = {
 		id,
-		nome: sanitizeChartName(chartSnapshot.nome),
+		name: sanitizeChartName(chartSnapshot.name),
 		type: chartSnapshot.type || null,
 		config: chartSnapshot.config || null,
 		dataSnapshot: Array.isArray(chartSnapshot.dataSnapshot) ? chartSnapshot.dataSnapshot : [],
@@ -113,7 +113,7 @@ export function getChartSnapshotFromState(panelState, chartId) {
 }
 
 /**
- * Reset the panel to a single fresh `layout-2col` block, drop all charts,
+ * Reset the panel to a single fresh `template-2col` block, drop all charts,
  * and zero the id counters.
  *
  * @param {AppState} appState
@@ -123,8 +123,8 @@ export function clearPanelState(appState, createPanelBlock) {
 	appState.panel.charts = [];
 	appState.panel.slots = {};
 	appState.panel.nextBlockId = 1;
-	appState.panel.blocks = [createPanelBlock('layout-2col')];
-	appState.panel.layout = 'layout-2col';
+	appState.panel.blocks = [createPanelBlock('template-2col')];
+	appState.panel.layout = 'template-2col';
 	appState.panel.nextChartId = 0;
 }
 
@@ -180,7 +180,7 @@ export function addPanelBlockState(appState, templateId, ensureDefaultPanelBlock
 
 /**
  * Remove a block by id. When removal would empty the panel, replaces the
- * removed block with a fresh `layout-2col` block so the panel is never
+ * removed block with a fresh `template-2col` block so the panel is never
  * blockless.
  *
  * @param {AppState} appState
@@ -191,7 +191,7 @@ export function addPanelBlockState(appState, templateId, ensureDefaultPanelBlock
 export function removePanelBlockState(appState, blockId, ensureDefaultPanelBlock, createPanelBlock) {
 	ensureDefaultPanelBlock();
 	const nextBlocks = appState.panel.blocks.filter(block => block.id !== blockId);
-	appState.panel.blocks = nextBlocks.length > 0 ? nextBlocks : [createPanelBlock('layout-2col')];
+	appState.panel.blocks = nextBlocks.length > 0 ? nextBlocks : [createPanelBlock('template-2col')];
 }
 
 /**

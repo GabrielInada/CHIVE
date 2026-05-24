@@ -32,13 +32,13 @@ import {
 
 function createDataset(overrides = {}) {
 	return {
-		dados: [
+		rows: [
 			{ region: 'North', sales: 10 },
 			{ region: 'North', sales: 15 },
 			{ region: 'South', sales: 20 },
 			{ region: 'East', sales: 5 },
 		],
-		configGraficos: {
+		chartConfig: {
 			pie: {
 				enabled: true,
 				expanded: true,
@@ -122,7 +122,7 @@ describe('pieControls listeners', () => {
 		appendControls(controls);
 
 		const onConfigChanged = vi.fn();
-		setupPieChartControlListeners(dataset, dataset.configGraficos.pie, ['sales'], ['region', 'sales'], onConfigChanged);
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], onConfigChanged);
 
 		const measureSelect = document.getElementById('viz-select-pie-measure');
 		measureSelect.value = 'sum';
@@ -139,7 +139,7 @@ describe('pieControls listeners', () => {
 		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupPieChartControlListeners(dataset, dataset.configGraficos.pie, ['sales'], ['region', 'sales'], vi.fn());
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
 
 		const boldButton = document.querySelector('button[data-color-preset-control="viz-pie-color-preset"][data-preset-name="Bold"]');
 		expect(boldButton).not.toBeNull();
@@ -153,19 +153,19 @@ describe('pieControls listeners', () => {
 	});
 
 	// Regression guard for the P0 fix and the wider color-helper fix:
-	// per-slice color writes must NEVER mutate dataset.configGraficos directly.
+	// per-slice color writes must NEVER mutate dataset.chartConfig directly.
 	// On `input`, the write goes through the non-emitting facade
 	// (normalizeActiveDatasetConfig) — no CONFIG_UPDATED emit, no sidebar
 	// rebuild, but state stays consistent. On `change`, the emitting facade
 	// commits the final value. If anyone re-introduces a bypass listener
-	// (direct assignment to dataset.configGraficos.pie.customSliceColors), the
+	// (direct assignment to dataset.chartConfig.pie.customSliceColors), the
 	// `normalizeActiveDatasetConfig` mock won't be called and this test fails.
 	it('routes input writes through the non-emitting facade and commits via the emitting facade on change', () => {
 		const dataset = createDataset();
 		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupPieChartControlListeners(dataset, dataset.configGraficos.pie, ['sales'], ['region', 'sales'], vi.fn());
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
 
 		const sliceInput = document.querySelector('input[data-color-grid-control="viz-pie-color-grid"][data-color-item="North"]');
 		expect(sliceInput).not.toBeNull();

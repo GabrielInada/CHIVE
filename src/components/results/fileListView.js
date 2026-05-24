@@ -5,7 +5,7 @@
  *
  * @param {Object} args
  * @param {HTMLElement} args.lista
- * @param {Array<{ nome: string, dados: Array<*>, colunas: Array<*>, tamanho: string }>} args.datasets
+ * @param {Array<{ name: string, rows: Array<*>, columns: Array<*>, sizeLabel: string }>} args.datasets
  * @param {number} args.indiceAtivo - Active dataset index; `-1` if none.
  * @param {(key: string, ...args: *) => string} args.traduzir
  * @param {() => string} args.getLocale
@@ -31,7 +31,7 @@ export function renderFileListDOM({
 	const normalizedFilter = String(filtro || '').trim().toLowerCase();
 	const indexedDatasets = datasets.map((dataset, index) => ({ dataset, index }));
 	const filteredDatasets = normalizedFilter
-		? indexedDatasets.filter(({ dataset }) => String(dataset.nome || '').toLowerCase().includes(normalizedFilter))
+		? indexedDatasets.filter(({ dataset }) => String(dataset.name || '').toLowerCase().includes(normalizedFilter))
 		: indexedDatasets;
 	const safeLimit = Number.isFinite(limiteVisivel) && limiteVisivel > 0 ? Math.floor(limiteVisivel) : 15;
 	const visibleDatasets = filteredDatasets.slice(0, safeLimit);
@@ -49,16 +49,16 @@ export function renderFileListDOM({
 
 		const name = document.createElement('span');
 		name.className = 'file-item-name';
-		name.title = dataset.nome;
-		name.textContent = dataset.nome;
+		name.title = dataset.name;
+		name.textContent = dataset.name;
 
 		const meta = document.createElement('span');
 		meta.className = 'file-item-meta';
 		meta.textContent = translate(
 			'chive-file-meta',
-			dataset.dados.length.toLocaleString(getLocale()),
-			dataset.colunas.length,
-			dataset.tamanho
+			dataset.rows.length.toLocaleString(getLocale()),
+			dataset.columns.length,
+			dataset.sizeLabel
 		);
 
 		const removeButton = document.createElement('button');
@@ -66,7 +66,7 @@ export function renderFileListDOM({
 		removeButton.type = 'button';
 		removeButton.dataset.acao = 'remover';
 		removeButton.dataset.idx = String(index);
-		removeButton.setAttribute('aria-label', translate('chive-remove-file', dataset.nome));
+		removeButton.setAttribute('aria-label', translate('chive-remove-file', dataset.name));
 		removeButton.textContent = '×';
 
 		selectButton.appendChild(name);

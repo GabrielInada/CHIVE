@@ -95,7 +95,7 @@ function setupDom() {
 
 function makeConfig(overrides = {}) {
 	const base = {
-		aba: 'charts',
+		activeTab: 'charts',
 		globalFilter: {},
 		bar: { enabled: false, chartHeight: 320 },
 		scatter: { enabled: false, chartHeight: 320 },
@@ -121,7 +121,7 @@ describe('renderCharts orchestration', () => {
 		const { grid, emptyState, blocks, containers } = setupDom();
 		containers.bar.appendChild(document.createElement('span'));
 
-		renderCharts(makeConfig({ aba: 'preview' }), [], [], []);
+		renderCharts(makeConfig({ activeTab: 'preview' }), [], [], []);
 
 		expect(grid.style.display).toBe('grid');
 		expect(emptyState.style.display).toBe('none');
@@ -183,8 +183,8 @@ describe('renderCharts orchestration', () => {
 
 	it('writes the i18n badge text using visible-column counts', () => {
 		const { badge } = setupDom();
-		const visibleColumns = [{ nome: 'a' }, { nome: 'b' }, { nome: 'c' }];
-		const visibleNumericColumns = [{ nome: 'b' }];
+		const visibleColumns = [{ name: 'a' }, { name: 'b' }, { name: 'c' }];
+		const visibleNumericColumns = [{ name: 'b' }];
 
 		renderCharts(makeConfig(), [], visibleColumns, visibleNumericColumns);
 
@@ -214,7 +214,7 @@ describe('renderCharts orchestration', () => {
 		const config = makeConfig();
 		config.bar.enabled = true;
 
-		renderCharts(config, rawRows, [{ nome: 'a' }], [{ nome: 'a' }]);
+		renderCharts(config, rawRows, [{ name: 'a' }], [{ name: 'a' }]);
 
 		expect(mocks.applyGlobalFilterRules).toHaveBeenCalledTimes(1);
 		const [calledRows, , numericNames] = mocks.applyGlobalFilterRules.mock.calls[0];

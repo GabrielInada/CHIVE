@@ -94,14 +94,14 @@ describe('fileManager', () => {
     initFileManager(null);
 
     mocks.processData.mockReturnValue({
-      dados: [{ a: 1 }],
-      colunas: [{ nome: 'a', tipo: 'numero' }],
+      rows: [{ a: 1 }],
+      columns: [{ name: 'a', type: 'number' }],
     });
     mocks.ingestFile.mockResolvedValue({
       ok: true,
       value: {
-        dados: [{ a: 1 }],
-        colunas: [{ nome: 'a', tipo: 'numero' }],
+        rows: [{ a: 1 }],
+        columns: [{ name: 'a', type: 'number' }],
         decimalSeparator: '.',
         statsNumeric: [],
         statsCategorical: [],
@@ -143,9 +143,9 @@ describe('fileManager', () => {
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
 
     const added = mocks.addDataset.mock.calls[0][0];
-    expect(added.nome).toBe('ok.csv');
-    expect(added.colunasSelecionadas).toEqual(['a']);
-    expect(added.configGraficos.bar.enabled).toBe(false);
+    expect(added.name).toBe('ok.csv');
+    expect(added.selectedColumns).toEqual(['a']);
+    expect(added.chartConfig.bar.enabled).toBe(false);
     expect(added.precomputedStats).toEqual({ numeric: [], categorical: [] });
     expect(onChange).toHaveBeenCalledTimes(1);
   });
@@ -169,8 +169,8 @@ describe('fileManager', () => {
     mocks.ingestFile.mockResolvedValueOnce({
       ok: true,
       value: {
-        dados: [{ x: 1 }, { x: 2 }],
-        colunas: [{ nome: 'x', tipo: 'numero' }],
+        rows: [{ x: 1 }, { x: 2 }],
+        columns: [{ name: 'x', type: 'number' }],
         decimalSeparator: '.',
         statsNumeric: [],
         statsCategorical: [],
@@ -182,7 +182,7 @@ describe('fileManager', () => {
     expect(mocks.ingestFile).toHaveBeenCalledTimes(1);
     expect(mocks.ingestFile.mock.calls[0][0].options).toEqual(expect.objectContaining({ rowLimit: 2 }));
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
-    expect(mocks.addDataset.mock.calls[0][0].dados).toHaveLength(2);
+    expect(mocks.addDataset.mock.calls[0][0].rows).toHaveLength(2);
   });
 
   it('select/remove/get datasets encaminham para appState com tratamento de erro', () => {
@@ -207,8 +207,8 @@ describe('fileManager', () => {
     removeDatasetByIndex(5);
     expect(mocks.showError).toHaveBeenCalledWith('remove boom');
 
-    mocks.getAllDatasets.mockReturnValue([{ nome: 'X' }]);
-    expect(getLoadedDatasets()).toEqual([{ nome: 'X' }]);
+    mocks.getAllDatasets.mockReturnValue([{ name: 'X' }]);
+    expect(getLoadedDatasets()).toEqual([{ name: 'X' }]);
   });
 
   it('setupFileInputListeners cobre caminhos missing e interacoes de upload zone', async () => {
@@ -288,7 +288,7 @@ describe('fileManager', () => {
     setupFileInputListeners();
     expect(capturedHandler).toBeDefined();
 
-    const testFile = csvFile({ name: 'dados.csv' });
+    const testFile = csvFile({ name: 'rows.csv' });
 
     // Simula change event com target = input
     const mockEvent1 = new Event('change');
@@ -298,7 +298,7 @@ describe('fileManager', () => {
     });
 
     // Primeiro upload
-    input.value = 'C:\\fakepath\\dados.csv';
+    input.value = 'C:\\fakepath\\rows.csv';
     Object.defineProperty(input, 'files', {
       value: [testFile],
       configurable: true,
@@ -315,7 +315,7 @@ describe('fileManager', () => {
     mocks.addDataset.mockClear();
 
     // Re-upload do MESMO arquivo
-    input.value = 'C:\\fakepath\\dados.csv'; // Mesmo path
+    input.value = 'C:\\fakepath\\rows.csv'; // Mesmo path
     Object.defineProperty(input, 'files', {
       value: [testFile],
       configurable: true,
@@ -337,20 +337,20 @@ describe('fileManager', () => {
   it('cria dataset unido e trata erros de validacao', () => {
     mocks.getAllDatasets.mockReturnValue([
       {
-        nome: 'A.csv',
-        dados: [{ id: '1', amount: 10 }],
-        colunas: [{ nome: 'id', tipo: 'texto' }, { nome: 'amount', tipo: 'numero' }],
+        name: 'A.csv',
+        rows: [{ id: '1', amount: 10 }],
+        columns: [{ name: 'id', type: 'text' }, { name: 'amount', type: 'number' }],
       },
       {
-        nome: 'B.csv',
-        dados: [{ id: '1', target: 99 }],
-        colunas: [{ nome: 'id', tipo: 'texto' }, { nome: 'target', tipo: 'numero' }],
+        name: 'B.csv',
+        rows: [{ id: '1', target: 99 }],
+        columns: [{ name: 'id', type: 'text' }, { name: 'target', type: 'number' }],
       },
     ]);
 
     mocks.processData.mockReturnValue({
-      dados: [{ id: '1', target: 99 }],
-      colunas: [{ nome: 'id', tipo: 'texto' }, { nome: 'target', tipo: 'numero' }],
+      rows: [{ id: '1', target: 99 }],
+      columns: [{ name: 'id', type: 'text' }, { name: 'target', type: 'number' }],
     });
     mocks.addDataset.mockReturnValue(2);
 

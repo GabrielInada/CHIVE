@@ -12,7 +12,7 @@ import { formatNumber, translateType, isEmptyValue } from '../../utils/formatter
  * empty.
  *
  * @param {Array<Object<string, *>>} rows
- * @param {Array<{ nome: string, tipo: string }>} visibleColumns
+ * @param {Array<{ name: string, type: string }>} visibleColumns
  * @param {number} limit
  * @returns {void}
  */
@@ -37,10 +37,10 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 	thIndex.classList.add('row-index');
 	thIndex.textContent = '#';
 	trHead.appendChild(thIndex);
-	visibleColumns.forEach(({ nome, tipo }) => {
+	visibleColumns.forEach(({ name, type }) => {
 		const th = document.createElement('th');
-		if (tipo === 'numero') th.classList.add('num');
-		th.textContent = nome;
+		if (type === 'number') th.classList.add('num');
+		th.textContent = name;
 		trHead.appendChild(th);
 	});
 	thead.appendChild(trHead);
@@ -52,13 +52,13 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 		tdIndex.classList.add('row-index');
 		tdIndex.textContent = String(i + 1);
 		tr.appendChild(tdIndex);
-		visibleColumns.forEach(({ nome, tipo }) => {
+		visibleColumns.forEach(({ name, type }) => {
 			const td = document.createElement('td');
-			if (tipo === 'numero') td.classList.add('num');
-			const value = row[nome];
+			if (type === 'number') td.classList.add('num');
+			const value = row[name];
 			const displayValue = isEmptyValue(value)
 				? '—'
-				: (tipo === 'numero' ? formatNumber(value) : String(value));
+				: (type === 'number' ? formatNumber(value) : String(value));
 			td.textContent = displayValue;
 			tr.appendChild(td);
 		});
@@ -70,9 +70,9 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 	const tdFootIndex = document.createElement('td');
 	tdFootIndex.classList.add('row-index');
 	trFoot.appendChild(tdFootIndex);
-	visibleColumns.forEach(({ tipo }) => {
+	visibleColumns.forEach(({ type }) => {
 		const td = document.createElement('td');
-		td.textContent = translateType(tipo);
+		td.textContent = translateType(type);
 		trFoot.appendChild(td);
 	});
 	tfoot.appendChild(trFoot);

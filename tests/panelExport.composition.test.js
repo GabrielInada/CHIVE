@@ -66,8 +66,8 @@ function injectLiveSlotSvgs() {
 function resetAppStateForTest() {
   appState.replaceAllState({
     data: { datasets: [], activeIndex: -1 },
-    panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
-    ui: { sidebarMode: 'dados', previewRows: 10 },
+    panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+    ui: { sidebarMode: 'data', previewRows: 10 },
   });
 }
 
@@ -102,7 +102,7 @@ describe('panel export composition (phase 2)', () => {
 
   it('includes slot border outlines in export when block border option is enabled', () => {
     const chartA = appState.addChartSnapshot({
-      nome: 'Chart A',
+      name: 'Chart A',
       svgMarkup: '<svg viewBox="0 0 10 10"><rect width="10" height="10" /></svg>',
     });
     const blockA = appState.getState().panel.blocks[0].id;
@@ -135,12 +135,12 @@ describe('panel export composition (phase 2)', () => {
 
   it('exports charts from multiple blocks using slot geometry in canvas coordinates', () => {
     const chartA = appState.addChartSnapshot({
-      nome: 'Chart A',
+      name: 'Chart A',
       svgMarkup: '<svg viewBox="0 0 10 10"><rect width="10" height="10" /></svg>',
     });
-    const blockB = appState.addPanelBlock('layout-2col');
+    const blockB = appState.addPanelBlock('template-2col');
     const chartB = appState.addChartSnapshot({
-      nome: 'Chart B',
+      name: 'Chart B',
       svgMarkup: '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" /></svg>',
     });
 
@@ -181,10 +181,10 @@ describe('panel export composition (phase 2)', () => {
   });
 
   it('exports charts in deterministic DOM order across blocks and slots', () => {
-    const chartA = appState.addChartSnapshot({ nome: 'A', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const blockB = appState.addPanelBlock('layout-2col');
-    const chartB = appState.addChartSnapshot({ nome: 'B', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const chartC = appState.addChartSnapshot({ nome: 'C', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const chartA = appState.addChartSnapshot({ name: 'A', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const blockB = appState.addPanelBlock('template-2col');
+    const chartB = appState.addChartSnapshot({ name: 'B', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const chartC = appState.addChartSnapshot({ name: 'C', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
 
     const blockA = appState.getState().panel.blocks[0].id;
     appState.assignChartToPanelBlockSlot(blockA, 'slot-1', chartA);
@@ -228,12 +228,12 @@ describe('panel export composition (phase 2)', () => {
   });
 
   it('exports all filled slots after template and proportion updates', () => {
-    const chart1 = appState.addChartSnapshot({ nome: '1', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const chart2 = appState.addChartSnapshot({ nome: '2', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const chart3 = appState.addChartSnapshot({ nome: '3', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const chart1 = appState.addChartSnapshot({ name: '1', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const chart2 = appState.addChartSnapshot({ name: '2', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const chart3 = appState.addChartSnapshot({ name: '3', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
 
     const blockA = appState.getState().panel.blocks[0].id;
-    appState.setPanelBlockTemplate(blockA, 'layout-hero2');
+    appState.setPanelBlockTemplate(blockA, 'template-hero2');
     appState.updatePanelBlockProportions(blockA, { splitMain: 68, splitRight: 37 });
 
     appState.assignChartToPanelBlockSlot(blockA, 'slot-1', chart1);
@@ -272,18 +272,18 @@ describe('panel export composition (phase 2)', () => {
   });
 
   it('exports mixed templates in one composition with stable coordinates', () => {
-    const c1 = appState.addChartSnapshot({ nome: 'c1', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const c2 = appState.addChartSnapshot({ nome: 'c2', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const c3 = appState.addChartSnapshot({ nome: 'c3', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const c4 = appState.addChartSnapshot({ nome: 'c4', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const c5 = appState.addChartSnapshot({ nome: 'c5', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const c6 = appState.addChartSnapshot({ nome: 'c6', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c1 = appState.addChartSnapshot({ name: 'c1', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c2 = appState.addChartSnapshot({ name: 'c2', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c3 = appState.addChartSnapshot({ name: 'c3', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c4 = appState.addChartSnapshot({ name: 'c4', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c5 = appState.addChartSnapshot({ name: 'c5', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c6 = appState.addChartSnapshot({ name: 'c6', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
 
     const blockA = appState.getState().panel.blocks[0].id;
-    const blockB = appState.addPanelBlock('layout-3col');
-    const blockC = appState.addPanelBlock('layout-1x2');
+    const blockB = appState.addPanelBlock('template-3col');
+    const blockC = appState.addPanelBlock('template-1x2');
 
-    appState.setPanelBlockTemplate(blockA, 'layout-hero2');
+    appState.setPanelBlockTemplate(blockA, 'template-hero2');
     appState.updatePanelBlockProportions(blockA, { splitMain: 66, splitRight: 40 });
     appState.updatePanelBlockProportions(blockB, { a: 25, b: 35, c: 40 });
     appState.updatePanelBlockProportions(blockC, { split: 55 });
@@ -342,8 +342,8 @@ describe('panel export composition (phase 2)', () => {
   });
 
   it('does not export charts from slots cleared or invalidated by chart removal', () => {
-    const kept = appState.addChartSnapshot({ nome: 'kept', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const removed = appState.addChartSnapshot({ nome: 'removed', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const kept = appState.addChartSnapshot({ name: 'kept', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const removed = appState.addChartSnapshot({ name: 'removed', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
 
     const blockA = appState.getState().panel.blocks[0].id;
     appState.assignChartToPanelBlockSlot(blockA, 'slot-1', kept);

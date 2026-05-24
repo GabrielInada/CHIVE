@@ -47,12 +47,12 @@ function buildSliceColor(baseHex, index) {
  * `chartHeight`, `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {Array<Object<string, *>>} rows - Source rows.
  * @param {string} colunaCategoria - Categorical column name (required).
  * @param {Object} [opcoes={}] - Render options bag.
  * @returns {Result}
  */
-export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
+export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return fail();
 
 	const color = isValidHexColor(String(opcoes.color || '').trim())
@@ -86,7 +86,7 @@ export function renderPieChart(container, dados, colunaCategoria, opcoes = {}) {
 		: CHART_DIMENSIONS.pie.height;
 
 	const contador = new Map();
-	dados.forEach(linha => {
+	rows.forEach(linha => {
 		const valorBruto = linha[colunaCategoria];
 		const categoria = isNullish(valorBruto) || valorBruto === ''
 			? '—'

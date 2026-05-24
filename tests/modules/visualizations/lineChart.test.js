@@ -21,7 +21,7 @@ describe('renderLineChart', () => {
 			{ x: 3, y: 15 },
 		];
 		const result = renderLineChart(container, rows, 'x', 'y', {
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 			missingMode: 'connect',
 		});
 		expect(result.ok).toBe(true);
@@ -37,7 +37,7 @@ describe('renderLineChart', () => {
 			{ d: new Date('2024-03-01'), y: 3 },
 		];
 		const result = renderLineChart(container, rows, 'd', 'y', {
-			axisTypes: { x: 'data', y: 'numero' },
+			axisTypes: { x: 'date', y: 'number' },
 		});
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('svg').length).toBe(1);
@@ -50,7 +50,7 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 'oops' },
 		];
 		const result = renderLineChart(container, rows, 'x', 'y', {
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 		});
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-numeric');
@@ -64,7 +64,7 @@ describe('renderLineChart', () => {
 			{ x: 3, y: 30 },
 		];
 		const result = renderLineChart(container, rows, 'x', 'y', {
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 			missingMode: 'interpolate',
 		});
 		expect(result.ok).toBe(true);
@@ -79,7 +79,7 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 20 },
 		];
 		const result = renderLineChart(container, rows, 'x', 'y', {
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 			showPoints: true,
 		});
 		expect(result.ok).toBe(true);
@@ -94,7 +94,7 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 30 },
 		];
 		const result = renderLineChart(container, rows, 'x', 'y', {
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 			aggregateMode: 'mean',
 			showPoints: true,
 		});
@@ -116,7 +116,7 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 20 },
 		];
 		renderLineChart(container, rows, 'x', 'y', {
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 			customTitle: 'Trend',
 			axisLabels: { x: 'Day', y: 'Visits' },
 		});

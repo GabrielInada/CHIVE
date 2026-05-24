@@ -27,7 +27,7 @@ import {
 
 function createDataset(overrides = {}) {
 	return {
-		configGraficos: {
+		chartConfig: {
 			network: {
 				enabled: true,
 				expanded: true,

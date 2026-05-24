@@ -220,16 +220,16 @@ refreshView();
  */
 function livePreviewRender() {
 	const dataset = getActiveDataset();
-	if (!dataset || !Array.isArray(dataset.colunas)) return;
-	const columnNames = dataset.colunas.map(column => column.nome);
+	if (!dataset || !Array.isArray(dataset.columns)) return;
+	const columnNames = dataset.columns.map(column => column.name);
 	const selectedNames = new Set(
-		Array.isArray(dataset.colunasSelecionadas)
-			? dataset.colunasSelecionadas
+		Array.isArray(dataset.selectedColumns)
+			? dataset.selectedColumns
 			: columnNames
 	);
-	const visibleColumns = dataset.colunas.filter(column => selectedNames.has(column.nome));
+	const visibleColumns = dataset.columns.filter(column => selectedNames.has(column.name));
 	const visibleNumericColumns = getNumericColumns(visibleColumns);
-	renderCharts(dataset.configGraficos, dataset.dados, visibleColumns, visibleNumericColumns);
+	renderCharts(dataset.chartConfig, dataset.rows, visibleColumns, visibleNumericColumns);
 	renderCanvasPanel();
 }
 
@@ -286,15 +286,15 @@ handlePresetDatasetRequest
 if (dataset) {
 	normalizeActiveDatasetConfig(mergeChartConfigWithDefaults);
 renderDataInterface(
-dataset.dados,
-dataset.colunas,
-dataset.nome,
-dataset.tamanho,
+dataset.rows,
+dataset.columns,
+dataset.name,
+dataset.sizeLabel,
 state.ui.previewRows,
 updatePreviewRows,
-dataset.colunasSelecionadas,
+dataset.selectedColumns,
 updateDatasetColumns,
-dataset.configGraficos,
+dataset.chartConfig,
 updateDatasetConfig
 );
 
@@ -399,8 +399,8 @@ async function handlePresetDatasetRequest(preset) {
 	try {
 		const source = await loadPresetSource(preset, { signal: abortController.signal });
 
-		let dados;
-		let colunas;
+		let rows;
+		let columns;
 		let statsNumeric = [];
 		let statsCategorical = [];
 
@@ -416,8 +416,8 @@ async function handlePresetDatasetRequest(preset) {
 				});
 			}
 			const processed = processData(rows);
-			dados = processed.dados;
-			colunas = processed.colunas;
+			rows = processed.rows;
+			columns = processed.columns;
 			progress.update(100);
 		} else {
 			const result = await ingestFile(
@@ -436,16 +436,16 @@ async function handlePresetDatasetRequest(preset) {
 				return;
 			}
 
-			({ dados, colunas, statsNumeric, statsCategorical } = result.value);
+			({ rows, columns, statsNumeric, statsCategorical } = result.value);
 		}
 
 		const dataset = {
-			nome: presetName,
-			tamanho: t('chive-preset-generated-size', [preset.rows]),
-			dados,
-			colunas,
-			colunasSelecionadas: colunas.map(c => c.nome),
-			configGraficos: createDefaultChartConfig(),
+			name: presetName,
+			sizeLabel: t('chive-preset-generated-size', [preset.rows]),
+			rows,
+			columns,
+			selectedColumns: columns.map(c => c.name),
+			chartConfig: createDefaultChartConfig(),
 			precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
 		};
 

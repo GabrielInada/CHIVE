@@ -89,10 +89,10 @@ function setupSidebarNavigationButtons() {
  */
 function navigateToTab(tabName) {
 	const dataset = getActiveDataset();
-	if (dataset?.configGraficos) {
+	if (dataset?.chartConfig) {
 		updateActiveDatasetConfig({
-			...dataset.configGraficos,
-			aba: tabName,
+			...dataset.chartConfig,
+			activeTab: tabName,
 		});
 	}
 	switchTab(tabName);
@@ -144,7 +144,7 @@ function handleChartAction(actionBtn) {
 /**
  * Map from `ChartTypeKey` → builder function that derives the snapshot
  * metadata (and a short `summary` string) from the active dataset's
- * `configGraficos`. Consumed by {@link buildChartSnapshotMetadata} when
+ * `chartConfig`. Consumed by {@link buildChartSnapshotMetadata} when
  * an "add to panel" button is clicked.
  *
  * Each builder returns at minimum `{ type, summary }`; chart-specific
@@ -288,7 +288,7 @@ const CHART_SNAPSHOT_BUILDERS = {
 function getChartSnapshotTitle(containerId, fallbackTitle) {
 	const type = CONTAINER_ID_TO_CHART_TYPE[containerId];
 	if (!type) return fallbackTitle;
-	const config = getActiveDataset()?.configGraficos || {};
+	const config = getActiveDataset()?.chartConfig || {};
 	return String(config[type]?.customTitle || '').trim() || fallbackTitle;
 }
 
@@ -301,7 +301,7 @@ function getChartSnapshotTitle(containerId, fallbackTitle) {
  */
 function buildChartSnapshotMetadata(containerId) {
 	const type = CONTAINER_ID_TO_CHART_TYPE[containerId];
-	const config = getActiveDataset()?.configGraficos;
+	const config = getActiveDataset()?.chartConfig;
 	if (!type || !config) return {};
 	const builder = CHART_SNAPSHOT_BUILDERS[type];
 	return builder ? builder(config) : {};

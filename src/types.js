@@ -8,10 +8,6 @@
  * Typedefs are not values, so barrels (modules/index.js) do not propagate
  * them — always import directly from this file.
  *
- * Field names follow the codebase's mixed Portuguese/English convention
- * (dataset.nome, dataset.dados, dataset.colunas) — do not rename for English
- * consistency; renaming breaks persistence and a large surface of callers.
- *
  * @see CONTRIBUTING.md  "Documentation Conventions" section
  * @see ARCHITECTURE.md
  */
@@ -25,22 +21,22 @@
  */
 
 /**
- * Detected column data type. Values are Portuguese for historical reasons.
+ * Detected column data type.
  *
- * @typedef {'numero' | 'texto' | 'data'} ColumnType
+ * @typedef {'number' | 'text' | 'date'} ColumnType
  */
 
 /**
  * Panel layout template identifier. Each template owns its own slot set
  * (see {@link PanelBlockProportions} for the per-template proportions shape).
  *
- * @typedef {'layout-single' | 'layout-2col' | 'layout-hero2' | 'layout-3col' | 'layout-1x2'} PanelTemplateId
+ * @typedef {'template-single' | 'template-2col' | 'template-hero2' | 'template-3col' | 'template-1x2'} PanelTemplateId
  */
 
 /**
  * Sidebar mode currently active in the UI.
  *
- * @typedef {'dados' | 'viz' | 'panel'} SidebarMode
+ * @typedef {'data' | 'viz' | 'panel'} SidebarMode
  */
 
 // ─── Data domain ────────────────────────────────────────────────────────
@@ -49,8 +45,8 @@
  * Column metadata as detected by the ingest worker.
  *
  * @typedef {Object} ColumnSpec
- * @property {string} nome - Column name as it appears in the source file.
- * @property {ColumnType} tipo - Detected type. Falls back to `'texto'` when no rule matches.
+ * @property {string} name - Column name as it appears in the source file.
+ * @property {ColumnType} type - Detected type. Falls back to `'text'` when no rule matches.
  */
 
 /**
@@ -68,12 +64,12 @@
  *
  * @typedef {Object} Dataset
  * @property {string} id - Stable UUID (or `dataset-<ts>-<n>` fallback when `crypto.randomUUID` is unavailable). Stamped by `addDataset` if missing.
- * @property {string} nome - Display name. Original filename for uploads, derived label for joins.
- * @property {string} tamanho - Pre-formatted size label (not raw bytes).
- * @property {Array<Object<string, *>>} dados - Parsed rows. Each row's keys match `colunas[i].nome`.
- * @property {ColumnSpec[]} colunas - Detected columns in source order.
- * @property {string[]} colunasSelecionadas - Names of currently visible columns (subset of `colunas[].nome`).
- * @property {ChartConfig} configGraficos - Per-chart-type configuration.
+ * @property {string} name - Display name. Original filename for uploads, derived label for joins.
+ * @property {string} sizeLabel - Pre-formatted size label (not raw bytes).
+ * @property {Array<Object<string, *>>} rows - Parsed rows. Each row's keys match `columns[i].name`.
+ * @property {ColumnSpec[]} columns - Detected columns in source order.
+ * @property {string[]} selectedColumns - Names of currently visible columns (subset of `columns[].name`).
+ * @property {ChartConfig} chartConfig - Per-chart-type configuration.
  * @property {PrecomputedStats} [precomputedStats] - Worker-computed stats, optional.
  */
 
@@ -122,7 +118,7 @@
  * each chart type's full field set.
  *
  * @typedef {Object} ChartConfig
- * @property {string} aba - Active tab id (e.g. `'preview'`, `'viz'`).
+ * @property {string} activeTab - Active tab id (e.g. `'preview'`, `'viz'`).
  * @property {GlobalFilter} globalFilter
  * @property {ChartTypeConfig} bar
  * @property {ChartTypeConfig} scatter
@@ -144,9 +140,9 @@
  * exist (the chart-picker still needs to offer *something*).
  *
  * @typedef {Object} ChartControlContext
- * @property {string[]} numeric - Numeric (`'numero'`) column names.
+ * @property {string[]} numeric - Numeric (`'number'`) column names.
  * @property {string[]} categorical - Categorical (non-numeric) column names.
- * @property {string[]} dates - Date (`'data'`) column names.
+ * @property {string[]} dates - Date (`'date'`) column names.
  * @property {string[]} allColumns - All currently visible column names.
  * @property {string[]} baseCategoricalOrAll - `categorical` when non-empty, else `allColumns`.
  */
@@ -156,11 +152,11 @@
 /**
  * Block proportion shape. Union: the layout template determines which fields are present.
  *
- * - `layout-single`:  `{ split: 100 }`
- * - `layout-2col`:    `{ split: number }` (20–80)
- * - `layout-1x2`:     `{ split: number }` (20–80)
- * - `layout-hero2`:   `{ splitMain: number, splitRight: number }`
- * - `layout-3col`:    `{ a: number, b: number, c: number }`
+ * - `template-single`:  `{ split: 100 }`
+ * - `template-2col`:    `{ split: number }` (20–80)
+ * - `template-1x2`:     `{ split: number }` (20–80)
+ * - `template-hero2`:   `{ splitMain: number, splitRight: number }`
+ * - `template-3col`:    `{ a: number, b: number, c: number }`
  *
  * @typedef {Object} PanelBlockProportions
  * @property {number} [split]
@@ -202,9 +198,9 @@
  *
  * @typedef {Object} ChartSnapshot
  * @property {number} id - Monotonic; assigned by `addChartSnapshot`.
- * @property {string} nome - Sanitized title, max 100 chars.
+ * @property {string} name - Sanitized title, max 100 chars.
  * @property {ChartTypeKey | null} type
- * @property {Object | null} config - Frozen copy of `configGraficos[type]` at capture time.
+ * @property {Object | null} config - Frozen copy of `chartConfig[type]` at capture time.
  * @property {Array<Object<string, *>>} dataSnapshot - Copy of the rows used.
  * @property {ColumnSpec[]} columnsSnapshot
  * @property {Object | null} metadata - Chart-specific render metadata (axis ranges, scales, …).
@@ -296,8 +292,8 @@
  * when `ingestFile` resolves successfully.
  *
  * @typedef {Object} IngestPayload
- * @property {Array<Object<string, *>>} dados - Normalized rows (numeric columns parsed; missing values preserved).
- * @property {ColumnSpec[]} colunas - Detected columns in source order.
+ * @property {Array<Object<string, *>>} rows - Normalized rows (numeric columns parsed; missing values preserved).
+ * @property {ColumnSpec[]} columns - Detected columns in source order.
  * @property {Object<string, Object>} statsNumeric - Per-column numeric stats (n, min, max, mean, median).
  * @property {Object<string, Object>} statsCategorical - Per-column categorical stats (mode, top-N, missingness).
  * @property {number} [truncatedFrom] - Original row count before the worker capped to `rowLimit`. Absent when no truncation occurred.
@@ -336,8 +332,8 @@
  * reshape it before exposing to callers.
  *
  * @typedef {Object} IngestWorkerDoneResult
- * @property {Array<Object<string, *>>} dados
- * @property {ColumnSpec[]} colunas
+ * @property {Array<Object<string, *>>} rows
+ * @property {ColumnSpec[]} columns
  * @property {string} decimalSeparator - Detected separator (`'.'` or `','`).
  * @property {NumericColumnStats[] | []} statsNumeric - Empty array when no rows.
  * @property {CategoricalColumnStats[] | []} statsCategorical - Empty array when no rows.
@@ -395,12 +391,12 @@
  * Output of `calculateStatistics` for one numeric column.
  *
  * @typedef {Object} NumericColumnStats
- * @property {string} nome
+ * @property {string} name
  * @property {number} n
  * @property {number} min
  * @property {number} max
- * @property {number} media - Arithmetic mean.
- * @property {number} mediana
+ * @property {number} mean - Arithmetic mean.
+ * @property {number} median
  */
 
 /**
@@ -410,7 +406,7 @@
  * counts so downstream renderers can render a uniform "no data" state.
  *
  * @typedef {Object} CategoricalColumnStats
- * @property {string} nome
+ * @property {string} name
  * @property {number} n - Count of non-missing values.
  * @property {number} missing
  * @property {number} missingPct - 0–1 inclusive.
@@ -431,7 +427,7 @@
  *
  * @typedef {Object} PresetDescriptor
  * @property {string} [id]
- * @property {string} [nome]
+ * @property {string} [name]
  * @property {Array<Object<string, *>>} [data] - Inline rows.
  * @property {string} [dataUrl] - Remote source. Resolved with a 10s timeout.
  * @property {string} [dataFormat] - Wins over URL extension when distinguishing CSV vs JSON.

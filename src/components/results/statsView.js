@@ -20,11 +20,11 @@ import { formatNumber } from '../../utils/formatters.js';
 function getNumericStats(rows, visibleColumns) {
 	const dataset = getActiveDataset();
 	const precomputed = dataset?.precomputedStats?.numeric;
-	if (Array.isArray(precomputed) && dataset.dados === rows) {
+	if (Array.isArray(precomputed) && dataset.rows === rows) {
 		const visibleNames = new Set(
-			visibleColumns.filter(c => c.tipo === 'numero').map(c => c.nome),
+			visibleColumns.filter(c => c.type === 'number').map(c => c.name),
 		);
-		return precomputed.filter(stat => visibleNames.has(stat.nome));
+		return precomputed.filter(stat => visibleNames.has(stat.name));
 	}
 	return calculateStatistics(rows, visibleColumns);
 }
@@ -33,11 +33,11 @@ function getNumericStats(rows, visibleColumns) {
 function getCategoricalStats(rows, visibleColumns) {
 	const dataset = getActiveDataset();
 	const precomputed = dataset?.precomputedStats?.categorical;
-	if (Array.isArray(precomputed) && dataset.dados === rows) {
+	if (Array.isArray(precomputed) && dataset.rows === rows) {
 		const visibleNames = new Set(
-			visibleColumns.filter(c => c.tipo !== 'numero').map(c => c.nome),
+			visibleColumns.filter(c => c.type !== 'number').map(c => c.name),
 		);
-		return precomputed.filter(stat => visibleNames.has(stat.nome));
+		return precomputed.filter(stat => visibleNames.has(stat.name));
 	}
 	return calculateCategoricalStatistics(rows, visibleColumns);
 }
@@ -73,7 +73,7 @@ function truncateText(text, maxLength = 18) {
  * visible.
  *
  * @param {Array<Object<string, *>>} rows
- * @param {Array<{ nome: string, tipo: string }>} visibleColumns
+ * @param {Array<{ name: string, type: string }>} visibleColumns
  * @returns {void}
  */
 export function renderStats(rows, visibleColumns) {
@@ -90,17 +90,17 @@ export function renderStats(rows, visibleColumns) {
 			const coluna = document.createElement('div');
 			coluna.className = 'stat-col';
 
-			const nome = document.createElement('div');
-			nome.className = 'stat-col-name';
-			nome.title = stat.nome;
-			nome.textContent = stat.nome;
+			const name = document.createElement('div');
+			name.className = 'stat-col-name';
+			name.title = stat.name;
+			name.textContent = stat.name;
 
-			coluna.appendChild(nome);
+			coluna.appendChild(name);
 			coluna.appendChild(createStatLine(t('chive-stat-valid'), stat.n.toLocaleString(getLocale())));
 			coluna.appendChild(createStatLine(t('chive-stat-min'), formatNumber(stat.min)));
 			coluna.appendChild(createStatLine(t('chive-stat-max'), formatNumber(stat.max)));
-			coluna.appendChild(createStatLine(t('chive-stat-mean'), formatNumber(stat.media)));
-			coluna.appendChild(createStatLine(t('chive-stat-median'), formatNumber(stat.mediana)));
+			coluna.appendChild(createStatLine(t('chive-stat-mean'), formatNumber(stat.mean)));
+			coluna.appendChild(createStatLine(t('chive-stat-median'), formatNumber(stat.median)));
 
 			containerStats.appendChild(coluna);
 		});
@@ -118,7 +118,7 @@ export function renderStats(rows, visibleColumns) {
  * render an "empty" placeholder line.
  *
  * @param {Array<Object<string, *>>} rows
- * @param {Array<{ nome: string, tipo: string }>} visibleColumns
+ * @param {Array<{ name: string, type: string }>} visibleColumns
  * @returns {void}
  */
 export function renderCategoricalStats(rows, visibleColumns) {
@@ -127,7 +127,7 @@ export function renderCategoricalStats(rows, visibleColumns) {
 
 	const stats = getCategoricalStats(rows, visibleColumns);
 	const container = document.getElementById('container-cat-stats');
-	const badge = document.getElementById('badge-cat-colunas');
+	const badge = document.getElementById('badge-cat-columns');
 
 	if (stats.length === 0) {
 		card.style.display = 'none';
@@ -146,11 +146,11 @@ export function renderCategoricalStats(rows, visibleColumns) {
 		const coluna = document.createElement('div');
 		coluna.className = 'stat-col';
 
-		const nome = document.createElement('div');
-		nome.className = 'stat-col-name';
-		nome.title = stat.nome;
-		nome.textContent = stat.nome;
-		coluna.appendChild(nome);
+		const name = document.createElement('div');
+		name.className = 'stat-col-name';
+		name.title = stat.name;
+		name.textContent = stat.name;
+		coluna.appendChild(name);
 
 		if (stat.empty) {
 			coluna.appendChild(createStatLine(t('chive-cat-stat-non-empty'), '0'));

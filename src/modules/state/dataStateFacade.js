@@ -93,14 +93,14 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 * in place so persistence can address the dataset across reloads. When
 	 * no dataset is currently active, the new one is auto-activated.
 	 *
-	 * @param {Dataset} dataset - Must have a `dados` array.
+	 * @param {Dataset} dataset - Must have a `rows` array.
 	 * @returns {number} Index of the newly added dataset.
-	 * @throws {Error} When `dataset` is missing or `dataset.dados` is not an array.
+	 * @throws {Error} When `dataset` is missing or `dataset.rows` is not an array.
 	 * @fires STATE_EVENTS.DATASET_ADDED
 	 */
 	function addDataset(dataset) {
-		if (!dataset || !Array.isArray(dataset.dados)) {
-			throw new Error('Invalid dataset: must have "dados" array');
+		if (!dataset || !Array.isArray(dataset.rows)) {
+			throw new Error('Invalid dataset: must have "rows" array');
 		}
 		if (!dataset.id) {
 			dataset.id = generateDatasetId();
@@ -142,7 +142,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	}
 
 	/**
-	 * Shallow-merge `updates` into the active dataset's `configGraficos`.
+	 * Shallow-merge `updates` into the active dataset's `chartConfig`.
 	 * No-op when no dataset is active.
 	 *
 	 * @param {Object} updates - Partial `ChartConfig`-shaped patch.
@@ -152,8 +152,8 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
 
-		dataset.configGraficos = {
-			...dataset.configGraficos,
+		dataset.chartConfig = {
+			...dataset.chartConfig,
 			...updates,
 		};
 		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, updates);
@@ -163,19 +163,19 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 * Replace the active dataset's selected-column list. No-op when no
 	 * dataset is active.
 	 *
-	 * @param {string[]} columnNames - Subset of the dataset's `colunas[].nome` values.
+	 * @param {string[]} columnNames - Subset of the dataset's `columns[].name` values.
 	 * @fires STATE_EVENTS.COLUMNS_UPDATED
 	 */
 	function updateActiveDatasetColumns(columnNames) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
 
-		dataset.colunasSelecionadas = columnNames;
+		dataset.selectedColumns = columnNames;
 		emitStateChange(STATE_EVENTS.COLUMNS_UPDATED, columnNames);
 	}
 
 	/**
-	 * Apply `normalizer` to `configGraficos` **without emitting**. Intended
+	 * Apply `normalizer` to `chartConfig` **without emitting**. Intended
 	 * for normalize-on-read paths — e.g. applying chart-config defaults
 	 * during a render. Emitting here would re-enter `refreshView` via the
 	 * CONFIG_UPDATED subscription and loop indefinitely.
@@ -183,12 +183,12 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 * **Do not** add an emit to this function. If you need an emit, use
 	 * {@link updateActiveDatasetConfig} instead.
 	 *
-	 * @param {(config: Object) => Object} normalizer - Receives the current `configGraficos`; returns the replacement.
+	 * @param {(config: Object) => Object} normalizer - Receives the current `chartConfig`; returns the replacement.
 	 */
 	function normalizeActiveDatasetConfig(normalizer) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
-		dataset.configGraficos = normalizer(dataset.configGraficos);
+		dataset.chartConfig = normalizer(dataset.chartConfig);
 	}
 
 	/**
@@ -211,7 +211,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (!dataset) return;
 		if (chartType !== null && !CHART_TYPES.includes(chartType)) return;
 
-		const current = dataset.configGraficos || {};
+		const current = dataset.chartConfig || {};
 		const next = { ...current };
 		CHART_TYPES.forEach(type => {
 			const previous = current[type] || {};
@@ -220,7 +220,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (chartType && activatedOverrides && typeof activatedOverrides === 'object') {
 			next[chartType] = { ...next[chartType], ...activatedOverrides };
 		}
-		dataset.configGraficos = next;
+		dataset.chartConfig = next;
 		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { activeChartType: chartType });
 	}
 

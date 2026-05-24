@@ -13,8 +13,8 @@ describe('fileListView', () => {
 		renderFileListDOM({
 			lista,
 			datasets: [
-				{ nome: 'A.csv', dados: [1, 2], colunas: ['x'], tamanho: '1KB' },
-				{ nome: 'B.csv', dados: [1], colunas: ['x', 'y'], tamanho: '2KB' },
+				{ name: 'A.csv', rows: [1, 2], columns: ['x'], sizeLabel: '1KB' },
+				{ name: 'B.csv', rows: [1], columns: ['x', 'y'], sizeLabel: '2KB' },
 			],
 			indiceAtivo: 1,
 			traduzir: (key, ...args) => `${key}:${args.join('|')}`,

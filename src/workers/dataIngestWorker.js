@@ -41,13 +41,13 @@ const NORMALIZE_CHUNK_SIZE = 20000;
  * Exported so tests can exercise the loop without spawning a real Worker.
  *
  * @param {Array<Object<string, *>>} rawData
- * @param {ColumnSpec[]} colunas
+ * @param {ColumnSpec[]} columns
  * @param {string} decimalSeparator - `'.'` or `','`.
  * @param {((done: number, total: number) => void) | null | undefined} onChunk
  * @param {number} [chunkSize=20000]
  * @returns {Array<Object<string, *>>}
  */
-export function chunkedNormalize(rawData, colunas, decimalSeparator, onChunk, chunkSize = NORMALIZE_CHUNK_SIZE) {
+export function chunkedNormalize(rawData, columns, decimalSeparator, onChunk, chunkSize = NORMALIZE_CHUNK_SIZE) {
 	const out = new Array(rawData.length);
 
 	for (let i = 0; i < rawData.length; i += chunkSize) {
@@ -55,15 +55,15 @@ export function chunkedNormalize(rawData, colunas, decimalSeparator, onChunk, ch
 		for (let j = i; j < end; j++) {
 			const row = rawData[j];
 			const converted = {};
-			for (const { nome, tipo } of colunas) {
-				const value = row[nome];
-				if (tipo === COLUMN_TYPES.NUMBER && value !== '' && value !== null && value !== undefined) {
-					converted[nome] = Number(normalizeNumericString(String(value), decimalSeparator));
-				} else if (tipo === COLUMN_TYPES.DATE && value !== '' && value !== null && value !== undefined) {
+			for (const { name, type } of columns) {
+				const value = row[name];
+				if (type === COLUMN_TYPES.NUMBER && value !== '' && value !== null && value !== undefined) {
+					converted[name] = Number(normalizeNumericString(String(value), decimalSeparator));
+				} else if (type === COLUMN_TYPES.DATE && value !== '' && value !== null && value !== undefined) {
 					const parsed = value instanceof Date ? value : new Date(value);
-					converted[nome] = Number.isFinite(parsed?.getTime?.()) ? parsed : null;
+					converted[name] = Number.isFinite(parsed?.getTime?.()) ? parsed : null;
 				} else {
-					converted[nome] = value;
+					converted[name] = value;
 				}
 			}
 			out[j] = converted;
@@ -115,8 +115,8 @@ export function runIngest({ id, kind, text, options = {} }, post) {
 			id,
 			type: 'done',
 			result: {
-				dados: [],
-				colunas: [],
+				rows: [],
+				columns: [],
 				decimalSeparator: '.',
 				statsNumeric: [],
 				statsCategorical: [],
@@ -136,30 +136,30 @@ export function runIngest({ id, kind, text, options = {} }, post) {
 	post({ id, type: 'progress', stage: 'decimal-detection', percent: 35 });
 
 	const columnNames = Object.keys(rawData[0]);
-	const colunas = [];
+	const columns = [];
 	for (let i = 0; i < columnNames.length; i++) {
 		const name = columnNames[i];
 		const values = rawData.map(row => row[name]);
-		colunas.push({ nome: name, tipo: detectType(values, decimalSeparator) });
+		columns.push({ name: name, type: detectType(values, decimalSeparator) });
 		const pct = 35 + Math.round(((i + 1) / columnNames.length) * 15);
 		post({ id, type: 'progress', stage: 'type-detection', percent: pct });
 	}
 
-	const dados = chunkedNormalize(rawData, colunas, decimalSeparator, (done, total) => {
+	const rows = chunkedNormalize(rawData, columns, decimalSeparator, (done, total) => {
 		const pct = 50 + Math.round((done / total) * 40);
 		post({ id, type: 'progress', stage: 'normalize', percent: pct });
 	});
 
 	post({ id, type: 'progress', stage: 'stats', percent: 92 });
-	const statsNumeric = calculateStatistics(dados, colunas);
+	const statsNumeric = calculateStatistics(rows, columns);
 	post({ id, type: 'progress', stage: 'stats', percent: 96 });
-	const statsCategorical = calculateCategoricalStatistics(dados, colunas);
+	const statsCategorical = calculateCategoricalStatistics(rows, columns);
 	post({ id, type: 'progress', stage: 'stats', percent: 100 });
 
 	post({
 		id,
 		type: 'done',
-		result: { dados, colunas, decimalSeparator, statsNumeric, statsCategorical, truncatedFrom },
+		result: { rows, columns, decimalSeparator, statsNumeric, statsCategorical, truncatedFrom },
 	});
 }
 

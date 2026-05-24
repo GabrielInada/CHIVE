@@ -23,7 +23,7 @@ import { createLineChartControls, setupLineChartControlListeners } from '../../.
 
 function createDataset(overrides = {}) {
 	return {
-		configGraficos: {
+		chartConfig: {
 			line: {
 				enabled: true,
 				expanded: true,

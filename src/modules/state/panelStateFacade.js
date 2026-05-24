@@ -48,7 +48,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  * @param {AppState} deps.appState
  * @param {(eventType: import('../../types.js').StateEventType, data?: *) => void} deps.emitStateChange
  * @param {(templateId?: PanelTemplateId) => PanelBlock} deps.createPanelBlock - Closure-bound block builder that increments `panel.nextBlockId`.
- * @param {() => void} deps.ensureDefaultPanelBlock - Inserts a default `layout-2col` block when `panel.blocks` is empty. Called from every method that reads or writes blocks; this is why several "getter" methods have a side effect.
+ * @param {() => void} deps.ensureDefaultPanelBlock - Inserts a default `template-2col` block when `panel.blocks` is empty. Called from every method that reads or writes blocks; this is why several "getter" methods have a side effect.
  * @param {(name: string) => string} deps.sanitizeChartName
  * @param {number} deps.panelBlockLimit
  * @param {number} deps.panelBlockMinHeight
@@ -72,7 +72,7 @@ export function createPanelStateFacade({
 	}
 
 	/**
-	 * Append a chart snapshot. Sanitizes `nome`, truncates `metaSummary` to
+	 * Append a chart snapshot. Sanitizes `name`, truncates `metaSummary` to
 	 * 180 chars, defaults `createdAt` to the current ISO timestamp, and
 	 * assigns a monotonic numeric id.
 	 *
@@ -127,7 +127,7 @@ export function createPanelStateFacade({
 
 	/**
 	 * Reset the panel: drop all snapshots, drop the legacy slot map, reset
-	 * counters, and replace `blocks` with a single fresh `layout-2col` block.
+	 * counters, and replace `blocks` with a single fresh `template-2col` block.
 	 *
 	 * @fires STATE_EVENTS.PANEL_CLEARED
 	 */
@@ -150,11 +150,11 @@ export function createPanelStateFacade({
 	 * Append a new block. Capped at `panelBlockLimit` (default 4 — see
 	 * `appState.js`).
 	 *
-	 * @param {PanelTemplateId} [templateId='layout-2col']
+	 * @param {PanelTemplateId} [templateId='template-2col']
 	 * @returns {string | null} New block id, or `null` when the limit was reached.
 	 * @fires STATE_EVENTS.PANEL_BLOCK_ADDED - Emitted only on success.
 	 */
-	function addPanelBlock(templateId = 'layout-2col') {
+	function addPanelBlock(templateId = 'template-2col') {
 		const block = addPanelBlockState(appState, templateId, ensureDefaultPanelBlock, createPanelBlock, panelBlockLimit);
 		if (!block) return null;
 		emitStateChange(STATE_EVENTS.PANEL_BLOCK_ADDED, block);
@@ -163,7 +163,7 @@ export function createPanelStateFacade({
 
 	/**
 	 * Remove a block. If removal would empty the panel, a fresh
-	 * `layout-2col` block is inserted in its place.
+	 * `template-2col` block is inserted in its place.
 	 *
 	 * @param {string} blockId
 	 * @fires STATE_EVENTS.PANEL_BLOCK_REMOVED
@@ -260,7 +260,7 @@ export function createPanelStateFacade({
 	 * to the new template (since `panel.layout` shadows `blocks[0].templateId`).
 	 *
 	 * @param {string} blockId
-	 * @param {PanelTemplateId} templateId - Unknown templates fall back to `'layout-2col'`.
+	 * @param {PanelTemplateId} templateId - Unknown templates fall back to `'template-2col'`.
 	 * @returns {boolean} `true` when the change was applied (including no-op same-template case), `false` when the block was not found.
 	 * @fires STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED
 	 */

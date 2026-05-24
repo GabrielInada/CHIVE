@@ -225,7 +225,7 @@ function getColumnContext(dataset) {
 	const numeric = getNumericColumnNames(visibleColumns);
 	const categorical = getCategoricalColumnNames(visibleColumns);
 	const dates = getDateColumnNames(visibleColumns);
-	const allColumns = visibleColumns.map(c => c.nome);
+	const allColumns = visibleColumns.map(c => c.name);
 	const baseCategoricalOrAll = categorical.length > 0 ? categorical : allColumns;
 	return { numeric, categorical, dates, allColumns, baseCategoricalOrAll };
 }
@@ -406,7 +406,7 @@ export function renderChartControlsSidebar(dataset) {
 		return;
 	}
 
-	const config = mergeChartConfigWithDefaults(dataset.configGraficos);
+	const config = mergeChartConfigWithDefaults(dataset.chartConfig);
 	const activeChartType = CHART_TYPES.find(type => config[type].enabled) || null;
 
 	const controls = activeChartType ? buildControlsForChart(activeChartType, dataset) : [];

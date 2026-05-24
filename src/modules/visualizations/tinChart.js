@@ -178,14 +178,14 @@ function collectUniqueEdges(delaunay) {
  * `customTitle`, `chartHeight`, `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {Array<Object<string, *>>} rows - Source rows.
  * @param {string} eixoX - Numeric X column.
  * @param {string} eixoY - Numeric Y column.
  * @param {string} eixoZ - Numeric Z column (the surface height).
  * @param {Object} [opcoes={}] - Render options bag.
  * @returns {Result}
  */
-export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {}) {
+export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}) {
 	if (!container || !eixoX || !eixoY || !eixoZ) return fail();
 
 	const fillMode = opcoes.fillMode === 'flat' ? 'flat' : 'smooth';
@@ -252,7 +252,7 @@ export function renderTinChart(container, dados, eixoX, eixoY, eixoZ, opcoes = {
 	};
 
 	const isMissing = v => v === null || v === undefined || v === '';
-	const pontos = (Array.isArray(dados) ? dados : [])
+	const pontos = (Array.isArray(rows) ? rows : [])
 		.filter(row => row && !isMissing(row[eixoX]) && !isMissing(row[eixoY]) && !isMissing(row[eixoZ]))
 		.map((row, index) => ({
 			x: Number(row[eixoX]),

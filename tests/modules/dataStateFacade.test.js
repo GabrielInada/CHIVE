@@ -11,7 +11,7 @@ describe('dataStateFacade', () => {
 		};
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
-		const index = facade.addDataset({ dados: [{ a: 1 }], colunas: ['a'] });
+		const index = facade.addDataset({ rows: [{ a: 1 }], columns: ['a'] });
 
 		expect(index).toBe(0);
 		expect(appState.data.activeIndex).toBe(0);
@@ -28,7 +28,7 @@ describe('dataStateFacade', () => {
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
 		expect(() => facade.addDataset(null)).toThrow('Invalid dataset');
-		expect(() => facade.addDataset({ dados: 'not array' })).toThrow('Invalid dataset');
+		expect(() => facade.addDataset({ rows: 'not array' })).toThrow('Invalid dataset');
 	});
 
 	it('does not override activeIndex on subsequent adds', () => {
@@ -40,15 +40,15 @@ describe('dataStateFacade', () => {
 		};
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
-		facade.addDataset({ dados: [{}], colunas: [] });
-		facade.addDataset({ dados: [{}], colunas: [] });
+		facade.addDataset({ rows: [{}], columns: [] });
+		facade.addDataset({ rows: [{}], columns: [] });
 		expect(appState.data.activeIndex).toBe(0);
 	});
 
 	it('setActiveDataset throws for out-of-range index', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
-			data: { datasets: [{ dados: [{}] }], activeIndex: 0 },
+			data: { datasets: [{ rows: [{}] }], activeIndex: 0 },
 			panel: { charts: [], slots: {} },
 			ui: {},
 		};
@@ -98,19 +98,19 @@ describe('dataStateFacade', () => {
 	it('updateActiveDatasetConfig merges into existing config', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
-			data: { datasets: [{ dados: [{}], colunas: [], configGraficos: { color: 'red' } }], activeIndex: 0 },
+			data: { datasets: [{ rows: [{}], columns: [], chartConfig: { color: 'red' } }], activeIndex: 0 },
 			panel: { charts: [], slots: {} },
 			ui: {},
 		};
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
 		facade.updateActiveDatasetConfig({ title: 'Test' });
-		expect(appState.data.datasets[0].configGraficos).toEqual({ color: 'red', title: 'Test' });
+		expect(appState.data.datasets[0].chartConfig).toEqual({ color: 'red', title: 'Test' });
 	});
 
 	it('getAllDatasets returns datasets array', () => {
 		const emitStateChange = vi.fn();
-		const datasets = [{ dados: [{}], colunas: [] }];
+		const datasets = [{ rows: [{}], columns: [] }];
 		const appState = {
 			data: { datasets, activeIndex: 0 },
 			panel: { charts: [], slots: {} },
@@ -124,7 +124,7 @@ describe('dataStateFacade', () => {
 	it('removeDataset adjusts activeIndex when removing before active', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
-			data: { datasets: [{ dados: [{}] }, { dados: [{}] }, { dados: [{}] }], activeIndex: 2 },
+			data: { datasets: [{ rows: [{}] }, { rows: [{}] }, { rows: [{}] }], activeIndex: 2 },
 			panel: { charts: [], slots: {} },
 			ui: {},
 		};
@@ -150,7 +150,7 @@ describe('dataStateFacade', () => {
 	it('normalizeActiveDatasetConfig writes config without emitting configUpdated', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
-			data: { datasets: [{ dados: [{}], colunas: [], configGraficos: { color: 'red' } }], activeIndex: 0 },
+			data: { datasets: [{ rows: [{}], columns: [], chartConfig: { color: 'red' } }], activeIndex: 0 },
 			panel: { charts: [], slots: {} },
 			ui: {},
 		};
@@ -158,7 +158,7 @@ describe('dataStateFacade', () => {
 
 		facade.normalizeActiveDatasetConfig(prev => ({ ...prev, normalized: true }));
 
-		expect(appState.data.datasets[0].configGraficos).toEqual({ color: 'red', normalized: true });
+		expect(appState.data.datasets[0].chartConfig).toEqual({ color: 'red', normalized: true });
 		expect(emitStateChange).not.toHaveBeenCalledWith('configUpdated', expect.anything());
 	});
 
@@ -178,7 +178,7 @@ describe('dataStateFacade', () => {
 	it('removing dataset clears panel snapshots and slots', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
-			data: { datasets: [{ dados: [{}], colunas: [] }], activeIndex: 0 },
+			data: { datasets: [{ rows: [{}], columns: [] }], activeIndex: 0 },
 			panel: { charts: [{ id: 1 }], slots: { 'slot-1': 1 } },
 			ui: {},
 		};

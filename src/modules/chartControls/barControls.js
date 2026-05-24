@@ -2,7 +2,7 @@
  * Bar-chart controls module.
  *
  * Builds the right-sidebar control group for the bar chart and wires its
- * listeners. Listeners mutate the active dataset's `configGraficos.bar` via
+ * listeners. Listeners mutate the active dataset's `chartConfig.bar` via
  * {@link updateActiveDatasetChartConfig} and call back into the host so the
  * chart re-renders.
  *
@@ -34,7 +34,7 @@ import {
 /**
  * Build the bar-chart control sections (Data, Display, Styling, Advanced).
  *
- * Reads from `dataset.configGraficos.bar`; the resulting elements expose
+ * Reads from `dataset.chartConfig.bar`; the resulting elements expose
  * the standard input ids that {@link setupBarChartControlListeners}
  * later attaches listeners to.
  *
@@ -45,10 +45,10 @@ import {
  * @returns {HTMLElement[]} Array of `chart-control-section` elements ready to append to the params pane.
  */
 export function createBarChartControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
-	const config = dataset.configGraficos.bar;
+	const config = dataset.chartConfig.bar;
 	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;
-	const isDisabled = !dataset.configGraficos.bar.enabled;
+	const isDisabled = !dataset.chartConfig.bar.enabled;
 
 	// ====== DATA & AGGREGATION SECTION ======
 	const dataControls = [];
@@ -245,7 +245,7 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 
 /**
  * Wire listeners for every bar-chart control element produced by
- * {@link createBarChartControls}. Mutates `dataset.configGraficos.bar`
+ * {@link createBarChartControls}. Mutates `dataset.chartConfig.bar`
  * via {@link updateActiveDatasetChartConfig} and invokes the
  * `onConfigChanged` callback so the host can re-render.
  *
@@ -278,12 +278,12 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 			const nextMode = ['count', 'sum', 'mean'].includes(selectBarMeasure.value)
 				? selectBarMeasure.value
 				: 'count';
-			const currentValueColumn = numericOptions.includes(dataset.configGraficos.bar?.valueColumn)
-				? dataset.configGraficos.bar?.valueColumn
+			const currentValueColumn = numericOptions.includes(dataset.chartConfig.bar?.valueColumn)
+				? dataset.chartConfig.bar?.valueColumn
 				: null;
 			updateActiveDatasetChartConfig({
 				bar: {
-					...dataset.configGraficos.bar,
+					...dataset.chartConfig.bar,
 					measureMode: nextMode,
 					valueColumn: nextMode === 'count' ? null : currentValueColumn,
 				},
@@ -298,7 +298,7 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 		selectBarValueColumn.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
 				bar: {
-					...dataset.configGraficos.bar,
+					...dataset.chartConfig.bar,
 					valueColumn: numericOptions.includes(selectBarValueColumn.value)
 						? selectBarValueColumn.value
 						: null,
@@ -345,7 +345,7 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
  * @returns {{ category: string | null }}
  */
 export function computeDefaults(dataset, ctx) {
-	const current = dataset.configGraficos?.bar?.category;
+	const current = dataset.chartConfig?.bar?.category;
 	const category = ctx.baseCategoricalOrAll.includes(current)
 		? current
 		: (ctx.baseCategoricalOrAll[0] || null);

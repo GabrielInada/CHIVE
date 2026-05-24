@@ -18,27 +18,27 @@ export const AXIS_TYPE_VALUES = {
 };
 
 /**
- * True when `axisType` names a numeric-style value (`'numeric'`,
- * `'number'`, `'numero'`). Case-insensitive.
+ * True when `axisType` names a numeric-style value (`'numeric'`, `'number'`).
+ * Case-insensitive.
  *
  * @param {string} axisType
  * @returns {boolean}
  */
 export function isNumericLikeAxisType(axisType) {
 	const value = String(axisType || '').toLowerCase();
-	return value === 'numeric' || value === 'number' || value === 'numero';
+	return value === 'numeric' || value === 'number';
 }
 
 /**
  * True when `axisType` names a categorical-style value (`'categorical'`,
- * `'category'`, `'text'`, `'texto'`, `'date'`, `'data'`). Case-insensitive.
+ * `'category'`, `'text'`, `'date'`). Case-insensitive.
  *
  * @param {string} axisType
  * @returns {boolean}
  */
 export function isCategoricalLikeAxisType(axisType) {
 	const value = String(axisType || '').toLowerCase();
-	return value === 'categorical' || value === 'category' || value === 'text' || value === 'texto' || value === 'date' || value === 'data';
+	return value === 'categorical' || value === 'category' || value === 'text' || value === 'date';
 }
 
 /**

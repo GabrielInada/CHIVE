@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { createPanelStateFacade } from '../../src/modules/state/panelStateFacade.js';
 
 function createPanelBlockFactory(appState) {
-	return (templateId = 'layout-2col') => {
+	return (templateId = 'template-2col') => {
 		const id = `block-${appState.panel.nextBlockId++}`;
 		return {
 			id,
@@ -24,7 +24,7 @@ describe('panelStateFacade', () => {
 			panel: {
 				charts: [],
 				slots: {},
-				layout: 'layout-2col',
+				layout: 'template-2col',
 				blocks: [],
 				nextBlockId: 1,
 				nextChartId: 0,
@@ -34,7 +34,7 @@ describe('panelStateFacade', () => {
 		const createPanelBlock = createPanelBlockFactory(appState);
 		const ensureDefaultPanelBlock = () => {
 			if (!Array.isArray(appState.panel.blocks)) appState.panel.blocks = [];
-			if (appState.panel.blocks.length === 0) appState.panel.blocks.push(createPanelBlock('layout-2col'));
+			if (appState.panel.blocks.length === 0) appState.panel.blocks.push(createPanelBlock('template-2col'));
 		};
 
 		const facade = createPanelStateFacade({
@@ -48,10 +48,10 @@ describe('panelStateFacade', () => {
 			panelBlockMaxHeight: 760,
 		});
 
-		const id = facade.addChartSnapshot({ nome: ' A ', svgMarkup: '<svg/>' });
+		const id = facade.addChartSnapshot({ name: ' A ', svgMarkup: '<svg/>' });
 
 		expect(id).toBe(0);
-		expect(facade.getChartSnapshot(0)?.nome).toBe('A');
+		expect(facade.getChartSnapshot(0)?.name).toBe('A');
 		expect(emitStateChange).toHaveBeenCalledWith('chartAdded', expect.objectContaining({ id: 0 }));
 	});
 
@@ -62,7 +62,7 @@ describe('panelStateFacade', () => {
 			panel: {
 				charts: [],
 				slots: {},
-				layout: 'layout-2col',
+				layout: 'template-2col',
 				blocks: [],
 				nextBlockId: 1,
 				nextChartId: 0,
@@ -86,7 +86,7 @@ describe('panelStateFacade', () => {
 			panelBlockMaxHeight: 760,
 		});
 
-		const id = facade.addChartSnapshot({ nome: 'Test', svgMarkup: '<svg/>' });
+		const id = facade.addChartSnapshot({ name: 'Test', svgMarkup: '<svg/>' });
 		emitStateChange.mockClear();
 
 		facade.removeChartSnapshot(id);
@@ -99,9 +99,9 @@ describe('panelStateFacade', () => {
 		const appState = {
 			data: { datasets: [], activeIndex: -1 },
 			panel: {
-				charts: [{ id: 0, nome: 'X' }],
+				charts: [{ id: 0, name: 'X' }],
 				slots: { 'slot-1': 0 },
-				layout: 'layout-3col',
+				layout: 'template-3col',
 				blocks: [],
 				nextBlockId: 1,
 				nextChartId: 1,
@@ -125,7 +125,7 @@ describe('panelStateFacade', () => {
 			panelBlockMaxHeight: 760,
 		});
 
-		expect(facade.getPanelCharts()).toEqual([{ id: 0, nome: 'X' }]);
+		expect(facade.getPanelCharts()).toEqual([{ id: 0, name: 'X' }]);
 	});
 
 	it('clears panel and emits panelCleared', () => {
@@ -133,9 +133,9 @@ describe('panelStateFacade', () => {
 		const appState = {
 			data: { datasets: [], activeIndex: -1 },
 			panel: {
-				charts: [{ id: 0, nome: 'A' }],
+				charts: [{ id: 0, name: 'A' }],
 				slots: { 'slot-1': 0 },
-				layout: 'layout-2col',
+				layout: 'template-2col',
 				blocks: [],
 				nextBlockId: 1,
 				nextChartId: 1,
@@ -171,7 +171,7 @@ describe('panelStateFacade', () => {
 			panel: {
 				charts: [],
 				slots: {},
-				layout: 'layout-2col',
+				layout: 'template-2col',
 				blocks: [],
 				nextBlockId: 1,
 				nextChartId: 0,
@@ -207,7 +207,7 @@ describe('panelStateFacade', () => {
 			panel: {
 				charts: [],
 				slots: {},
-				layout: 'layout-2col',
+				layout: 'template-2col',
 				blocks: [],
 				nextBlockId: 1,
 				nextChartId: 0,
@@ -217,7 +217,7 @@ describe('panelStateFacade', () => {
 		const createPanelBlock = createPanelBlockFactory(appState);
 		const ensureDefaultPanelBlock = () => {
 			if (!Array.isArray(appState.panel.blocks)) appState.panel.blocks = [];
-			if (appState.panel.blocks.length === 0) appState.panel.blocks.push(createPanelBlock('layout-2col'));
+			if (appState.panel.blocks.length === 0) appState.panel.blocks.push(createPanelBlock('template-2col'));
 		};
 
 		const facade = createPanelStateFacade({
@@ -231,7 +231,7 @@ describe('panelStateFacade', () => {
 			panelBlockMaxHeight: 760,
 		});
 
-		const added = facade.addPanelBlock('layout-2col');
+		const added = facade.addPanelBlock('template-2col');
 
 		expect(added).toBeNull();
 		expect(appState.panel.blocks.length).toBe(1);

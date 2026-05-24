@@ -8,17 +8,17 @@ const mocks = vi.hoisted(() => ({
 		getPanelBlocks: vi.fn(() => [
 			{
 				id: 'block-1',
-				templateId: 'layout-2col',
+				templateId: 'template-2col',
 				slots: {},
 				proportions: { split: 50 },
 			},
 		]),
 		getActiveDataset: vi.fn(() => ({
-			nome: 'fixture.csv',
-			dados: [{ a: 1 }, { a: 2 }],
-			colunas: [{ nome: 'a', tipo: 'numero' }],
-			colunasSelecionadas: ['a'],
-			configGraficos: {},
+			name: 'fixture.csv',
+			rows: [{ a: 1 }, { a: 2 }],
+			columns: [{ name: 'a', type: 'number' }],
+			selectedColumns: ['a'],
+			chartConfig: {},
 		})),
 		addChartSnapshot: vi.fn((snap) => {
 			const id = Math.random();
@@ -100,11 +100,11 @@ describe('panelManager (branch coverage)', () => {
 		mocks.appState.onStateChange.mockClear();
 		mocks.appState.getActiveDataset.mockClear();
 		mocks.appState.getActiveDataset.mockReturnValue({
-			nome: 'fixture.csv',
-			dados: [{ a: 1 }, { a: 2 }],
-			colunas: [{ nome: 'a', tipo: 'numero' }],
-			colunasSelecionadas: ['a'],
-			configGraficos: {},
+			name: 'fixture.csv',
+			rows: [{ a: 1 }, { a: 2 }],
+			columns: [{ name: 'a', type: 'number' }],
+			selectedColumns: ['a'],
+			chartConfig: {},
 		});
 		mocks.chartDefaults.mergeChartConfigWithDefaults.mockClear();
 		mocks.globalFilter.resolveGlobalFilterForColumns.mockClear();
@@ -168,8 +168,8 @@ describe('panelManager (branch coverage)', () => {
 			addChartToPanel('container', 'My Bar Chart', { type: 'bar' });
 
 			const call = mocks.appState.addChartSnapshot.mock.calls[0][0];
-			expect(call.nome).toBe('My Bar Chart');
-			expect(typeof call.nome).toBe('string');
+			expect(call.name).toBe('My Bar Chart');
+			expect(typeof call.name).toBe('string');
 		});
 	});
 
@@ -254,32 +254,32 @@ describe('panelManager (branch coverage)', () => {
 
 	describe('getLayoutConfig()', () => {
 		it('returns config for valid layout', () => {
-			const config = getLayoutConfig('layout-2col');
+			const config = getLayoutConfig('template-2col');
 
 			expect(config).toBeDefined();
 			expect(config.slots).toContain('slot-1');
 			expect(config.slots).toContain('slot-2');
 		});
 
-		it('defaults to layout-2col for invalid layout', () => {
+		it('defaults to template-2col for invalid layout', () => {
 			const config = getLayoutConfig('invalid');
 
 			expect(config.cssClass).toContain('2col');
 		});
 
 		it('has correct slot counts per layout', () => {
-			expect(getLayoutConfig('layout-single').slots.length).toBe(1);
-			expect(getLayoutConfig('layout-2col').slots.length).toBe(2);
-			expect(getLayoutConfig('layout-hero2').slots.length).toBe(3);
-			expect(getLayoutConfig('layout-3col').slots.length).toBe(3);
-			expect(getLayoutConfig('layout-1x2').slots.length).toBe(2);
+			expect(getLayoutConfig('template-single').slots.length).toBe(1);
+			expect(getLayoutConfig('template-2col').slots.length).toBe(2);
+			expect(getLayoutConfig('template-hero2').slots.length).toBe(3);
+			expect(getLayoutConfig('template-3col').slots.length).toBe(3);
+			expect(getLayoutConfig('template-1x2').slots.length).toBe(2);
 		});
 
 		it('includes translation key for each layout', () => {
-			const layouts = ['layout-single', 'layout-2col', 'layout-hero2', 'layout-3col', 'layout-1x2'];
+			const layouts = ['template-single', 'template-2col', 'template-hero2', 'template-3col', 'template-1x2'];
 			layouts.forEach((id) => {
 				const cfg = getLayoutConfig(id);
-				expect(cfg.labelKey).toContain('chive-panel-layout');
+				expect(cfg.labelKey).toContain('chive-panel-template');
 			});
 		});
 	});

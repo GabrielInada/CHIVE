@@ -39,13 +39,13 @@ describe('network graph visualization', () => {
 
 	it('renders links and nodes from source/target columns', () => {
 		const container = document.getElementById('network');
-		const dados = [
+		const rows = [
 			{ origem: 'A', destino: 'B', peso: 2 },
 			{ origem: 'B', destino: 'C', peso: 1 },
 			{ origem: 'A', destino: 'C', peso: 3 },
 		];
 
-		const result = renderNetworkGraph(container, dados, 'origem', 'destino', {
+		const result = renderNetworkGraph(container, rows, 'origem', 'destino', {
 			weightColumn: 'peso',
 			showNodeLabels: true,
 		});
@@ -59,12 +59,12 @@ describe('network graph visualization', () => {
 
 	it('uses configured source/target labels in the legend', () => {
 		const container = document.getElementById('network');
-		const dados = [
+		const rows = [
 			{ origem: 'A', destino: 'B' },
 			{ origem: 'B', destino: 'C' },
 		];
 
-		renderNetworkGraph(container, dados, 'origem', 'destino', {
+		renderNetworkGraph(container, rows, 'origem', 'destino', {
 			showLegend: true,
 			labels: { source: 'Origem', target: 'Destino' },
 		});
@@ -79,12 +79,12 @@ describe('network graph visualization', () => {
 
 	it('falls back to "Source" / "Target" when labels are absent', () => {
 		const container = document.getElementById('network');
-		const dados = [
+		const rows = [
 			{ origem: 'A', destino: 'B' },
 			{ origem: 'B', destino: 'C' },
 		];
 
-		renderNetworkGraph(container, dados, 'origem', 'destino', { showLegend: true });
+		renderNetworkGraph(container, rows, 'origem', 'destino', { showLegend: true });
 
 		const legendTexts = Array.from(container.querySelectorAll('.network-legend text'))
 			.map(node => node.textContent);
@@ -94,12 +94,12 @@ describe('network graph visualization', () => {
 
 	it('returns explicit failure when there is no valid source-target data', () => {
 		const container = document.getElementById('network');
-		const dados = [
+		const rows = [
 			{ origem: '', destino: '' },
 			{ origem: null, destino: undefined },
 		];
 
-		const result = renderNetworkGraph(container, dados, 'origem', 'destino');
+		const result = renderNetworkGraph(container, rows, 'origem', 'destino');
 
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('insufficient-data');
@@ -107,11 +107,11 @@ describe('network graph visualization', () => {
 
 	it('pins the tooltip when a node is clicked', () => {
 		const container = document.getElementById('network');
-		const dados = [
+		const rows = [
 			{ origem: 'A', destino: 'B' },
 			{ origem: 'B', destino: 'C' },
 		];
-		renderNetworkGraph(container, dados, 'origem', 'destino');
+		renderNetworkGraph(container, rows, 'origem', 'destino');
 		stubScreenCTM(container);
 
 		const firstNode = container.querySelector('circle');
@@ -125,11 +125,11 @@ describe('network graph visualization', () => {
 
 	it('unpins and hides the tooltip on background click', () => {
 		const container = document.getElementById('network');
-		const dados = [
+		const rows = [
 			{ origem: 'A', destino: 'B' },
 			{ origem: 'B', destino: 'C' },
 		];
-		renderNetworkGraph(container, dados, 'origem', 'destino');
+		renderNetworkGraph(container, rows, 'origem', 'destino');
 		stubScreenCTM(container);
 
 		const firstNode = container.querySelector('circle');
@@ -145,11 +145,11 @@ describe('network graph visualization', () => {
 
 	it('repositions the pinned tooltip when the anchored node moves', async () => {
 		const container = document.getElementById('network');
-		const dados = [
+		const rows = [
 			{ origem: 'A', destino: 'B' },
 			{ origem: 'B', destino: 'C' },
 		];
-		renderNetworkGraph(container, dados, 'origem', 'destino');
+		renderNetworkGraph(container, rows, 'origem', 'destino');
 		stubScreenCTM(container);
 
 		const firstNode = container.querySelector('circle');

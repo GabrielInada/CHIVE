@@ -12,13 +12,13 @@ describe('visualization color options', () => {
 
 	it('applies custom bar color to rendered bars', () => {
 		const container = document.getElementById('bar');
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 			{ categoria: 'A' },
 		];
 
-		const result = renderBarChart(container, dados, 'categoria', {
+		const result = renderBarChart(container, rows, 'categoria', {
 			color: '#112233',
 		});
 
@@ -30,9 +30,9 @@ describe('visualization color options', () => {
 
 	it('falls back to default bar color on invalid color', () => {
 		const container = document.getElementById('bar');
-		const dados = [{ categoria: 'A' }];
+		const rows = [{ categoria: 'A' }];
 
-		renderBarChart(container, dados, 'categoria', {
+		renderBarChart(container, rows, 'categoria', {
 			color: 'invalid-color',
 		});
 
@@ -42,13 +42,13 @@ describe('visualization color options', () => {
 
 	it('applies custom scatter color to rendered points', () => {
 		const container = document.getElementById('scatter');
-		const dados = [
+		const rows = [
 			{ x: 1, y: 2 },
 			{ x: 2, y: 3 },
 			{ x: 3, y: 4 },
 		];
 
-		const result = renderScatterPlot(container, dados, 'x', 'y', {
+		const result = renderScatterPlot(container, rows, 'x', 'y', {
 			color: '#abcdef',
 		});
 

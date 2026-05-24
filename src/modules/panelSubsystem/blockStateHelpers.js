@@ -15,7 +15,7 @@
  * @typedef {import('../../types.js').PanelBlockProportions} PanelBlockProportions
  */
 
-const PANEL_TEMPLATES = ['layout-single', 'layout-2col', 'layout-hero2', 'layout-3col', 'layout-1x2'];
+const PANEL_TEMPLATES = ['template-single', 'template-2col', 'template-hero2', 'template-3col', 'template-1x2'];
 
 /**
  * Default proportions for each layout template. The shape varies per
@@ -25,22 +25,22 @@ const PANEL_TEMPLATES = ['layout-single', 'layout-2col', 'layout-hero2', 'layout
  * @returns {PanelBlockProportions}
  */
 export function createDefaultProportions(templateId) {
-	if (templateId === 'layout-2col') return { split: 50 };
-	if (templateId === 'layout-hero2') return { splitMain: 60, splitRight: 50 };
-	if (templateId === 'layout-3col') return { a: 33, b: 33, c: 34 };
-	if (templateId === 'layout-1x2') return { split: 50 };
+	if (templateId === 'template-2col') return { split: 50 };
+	if (templateId === 'template-hero2') return { splitMain: 60, splitRight: 50 };
+	if (templateId === 'template-3col') return { a: 33, b: 33, c: 34 };
+	if (templateId === 'template-1x2') return { split: 50 };
 	return { split: 100 };
 }
 
 /**
  * Coerce an untrusted id into a known {@link PanelTemplateId}. Anything
- * not in the canonical list collapses to `'layout-2col'` (the default).
+ * not in the canonical list collapses to `'template-2col'` (the default).
  *
  * @param {*} templateId
  * @returns {PanelTemplateId}
  */
 export function normalizeTemplateId(templateId) {
-	return PANEL_TEMPLATES.includes(templateId) ? templateId : 'layout-2col';
+	return PANEL_TEMPLATES.includes(templateId) ? templateId : 'template-2col';
 }
 
 /**
@@ -52,11 +52,11 @@ export function normalizeTemplateId(templateId) {
  */
 export function getTemplateSlots(templateId) {
 	const normalized = normalizeTemplateId(templateId);
-	if (normalized === 'layout-single') return ['slot-1'];
-	if (normalized === 'layout-2col') return ['slot-1', 'slot-2'];
-	if (normalized === 'layout-hero2') return ['slot-1', 'slot-2', 'slot-3'];
-	if (normalized === 'layout-3col') return ['slot-1', 'slot-2', 'slot-3'];
-	if (normalized === 'layout-1x2') return ['slot-1', 'slot-2'];
+	if (normalized === 'template-single') return ['slot-1'];
+	if (normalized === 'template-2col') return ['slot-1', 'slot-2'];
+	if (normalized === 'template-hero2') return ['slot-1', 'slot-2', 'slot-3'];
+	if (normalized === 'template-3col') return ['slot-1', 'slot-2', 'slot-3'];
+	if (normalized === 'template-1x2') return ['slot-1', 'slot-2'];
 	return ['slot-1', 'slot-2'];
 }
 
@@ -66,10 +66,10 @@ export function getTemplateSlots(templateId) {
  * object that lives in `appState.panel.blocks[]`.
  *
  * @param {number} nextBlockId - Monotonic counter from `appState.panel.nextBlockId`.
- * @param {PanelTemplateId} [templateId='layout-2col']
+ * @param {PanelTemplateId} [templateId='template-2col']
  * @returns {PanelBlock}
  */
-export function createPanelBlock(nextBlockId, templateId = 'layout-2col') {
+export function createPanelBlock(nextBlockId, templateId = 'template-2col') {
 	const normalizedTemplate = normalizeTemplateId(templateId);
 	return {
 		id: `block-${nextBlockId}`,

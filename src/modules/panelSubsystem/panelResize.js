@@ -61,7 +61,7 @@ function applyDynamicBlockHeight(gridDiv, block) {
 /**
  * Render the proportion-drag handles overlaid on a block's grid. Each
  * template gets a different set of handles — vertical splits on the
- * x-axis, horizontal splits on the y-axis. `layout-hero2`'s right-column
+ * x-axis, horizontal splits on the y-axis. `template-hero2`'s right-column
  * y-handle is positioned on a rail that follows the main split.
  *
  * Each handle's `mousedown` starts a drag via {@link startGuidedResizeDrag}.
@@ -75,11 +75,11 @@ export function renderGuidedResizeHandles(gridDiv, block, renderCanvasPanel) {
 	if (!gridDiv || !block?.proportions) return;
 
 	const handles = [];
-	if (block.templateId === 'layout-2col') {
+	if (block.templateId === 'template-2col') {
 		handles.push({ key: 'split', axis: 'x', position: block.proportions.split ?? 50 });
-	} else if (block.templateId === 'layout-1x2') {
+	} else if (block.templateId === 'template-1x2') {
 		handles.push({ key: 'split', axis: 'y', position: block.proportions.split ?? 50, railStart: 0, railEnd: 100 });
-	} else if (block.templateId === 'layout-hero2') {
+	} else if (block.templateId === 'template-hero2') {
 		const splitMain = clampPercent(block.proportions.splitMain ?? 60, 20, 80);
 		handles.push({ key: 'splitMain', axis: 'x', position: splitMain });
 		handles.push({
@@ -89,7 +89,7 @@ export function renderGuidedResizeHandles(gridDiv, block, renderCanvasPanel) {
 			railStart: splitMain,
 			railEnd: 100,
 		});
-	} else if (block.templateId === 'layout-3col') {
+	} else if (block.templateId === 'template-3col') {
 		const a = Number(block.proportions.a ?? 33);
 		const b = Number(block.proportions.b ?? 33);
 		handles.push({ key: 'a', axis: 'x', position: a });
@@ -154,19 +154,19 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv, renderCanvasPa
 		const currentBlock = getPanelBlocks().find(item => item.id === blockId);
 		if (!currentBlock) return;
 
-		if (templateId === 'layout-2col' && key === 'split') {
+		if (templateId === 'template-2col' && key === 'split') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
 			updatePanelBlockProportions(blockId, { split: clampPercent(next, 20, 80) });
-		} else if (templateId === 'layout-1x2' && key === 'split') {
+		} else if (templateId === 'template-1x2' && key === 'split') {
 			const next = ((event.clientY - rect.top) / rect.height) * 100;
 			updatePanelBlockProportions(blockId, { split: clampPercent(next, 20, 80) });
-		} else if (templateId === 'layout-hero2' && key === 'splitMain') {
+		} else if (templateId === 'template-hero2' && key === 'splitMain') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
 			updatePanelBlockProportions(blockId, { splitMain: clampPercent(next, 20, 80) });
-		} else if (templateId === 'layout-hero2' && key === 'splitRight') {
+		} else if (templateId === 'template-hero2' && key === 'splitRight') {
 			const next = ((event.clientY - rect.top) / rect.height) * 100;
 			updatePanelBlockProportions(blockId, { splitRight: clampPercent(next, 20, 80) });
-		} else if (templateId === 'layout-3col' && key === 'a') {
+		} else if (templateId === 'template-3col' && key === 'a') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
 			const a = clampPercent(next, 20, 60);
 			const remaining = 100 - a;
@@ -174,7 +174,7 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv, renderCanvasPa
 			if (b > remaining - 20) b = remaining - 20;
 			const c = 100 - a - b;
 			updatePanelBlockProportions(blockId, { a, b, c });
-		} else if (templateId === 'layout-3col' && key === 'ab') {
+		} else if (templateId === 'template-3col' && key === 'ab') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
 			const a = clampPercent(currentBlock.proportions.a ?? 33, 20, 60);
 			const ab = clampPercent(next, a + 20, 80);

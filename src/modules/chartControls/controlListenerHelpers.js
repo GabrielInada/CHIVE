@@ -2,7 +2,7 @@
  * CHIVE chart-control listener helpers.
  *
  * Wires DOM elements built by `shared.js` (selects, checkboxes, sliders,
- * color inputs) to writes against the active dataset's `configGraficos`.
+ * color inputs) to writes against the active dataset's `chartConfig`.
  * Every helper takes the dataset reference, the chart-type key, and an
  * optional `onConfigChanged` callback that fires after the state write.
  *
@@ -25,7 +25,7 @@ function makeUpdater(dataset, chartKey, onConfigChanged) {
 	return (partialUpdate) => {
 		updateActiveDatasetChartConfig({
 			[chartKey]: {
-				...dataset.configGraficos[chartKey],
+				...dataset.chartConfig[chartKey],
 				...partialUpdate,
 			},
 		});

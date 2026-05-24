@@ -41,13 +41,13 @@ const appState = {
 	panel: {
 		charts: [],
 		slots: {},
-		layout: 'layout-2col',
+		layout: 'template-2col',
 		blocks: [],
 		nextBlockId: 1,
 		nextChartId: 0,
 	},
 	ui: {
-		sidebarMode: 'dados',
+		sidebarMode: 'data',
 		previewRows: 10,
 	},
 };
@@ -62,17 +62,17 @@ const PANEL_BLOCK_MAX_HEIGHT = 760;
  * counter increment is the side effect that lives here.
  *
  * @private
- * @param {PanelTemplateId} [templateId='layout-2col']
+ * @param {PanelTemplateId} [templateId='template-2col']
  * @returns {PanelBlock}
  */
-function createPanelBlock(templateId = 'layout-2col') {
+function createPanelBlock(templateId = 'template-2col') {
 	const block = buildPanelBlock(appState.panel.nextBlockId, templateId);
 	appState.panel.nextBlockId += 1;
 	return block;
 }
 
 /**
- * Insert a default `layout-2col` block when `panel.blocks` is empty (or has
+ * Insert a default `template-2col` block when `panel.blocks` is empty (or has
  * been replaced by a non-array). Called from every panel-facade method that
  * touches `blocks` — this is why several "getter" methods on the facade
  * have a mutation as a side effect.
@@ -84,7 +84,7 @@ function ensureDefaultPanelBlock() {
 		appState.panel.blocks = [];
 	}
 	if (appState.panel.blocks.length === 0) {
-		appState.panel.blocks.push(createPanelBlock('layout-2col'));
+		appState.panel.blocks.push(createPanelBlock('template-2col'));
 	}
 }
 
@@ -154,9 +154,9 @@ export function setActiveDataset(index) {
  * Append a dataset and auto-activate it when no dataset was active. Stamps
  * a stable id when missing.
  *
- * @param {Dataset} dataset - Must have a `dados` array.
+ * @param {Dataset} dataset - Must have a `rows` array.
  * @returns {number} Index of the new dataset.
- * @throws {Error} When `dataset` is missing or `dataset.dados` is not an array.
+ * @throws {Error} When `dataset` is missing or `dataset.rows` is not an array.
  * @fires STATE_EVENTS.DATASET_ADDED
  */
 export function addDataset(dataset) {
@@ -176,7 +176,7 @@ export function removeDataset(index) {
 }
 
 /**
- * Shallow-merge `updates` into the active dataset's `configGraficos`.
+ * Shallow-merge `updates` into the active dataset's `chartConfig`.
  * No-op when no dataset is active.
  *
  * @param {Object} updates
@@ -198,7 +198,7 @@ export function updateActiveDatasetColumns(columnNames) {
 }
 
 /**
- * Apply a normalizer to the active dataset's `configGraficos`
+ * Apply a normalizer to the active dataset's `chartConfig`
  * **without emitting**. Intended for normalize-on-read paths (e.g. defaults
  * applied during render). Emitting here would re-enter `refreshView` via
  * the CONFIG_UPDATED subscription and loop. Use
@@ -274,7 +274,7 @@ export function getPanelBlocks() {
 }
 
 /**
- * Reset the panel to a single fresh `layout-2col` block.
+ * Reset the panel to a single fresh `template-2col` block.
  *
  * @fires STATE_EVENTS.PANEL_CLEARED
  */
@@ -292,16 +292,16 @@ export function validatePanelSlots() {
 /**
  * Append a new block. Capped at 4 blocks per panel.
  *
- * @param {PanelTemplateId} [templateId='layout-2col']
+ * @param {PanelTemplateId} [templateId='template-2col']
  * @returns {string | null} New block id, or `null` when at the limit.
  * @fires STATE_EVENTS.PANEL_BLOCK_ADDED
  */
-export function addPanelBlock(templateId = 'layout-2col') {
+export function addPanelBlock(templateId = 'template-2col') {
 	return panelState.addPanelBlock(templateId);
 }
 
 /**
- * Remove a block; inserts a fresh `layout-2col` block if removal would
+ * Remove a block; inserts a fresh `template-2col` block if removal would
  * empty the panel.
  *
  * @param {string} blockId
@@ -388,7 +388,7 @@ export function assignChartToPanelBlockSlot(blockId, slotId, chartId) {
  * Switch the sidebar mode. No-op when already in the requested mode.
  *
  * @param {SidebarMode} mode
- * @throws {Error} When `mode` is not one of `'dados' | 'viz' | 'panel'`.
+ * @throws {Error} When `mode` is not one of `'data' | 'viz' | 'panel'`.
  * @fires STATE_EVENTS.SIDEBAR_MODE_CHANGED
  */
 export function setSidebarMode(mode) {
@@ -427,7 +427,7 @@ export function replaceAllState({ data, panel, ui } = {}) {
 	if (panel && typeof panel === 'object') {
 		appState.panel.charts = Array.isArray(panel.charts) ? panel.charts : [];
 		appState.panel.slots = panel.slots && typeof panel.slots === 'object' ? panel.slots : {};
-		appState.panel.layout = typeof panel.layout === 'string' ? panel.layout : 'layout-2col';
+		appState.panel.layout = typeof panel.layout === 'string' ? panel.layout : 'template-2col';
 
 		// Seed nextBlockId BEFORE synthesizing the fallback default block, so the
 		// synthesized block uses the requested id (and nextBlockId auto-increments
@@ -438,7 +438,7 @@ export function replaceAllState({ data, panel, ui } = {}) {
 		}
 		appState.panel.blocks = Array.isArray(panel.blocks) && panel.blocks.length > 0
 			? panel.blocks
-			: [createPanelBlock('layout-2col')];
+			: [createPanelBlock('template-2col')];
 		if (!hasProvidedNextBlockId) {
 			appState.panel.nextBlockId = appState.panel.blocks.length + 1;
 		}
@@ -449,7 +449,7 @@ export function replaceAllState({ data, panel, ui } = {}) {
 	}
 
 	if (ui && typeof ui === 'object') {
-		if (['dados', 'viz', 'panel'].includes(ui.sidebarMode)) {
+		if (['data', 'viz', 'panel'].includes(ui.sidebarMode)) {
 			appState.ui.sidebarMode = ui.sidebarMode;
 		}
 		if (Number.isInteger(ui.previewRows) && ui.previewRows >= 1) {
@@ -472,9 +472,9 @@ export function replaceAllState({ data, panel, ui } = {}) {
 export function exposeGlobals() {
 	window.datasetsCarregados = appState.data.datasets;
 	window.datasetAtivo = getActiveDataset();
-	window.dadosCarregados = getActiveDataset()?.dados || null;
-	window.colunasDetectadas = getActiveDataset()?.colunas || null;
-	window.colunasSelecionadasAtivas = getActiveDataset()?.colunasSelecionadas || null;
+	window.dadosCarregados = getActiveDataset()?.rows || null;
+	window.colunasDetectadas = getActiveDataset()?.columns || null;
+	window.colunasSelecionadasAtivas = getActiveDataset()?.selectedColumns || null;
 	window.chartsPainel = appState.panel.charts;
 	window.slotsPainel = appState.panel.slots;
 	window.layoutPainelAtual = appState.panel.layout;

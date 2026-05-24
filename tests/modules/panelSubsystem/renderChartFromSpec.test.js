@@ -22,14 +22,14 @@ import { renderChartFromSpec, SUPPORTED_PANEL_CHART_TYPES } from '../../../src/m
 
 const baseRows = [{ a: 1 }, { a: 2 }];
 const baseColumns = [
-	{ nome: 'a', tipo: 'numero' },
-	{ nome: 'b', tipo: 'texto' },
+	{ name: 'a', type: 'number' },
+	{ name: 'b', type: 'text' },
 ];
 
 function makeSpec(type, configOverrides = {}) {
 	return {
 		id: 1,
-		nome: 'Test',
+		name: 'Test',
 		type,
 		config: configOverrides,
 		dataSnapshot: baseRows,
@@ -79,7 +79,7 @@ describe('renderChartFromSpec', () => {
 		expect(rows).toBe(baseRows);
 		expect(x).toBe('a');
 		expect(y).toBe('b');
-		expect(opts.axisTypes).toEqual({ x: 'numero', y: 'texto' });
+		expect(opts.axisTypes).toEqual({ x: 'number', y: 'text' });
 		expect(opts.xColumn).toBe('a');
 		expect(opts.yColumn).toBe('b');
 	});
@@ -127,7 +127,7 @@ describe('renderChartFromSpec', () => {
 		expect(rows).toBe(baseRows);
 		expect(x).toBe('a');
 		expect(y).toBe('a');
-		expect(opts.axisTypes).toEqual({ x: 'numero', y: 'numero' });
+		expect(opts.axisTypes).toEqual({ x: 'number', y: 'number' });
 		expect(opts.curve).toBe('monotone');
 		expect(opts.missingMode).toBe('gap');
 	});

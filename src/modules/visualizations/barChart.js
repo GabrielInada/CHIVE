@@ -64,12 +64,12 @@ function ordenarCategorias(linhas, ordenacao) {
  * `labels`/`axisLabels` bags.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {Array<Object<string, *>>} rows - Source rows.
  * @param {string} colunaCategoria - Categorical column name (required).
  * @param {Object} [opcoes={}] - Render options bag.
  * @returns {Result}
  */
-export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
+export function renderBarChart(container, rows, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return fail();
 	const ordenacao = opcoes.ordenacao || BAR_CHART.defaultSort;
 	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : BAR_CHART.defaultTopN;
@@ -90,7 +90,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	const valueColumn = opcoes.valueColumn || null;
 	const hasValueColumn = (measureMode === 'count')
 		? true
-		: dados.some(linha => Object.prototype.hasOwnProperty.call(linha, valueColumn));
+		: rows.some(linha => Object.prototype.hasOwnProperty.call(linha, valueColumn));
 	const axisLabels = {
 		x: opcoes.axisLabels?.x || colunaCategoria,
 		y: opcoes.axisLabels?.y
@@ -126,7 +126,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 	const contadorN = new Map();
 
 	if (measureMode === 'count') {
-		dados.forEach(linha => {
+		rows.forEach(linha => {
 			const valorBruto = linha[colunaCategoria];
 			const categoria = isNullish(valorBruto) || valorBruto === ''
 				? '—'
@@ -135,7 +135,7 @@ export function renderBarChart(container, dados, colunaCategoria, opcoes = {}) {
 		});
 	} else {
 		if (!valueColumn || !hasValueColumn) return fail('no-value-column');
-		dados.forEach(linha => {
+		rows.forEach(linha => {
 			const valorBruto = linha[colunaCategoria];
 			const categoria = isNullish(valorBruto) || valorBruto === ''
 				? '—'

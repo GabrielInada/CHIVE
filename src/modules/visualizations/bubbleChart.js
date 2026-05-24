@@ -54,12 +54,12 @@ function getBubblePalette(colorScheme) {
  * `labels` bag.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {Array<Object<string, *>>} rows - Source rows.
  * @param {string} colunaCategoria - Root category column name (required).
  * @param {Object} [opcoes={}] - Render options bag.
  * @returns {Result}
  */
-export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}) {
+export function renderBubbleChart(container, rows, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return fail();
 
 	const measureMode = BUBBLE_CHART.measureModes.includes(opcoes.measureMode)
@@ -105,7 +105,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	}
 
 	const aggregation = aggregateBubbles({
-		rows: dados,
+		rows: rows,
 		categoryColumn: colunaCategoria,
 		measureMode,
 		valueColumn,

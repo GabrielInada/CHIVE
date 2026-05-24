@@ -16,14 +16,14 @@ describe('pie chart and axis labels', () => {
 
 	it('renders pie chart with valid defaults and custom color base', () => {
 		const container = document.getElementById('pie');
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 			{ categoria: 'A' },
 			{ categoria: 'C' },
 		];
 
-		const result = renderPieChart(container, dados, 'categoria', {
+		const result = renderPieChart(container, rows, 'categoria', {
 			color: '#336699',
 			innerRadius: 24,
 			outerRadius: 80,
@@ -37,14 +37,14 @@ describe('pie chart and axis labels', () => {
 
 	it('supports pie sum mode with legend and outside labels', () => {
 		const container = document.getElementById('pie');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', valor: 10 },
 			{ categoria: 'A', valor: 5 },
 			{ categoria: 'B', valor: 7 },
 			{ categoria: 'C', valor: 3 },
 		];
 
-		const result = renderPieChart(container, dados, 'categoria', {
+		const result = renderPieChart(container, rows, 'categoria', {
 			measureMode: 'sum',
 			valueColumn: 'valor',
 			showLegend: true,
@@ -59,13 +59,13 @@ describe('pie chart and axis labels', () => {
 
 	it('applies initial zoom scale to pie viewport', () => {
 		const container = document.getElementById('pie');
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 			{ categoria: 'A' },
 		];
 
-		const result = renderPieChart(container, dados, 'categoria', {
+		const result = renderPieChart(container, rows, 'categoria', {
 			zoomScale: 1.8,
 		});
 
@@ -77,14 +77,14 @@ describe('pie chart and axis labels', () => {
 
 	it('hides outside labels for tiny slices while keeping legend entries visible', () => {
 		const container = document.getElementById('pie');
-		const dados = [];
+		const rows = [];
 		for (let index = 0; index < 98; index += 1) {
-			dados.push({ categoria: 'Major' });
+			rows.push({ categoria: 'Major' });
 		}
-		dados.push({ categoria: 'TinyA' });
-		dados.push({ categoria: 'TinyB' });
+		rows.push({ categoria: 'TinyA' });
+		rows.push({ categoria: 'TinyB' });
 
-		const result = renderPieChart(container, dados, 'categoria', {
+		const result = renderPieChart(container, rows, 'categoria', {
 			labelPosition: 'outside',
 			showLegend: true,
 		});
@@ -99,10 +99,10 @@ describe('pie chart and axis labels', () => {
 
 	it('aggregates remaining categories into Other when topN is set with mode "other"', () => {
 		const container = document.getElementById('pie');
-		const dados = [];
-		['A', 'A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'D', 'E', 'F'].forEach(c => dados.push({ categoria: c }));
+		const rows = [];
+		['A', 'A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'D', 'E', 'F'].forEach(c => rows.push({ categoria: c }));
 
-		const result = renderPieChart(container, dados, 'categoria', {
+		const result = renderPieChart(container, rows, 'categoria', {
 			topN: 2,
 			topNMode: 'other',
 			showLegend: true,
@@ -119,10 +119,10 @@ describe('pie chart and axis labels', () => {
 
 	it('truncates remaining categories when topN mode is "truncate"', () => {
 		const container = document.getElementById('pie');
-		const dados = [];
-		['A', 'A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'D', 'E', 'F'].forEach(c => dados.push({ categoria: c }));
+		const rows = [];
+		['A', 'A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'D', 'E', 'F'].forEach(c => rows.push({ categoria: c }));
 
-		const result = renderPieChart(container, dados, 'categoria', {
+		const result = renderPieChart(container, rows, 'categoria', {
 			topN: 2,
 			topNMode: 'truncate',
 			showLegend: true,
@@ -139,26 +139,26 @@ describe('pie chart and axis labels', () => {
 
 	it('does not change behavior when topN is 0 (all categories)', () => {
 		const container = document.getElementById('pie');
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 			{ categoria: 'C' },
 			{ categoria: 'D' },
 		];
 
-		const result = renderPieChart(container, dados, 'categoria', { topN: 0 });
+		const result = renderPieChart(container, rows, 'categoria', { topN: 0 });
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('path').length).toBe(4);
 	});
 
 	it('returns explicit failure reason for sum mode without valid numeric column', () => {
 		const container = document.getElementById('pie');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', valor: 'x' },
 			{ categoria: 'B', valor: 'y' },
 		];
 
-		const result = renderPieChart(container, dados, 'categoria', {
+		const result = renderPieChart(container, rows, 'categoria', {
 			measureMode: 'sum',
 			valueColumn: 'valor',
 		});
@@ -169,19 +169,19 @@ describe('pie chart and axis labels', () => {
 
 	it('supports bar chart sum and mean measure modes with numeric value column', () => {
 		const container = document.getElementById('bar');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', valor: 10 },
 			{ categoria: 'A', valor: 20 },
 			{ categoria: 'B', valor: 30 },
 		];
 
-		const sumResult = renderBarChart(container, dados, 'categoria', {
+		const sumResult = renderBarChart(container, rows, 'categoria', {
 			measureMode: 'sum',
 			valueColumn: 'valor',
 		});
 		expect(sumResult.ok).toBe(true);
 
-		const meanResult = renderBarChart(container, dados, 'categoria', {
+		const meanResult = renderBarChart(container, rows, 'categoria', {
 			measureMode: 'mean',
 			valueColumn: 'valor',
 		});
@@ -191,13 +191,13 @@ describe('pie chart and axis labels', () => {
 	it('renders pinned bar tooltip actions for focus and add-to-filter', () => {
 		const container = document.getElementById('bar');
 		const calls = { focus: [], add: [] };
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 		];
 
-		const result = renderBarChart(container, dados, 'categoria', {
+		const result = renderBarChart(container, rows, 'categoria', {
 			filterCallbacks: {
 				onFocusGlobalFilter: (column, token) => calls.focus.push([column, token]),
 				onAddToGlobalFilter: (column, token) => calls.add.push([column, token]),
@@ -223,13 +223,13 @@ describe('pie chart and axis labels', () => {
 	it('adds an exclude (danger) action and a state badge when wired with the full filter bundle', () => {
 		const container = document.getElementById('bar');
 		const calls = { focus: [], add: [], excl: [] };
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 		];
 
-		const result = renderBarChart(container, dados, 'categoria', {
+		const result = renderBarChart(container, rows, 'categoria', {
 			filterCallbacks: {
 				onFocusGlobalFilter: (column, token) => calls.focus.push([column, token]),
 				onAddToGlobalFilter: (column, token) => calls.add.push([column, token]),
@@ -262,12 +262,12 @@ describe('pie chart and axis labels', () => {
 	it('hides "Show only this" when isShowOnlyThisRedundant returns true', () => {
 		const container = document.getElementById('bar');
 		const calls = { focus: [], add: [] };
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 		];
 
-		const result = renderBarChart(container, dados, 'categoria', {
+		const result = renderBarChart(container, rows, 'categoria', {
 			filterCallbacks: {
 				onFocusGlobalFilter: (column, token) => calls.focus.push([column, token]),
 				onAddToGlobalFilter: (column, token) => calls.add.push([column, token]),
@@ -291,12 +291,12 @@ describe('pie chart and axis labels', () => {
 	it('shows an "in filter" state badge and Remove action when token is already included', () => {
 		const container = document.getElementById('bar');
 		const calls = { focus: [], remove: [] };
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 		];
 
-		const result = renderBarChart(container, dados, 'categoria', {
+		const result = renderBarChart(container, rows, 'categoria', {
 			filterCallbacks: {
 				onFocusGlobalFilter: (column, token) => calls.focus.push([column, token]),
 				onAddToGlobalFilter: () => {},
@@ -333,19 +333,19 @@ describe('pie chart and axis labels', () => {
 
 	it('returns explicit failure reasons for bar sum/mean when value column is missing or non-numeric', () => {
 		const container = document.getElementById('bar');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', valor: 'x' },
 			{ categoria: 'B', valor: 'y' },
 		];
 
-		const noColumnResult = renderBarChart(container, dados, 'categoria', {
+		const noColumnResult = renderBarChart(container, rows, 'categoria', {
 			measureMode: 'sum',
 			valueColumn: 'inexistente',
 		});
 		expect(noColumnResult.ok).toBe(false);
 		expect(noColumnResult.reason).toBe('no-value-column');
 
-		const noNumericResult = renderBarChart(container, dados, 'categoria', {
+		const noNumericResult = renderBarChart(container, rows, 'categoria', {
 			measureMode: 'sum',
 			valueColumn: 'valor',
 		});

@@ -49,11 +49,11 @@ function sanitizeNodeValue(value) {
 	return String(value).trim();
 }
 
-function buildNetworkData(dados, sourceColumn, targetColumn, weightColumn, groupColumn) {
+function buildNetworkData(rows, sourceColumn, targetColumn, weightColumn, groupColumn) {
 	const nodeMap = new Map();
 	const links = [];
 
-	dados.forEach(linha => {
+	rows.forEach(linha => {
 		const source = sanitizeNodeValue(linha[sourceColumn]);
 		const target = sanitizeNodeValue(linha[targetColumn]);
 		if (!source || !target) return;
@@ -106,13 +106,13 @@ function stopPreviousSimulation(container) {
  * inputs, `customTitle`, `chartHeight`, `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows (one row per edge).
+ * @param {Array<Object<string, *>>} rows - Source rows (one row per edge).
  * @param {string} sourceColumn - Column holding the source node identifier.
  * @param {string} targetColumn - Column holding the target node identifier.
  * @param {Object} [opcoes={}] - Render options bag.
  * @returns {Result}
  */
-export function renderNetworkGraph(container, dados, sourceColumn, targetColumn, opcoes = {}) {
+export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, opcoes = {}) {
 	if (!container || !sourceColumn || !targetColumn) return fail();
 
 	const weightColumn = opcoes.weightColumn || null;
@@ -148,7 +148,7 @@ export function renderNetworkGraph(container, dados, sourceColumn, targetColumn,
 		target: opcoes.labels?.target || 'Target',
 	};
 
-	const network = buildNetworkData(dados, sourceColumn, targetColumn, weightColumn, groupColumn);
+	const network = buildNetworkData(rows, sourceColumn, targetColumn, weightColumn, groupColumn);
 	if (network.nodes.length === 0 || network.links.length === 0) {
 		return fail('insufficient-data');
 	}

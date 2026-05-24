@@ -19,11 +19,11 @@ import { createBubbleChartControls, setupBubbleChartControlListeners } from '../
 
 function createDataset(measureMode = 'count', valueColumn = null, nestingMode = 'flat', nestingColumns = []) {
 	return {
-		dados: [
+		rows: [
 			{ categoria: 'A', valor: 10, grupo: 'X', regiao: 'Norte' },
 			{ categoria: 'B', valor: 20, grupo: 'Y', regiao: 'Sul' },
 		],
-		configGraficos: {
+		chartConfig: {
 			bubble: {
 				enabled: true,
 				expanded: true,
@@ -88,8 +88,8 @@ describe('bubbleControls measure mode', () => {
 			}),
 		});
 
-		dataset.configGraficos.bubble.measureMode = 'sum';
-		dataset.configGraficos.bubble.valueColumn = 'valor';
+		dataset.chartConfig.bubble.measureMode = 'sum';
+		dataset.chartConfig.bubble.valueColumn = 'valor';
 		valueSelect.value = 'valor';
 		valueSelect.dispatchEvent(new Event('change', { bubbles: true }));
 		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
@@ -98,7 +98,7 @@ describe('bubbleControls measure mode', () => {
 			}),
 		});
 
-		dataset.configGraficos.bubble.valueColumn = 'valor';
+		dataset.chartConfig.bubble.valueColumn = 'valor';
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
@@ -241,8 +241,8 @@ describe('bubbleControls progressive nesting selectors', () => {
 	it('initial config with groupColumn hydrates first nesting level selector correctly', () => {
 		// Simulate old config with only groupColumn, no nestingColumns
 		const dataset = createDataset('count', null, 'grouped', []);
-		dataset.configGraficos.bubble.groupColumn = 'grupo';
-		dataset.configGraficos.bubble.nestingColumns = [];
+		dataset.chartConfig.bubble.groupColumn = 'grupo';
+		dataset.chartConfig.bubble.nestingColumns = [];
 
 		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao']);
 		controls.forEach(control => document.body.appendChild(control));

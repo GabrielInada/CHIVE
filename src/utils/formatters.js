@@ -90,9 +90,9 @@ export function formatNumber(value, locale) {
  * @returns {string}
  */
 export function translateType(type) {
-	if (type === 'numero') return t('chive-type-number');
-	if (type === 'texto') return t('chive-type-text');
-	if (type === 'data') return t('chive-type-date');
+	if (type === 'number') return t('chive-type-number');
+	if (type === 'text') return t('chive-type-text');
+	if (type === 'date') return t('chive-type-date');
 	return type;
 }
 

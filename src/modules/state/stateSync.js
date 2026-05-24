@@ -87,7 +87,7 @@ export function getStateSummary() {
 	return {
 		datasetsCount: state.data.datasets.length,
 		activeDatasetIndex: state.data.activeIndex,
-		activeDatasetName: getActiveDataset()?.nome || 'none',
+		activeDatasetName: getActiveDataset()?.name || 'none',
 		panelChartsCount: state.panel.charts.length,
 		panelLayout: state.panel.layout,
 		sidebarMode: state.ui.sidebarMode,

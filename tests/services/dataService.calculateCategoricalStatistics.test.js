@@ -7,7 +7,7 @@ describe('calculateCategoricalStatistics', () => {
 	it('returns no entries when no categorical columns are visible', () => {
 		const stats = calculateCategoricalStatistics(
 			[{ x: 1 }, { x: 2 }],
-			[{ nome: 'x', tipo: 'numero' }],
+			[{ name: 'x', type: 'number' }],
 		);
 		expect(stats).toEqual([]);
 	});
@@ -21,8 +21,8 @@ describe('calculateCategoricalStatistics', () => {
 			{ city: null },
 			{ city: '' },
 		];
-		const [stat] = calculateCategoricalStatistics(rows, [{ nome: 'city', tipo: 'texto' }]);
-		expect(stat.nome).toBe('city');
+		const [stat] = calculateCategoricalStatistics(rows, [{ name: 'city', type: 'text' }]);
+		expect(stat.name).toBe('city');
 		expect(stat.n).toBe(4);
 		expect(stat.missing).toBe(2);
 		expect(stat.missingPct).toBeCloseTo(2 / 6, 4);
@@ -38,7 +38,7 @@ describe('calculateCategoricalStatistics', () => {
 	it('handles a column where every value is missing', () => {
 		const [stat] = calculateCategoricalStatistics(
 			[{ a: null }, { a: undefined }, { a: '   ' }],
-			[{ nome: 'a', tipo: 'texto' }],
+			[{ name: 'a', type: 'text' }],
 		);
 		expect(stat.empty).toBe(true);
 		expect(stat.n).toBe(0);
@@ -58,7 +58,7 @@ describe('calculateCategoricalStatistics', () => {
 			...Array(1).fill({ k: 'f' }),
 			...Array(1).fill({ k: 'g' }),
 		];
-		const [stat] = calculateCategoricalStatistics(rows, [{ nome: 'k', tipo: 'texto' }]);
+		const [stat] = calculateCategoricalStatistics(rows, [{ name: 'k', type: 'text' }]);
 		const total = rows.length;
 		expect(stat.top5Pct).toBeCloseTo((5 + 4 + 3 + 2 + 1) / total, 4);
 		expect(stat.top5Pct).toBeLessThan(1);
@@ -68,7 +68,7 @@ describe('calculateCategoricalStatistics', () => {
 		const rows = [];
 		for (let i = 0; i < 5000; i++) rows.push({ id: `id-${i}` });
 		for (let i = 0; i < 100; i++) rows.push({ id: 'shared' });
-		const [stat] = calculateCategoricalStatistics(rows, [{ nome: 'id', tipo: 'texto' }]);
+		const [stat] = calculateCategoricalStatistics(rows, [{ name: 'id', type: 'text' }]);
 		expect(stat.unique).toBe(5001);
 		expect(stat.mode).toBe('shared');
 		expect(stat.modeCount).toBe(100);
@@ -77,7 +77,7 @@ describe('calculateCategoricalStatistics', () => {
 	it('breaks ties on mode by lexicographic order for determinism', () => {
 		const [stat] = calculateCategoricalStatistics(
 			[{ k: 'b' }, { k: 'a' }, { k: 'c' }],
-			[{ nome: 'k', tipo: 'texto' }],
+			[{ name: 'k', type: 'text' }],
 		);
 		expect(stat.modeCount).toBe(1);
 		expect(stat.mode).toBe('a');
