@@ -55,9 +55,9 @@ describe('stateSync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = `
-      <div id="sidebar-panel-dados" class="inactive"></div>
+      <div id="sidebar-panel-data" class="inactive"></div>
       <div id="sidebar-panel-viz" class="inactive"></div>
-      <div id="sidebar-panel-panel" class="inactive"></div>
+      <div id="sidebar-panel-dashboard" class="inactive"></div>
     `;
 
     mocks.getState.mockReturnValue(buildState());
@@ -93,11 +93,11 @@ describe('stateSync', () => {
     switchSidebarMode('panel');
 
     expect(mocks.setSidebarMode).toHaveBeenCalledWith('panel');
-    expect(document.getElementById('sidebar-panel-panel').classList.contains('active')).toBe(true);
+    expect(document.getElementById('sidebar-panel-dashboard').classList.contains('active')).toBe(true);
     expect(document.getElementById('sidebar-panel-viz').classList.contains('active')).toBe(false);
 
     switchSidebarMode('dados');
-    expect(document.getElementById('sidebar-panel-dados').classList.contains('active')).toBe(true);
+    expect(document.getElementById('sidebar-panel-data').classList.contains('active')).toBe(true);
   });
 
   it('gera summary e debug payload com fallback de activeDatasetName', () => {

@@ -73,10 +73,10 @@ import {
 
 function setupDom() {
   document.body.innerHTML = `
-    <button id="btn-avancar" type="button"></button>
-    <button id="btn-editar-colunas" type="button"></button>
-    <button id="btn-ir-painel" type="button"></button>
-    <button id="btn-voltar-viz" type="button"></button>
+    <button id="btn-advance" type="button"></button>
+    <button id="btn-edit-columns" type="button"></button>
+    <button id="btn-go-to-panel" type="button"></button>
+    <button id="btn-back-to-viz" type="button"></button>
 
     <select id="select-lang">
       <option value="pt-BR">Português</option>
@@ -84,7 +84,7 @@ function setupDom() {
     </select>
     <button id="lang-display" type="button"></button>
 
-    <input id="input-arquivo" type="file" />
+    <input id="file-input" type="file" />
 
     <div class="chart-block">
       <h3 class="chart-title">Meu Grafico</h3>
@@ -108,7 +108,7 @@ function setupDom() {
     <button data-dataset-select="2" type="button"></button>
     <button data-dataset-remove="1" type="button"></button>
 
-    <div id="lista-colunas-conteudo"></div>
+    <div id="column-list-content"></div>
   `;
 }
 
@@ -130,11 +130,11 @@ describe('eventHandlers', () => {
     expect(mocks.setupSidebarToggleListener).toHaveBeenCalledTimes(1);
     expect(mocks.setupPanelEventListeners).toHaveBeenCalledTimes(1);
 
-    document.getElementById('btn-ir-painel').click();
+    document.getElementById('btn-go-to-panel').click();
     expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ aba: 'panel' });
     expect(mocks.switchTab).toHaveBeenCalledWith('panel');
 
-    document.getElementById('btn-voltar-viz').click();
+    document.getElementById('btn-back-to-viz').click();
     expect(mocks.switchTab).toHaveBeenCalledWith('charts');
 
     mocks.downloadSvgFromContainer.mockReturnValueOnce({ ok: false });
@@ -151,7 +151,7 @@ describe('eventHandlers', () => {
     document.querySelector('[data-chart-action="add-panel"]').click();
     expect(mocks.showError).toHaveBeenCalledWith('tr:chive-panel-add-error');
 
-    const input = document.getElementById('input-arquivo');
+    const input = document.getElementById('file-input');
     const clickSpy = vi.spyOn(input, 'click');
 
     document.dispatchEvent(new KeyboardEvent('keydown', {
@@ -173,7 +173,7 @@ describe('eventHandlers', () => {
   it('setupResultsViewListeners registra listeners sem quebrar fluxo', () => {
     setupResultsViewListeners();
 
-    const list = document.getElementById('lista-colunas-conteudo');
+    const list = document.getElementById('column-list-content');
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     list.appendChild(checkbox);

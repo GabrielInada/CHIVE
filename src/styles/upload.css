@@ -1,7 +1,7 @@
 /* @feature: file-manager
    File upload UI, drop zone styling, file list presentation */
 
-#zona-upload {
+#upload-zone {
   border: 2px dashed var(--border);
   border-radius: 8px;
   padding: 24px 16px;
@@ -11,29 +11,29 @@
   background: var(--bg);
 }
 
-#zona-upload.dragging {
+#upload-zone.dragging {
   border-color: var(--accent);
   background: rgba(26, 71, 42, 0.04);
 }
 
-#zona-upload.loaded {
+#upload-zone.loaded {
   border-style: solid;
   border-color: var(--accent);
   background: rgba(26, 71, 42, 0.04);
   padding: 12px 14px;
 }
 
-#zona-upload.loaded .upload-icon {
+#upload-zone.loaded .upload-icon {
   font-size: 18px;
   margin-bottom: 4px;
 }
 
-#zona-upload.loaded .upload-text-main {
+#upload-zone.loaded .upload-text-main {
   font-size: 13px;
   margin-bottom: 2px;
 }
 
-#zona-upload.loaded .upload-text-sub {
+#upload-zone.loaded .upload-text-sub {
   font-size: 10px;
   line-height: 1.3;
 }
@@ -58,11 +58,11 @@
   line-height: 1.5;
 }
 
-#input-arquivo {
+#file-input {
   display: none;
 }
 
-#info-arquivo {
+#file-info {
   display: none;
   max-height: 42vh;
   overflow-y: auto;

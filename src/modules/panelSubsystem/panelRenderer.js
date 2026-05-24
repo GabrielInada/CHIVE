@@ -42,7 +42,7 @@ import { mountSlot, teardownAllSlots } from './slotLifecycle.js';
 
 /**
  * Render the sidebar list of saved chart snapshots into
- * `#lista-painel-charts`. Each item gets a thumbnail (live D3 render via
+ * `#panel-chart-list`. Each item gets a thumbnail (live D3 render via
  * {@link mountSlot}) and a remove button wired to the provided callback.
  *
  * No-op when the container element is missing.
@@ -50,7 +50,7 @@ import { mountSlot, teardownAllSlots } from './slotLifecycle.js';
  * @param {(chartId: number | string) => void} removeChartFromPanel - Callback for the per-item remove button; usually `panelManager.removeChartFromPanel`.
  */
 export function renderSidebarPanel(removeChartFromPanel) {
-	const lista = document.getElementById('lista-painel-charts');
+	const lista = document.getElementById('panel-chart-list');
 	if (!lista) return;
 
 	teardownAllSlots(lista);

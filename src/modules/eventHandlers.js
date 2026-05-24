@@ -53,10 +53,10 @@ export function initializeAllEventHandlers() {
  * @private
  */
 function setupSidebarNavigationButtons() {
-	const btnAvancar = document.getElementById('btn-avancar');
-	const btnEditarColunas = document.getElementById('btn-editar-colunas');
-	const btnIrPainel = document.getElementById('btn-ir-painel');
-	const btnVoltarViz = document.getElementById('btn-voltar-viz');
+	const btnAvancar = document.getElementById('btn-advance');
+	const btnEditarColunas = document.getElementById('btn-edit-columns');
+	const btnIrPainel = document.getElementById('btn-go-to-panel');
+	const btnVoltarViz = document.getElementById('btn-back-to-viz');
 
 	if (btnAvancar) {
 		btnAvancar.addEventListener('click', () => {
@@ -321,7 +321,7 @@ function setupGlobalKeyboardListeners() {
 		// Ctrl+O or Cmd+O: open file picker
 		if ((event.ctrlKey || event.metaKey) && event.key === 'o') {
 			event.preventDefault();
-			document.getElementById('input-arquivo')?.click();
+			document.getElementById('file-input')?.click();
 		}
 	});
 }
@@ -362,7 +362,7 @@ function setupDatasetListeners() {
  */
 export function setupResultsViewListeners() {
 	// Column selection
-	const listaColunas = document.getElementById('lista-colunas-conteudo');
+	const listaColunas = document.getElementById('column-list-content');
 	if (listaColunas) {
 		listaColunas.addEventListener('change', event => {
 			if (event.target.type === 'checkbox' && !event.target.disabled) {

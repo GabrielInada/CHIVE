@@ -82,7 +82,7 @@ export function renderStats(rows, visibleColumns) {
 
 	if (stats.length > 0) {
 		cardStats.style.display = 'block';
-		document.getElementById('badge-num-colunas').textContent = t('chive-stats-badge', stats.length);
+		document.getElementById('badge-num-columns').textContent = t('chive-stats-badge', stats.length);
 		const containerStats = document.getElementById('container-stats');
 		containerStats.replaceChildren();
 

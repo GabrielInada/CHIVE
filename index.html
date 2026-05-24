@@ -37,10 +37,10 @@
                 <button id="btn-toggle-sidebar" class="btn-toggle-sidebar" type="button" aria-expanded="true" aria-label="Recolher painel lateral" title="Recolher painel lateral">«</button>
             </div>
 
-            <section id="sidebar-panel-dados" class="sidebar-panel active">
+            <section id="sidebar-panel-data" class="sidebar-panel active">
                 <div>
                     <p class="section-title" data-i18n="chive-section-upload">Carregar arquivo</p>
-                    <div id="zona-upload" role="button" tabindex="0">
+                    <div id="upload-zone" role="button" tabindex="0">
                         <span class="upload-icon">⬆</span>
                         <p class="upload-text-main" data-i18n="chive-upload-main">Arraste seu arquivo aqui</p>
                         <p class="upload-text-sub" data-i18n="chive-upload-sub" data-i18n-html>ou clique para selecionar<br>
@@ -48,59 +48,59 @@
                         </p>
                     </div>
 
-                    <input type="file" id="input-arquivo" accept=".csv,.tsv,.dsv,.txt,.json,text/csv,text/tab-separated-values,application/json" multiple />
-                    <div id="mensagem-erro"></div>
+                    <input type="file" id="file-input" accept=".csv,.tsv,.dsv,.txt,.json,text/csv,text/tab-separated-values,application/json" multiple />
+                    <div id="error-message"></div>
                 </div>
 
-                <div id="info-arquivo">
+                <div id="file-info">
                     <p class="section-title" data-i18n="chive-section-files">Arquivos carregados</p>
-                    <div class="files-summary" id="arquivo-resumo-texto">Nenhum arquivo</div>
-                    <div class="file-list" id="lista-arquivos-conteudo"></div>
+                    <div class="files-summary" id="file-summary-text">Nenhum arquivo</div>
+                    <div class="file-list" id="file-list-content"></div>
                 </div>
 
-                <div id="painel-colunas">
+                <div id="columns-panel">
                     <p class="section-title" data-i18n="chive-section-columns">Colunas detectadas</p>
-                    <div class="column-actions" id="colunas-acoes"></div>
-                    <div class="column-list" id="lista-colunas-conteudo"></div>
+                    <div class="column-actions" id="column-actions-bar"></div>
+                    <div class="column-list" id="column-list-content"></div>
                 </div>
 
-                <button class="btn-primary" id="btn-avancar" disabled data-i18n="chive-btn-advance">Avançar para os gráficos →</button>
+                <button class="btn-primary" id="btn-advance" disabled data-i18n="chive-btn-advance">Avançar para os gráficos →</button>
             </section>
 
             <section id="sidebar-panel-viz" class="sidebar-panel">
-                <div id="painel-visualizacoes-sidebar">
+                <div id="viz-sidebar-panel">
                     <p class="section-title" data-i18n="chive-section-viz-manage">Visualizações</p>
                     <div class="viz-chart-params" id="viz-chart-params"></div>
                 </div>
-                <button class="btn-primary" id="btn-editar-colunas" data-i18n="chive-btn-edit-columns">← Editar colunas</button>
-                <button class="btn-primary" id="btn-ir-painel" data-i18n="chive-btn-go-panel">Ir para o painel →</button>
+                <button class="btn-primary" id="btn-edit-columns" data-i18n="chive-btn-edit-columns">← Editar colunas</button>
+                <button class="btn-primary" id="btn-go-to-panel" data-i18n="chive-btn-go-panel">Ir para o painel →</button>
             </section>
 
-            <section id="sidebar-panel-panel" class="sidebar-panel">
-                <div id="painel-dashboard-sidebar">
+            <section id="sidebar-panel-dashboard" class="sidebar-panel">
+                <div id="dashboard-sidebar-panel">
                     <p class="section-title" data-i18n="chive-section-panel-saved">Charts salvos</p>
                     <p class="panel-sidebar-hint" data-i18n="chive-panel-sidebar-hint">Arraste um chart para um slot do layout.</p>
-                    <div class="panel-chart-list" id="lista-painel-charts"></div>
+                    <div class="panel-chart-list" id="panel-chart-list"></div>
                 </div>
-                <button class="btn-primary" id="btn-voltar-viz" data-i18n="chive-btn-back-viz">← Voltar para visualizações</button>
+                <button class="btn-primary" id="btn-back-to-viz" data-i18n="chive-btn-back-viz">← Voltar para visualizações</button>
             </section>
         </aside>
 
         <main class="results-area">
-            <div id="estado-vazio">
+            <div id="empty-state">
                 <span class="empty-icon">◫</span>
                 <p class="empty-title" data-i18n="chive-empty-title">Nenhum dado carregado ainda</p>
                 <p class="empty-sub" data-i18n="chive-empty-sub">Carregue um arquivo CSV ou JSON ao lado para ver o preview dos dados aqui.</p>
             </div>
 
-            <div id="estado-dados">
-                <div class="result-tabs" id="resultado-tabs">
-                    <div class="result-tabs-group" id="resultado-tabs-grupo">
+            <div id="data-state">
+                <div class="result-tabs" id="result-tabs">
+                    <div class="result-tabs-group" id="result-tabs-group">
                         <button type="button" class="result-tab active" id="tab-preview" data-aba="preview" data-i18n="chive-tab-preview">Preview</button>
                         <button type="button" class="result-tab" id="tab-charts" data-aba="charts" data-i18n="chive-tab-charts">Visualizações</button>
                         <button type="button" class="result-tab" id="tab-panel" data-aba="panel" data-i18n="chive-tab-panel">Painel</button>
                     </div>
-                    <div class="result-tabs-actions" id="resultado-tabs-acoes">
+                    <div class="result-tabs-actions" id="result-tabs-actions">
                         <button type="button" class="global-filter-trigger" id="btn-global-filter" aria-haspopup="dialog" aria-expanded="false" data-active="false" disabled hidden>
                             <svg class="global-filter-trigger-icone" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
@@ -111,13 +111,13 @@
                     </div>
                 </div>
 
-                <div id="painel-preview" class="result-panel active">
+                <div id="tab-content-preview" class="result-panel active">
                     <div class="result-card animate">
                         <div class="card-header">
                             <span class="card-title" data-i18n="chive-card-preview">Preview dos dados</span>
                             <div class="card-header-controls">
-                                <label class="rows-label" for="select-linhas-preview" data-i18n="chive-label-rows">Linhas</label>
-                                <select id="select-linhas-preview" class="rows-select">
+                                <label class="rows-label" for="select-preview-rows" data-i18n="chive-label-rows">Linhas</label>
+                                <select id="select-preview-rows" class="rows-select">
                                     <option value="1">1</option>
                                     <option value="5">5</option>
                                     <option value="10" selected>10</option>
@@ -126,18 +126,18 @@
                                     <option value="500">500</option>
                                     <option value="1000">1000</option>
                                 </select>
-                                <span class="card-badge" id="badge-linhas">— linhas</span>
+                                <span class="card-badge" id="badge-rows">— linhas</span>
                             </div>
                         </div>
                         <div class="card-body card-body-preview">
-                            <div id="container-tabela"></div>
+                            <div id="table-container"></div>
                         </div>
                     </div>
 
                     <div class="result-card animate" id="card-stats" style="display:none">
                         <div class="card-header">
                             <span class="card-title" data-i18n="chive-card-stats">Estatísticas — colunas numéricas</span>
-                            <span class="card-badge" id="badge-num-colunas">—</span>
+                            <span class="card-badge" id="badge-num-columns">—</span>
                         </div>
                         <div class="card-body">
                             <div class="stats-grid" id="container-stats"></div>
@@ -155,7 +155,7 @@
                     </div>
                 </div>
 
-                <div id="painel-charts" class="result-panel">
+                <div id="tab-content-charts" class="result-panel">
                     <div class="result-card animate">
                         <div class="card-header">
                             <span class="card-title" data-i18n="chive-card-charts">Visualizações</span>
@@ -385,12 +385,12 @@
                     </div>
                 </div>
 
-                <div id="painel-panel" class="result-panel">
+                <div id="tab-content-dashboard" class="result-panel">
                     <div class="result-card animate">
                         <div class="card-header">
                             <span class="card-title" data-i18n="chive-card-panel">Painel</span>
                             <div class="card-header-controls">
-                                <button type="button" class="btn-primary btn-panel-export" id="btn-exportar-painel" data-i18n="chive-panel-export-svg">Exportar SVG</button>
+                                <button type="button" class="btn-primary btn-panel-export" id="btn-export-panel" data-i18n="chive-panel-export-svg">Exportar SVG</button>
                             </div>
                         </div>
                         <div class="card-body card-body-panel">

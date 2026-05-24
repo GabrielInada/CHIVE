@@ -60,9 +60,9 @@ export function switchTab(tabName) {
 	});
 
 	// Update tab panels
-	const painelPreview = document.getElementById('painel-preview');
-	const painelCharts = document.getElementById('painel-charts');
-	const painelPanel = document.getElementById('painel-panel');
+	const painelPreview = document.getElementById('tab-content-preview');
+	const painelCharts = document.getElementById('tab-content-charts');
+	const painelPanel = document.getElementById('tab-content-dashboard');
 
 	if (painelPreview) painelPreview.hidden = tabName !== 'preview';
 	if (painelCharts) painelCharts.hidden = tabName !== 'charts';
@@ -99,9 +99,9 @@ function updateSidebarForTab(tabName) {
  */
 export function updateSidebarUI(mode) {
 	const sidebars = {
-		dados: document.getElementById('sidebar-panel-dados'),
+		dados: document.getElementById('sidebar-panel-data'),
 		viz: document.getElementById('sidebar-panel-viz'),
-		panel: document.getElementById('sidebar-panel-panel'),
+		panel: document.getElementById('sidebar-panel-dashboard'),
 	};
 
 	Object.entries(sidebars).forEach(([modeKey, el]) => {
@@ -120,9 +120,9 @@ export function updateSidebarUI(mode) {
  */
 export function setTabVisibility(tabName, visible) {
 	const panelMap = {
-		preview: document.getElementById('painel-preview'),
-		charts: document.getElementById('painel-charts'),
-		panel: document.getElementById('painel-panel'),
+		preview: document.getElementById('tab-content-preview'),
+		charts: document.getElementById('tab-content-charts'),
+		panel: document.getElementById('tab-content-dashboard'),
 	};
 
 	const panel = panelMap[tabName];

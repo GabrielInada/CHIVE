@@ -340,8 +340,8 @@ export function createJoinedDataset(spec = {}) {
  * Surfaces an error toast if either expected DOM element is missing.
  */
 export function setupFileInputListeners() {
-	const inputArquivo = document.getElementById('input-arquivo');
-	const zonaUpload = document.getElementById('zona-upload');
+	const inputArquivo = document.getElementById('file-input');
+	const zonaUpload = document.getElementById('upload-zone');
 
 	if (inputArquivo) {
 		inputArquivo.addEventListener('change', async event => {
