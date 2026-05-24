@@ -15,9 +15,9 @@ import {
 } from '../../src/services/dataService.js';
 
 describe('dataService', () => {
-  it('detecta tipo numero e texto corretamente', () => {
-    expect(detectType(['1', '2', '3', '4'])).toBe('numero');
-    expect(detectType(['abc', 'def', 'ghi'])).toBe('texto');
+  it('detecta type numero e texto corretamente', () => {
+    expect(detectType(['1', '2', '3', '4'])).toBe('number');
+    expect(detectType(['abc', 'def', 'ghi'])).toBe('text');
   });
 
   describe('normalizeNumericString', () => {
@@ -98,7 +98,7 @@ describe('dataService', () => {
     expect(() => parseJson('{"foo":1}')).toThrow('Unrecognized JSON format. The file must be an array of objects: [{...}, {...}]');
   });
 
-  it('processa dados convertendo colunas numericas e calcula estatisticas', () => {
+  it('processa rows convertendo columns numericas e calcula estatisticas', () => {
     const input = [
       { a: '1', b: 'x' },
       { a: '2', b: 'y' },
@@ -106,28 +106,28 @@ describe('dataService', () => {
     ];
 
     const processed = processData(input);
-    expect(processed.colunas.find(c => c.nome === 'a')?.tipo).toBe('numero');
-    expect(typeof processed.dados[0].a).toBe('number');
+    expect(processed.columns.find(c => c.name === 'a')?.type).toBe('number');
+    expect(typeof processed.rows[0].a).toBe('number');
 
-    const stats = calculateStatistics(processed.dados, processed.colunas);
+    const stats = calculateStatistics(processed.rows, processed.columns);
     expect(stats.length).toBe(1);
-    expect(stats[0].nome).toBe('a');
+    expect(stats[0].name).toBe('a');
     expect(stats[0].min).toBe(1);
     expect(stats[0].max).toBe(3);
-    expect(stats[0].media).toBe(2);
+    expect(stats[0].mean).toBe(2);
   });
 
   describe('processData com separador decimal europeu', () => {
-    it('detecta e converte colunas numericas em formato europeu (virgula decimal)', () => {
+    it('detecta e converte columns numericas em formato europeu (virgula decimal)', () => {
       const input = [
-        { valor: '3,14', nome: 'pi' },
-        { valor: '2,71', nome: 'e' },
-        { valor: '1,41', nome: 'sqrt2' },
+        { valor: '3,14', name: 'pi' },
+        { valor: '2,71', name: 'e' },
+        { valor: '1,41', name: 'sqrt2' },
       ];
       const result = processData(input);
-      expect(result.colunas.find(c => c.nome === 'valor')?.tipo).toBe('numero');
-      expect(result.dados[0].valor).toBeCloseTo(3.14);
-      expect(result.dados[1].valor).toBeCloseTo(2.71);
+      expect(result.columns.find(c => c.name === 'valor')?.type).toBe('number');
+      expect(result.rows[0].valor).toBeCloseTo(3.14);
+      expect(result.rows[1].valor).toBeCloseTo(2.71);
     });
 
     it('detecta e converte inteiros europeus com ponto como separador de milhar', () => {
@@ -137,9 +137,9 @@ describe('dataService', () => {
         { populacao: '2.000', pais: 'C' },
       ];
       const result = processData(input);
-      expect(result.colunas.find(c => c.nome === 'populacao')?.tipo).toBe('numero');
-      expect(result.dados[0].populacao).toBe(1000);
-      expect(result.dados[1].populacao).toBe(50000);
+      expect(result.columns.find(c => c.name === 'populacao')?.type).toBe('number');
+      expect(result.rows[0].populacao).toBe(1000);
+      expect(result.rows[1].populacao).toBe(50000);
     });
 
     it('detecta e converte formato europeu completo com milhar e decimal', () => {
@@ -148,26 +148,26 @@ describe('dataService', () => {
         { preco: '2.000,75' },
       ];
       const result = processData(input);
-      expect(result.colunas.find(c => c.nome === 'preco')?.tipo).toBe('numero');
-      expect(result.dados[0].preco).toBeCloseTo(1234.56);
+      expect(result.columns.find(c => c.name === 'preco')?.type).toBe('number');
+      expect(result.rows[0].preco).toBeCloseTo(1234.56);
     });
 
     it('converte formato US com separador de milhar (valores entre aspas no CSV)', () => {
       const csv = 'id,value\n1,"1,234.56"\n2,"2,345.67"\n3,"3,456.78"';
       const rows = parseCsv(csv);
       const result = processData(rows);
-      expect(result.colunas.find(c => c.nome === 'value')?.tipo).toBe('numero');
-      expect(result.dados[0].value).toBeCloseTo(1234.56);
-      expect(result.dados[1].value).toBeCloseTo(2345.67);
+      expect(result.columns.find(c => c.name === 'value')?.type).toBe('number');
+      expect(result.rows[0].value).toBeCloseTo(1234.56);
+      expect(result.rows[1].value).toBeCloseTo(2345.67);
     });
 
     it('converte formato europeu end-to-end com delimitador ponto-e-virgula', () => {
       const csv = 'id;valor\n1;3,14\n2;2,71\n3;1,41';
       const rows = parseCsv(csv);
       const result = processData(rows);
-      expect(result.colunas.find(c => c.nome === 'valor')?.tipo).toBe('numero');
-      expect(result.dados[0].valor).toBeCloseTo(3.14);
-      expect(result.dados[2].valor).toBeCloseTo(1.41);
+      expect(result.columns.find(c => c.name === 'valor')?.type).toBe('number');
+      expect(result.rows[0].valor).toBeCloseTo(3.14);
+      expect(result.rows[2].valor).toBeCloseTo(1.41);
     });
 
     it('converte numeros com alta precisao decimal', () => {
@@ -177,8 +177,8 @@ describe('dataService', () => {
         { value: '3456.78912' },
       ];
       const result = processData(input);
-      expect(result.colunas.find(c => c.nome === 'value')?.tipo).toBe('numero');
-      expect(result.dados[0].value).toBeCloseTo(1234.56789);
+      expect(result.columns.find(c => c.name === 'value')?.type).toBe('number');
+      expect(result.rows[0].value).toBeCloseTo(1234.56789);
     });
 
     it('converte notacao cientifica corretamente', () => {
@@ -188,9 +188,9 @@ describe('dataService', () => {
         { value: '3.45678e3' },
       ];
       const result = processData(input);
-      expect(result.colunas.find(c => c.nome === 'value')?.tipo).toBe('numero');
-      expect(result.dados[0].value).toBeCloseTo(1234.56);
-      expect(result.dados[1].value).toBeCloseTo(2345.67);
+      expect(result.columns.find(c => c.name === 'value')?.type).toBe('number');
+      expect(result.rows[0].value).toBeCloseTo(1234.56);
+      expect(result.rows[1].value).toBeCloseTo(2345.67);
     });
 
     it('converte numeros negativos com sinal de menos', () => {
@@ -200,9 +200,9 @@ describe('dataService', () => {
         { value: '-3456.78' },
       ];
       const result = processData(input);
-      expect(result.colunas.find(c => c.nome === 'value')?.tipo).toBe('numero');
-      expect(result.dados[0].value).toBeCloseTo(-1234.56);
-      expect(result.dados[2].value).toBeCloseTo(-3456.78);
+      expect(result.columns.find(c => c.name === 'value')?.type).toBe('number');
+      expect(result.rows[0].value).toBeCloseTo(-1234.56);
+      expect(result.rows[2].value).toBeCloseTo(-3456.78);
     });
 
     it('converte valores decimais com zero inicial', () => {
@@ -212,18 +212,18 @@ describe('dataService', () => {
         { value: '0.91' },
       ];
       const result = processData(input);
-      expect(result.colunas.find(c => c.nome === 'value')?.tipo).toBe('numero');
-      expect(result.dados[0].value).toBeCloseTo(0.56);
-      expect(result.dados[2].value).toBeCloseTo(0.91);
+      expect(result.columns.find(c => c.name === 'value')?.type).toBe('number');
+      expect(result.rows[0].value).toBeCloseTo(0.56);
+      expect(result.rows[2].value).toBeCloseTo(0.91);
     });
 
     it('converte inteiros US com separador de milhar', () => {
       const csv = 'id,value\n1,"1,000"\n2,"2,000"\n3,"3,000"\n4,"4,000"\n5,"5,000"';
       const rows = parseCsv(csv);
       const result = processData(rows);
-      expect(result.colunas.find(c => c.nome === 'value')?.tipo).toBe('numero');
-      expect(result.dados[0].value).toBe(1000);
-      expect(result.dados[4].value).toBe(5000);
+      expect(result.columns.find(c => c.name === 'value')?.type).toBe('number');
+      expect(result.rows[0].value).toBe(1000);
+      expect(result.rows[4].value).toBe(5000);
     });
 
     it('nao regride para arquivos em formato US padrao', () => {
@@ -233,17 +233,17 @@ describe('dataService', () => {
         { a: '3', b: 'z' },
       ];
       const result = processData(input);
-      expect(result.colunas.find(c => c.nome === 'a')?.tipo).toBe('numero');
-      expect(result.dados[0].a).toBe(1);
+      expect(result.columns.find(c => c.name === 'a')?.type).toBe('number');
+      expect(result.rows[0].a).toBe(1);
     });
   });
 
   it('retorna estrutura vazia quando processData recebe array vazio', () => {
     const processed = processData([]);
-    expect(processed).toEqual({ dados: [], colunas: [] });
+    expect(processed).toEqual({ rows: [], columns: [] });
   });
 
-  it('executa join com multiplas chaves e prefixa colunas conflitantes', () => {
+  it('executa join com multiplas chaves e prefixa columns conflitantes', () => {
     const leftRows = [
       { id: 'A1', region: 'North', amount: 10, owner: 'Ana' },
       { id: 'B2', region: 'South', amount: 7, owner: 'Beto' },
@@ -374,7 +374,7 @@ describe('dataService', () => {
       expect(result.rows[1].val).toBeNull();
     });
 
-    it('fallback para inner join quando tipo invalido', () => {
+    it('fallback para inner join quando type invalido', () => {
       const result = joinDatasets({
         leftRows: [{ id: '1' }],
         rightRows: [{ id: '2' }],
@@ -408,7 +408,7 @@ describe('dataService', () => {
       expect(result.outputColumns).toContain('b.value2');
     });
 
-    it('sanitiza prefixo de nome de arquivo com caracteres especiais', () => {
+    it('sanitiza prefixo de name de arquivo com caracteres especiais', () => {
       const result = joinDatasets({
         leftRows: [{ id: '1', val: 'A' }],
         rightRows: [{ id: '1', val: 'B' }],
@@ -427,11 +427,11 @@ describe('dataService', () => {
   });
 
   describe('parseCsv edge cases', () => {
-    it('lanca erro para CSV com apenas header e sem dados', () => {
+    it('lanca erro para CSV com apenas header e sem rows', () => {
       expect(() => parseCsv('a,b,c\n')).toThrow('The CSV file is empty.');
     });
 
-    it('parseia CSV com linhas de dados em branco incluindo-as no resultado', () => {
+    it('parseia CSV com linhas de rows em branco incluindo-as no resultado', () => {
       const rows = parseCsv('a,b\n1,2\n\n3,4');
       expect(rows.length).toBe(3);
       expect(rows[0].a).toBe('1');
@@ -485,24 +485,24 @@ describe('dataService', () => {
 
   describe('detectType edge cases', () => {
     it('retorna texto como fallback para valores vazios', () => {
-      expect(detectType([null, undefined, ''])).toBe('texto');
-      expect(detectType([])).toBe('texto');
+      expect(detectType([null, undefined, ''])).toBe('text');
+      expect(detectType([])).toBe('text');
     });
 
     it('detecta datas quando maioria dos valores sao datas validas', () => {
-      expect(detectType(['2024-01-01', '2024-06-15', '2024-12-31'])).toBe('data');
+      expect(detectType(['2024-01-01', '2024-06-15', '2024-12-31'])).toBe('date');
     });
 
     it('detecta numeros com separador decimal europeu', () => {
-      expect(detectType(['3,14', '2,71', '1,41'], ',')).toBe('numero');
+      expect(detectType(['3,14', '2,71', '1,41'], ',')).toBe('number');
     });
   });
 
   describe('calculateStatistics edge cases', () => {
-    it('retorna array vazio para colunas sem tipo numero', () => {
+    it('retorna array vazio para columns sem type numero', () => {
       const stats = calculateStatistics(
         [{ a: 'x' }, { a: 'y' }],
-        [{ nome: 'a', tipo: 'texto' }],
+        [{ name: 'a', type: 'text' }],
       );
       expect(stats).toEqual([]);
     });
@@ -510,19 +510,19 @@ describe('dataService', () => {
     it('ignora valores nulos e NaN no calculo de estatisticas', () => {
       const stats = calculateStatistics(
         [{ val: 10 }, { val: null }, { val: 20 }, { val: NaN }],
-        [{ nome: 'val', tipo: 'numero' }],
+        [{ name: 'val', type: 'number' }],
       );
       expect(stats.length).toBe(1);
       expect(stats[0].n).toBe(2);
       expect(stats[0].min).toBe(10);
       expect(stats[0].max).toBe(20);
-      expect(stats[0].media).toBe(15);
+      expect(stats[0].mean).toBe(15);
     });
 
-    it('ignora colunas numericas onde todos valores sao nulos', () => {
+    it('ignora columns numericas onde todos valores sao nulos', () => {
       const stats = calculateStatistics(
         [{ val: null }, { val: undefined }],
-        [{ nome: 'val', tipo: 'numero' }],
+        [{ name: 'val', type: 'number' }],
       );
       expect(stats).toEqual([]);
     });

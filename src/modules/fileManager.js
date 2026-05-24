@@ -127,20 +127,20 @@ async function processFileForDataset(file) {
 		throw new Error(`${t('chive-error-parse')}: ${result.reason}`);
 	}
 
-	const { dados, colunas, statsNumeric, statsCategorical, truncatedFrom } = result.value;
+	const { rows, columns, statsNumeric, statsCategorical, truncatedFrom } = result.value;
 
-	if (dados.length === 0) {
+	if (rows.length === 0) {
 		progress.fail(t('chive-progress-failed', [t('chive-error-empty-file')]));
 		throw new Error(t('chive-error-empty-file'));
 	}
 
 	const dataset = {
-		nome: file.name,
-		tamanho: formatFileSize(file.size),
-		dados,
-		colunas,
-		colunasSelecionadas: colunas.map(coluna => coluna.nome),
-		configGraficos: createDefaultChartConfig(),
+		name: file.name,
+		sizeLabel: formatFileSize(file.size),
+		rows,
+		columns,
+		selectedColumns: columns.map(coluna => coluna.name),
+		chartConfig: createDefaultChartConfig(),
 		// Stats computed in the worker — statsView reads these instead of recomputing
 		// on every DATASET_ADDED event. See `services/dataIngestService.js`.
 		precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
@@ -283,10 +283,10 @@ export function createJoinedDataset(spec = {}) {
 
 	const leftColumns = Array.isArray(spec.leftColumns)
 		? spec.leftColumns.filter(Boolean)
-		: leftDataset.colunas.map(column => column.nome);
+		: leftDataset.columns.map(column => column.name);
 	const rightColumns = Array.isArray(spec.rightColumns)
 		? spec.rightColumns.filter(Boolean)
-		: rightDataset.colunas.map(column => column.nome);
+		: rightDataset.columns.map(column => column.name);
 
 	if ((leftColumns.length + rightColumns.length) === 0) {
 		return { ok: false, message: t('chive-join-error-columns-required') };
@@ -294,15 +294,15 @@ export function createJoinedDataset(spec = {}) {
 
 	try {
 		const result = joinDatasets({
-			leftRows: leftDataset.dados,
-			rightRows: rightDataset.dados,
+			leftRows: leftDataset.rows,
+			rightRows: rightDataset.rows,
 			leftKeys,
 			rightKeys,
 			joinType: normalizeJoinType(spec.joinType),
 			leftColumns,
 			rightColumns,
-			leftDatasetName: leftDataset.nome,
-			rightDatasetName: rightDataset.nome,
+			leftDatasetName: leftDataset.name,
+			rightDatasetName: rightDataset.name,
 			normalization: {
 				trim: true,
 				caseSensitive: false,
@@ -310,15 +310,15 @@ export function createJoinedDataset(spec = {}) {
 		});
 
 		const processed = processData(result.rows);
-		const fallbackColumns = result.outputColumns.map(columnName => ({ nome: columnName, tipo: 'texto' }));
-		const datasetName = buildJoinDatasetName(leftDataset.nome, rightDataset.nome);
+		const fallbackColumns = result.outputColumns.map(columnName => ({ name: columnName, type: 'text' }));
+		const datasetName = buildJoinDatasetName(leftDataset.name, rightDataset.name);
 		const dataset = {
-			nome: datasetName,
-			tamanho: t('chive-join-generated-size', [result.rows.length]),
-			dados: processed.dados,
-			colunas: processed.colunas.length > 0 ? processed.colunas : fallbackColumns,
-			colunasSelecionadas: (processed.colunas.length > 0 ? processed.colunas : fallbackColumns).map(column => column.nome),
-			configGraficos: createDefaultChartConfig(),
+			name: datasetName,
+			sizeLabel: t('chive-join-generated-size', [result.rows.length]),
+			rows: processed.rows,
+			columns: processed.columns.length > 0 ? processed.columns : fallbackColumns,
+			selectedColumns: (processed.columns.length > 0 ? processed.columns : fallbackColumns).map(column => column.name),
+			chartConfig: createDefaultChartConfig(),
 		};
 
 		const index = addDataset(dataset);

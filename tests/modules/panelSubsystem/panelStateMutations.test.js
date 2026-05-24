@@ -16,12 +16,12 @@ import {
 	assignChartToPanelBlockSlotState,
 } from '../../../src/modules/panelSubsystem/panelStateMutations.js';
 
-function makeBlock(id, templateId = 'layout-2col') {
+function makeBlock(id, templateId = 'template-2col') {
 	return { id, templateId, slots: {}, proportions: { split: 50 }, heightPx: null, borderEnabled: false, borderColor: '#5d645d' };
 }
 
 let nextBlockId = 1;
-function createPanelBlock(templateId = 'layout-2col') {
+function createPanelBlock(templateId = 'template-2col') {
 	return makeBlock(`block-${nextBlockId++}`, templateId);
 }
 
@@ -32,7 +32,7 @@ function makeAppState(overrides = {}) {
 		panel: {
 			charts: [],
 			slots: {},
-			layout: 'layout-2col',
+			layout: 'template-2col',
 			blocks: [makeBlock('block-0')],
 			nextBlockId: 1,
 			nextChartId: 0,
@@ -70,9 +70,9 @@ describe('normalizePanelChartId', () => {
 describe('addChartSnapshotToState', () => {
 	it('adds snapshot with incremented id and sanitized name', () => {
 		const panel = { charts: [], nextChartId: 0 };
-		const { id, snapshot } = addChartSnapshotToState(panel, { nome: '  Test  ', svgMarkup: '<svg/>' }, s => s.trim());
+		const { id, snapshot } = addChartSnapshotToState(panel, { name: '  Test  ', svgMarkup: '<svg/>' }, s => s.trim());
 		expect(id).toBe(0);
-		expect(snapshot.nome).toBe('Test');
+		expect(snapshot.name).toBe('Test');
 		expect(panel.charts.length).toBe(1);
 		expect(panel.nextChartId).toBe(1);
 	});
@@ -80,20 +80,20 @@ describe('addChartSnapshotToState', () => {
 	it('truncates metaSummary to 180 characters', () => {
 		const panel = { charts: [], nextChartId: 0 };
 		const long = 'a'.repeat(200);
-		const { snapshot } = addChartSnapshotToState(panel, { nome: 'X', svgMarkup: '', metaSummary: long }, s => s);
+		const { snapshot } = addChartSnapshotToState(panel, { name: 'X', svgMarkup: '', metaSummary: long }, s => s);
 		expect(snapshot.metaSummary.length).toBe(180);
 	});
 
 	it('defaults metaSummary to empty string for non-string input', () => {
 		const panel = { charts: [], nextChartId: 0 };
-		const { snapshot } = addChartSnapshotToState(panel, { nome: 'X', svgMarkup: '' }, s => s);
+		const { snapshot } = addChartSnapshotToState(panel, { name: 'X', svgMarkup: '' }, s => s);
 		expect(snapshot.metaSummary).toBe('');
 	});
 });
 
 describe('removeChartSnapshotFromState', () => {
 	it('removes chart and cleans up slot references', () => {
-		const appState = makeAppState({ charts: [{ id: 0, nome: 'A' }], slots: { 'slot-1': 0 }, nextChartId: 1 });
+		const appState = makeAppState({ charts: [{ id: 0, name: 'A' }], slots: { 'slot-1': 0 }, nextChartId: 1 });
 		appState.panel.blocks[0].slots = { 'slot-1': 0 };
 
 		const result = removeChartSnapshotFromState(appState, 0, ensureDefault(appState));
@@ -111,8 +111,8 @@ describe('removeChartSnapshotFromState', () => {
 
 describe('getChartSnapshotFromState', () => {
 	it('returns chart by id', () => {
-		const panel = { charts: [{ id: 0, nome: 'A' }, { id: 1, nome: 'B' }] };
-		expect(getChartSnapshotFromState(panel, 1).nome).toBe('B');
+		const panel = { charts: [{ id: 0, name: 'A' }, { id: 1, name: 'B' }] };
+		expect(getChartSnapshotFromState(panel, 1).name).toBe('B');
 	});
 
 	it('returns null for non-existent chart', () => {
@@ -158,14 +158,14 @@ describe('validatePanelSlotsState', () => {
 describe('addPanelBlockState', () => {
 	it('adds block when under limit', () => {
 		const appState = makeAppState();
-		const block = addPanelBlockState(appState, 'layout-single', ensureDefault(appState), createPanelBlock, 4);
+		const block = addPanelBlockState(appState, 'template-single', ensureDefault(appState), createPanelBlock, 4);
 		expect(block).not.toBeNull();
 		expect(appState.panel.blocks.length).toBe(2);
 	});
 
 	it('returns null when at block limit', () => {
 		const appState = makeAppState();
-		const result = addPanelBlockState(appState, 'layout-2col', ensureDefault(appState), createPanelBlock, 1);
+		const result = addPanelBlockState(appState, 'template-2col', ensureDefault(appState), createPanelBlock, 1);
 		expect(result).toBeNull();
 	});
 });
@@ -287,53 +287,53 @@ describe('updatePanelBlockBorderState', () => {
 });
 
 describe('setPanelBlockTemplateState', () => {
-	const normalize = (t) => ['layout-single', 'layout-2col', 'layout-3col'].includes(t) ? t : 'layout-2col';
+	const normalize = (t) => ['template-single', 'template-2col', 'template-3col'].includes(t) ? t : 'template-2col';
 	const getSlots = (t) => {
-		if (t === 'layout-single') return ['slot-1'];
-		if (t === 'layout-3col') return ['slot-1', 'slot-2', 'slot-3'];
+		if (t === 'template-single') return ['slot-1'];
+		if (t === 'template-3col') return ['slot-1', 'slot-2', 'slot-3'];
 		return ['slot-1', 'slot-2'];
 	};
 	const defaultProps = () => ({ split: 50 });
 
 	it('changes template and returns ok', () => {
 		const appState = makeAppState({ blocks: [makeBlock('A')] });
-		const result = setPanelBlockTemplateState(appState, 'A', 'layout-single', ensureDefault(appState), normalize, getSlots, defaultProps);
+		const result = setPanelBlockTemplateState(appState, 'A', 'template-single', ensureDefault(appState), normalize, getSlots, defaultProps);
 		expect(result.ok).toBe(true);
-		expect(result.templateId).toBe('layout-single');
-		expect(appState.panel.blocks[0].templateId).toBe('layout-single');
+		expect(result.templateId).toBe('template-single');
+		expect(appState.panel.blocks[0].templateId).toBe('template-single');
 	});
 
 	it('returns ok without changes when same template', () => {
 		const appState = makeAppState({ blocks: [makeBlock('A')] });
-		const result = setPanelBlockTemplateState(appState, 'A', 'layout-2col', ensureDefault(appState), normalize, getSlots, defaultProps);
+		const result = setPanelBlockTemplateState(appState, 'A', 'template-2col', ensureDefault(appState), normalize, getSlots, defaultProps);
 		expect(result.ok).toBe(true);
 	});
 
 	it('returns not ok for non-existent block', () => {
 		const appState = makeAppState();
-		expect(setPanelBlockTemplateState(appState, 'nope', 'layout-2col', ensureDefault(appState), normalize, getSlots, defaultProps).ok).toBe(false);
+		expect(setPanelBlockTemplateState(appState, 'nope', 'template-2col', ensureDefault(appState), normalize, getSlots, defaultProps).ok).toBe(false);
 	});
 
 	it('updates panel layout when first block template changes', () => {
 		const block = makeBlock('block-0');
 		const appState = makeAppState({ blocks: [block] });
-		setPanelBlockTemplateState(appState, 'block-0', 'layout-3col', ensureDefault(appState), normalize, getSlots, defaultProps);
-		expect(appState.panel.layout).toBe('layout-3col');
+		setPanelBlockTemplateState(appState, 'block-0', 'template-3col', ensureDefault(appState), normalize, getSlots, defaultProps);
+		expect(appState.panel.layout).toBe('template-3col');
 	});
 
 	it('prunes slots not in new template', () => {
 		const block = makeBlock('A');
-		block.templateId = 'layout-3col';
+		block.templateId = 'template-3col';
 		block.slots = { 'slot-1': 0, 'slot-2': 1, 'slot-3': 2 };
 		const appState = makeAppState({ blocks: [block] });
-		setPanelBlockTemplateState(appState, 'A', 'layout-single', ensureDefault(appState), normalize, getSlots, defaultProps);
+		setPanelBlockTemplateState(appState, 'A', 'template-single', ensureDefault(appState), normalize, getSlots, defaultProps);
 		expect(Object.keys(appState.panel.blocks[0].slots)).toEqual(['slot-1']);
 	});
 });
 
 describe('assignChartToPanelBlockSlotState', () => {
 	it('assigns chart to block slot', () => {
-		const chart = { id: 0, nome: 'A' };
+		const chart = { id: 0, name: 'A' };
 		const appState = makeAppState({ charts: [chart] });
 		const getSnapshot = (id) => appState.panel.charts.find(c => c.id === id) || null;
 		const result = assignChartToPanelBlockSlotState(appState, 'block-0', 'slot-1', 0, ensureDefault(appState), getSnapshot);

@@ -29,7 +29,7 @@ import { normalizeGlobalFilter, createEmptyGlobalFilter } from '../utils/globalF
  */
 export function createDefaultChartConfig() {
 	return {
-		aba: 'preview',
+		activeTab: 'preview',
 		globalFilter: createEmptyGlobalFilter(),
 		bar: {
 			enabled: false,
@@ -244,7 +244,7 @@ function pickGlobalFilter(config) {
 }
 
 /**
- * Deep-merge `configGraficos` onto the defaults. User-set fields always
+ * Deep-merge `chartConfig` onto the defaults. User-set fields always
  * win; missing fields fall back to defaults. The merge is per-chart-type
  * (each `bar`, `scatter`, … block is independently shallow-merged), with
  * one nested case (`scatter.regression`) handled explicitly.
@@ -254,12 +254,12 @@ function pickGlobalFilter(config) {
  * into a one-element `nestingColumns` array. This preserves pre-multilevel
  * bubble configs across reloads.
  *
- * @param {*} configGraficos - Saved (possibly partial) chart config, or `null`/`undefined`.
+ * @param {*} chartConfig - Saved (possibly partial) chart config, or `null`/`undefined`.
  * @returns {ChartConfig} Merged, fully-populated config.
  */
-export function mergeChartConfigWithDefaults(configGraficos) {
+export function mergeChartConfigWithDefaults(chartConfig) {
 	const defaults = createDefaultChartConfig();
-	const config = configGraficos || {};
+	const config = chartConfig || {};
 
 	return {
 		...defaults,

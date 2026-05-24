@@ -101,7 +101,7 @@ export function createBlockTemplateSelect({ blockId, templateId, layouts, transl
 /**
  * Build the "add block" row at the bottom of the panel: a template
  * picker `<select>` and an "add" button. The button passes the picker's
- * current value to the handler; `'layout-2col'` is used as a fallback
+ * current value to the handler; `'template-2col'` is used as a fallback
  * when the picker has no value.
  *
  * @param {Object} params
@@ -116,7 +116,7 @@ export function createAddBlockControls({ layouts, translate, onAddBlock }) {
 	addTemplateSelect.className = 'panel-add-template-select';
 	addTemplateSelect.dataset.panelAddTemplate = '1';
 	addTemplateSelect.setAttribute('aria-label', translate('chive-panel-layout-label'));
-	const selectedTemplate = 'layout-2col';
+	const selectedTemplate = 'template-2col';
 
 	Object.entries(layouts).forEach(([id, config]) => {
 		const option = document.createElement('option');
@@ -131,7 +131,7 @@ export function createAddBlockControls({ layouts, translate, onAddBlock }) {
 	addBlockButton.dataset.panelAddBlock = '1';
 	addBlockButton.textContent = translate('chive-panel-add-block');
 	addBlockButton.addEventListener('click', () => {
-		onAddBlock(addTemplateSelect.value || 'layout-2col');
+		onAddBlock(addTemplateSelect.value || 'template-2col');
 	});
 
 	const addControls = document.createElement('div');

@@ -47,7 +47,7 @@ function buildColumnTypeIndex(columnsSnapshot) {
 	if (!Array.isArray(columnsSnapshot)) return {};
 	const index = {};
 	for (const column of columnsSnapshot) {
-		if (column?.nome) index[column.nome] = column.tipo;
+		if (column?.name) index[column.name] = column.type;
 	}
 	return index;
 }

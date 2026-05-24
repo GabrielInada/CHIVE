@@ -69,7 +69,7 @@ describe('tabsView', () => {
 
 		expect(firstCallback).not.toHaveBeenCalled();
 		expect(latestCallback).toHaveBeenCalledTimes(1);
-		expect(latestCallback).toHaveBeenCalledWith({ aba: 'charts' });
+		expect(latestCallback).toHaveBeenCalledWith({ activeTab: 'charts' });
 	});
 
 	it('does nothing on click when callback is missing', async () => {

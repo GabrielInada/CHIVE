@@ -38,12 +38,12 @@ import {
 function buildState() {
   return {
     data: {
-      datasets: [{ nome: 'A' }, { nome: 'B' }],
+      datasets: [{ name: 'A' }, { name: 'B' }],
       activeIndex: 1,
     },
     panel: {
       charts: [{ id: 1 }, { id: 2 }, { id: 3 }],
-      layout: 'layout-2col',
+      layout: 'template-2col',
     },
     ui: {
       sidebarMode: 'viz',
@@ -61,7 +61,7 @@ describe('stateSync', () => {
     `;
 
     mocks.getState.mockReturnValue(buildState());
-    mocks.getActiveDataset.mockReturnValue({ nome: 'B' });
+    mocks.getActiveDataset.mockReturnValue({ name: 'B' });
   });
 
   it('initializeStateSync registra listener global e sincroniza imediatamente', () => {
@@ -81,12 +81,12 @@ describe('stateSync', () => {
     expect(mocks.exposeGlobals).toHaveBeenCalledTimes(2);
   });
 
-  it('encaminha updates de colunas e config para appState', () => {
+  it('encaminha updates de columns e config para appState', () => {
     updateActiveDatasetColumnSelection(['a', 'b']);
-    updateActiveDatasetChartConfig({ aba: 'charts' });
+    updateActiveDatasetChartConfig({ activeTab: 'charts' });
 
     expect(mocks.updateActiveDatasetColumns).toHaveBeenCalledWith(['a', 'b']);
-    expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ aba: 'charts' });
+    expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
   });
 
   it('switchSidebarMode atualiza estado e classes de sidebar', () => {
@@ -96,7 +96,7 @@ describe('stateSync', () => {
     expect(document.getElementById('sidebar-panel-dashboard').classList.contains('active')).toBe(true);
     expect(document.getElementById('sidebar-panel-viz').classList.contains('active')).toBe(false);
 
-    switchSidebarMode('dados');
+    switchSidebarMode('data');
     expect(document.getElementById('sidebar-panel-data').classList.contains('active')).toBe(true);
   });
 
@@ -107,7 +107,7 @@ describe('stateSync', () => {
       activeDatasetIndex: 1,
       activeDatasetName: 'B',
       panelChartsCount: 3,
-      panelLayout: 'layout-2col',
+      panelLayout: 'template-2col',
       sidebarMode: 'viz',
     });
 

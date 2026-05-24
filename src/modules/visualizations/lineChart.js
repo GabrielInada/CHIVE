@@ -58,8 +58,8 @@ const AXIS_KIND = { date: 'date', numeric: 'numeric', categorical: 'categorical'
 
 function resolveXAxisKind(configuredAxisType) {
 	const value = String(configuredAxisType || '').toLowerCase();
-	if (value === 'data' || value === 'date') return AXIS_KIND.date;
-	if (value === 'numero' || value === 'number' || value === 'numeric') return AXIS_KIND.numeric;
+	if (value === 'date') return AXIS_KIND.date;
+	if (value === 'number' || value === 'numeric') return AXIS_KIND.numeric;
 	return AXIS_KIND.categorical;
 }
 
@@ -69,10 +69,10 @@ function toDateOrNull(value) {
 	return Number.isFinite(date.getTime()) ? date : null;
 }
 
-function buildPoints(dados, eixoX, eixoY, xKind) {
+function buildPoints(rows, eixoX, eixoY, xKind) {
 	const points = [];
-	for (let index = 0; index < dados.length; index++) {
-		const row = dados[index];
+	for (let index = 0; index < rows.length; index++) {
+		const row = rows[index];
 		const xRaw = row?.[eixoX];
 		const yRaw = row?.[eixoY];
 		const yIsMissing = isNullish(yRaw) || yRaw === '';
@@ -180,15 +180,15 @@ function normalizeHex(value, fallback) {
  * axis-label toggles, `customTitle`, `chartHeight`, `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {Array<Object<string, *>>} rows - Source rows.
  * @param {string} eixoX - X-axis column name (any type).
  * @param {string} eixoY - Y-axis column name (numeric).
  * @param {Object} [opcoes={}] - Render options bag.
  * @returns {Result}
  */
-export function renderLineChart(container, dados, eixoX, eixoY, opcoes = {}) {
+export function renderLineChart(container, rows, eixoX, eixoY, opcoes = {}) {
 	if (!container || !eixoX || !eixoY) return fail('invalid-args');
-	if (!Array.isArray(dados) || dados.length === 0) return fail();
+	if (!Array.isArray(rows) || rows.length === 0) return fail();
 
 	const xKind = resolveXAxisKind(opcoes.axisTypes?.x);
 	const curve = CURVE_BY_KEY[opcoes.curve] || curveLinear;
@@ -217,7 +217,7 @@ export function renderLineChart(container, dados, eixoX, eixoY, opcoes = {}) {
 	};
 	const locale = opcoes.locale || undefined;
 
-	let points = buildPoints(dados, eixoX, eixoY, xKind);
+	let points = buildPoints(rows, eixoX, eixoY, xKind);
 	if (points.length === 0) return fail('no-x-values');
 
 	points = aggregatePoints(points, aggregateMode);

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	filterVisibleColumns: vi.fn(() => [{ nome: 'categoria' }, { nome: 'valor' }]),
+	filterVisibleColumns: vi.fn(() => [{ name: 'categoria' }, { name: 'valor' }]),
 	getNumericColumnNames: vi.fn(() => ['valor']),
 	getCategoricalColumnNames: vi.fn(() => ['categoria']),
 	getDateColumnNames: vi.fn(() => []),
@@ -149,20 +149,20 @@ describe('renderChartControlsSidebar', () => {
 	});
 
 	it('renders a chart-picker trigger inside the params pane', () => {
-		renderChartControlsSidebar({ configGraficos: {} });
+		renderChartControlsSidebar({ chartConfig: {} });
 		const trigger = document.querySelector('#viz-chart-params .viz-chart-picker-trigger');
 		expect(trigger).not.toBeNull();
 	});
 
 	it('trigger shows placeholder when no chart is active', () => {
-		renderChartControlsSidebar({ configGraficos: {} });
+		renderChartControlsSidebar({ chartConfig: {} });
 		const label = document.querySelector('.viz-chart-picker-trigger-label');
 		expect(label?.classList.contains('placeholder')).toBe(true);
 	});
 
 	it('trigger shows the active chart name when a chart is active', () => {
 		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('scatter'));
-		renderChartControlsSidebar({ configGraficos: {} });
+		renderChartControlsSidebar({ chartConfig: {} });
 		const label = document.querySelector('.viz-chart-picker-trigger-label');
 		expect(label?.classList.contains('placeholder')).toBe(false);
 		expect(label?.textContent).toBe('chive-chart-toggle-scatter');
@@ -170,7 +170,7 @@ describe('renderChartControlsSidebar', () => {
 
 	it('renders only the active chart\'s controls in the params pane', () => {
 		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('scatter'));
-		renderChartControlsSidebar({ configGraficos: {} });
+		renderChartControlsSidebar({ chartConfig: {} });
 		expect(mocks.createScatterPlotControls).toHaveBeenCalledTimes(1);
 		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
 		expect(mocks.setupScatterPlotControlListeners).toHaveBeenCalledTimes(1);
@@ -178,7 +178,7 @@ describe('renderChartControlsSidebar', () => {
 	});
 
 	it('shows the params empty-state placeholder when no chart is active', () => {
-		renderChartControlsSidebar({ configGraficos: {} });
+		renderChartControlsSidebar({ chartConfig: {} });
 		const empty = document.querySelector('#viz-chart-params .viz-params-empty');
 		expect(empty).not.toBeNull();
 		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
@@ -194,7 +194,7 @@ describe('renderChartControlsSidebar', () => {
 
 	it('clicking the trigger opens the picker with current activeChartType', () => {
 		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('bar'));
-		renderChartControlsSidebar({ configGraficos: { bar: { category: 'categoria' } } });
+		renderChartControlsSidebar({ chartConfig: { bar: { category: 'categoria' } } });
 		document.querySelector('.viz-chart-picker-trigger').click();
 		expect(mocks.openChartTypePickerDialog).toHaveBeenCalledTimes(1);
 		expect(mocks.openChartTypePickerDialog).toHaveBeenCalledWith(
@@ -205,7 +205,7 @@ describe('renderChartControlsSidebar', () => {
 	it('picker resolving with a chartType activates that chart with defaults', async () => {
 		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('bar'));
 		mocks.openChartTypePickerDialog.mockReturnValueOnce(Promise.resolve({ chartType: 'scatter' }));
-		renderChartControlsSidebar({ configGraficos: { bar: { category: 'categoria' } } });
+		renderChartControlsSidebar({ chartConfig: { bar: { category: 'categoria' } } });
 		document.querySelector('.viz-chart-picker-trigger').click();
 		await Promise.resolve();
 		await Promise.resolve();
@@ -218,7 +218,7 @@ describe('renderChartControlsSidebar', () => {
 	it('picker resolving with { chartType: null } deselects', async () => {
 		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('bar'));
 		mocks.openChartTypePickerDialog.mockReturnValueOnce(Promise.resolve({ chartType: null }));
-		renderChartControlsSidebar({ configGraficos: {} });
+		renderChartControlsSidebar({ chartConfig: {} });
 		document.querySelector('.viz-chart-picker-trigger').click();
 		await Promise.resolve();
 		await Promise.resolve();
@@ -228,7 +228,7 @@ describe('renderChartControlsSidebar', () => {
 	it('picker resolving with null (cancel) does not change state', async () => {
 		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive('bar'));
 		mocks.openChartTypePickerDialog.mockReturnValueOnce(Promise.resolve(null));
-		renderChartControlsSidebar({ configGraficos: {} });
+		renderChartControlsSidebar({ chartConfig: {} });
 		document.querySelector('.viz-chart-picker-trigger').click();
 		await Promise.resolve();
 		await Promise.resolve();
@@ -257,7 +257,7 @@ describe('renderChartControlsSidebar', () => {
 			return [section];
 		});
 
-		renderChartControlsSidebar({ configGraficos: {} });
+		renderChartControlsSidebar({ chartConfig: {} });
 
 		const header = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-header');
 		const content = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-content');
@@ -266,7 +266,7 @@ describe('renderChartControlsSidebar', () => {
 		content.style.display = 'block';
 		toggleIcon.textContent = '▼';
 
-		renderChartControlsSidebar({ configGraficos: {} });
+		renderChartControlsSidebar({ chartConfig: {} });
 
 		const nextHeader = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-header');
 		const nextContent = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-content');
@@ -283,7 +283,7 @@ describe('computeActivationDefaults', () => {
 	const allColumns = ['c1', 'c2', 'n1', 'n2'];
 
 	function makeDataset(config = {}) {
-		return { configGraficos: config };
+		return { chartConfig: config };
 	}
 
 	it('bar: picks first categorical when current is invalid', () => {
@@ -362,12 +362,12 @@ describe('handleChartTypeSelect', () => {
 	});
 
 	it('calls setActiveChartType(null) when given null', () => {
-		handleChartTypeSelect(null, { configGraficos: {} });
+		handleChartTypeSelect(null, { chartConfig: {} });
 		expect(mocks.setActiveChartType).toHaveBeenCalledWith(null);
 	});
 
 	it('forwards computed defaults + expanded:true when activating a chart', () => {
-		handleChartTypeSelect('bar', { configGraficos: {} });
+		handleChartTypeSelect('bar', { chartConfig: {} });
 		expect(mocks.setActiveChartType).toHaveBeenCalledWith(
 			'bar',
 			expect.objectContaining({ category: 'categoria', expanded: true })

@@ -42,10 +42,10 @@ import {
  * @returns {string[]}
  */
 function getPieSectorValues(dataset, config) {
-	if (!config?.category || !Array.isArray(dataset?.dados)) return [];
+	if (!config?.category || !Array.isArray(dataset?.rows)) return [];
 
 	const counter = new Map();
-	dataset.dados.forEach(row => {
+	dataset.rows.forEach(row => {
 		const rawValue = row[config.category];
 		const category = isNullish(rawValue) || rawValue === ''
 			? '—'
@@ -81,7 +81,7 @@ function getPieSectorValues(dataset, config) {
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
 export function createPieChartControls(dataset, categoryOptions, numericOptions, allColumns = []) {
-	const config = dataset.configGraficos.pie;
+	const config = dataset.chartConfig.pie;
 	const sectorValues = getPieSectorValues(dataset, config);
 
 	// ====== DATA & AGGREGATION SECTION ======
@@ -97,7 +97,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 	const categorySelect = document.createElement('select');
 	categorySelect.id = 'viz-select-pie-category';
 	categorySelect.className = 'rows-select';
-	categorySelect.disabled = !dataset.configGraficos.pie.enabled;
+	categorySelect.disabled = !dataset.chartConfig.pie.enabled;
 
 	const noneOption = document.createElement('option');
 	noneOption.value = '';
@@ -126,7 +126,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 	const measureSelect = document.createElement('select');
 	measureSelect.id = 'viz-select-pie-measure';
 	measureSelect.className = 'rows-select';
-	measureSelect.disabled = !dataset.configGraficos.pie.enabled;
+	measureSelect.disabled = !dataset.chartConfig.pie.enabled;
 
 	[
 		{ value: 'count', label: t('chive-chart-control-pie-measure-count') },
@@ -153,7 +153,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 	const valueSelect = document.createElement('select');
 	valueSelect.id = 'viz-select-pie-value-column';
 	valueSelect.className = 'rows-select';
-	valueSelect.disabled = !dataset.configGraficos.pie.enabled || config.measureMode !== 'sum';
+	valueSelect.disabled = !dataset.chartConfig.pie.enabled || config.measureMode !== 'sum';
 
 	const noneOptionValue = document.createElement('option');
 	noneOptionValue.value = '';
@@ -182,7 +182,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 			{ value: '50', label: 'Top 50' },
 		],
 		String(Number.isFinite(Number(config.topN)) ? Number(config.topN) : PIE_CHART.defaultTopN),
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	dataControls.push(createSelectControl(
@@ -193,7 +193,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 			{ value: 'truncate', label: t('chive-chart-pie-topn-mode-truncate') },
 		],
 		config.topNMode === 'truncate' ? 'truncate' : 'other',
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	// ====== DISPLAY SECTION ======
@@ -206,7 +206,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 		PIE_CHART.minInnerRadius,
 		PIE_CHART.maxOuterRadius - 8,
 		1,
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	displayControls.push(createSliderControl(
@@ -216,7 +216,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 		PIE_CHART.minOuterRadius,
 		PIE_CHART.maxOuterRadius,
 		1,
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	displayControls.push(createSliderControl(
@@ -226,7 +226,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 		PIE_CHART.minPadAngle,
 		PIE_CHART.maxPadAngle,
 		0.5,
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	displayControls.push(createSliderControl(
@@ -236,28 +236,28 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 		PIE_CHART.minZoomScale,
 		PIE_CHART.maxZoomScale,
 		0.05,
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	displayControls.push(createCheckboxControl(
 		'viz-toggle-pie-category-label',
 		t('chive-chart-control-pie-sector-label'),
 		config.showCategoryLabel,
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	displayControls.push(createCheckboxControl(
 		'viz-toggle-pie-value-label',
 		t('chive-chart-control-pie-sector-value'),
 		config.showValueLabel,
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	displayControls.push(createCheckboxControl(
 		'viz-toggle-pie-legend',
 		t('chive-chart-control-pie-show-legend'),
 		config.showLegend,
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	displayControls.push(createTextControl(
@@ -265,7 +265,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 		t('chive-chart-control-common-title'),
 		config.customTitle,
 		80,
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	displayControls.push(createSliderControl(
@@ -275,7 +275,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 		220,
 		720,
 		10,
-		!dataset.configGraficos.pie.enabled
+		!dataset.chartConfig.pie.enabled
 	));
 
 	const labelPositionDiv = document.createElement('div');
@@ -288,7 +288,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 	const labelPositionSelect = document.createElement('select');
 	labelPositionSelect.id = 'viz-select-pie-label-position';
 	labelPositionSelect.className = 'rows-select';
-	labelPositionSelect.disabled = !dataset.configGraficos.pie.enabled;
+	labelPositionSelect.disabled = !dataset.chartConfig.pie.enabled;
 
 	[
 		{ value: 'inside', label: t('chive-chart-control-pie-label-position-inside') },
@@ -312,7 +312,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 	resetZoomBtn.id = 'viz-btn-pie-reset-zoom';
 	resetZoomBtn.className = 'chart-control-btn';
 	resetZoomBtn.textContent = t('chive-chart-control-pie-reset-zoom');
-	resetZoomBtn.disabled = !dataset.configGraficos.pie.enabled;
+	resetZoomBtn.disabled = !dataset.chartConfig.pie.enabled;
 	resetZoomDiv.appendChild(resetZoomBtn);
 	displayControls.push(resetZoomDiv);
 
@@ -324,7 +324,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 		t('chive-chart-control-pie-color'),
 		config.color,
 		CHART_COLORS.pie,
-		!dataset.configGraficos.pie.enabled,
+		!dataset.chartConfig.pie.enabled,
 	));
 
 	// Palette presets for quick color application
@@ -333,7 +333,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 			'viz-pie-color-preset',
 			t('chive-chart-color-palette'),
 			config.colorScheme || 'Bold',
-			!dataset.configGraficos.pie.enabled
+			!dataset.chartConfig.pie.enabled
 		));
 	}
 
@@ -365,8 +365,8 @@ function updatePieColorPickerGrid(dataset, sectorValues) {
 		'viz-pie-color-grid',
 		t('chive-chart-color-pie-slices'),
 		sectorValues,
-		dataset.configGraficos.pie.customSliceColors || {},
-		!dataset.configGraficos.pie.enabled,
+		dataset.chartConfig.pie.customSliceColors || {},
+		!dataset.chartConfig.pie.enabled,
 		null
 	);
 }
@@ -393,7 +393,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
-	const sectorValues = getPieSectorValues(dataset, dataset.configGraficos.pie);
+	const sectorValues = getPieSectorValues(dataset, dataset.chartConfig.pie);
 
 	setupSelectListeners([
 		{ id: 'viz-select-pie-category', key: 'category' },
@@ -408,13 +408,13 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 	if (measureSelect) {
 		measureSelect.addEventListener('change', () => {
 			const measureMode = measureSelect.value === 'sum' ? 'sum' : 'count';
-			const currentValueColumn = dataset.configGraficos.pie?.valueColumn;
+			const currentValueColumn = dataset.chartConfig.pie?.valueColumn;
 			const nextValueColumn = measureMode === 'sum'
 				? (numeric.includes(currentValueColumn) ? currentValueColumn : (numeric[0] || null))
 				: currentValueColumn;
 			updateActiveDatasetChartConfig({
 				pie: {
-					...dataset.configGraficos.pie,
+					...dataset.chartConfig.pie,
 					measureMode,
 					valueColumn: nextValueColumn,
 				},
@@ -434,14 +434,14 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 	if (innerSlider) {
 		innerSlider.addEventListener('input', () => syncSliderOutput(innerSlider));
 		innerSlider.addEventListener('change', () => {
-			const outerRadius = Number(outerSlider?.value || dataset.configGraficos.pie.outerRadius || PIE_CHART.defaultOuterRadius);
+			const outerRadius = Number(outerSlider?.value || dataset.chartConfig.pie.outerRadius || PIE_CHART.defaultOuterRadius);
 			const innerRadius = Math.min(Number(innerSlider.value), Math.max(0, outerRadius - 8));
 			if (String(innerRadius) !== innerSlider.value) {
 				innerSlider.value = String(innerRadius);
 				syncSliderOutput(innerSlider);
 			}
 			updateActiveDatasetChartConfig({
-				pie: { ...dataset.configGraficos.pie, innerRadius },
+				pie: { ...dataset.chartConfig.pie, innerRadius },
 			});
 			onConfigChanged?.();
 		});
@@ -451,14 +451,14 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 		outerSlider.addEventListener('input', () => syncSliderOutput(outerSlider));
 		outerSlider.addEventListener('change', () => {
 			const outerRadius = Number(outerSlider.value);
-			const currentInner = Number(innerSlider?.value || dataset.configGraficos.pie.innerRadius || PIE_CHART.defaultInnerRadius);
+			const currentInner = Number(innerSlider?.value || dataset.chartConfig.pie.innerRadius || PIE_CHART.defaultInnerRadius);
 			const innerRadius = Math.min(currentInner, Math.max(0, outerRadius - 8));
 			if (innerSlider && String(innerRadius) !== innerSlider.value) {
 				innerSlider.value = String(innerRadius);
 				syncSliderOutput(innerSlider);
 			}
 			updateActiveDatasetChartConfig({
-				pie: { ...dataset.configGraficos.pie, outerRadius, innerRadius },
+				pie: { ...dataset.chartConfig.pie, outerRadius, innerRadius },
 			});
 			onConfigChanged?.();
 		});
@@ -480,7 +480,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				syncSliderOutput(pieZoomSlider);
 			}
 			updateActiveDatasetChartConfig({
-				pie: { ...dataset.configGraficos.pie, zoomScale: PIE_CHART.defaultZoomScale },
+				pie: { ...dataset.chartConfig.pie, zoomScale: PIE_CHART.defaultZoomScale },
 			});
 			onConfigChanged?.();
 		});
@@ -503,14 +503,14 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const presetColors = COLOR_PRESETS[presetName] || [];
 			if (presetColors.length === 0 || sectorValues.length === 0) return;
 
-			const nextSliceColors = { ...(dataset.configGraficos.pie.customSliceColors || {}) };
+			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
 			sectorValues.forEach((sector, index) => {
 				nextSliceColors[sector] = presetColors[index % presetColors.length];
 			});
 
 			updateActiveDatasetChartConfig({
 				pie: {
-					...dataset.configGraficos.pie,
+					...dataset.chartConfig.pie,
 					colorScheme: presetName,
 					customSliceColors: nextSliceColors,
 				},
@@ -544,12 +544,12 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const sector = input.dataset.colorItem;
 			if (!sector) return;
 
-			const nextSliceColors = { ...(dataset.configGraficos.pie.customSliceColors || {}) };
+			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
 			nextSliceColors[sector] = normalizeHexColor(input.value, CHART_COLORS.pie);
 
 			updateActiveDatasetChartConfig({
 				pie: {
-					...dataset.configGraficos.pie,
+					...dataset.chartConfig.pie,
 					customSliceColors: nextSliceColors,
 				},
 			});
@@ -568,8 +568,8 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
  * @returns {{ category: string | null, valueColumn: string | null }}
  */
 export function computeDefaults(dataset, ctx) {
-	const currentCat = dataset.configGraficos?.pie?.category;
-	const currentVal = dataset.configGraficos?.pie?.valueColumn;
+	const currentCat = dataset.chartConfig?.pie?.category;
+	const currentVal = dataset.chartConfig?.pie?.valueColumn;
 	return {
 		category: ctx.baseCategoricalOrAll.includes(currentCat)
 			? currentCat

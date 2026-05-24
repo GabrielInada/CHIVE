@@ -49,17 +49,17 @@ export function setupTabListeners(onChartConfigChange, onGlobalFilterOpen) {
 
 	tabPreview.addEventListener('click', () => {
 		if (!currentOnChartConfigChange) return;
-		currentOnChartConfigChange({ aba: 'preview' });
+		currentOnChartConfigChange({ activeTab: 'preview' });
 	});
 
 	tabCharts.addEventListener('click', () => {
 		if (!currentOnChartConfigChange) return;
-		currentOnChartConfigChange({ aba: 'charts' });
+		currentOnChartConfigChange({ activeTab: 'charts' });
 	});
 
 	tabPanel.addEventListener('click', () => {
 		if (!currentOnChartConfigChange) return;
-		currentOnChartConfigChange({ aba: 'panel' });
+		currentOnChartConfigChange({ activeTab: 'panel' });
 	});
 
 	if (globalFilterTrigger) {

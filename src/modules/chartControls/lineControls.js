@@ -63,7 +63,7 @@ function buildAggregateOptions() {
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
 export function createLineChartControls(dataset, numericOptions = [], dateOptions = [], allOptions = []) {
-	const config = dataset.configGraficos.line;
+	const config = dataset.chartConfig.line;
 	const disabled = !config.enabled;
 
 	// ====== DATA & AGGREGATION SECTION ======
@@ -225,7 +225,7 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 		xSelect.addEventListener('change', () => {
 			const selected = allOptions.includes(xSelect.value) ? xSelect.value : null;
 			updateActiveDatasetChartConfig({
-				line: { ...dataset.configGraficos.line, x: selected },
+				line: { ...dataset.chartConfig.line, x: selected },
 			});
 			onConfigChanged?.();
 		});
@@ -236,7 +236,7 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 		ySelect.addEventListener('change', () => {
 			const selected = numericOptions.includes(ySelect.value) ? ySelect.value : null;
 			updateActiveDatasetChartConfig({
-				line: { ...dataset.configGraficos.line, y: selected },
+				line: { ...dataset.chartConfig.line, y: selected },
 			});
 			onConfigChanged?.();
 		});
@@ -285,8 +285,8 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
  * @returns {{ x: string | null, y: string | null }}
  */
 export function computeDefaults(dataset, ctx) {
-	const currentX = dataset.configGraficos?.line?.x;
-	const currentY = dataset.configGraficos?.line?.y;
+	const currentX = dataset.chartConfig?.line?.x;
+	const currentY = dataset.chartConfig?.line?.y;
 	const xDefault = ctx.allColumns.includes(currentX)
 		? currentX
 		: (ctx.dates[0] ?? ctx.numeric[0] ?? ctx.allColumns[0] ?? null);

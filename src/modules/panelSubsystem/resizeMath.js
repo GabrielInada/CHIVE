@@ -41,7 +41,7 @@ export function normalizeHexColor(color, fallback = '#5d645d') {
 
 /**
  * Compute a layout-aware minimum height in pixels. For templates with a
- * horizontal split (`layout-1x2`, `layout-hero2`), a small split percentage
+ * horizontal split (`template-1x2`, `template-hero2`), a small split percentage
  * makes one row tiny — this function derives the height that keeps the
  * smaller row at least `SLOT_MIN_HEIGHT` tall. Result is clamped to
  * `[220, 620]`.
@@ -62,11 +62,11 @@ export function computeDynamicMinHeight(templateId, proportions) {
 
 	let dynamicMinHeight = BASE_MIN_HEIGHT;
 
-	if (templateId === 'layout-1x2') {
+	if (templateId === 'template-1x2') {
 		const split = clampPercent(proportions?.split ?? 50, 20, 80) / 100;
 		const smallestRow = Math.min(split, 1 - split);
 		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
-	} else if (templateId === 'layout-hero2') {
+	} else if (templateId === 'template-hero2') {
 		const splitRight = clampPercent(proportions?.splitRight ?? 50, 20, 80) / 100;
 		const smallestRow = Math.min(splitRight, 1 - splitRight);
 		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);

@@ -59,7 +59,7 @@ function buildColumnSelectOptions(columns) {
  */
 export function createTinControls(dataset, numericOptions, allColumns = []) {
 	void allColumns;
-	const config = dataset.configGraficos.tin;
+	const config = dataset.chartConfig.tin;
 	const disabled = !config.enabled;
 
 	const dataControls = [];
@@ -489,7 +489,7 @@ function pickPreferred(options, preferredIndex, avoid = []) {
  * @returns {{ x: string | null, y: string | null, z: string | null }}
  */
 export function computeDefaults(dataset, ctx) {
-	const config = dataset.configGraficos?.tin || {};
+	const config = dataset.chartConfig?.tin || {};
 	const numerics = ctx.numeric || [];
 	const currentX = numerics.includes(config.x) ? config.x : (numerics[0] ?? null);
 	const currentY = numerics.includes(config.y) && config.y !== currentX

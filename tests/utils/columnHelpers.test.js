@@ -13,30 +13,30 @@ import {
 
 describe('columnHelpers', () => {
   const columns = [
-    { nome: 'a', tipo: 'numero' },
-    { nome: 'b', tipo: 'texto' },
-    { nome: 'c', tipo: 'numero' },
-    { nome: 'd', tipo: 'data' },
+    { name: 'a', type: 'number' },
+    { name: 'b', type: 'text' },
+    { name: 'c', type: 'number' },
+    { name: 'd', type: 'date' },
   ];
 
-  it('filtra colunas visiveis por selecao explicita ou dataset default', () => {
-    const dataset = { colunas: columns, colunasSelecionadas: ['a', 'c'] };
-    expect(filterVisibleColumns(dataset).map(c => c.nome)).toEqual(['a', 'c']);
-    expect(filterVisibleColumns(dataset, ['b']).map(c => c.nome)).toEqual(['b']);
+  it('filtra columns visiveis por selecao explicita ou dataset default', () => {
+    const dataset = { columns: columns, selectedColumns: ['a', 'c'] };
+    expect(filterVisibleColumns(dataset).map(c => c.name)).toEqual(['a', 'c']);
+    expect(filterVisibleColumns(dataset, ['b']).map(c => c.name)).toEqual(['b']);
   });
 
-  it('retorna colunas numericas e nomes numericos', () => {
-    expect(getNumericColumns(columns).map(c => c.nome)).toEqual(['a', 'c']);
+  it('retorna columns numericas e nomes numericos', () => {
+    expect(getNumericColumns(columns).map(c => c.name)).toEqual(['a', 'c']);
     expect(getNumericColumnNames(columns)).toEqual(['a', 'c']);
   });
 
-  it('retorna colunas categoricas (inclui datas) e nomes', () => {
-    expect(getCategoricalColumns(columns).map(c => c.nome)).toEqual(['b', 'd']);
+  it('retorna columns categoricas (inclui datas) e nomes', () => {
+    expect(getCategoricalColumns(columns).map(c => c.name)).toEqual(['b', 'd']);
     expect(getCategoricalColumnNames(columns)).toEqual(['b', 'd']);
   });
 
-  it('retorna colunas de data e nomes de data', () => {
-    expect(getDateColumns(columns).map(c => c.nome)).toEqual(['d']);
+  it('retorna columns de data e nomes de data', () => {
+    expect(getDateColumns(columns).map(c => c.name)).toEqual(['d']);
     expect(getDateColumnNames(columns)).toEqual(['d']);
   });
 });

@@ -13,41 +13,41 @@
  * @type {Object<PanelTemplateId, { cssClass: string, slots: string[], labelKey: string }>}
  */
 export const PANEL_LAYOUTS = {
-	'layout-single': {
-		cssClass: 'layout-single',
+	'template-single': {
+		cssClass: 'template-single',
 		slots: ['slot-1'],
-		labelKey: 'chive-panel-layout-single',
+		labelKey: 'chive-panel-template-single',
 	},
-	'layout-2col': {
-		cssClass: 'layout-2col',
+	'template-2col': {
+		cssClass: 'template-2col',
 		slots: ['slot-1', 'slot-2'],
-		labelKey: 'chive-panel-layout-2col',
+		labelKey: 'chive-panel-template-2col',
 	},
-	'layout-hero2': {
-		cssClass: 'layout-hero2',
+	'template-hero2': {
+		cssClass: 'template-hero2',
 		slots: ['slot-1', 'slot-2', 'slot-3'],
-		labelKey: 'chive-panel-layout-hero2',
+		labelKey: 'chive-panel-template-hero2',
 	},
-	'layout-3col': {
-		cssClass: 'layout-3col',
+	'template-3col': {
+		cssClass: 'template-3col',
 		slots: ['slot-1', 'slot-2', 'slot-3'],
-		labelKey: 'chive-panel-layout-3col',
+		labelKey: 'chive-panel-template-3col',
 	},
-	'layout-1x2': {
-		cssClass: 'layout-1x2',
+	'template-1x2': {
+		cssClass: 'template-1x2',
 		slots: ['slot-1', 'slot-2'],
-		labelKey: 'chive-panel-layout-1x2',
+		labelKey: 'chive-panel-template-1x2',
 	},
 };
 
 /**
- * Look up a layout config by id. Unknown ids fall back to `'layout-2col'`.
+ * Look up a layout config by id. Unknown ids fall back to `'template-2col'`.
  *
  * @param {*} layoutId
  * @returns {{ cssClass: string, slots: string[], labelKey: string }}
  */
 export function getLayoutConfig(layoutId) {
-	return PANEL_LAYOUTS[layoutId] || PANEL_LAYOUTS['layout-2col'];
+	return PANEL_LAYOUTS[layoutId] || PANEL_LAYOUTS['template-2col'];
 }
 
 /**

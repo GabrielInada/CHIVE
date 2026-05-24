@@ -52,12 +52,12 @@ function truncate(text, maxLen) {
  * `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {Array<Object<string, *>>} rows - Source rows.
  * @param {string} colunaCategoria - Categorical column name (required).
  * @param {Object} [opcoes={}] - Render options bag.
  * @returns {void}
  */
-export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
+export function renderTreeMap(container, rows, colunaCategoria, opcoes = {}) {
 	if (!container || !colunaCategoria) return { ok: false };
 
 	const measureMode = TREEMAP_CHART.measureModes.includes(opcoes.measureMode)
@@ -90,14 +90,14 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 	// Aggregate data
 	const hasValueColumn = measureMode === 'count'
 		? true
-		: dados.some(linha => Object.prototype.hasOwnProperty.call(linha, valueColumn));
+		: rows.some(linha => Object.prototype.hasOwnProperty.call(linha, valueColumn));
 
 	if (measureMode === 'sum' && (!valueColumn || !hasValueColumn)) {
 		return { ok: false, reason: 'no-value-column' };
 	}
 
 	const contador = new Map();
-	dados.forEach(linha => {
+	rows.forEach(linha => {
 		const valorBruto = linha[colunaCategoria];
 		const categoria = isNullish(valorBruto) || valorBruto === ''
 			? '—'
@@ -151,7 +151,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 
 	const rootData = {
 		name: 'root',
-		children: entradas.map(([nome, valor]) => ({ name: nome, value: valor })),
+		children: entradas.map(([name, value]) => ({ name, value })),
 	};
 
 	const root = hierarchy(rootData)

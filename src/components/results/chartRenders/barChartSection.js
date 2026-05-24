@@ -15,7 +15,7 @@ import { showChartMessage } from './sharedRenderHelpers.js';
  * Render the bar-chart section for the current dataset.
  *
  * @param {Object} args
- * @param {Object} args.config - The bar config block (`configGraficos.bar`).
+ * @param {Object} args.config - The bar config block (`chartConfig.bar`).
  * @param {Array<Object<string, *>>} args.rows - Already filtered by the global filter.
  * @param {Object} args.filterCallbacks - Bag of tooltip filter action handlers.
  * @returns {void}

@@ -9,11 +9,11 @@ describe('chunkedNormalize', () => {
 			{ a: '1.5', b: 'hello' },
 			{ a: '2.5', b: 'world' },
 		];
-		const colunas = [
-			{ nome: 'a', tipo: 'numero' },
-			{ nome: 'b', tipo: 'texto' },
+		const columns = [
+			{ name: 'a', type: 'number' },
+			{ name: 'b', type: 'text' },
 		];
-		const out = chunkedNormalize(rows, colunas, '.');
+		const out = chunkedNormalize(rows, columns, '.');
 		expect(out).toEqual([
 			{ a: 1.5, b: 'hello' },
 			{ a: 2.5, b: 'world' },
@@ -22,8 +22,8 @@ describe('chunkedNormalize', () => {
 
 	it('handles comma decimal separator', () => {
 		const rows = [{ a: '1,5' }];
-		const colunas = [{ nome: 'a', tipo: 'numero' }];
-		expect(chunkedNormalize(rows, colunas, ',')).toEqual([{ a: 1.5 }]);
+		const columns = [{ name: 'a', type: 'number' }];
+		expect(chunkedNormalize(rows, columns, ',')).toEqual([{ a: 1.5 }]);
 	});
 
 	it('preserves null/empty/undefined numeric cells without coercing them', () => {
@@ -31,11 +31,11 @@ describe('chunkedNormalize', () => {
 			{ a: '', b: null },
 			{ a: '5', b: undefined },
 		];
-		const colunas = [
-			{ nome: 'a', tipo: 'numero' },
-			{ nome: 'b', tipo: 'texto' },
+		const columns = [
+			{ name: 'a', type: 'number' },
+			{ name: 'b', type: 'text' },
 		];
-		const out = chunkedNormalize(rows, colunas, '.');
+		const out = chunkedNormalize(rows, columns, '.');
 		expect(out[0]).toEqual({ a: '', b: null });
 		expect(out[1]).toEqual({ a: 5, b: undefined });
 	});
@@ -46,8 +46,8 @@ describe('chunkedNormalize', () => {
 			{ d: 'not-a-date' },
 			{ d: '' },
 		];
-		const colunas = [{ nome: 'd', tipo: 'data' }];
-		const out = chunkedNormalize(rows, colunas, '.');
+		const columns = [{ name: 'd', type: 'date' }];
+		const out = chunkedNormalize(rows, columns, '.');
 		expect(out[0].d).toBeInstanceOf(Date);
 		expect(out[0].d.getUTCFullYear()).toBe(2024);
 		expect(out[1].d).toBeNull();
@@ -56,9 +56,9 @@ describe('chunkedNormalize', () => {
 
 	it('invokes onChunk between batches with running counts', () => {
 		const rows = Array.from({ length: 50 }, (_, i) => ({ a: String(i) }));
-		const colunas = [{ nome: 'a', tipo: 'numero' }];
+		const columns = [{ name: 'a', type: 'number' }];
 		const onChunk = vi.fn();
-		chunkedNormalize(rows, colunas, '.', onChunk, 20);
+		chunkedNormalize(rows, columns, '.', onChunk, 20);
 		expect(onChunk).toHaveBeenCalledTimes(3);
 		expect(onChunk.mock.calls[0]).toEqual([20, 50]);
 		expect(onChunk.mock.calls[1]).toEqual([40, 50]);
@@ -81,11 +81,11 @@ describe('runIngest', () => {
 
 		const done = msgs.find(m => m.type === 'done');
 		expect(done).toBeTruthy();
-		expect(done.result.dados).toEqual([
+		expect(done.result.rows).toEqual([
 			{ a: 1, b: 2 },
 			{ a: 3, b: 4 },
 		]);
-		expect(done.result.colunas.map(c => c.nome)).toEqual(['a', 'b']);
+		expect(done.result.columns.map(c => c.name)).toEqual(['a', 'b']);
 		expect(done.result.statsNumeric.length).toBe(2);
 		expect(done.result.truncatedFrom).toBeNull();
 	});
@@ -96,7 +96,7 @@ describe('runIngest', () => {
 		runIngest({ id: 'test', kind: 'csv', text: csv, options: { rowLimit: 10 } }, post);
 
 		const done = msgs.find(m => m.type === 'done');
-		expect(done.result.dados).toHaveLength(10);
+		expect(done.result.rows).toHaveLength(10);
 		expect(done.result.truncatedFrom).toBe(100);
 	});
 
@@ -107,15 +107,15 @@ describe('runIngest', () => {
 			post,
 		);
 		const done = msgs.find(m => m.type === 'done');
-		expect(done.result.colunas.map(c => c.nome)).toEqual(['a', 'c']);
-		expect(done.result.dados).toEqual([{ a: 1, c: 3 }]);
+		expect(done.result.columns.map(c => c.name)).toEqual(['a', 'c']);
+		expect(done.result.rows).toEqual([{ a: 1, c: 3 }]);
 	});
 
 	it('parses JSON arrays', () => {
 		const { post, msgs } = collectMessages();
 		runIngest({ id: 'test', kind: 'json', text: '[{"a":1},{"a":2}]' }, post);
 		const done = msgs.find(m => m.type === 'done');
-		expect(done.result.dados).toEqual([{ a: 1 }, { a: 2 }]);
+		expect(done.result.rows).toEqual([{ a: 1 }, { a: 2 }]);
 	});
 
 	it('progress percentages are non-decreasing and reach 100 by the final message', () => {

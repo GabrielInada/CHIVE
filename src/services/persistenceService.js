@@ -5,9 +5,15 @@
  * and restores it on boot. UI preferences live in localStorage (small payload,
  * no transaction overhead, matches the existing locale pattern).
  *
- * Schema — DB `chive-state` v1:
+ * Schema — DB `chive-state` v2:
  *   - `datasets` (keyPath: 'id')      — one record per dataset
  *   - `panel`    (keyPath: 'key')     — singleton record { key: 'singleton', ... }
+ *
+ * v1→v2 upgrade: drops both stores and clears localStorage UI prefs. The
+ * field names changed shape in v2 (English: `name`/`rows`/`columns`/`type`
+ * instead of `nome`/`dados`/`colunas`/`tipo`), and migrating in place is
+ * not worth the complexity given how cheap re-uploading is. Existing users
+ * re-upload once.
  *
  * Caller injects `replaceAllState` and a `getState` function so this service
  * does not import from appState — keeps the dependency graph one-way and
@@ -24,7 +30,7 @@ import { onStateChange, STATE_EVENTS } from '../modules/state/stateEvents.js';
 import { debounce } from '../utils/debounce.js';
 
 const DB_NAME = 'chive-state';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_DATASETS = 'datasets';
 const STORE_PANEL = 'panel';
 const PANEL_KEY = 'singleton';
@@ -49,8 +55,27 @@ export function isPersistenceAvailable() {
 function openDb() {
 	return new Promise((resolve, reject) => {
 		const req = indexedDB.open(DB_NAME, DB_VERSION);
-		req.onupgradeneeded = () => {
+		req.onupgradeneeded = (event) => {
 			const db = req.result;
+			// v1→v2: field names changed shape (English rename). Drop the
+			// stores so old records don't fail validation and silently disappear.
+			// Also clear localStorage so the persisted `sidebarMode: 'dados'`
+			// value (renamed to `'data'`) doesn't leave the sidebar in an
+			// unrendered state for existing users. Guarded by `oldVersion > 0`
+			// so the first-visit case (oldVersion === 0) does not wipe state.
+			if (event.oldVersion > 0 && event.oldVersion < 2) {
+				if (db.objectStoreNames.contains(STORE_DATASETS)) {
+					db.deleteObjectStore(STORE_DATASETS);
+				}
+				if (db.objectStoreNames.contains(STORE_PANEL)) {
+					db.deleteObjectStore(STORE_PANEL);
+				}
+				try {
+					localStorage.removeItem(UI_LOCAL_STORAGE_KEY);
+				} catch {
+					// Quota / sandboxed — best effort.
+				}
+			}
 			if (!db.objectStoreNames.contains(STORE_DATASETS)) {
 				db.createObjectStore(STORE_DATASETS, { keyPath: 'id' });
 			}
@@ -126,12 +151,12 @@ function isPlainObject(value) {
 // Drop chart-spec entries that aren't plain objects — renderers read sub-keys
 // (.color, .category, …) and would explode on a string/number/array. Missing
 // keys are absorbed downstream by mergeChartConfigWithDefaults.
-function sanitizeConfigGraficos(configGraficos) {
-	if (!isPlainObject(configGraficos)) return {};
+function sanitizeChartConfig(chartConfig) {
+	if (!isPlainObject(chartConfig)) return {};
 	const sanitized = {};
-	for (const [chartKey, chartConfig] of Object.entries(configGraficos)) {
-		if (isPlainObject(chartConfig)) {
-			sanitized[chartKey] = chartConfig;
+	for (const [chartKey, chartTypeConfig] of Object.entries(chartConfig)) {
+		if (isPlainObject(chartTypeConfig)) {
+			sanitized[chartKey] = chartTypeConfig;
 		}
 	}
 	return sanitized;
@@ -142,16 +167,16 @@ function sanitizeConfigGraficos(configGraficos) {
 function validateDatasetRecord(record) {
 	if (!isPlainObject(record)) return null;
 	if (!record.id) return null;
-	if (typeof record.nome !== 'string') return null;
-	if (!Array.isArray(record.dados)) return null;
-	if (!Array.isArray(record.colunas)) return null;
-	const colunasOk = record.colunas.every(
-		col => isPlainObject(col) && typeof col.nome === 'string' && typeof col.tipo === 'string'
+	if (typeof record.name !== 'string') return null;
+	if (!Array.isArray(record.rows)) return null;
+	if (!Array.isArray(record.columns)) return null;
+	const colunasOk = record.columns.every(
+		col => isPlainObject(col) && typeof col.name === 'string' && typeof col.type === 'string'
 	);
 	if (!colunasOk) return null;
 	return {
 		...record,
-		configGraficos: sanitizeConfigGraficos(record.configGraficos),
+		chartConfig: sanitizeChartConfig(record.chartConfig),
 	};
 }
 
@@ -159,8 +184,8 @@ function validateDatasetRecord(record) {
  * Restore persisted state into appState. No-op on first visit, when
  * IndexedDB is unavailable, or when `replaceAllState` is not a function.
  *
- * Dataset records that fail validation (missing `id`, malformed `colunas`,
- * non-array `dados`, …) are dropped with a console warning; the remaining
+ * Dataset records that fail validation (missing `id`, malformed `columns`,
+ * non-array `rows`, …) are dropped with a console warning; the remaining
  * datasets are still hydrated.
  *
  * @param {Object} hooks
@@ -254,7 +279,7 @@ export async function persistState(snapshot) {
 		blocks: Array.isArray(panel.blocks) ? panel.blocks : [],
 		charts: Array.isArray(panel.charts) ? panel.charts : [],
 		slots: panel.slots && typeof panel.slots === 'object' ? panel.slots : {},
-		layout: typeof panel.layout === 'string' ? panel.layout : 'layout-2col',
+		layout: typeof panel.layout === 'string' ? panel.layout : 'template-2col',
 		nextBlockId: Number.isInteger(panel.nextBlockId) ? panel.nextBlockId : 1,
 		nextChartId: Number.isInteger(panel.nextChartId) ? panel.nextChartId : 0,
 		activeDatasetId,

@@ -28,11 +28,11 @@ export function createUiStateFacade({ appState, emitStateChange }) {
 	 * Switch the sidebar mode. No-op when the requested mode is already active.
 	 *
 	 * @param {SidebarMode} mode
-	 * @throws {Error} When `mode` is not one of `'dados' | 'viz' | 'panel'`.
+	 * @throws {Error} When `mode` is not one of `'data' | 'viz' | 'panel'`.
 	 * @fires STATE_EVENTS.SIDEBAR_MODE_CHANGED
 	 */
 	function setSidebarMode(mode) {
-		if (!['dados', 'viz', 'panel'].includes(mode)) {
+		if (!['data', 'viz', 'panel'].includes(mode)) {
 			throw new Error(`Invalid sidebar mode: ${mode}`);
 		}
 		if (appState.ui.sidebarMode === mode) {

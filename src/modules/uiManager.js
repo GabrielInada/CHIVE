@@ -3,7 +3,7 @@
  *
  * Manages UI state:
  *   - Active tab switching (preview, charts, panel)
- *   - Sidebar mode (dados, viz, panel)
+ *   - Sidebar mode (rows, viz, panel)
  *   - UI element visibility and states
  *
  * @typedef {import('../types.js').SidebarMode} SidebarMode
@@ -34,7 +34,7 @@ export function getActiveTab() {
  * Switch to a tab and apply the side-effect chain:
  *   1. Toggle `active`/`inactive` classes on `[data-aba]` buttons.
  *   2. Hide all `tab-content-*` panels except the one matching `tabName`.
- *   3. Update the sidebar mode to match (`preview → dados`, `charts → viz`, `panel → panel`) via `setSidebarMode`.
+ *   3. Update the sidebar mode to match (`preview → rows`, `charts → viz`, `panel → panel`) via `setSidebarMode`.
  *
  * No-op when `tabName` is not a valid tab name.
  *
@@ -80,12 +80,12 @@ export function switchTab(tabName) {
  */
 function updateSidebarForTab(tabName) {
 	const sidebarMap = {
-		preview: 'dados',
+		preview: 'data',
 		charts: 'viz',
 		panel: 'panel',
 	};
 
-	const newMode = sidebarMap[tabName] || 'dados';
+	const newMode = sidebarMap[tabName] || 'data';
 	setSidebarMode(newMode);
 	updateSidebarUI(newMode);
 }
@@ -99,7 +99,7 @@ function updateSidebarForTab(tabName) {
  */
 export function updateSidebarUI(mode) {
 	const sidebars = {
-		dados: document.getElementById('sidebar-panel-data'),
+		data: document.getElementById('sidebar-panel-data'),
 		viz: document.getElementById('sidebar-panel-viz'),
 		panel: document.getElementById('sidebar-panel-dashboard'),
 	};

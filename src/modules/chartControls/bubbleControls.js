@@ -110,8 +110,8 @@ function createNestingControls(config, categoryColumn, allColumns, disabled) {
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
 export function createBubbleChartControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
-	const config = dataset.configGraficos.bubble;
-	const disabled = !dataset.configGraficos.bubble.enabled;
+	const config = dataset.chartConfig.bubble;
+	const disabled = !dataset.chartConfig.bubble.enabled;
 	const measureMode = BUBBLE_CHART.measureModes.includes(config.measureMode)
 		? config.measureMode
 		: BUBBLE_CHART.defaultMeasureMode;
@@ -264,14 +264,14 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 	], dataset, 'bubble', onConfigChanged);
 
 	// Progressive nesting level listeners
-	const nestingColumns = resolveNestingColumnsFromConfig(dataset.configGraficos.bubble);
+	const nestingColumns = resolveNestingColumnsFromConfig(dataset.chartConfig.bubble);
 	const maxLevels = nestingColumns.length + 1;
 	for (let i = 0; i < maxLevels; i++) {
 		const selectEl = document.getElementById(`viz-select-bubble-nesting-level-${i}`);
 		if (!selectEl) continue;
 		const levelIndex = i;
 		selectEl.addEventListener('change', () => {
-			const currentNesting = resolveNestingColumnsFromConfig(dataset.configGraficos.bubble);
+			const currentNesting = resolveNestingColumnsFromConfig(dataset.chartConfig.bubble);
 			const newValue = selectEl.value || null;
 			if (newValue) {
 				// Set this level and truncate deeper levels
@@ -279,7 +279,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 				updated[levelIndex] = newValue;
 				updateActiveDatasetChartConfig({
 					bubble: {
-						...dataset.configGraficos.bubble,
+						...dataset.chartConfig.bubble,
 						nestingColumns: updated,
 						groupColumn: updated[0] || null,
 					},
@@ -289,7 +289,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 				const updated = currentNesting.slice(0, levelIndex);
 				updateActiveDatasetChartConfig({
 					bubble: {
-						...dataset.configGraficos.bubble,
+						...dataset.chartConfig.bubble,
 						nestingColumns: updated,
 						groupColumn: updated[0] || null,
 					},
@@ -305,12 +305,12 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 			const nextMode = BUBBLE_CHART.measureModes.includes(measureSelect.value)
 				? measureSelect.value
 				: BUBBLE_CHART.defaultMeasureMode;
-			const currentValueColumn = numericOptions.includes(dataset.configGraficos.bubble?.valueColumn)
-				? dataset.configGraficos.bubble?.valueColumn
+			const currentValueColumn = numericOptions.includes(dataset.chartConfig.bubble?.valueColumn)
+				? dataset.chartConfig.bubble?.valueColumn
 				: null;
 			updateActiveDatasetChartConfig({
 				bubble: {
-					...dataset.configGraficos.bubble,
+					...dataset.chartConfig.bubble,
 					measureMode: nextMode,
 					valueColumn: nextMode === 'count' ? null : (currentValueColumn || numericOptions[0] || null),
 				},
@@ -324,7 +324,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 		valueSelect.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
 				bubble: {
-					...dataset.configGraficos.bubble,
+					...dataset.chartConfig.bubble,
 					valueColumn: numericOptions.includes(valueSelect.value) ? valueSelect.value : null,
 				},
 			});
@@ -349,9 +349,9 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
  * @returns {{ category: string | null, valueColumn: string | null }}
  */
 export function computeDefaults(dataset, ctx) {
-	const currentCat = dataset.configGraficos?.bubble?.category;
-	const currentVal = dataset.configGraficos?.bubble?.valueColumn;
-	const measureMode = dataset.configGraficos?.bubble?.measureMode;
+	const currentCat = dataset.chartConfig?.bubble?.category;
+	const currentVal = dataset.chartConfig?.bubble?.valueColumn;
+	const measureMode = dataset.chartConfig?.bubble?.measureMode;
 	const valueColumn = measureMode !== 'count'
 		? (ctx.numeric.includes(currentVal) ? currentVal : (ctx.numeric[0] || null))
 		: currentVal;

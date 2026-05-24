@@ -33,8 +33,8 @@ import {
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
 export function createNetworkGraphControls(dataset, allOptions, numericOptions, categoryOptions) {
-	const config = dataset.configGraficos.network;
-	const disabled = !dataset.configGraficos.network.enabled;
+	const config = dataset.chartConfig.network;
+	const disabled = !dataset.chartConfig.network.enabled;
 
 	// ====== DATA & AGGREGATION SECTION (Node/edge definitions) ======
 	const dataControls = [];
@@ -284,7 +284,7 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 			}
 			updateActiveDatasetChartConfig({
 				network: {
-					...dataset.configGraficos.network,
+					...dataset.chartConfig.network,
 					zoomScale: NETWORK_GRAPH.defaultZoomScale,
 				},
 			});
@@ -319,8 +319,8 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
  * @returns {{ source: string | null, target: string | null }}
  */
 export function computeDefaults(dataset, ctx) {
-	const currentSource = dataset.configGraficos?.network?.source;
-	const currentTarget = dataset.configGraficos?.network?.target;
+	const currentSource = dataset.chartConfig?.network?.source;
+	const currentTarget = dataset.chartConfig?.network?.target;
 	const sourcePadrao = ctx.allColumns.includes(currentSource)
 		? currentSource
 		: (ctx.allColumns[0] || null);

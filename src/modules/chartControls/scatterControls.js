@@ -39,8 +39,8 @@ import { triggerLiveRender } from './livePreview.js';
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
 export function createScatterPlotControls(dataset, numericOptions, allOptions = []) {
-	const config = dataset.configGraficos.scatter;
-	const disabled = !dataset.configGraficos.scatter.enabled;
+	const config = dataset.chartConfig.scatter;
+	const disabled = !dataset.chartConfig.scatter.enabled;
 	const categoryOptions = allOptions.filter(option => !numericOptions.includes(option));
 
 	// ====== DATA & AGGREGATION SECTION (X/Y axes) ======
@@ -381,10 +381,10 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 		if (!select) return;
 		select.addEventListener('change', () => {
 			const selected = allOptions.includes(select.value) ? select.value : null;
-			const currentScale = dataset.configGraficos.scatter?.[scaleKey] === 'log' ? 'log' : 'linear';
+			const currentScale = dataset.chartConfig.scatter?.[scaleKey] === 'log' ? 'log' : 'linear';
 			updateActiveDatasetChartConfig({
 				scatter: {
-					...dataset.configGraficos.scatter,
+					...dataset.chartConfig.scatter,
 					[axisKey]: selected,
 					[scaleKey]: numeric.includes(selected) ? currentScale : 'linear',
 				},
@@ -401,12 +401,12 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 		{
 			id: 'viz-select-scatter-xscale',
 			key: 'xScale',
-			transform: v => (numeric.includes(dataset.configGraficos.scatter?.x) && v === 'log' ? 'log' : 'linear'),
+			transform: v => (numeric.includes(dataset.chartConfig.scatter?.x) && v === 'log' ? 'log' : 'linear'),
 		},
 		{
 			id: 'viz-select-scatter-yscale',
 			key: 'yScale',
-			transform: v => (numeric.includes(dataset.configGraficos.scatter?.y) && v === 'log' ? 'log' : 'linear'),
+			transform: v => (numeric.includes(dataset.chartConfig.scatter?.y) && v === 'log' ? 'log' : 'linear'),
 		},
 		{ id: 'viz-select-scatter-radius', key: 'radius', transform: v => Number(v) },
 		{ id: 'viz-select-scatter-opacity', key: 'opacity', transform: v => Number(v) },
@@ -435,12 +435,12 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 		colorModeSelect.addEventListener('change', () => {
 			const value = colorModeSelect.value;
 			const availableFields = value === 'category' ? categorical : numeric;
-			const currentField = dataset.configGraficos.scatter.colorField;
-			const currentRegression = dataset.configGraficos.scatter.regression || {};
+			const currentField = dataset.chartConfig.scatter.colorField;
+			const currentRegression = dataset.chartConfig.scatter.regression || {};
 			const nextRegressionMode = value === 'category' ? currentRegression.mode : 'overall';
 			updateActiveDatasetChartConfig({
 				scatter: {
-					...dataset.configGraficos.scatter,
+					...dataset.chartConfig.scatter,
 					colorMode: value === 'uniform' ? 'uniform' : value,
 					colorField: value === 'uniform'
 						? null
@@ -473,7 +473,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 		inputScatterColor.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
 				scatter: {
-					...dataset.configGraficos.scatter,
+					...dataset.chartConfig.scatter,
 					colorMode: 'uniform',
 					colorField: null,
 					colorFieldType: null,
@@ -508,7 +508,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 	setupSliderListener('viz-slider-scatter-size-max', 'sizeMax', dataset, 'scatter', onConfigChanged);
 
 	const updateRegression = patch => {
-		const currentScatter = dataset.configGraficos.scatter || {};
+		const currentScatter = dataset.chartConfig.scatter || {};
 		const currentRegression = currentScatter.regression || {};
 		updateActiveDatasetChartConfig({
 			scatter: {
@@ -536,7 +536,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 	if (regressionModeSelect) {
 		regressionModeSelect.addEventListener('change', () => {
 			const value = regressionModeSelect.value === 'perCategory' ? 'perCategory' : 'overall';
-			const currentScatter = dataset.configGraficos.scatter || {};
+			const currentScatter = dataset.chartConfig.scatter || {};
 			const nextScatter = {
 				...currentScatter,
 				regression: { ...(currentScatter.regression || {}), mode: value },
@@ -585,7 +585,7 @@ function pickPreferred(options, preferredIndex = 0, avoid = null) {
  * @returns {{ x: string | null, y: string | null, xScale: 'linear' | 'log', yScale: 'linear' | 'log' }}
  */
 export function computeDefaults(dataset, ctx) {
-	const config = dataset.configGraficos || {};
+	const config = dataset.chartConfig || {};
 	const currentX = config.scatter?.x;
 	const currentY = config.scatter?.y;
 	const numericInAll = ctx.numeric.filter(opt => ctx.allColumns.includes(opt));

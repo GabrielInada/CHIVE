@@ -18,8 +18,8 @@ function setupDom() {
 function resetAppStateForTest() {
   appState.replaceAllState({
     data: { datasets: [], activeIndex: -1 },
-    panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
-    ui: { sidebarMode: 'dados', previewRows: 10 },
+    panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+    ui: { sidebarMode: 'data', previewRows: 10 },
   });
 }
 
@@ -41,7 +41,7 @@ describe('panelManager multi-block canvas (phase 2)', () => {
   });
 
   it('renders one visual block for each panel block in state', () => {
-    appState.addPanelBlock('layout-single');
+    appState.addPanelBlock('template-single');
 
     renderCanvasPanel();
 
@@ -50,7 +50,7 @@ describe('panelManager multi-block canvas (phase 2)', () => {
   });
 
   it('applies border mode per block from block-local controls', () => {
-    const blockB = appState.addPanelBlock('layout-2col');
+    const blockB = appState.addPanelBlock('template-2col');
     renderCanvasPanel();
 
     const blockAId = appState.getState().panel.blocks[0].id;
@@ -85,7 +85,7 @@ describe('panelManager multi-block canvas (phase 2)', () => {
 
     const addTemplateSelect = document.querySelector('[data-panel-add-template]');
     expect(addTemplateSelect).toBeTruthy();
-    addTemplateSelect.value = 'layout-single';
+    addTemplateSelect.value = 'template-single';
     addTemplateSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
     const addBtn = document.querySelector('[data-panel-add-block]');
@@ -95,11 +95,11 @@ describe('panelManager multi-block canvas (phase 2)', () => {
 
     const state = appState.getState();
     expect(state.panel.blocks.length).toBe(2);
-    expect(state.panel.blocks[1].templateId).toBe('layout-single');
+    expect(state.panel.blocks[1].templateId).toBe('template-single');
   });
 
   it('moves block order down when clicking block down control', () => {
-    const secondId = appState.addPanelBlock('layout-single');
+    const secondId = appState.addPanelBlock('template-single');
 
     renderCanvasPanel();
 
@@ -152,12 +152,12 @@ describe('panelManager multi-block canvas (phase 2)', () => {
     const templateSelect = document.querySelector(`[data-panel-block-template="${blockId}"]`);
     expect(templateSelect).toBeTruthy();
 
-    templateSelect.value = 'layout-hero2';
+    templateSelect.value = 'template-hero2';
     templateSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
     const state = appState.getState();
     const block = state.panel.blocks.find(b => b.id === blockId);
-    expect(block.templateId).toBe('layout-hero2');
+    expect(block.templateId).toBe('template-hero2');
 
     const slot3 = document.querySelector(
       `.panel-block[data-panel-block-id="${blockId}"] [data-panel-slot="slot-3"]`
@@ -167,7 +167,7 @@ describe('panelManager multi-block canvas (phase 2)', () => {
 
   it('positions hero2 vertical handle within the right column rail', () => {
     const blockId = appState.getState().panel.blocks[0].id;
-    appState.setPanelBlockTemplate(blockId, 'layout-hero2');
+    appState.setPanelBlockTemplate(blockId, 'template-hero2');
     appState.updatePanelBlockProportions(blockId, { splitMain: 70, splitRight: 45 });
 
     renderCanvasPanel();
@@ -185,7 +185,7 @@ describe('panelManager multi-block canvas (phase 2)', () => {
 
   it('grows vertical-template block height at extreme split with limits', () => {
     const blockId = appState.getState().panel.blocks[0].id;
-    appState.setPanelBlockTemplate(blockId, 'layout-1x2');
+    appState.setPanelBlockTemplate(blockId, 'template-1x2');
     appState.updatePanelBlockProportions(blockId, { split: 80 });
 
     renderCanvasPanel();
@@ -242,9 +242,9 @@ describe('panelManager multi-block canvas (phase 2)', () => {
       dispatchEvent: () => false,
     });
 
-    const chartA = appState.addChartSnapshot({ nome: 'A', svgMarkup: '<svg />' });
-    const blockB = appState.addPanelBlock('layout-2col');
-    const chartB = appState.addChartSnapshot({ nome: 'B', svgMarkup: '<svg />' });
+    const chartA = appState.addChartSnapshot({ name: 'A', svgMarkup: '<svg />' });
+    const blockB = appState.addPanelBlock('template-2col');
+    const chartB = appState.addChartSnapshot({ name: 'B', svgMarkup: '<svg />' });
 
     const blockA = appState.getState().panel.blocks[0].id;
     appState.assignChartToPanelBlockSlot(blockA, 'slot-1', chartA);

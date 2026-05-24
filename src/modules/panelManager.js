@@ -107,7 +107,7 @@ function handleLayoutChange() {
 
 /**
  * Capture a chart's current state as a snapshot and add it to the panel.
- * Reads the active dataset, merges its `configGraficos` with chart defaults,
+ * Reads the active dataset, merges its `chartConfig` with chart defaults,
  * applies the global filter, and stores a {@link ChartSnapshot} via the
  * panel facade.
  *
@@ -127,20 +127,20 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 		const dataset = getActiveDataset();
 		if (!dataset) return fail('no-dataset');
 
-		const mergedConfig = mergeChartConfigWithDefaults(dataset.configGraficos);
-		const allColumnNames = Array.isArray(dataset.colunas)
-			? dataset.colunas.map(column => column?.nome).filter(Boolean)
+		const mergedConfig = mergeChartConfigWithDefaults(dataset.chartConfig);
+		const allColumnNames = Array.isArray(dataset.columns)
+			? dataset.columns.map(column => column?.name).filter(Boolean)
 			: [];
-		const numericColumnNames = getNumericColumnNames(dataset.colunas || []);
+		const numericColumnNames = getNumericColumnNames(dataset.columns || []);
 		const safeGlobalFilter = resolveGlobalFilterForColumns(mergedConfig.globalFilter, allColumnNames);
-		const filteredRows = applyGlobalFilterRules(dataset.dados || [], safeGlobalFilter, numericColumnNames);
+		const filteredRows = applyGlobalFilterRules(dataset.rows || [], safeGlobalFilter, numericColumnNames);
 
 		const chartId = addChartSnapshot({
-			nome: chartBaseName,
+			name: chartBaseName,
 			type,
 			config: structuredClone(mergedConfig[type] || {}),
 			dataSnapshot: structuredClone(filteredRows),
-			columnsSnapshot: structuredClone(dataset.colunas || []),
+			columnsSnapshot: structuredClone(dataset.columns || []),
 			metadata,
 			metaSummary: typeof metadata?.summary === 'string' ? metadata.summary : '',
 		});
@@ -283,7 +283,7 @@ export function initializeLayoutSelector() {
 }
 
 /**
- * Reset the panel to a single fresh `layout-2col` block and re-render.
+ * Reset the panel to a single fresh `template-2col` block and re-render.
  *
  * @fires STATE_EVENTS.PANEL_CLEARED
  */

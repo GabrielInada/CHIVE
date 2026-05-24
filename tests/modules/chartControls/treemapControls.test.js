@@ -27,7 +27,7 @@ import {
 
 function createDataset(overrides = {}) {
 	return {
-		configGraficos: {
+		chartConfig: {
 			treemap: {
 				enabled: true,
 				expanded: true,

@@ -27,7 +27,7 @@ describe('controlListenerHelpers setupColorInputListener', () => {
 
 	function makeDataset(initialColor) {
 		return {
-			configGraficos: {
+			chartConfig: {
 				bar: {
 					color: initialColor,
 				},

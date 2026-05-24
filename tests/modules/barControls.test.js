@@ -19,7 +19,7 @@ import { createBarChartControls, setupBarChartControlListeners } from '../../src
 
 function createDataset(measureMode = 'count', valueColumn = null) {
 	return {
-		configGraficos: {
+		chartConfig: {
 			bar: {
 				enabled: true,
 				category: 'categoria',
@@ -84,8 +84,8 @@ describe('barControls measure mode', () => {
 			}),
 		});
 
-		dataset.configGraficos.bar.measureMode = 'sum';
-		dataset.configGraficos.bar.valueColumn = null;
+		dataset.chartConfig.bar.measureMode = 'sum';
+		dataset.chartConfig.bar.valueColumn = null;
 		valueSelect.value = 'valor';
 		valueSelect.dispatchEvent(new Event('change', { bubbles: true }));
 		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
@@ -94,7 +94,7 @@ describe('barControls measure mode', () => {
 			}),
 		});
 
-		dataset.configGraficos.bar.valueColumn = 'valor';
+		dataset.chartConfig.bar.valueColumn = 'valor';
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({

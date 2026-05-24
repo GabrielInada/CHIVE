@@ -80,8 +80,8 @@ export function renderSidebarPanel(removeChartFromPanel) {
 
 		const titulo = document.createElement('span');
 		titulo.className = 'panel-item-title';
-		titulo.textContent = chart.nome; // textContent for XSS prevention
-		titulo.title = chart.nome;
+		titulo.textContent = chart.name; // textContent for XSS prevention
+		titulo.title = chart.name;
 
 		const metaResumo = typeof chart.metaSummary === 'string' ? chart.metaSummary.trim() : '';
 		const subtitulo = document.createElement('span');
@@ -339,7 +339,7 @@ export function fillLayoutSelect() {
 	const select = document.getElementById('select-panel-layout');
 	if (!select) return;
 	const blocks = getPanelBlocks();
-	const currentLayout = blocks[0]?.templateId || 'layout-2col';
+	const currentLayout = blocks[0]?.templateId || 'template-2col';
 	select.replaceChildren();
 
 	Object.entries(PANEL_LAYOUTS).forEach(([id, layout]) => {

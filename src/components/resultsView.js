@@ -115,11 +115,11 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   if (activeDataset) {
     const metaText = t(
       'chive-file-meta',
-      activeDataset.dados.length.toLocaleString(getLocale()),
-      activeDataset.colunas.length,
-      activeDataset.tamanho
+      activeDataset.rows.length.toLocaleString(getLocale()),
+      activeDataset.columns.length,
+      activeDataset.sizeLabel
     );
-    selectedMeta.textContent = `${activeDataset.nome} · ${metaText}`;
+    selectedMeta.textContent = `${activeDataset.name} · ${metaText}`;
     selectedMeta.style.display = 'block';
     selectedMeta.title = selectedMeta.textContent;
   } else {
@@ -356,21 +356,21 @@ export function renderDataInterface(
   document.getElementById('empty-state').style.display = 'none';
   document.getElementById('data-state').style.display = 'flex';
 
-  const columnNames = columns.map(column => column.nome);
+  const columnNames = columns.map(column => column.name);
   const selectedNames = new Set(Array.isArray(selectedColumns) ? selectedColumns : columnNames);
-  const visibleColumns = columns.filter(column => selectedNames.has(column.nome));
+  const visibleColumns = columns.filter(column => selectedNames.has(column.name));
   const visibleNumericColumns = getNumericColumns(visibleColumns);
 
   const config = mergeChartConfigWithDefaults(chartConfig);
 
   // Detect active filter
-  const numericNames = columns.filter(c => c.tipo === 'numero').map(c => c.nome);
-  const textNames = columns.filter(c => c.tipo === 'texto').map(c => c.nome);
+  const numericNames = columns.filter(c => c.type === 'number').map(c => c.name);
+  const textNames = columns.filter(c => c.type === 'text').map(c => c.name);
   const selectedArray = [...selectedNames];
   const activeFilter =
-    selectedArray.length === columnNames.length ? 'todas'
-      : selectedArray.length === numericNames.length && selectedArray.every(n => numericNames.includes(n)) ? 'numericas'
-        : selectedArray.length === textNames.length && selectedArray.every(n => textNames.includes(n)) ? 'texto'
+    selectedArray.length === columnNames.length ? 'all'
+      : selectedArray.length === numericNames.length && selectedArray.every(n => numericNames.includes(n)) ? 'numeric'
+        : selectedArray.length === textNames.length && selectedArray.every(n => textNames.includes(n)) ? 'text'
           : null;
 
   // Render buttons outside the scroll container
@@ -380,7 +380,7 @@ export function renderDataInterface(
   renderColumnControlsDOM({
     acoesContainer: actionsContainer,
     listaColunas: columnsList,
-    colunas: columns,
+    columns: columns,
     nomesSelecionados: selectedNames,
     filtroAtivo: activeFilter,
     nomesColunas: columnNames,
@@ -391,7 +391,7 @@ export function renderDataInterface(
     aoAlterarSelecaoColuna: onColumnSelectionChange,
   });
 
-  const allColumnNames = columns.map(column => column.nome);
+  const allColumnNames = columns.map(column => column.name);
   const safeGlobalFilter = resolveGlobalFilterForColumns(config.globalFilter, allColumnNames);
   const filteredRowsForTrigger = applyGlobalFilterRules(rows, safeGlobalFilter, numericNames);
 
@@ -448,7 +448,7 @@ export function renderDataInterface(
   const lookupTokenFilterState = (column, token) => getTokenFilterState(safeGlobalFilter, column, token);
   const lookupShowOnlyThisRedundant = (column, token) => isShowOnlyThisRedundant(safeGlobalFilter, column, token);
 
-  updateTabs(config.aba, onChartConfigChange, config, {
+  updateTabs(config.activeTab, onChartConfigChange, config, {
     triggerState: {
       hasDataset: true,
       globalFilter: safeGlobalFilter,
@@ -511,5 +511,5 @@ export function renderDataInterface(
   document.querySelector('.upload-text-main').textContent = t('chive-upload-loaded-main');
   document.querySelector('.upload-text-sub').textContent = t('chive-upload-loaded-sub');
   document.getElementById('file-summary-text').title =
-    `${fileName} · ${rows.length.toLocaleString(getLocale())} linhas · ${columns.length} colunas · ${fileSize}`;
+    `${fileName} · ${rows.length.toLocaleString(getLocale())} linhas · ${columns.length} columns · ${fileSize}`;
 }

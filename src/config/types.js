@@ -9,9 +9,9 @@ export const TYPE_DETECTION = {
 };
 
 export const COLUMN_TYPES = {
-  NUMBER: 'numero',
-  TEXT: 'texto',
-  DATE: 'data',
+  NUMBER: 'number',
+  TEXT: 'text',
+  DATE: 'date',
 };
 
 export const TYPE_DEFAULTS = {

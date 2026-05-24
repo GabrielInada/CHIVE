@@ -5,7 +5,7 @@ describe('chartDefaults', () => {
 	describe('createDefaultChartConfig', () => {
 		it('returns config with all chart type sections', () => {
 			const config = createDefaultChartConfig();
-			expect(config).toHaveProperty('aba', 'preview');
+			expect(config).toHaveProperty('activeTab', 'preview');
 			expect(config).toHaveProperty('bar');
 			expect(config).toHaveProperty('scatter');
 			expect(config).toHaveProperty('network');
@@ -74,7 +74,7 @@ describe('chartDefaults', () => {
 		it('returns full defaults when config is null', () => {
 			const result = mergeChartConfigWithDefaults(null);
 			const defaults = createDefaultChartConfig();
-			expect(result.aba).toBe(defaults.aba);
+			expect(result.activeTab).toBe(defaults.activeTab);
 			expect(result.bar.enabled).toBe(false);
 		});
 
@@ -141,9 +141,9 @@ describe('chartDefaults', () => {
 			expect(result.line.strokeWidth).toBeDefined();
 		});
 
-		it('preserves top-level overrides like aba', () => {
-			const result = mergeChartConfigWithDefaults({ aba: 'bar' });
-			expect(result.aba).toBe('bar');
+		it('preserves top-level overrides like activeTab', () => {
+			const result = mergeChartConfigWithDefaults({ activeTab: 'bar' });
+			expect(result.activeTab).toBe('bar');
 		});
 
 		it('handles empty object config', () => {

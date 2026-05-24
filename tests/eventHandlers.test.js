@@ -16,8 +16,8 @@ const mocks = vi.hoisted(() => ({
   showFeedback: vi.fn(),
   t: vi.fn(key => `tr:${key}`),
   getActiveDataset: vi.fn(() => ({
-    configGraficos: {
-      aba: 'preview',
+    chartConfig: {
+      activeTab: 'preview',
       pie: {
         category: 'categoria',
         measureMode: 'count',
@@ -117,7 +117,7 @@ describe('eventHandlers', () => {
     vi.clearAllMocks();
     mocks.downloadSvgFromContainer.mockReturnValue({ ok: true });
     mocks.addChartToPanel.mockReturnValue({ ok: true });
-    mocks.getActiveDataset.mockReturnValue({ configGraficos: { aba: 'preview' } });
+    mocks.getActiveDataset.mockReturnValue({ chartConfig: { activeTab: 'preview' } });
 
     setupDom();
   });
@@ -131,7 +131,7 @@ describe('eventHandlers', () => {
     expect(mocks.setupPanelEventListeners).toHaveBeenCalledTimes(1);
 
     document.getElementById('btn-go-to-panel').click();
-    expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ aba: 'panel' });
+    expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'panel' });
     expect(mocks.switchTab).toHaveBeenCalledWith('panel');
 
     document.getElementById('btn-back-to-viz').click();

@@ -30,7 +30,7 @@ import { createSelectControl } from './shared.js';
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
 export function createTreeMapControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
-	const config = dataset.configGraficos.treemap;
+	const config = dataset.chartConfig.treemap;
 	const measureMode = TREEMAP_CHART.measureModes.includes(config.measureMode) ? config.measureMode : 'count';
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;
 	const isDisabled = !config.enabled;
@@ -192,7 +192,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	if (selectCategory) {
 		selectCategory.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, category: selectCategory.value || null },
+				treemap: { ...dataset.chartConfig.treemap, category: selectCategory.value || null },
 			});
 			onConfigChanged?.();
 		});
@@ -202,12 +202,12 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	if (selectMeasure) {
 		selectMeasure.addEventListener('change', () => {
 			const nextMode = TREEMAP_CHART.measureModes.includes(selectMeasure.value) ? selectMeasure.value : 'count';
-			const currentValueColumn = numericOptions.includes(dataset.configGraficos.treemap?.valueColumn)
-				? dataset.configGraficos.treemap?.valueColumn
+			const currentValueColumn = numericOptions.includes(dataset.chartConfig.treemap?.valueColumn)
+				? dataset.chartConfig.treemap?.valueColumn
 				: null;
 			updateActiveDatasetChartConfig({
 				treemap: {
-					...dataset.configGraficos.treemap,
+					...dataset.chartConfig.treemap,
 					measureMode: nextMode,
 					valueColumn: nextMode === 'count' ? null : currentValueColumn,
 				},
@@ -221,7 +221,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 		selectValueColumn.addEventListener('change', () => {
 			const nextValue = numericOptions.includes(selectValueColumn.value) ? selectValueColumn.value : null;
 			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, valueColumn: nextValue },
+				treemap: { ...dataset.chartConfig.treemap, valueColumn: nextValue },
 			});
 			onConfigChanged?.();
 		});
@@ -231,7 +231,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	if (selectTopN) {
 		selectTopN.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, topN: Number(selectTopN.value) },
+				treemap: { ...dataset.chartConfig.treemap, topN: Number(selectTopN.value) },
 			});
 			onConfigChanged?.();
 		});
@@ -241,7 +241,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	if (inputTitle) {
 		inputTitle.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, customTitle: String(inputTitle.value || '').trim() },
+				treemap: { ...dataset.chartConfig.treemap, customTitle: String(inputTitle.value || '').trim() },
 			});
 			onConfigChanged?.();
 		});
@@ -256,7 +256,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 		sliderHeight.addEventListener('input', syncOutput);
 		sliderHeight.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, chartHeight: Number(sliderHeight.value) },
+				treemap: { ...dataset.chartConfig.treemap, chartHeight: Number(sliderHeight.value) },
 			});
 			onConfigChanged?.();
 		});
@@ -271,7 +271,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 		sliderPadding.addEventListener('input', syncOutput);
 		sliderPadding.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, padding: Number(sliderPadding.value) },
+				treemap: { ...dataset.chartConfig.treemap, padding: Number(sliderPadding.value) },
 			});
 			onConfigChanged?.();
 		});
@@ -281,7 +281,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	if (toggleLabels) {
 		toggleLabels.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, showLabels: toggleLabels.checked },
+				treemap: { ...dataset.chartConfig.treemap, showLabels: toggleLabels.checked },
 			});
 			onConfigChanged?.();
 		});
@@ -291,7 +291,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	if (toggleValues) {
 		toggleValues.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, showValues: toggleValues.checked },
+				treemap: { ...dataset.chartConfig.treemap, showValues: toggleValues.checked },
 			});
 			onConfigChanged?.();
 		});
@@ -302,7 +302,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 		selectColorMode.addEventListener('change', () => {
 			const nextMode = ['scheme', 'uniform'].includes(selectColorMode.value) ? selectColorMode.value : 'scheme';
 			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.configGraficos.treemap, colorMode: nextMode },
+				treemap: { ...dataset.chartConfig.treemap, colorMode: nextMode },
 			});
 			onConfigChanged?.();
 		});
@@ -313,7 +313,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 		inputColor.addEventListener('change', () => {
 			updateActiveDatasetChartConfig({
 				treemap: {
-					...dataset.configGraficos.treemap,
+					...dataset.chartConfig.treemap,
 					color: normalizeHexColor(inputColor.value, CHART_COLORS.treemap),
 				},
 			});
@@ -329,7 +329,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 			if (palette.length === 0) return;
 			updateActiveDatasetChartConfig({
 				treemap: {
-					...dataset.configGraficos.treemap,
+					...dataset.chartConfig.treemap,
 					colorScheme: presetName,
 					color: normalizeHexColor(palette[0], CHART_COLORS.treemap),
 				},
@@ -349,7 +349,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
  * @returns {{ category: string | null }}
  */
 export function computeDefaults(dataset, ctx) {
-	const current = dataset.configGraficos?.treemap?.category;
+	const current = dataset.chartConfig?.treemap?.category;
 	return {
 		category: ctx.baseCategoricalOrAll.includes(current)
 			? current

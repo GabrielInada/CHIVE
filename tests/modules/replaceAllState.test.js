@@ -16,11 +16,11 @@ import {
 function makeDataset(overrides = {}) {
 	return {
 		id: 'fixed-id',
-		nome: 'a.csv',
-		dados: [{ x: 1 }],
-		colunas: [{ nome: 'x', tipo: 'numero' }],
-		colunasSelecionadas: ['x'],
-		configGraficos: {},
+		name: 'a.csv',
+		rows: [{ x: 1 }],
+		columns: [{ name: 'x', type: 'number' }],
+		selectedColumns: ['x'],
+		chartConfig: {},
 		...overrides,
 	};
 }
@@ -28,8 +28,8 @@ function makeDataset(overrides = {}) {
 function resetAppStateForTest() {
 	replaceAllState({
 		data: { datasets: [], activeIndex: -1 },
-		panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
-		ui: { sidebarMode: 'dados', previewRows: 10 },
+		panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+		ui: { sidebarMode: 'data', previewRows: 10 },
 	});
 }
 
@@ -41,14 +41,14 @@ describe('replaceAllState()', () => {
 	it('replaces datasets, activeIndex, panel, and ui in one shot', () => {
 		replaceAllState({
 			data: {
-				datasets: [makeDataset({ id: 'a' }), makeDataset({ id: 'b', nome: 'b.csv' })],
+				datasets: [makeDataset({ id: 'a' }), makeDataset({ id: 'b', name: 'b.csv' })],
 				activeIndex: 1,
 			},
 			panel: {
 				charts: [{ id: 0, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] }],
 				slots: { 'slot-1': 0 },
-				layout: 'layout-3col',
-				blocks: [{ id: 7, templateId: 'layout-3col', slots: { 'slot-1': 0 }, proportions: { a: 33, b: 33, c: 34 } }],
+				layout: 'template-3col',
+				blocks: [{ id: 7, templateId: 'template-3col', slots: { 'slot-1': 0 }, proportions: { a: 33, b: 33, c: 34 } }],
 				nextBlockId: 8,
 				nextChartId: 1,
 			},
@@ -63,7 +63,7 @@ describe('replaceAllState()', () => {
 		expect(getActiveDataset().id).toBe('b');
 
 		expect(getPanelCharts()).toHaveLength(1);
-		expect(getState().panel.layout).toBe('layout-3col');
+		expect(getState().panel.layout).toBe('template-3col');
 		expect(getPanelBlocks()).toHaveLength(1);
 		expect(getPanelBlocks()[0].id).toBe(7);
 
@@ -112,11 +112,11 @@ describe('replaceAllState()', () => {
 
 	it('addDataset stamps an id on datasets that lack one', () => {
 		const idx = addDataset({
-			nome: 'x.csv',
-			dados: [],
-			colunas: [],
-			colunasSelecionadas: [],
-			configGraficos: {},
+			name: 'x.csv',
+			rows: [],
+			columns: [],
+			selectedColumns: [],
+			chartConfig: {},
 		});
 		const dataset = getAllDatasets()[idx];
 		expect(typeof dataset.id).toBe('string');

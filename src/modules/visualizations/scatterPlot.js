@@ -66,13 +66,13 @@ const SCATTER_PALETTES = {
  * `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows.
+ * @param {Array<Object<string, *>>} rows - Source rows.
  * @param {string} eixoX - X-axis column name.
  * @param {string} eixoY - Y-axis column name.
  * @param {Object} [opcoes={}] - Render options bag.
  * @returns {Result}
  */
-export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
+export function renderScatterPlot(container, rows, eixoX, eixoY, opcoes = {}) {
 	if (!container || !eixoX || !eixoY) return fail();
 	const xScale = opcoes.xScale === 'log' ? 'log' : 'linear';
 	const yScale = opcoes.yScale === 'log' ? 'log' : 'linear';
@@ -125,7 +125,7 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		y: opcoes.axisTypes?.y,
 	};
 
-	let pontos = dados.map((linha, index) => ({
+	let pontos = rows.map((linha, index) => ({
 		xRaw: linha?.[eixoX],
 		yRaw: linha?.[eixoY],
 		x: Number(linha?.[eixoX]),

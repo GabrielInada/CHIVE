@@ -8,21 +8,21 @@
  * @param {Object} args
  * @param {HTMLElement} args.acoesContainer - Container for the action buttons.
  * @param {HTMLElement} args.listaColunas - Container for the per-column checkboxes.
- * @param {Array<{ nome: string, tipo: string }>} args.colunas
+ * @param {Array<{ name: string, type: string }>} args.columns
  * @param {Set<string>} args.nomesSelecionados - Names of currently selected columns.
- * @param {'todas' | 'numericas' | 'texto' | null} args.filtroAtivo - Drives the "active" highlight on the action buttons.
+ * @param {'all' | 'numeric' | 'text' | null} args.filtroAtivo - Drives the "active" highlight on the action buttons.
  * @param {string[]} args.nomesColunas - All column names.
  * @param {string[]} args.nomesNumericas
  * @param {string[]} args.nomesTexto
  * @param {(key: string, ...args: *) => string} args.traduzir
- * @param {(tipo: string) => string} args.translateType
+ * @param {(type: string) => string} args.translateType
  * @param {(names: string[]) => void} args.aoAlterarSelecaoColuna - Fired with the new selection list.
  * @returns {void}
  */
 export function renderColumnControlsDOM({
 	acoesContainer,
 	listaColunas,
-	colunas,
+	columns,
 	nomesSelecionados,
 	filtroAtivo,
 	nomesColunas,
@@ -43,51 +43,51 @@ export function renderColumnControlsDOM({
 		return botao;
 	};
 
-	acoesContainer.appendChild(createActionButton('todas', traduzir('chive-action-select-all'), filtroAtivo === 'todas'));
-	acoesContainer.appendChild(createActionButton('limpar', traduzir('chive-action-clear')));
-	acoesContainer.appendChild(createActionButton('numericas', traduzir('chive-action-only-numeric'), filtroAtivo === 'numericas'));
-	acoesContainer.appendChild(createActionButton('texto', traduzir('chive-action-only-text'), filtroAtivo === 'texto'));
+	acoesContainer.appendChild(createActionButton('all', traduzir('chive-action-select-all'), filtroAtivo === 'all'));
+	acoesContainer.appendChild(createActionButton('clear', traduzir('chive-action-clear')));
+	acoesContainer.appendChild(createActionButton('numeric', traduzir('chive-action-only-numeric'), filtroAtivo === 'numeric'));
+	acoesContainer.appendChild(createActionButton('text', traduzir('chive-action-only-text'), filtroAtivo === 'text'));
 
 	acoesContainer.onclick = evento => {
 		const alvo = evento.target.closest('[data-acao-coluna]');
 		if (!alvo || !aoAlterarSelecaoColuna) return;
 		const acao = alvo.dataset.acaoColuna;
-		if (acao === 'todas') {
+		if (acao === 'all') {
 			aoAlterarSelecaoColuna(nomesColunas);
 			return;
 		}
-		if (acao === 'limpar') {
+		if (acao === 'clear') {
 			aoAlterarSelecaoColuna([]);
 			return;
 		}
-		if (acao === 'numericas') {
+		if (acao === 'numeric') {
 			aoAlterarSelecaoColuna(nomesNumericas);
 			return;
 		}
-		if (acao === 'texto') {
+		if (acao === 'text') {
 			aoAlterarSelecaoColuna(nomesTexto);
 		}
 	};
 
 	listaColunas.replaceChildren();
-	colunas.forEach(({ nome, tipo }) => {
+	columns.forEach(({ name, type }) => {
 		const label = document.createElement('label');
 		label.className = 'column-item';
-		label.title = nome;
+		label.title = name;
 
 		const checkbox = document.createElement('input');
 		checkbox.className = 'column-checkbox';
 		checkbox.type = 'checkbox';
-		checkbox.dataset.coluna = nome;
-		checkbox.checked = nomesSelecionados.has(nome);
+		checkbox.dataset.coluna = name;
+		checkbox.checked = nomesSelecionados.has(name);
 
 		const nomeSpan = document.createElement('span');
 		nomeSpan.className = 'column-name';
-		nomeSpan.textContent = nome;
+		nomeSpan.textContent = name;
 
 		const tipoSpan = document.createElement('span');
-		tipoSpan.className = `type-tag ${tipo}`;
-		tipoSpan.textContent = translateType(tipo);
+		tipoSpan.className = `type-tag ${type}`;
+		tipoSpan.textContent = translateType(type);
 
 		label.appendChild(checkbox);
 		label.appendChild(nomeSpan);
