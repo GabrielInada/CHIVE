@@ -38,22 +38,22 @@ export function renderFileListDOM({
 
 	visibleDatasets.forEach(({ dataset, index }) => {
 		const item = document.createElement('div');
-		item.className = `arquivo-item ${index === activeIndex ? 'ativo' : ''}`;
+		item.className = `file-item ${index === activeIndex ? 'active' : ''}`;
 		item.dataset.idx = String(index);
 
 		const selectButton = document.createElement('button');
-		selectButton.className = 'arquivo-item-botao';
+		selectButton.className = 'file-item-button';
 		selectButton.type = 'button';
 		selectButton.dataset.acao = 'selecionar';
 		selectButton.dataset.idx = String(index);
 
 		const name = document.createElement('span');
-		name.className = 'arquivo-item-nome';
+		name.className = 'file-item-name';
 		name.title = dataset.nome;
 		name.textContent = dataset.nome;
 
 		const meta = document.createElement('span');
-		meta.className = 'arquivo-item-meta';
+		meta.className = 'file-item-meta';
 		meta.textContent = translate(
 			'chive-file-meta',
 			dataset.dados.length.toLocaleString(getLocale()),
@@ -62,7 +62,7 @@ export function renderFileListDOM({
 		);
 
 		const removeButton = document.createElement('button');
-		removeButton.className = 'arquivo-item-remover';
+		removeButton.className = 'file-item-remove';
 		removeButton.type = 'button';
 		removeButton.dataset.acao = 'remover';
 		removeButton.dataset.idx = String(index);
@@ -78,7 +78,7 @@ export function renderFileListDOM({
 
 	if (filteredDatasets.length === 0) {
 		const empty = document.createElement('div');
-		empty.className = 'arquivo-lista-vazia';
+		empty.className = 'file-list-empty';
 		empty.textContent = translate('chive-files-no-match');
 		list.appendChild(empty);
 	}

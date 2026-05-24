@@ -21,7 +21,7 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 	if (visibleColumns.length === 0) {
 		tableContainer.replaceChildren();
 		const empty = document.createElement('div');
-		empty.className = 'tabela-sem-colunas';
+		empty.className = 'table-no-columns';
 		empty.textContent = t('chive-no-columns-selected');
 		tableContainer.appendChild(empty);
 		return;
@@ -29,7 +29,7 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 
 	const previewRows = rows.slice(0, limit);
 	const table = document.createElement('table');
-	table.className = 'tabela-preview';
+	table.className = 'table-preview';
 
 	const thead = document.createElement('thead');
 	const trHead = document.createElement('tr');

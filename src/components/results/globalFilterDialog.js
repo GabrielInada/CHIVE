@@ -76,7 +76,7 @@ function renderNumericRuleBody({ body, rule, translate }) {
 	const opLabel = document.createElement('label');
 	opLabel.textContent = translate('chive-chart-filter-operator');
 	const opSelect = document.createElement('select');
-	opSelect.className = 'linhas-select gf-rule-operator';
+	opSelect.className = 'rows-select gf-rule-operator';
 	[
 		{ value: 'between', label: translate('chive-chart-filter-op-between') },
 		{ value: 'lt', label: translate('chive-chart-filter-op-lt') },
@@ -99,7 +99,7 @@ function renderNumericRuleBody({ body, rule, translate }) {
 			minLabel.textContent = translate('chive-chart-filter-min');
 			const minInput = document.createElement('input');
 			minInput.type = 'number';
-			minInput.className = 'linhas-select';
+			minInput.className = 'rows-select';
 			minInput.value = String(rule.min ?? '');
 			minInput.addEventListener('input', () => { rule.min = minInput.value; });
 			minWrap.appendChild(minLabel);
@@ -112,7 +112,7 @@ function renderNumericRuleBody({ body, rule, translate }) {
 			maxLabel.textContent = translate('chive-chart-filter-max');
 			const maxInput = document.createElement('input');
 			maxInput.type = 'number';
-			maxInput.className = 'linhas-select';
+			maxInput.className = 'rows-select';
 			maxInput.value = String(rule.max ?? '');
 			maxInput.addEventListener('input', () => { rule.max = maxInput.value; });
 			maxWrap.appendChild(maxLabel);
@@ -125,7 +125,7 @@ function renderNumericRuleBody({ body, rule, translate }) {
 			valueLabel.textContent = translate('chive-chart-filter-value');
 			const valueInput = document.createElement('input');
 			valueInput.type = 'number';
-			valueInput.className = 'linhas-select';
+			valueInput.className = 'rows-select';
 			valueInput.value = String(rule.value ?? '');
 			valueInput.addEventListener('input', () => { rule.value = valueInput.value; });
 			valueWrap.appendChild(valueLabel);
@@ -159,7 +159,7 @@ function renderCategoricalRuleBody({ body, rule, rows, translate }) {
 	searchLabel.textContent = translate('chive-chart-filter-search');
 	const searchInput = document.createElement('input');
 	searchInput.type = 'search';
-	searchInput.className = 'linhas-select gf-rule-search';
+	searchInput.className = 'rows-select gf-rule-search';
 	searchInput.value = rule.search || '';
 	searchWrap.appendChild(searchLabel);
 	searchWrap.appendChild(searchInput);
@@ -169,11 +169,11 @@ function renderCategoricalRuleBody({ body, rule, rows, translate }) {
 	actions.className = 'gf-actions';
 	const selectAllBtn = document.createElement('button');
 	selectAllBtn.type = 'button';
-	selectAllBtn.className = 'btn-secundario gf-action-btn gf-rule-select-all';
+	selectAllBtn.className = 'btn-secondary gf-action-btn gf-rule-select-all';
 	selectAllBtn.textContent = translate('chive-chart-filter-select-all');
 	const clearSelectionBtn = document.createElement('button');
 	clearSelectionBtn.type = 'button';
-	clearSelectionBtn.className = 'btn-secundario gf-action-btn gf-rule-clear-selection';
+	clearSelectionBtn.className = 'btn-secondary gf-action-btn gf-rule-clear-selection';
 	clearSelectionBtn.textContent = translate('chive-chart-filter-clear');
 	actions.appendChild(selectAllBtn);
 	actions.appendChild(clearSelectionBtn);
@@ -294,7 +294,7 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
 
 	const removeBtn = document.createElement('button');
 	removeBtn.type = 'button';
-	removeBtn.className = 'btn-secundario gf-rule-remove';
+	removeBtn.className = 'btn-secondary gf-rule-remove';
 	removeBtn.textContent = translate('chive-global-filter-remove-rule');
 	removeBtn.addEventListener('click', () => onRemove(rule._uid));
 	header.appendChild(removeBtn);
@@ -306,7 +306,7 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
 	const columnLabel = document.createElement('label');
 	columnLabel.textContent = translate('chive-chart-filter-column');
 	const columnSelect = document.createElement('select');
-	columnSelect.className = 'linhas-select gf-rule-column';
+	columnSelect.className = 'rows-select gf-rule-column';
 	columnSelect.appendChild(createOption('', translate('chive-chart-option-none'), !rule.column));
 	allColumns.forEach(name => columnSelect.appendChild(createOption(name, name, rule.column === name)));
 	columnWrap.appendChild(columnLabel);
@@ -421,13 +421,13 @@ export function openGlobalFilterDialog({
 
 		const addRuleBtn = document.createElement('button');
 		addRuleBtn.type = 'button';
-		addRuleBtn.className = 'btn-secundario gf-add-rule';
+		addRuleBtn.className = 'btn-secondary gf-add-rule';
 		addRuleBtn.textContent = translate('chive-global-filter-add-rule');
 		topActions.appendChild(addRuleBtn);
 
 		const clearAllBtn = document.createElement('button');
 		clearAllBtn.type = 'button';
-		clearAllBtn.className = 'btn-secundario gf-clear-all';
+		clearAllBtn.className = 'btn-secondary gf-clear-all';
 		clearAllBtn.textContent = translate('chive-global-filter-clear-all');
 		topActions.appendChild(clearAllBtn);
 
@@ -437,11 +437,11 @@ export function openGlobalFilterDialog({
 		footer.className = 'join-footer gf-footer';
 		const cancelBtn = document.createElement('button');
 		cancelBtn.type = 'button';
-		cancelBtn.className = 'btn-secundario gf-cancel';
+		cancelBtn.className = 'btn-secondary gf-cancel';
 		cancelBtn.textContent = translate('chive-global-filter-cancel');
 		const applyBtn = document.createElement('button');
 		applyBtn.type = 'button';
-		applyBtn.className = 'btn-primario gf-apply';
+		applyBtn.className = 'btn-primary gf-apply';
 		applyBtn.textContent = translate('chive-global-filter-apply');
 		footer.appendChild(cancelBtn);
 		footer.appendChild(applyBtn);

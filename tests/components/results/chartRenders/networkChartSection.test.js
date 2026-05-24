@@ -111,7 +111,7 @@ describe('renderNetworkChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-network');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-network');
 	});
 
 	it('falls back to the i18n key when source/target column names are empty', () => {

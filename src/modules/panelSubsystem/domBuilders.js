@@ -26,18 +26,18 @@
  */
 export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMoveDown, onRemove }) {
 	const header = document.createElement('div');
-	header.className = 'painel-block-header';
+	header.className = 'panel-block-header';
 
 	const title = document.createElement('span');
-	title.className = 'painel-block-title';
+	title.className = 'panel-block-title';
 	title.textContent = `Block ${index + 1}`;
 
 	const actions = document.createElement('div');
-	actions.className = 'painel-block-actions';
+	actions.className = 'panel-block-actions';
 
 	const upBtn = document.createElement('button');
 	upBtn.type = 'button';
-	upBtn.className = 'painel-block-btn';
+	upBtn.className = 'panel-block-btn';
 	upBtn.dataset.panelBlockUp = blockId;
 	upBtn.textContent = '↑';
 	upBtn.disabled = index === 0;
@@ -45,7 +45,7 @@ export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMov
 
 	const downBtn = document.createElement('button');
 	downBtn.type = 'button';
-	downBtn.className = 'painel-block-btn';
+	downBtn.className = 'panel-block-btn';
 	downBtn.dataset.panelBlockDown = blockId;
 	downBtn.textContent = '↓';
 	downBtn.disabled = index === totalBlocks - 1;
@@ -53,7 +53,7 @@ export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMov
 
 	const removeBtn = document.createElement('button');
 	removeBtn.type = 'button';
-	removeBtn.className = 'painel-block-btn painel-block-btn-danger';
+	removeBtn.className = 'panel-block-btn panel-block-btn-danger';
 	removeBtn.dataset.panelBlockRemove = blockId;
 	removeBtn.textContent = '×';
 	removeBtn.disabled = totalBlocks <= 1;
@@ -83,7 +83,7 @@ export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMov
  */
 export function createBlockTemplateSelect({ blockId, templateId, layouts, translate, onTemplateChange }) {
 	const templateSelect = document.createElement('select');
-	templateSelect.className = 'painel-block-template';
+	templateSelect.className = 'panel-block-template';
 	templateSelect.dataset.panelBlockTemplate = blockId;
 
 	Object.entries(layouts).forEach(([id, config]) => {
@@ -113,7 +113,7 @@ export function createBlockTemplateSelect({ blockId, templateId, layouts, transl
 export function createAddBlockControls({ layouts, translate, onAddBlock }) {
 	const addBlockButton = document.createElement('button');
 	const addTemplateSelect = document.createElement('select');
-	addTemplateSelect.className = 'painel-add-template-select';
+	addTemplateSelect.className = 'panel-add-template-select';
 	addTemplateSelect.dataset.panelAddTemplate = '1';
 	addTemplateSelect.setAttribute('aria-label', translate('chive-panel-layout-label'));
 	const selectedTemplate = 'layout-2col';
@@ -127,7 +127,7 @@ export function createAddBlockControls({ layouts, translate, onAddBlock }) {
 	});
 
 	addBlockButton.type = 'button';
-	addBlockButton.className = 'btn-primario painel-add-block-btn';
+	addBlockButton.className = 'btn-primary panel-add-block-btn';
 	addBlockButton.dataset.panelAddBlock = '1';
 	addBlockButton.textContent = translate('chive-panel-add-block');
 	addBlockButton.addEventListener('click', () => {
@@ -135,7 +135,7 @@ export function createAddBlockControls({ layouts, translate, onAddBlock }) {
 	});
 
 	const addControls = document.createElement('div');
-	addControls.className = 'painel-add-controls';
+	addControls.className = 'panel-add-controls';
 	addControls.appendChild(addTemplateSelect);
 	addControls.appendChild(addBlockButton);
 
@@ -171,7 +171,7 @@ export function createBlockBorderControls({
 	onChangeColor,
 }) {
 	const borderControls = document.createElement('div');
-	borderControls.className = 'painel-block-border-controls';
+	borderControls.className = 'panel-block-border-controls';
 
 	const borderToggleLabel = document.createElement('label');
 	borderToggleLabel.className = 'panel-borders-toggle';
@@ -259,7 +259,7 @@ export function createPanelSlotElement({
 	onDropData,
 }) {
 	const slot = document.createElement('div');
-	slot.className = chart ? 'painel-slot' : 'painel-slot vazio';
+	slot.className = chart ? 'panel-slot' : 'panel-slot empty';
 	slot.dataset.panelSlot = slotId;
 	slot.dataset.panelBlockId = blockId;
 	slot.dataset.panelBorderEnabled = borderEnabled ? '1' : '0';
@@ -271,14 +271,14 @@ export function createPanelSlotElement({
 
 		const clearBtn = document.createElement('button');
 		clearBtn.type = 'button';
-		clearBtn.className = 'painel-slot-limpar';
+		clearBtn.className = 'panel-slot-clear';
 		clearBtn.dataset.clearPanelSlot = `${blockId}:${slotId}`;
 		clearBtn.setAttribute('aria-label', translate('chive-panel-clear-slot'));
 		clearBtn.textContent = '×';
 		clearBtn.addEventListener('click', onClearSlot);
 
 		const svgDiv = document.createElement('div');
-		svgDiv.className = 'painel-slot-svg';
+		svgDiv.className = 'panel-slot-svg';
 
 		slot.appendChild(clearBtn);
 		slot.appendChild(svgDiv);
@@ -293,7 +293,7 @@ export function createPanelSlotElement({
 		}
 	} else {
 		const placeholder = document.createElement('div');
-		placeholder.className = 'painel-slot-placeholder';
+		placeholder.className = 'panel-slot-placeholder';
 		placeholder.textContent = translate('chive-panel-slot-empty');
 		slot.appendChild(placeholder);
 	}

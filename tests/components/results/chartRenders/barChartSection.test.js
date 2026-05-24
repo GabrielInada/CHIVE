@@ -128,7 +128,7 @@ describe('renderBarChartSection', () => {
 
 		renderBarChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 
-		const empty = container.querySelector('.chart-vazio');
+		const empty = container.querySelector('.chart-empty');
 		expect(empty).not.toBeNull();
 		expect(empty.textContent).toBe('chive-chart-empty-bar-numeric');
 	});
@@ -139,7 +139,7 @@ describe('renderBarChartSection', () => {
 
 		renderBarChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-bar-numeric');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-bar-numeric');
 	});
 
 	it('shows the generic bar empty-state message for any other failure reason', () => {
@@ -148,6 +148,6 @@ describe('renderBarChartSection', () => {
 
 		renderBarChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-bar');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-bar');
 	});
 });

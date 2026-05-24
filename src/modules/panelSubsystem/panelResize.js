@@ -107,7 +107,7 @@ export function renderGuidedResizeHandles(gridDiv, block, renderCanvasPanel) {
 			railCenter = railStart + railSpan / 2;
 
 			const rail = document.createElement('div');
-			rail.className = 'painel-resize-rail eixo-y';
+			rail.className = 'panel-resize-rail axis-y';
 			rail.style.left = `${railCenter}%`;
 			rail.style.width = `calc(${railSpan}% - 10px)`;
 			gridDiv.appendChild(rail);
@@ -115,7 +115,7 @@ export function renderGuidedResizeHandles(gridDiv, block, renderCanvasPanel) {
 
 		const handle = document.createElement('button');
 		handle.type = 'button';
-		handle.className = `painel-resize-handle eixo-${handleConfig.axis}`;
+		handle.className = `panel-resize-handle axis-${handleConfig.axis}`;
 		handle.dataset.panelResizeHandle = `${block.id}:${handleConfig.key}`;
 		handle.setAttribute('aria-label', t('chive-panel-resize-handle'));
 		if (handleConfig.axis === 'x') {

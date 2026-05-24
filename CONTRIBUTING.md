@@ -61,7 +61,7 @@ npm run test:watch   # Tests in watch mode
 
 ## Code conventions
 
-- **CSS class names use Portuguese:** `.painel-`, `.tabela-`, `.grafico-`, modifiers like `.ativo`, `.desativado`
+- **CSS class names use English kebab-case:** `.panel-`, `.table-`, `.chart-`, modifiers like `.active`, `.loaded`, `.empty`
 - **CSS architecture:** Cascade layers ordered: foundation → controls → data-view → visual-output → feedback. See `src/styles/STYLES_ORGANIZATION.md` for details.
 - **Module exports:** camelCase for functions, PascalCase for classes
 - **Dependency injection:** Event handlers and render functions are passed as callbacks for testability and to avoid circular dependencies

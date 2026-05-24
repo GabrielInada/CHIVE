@@ -20,10 +20,10 @@ describe('feedbackUI', () => {
     showFeedback('ok', 100);
     const toast = document.getElementById('toast-feedback');
     expect(toast).toBeTruthy();
-    expect(toast.classList.contains('visivel')).toBe(true);
+    expect(toast.classList.contains('visible')).toBe(true);
 
     vi.advanceTimersByTime(120);
-    expect(toast.classList.contains('visivel')).toBe(false);
+    expect(toast.classList.contains('visible')).toBe(false);
   });
 
   it('mostra erro no container quando existe e permite fechar', () => {
@@ -33,13 +33,13 @@ describe('feedbackUI', () => {
 
     showError('boom');
 
-    const error = errorsContainer.querySelector('.aviso-erro');
+    const error = errorsContainer.querySelector('.error-notice');
     expect(error).toBeTruthy();
     expect(error.textContent).toContain('boom');
 
-    const close = errorsContainer.querySelector('.btn-fechar-aviso');
+    const close = errorsContainer.querySelector('.btn-close-notice');
     close.click();
-    expect(errorsContainer.querySelector('.aviso-erro')).toBeNull();
+    expect(errorsContainer.querySelector('.error-notice')).toBeNull();
   });
 
   it('faz fallback para toast se container de erro não existir', () => {
@@ -55,10 +55,10 @@ describe('feedbackUI', () => {
     document.body.appendChild(errorsContainer);
 
     showError('timed error', 200);
-    expect(errorsContainer.querySelector('.aviso-erro')).toBeTruthy();
+    expect(errorsContainer.querySelector('.error-notice')).toBeTruthy();
 
     vi.advanceTimersByTime(250);
-    expect(errorsContainer.querySelector('.aviso-erro')).toBeNull();
+    expect(errorsContainer.querySelector('.error-notice')).toBeNull();
   });
 
   it('reuses existing toast element on repeated calls', () => {
@@ -83,7 +83,7 @@ describe('feedbackUI', () => {
     document.body.appendChild(errorsContainer);
 
     showErrorMessage('alias error');
-    expect(errorsContainer.querySelector('.aviso-erro')).toBeTruthy();
+    expect(errorsContainer.querySelector('.error-notice')).toBeTruthy();
   });
 
   it('hideErrorMessage alias clears errors', async () => {

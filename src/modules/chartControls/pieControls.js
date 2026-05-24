@@ -96,7 +96,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 
 	const categorySelect = document.createElement('select');
 	categorySelect.id = 'viz-select-pie-category';
-	categorySelect.className = 'linhas-select';
+	categorySelect.className = 'rows-select';
 	categorySelect.disabled = !dataset.configGraficos.pie.enabled;
 
 	const noneOption = document.createElement('option');
@@ -125,7 +125,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 
 	const measureSelect = document.createElement('select');
 	measureSelect.id = 'viz-select-pie-measure';
-	measureSelect.className = 'linhas-select';
+	measureSelect.className = 'rows-select';
 	measureSelect.disabled = !dataset.configGraficos.pie.enabled;
 
 	[
@@ -152,7 +152,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 
 	const valueSelect = document.createElement('select');
 	valueSelect.id = 'viz-select-pie-value-column';
-	valueSelect.className = 'linhas-select';
+	valueSelect.className = 'rows-select';
 	valueSelect.disabled = !dataset.configGraficos.pie.enabled || config.measureMode !== 'sum';
 
 	const noneOptionValue = document.createElement('option');
@@ -287,7 +287,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 
 	const labelPositionSelect = document.createElement('select');
 	labelPositionSelect.id = 'viz-select-pie-label-position';
-	labelPositionSelect.className = 'linhas-select';
+	labelPositionSelect.className = 'rows-select';
 	labelPositionSelect.disabled = !dataset.configGraficos.pie.enabled;
 
 	[

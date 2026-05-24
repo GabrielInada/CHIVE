@@ -99,7 +99,7 @@ describe('renderPieChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-pie-sum');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-pie-sum');
 	});
 
 	it('shows the generic empty-state for any other failure reason', () => {
@@ -112,7 +112,7 @@ describe('renderPieChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-pie');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-pie');
 	});
 
 	it('renders happy path with chartHeight applied to container', () => {

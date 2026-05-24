@@ -17,8 +17,8 @@ describe('domBuilders createPanelSlotElement', () => {
 			onDropData: vi.fn(),
 		});
 
-		expect(slot.classList.contains('vazio')).toBe(true);
-		expect(slot.querySelector('.painel-slot-placeholder')).toBeTruthy();
+		expect(slot.classList.contains('empty')).toBe(true);
+		expect(slot.querySelector('.panel-slot-placeholder')).toBeTruthy();
 	});
 
 	it('creates chart slot with clear button and svg preview', () => {
@@ -36,9 +36,9 @@ describe('domBuilders createPanelSlotElement', () => {
 		});
 
 		expect(slot.dataset.panelChartId).toBe('7');
-		expect(slot.querySelector('.painel-slot-svg')).toBeTruthy();
+		expect(slot.querySelector('.panel-slot-svg')).toBeTruthy();
 
-		slot.querySelector('.painel-slot-limpar').click();
+		slot.querySelector('.panel-slot-clear').click();
 		expect(onClear).toHaveBeenCalled();
 	});
 

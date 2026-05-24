@@ -2,7 +2,7 @@
    Transitions, keyframe animations, motion utilities
    Used by all features */
 
-@keyframes surgir {
+@keyframes appear {
   from {
     opacity: 0;
     transform: translateY(8px);
@@ -14,6 +14,6 @@
   }
 }
 
-.animar {
-  animation: surgir 0.3s ease both;
+.animate {
+  animation: appear 0.3s ease both;
 }

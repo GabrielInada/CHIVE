@@ -48,12 +48,12 @@ describe('tabsView', () => {
 
 		updateTabs('charts', vi.fn());
 
-		expect(document.getElementById('tab-charts').classList.contains('ativo')).toBe(true);
-		expect(document.getElementById('painel-charts').classList.contains('ativo')).toBe(true);
-		expect(document.getElementById('tab-preview').classList.contains('ativo')).toBe(false);
-		expect(document.getElementById('painel-preview').classList.contains('ativo')).toBe(false);
-		expect(document.getElementById('tab-panel').classList.contains('ativo')).toBe(false);
-		expect(document.getElementById('painel-panel').classList.contains('ativo')).toBe(false);
+		expect(document.getElementById('tab-charts').classList.contains('active')).toBe(true);
+		expect(document.getElementById('painel-charts').classList.contains('active')).toBe(true);
+		expect(document.getElementById('tab-preview').classList.contains('active')).toBe(false);
+		expect(document.getElementById('painel-preview').classList.contains('active')).toBe(false);
+		expect(document.getElementById('tab-panel').classList.contains('active')).toBe(false);
+		expect(document.getElementById('painel-panel').classList.contains('active')).toBe(false);
 	});
 
 	it('registers listeners once and always uses latest callback', async () => {

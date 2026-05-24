@@ -126,8 +126,8 @@ function handleChartAction(actionBtn) {
 			showError(t('chive-chart-download-error'));
 		}
 	} else if (action === 'add-panel') {
-		const chartBlock = actionBtn.closest('.chart-bloco');
-		const fallbackTitle = chartBlock?.querySelector('.chart-titulo')?.textContent?.trim()
+		const chartBlock = actionBtn.closest('.chart-block');
+		const fallbackTitle = chartBlock?.querySelector('.chart-title')?.textContent?.trim()
 			|| t('chive-card-charts');
 		const titulo = getChartSnapshotTitle(containerId, fallbackTitle);
 		const metadata = buildChartSnapshotMetadata(containerId);

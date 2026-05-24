@@ -86,24 +86,24 @@ describe('renderBubbleChartSection', () => {
 		const { container } = setupDom();
 		mocks.renderBubbleChart.mockReturnValueOnce({ ok: false, reason: 'no-numeric' });
 		renderBubbleChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-bubble-numeric');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-bubble-numeric');
 
 		container.replaceChildren();
 		mocks.renderBubbleChart.mockReturnValueOnce({ ok: false, reason: 'no-value-column' });
 		renderBubbleChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-bubble-numeric');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-bubble-numeric');
 	});
 
 	it('maps no-nesting-columns and no-group-column reasons to nesting-required empty-state', () => {
 		const { container } = setupDom();
 		mocks.renderBubbleChart.mockReturnValueOnce({ ok: false, reason: 'no-nesting-columns' });
 		renderBubbleChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-bubble-nesting-required');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-bubble-nesting-required');
 
 		container.replaceChildren();
 		mocks.renderBubbleChart.mockReturnValueOnce({ ok: false, reason: 'no-group-column' });
 		renderBubbleChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-bubble-nesting-required');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-bubble-nesting-required');
 	});
 
 	it('falls back to the generic empty-state for any other failure reason', () => {
@@ -112,7 +112,7 @@ describe('renderBubbleChartSection', () => {
 
 		renderBubbleChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-bubble');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-bubble');
 	});
 
 	it('renders happy path with chartHeight applied', () => {

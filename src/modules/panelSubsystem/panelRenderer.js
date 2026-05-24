@@ -59,7 +59,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
 	if (charts.length === 0) {
 		lista.replaceChildren();
 		const emptyDiv = document.createElement('div');
-		emptyDiv.className = 'painel-vazio';
+		emptyDiv.className = 'panel-empty';
 		emptyDiv.textContent = t('chive-panel-empty-sidebar');
 		lista.appendChild(emptyDiv);
 		return;
@@ -76,21 +76,21 @@ export function renderSidebarPanel(removeChartFromPanel) {
 
 		// Top section with title and remove button
 		const topo = document.createElement('div');
-		topo.className = 'panel-item-topo';
+		topo.className = 'panel-item-top';
 
 		const titulo = document.createElement('span');
-		titulo.className = 'panel-item-titulo';
+		titulo.className = 'panel-item-title';
 		titulo.textContent = chart.nome; // textContent for XSS prevention
 		titulo.title = chart.nome;
 
 		const metaResumo = typeof chart.metaSummary === 'string' ? chart.metaSummary.trim() : '';
 		const subtitulo = document.createElement('span');
-		subtitulo.className = 'panel-item-subtitulo';
+		subtitulo.className = 'panel-item-subtitle';
 		subtitulo.textContent = metaResumo;
 		subtitulo.hidden = metaResumo.length === 0;
 
 		const removeBtn = document.createElement('button');
-		removeBtn.className = 'panel-item-remover';
+		removeBtn.className = 'panel-item-remove';
 		removeBtn.type = 'button';
 		removeBtn.dataset.removePanelChart = chart.id;
 		removeBtn.setAttribute('aria-label', t('chive-panel-remove-chart'));
@@ -156,7 +156,7 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 	canvas.replaceChildren();
 
 	const stack = document.createElement('div');
-	stack.className = 'painel-block-stack';
+	stack.className = 'panel-block-stack';
 
 	blocks.forEach((block, index) => {
 		const { blockEl, gridDiv } = createBlockElement(block, {
@@ -186,7 +186,7 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 	canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]').forEach(slotEl => {
 		const chart = getChartSnapshot(slotEl.dataset.panelChartId);
 		if (!chart) return;
-		const svgContainer = slotEl.querySelector('.painel-slot-svg');
+		const svgContainer = slotEl.querySelector('.panel-slot-svg');
 		if (!svgContainer) return;
 		mountSlot(svgContainer, chart);
 	});
@@ -203,7 +203,7 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanvasPanelFn }) {
 	const layout = getTemplateForBlock(block);
 	const blockEl = document.createElement('section');
-	blockEl.className = 'painel-block';
+	blockEl.className = 'panel-block';
 	blockEl.dataset.panelBlockId = block.id;
 
 	const header = createBlockHeader({
@@ -228,7 +228,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 	});
 
 	const gridDiv = document.createElement('div');
-	gridDiv.className = `painel-layout ${layout.classe}`;
+	gridDiv.className = `panel-layout ${layout.classe}`;
 	gridDiv.dataset.panelLayoutBlock = block.id;
 	const borderColor = normalizeHexColor(block.borderColor);
 	if (block.borderEnabled) {
@@ -318,7 +318,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 function attachBlockResizeListener(blockEl, block, gridDiv, renderCanvasPanelFn) {
 	const handle = document.createElement('button');
 	handle.type = 'button';
-	handle.className = 'painel-block-size-handle';
+	handle.className = 'panel-block-size-handle';
 	handle.dataset.panelBlockResize = block.id;
 	handle.setAttribute('aria-label', t('chive-panel-resize-block-height'));
 	handle.addEventListener('mousedown', event => {

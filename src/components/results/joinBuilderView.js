@@ -194,7 +194,7 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		leftLabel.htmlFor = 'join-left-file';
 		const leftSelect = document.createElement('select');
 		leftSelect.id = 'join-left-file';
-		leftSelect.className = 'linhas-select';
+		leftSelect.className = 'rows-select';
 		datasets.forEach((dataset, index) => {
 			leftSelect.appendChild(createOption(index, dataset.nome, index === 0));
 		});
@@ -208,7 +208,7 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		rightLabel.htmlFor = 'join-right-file';
 		const rightSelect = document.createElement('select');
 		rightSelect.id = 'join-right-file';
-		rightSelect.className = 'linhas-select';
+		rightSelect.className = 'rows-select';
 		datasets.forEach((dataset, index) => {
 			rightSelect.appendChild(createOption(index, dataset.nome, index === 1));
 		});
@@ -222,7 +222,7 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		typeLabel.htmlFor = 'join-type';
 		const typeSelect = document.createElement('select');
 		typeSelect.id = 'join-type';
-		typeSelect.className = 'linhas-select';
+		typeSelect.className = 'rows-select';
 		[
 			{ value: 'inner', label: translate('chive-join-type-inner') },
 			{ value: 'left', label: translate('chive-join-type-left') },
@@ -255,11 +255,11 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		footer.className = 'join-footer';
 		const cancelButton = document.createElement('button');
 		cancelButton.type = 'button';
-		cancelButton.className = 'btn-secundario';
+		cancelButton.className = 'btn-secondary';
 		cancelButton.textContent = translate('chive-join-cancel');
 		const createButton = document.createElement('button');
 		createButton.type = 'button';
-		createButton.className = 'btn-primario';
+		createButton.className = 'btn-primary';
 		createButton.textContent = translate('chive-join-create');
 		footer.appendChild(cancelButton);
 		footer.appendChild(createButton);

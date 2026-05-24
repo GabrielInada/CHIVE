@@ -88,12 +88,12 @@ export function updateTabsUI(activeTab) {
 	const chartsActive = activeTab === 'charts';
 	const panelActive = activeTab === 'panel';
 
-	tabPreview.classList.toggle('ativo', previewActive);
-	tabCharts.classList.toggle('ativo', chartsActive);
-	tabPanel.classList.toggle('ativo', panelActive);
-	previewPanel.classList.toggle('ativo', previewActive);
-	chartsPanel.classList.toggle('ativo', chartsActive);
-	dashboardPanel.classList.toggle('ativo', panelActive);
+	tabPreview.classList.toggle('active', previewActive);
+	tabCharts.classList.toggle('active', chartsActive);
+	tabPanel.classList.toggle('active', panelActive);
+	previewPanel.classList.toggle('active', previewActive);
+	chartsPanel.classList.toggle('active', chartsActive);
+	dashboardPanel.classList.toggle('active', panelActive);
 }
 
 /**
@@ -132,7 +132,7 @@ export function updateGlobalFilterTrigger({
 
 	const active = hasDataset && isGlobalFilterActive(globalFilter);
 	globalFilterTrigger.dataset.active = active ? 'true' : 'false';
-	globalFilterTrigger.classList.toggle('ativo', active);
+	globalFilterTrigger.classList.toggle('active', active);
 
 	if (active) {
 		const count = countGlobalFilterRules(globalFilter);

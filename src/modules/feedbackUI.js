@@ -30,11 +30,11 @@ export function showFeedback(message, duration = 2200) {
 	}
 
 	toast.textContent = message;
-	toast.classList.add('visivel');
+	toast.classList.add('visible');
 
 	if (feedbackTimer) window.clearTimeout(feedbackTimer);
 	feedbackTimer = window.setTimeout(() => {
-		toast.classList.remove('visivel');
+		toast.classList.remove('visible');
 	}, duration);
 }
 
@@ -60,14 +60,14 @@ export function showError(message, duration = 0) {
 	}
 
 	const errorDiv = document.createElement('div');
-	errorDiv.className = 'aviso-erro';
+	errorDiv.className = 'error-notice';
 	errorDiv.role = 'alert';
 
 	const content = document.createElement('div');
 	content.textContent = message;
 
 	const closeBtn = document.createElement('button');
-	closeBtn.className = 'btn-fechar-aviso';
+	closeBtn.className = 'btn-close-notice';
 	closeBtn.type = 'button';
 	closeBtn.textContent = '×';
 	closeBtn.addEventListener('click', () => {
@@ -149,7 +149,7 @@ export function hideLoading() {
 export function clearAllFeedback() {
 	const toast = document.getElementById('toast-feedback');
 	if (toast) {
-		toast.classList.remove('visivel');
+		toast.classList.remove('visible');
 	}
 	clearErrors();
 	hideLoading();
@@ -211,8 +211,8 @@ export function showProgress(initialLabel = '') {
 	document.body.appendChild(toast);
 	// WHY: rAF defers the class-add to the next frame, which forces a layout
 	// pass between the initial mount and the transition trigger. Without this,
-	// the .visivel transition runs on the initial style (no visual fade-in).
-	requestAnimationFrame(() => toast.classList.add('visivel'));
+	// the .visible transition runs on the initial style (no visual fade-in).
+	requestAnimationFrame(() => toast.classList.add('visible'));
 
 	let cancelHandler = null;
 	// 'callback' while in-flight (× aborts host work);
@@ -261,7 +261,7 @@ export function showProgress(initialLabel = '') {
 		close() {
 			if (autoCloseTimer) window.clearTimeout(autoCloseTimer);
 			cancelBtn.removeEventListener('click', onCancelClick);
-			toast.classList.remove('visivel');
+			toast.classList.remove('visible');
 			window.setTimeout(() => {
 				if (toast.parentNode) toast.parentNode.removeChild(toast);
 			}, 200);

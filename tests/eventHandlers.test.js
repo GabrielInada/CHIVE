@@ -86,8 +86,8 @@ function setupDom() {
 
     <input id="input-arquivo" type="file" />
 
-    <div class="chart-bloco">
-      <h3 class="chart-titulo">Meu Grafico</h3>
+    <div class="chart-block">
+      <h3 class="chart-title">Meu Grafico</h3>
       <div data-chart-actions>
         <button
           class="chart-action-btn"

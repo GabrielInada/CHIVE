@@ -84,7 +84,7 @@ export function exportPanelLayoutSvg(feedbackCallback) {
 				border.setAttribute('stroke-width', '2');
 				border.setAttribute('rx', '8');
 				border.setAttribute('ry', '8');
-				if (slotEl.classList.contains('vazio')) {
+				if (slotEl.classList.contains('empty')) {
 					border.setAttribute('stroke-dasharray', '6 4');
 				}
 				svgRoot.appendChild(border);

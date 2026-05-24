@@ -79,7 +79,7 @@ export function createTextControl(id, labelText, value, maxLength = 80, disabled
 	const input = document.createElement('input');
 	input.id = id;
 	input.type = 'text';
-	input.className = 'linhas-select';
+	input.className = 'rows-select';
 	input.value = String(value || '');
 	input.maxLength = maxLength;
 	input.disabled = disabled;
@@ -110,7 +110,7 @@ export function createNumberInputControl(id, labelText, value, { min, max, step,
 	const input = document.createElement('input');
 	input.id = id;
 	input.type = 'number';
-	input.className = 'linhas-select';
+	input.className = 'rows-select';
 	if (min !== undefined && min !== null) input.min = String(min);
 	if (max !== undefined && max !== null) input.max = String(max);
 	if (step !== undefined && step !== null) input.step = String(step);
@@ -192,7 +192,7 @@ export function createSelectControl(id, labelText, optionsArray, selectedValue, 
 
 	const select = document.createElement('select');
 	select.id = id;
-	select.className = 'linhas-select';
+	select.className = 'rows-select';
 	select.disabled = disabled;
 
 	optionsArray.forEach(opt => {

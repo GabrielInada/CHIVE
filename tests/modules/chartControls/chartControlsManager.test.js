@@ -187,7 +187,7 @@ describe('renderChartControlsSidebar', () => {
 
 	it('shows global empty-state when no dataset is provided', () => {
 		renderChartControlsSidebar(null);
-		const empty = document.querySelector('#viz-chart-params .tabela-sem-colunas');
+		const empty = document.querySelector('#viz-chart-params .table-no-columns');
 		expect(empty).not.toBeNull();
 		expect(document.querySelector('.viz-chart-picker-trigger')).toBeNull();
 	});

@@ -22,7 +22,7 @@ body {
 }
 
 .logo {
-  font-family: var(--fonte-display);
+  font-family: var(--font-display);
   font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.5px;
@@ -59,7 +59,7 @@ body {
 }
 
 .lang-display-btn {
-  font-family: var(--fonte-sans);
+  font-family: var(--font-sans);
   font-size: 13px;
   background: rgba(255, 255, 255, 0.12);
   color: #fff;
@@ -104,7 +104,7 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.step.atual {
+.step.current {
   background: rgba(255, 255, 255, 0.2);
   opacity: 1;
   color: #fff;
@@ -120,7 +120,7 @@ body {
   transition: grid-template-columns 0.24s ease;
 }
 
-.painel-esquerdo {
+.panel-left {
   background: var(--surface);
   border-right: 1px solid var(--border);
   padding: 28px 24px;
@@ -136,7 +136,7 @@ body {
   transition: padding 0.24s ease;
 }
 
-.painel-esquerdo:has(#sidebar-panel-dados.ativo) {
+.panel-left:has(#sidebar-panel-dados.active) {
   position: static;
   align-self: stretch;
   height: auto;
@@ -151,21 +151,21 @@ body {
   min-height: 0;
 }
 
-.sidebar-panel.ativo {
+.sidebar-panel.active {
   display: flex;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
 }
 
-.painel-topo {
+.panel-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-top: -6px;
 }
 
-.painel-topo-label {
+.panel-top-label {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -189,8 +189,8 @@ body {
   background: rgba(26, 71, 42, 0.06);
 }
 
-.secao-titulo {
-  font-family: var(--fonte-display);
+.section-title {
+  font-family: var(--font-display);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -199,6 +199,6 @@ body {
   margin-bottom: 10px;
 }
 
-.area-resultados {
+.results-area {
   padding: 28px 32px;
 }

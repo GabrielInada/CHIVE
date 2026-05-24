@@ -140,7 +140,7 @@ describe('renderTinChartSection', () => {
 
 		renderTinChartSection({ config: defaultConfig(), rows: [] });
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-tin-insufficient-points');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-tin-insufficient-points');
 	});
 
 	it('falls back to generic empty-state for any other failure', () => {
@@ -149,6 +149,6 @@ describe('renderTinChartSection', () => {
 
 		renderTinChartSection({ config: defaultConfig(), rows: [] });
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-tin');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-tin');
 	});
 });

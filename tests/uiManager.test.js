@@ -26,17 +26,17 @@ import {
 
 function setupDom() {
   document.body.innerHTML = `
-    <button id="tab-preview" data-aba="preview" class="ativo"></button>
-    <button id="tab-charts" data-aba="charts" class="inativo"></button>
-    <button id="tab-panel" data-aba="panel" class="inativo"></button>
+    <button id="tab-preview" data-aba="preview" class="active"></button>
+    <button id="tab-charts" data-aba="charts" class="inactive"></button>
+    <button id="tab-panel" data-aba="panel" class="inactive"></button>
 
     <section id="painel-preview"></section>
     <section id="painel-charts" hidden></section>
     <section id="painel-panel" hidden></section>
 
-    <aside id="sidebar-panel-dados" class="ativo"></aside>
-    <aside id="sidebar-panel-viz" class="inativo"></aside>
-    <aside id="sidebar-panel-panel" class="inativo"></aside>
+    <aside id="sidebar-panel-dados" class="active"></aside>
+    <aside id="sidebar-panel-viz" class="inactive"></aside>
+    <aside id="sidebar-panel-panel" class="inactive"></aside>
 
     <button id="btn-toggle-sidebar" aria-expanded="true"></button>
   `;
@@ -52,24 +52,24 @@ describe('uiManager', () => {
   it('retorna a aba ativa e faz fallback para preview', () => {
     expect(getActiveTab()).toBe('preview');
 
-    document.querySelector('[data-aba="preview"]').classList.remove('ativo');
+    document.querySelector('[data-aba="preview"]').classList.remove('active');
     expect(getActiveTab()).toBe('preview');
   });
 
   it('switchTab atualiza classes paineis e sidebar mode para charts', () => {
     switchTab('charts');
 
-    expect(document.getElementById('tab-charts').classList.contains('ativo')).toBe(true);
+    expect(document.getElementById('tab-charts').classList.contains('active')).toBe(true);
     expect(document.getElementById('painel-charts').hidden).toBe(false);
     expect(document.getElementById('painel-preview').hidden).toBe(true);
     expect(mocks.setSidebarMode).toHaveBeenCalledWith('viz');
-    expect(document.getElementById('sidebar-panel-viz').classList.contains('ativo')).toBe(true);
+    expect(document.getElementById('sidebar-panel-viz').classList.contains('active')).toBe(true);
   });
 
   it('ignora switchTab com aba invalida', () => {
     switchTab('inexistente');
     expect(mocks.setSidebarMode).not.toHaveBeenCalled();
-    expect(document.getElementById('tab-preview').classList.contains('ativo')).toBe(true);
+    expect(document.getElementById('tab-preview').classList.contains('active')).toBe(true);
   });
 
   it('setTabVisibility e updateSidebarUI aplicam visibilidade correta', () => {
@@ -80,8 +80,8 @@ describe('uiManager', () => {
     expect(document.getElementById('painel-panel').hidden).toBe(true);
 
     updateSidebarUI('panel');
-    expect(document.getElementById('sidebar-panel-panel').classList.contains('ativo')).toBe(true);
-    expect(document.getElementById('sidebar-panel-dados').classList.contains('inativo')).toBe(true);
+    expect(document.getElementById('sidebar-panel-panel').classList.contains('active')).toBe(true);
+    expect(document.getElementById('sidebar-panel-dados').classList.contains('inactive')).toBe(true);
   });
 
   it('toggleSidebarCollapsed alterna classe e atributos de acessibilidade', () => {

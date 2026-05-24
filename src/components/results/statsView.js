@@ -45,7 +45,7 @@ function getCategoricalStats(rows, visibleColumns) {
 /** @private */
 function createStatLine(label, valor) {
 	const linha = document.createElement('div');
-	linha.className = 'stat-linha';
+	linha.className = 'stat-row';
 	const spanLabel = document.createElement('span');
 	spanLabel.textContent = label;
 	const spanValor = document.createElement('span');
@@ -91,7 +91,7 @@ export function renderStats(rows, visibleColumns) {
 			coluna.className = 'stat-col';
 
 			const nome = document.createElement('div');
-			nome.className = 'stat-col-nome';
+			nome.className = 'stat-col-name';
 			nome.title = stat.nome;
 			nome.textContent = stat.nome;
 
@@ -147,7 +147,7 @@ export function renderCategoricalStats(rows, visibleColumns) {
 		coluna.className = 'stat-col';
 
 		const nome = document.createElement('div');
-		nome.className = 'stat-col-nome';
+		nome.className = 'stat-col-name';
 		nome.title = stat.nome;
 		nome.textContent = stat.nome;
 		coluna.appendChild(nome);
@@ -159,7 +159,7 @@ export function renderCategoricalStats(rows, visibleColumns) {
 				`${stat.missing.toLocaleString(locale)} (${formatPct(stat.missingPct)})`,
 			));
 			const empty = document.createElement('div');
-			empty.className = 'stat-linha';
+			empty.className = 'stat-row';
 			const span = document.createElement('span');
 			span.textContent = t('chive-cat-stat-empty');
 			empty.appendChild(span);

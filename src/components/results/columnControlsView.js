@@ -36,7 +36,7 @@ export function renderColumnControlsDOM({
 
 	const createActionButton = (acao, texto, ativo = false) => {
 		const botao = document.createElement('button');
-		botao.className = `colunas-acao${ativo ? ' ativo' : ''}`;
+		botao.className = `column-action${ativo ? ' active' : ''}`;
 		botao.type = 'button';
 		botao.dataset.acaoColuna = acao;
 		botao.textContent = texto;
@@ -72,21 +72,21 @@ export function renderColumnControlsDOM({
 	listaColunas.replaceChildren();
 	colunas.forEach(({ nome, tipo }) => {
 		const label = document.createElement('label');
-		label.className = 'coluna-item';
+		label.className = 'column-item';
 		label.title = nome;
 
 		const checkbox = document.createElement('input');
-		checkbox.className = 'coluna-checkbox';
+		checkbox.className = 'column-checkbox';
 		checkbox.type = 'checkbox';
 		checkbox.dataset.coluna = nome;
 		checkbox.checked = nomesSelecionados.has(nome);
 
 		const nomeSpan = document.createElement('span');
-		nomeSpan.className = 'coluna-nome';
+		nomeSpan.className = 'column-name';
 		nomeSpan.textContent = nome;
 
 		const tipoSpan = document.createElement('span');
-		tipoSpan.className = `tipo-tag ${tipo}`;
+		tipoSpan.className = `type-tag ${tipo}`;
 		tipoSpan.textContent = translateType(tipo);
 
 		label.appendChild(checkbox);
@@ -99,7 +99,7 @@ export function renderColumnControlsDOM({
 		const alvo = evento.target;
 		if (!(alvo instanceof HTMLInputElement) || alvo.type !== 'checkbox' || !aoAlterarSelecaoColuna) return;
 
-		const selecionados = Array.from(listaColunas.querySelectorAll('.coluna-checkbox:checked'))
+		const selecionados = Array.from(listaColunas.querySelectorAll('.column-checkbox:checked'))
 			.map(checkbox => checkbox.dataset.coluna)
 			.filter(Boolean);
 		aoAlterarSelecaoColuna(selecionados);
