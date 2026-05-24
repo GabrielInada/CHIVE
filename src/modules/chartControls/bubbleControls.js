@@ -353,7 +353,7 @@ export function computeDefaults(dataset, ctx) {
 	const currentVal = dataset.configGraficos?.bubble?.valueColumn;
 	const measureMode = dataset.configGraficos?.bubble?.measureMode;
 	const valueColumn = measureMode !== 'count'
-		? (ctx.numericas.includes(currentVal) ? currentVal : (ctx.numericas[0] || null))
+		? (ctx.numeric.includes(currentVal) ? currentVal : (ctx.numeric[0] || null))
 		: currentVal;
 	return {
 		category: ctx.baseCategoricalOrAll.includes(currentCat)

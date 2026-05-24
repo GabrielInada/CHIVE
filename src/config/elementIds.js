@@ -66,9 +66,9 @@ export const VIEW_IDS = {
 
 // Sidebar elements
 export const SIDEBAR_IDS = {
-	panelDados: 'sidebar-panel-data',
+	panelData: 'sidebar-panel-data',
 	panelViz: 'sidebar-panel-viz',
-	panelPanel: 'sidebar-panel-dashboard',
+	panelDashboard: 'sidebar-panel-dashboard',
 	toggleButton: 'btn-toggle-sidebar',
 };
 

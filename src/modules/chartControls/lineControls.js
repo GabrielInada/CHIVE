@@ -287,12 +287,12 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 export function computeDefaults(dataset, ctx) {
 	const currentX = dataset.configGraficos?.line?.x;
 	const currentY = dataset.configGraficos?.line?.y;
-	const xDefault = ctx.todasColunas.includes(currentX)
+	const xDefault = ctx.allColumns.includes(currentX)
 		? currentX
-		: (ctx.datas[0] ?? ctx.numericas[0] ?? ctx.todasColunas[0] ?? null);
-	const yCandidates = ctx.numericas.filter(name => name !== xDefault);
-	const yDefault = ctx.numericas.includes(currentY) && currentY !== xDefault
+		: (ctx.dates[0] ?? ctx.numeric[0] ?? ctx.allColumns[0] ?? null);
+	const yCandidates = ctx.numeric.filter(name => name !== xDefault);
+	const yDefault = ctx.numeric.includes(currentY) && currentY !== xDefault
 		? currentY
-		: (yCandidates[0] ?? ctx.numericas[0] ?? null);
+		: (yCandidates[0] ?? ctx.numeric[0] ?? null);
 	return { x: xDefault, y: yDefault };
 }

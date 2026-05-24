@@ -490,7 +490,7 @@ function pickPreferred(options, preferredIndex, avoid = []) {
  */
 export function computeDefaults(dataset, ctx) {
 	const config = dataset.configGraficos?.tin || {};
-	const numerics = ctx.numericas || [];
+	const numerics = ctx.numeric || [];
 	const currentX = numerics.includes(config.x) ? config.x : (numerics[0] ?? null);
 	const currentY = numerics.includes(config.y) && config.y !== currentX
 		? config.y

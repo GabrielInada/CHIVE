@@ -15,7 +15,7 @@ import { setSidebarMode } from './state/appState.js';
 
 /**
  * Read the currently-active tab from the DOM (whichever `[data-aba]`
- * element carries the `ativo` class). Falls back to `'preview'` when no
+ * element carries the `active` class). Falls back to `'preview'` when no
  * tab is marked active.
  *
  * @returns {TabName}
@@ -32,8 +32,8 @@ export function getActiveTab() {
 
 /**
  * Switch to a tab and apply the side-effect chain:
- *   1. Toggle `ativo`/`inativo` classes on `[data-aba]` buttons.
- *   2. Hide all `painel-*` panels except the one matching `tabName`.
+ *   1. Toggle `active`/`inactive` classes on `[data-aba]` buttons.
+ *   2. Hide all `tab-content-*` panels except the one matching `tabName`.
  *   3. Update the sidebar mode to match (`preview → dados`, `charts → viz`, `panel → panel`) via `setSidebarMode`.
  *
  * No-op when `tabName` is not a valid tab name.
@@ -91,7 +91,7 @@ function updateSidebarForTab(tabName) {
 }
 
 /**
- * Apply a sidebar mode to the DOM by toggling `ativo`/`inativo` classes
+ * Apply a sidebar mode to the DOM by toggling `active`/`inactive` classes
  * on the three `sidebar-panel-*` containers. Pure DOM update — does not
  * write to state.
  *

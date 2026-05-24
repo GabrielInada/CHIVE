@@ -144,11 +144,11 @@
  * exist (the chart-picker still needs to offer *something*).
  *
  * @typedef {Object} ChartControlContext
- * @property {string[]} numericas - Numeric (`'numero'`) column names.
- * @property {string[]} categoricas - Categorical (non-numeric) column names.
- * @property {string[]} datas - Date (`'data'`) column names.
- * @property {string[]} todasColunas - All currently visible column names.
- * @property {string[]} baseCategoricalOrAll - `categoricas` when non-empty, else `todasColunas`.
+ * @property {string[]} numeric - Numeric (`'numero'`) column names.
+ * @property {string[]} categorical - Categorical (non-numeric) column names.
+ * @property {string[]} dates - Date (`'data'`) column names.
+ * @property {string[]} allColumns - All currently visible column names.
+ * @property {string[]} baseCategoricalOrAll - `categorical` when non-empty, else `allColumns`.
  */
 
 // ─── Panel domain ───────────────────────────────────────────────────────

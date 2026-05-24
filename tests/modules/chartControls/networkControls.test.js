@@ -182,18 +182,18 @@ describe('networkControls listeners', () => {
 describe('networkControls computeDefaults', () => {
 	it('preserves the current source/target when both are still in scope', () => {
 		const dataset = createDataset({ source: 'from', target: 'to' });
-		const ctx = { todasColunas: ['from', 'to', 'extra'] };
+		const ctx = { allColumns: ['from', 'to', 'extra'] };
 		expect(computeDefaults(dataset, ctx)).toEqual({ source: 'from', target: 'to' });
 	});
 
 	it('falls back to the first two distinct columns when the current values are out of scope', () => {
 		const dataset = createDataset({ source: 'gone', target: 'missing' });
-		const ctx = { todasColunas: ['alpha', 'beta', 'gamma'] };
+		const ctx = { allColumns: ['alpha', 'beta', 'gamma'] };
 		expect(computeDefaults(dataset, ctx)).toEqual({ source: 'alpha', target: 'beta' });
 	});
 
 	it('returns null when there are no columns', () => {
 		const dataset = createDataset();
-		expect(computeDefaults(dataset, { todasColunas: [] })).toEqual({ source: null, target: null });
+		expect(computeDefaults(dataset, { allColumns: [] })).toEqual({ source: null, target: null });
 	});
 });

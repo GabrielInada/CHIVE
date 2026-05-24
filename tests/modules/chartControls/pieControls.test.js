@@ -193,19 +193,19 @@ describe('pieControls listeners', () => {
 describe('pieControls computeDefaults', () => {
 	it('preserves the current category and valueColumn when they are still in scope', () => {
 		const dataset = createDataset({ category: 'region', valueColumn: 'sales' });
-		const ctx = { baseCategoricalOrAll: ['region', 'team'], numericas: ['sales', 'profit'] };
+		const ctx = { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales', 'profit'] };
 		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'sales' });
 	});
 
 	it('falls back to the first option when the current value is out of scope', () => {
 		const dataset = createDataset({ category: 'old', valueColumn: 'gone' });
-		const ctx = { baseCategoricalOrAll: ['region', 'team'], numericas: ['sales'] };
+		const ctx = { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] };
 		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'sales' });
 	});
 
 	it('returns null when there are no candidate columns', () => {
 		const dataset = createDataset();
-		const ctx = { baseCategoricalOrAll: [], numericas: [] };
+		const ctx = { baseCategoricalOrAll: [], numeric: [] };
 		expect(computeDefaults(dataset, ctx)).toEqual({ category: null, valueColumn: null });
 	});
 });
