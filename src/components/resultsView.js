@@ -90,7 +90,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   if (!stickyHeader) {
     stickyHeader = document.createElement('div');
     stickyHeader.id = stickyHeaderId;
-    stickyHeader.className = 'arquivos-topo-fixo';
+    stickyHeader.className = 'files-top-fixed';
     fileInfo.insertBefore(stickyHeader, summary);
   }
 
@@ -106,7 +106,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   if (!selectedMeta) {
     selectedMeta = document.createElement('div');
     selectedMeta.id = selectedMetaId;
-    selectedMeta.className = 'arquivos-selecionado-meta';
+    selectedMeta.className = 'files-selected-meta';
     stickyHeader.appendChild(selectedMeta);
   } else if (selectedMeta.parentElement !== stickyHeader) {
     stickyHeader.appendChild(selectedMeta);
@@ -133,7 +133,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   if (!tools) {
     tools = document.createElement('div');
     tools.id = toolsId;
-    tools.className = 'arquivos-ferramentas';
+    tools.className = 'files-tools';
     stickyHeader.appendChild(tools);
   } else if (tools.parentElement !== stickyHeader) {
     stickyHeader.appendChild(tools);
@@ -142,7 +142,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   tools.replaceChildren();
   const searchInput = document.createElement('input');
   searchInput.type = 'search';
-  searchInput.className = 'arquivos-filtro-input';
+  searchInput.className = 'files-filter-input';
   searchInput.id = 'arquivos-filtro-input';
   searchInput.placeholder = t('chive-files-search-placeholder');
   searchInput.value = fileListQuery;
@@ -150,7 +150,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   tools.appendChild(searchInput);
 
   const filterStatus = document.createElement('div');
-  filterStatus.className = 'arquivos-filtro-status';
+  filterStatus.className = 'files-filter-status';
   tools.appendChild(filterStatus);
 
   const paginationId = 'arquivos-paginacao';
@@ -158,7 +158,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   if (!pagination) {
     pagination = document.createElement('div');
     pagination.id = paginationId;
-    pagination.className = 'arquivos-paginacao';
+    pagination.className = 'files-pagination';
     list.insertAdjacentElement('afterend', pagination);
   }
 
@@ -181,7 +181,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
     if (renderResult.filtered > FILE_LIST_PAGE_SIZE) {
       const toggle = document.createElement('button');
       toggle.type = 'button';
-      toggle.className = 'btn-secundario arquivos-paginacao-btn';
+      toggle.className = 'btn-secondary files-pagination-btn';
 
       if (renderResult.hasMore) {
         toggle.textContent = t('chive-files-show-more', renderResult.filtered - renderResult.rendered);
@@ -210,19 +210,19 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   fileListVisibleCount = Math.max(FILE_LIST_PAGE_SIZE, fileListVisibleCount);
   renderList();
 
-  const joinActionsId = 'join-arquivos-acoes';
+  const joinActionsId = 'join-files-actions';
   let joinActions = document.getElementById(joinActionsId);
   if (!joinActions) {
     joinActions = document.createElement('div');
     joinActions.id = joinActionsId;
-    joinActions.className = 'join-arquivos-acoes';
+    joinActions.className = 'join-files-actions';
     list.insertAdjacentElement('afterend', joinActions);
   }
 
   joinActions.replaceChildren();
   const joinButton = document.createElement('button');
   joinButton.type = 'button';
-  joinButton.className = 'btn-secundario btn-join-files';
+  joinButton.className = 'btn-secondary btn-join-files';
   joinButton.id = 'btn-join-files';
   joinButton.textContent = t('chive-btn-join-files');
   joinButton.disabled = datasets.length < 2;
@@ -238,7 +238,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
 
   const presetButton = document.createElement('button');
   presetButton.type = 'button';
-  presetButton.className = 'btn-secundario btn-preset-datasets';
+  presetButton.className = 'btn-secondary btn-preset-datasets';
   presetButton.id = 'btn-preset-datasets';
   presetButton.textContent = t('chive-btn-preset-datasets');
   presetButton.addEventListener('click', async () => {
@@ -286,7 +286,7 @@ export function renderEmptyState() {
   if (emptyFilterBtn) {
     emptyFilterBtn.hidden = true;
     emptyFilterBtn.disabled = true;
-    emptyFilterBtn.classList.remove('ativo');
+    emptyFilterBtn.classList.remove('active');
     emptyFilterBtn.dataset.active = 'false';
   }
   if (els['container-tabela']) els['container-tabela'].replaceChildren();
@@ -305,15 +305,15 @@ export function renderEmptyState() {
   if (devNotice) devNotice.style.display = 'none';
   
   const zonaUpload = document.getElementById('zona-upload');
-  if (zonaUpload) zonaUpload.classList.remove('carregado');
+  if (zonaUpload) zonaUpload.classList.remove('loaded');
   
-  const uploadIcone = document.querySelector('.upload-icone');
+  const uploadIcone = document.querySelector('.upload-icon');
   if (uploadIcone) uploadIcone.textContent = '⬆';
   
-  const uploadTextoMain = document.querySelector('.upload-texto-principal');
+  const uploadTextoMain = document.querySelector('.upload-text-main');
   if (uploadTextoMain) uploadTextoMain.textContent = t('chive-upload-main');
   
-  const uploadTextoSub = document.querySelector('.upload-texto-sub');
+  const uploadTextoSub = document.querySelector('.upload-text-sub');
   // innerHTML: translation contains <br>/<strong>; source is i18n JSON, not user input.
   if (uploadTextoSub) uploadTextoSub.innerHTML = t('chive-upload-sub');
 }
@@ -506,10 +506,10 @@ export function renderDataInterface(
   document.getElementById('btn-avancar').disabled = false;
   const devNotice = document.getElementById('aviso-dev');
   if (devNotice) devNotice.style.display = 'block';
-  document.getElementById('zona-upload').classList.add('carregado');
-  document.querySelector('.upload-icone').textContent = '✓';
-  document.querySelector('.upload-texto-principal').textContent = t('chive-upload-loaded-main');
-  document.querySelector('.upload-texto-sub').textContent = t('chive-upload-loaded-sub');
+  document.getElementById('zona-upload').classList.add('loaded');
+  document.querySelector('.upload-icon').textContent = '✓';
+  document.querySelector('.upload-text-main').textContent = t('chive-upload-loaded-main');
+  document.querySelector('.upload-text-sub').textContent = t('chive-upload-loaded-sub');
   document.getElementById('arquivo-resumo-texto').title =
     `${fileName} · ${rows.length.toLocaleString(getLocale())} linhas · ${columns.length} colunas · ${fileSize}`;
 }

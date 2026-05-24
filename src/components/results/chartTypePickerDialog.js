@@ -15,7 +15,7 @@ import { CHART_TYPES, PREVIEW_SVGS, CATEGORY_KEYS } from '../../modules/chartCon
 function buildChartCard(type, translate, isActive) {
 	const card = document.createElement('button');
 	card.type = 'button';
-	card.className = `preset-card chart-picker-card${isActive ? ' selecionado' : ''}`;
+	card.className = `preset-card chart-picker-card${isActive ? ' selected' : ''}`;
 	card.dataset.chartType = type;
 
 	const preview = document.createElement('span');
@@ -25,7 +25,7 @@ function buildChartCard(type, translate, isActive) {
 	card.appendChild(preview);
 
 	const name = document.createElement('div');
-	name.className = 'preset-card-nome';
+	name.className = 'preset-card-name';
 	name.textContent = translate(`chive-chart-toggle-${type}`);
 	card.appendChild(name);
 
@@ -79,12 +79,12 @@ export function openChartTypePickerDialog({ activeChartType = null, translate })
 
 		const clearButton = document.createElement('button');
 		clearButton.type = 'button';
-		clearButton.className = 'btn-secundario';
+		clearButton.className = 'btn-secondary';
 		clearButton.textContent = translate('chive-chart-picker-clear');
 
 		const cancelButton = document.createElement('button');
 		cancelButton.type = 'button';
-		cancelButton.className = 'btn-secundario';
+		cancelButton.className = 'btn-secondary';
 		cancelButton.textContent = translate('chive-chart-picker-cancel');
 
 		footer.appendChild(clearButton);

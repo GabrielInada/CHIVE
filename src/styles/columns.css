@@ -5,7 +5,7 @@
   display: none;
 }
 
-.lista-colunas {
+.column-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -14,14 +14,14 @@
   padding-right: 2px;
 }
 
-.colunas-acoes {
+.column-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 4px;
 }
 
-.coluna-item {
+.column-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -34,19 +34,19 @@
   cursor: pointer;
 }
 
-.coluna-checkbox {
+.column-checkbox {
   accent-color: var(--accent);
   width: 13px;
   height: 13px;
   flex-shrink: 0;
 }
 
-.coluna-nome {
+.column-name {
   font-weight: 500;
   color: var(--text);
 }
 
-.tipo-tag {
+.type-tag {
   font-size: 9px;
   padding: 2px 7px;
   border-radius: 3px;
@@ -57,23 +57,23 @@
   margin-left: 8px;
 }
 
-.tipo-tag.numero {
+.type-tag.numero {
   background: var(--tag-num);
   color: var(--success);
 }
 
-.tipo-tag.texto {
+.type-tag.texto {
   background: var(--tag-txt);
   color: #7a5200;
 }
 
-.tipo-tag.data {
+.type-tag.data {
   background: var(--tag-dat);
   color: #2c3a8c;
 }
 
 /* Estado ativo nos botões de filtro */
-.colunas-acao.ativo {
+.column-action.active {
   border-color: var(--accent);
   color: var(--accent);
   background: rgba(26, 71, 42, 0.08);

@@ -77,12 +77,12 @@ describe('slotLifecycle', () => {
 		expect(container.innerHTML).toBe('');
 	});
 
-	it('teardownAllSlots cleans every painel-slot-svg under root', () => {
+	it('teardownAllSlots cleans every panel-slot-svg under root', () => {
 		const root = document.createElement('div');
 		const a = document.createElement('div');
-		a.className = 'painel-slot-svg';
+		a.className = 'panel-slot-svg';
 		const b = document.createElement('div');
-		b.className = 'painel-slot-svg';
+		b.className = 'panel-slot-svg';
 		root.appendChild(a);
 		root.appendChild(b);
 

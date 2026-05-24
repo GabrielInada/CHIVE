@@ -388,7 +388,7 @@ export function renderChartControlsSidebar(dataset) {
 	const emptyState = (message) => {
 		paramsContainer.replaceChildren();
 		const emptyDiv = document.createElement('div');
-		emptyDiv.className = 'tabela-sem-colunas';
+		emptyDiv.className = 'table-no-columns';
 		emptyDiv.textContent = message;
 		paramsContainer.appendChild(emptyDiv);
 	};

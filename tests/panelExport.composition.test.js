@@ -43,13 +43,13 @@ function rect(left, top, width, height) {
 }
 
 /**
- * Inject a live <svg> into each chart-bearing slot's .painel-slot-svg container.
+ * Inject a live <svg> into each chart-bearing slot's .panel-slot-svg container.
  * After Phase 1, the exporter clones the LIVE SVG from the DOM (no longer reads
  * a serialized svgMarkup string from state). Tests that exercise export geometry
  * therefore need to put real SVG elements in the slots before calling export.
  */
 function injectLiveSlotSvgs() {
-  document.querySelectorAll('[data-panel-slot][data-panel-chart-id] .painel-slot-svg').forEach(slotSvgEl => {
+  document.querySelectorAll('[data-panel-slot][data-panel-chart-id] .panel-slot-svg').forEach(slotSvgEl => {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     // Intentionally NO width/height/x/y here — the exporter sets those fresh,
     // and tests rely on them appearing in canonical x y width height order in
@@ -115,10 +115,10 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(0, 0, 600, 400);
 
     const filledSlot = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const emptySlot = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
     );
     filledSlot.getBoundingClientRect = () => rect(20, 30, 260, 150);
     emptySlot.getBoundingClientRect = () => rect(300, 30, 260, 150);
@@ -154,10 +154,10 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(100, 50, 1000, 800);
 
     const slotA = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const slotB = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-2"]`
     );
 
     slotA.getBoundingClientRect = () => rect(150, 110, 300, 200);
@@ -197,13 +197,13 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(0, 0, 1000, 700);
 
     const slotA1 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const slotA2 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
     );
     const slotB1 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-1"]`
     );
 
     slotA1.getBoundingClientRect = () => rect(10, 10, 111, 101);
@@ -246,13 +246,13 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(50, 40, 900, 600);
 
     const slot1 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const slot2 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
     );
     const slot3 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-3"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-3"]`
     );
 
     slot1.getBoundingClientRect = () => rect(100, 80, 500, 520);
@@ -301,22 +301,22 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(20, 10, 1200, 900);
 
     const a1 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const a2 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
     );
     const a3 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-3"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-3"]`
     );
     const b1 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-1"]`
     );
     const b3 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-3"]`
+      `.panel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-3"]`
     );
     const c2slot = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockC}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockC}"] [data-panel-slot="slot-2"]`
     );
 
     a1.getBoundingClientRect = () => rect(60, 40, 700, 420);
@@ -357,7 +357,7 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(0, 0, 800, 500);
 
     const keptSlot = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     keptSlot.getBoundingClientRect = () => rect(20, 30, 300, 200);
 

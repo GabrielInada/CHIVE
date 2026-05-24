@@ -23,7 +23,7 @@ import { setSidebarMode } from './state/appState.js';
 export function getActiveTab() {
 	const tabs = document.querySelectorAll('[data-aba]');
 	for (const tab of tabs) {
-		if (tab.classList && tab.classList.contains('ativo')) {
+		if (tab.classList && tab.classList.contains('active')) {
 			return tab.dataset.aba;
 		}
 	}
@@ -51,11 +51,11 @@ export function switchTab(tabName) {
 	const tabs = document.querySelectorAll('[data-aba]');
 	tabs.forEach(tab => {
 		if (tab.dataset.aba === tabName) {
-			tab.classList.add('ativo');
-			tab.classList.remove('inativo');
+			tab.classList.add('active');
+			tab.classList.remove('inactive');
 		} else {
-			tab.classList.remove('ativo');
-			tab.classList.add('inativo');
+			tab.classList.remove('active');
+			tab.classList.add('inactive');
 		}
 	});
 
@@ -106,8 +106,8 @@ export function updateSidebarUI(mode) {
 
 	Object.entries(sidebars).forEach(([modeKey, el]) => {
 		if (el) {
-			el.classList.toggle('ativo', mode === modeKey);
-			el.classList.toggle('inativo', mode !== modeKey);
+			el.classList.toggle('active', mode === modeKey);
+			el.classList.toggle('inactive', mode !== modeKey);
 		}
 	});
 }

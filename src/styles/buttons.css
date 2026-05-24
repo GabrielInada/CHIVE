@@ -2,13 +2,13 @@
    Button styles and variants (primary, secondary, danger, etc.)
    Used by all features */
 
-.btn-primario {
+.btn-primary {
   background: var(--accent);
   color: #fff;
   border: none;
   padding: 10px 20px;
   border-radius: 5px;
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -16,33 +16,33 @@
   transition: opacity 0.15s;
 }
 
-.btn-primario:hover {
+.btn-primary:hover {
   opacity: 0.85;
 }
 
-.btn-secundario {
+.btn-secondary {
   background: var(--surface);
   color: var(--accent);
   border: 1px solid var(--border);
 }
 
-.btn-primario:disabled {
+.btn-primary:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
 
-.colunas-acao {
+.column-action {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
   border-radius: 999px;
   padding: 4px 8px;
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 10px;
   cursor: pointer;
 }
 
-.colunas-acao:hover {
+.column-action:hover {
   border-color: var(--accent);
   color: var(--accent);
   background: rgba(26, 71, 42, 0.05);

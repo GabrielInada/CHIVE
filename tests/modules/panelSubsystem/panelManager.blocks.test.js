@@ -45,7 +45,7 @@ describe('panelManager multi-block canvas (phase 2)', () => {
 
     renderCanvasPanel();
 
-    const blockEls = document.querySelectorAll('.painel-block[data-panel-block-id]');
+    const blockEls = document.querySelectorAll('.panel-block[data-panel-block-id]');
     expect(blockEls.length).toBe(2);
   });
 
@@ -160,7 +160,7 @@ describe('panelManager multi-block canvas (phase 2)', () => {
     expect(block.templateId).toBe('layout-hero2');
 
     const slot3 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockId}"] [data-panel-slot="slot-3"]`
+      `.panel-block[data-panel-block-id="${blockId}"] [data-panel-slot="slot-3"]`
     );
     expect(slot3).toBeTruthy();
   });
@@ -177,7 +177,7 @@ describe('panelManager multi-block canvas (phase 2)', () => {
     expect(handle.style.left).toBe('85%');
     expect(handle.style.width).toBe('');
 
-    const rail = document.querySelector('.painel-block[data-panel-block-id="' + blockId + '"] .painel-resize-rail.eixo-y');
+    const rail = document.querySelector('.panel-block[data-panel-block-id="' + blockId + '"] .panel-resize-rail.axis-y');
     expect(rail).toBeTruthy();
     expect(rail.style.left).toBe('85%');
     expect(rail.style.width).toBe('calc(30% - 10px)');
@@ -253,10 +253,10 @@ describe('panelManager multi-block canvas (phase 2)', () => {
     renderCanvasPanel();
 
     const sourceSlot = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const targetSlot = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-1"]`
     );
     expect(sourceSlot).toBeTruthy();
     expect(targetSlot).toBeTruthy();

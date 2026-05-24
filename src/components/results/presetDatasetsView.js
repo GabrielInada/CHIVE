@@ -20,7 +20,7 @@ function buildPresetCard(entry, translate) {
 	card.dataset.presetId = entry.id;
 
 	const name = document.createElement('div');
-	name.className = 'preset-card-nome';
+	name.className = 'preset-card-name';
 	name.textContent = translate(entry.nameKey);
 	card.appendChild(name);
 
@@ -99,12 +99,12 @@ export function openPresetDatasetsDialog({ translate }) {
 		footer.className = 'join-footer';
 		const cancelButton = document.createElement('button');
 		cancelButton.type = 'button';
-		cancelButton.className = 'btn-secundario';
+		cancelButton.className = 'btn-secondary';
 		cancelButton.textContent = translate('chive-preset-cancel');
 
 		const loadButton = document.createElement('button');
 		loadButton.type = 'button';
-		loadButton.className = 'btn-primario';
+		loadButton.className = 'btn-primary';
 		loadButton.textContent = translate('chive-preset-load');
 		loadButton.disabled = true;
 
@@ -133,7 +133,7 @@ export function openPresetDatasetsDialog({ translate }) {
 			card.addEventListener('click', () => {
 				selectedId = entry.id;
 				Array.from(grid.querySelectorAll('.preset-card')).forEach(node => {
-					node.classList.toggle('selecionado', node.dataset.presetId === selectedId);
+					node.classList.toggle('selected', node.dataset.presetId === selectedId);
 				});
 				loadButton.disabled = false;
 			});

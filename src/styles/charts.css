@@ -64,7 +64,7 @@
   background: var(--surface);
   color: var(--text);
   padding: 7px 9px;
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 11px;
   cursor: pointer;
 }
@@ -99,14 +99,14 @@
   gap: 16px;
 }
 
-.chart-bloco {
+.chart-block {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
   padding: 12px;
 }
 
-.chart-bloco-topo {
+.chart-block-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -114,13 +114,13 @@
   margin-bottom: 8px;
 }
 
-.chart-titulo {
-  font-family: var(--fonte-display);
+.chart-title {
+  font-family: var(--font-display);
   font-size: 13px;
   color: var(--text);
 }
 
-.chart-acoes {
+.chart-actions {
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -133,7 +133,7 @@
   background: var(--surface);
   color: var(--accent);
   padding: 6px 12px;
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -155,7 +155,7 @@
   overflow: hidden;
 }
 
-.chart-vazio {
+.chart-empty {
   min-height: 240px;
   display: flex;
   align-items: center;

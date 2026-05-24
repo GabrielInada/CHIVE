@@ -5,20 +5,20 @@ body.sidebar-collapsed .workspace {
   --sidebar-width: 74px;
 }
 
-body.sidebar-collapsed .painel-esquerdo {
+body.sidebar-collapsed .panel-left {
   padding: 16px 10px;
   gap: 12px;
 }
 
-body.sidebar-collapsed .painel-topo {
+body.sidebar-collapsed .panel-top {
   width: 100%;
   justify-content: center;
 }
 
-body.sidebar-collapsed .painel-topo-label,
-body.sidebar-collapsed .secao-titulo,
-body.sidebar-collapsed .upload-texto-principal,
-body.sidebar-collapsed .upload-texto-sub,
+body.sidebar-collapsed .panel-top-label,
+body.sidebar-collapsed .section-title,
+body.sidebar-collapsed .upload-text-main,
+body.sidebar-collapsed .upload-text-sub,
 body.sidebar-collapsed #info-arquivo,
 body.sidebar-collapsed #painel-colunas,
 body.sidebar-collapsed #painel-visualizacoes-sidebar,
@@ -34,6 +34,6 @@ body.sidebar-collapsed #btn-voltar-viz {
 
 /* Centraliza e redimensiona a zona de upload no modo colapsado - Lucas */
 body.sidebar-collapsed #zona-upload,
-body.sidebar-collapsed .upload-icone {
+body.sidebar-collapsed .upload-icon {
   display: none;
 }

@@ -78,7 +78,7 @@ describe('renderTreemapChartSection', () => {
 
 		renderTreemapChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-treemap-numeric');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-treemap-numeric');
 	});
 
 	it('falls back to generic empty-state for any other failure', () => {
@@ -87,7 +87,7 @@ describe('renderTreemapChartSection', () => {
 
 		renderTreemapChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-treemap');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-treemap');
 	});
 
 	it('renders happy path with category arg and full options', () => {

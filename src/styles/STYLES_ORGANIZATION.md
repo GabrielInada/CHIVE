@@ -44,7 +44,7 @@ Foundation is split into two sub-bundles so the about page can load only what it
 
 | File | Purpose |
 |------|---------|
-| `animations.css` | `.animar` keyframe used by app feature reveals |
+| `animations.css` | `.animate` keyframe used by app feature reveals |
 | `collapsed.css` | `body.sidebar-collapsed` state styles for the main-app sidebar |
 
 **Bundle via**: `base.css` → `style.css`
@@ -179,17 +179,16 @@ When adding styles for a new feature:
 
 ## Class Naming Convention
 
-Classes follow Portuguese naming with kebab-case:
-- Component prefix: `.painel-`, `.tabela-`, `.grafico-`, `.vizão-`
-- Modifiers: `.ativo`, `.desativado`, `.carregado`
+Classes follow English kebab-case:
+- Component prefix: `.panel-`, `.table-`, `.chart-`
+- Modifiers: `.active`, `.loaded`, `.empty`, `.selected`, `.dragging`
 - IDs are used sparingly for major containers
 
 Examples:
-- `.painel-block` — Panel block container
-- `.tabela-preview` — Preview table
-- `.charts-controles` — Chart control UI
-- `.colunas-acoes` — Column action buttons
-- `#estado-vazio` — Empty state container
+- `.panel-block` — Panel block container
+- `.table-preview` — Preview table
+- `.column-actions` — Column action buttons
+- `#estado-vazio` — Empty state container (Portuguese IDs slated for rename in PR 3)
 
 ## Common Variables
 
@@ -207,9 +206,9 @@ All colors, fonts, and spacing are defined in `variables.css`:
 --tag-num       /* Numeric data tag background */
 --tag-txt       /* Text data tag background */
 --tag-dat       /* Date data tag background */
---fonte-display /* Display font (Source Serif 4) */
---fonte-sans    /* UI/body font (Source Sans 3) */
---fonte-mono    /* Monospace font (JetBrains Mono) */
+--font-display  /* Display font (Source Serif 4) */
+--font-sans     /* UI/body font (Source Sans 3) */
+--font-mono     /* Monospace font (JetBrains Mono) */
 ```
 
 ## Responsive Breakpoints Strategy
@@ -237,9 +236,9 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 - **Content padding**: Reduces from `28px 32px` to `24px 20px 40px` to maximize usable space
 
 **Component behavior**:
-- When sidebar is collapsed, all text labels (`upload-texto-principal`, `secao-titulo`, etc.) are forcibly shown with `display: initial !important` to prevent content hiding
+- When sidebar is collapsed, all text labels (`upload-text-main`, `section-title`, etc.) are forcibly shown with `display: initial !important` to prevent content hiding
 - Upload zone maintains 32px padding but content font sizes adjust
-- Main content area (`area-resultados`) gets more padding on bottom for mobile app behavior
+- Main content area (`results-area`) gets more padding on bottom for mobile app behavior
 
 ### Design Rationale
 
@@ -256,7 +255,7 @@ Pick the home that matches the scope of the rule:
 2. **Feature-internal** (e.g., panel slot rearrangement, results table) → the feature's own file (`panel.css`, `results.css`) at the breakpoint already in use there
 3. **About page** → `about.css` (1024px or 640px blocks)
 4. **Header chrome** (nav, logo, language switcher) → `style.css` (768px or 480px blocks)
-5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.ativo`) over new breakpoints when the difference is interaction-driven, not viewport-driven
+5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.active`) over new breakpoints when the difference is interaction-driven, not viewport-driven
 6. Test on: Desktop (1440px+), Tablet (768px–900px), Mobile (375px–480px)
 
 ### Future Breakpoint Candidates

@@ -20,24 +20,24 @@
     --sidebar-width: 1fr;
   }
 
-  .painel-esquerdo {
+  .panel-left {
     border-right: none;
     border-bottom: 1px solid var(--border);
   }
 
-  body.sidebar-collapsed .painel-esquerdo {
+  body.sidebar-collapsed .panel-left {
     padding: 18px 20px;
     gap: 24px;
   }
 
-  body.sidebar-collapsed .painel-topo {
+  body.sidebar-collapsed .panel-top {
     justify-content: space-between;
   }
 
-  body.sidebar-collapsed .painel-topo-label,
-  body.sidebar-collapsed .secao-titulo,
-  body.sidebar-collapsed .upload-texto-principal,
-  body.sidebar-collapsed .upload-texto-sub,
+  body.sidebar-collapsed .panel-top-label,
+  body.sidebar-collapsed .section-title,
+  body.sidebar-collapsed .upload-text-main,
+  body.sidebar-collapsed .upload-text-sub,
   body.sidebar-collapsed #info-arquivo,
   body.sidebar-collapsed #painel-colunas,
   body.sidebar-collapsed #painel-visualizacoes-sidebar,
@@ -52,11 +52,11 @@
   }
 
   body.sidebar-collapsed #zona-upload,
-  body.sidebar-collapsed .upload-icone {
+  body.sidebar-collapsed .upload-icon {
     display: none;
   }
 
-  .area-resultados {
+  .results-area {
     padding: 24px 20px 40px;
   }
 

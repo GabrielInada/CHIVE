@@ -16,7 +16,7 @@
   display: none;
   background: #1c1a17;
   color: #c8ff4d;
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 11px;
   padding: 10px 20px;
   border-radius: 6px;
@@ -37,7 +37,7 @@
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 8px;
   padding: 10px 12px;
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 11px;
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
   opacity: 0;
@@ -46,7 +46,7 @@
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-.toast-feedback.visivel {
+.toast-feedback.visible {
   opacity: 1;
   transform: translateY(0);
 }
@@ -63,7 +63,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px 14px;
-  font-family: var(--fonte-sans);
+  font-family: var(--font-sans);
   font-size: 13px;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
   display: grid;
@@ -78,7 +78,7 @@
   transition: opacity 0.18s ease, transform 0.18s ease;
 }
 
-.toast-progress.visivel {
+.toast-progress.visible {
   opacity: 1;
   transform: translateY(0);
 }
@@ -93,7 +93,7 @@
 
 .toast-progress-percent {
   grid-area: percent;
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--muted);
   align-self: center;

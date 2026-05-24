@@ -22,7 +22,7 @@
     position: absolute;
     right: 48px;
     bottom: -20px;
-    font-family: var(--fonte-display);
+    font-family: var(--font-display);
     font-size: 140px;
     font-weight: 700;
     color: rgba(255,255,255,0.04);
@@ -32,7 +32,7 @@
 }
 
 .about-hero-title {
-    font-family: var(--fonte-display);
+    font-family: var(--font-display);
     font-size: 48px;
     font-weight: 700;
     margin: 0;
@@ -43,7 +43,7 @@
 .about-hero-copy {
     margin-top: 16px;
     max-width: 600px;
-    font-family: var(--fonte-sans);
+    font-family: var(--font-sans);
     font-size: 16px;
     line-height: 1.8;
     color: rgba(255, 255, 255, 0.85);
@@ -68,7 +68,7 @@
 }
 
 .about-subtitle {
-    font-family: var(--fonte-display);
+    font-family: var(--font-display);
     font-size: 26px;
     font-weight: 700;
     color: var(--text);
@@ -76,7 +76,7 @@
 }
 
 .about-column p {
-    font-family: var(--fonte-sans);
+    font-family: var(--font-sans);
     font-size: 15px;
     line-height: 1.85;
     color: var(--muted);
@@ -90,7 +90,7 @@
 }
 
 .about-team h3 {
-    font-family: var(--fonte-display);
+    font-family: var(--font-display);
     font-size: 20px;
     font-weight: 700;
     color: var(--text);
@@ -133,7 +133,7 @@
 }
 
 .team-card h4 {
-    font-family: var(--fonte-display);
+    font-family: var(--font-display);
     font-size: 16px;
     font-weight: 700;
     margin: 0 0 10px 0;
@@ -148,7 +148,7 @@
     border-radius: 999px;
     background: rgba(26, 71, 42, 0.08);
     color: var(--accent);
-    font-family: var(--fonte-sans);
+    font-family: var(--font-sans);
     font-size: 11px;
     font-weight: 600;
     text-transform: uppercase;
@@ -167,7 +167,7 @@
 
 .team-meta {
     margin-top: 10px;
-    font-family: var(--fonte-sans);
+    font-family: var(--font-sans);
     font-size: 13px;
     color: var(--muted);
     line-height: 1.5;
@@ -197,7 +197,7 @@
 }
 
 .sidebar-section h3 {
-    font-family: var(--fonte-display);
+    font-family: var(--font-display);
     font-size: 15px;
     font-weight: 700;
     color: var(--text);
@@ -205,7 +205,7 @@
 }
 
 .sidebar-section p {
-    font-family: var(--fonte-sans);
+    font-family: var(--font-sans);
     font-size: 13px;
     line-height: 1.65;
     color: var(--muted);
@@ -238,7 +238,7 @@
 }
 
 .sidebar-section li {
-    font-family: var(--fonte-mono);
+    font-family: var(--font-mono);
     font-size: 12px;
     color: var(--muted);
     padding: 6px 10px;
@@ -252,7 +252,7 @@
     padding: 32px 20px;
     border-top: 1px solid var(--border);
     color: var(--muted);
-    font-family: var(--fonte-sans);
+    font-family: var(--font-sans);
     font-size: 12px;
     background: var(--surface);
 }
