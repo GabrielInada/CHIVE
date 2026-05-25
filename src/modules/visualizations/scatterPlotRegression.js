@@ -110,14 +110,14 @@ export function fitLinearRegression(pairs) {
  * negative).
  *
  * @private
- * @param {{ x: number, y: number }} ponto
+ * @param {{ x: number, y: number }} point
  * @param {boolean} xLog
  * @param {boolean} yLog
  * @returns {{ x: number, y: number } | null}
  */
-function transformPoint(ponto, xLog, yLog) {
-	const xFit = xLog ? Math.log(ponto.x) : ponto.x;
-	const yFit = yLog ? Math.log(ponto.y) : ponto.y;
+function transformPoint(point, xLog, yLog) {
+	const xFit = xLog ? Math.log(point.x) : point.x;
+	const yFit = yLog ? Math.log(point.y) : point.y;
 	if (!Number.isFinite(xFit) || !Number.isFinite(yFit)) return null;
 	return { x: xFit, y: yFit };
 }
@@ -131,16 +131,16 @@ function transformPoint(ponto, xLog, yLog) {
  * `null` when `n < 3` or residual SE is non-finite/zero (CI undefined).
  *
  * @param {Object} args
- * @param {Array<Object<string, *>>} args.pontos - Each must have numeric `x`/`y`.
+ * @param {Array<Object<string, *>>} args.points - Each must have numeric `x`/`y`.
  * @param {'linear' | 'log'} [args.xScale]
  * @param {'linear' | 'log'} [args.yScale]
  * @param {[number, number]} args.xDomain - X-axis extent in raw (non-log) units.
- * @param {(ponto: Object) => string} [args.groupBy] - Returns a group key per point.
+ * @param {(point: Object) => string} [args.groupBy] - Returns a group key per point.
  * @param {number} [args.sampleCount=80] - Number of evenly-spaced sample points along the line.
  * @returns {Array<{ groupKey: string, fit: Object, sampleLine: Array<{x: number, y: number}> | null, sampleBand: Array<{x: number, yLow: number, yHigh: number}> | null }>}
  */
 export function computeRegression({
-	pontos,
+	points,
 	xScale,
 	yScale,
 	xDomain,
@@ -158,11 +158,11 @@ export function computeRegression({
 
 	const groupOrder = [];
 	const groups = new Map();
-	for (let i = 0; i < pontos.length; i++) {
-		const ponto = pontos[i];
-		const pair = transformPoint(ponto, xLog, yLog);
+	for (let i = 0; i < points.length; i++) {
+		const point = points[i];
+		const pair = transformPoint(point, xLog, yLog);
 		if (!pair) continue;
-		const key = groupBy ? groupBy(ponto) : '__overall__';
+		const key = groupBy ? groupBy(point) : '__overall__';
 		if (!groups.has(key)) {
 			groups.set(key, []);
 			groupOrder.push(key);

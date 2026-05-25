@@ -81,7 +81,7 @@ describe('stateSync', () => {
     expect(mocks.exposeGlobals).toHaveBeenCalledTimes(2);
   });
 
-  it('encaminha updates de columns e config para appState', () => {
+  it('forwards columns and config updates to appState', () => {
     updateActiveDatasetColumnSelection(['a', 'b']);
     updateActiveDatasetChartConfig({ activeTab: 'charts' });
 
@@ -100,7 +100,7 @@ describe('stateSync', () => {
     expect(document.getElementById('sidebar-panel-data').classList.contains('active')).toBe(true);
   });
 
-  it('gera summary e debug payload com fallback de activeDatasetName', () => {
+  it('generates summary and debug payload with activeDatasetName fallback', () => {
     const summary = getStateSummary();
     expect(summary).toEqual({
       datasetsCount: 2,
@@ -120,7 +120,7 @@ describe('stateSync', () => {
     expect(debug.state).toEqual(buildState());
   });
 
-  it('syncWindowGlobals expande globals diretamente', () => {
+  it('syncWindowGlobals expands globals directly', () => {
     syncWindowGlobals();
     expect(mocks.exposeGlobals).toHaveBeenCalledTimes(1);
   });

@@ -13,15 +13,15 @@ import { compareStrings, normalizeCategoryValue } from '../../utils/chartFilters
  * Prefers the canonical `nestingColumns` array; falls back to the legacy
  * single `groupColumn`. De-duplicates while preserving order.
  *
- * @param {Object} opcoes
+ * @param {Object} options
  * @returns {string[]}
  */
-export function resolveNestingColumns(opcoes) {
-	if (Array.isArray(opcoes.nestingColumns) && opcoes.nestingColumns.length > 0) {
-		return [...new Set(opcoes.nestingColumns.filter(c => c && typeof c === 'string'))];
+export function resolveNestingColumns(options) {
+	if (Array.isArray(options.nestingColumns) && options.nestingColumns.length > 0) {
+		return [...new Set(options.nestingColumns.filter(c => c && typeof c === 'string'))];
 	}
-	if (opcoes.groupColumn && typeof opcoes.groupColumn === 'string') {
-		return [opcoes.groupColumn];
+	if (options.groupColumn && typeof options.groupColumn === 'string') {
+		return [options.groupColumn];
 	}
 	return [];
 }
@@ -52,30 +52,30 @@ export function aggregateBubbles({ rows, categoryColumn, measureMode, valueColum
 
 	const hasValueColumn = measureMode === 'count'
 		? true
-		: rows.some(linha => Object.prototype.hasOwnProperty.call(linha, valueColumn));
+		: rows.some(row => Object.prototype.hasOwnProperty.call(row, valueColumn));
 
 	const aggregated = new Map();
 	const nestingByCategory = new Map();
 
 	if (measureMode === 'count') {
-		rows.forEach(linha => {
-			const category = normalizeCategoryValue(linha[categoryColumn]);
+		rows.forEach(row => {
+			const category = normalizeCategoryValue(row[categoryColumn]);
 			aggregated.set(category, (aggregated.get(category) || 0) + 1);
 			if (nestingColumns.length > 0 && !nestingByCategory.has(category)) {
-				nestingByCategory.set(category, nestingColumns.map(col => normalizeCategoryValue(linha[col])));
+				nestingByCategory.set(category, nestingColumns.map(col => normalizeCategoryValue(row[col])));
 			}
 		});
 	} else {
 		if (!hasValueColumn) return { bubbles: [], reason: 'no-value-column' };
 		const counter = new Map();
-		rows.forEach(linha => {
-			const category = normalizeCategoryValue(linha[categoryColumn]);
-			const rawValue = Number(linha[valueColumn]);
+		rows.forEach(row => {
+			const category = normalizeCategoryValue(row[categoryColumn]);
+			const rawValue = Number(row[valueColumn]);
 			if (!Number.isFinite(rawValue)) return;
 			aggregated.set(category, (aggregated.get(category) || 0) + rawValue);
 			counter.set(category, (counter.get(category) || 0) + 1);
 			if (nestingColumns.length > 0 && !nestingByCategory.has(category)) {
-				nestingByCategory.set(category, nestingColumns.map(col => normalizeCategoryValue(linha[col])));
+				nestingByCategory.set(category, nestingColumns.map(col => normalizeCategoryValue(row[col])));
 			}
 		});
 

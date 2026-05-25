@@ -43,16 +43,16 @@ function getCategoricalStats(rows, visibleColumns) {
 }
 
 /** @private */
-function createStatLine(label, valor) {
-	const linha = document.createElement('div');
-	linha.className = 'stat-row';
+function createStatLine(label, value) {
+	const row = document.createElement('div');
+	row.className = 'stat-row';
 	const spanLabel = document.createElement('span');
 	spanLabel.textContent = label;
-	const spanValor = document.createElement('span');
-	spanValor.textContent = valor;
-	linha.appendChild(spanLabel);
-	linha.appendChild(spanValor);
-	return linha;
+	const spanValue = document.createElement('span');
+	spanValue.textContent = value;
+	row.appendChild(spanLabel);
+	row.appendChild(spanValue);
+	return row;
 }
 
 /** @private */

@@ -129,7 +129,7 @@ describe('fileManager', () => {
     expect(mocks.addDataset).not.toHaveBeenCalled();
   });
 
-  it('processa CSV valido e adiciona dataset normalizado', async () => {
+  it('processes valid CSV and adds a normalized dataset', async () => {
     const onChange = vi.fn();
     initFileManager(onChange);
 
@@ -329,7 +329,7 @@ describe('fileManager', () => {
 
     await capturedHandler(mockEvent2);
 
-    // Deve ter chamado addDataset novamente (só é possível porque value foi limpo no handler)
+    // addDataset should have been called again (only possible because value was cleared in the handler)
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
     expect(input.value).toBe('');
   });

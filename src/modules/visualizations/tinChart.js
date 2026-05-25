@@ -179,112 +179,112 @@ function collectUniqueEdges(delaunay) {
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} eixoX - Numeric X column.
- * @param {string} eixoY - Numeric Y column.
- * @param {string} eixoZ - Numeric Z column (the surface height).
- * @param {Object} [opcoes={}] - Render options bag.
+ * @param {string} xColumn - Numeric X column.
+ * @param {string} yColumn - Numeric Y column.
+ * @param {string} zColumn - Numeric Z column (the surface height).
+ * @param {Object} [options={}] - Render options bag.
  * @returns {Result}
  */
-export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}) {
-	if (!container || !eixoX || !eixoY || !eixoZ) return fail();
+export function renderTinChart(container, rows, xColumn, yColumn, zColumn, options = {}) {
+	if (!container || !xColumn || !yColumn || !zColumn) return fail();
 
-	const fillMode = opcoes.fillMode === 'flat' ? 'flat' : 'smooth';
-	const subdivisionDepth = clampDepth(opcoes.subdivisionDepth);
+	const fillMode = options.fillMode === 'flat' ? 'flat' : 'smooth';
+	const subdivisionDepth = clampDepth(options.subdivisionDepth);
 	const effectiveSubdivisionDepth = fillMode === 'flat' ? 0 : subdivisionDepth;
-	const gradientMin = normalizeColor(opcoes.gradientMinColor, CHART_COLORS.tin);
-	const gradientMax = normalizeColor(opcoes.gradientMaxColor, '#ffffff');
-	const gradientDistribution = opcoes.gradientDistribution === 'rank' ? 'rank' : 'value';
-	const colorRamp = resolveColorRamp(opcoes.colorRamp);
-	const showEdges = opcoes.showEdges !== false;
-	const edgeColor = normalizeColor(opcoes.edgeColor, TIN_CHART.defaultEdgeColor);
-	const showPoints = opcoes.showPoints !== false;
-	const pointRadius = Number.isFinite(Number(opcoes.pointRadius))
-		? Math.max(1, Number(opcoes.pointRadius))
+	const gradientMin = normalizeColor(options.gradientMinColor, CHART_COLORS.tin);
+	const gradientMax = normalizeColor(options.gradientMaxColor, '#ffffff');
+	const gradientDistribution = options.gradientDistribution === 'rank' ? 'rank' : 'value';
+	const colorRamp = resolveColorRamp(options.colorRamp);
+	const showEdges = options.showEdges !== false;
+	const edgeColor = normalizeColor(options.edgeColor, TIN_CHART.defaultEdgeColor);
+	const showPoints = options.showPoints !== false;
+	const pointRadius = Number.isFinite(Number(options.pointRadius))
+		? Math.max(1, Number(options.pointRadius))
 		: TIN_CHART.defaultPointRadius;
-	const showZLabels = opcoes.showZLabels === true;
-	const showHull = opcoes.showHull === true;
-	const hullColor = normalizeColor(opcoes.hullColor, TIN_CHART.defaultHullColor);
-	const showIsolines = opcoes.showIsolines === true;
-	const isolineMode = opcoes.isolineMode === 'step' ? 'step' : 'count';
-	const isolineCountRaw = Math.round(Number(opcoes.isolineCount));
+	const showZLabels = options.showZLabels === true;
+	const showHull = options.showHull === true;
+	const hullColor = normalizeColor(options.hullColor, TIN_CHART.defaultHullColor);
+	const showIsolines = options.showIsolines === true;
+	const isolineMode = options.isolineMode === 'step' ? 'step' : 'count';
+	const isolineCountRaw = Math.round(Number(options.isolineCount));
 	const isolineCount = Number.isFinite(isolineCountRaw)
 		? Math.max(TIN_CHART.minIsolineCount, Math.min(TIN_CHART.maxIsolineCount, isolineCountRaw))
 		: TIN_CHART.defaultIsolineCount;
-	const isolineStepRaw = Number(opcoes.isolineStep);
+	const isolineStepRaw = Number(options.isolineStep);
 	const isolineStep = Number.isFinite(isolineStepRaw) && isolineStepRaw > 0
 		? isolineStepRaw
 		: TIN_CHART.defaultIsolineStep;
-	const isolineColor = normalizeColor(opcoes.isolineColor, TIN_CHART.defaultIsolineColor);
-	const isolineWidthRaw = Number(opcoes.isolineWidth);
+	const isolineColor = normalizeColor(options.isolineColor, TIN_CHART.defaultIsolineColor);
+	const isolineWidthRaw = Number(options.isolineWidth);
 	const isolineWidth = Number.isFinite(isolineWidthRaw)
 		? Math.max(TIN_CHART.minIsolineWidth, Math.min(TIN_CHART.maxIsolineWidth, isolineWidthRaw))
 		: TIN_CHART.defaultIsolineWidth;
-	const showIsolineLabels = opcoes.showIsolineLabels === true;
-	const isolineLabelSizeRaw = Math.round(Number(opcoes.isolineLabelSize));
+	const showIsolineLabels = options.showIsolineLabels === true;
+	const isolineLabelSizeRaw = Math.round(Number(options.isolineLabelSize));
 	const isolineLabelSize = Number.isFinite(isolineLabelSizeRaw)
 		? Math.max(TIN_CHART.minIsolineLabelSize, Math.min(TIN_CHART.maxIsolineLabelSize, isolineLabelSizeRaw))
 		: TIN_CHART.defaultIsolineLabelSize;
-	const isolineLabelColor = normalizeColor(opcoes.isolineLabelColor, TIN_CHART.defaultIsolineLabelColor);
-	const colorIsolinesByZ = opcoes.colorIsolinesByZ === true;
-	const isolineMinColor = normalizeColor(opcoes.isolineMinColor, TIN_CHART.defaultIsolineMinColor);
-	const isolineMaxColor = normalizeColor(opcoes.isolineMaxColor, TIN_CHART.defaultIsolineMaxColor);
-	const showThreshold = opcoes.showThreshold === true;
-	const thresholdValueRaw = Number(opcoes.thresholdValue);
+	const isolineLabelColor = normalizeColor(options.isolineLabelColor, TIN_CHART.defaultIsolineLabelColor);
+	const colorIsolinesByZ = options.colorIsolinesByZ === true;
+	const isolineMinColor = normalizeColor(options.isolineMinColor, TIN_CHART.defaultIsolineMinColor);
+	const isolineMaxColor = normalizeColor(options.isolineMaxColor, TIN_CHART.defaultIsolineMaxColor);
+	const showThreshold = options.showThreshold === true;
+	const thresholdValueRaw = Number(options.thresholdValue);
 	const thresholdValue = Number.isFinite(thresholdValueRaw)
 		? thresholdValueRaw
 		: TIN_CHART.defaultThresholdValue;
-	const thresholdColor = normalizeColor(opcoes.thresholdColor, TIN_CHART.defaultThresholdColor);
-	const thresholdWidthRaw = Number(opcoes.thresholdWidth);
+	const thresholdColor = normalizeColor(options.thresholdColor, TIN_CHART.defaultThresholdColor);
+	const thresholdWidthRaw = Number(options.thresholdWidth);
 	const thresholdWidth = Number.isFinite(thresholdWidthRaw)
 		? Math.max(TIN_CHART.minThresholdWidth, Math.min(TIN_CHART.maxThresholdWidth, thresholdWidthRaw))
 		: TIN_CHART.defaultThresholdWidth;
-	const showXAxisLabel = opcoes.showXAxisLabel !== false;
-	const showYAxisLabel = opcoes.showYAxisLabel !== false;
-	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
-		? Math.max(220, Math.min(900, Number(opcoes.chartHeight)))
+	const showXAxisLabel = options.showXAxisLabel !== false;
+	const showYAxisLabel = options.showYAxisLabel !== false;
+	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(options.chartHeight))
+		? Math.max(220, Math.min(900, Number(options.chartHeight)))
 		: CHART_DIMENSIONS.tin.height;
-	const locale = opcoes.locale || undefined;
+	const locale = options.locale || undefined;
 	const axisLabels = {
-		x: opcoes.axisLabels?.x || eixoX,
-		y: opcoes.axisLabels?.y || eixoY,
-		z: opcoes.axisLabels?.z || eixoZ,
+		x: options.axisLabels?.x || xColumn,
+		y: options.axisLabels?.y || yColumn,
+		z: options.axisLabels?.z || zColumn,
 	};
 
 	const isMissing = v => v === null || v === undefined || v === '';
-	const pontos = (Array.isArray(rows) ? rows : [])
-		.filter(row => row && !isMissing(row[eixoX]) && !isMissing(row[eixoY]) && !isMissing(row[eixoZ]))
+	const points = (Array.isArray(rows) ? rows : [])
+		.filter(row => row && !isMissing(row[xColumn]) && !isMissing(row[yColumn]) && !isMissing(row[zColumn]))
 		.map((row, index) => ({
-			x: Number(row[eixoX]),
-			y: Number(row[eixoY]),
-			z: Number(row[eixoZ]),
+			x: Number(row[xColumn]),
+			y: Number(row[yColumn]),
+			z: Number(row[zColumn]),
 			raw: row,
 			index,
 		}))
 		.filter(p => Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z));
 
-	if (pontos.length < 3) return fail('insufficient-points');
+	if (points.length < 3) return fail('insufficient-points');
 
 	container.replaceChildren();
 	hideChartTooltip();
 
-	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.tin.width, 320);
-	const altura = chartHeight;
-	const margem = { ...CHART_DIMENSIONS.tin.margins };
+	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.tin.width, 320);
+	const height = chartHeight;
+	const margin = { ...CHART_DIMENSIONS.tin.margins };
 	const titleOffset = customTitle ? 20 : 0;
 	const legendHeight = 14;
 	const legendGap = 22;
-	const larguraInterna = Math.max(40, largura - margem.left - margem.right);
-	const alturaInterna = Math.max(40, altura - margem.top - margem.bottom - titleOffset - legendGap);
+	const innerWidth = Math.max(40, width - margin.left - margin.right);
+	const innerHeight = Math.max(40, height - margin.top - margin.bottom - titleOffset - legendGap);
 
 	const svg = select(container)
 		.append('svg')
-		.attr('width', largura)
-		.attr('height', altura);
+		.attr('width', width)
+		.attr('height', height);
 
 	if (customTitle) {
 		svg.append('text')
-			.attr('x', largura / 2)
+			.attr('x', width / 2)
 			.attr('y', 16)
 			.attr('text-anchor', 'middle')
 			.attr('font-size', 13)
@@ -293,21 +293,21 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 			.text(customTitle);
 	}
 
-	const grupo = svg.append('g')
-		.attr('transform', `translate(${margem.left},${margem.top + titleOffset})`);
+	const group = svg.append('g')
+		.attr('transform', `translate(${margin.left},${margin.top + titleOffset})`);
 
-	const [xMin, xMax] = extent(pontos, p => p.x);
-	const [yMin, yMax] = extent(pontos, p => p.y);
-	const [zMin, zMax] = extent(pontos, p => p.z);
+	const [xMin, xMax] = extent(points, p => p.x);
+	const [yMin, yMax] = extent(points, p => p.y);
+	const [zMin, zMax] = extent(points, p => p.z);
 
-	const escalaX = scaleLinear()
+	const xScale = scaleLinear()
 		.domain(xMin === xMax ? [xMin - 1, xMax + 1] : [xMin, xMax])
 		.nice()
-		.range([0, larguraInterna]);
-	const escalaY = scaleLinear()
+		.range([0, innerWidth]);
+	const yScale = scaleLinear()
 		.domain(yMin === yMax ? [yMin - 1, yMax + 1] : [yMin, yMax])
 		.nice()
-		.range([alturaInterna, 0]);
+		.range([innerHeight, 0]);
 
 	const rampInterp = colorRamp === 'custom' ? null : D3_RAMP_BY_NAME[colorRamp];
 	const sampleRamp = rampInterp
@@ -316,7 +316,7 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 
 	let colorAt;
 	if (gradientDistribution === 'rank') {
-		const sortedZ = [...pontos.map(p => p.z)].sort((a, b) => a - b);
+		const sortedZ = [...points.map(p => p.z)].sort((a, b) => a - b);
 		const rankFor = z => {
 			let lo = 0;
 			let hi = sortedZ.length;
@@ -335,16 +335,16 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 
 	// In screen coordinates so the Delaunay triangulation matches what the
 	// user sees (otherwise scale flipping on Y can change which triangles form).
-	const screenPoints = pontos.map(p => ({
-		sx: escalaX(p.x),
-		sy: escalaY(p.y),
+	const screenPoints = points.map(p => ({
+		sx: xScale(p.x),
+		sy: yScale(p.y),
 		z: p.z,
 		raw: p.raw,
 		index: p.index,
 	}));
 	const delaunay = Delaunay.from(screenPoints, d => d.sx, d => d.sy);
 
-	const trianglesGroup = grupo.append('g').attr('class', 'tin-triangles');
+	const trianglesGroup = group.append('g').attr('class', 'tin-triangles');
 	const polygons = [];
 	const tris = delaunay.triangles;
 	for (let i = 0; i < tris.length; i += 3) {
@@ -371,7 +371,7 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 	if (showHull) {
 		const hull = delaunay.hullPolygon();
 		if (hull && hull.length > 0) {
-			grupo.append('path')
+			group.append('path')
 				.attr('d', `M${hull.map(pt => `${pt[0]},${pt[1]}`).join('L')}Z`)
 				.attr('fill', 'none')
 				.attr('stroke', hullColor)
@@ -412,7 +412,7 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 	};
 
 	if (showIsolines && zMin !== zMax) {
-		const isolinesGroup = grupo.append('g').attr('class', 'tin-isolines');
+		const isolinesGroup = group.append('g').attr('class', 'tin-isolines');
 		let levels;
 		if (isolineMode === 'step') {
 			levels = [];
@@ -455,7 +455,7 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 					.attr('data-z', level);
 			});
 			if (showIsolineLabels && longest) {
-				if (!labelGroup) labelGroup = grupo.append('g').attr('class', 'tin-isoline-labels');
+				if (!labelGroup) labelGroup = group.append('g').attr('class', 'tin-isoline-labels');
 				labelGroup.append('text')
 					.attr('transform', `translate(${longest.midX},${longest.midY}) rotate(${longest.angleDeg})`)
 					.attr('text-anchor', 'middle')
@@ -475,7 +475,7 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 	if (showThreshold && thresholdValue >= zMin && thresholdValue <= zMax) {
 		const { segments } = computeIsolineSegments(triangleVerts, thresholdValue);
 		if (segments.length > 0) {
-			const thresholdGroup = grupo.append('g').attr('class', 'tin-threshold-contour');
+			const thresholdGroup = group.append('g').attr('class', 'tin-threshold-contour');
 			const thresholdHitWidth = Math.max(6, thresholdWidth);
 			segments.forEach(seg => {
 				thresholdGroup.append('line')
@@ -505,7 +505,7 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 
 	if (showEdges) {
 		const edges = collectUniqueEdges(delaunay);
-		const edgeGroup = grupo.append('g').attr('class', 'tin-edges');
+		const edgeGroup = group.append('g').attr('class', 'tin-edges');
 		edges.forEach(([p, q]) => {
 			const a = screenPoints[p];
 			const b = screenPoints[q];
@@ -521,7 +521,7 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 	}
 
 	if (showPoints) {
-		const pointsGroup = grupo.append('g').attr('class', 'tin-points');
+		const pointsGroup = group.append('g').attr('class', 'tin-points');
 		const circles = pointsGroup
 			.selectAll('circle')
 			.data(screenPoints)
@@ -537,9 +537,9 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 		circles
 			.on('mouseenter', (event, d) => {
 				const wrapper = document.createElement('div');
-				wrapper.appendChild(createTooltipLine(axisLabels.x, formatNumber(Number(d.raw?.[eixoX]), locale)));
-				wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(Number(d.raw?.[eixoY]), locale)));
-				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(Number(d.raw?.[eixoZ]), locale)));
+				wrapper.appendChild(createTooltipLine(axisLabels.x, formatNumber(Number(d.raw?.[xColumn]), locale)));
+				wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(Number(d.raw?.[yColumn]), locale)));
+				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(Number(d.raw?.[zColumn]), locale)));
 				showChartTooltip(wrapper, event.pageX, event.pageY);
 			})
 			.on('mousemove', event => moveChartTooltip(event.pageX, event.pageY))
@@ -547,7 +547,7 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 	}
 
 	if (showZLabels) {
-		const labelGroup = grupo.append('g').attr('class', 'tin-z-labels');
+		const labelGroup = group.append('g').attr('class', 'tin-z-labels');
 		screenPoints.forEach(d => {
 			labelGroup.append('text')
 				.attr('x', d.sx + 5)
@@ -559,17 +559,17 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 		});
 	}
 
-	grupo.append('g')
-		.attr('transform', `translate(0,${alturaInterna})`)
-		.call(axisBottom(escalaX).ticks(6));
+	group.append('g')
+		.attr('transform', `translate(0,${innerHeight})`)
+		.call(axisBottom(xScale).ticks(6));
 
-	grupo.append('g')
-		.call(axisLeft(escalaY).ticks(6));
+	group.append('g')
+		.call(axisLeft(yScale).ticks(6));
 
 	if (showXAxisLabel) {
-		grupo.append('text')
-			.attr('x', larguraInterna / 2)
-			.attr('y', alturaInterna + margem.bottom - 14)
+		group.append('text')
+			.attr('x', innerWidth / 2)
+			.attr('y', innerHeight + margin.bottom - 14)
 			.attr('text-anchor', 'middle')
 			.attr('fill', '#5f5a53')
 			.attr('font-size', 11)
@@ -577,19 +577,19 @@ export function renderTinChart(container, rows, eixoX, eixoY, eixoZ, opcoes = {}
 	}
 
 	if (showYAxisLabel) {
-		grupo.append('text')
+		group.append('text')
 			.attr('transform', 'rotate(-90)')
-			.attr('x', -alturaInterna / 2)
-			.attr('y', -margem.left + 16)
+			.attr('x', -innerHeight / 2)
+			.attr('y', -margin.left + 16)
 			.attr('text-anchor', 'middle')
 			.attr('fill', '#5f5a53')
 			.attr('font-size', 11)
 			.text(axisLabels.y);
 	}
 
-	const legendY = margem.top + titleOffset + alturaInterna + legendGap - legendHeight;
-	const legendLeft = margem.left;
-	const legendWidth = Math.min(180, larguraInterna);
+	const legendY = margin.top + titleOffset + innerHeight + legendGap - legendHeight;
+	const legendLeft = margin.left;
+	const legendWidth = Math.min(180, innerWidth);
 	const legend = svg.append('g')
 		.attr('class', 'tin-legend')
 		.attr('transform', `translate(${legendLeft},${legendY})`);

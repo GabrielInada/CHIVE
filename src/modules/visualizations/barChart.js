@@ -31,33 +31,33 @@ import { ok, fail } from '../../utils/result.js';
 // so categories with equal counts have a deterministic visual order. Without the
 // secondary string compare, sort stability varies by browser engine and the bar
 // order can flicker between renders on identical data.
-function ordenarCategorias(linhas, ordenacao) {
-	if (ordenacao === 'count-asc') {
-		return linhas.sort((a, b) => a[1] - b[1] || compareStrings(a[0], b[0]));
+function sortCategories(entries, sort) {
+	if (sort === 'count-asc') {
+		return entries.sort((a, b) => a[1] - b[1] || compareStrings(a[0], b[0]));
 	}
 
-	if (ordenacao === 'label-asc') {
-		return linhas.sort((a, b) => compareStrings(a[0], b[0]));
+	if (sort === 'label-asc') {
+		return entries.sort((a, b) => compareStrings(a[0], b[0]));
 	}
 
-	if (ordenacao === 'label-desc') {
-		return linhas.sort((a, b) => compareStrings(b[0], a[0]));
+	if (sort === 'label-desc') {
+		return entries.sort((a, b) => compareStrings(b[0], a[0]));
 	}
 
-	return linhas.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]));
+	return entries.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]));
 }
 
 /**
  * Render a bar chart into `container`. Returns `ok()` on success, or
  * `fail(reason)` on early exit:
- *   - no `colunaCategoria` or no container → `fail()`
+ *   - no `categoryColumn` or no container → `fail()`
  *   - `measureMode` is sum/mean but `valueColumn` is missing → `fail('no-value-column')`
  *   - sum/mean over no parseable numbers → `fail('no-numeric')`
  *   - empty data → `fail()`
  *
  * The full option bag varies; see `BAR_CHART` and `CHART_DIMENSIONS` in
  * `config/charts.js` for the field set and defaults. Frequently used keys
- * include `ordenacao` (count-desc/asc, label-asc/desc), `topN`, `measureMode`
+ * include `sort` (count-desc/asc, label-asc/desc), `topN`, `measureMode`
  * ('count' | 'sum' | 'mean'), `valueColumn`, `colorMode`
  * ('uniform' | 'gradient' | 'gradient-manual'), color stops, axis label
  * toggles, `customTitle`, `chartHeight`, `locale`, and the localized
@@ -65,130 +65,130 @@ function ordenarCategorias(linhas, ordenacao) {
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} colunaCategoria - Categorical column name (required).
- * @param {Object} [opcoes={}] - Render options bag.
+ * @param {string} categoryColumn - Categorical column name (required).
+ * @param {Object} [options={}] - Render options bag.
  * @returns {Result}
  */
-export function renderBarChart(container, rows, colunaCategoria, opcoes = {}) {
-	if (!container || !colunaCategoria) return fail();
-	const ordenacao = opcoes.ordenacao || BAR_CHART.defaultSort;
-	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : BAR_CHART.defaultTopN;
-	const showXAxisLabel = opcoes.showXAxisLabel !== false;
-	const showYAxisLabel = opcoes.showYAxisLabel !== false;
+export function renderBarChart(container, rows, categoryColumn, options = {}) {
+	if (!container || !categoryColumn) return fail();
+	const sort = options.sort || BAR_CHART.defaultSort;
+	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : BAR_CHART.defaultTopN;
+	const showXAxisLabel = options.showXAxisLabel !== false;
+	const showYAxisLabel = options.showYAxisLabel !== false;
 	const labels = {
-		categoria: opcoes.labels?.categoria || 'Category',
-		contagem: opcoes.labels?.contagem || 'Count',
-		soma: opcoes.labels?.soma || 'Sum',
-		media: opcoes.labels?.media || 'Mean',
-		percentual: opcoes.labels?.percentual || 'Percentage',
-		focusOnThis: opcoes.labels?.focusOnThis || 'Show only this',
-		addToFilter: opcoes.labels?.addToFilter || 'Add to global filter',
+		category: options.labels?.category || 'Category',
+		count: options.labels?.count || 'Count',
+		sum: options.labels?.sum || 'Sum',
+		mean: options.labels?.mean || 'Mean',
+		percentage: options.labels?.percentage || 'Percentage',
+		focusOnThis: options.labels?.focusOnThis || 'Show only this',
+		addToFilter: options.labels?.addToFilter || 'Add to global filter',
 	};
-	const measureMode = BAR_CHART.measureModes.includes(opcoes.measureMode)
-		? opcoes.measureMode
+	const measureMode = BAR_CHART.measureModes.includes(options.measureMode)
+		? options.measureMode
 		: BAR_CHART.defaultMeasureMode;
-	const valueColumn = opcoes.valueColumn || null;
+	const valueColumn = options.valueColumn || null;
 	const hasValueColumn = (measureMode === 'count')
 		? true
-		: rows.some(linha => Object.prototype.hasOwnProperty.call(linha, valueColumn));
+		: rows.some(row => Object.prototype.hasOwnProperty.call(row, valueColumn));
 	const axisLabels = {
-		x: opcoes.axisLabels?.x || colunaCategoria,
-		y: opcoes.axisLabels?.y
+		x: options.axisLabels?.x || categoryColumn,
+		y: options.axisLabels?.y
 			|| (measureMode === 'mean'
-				? labels.media
+				? labels.mean
 				: measureMode === 'sum'
-					? labels.soma
-					: labels.contagem),
+					? labels.sum
+					: labels.count),
 	};
-	const color = isValidHexColor(String(opcoes.color || '').trim())
-		? String(opcoes.color).trim()
+	const color = isValidHexColor(String(options.color || '').trim())
+		? String(options.color).trim()
 		: CHART_COLORS.bar;
-	const colorMode = ['uniform', 'gradient', 'gradient-manual'].includes(opcoes.colorMode)
-		? opcoes.colorMode
+	const colorMode = ['uniform', 'gradient', 'gradient-manual'].includes(options.colorMode)
+		? options.colorMode
 		: 'uniform';
-	const gradientMinColor = isValidHexColor(String(opcoes.gradientMinColor || '').trim())
-		? String(opcoes.gradientMinColor).trim()
+	const gradientMinColor = isValidHexColor(String(options.gradientMinColor || '').trim())
+		? String(options.gradientMinColor).trim()
 		: color;
-	const gradientMaxColor = isValidHexColor(String(opcoes.gradientMaxColor || '').trim())
-		? String(opcoes.gradientMaxColor).trim()
+	const gradientMaxColor = isValidHexColor(String(options.gradientMaxColor || '').trim())
+		? String(options.gradientMaxColor).trim()
 		: '#ffffff';
-	const manualThresholdPct = Number.isFinite(Number(opcoes.manualThresholdPct))
-		? Math.max(0, Math.min(100, Number(opcoes.manualThresholdPct)))
+	const manualThresholdPct = Number.isFinite(Number(options.manualThresholdPct))
+		? Math.max(0, Math.min(100, Number(options.manualThresholdPct)))
 		: 50;
-	const gradientDistribution = opcoes.gradientDistribution === 'rank' ? 'rank' : 'value';
-	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
-		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
+	const gradientDistribution = options.gradientDistribution === 'rank' ? 'rank' : 'value';
+	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(options.chartHeight))
+		? Math.max(220, Math.min(720, Number(options.chartHeight)))
 		: CHART_DIMENSIONS.bar.height;
-	const locale = opcoes.locale || undefined;
+	const locale = options.locale || undefined;
 
-	const contador = new Map();
-	const contadorN = new Map();
+	const counter = new Map();
+	const counterN = new Map();
 
 	if (measureMode === 'count') {
-		rows.forEach(linha => {
-			const valorBruto = linha[colunaCategoria];
-			const categoria = isNullish(valorBruto) || valorBruto === ''
+		rows.forEach(row => {
+			const rawValue = row[categoryColumn];
+			const category = isNullish(rawValue) || rawValue === ''
 				? '—'
-				: String(valorBruto);
-			contador.set(categoria, (contador.get(categoria) || 0) + 1);
+				: String(rawValue);
+			counter.set(category, (counter.get(category) || 0) + 1);
 		});
 	} else {
 		if (!valueColumn || !hasValueColumn) return fail('no-value-column');
-		rows.forEach(linha => {
-			const valorBruto = linha[colunaCategoria];
-			const categoria = isNullish(valorBruto) || valorBruto === ''
+		rows.forEach(row => {
+			const rawValue = row[categoryColumn];
+			const category = isNullish(rawValue) || rawValue === ''
 				? '—'
-				: String(valorBruto);
-			const valor = Number(linha[valueColumn]);
-			if (!Number.isFinite(valor)) return;
-			contador.set(categoria, (contador.get(categoria) || 0) + valor);
-			contadorN.set(categoria, (contadorN.get(categoria) || 0) + 1);
+				: String(rawValue);
+			const value = Number(row[valueColumn]);
+			if (!Number.isFinite(value)) return;
+			counter.set(category, (counter.get(category) || 0) + value);
+			counterN.set(category, (counterN.get(category) || 0) + 1);
 		});
 
 		if (measureMode === 'mean') {
-			for (const [categoria, soma] of contador.entries()) {
-				contador.set(categoria, soma / (contadorN.get(categoria) || 1));
+			for (const [category, sum] of counter.entries()) {
+				counter.set(category, sum / (counterN.get(category) || 1));
 			}
 		}
 	}
 
-	if ((measureMode === 'sum' || measureMode === 'mean') && contador.size === 0) {
+	if ((measureMode === 'sum' || measureMode === 'mean') && counter.size === 0) {
 		return fail('no-numeric');
 	}
 
-	let linhas = Array.from(contador.entries());
-	linhas = ordenarCategorias(linhas, ordenacao);
+	let entries = Array.from(counter.entries());
+	entries = sortCategories(entries, sort);
 
 	if (topN > 0) {
-		linhas = linhas.slice(0, topN);
+		entries = entries.slice(0, topN);
 	}
 
-	if (linhas.length === 0) return fail();
-	const totalContagem = linhas.reduce((acc, item) => acc + item[1], 0);
+	if (entries.length === 0) return fail();
+	const totalContagem = entries.reduce((acc, item) => acc + item[1], 0);
 
 	container.replaceChildren();
  	hideChartTooltip();
-	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.bar.width, 320);
-	const altura = chartHeight;
-	const margem = CHART_DIMENSIONS.bar.margins;
+	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bar.width, 320);
+	const height = chartHeight;
+	const margin = CHART_DIMENSIONS.bar.margins;
 	const titleOffset = customTitle ? 20 : 0;
-	const larguraInterna = largura - margem.left - margem.right;
-	const alturaInterna = altura - margem.top - margem.bottom - titleOffset;
+	const innerWidth = width - margin.left - margin.right;
+	const innerHeight = height - margin.top - margin.bottom - titleOffset;
 
 	const svg = select(container)
 		.append('svg')
-		.attr('width', largura)
-		.attr('height', altura);
+		.attr('width', width)
+		.attr('height', height);
 
-	const grupo = svg
+	const group = svg
 		.append('g')
-		.attr('transform', `translate(${margem.left},${margem.top + titleOffset})`);
+		.attr('transform', `translate(${margin.left},${margin.top + titleOffset})`);
 
 	if (customTitle) {
 		svg
 			.append('text')
-			.attr('x', largura / 2)
+			.attr('x', width / 2)
 			.attr('y', 16)
 			.attr('text-anchor', 'middle')
 			.attr('font-size', 13)
@@ -197,31 +197,31 @@ export function renderBarChart(container, rows, colunaCategoria, opcoes = {}) {
 			.text(customTitle);
 	}
 
-	let pinnedCategoria = null;
+	let pinnedCategory = null;
 
-	const montarConteudoTooltip = item => {
-		const percentual = totalContagem > 0 ? ((item[1] / totalContagem) * 100) : 0;
+	const buildTooltipContent = item => {
+		const percentage = totalContagem > 0 ? ((item[1] / totalContagem) * 100) : 0;
 		const wrapper = document.createElement('div');
-		const valorLabel = measureMode === 'mean'
-			? labels.media
+		const valueLabel = measureMode === 'mean'
+			? labels.mean
 			: measureMode === 'sum'
-				? labels.soma
-				: labels.contagem;
+				? labels.sum
+				: labels.count;
 
-		wrapper.appendChild(createTooltipLine(labels.categoria, String(item[0])));
-		wrapper.appendChild(createTooltipLine(valorLabel, formatNumber(item[1], locale)));
+		wrapper.appendChild(createTooltipLine(labels.category, String(item[0])));
+		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(item[1], locale)));
 		if (measureMode !== 'mean') {
-			wrapper.appendChild(createTooltipLine(labels.percentual, `${percentual.toFixed(1)}%`));
+			wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		}
 
 		return wrapper;
 	};
 
-	const exibirTooltip = (event, item) => {
-		showChartTooltip(montarConteudoTooltip(item), event.pageX, event.pageY);
+	const showTooltip = (event, item) => {
+		showChartTooltip(buildTooltipContent(item), event.pageX, event.pageY);
 	};
 
-	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterCallbacks = options.filterCallbacks || {};
 	const filterLabels = filterCallbacks.filterActionLabels || {};
 	const actionLabels = {
 		focus: filterLabels.focus || labels.focusOnThis,
@@ -231,17 +231,17 @@ export function renderBarChart(container, rows, colunaCategoria, opcoes = {}) {
 		bringBack: filterLabels.bringBack || 'Bring back',
 	};
 
-	const exibirTooltipFixado = (event, item, onDismiss) => {
-		const content = montarConteudoTooltip(item);
+	const showPinnedTooltip = (event, item, onDismiss) => {
+		const content = buildTooltipContent(item);
 		const token = toCategoryToken(item[0]);
 		const state = typeof filterCallbacks.getTokenFilterState === 'function'
-			? filterCallbacks.getTokenFilterState(colunaCategoria, token)
+			? filterCallbacks.getTokenFilterState(categoryColumn, token)
 			: null;
 		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
-			? !!filterCallbacks.isShowOnlyThisRedundant(colunaCategoria, token)
+			? !!filterCallbacks.isShowOnlyThisRedundant(categoryColumn, token)
 			: false;
 		const actions = buildCategoricalFilterActions({
-			column: colunaCategoria,
+			column: categoryColumn,
 			token,
 			state,
 			labels: actionLabels,
@@ -267,24 +267,24 @@ export function renderBarChart(container, rows, colunaCategoria, opcoes = {}) {
 		});
 	};
 
-	const escalaX = scaleBand()
-		.domain(linhas.map(item => item[0]))
-		.range([0, larguraInterna])
+	const xScale = scaleBand()
+		.domain(entries.map(item => item[0]))
+		.range([0, innerWidth])
 		.padding(0.14);
 
-	const escalaY = scaleLinear()
-		.domain([0, max(linhas, item => item[1]) || 0])
+	const yScale = scaleLinear()
+		.domain([0, max(entries, item => item[1]) || 0])
 		.nice()
-		.range([alturaInterna, 0]);
+		.range([innerHeight, 0]);
 
-	const minValor = Math.min(...linhas.map(item => item[1]));
-	const maxValor = Math.max(...linhas.map(item => item[1]));
+	const minValor = Math.min(...entries.map(item => item[1]));
+	const maxValor = Math.max(...entries.map(item => item[1]));
 	const deltaValor = maxValor - minValor || 1;
 	const thresholdValue = minValor + (deltaValor * (manualThresholdPct / 100));
 	const rankMap = (colorMode === 'gradient' && gradientDistribution === 'rank')
-		? buildRankMap(linhas, item => item[1])
+		? buildRankMap(entries, item => item[1])
 		: null;
-	const rankDenom = Math.max(linhas.length - 1, 1);
+	const rankDenom = Math.max(entries.length - 1, 1);
 
 	const getBarColor = (item) => {
 		if (colorMode === 'uniform') return color;
@@ -302,67 +302,67 @@ export function renderBarChart(container, rows, colunaCategoria, opcoes = {}) {
 		return color;
 	};
 
-	grupo
+	group
 		.selectAll('rect')
-		.data(linhas)
+		.data(entries)
 		.enter()
 		.append('rect')
-		.attr('x', item => escalaX(item[0]))
-		.attr('y', item => escalaY(item[1]))
-		.attr('width', escalaX.bandwidth())
-		.attr('height', item => alturaInterna - escalaY(item[1]))
+		.attr('x', item => xScale(item[0]))
+		.attr('y', item => yScale(item[1]))
+		.attr('width', xScale.bandwidth())
+		.attr('height', item => innerHeight - yScale(item[1]))
 		.attr('rx', 3)
 		.attr('fill', item => getBarColor(item))
 		.on('mouseenter', (event, item) => {
-			if (pinnedCategoria !== null) return;
-			exibirTooltip(event, item);
+			if (pinnedCategory !== null) return;
+			showTooltip(event, item);
 		})
 		.on('mousemove', event => {
-			if (pinnedCategoria !== null) return;
+			if (pinnedCategory !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseleave', () => {
-			if (pinnedCategoria !== null) return;
+			if (pinnedCategory !== null) return;
 			hideChartTooltip();
 		})
 		.on('click', (event, item) => {
 			event.stopPropagation();
-			if (pinnedCategoria === item[0]) {
-				pinnedCategoria = null;
+			if (pinnedCategory === item[0]) {
+				pinnedCategory = null;
 				hideChartTooltip();
 				return;
 			}
-			pinnedCategoria = item[0];
-			exibirTooltipFixado(event, item, () => {
-				pinnedCategoria = null;
+			pinnedCategory = item[0];
+			showPinnedTooltip(event, item, () => {
+				pinnedCategory = null;
 				hideChartTooltip();
 			});
 		});
 
 	svg.on('click', () => {
-		pinnedCategoria = null;
+		pinnedCategory = null;
 		hideChartTooltip();
 	});
 
-	grupo
+	group
 		.append('g')
-		.attr('transform', `translate(0,${alturaInterna})`)
-		.call(axisBottom(escalaX))
+		.attr('transform', `translate(0,${innerHeight})`)
+		.call(axisBottom(xScale))
 		.selectAll('text')
 		.style('text-anchor', 'end')
 		.attr('dx', '-0.6em')
 		.attr('dy', '0.15em')
 		.attr('transform', 'rotate(-30)');
 
-	grupo
+	group
 		.append('g')
-		.call(axisLeft(escalaY).ticks(BAR_CHART.ticks));
+		.call(axisLeft(yScale).ticks(BAR_CHART.ticks));
 
 	if (showXAxisLabel) {
-		grupo
+		group
 			.append('text')
-			.attr('x', larguraInterna / 2)
-			.attr('y', alturaInterna + margem.bottom - 18)
+			.attr('x', innerWidth / 2)
+			.attr('y', innerHeight + margin.bottom - 18)
 			.attr('text-anchor', 'middle')
 			.attr('fill', '#5f5a53')
 			.attr('font-size', 11)
@@ -370,11 +370,11 @@ export function renderBarChart(container, rows, colunaCategoria, opcoes = {}) {
 	}
 
 	if (showYAxisLabel) {
-		grupo
+		group
 			.append('text')
 			.attr('transform', 'rotate(-90)')
-			.attr('x', -alturaInterna / 2)
-			.attr('y', -margem.left + 16)
+			.attr('x', -innerHeight / 2)
+			.attr('y', -margin.left + 16)
 			.attr('text-anchor', 'middle')
 			.attr('fill', '#5f5a53')
 			.attr('font-size', 11)

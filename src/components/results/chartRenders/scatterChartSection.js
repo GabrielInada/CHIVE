@@ -64,9 +64,9 @@ export function renderScatterChartSection({ config, rows, columnTypeByName, filt
 			},
 			locale: getLocale(),
 			labels: {
-				eixoX: t('chive-chart-control-scatter-x'),
-				eixoY: t('chive-chart-control-scatter-y'),
-				indice: t('chive-tooltip-row'),
+				xAxis: t('chive-chart-control-scatter-x'),
+				yAxis: t('chive-chart-control-scatter-y'),
+				index: t('chive-tooltip-row'),
 				count: t('chive-tooltip-count'),
 				regressionSlope: t('chive-chart-tooltip-regression-slope'),
 				regressionIntercept: t('chive-chart-tooltip-regression-intercept'),
@@ -80,9 +80,9 @@ export function renderScatterChartSection({ config, rows, columnTypeByName, filt
 		}
 	);
 	if (!result.ok) {
-		const chave = result.reason === 'log-no-positive'
+		const key = result.reason === 'log-no-positive'
 			? 'chive-chart-empty-scatter-log'
 			: 'chive-chart-empty-scatter';
-		showChartMessage(CHART_CONTAINERS.scatter, t(chave));
+		showChartMessage(CHART_CONTAINERS.scatter, t(key));
 	}
 }
