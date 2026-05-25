@@ -113,9 +113,9 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 ```js
 const appState = {
     data:  { datasets: [], activeIndex: -1 },
-    panel: { charts: [], slots: {}, layout: 'layout-2col',
+    panel: { charts: [], slots: {}, layout: 'template-2col',
              blocks: [], nextBlockId: 1, nextChartId: 0 },
-    ui:    { sidebarMode: 'dados', previewRows: 10 },
+    ui:    { sidebarMode: 'data', previewRows: 10 },
 };
 ```
 

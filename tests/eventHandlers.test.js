@@ -122,7 +122,7 @@ describe('eventHandlers', () => {
     setupDom();
   });
 
-  it('inicializa handlers e cobre fluxos principais de interacao', () => {
+  it('initializes handlers and covers main interaction flows', () => {
     initializeAllEventHandlers();
 
     expect(mocks.setupFileInputListeners).toHaveBeenCalledTimes(1);
@@ -170,7 +170,7 @@ describe('eventHandlers', () => {
     expect(mocks.removeDatasetByIndex).toHaveBeenCalledWith(1);
   });
 
-  it('setupResultsViewListeners registra listeners sem quebrar fluxo', () => {
+  it('setupResultsViewListeners registers listeners without breaking flow', () => {
     setupResultsViewListeners();
 
     const list = document.getElementById('column-list-content');

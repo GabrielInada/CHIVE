@@ -16,7 +16,7 @@ describe('feedbackUI', () => {
     document.body.innerHTML = '';
   });
 
-  it('cria toast de feedback e remove visibilidade após timeout', () => {
+  it('creates feedback toast and removes visibility after timeout', () => {
     showFeedback('ok', 100);
     const toast = document.getElementById('toast-feedback');
     expect(toast).toBeTruthy();
@@ -26,7 +26,7 @@ describe('feedbackUI', () => {
     expect(toast.classList.contains('visible')).toBe(false);
   });
 
-  it('mostra erro no container quando existe e permite fechar', () => {
+  it('shows error in container when it exists and allows closing', () => {
     const errorsContainer = document.createElement('div');
     errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
@@ -42,7 +42,7 @@ describe('feedbackUI', () => {
     expect(errorsContainer.querySelector('.error-notice')).toBeNull();
   });
 
-  it('faz fallback para toast se container de erro não existir', () => {
+  it('falls back to toast when error container does not exist', () => {
     showError('fallback', 100);
     const toast = document.getElementById('toast-feedback');
     expect(toast).toBeTruthy();

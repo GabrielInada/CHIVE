@@ -19,23 +19,23 @@ describe('columnHelpers', () => {
     { name: 'd', type: 'date' },
   ];
 
-  it('filtra columns visiveis por selecao explicita ou dataset default', () => {
+  it('filters visible columns by explicit selection or dataset default', () => {
     const dataset = { columns: columns, selectedColumns: ['a', 'c'] };
     expect(filterVisibleColumns(dataset).map(c => c.name)).toEqual(['a', 'c']);
     expect(filterVisibleColumns(dataset, ['b']).map(c => c.name)).toEqual(['b']);
   });
 
-  it('retorna columns numericas e nomes numericos', () => {
+  it('returns numeric columns and numeric names', () => {
     expect(getNumericColumns(columns).map(c => c.name)).toEqual(['a', 'c']);
     expect(getNumericColumnNames(columns)).toEqual(['a', 'c']);
   });
 
-  it('retorna columns categoricas (inclui datas) e nomes', () => {
+  it('returns categorical columns (including dates) and names', () => {
     expect(getCategoricalColumns(columns).map(c => c.name)).toEqual(['b', 'd']);
     expect(getCategoricalColumnNames(columns)).toEqual(['b', 'd']);
   });
 
-  it('retorna columns de data e nomes de data', () => {
+  it('returns date columns and date names', () => {
     expect(getDateColumns(columns).map(c => c.name)).toEqual(['d']);
     expect(getDateColumnNames(columns)).toEqual(['d']);
   });

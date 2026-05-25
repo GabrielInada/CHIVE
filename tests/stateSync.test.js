@@ -64,7 +64,7 @@ describe('stateSync', () => {
     mocks.getActiveDataset.mockReturnValue({ name: 'B' });
   });
 
-  it('initializeStateSync registra listener global e sincroniza imediatamente', () => {
+  it('initializeStateSync registers global listener and syncs immediately', () => {
     let stateListener = null;
     mocks.onStateChange.mockImplementation((scope, callback) => {
       if (scope === '*') {
@@ -89,7 +89,7 @@ describe('stateSync', () => {
     expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
   });
 
-  it('switchSidebarMode atualiza estado e classes de sidebar', () => {
+  it('switchSidebarMode updates state and sidebar classes', () => {
     switchSidebarMode('panel');
 
     expect(mocks.setSidebarMode).toHaveBeenCalledWith('panel');

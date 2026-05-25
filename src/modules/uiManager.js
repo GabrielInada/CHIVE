@@ -14,17 +14,17 @@ import { t } from '../services/i18nService.js';
 import { setSidebarMode } from './state/appState.js';
 
 /**
- * Read the currently-active tab from the DOM (whichever `[data-aba]`
+ * Read the currently-active tab from the DOM (whichever `[data-tab]`
  * element carries the `active` class). Falls back to `'preview'` when no
  * tab is marked active.
  *
  * @returns {TabName}
  */
 export function getActiveTab() {
-	const tabs = document.querySelectorAll('[data-aba]');
+	const tabs = document.querySelectorAll('[data-tab]');
 	for (const tab of tabs) {
 		if (tab.classList && tab.classList.contains('active')) {
-			return tab.dataset.aba;
+			return tab.dataset.tab;
 		}
 	}
 	return 'preview';
@@ -32,7 +32,7 @@ export function getActiveTab() {
 
 /**
  * Switch to a tab and apply the side-effect chain:
- *   1. Toggle `active`/`inactive` classes on `[data-aba]` buttons.
+ *   1. Toggle `active`/`inactive` classes on `[data-tab]` buttons.
  *   2. Hide all `tab-content-*` panels except the one matching `tabName`.
  *   3. Update the sidebar mode to match (`preview → rows`, `charts → viz`, `panel → panel`) via `setSidebarMode`.
  *
@@ -48,9 +48,9 @@ export function switchTab(tabName) {
 	}
 
 	// Update tab buttons
-	const tabs = document.querySelectorAll('[data-aba]');
+	const tabs = document.querySelectorAll('[data-tab]');
 	tabs.forEach(tab => {
-		if (tab.dataset.aba === tabName) {
+		if (tab.dataset.tab === tabName) {
 			tab.classList.add('active');
 			tab.classList.remove('inactive');
 		} else {
@@ -161,15 +161,15 @@ export function toggleSidebarCollapsed() {
 }
 
 /**
- * Wire click handlers on every `[data-aba]` element so clicking a tab
+ * Wire click handlers on every `[data-tab]` element so clicking a tab
  * delegates to {@link switchTab}. Called once during app boot from
  * `eventHandlers.initializeAllEventHandlers`.
  */
 export function setupTabListeners() {
-	const tabs = document.querySelectorAll('[data-aba]');
+	const tabs = document.querySelectorAll('[data-tab]');
 	tabs.forEach(tab => {
 		tab.addEventListener('click', () => {
-			const tabName = tab.dataset.aba;
+			const tabName = tab.dataset.tab;
 			switchTab(tabName);
 		});
 	});

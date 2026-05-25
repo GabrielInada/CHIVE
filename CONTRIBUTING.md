@@ -55,7 +55,7 @@ npm run test:watch   # Tests in watch mode
 
 ## Commit & PR conventions
 
-- Commit messages mix Portuguese and English — match the existing repo style.
+- Commit messages are in English.
 - PRs target `develop`, never `main` directly. The only thing that lands on `main` is a merge from `develop` after it has been tested.
 - Keep PRs scoped; if you discover unrelated cleanup, open a separate branch.
 
