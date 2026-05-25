@@ -48,87 +48,87 @@ function buildSliceColor(baseHex, index) {
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} colunaCategoria - Categorical column name (required).
- * @param {Object} [opcoes={}] - Render options bag.
+ * @param {string} categoryColumn - Categorical column name (required).
+ * @param {Object} [options={}] - Render options bag.
  * @returns {Result}
  */
-export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
-	if (!container || !colunaCategoria) return fail();
+export function renderPieChart(container, rows, categoryColumn, options = {}) {
+	if (!container || !categoryColumn) return fail();
 
-	const color = isValidHexColor(String(opcoes.color || '').trim())
-		? String(opcoes.color).trim()
+	const color = isValidHexColor(String(options.color || '').trim())
+		? String(options.color).trim()
 		: CHART_COLORS.pie;
-	const locale = opcoes.locale || undefined;
-		const customSliceColors = opcoes.customSliceColors || {};
+	const locale = options.locale || undefined;
+		const customSliceColors = options.customSliceColors || {};
 	const labels = {
-		categoria: opcoes.labels?.categoria || 'Category',
-		contagem: opcoes.labels?.contagem || 'Count',
-		percentual: opcoes.labels?.percentual || 'Percentage',
-		other: opcoes.labels?.other || 'Other',
-		focusOnThis: opcoes.labels?.focusOnThis || 'Show only this',
-		addToFilter: opcoes.labels?.addToFilter || 'Add to global filter',
+		category: options.labels?.category || 'Category',
+		count: options.labels?.count || 'Count',
+		percentage: options.labels?.percentage || 'Percentage',
+		other: options.labels?.other || 'Other',
+		focusOnThis: options.labels?.focusOnThis || 'Show only this',
+		addToFilter: options.labels?.addToFilter || 'Add to global filter',
 	};
-	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : 0;
-	const topNMode = opcoes.topNMode === 'truncate' ? 'truncate' : 'other';
+	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : 0;
+	const topNMode = options.topNMode === 'truncate' ? 'truncate' : 'other';
 
-	const rawInner = Number(opcoes.innerRadius);
-	const rawOuter = Number(opcoes.outerRadius);
-	const rawPadAngle = Number(opcoes.padAngle);
-	const measureMode = opcoes.measureMode === 'sum' ? 'sum' : 'count';
-	const valueColumn = opcoes.valueColumn || null;
-	const showCategoryLabel = opcoes.showCategoryLabel !== false;
-	const showValueLabel = opcoes.showValueLabel !== false;
-	const showLegend = opcoes.showLegend !== false;
-	const labelPosition = opcoes.labelPosition === 'outside' ? 'outside' : 'inside';
-	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
-		? clamp(Number(opcoes.chartHeight), 220, 720)
+	const rawInner = Number(options.innerRadius);
+	const rawOuter = Number(options.outerRadius);
+	const rawPadAngle = Number(options.padAngle);
+	const measureMode = options.measureMode === 'sum' ? 'sum' : 'count';
+	const valueColumn = options.valueColumn || null;
+	const showCategoryLabel = options.showCategoryLabel !== false;
+	const showValueLabel = options.showValueLabel !== false;
+	const showLegend = options.showLegend !== false;
+	const labelPosition = options.labelPosition === 'outside' ? 'outside' : 'inside';
+	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(options.chartHeight))
+		? clamp(Number(options.chartHeight), 220, 720)
 		: CHART_DIMENSIONS.pie.height;
 
-	const contador = new Map();
-	rows.forEach(linha => {
-		const valorBruto = linha[colunaCategoria];
-		const categoria = isNullish(valorBruto) || valorBruto === ''
+	const counter = new Map();
+	rows.forEach(row => {
+		const rawValue = row[categoryColumn];
+		const category = isNullish(rawValue) || rawValue === ''
 			? '—'
-			: String(valorBruto);
+			: String(rawValue);
 		if (measureMode === 'sum') {
 			if (!valueColumn) return;
-			const valor = Number(linha[valueColumn]);
-			if (!Number.isFinite(valor)) return;
-			contador.set(categoria, (contador.get(categoria) || 0) + valor);
+			const value = Number(row[valueColumn]);
+			if (!Number.isFinite(value)) return;
+			counter.set(category, (counter.get(category) || 0) + value);
 			return;
 		}
-		contador.set(categoria, (contador.get(categoria) || 0) + 1);
+		counter.set(category, (counter.get(category) || 0) + 1);
 	});
 
-	const linhas = Array.from(contador.entries())
-		.map(([categoria, valor]) => ({ categoria, valor }))
-		.sort((a, b) => b.valor - a.valor || compareStrings(a.categoria, b.categoria));
-	if (linhas.length === 0) {
+	const entries = Array.from(counter.entries())
+		.map(([category, value]) => ({ category, value }))
+		.sort((a, b) => b.value - a.value || compareStrings(a.category, b.category));
+	if (entries.length === 0) {
 		return fail(measureMode === 'sum' ? 'sum-no-numeric' : undefined);
 	}
 
-	if (topN > 0 && linhas.length > topN) {
+	if (topN > 0 && entries.length > topN) {
 		if (topNMode === 'truncate') {
-			linhas.length = topN;
+			entries.length = topN;
 		} else {
-			const head = linhas.slice(0, topN);
-			const restValor = linhas.slice(topN).reduce((sum, item) => sum + item.valor, 0);
-			linhas.length = 0;
-			linhas.push(...head, { categoria: labels.other, valor: restValor, isOther: true });
+			const head = entries.slice(0, topN);
+			const restValor = entries.slice(topN).reduce((sum, item) => sum + item.value, 0);
+			entries.length = 0;
+			entries.push(...head, { category: labels.other, value: restValor, isOther: true });
 		}
 	}
 
 	container.replaceChildren();
 	hideChartTooltip();
 
-	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.pie.width, 320);
-	const altura = chartHeight;
-	const margem = CHART_DIMENSIONS.pie.margins;
+	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.pie.width, 320);
+	const height = chartHeight;
+	const margin = CHART_DIMENSIONS.pie.margins;
 	const titleOffset = customTitle ? 18 : 0;
-	const centerX = (largura - margem.left - margem.right) / 2 + margem.left;
-	const centerY = (altura - margem.top - margem.bottom - titleOffset) / 2 + margem.top + titleOffset;
-	const maxRadius = Math.max(PIE_CHART.minOuterRadius, Math.min(centerX - margem.left, centerY - margem.top));
+	const centerX = (width - margin.left - margin.right) / 2 + margin.left;
+	const centerY = (height - margin.top - margin.bottom - titleOffset) / 2 + margin.top + titleOffset;
+	const maxRadius = Math.max(PIE_CHART.minOuterRadius, Math.min(centerX - margin.left, centerY - margin.top));
 	const outerRadius = clamp(
 		Number.isFinite(rawOuter) ? rawOuter : PIE_CHART.defaultOuterRadius,
 		PIE_CHART.minOuterRadius,
@@ -139,7 +139,7 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 		PIE_CHART.minInnerRadius,
 		Math.max(0, outerRadius - 8)
 	);
-	const total = linhas.reduce((acc, item) => acc + item.valor, 0);
+	const total = entries.reduce((acc, item) => acc + item.value, 0);
 	const padAngleDeg = clamp(
 		Number.isFinite(rawPadAngle) ? rawPadAngle : PIE_CHART.defaultPadAngle,
 		PIE_CHART.minPadAngle,
@@ -147,22 +147,22 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 	);
 	const padAngleRad = (padAngleDeg * Math.PI) / 180;
 	const zoomScale = clamp(
-		Number.isFinite(Number(opcoes.zoomScale)) ? Number(opcoes.zoomScale) : PIE_CHART.defaultZoomScale,
+		Number.isFinite(Number(options.zoomScale)) ? Number(options.zoomScale) : PIE_CHART.defaultZoomScale,
 		PIE_CHART.minZoomScale,
 		PIE_CHART.maxZoomScale
 	);
 
 	const svg = select(container)
 		.append('svg')
-		.attr('width', largura)
-		.attr('height', altura);
+		.attr('width', width)
+		.attr('height', height);
 
 	const viewport = svg.append('g');
 
 	if (customTitle) {
 		svg
 			.append('text')
-			.attr('x', largura / 2)
+			.attr('x', width / 2)
 			.attr('y', 16)
 			.attr('text-anchor', 'middle')
 			.attr('font-size', 13)
@@ -171,14 +171,14 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 			.text(customTitle);
 	}
 
-	const grupo = viewport
+	const group = viewport
 		.append('g')
 		.attr('transform', `translate(${centerX},${centerY})`);
 
 	const pieGenerator = pie()
 		.sort(null)
 		.padAngle(padAngleRad)
-		.value(item => item.valor);
+		.value(item => item.value);
 
 	const arcGenerator = arc()
 		.innerRadius(innerRadius)
@@ -188,22 +188,22 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 		.innerRadius(innerRadius + (outerRadius - innerRadius) * 0.62)
 		.outerRadius(innerRadius + (outerRadius - innerRadius) * 0.62);
 
-	let pinnedCategoria = null;
+	let pinnedCategory = null;
 
-	const montarConteudoTooltip = item => {
-		const percentual = total > 0 ? ((item.valor / total) * 100) : 0;
+	const buildTooltipContent = item => {
+		const percentage = total > 0 ? ((item.value / total) * 100) : 0;
 		const wrapper = document.createElement('div');
-		wrapper.appendChild(createTooltipLine(labels.categoria, item.categoria));
-		wrapper.appendChild(createTooltipLine(labels.contagem, formatNumber(item.valor, locale)));
-		wrapper.appendChild(createTooltipLine(labels.percentual, `${percentual.toFixed(1)}%`));
+		wrapper.appendChild(createTooltipLine(labels.category, item.category));
+		wrapper.appendChild(createTooltipLine(labels.count, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		return wrapper;
 	};
 
-	const exibirTooltip = (event, item) => {
-		showChartTooltip(montarConteudoTooltip(item), event.pageX, event.pageY);
+	const showTooltip = (event, item) => {
+		showChartTooltip(buildTooltipContent(item), event.pageX, event.pageY);
 	};
 
-	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterCallbacks = options.filterCallbacks || {};
 	const filterLabels = filterCallbacks.filterActionLabels || {};
 	const actionLabels = {
 		focus: filterLabels.focus || labels.focusOnThis,
@@ -213,26 +213,26 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 		bringBack: filterLabels.bringBack || 'Bring back',
 	};
 
-	const exibirTooltipFixado = (event, item, onDismiss) => {
-		const content = montarConteudoTooltip(item);
+	const showPinnedTooltip = (event, item, onDismiss) => {
+		const content = buildTooltipContent(item);
 		if (item.isOther) {
 			showPinnedChartTooltip(content, event.pageX, event.pageY, {
-				headerTitle: String(item.categoria),
+				headerTitle: String(item.category),
 				closeLabel: filterLabels.close,
 				onDismiss,
 				actionSets: [],
 			});
 			return;
 		}
-		const token = toCategoryToken(item.categoria);
+		const token = toCategoryToken(item.category);
 		const state = typeof filterCallbacks.getTokenFilterState === 'function'
-			? filterCallbacks.getTokenFilterState(colunaCategoria, token)
+			? filterCallbacks.getTokenFilterState(categoryColumn, token)
 			: null;
 		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
-			? !!filterCallbacks.isShowOnlyThisRedundant(colunaCategoria, token)
+			? !!filterCallbacks.isShowOnlyThisRedundant(categoryColumn, token)
 			: false;
 		const actions = buildCategoricalFilterActions({
-			column: colunaCategoria,
+			column: categoryColumn,
 			token,
 			state,
 			labels: actionLabels,
@@ -250,7 +250,7 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 		});
 		const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
 		showPinnedChartTooltip(content, event.pageX, event.pageY, {
-			headerTitle: String(item.categoria),
+			headerTitle: String(item.category),
 			closeLabel: filterLabels.close,
 			onDismiss,
 			actionSets: actionSet ? [actionSet] : [],
@@ -258,57 +258,57 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 		});
 	};
 
-	grupo
+	group
 		.selectAll('path')
-		.data(pieGenerator(linhas))
+		.data(pieGenerator(entries))
 		.enter()
 		.append('path')
 		.attr('d', arcGenerator)
 		.attr('fill', (item) => {
-			const categoria = item.data.categoria;
+			const category = item.data.category;
 			if (item.data.isOther) {
 				return PIE_CHART.otherSliceColor;
 			}
-			if (customSliceColors[categoria]) {
-				return customSliceColors[categoria];
+			if (customSliceColors[category]) {
+				return customSliceColors[category];
 			}
-			return buildSliceColor(color, linhas.findIndex(line => line.categoria === categoria));
+			return buildSliceColor(color, entries.findIndex(line => line.category === category));
 		})
 		.attr('stroke', '#fff')
 		.attr('stroke-width', 1)
 		.on('mouseenter', (event, item) => {
-			if (pinnedCategoria !== null) return;
-			exibirTooltip(event, item.data);
+			if (pinnedCategory !== null) return;
+			showTooltip(event, item.data);
 		})
 		.on('mousemove', event => {
-			if (pinnedCategoria !== null) return;
+			if (pinnedCategory !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseleave', () => {
-			if (pinnedCategoria !== null) return;
+			if (pinnedCategory !== null) return;
 			hideChartTooltip();
 		})
 		.on('click', (event, item) => {
 			event.stopPropagation();
-			if (pinnedCategoria === item.data.categoria) {
-				pinnedCategoria = null;
+			if (pinnedCategory === item.data.category) {
+				pinnedCategory = null;
 				hideChartTooltip();
 				return;
 			}
-			pinnedCategoria = item.data.categoria;
-			exibirTooltipFixado(event, item.data, () => {
-				pinnedCategoria = null;
+			pinnedCategory = item.data.category;
+			showPinnedTooltip(event, item.data, () => {
+				pinnedCategory = null;
 				hideChartTooltip();
 			});
 		});
 
 	svg.on('click', () => {
-		pinnedCategoria = null;
+		pinnedCategory = null;
 		hideChartTooltip();
 	});
 
 	const zoomBehavior = zoom()
-		.extent([[0, 0], [largura, altura]])
+		.extent([[0, 0], [width, height]])
 		.scaleExtent([PIE_CHART.minZoomScale, PIE_CHART.maxZoomScale])
 		.on('zoom', event => {
 			viewport.attr('transform', event.transform);
@@ -317,9 +317,9 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 	svg.call(zoomBehavior);
 	svg.call(zoomBehavior.transform, zoomIdentity.scale(zoomScale));
 
-	const pieData = pieGenerator(linhas);
+	const pieData = pieGenerator(entries);
 	if ((showCategoryLabel || showValueLabel) && labelPosition === 'inside') {
-		grupo
+		group
 			.selectAll('text')
 			.data(pieData.filter(item => ((item.endAngle - item.startAngle) / (2 * Math.PI)) >= 0.04))
 			.enter()
@@ -331,8 +331,8 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 			.selectAll('tspan')
 			.data(item => {
 				const parts = [];
-				if (showCategoryLabel) parts.push({ text: String(item.data.categoria), dy: '0' });
-				if (showValueLabel) parts.push({ text: formatNumber(item.data.valor, locale), dy: showCategoryLabel ? '1.1em' : '0' });
+				if (showCategoryLabel) parts.push({ text: String(item.data.category), dy: '0' });
+				if (showValueLabel) parts.push({ text: formatNumber(item.data.value, locale), dy: showCategoryLabel ? '1.1em' : '0' });
 				return parts;
 			})
 			.enter()
@@ -347,7 +347,7 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 			.innerRadius(outerRadius + 12)
 			.outerRadius(outerRadius + 12);
 
-		grupo
+		group
 			.selectAll('polyline')
 			.data(pieData.filter(item => ((item.endAngle - item.startAngle) / (2 * Math.PI)) >= 0.03))
 			.enter()
@@ -363,7 +363,7 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 				return [start, mid, end].map(point => point.join(',')).join(' ');
 			});
 
-		grupo
+		group
 			.selectAll('text.pie-outside-label')
 			.data(pieData.filter(item => ((item.endAngle - item.startAngle) / (2 * Math.PI)) >= 0.03))
 			.enter()
@@ -380,8 +380,8 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 			.selectAll('tspan')
 			.data(item => {
 				const parts = [];
-				if (showCategoryLabel) parts.push({ text: String(item.data.categoria), dy: '0' });
-				if (showValueLabel) parts.push({ text: formatNumber(item.data.valor, locale), dy: showCategoryLabel ? '1.1em' : '0' });
+				if (showCategoryLabel) parts.push({ text: String(item.data.category), dy: '0' });
+				if (showValueLabel) parts.push({ text: formatNumber(item.data.value, locale), dy: showCategoryLabel ? '1.1em' : '0' });
 				return parts;
 			})
 			.enter()
@@ -394,13 +394,13 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 	if (showLegend) {
 		const legend = svg
 			.append('g')
-			.attr('transform', `translate(${Math.max(centerX + outerRadius + 26, largura - 180)},${Math.max(14, centerY - outerRadius)})`);
+			.attr('transform', `translate(${Math.max(centerX + outerRadius + 26, width - 180)},${Math.max(14, centerY - outerRadius)})`);
 
-		linhas.slice(0, 8).forEach((item, index) => {
+		entries.slice(0, 8).forEach((item, index) => {
 			const row = legend.append('g').attr('transform', `translate(0,${index * 16})`);
 			const swatch = item.isOther
 				? PIE_CHART.otherSliceColor
-				: (customSliceColors[item.categoria] || buildSliceColor(color, index));
+				: (customSliceColors[item.category] || buildSliceColor(color, index));
 			row.append('rect')
 				.attr('width', 10)
 				.attr('height', 10)
@@ -411,7 +411,7 @@ export function renderPieChart(container, rows, colunaCategoria, opcoes = {}) {
 				.attr('y', 9)
 				.attr('font-size', 10)
 				.attr('fill', '#3f3a33')
-				.text(`${item.categoria} (${formatNumber(item.valor, locale)})`);
+				.text(`${item.category} (${formatNumber(item.value, locale)})`);
 		});
 	}
 

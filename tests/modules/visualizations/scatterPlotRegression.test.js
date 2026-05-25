@@ -85,7 +85,7 @@ describe('fitLinearRegression', () => {
 });
 
 describe('computeRegression', () => {
-	const linearPontos = [
+	const linearPoints = [
 		{ x: 1, y: 3 },
 		{ x: 2, y: 5 },
 		{ x: 3, y: 7 },
@@ -93,7 +93,7 @@ describe('computeRegression', () => {
 		{ x: 5, y: 11 },
 	];
 
-	const noisyLinearPontos = [
+	const noisyLinearPoints = [
 		{ x: 1, y: 3.1 },
 		{ x: 2, y: 4.9 },
 		{ x: 3, y: 7.2 },
@@ -103,7 +103,7 @@ describe('computeRegression', () => {
 
 	it('returns one overall group when no groupBy is provided', () => {
 		const results = computeRegression({
-			pontos: linearPontos,
+			points: linearPoints,
 			xScale: 'linear',
 			yScale: 'linear',
 			xDomain: [1, 5],
@@ -118,7 +118,7 @@ describe('computeRegression', () => {
 
 	it('produces a confidence band when the fit has residual variance', () => {
 		const results = computeRegression({
-			pontos: noisyLinearPontos,
+			points: noisyLinearPoints,
 			xScale: 'linear',
 			yScale: 'linear',
 			xDomain: [1, 5],
@@ -137,7 +137,7 @@ describe('computeRegression', () => {
 
 	it('returns sampleBand = null when the fit is exact (ssRes = 0)', () => {
 		const results = computeRegression({
-			pontos: linearPontos,
+			points: linearPoints,
 			xScale: 'linear',
 			yScale: 'linear',
 			xDomain: [1, 5],
@@ -147,7 +147,7 @@ describe('computeRegression', () => {
 
 	it('sampleLine endpoints span the x domain', () => {
 		const results = computeRegression({
-			pontos: linearPontos,
+			points: linearPoints,
 			xScale: 'linear',
 			yScale: 'linear',
 			xDomain: [0, 10],
@@ -160,9 +160,9 @@ describe('computeRegression', () => {
 	});
 
 	it('fits in log(x) space when xScale is log and recovers slope/intercept', () => {
-		const pontos = [1, 10, 100, 1000].map(x => ({ x, y: 3 * Math.log(x) + 1 }));
+		const points = [1, 10, 100, 1000].map(x => ({ x, y: 3 * Math.log(x) + 1 }));
 		const results = computeRegression({
-			pontos,
+			points,
 			xScale: 'log',
 			yScale: 'linear',
 			xDomain: [1, 1000],
@@ -177,7 +177,7 @@ describe('computeRegression', () => {
 	});
 
 	it('groups points by groupBy and fits each group independently', () => {
-		const pontos = [
+		const points = [
 			{ x: 0, y: 0, cat: 'A' },
 			{ x: 1, y: 1, cat: 'A' },
 			{ x: 2, y: 2, cat: 'A' },
@@ -186,7 +186,7 @@ describe('computeRegression', () => {
 			{ x: 2, y: 10, cat: 'B' },
 		];
 		const results = computeRegression({
-			pontos,
+			points,
 			xScale: 'linear',
 			yScale: 'linear',
 			xDomain: [0, 2],
@@ -200,7 +200,7 @@ describe('computeRegression', () => {
 
 	it('returns sampleBand = null when n < 3', () => {
 		const results = computeRegression({
-			pontos: [
+			points: [
 				{ x: 0, y: 0 },
 				{ x: 1, y: 1 },
 			],
@@ -213,14 +213,14 @@ describe('computeRegression', () => {
 	});
 
 	it('skips groups with too few points or zero variance', () => {
-		const pontos = [
+		const points = [
 			{ x: 0, y: 0, cat: 'A' },
 			{ x: 1, y: 1, cat: 'A' },
 			{ x: 2, y: 2, cat: 'A' },
 			{ x: 5, y: 5, cat: 'B' },
 		];
 		const results = computeRegression({
-			pontos,
+			points,
 			xScale: 'linear',
 			yScale: 'linear',
 			xDomain: [0, 5],

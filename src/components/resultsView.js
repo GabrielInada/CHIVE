@@ -511,5 +511,5 @@ export function renderDataInterface(
   document.querySelector('.upload-text-main').textContent = t('chive-upload-loaded-main');
   document.querySelector('.upload-text-sub').textContent = t('chive-upload-loaded-sub');
   document.getElementById('file-summary-text').title =
-    `${fileName} · ${rows.length.toLocaleString(getLocale())} linhas · ${columns.length} columns · ${fileSize}`;
+    `${fileName} · ${rows.length.toLocaleString(getLocale())} rows · ${columns.length} columns · ${fileSize}`;
 }

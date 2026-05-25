@@ -49,24 +49,24 @@ export function renderBubbleChartSection({ config, rows, filterCallbacks }) {
 			colorScheme: config.colorScheme,
 			locale: getLocale(),
 			labels: {
-				categoria: t('chive-chart-control-bubble-category'),
-				contagem: t('chive-tooltip-count'),
-				soma: t('chive-tooltip-sum'),
-				media: t('chive-tooltip-mean'),
-				grupo: t('chive-chart-control-bubble-group'),
-				filhos: t('chive-chart-control-bubble-node-children-count'),
-				nivel: t('chive-chart-control-bubble-node-depth'),
+				category: t('chive-chart-control-bubble-category'),
+				count: t('chive-tooltip-count'),
+				sum: t('chive-tooltip-sum'),
+				mean: t('chive-tooltip-mean'),
+				group: t('chive-chart-control-bubble-group'),
+				children: t('chive-chart-control-bubble-node-children-count'),
+				level: t('chive-chart-control-bubble-node-depth'),
 			},
 			filterCallbacks,
 		}
 	);
 
 	if (!result.ok) {
-		const chave = result.reason === 'no-value-column' || result.reason === 'no-numeric'
+		const key = result.reason === 'no-value-column' || result.reason === 'no-numeric'
 			? 'chive-chart-empty-bubble-numeric'
 			: result.reason === 'no-nesting-columns' || result.reason === 'no-group-column'
 				? 'chive-chart-empty-bubble-nesting-required'
 				: 'chive-chart-empty-bubble';
-		showChartMessage(CHART_CONTAINERS.bubble, t(chave));
+		showChartMessage(CHART_CONTAINERS.bubble, t(key));
 	}
 }

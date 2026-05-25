@@ -12,7 +12,7 @@ import {
 	computeAdaptiveMargins,
 	aggregateCategoricalPairs,
 	pickMostFrequentCategory,
-	normalizarDominio,
+	normalizeDomain,
 } from '../../../src/modules/visualizations/scatterPlotAxisHelpers.js';
 
 describe('isNumericLikeAxisType', () => {
@@ -222,23 +222,23 @@ describe('pickMostFrequentCategory', () => {
 	});
 });
 
-describe('normalizarDominio', () => {
+describe('normalizeDomain', () => {
 	it('passes through a valid non-zero-width range', () => {
-		expect(normalizarDominio([1, 10])).toEqual([1, 10]);
+		expect(normalizeDomain([1, 10])).toEqual([1, 10]);
 	});
 
 	it('widens a zero-width non-zero range by 10%', () => {
-		const [min, max] = normalizarDominio([5, 5]);
+		const [min, max] = normalizeDomain([5, 5]);
 		expect(min).toBeCloseTo(4.5);
 		expect(max).toBeCloseTo(5.5);
 	});
 
 	it('widens a zero-zero range by ±1', () => {
-		expect(normalizarDominio([0, 0])).toEqual([-1, 1]);
+		expect(normalizeDomain([0, 0])).toEqual([-1, 1]);
 	});
 
 	it('returns [0, 1] for non-finite inputs', () => {
-		expect(normalizarDominio([NaN, 10])).toEqual([0, 1]);
-		expect(normalizarDominio([Infinity, -Infinity])).toEqual([0, 1]);
+		expect(normalizeDomain([NaN, 10])).toEqual([0, 1]);
+		expect(normalizeDomain([Infinity, -Infinity])).toEqual([0, 1]);
 	});
 });

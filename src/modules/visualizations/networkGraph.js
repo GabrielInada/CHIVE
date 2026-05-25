@@ -53,14 +53,14 @@ function buildNetworkData(rows, sourceColumn, targetColumn, weightColumn, groupC
 	const nodeMap = new Map();
 	const links = [];
 
-	rows.forEach(linha => {
-		const source = sanitizeNodeValue(linha[sourceColumn]);
-		const target = sanitizeNodeValue(linha[targetColumn]);
+	rows.forEach(row => {
+		const source = sanitizeNodeValue(row[sourceColumn]);
+		const target = sanitizeNodeValue(row[targetColumn]);
 		if (!source || !target) return;
 
-		const rawWeight = weightColumn ? Number(linha[weightColumn]) : 1;
+		const rawWeight = weightColumn ? Number(row[weightColumn]) : 1;
 		const weight = Number.isFinite(rawWeight) && rawWeight > 0 ? rawWeight : 1;
-		const rawGroup = groupColumn ? sanitizeNodeValue(linha[groupColumn]) : '';
+		const rawGroup = groupColumn ? sanitizeNodeValue(row[groupColumn]) : '';
 		const group = rawGroup || 'default';
 
 		if (!nodeMap.has(source)) {
@@ -109,43 +109,43 @@ function stopPreviousSimulation(container) {
  * @param {Array<Object<string, *>>} rows - Source rows (one row per edge).
  * @param {string} sourceColumn - Column holding the source node identifier.
  * @param {string} targetColumn - Column holding the target node identifier.
- * @param {Object} [opcoes={}] - Render options bag.
+ * @param {Object} [options={}] - Render options bag.
  * @returns {Result}
  */
-export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, opcoes = {}) {
+export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, options = {}) {
 	if (!container || !sourceColumn || !targetColumn) return fail();
 
-	const weightColumn = opcoes.weightColumn || null;
-	const groupColumn = opcoes.groupColumn || null;
-	const nodeRadius = Number.isFinite(Number(opcoes.nodeRadius)) ? Number(opcoes.nodeRadius) : 5;
-	const linkOpacity = Number.isFinite(Number(opcoes.linkOpacity)) ? Number(opcoes.linkOpacity) : 0.45;
-	const chargeStrength = Number.isFinite(Number(opcoes.chargeStrength)) ? Number(opcoes.chargeStrength) : -80;
-	const linkDistance = Number.isFinite(Number(opcoes.linkDistance)) ? Number(opcoes.linkDistance) : 46;
-	const zoomScale = Number.isFinite(Number(opcoes.zoomScale))
-		? Number(opcoes.zoomScale)
+	const weightColumn = options.weightColumn || null;
+	const groupColumn = options.groupColumn || null;
+	const nodeRadius = Number.isFinite(Number(options.nodeRadius)) ? Number(options.nodeRadius) : 5;
+	const linkOpacity = Number.isFinite(Number(options.linkOpacity)) ? Number(options.linkOpacity) : 0.45;
+	const chargeStrength = Number.isFinite(Number(options.chargeStrength)) ? Number(options.chargeStrength) : -80;
+	const linkDistance = Number.isFinite(Number(options.linkDistance)) ? Number(options.linkDistance) : 46;
+	const zoomScale = Number.isFinite(Number(options.zoomScale))
+		? Number(options.zoomScale)
 		: NETWORK_GRAPH.defaultZoomScale;
-	const alphaDecay = Number.isFinite(Number(opcoes.alphaDecay))
-		? Number(opcoes.alphaDecay)
+	const alphaDecay = Number.isFinite(Number(options.alphaDecay))
+		? Number(options.alphaDecay)
 		: NETWORK_GRAPH.defaultAlphaDecay;
-	const showLegend = opcoes.showLegend !== false;
-	const showNodeLabels = opcoes.showNodeLabels === true;
-	const sourceNodeColor = isValidHexColor(String(opcoes.sourceNodeColor || '').trim())
-		? String(opcoes.sourceNodeColor).trim()
+	const showLegend = options.showLegend !== false;
+	const showNodeLabels = options.showNodeLabels === true;
+	const sourceNodeColor = isValidHexColor(String(options.sourceNodeColor || '').trim())
+		? String(options.sourceNodeColor).trim()
 		: '#e3743d';
-	const targetNodeColor = isValidHexColor(String(opcoes.targetNodeColor || '').trim())
-		? String(opcoes.targetNodeColor).trim()
+	const targetNodeColor = isValidHexColor(String(options.targetNodeColor || '').trim())
+		? String(options.targetNodeColor).trim()
 		: '#6b94c9';
-	const edgeColorMode = opcoes.edgeColorMode === 'uniform' ? 'uniform' : 'gradient';
-	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
-		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
+	const edgeColorMode = options.edgeColorMode === 'uniform' ? 'uniform' : 'gradient';
+	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(options.chartHeight))
+		? Math.max(220, Math.min(720, Number(options.chartHeight)))
 		: 420;
-	const locale = opcoes.locale || undefined;
+	const locale = options.locale || undefined;
 	const labels = {
-		node: opcoes.labels?.node || 'Node',
-		linkWeight: opcoes.labels?.linkWeight || 'Weight',
-		source: opcoes.labels?.source || 'Source',
-		target: opcoes.labels?.target || 'Target',
+		node: options.labels?.node || 'Node',
+		linkWeight: options.labels?.linkWeight || 'Weight',
+		source: options.labels?.source || 'Source',
+		target: options.labels?.target || 'Target',
 	};
 
 	const network = buildNetworkData(rows, sourceColumn, targetColumn, weightColumn, groupColumn);
@@ -157,14 +157,14 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 	hideChartTooltip();
 	stopPreviousSimulation(container);
 
-	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
-	const altura = chartHeight;
+	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
+	const height = chartHeight;
 
 	const svg = select(container)
 		.append('svg')
-		.attr('width', largura)
-		.attr('height', altura)
-		.attr('viewBox', [-(largura / 2), -(altura / 2), largura, altura]);
+		.attr('width', width)
+		.attr('height', height)
+		.attr('viewBox', [-(width / 2), -(height / 2), width, height]);
 
 	const viewport = svg.append('g');
 
@@ -172,7 +172,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 		svg
 			.append('text')
 			.attr('x', 0)
-			.attr('y', -(altura / 2) + 18)
+			.attr('y', -(height / 2) + 18)
 			.attr('text-anchor', 'middle')
 			.attr('font-size', 13)
 			.attr('font-weight', 600)
@@ -202,7 +202,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 	container[SIMULATION_KEY] = simulation;
 
 	let pinnedNodeDatum = null;
-	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterCallbacks = options.filterCallbacks || {};
 	const filterLabels = filterCallbacks.filterActionLabels || {};
 	const actionLabels = {
 		focus: filterLabels.focus || 'Show only this',
@@ -449,7 +449,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 	if (showLegend) {
 		const legend = svg
 			.append('g')
-			.attr('transform', `translate(${-(largura / 2) + 12},${-(altura / 2) + 12})`)
+			.attr('transform', `translate(${-(width / 2) + 12},${-(height / 2) + 12})`)
 			.attr('class', 'network-legend');
 
 		[

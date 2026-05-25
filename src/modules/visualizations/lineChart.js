@@ -69,12 +69,12 @@ function toDateOrNull(value) {
 	return Number.isFinite(date.getTime()) ? date : null;
 }
 
-function buildPoints(rows, eixoX, eixoY, xKind) {
+function buildPoints(rows, xColumn, yColumn, xKind) {
 	const points = [];
 	for (let index = 0; index < rows.length; index++) {
 		const row = rows[index];
-		const xRaw = row?.[eixoX];
-		const yRaw = row?.[eixoY];
+		const xRaw = row?.[xColumn];
+		const yRaw = row?.[yColumn];
 		const yIsMissing = isNullish(yRaw) || yRaw === '';
 		const yNum = yIsMissing ? NaN : Number(yRaw);
 		const y = Number.isFinite(yNum) ? yNum : NaN;
@@ -181,43 +181,43 @@ function normalizeHex(value, fallback) {
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} eixoX - X-axis column name (any type).
- * @param {string} eixoY - Y-axis column name (numeric).
- * @param {Object} [opcoes={}] - Render options bag.
+ * @param {string} xColumn - X-axis column name (any type).
+ * @param {string} yColumn - Y-axis column name (numeric).
+ * @param {Object} [options={}] - Render options bag.
  * @returns {Result}
  */
-export function renderLineChart(container, rows, eixoX, eixoY, opcoes = {}) {
-	if (!container || !eixoX || !eixoY) return fail('invalid-args');
+export function renderLineChart(container, rows, xColumn, yColumn, options = {}) {
+	if (!container || !xColumn || !yColumn) return fail('invalid-args');
 	if (!Array.isArray(rows) || rows.length === 0) return fail();
 
-	const xKind = resolveXAxisKind(opcoes.axisTypes?.x);
-	const curve = CURVE_BY_KEY[opcoes.curve] || curveLinear;
-	const missingMode = LINE_CHART.missingModes.includes(opcoes.missingMode)
-		? opcoes.missingMode
+	const xKind = resolveXAxisKind(options.axisTypes?.x);
+	const curve = CURVE_BY_KEY[options.curve] || curveLinear;
+	const missingMode = LINE_CHART.missingModes.includes(options.missingMode)
+		? options.missingMode
 		: LINE_CHART.defaultMissingMode;
-	const strokeWidth = Number.isFinite(Number(opcoes.strokeWidth))
-		? Math.max(0.5, Math.min(8, Number(opcoes.strokeWidth)))
+	const strokeWidth = Number.isFinite(Number(options.strokeWidth))
+		? Math.max(0.5, Math.min(8, Number(options.strokeWidth)))
 		: LINE_CHART.defaultStrokeWidth;
-	const color = normalizeHex(opcoes.color, CHART_COLORS.line);
-	const ghostColor = normalizeHex(opcoes.ghostStrokeColor, LINE_CHART.defaultGhostStrokeColor);
-	const showPoints = opcoes.showPoints === true;
-	const sortX = opcoes.sortX !== false;
-	const aggregateMode = LINE_CHART.aggregateModes.includes(opcoes.aggregateMode)
-		? opcoes.aggregateMode
+	const color = normalizeHex(options.color, CHART_COLORS.line);
+	const ghostColor = normalizeHex(options.ghostStrokeColor, LINE_CHART.defaultGhostStrokeColor);
+	const showPoints = options.showPoints === true;
+	const sortX = options.sortX !== false;
+	const aggregateMode = LINE_CHART.aggregateModes.includes(options.aggregateMode)
+		? options.aggregateMode
 		: 'none';
-	const showXAxisLabel = opcoes.showXAxisLabel !== false;
-	const showYAxisLabel = opcoes.showYAxisLabel !== false;
-	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
-		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
+	const showXAxisLabel = options.showXAxisLabel !== false;
+	const showYAxisLabel = options.showYAxisLabel !== false;
+	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(options.chartHeight))
+		? Math.max(220, Math.min(720, Number(options.chartHeight)))
 		: CHART_DIMENSIONS.line.height;
 	const axisLabels = {
-		x: opcoes.axisLabels?.x || eixoX,
-		y: opcoes.axisLabels?.y || eixoY,
+		x: options.axisLabels?.x || xColumn,
+		y: options.axisLabels?.y || yColumn,
 	};
-	const locale = opcoes.locale || undefined;
+	const locale = options.locale || undefined;
 
-	let points = buildPoints(rows, eixoX, eixoY, xKind);
+	let points = buildPoints(rows, xColumn, yColumn, xKind);
 	if (points.length === 0) return fail('no-x-values');
 
 	points = aggregatePoints(points, aggregateMode);
@@ -229,25 +229,25 @@ export function renderLineChart(container, rows, eixoX, eixoY, opcoes = {}) {
 	container.replaceChildren();
 	hideChartTooltip();
 
-	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.line.width, 320);
-	const altura = chartHeight;
-	const margem = { ...CHART_DIMENSIONS.line.margins };
+	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.line.width, 320);
+	const height = chartHeight;
+	const margin = { ...CHART_DIMENSIONS.line.margins };
 	if (xKind === AXIS_KIND.categorical) {
-		margem.bottom = Math.max(margem.bottom, 64);
+		margin.bottom = Math.max(margin.bottom, 64);
 	}
 	const titleOffset = customTitle ? 20 : 0;
-	const larguraInterna = Math.max(40, largura - margem.left - margem.right);
-	const alturaInterna = Math.max(40, altura - margem.top - margem.bottom - titleOffset);
+	const innerWidth = Math.max(40, width - margin.left - margin.right);
+	const innerHeight = Math.max(40, height - margin.top - margin.bottom - titleOffset);
 
 	const svg = select(container)
 		.append('svg')
-		.attr('width', largura)
-		.attr('height', altura)
-		.attr('viewBox', `0 0 ${largura} ${altura}`);
+		.attr('width', width)
+		.attr('height', height)
+		.attr('viewBox', `0 0 ${width} ${height}`);
 
 	if (customTitle) {
 		svg.append('text')
-			.attr('x', largura / 2)
+			.attr('x', width / 2)
 			.attr('y', 16)
 			.attr('text-anchor', 'middle')
 			.attr('font-size', 13)
@@ -256,26 +256,26 @@ export function renderLineChart(container, rows, eixoX, eixoY, opcoes = {}) {
 			.text(customTitle);
 	}
 
-	const grupo = svg.append('g')
-		.attr('transform', `translate(${margem.left},${margem.top + titleOffset})`);
+	const group = svg.append('g')
+		.attr('transform', `translate(${margin.left},${margin.top + titleOffset})`);
 
-	const escalaX = buildXScale(xKind, definedPoints, [0, larguraInterna]);
+	const xScale = buildXScale(xKind, definedPoints, [0, innerWidth]);
 	const yValues = definedPoints.map(p => p.y);
 	const yMin = Math.min(0, d3Min(yValues));
 	const yMax = d3Max(yValues);
 	const yDomain = yMin === yMax
 		? [yMin - 1, yMax + 1]
 		: [yMin, yMax];
-	const escalaY = scaleLinear().domain(yDomain).nice().range([alturaInterna, 0]);
+	const yScale = scaleLinear().domain(yDomain).nice().range([innerHeight, 0]);
 
 	const projectX = point => {
 		if (xKind === AXIS_KIND.categorical) {
-			const value = escalaX(point.x);
+			const value = xScale(point.x);
 			return value === undefined ? null : value;
 		}
-		return escalaX(point.x);
+		return xScale(point.x);
 	};
-	const projectY = point => escalaY(point.y);
+	const projectY = point => yScale(point.y);
 
 	const lineGenerator = d3Line()
 		.curve(curve)
@@ -288,7 +288,7 @@ export function renderLineChart(container, rows, eixoX, eixoY, opcoes = {}) {
 			.defined(point => Number.isFinite(point.y) && projectX(point) !== null)
 			.x(point => projectX(point))
 			.y(point => projectY(point));
-		grupo.append('path')
+		group.append('path')
 			.attr('class', 'line-path-ghost')
 			.attr('fill', 'none')
 			.attr('stroke', ghostColor)
@@ -306,7 +306,7 @@ export function renderLineChart(container, rows, eixoX, eixoY, opcoes = {}) {
 			.x(point => projectX(point))
 			.y(point => projectY(point));
 
-	grupo.append('path')
+	group.append('path')
 		.attr('class', 'line-path-main')
 		.attr('fill', 'none')
 		.attr('stroke', color)
@@ -316,7 +316,7 @@ export function renderLineChart(container, rows, eixoX, eixoY, opcoes = {}) {
 		.attr('d', mainGenerator(pathPoints));
 
 	if (showPoints) {
-		grupo.selectAll('circle.line-point')
+		group.selectAll('circle.line-point')
 			.data(definedPoints)
 			.enter()
 			.append('circle')
@@ -332,14 +332,14 @@ export function renderLineChart(container, rows, eixoX, eixoY, opcoes = {}) {
 			.on('mouseleave', () => hideChartTooltip());
 	}
 
-	const xAxis = grupo.append('g')
-		.attr('transform', `translate(0,${alturaInterna})`)
+	const xAxis = group.append('g')
+		.attr('transform', `translate(0,${innerHeight})`)
 		.call(
 			xKind === AXIS_KIND.date
-				? axisBottom(escalaX).ticks(Math.max(2, Math.round(larguraInterna / 80))).tickSizeOuter(0)
+				? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0)
 				: xKind === AXIS_KIND.numeric
-					? axisBottom(escalaX).ticks(Math.max(2, Math.round(larguraInterna / 80))).tickSizeOuter(0)
-					: axisBottom(escalaX).tickFormat(value => truncateCategoryTick(value))
+					? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0)
+					: axisBottom(xScale).tickFormat(value => truncateCategoryTick(value))
 		);
 
 	if (xKind === AXIS_KIND.categorical) {
@@ -350,17 +350,17 @@ export function renderLineChart(container, rows, eixoX, eixoY, opcoes = {}) {
 			.attr('transform', 'rotate(-28)');
 	}
 
-	grupo.append('g')
-		.call(axisLeft(escalaY).ticks(Math.max(2, Math.round(alturaInterna / 40))))
+	group.append('g')
+		.call(axisLeft(yScale).ticks(Math.max(2, Math.round(innerHeight / 40))))
 		.call(g => g.select('.domain').remove())
 		.call(g => g.selectAll('.tick line').clone()
-			.attr('x2', larguraInterna)
+			.attr('x2', innerWidth)
 			.attr('stroke-opacity', 0.1));
 
 	if (showXAxisLabel) {
-		grupo.append('text')
-			.attr('x', larguraInterna / 2)
-			.attr('y', alturaInterna + margem.bottom - 8)
+		group.append('text')
+			.attr('x', innerWidth / 2)
+			.attr('y', innerHeight + margin.bottom - 8)
 			.attr('text-anchor', 'middle')
 			.attr('fill', '#5f5a53')
 			.attr('font-size', 11)
@@ -368,10 +368,10 @@ export function renderLineChart(container, rows, eixoX, eixoY, opcoes = {}) {
 	}
 
 	if (showYAxisLabel) {
-		grupo.append('text')
+		group.append('text')
 			.attr('transform', 'rotate(-90)')
-			.attr('x', -alturaInterna / 2)
-			.attr('y', -margem.left + 16)
+			.attr('x', -innerHeight / 2)
+			.attr('y', -margin.left + 16)
 			.attr('text-anchor', 'middle')
 			.attr('fill', '#5f5a53')
 			.attr('font-size', 11)

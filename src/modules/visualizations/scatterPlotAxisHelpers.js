@@ -86,15 +86,15 @@ export function deterministicJitter(index, axisSeed) {
 /**
  * Build a categorical-domain array (unique values in encounter order).
  *
- * @param {Array<Object<string, *>>} pontos
+ * @param {Array<Object<string, *>>} points
  * @param {string} key
  * @returns {Array<*>}
  */
-export function buildCategoryDomain(pontos, key) {
+export function buildCategoryDomain(points, key) {
 	const seen = new Set();
 	const domain = [];
-	pontos.forEach(ponto => {
-		const value = ponto[key];
+	points.forEach(point => {
+		const value = point[key];
 		if (seen.has(value)) return;
 		seen.add(value);
 		domain.push(value);
@@ -246,11 +246,11 @@ export function pickMostFrequentCategory(rows, fieldName) {
  * @param {[number, number]} extent
  * @returns {[number, number]}
  */
-export function normalizarDominio([minimo, maximo]) {
-	if (!Number.isFinite(minimo) || !Number.isFinite(maximo)) return [0, 1];
-	if (minimo === maximo) {
-		const delta = minimo === 0 ? 1 : Math.abs(minimo * 0.1);
-		return [minimo - delta, maximo + delta];
+export function normalizeDomain([minimum, maximum]) {
+	if (!Number.isFinite(minimum) || !Number.isFinite(maximum)) return [0, 1];
+	if (minimum === maximum) {
+		const delta = minimum === 0 ? 1 : Math.abs(minimum * 0.1);
+		return [minimum - delta, maximum + delta];
 	}
-	return [minimo, maximo];
+	return [minimum, maximum];
 }
