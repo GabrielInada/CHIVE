@@ -26,9 +26,9 @@ import {
 
 function setupDom() {
   document.body.innerHTML = `
-    <button id="tab-preview" data-aba="preview" class="active"></button>
-    <button id="tab-charts" data-aba="charts" class="inactive"></button>
-    <button id="tab-panel" data-aba="panel" class="inactive"></button>
+    <button id="tab-preview" data-tab="preview" class="active"></button>
+    <button id="tab-charts" data-tab="charts" class="inactive"></button>
+    <button id="tab-panel" data-tab="panel" class="inactive"></button>
 
     <section id="tab-content-preview"></section>
     <section id="tab-content-charts" hidden></section>
@@ -49,14 +49,14 @@ describe('uiManager', () => {
     document.body.className = '';
   });
 
-  it('retorna a aba ativa e faz fallback para preview', () => {
+  it('returns the active tab and falls back to preview', () => {
     expect(getActiveTab()).toBe('preview');
 
-    document.querySelector('[data-aba="preview"]').classList.remove('active');
+    document.querySelector('[data-tab="preview"]').classList.remove('active');
     expect(getActiveTab()).toBe('preview');
   });
 
-  it('switchTab atualiza classes paineis e sidebar mode para charts', () => {
+  it('switchTab updates panel classes and sidebar mode for charts', () => {
     switchTab('charts');
 
     expect(document.getElementById('tab-charts').classList.contains('active')).toBe(true);
@@ -66,13 +66,13 @@ describe('uiManager', () => {
     expect(document.getElementById('sidebar-panel-viz').classList.contains('active')).toBe(true);
   });
 
-  it('ignora switchTab com aba invalida', () => {
+  it('ignores switchTab with invalid tab name', () => {
     switchTab('inexistente');
     expect(mocks.setSidebarMode).not.toHaveBeenCalled();
     expect(document.getElementById('tab-preview').classList.contains('active')).toBe(true);
   });
 
-  it('setTabVisibility e updateSidebarUI aplicam visibilidade correta', () => {
+  it('setTabVisibility and updateSidebarUI apply correct visibility', () => {
     setTabVisibility('panel', true);
     expect(document.getElementById('tab-content-dashboard').hidden).toBe(false);
 
@@ -84,7 +84,7 @@ describe('uiManager', () => {
     expect(document.getElementById('sidebar-panel-data').classList.contains('inactive')).toBe(true);
   });
 
-  it('toggleSidebarCollapsed alterna classe e atributos de acessibilidade', () => {
+  it('toggleSidebarCollapsed toggles class and accessibility attributes', () => {
     const collapsed = toggleSidebarCollapsed();
     expect(collapsed).toBe(true);
     expect(document.body.classList.contains('sidebar-collapsed')).toBe(true);
@@ -99,7 +99,7 @@ describe('uiManager', () => {
     expect(btn.getAttribute('aria-label')).toBe('tr:chive-sidebar-collapse');
   });
 
-  it('registra listeners de aba e toggle da sidebar', () => {
+  it('registers tab listeners and sidebar toggle', () => {
     setupTabListeners();
     setupSidebarToggleListener();
 

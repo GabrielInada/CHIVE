@@ -121,7 +121,7 @@ describe('fileManager', () => {
     });
   });
 
-  it('ignora upload vazio e nao limpa erros quando sem arquivos', async () => {
+  it('ignores empty upload and does not clear errors when no files', async () => {
     await handleFileUpload(null);
     await handleFileUpload([]);
 
@@ -150,7 +150,7 @@ describe('fileManager', () => {
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
-  it('trata erros de formato e cancelamento de arquivo grande', async () => {
+  it('handles format errors and large-file cancellation', async () => {
     await handleFileUpload([csvFile({ name: 'bad.xyz' })]);
     expect(mocks.showError).toHaveBeenCalledWith(`chive-error-format:bad.xyz`);
 
@@ -256,7 +256,7 @@ describe('fileManager', () => {
     expect(mocks.clearErrors).toHaveBeenCalled();
   });
 
-  it('permite fazer re-upload do mesmo arquivo apos delete (regression: limpa input value)', async () => {
+  it('allows re-uploading the same file after delete (regression: clears input value)', async () => {
     const onChange = vi.fn();
     initFileManager(onChange);
 
@@ -334,7 +334,7 @@ describe('fileManager', () => {
     expect(input.value).toBe('');
   });
 
-  it('cria dataset unido e trata erros de validacao', () => {
+  it('creates joined dataset and handles validation errors', () => {
     mocks.getAllDatasets.mockReturnValue([
       {
         name: 'A.csv',
@@ -378,7 +378,7 @@ describe('fileManager', () => {
     expect(invalid.message).toBe('chive-join-error-select-different-files');
   });
 
-  it('usa confirmFn injetada no lugar de window.confirm', async () => {
+  it('uses injected confirmFn instead of window.confirm', async () => {
     const confirmMock = vi.fn(() => false);
     initFileManager(null, confirmMock);
 

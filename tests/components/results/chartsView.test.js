@@ -117,7 +117,7 @@ describe('renderCharts orchestration', () => {
 		mocks.applyGlobalFilterRules.mockImplementation(rows => rows);
 	});
 
-	it('resets all containers and shows all blocks when aba is not charts', () => {
+	it('resets all containers and shows all blocks when tab is not charts', () => {
 		const { grid, emptyState, blocks, containers } = setupDom();
 		containers.bar.appendChild(document.createElement('span'));
 

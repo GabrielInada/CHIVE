@@ -15,19 +15,19 @@ import {
 } from '../../src/services/dataService.js';
 
 describe('dataService', () => {
-  it('detecta type numero e texto corretamente', () => {
+  it('detects number and text types correctly', () => {
     expect(detectType(['1', '2', '3', '4'])).toBe('number');
     expect(detectType(['abc', 'def', 'ghi'])).toBe('text');
   });
 
   describe('normalizeNumericString', () => {
-    it('nao altera valores em formato US quando decimal e ponto', () => {
+    it('does not alter US-format values when decimal is dot', () => {
       expect(normalizeNumericString('3.14', '.')).toBe('3.14');
       expect(normalizeNumericString('1,234.56', '.')).toBe('1234.56');
       expect(normalizeNumericString('1000', '.')).toBe('1000');
     });
 
-    it('converte formato europeu para formato Number() quando decimal e virgula', () => {
+    it('converts European format to Number() format when decimal is comma', () => {
       expect(normalizeNumericString('3,14', ',')).toBe('3.14');
       expect(normalizeNumericString('1.234,56', ',')).toBe('1234.56');
       expect(normalizeNumericString('1.000', ',')).toBe('1000');
@@ -35,37 +35,37 @@ describe('dataService', () => {
   });
 
   describe('detectDecimalSeparator', () => {
-    it('retorna ponto como fallback para array vazio ou sem separadores', () => {
+    it('returns dot as fallback for empty array or no separators', () => {
       expect(detectDecimalSeparator([])).toBe('.');
       expect(detectDecimalSeparator(['abc', 'def'])).toBe('.');
       expect(detectDecimalSeparator(['100', '200', '300'])).toBe('.');
     });
 
-    it('Stage 1: detecta ponto como decimal quando ambos separadores presentes (formato US)', () => {
+    it('Stage 1: detects dot as decimal when both separators present (US format)', () => {
       expect(detectDecimalSeparator(['1,234.56', '2,000.75'])).toBe('.');
     });
 
-    it('Stage 1: detecta virgula como decimal quando ambos separadores presentes (formato europeu)', () => {
+    it('Stage 1: detects comma as decimal when both separators present (European format)', () => {
       expect(detectDecimalSeparator(['1.234,56', '2.000,75'])).toBe(',');
     });
 
-    it('Stage 2: detecta ponto como decimal por contagem de digitos (1-2 casas)', () => {
+    it('Stage 2: detects dot as decimal by digit count (1-2 places)', () => {
       expect(detectDecimalSeparator(['3.14', '2.71', '1.41'])).toBe('.');
     });
 
-    it('Stage 2: detecta virgula como decimal por contagem de digitos (1-2 casas)', () => {
+    it('Stage 2: detects comma as decimal by digit count (1-2 places)', () => {
       expect(detectDecimalSeparator(['3,14', '2,71', '1,41'])).toBe(',');
     });
 
-    it('Stage 2: detecta ponto como decimal com mais de 3 casas decimais', () => {
+    it('Stage 2: detects dot as decimal with more than 3 decimal places', () => {
       expect(detectDecimalSeparator(['3.14159', '2.71828'])).toBe('.');
     });
 
-    it('Stage 2b: detecta virgula como decimal para inteiros europeus como 1.000', () => {
+    it('Stage 2b: detects comma as decimal for European integers like 1.000', () => {
       expect(detectDecimalSeparator(['1.000', '2.000', '50.000'])).toBe(',');
     });
 
-    it('Stage 3: fallback por NaN - reverte quando separador detectado produz muitos NaN', () => {
+    it('Stage 3: NaN fallback — reverts when detected separator produces many NaN', () => {
       // All values have exactly 3 decimal places in European format.
       // Stages 1-2b skip them as ambiguous, fall back to '.',
       // but Stage 3 sees high NaN rate and switches to ','.
@@ -73,13 +73,13 @@ describe('dataService', () => {
       expect(detectDecimalSeparator(values)).toBe(',');
     });
 
-    it('ponto vence empates como separador de maior prioridade', () => {
+    it('dot wins ties as the higher-priority separator', () => {
       // Equal evidence for both - dot wins
       expect(detectDecimalSeparator(['3.14', '3,14'])).toBe('.');
     });
   });
 
-  it('parseia CSV e rejeita CSV vazio', () => {
+  it('parses CSV and rejects empty CSV', () => {
     const rows = parseCsv('a,b\n1,2\n3,4');
     expect(rows.length).toBe(2);
     expect(rows[0].a).toBe('1');
@@ -87,7 +87,7 @@ describe('dataService', () => {
     expect(() => parseCsv('')).toThrow('The CSV file is empty.');
   });
 
-  it('parseia JSON em formatos suportados e rejeita inválido', () => {
+  it('parses JSON in supported formats and rejects invalid', () => {
     const arr = parseJson('[{"a":1},{"a":2}]');
     expect(arr.length).toBe(2);
 
@@ -98,7 +98,7 @@ describe('dataService', () => {
     expect(() => parseJson('{"foo":1}')).toThrow('Unrecognized JSON format. The file must be an array of objects: [{...}, {...}]');
   });
 
-  it('processa rows convertendo columns numericas e calcula estatisticas', () => {
+  it('processes rows converting numeric columns and computes statistics', () => {
     const input = [
       { a: '1', b: 'x' },
       { a: '2', b: 'y' },
@@ -117,8 +117,8 @@ describe('dataService', () => {
     expect(stats[0].mean).toBe(2);
   });
 
-  describe('processData com separador decimal europeu', () => {
-    it('detecta e converte columns numericas em formato europeu (virgula decimal)', () => {
+  describe('processData with European decimal separator', () => {
+    it('detects and converts numeric columns in European format (comma decimal)', () => {
       const input = [
         { valor: '3,14', name: 'pi' },
         { valor: '2,71', name: 'e' },
@@ -130,7 +130,7 @@ describe('dataService', () => {
       expect(result.rows[1].valor).toBeCloseTo(2.71);
     });
 
-    it('detecta e converte inteiros europeus com ponto como separador de milhar', () => {
+    it('detects and converts European integers with dot as thousand separator', () => {
       const input = [
         { populacao: '1.000', pais: 'A' },
         { populacao: '50.000', pais: 'B' },
@@ -142,7 +142,7 @@ describe('dataService', () => {
       expect(result.rows[1].populacao).toBe(50000);
     });
 
-    it('detecta e converte formato europeu completo com milhar e decimal', () => {
+    it('detects and converts full European format with thousand and decimal', () => {
       const input = [
         { preco: '1.234,56' },
         { preco: '2.000,75' },
@@ -152,7 +152,7 @@ describe('dataService', () => {
       expect(result.rows[0].preco).toBeCloseTo(1234.56);
     });
 
-    it('converte formato US com separador de milhar (valores entre aspas no CSV)', () => {
+    it('converts US format with thousand separator (values quoted in CSV)', () => {
       const csv = 'id,value\n1,"1,234.56"\n2,"2,345.67"\n3,"3,456.78"';
       const rows = parseCsv(csv);
       const result = processData(rows);
@@ -161,7 +161,7 @@ describe('dataService', () => {
       expect(result.rows[1].value).toBeCloseTo(2345.67);
     });
 
-    it('converte formato europeu end-to-end com delimitador ponto-e-virgula', () => {
+    it('converts European format end-to-end with semicolon delimiter', () => {
       const csv = 'id;valor\n1;3,14\n2;2,71\n3;1,41';
       const rows = parseCsv(csv);
       const result = processData(rows);
@@ -170,7 +170,7 @@ describe('dataService', () => {
       expect(result.rows[2].valor).toBeCloseTo(1.41);
     });
 
-    it('converte numeros com alta precisao decimal', () => {
+    it('converts numbers with high decimal precision', () => {
       const input = [
         { value: '1234.56789' },
         { value: '2345.67891' },
@@ -181,7 +181,7 @@ describe('dataService', () => {
       expect(result.rows[0].value).toBeCloseTo(1234.56789);
     });
 
-    it('converte notacao cientifica corretamente', () => {
+    it('converts scientific notation correctly', () => {
       const input = [
         { value: '1.23456e3' },
         { value: '2.34567e3' },
@@ -193,7 +193,7 @@ describe('dataService', () => {
       expect(result.rows[1].value).toBeCloseTo(2345.67);
     });
 
-    it('converte numeros negativos com sinal de menos', () => {
+    it('converts negative numbers with minus sign', () => {
       const input = [
         { value: '-1234.56' },
         { value: '-2345.67' },
@@ -205,7 +205,7 @@ describe('dataService', () => {
       expect(result.rows[2].value).toBeCloseTo(-3456.78);
     });
 
-    it('converte valores decimais com zero inicial', () => {
+    it('converts decimal values with leading zero', () => {
       const input = [
         { value: '0.56' },
         { value: '0.78' },
@@ -217,7 +217,7 @@ describe('dataService', () => {
       expect(result.rows[2].value).toBeCloseTo(0.91);
     });
 
-    it('converte inteiros US com separador de milhar', () => {
+    it('converts US integers with thousand separator', () => {
       const csv = 'id,value\n1,"1,000"\n2,"2,000"\n3,"3,000"\n4,"4,000"\n5,"5,000"';
       const rows = parseCsv(csv);
       const result = processData(rows);
@@ -226,7 +226,7 @@ describe('dataService', () => {
       expect(result.rows[4].value).toBe(5000);
     });
 
-    it('nao regride para arquivos em formato US padrao', () => {
+    it('does not regress for standard US-format files', () => {
       const input = [
         { a: '1', b: 'x' },
         { a: '2', b: 'y' },
@@ -238,12 +238,12 @@ describe('dataService', () => {
     });
   });
 
-  it('retorna estrutura vazia quando processData recebe array vazio', () => {
+  it('returns empty structure when processData receives empty array', () => {
     const processed = processData([]);
     expect(processed).toEqual({ rows: [], columns: [] });
   });
 
-  it('executa join com multiplas chaves e prefixa columns conflitantes', () => {
+  it('executes join with multiple keys and prefixes conflicting columns', () => {
     const leftRows = [
       { id: 'A1', region: 'North', amount: 10, owner: 'Ana' },
       { id: 'B2', region: 'South', amount: 7, owner: 'Beto' },
@@ -275,7 +275,7 @@ describe('dataService', () => {
     });
   });
 
-  it('suporta full join com linhas nao correspondentes', () => {
+  it('supports full join with non-matching rows', () => {
     const result = joinDatasets({
       leftRows: [{ id: '1', value: 'L1' }],
       rightRows: [{ id: '2', value: 'R2' }],
@@ -293,14 +293,14 @@ describe('dataService', () => {
     expect(result.outputColumns).toContain('right.id');
   });
 
-  it('processData lanca erro quando recebe valor nao-array', () => {
+  it('processData throws when given non-array value', () => {
     expect(() => processData('not an array')).toThrow('rawData must be an array');
     expect(() => processData(null)).toThrow('rawData must be an array');
     expect(() => processData({})).toThrow('rawData must be an array');
   });
 
-  describe('joinDatasets validacao de entrada', () => {
-    it('lanca erro quando datasets nao sao arrays', () => {
+  describe('joinDatasets input validation', () => {
+    it('throws when datasets are not arrays', () => {
       expect(() => joinDatasets({
         leftRows: 'not array',
         rightRows: [],
@@ -311,7 +311,7 @@ describe('dataService', () => {
       })).toThrow('join-invalid-datasets');
     });
 
-    it('lanca erro quando chaves estao ausentes ou vazias', () => {
+    it('throws when keys are missing or empty', () => {
       expect(() => joinDatasets({
         leftRows: [],
         rightRows: [],
@@ -331,7 +331,7 @@ describe('dataService', () => {
       })).toThrow('join-keys-required');
     });
 
-    it('lanca erro quando quantidade de chaves nao corresponde', () => {
+    it('throws when key counts do not match', () => {
       expect(() => joinDatasets({
         leftRows: [],
         rightRows: [],
@@ -342,7 +342,7 @@ describe('dataService', () => {
       })).toThrow('join-keys-mismatch');
     });
 
-    it('suporta left join com linhas sem correspondencia', () => {
+    it('supports left join with non-matching rows', () => {
       const result = joinDatasets({
         leftRows: [{ id: '1', val: 'A' }, { id: '2', val: 'B' }],
         rightRows: [{ id: '1', score: '10' }],
@@ -358,7 +358,7 @@ describe('dataService', () => {
       expect(result.rows[1].score).toBeNull();
     });
 
-    it('suporta right join com linhas sem correspondencia', () => {
+    it('supports right join with non-matching rows', () => {
       const result = joinDatasets({
         leftRows: [{ id: '1', val: 'A' }],
         rightRows: [{ id: '1', score: '10' }, { id: '2', score: '20' }],
@@ -374,7 +374,7 @@ describe('dataService', () => {
       expect(result.rows[1].val).toBeNull();
     });
 
-    it('fallback para inner join quando type invalido', () => {
+    it('falls back to inner join when type is invalid', () => {
       const result = joinDatasets({
         leftRows: [{ id: '1' }],
         rightRows: [{ id: '2' }],
@@ -389,7 +389,7 @@ describe('dataService', () => {
       expect(result.rows.length).toBe(0);
     });
 
-    it('resolve colisao de nomes com sufixo numerico', () => {
+    it('resolves name collision with numeric suffix', () => {
       const result = joinDatasets({
         leftRows: [{ id: '1', value: 'L', value2: 'extra' }],
         rightRows: [{ id: '1', value: 'R', value2: 'extra2' }],
@@ -408,7 +408,7 @@ describe('dataService', () => {
       expect(result.outputColumns).toContain('b.value2');
     });
 
-    it('sanitiza prefixo de name de arquivo com caracteres especiais', () => {
+    it('sanitizes file-name prefix with special characters', () => {
       const result = joinDatasets({
         leftRows: [{ id: '1', val: 'A' }],
         rightRows: [{ id: '1', val: 'B' }],
@@ -427,11 +427,11 @@ describe('dataService', () => {
   });
 
   describe('parseCsv edge cases', () => {
-    it('lanca erro para CSV com apenas header e sem rows', () => {
+    it('throws for CSV with only header and no rows', () => {
       expect(() => parseCsv('a,b,c\n')).toThrow('The CSV file is empty.');
     });
 
-    it('parseia CSV com linhas de rows em branco incluindo-as no resultado', () => {
+    it('parses CSV with blank rows, including them in the result', () => {
       const rows = parseCsv('a,b\n1,2\n\n3,4');
       expect(rows.length).toBe(3);
       expect(rows[0].a).toBe('1');
@@ -440,11 +440,11 @@ describe('dataService', () => {
   });
 
   describe('parseJson edge cases', () => {
-    it('lanca erro para array JSON vazio', () => {
+    it('throws for empty JSON array', () => {
       expect(() => parseJson('[]')).toThrow('The JSON file is empty.');
     });
 
-    it('lanca erro para objeto aninhado com array vazio', () => {
+    it('throws for nested object with empty array', () => {
       expect(() => parseJson('{"items":[]}')).toThrow('The data array in the JSON is empty.');
     });
   });
@@ -484,22 +484,22 @@ describe('dataService', () => {
   });
 
   describe('detectType edge cases', () => {
-    it('retorna texto como fallback para valores vazios', () => {
+    it('returns text as fallback for empty values', () => {
       expect(detectType([null, undefined, ''])).toBe('text');
       expect(detectType([])).toBe('text');
     });
 
-    it('detecta datas quando maioria dos valores sao datas validas', () => {
+    it('detects dates when most values are valid dates', () => {
       expect(detectType(['2024-01-01', '2024-06-15', '2024-12-31'])).toBe('date');
     });
 
-    it('detecta numeros com separador decimal europeu', () => {
+    it('detects numbers with European decimal separator', () => {
       expect(detectType(['3,14', '2,71', '1,41'], ',')).toBe('number');
     });
   });
 
   describe('calculateStatistics edge cases', () => {
-    it('retorna array vazio para columns sem type numero', () => {
+    it('returns empty array for columns without number type', () => {
       const stats = calculateStatistics(
         [{ a: 'x' }, { a: 'y' }],
         [{ name: 'a', type: 'text' }],
@@ -507,7 +507,7 @@ describe('dataService', () => {
       expect(stats).toEqual([]);
     });
 
-    it('ignora valores nulos e NaN no calculo de estatisticas', () => {
+    it('ignores null and NaN values in statistics calculation', () => {
       const stats = calculateStatistics(
         [{ val: 10 }, { val: null }, { val: 20 }, { val: NaN }],
         [{ name: 'val', type: 'number' }],
@@ -519,7 +519,7 @@ describe('dataService', () => {
       expect(stats[0].mean).toBe(15);
     });
 
-    it('ignora columns numericas onde todos valores sao nulos', () => {
+    it('ignores numeric columns where all values are null', () => {
       const stats = calculateStatistics(
         [{ val: null }, { val: undefined }],
         [{ name: 'val', type: 'number' }],
@@ -528,13 +528,13 @@ describe('dataService', () => {
     });
   });
 
-  it('formata tamanhos de arquivo em B KB e MB', () => {
+  it('formats file sizes in B, KB, and MB', () => {
     expect(formatFileSize(100)).toBe('100 B');
     expect(formatFileSize(2048)).toBe('2.0 KB');
     expect(formatFileSize(3 * 1024 * 1024)).toBe('3.0 MB');
   });
 
-  it('detecta delimitador correto a partir da primeira linha', () => {
+  it('detects correct delimiter from the first line', () => {
     expect(detectDelimiter('a,b,c')).toBe(',');
     expect(detectDelimiter('a;b;c')).toBe(';');
     expect(detectDelimiter('a\tb\tc')).toBe('\t');
@@ -543,25 +543,25 @@ describe('dataService', () => {
     expect(detectDelimiter('nenhum_delimitador')).toBe(','); // fallback
   });
 
-  it('detecta tiebreaker: prefere virgula quando contagens sao iguais', () => {
+  it('detects tiebreaker: prefers comma when counts are equal', () => {
     // one comma and one semicolon — comma has priority
     expect(detectDelimiter('a,b;c')).toBe(',');
   });
 
-  it('parseia TSV com auto-deteccao de delimitador', () => {
+  it('parses TSV with delimiter auto-detection', () => {
     const rows = parseCsv('a\tb\n1\t2\n3\t4');
     expect(rows.length).toBe(2);
     expect(rows[0].a).toBe('1');
     expect(rows[0].b).toBe('2');
   });
 
-  it('parseia arquivo delimitado por ponto-e-virgula com auto-deteccao', () => {
+  it('parses semicolon-delimited file with auto-detection', () => {
     const rows = parseCsv('a;b\n1;2\n3;4');
     expect(rows.length).toBe(2);
     expect(rows[0].a).toBe('1');
   });
 
-  it('parseia arquivo delimitado por pipe com auto-deteccao', () => {
+  it('parses pipe-delimited file with auto-detection', () => {
     const rows = parseCsv('a|b\n1|2\n3|4');
     expect(rows.length).toBe(2);
     expect(rows[0].a).toBe('1');
