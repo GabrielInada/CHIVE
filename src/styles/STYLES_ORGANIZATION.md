@@ -219,11 +219,11 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 
 | Breakpoint | Scope | File(s) | What changes |
 |------------|-------|---------|--------------|
-| **1024px** | About page | [about.css:261](src/styles/about.css#L261) | About-page grid collapses from 2-column to 1-column; hero padding shrinks |
-| **900px** | Main app layout | [responsive.css:5](src/styles/responsive.css#L5), [panel.css:489](src/styles/panel.css#L489) | Workspace stacks; header switches to column; sidebar narrows; panel block adjustments |
-| **768px** | Header chrome | [style.css:68](src/styles/style.css#L68) | Header nav gap/margins shrink; header wraps |
-| **640px** | About page + results | [about.css:286](src/styles/about.css#L286), [results.css:292](src/styles/results.css#L292) | About hero compresses; team grid becomes 1-column; results-area tweaks |
-| **480px** | Header chrome | [style.css:83](src/styles/style.css#L83) | Header nav reflows to full-width row below logo |
+| **1024px** | About page | [about.css:261](about.css#L261) | About-page grid collapses from 2-column to 1-column; hero padding shrinks |
+| **900px** | Main app layout | [responsive.css:5](responsive.css#L5), [panel.css:489](panel.css#L489) | Workspace stacks; header switches to column; sidebar narrows; panel block adjustments |
+| **768px** | Header chrome | [header-nav.css:60](header-nav.css#L60) | Header nav gap/margins shrink; header wraps |
+| **640px** | About page + results | [about.css:286](about.css#L286), [results.css:292](results.css#L292) | About hero compresses; team grid becomes 1-column; results-area tweaks |
+| **480px** | Header chrome | [header-nav.css:75](header-nav.css#L75) | Header nav reflows to full-width row below logo |
 
 ### Main-app breakpoint: 900px
 
@@ -254,7 +254,7 @@ Pick the home that matches the scope of the rule:
 1. **Main-app layout** (workspace, sidebar, content area) → `responsive.css` under the existing `@media (max-width: 900px)` block
 2. **Feature-internal** (e.g., panel slot rearrangement, results table) → the feature's own file (`panel.css`, `results.css`) at the breakpoint already in use there
 3. **About page** → `about.css` (1024px or 640px blocks)
-4. **Header chrome** (nav, logo, language switcher) → `style.css` (768px or 480px blocks)
+4. **Header chrome** (nav, logo, language switcher) → `header-nav.css` (768px or 480px blocks)
 5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.active`) over new breakpoints when the difference is interaction-driven, not viewport-driven
 6. Test on: Desktop (1440px+), Tablet (768px–900px), Mobile (375px–480px)
 

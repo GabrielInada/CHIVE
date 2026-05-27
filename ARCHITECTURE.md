@@ -57,7 +57,7 @@ flowchart TB
         direction LR
         COMP["components/"]
         VIZ["visualizations/"]
-        PANEL["panel/<br/>(slots · export · resize)"]
+        PANEL["panelSubsystem/<br/>(slots · export · resize)"]
     end
     WORKER["dataIngestWorker<br/>(off-main-thread parse)"]
     UTIL["Utilities<br/>services · config · utils"]
@@ -89,7 +89,7 @@ The diagram is a faithful abstraction, not a literal call graph. Two simplificat
 | Layer | Owns | Key files |
 |---|---|---|
 | **Controllers** | DOM event capture and translation into facade calls. Never mutate state directly; never render as part of the input path. One of them (`panelManager`) also subscribes to the event bus and re-renders its own UI slice — see the dual-hat caveat in §3. | `eventHandlers.js`, `fileManager.js`, `panelManager.js`, `chartControls/` |
-| **State Management Core** | The only place state mutates. Three facades wrap one module-scoped state object; an event bus broadcasts every mutation. Persistence subscribes to the bus and writes a debounced snapshot to IndexedDB. | `appState.js`, `dataStateFacade.js`, `uiStateFacade.js`, `panelStateFacade.js`, `stateEvents.js`, `stateSync.js`, `services/persistenceService.js`, plus panel mutation helpers in `modules/panelSubsystem/panelStateMutations.js` and `modules/panelSubsystem/blockStateHelpers.js` |
+| **State Management Core** | The only place state mutates. Three facades wrap one module-scoped state object; an event bus broadcasts every mutation. Persistence subscribes to the bus and writes a debounced snapshot to IndexedDB. | `state/appState.js`, `state/dataStateFacade.js`, `state/uiStateFacade.js`, `state/panelStateFacade.js`, `state/stateEvents.js`, `state/stateSync.js`, `services/persistenceService.js`, plus panel mutation helpers in `modules/panelSubsystem/panelStateMutations.js` and `modules/panelSubsystem/blockStateHelpers.js` |
 | **Orchestrator** | Bootstrap plus `refreshView` — the broadest subscriber, handling dataset/columns/config events with a full view refresh. Other modules handle their own events independently. | `main.js` |
 | **Visualization Layer** | Stateless renderers. Read state via getters; never mutate. D3 visualizations and the dashboard `panelSubsystem/` subsystem (live-mounted slots, snapshot rendering, SVG export) live here. | `components/`, `modules/visualizations/`, `modules/panelSubsystem/` *(except `panelStateMutations.js` and `blockStateHelpers.js`, which back the panel facade and belong to the State Management Core)* |
 | **Utilities & side-effecting services** | `config/` and `utils/` are pure leaf helpers — no state, no DOM. `services/` sits at the utility layer but contains side-effecting modules: `persistenceService` subscribes to the bus and performs async IndexedDB I/O, `i18nService.setLocale` mutates `document.documentElement.lang` and `[data-i18n]` nodes, `dataIngestService` wraps the ingest worker. | `services/`, `config/`, `utils/` |
@@ -152,7 +152,7 @@ If you find yourself wanting another non-emitting or bypass write path, stop and
 
 ### Panel lifecycle (live-mounted slots)
 
-Panel charts are not stored as pre-rendered SVG. Each chart is a **snapshot spec** — `{ id, nome, type, config, dataSnapshot, columnsSnapshot, metadata, metaSummary, createdAt }` — kept in `appState.panel.charts` and persisted as-is. The four load-bearing fields for rendering are `type`, `config`, `dataSnapshot`, and `columnsSnapshot`; `id` is what `persistenceService` addresses across reloads, and `metaSummary` (truncated to 180 chars) plus `createdAt` are surfaced in the panel UI. Three pieces drive rendering from a spec:
+Panel charts are not stored as pre-rendered SVG. Each chart is a **snapshot spec** — `{ id, name, type, config, dataSnapshot, columnsSnapshot, metadata, metaSummary, createdAt }` — kept in `appState.panel.charts` and persisted as-is. The four load-bearing fields for rendering are `type`, `config`, `dataSnapshot`, and `columnsSnapshot`; `id` is what `persistenceService` addresses across reloads, and `metaSummary` (truncated to 180 chars) plus `createdAt` are surfaced in the panel UI. Three pieces drive rendering from a spec:
 
 - **`renderChartFromSpec.js`** ([src/modules/panelSubsystem/renderChartFromSpec.js](src/modules/panelSubsystem/renderChartFromSpec.js)) — a type→renderer dispatcher. Maps `spec.type` to the appropriate D3 renderer (bar / scatter / pie / bubble / network / treemap / line / tin) and produces SVG into the given container. The frozen list is exported as `SUPPORTED_PANEL_CHART_TYPES`.
 - **`slotLifecycle.js`** ([src/modules/panelSubsystem/slotLifecycle.js](src/modules/panelSubsystem/slotLifecycle.js)) — `mountSlot(container, spec)` renders the chart and attaches a `ResizeObserver`; on each resize the next paint is scheduled via `requestAnimationFrame` and any pending frame is cancelled (RAF coalescing). `teardownSlot` disconnects the observer, cancels in-flight frames, stops network-graph simulations, and clears the DOM. `panelManager` uses this to mount/unmount slots when the layout changes.
@@ -167,7 +167,7 @@ Trace one end-to-end cycle and the architecture clicks:
 > A user toggles a column-visibility checkbox.
 >
 > 1. `eventHandlers.js` receives the DOM `change` event, computes the new column list, and calls `updateActiveDatasetColumns(columns)` (the facade).
-> 2. The facade writes `dataset.colunasSelecionadas` and emits `STATE_EVENTS.COLUMNS_UPDATED`.
+> 2. The facade writes `dataset.selectedColumns` and emits `STATE_EVENTS.COLUMNS_UPDATED`.
 > 3. `main.js` is subscribed to that event and calls `refreshView()`.
 > 4. `refreshView` reads the current state via getters (`getActiveDataset`, `getLoadedDatasets`, `getState`) and calls the renderers. There are two branches: the **empty-state** path (no datasets loaded) runs `renderFileList`, `renderEmptyState`, `renderSidebarPanel`, `renderCanvasPanel` and switches to the preview tab; the **active-dataset** path runs `renderFileList`, `renderDataInterface`, `renderChartControlsSidebar`, `renderSidebarPanel`, `renderCanvasPanel` (and applies chart-config defaults via the non-emitting `normalizeActiveDatasetConfig`).
 > 5. Renderers produce DOM; D3 charts redraw. None of them emit anything — the cycle ends.

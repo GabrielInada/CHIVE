@@ -70,7 +70,7 @@ npm run test:watch   # Tests in watch mode
 - **Color utilities:** Use shared functions from `src/utils/colorUtils.js` — never duplicate hex/rgb conversion logic
 - **Chart control listeners:** Use helpers from `src/modules/chartControls/controlListenerHelpers.js` for common patterns (select, checkbox, slider, etc.) — only write inline listeners when cross-dependency logic is needed
 - **Join and preset dataset UIs:** Keep orchestration in modules/components and reuse existing event-driven patterns
-- **No TypeScript, no linter config** — plain JS with ES modules
+- **No TypeScript** — plain JS with ES modules. ESLint exists, but its config is intentionally narrow and architecture-focused.
 
 ## Documentation conventions
 
@@ -107,7 +107,7 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 | If you're adding… | Put it in | Notes |
 |---|---|---|
 | A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. |
-| A new state field | The relevant domain in `appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
+| A new state field | The relevant domain in `src/modules/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
 | A new DOM event handler | `src/modules/eventHandlers.js` (or an existing controller) | Translate the event into a facade call. Never mutate state directly. |
 | A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
 | A pure helper (formatting, parsing, color) | `src/utils/` | No DOM access. No state imports. |
