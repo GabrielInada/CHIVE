@@ -102,6 +102,13 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 
 **CI runs lint + tests on every push and PR** (`.github/workflows/lint-and-test.yml`, targeting `main` and `develop`). Even if you forget `npm run lint` locally, the merge gate catches it.
 
+### ESLint guards
+
+Beyond renderer statelessness, `npm run lint` enforces two more classes of rule ([eslint.config.js](eslint.config.js)):
+
+- **Raw-static deployment guards.** CHIVE is meant to run served raw from `src/` with no build step, so bundler-/Vite-only import forms are hard errors — they pass dev/test/Vite but break when `src/` is served directly. Banned: bare `d3` / `banana-i18n` imports (use the full `https://esm.sh/…` CDN URL — see `BARE_IMPORT_BANS`), the `?worker` / `?url` / `?raw` suffixes, and `import.meta.glob` / `import.meta.env`. `import.meta.url` stays allowed: it is the standard form for `new Worker(new URL(…), import.meta.url)` and preset asset URLs. To add a runtime dependency, import its full CDN URL — never a bare specifier.
+- **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not import "upward": `config/` may not import `modules/`, `components/`, `features/`, or `services/`; `utils/` may not import `modules/`, `components/`, or `features/`. (`utils/` → `services/` is currently allowed because `formatters.js` depends on `i18nService` for translation; closing that boundary is a tracked follow-up.)
+
 ## Where do I put new code?
 
 | If you're adding… | Put it in | Notes |

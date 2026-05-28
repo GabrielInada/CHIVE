@@ -20,9 +20,11 @@ const APP_STATE_READS = [
 	'sanitizeChartName',
 ];
 
-// Facade getters that return mutable refs (objects/arrays). The mutation guard
-// below blocks inline `getXxx().a.b = c` assignments across all of src/. If a
-// new mutable-ref getter is added to appState.js, add it here too.
+// Facade getters that return mutable refs (objects/arrays). The inline mutation
+// guard below blocks `getXxx().a.b = c` assignments across all of src/. The
+// aliased form (`const d = getXxx(); d.a = b`) is caught separately by the
+// local `chive/no-facade-getter-mutation` rule. If a new mutable-ref getter is
+// added to appState.js, add it here too (and to the local rule's getter list).
 const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState)';
 
 const FACADE_MUTATION_MESSAGE =
@@ -30,68 +32,128 @@ const FACADE_MUTATION_MESSAGE =
 	'Use the corresponding facade write method (updateActiveDatasetConfig, ' +
 	'addChartSnapshot, …). See CONTRIBUTING.md §Architecture invariants.';
 
+// Inline facade-mutation selectors: catch `getXxx().a = b` at depths 1–3.
+const FACADE_MUTATION_SELECTORS = [
+	{
+		selector: `AssignmentExpression[left.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
+		message: FACADE_MUTATION_MESSAGE,
+	},
+	{
+		selector: `AssignmentExpression[left.object.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
+		message: FACADE_MUTATION_MESSAGE,
+	},
+	{
+		selector: `AssignmentExpression[left.object.object.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
+		message: FACADE_MUTATION_MESSAGE,
+	},
+];
+
+// Raw-static deployment guards. CHIVE can be served raw from src/ with no build
+// step, so bundler-only / Vite-only import forms must be hard errors — they
+// pass dev/test/Vite but break when src/ is served directly.
+const BARE_IMPORT_BANS = [
+	{
+		name: 'd3',
+		message: 'Import the full CDN URL (https://esm.sh/d3@7.9.0). A bare "d3" specifier only resolves under a bundler and breaks raw-static hosting.',
+	},
+	{
+		name: 'banana-i18n',
+		message: 'Import the full CDN URL (https://esm.sh/banana-i18n@2.4.0). A bare specifier only resolves under a bundler and breaks raw-static hosting.',
+	},
+];
+
+const VITE_ONLY_SYNTAX_SELECTORS = [
+	{
+		selector: ':matches(ImportDeclaration, ImportExpression, ExportNamedDeclaration, ExportAllDeclaration)[source.value=/\\?(worker|url|raw)(&|$)/]',
+		message: 'Vite-only import suffix (?worker / ?url / ?raw) breaks raw-static hosting. Build workers with `new Worker(new URL(...), import.meta.url)` instead.',
+	},
+	{
+		selector: "MemberExpression[object.type='MetaProperty'][property.name=/^(glob|env)$/]",
+		message: 'import.meta.glob / import.meta.env are Vite-only and break raw-static hosting. (import.meta.url is allowed — it is the standard worker/asset URL form.)',
+	},
+];
+
+const BROWSER_GLOBALS = {
+	window: 'readonly',
+	document: 'readonly',
+	console: 'readonly',
+};
+
 export default [
 	js.configs.recommended,
+
+	// (A) src-wide defaults: language options + cross-cutting guards applied to
+	// ALL of src/. NOTE: flat config REPLACES (does not merge) a rule's options
+	// across matching config objects — the last match wins entirely. The blocks
+	// below redeclare `no-restricted-imports` for their file subset, so each one
+	// must repeat BARE_IMPORT_BANS or it would silently drop the bare-import
+	// guard for those files. Likewise, all `no-restricted-syntax` selectors for
+	// src/ must live here in one array.
 	{
-		files: ['src/components/**/*.js', 'src/features/**/*.js'],
+		files: ['src/**/*.js'],
 		languageOptions: {
 			ecmaVersion: 'latest',
 			sourceType: 'module',
-			globals: {
-				window: 'readonly',
-				document: 'readonly',
-				console: 'readonly',
-			},
+			globals: BROWSER_GLOBALS,
 		},
 		rules: {
+			'no-restricted-imports': ['error', { paths: BARE_IMPORT_BANS }],
+			'no-restricted-syntax': ['error',
+				...FACADE_MUTATION_SELECTORS,
+				...VITE_ONLY_SYNTAX_SELECTORS,
+			],
+			// General JS hygiene is intentionally off here; it is its own decision
+			// (see CONTRIBUTING.md §ESLint guards).
+			'no-unused-vars': 'off',
+			'no-undef': 'off',
+		},
+	},
+
+	// (B) Renderers must be stateless: only read-only facade imports. Placed
+	// AFTER (A) because it redeclares `no-restricted-imports`; it repeats the
+	// bare-import bans alongside the facade-read restriction.
+	{
+		files: ['src/components/**/*.js', 'src/features/**/*.js'],
+		rules: {
 			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
 				patterns: [{
 					group: ['**/modules/state/appState.js'],
 					allowImportNames: APP_STATE_READS,
 					message: STATELESS_RENDERER_MESSAGE,
 				}],
 			}],
-			// Disable recommended rules that aren't the point of this lint setup.
-			// The scope here is specifically the facade boundary; adding general
-			// JS rules is its own decision.
-			'no-unused-vars': 'off',
-			'no-undef': 'off',
 		},
 	},
+
+	// (C) utils/ is a pure leaf layer. It may import services/ (i18n is a
+	// cross-cutting dependency in formatters.js) — closing that boundary is
+	// deferred to the formatters→i18n refactor. It must never reach into
+	// modules/, components/, or features/.
 	{
-		// Block 2: AST-level mutation guard across all of src/. Catches inline
-		// `getActiveDataset().X = y` patterns (depth 1, 2, 3). The aliased form
-		// `const ds = getActiveDataset(); ds.X = y` is NOT caught (static
-		// analysis without scope tracking can't trace the alias) — that gap is
-		// also what protects facade internals like dataStateFacade.js from
-		// false positives, since they use exactly that aliased pattern.
-		files: ['src/**/*.js'],
-		languageOptions: {
-			ecmaVersion: 'latest',
-			sourceType: 'module',
-			globals: {
-				window: 'readonly',
-				document: 'readonly',
-				console: 'readonly',
-			},
-		},
+		files: ['src/utils/**/*.js'],
 		rules: {
-			'no-restricted-syntax': ['error',
-				{
-					selector: `AssignmentExpression[left.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
-					message: FACADE_MUTATION_MESSAGE,
-				},
-				{
-					selector: `AssignmentExpression[left.object.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
-					message: FACADE_MUTATION_MESSAGE,
-				},
-				{
-					selector: `AssignmentExpression[left.object.object.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
-					message: FACADE_MUTATION_MESSAGE,
-				},
-			],
-			'no-unused-vars': 'off',
-			'no-undef': 'off',
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/modules/**', '**/components/**', '**/features/**'],
+					message: 'utils/ is a pure leaf layer — no imports from modules/, components/, or features/.',
+				}],
+			}],
+		},
+	},
+
+	// (D) config/ is a pure leaf layer — no imports from any higher layer.
+	{
+		files: ['src/config/**/*.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'config/ is a pure leaf layer — no imports from modules/, components/, features/, or services/.',
+				}],
+			}],
 		},
 	},
 ];
