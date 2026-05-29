@@ -103,9 +103,17 @@ export default [
 				...FACADE_MUTATION_SELECTORS,
 				...VITE_ONLY_SYNTAX_SELECTORS,
 			],
-			// General JS hygiene is intentionally off here; it is its own decision
-			// (see CONTRIBUTING.md §ESLint guards).
-			'no-unused-vars': 'off',
+			// General JS hygiene as non-blocking warnings (CI runs `npm run lint`
+			// with no --max-warnings, so these don't gate merges). See
+			// CONTRIBUTING.md §ESLint guards. `curly` uses 'multi-line' to match
+			// the codebase's brace-free single-line style (the default 'all'
+			// would flag ~500 existing statements).
+			'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+			'prefer-const': 'warn',
+			'no-var': 'warn',
+			'eqeqeq': 'warn',
+			'curly': ['warn', 'multi-line'],
+			// no-undef stays off until BROWSER_GLOBALS is complete (next PR).
 			'no-undef': 'off',
 		},
 	},
