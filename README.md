@@ -2,11 +2,7 @@
 
 CHIVE is a client-side browser tool for exploring CSV/JSON data, building interactive D3 visualizations, and composing charts into dashboard panels. It runs as static files, with no CHIVE backend required.
 
-<!--
-Add a current screenshot at docs/assets/chive-readme-preview.png, then uncomment:
-
-![CHIVE workspace preview](docs/assets/chive-readme-preview.png)
--->
+![CHIVE workspace preview](docs/assets/readme-preview.png)
 
 ## Live Deployments
 
