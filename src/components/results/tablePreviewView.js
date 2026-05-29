@@ -3,8 +3,8 @@
  * cells (numeric/text), and a footer row showing per-column type tags.
  */
 
-import { t } from '../../services/i18nService.js';
-import { formatNumber, translateType, isEmptyValue } from '../../utils/formatters.js';
+import { t, translateType, getLocale } from '../../services/i18nService.js';
+import { formatNumber, isEmptyValue } from '../../utils/formatters.js';
 
 /**
  * Render the preview table into `#table-container`. Caps rows at `limit`.
@@ -28,6 +28,7 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 	}
 
 	const previewRows = rows.slice(0, limit);
+	const locale = getLocale();
 	const table = document.createElement('table');
 	table.className = 'table-preview';
 
@@ -58,7 +59,7 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 			const value = row[name];
 			const displayValue = isEmptyValue(value)
 				? '—'
-				: (type === 'number' ? formatNumber(value) : String(value));
+				: (type === 'number' ? formatNumber(value, locale) : String(value));
 			td.textContent = displayValue;
 			tr.appendChild(td);
 		});
