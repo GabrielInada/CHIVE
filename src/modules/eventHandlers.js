@@ -32,7 +32,7 @@ const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
  *   - `setupSidebarNavigationButtons` (here, private)
  *   - `setupPanelEventListeners` (panelManager)
  *   - `setupChartActionListeners` (here, private — download SVG + add-to-panel buttons)
- *   - `setupGlobalKeyboardListeners` (here, private — Esc + Ctrl/Cmd+O)
+ *   - `setupGlobalKeyboardListeners` (here, private — Ctrl/Cmd+O)
  *   - `setupDatasetListeners` (here, private — delegated select/remove)
  *
  * Called once during app startup from `main.js`.
@@ -313,11 +313,6 @@ function buildChartSnapshotMetadata(containerId) {
  */
 function setupGlobalKeyboardListeners() {
 	document.addEventListener('keydown', event => {
-		// Escape: close menus
-		if (event.key === 'Escape') {
-			closeAllChartMenus();
-		}
-
 		// Ctrl+O or Cmd+O: open file picker
 		if ((event.ctrlKey || event.metaKey) && event.key === 'o') {
 			event.preventDefault();

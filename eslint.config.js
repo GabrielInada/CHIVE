@@ -74,10 +74,36 @@ const VITE_ONLY_SYNTAX_SELECTORS = [
 	},
 ];
 
+// Hand-maintained (dep-free, by choice — see ARCHITECTURE.md's minimal-footprint
+// stance). Combined window + Web Worker scope, since the ingest worker is linted
+// too. Add a global the first time a new browser/worker API is referenced in
+// src/; the set below is exactly what src/ uses today.
 const BROWSER_GLOBALS = {
 	window: 'readonly',
 	document: 'readonly',
 	console: 'readonly',
+	URL: 'readonly',
+	localStorage: 'readonly',
+	crypto: 'readonly',
+	fetch: 'readonly',
+	setTimeout: 'readonly',
+	clearTimeout: 'readonly',
+	requestAnimationFrame: 'readonly',
+	structuredClone: 'readonly',
+	indexedDB: 'readonly',
+	Node: 'readonly',
+	HTMLElement: 'readonly',
+	HTMLInputElement: 'readonly',
+	CustomEvent: 'readonly',
+	XMLSerializer: 'readonly',
+	AbortController: 'readonly',
+	AbortSignal: 'readonly',
+	ResizeObserver: 'readonly',
+	FileReader: 'readonly',
+	Blob: 'readonly',
+	Worker: 'readonly',
+	self: 'readonly',
+	DedicatedWorkerGlobalScope: 'readonly',
 };
 
 export default [
@@ -113,8 +139,7 @@ export default [
 			'no-var': 'warn',
 			'eqeqeq': 'warn',
 			'curly': ['warn', 'multi-line'],
-			// no-undef stays off until BROWSER_GLOBALS is complete (next PR).
-			'no-undef': 'off',
+			'no-undef': 'error',
 		},
 	},
 
