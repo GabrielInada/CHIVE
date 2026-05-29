@@ -12,11 +12,10 @@
  * @typedef {import('../types.js').ChartConfig} ChartConfig
  */
 
-import { t, getLocale } from '../services/i18nService.js';
+import { t, getLocale, translateType } from '../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
 import { renderCharts } from '../features/chartFeatures.js';
 import { getNumericColumns } from '../utils/columnHelpers.js';
-import { translateType } from '../utils/formatters.js';
 
 import { updateTabs } from './results/tabsView.js';
 import { renderTablePreview } from './results/tablePreviewView.js';

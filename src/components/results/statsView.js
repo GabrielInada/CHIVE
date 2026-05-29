@@ -85,6 +85,7 @@ export function renderStats(rows, visibleColumns) {
 		document.getElementById('badge-num-columns').textContent = t('chive-stats-badge', stats.length);
 		const containerStats = document.getElementById('container-stats');
 		containerStats.replaceChildren();
+		const locale = getLocale();
 
 		stats.forEach(stat => {
 			const coluna = document.createElement('div');
@@ -96,11 +97,11 @@ export function renderStats(rows, visibleColumns) {
 			name.textContent = stat.name;
 
 			coluna.appendChild(name);
-			coluna.appendChild(createStatLine(t('chive-stat-valid'), stat.n.toLocaleString(getLocale())));
-			coluna.appendChild(createStatLine(t('chive-stat-min'), formatNumber(stat.min)));
-			coluna.appendChild(createStatLine(t('chive-stat-max'), formatNumber(stat.max)));
-			coluna.appendChild(createStatLine(t('chive-stat-mean'), formatNumber(stat.mean)));
-			coluna.appendChild(createStatLine(t('chive-stat-median'), formatNumber(stat.median)));
+			coluna.appendChild(createStatLine(t('chive-stat-valid'), stat.n.toLocaleString(locale)));
+			coluna.appendChild(createStatLine(t('chive-stat-min'), formatNumber(stat.min, locale)));
+			coluna.appendChild(createStatLine(t('chive-stat-max'), formatNumber(stat.max, locale)));
+			coluna.appendChild(createStatLine(t('chive-stat-mean'), formatNumber(stat.mean, locale)));
+			coluna.appendChild(createStatLine(t('chive-stat-median'), formatNumber(stat.median, locale)));
 
 			containerStats.appendChild(coluna);
 		});
