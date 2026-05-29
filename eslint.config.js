@@ -160,18 +160,18 @@ export default [
 		},
 	},
 
-	// (C) utils/ is a pure leaf layer. It may import services/ (i18n is a
-	// cross-cutting dependency in formatters.js), closing that boundary is
-	// deferred to the formatters→i18n refactor. It must never reach into
-	// modules/, components/, or features/.
+	// (C) utils/ is a pure leaf layer — no imports from modules/, components/,
+	// features/, or services/. (Formerly allowed services/ because formatters.js
+	// imported i18n; that edge was removed when formatters became pure, closing
+	// the boundary fully.)
 	{
 		files: ['src/utils/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**'],
-					message: 'utils/ is a pure leaf layer, no imports from modules/, components/, or features/.',
+					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'utils/ is a pure leaf layer — no imports from modules/, components/, features/, or services/.',
 				}],
 			}],
 		},
