@@ -5,7 +5,7 @@
  * listeners pre-wired. The caller passes click/change handlers in via the
  * options bag; this module owns the markup only.
  *
- * Note: there is also a `createPanelBlock` in `blockStateHelpers.js` —
+ * Note: there is also a `createPanelBlock` in `blockStateHelpers.js`,
  * that builds the state-shape object that lives in `appState`. This file
  * is DOM-only.
  */
@@ -71,7 +71,7 @@ export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMov
 /**
  * Build a `<select>` for switching a block's layout template. Pre-selects
  * the current `templateId`. The change handler fires the `change` DOM
- * event payload — read `e.target.value` to get the new template id.
+ * event payload, read `e.target.value` to get the new template id.
  *
  * @param {Object} params
  * @param {string} params.blockId
@@ -228,8 +228,8 @@ export function createBlockBorderControls({
 
 /**
  * Build a single slot's DOM element. The element is either a "filled"
- * slot (when `chart` is provided) — with a clear button, an empty `<div>`
- * placeholder for the chart's SVG, and drag-source listeners — or an
+ * slot (when `chart` is provided), with a clear button, an empty `<div>`
+ * placeholder for the chart's SVG, and drag-source listeners, or an
  * "empty" slot with a translated placeholder text.
  *
  * Drag-and-drop is wired only when `desktopDnd` is `true`. Mobile and

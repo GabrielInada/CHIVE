@@ -6,9 +6,9 @@
  *
  * The dialog works on draft copies of the rules; commits return one of
  * three actions:
- *   - `{ action: 'apply', filter }` — Apply was clicked.
- *   - `{ action: 'clear', filter }` — Clear was clicked (filter is empty).
- *   - `null` — Cancel / Escape / backdrop click.
+ *   - `{ action: 'apply', filter }`, Apply was clicked.
+ *   - `{ action: 'clear', filter }`, Clear was clicked (filter is empty).
+ *   - `null`, Cancel / Escape / backdrop click.
  *
  * Rules get a transient `_uid` field while in the dialog (stripped on
  * commit) so DOM event handlers can identify cards across re-renders
@@ -358,12 +358,12 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
  * Open the global-filter dialog. Returns a Promise that resolves with
  * the user's action:
  *
- *   - `{ action: 'apply', filter }` — Apply was clicked. `filter` is the
+ *   - `{ action: 'apply', filter }`, Apply was clicked. `filter` is the
  *     normalized `GlobalFilter` (possibly empty if all rules were
  *     deleted).
- *   - `{ action: 'clear', filter: GlobalFilter }` — Clear was clicked;
+ *   - `{ action: 'clear', filter: GlobalFilter }`, Clear was clicked;
  *     `filter` is an empty filter.
- *   - `null` — Cancel / Escape / backdrop click.
+ *   - `null`, Cancel / Escape / backdrop click.
  *
  * The dialog renders a live row-count preview as the user edits rules.
  *

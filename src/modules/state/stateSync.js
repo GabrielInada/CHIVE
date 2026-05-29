@@ -26,7 +26,7 @@ import { updateSidebarUI } from '../uiManager.js';
 /**
  * Subscribe wildcard to {@link syncWindowGlobals} and run an initial
  * sync. Called once during app boot from `main.js`. Wildcard
- * subscription is sanctioned for state-bus consumers — see
+ * subscription is sanctioned for state-bus consumers, see
  * `ARCHITECTURE.md`.
  */
 export function initializeStateSync() {
@@ -77,7 +77,7 @@ export function switchSidebarMode(mode) {
 }
 
 /**
- * Compact state digest for debugging — feeds the `window.chiveDebug`
+ * Compact state digest for debugging, feeds the `window.chiveDebug`
  * surface in `main.js`. Not a stable API.
  *
  * @returns {{ datasetsCount: number, activeDatasetIndex: number, activeDatasetName: string, panelChartsCount: number, panelLayout: string, sidebarMode: SidebarMode }}

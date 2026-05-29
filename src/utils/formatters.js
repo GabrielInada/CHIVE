@@ -64,7 +64,7 @@ export function escapeHtml(text) {
  */
 export function formatNumber(value, locale) {
 	const numberValue = Number(value);
-	if (value === null || value === undefined || value === '' || Number.isNaN(numberValue)) return '—';
+	if (value === null || value === undefined || value === '' || Number.isNaN(numberValue)) return 'N/A';
 
 	const localeToUse = locale || getLocale();
 	

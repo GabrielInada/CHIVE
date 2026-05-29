@@ -1,14 +1,14 @@
 /**
  * CHIVE panel renderer.
  *
- * Renders both panel surfaces — the sidebar list of saved chart snapshots
+ * Renders both panel surfaces, the sidebar list of saved chart snapshots
  * and the canvas grid of layout blocks. Both surfaces are rendered from
  * scratch on every call; teardown/re-mount lifecycles for slot SVGs go
  * through `slotLifecycle.js` so D3 resources (network simulations,
  * ResizeObservers, RAF handles) get cleaned up before each re-render.
  *
  * Caller wiring lives in `panelManager.js`. The exports here are pure
- * rendering — they do not subscribe to state changes; the manager
+ * rendering, they do not subscribe to state changes; the manager
  * decides when to call them.
  */
 
@@ -137,7 +137,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
  * slot's chart via {@link mountSlot}.
  *
  * `renderCanvasPanelFn` is passed back into per-block listeners so they
- * can trigger their own re-render in response to a block mutation —
+ * can trigger their own re-render in response to a block mutation,
  * this avoids importing back through `panelManager.js`.
  *
  * No-op when the canvas element is missing.

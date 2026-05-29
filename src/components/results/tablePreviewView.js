@@ -57,7 +57,7 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 			if (type === 'number') td.classList.add('num');
 			const value = row[name];
 			const displayValue = isEmptyValue(value)
-				? '—'
+				? 'N/A'
 				: (type === 'number' ? formatNumber(value) : String(value));
 			td.textContent = displayValue;
 			tr.appendChild(td);

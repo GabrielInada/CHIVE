@@ -38,8 +38,8 @@ export class PresetFetchTimeoutError extends Error {
  * @param {{ signal?: AbortSignal, timeoutMs?: number }} [options]
  * @returns {Promise<PresetSource>}
  * @throws {PresetFetchTimeoutError} The fetch did not complete within `timeoutMs`.
- * @throws {Error} `'preset-data-missing'` — preset has neither `data` nor a usable `dataUrl`.
- * @throws {Error} `'preset-fetch-failed:<status>'` — server returned a non-2xx response.
+ * @throws {Error} `'preset-data-missing'`, preset has neither `data` nor a usable `dataUrl`.
+ * @throws {Error} `'preset-fetch-failed:<status>'`, server returned a non-2xx response.
  */
 export async function loadPresetSource(preset, { signal, timeoutMs = PRESET_FETCH_TIMEOUT_MS } = {}) {
 	if (Array.isArray(preset?.data)) {

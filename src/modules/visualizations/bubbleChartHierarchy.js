@@ -93,8 +93,8 @@ export function aggregateBubbles({ rows, categoryColumn, measureMode, valueColum
 	let bubbles = Array.from(aggregated.entries()).map(([category, value]) => ({
 		category,
 		value,
-		group: nestingColumns.length > 0 ? (nestingByCategory.get(category)?.[0] || '—') : category,
-		nestingPath: nestingColumns.length > 0 ? (nestingByCategory.get(category) || nestingColumns.map(() => '—')) : [],
+		group: nestingColumns.length > 0 ? (nestingByCategory.get(category)?.[0] || 'N/A') : category,
+		nestingPath: nestingColumns.length > 0 ? (nestingByCategory.get(category) || nestingColumns.map(() => 'N/A')) : [],
 	}));
 
 	bubbles.sort((a, b) => b.value - a.value || compareStrings(a.category, b.category));
@@ -171,7 +171,7 @@ export function getTopLevelGroup(node) {
 	while (current.parent && current.parent.parent) {
 		current = current.parent;
 	}
-	return current.data.groupName || current.data.group || current.data.category || '—';
+	return current.data.groupName || current.data.group || current.data.category || 'N/A';
 }
 
 /**
@@ -186,7 +186,7 @@ export function isIntermediate(node) {
 
 /**
  * True when `node` lives somewhere beneath `ancestor` in the hierarchy.
- * O(depth) — walks up via `.parent`.
+ * O(depth), walks up via `.parent`.
  *
  * @param {*} node
  * @param {*} ancestor

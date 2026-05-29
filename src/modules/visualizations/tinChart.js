@@ -76,7 +76,7 @@ function midpoint(a, b) {
 }
 
 // Recursively subdivides a triangle into 4^depth flat-colored sub-triangles.
-// Each leaf gets the mean-Z color of its 3 vertices — this approximates a
+// Each leaf gets the mean-Z color of its 3 vertices, this approximates a
 // Gouraud-shaded fill in pure SVG so the chart still exports cleanly.
 function emitSubdivided(triangle, depth, colorAt, outPolygons) {
 	if (depth <= 0) {
@@ -97,7 +97,7 @@ function emitSubdivided(triangle, depth, colorAt, outPolygons) {
 // Computes the iso-segment crossings for a single Z level across an array of
 // triangles in screen coordinates. Returns the visible segments plus a
 // descriptor of the longest one (used to anchor a label or any per-level
-// annotation). Pure function — extracted so the regular-isoline pass, the
+// annotation). Pure function, extracted so the regular-isoline pass, the
 // threshold contour, and any per-segment styling all consume one source of
 // truth for level-crossing geometry.
 function computeIsolineSegments(triangleVerts, level) {

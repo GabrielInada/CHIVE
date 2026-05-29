@@ -50,7 +50,7 @@ function buildPresetCard(entry, translate) {
 
 		if (entry.sourceUrl) {
 			if (entry.sourceLabel) {
-				source.appendChild(document.createTextNode(' - '));
+				source.appendChild(document.createTextNode(', '));
 			}
 			const link = document.createElement('a');
 			link.href = entry.sourceUrl;

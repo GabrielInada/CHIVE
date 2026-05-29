@@ -3,7 +3,7 @@
  *
  * `createDefaultChartConfig` returns the canonical fresh shape that every
  * new dataset starts with; `mergeChartConfigWithDefaults` deep-merges a
- * (possibly-partial) saved config onto the defaults — user-set fields
+ * (possibly-partial) saved config onto the defaults, user-set fields
  * always win on overlap, missing fields fall back to the default.
  *
  * The chart-specific sub-shapes live alongside the defaults here; each
@@ -22,7 +22,7 @@ import { normalizeGlobalFilter, createEmptyGlobalFilter } from '../utils/globalF
  * bindings (`category`, `x`, `y`, …) `null` until the user picks one in
  * the sidebar.
  *
- * Mutating the returned object is safe — it is freshly constructed on
+ * Mutating the returned object is safe, it is freshly constructed on
  * each call.
  *
  * @returns {ChartConfig}

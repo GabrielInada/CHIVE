@@ -5,7 +5,7 @@
  * are facade internals: although they are exported (so `panelStateFacade.js`
  * can import them across the file boundary), they should not be called
  * from outside `panelStateFacade.js`. The facade is the only sanctioned
- * entry point because it owns event emission — calling these directly
+ * entry point because it owns event emission, calling these directly
  * mutates state without firing the corresponding `STATE_EVENTS.*`.
  *
  * Each function takes `appState` (or its `.panel` slice) plus injected

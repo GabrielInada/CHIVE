@@ -46,7 +46,7 @@ export function getNumericColumnNames(columns) {
  * Categorical (non-numeric) columns.
  *
  * Note: date columns are included here for backwards-compatibility with
- * bar/pie/treemap/scatter — they treat dates as categorical buckets. Use
+ * bar/pie/treemap/scatter, they treat dates as categorical buckets. Use
  * {@link getDateColumns} when you want only date columns.
  *
  * @param {ColumnSpec[]} columns

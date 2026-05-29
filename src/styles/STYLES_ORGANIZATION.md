@@ -5,9 +5,9 @@ This document describes the organizational structure of stylesheets and their al
 ## Architecture
 
 All stylesheets are imported through a bundler pattern with cascade layers:
-- **Main entry**: `style.css` (declares layer order and imports feature bundles) — used by `index.html`
+- **Main entry**: `style.css` (declares layer order and imports feature bundles); used by `index.html`
 - **Feature bundles**: `base.css`, `data-view.css`, `visual-output.css`, `controls.css`, `feedback.css`
-- **Shared chrome bundle**: `chrome.css` — the foundation subset both `index.html` and `about.html` need (variables, layout, responsive, header-nav). Loaded directly by `about.html`; transitively included in `style.css` via `base.css`.
+- **Shared chrome bundle**: `chrome.css`, the foundation subset both `index.html` and `about.html` need (variables, layout, responsive, header-nav). It is loaded directly by `about.html` and transitively included in `style.css` via `base.css`.
 - **Individual styles**: Feature-specific CSS files
 
 ### Cascade Layer Order
@@ -85,7 +85,7 @@ Canvas layout, chart placement, and block management.
 
 † Listed here because the Panel feature owns it, but it is imported via `controls.css` (not `visual-output.css`) so its rules cascade in the `controls` layer.
 
-**Sub-feature**: `panel > visualizations` — Visualization-specific styling
+**Sub-feature**: `panel > visualizations`, visualization-specific styling
 
 **Bundle via**: `visual-output.css` → `style.css` (except `visualizations.css`, see above)
 
@@ -96,7 +96,7 @@ Shared UI patterns used across multiple features.
 |------|---------|
 | `messages.css` | Toast notifications, error/warning/info alerts, status displays |
 
-`feedback.css` itself is just the bundle file (a single `@import` for `messages.css`) — same shape as `base.css`, `controls.css`, `data-view.css`, and `visual-output.css`.
+`feedback.css` itself is just the bundle file (a single `@import` for `messages.css`), the same shape as `base.css`, `controls.css`, `data-view.css`, and `visual-output.css`.
 
 **Bundle via**: `feedback.css` → `style.css`
 
@@ -109,7 +109,7 @@ Main stylesheet orchestrator.
 
 ### Per-Page Stylesheets
 
-Pages load stylesheets directly via `<link rel="stylesheet">`. `index.html` loads only `style.css`, which transitively pulls in everything. `about.html` loads `chrome.css` + `about.css` — skipping the controls, data-view, visual-output, and feedback layers entirely.
+Pages load stylesheets directly via `<link rel="stylesheet">`. `index.html` loads only `style.css`, which transitively pulls in everything. `about.html` loads `chrome.css` + `about.css` and skips the controls, data-view, visual-output, and feedback layers entirely.
 
 | Page | Loads |
 |------|-------|
@@ -160,7 +160,7 @@ chrome.css (foundation layer)
 ├── responsive.css
 └── header-nav.css
 
-about.css (no layer — page-specific, wins over chrome on ties)
+about.css (no layer; page-specific, wins over chrome on ties)
 ```
 
 ## Adding New Styles
@@ -185,10 +185,10 @@ Classes follow English kebab-case:
 - IDs are used sparingly for major containers
 
 Examples:
-- `.panel-block` — Panel block container
-- `.table-preview` — Preview table
-- `.column-actions` — Column action buttons
-- `#empty-state` — Empty state container
+- `.panel-block`: Panel block container
+- `.table-preview`: Preview table
+- `.column-actions`: Column action buttons
+- `#empty-state`: Empty state container
 
 ## Common Variables
 
@@ -256,7 +256,7 @@ Pick the home that matches the scope of the rule:
 3. **About page** → `about.css` (1024px or 640px blocks)
 4. **Header chrome** (nav, logo, language switcher) → `header-nav.css` (768px or 480px blocks)
 5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.active`) over new breakpoints when the difference is interaction-driven, not viewport-driven
-6. Test on: Desktop (1440px+), Tablet (768px–900px), Mobile (375px–480px)
+6. Test on: Desktop (1440px+), Tablet (768px to 900px), Mobile (375px to 480px)
 
 ### Future Breakpoint Candidates
 

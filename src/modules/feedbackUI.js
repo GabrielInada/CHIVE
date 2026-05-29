@@ -246,7 +246,7 @@ export function showProgress(initialLabel = '') {
 			if (message) labelEl.textContent = message;
 			// WHY: succeed flips cancelMode to 'close' (× now dismisses; it no longer
 			// invokes the host's cancel handler) and auto-closes after autoCloseMs.
-			// Symmetric with fail() — except fail does NOT auto-close, since an error
+			// Symmetric with fail(), except fail does NOT auto-close, since an error
 			// must stay visible until the user has read it.
 			cancelMode = 'close';
 			if (autoCloseTimer) window.clearTimeout(autoCloseTimer);
@@ -256,7 +256,7 @@ export function showProgress(initialLabel = '') {
 			toast.classList.add('failure');
 			if (message) labelEl.textContent = message;
 			cancelMode = 'close';
-			// No auto-close — user must dismiss via × so the error stays readable.
+			// No auto-close, user must dismiss via × so the error stays readable.
 		},
 		close() {
 			if (autoCloseTimer) window.clearTimeout(autoCloseTimer);

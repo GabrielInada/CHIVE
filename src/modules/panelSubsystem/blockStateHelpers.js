@@ -19,7 +19,7 @@ const PANEL_TEMPLATES = ['template-single', 'template-2col', 'template-hero2', '
 
 /**
  * Default proportions for each layout template. The shape varies per
- * template — see {@link PanelBlockProportions} for the union.
+ * template, see {@link PanelBlockProportions} for the union.
  *
  * @param {PanelTemplateId | string} templateId - Unknown ids fall back to a single-column split.
  * @returns {PanelBlockProportions}
@@ -62,7 +62,7 @@ export function getTemplateSlots(templateId) {
 
 /**
  * Build a fresh state-shape {@link PanelBlock}. Distinct from the DOM
- * factory `createPanelBlock` in `domBuilders.js` — this one assembles the
+ * factory `createPanelBlock` in `domBuilders.js`, this one assembles the
  * object that lives in `appState.panel.blocks[]`.
  *
  * @param {number} nextBlockId - Monotonic counter from `appState.panel.nextBlockId`.

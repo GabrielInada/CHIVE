@@ -331,7 +331,7 @@ describe('bubble chart multi-level nesting', () => {
 		});
 
 		expect(result.ok).toBe(true);
-		// Two groups: '—' and 'X'
+		// Two groups: 'N/A' and 'X'
 		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
 	});
 

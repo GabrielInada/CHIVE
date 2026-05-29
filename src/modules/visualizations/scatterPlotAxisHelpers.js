@@ -70,7 +70,7 @@ export function inferAxisType(axisValues, configuredAxisType) {
 /**
  * Deterministic pseudo-random jitter in `[-1, 1]`, seeded by `index` and
  * `axisSeed`. Uses the standard `sin(x) * 43758.5...` hash so the same
- * `(index, axisSeed)` always produces the same offset — important so the
+ * `(index, axisSeed)` always produces the same offset, important so the
  * categorical scatter does not visually "shuffle" between renders.
  *
  * @param {number} index
@@ -143,7 +143,7 @@ export function estimateLongestCategoryLength(points, key) {
 
 /**
  * Grow the left/bottom margins when the corresponding axis is categorical,
- * so long category labels do not get clipped. Returns a new object — does
+ * so long category labels do not get clipped. Returns a new object, does
  * not mutate `baseMargins`.
  *
  * @param {{ top: number, right: number, bottom: number, left: number }} baseMargins
@@ -208,7 +208,7 @@ export function aggregateCategoricalPairs(points) {
 /**
  * Find the most-frequent normalized value of `rows[].[fieldName]`. Ties
  * broken alphabetically by {@link compareStrings} so the result is stable.
- * Returns `'—'` when `rows` is empty.
+ * Returns `'N/A'` when `rows` is empty.
  *
  * @param {Array<Object<string, *>>} rows
  * @param {string} fieldName
@@ -222,7 +222,7 @@ export function pickMostFrequentCategory(rows, fieldName) {
 		categoryCount.set(category, (categoryCount.get(category) || 0) + 1);
 	});
 
-	let bestCategory = '—';
+	let bestCategory = 'N/A';
 	let bestCount = -1;
 	for (const [category, count] of categoryCount.entries()) {
 		if (count > bestCount) {

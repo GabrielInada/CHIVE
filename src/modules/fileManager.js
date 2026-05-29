@@ -25,14 +25,14 @@ import { createDefaultChartConfig } from '../config/chartDefaults.js';
 // Callback when dataset list changes
 let onDatasetsChangeCallback = null;
 
-// Confirmation function for user prompts — injectable for testing, defaults to window.confirm
+// Confirmation function for user prompts, injectable for testing, defaults to window.confirm
 let confirmFn = message => window.confirm(message);
 
 /**
  * Initialize the file manager. Wire the change callback (invoked after
  * each successful add/remove/select) and the confirmation function used
  * for the over-limit file-size prompt. The confirmation hook is
- * injectable for testing — production callers can omit it.
+ * injectable for testing, production callers can omit it.
  *
  * @param {(() => void) | null} [changeCallback] - Called when the dataset list changes.
  * @param {((message: string) => boolean) | null} [confirmCallback] - Defaults to `window.confirm`.
@@ -141,7 +141,7 @@ async function processFileForDataset(file) {
 		columns,
 		selectedColumns: columns.map(coluna => coluna.name),
 		chartConfig: createDefaultChartConfig(),
-		// Stats computed in the worker — statsView reads these instead of recomputing
+		// Stats computed in the worker, statsView reads these instead of recomputing
 		// on every DATASET_ADDED event. See `services/dataIngestService.js`.
 		precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
 	};

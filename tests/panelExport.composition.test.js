@@ -51,7 +51,7 @@ function rect(left, top, width, height) {
 function injectLiveSlotSvgs() {
   document.querySelectorAll('[data-panel-slot][data-panel-chart-id] .panel-slot-svg').forEach(slotSvgEl => {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    // Intentionally NO width/height/x/y here — the exporter sets those fresh,
+    // Intentionally NO width/height/x/y here, the exporter sets those fresh,
     // and tests rely on them appearing in canonical x y width height order in
     // the serialized output.
     svg.setAttribute('viewBox', '0 0 10 10');

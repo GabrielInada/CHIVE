@@ -1,5 +1,5 @@
 /**
- * CHIVE services barrel — partial by design.
+ * CHIVE services barrel, partial by design.
  *
  * Only the broadly-consumed services are re-exported here ([i18nService](./i18nService.js)
  * and [dataService](./dataService.js)). The remaining services are imported by

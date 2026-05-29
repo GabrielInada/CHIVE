@@ -11,7 +11,7 @@
  * in `dataService.js` stays untouched (still used by the join builder +
  * tests).
  *
- * Message protocol — see `services/dataIngestService.js` for the host side
+ * Message protocol, see `services/dataIngestService.js` for the host side
  * and the {@link IngestWorkerRequest} / {@link IngestWorkerResponse}
  * typedefs in `src/types.js`.
  *

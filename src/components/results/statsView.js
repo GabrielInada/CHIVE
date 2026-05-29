@@ -1,5 +1,5 @@
 /**
- * Stats view — renders the numeric and categorical stat strips below the
+ * Stats view, renders the numeric and categorical stat strips below the
  * table preview. Reuses worker-precomputed stats when possible (see
  * {@link getNumericStats}); falls back to live computation for joined
  * datasets or filtered slices.

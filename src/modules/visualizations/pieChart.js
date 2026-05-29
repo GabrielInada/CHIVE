@@ -89,7 +89,7 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 	rows.forEach(row => {
 		const rawValue = row[categoryColumn];
 		const category = isNullish(rawValue) || rawValue === ''
-			? '—'
+			? 'N/A'
 			: String(rawValue);
 		if (measureMode === 'sum') {
 			if (!valueColumn) return;

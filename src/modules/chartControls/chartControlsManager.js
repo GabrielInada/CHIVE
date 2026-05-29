@@ -2,8 +2,8 @@
  * CHIVE Chart Controls Manager.
  *
  * Owns visualization controls in the sidebar:
- *   - Chart-type list (top pane) — radio selection of the active chart.
- *   - Params pane (bottom) — controls for the currently active chart.
+ *   - Chart-type list (top pane), radio selection of the active chart.
+ *   - Params pane (bottom), controls for the currently active chart.
  *   - Centralized activation defaults (column selection on chart switch).
  *
  * Each chart type has its own controls module (`barControls.js`,

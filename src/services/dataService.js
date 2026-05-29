@@ -7,7 +7,7 @@ import { isNullish } from '../utils/formatters.js';
  *
  * Pure functions for CSV/JSON parsing, type/decimal detection, row
  * normalization, dataset joins, and per-column statistics. No DOM, no
- * state, no I/O — safe to use in workers and tests.
+ * state, no I/O, safe to use in workers and tests.
  *
  * @typedef {import('../types.js').ColumnSpec} ColumnSpec
  * @typedef {import('../types.js').JoinDatasetsOptions} JoinDatasetsOptions
@@ -114,9 +114,9 @@ function sanitizePrefix(fileName, fallback) {
  *
  * @param {JoinDatasetsOptions} options
  * @returns {JoinResult}
- * @throws {Error} `'join-invalid-datasets'` — `leftRows` or `rightRows` is not an array.
- * @throws {Error} `'join-keys-required'` — either key array is missing or empty.
- * @throws {Error} `'join-keys-mismatch'` — key arrays have different lengths.
+ * @throws {Error} `'join-invalid-datasets'`, `leftRows` or `rightRows` is not an array.
+ * @throws {Error} `'join-keys-required'`, either key array is missing or empty.
+ * @throws {Error} `'join-keys-mismatch'`, key arrays have different lengths.
  *
  * @example
  *   const result = joinDatasets({
@@ -498,9 +498,9 @@ function stripDangerousKeys(value) {
  *
  * @param {string} text - Raw file content.
  * @returns {Array<Object<string, *>>} Parsed rows.
- * @throws {Error} `'JSON file contains syntax errors…'` — `JSON.parse` failed.
- * @throws {Error} `'The JSON file is empty.'` / `'The data array in the JSON is empty.'` — zero rows.
- * @throws {Error} `'Unrecognized JSON format…'` — root is neither an array nor an object with an array-valued key.
+ * @throws {Error} `'JSON file contains syntax errors…'`, `JSON.parse` failed.
+ * @throws {Error} `'The JSON file is empty.'` / `'The data array in the JSON is empty.'`, zero rows.
+ * @throws {Error} `'Unrecognized JSON format…'`, root is neither an array nor an object with an array-valued key.
  */
 export function parseJson(text) {
 	let parsed;
@@ -532,7 +532,7 @@ export function parseJson(text) {
  * Detect column types and normalize numeric values in a single pass.
  *
  * The decimal separator is detected once for the whole dataset (it is a
- * file-level property — all numeric columns in one upload share the same
+ * file-level property, all numeric columns in one upload share the same
  * convention). Then each column gets a `type` from `detectType`, and
  * numeric cells are parsed into actual numbers via `normalizeNumericString`.
  *

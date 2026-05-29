@@ -34,7 +34,7 @@ import {
  * Compute the category-token order that will appear in the rendered pie
  * (descending by aggregate, with a string tiebreaker so order is stable).
  * Used to drive the per-slice color picker grid and the palette-preset
- * mapping. Missing values bucket under `'—'`.
+ * mapping. Missing values bucket under `'N/A'`.
  *
  * @private
  * @param {Dataset} dataset
@@ -48,7 +48,7 @@ function getPieSectorValues(dataset, config) {
 	dataset.rows.forEach(row => {
 		const rawValue = row[config.category];
 		const category = isNullish(rawValue) || rawValue === ''
-			? '—'
+			? 'N/A'
 			: String(rawValue);
 
 		if (config.measureMode === 'sum') {
@@ -71,7 +71,7 @@ function getPieSectorValues(dataset, config) {
  * Build the pie-chart control sections (Data, Display, Styling).
  *
  * The Styling section conditionally includes the palette preset and
- * per-slice color picker grid — they appear only when the chart has
+ * per-slice color picker grid, they appear only when the chart has
  * sectors to color (i.e. a non-empty category column).
  *
  * @param {Dataset} dataset

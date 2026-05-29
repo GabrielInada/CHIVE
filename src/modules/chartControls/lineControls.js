@@ -3,7 +3,7 @@
  *
  * Builds the right-sidebar control group for the line chart and wires its
  * listeners. The X-axis accepts any column type (numeric, categorical, or
- * date) — date detection happens inside {@link computeDefaults}.
+ * date), date detection happens inside {@link computeDefaults}.
  *
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').ChartControlContext} ChartControlContext

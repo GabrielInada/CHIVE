@@ -65,7 +65,7 @@ describe('dataService', () => {
       expect(detectDecimalSeparator(['1.000', '2.000', '50.000'])).toBe(',');
     });
 
-    it('Stage 3: NaN fallback — reverts when detected separator produces many NaN', () => {
+    it('Stage 3: NaN fallback, reverts when detected separator produces many NaN', () => {
       // All values have exactly 3 decimal places in European format.
       // Stages 1-2b skip them as ambiguous, fall back to '.',
       // but Stage 3 sees high NaN rate and switches to ','.
@@ -74,7 +74,7 @@ describe('dataService', () => {
     });
 
     it('dot wins ties as the higher-priority separator', () => {
-      // Equal evidence for both - dot wins
+      // Equal evidence for both: dot wins
       expect(detectDecimalSeparator(['3.14', '3,14'])).toBe('.');
     });
   });
@@ -544,7 +544,7 @@ describe('dataService', () => {
   });
 
   it('detects tiebreaker: prefers comma when counts are equal', () => {
-    // one comma and one semicolon — comma has priority
+    // one comma and one semicolon, comma has priority
     expect(detectDelimiter('a,b;c')).toBe(',');
   });
 

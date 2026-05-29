@@ -7,7 +7,7 @@ import { createPanelStateFacade } from './panelStateFacade.js';
 export { onStateChange, STATE_EVENTS };
 
 /**
- * CHIVE application state — single source of truth.
+ * CHIVE application state, single source of truth.
  *
  * The private `appState` object below is never exported. All reads go
  * through `get*` functions; all writes go through the three domain facades
@@ -15,7 +15,7 @@ export { onStateChange, STATE_EVENTS };
  *
  * Note on the two `createPanelBlock` symbols in this file:
  *   - The import from `./panel/blockStateHelpers.js` is aliased to
- *     `buildPanelBlock` — a pure constructor that takes an explicit id.
+ *     `buildPanelBlock`, a pure constructor that takes an explicit id.
  *   - The local `createPanelBlock` below is a closure that calls
  *     `buildPanelBlock` AND increments `appState.panel.nextBlockId`. This
  *     is the one passed into the panel facade. Do not conflate the two.
@@ -30,7 +30,7 @@ export { onStateChange, STATE_EVENTS };
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  *
  * @see ARCHITECTURE.md
- * @see CONTRIBUTING.md "Architecture invariants — do not break"
+ * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
 
 const appState = {
@@ -74,7 +74,7 @@ function createPanelBlock(templateId = 'template-2col') {
 /**
  * Insert a default `template-2col` block when `panel.blocks` is empty (or has
  * been replaced by a non-array). Called from every panel-facade method that
- * touches `blocks` — this is why several "getter" methods on the facade
+ * touches `blocks`, this is why several "getter" methods on the facade
  * have a mutation as a side effect.
  *
  * @private
@@ -114,7 +114,7 @@ const panelState = createPanelStateFacade({
 
 /**
  * Read a deep clone of the entire state. Safe to mutate without affecting
- * the real state — contrast with the live-reference getters
+ * the real state, contrast with the live-reference getters
  * ({@link getAllDatasets}, {@link getPanelCharts}, {@link getPanelBlocks}).
  *
  * @returns {AppState} Deep clone.
@@ -407,7 +407,7 @@ export function setPreviewRows(rows) {
 }
 
 /**
- * Atomically replace the entire state. Bypasses the facades — used by
+ * Atomically replace the entire state. Bypasses the facades, used by
  * `persistenceService` for hydration on boot.
  *
  * Missing fields fall back to the current default shape so a partial
@@ -462,7 +462,7 @@ export function replaceAllState({ data, panel, ui } = {}) {
 
 /**
  * Mirror selected state fields onto `window.*` globals for legacy hooks
- * that still read from globals. New code must not depend on these — read
+ * that still read from globals. New code must not depend on these, read
  * via the getters in this module instead.
  *
  * @deprecated Legacy compatibility shim. Slated for removal once all

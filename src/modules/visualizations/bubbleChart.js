@@ -182,7 +182,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 	// Color domain: by top-level nesting group names (depth 1 children of root)
 	let colorDomain;
 	if (isGrouped && root.children) {
-		colorDomain = root.children.map(c => c.data.groupName || '—');
+		colorDomain = root.children.map(c => c.data.groupName || 'N/A');
 	} else {
 		colorDomain = Array.from(new Set(leaves.map(item => item.data.group)));
 	}

@@ -6,7 +6,7 @@
  *
  * Note: this module wires listeners by hand (per-element `addEventListener`)
  * rather than via the `setupSelectListeners`/etc. helpers used by other
- * modules — same effect, more verbose.
+ * modules, same effect, more verbose.
  *
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').ChartControlContext} ChartControlContext

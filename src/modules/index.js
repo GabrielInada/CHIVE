@@ -1,5 +1,5 @@
 /**
- * CHIVE modules barrel — single import surface for the orchestration layer
+ * CHIVE modules barrel, single import surface for the orchestration layer
  * consumed by `main.js`. Re-exports the state core (appState), the
  * stateSync compatibility shim, and the four user-flow controllers
  * (panel/file/event/UI managers plus feedbackUI).

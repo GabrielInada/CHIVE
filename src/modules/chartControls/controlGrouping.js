@@ -73,7 +73,7 @@ export function createControlSection(sectionId, title, controls, expanded = true
 		toggleIcon.textContent = isExpanded ? '▶' : '▼';
 		// Only animate on user-triggered expansion. Re-rendered sections that start
 		// expanded (via applyControlSectionExpansionState after a sidebar rebuild)
-		// must NOT animate — the max-height:0 start frame would throw off the
+		// must NOT animate, the max-height:0 start frame would throw off the
 		// scroll-restore measurements in renderChartControlsSidebar.
 		if (!isExpanded) {
 			content.classList.add('chart-section-content--opening');

@@ -16,7 +16,7 @@ const FROM_BARREL = "import { getState, getPanelBlocks } from '../modules/index.
 
 ruleTester.run('no-facade-getter-mutation', rule, {
 	valid: [
-		// Inline read (no alias) — never a mutation.
+		// Inline read (no alias), never a mutation.
 		`${FROM_APPSTATE}\nconst n = getActiveDataset().name;`,
 
 		// Aliased but read-only.

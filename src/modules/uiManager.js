@@ -92,7 +92,7 @@ function updateSidebarForTab(tabName) {
 
 /**
  * Apply a sidebar mode to the DOM by toggling `active`/`inactive` classes
- * on the three `sidebar-panel-*` containers. Pure DOM update — does not
+ * on the three `sidebar-panel-*` containers. Pure DOM update, does not
  * write to state.
  *
  * @param {SidebarMode} mode

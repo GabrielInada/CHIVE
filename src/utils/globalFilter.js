@@ -6,7 +6,7 @@
  * resolving the active filter), and the global filter dialog component.
  *
  * Migrates legacy single-rule filters (pre-2.0) into the rules-array shape
- * on the fly via {@link normalizeGlobalFilter} — direct callers should
+ * on the fly via {@link normalizeGlobalFilter}, direct callers should
  * always run input through normalize before reading.
  *
  * @typedef {import('../types.js').GlobalFilter} GlobalFilter
@@ -71,8 +71,8 @@ function ruleHasColumn(rule) {
  * three input shapes:
  *   1. The canonical `{ rules, combine }` (current).
  *   2. A legacy single-rule filter (no `rules` array, but has `column` /
- *      `include` / `operator` / `mode`) — promoted to a single-rule array.
- *   3. Anything else — collapses to an empty filter.
+ *      `include` / `operator` / `mode`), promoted to a single-rule array.
+ *   3. Anything else, collapses to an empty filter.
  *
  * Rules without a column are filtered out; remaining rules are individually
  * normalized via {@link normalizeFilterConfig}.
@@ -161,7 +161,7 @@ export function resolveGlobalFilterForColumns(rawFilter, availableColumns) {
 /**
  * Apply every rule in `rawFilter` to `rows` in sequence (AND semantics).
  * Returns the input array unchanged when no rules are active. The pipeline
- * is row-monotonic — each rule narrows the surviving set, never expands it.
+ * is row-monotonic, each rule narrows the surviving set, never expands it.
  *
  * @param {Array<Object<string, *>>} rows
  * @param {*} rawFilter
@@ -260,7 +260,7 @@ export function excludeTokenFromFilter(rawFilter, column, token) {
  * Remove `token` from the include set on the matching categorical rule.
  * When the rule's include AND exclude sets both become empty, the rule
  * itself is dropped from the filter (since an empty active rule would
- * filter out all rows — see {@link applyChartFilterRows}).
+ * filter out all rows, see {@link applyChartFilterRows}).
  *
  * @param {*} rawFilter
  * @param {string} column
@@ -388,7 +388,7 @@ export function getTokenFilterState(rawFilter, column, token) {
 
 /**
  * Compatibility alias for {@link createEmptyGlobalFilter}. Both functions
- * return the same shape — distinct names exist because "create empty"
+ * return the same shape, distinct names exist because "create empty"
  * reads better at construction sites while "create default" reads better
  * at reset sites.
  *

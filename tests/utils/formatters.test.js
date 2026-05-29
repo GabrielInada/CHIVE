@@ -10,9 +10,9 @@ describe('formatters', () => {
   });
 
   it('formats numbers with precision rules', () => {
-    expect(formatNumber(null, 'en-US')).toBe('—');
-    expect(formatNumber('', 'en-US')).toBe('—');
-    expect(formatNumber('foo', 'en-US')).toBe('—');
+    expect(formatNumber(null, 'en-US')).toBe('N/A');
+    expect(formatNumber('', 'en-US')).toBe('N/A');
+    expect(formatNumber('foo', 'en-US')).toBe('N/A');
 
     expect(formatNumber(1234, 'en-US')).toBe('1,234');
     expect(formatNumber(123.45, 'en-US')).toBe('123.5');

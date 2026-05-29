@@ -3,7 +3,7 @@
  *
  * Builds the right-sidebar control group for the TIN (Triangulated
  * Irregular Network) surface chart and wires its listeners. The TIN chart
- * is the most option-dense — surface fill mode, subdivision depth,
+ * is the most option-dense, surface fill mode, subdivision depth,
  * isolines, threshold line, multi-color gradient ramps.
  *
  * X/Y/Z axes are all numeric-only.

@@ -25,7 +25,7 @@ export function hexToRgb(hex) {
 }
 
 /**
- * Convert a 0–255 channel value to a 2-char hex byte. Clamps out-of-range
+ * Convert a 0 to 255 channel value to a 2-char hex byte. Clamps out-of-range
  * inputs so callers can hand off raw arithmetic results without rounding
  * concerns.
  *

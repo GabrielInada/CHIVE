@@ -39,7 +39,7 @@ export function applyBlockProportions(gridDiv, block) {
 
 /**
  * Compute and apply a block's `min-height`. Two layers of clamping are
- * intentional — see the inline comment below.
+ * intentional, see the inline comment below.
  *
  * @private
  */
@@ -60,7 +60,7 @@ function applyDynamicBlockHeight(gridDiv, block) {
 
 /**
  * Render the proportion-drag handles overlaid on a block's grid. Each
- * template gets a different set of handles — vertical splits on the
+ * template gets a different set of handles, vertical splits on the
  * x-axis, horizontal splits on the y-axis. `template-hero2`'s right-column
  * y-handle is positioned on a rail that follows the main split.
  *

@@ -31,9 +31,9 @@ const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
  *   - `setupSidebarToggleListener` (uiManager)
  *   - `setupSidebarNavigationButtons` (here, private)
  *   - `setupPanelEventListeners` (panelManager)
- *   - `setupChartActionListeners` (here, private — download SVG + add-to-panel buttons)
- *   - `setupGlobalKeyboardListeners` (here, private — Ctrl/Cmd+O)
- *   - `setupDatasetListeners` (here, private — delegated select/remove)
+ *   - `setupChartActionListeners` (here, private, download SVG + add-to-panel buttons)
+ *   - `setupGlobalKeyboardListeners` (here, private, Ctrl/Cmd+O)
+ *   - `setupDatasetListeners` (here, private, delegated select/remove)
  *
  * Called once during app startup from `main.js`.
  */
@@ -351,7 +351,7 @@ function setupDatasetListeners() {
 /**
  * Wire delegated listeners on the results view (column list, column
  * action buttons). Note: the inner callbacks reference TODO comments
- * pointing at `resultsView.js` for the actual wiring — this function
+ * pointing at `resultsView.js` for the actual wiring, this function
  * currently sets up the delegation skeleton but the callbacks are not
  * yet routed. Tracked as a follow-up refactor; documented as-is.
  */

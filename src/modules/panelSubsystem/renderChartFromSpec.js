@@ -5,7 +5,7 @@
  * delegates here via {@link renderChartFromSpec} when mounting a slot;
  * this module then dispatches to the appropriate `render*Chart` function
  * in `modules/visualizations/`. Panel snapshots come into this module as
- * `{ type, config, dataSnapshot, columnsSnapshot, metadata }` — see
+ * `{ type, config, dataSnapshot, columnsSnapshot, metadata }`, see
  * {@link ChartSnapshot} for the full shape.
  *
  * Panel-rendered charts intentionally pass an empty filter-callbacks bag

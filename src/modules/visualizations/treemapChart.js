@@ -43,7 +43,7 @@ function truncate(text, maxLen) {
 
 /**
  * Render a treemap into `container`. Unlike the other renderers, this one
- * returns nothing (`void`) — failure modes are handled by early returns
+ * returns nothing (`void`), failure modes are handled by early returns
  * that leave the container empty.
  *
  * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
@@ -100,7 +100,7 @@ export function renderTreeMap(container, rows, categoryColumn, options = {}) {
 	rows.forEach(row => {
 		const rawValue = row[categoryColumn];
 		const category = isNullish(rawValue) || rawValue === ''
-			? '—'
+			? 'N/A'
 			: String(rawValue);
 		if (measureMode === 'sum') {
 			const value = Number(row[valueColumn]);

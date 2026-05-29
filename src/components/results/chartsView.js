@@ -26,7 +26,7 @@ import { renderTinChartSection } from './chartRenders/tinChartSection.js';
 /**
  * Render the active chart into its container. Single-chart-at-a-time: if
  * the config has multiple enabled flags (legacy), the first one in
- * canonical order wins — the rest are coerced to disabled before render.
+ * canonical order wins, the rest are coerced to disabled before render.
  *
  * The `options` callbacks all share the same `(column, token) => void`
  * signature and are wired into the per-chart tooltip actions.

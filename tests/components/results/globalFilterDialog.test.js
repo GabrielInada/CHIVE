@@ -117,7 +117,7 @@ describe('openGlobalFilterDialog (multi-rule)', () => {
 		valueInput.value = '25';
 		valueInput.dispatchEvent(new Event('input'));
 
-		// Add a second (incomplete) rule — should be skipped in the final output.
+		// Add a second (incomplete) rule, should be skipped in the final output.
 		document.querySelector('.gf-add-rule').click();
 
 		document.querySelector('.gf-apply').click();

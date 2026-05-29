@@ -2,7 +2,7 @@
  * Bubble-chart controls module.
  *
  * Builds the right-sidebar control group for the bubble chart and wires
- * listeners. Notable: the bubble chart supports *progressive nesting* — a
+ * listeners. Notable: the bubble chart supports *progressive nesting*, a
  * variable-depth column hierarchy ({@link createNestingControls}) that
  * appends one new select per filled level.
  *

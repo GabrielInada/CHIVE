@@ -3,7 +3,7 @@
  *
  * Each entry maps a {@link PanelTemplateId} to its CSS class, slot list,
  * and i18n label key. This is the canonical source of truth for which
- * templates exist — `chartFeatures.js` exports it as-is and panel
+ * templates exist, `chartFeatures.js` exports it as-is and panel
  * code reaches in here rather than maintaining a parallel list.
  *
  * @typedef {import('../../types.js').PanelTemplateId} PanelTemplateId

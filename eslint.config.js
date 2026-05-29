@@ -29,11 +29,11 @@ const APP_STATE_READS = [
 const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState)';
 
 const FACADE_MUTATION_MESSAGE =
-	'Mutating a facade getter return is forbidden — these are read-only views. ' +
+	'Mutating a facade getter return is forbidden, these are read-only views. ' +
 	'Use the corresponding facade write method (updateActiveDatasetConfig, ' +
 	'addChartSnapshot, …). See CONTRIBUTING.md §Architecture invariants.';
 
-// Inline facade-mutation selectors: catch `getXxx().a = b` at depths 1–3.
+// Inline facade-mutation selectors: catch `getXxx().a = b` at depths 1 to 3.
 const FACADE_MUTATION_SELECTORS = [
 	{
 		selector: `AssignmentExpression[left.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
@@ -50,7 +50,7 @@ const FACADE_MUTATION_SELECTORS = [
 ];
 
 // Raw-static deployment guards. CHIVE can be served raw from src/ with no build
-// step, so bundler-only / Vite-only import forms must be hard errors — they
+// step, so bundler-only / Vite-only import forms must be hard errors, they
 // pass dev/test/Vite but break when src/ is served directly.
 const BARE_IMPORT_BANS = [
 	{
@@ -70,11 +70,11 @@ const VITE_ONLY_SYNTAX_SELECTORS = [
 	},
 	{
 		selector: "MemberExpression[object.type='MetaProperty'][property.name=/^(glob|env)$/]",
-		message: 'import.meta.glob / import.meta.env are Vite-only and break raw-static hosting. (import.meta.url is allowed — it is the standard worker/asset URL form.)',
+		message: 'import.meta.glob / import.meta.env are Vite-only and break raw-static hosting. (import.meta.url is allowed, it is the standard worker/asset URL form.)',
 	},
 ];
 
-// Hand-maintained (dep-free, by choice — see ARCHITECTURE.md's minimal-footprint
+// Hand-maintained (dep-free, by choice, see ARCHITECTURE.md's minimal-footprint
 // stance). Combined window + Web Worker scope, since the ingest worker is linted
 // too. Add a global the first time a new browser/worker API is referenced in
 // src/; the set below is exactly what src/ uses today.
@@ -111,7 +111,7 @@ export default [
 
 	// (A) src-wide defaults: language options + cross-cutting guards applied to
 	// ALL of src/. NOTE: flat config REPLACES (does not merge) a rule's options
-	// across matching config objects — the last match wins entirely. The blocks
+	// across matching config objects, the last match wins entirely. The blocks
 	// below redeclare `no-restricted-imports` for their file subset, so each one
 	// must repeat BARE_IMPORT_BANS or it would silently drop the bare-import
 	// guard for those files. Likewise, all `no-restricted-syntax` selectors for
@@ -161,7 +161,7 @@ export default [
 	},
 
 	// (C) utils/ is a pure leaf layer. It may import services/ (i18n is a
-	// cross-cutting dependency in formatters.js) — closing that boundary is
+	// cross-cutting dependency in formatters.js), closing that boundary is
 	// deferred to the formatters→i18n refactor. It must never reach into
 	// modules/, components/, or features/.
 	{
@@ -171,13 +171,13 @@ export default [
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
 					group: ['**/modules/**', '**/components/**', '**/features/**'],
-					message: 'utils/ is a pure leaf layer — no imports from modules/, components/, or features/.',
+					message: 'utils/ is a pure leaf layer, no imports from modules/, components/, or features/.',
 				}],
 			}],
 		},
 	},
 
-	// (D) config/ is a pure leaf layer — no imports from any higher layer.
+	// (D) config/ is a pure leaf layer, no imports from any higher layer.
 	{
 		files: ['src/config/**/*.js'],
 		rules: {
@@ -185,14 +185,14 @@ export default [
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
 					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
-					message: 'config/ is a pure leaf layer — no imports from modules/, components/, features/, or services/.',
+					message: 'config/ is a pure leaf layer, no imports from modules/, components/, features/, or services/.',
 				}],
 			}],
 		},
 	},
 
 	// (E) Aliased facade-getter mutation guard. Catches
-	// `const d = getActiveDataset(); d.x = y` — the blind spot the inline
+	// `const d = getActiveDataset(); d.x = y`, the blind spot the inline
 	// no-restricted-syntax selectors above can't reach. Scope-aware + import-
 	// gated (see the rule banner). Facade internals under state/ legitimately
 	// use the aliased-write pattern, so they are exempt.

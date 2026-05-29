@@ -5,7 +5,7 @@
  * listeners on every change to trigger a live re-render of the chart
  * (without waiting for the user to save). Live preview is currently
  * disabled at the wiring level (`initChartControls` is typically called
- * with `null`) — these functions are no-ops in that case.
+ * with `null`), these functions are no-ops in that case.
  */
 
 let liveRenderCallback = null;

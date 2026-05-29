@@ -10,7 +10,7 @@ import { isValidHexColor } from '../../utils/colorUtils.js';
 
 /**
  * Clamp `value` to `[min, max]` and coerce non-finite inputs to `min`.
- * Duplicate of {@link clampPercentage} in `blockStateHelpers.js` —
+ * Duplicate of {@link clampPercentage} in `blockStateHelpers.js`,
  * intentionally kept separate so panel-resize math has no dependency
  * back on the state-helpers module.
  *
@@ -42,7 +42,7 @@ export function normalizeHexColor(color, fallback = '#5d645d') {
 /**
  * Compute a layout-aware minimum height in pixels. For templates with a
  * horizontal split (`template-1x2`, `template-hero2`), a small split percentage
- * makes one row tiny — this function derives the height that keeps the
+ * makes one row tiny, this function derives the height that keeps the
  * smaller row at least `SLOT_MIN_HEIGHT` tall. Result is clamped to
  * `[220, 620]`.
  *

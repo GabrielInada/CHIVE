@@ -4,7 +4,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  * CHIVE data-domain facade.
  *
  * Owns every write into `appState.data`. The exports in `appState.js` are
- * thin wrappers around the methods returned here — call those, not these,
+ * thin wrappers around the methods returned here, call those, not these,
  * from outside this module. Direct mutation of dataset fields or of the
  * datasets array is forbidden; ESLint enforces it for the renderer layer.
  *
@@ -12,7 +12,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  *
  * @see ARCHITECTURE.md
- * @see CONTRIBUTING.md "Architecture invariants — do not break"
+ * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
 
 const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
@@ -176,7 +176,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 
 	/**
 	 * Apply `normalizer` to `chartConfig` **without emitting**. Intended
-	 * for normalize-on-read paths — e.g. applying chart-config defaults
+	 * for normalize-on-read paths, e.g. applying chart-config defaults
 	 * during a render. Emitting here would re-enter `refreshView` via the
 	 * CONFIG_UPDATED subscription and loop indefinitely.
 	 *

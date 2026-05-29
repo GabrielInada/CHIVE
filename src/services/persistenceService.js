@@ -5,9 +5,9 @@
  * and restores it on boot. UI preferences live in localStorage (small payload,
  * no transaction overhead, matches the existing locale pattern).
  *
- * Schema — DB `chive-state` v2:
- *   - `datasets` (keyPath: 'id')      — one record per dataset
- *   - `panel`    (keyPath: 'key')     — singleton record { key: 'singleton', ... }
+ * Schema, DB `chive-state` v2:
+ *   - `datasets` (keyPath: 'id')     , one record per dataset
+ *   - `panel`    (keyPath: 'key')    , singleton record { key: 'singleton', ... }
  *
  * v1→v2 upgrade: drops both stores and clears localStorage UI prefs. The
  * field names changed shape in v2 (English: `name`/`rows`/`columns`/`type`
@@ -16,7 +16,7 @@
  * re-upload once.
  *
  * Caller injects `replaceAllState` and a `getState` function so this service
- * does not import from appState — keeps the dependency graph one-way and
+ * does not import from appState, keeps the dependency graph one-way and
  * makes the service trivially mockable.
  *
  * Cross-tab note: two tabs writing the same DB → last-writer-wins. Acceptable
@@ -36,7 +36,7 @@ const STORE_PANEL = 'panel';
 const PANEL_KEY = 'singleton';
 const UI_LOCAL_STORAGE_KEY = 'chive.ui';
 
-// Coalesce save bursts beyond what debounce already does — if a previous
+// Coalesce save bursts beyond what debounce already does, if a previous
 // save is still in flight when a new one fires, drop the new one. The next
 // state event (or beforeunload flush) will write the latest snapshot.
 let saveInFlight = null;
@@ -73,7 +73,7 @@ function openDb() {
 				try {
 					localStorage.removeItem(UI_LOCAL_STORAGE_KEY);
 				} catch {
-					// Quota / sandboxed — best effort.
+					// Quota / sandboxed, best effort.
 				}
 			}
 			if (!db.objectStoreNames.contains(STORE_DATASETS)) {
@@ -140,7 +140,7 @@ function writeUiPrefs(ui) {
 	try {
 		localStorage.setItem(UI_LOCAL_STORAGE_KEY, JSON.stringify(ui));
 	} catch {
-		// Quota exceeded or sandboxed — nothing actionable from here.
+		// Quota exceeded or sandboxed, nothing actionable from here.
 	}
 }
 
@@ -148,7 +148,7 @@ function isPlainObject(value) {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-// Drop chart-spec entries that aren't plain objects — renderers read sub-keys
+// Drop chart-spec entries that aren't plain objects, renderers read sub-keys
 // (.color, .category, …) and would explode on a string/number/array. Missing
 // keys are absorbed downstream by mergeChartConfigWithDefaults.
 function sanitizeChartConfig(chartConfig) {
@@ -259,7 +259,7 @@ export async function hydrateState({ replaceAllState, transformPanel } = {}) {
  * Coalescing: if a previous save is still in flight when this is called,
  * the new call returns that previous Promise instead of starting another
  * write. The next state event (or `beforeunload` flush) will capture
- * whatever changed in the meantime — last-writer-wins semantics, by design.
+ * whatever changed in the meantime, last-writer-wins semantics, by design.
  *
  * No-op when IndexedDB is unavailable or `snapshot` is not an object.
  *
@@ -307,7 +307,7 @@ export async function persistState(snapshot) {
 }
 
 /**
- * Wipe all persisted state — UI prefs from localStorage and the entire
+ * Wipe all persisted state, UI prefs from localStorage and the entire
  * IndexedDB database. Best-effort: resolves even if individual deletions
  * fail or are blocked by another tab.
  *
@@ -338,7 +338,7 @@ export async function clearPersistedState() {
  * is reserved for state-bus consumers (stateSync, persistenceService). UI code
  * still subscribes only to typed events.
  *
- * `STATE_HYDRATED` is skipped — saving the snapshot we just loaded would be
+ * `STATE_HYDRATED` is skipped, saving the snapshot we just loaded would be
  * a no-op write at best and a race condition at worst.
  *
  * @param {() => Partial<AppState>} getStateFn - Snapshot accessor; usually `getState` from appState.
@@ -352,7 +352,7 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 300 } = {})
 	const save = debounce(() => persistState(getStateFn()), debounceMs);
 
 	const unsubscribe = onStateChange(STATE_EVENTS.WILDCARD, payload => {
-		// Skip our own hydration emission — otherwise we'd schedule a save
+		// Skip our own hydration emission, otherwise we'd schedule a save
 		// for the snapshot we just loaded.
 		if (payload?.type === STATE_EVENTS.STATE_HYDRATED) return;
 		save();

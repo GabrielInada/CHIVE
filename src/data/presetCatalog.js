@@ -41,7 +41,7 @@ const monthlyVisitsCsvUrl = new URL('./presets/dataset-monthly-visits.csv', impo
  * picker dialog.
  *
  * The `PresetCatalogEntry` typedef notes its fields don't include `rows`/`columns`
- * as derived — these are author-asserted metadata used by the picker dialog
+ * as derived, these are author-asserted metadata used by the picker dialog
  * to show expected dimensions before the user commits to a load.
  *
  * @type {PresetCatalogEntry[]}

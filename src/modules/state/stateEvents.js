@@ -1,5 +1,5 @@
 /**
- * CHIVE state bus — canonical event registry, subscriber API, and emit pipeline.
+ * CHIVE state bus, canonical event registry, subscriber API, and emit pipeline.
  *
  * @typedef {import('../../types.js').StateEventType} StateEventType
  * @typedef {import('../../types.js').StateChangeListener} StateChangeListener
@@ -59,7 +59,7 @@ let stateLogEnabled = false;
  * stateLog and printed via console.log under the `[chive:state]` tag. Off by
  * default; flip on at runtime via `window.chiveDebug.enableStateLog()`.
  *
- * Log entries hold live references to payloads (no clone) — mutations after
+ * Log entries hold live references to payloads (no clone), mutations after
  * emit will affect the recorded entry. Acceptable for a debug tool.
  */
 export function enableStateLog() {
@@ -77,7 +77,7 @@ export function disableStateLog() {
 /**
  * Read the current mutation log.
  *
- * @returns {Array<{ type: StateEventType, data: *, t: number }>} Shallow copy of the log buffer (last 100 entries max). Each entry's `data` is a live reference to the original payload — do not mutate.
+ * @returns {Array<{ type: StateEventType, data: *, t: number }>} Shallow copy of the log buffer (last 100 entries max). Each entry's `data` is a live reference to the original payload, do not mutate.
  */
 export function getStateLog() {
 	return stateLog.slice();
@@ -102,7 +102,7 @@ function reportListenerError(errorType, eventType, err) {
 
 /**
  * Subscribe to a state event. Pass `STATE_EVENTS.WILDCARD` (`'*'`) to receive
- * every emission — reserved for sink-style consumers (`stateSync`,
+ * every emission, reserved for sink-style consumers (`stateSync`,
  * `persistenceService`); do not use from controllers or renderers.
  *
  * @param {StateEventType} eventType - Event name. Always use `STATE_EVENTS.*` constants, not string literals.
@@ -141,7 +141,7 @@ export function onStateChange(eventType, callback) {
  *   3. A `chive-state-changed` CustomEvent on `window` (browser extension hook).
  *
  * Listener errors are caught and rebroadcast as a `chive-internal-error`
- * CustomEvent on `window` — one bad subscriber cannot break the fan-out.
+ * CustomEvent on `window`, one bad subscriber cannot break the fan-out.
  *
  * When the in-memory log is enabled ({@link enableStateLog}), the emission
  * is also appended to the log buffer and printed under `[chive:state]`.

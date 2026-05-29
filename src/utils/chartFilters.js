@@ -14,7 +14,7 @@ import { isEmptyValue, isNullish } from './formatters.js';
 /**
  * Sentinel token used to represent missing values (null/undefined/empty
  * string) in the include/exclude sets. Keeps the categorical pipeline
- * monomorphic — every value is a string token.
+ * monomorphic: every value is a string token.
  *
  * @type {string}
  */
@@ -33,7 +33,8 @@ const NUMERIC_OPERATORS = new Set(['between', 'lt', 'gt', 'eq']);
 
 /**
  * Build a fresh, empty filter config. All callers that create a new
- * filter — dialog open, "reset" button, normalization fallback — go
+ * filter creation, including dialog open, "reset" button, and
+ * normalization fallback, go
  * through this so the shape stays canonical.
  *
  * @returns {GlobalFilterRule & { exclude: string[], search: string, value: string, min: string, max: string }} Default config with no column selected.
@@ -91,21 +92,21 @@ export function compareStrings(a, b) {
 }
 
 /**
- * Collapse missing/empty values into a single em-dash bucket so they do
+ * Collapse missing/empty values into a single N/A bucket so they do
  * not fragment categorical series. Used by scatter/bubble grouping.
  *
  * @param {*} value
- * @returns {string} `'—'` for missing/empty; `String(value)` otherwise.
+ * @returns {string} `'N/A'` for missing/empty; `String(value)` otherwise.
  */
 export function normalizeCategoryValue(value) {
-  return isNullish(value) || value === '' ? '—' : String(value);
+  return isNullish(value) || value === '' ? 'N/A' : String(value);
 }
 
 /**
  * Coerce a possibly-malformed filter config into the canonical shape.
  * Unknown operators fall back to `'between'`; non-string columns collapse
  * to `null`; non-array `include`/`exclude` reset to `[]`. The `mode` field
- * is derived from `numericColumns` — picking a column that's in the list
+ * is derived from `numericColumns`. Picking a column that's in the list
  * flips the rule to numeric mode.
  *
  * @param {Object | null | undefined} rawFilter - Possibly-partial filter; defaults applied for missing fields.
@@ -203,7 +204,7 @@ function parseNumericValue(value) {
  * (e.g. numeric mode with non-parseable bounds).
  *
  * Note: for categorical mode, an active rule with neither include nor
- * exclude tokens returns `[]` — the user picked a column but no values,
+ * exclude tokens returns `[]`: the user picked a column but no values,
  * so nothing matches. This is intentional UX; do not "fix" it without
  * checking call sites.
  *

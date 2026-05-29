@@ -96,7 +96,7 @@ describe('ingestFile', () => {
 	it('resolves with cancelled when the AbortSignal fires before done', async () => {
 		const controller = new AbortController();
 
-		// Worker receives postMessage but never replies — caller will abort.
+		// Worker receives postMessage but never replies, caller will abort.
 		worker.onPost(() => {});
 
 		const promise = ingestFile({ kind: 'csv', text: 'x\n1' }, { signal: controller.signal });

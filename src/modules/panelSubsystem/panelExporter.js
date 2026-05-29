@@ -4,7 +4,7 @@
  * Walks the rendered `#panel-layout-canvas` and composes a single
  * standalone SVG file containing every visible slot's chart plus the
  * block borders. The output is positioned in absolute coordinates
- * relative to the canvas — what you see is what you save.
+ * relative to the canvas, what you see is what you save.
  *
  * @typedef {import('../../types.js').Result} Result
  */
@@ -90,7 +90,7 @@ export function exportPanelLayoutSvg(feedbackCallback) {
 				svgRoot.appendChild(border);
 		});
 
-		// Add each chart in rendered slots (all blocks) — clone the LIVE SVG from the DOM
+		// Add each chart in rendered slots (all blocks), clone the LIVE SVG from the DOM
 		const slotElements = canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]');
 		slotElements.forEach(slotEl => {
 			const liveSvg = slotEl.querySelector('svg');

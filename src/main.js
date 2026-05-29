@@ -1,9 +1,9 @@
 /**
  * CHIVE (Connected Hierarchical Interactive Visualization Engine)
- * — Main Application Orchestrator.
+ *, Main Application Orchestrator.
  *
  * Boot sequence (see {@link initializeApplication}):
- *   1. Initialize i18n (await — must precede any translated render).
+ *   1. Initialize i18n (await, must precede any translated render).
  *   2. Hydrate persisted state from IndexedDB BEFORE wiring subscribers,
  *      so restoration does not trigger a redundant save and the first
  *      render sees the restored state.
@@ -213,7 +213,7 @@ refreshView();
  * Re-render only the chart visualizations using the current in-memory
  * dataset config. Called during live previews (e.g. while a color
  * picker is open) so the chart updates as the user drags, without
- * rebuilding the controls sidebar — which would steal focus from the
+ * rebuilding the controls sidebar, which would steal focus from the
  * picker.
  *
  * @private
@@ -240,7 +240,7 @@ function livePreviewRender() {
 /**
  * Master view update. Reads state via getters, normalizes the active
  * dataset's config in place via {@link normalizeActiveDatasetConfig}
- * (no-emit by design — emitting would re-enter via CONFIG_UPDATED and
+ * (no-emit by design, emitting would re-enter via CONFIG_UPDATED and
  * loop), then delegates rendering to specialized modules.
  *
  * Called after any state change the file subscribes to (active dataset,
@@ -405,7 +405,7 @@ async function handlePresetDatasetRequest(preset) {
 		let statsCategorical = [];
 
 		if (source.mode === 'inline') {
-			// Inline presets are tiny demo arrays — sync processData is cheap.
+			// Inline presets are tiny demo arrays, sync processData is cheap.
 			let rows = source.rows;
 			if (source.dropColumns.length > 0) {
 				const dropSet = new Set(source.dropColumns);
@@ -464,7 +464,7 @@ async function handlePresetDatasetRequest(preset) {
 }
 
 // =============================================================================
-// DOM READY - START APP
+// DOM ready: start app
 // =============================================================================
 
 if (document.readyState === 'loading') {
@@ -473,7 +473,7 @@ document.addEventListener('DOMContentLoaded', initializeApplication);
 initializeApplication();
 }
 
-// Debugging surface exposed on `window.chiveDebug`. NOT a stable API —
+// Debugging surface exposed on `window.chiveDebug`. NOT a stable API,
 // production code must not depend on these handles. Useful from the
 // browser console for poking at state + toggling the in-memory state log.
 window.chiveDebug = {

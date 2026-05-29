@@ -1,6 +1,6 @@
 /**
  * @fileoverview Forbid mutating the return value of a CHIVE facade getter
- * through an alias — e.g. `const d = getActiveDataset(); d.x = y`.
+ * through an alias, e.g. `const d = getActiveDataset(); d.x = y`.
  *
  * The inline form (`getActiveDataset().x = y`) is handled by the
  * `no-restricted-syntax` selectors in eslint.config.js; this rule covers the
@@ -56,7 +56,7 @@ export default {
 		schema: [],
 		messages: {
 			facadeMutation:
-				'Mutating a facade getter return is forbidden — these are read-only views. ' +
+				'Mutating a facade getter return is forbidden, these are read-only views. ' +
 				'Use the corresponding facade write method (updateActiveDatasetConfig, ' +
 				'addChartSnapshot, …). See CONTRIBUTING.md §Architecture invariants.',
 		},

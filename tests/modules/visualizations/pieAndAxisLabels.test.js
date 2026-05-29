@@ -283,7 +283,7 @@ describe('pie chart and axis labels', () => {
 		firstBar.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
 		const buttons = document.querySelectorAll('.chart-tooltip__action');
-		// no "Show only this" — only [Add, Hide]
+		// no "Show only this", only [Add, Hide]
 		expect(buttons).toHaveLength(2);
 		expect(buttons[0].className).not.toContain('chart-tooltip__action--primary');
 	});

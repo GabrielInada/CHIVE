@@ -99,14 +99,14 @@ export function setupTextInputListener(elementId, configKey, dataset, chartKey, 
  * Wire a color input. Two events are wired so live painting works
  * without disrupting the picker:
  *
- *   - `input` — fires continuously while the picker is open. Goes
+ *   - `input`, fires continuously while the picker is open. Goes
  *     through `normalizeActiveDatasetConfig` (the non-emitting facade
  *     path) so the state stays consistent without firing
  *     `CONFIG_UPDATED`. That event would trigger `refreshView` and
  *     rebuild the controls sidebar, stealing focus from the picker.
  *     After the write, the registered live-render callback re-paints
  *     only the chart visualizations.
- *   - `change` — fires when the picker closes. Goes through the emitting
+ *   - `change`, fires when the picker closes. Goes through the emitting
  *     facade so `CONFIG_UPDATED` fires, the auto-save subscription
  *     debounces the write into IndexedDB, and the sidebar refreshes.
  *

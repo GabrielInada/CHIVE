@@ -46,9 +46,9 @@ function buildChartCard(type, translate, isActive) {
  * Open the chart-type picker dialog. Returns a Promise that resolves
  * with the user's choice:
  *
- *   - `{ chartType: 'bar' | 'scatter' | ... }` — a chart card was clicked.
- *   - `{ chartType: null }` — the "Clear" button was clicked.
- *   - `null` — cancel, Escape, or backdrop click.
+ *   - `{ chartType: 'bar' | 'scatter' | ... }`, a chart card was clicked.
+ *   - `{ chartType: null }`, the "Clear" button was clicked.
+ *   - `null`, cancel, Escape, or backdrop click.
  *
  * @param {Object} args
  * @param {string | null} [args.activeChartType=null] - Pre-selected card.

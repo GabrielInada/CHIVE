@@ -1,4 +1,4 @@
-# CHIVE - Connected Hierarchical Interactive Visualization Engine
+# CHIVE: Connected Hierarchical Interactive Visualization Engine
 
 ## Live deployments
 
@@ -12,7 +12,7 @@ CHIVE is hosted in two places:
 - **Stable** reflects the released state of the project. It is our "Ready-To-Use" and reliable version of the project.
 - **Preview** reflects `develop` and is intended for trying out upcoming features before they are merged into `main`. It is our "beta" version of the project. We do not guarantee that everything is working "fine" here, but it usually has some extra features which are being tested.
 
-Both deployments serve the **same source files unchanged** (`index.html`, `about.html`, `src/`). No build step runs at deploy time — the app uses native browser ES modules and loads `d3` and `banana-i18n` from the `esm.sh` CDN, so any host that can serve static files (nginx, Apache, GitHub Pages, `python -m http.server`) works.
+Both deployments serve the **same source files unchanged** (`index.html`, `about.html`, `src/`). No build step runs at deploy time. The app uses native browser ES modules and loads `d3` and `banana-i18n` from the `esm.sh` CDN, so any host that can serve static files (nginx, Apache, GitHub Pages, `python -m http.server`) works.
 
 ## Static Server Deployment
 The app runtime uses:

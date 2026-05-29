@@ -5,7 +5,7 @@
  * trimming, color modes (uniform / auto gradient / manual threshold), and
  * click-to-filter tooltip actions. Internal D3 helpers (scale setup, label
  * positioning, gradient interpolation) are intentionally undocumented per
- * the Tier 5 plan — only the entry signature is part of the public API.
+ * the Tier 5 plan, only the entry signature is part of the public API.
  *
  * @typedef {import('../../types.js').Result} Result
  */
@@ -129,7 +129,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		rows.forEach(row => {
 			const rawValue = row[categoryColumn];
 			const category = isNullish(rawValue) || rawValue === ''
-				? '—'
+				? 'N/A'
 				: String(rawValue);
 			counter.set(category, (counter.get(category) || 0) + 1);
 		});
@@ -138,7 +138,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		rows.forEach(row => {
 			const rawValue = row[categoryColumn];
 			const category = isNullish(rawValue) || rawValue === ''
-				? '—'
+				? 'N/A'
 				: String(rawValue);
 			const value = Number(row[valueColumn]);
 			if (!Number.isFinite(value)) return;

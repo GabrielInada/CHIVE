@@ -57,7 +57,7 @@ let panelManagerInitialized = false;
  * @param {((message: string, kind?: 'success' | 'error') => void) | null} [feedbackFn] - Callback for user feedback. When `null`, panel actions fall back to silent operation.
  */
 export function initPanelManager(feedbackFn = null) {
-	// Always update the feedback callback — callers may legitimately
+	// Always update the feedback callback, callers may legitimately
 	// pass a different function without intending to re-register listeners.
 	feedbackCallback = feedbackFn;
 
@@ -237,7 +237,7 @@ export function exportPanelLayoutSvg() {
 
 /**
  * Wire change/click listeners on the layout `<select>` and the export
- * button. Idempotent in practice — both elements get a fresh listener
+ * button. Idempotent in practice, both elements get a fresh listener
  * each call, so callers should invoke this at most once.
  */
 export function setupPanelEventListeners() {

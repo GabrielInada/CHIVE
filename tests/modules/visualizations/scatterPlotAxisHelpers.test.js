@@ -217,8 +217,8 @@ describe('pickMostFrequentCategory', () => {
 		expect(pickMostFrequentCategory(rows, 'k')).toBe('A');
 	});
 
-	it('returns em-dash for an empty input', () => {
-		expect(pickMostFrequentCategory([], 'k')).toBe('—');
+	it('returns N/A for an empty input', () => {
+		expect(pickMostFrequentCategory([], 'k')).toBe('N/A');
 	});
 });
 

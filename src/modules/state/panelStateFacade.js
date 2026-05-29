@@ -26,7 +26,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  *
  * Owns every write into `appState.panel`. The mutation helpers under
  * `./panel/` are `@internal` and must not be imported from outside this
- * module — they assume the caller is the facade and skip emission.
+ * module, they assume the caller is the facade and skip emission.
  *
  * @typedef {import('../../types.js').AppState} AppState
  * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
@@ -35,7 +35,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  * @typedef {import('../../types.js').PanelBlockProportions} PanelBlockProportions
  *
  * @see ARCHITECTURE.md
- * @see CONTRIBUTING.md "Architecture invariants — do not break"
+ * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
 
 /**
@@ -139,7 +139,7 @@ export function createPanelStateFacade({
 	/**
 	 * Drop any slot assignment that points at a snapshot id which no longer
 	 * exists. Scans both the legacy slot map and every block's slot map.
-	 * Does not emit — callers do not need a reactive signal because the
+	 * Does not emit, callers do not need a reactive signal because the
 	 * cleanup is invisible to downstream renderers.
 	 */
 	function validatePanelSlots() {
@@ -147,7 +147,7 @@ export function createPanelStateFacade({
 	}
 
 	/**
-	 * Append a new block. Capped at `panelBlockLimit` (default 4 — see
+	 * Append a new block. Capped at `panelBlockLimit` (default 4, see
 	 * `appState.js`).
 	 *
 	 * @param {PanelTemplateId} [templateId='template-2col']
@@ -212,7 +212,7 @@ export function createPanelStateFacade({
 
 	/**
 	 * Set a block's pixel height. Value is rounded and clamped to
-	 * `[panelBlockMinHeight, panelBlockMaxHeight]` (defaults 220–760 — see
+	 * `[panelBlockMinHeight, panelBlockMaxHeight]` (defaults 220 to 760, see
 	 * `appState.js`). No-op when the block is missing or `heightPx` is
 	 * non-finite.
 	 *

@@ -1,5 +1,5 @@
 /**
- * Tabs view — preview / charts / dashboard switcher plus the global-filter
+ * Tabs view, preview / charts / dashboard switcher plus the global-filter
  * trigger button that only shows on the charts tab.
  *
  * Listeners are wired exactly once (module-local flag); subsequent
@@ -30,7 +30,7 @@ function getTabElements() {
 }
 
 /**
- * Wire tab + global-filter button click handlers. Idempotent — listeners
+ * Wire tab + global-filter button click handlers. Idempotent, listeners
  * are attached once, and subsequent calls only swap the currently-active
  * callbacks.
  *

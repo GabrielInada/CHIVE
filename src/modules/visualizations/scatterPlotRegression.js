@@ -9,7 +9,7 @@
  */
 
 /**
- * Critical t-values for a 95% two-tailed confidence interval, df 1–30.
+ * Critical t-values for a 95% two-tailed confidence interval, df 1 to 30.
  * Lookup falls back to `1.96` for df > 30 (large-sample approximation).
  */
 export const T_CRIT_95 = {

@@ -1,12 +1,12 @@
 /**
- * CHIVE — centralized JSDoc typedef catalog.
+ * CHIVE centralized JSDoc typedef catalog.
  *
  * No runtime exports. Consumers reference these shapes via:
  *   @typedef {import('../types.js').Dataset} Dataset
  *
  * Pull the relative path of this file from wherever the consumer lives.
  * Typedefs are not values, so barrels (modules/index.js) do not propagate
- * them — always import directly from this file.
+ * them. Always import directly from this file.
  *
  * @see CONTRIBUTING.md  "Documentation Conventions" section
  * @see ARCHITECTURE.md
@@ -98,8 +98,8 @@
 
 /**
  * Universal fields present on every per-chart config block. Each chart type
- * extends this with type-specific fields (axis bindings, color scales, …) —
- * those extras are intentionally not enumerated here to keep this typedef
+ * extends this with type-specific fields (axis bindings, color scales, …).
+ * Those extras are intentionally not enumerated here to keep this typedef
  * stable. See `src/config/chartDefaults.js` for the full per-chart shape.
  *
  * @typedef {Object} ChartTypeConfig
@@ -107,14 +107,14 @@
  * @property {boolean} expanded - Sidebar config panel expansion state.
  * @property {string} customTitle - User-overridden title; empty string means use the default.
  * @property {number} chartHeight - Render height in pixels.
- * @property {string} [color] - Primary color (hex). Optional — not every chart uses a single color.
+ * @property {string} [color] - Primary color (hex). Optional, not every chart uses a single color.
  * @property {string} [colorMode] - Color application mode (chart-specific values).
  */
 
 /**
  * Per-dataset chart configuration. One block per supported chart type plus
  * the active-tab marker and global filter. The per-chart entries are
- * superset-typed as `ChartTypeConfig` — see `src/config/chartDefaults.js` for
+ * superset-typed as `ChartTypeConfig`. See `src/config/chartDefaults.js` for
  * each chart type's full field set.
  *
  * @typedef {Object} ChartConfig
@@ -153,8 +153,8 @@
  * Block proportion shape. Union: the layout template determines which fields are present.
  *
  * - `template-single`:  `{ split: 100 }`
- * - `template-2col`:    `{ split: number }` (20–80)
- * - `template-1x2`:     `{ split: number }` (20–80)
+ * - `template-2col`:    `{ split: number }` (20 to 80)
+ * - `template-1x2`:     `{ split: number }` (20 to 80)
  * - `template-hero2`:   `{ splitMain: number, splitRight: number }`
  * - `template-3col`:    `{ a: number, b: number, c: number }`
  *
@@ -279,7 +279,7 @@
 /**
  * Standardized success/failure shape produced by `ok()` / `fail()` in
  * `src/utils/result.js`. The success variant spreads its data fields onto
- * the result — there is no `.value` wrapper. Failures carry an optional
+ * the result. There is no `.value` wrapper. Failures carry an optional
  * `reason` string.
  *
  * @typedef {{ ok: true, [key: string]: * } | { ok: false, reason?: string }} Result
@@ -303,11 +303,11 @@
  * One progress tick emitted by the worker. Stages run roughly in this
  * order: `'parsing'` → `'decimal-detection'` → `'type-detection'` →
  * `'normalize'` → `'stats'`. `percent` is the overall pipeline progress
- * (0–100), not a per-stage value.
+ * (0 to 100), not a per-stage value.
  *
  * @typedef {Object} IngestProgress
  * @property {string} stage
- * @property {number} percent - 0–100 inclusive.
+ * @property {number} percent - 0 to 100 inclusive.
  * @property {string} [label] - Localized label when the worker chose to send one; otherwise the host derives one via `progressLabelForStage`.
  */
 
@@ -328,7 +328,7 @@
 
 /**
  * Done-state result body posted back by the Worker. Distinct from
- * {@link IngestPayload} — this is the wire shape; the host service may
+ * {@link IngestPayload}. This is the wire shape; the host service may
  * reshape it before exposing to callers.
  *
  * @typedef {Object} IngestWorkerDoneResult
@@ -359,7 +359,7 @@
 
 /**
  * Options bag passed to `joinDatasets`. The left/right key arrays form a
- * composite key — `leftKeys[i]` is matched against `rightKeys[i]`.
+ * composite key. `leftKeys[i]` is matched against `rightKeys[i]`.
  *
  * Key normalization is applied before comparison: by default values are
  * trimmed and case-insensitive. Numbers, booleans, and Dates are encoded
@@ -409,7 +409,7 @@
  * @property {string} name
  * @property {number} n - Count of non-missing values.
  * @property {number} missing
- * @property {number} missingPct - 0–1 inclusive.
+ * @property {number} missingPct - 0 to 1 inclusive.
  * @property {number} unique - Distinct value count.
  * @property {number} uniquenessRate - `unique / n` (0 when `n === 0`).
  * @property {string | null} mode - Most-frequent value as a string; `null` only when `n === 0`. Ties broken by `localeCompare`.
@@ -435,7 +435,7 @@
  */
 
 /**
- * Resolved preset source. Discriminated by `mode` — callers should narrow
+ * Resolved preset source. Discriminated by `mode`; callers should narrow
  * before reading fields specific to one variant.
  *
  * @typedef {(
@@ -468,10 +468,10 @@
 /**
  * Imperative handle returned by `feedbackUI.showProgress` for driving a
  * non-modal progress toast. The toast has three terminal states:
- *   - **In flight** — `update()` reports percent/label progress.
- *   - **Succeeded** — `succeed()` flips the toast to its success style and
+ *   - **In flight**: `update()` reports percent/label progress.
+ *   - **Succeeded**: `succeed()` flips the toast to its success style and
  *     auto-closes after `autoCloseMs` (default 1500).
- *   - **Failed**    — `fail()` flips the toast to its failure style and
+ *   - **Failed**: `fail()` flips the toast to its failure style and
  *     stays open until the user dismisses it.
  *
  * `close()` is idempotent and removes the toast from the DOM.

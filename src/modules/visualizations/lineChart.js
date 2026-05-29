@@ -3,7 +3,7 @@
  *
  * Renders a 2-D line series with one of seven curve interpolations
  * (linear, monotone, step variants, basis, cardinal). Accepts numeric,
- * categorical, or date X-axes — date detection happens via the row's value
+ * categorical, or date X-axes, date detection happens via the row's value
  * type. Missing-data handling: `missingMode` selects how gaps are drawn
  * (skip / connect / break).
  *

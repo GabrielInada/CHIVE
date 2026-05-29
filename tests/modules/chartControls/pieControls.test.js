@@ -155,7 +155,7 @@ describe('pieControls listeners', () => {
 	// Regression guard for the P0 fix and the wider color-helper fix:
 	// per-slice color writes must NEVER mutate dataset.chartConfig directly.
 	// On `input`, the write goes through the non-emitting facade
-	// (normalizeActiveDatasetConfig) — no CONFIG_UPDATED emit, no sidebar
+	// (normalizeActiveDatasetConfig), no CONFIG_UPDATED emit, no sidebar
 	// rebuild, but state stays consistent. On `change`, the emitting facade
 	// commits the final value. If anyone re-introduces a bypass listener
 	// (direct assignment to dataset.chartConfig.pie.customSliceColors), the

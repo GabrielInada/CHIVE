@@ -67,7 +67,7 @@ export function hideErrorMessage() {
  * Render the dataset file list with search, "show more/less" pagination,
  * the active-dataset metadata row, and the Join/Preset tool buttons.
  *
- * Filter query and visible-count state are module-local — re-rendering
+ * Filter query and visible-count state are module-local, re-rendering
  * resets visible-count when the query changes, but preserves it across
  * paginations of the same query.
  *
@@ -298,7 +298,7 @@ export function renderEmptyState() {
   if (els['chart-network-container']) els['chart-network-container'].replaceChildren();
   if (els['chart-pie-container']) els['chart-pie-container'].replaceChildren();
   if (els['chart-bubble-container']) els['chart-bubble-container'].replaceChildren();
-  if (els['badge-charts']) els['badge-charts'].textContent = '—';
+  if (els['badge-charts']) els['badge-charts'].textContent = '0';
   if (els['btn-advance']) els['btn-advance'].disabled = true;
 
   const devNotice = document.getElementById('dev-warning');
