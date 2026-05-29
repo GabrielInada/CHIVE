@@ -1,4 +1,5 @@
 import js from '@eslint/js';
+import chiveRules from './eslint-rules/index.js';
 
 const STATELESS_RENDERER_MESSAGE =
 	'Renderers (src/components/, src/features/) must be stateless ' +
@@ -154,6 +155,20 @@ export default [
 					message: 'config/ is a pure leaf layer — no imports from modules/, components/, features/, or services/.',
 				}],
 			}],
+		},
+	},
+
+	// (E) Aliased facade-getter mutation guard. Catches
+	// `const d = getActiveDataset(); d.x = y` — the blind spot the inline
+	// no-restricted-syntax selectors above can't reach. Scope-aware + import-
+	// gated (see the rule banner). Facade internals under state/ legitimately
+	// use the aliased-write pattern, so they are exempt.
+	{
+		files: ['src/**/*.js'],
+		ignores: ['src/modules/state/**'],
+		plugins: { chive: chiveRules },
+		rules: {
+			'chive/no-facade-getter-mutation': 'error',
 		},
 	},
 ];
