@@ -31,6 +31,13 @@ import {
 	removeChartSnapshot,
 	getChartSnapshot,
 	setPanelBlockTemplate,
+	addPanelBlock,
+	removePanelBlock,
+	movePanelBlock,
+	updatePanelBlockBorder,
+	assignChartToPanelBlockSlot,
+	updatePanelBlockProportions,
+	updatePanelBlockHeight,
 	validatePanelSlots,
 	clearPanel,
 	onStateChange,
@@ -50,6 +57,11 @@ let feedbackCallback = null;
 // Guard: prevents duplicate listener registration if initPanelManager is called more than once
 let panelManagerInitialized = false;
 
+// Unsubscribe functions returned by onStateChange in initPanelManager. Kept so
+// _resetPanelManagerForTesting can detach listeners between tests; without
+// this, repeated init/reset cycles append fresh subscribers to the same bus.
+let panelSubscriptions = [];
+
 /**
  * Initialize the panel manager. Wires panel-related state-event listeners
  * exactly once; subsequent calls update only the feedback callback.
@@ -65,16 +77,16 @@ export function initPanelManager(feedbackFn = null) {
 	panelManagerInitialized = true;
 
 	// Re-render when state changes
-	onStateChange(STATE_EVENTS.CHART_ADDED, handleChartStateChange);
-	onStateChange(STATE_EVENTS.CHART_REMOVED, handleChartStateChange);
-	onStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, handleChartStateChange);
-	onStateChange(STATE_EVENTS.PANEL_BLOCK_ADDED, handleLayoutChange);
-	onStateChange(STATE_EVENTS.PANEL_BLOCK_REMOVED, handleLayoutChange);
-	onStateChange(STATE_EVENTS.PANEL_BLOCK_MOVED, handleLayoutChange);
-	onStateChange(STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED, handleLayoutChange);
-	onStateChange(STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED, handleLayoutChange);
-	onStateChange(STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED, handleLayoutChange);
-	onStateChange(STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED, handleLayoutChange);
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_ADDED, handleChartStateChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_REMOVED, handleChartStateChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, handleChartStateChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_ADDED, handleLayoutChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_REMOVED, handleLayoutChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_MOVED, handleLayoutChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED, handleLayoutChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED, handleLayoutChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED, handleLayoutChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED, handleLayoutChange));
 }
 
 /**
@@ -83,6 +95,8 @@ export function initPanelManager(feedbackFn = null) {
  * @internal
  */
 export function _resetPanelManagerForTesting() {
+	panelSubscriptions.forEach(unsubscribe => unsubscribe());
+	panelSubscriptions = [];
 	panelManagerInitialized = false;
 }
 
@@ -100,9 +114,53 @@ function handleChartStateChange() {
  * @private
  */
 function handleLayoutChange() {
-	validatePanelSlots();
 	renderCanvasPanel();
 	fillLayoutSelect();
+}
+
+// =============================================================================
+// FACADE-WRITE CALLBACKS (injected into panelSubsystem renderers)
+// =============================================================================
+// These thin handlers are the only place that calls the panel write facades on
+// behalf of user actions surfaced by panelRenderer.js and panelResize.js. The
+// renderers receive them via the callback bag passed to renderCanvasPanel();
+// they never import write facades directly. Re-renders happen via the bus
+// subscriptions in initPanelManager(), not via direct calls from the
+// renderer's handlers.
+
+function handleAddBlock(templateId) {
+	const newBlockId = addPanelBlock(templateId);
+	if (newBlockId === null && feedbackCallback) {
+		feedbackCallback(t('chive-panel-max-blocks'), 'error');
+	}
+}
+
+function handleMoveBlock(blockId, newIndex) {
+	movePanelBlock(blockId, newIndex);
+}
+
+function handleRemoveBlock(blockId) {
+	removePanelBlock(blockId);
+}
+
+function handleChangeBlockTemplate(blockId, templateId) {
+	setPanelBlockTemplate(blockId, templateId);
+}
+
+function handleUpdateBlockBorder(blockId, patch) {
+	updatePanelBlockBorder(blockId, patch);
+}
+
+function handleAssignSlot(blockId, slotId, chartId) {
+	assignChartToPanelBlockSlot(blockId, slotId, chartId);
+}
+
+function handleUpdateBlockProportions(blockId, proportions) {
+	updatePanelBlockProportions(blockId, proportions);
+}
+
+function handleUpdateBlockHeight(blockId, heightPx) {
+	updatePanelBlockHeight(blockId, heightPx);
 }
 
 /**
@@ -200,12 +258,23 @@ export function renderSidebarPanel() {
 
 /**
  * Render the panel canvas (layout templates with mounted chart slots).
- * Re-rendering is recursive: the rendered canvas calls `renderCanvasPanel`
- * itself when blocks mutate, which is why the function passes its own
- * reference into the renderer.
+ * Re-rendering is driven by the bus subscriptions in initPanelManager(),
+ * not by recursive calls from the renderer: every facade write the renderer
+ * triggers via the callback bag below fans out to the matching
+ * STATE_EVENTS.* subscription, which calls back into this function.
  */
 export function renderCanvasPanel() {
-	renderCanvas(renderCanvasPanel, feedbackCallback);
+	validatePanelSlots();
+	renderCanvas({
+		onAddBlock: handleAddBlock,
+		onMoveBlock: handleMoveBlock,
+		onRemoveBlock: handleRemoveBlock,
+		onChangeBlockTemplate: handleChangeBlockTemplate,
+		onUpdateBlockBorder: handleUpdateBlockBorder,
+		onAssignSlot: handleAssignSlot,
+		onUpdateBlockProportions: handleUpdateBlockProportions,
+		onUpdateBlockHeight: handleUpdateBlockHeight,
+	});
 }
 
 /**

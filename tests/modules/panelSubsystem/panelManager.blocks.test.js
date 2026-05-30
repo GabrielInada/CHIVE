@@ -2,7 +2,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import * as appState from '../../../src/modules/state/appState.js';
-import { renderCanvasPanel } from '../../../src/modules/panelManager.js';
+import { renderCanvasPanel, initPanelManager, _resetPanelManagerForTesting } from '../../../src/modules/panelManager.js';
 
 function setupDom() {
   document.body.innerHTML = `
@@ -38,6 +38,12 @@ describe('panelManager multi-block canvas (phase 2)', () => {
       removeEventListener: () => {},
       dispatchEvent: () => false,
     }));
+
+    // Wire panelManager's STATE_EVENTS subscriptions; the renderer surfaces
+    // user actions via the callback bag and relies on these subscriptions to
+    // trigger re-renders (no more inline self-rerender from renderer handlers).
+    _resetPanelManagerForTesting();
+    initPanelManager();
   });
 
   it('renders one visual block for each panel block in state', () => {

@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => ({
 		getChartSnapshot: vi.fn(),
 		assignChartToPanelBlockSlot: vi.fn(),
 		validatePanelSlots: vi.fn(),
-		onStateChange: vi.fn(),
+		onStateChange: vi.fn(() => () => {}),
 		STATE_EVENTS: {
 			CHART_ADDED: 'chartAdded',
 			CHART_REMOVED: 'chartRemoved',
