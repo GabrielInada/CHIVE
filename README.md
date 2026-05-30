@@ -132,15 +132,17 @@ CHIVE has no application backend in the default deployments. Uploaded datasets a
 - IndexedDB stores dataset and dashboard panel state.
 - `localStorage` stores small UI preferences.
 
-The default runtime still trusts external origins for JavaScript modules and fonts. If you need stricter controls for sensitive data, self-host CHIVE and review the CDN/font trust boundary before use.
+The default runtime still trusts external origins for JavaScript modules and fonts. If you need stricter controls for sensitive data, self-host CHIVE and review the CDN/font trust boundary before use. See [Privacy and security](docs/PRIVACY_AND_SECURITY.md) for the detailed trust model.
 
 ## Documentation
 
 - [Architecture overview](ARCHITECTURE.md): fast mental model for state, events, facades, and rendering boundaries.
 - [Architecture reference](docs/ARCHITECTURE_REFERENCE.md): exact state schema, facade methods, event registry, and subscribers.
+- [Privacy and security](docs/PRIVACY_AND_SECURITY.md): browser storage, runtime network dependencies, and trust boundaries.
+- [Security policy](SECURITY.md): where to report security concerns.
 - [Contributing](CONTRIBUTING.md): development workflow, code conventions, lint rules, and tests.
 - [Stylesheet organization](src/styles/STYLES_ORGANIZATION.md): CSS layers, feature ownership, and responsive rules.
-- Planned follow-ups: user guide, chart/data reference, and privacy/security trust model.
+- Planned follow-ups: user guide and chart/data reference.
 
 ## Project Status
 
