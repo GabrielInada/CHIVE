@@ -66,8 +66,8 @@ Useful commands:
 
 ```powershell
 npm run dev          # Start Vite dev server
-npm run build        # Production build into dist/
-npm run preview      # Preview the production build
+npm run build        # Optional Vite production build into dist/
+npm run preview      # Preview the optional Vite build
 npm run lint         # Run ESLint architecture/deployment guards
 npm run lint:fix     # Apply safe automatic lint fixes
 npm test             # Run all tests once

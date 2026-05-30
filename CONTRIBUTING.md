@@ -25,26 +25,39 @@ Open a [documentation issue](https://github.com/GabrielInada/CHIVE/issues/new?te
 
 ## Development
 
-CHIVE is plain JavaScript (ES modules, no TypeScript) built with Vite and tested with Vitest. Before opening a PR, follow these steps:
+CHIVE is plain JavaScript (browser ES modules, no TypeScript) designed for static hosting without a required build step. Vite is the local dev server and optional build/preview tool; Vitest runs the automated test suite. Develop changes in this order:
 
-1. Make sure your PR has a bug report or feature proposal issue associated with it. If not, open one first.
+1. Make sure your PR has a bug report, feature proposal, or documentation issue associated with it. If not, open one first.
 2. Fork the repo and clone your fork to your machine.
 3. Install the NPM dependencies with `npm install`.
 4. Create a branch from `develop` using the pattern `feat/<short-name>` (see [Branching workflow](#branching-workflow) below).
 5. Make your changes in `src/`, then add or update tests in `tests/` mirroring the file structure.
-6. Run `npm test` and verify all tests pass.
-7. Run `npm run dev` and smoke-check the affected feature in a browser at <http://localhost:5173>.
-8. Open a pull request against the **[`develop`](https://github.com/GabrielInada/CHIVE/tree/develop)** branch.
+6. Run `npm run lint` and fix any errors. General hygiene warnings should be reviewed, but they do not fail CI.
+7. Run `npm test` and verify all tests pass.
+8. Run `npm run dev` and smoke-check the affected feature in a browser at <http://localhost:5173>.
+9. If your change touches imports, workers, assets, deployment, or runtime dependency loading, run a production-style static smoke test from the project root: `python -m http.server 8080`, then open <http://localhost:8080/>. This catches the raw-static deployment issues described in [ESLint guards](#eslint-guards).
+10. Open a pull request against the **[`develop`](https://github.com/GabrielInada/CHIVE/tree/develop)** branch.
 
 Common commands:
 
 ```bash
 npm run dev          # Start Vite dev server (http://localhost:5173)
-npm run build        # Production build -> dist/
-npm run preview      # Preview production build
+npm run build        # Optional Vite production build -> dist/
+npm run preview      # Preview the optional Vite build
+npm run lint         # Run ESLint architecture/deployment guards
+npm run lint:fix     # Apply safe automatic lint fixes; architecture errors usually need manual fixes
 npm test             # Run all tests once (vitest run)
 npm run test:watch   # Tests in watch mode
 ```
+
+Before opening a PR, check that:
+
+- The PR links the relevant bug report, feature proposal, or documentation issue.
+- Tests were added or updated when behavior changed.
+- `npm run lint` passes without errors.
+- `npm test` passes.
+- The affected feature was smoke-checked with `npm run dev`.
+- The local static smoke test was run if the change affects raw-static runtime behavior.
 
 ## Branching workflow
 
