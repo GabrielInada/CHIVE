@@ -13,7 +13,7 @@ const mocks = vi.hoisted(() => ({
   exposeGlobals: vi.fn(),
 }));
 
-vi.mock('../src/modules/appState.js', () => ({
+vi.mock('../src/modules/state/appState.js', () => ({
   getState: mocks.getState,
   getActiveDataset: mocks.getActiveDataset,
   getAllDatasets: mocks.getAllDatasets,
@@ -33,17 +33,17 @@ import {
   syncWindowGlobals,
   updateActiveDatasetChartConfig,
   updateActiveDatasetColumnSelection,
-} from '../src/modules/stateSync.js';
+} from '../src/modules/state/stateSync.js';
 
 function buildState() {
   return {
     data: {
-      datasets: [{ nome: 'A' }, { nome: 'B' }],
+      datasets: [{ name: 'A' }, { name: 'B' }],
       activeIndex: 1,
     },
     panel: {
       charts: [{ id: 1 }, { id: 2 }, { id: 3 }],
-      layout: 'layout-2col',
+      layout: 'template-2col',
     },
     ui: {
       sidebarMode: 'viz',
@@ -55,16 +55,16 @@ describe('stateSync', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.innerHTML = `
-      <div id="sidebar-panel-dados" class="inativo"></div>
-      <div id="sidebar-panel-viz" class="inativo"></div>
-      <div id="sidebar-panel-panel" class="inativo"></div>
+      <div id="sidebar-panel-data" class="inactive"></div>
+      <div id="sidebar-panel-viz" class="inactive"></div>
+      <div id="sidebar-panel-dashboard" class="inactive"></div>
     `;
 
     mocks.getState.mockReturnValue(buildState());
-    mocks.getActiveDataset.mockReturnValue({ nome: 'B' });
+    mocks.getActiveDataset.mockReturnValue({ name: 'B' });
   });
 
-  it('initializeStateSync registra listener global e sincroniza imediatamente', () => {
+  it('initializeStateSync registers global listener and syncs immediately', () => {
     let stateListener = null;
     mocks.onStateChange.mockImplementation((scope, callback) => {
       if (scope === '*') {
@@ -81,33 +81,33 @@ describe('stateSync', () => {
     expect(mocks.exposeGlobals).toHaveBeenCalledTimes(2);
   });
 
-  it('encaminha updates de colunas e config para appState', () => {
+  it('forwards columns and config updates to appState', () => {
     updateActiveDatasetColumnSelection(['a', 'b']);
-    updateActiveDatasetChartConfig({ aba: 'charts' });
+    updateActiveDatasetChartConfig({ activeTab: 'charts' });
 
     expect(mocks.updateActiveDatasetColumns).toHaveBeenCalledWith(['a', 'b']);
-    expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ aba: 'charts' });
+    expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
   });
 
-  it('switchSidebarMode atualiza estado e classes de sidebar', () => {
+  it('switchSidebarMode updates state and sidebar classes', () => {
     switchSidebarMode('panel');
 
     expect(mocks.setSidebarMode).toHaveBeenCalledWith('panel');
-    expect(document.getElementById('sidebar-panel-panel').classList.contains('ativo')).toBe(true);
-    expect(document.getElementById('sidebar-panel-viz').classList.contains('ativo')).toBe(false);
+    expect(document.getElementById('sidebar-panel-dashboard').classList.contains('active')).toBe(true);
+    expect(document.getElementById('sidebar-panel-viz').classList.contains('active')).toBe(false);
 
-    switchSidebarMode('dados');
-    expect(document.getElementById('sidebar-panel-dados').classList.contains('ativo')).toBe(true);
+    switchSidebarMode('data');
+    expect(document.getElementById('sidebar-panel-data').classList.contains('active')).toBe(true);
   });
 
-  it('gera summary e debug payload com fallback de activeDatasetName', () => {
+  it('generates summary and debug payload with activeDatasetName fallback', () => {
     const summary = getStateSummary();
     expect(summary).toEqual({
       datasetsCount: 2,
       activeDatasetIndex: 1,
       activeDatasetName: 'B',
       panelChartsCount: 3,
-      panelLayout: 'layout-2col',
+      panelLayout: 'template-2col',
       sidebarMode: 'viz',
     });
 
@@ -120,7 +120,7 @@ describe('stateSync', () => {
     expect(debug.state).toEqual(buildState());
   });
 
-  it('syncWindowGlobals expande globals diretamente', () => {
+  it('syncWindowGlobals expands globals directly', () => {
     syncWindowGlobals();
     expect(mocks.exposeGlobals).toHaveBeenCalledTimes(1);
   });

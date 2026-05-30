@@ -16,13 +16,13 @@ import {
 	onStateChange,
 	replaceAllState,
 	getState,
-} from '../src/modules/appState.js';
+} from '../src/modules/state/appState.js';
 
 function resetAppStateForTest() {
 	replaceAllState({
 		data: { datasets: [], activeIndex: -1 },
-		panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
-		ui: { sidebarMode: 'dados', previewRows: 10 },
+		panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+		ui: { sidebarMode: 'data', previewRows: 10 },
 	});
 }
 
@@ -41,26 +41,26 @@ describe('appState (edge cases - branch coverage)', () => {
 		});
 
 		it('throws on invalid dataset index in setActiveDataset', () => {
-			addDataset({ dados: [{}], colunas: [] });
+			addDataset({ rows: [{}], columns: [] });
 			expect(() => setActiveDataset(99)).toThrow();
 			expect(() => setActiveDataset(-2)).toThrow();
 		});
 
 		it('auto-selects first added dataset', () => {
-			const idx = addDataset({ dados: [{ x: 1 }], colunas: ['x'] });
+			const idx = addDataset({ rows: [{ x: 1 }], columns: ['x'] });
 			expect(getState().data.activeIndex).toBe(idx);
 		});
 
 		it('does not override activeIndex on subsequent adds', () => {
-			addDataset({ dados: [{}], colunas: [] });
-			addDataset({ dados: [{}], colunas: [] });
+			addDataset({ rows: [{}], columns: [] });
+			addDataset({ rows: [{}], columns: [] });
 			expect(getState().data.activeIndex).toBe(0);
 		});
 
 		it('adjusts activeIndex down when earlier dataset removed', () => {
-			addDataset({ dados: [{}], colunas: [] });
-			addDataset({ dados: [{}], colunas: [] });
-			addDataset({ dados: [{}], colunas: [] });
+			addDataset({ rows: [{}], columns: [] });
+			addDataset({ rows: [{}], columns: [] });
+			addDataset({ rows: [{}], columns: [] });
 
 			setActiveDataset(2);
 			removeDataset(0);
@@ -69,22 +69,22 @@ describe('appState (edge cases - branch coverage)', () => {
 		});
 
 		it('sets activeIndex to -1 when last dataset removed', () => {
-			addDataset({ dados: [{}], colunas: [] });
+			addDataset({ rows: [{}], columns: [] });
 			removeDataset(0);
 			expect(getState().data.activeIndex).toBe(-1);
 		});
 
 		it('does not change activeIndex when removed after active', () => {
-			addDataset({ dados: [{}], colunas: [] });
-			addDataset({ dados: [{}], colunas: [] });
+			addDataset({ rows: [{}], columns: [] });
+			addDataset({ rows: [{}], columns: [] });
 			setActiveDataset(0);
 			removeDataset(1);
 			expect(getState().data.activeIndex).toBe(0);
 		});
 
 		it('clears panel charts when dataset removed', () => {
-			addDataset({ dados: [{}], colunas: [] });
-			addChartSnapshot({ nome: 'c1', svgMarkup: '<svg/>' });
+			addDataset({ rows: [{}], columns: [] });
+			addChartSnapshot({ name: 'c1', svgMarkup: '<svg/>' });
 			expect(getPanelCharts().length).toBe(1);
 
 			removeDataset(0);
@@ -103,33 +103,33 @@ describe('appState (edge cases - branch coverage)', () => {
 
 		it('merges config into active dataset', () => {
 			const idx = addDataset({
-				dados: [{}],
-				colunas: [],
-				configGraficos: { type: 'bar' },
+				rows: [{}],
+				columns: [],
+				chartConfig: { type: 'bar' },
 			});
 			updateActiveDatasetConfig({ title: 'Test' });
 
 			const active = getActiveDataset();
-			expect(active.configGraficos).toEqual({ type: 'bar', title: 'Test' });
+			expect(active.chartConfig).toEqual({ type: 'bar', title: 'Test' });
 		});
 
 		it('updates column selection in active dataset', () => {
 			addDataset({
-				dados: [{}],
-				colunas: ['a', 'b'],
-				colunasSelecionadas: [],
+				rows: [{}],
+				columns: ['a', 'b'],
+				selectedColumns: [],
 			});
 			updateActiveDatasetColumns(['a']);
 
 			const active = getActiveDataset();
-			expect(active.colunasSelecionadas).toEqual(['a']);
+			expect(active.selectedColumns).toEqual(['a']);
 		});
 	});
 
 	describe('Chart snapshot branches', () => {
 		it('increments chart IDs correctly', () => {
-			const id1 = addChartSnapshot({ nome: 'c1', svgMarkup: '<svg/>' });
-			const id2 = addChartSnapshot({ nome: 'c2', svgMarkup: '<svg/>' });
+			const id1 = addChartSnapshot({ name: 'c1', svgMarkup: '<svg/>' });
+			const id2 = addChartSnapshot({ name: 'c2', svgMarkup: '<svg/>' });
 			expect(id2).toBe(id1 + 1);
 		});
 
@@ -143,8 +143,8 @@ describe('appState (edge cases - branch coverage)', () => {
 		});
 
 		it('removes chart from snapshots array', () => {
-			const id1 = addChartSnapshot({ nome: 'c1', svgMarkup: '<svg/>' });
-			const id2 = addChartSnapshot({ nome: 'c2', svgMarkup: '<svg/>' });
+			const id1 = addChartSnapshot({ name: 'c1', svgMarkup: '<svg/>' });
+			const id2 = addChartSnapshot({ name: 'c2', svgMarkup: '<svg/>' });
 
 			removeChartSnapshot(id1);
 
@@ -154,18 +154,18 @@ describe('appState (edge cases - branch coverage)', () => {
 
 		it('sanitizes chart name on add', () => {
 			const id = addChartSnapshot({
-				nome: '<img src=x onerror="alert(1)">',
+				name: '<img src=x onerror="alert(1)">',
 				svgMarkup: '<svg/>',
 			});
 			const chart = getChartSnapshot(id);
 			// sanitation should occur (test exact behavior depends on implementation)
-			expect(chart.nome).toBeDefined();
+			expect(chart.name).toBeDefined();
 		});
 
 		it('handles createdAt timestamp', () => {
 			const now = new Date().toISOString();
 			const id = addChartSnapshot({
-				nome: 'test',
+				name: 'test',
 				svgMarkup: '<svg/>',
 				createdAt: now,
 			});
@@ -178,7 +178,7 @@ describe('appState (edge cases - branch coverage)', () => {
 		it('ensures default block exists on getPanelBlocks()', () => {
 			const blocks = getPanelBlocks();
 			expect(blocks.length).toBeGreaterThan(0);
-			expect(blocks[0].templateId).toBe('layout-2col');
+			expect(blocks[0].templateId).toBe('template-2col');
 		});
 
 		it('maintains block structure across calls', () => {
@@ -193,7 +193,7 @@ describe('appState (edge cases - branch coverage)', () => {
 			const spy = vi.fn();
 			onStateChange('datasetAdded', spy);
 
-			const idx = addDataset({ dados: [{}], colunas: [] });
+			const idx = addDataset({ rows: [{}], columns: [] });
 
 			expect(spy).toHaveBeenCalledWith(expect.objectContaining({ index: idx }));
 		});
@@ -202,7 +202,7 @@ describe('appState (edge cases - branch coverage)', () => {
 			const spy = vi.fn();
 			onStateChange('datasetRemoved', spy);
 
-			const idx = addDataset({ dados: [{}], colunas: [] });
+			const idx = addDataset({ rows: [{}], columns: [] });
 			removeDataset(idx);
 
 			expect(spy).toHaveBeenCalledWith(idx);
@@ -210,7 +210,7 @@ describe('appState (edge cases - branch coverage)', () => {
 
 		it('fires activeDataset on setActiveDataset', () => {
 			const spy = vi.fn();
-			const idx = addDataset({ dados: [{}], colunas: [] });
+			const idx = addDataset({ rows: [{}], columns: [] });
 
 			onStateChange('activeDataset', spy);
 			setActiveDataset(idx);
@@ -220,7 +220,7 @@ describe('appState (edge cases - branch coverage)', () => {
 
 		it('fires configUpdated on updateActiveDatasetConfig', () => {
 			const spy = vi.fn();
-			addDataset({ dados: [{}], colunas: [], configGraficos: {} });
+			addDataset({ rows: [{}], columns: [], chartConfig: {} });
 
 			onStateChange('configUpdated', spy);
 			updateActiveDatasetConfig({ x: 1 });
@@ -230,7 +230,7 @@ describe('appState (edge cases - branch coverage)', () => {
 
 		it('fires columnsUpdated on updateActiveDatasetColumns', () => {
 			const spy = vi.fn();
-			addDataset({ dados: [{}], colunas: ['a'], colunasSelecionadas: [] });
+			addDataset({ rows: [{}], columns: ['a'], selectedColumns: [] });
 
 			onStateChange('columnsUpdated', spy);
 			updateActiveDatasetColumns(['a']);
@@ -242,7 +242,7 @@ describe('appState (edge cases - branch coverage)', () => {
 			const spy = vi.fn();
 			onStateChange('chartAdded', spy);
 
-			const id = addChartSnapshot({ nome: 'test', svgMarkup: '<svg/>' });
+			const id = addChartSnapshot({ name: 'test', svgMarkup: '<svg/>' });
 
 			expect(spy).toHaveBeenCalled();
 			expect(spy.mock.calls[0][0]).toEqual(expect.objectContaining({ id }));
@@ -250,7 +250,7 @@ describe('appState (edge cases - branch coverage)', () => {
 
 		it('fires chartRemoved on removeChartSnapshot', () => {
 			const spy = vi.fn();
-			const id = addChartSnapshot({ nome: 'test', svgMarkup: '<svg/>' });
+			const id = addChartSnapshot({ name: 'test', svgMarkup: '<svg/>' });
 
 			onStateChange('chartRemoved', spy);
 			removeChartSnapshot(id);
@@ -261,17 +261,17 @@ describe('appState (edge cases - branch coverage)', () => {
 
 	describe('getState and exposeGlobals', () => {
 		it('getState returns deep clone of state', async () => {
-			const { getState } = await import('../src/modules/appState.js');
-			addDataset({ dados: [{ x: 1 }], colunas: ['x'] });
+			const { getState } = await import('../src/modules/state/appState.js');
+			addDataset({ rows: [{ x: 1 }], columns: ['x'] });
 			const state = getState();
 			expect(state.data.datasets.length).toBe(1);
-			state.data.datasets.push({ dados: [], colunas: [] });
+			state.data.datasets.push({ rows: [], columns: [] });
 			expect(getState().data.datasets.length).toBe(1);
 		});
 
 		it('exposeGlobals sets window properties', async () => {
-			const { exposeGlobals, getAllDatasets } = await import('../src/modules/appState.js');
-			addDataset({ dados: [{ a: 1 }], colunas: ['a'], colunasSelecionadas: ['a'] });
+			const { exposeGlobals, getAllDatasets } = await import('../src/modules/state/appState.js');
+			addDataset({ rows: [{ a: 1 }], columns: ['a'], selectedColumns: ['a'] });
 			exposeGlobals();
 			expect(window.datasetsCarregados).toBe(getAllDatasets());
 			expect(window.dadosCarregados).toBeTruthy();
@@ -279,7 +279,7 @@ describe('appState (edge cases - branch coverage)', () => {
 		});
 
 		it('exposeGlobals handles no active dataset', async () => {
-			const { exposeGlobals } = await import('../src/modules/appState.js');
+			const { exposeGlobals } = await import('../src/modules/state/appState.js');
 			exposeGlobals();
 			expect(window.dadosCarregados).toBeNull();
 			expect(window.colunasDetectadas).toBeNull();
@@ -289,19 +289,19 @@ describe('appState (edge cases - branch coverage)', () => {
 
 	describe('sanitizeChartName', () => {
 		it('trims and truncates chart name', async () => {
-			const { sanitizeChartName } = await import('../src/modules/appState.js');
+			const { sanitizeChartName } = await import('../src/modules/state/appState.js');
 			expect(sanitizeChartName('  Test  ')).toBe('Test');
 			expect(sanitizeChartName('a'.repeat(200)).length).toBe(100);
 		});
 	});
 
 	describe('Input validation branches', () => {
-		it('throws on addDataset with missing dados', () => {
-			expect(() => addDataset({ colunas: [] })).toThrow();
+		it('throws on addDataset with missing rows', () => {
+			expect(() => addDataset({ columns: [] })).toThrow();
 		});
 
-		it('throws on addDataset with non-array dados', () => {
-			expect(() => addDataset({ dados: 'not-array', colunas: [] })).toThrow();
+		it('throws on addDataset with non-array rows', () => {
+			expect(() => addDataset({ rows: 'not-array', columns: [] })).toThrow();
 		});
 
 		it('throws on removeDataset invalid index', () => {

@@ -26,7 +26,7 @@ What other approaches did you consider? Why is the proposed one better?
 
 - [ ] This feature can be added incrementally (small PR)
 - [ ] This feature requires multiple PRs / a design discussion first
-- [ ] Unsure — happy to discuss
+- [ ] Unsure; happy to discuss
 
 ## Additional context
 

@@ -12,7 +12,7 @@
 .header-nav a {
     color: rgba(255, 255, 255, 0.45);
     text-decoration: none;
-    font-family: var(--fonte-sans);
+    font-family: var(--font-sans);
     font-weight: 400;
     font-size: 13px;
     transition: color 0.2s ease, opacity 0.2s ease, background 0.2s ease;

@@ -12,14 +12,14 @@ import {
 	computeAdaptiveMargins,
 	aggregateCategoricalPairs,
 	pickMostFrequentCategory,
-	normalizarDominio,
+	normalizeDomain,
 } from '../../../src/modules/visualizations/scatterPlotAxisHelpers.js';
 
 describe('isNumericLikeAxisType', () => {
-	it('accepts "numeric", "number", "numero" (case-insensitive)', () => {
+	it('accepts "numeric" and "number" (case-insensitive)', () => {
 		expect(isNumericLikeAxisType('numeric')).toBe(true);
 		expect(isNumericLikeAxisType('NUMBER')).toBe(true);
-		expect(isNumericLikeAxisType('Numero')).toBe(true);
+		expect(isNumericLikeAxisType('Number')).toBe(true);
 	});
 
 	it('rejects other strings and falsy values', () => {
@@ -35,9 +35,9 @@ describe('isCategoricalLikeAxisType', () => {
 		expect(isCategoricalLikeAxisType('categorical')).toBe(true);
 		expect(isCategoricalLikeAxisType('CATEGORY')).toBe(true);
 		expect(isCategoricalLikeAxisType('text')).toBe(true);
-		expect(isCategoricalLikeAxisType('Texto')).toBe(true);
+		expect(isCategoricalLikeAxisType('TEXT')).toBe(true);
 		expect(isCategoricalLikeAxisType('date')).toBe(true);
-		expect(isCategoricalLikeAxisType('data')).toBe(true);
+		expect(isCategoricalLikeAxisType('DATE')).toBe(true);
 	});
 
 	it('rejects numeric synonyms and unknown strings', () => {
@@ -217,28 +217,28 @@ describe('pickMostFrequentCategory', () => {
 		expect(pickMostFrequentCategory(rows, 'k')).toBe('A');
 	});
 
-	it('returns em-dash for an empty input', () => {
-		expect(pickMostFrequentCategory([], 'k')).toBe('—');
+	it('returns N/A for an empty input', () => {
+		expect(pickMostFrequentCategory([], 'k')).toBe('N/A');
 	});
 });
 
-describe('normalizarDominio', () => {
+describe('normalizeDomain', () => {
 	it('passes through a valid non-zero-width range', () => {
-		expect(normalizarDominio([1, 10])).toEqual([1, 10]);
+		expect(normalizeDomain([1, 10])).toEqual([1, 10]);
 	});
 
 	it('widens a zero-width non-zero range by 10%', () => {
-		const [min, max] = normalizarDominio([5, 5]);
+		const [min, max] = normalizeDomain([5, 5]);
 		expect(min).toBeCloseTo(4.5);
 		expect(max).toBeCloseTo(5.5);
 	});
 
 	it('widens a zero-zero range by ±1', () => {
-		expect(normalizarDominio([0, 0])).toEqual([-1, 1]);
+		expect(normalizeDomain([0, 0])).toEqual([-1, 1]);
 	});
 
 	it('returns [0, 1] for non-finite inputs', () => {
-		expect(normalizarDominio([NaN, 10])).toEqual([0, 1]);
-		expect(normalizarDominio([Infinity, -Infinity])).toEqual([0, 1]);
+		expect(normalizeDomain([NaN, 10])).toEqual([0, 1]);
+		expect(normalizeDomain([Infinity, -Infinity])).toEqual([0, 1]);
 	});
 });

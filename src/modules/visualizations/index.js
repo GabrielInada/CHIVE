@@ -3,7 +3,7 @@
  * full option bags are documented on each entry function. Internal D3
  * helpers within each chart file are intentionally undocumented.
  *
- * Consumers: `modules/panel/renderChartFromSpec.js`, `components/results/
+ * Consumers: `modules/panelSubsystem/renderChartFromSpec.js`, `components/results/
  * chartRenders/*` chart sections.
  */
 

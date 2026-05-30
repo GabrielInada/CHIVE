@@ -17,7 +17,7 @@ import { addChartToPanel, setupPanelEventListeners } from './panelManager.js';
 import { showError, showFeedback } from './feedbackUI.js';
 import { setupFileInputListeners, selectDataset, removeDatasetByIndex } from './fileManager.js';
 import { setupTabListeners, setupSidebarToggleListener, switchTab } from './uiManager.js';
-import { getActiveDataset, updateActiveDatasetConfig } from './appState.js';
+import { getActiveDataset, updateActiveDatasetConfig } from './state/appState.js';
 import { CHART_CONTAINERS } from '../config/elementIds.js';
 
 const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
@@ -31,9 +31,9 @@ const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
  *   - `setupSidebarToggleListener` (uiManager)
  *   - `setupSidebarNavigationButtons` (here, private)
  *   - `setupPanelEventListeners` (panelManager)
- *   - `setupChartActionListeners` (here, private — download SVG + add-to-panel buttons)
- *   - `setupGlobalKeyboardListeners` (here, private — Esc + Ctrl/Cmd+O)
- *   - `setupDatasetListeners` (here, private — delegated select/remove)
+ *   - `setupChartActionListeners` (here, private, download SVG + add-to-panel buttons)
+ *   - `setupGlobalKeyboardListeners` (here, private, Ctrl/Cmd+O)
+ *   - `setupDatasetListeners` (here, private, delegated select/remove)
  *
  * Called once during app startup from `main.js`.
  */
@@ -53,10 +53,10 @@ export function initializeAllEventHandlers() {
  * @private
  */
 function setupSidebarNavigationButtons() {
-	const btnAvancar = document.getElementById('btn-avancar');
-	const btnEditarColunas = document.getElementById('btn-editar-colunas');
-	const btnIrPainel = document.getElementById('btn-ir-painel');
-	const btnVoltarViz = document.getElementById('btn-voltar-viz');
+	const btnAvancar = document.getElementById('btn-advance');
+	const btnEditarColunas = document.getElementById('btn-edit-columns');
+	const btnIrPainel = document.getElementById('btn-go-to-panel');
+	const btnVoltarViz = document.getElementById('btn-back-to-viz');
 
 	if (btnAvancar) {
 		btnAvancar.addEventListener('click', () => {
@@ -89,10 +89,10 @@ function setupSidebarNavigationButtons() {
  */
 function navigateToTab(tabName) {
 	const dataset = getActiveDataset();
-	if (dataset?.configGraficos) {
+	if (dataset?.chartConfig) {
 		updateActiveDatasetConfig({
-			...dataset.configGraficos,
-			aba: tabName,
+			...dataset.chartConfig,
+			activeTab: tabName,
 		});
 	}
 	switchTab(tabName);
@@ -126,8 +126,8 @@ function handleChartAction(actionBtn) {
 			showError(t('chive-chart-download-error'));
 		}
 	} else if (action === 'add-panel') {
-		const chartBlock = actionBtn.closest('.chart-bloco');
-		const fallbackTitle = chartBlock?.querySelector('.chart-titulo')?.textContent?.trim()
+		const chartBlock = actionBtn.closest('.chart-block');
+		const fallbackTitle = chartBlock?.querySelector('.chart-title')?.textContent?.trim()
 			|| t('chive-card-charts');
 		const titulo = getChartSnapshotTitle(containerId, fallbackTitle);
 		const metadata = buildChartSnapshotMetadata(containerId);
@@ -144,7 +144,7 @@ function handleChartAction(actionBtn) {
 /**
  * Map from `ChartTypeKey` → builder function that derives the snapshot
  * metadata (and a short `summary` string) from the active dataset's
- * `configGraficos`. Consumed by {@link buildChartSnapshotMetadata} when
+ * `chartConfig`. Consumed by {@link buildChartSnapshotMetadata} when
  * an "add to panel" button is clicked.
  *
  * Each builder returns at minimum `{ type, summary }`; chart-specific
@@ -288,7 +288,7 @@ const CHART_SNAPSHOT_BUILDERS = {
 function getChartSnapshotTitle(containerId, fallbackTitle) {
 	const type = CONTAINER_ID_TO_CHART_TYPE[containerId];
 	if (!type) return fallbackTitle;
-	const config = getActiveDataset()?.configGraficos || {};
+	const config = getActiveDataset()?.chartConfig || {};
 	return String(config[type]?.customTitle || '').trim() || fallbackTitle;
 }
 
@@ -301,7 +301,7 @@ function getChartSnapshotTitle(containerId, fallbackTitle) {
  */
 function buildChartSnapshotMetadata(containerId) {
 	const type = CONTAINER_ID_TO_CHART_TYPE[containerId];
-	const config = getActiveDataset()?.configGraficos;
+	const config = getActiveDataset()?.chartConfig;
 	if (!type || !config) return {};
 	const builder = CHART_SNAPSHOT_BUILDERS[type];
 	return builder ? builder(config) : {};
@@ -313,15 +313,10 @@ function buildChartSnapshotMetadata(containerId) {
  */
 function setupGlobalKeyboardListeners() {
 	document.addEventListener('keydown', event => {
-		// Escape: close menus
-		if (event.key === 'Escape') {
-			closeAllChartMenus();
-		}
-
 		// Ctrl+O or Cmd+O: open file picker
 		if ((event.ctrlKey || event.metaKey) && event.key === 'o') {
 			event.preventDefault();
-			document.getElementById('input-arquivo')?.click();
+			document.getElementById('file-input')?.click();
 		}
 	});
 }
@@ -356,13 +351,13 @@ function setupDatasetListeners() {
 /**
  * Wire delegated listeners on the results view (column list, column
  * action buttons). Note: the inner callbacks reference TODO comments
- * pointing at `resultsView.js` for the actual wiring — this function
+ * pointing at `resultsView.js` for the actual wiring, this function
  * currently sets up the delegation skeleton but the callbacks are not
  * yet routed. Tracked as a follow-up refactor; documented as-is.
  */
 export function setupResultsViewListeners() {
 	// Column selection
-	const listaColunas = document.getElementById('lista-colunas-conteudo');
+	const listaColunas = document.getElementById('column-list-content');
 	if (listaColunas) {
 		listaColunas.addEventListener('change', event => {
 			if (event.target.type === 'checkbox' && !event.target.disabled) {

@@ -13,8 +13,8 @@ describe('fileListView', () => {
 		renderFileListDOM({
 			lista,
 			datasets: [
-				{ nome: 'A.csv', dados: [1, 2], colunas: ['x'], tamanho: '1KB' },
-				{ nome: 'B.csv', dados: [1], colunas: ['x', 'y'], tamanho: '2KB' },
+				{ name: 'A.csv', rows: [1, 2], columns: ['x'], sizeLabel: '1KB' },
+				{ name: 'B.csv', rows: [1], columns: ['x', 'y'], sizeLabel: '2KB' },
 			],
 			indiceAtivo: 1,
 			traduzir: (key, ...args) => `${key}:${args.join('|')}`,
@@ -23,8 +23,8 @@ describe('fileListView', () => {
 			aoRemover,
 		});
 
-		expect(lista.querySelectorAll('.arquivo-item').length).toBe(2);
-		expect(lista.querySelector('.arquivo-item.ativo')).toBeTruthy();
+		expect(lista.querySelectorAll('.file-item').length).toBe(2);
+		expect(lista.querySelector('.file-item.active')).toBeTruthy();
 
 		lista.querySelector('[data-acao="selecionar"][data-idx="0"]').click();
 		expect(aoSelecionar).toHaveBeenCalledWith(0);

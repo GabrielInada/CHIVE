@@ -38,6 +38,21 @@ export function t(key, ...params) {
 }
 
 /**
+ * Translate a column-type code (`'number'`, `'text'`, `'date'`) into its
+ * localized label. Unknown codes pass through unchanged so the function
+ * never throws on legacy data.
+ *
+ * @param {import('../types.js').ColumnType | string} type
+ * @returns {string}
+ */
+export function translateType(type) {
+	if (type === 'number') return t('chive-type-number');
+	if (type === 'text') return t('chive-type-text');
+	if (type === 'date') return t('chive-type-date');
+	return type;
+}
+
+/**
  * @returns {string} The currently active locale code (e.g. `'pt-BR'` or `'en'`).
  */
 export function getLocale() {

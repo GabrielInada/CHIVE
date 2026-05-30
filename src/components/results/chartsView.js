@@ -26,7 +26,7 @@ import { renderTinChartSection } from './chartRenders/tinChartSection.js';
 /**
  * Render the active chart into its container. Single-chart-at-a-time: if
  * the config has multiple enabled flags (legacy), the first one in
- * canonical order wins — the rest are coerced to disabled before render.
+ * canonical order wins, the rest are coerced to disabled before render.
  *
  * The `options` callbacks all share the same `(column, token) => void`
  * signature and are wired into the per-chart tooltip actions.
@@ -91,13 +91,13 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	};
 	const chartConfig = mergeChartConfigWithDefaults(config);
 	const numericColumnNames = Array.isArray(visibleNumericColumns)
-		? visibleNumericColumns.map(column => column?.nome).filter(Boolean)
+		? visibleNumericColumns.map(column => column?.name).filter(Boolean)
 		: [];
 	const allColumnNames = Array.isArray(visibleColumns)
-		? visibleColumns.map(column => column?.nome).filter(Boolean)
+		? visibleColumns.map(column => column?.name).filter(Boolean)
 		: [];
 	const columnTypeByName = Array.isArray(visibleColumns)
-		? Object.fromEntries(visibleColumns.map(column => [column?.nome, column?.tipo]))
+		? Object.fromEntries(visibleColumns.map(column => [column?.name, column?.type]))
 		: {};
 	const safeGlobalFilter = resolveGlobalFilterForColumns(chartConfig.globalFilter, allColumnNames);
 	const filteredRows = applyGlobalFilterRules(rows, safeGlobalFilter, numericColumnNames);
@@ -118,7 +118,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		visibleNumericColumns.length
 	);
 
-	if (chartConfig.aba !== 'charts') {
+	if (chartConfig.activeTab !== 'charts') {
 		chartsGrid.style.display = 'grid';
 		emptyState.style.display = 'none';
 		blocoBar.style.display = 'block';

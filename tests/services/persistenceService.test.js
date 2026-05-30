@@ -8,22 +8,22 @@ import {
 	clearPersistedState,
 	enablePersistenceAutoSave,
 } from '../../src/services/persistenceService.js';
-import { emitStateChange, STATE_EVENTS } from '../../src/modules/stateEvents.js';
+import { emitStateChange, STATE_EVENTS } from '../../src/modules/state/stateEvents.js';
 
 function makeSnapshot(overrides = {}) {
 	return {
 		data: {
 			datasets: [
-				{ id: 'ds-1', nome: 'a.csv', dados: [{ x: 1 }], colunas: [{ nome: 'x', tipo: 'numero' }], colunasSelecionadas: ['x'], configGraficos: {} },
-				{ id: 'ds-2', nome: 'b.csv', dados: [{ y: 2 }], colunas: [{ nome: 'y', tipo: 'numero' }], colunasSelecionadas: ['y'], configGraficos: {} },
+				{ id: 'ds-1', name: 'a.csv', rows: [{ x: 1 }], columns: [{ name: 'x', type: 'number' }], selectedColumns: ['x'], chartConfig: {} },
+				{ id: 'ds-2', name: 'b.csv', rows: [{ y: 2 }], columns: [{ name: 'y', type: 'number' }], selectedColumns: ['y'], chartConfig: {} },
 			],
 			activeIndex: 1,
 		},
 		panel: {
 			charts: [{ id: 0, type: 'bar', config: { color: '#abc' }, dataSnapshot: [], columnsSnapshot: [] }],
 			slots: {},
-			layout: 'layout-2col',
-			blocks: [{ id: 1, templateId: 'layout-2col', slots: {}, proportions: { split: 50 } }],
+			layout: 'template-2col',
+			blocks: [{ id: 1, templateId: 'template-2col', slots: {}, proportions: { split: 50 } }],
 			nextBlockId: 2,
 			nextChartId: 1,
 		},
@@ -70,7 +70,7 @@ describe('persistenceService', () => {
 			expect(restored.panel.charts).toHaveLength(1);
 			expect(restored.panel.charts[0].type).toBe('bar');
 			expect(restored.panel.charts[0].config.color).toBe('#abc');
-			expect(restored.panel.layout).toBe('layout-2col');
+			expect(restored.panel.layout).toBe('template-2col');
 			expect(restored.panel.blocks).toHaveLength(1);
 			expect(restored.panel).not.toHaveProperty('activeDatasetId');
 			expect(restored.panel).not.toHaveProperty('key');
@@ -103,7 +103,7 @@ describe('persistenceService', () => {
 			// …then overwrite the datasets store with a different id
 			await persistState(makeSnapshot({
 				data: {
-					datasets: [{ id: 'ds-other', nome: 'other.csv', dados: [], colunas: [], colunasSelecionadas: [], configGraficos: {} }],
+					datasets: [{ id: 'ds-other', name: 'other.csv', rows: [], columns: [], selectedColumns: [], chartConfig: {} }],
 					activeIndex: 0,
 				},
 			}));
@@ -160,18 +160,18 @@ describe('persistenceService', () => {
 		function goodRecord(id = 'good') {
 			return {
 				id,
-				nome: `${id}.csv`,
-				dados: [{ x: 1 }],
-				colunas: [{ nome: 'x', tipo: 'numero' }],
-				colunasSelecionadas: ['x'],
-				configGraficos: {},
+				name: `${id}.csv`,
+				rows: [{ x: 1 }],
+				columns: [{ name: 'x', type: 'number' }],
+				selectedColumns: ['x'],
+				chartConfig: {},
 			};
 		}
 
 		async function hydrateWith(badRecord) {
 			await persistState({
 				data: { datasets: [goodRecord(), badRecord], activeIndex: 0 },
-				panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+				panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
 				ui: {},
 			});
 			const replaceAllState = vi.fn();
@@ -181,66 +181,66 @@ describe('persistenceService', () => {
 			return replaceAllState.mock.calls[0][0];
 		}
 
-		it('drops datasets where nome is not a string', async () => {
-			const restored = await hydrateWith({ ...goodRecord('bad'), nome: 123 });
+		it('drops datasets where name is not a string', async () => {
+			const restored = await hydrateWith({ ...goodRecord('bad'), name: 123 });
 			expect(restored.data.datasets).toHaveLength(1);
 			expect(restored.data.datasets[0].id).toBe('good');
 		});
 
-		it('drops datasets where colunas is not an array', async () => {
-			const restored = await hydrateWith({ ...goodRecord('bad'), colunas: 'oops' });
+		it('drops datasets where columns is not an array', async () => {
+			const restored = await hydrateWith({ ...goodRecord('bad'), columns: 'oops' });
 			expect(restored.data.datasets).toHaveLength(1);
 			expect(restored.data.datasets[0].id).toBe('good');
 		});
 
-		it('drops datasets where a colunas entry is malformed', async () => {
+		it('drops datasets where a columns entry is malformed', async () => {
 			const restored = await hydrateWith({
 				...goodRecord('bad'),
-				colunas: [{ nome: 'x' /* tipo missing */ }],
+				columns: [{ name: 'x' /* type missing */ }],
 			});
 			expect(restored.data.datasets).toHaveLength(1);
 			expect(restored.data.datasets[0].id).toBe('good');
 		});
 
-		it('drops datasets where dados is not an array', async () => {
-			const restored = await hydrateWith({ ...goodRecord('bad'), dados: { 0: { x: 1 } } });
+		it('drops datasets where rows is not an array', async () => {
+			const restored = await hydrateWith({ ...goodRecord('bad'), rows: { 0: { x: 1 } } });
 			expect(restored.data.datasets).toHaveLength(1);
 			expect(restored.data.datasets[0].id).toBe('good');
 		});
 
-		it('sanitizes configGraficos: drops chart-spec entries that are not plain objects', async () => {
+		it('sanitizes chartConfig: drops chart-spec entries that are not plain objects', async () => {
 			await persistState({
 				data: {
 					datasets: [{
 						...goodRecord('with-mixed-config'),
-						configGraficos: { bar: 'oops', scatter: { color: '#abc' }, pie: 42 },
+						chartConfig: { bar: 'oops', scatter: { color: '#abc' }, pie: 42 },
 					}],
 					activeIndex: 0,
 				},
-				panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+				panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
 				ui: {},
 			});
 			const replaceAllState = vi.fn();
 			await hydrateState({ replaceAllState });
 
 			const restored = replaceAllState.mock.calls[0][0].data.datasets[0];
-			expect(restored.configGraficos).toEqual({ scatter: { color: '#abc' } });
+			expect(restored.chartConfig).toEqual({ scatter: { color: '#abc' } });
 		});
 
-		it('replaces a non-object configGraficos with an empty object', async () => {
+		it('replaces a non-object chartConfig with an empty object', async () => {
 			await persistState({
 				data: {
-					datasets: [{ ...goodRecord('nullish-config'), configGraficos: null }],
+					datasets: [{ ...goodRecord('nullish-config'), chartConfig: null }],
 					activeIndex: 0,
 				},
-				panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+				panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
 				ui: {},
 			});
 			const replaceAllState = vi.fn();
 			await hydrateState({ replaceAllState });
 
 			const restored = replaceAllState.mock.calls[0][0].data.datasets[0];
-			expect(restored.configGraficos).toEqual({});
+			expect(restored.chartConfig).toEqual({});
 		});
 
 		it('console-warns with a drop count when records are dropped', async () => {
@@ -248,12 +248,12 @@ describe('persistenceService', () => {
 				data: {
 					datasets: [
 						goodRecord('keep'),
-						{ ...goodRecord('drop1'), nome: 123 },
-						{ ...goodRecord('drop2'), colunas: 'oops' },
+						{ ...goodRecord('drop1'), name: 123 },
+						{ ...goodRecord('drop2'), columns: 'oops' },
 					],
 					activeIndex: 0,
 				},
-				panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+				panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
 				ui: {},
 			});
 			const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -280,12 +280,12 @@ describe('persistenceService', () => {
 			await persistState({
 				data: {
 					datasets: [
-						{ id: 'good', nome: 'good.csv', dados: [], colunas: [], colunasSelecionadas: [], configGraficos: {} },
-						{ /* no id */ nome: 'orphan.csv', dados: [], colunas: [], colunasSelecionadas: [], configGraficos: {} },
+						{ id: 'good', name: 'good.csv', rows: [], columns: [], selectedColumns: [], chartConfig: {} },
+						{ /* no id */ name: 'orphan.csv', rows: [], columns: [], selectedColumns: [], chartConfig: {} },
 					],
 					activeIndex: 0,
 				},
-				panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+				panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
 				ui: {},
 			});
 

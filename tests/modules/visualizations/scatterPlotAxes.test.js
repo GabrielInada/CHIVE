@@ -22,7 +22,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		];
 
 		const result = renderScatterPlot(container, rows, 'group', 'value', {
-			axisTypes: { x: 'texto', y: 'numero' },
+			axisTypes: { x: 'text', y: 'number' },
 		});
 
 		expect(result.ok).toBe(true);
@@ -39,7 +39,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		const result = renderScatterPlot(container, rows, 'group', 'value', {
 			xScale: 'log',
 			yScale: 'linear',
-			axisTypes: { x: 'texto', y: 'numero' },
+			axisTypes: { x: 'text', y: 'number' },
 		});
 
 		expect(result.ok).toBe(true);
@@ -55,7 +55,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		];
 
 		const result = renderScatterPlot(container, rows, 'group', 'value', {
-			axisTypes: { x: 'texto', y: 'numero' },
+			axisTypes: { x: 'text', y: 'number' },
 		});
 
 		expect(result.ok).toBe(true);
@@ -75,7 +75,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		];
 
 		const result = renderScatterPlot(container, rows, 'x', 'y', {
-			axisTypes: { x: 'texto', y: 'texto' },
+			axisTypes: { x: 'text', y: 'text' },
 			categoricalPairMode: 'aggregate',
 		});
 
@@ -96,7 +96,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		];
 
 		const result = renderScatterPlot(container, rows, 'x', 'y', {
-			axisTypes: { x: 'texto', y: 'texto' },
+			axisTypes: { x: 'text', y: 'text' },
 		});
 
 		expect(result.ok).toBe(true);
@@ -113,7 +113,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		const result = renderScatterPlot(container, rows, 'x', 'y', {
 			xScale: 'log',
 			yScale: 'linear',
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 		});
 
 		expect(result.ok).toBe(false);
@@ -125,7 +125,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		const rows = [{ height_cm: 170, weight_kg: 65 }];
 
 		renderScatterPlot(container, rows, 'height_cm', 'weight_kg', {
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 			labels: { eixoX: 'X', eixoY: 'Y', indice: 'Row', count: 'Count' },
 		});
 
@@ -143,7 +143,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		const rows = [{ a: 1, b: 2 }];
 
 		renderScatterPlot(container, rows, 'a', 'b', {
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 			axisLabels: { x: 'Altura', y: 'Peso' },
 		});
 
@@ -163,7 +163,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		];
 
 		const result = renderScatterPlot(container, rows, 'x', 'y', {
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 			sizeMode: 'numeric',
 			sizeField: 'z',
 			sizeMin: 2,
@@ -189,7 +189,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		];
 
 		const result = renderScatterPlot(container, rows, 'x', 'y', {
-			axisTypes: { x: 'numero', y: 'numero' },
+			axisTypes: { x: 'number', y: 'number' },
 			sizeMode: 'uniform',
 			sizeField: 'z',
 			radius: 4,

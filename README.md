@@ -1,106 +1,150 @@
-# CHIVE - Connected Hierarchical Interactive Visualization Engine
+# CHIVE: Connected Hierarchical Interactive Visualization Engine
 
-## Live deployments
+CHIVE is a client-side browser tool for exploring CSV/JSON data, building interactive D3 visualizations, and composing charts into dashboard panels. It runs as static files, with no CHIVE backend required.
 
-CHIVE is hosted in two places:
+![CHIVE workspace preview](docs/assets/readme-preview.png)
+
+## Live Deployments
 
 | Environment | URL | Branch | Host |
 |---|---|---|---|
-| **Stable** | https://apps.roberto.eti.br/chive/ | `main` | Self hosted server |
-| **Preview** | https://gabrielinada.github.io/CHIVE/ | `develop` | GitHub Pages |
+| **Stable** | [apps.roberto.eti.br/chive](https://apps.roberto.eti.br/chive/) | `main` | Self-hosted server |
+| **Preview** | [gabrielinada.github.io/CHIVE](https://gabrielinada.github.io/CHIVE/) | `develop` | GitHub Pages |
 
-- **Stable** reflects the released state of the project. It is our "Ready-To-Use" and reliable version of the project.
-- **Preview** reflects `develop` and is intended for trying out upcoming features before they are merged into `main`. It is our "beta" version of the project. We do not guarantee that everything is working "fine" here, but it usually has some extra features which are being tested.
+- **Stable** reflects the released state of the project and is the recommended version for normal use.
+- **Preview** reflects `develop` and is intended for trying upcoming features before they are merged into `main`.
 
-Both deployments serve the **same source files unchanged** (`index.html`, `about.html`, `src/`). No build step runs at deploy time — the app uses native browser ES modules and loads `d3` and `banana-i18n` from the `esm.sh` CDN, so any host that can serve static files (nginx, Apache, GitHub Pages, `python -m http.server`) works.
+Both deployments serve the same source files unchanged: `index.html`, `about.html`, and `src/`. No production build step runs at deploy time.
 
-## Static Server Deployment
-The app runtime uses:
+## What You Can Do
 
-1. Native browser ES modules (`<script type="module">`)
-2. External dependencies (`d3`, `banana-i18n`) loaded directly from the `esm.sh` CDN via full URLs in the source files
+- Load CSV-like text data (`.csv`, `.tsv`, `.dsv`, `.txt`) and JSON files.
+- Use bundled sample datasets for quick experiments.
+- Preview rows, inspect detected columns, and select which columns stay visible.
+- Review numeric and categorical summaries.
+- Build bar, scatter, pie/donut, bubble, network, treemap, line, and TIN charts.
+- Apply global filters to focus the active dataset.
+- Join datasets through the browser UI.
+- Save chart snapshots into dashboard panel layouts.
+- Export the dashboard panel as SVG.
+- Switch the UI between English and Brazilian Portuguese.
 
-### Deploy Requirements
+## Quick Start
 
-1. Serve files over HTTP/HTTPS (do not use `file://`).
-2. Serve these files/folders at minimum:
-	1. `index.html`
-	2. `about.html`
-	3. `src/` (includes app code, styles, and icon assets under `src/icons/`)
-3. Allow access to these external origins (default setup):
-	1. `https://esm.sh`
-	2. `https://fonts.googleapis.com`
-	3. `https://fonts.gstatic.com`
+1. Open the [Stable deployment](https://apps.roberto.eti.br/chive/) or the [Preview deployment](https://gabrielinada.github.io/CHIVE/).
+2. Load a sample dataset, or upload a CSV/JSON file from your machine.
+3. Review the table preview and choose the columns you want to keep visible.
+4. Open the visualization view and pick a chart type.
+5. Configure the chart columns and options in the sidebar.
+6. Add useful charts to the panel.
+7. Arrange the panel layout and export it as SVG when needed.
 
-### Deploy Steps
+## Local Development
 
-1. Upload the project files as static content (at least `index.html`, `about.html`, and `src/`).
-2. Serve with any static web server (Nginx, Apache, Caddy, IIS, etc.).
-3. Open `index.html` through HTTP/HTTPS (not `file://`).
-
-### Post-Deploy Smoke Test
-
-1. Open app URL.
-2. Check browser console has no module/CORS/CSP errors.
-3. Upload a small CSV or JSON file.
-4. Verify preview renders and charts can be displayed.
-
-### Important Notes
-
-1. The default setup loads dependencies from CDN (`esm.sh`), so the server/client must have internet access.
-
-## Local static test
-
-If you want to test the static runtime mode locally, run a static server from the project root:
-
-1. Open terminal in project folder.
-2. Start one of these servers:
-
-Python:
-
-```powershell
-python -m http.server 8080
-```
-
-3. Open `http://localhost:8080/`.
-4. Check browser console/network for module loading errors.
-
-### Local Test Checklist
-
-1. App shell loads successfully.
-2. No red errors in browser console.
-3. Upload file works.
-4. At least one chart renders.
-
-## Testing (Vitest)
-
-Tests are for local development/CI quality checks. They are not required on the production static server.
-
-### Prerequisite (local only)
-
-1. Install Node.js LTS.
-2. Install dependencies once in project root:
+Install Node.js LTS, then install dependencies once:
 
 ```powershell
 npm install
 ```
 
-### Run test suite
-
-Run all tests once:
+Start the Vite dev server:
 
 ```powershell
+npm run dev
+```
+
+Open <http://localhost:5173/>.
+
+Run local checks:
+
+```powershell
+npm run lint
 npm test
 ```
 
-Run tests in watch mode (during development):
+Useful commands:
 
 ```powershell
-npm run test:watch
+npm run dev          # Start Vite dev server
+npm run build        # Production build into dist/
+npm run preview      # Preview the production build
+npm run lint         # Run ESLint architecture/deployment guards
+npm run lint:fix     # Apply safe automatic lint fixes
+npm test             # Run all tests once
+npm run test:watch   # Run tests in watch mode
 ```
 
-### Suggested workflow
+## Static Deployment
 
-1. Make code changes.
-2. Run `npm test`.
-3. If tests pass, run local static test (`python -m http.server 8080`) and do a quick browser smoke check.
+CHIVE is designed to run from a static web server. The app runtime uses:
+
+1. Native browser ES modules through `<script type="module">`.
+2. External runtime dependencies loaded from `https://esm.sh` with full URLs in source files.
+3. Google Fonts loaded from `fonts.googleapis.com` and `fonts.gstatic.com`.
+
+### Requirements
+
+1. Serve files over HTTP/HTTPS. Do not open the app with `file://`.
+2. Serve these files and folders at minimum:
+   - `index.html`
+   - `about.html`
+   - `src/`
+3. Allow these external origins in the default setup:
+   - `https://esm.sh`
+   - `https://fonts.googleapis.com`
+   - `https://fonts.gstatic.com`
+
+### Deploy Steps
+
+1. Upload the project files as static content.
+2. Serve them with a static web server such as Nginx, Apache, Caddy, IIS, or GitHub Pages.
+3. Open `index.html` through HTTP/HTTPS.
+
+### Post-Deploy Smoke Test
+
+1. Open the app URL.
+2. Check that the browser console has no module, CORS, or CSP errors.
+3. Load a bundled sample dataset or upload a small CSV/JSON file.
+4. Verify the table preview renders.
+5. Create at least one chart.
+
+## Local Static Test
+
+To test the production-style static runtime locally, run a static server from the project root:
+
+```powershell
+python -m http.server 8080
+```
+
+Then open <http://localhost:8080/>.
+
+Checklist:
+
+1. App shell loads successfully.
+2. Browser console has no red errors.
+3. File upload or sample dataset loading works.
+4. At least one chart renders.
+
+## Data And Privacy
+
+CHIVE has no application backend in the default deployments. Uploaded datasets are parsed and visualized in the browser. The app uses browser storage so work can survive refreshes:
+
+- IndexedDB stores dataset and dashboard panel state.
+- `localStorage` stores small UI preferences.
+
+The default runtime still trusts external origins for JavaScript modules and fonts. If you need stricter controls for sensitive data, self-host CHIVE and review the CDN/font trust boundary before use.
+
+## Documentation
+
+- [Architecture](ARCHITECTURE.md): internal state, event flow, facades, and rendering boundaries.
+- [Contributing](CONTRIBUTING.md): development workflow, code conventions, lint rules, and tests.
+- [Stylesheet organization](src/styles/STYLES_ORGANIZATION.md): CSS layers, feature ownership, and responsive rules.
+- Planned follow-ups: user guide, chart/data reference, and privacy/security trust model.
+
+## Project Status
+
+CHIVE is an open-source research project from UFRA (Federal Rural University of the Amazon). The codebase is plain JavaScript with browser ES modules, D3, Vite for local development, Vitest for tests, and no frontend framework.
+
+## License
+
+See [LICENSE](LICENSE).

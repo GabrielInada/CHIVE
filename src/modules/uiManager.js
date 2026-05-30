@@ -3,7 +3,7 @@
  *
  * Manages UI state:
  *   - Active tab switching (preview, charts, panel)
- *   - Sidebar mode (dados, viz, panel)
+ *   - Sidebar mode (rows, viz, panel)
  *   - UI element visibility and states
  *
  * @typedef {import('../types.js').SidebarMode} SidebarMode
@@ -11,20 +11,20 @@
  */
 
 import { t } from '../services/i18nService.js';
-import { setSidebarMode } from './appState.js';
+import { setSidebarMode } from './state/appState.js';
 
 /**
- * Read the currently-active tab from the DOM (whichever `[data-aba]`
- * element carries the `ativo` class). Falls back to `'preview'` when no
+ * Read the currently-active tab from the DOM (whichever `[data-tab]`
+ * element carries the `active` class). Falls back to `'preview'` when no
  * tab is marked active.
  *
  * @returns {TabName}
  */
 export function getActiveTab() {
-	const tabs = document.querySelectorAll('[data-aba]');
+	const tabs = document.querySelectorAll('[data-tab]');
 	for (const tab of tabs) {
-		if (tab.classList && tab.classList.contains('ativo')) {
-			return tab.dataset.aba;
+		if (tab.classList && tab.classList.contains('active')) {
+			return tab.dataset.tab;
 		}
 	}
 	return 'preview';
@@ -32,9 +32,9 @@ export function getActiveTab() {
 
 /**
  * Switch to a tab and apply the side-effect chain:
- *   1. Toggle `ativo`/`inativo` classes on `[data-aba]` buttons.
- *   2. Hide all `painel-*` panels except the one matching `tabName`.
- *   3. Update the sidebar mode to match (`preview → dados`, `charts → viz`, `panel → panel`) via `setSidebarMode`.
+ *   1. Toggle `active`/`inactive` classes on `[data-tab]` buttons.
+ *   2. Hide all `tab-content-*` panels except the one matching `tabName`.
+ *   3. Update the sidebar mode to match (`preview → rows`, `charts → viz`, `panel → panel`) via `setSidebarMode`.
  *
  * No-op when `tabName` is not a valid tab name.
  *
@@ -48,21 +48,21 @@ export function switchTab(tabName) {
 	}
 
 	// Update tab buttons
-	const tabs = document.querySelectorAll('[data-aba]');
+	const tabs = document.querySelectorAll('[data-tab]');
 	tabs.forEach(tab => {
-		if (tab.dataset.aba === tabName) {
-			tab.classList.add('ativo');
-			tab.classList.remove('inativo');
+		if (tab.dataset.tab === tabName) {
+			tab.classList.add('active');
+			tab.classList.remove('inactive');
 		} else {
-			tab.classList.remove('ativo');
-			tab.classList.add('inativo');
+			tab.classList.remove('active');
+			tab.classList.add('inactive');
 		}
 	});
 
 	// Update tab panels
-	const painelPreview = document.getElementById('painel-preview');
-	const painelCharts = document.getElementById('painel-charts');
-	const painelPanel = document.getElementById('painel-panel');
+	const painelPreview = document.getElementById('tab-content-preview');
+	const painelCharts = document.getElementById('tab-content-charts');
+	const painelPanel = document.getElementById('tab-content-dashboard');
 
 	if (painelPreview) painelPreview.hidden = tabName !== 'preview';
 	if (painelCharts) painelCharts.hidden = tabName !== 'charts';
@@ -80,34 +80,34 @@ export function switchTab(tabName) {
  */
 function updateSidebarForTab(tabName) {
 	const sidebarMap = {
-		preview: 'dados',
+		preview: 'data',
 		charts: 'viz',
 		panel: 'panel',
 	};
 
-	const newMode = sidebarMap[tabName] || 'dados';
+	const newMode = sidebarMap[tabName] || 'data';
 	setSidebarMode(newMode);
 	updateSidebarUI(newMode);
 }
 
 /**
- * Apply a sidebar mode to the DOM by toggling `ativo`/`inativo` classes
- * on the three `sidebar-panel-*` containers. Pure DOM update — does not
+ * Apply a sidebar mode to the DOM by toggling `active`/`inactive` classes
+ * on the three `sidebar-panel-*` containers. Pure DOM update, does not
  * write to state.
  *
  * @param {SidebarMode} mode
  */
 export function updateSidebarUI(mode) {
 	const sidebars = {
-		dados: document.getElementById('sidebar-panel-dados'),
+		data: document.getElementById('sidebar-panel-data'),
 		viz: document.getElementById('sidebar-panel-viz'),
-		panel: document.getElementById('sidebar-panel-panel'),
+		panel: document.getElementById('sidebar-panel-dashboard'),
 	};
 
 	Object.entries(sidebars).forEach(([modeKey, el]) => {
 		if (el) {
-			el.classList.toggle('ativo', mode === modeKey);
-			el.classList.toggle('inativo', mode !== modeKey);
+			el.classList.toggle('active', mode === modeKey);
+			el.classList.toggle('inactive', mode !== modeKey);
 		}
 	});
 }
@@ -120,9 +120,9 @@ export function updateSidebarUI(mode) {
  */
 export function setTabVisibility(tabName, visible) {
 	const panelMap = {
-		preview: document.getElementById('painel-preview'),
-		charts: document.getElementById('painel-charts'),
-		panel: document.getElementById('painel-panel'),
+		preview: document.getElementById('tab-content-preview'),
+		charts: document.getElementById('tab-content-charts'),
+		panel: document.getElementById('tab-content-dashboard'),
 	};
 
 	const panel = panelMap[tabName];
@@ -161,15 +161,15 @@ export function toggleSidebarCollapsed() {
 }
 
 /**
- * Wire click handlers on every `[data-aba]` element so clicking a tab
+ * Wire click handlers on every `[data-tab]` element so clicking a tab
  * delegates to {@link switchTab}. Called once during app boot from
  * `eventHandlers.initializeAllEventHandlers`.
  */
 export function setupTabListeners() {
-	const tabs = document.querySelectorAll('[data-aba]');
+	const tabs = document.querySelectorAll('[data-tab]');
 	tabs.forEach(tab => {
 		tab.addEventListener('click', () => {
-			const tabName = tab.dataset.aba;
+			const tabName = tab.dataset.tab;
 			switchTab(tabName);
 		});
 	});

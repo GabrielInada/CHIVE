@@ -1,7 +1,7 @@
 /* @feature: results
    Results view container, empty state display, file list styling */
 
-#estado-vazio {
+#empty-state {
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -13,32 +13,32 @@
   padding: 60px 40px;
 }
 
-.vazio-icone {
+.empty-icon {
   font-size: 52px;
   opacity: 0.3;
 }
 
-.vazio-titulo {
-  font-family: var(--fonte-display);
+.empty-title {
+  font-family: var(--font-display);
   font-size: 18px;
   font-weight: 300;
   color: var(--text);
   opacity: 0.5;
 }
 
-.vazio-sub {
+.empty-sub {
   font-size: 12px;
   max-width: 320px;
   line-height: 1.6;
 }
 
-#estado-dados {
+#data-state {
   display: none;
   flex-direction: column;
   gap: 28px;
 }
 
-.resultado-tabs {
+.result-tabs {
   display: none;
   align-items: center;
   justify-content: space-between;
@@ -46,31 +46,31 @@
   flex-wrap: wrap;
 }
 
-.resultado-tabs-grupo {
+.result-tabs-group {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.resultado-tabs-acoes {
+.result-tabs-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   margin-left: auto;
 }
 
-.resultado-tab {
+.result-tab {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
   border-radius: 999px;
   padding: 6px 12px;
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 11px;
   cursor: pointer;
 }
 
-.resultado-tab.ativo {
+.result-tab.active {
   border-color: var(--accent);
   background: rgba(26, 71, 42, 0.08);
   color: var(--accent);
@@ -85,7 +85,7 @@
   color: var(--accent);
   border-radius: 999px;
   padding: 8px 14px;
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -107,14 +107,14 @@
   cursor: not-allowed;
 }
 
-.global-filter-trigger.ativo,
+.global-filter-trigger.active,
 .global-filter-trigger[data-active="true"] {
   background: var(--accent);
   color: var(--surface);
   border-color: var(--accent);
 }
 
-.global-filter-trigger.ativo:hover:not(:disabled),
+.global-filter-trigger.active:hover:not(:disabled),
 .global-filter-trigger[data-active="true"]:hover:not(:disabled) {
   background: var(--accent);
   filter: brightness(1.1);
@@ -257,7 +257,7 @@
 }
 
 .gf-rule-title {
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--muted);
   text-transform: uppercase;
@@ -290,28 +290,28 @@
 }
 
 @media (max-width: 640px) {
-  .resultado-tabs {
+  .result-tabs {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .resultado-tabs-acoes {
+  .result-tabs-actions {
     margin-left: 0;
     justify-content: flex-end;
   }
 }
 
-.resultado-painel {
+.result-panel {
   display: none;
   flex-direction: column;
   gap: 28px;
 }
 
-.resultado-painel.ativo {
+.result-panel.active {
   display: flex;
 }
 
-.resultado-card {
+.result-card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -327,34 +327,34 @@
   background: rgba(26, 71, 42, 0.03);
 }
 
-.card-header-controles {
+.card-header-controls {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.linhas-label {
+.rows-label {
   font-size: 10px;
   color: var(--muted);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
 
-.linhas-select {
+.rows-select {
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
   border-radius: 4px;
   padding: 4px 6px;
-  font-family: var(--fonte-mono);
+  font-family: var(--font-mono);
   font-size: 11px;
   height: 24px;
   line-height: 1;
   vertical-align: middle;
 }
 
-#select-linhas-preview {
-  font-family: var(--fonte-sans);
+#select-preview-rows {
+  font-family: var(--font-sans);
   font-size: 12px;
   font-weight: 500;
   line-height: normal;
@@ -368,8 +368,8 @@
   transform: translateZ(0);
 }
 
-.card-titulo {
-  font-family: var(--fonte-display);
+.card-title {
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 700;
   color: var(--text);
@@ -384,21 +384,21 @@
   border-radius: 3px;
 }
 
-.card-corpo {
+.card-body {
   padding: 0;
   overflow-x: auto;
 }
 
-.card-corpo-preview {
+.card-body-preview {
   max-height: min(64vh, 720px);
   overflow: auto;
 }
 
-.card-corpo-charts {
+.card-body-charts {
   padding: 16px;
 }
 
-#painel-charts .resultado-card {
+#tab-content-charts .result-card {
   display: flex;
   flex-direction: column;
 }

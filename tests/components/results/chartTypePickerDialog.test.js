@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../../src/modules/chart-controls/previews.js', () => ({
+vi.mock('../../../src/modules/chartControls/previews.js', () => ({
 	PREVIEW_BAR_SVG: '<svg data-prev="bar" />',
 	PREVIEW_SCATTER_SVG: '<svg data-prev="scatter" />',
 	PREVIEW_PIE_SVG: '<svg data-prev="pie" />',
@@ -14,7 +14,7 @@ vi.mock('../../../src/modules/chart-controls/previews.js', () => ({
 }));
 
 import { openChartTypePickerDialog } from '../../../src/components/results/chartTypePickerDialog.js';
-import { CHART_TYPES } from '../../../src/modules/chart-controls/chartTypes.js';
+import { CHART_TYPES } from '../../../src/modules/chartControls/chartTypes.js';
 
 const translate = key => `t:${key}`;
 
@@ -41,16 +41,16 @@ describe('openChartTypePickerDialog', () => {
 		expect(types).toEqual(CHART_TYPES);
 	});
 
-	it('marks the active chart card with .selecionado', () => {
+	it('marks the active chart card with .selected', () => {
 		openChartTypePickerDialog({ activeChartType: 'pie', translate });
-		const selected = document.querySelectorAll('.chart-picker-card.selecionado');
+		const selected = document.querySelectorAll('.chart-picker-card.selected');
 		expect(selected.length).toBe(1);
 		expect(selected[0].dataset.chartType).toBe('pie');
 	});
 
-	it('renders no .selecionado card when activeChartType is null', () => {
+	it('renders no .selected card when activeChartType is null', () => {
 		openChartTypePickerDialog({ activeChartType: null, translate });
-		expect(document.querySelectorAll('.chart-picker-card.selecionado').length).toBe(0);
+		expect(document.querySelectorAll('.chart-picker-card.selected').length).toBe(0);
 	});
 
 	it('clicking a card resolves with { chartType } and removes the overlay', async () => {
@@ -64,7 +64,7 @@ describe('openChartTypePickerDialog', () => {
 
 	it('clicking Clear resolves with { chartType: null }', async () => {
 		const promise = openChartTypePickerDialog({ activeChartType: 'bar', translate });
-		const clearBtn = Array.from(document.querySelectorAll('.btn-secundario'))
+		const clearBtn = Array.from(document.querySelectorAll('.btn-secondary'))
 			.find(b => b.textContent === translate('chive-chart-picker-clear'));
 		clearBtn.click();
 		const result = await promise;
@@ -74,7 +74,7 @@ describe('openChartTypePickerDialog', () => {
 
 	it('clicking Cancel resolves with null', async () => {
 		const promise = openChartTypePickerDialog({ activeChartType: 'bar', translate });
-		const cancelBtn = Array.from(document.querySelectorAll('.btn-secundario'))
+		const cancelBtn = Array.from(document.querySelectorAll('.btn-secondary'))
 			.find(b => b.textContent === translate('chive-chart-picker-cancel'));
 		cancelBtn.click();
 		const result = await promise;

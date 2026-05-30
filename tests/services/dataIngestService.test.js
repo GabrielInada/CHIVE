@@ -56,8 +56,8 @@ describe('ingestFile', () => {
 					id: data.id,
 					type: 'done',
 					result: {
-						dados: [{ x: 1 }],
-						colunas: [{ nome: 'x', tipo: 'numero' }],
+						rows: [{ x: 1 }],
+						columns: [{ name: 'x', type: 'number' }],
 						decimalSeparator: '.',
 						statsNumeric: [],
 						statsCategorical: [],
@@ -70,7 +70,7 @@ describe('ingestFile', () => {
 		const result = await ingestFile({ kind: 'csv', text: 'x\n1' }, { onProgress });
 
 		expect(result.ok).toBe(true);
-		expect(result.value.dados).toEqual([{ x: 1 }]);
+		expect(result.value.rows).toEqual([{ x: 1 }]);
 		expect(onProgress).toHaveBeenCalledTimes(2);
 		expect(onProgress).toHaveBeenNthCalledWith(1, { stage: 'parsing', percent: 30, label: undefined });
 		expect(onProgress).toHaveBeenNthCalledWith(2, { stage: 'normalize', percent: 70, label: undefined });
@@ -80,7 +80,7 @@ describe('ingestFile', () => {
 	it('forwards options including rowLimit and dropColumns to the worker', async () => {
 		worker.onPost((data, w) => {
 			queueMicrotask(() => {
-				w.emit({ id: data.id, type: 'done', result: { dados: [], colunas: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
+				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
 			});
 		});
 
@@ -96,7 +96,7 @@ describe('ingestFile', () => {
 	it('resolves with cancelled when the AbortSignal fires before done', async () => {
 		const controller = new AbortController();
 
-		// Worker receives postMessage but never replies — caller will abort.
+		// Worker receives postMessage but never replies, caller will abort.
 		worker.onPost(() => {});
 
 		const promise = ingestFile({ kind: 'csv', text: 'x\n1' }, { signal: controller.signal });
@@ -141,7 +141,7 @@ describe('ingestFile', () => {
 		worker.onPost((data, w) => {
 			queueMicrotask(() => {
 				w.emit({ id: 'wrong-id', type: 'progress', stage: 'parsing', percent: 50 });
-				w.emit({ id: data.id, type: 'done', result: { dados: [], colunas: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
+				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
 			});
 		});
 
@@ -175,7 +175,7 @@ describe('ingestFile message validation', () => {
 	});
 
 	function validResult() {
-		return { dados: [], colunas: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null };
+		return { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null };
 	}
 
 	it('skips a progress message with a non-string stage', async () => {

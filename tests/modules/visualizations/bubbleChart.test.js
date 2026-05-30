@@ -9,22 +9,22 @@ describe('bubble chart visualization', () => {
 	});
 
 	it('returns failure when container or category column is missing', () => {
-		const dados = [{ categoria: 'A' }];
+		const rows = [{ categoria: 'A' }];
 
-		expect(renderBubbleChart(null, dados, 'categoria')).toEqual({ ok: false });
-		expect(renderBubbleChart(document.getElementById('bubble'), dados, null)).toEqual({ ok: false });
+		expect(renderBubbleChart(null, rows, 'categoria')).toEqual({ ok: false });
+		expect(renderBubbleChart(document.getElementById('bubble'), rows, null)).toEqual({ ok: false });
 	});
 
 	it('renders packed bubbles and returns ok', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 			{ categoria: 'C' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			chartHeight: 700,
 			labelMode: 'auto',
 		});
@@ -36,19 +36,19 @@ describe('bubble chart visualization', () => {
 
 	it('supports count, sum, and mean aggregation plus top-N filtering', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', valor: 10 },
 			{ categoria: 'A', valor: 20 },
 			{ categoria: 'B', valor: 5 },
 			{ categoria: 'C', valor: 40 },
 		];
 
-		const countResult = renderBubbleChart(container, dados, 'categoria', { topN: 2 });
+		const countResult = renderBubbleChart(container, rows, 'categoria', { topN: 2 });
 		expect(countResult.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-node').length).toBe(2);
 
 		container.innerHTML = '';
-		const sumResult = renderBubbleChart(container, dados, 'categoria', {
+		const sumResult = renderBubbleChart(container, rows, 'categoria', {
 			measureMode: 'sum',
 			valueColumn: 'valor',
 			topN: 0,
@@ -57,7 +57,7 @@ describe('bubble chart visualization', () => {
 		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
 
 		container.innerHTML = '';
-		const meanResult = renderBubbleChart(container, dados, 'categoria', {
+		const meanResult = renderBubbleChart(container, rows, 'categoria', {
 			measureMode: 'mean',
 			valueColumn: 'valor',
 		});
@@ -66,12 +66,12 @@ describe('bubble chart visualization', () => {
 
 	it('returns explicit failure reasons for missing numeric data in sum mode', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', valor: 'x' },
 			{ categoria: 'B', valor: 'y' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			measureMode: 'sum',
 			valueColumn: 'valor',
 		});
@@ -82,13 +82,13 @@ describe('bubble chart visualization', () => {
 
 	it('flat mode unchanged when nestingMode is flat or omitted', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'X' },
 			{ categoria: 'C', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'flat',
 			groupColumn: 'grupo',
 		});
@@ -100,14 +100,14 @@ describe('bubble chart visualization', () => {
 
 	it('grouped mode creates parent and leaf structure', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'X' },
 			{ categoria: 'C', grupo: 'Y' },
 			{ categoria: 'D', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 		});
@@ -119,12 +119,12 @@ describe('bubble chart visualization', () => {
 
 	it('grouped mode without groupColumn or nestingColumns returns fail', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 		});
 
@@ -134,7 +134,7 @@ describe('bubble chart visualization', () => {
 
 	it('topN still works in grouped mode (global leaf limit)', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'X' },
 			{ categoria: 'C', grupo: 'Y' },
@@ -142,7 +142,7 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'E', grupo: 'Z' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 			topN: 3,
@@ -154,13 +154,13 @@ describe('bubble chart visualization', () => {
 
 	it('sum/mean still work in grouped mode', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', grupo: 'X', valor: 10 },
 			{ categoria: 'B', grupo: 'X', valor: 20 },
 			{ categoria: 'C', grupo: 'Y', valor: 30 },
 		];
 
-		const sumResult = renderBubbleChart(container, dados, 'categoria', {
+		const sumResult = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 			measureMode: 'sum',
@@ -175,13 +175,13 @@ describe('bubble chart visualization', () => {
 
 	it('leaf labels use bubble-leaf-label class from renderLeafLabels', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 		];
 
-		renderBubbleChart(container, dados, 'categoria', {
+		renderBubbleChart(container, rows, 'categoria', {
 			labelMode: 'all',
 		});
 
@@ -191,14 +191,14 @@ describe('bubble chart visualization', () => {
 
 	it('parent tooltip includes aggregated value and child count via title element', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'X' },
 			{ categoria: 'C', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 		});
@@ -216,13 +216,13 @@ describe('bubble chart multi-level nesting', () => {
 
 	it('nestingColumns length 1 matches current grouped behavior', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'X' },
 			{ categoria: 'C', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
 		});
@@ -234,14 +234,14 @@ describe('bubble chart multi-level nesting', () => {
 
 	it('nestingColumns length 2 creates two intermediate depths plus leaves', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', regiao: 'Norte', estado: 'PA' },
 			{ categoria: 'B', regiao: 'Norte', estado: 'PA' },
 			{ categoria: 'C', regiao: 'Norte', estado: 'AM' },
 			{ categoria: 'D', regiao: 'Sul', estado: 'RS' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao', 'estado'],
 		});
@@ -262,13 +262,13 @@ describe('bubble chart multi-level nesting', () => {
 
 	it('nestingColumns length 3 creates expected depth chain', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', continente: 'America', pais: 'Brasil', regiao: 'Norte' },
 			{ categoria: 'B', continente: 'America', pais: 'Brasil', regiao: 'Sul' },
 			{ categoria: 'C', continente: 'Europa', pais: 'Portugal', regiao: 'Lisboa' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			nestingColumns: ['continente', 'pais', 'regiao'],
 		});
@@ -285,12 +285,12 @@ describe('bubble chart multi-level nesting', () => {
 
 	it('grouped with only groupColumn still works (migration)', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 		});
@@ -301,12 +301,12 @@ describe('bubble chart multi-level nesting', () => {
 
 	it('grouped with both nestingColumns and groupColumn prefers nestingColumns', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', regiao: 'Norte', grupo: 'X' },
 			{ categoria: 'B', regiao: 'Sul', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao'],
 			groupColumn: 'grupo',
@@ -320,28 +320,28 @@ describe('bubble chart multi-level nesting', () => {
 
 	it('null values in nesting columns normalized and rendered', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', grupo: null },
 			{ categoria: 'B', grupo: 'X' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
 		});
 
 		expect(result.ok).toBe(true);
-		// Two groups: '—' and 'X'
+		// Two groups: 'N/A' and 'X'
 		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
 	});
 
 	it('single-item groups render and zoom without errors', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', grupo: 'X' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
 			zoomTransitionDuration: 0,
@@ -354,11 +354,11 @@ describe('bubble chart multi-level nesting', () => {
 
 	it('empty grouped nesting returns no-nesting-columns fail reason', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			nestingColumns: [],
 		});
@@ -369,12 +369,12 @@ describe('bubble chart multi-level nesting', () => {
 
 	it('intermediate nodes rendered for all depths', () => {
 		const container = document.getElementById('bubble');
-		const dados = [
+		const rows = [
 			{ categoria: 'A', regiao: 'Norte', estado: 'PA' },
 			{ categoria: 'B', regiao: 'Sul', estado: 'RS' },
 		];
 
-		const result = renderBubbleChart(container, dados, 'categoria', {
+		const result = renderBubbleChart(container, rows, 'categoria', {
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao', 'estado'],
 		});

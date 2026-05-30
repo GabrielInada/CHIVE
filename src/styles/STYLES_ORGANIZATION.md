@@ -5,9 +5,9 @@ This document describes the organizational structure of stylesheets and their al
 ## Architecture
 
 All stylesheets are imported through a bundler pattern with cascade layers:
-- **Main entry**: `style.css` (declares layer order and imports feature bundles) — used by `index.html`
+- **Main entry**: `style.css` (declares layer order and imports feature bundles); used by `index.html`
 - **Feature bundles**: `base.css`, `data-view.css`, `visual-output.css`, `controls.css`, `feedback.css`
-- **Shared chrome bundle**: `chrome.css` — the foundation subset both `index.html` and `about.html` need (variables, layout, responsive, header-nav). Loaded directly by `about.html`; transitively included in `style.css` via `base.css`.
+- **Shared chrome bundle**: `chrome.css`, the foundation subset both `index.html` and `about.html` need (variables, layout, responsive, header-nav). It is loaded directly by `about.html` and transitively included in `style.css` via `base.css`.
 - **Individual styles**: Feature-specific CSS files
 
 ### Cascade Layer Order
@@ -44,7 +44,7 @@ Foundation is split into two sub-bundles so the about page can load only what it
 
 | File | Purpose |
 |------|---------|
-| `animations.css` | `.animar` keyframe used by app feature reveals |
+| `animations.css` | `.animate` keyframe used by app feature reveals |
 | `collapsed.css` | `body.sidebar-collapsed` state styles for the main-app sidebar |
 
 **Bundle via**: `base.css` → `style.css`
@@ -85,7 +85,7 @@ Canvas layout, chart placement, and block management.
 
 † Listed here because the Panel feature owns it, but it is imported via `controls.css` (not `visual-output.css`) so its rules cascade in the `controls` layer.
 
-**Sub-feature**: `panel > visualizations` — Visualization-specific styling
+**Sub-feature**: `panel > visualizations`, visualization-specific styling
 
 **Bundle via**: `visual-output.css` → `style.css` (except `visualizations.css`, see above)
 
@@ -96,7 +96,7 @@ Shared UI patterns used across multiple features.
 |------|---------|
 | `messages.css` | Toast notifications, error/warning/info alerts, status displays |
 
-`feedback.css` itself is just the bundle file (a single `@import` for `messages.css`) — same shape as `base.css`, `controls.css`, `data-view.css`, and `visual-output.css`.
+`feedback.css` itself is just the bundle file (a single `@import` for `messages.css`), the same shape as `base.css`, `controls.css`, `data-view.css`, and `visual-output.css`.
 
 **Bundle via**: `feedback.css` → `style.css`
 
@@ -109,7 +109,7 @@ Main stylesheet orchestrator.
 
 ### Per-Page Stylesheets
 
-Pages load stylesheets directly via `<link rel="stylesheet">`. `index.html` loads only `style.css`, which transitively pulls in everything. `about.html` loads `chrome.css` + `about.css` — skipping the controls, data-view, visual-output, and feedback layers entirely.
+Pages load stylesheets directly via `<link rel="stylesheet">`. `index.html` loads only `style.css`, which transitively pulls in everything. `about.html` loads `chrome.css` + `about.css` and skips the controls, data-view, visual-output, and feedback layers entirely.
 
 | Page | Loads |
 |------|-------|
@@ -160,7 +160,7 @@ chrome.css (foundation layer)
 ├── responsive.css
 └── header-nav.css
 
-about.css (no layer — page-specific, wins over chrome on ties)
+about.css (no layer; page-specific, wins over chrome on ties)
 ```
 
 ## Adding New Styles
@@ -179,17 +179,16 @@ When adding styles for a new feature:
 
 ## Class Naming Convention
 
-Classes follow Portuguese naming with kebab-case:
-- Component prefix: `.painel-`, `.tabela-`, `.grafico-`, `.vizão-`
-- Modifiers: `.ativo`, `.desativado`, `.carregado`
+Classes follow English kebab-case:
+- Component prefix: `.panel-`, `.table-`, `.chart-`
+- Modifiers: `.active`, `.loaded`, `.empty`, `.selected`, `.dragging`
 - IDs are used sparingly for major containers
 
 Examples:
-- `.painel-block` — Panel block container
-- `.tabela-preview` — Preview table
-- `.charts-controles` — Chart control UI
-- `.colunas-acoes` — Column action buttons
-- `#estado-vazio` — Empty state container
+- `.panel-block`: Panel block container
+- `.table-preview`: Preview table
+- `.column-actions`: Column action buttons
+- `#empty-state`: Empty state container
 
 ## Common Variables
 
@@ -207,9 +206,9 @@ All colors, fonts, and spacing are defined in `variables.css`:
 --tag-num       /* Numeric data tag background */
 --tag-txt       /* Text data tag background */
 --tag-dat       /* Date data tag background */
---fonte-display /* Display font (Source Serif 4) */
---fonte-sans    /* UI/body font (Source Sans 3) */
---fonte-mono    /* Monospace font (JetBrains Mono) */
+--font-display  /* Display font (Source Serif 4) */
+--font-sans     /* UI/body font (Source Sans 3) */
+--font-mono     /* Monospace font (JetBrains Mono) */
 ```
 
 ## Responsive Breakpoints Strategy
@@ -220,11 +219,11 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 
 | Breakpoint | Scope | File(s) | What changes |
 |------------|-------|---------|--------------|
-| **1024px** | About page | [about.css:261](src/styles/about.css#L261) | About-page grid collapses from 2-column to 1-column; hero padding shrinks |
-| **900px** | Main app layout | [responsive.css:5](src/styles/responsive.css#L5), [panel.css:489](src/styles/panel.css#L489) | Workspace stacks; header switches to column; sidebar narrows; panel block adjustments |
-| **768px** | Header chrome | [style.css:68](src/styles/style.css#L68) | Header nav gap/margins shrink; header wraps |
-| **640px** | About page + results | [about.css:286](src/styles/about.css#L286), [results.css:292](src/styles/results.css#L292) | About hero compresses; team grid becomes 1-column; results-area tweaks |
-| **480px** | Header chrome | [style.css:83](src/styles/style.css#L83) | Header nav reflows to full-width row below logo |
+| **1024px** | About page | [about.css:261](about.css#L261) | About-page grid collapses from 2-column to 1-column; hero padding shrinks |
+| **900px** | Main app layout | [responsive.css:5](responsive.css#L5), [panel.css:489](panel.css#L489) | Workspace stacks; header switches to column; sidebar narrows; panel block adjustments |
+| **768px** | Header chrome | [header-nav.css:60](header-nav.css#L60) | Header nav gap/margins shrink; header wraps |
+| **640px** | About page + results | [about.css:286](about.css#L286), [results.css:292](results.css#L292) | About hero compresses; team grid becomes 1-column; results-area tweaks |
+| **480px** | Header chrome | [header-nav.css:75](header-nav.css#L75) | Header nav reflows to full-width row below logo |
 
 ### Main-app breakpoint: 900px
 
@@ -237,9 +236,9 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 - **Content padding**: Reduces from `28px 32px` to `24px 20px 40px` to maximize usable space
 
 **Component behavior**:
-- When sidebar is collapsed, all text labels (`upload-texto-principal`, `secao-titulo`, etc.) are forcibly shown with `display: initial !important` to prevent content hiding
+- When sidebar is collapsed, all text labels (`upload-text-main`, `section-title`, etc.) are forcibly shown with `display: initial !important` to prevent content hiding
 - Upload zone maintains 32px padding but content font sizes adjust
-- Main content area (`area-resultados`) gets more padding on bottom for mobile app behavior
+- Main content area (`results-area`) gets more padding on bottom for mobile app behavior
 
 ### Design Rationale
 
@@ -255,9 +254,9 @@ Pick the home that matches the scope of the rule:
 1. **Main-app layout** (workspace, sidebar, content area) → `responsive.css` under the existing `@media (max-width: 900px)` block
 2. **Feature-internal** (e.g., panel slot rearrangement, results table) → the feature's own file (`panel.css`, `results.css`) at the breakpoint already in use there
 3. **About page** → `about.css` (1024px or 640px blocks)
-4. **Header chrome** (nav, logo, language switcher) → `style.css` (768px or 480px blocks)
-5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.ativo`) over new breakpoints when the difference is interaction-driven, not viewport-driven
-6. Test on: Desktop (1440px+), Tablet (768px–900px), Mobile (375px–480px)
+4. **Header chrome** (nav, logo, language switcher) → `header-nav.css` (768px or 480px blocks)
+5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.active`) over new breakpoints when the difference is interaction-driven, not viewport-driven
+6. Test on: Desktop (1440px+), Tablet (768px to 900px), Mobile (375px to 480px)
 
 ### Future Breakpoint Candidates
 

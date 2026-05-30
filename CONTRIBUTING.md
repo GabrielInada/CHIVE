@@ -1,6 +1,6 @@
 # Contributing to CHIVE
 
-Welcome. This document is the contributor's rulebook — read it before opening your first PR.
+Welcome. This document is the contributor's rulebook. Read it before opening your first PR.
 
 For end-user setup and deployment, see [README.md](README.md). For the architectural shape of the codebase, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
@@ -9,11 +9,11 @@ For end-user setup and deployment, see [README.md](README.md). For the architect
 
 ## Bug report
 
-Open a [bug report issue](https://github.com/GabrielInada/CHIVE/issues/new?template=bug_report.md) and fill in the template — what you observed, what you expected, and the smallest reproduction you can capture (steps, dataset, browser). The `bug` label is attached automatically.
+Open a [bug report issue](https://github.com/GabrielInada/CHIVE/issues/new?template=bug_report.md) and fill in the template: what you observed, what you expected, and the smallest reproduction you can capture (steps, dataset, browser). The `bug` label is attached automatically.
 
 ## Feature proposal
 
-Open a [feature proposal issue](https://github.com/GabrielInada/CHIVE/issues/new?template=feature_request.md) and fill in the template — the problem it solves, the user it serves, and how you'd expect it to behave. The `feature` label is attached automatically.
+Open a [feature proposal issue](https://github.com/GabrielInada/CHIVE/issues/new?template=feature_request.md) and fill in the template: the problem it solves, the user it serves, and how you'd expect it to behave. The `feature` label is attached automatically.
 
 ## Question
 
@@ -48,66 +48,82 @@ npm run test:watch   # Tests in watch mode
 
 ## Branching workflow
 
-- `main` — production/stable branch (default)
-- `develop` — integration/staging branch for testing before main
-- `feat/*` — feature branches; each new feature uses pattern `feat/branchName`
+- `main`: production/stable branch (default)
+- `develop`: integration/staging branch for testing before main
+- `feat/*`: feature branches; each new feature uses pattern `feat/branchName`
 - **Workflow:** Feature branches → PR to `develop` → tested → PR to `main`
 
 ## Commit & PR conventions
 
-- Commit messages mix Portuguese and English — match the existing repo style.
+- Commit messages are in English.
 - PRs target `develop`, never `main` directly. The only thing that lands on `main` is a merge from `develop` after it has been tested.
 - Keep PRs scoped; if you discover unrelated cleanup, open a separate branch.
 
 ## Code conventions
 
-- **CSS class names use Portuguese:** `.painel-`, `.tabela-`, `.grafico-`, modifiers like `.ativo`, `.desativado`
+- **CSS class names use English kebab-case:** `.panel-`, `.table-`, `.chart-`, modifiers like `.active`, `.loaded`, `.empty`
 - **CSS architecture:** Cascade layers ordered: foundation → controls → data-view → visual-output → feedback. See `src/styles/STYLES_ORGANIZATION.md` for details.
 - **Module exports:** camelCase for functions, PascalCase for classes
 - **Dependency injection:** Event handlers and render functions are passed as callbacks for testability and to avoid circular dependencies
 - **Result pattern:** Functions returning success/failure use `ok(data)` / `fail(reason)` from `src/utils/result.js`
 - **DOM IDs:** Use constants from `src/config/elementIds.js` instead of hardcoded strings
-- **Color utilities:** Use shared functions from `src/utils/colorUtils.js` — never duplicate hex/rgb conversion logic
-- **Chart control listeners:** Use helpers from `src/modules/chart-controls/controlListenerHelpers.js` for common patterns (select, checkbox, slider, etc.) — only write inline listeners when cross-dependency logic is needed
+- **Color utilities:** Use shared functions from `src/utils/colorUtils.js`; never duplicate hex/rgb conversion logic
+- **Chart control listeners:** Use helpers from `src/modules/chartControls/controlListenerHelpers.js` for common patterns (select, checkbox, slider, etc.); only write inline listeners when cross-dependency logic is needed
 - **Join and preset dataset UIs:** Keep orchestration in modules/components and reuse existing event-driven patterns
-- **No TypeScript, no linter config** — plain JS with ES modules
+- **No TypeScript:** plain JS with ES modules. ESLint exists, but its config is intentionally narrow and architecture-focused.
 
 ## Documentation conventions
 
 Public functions on the state core, services, and orchestrators carry JSDoc so the IDE can read each function's contract without re-reading the file. The conventions below match the existing style; please match them rather than inventing a new one.
 
+When moving, renaming, or adding documentation:
+
+- Search for old file names and paths with `rg`.
+- Check Markdown links changed by the edit.
+- Update issue templates when a top-level or user-facing doc target changes.
+- Update the README documentation map when a new user-facing doc is added.
+
 - **Format**: `/** ... */` blocks, tab-indented. `@param {Type} name - description`. `@returns {Type} description` (omit only when the function is `void`).
 - **Minimum verbosity**: a 1-line summary plus `@param`/`@returns`. Add `@example`, `@fires`, `@throws`, `@deprecated`, or `@private` only where they convey something a reader could not infer from the signature.
-- **Project typedefs** live in [`src/types.js`](src/types.js) (`AppState`, `Dataset`, `ChartConfig`, `PanelBlock`, `ChartSnapshot`, `StateEventType`, …). Import via `@typedef {import('../types.js').Foo} Foo` at the top of the consuming file, then reference `Foo` unqualified downstream. Barrels do not propagate typedefs — always import from `src/types.js` directly.
-- **Mutable vs cloned returns**: functions that return a live state reference must say `"Live reference, do not mutate."` in the `@returns` description. Cloned returns say `"Deep clone."`. This footgun is real — mutating a getter return bypasses the facade and breaks reactivity. See [`appState.js`](src/modules/appState.js) for examples.
+- **Project typedefs** live in [`src/types.js`](src/types.js) (`AppState`, `Dataset`, `ChartConfig`, `PanelBlock`, `ChartSnapshot`, `StateEventType`, …). Import via `@typedef {import('../types.js').Foo} Foo` at the top of the consuming file, then reference `Foo` unqualified downstream. Barrels do not propagate typedefs; always import from `src/types.js` directly.
+- **Mutable vs cloned returns**: functions that return a live state reference must say `"Live reference, do not mutate."` in the `@returns` description. Cloned returns say `"Deep clone."`. This footgun is real. Mutating a getter return bypasses the facade and breaks reactivity. See [`appState.js`](src/modules/state/appState.js) for examples.
 - **Events**: use `@fires STATE_EVENTS.FOO` (the constant name, not the string literal `'foo'`). Functions that conditionally emit must say so in the description.
-- **Facade-only-write invariant**: facade module banners reference `@see ARCHITECTURE.md`. Mutation helpers under `src/modules/panel/*` and similar are `@internal` and must not be imported from outside the module that backs them.
+- **Facade-only-write invariant**: facade module banners reference `@see ARCHITECTURE.md`. Mutation helpers under `src/modules/panelSubsystem/*` and similar are `@internal` and must not be imported from outside the module that backs them.
 - **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only; the editor and Claude use it for hover/intellisense without type validation.
 - **No HTML site generation** (no typedoc / no jsdoc CLI). Hover and source reading are the deliverable.
 
-## Architecture invariants — do not break
+## Architecture invariants: do not break
 
 Hard rules. Breaking any of them silently degrades reactivity, and the failure mode is "the UI looks fine until the day it doesn't." See [ARCHITECTURE.md](ARCHITECTURE.md) for the why.
 
 - All writes to application state go through a facade. Never assign to `dataset.*`, `appState.*`, or anything returned from a getter (`getActiveDataset()`, `getAllDatasets()`, `getPanelCharts()`, …).
-- Event names live in `STATE_EVENTS`. Never use string literals in `src/`. (Tests intentionally keep literals to exercise the wire format — leave them alone.)
+- Event names live in `STATE_EVENTS`. Never use string literals in `src/`. (Tests intentionally keep literals to exercise the wire format; leave them alone.)
 - Subscribers must not synchronously emit a state event from inside their callback (re-entrancy loop). Defer with `queueMicrotask` if you need a follow-up mutation.
-- For normalize-on-read paths (e.g. applying chart-config defaults during render), use `normalizeActiveDatasetConfig` — it writes without emitting, which is the only safe shape for that case.
+- For normalize-on-read paths (e.g. applying chart-config defaults during render), use `normalizeActiveDatasetConfig`; it writes without emitting, which is the only safe shape for that case.
 - Renderers are stateless. They read via getters and never mutate.
-- `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`stateSync.js`, `persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js` — use a typed subscription.
+- `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`stateSync.js`, `persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js`; use a typed subscription.
 
-**Renderer statelessness is enforced by lint.** ESLint (`npm run lint`) restricts files under `src/components/` and `src/features/` to read-only imports from `modules/appState.js` — the `get*` functions, `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing any write function from those directories is an error. If you need a write from a renderer, you're writing it in the wrong layer — route it through a chart-controls listener or `eventHandlers.js`, both outside the linted scope. When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
+**Renderer statelessness is enforced by lint.** ESLint (`npm run lint`) restricts files under `src/components/` and `src/features/` to read-only imports from `modules/state/appState.js`: the `get*` functions, `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing any write function from those directories is an error. If you need a write from a renderer, you're writing it in the wrong layer; route it through a chartControls listener or `eventHandlers.js`, both outside the linted scope. When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
 
-**Inline mutation of facade getter returns is blocked across all of `src/`.** A second lint rule (`no-restricted-syntax` in `eslint.config.js`) catches patterns like `getActiveDataset().X = y` and `getActiveDataset().X.Y = z` at depths 1–3 against the mutable-ref getters (`getActiveDataset`, `getAllDatasets`, `getPanelCharts`, `getChartSnapshot`, `getPanelBlocks`, `getState`). The rule has one known blind spot: aliased mutations (`const ds = getActiveDataset(); ds.X = y`) pass static analysis. Don't write that pattern — go through a facade write method. When a new mutable-ref getter is added to `appState.js`, update `FACADE_MUTABLE_GETTERS` in `eslint.config.js`.
+**Mutation of facade getter returns is blocked across all of `src/`.** A `no-restricted-syntax` rule in `eslint.config.js` catches the *inline* forms, `getActiveDataset().X = y` and `getActiveDataset().X.Y = z` at depths 1 to 3, against the mutable-ref getters (`getActiveDataset`, `getAllDatasets`, `getPanelCharts`, `getChartSnapshot`, `getPanelBlocks`, `getState`). The *aliased* form (`const ds = getActiveDataset(); ds.X = y`) is caught by a local rule, `chive/no-facade-getter-mutation` ([eslint-rules/no-facade-getter-mutation.js](eslint-rules/no-facade-getter-mutation.js)): it is scope-aware and import-gated (only getters imported from `modules/index.js` or `modules/state/appState.js` count, so DOM `el.dataset.x = y` writes and same-named DI params are not flagged), and it exempts the facade internals under `src/modules/state/` that legitimately use the aliased-write pattern. One gap remains by design: *sub-property* aliasing (`const c = getActiveDataset().chartConfig; c.X = y`) is caught by neither rule. Do not write it; route writes through a facade method. When a new mutable-ref getter is added to `appState.js`, update **both** `FACADE_MUTABLE_GETTERS` in `eslint.config.js` and `TRACKED_GETTERS` in the local rule.
 
 **CI runs lint + tests on every push and PR** (`.github/workflows/lint-and-test.yml`, targeting `main` and `develop`). Even if you forget `npm run lint` locally, the merge gate catches it.
+
+### ESLint guards
+
+Beyond renderer statelessness, `npm run lint` enforces these additional rule classes ([eslint.config.js](eslint.config.js)):
+
+- **Raw-static deployment guards.** CHIVE is meant to run served raw from `src/` with no build step, so bundler-/Vite-only import forms are hard errors — they pass dev/test/Vite but break when `src/` is served directly. Banned: bare `d3` / `banana-i18n` imports (use the full `https://esm.sh/…` CDN URL — see `BARE_IMPORT_BANS`), the `?worker` / `?url` / `?raw` suffixes, and `import.meta.glob` / `import.meta.env`. `import.meta.url` stays allowed: it is the standard form for `new Worker(new URL(…), import.meta.url)` and preset asset URLs. To add a runtime dependency, import its full CDN URL — never a bare specifier.
+- **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not import "upward": neither may import `modules/`, `components/`, `features/`, or `services/`. (Type/number/date formatting in `utils/formatters.js` is pure — callers pass `locale`; the localized type-label helper `translateType` lives in `services/i18nService.js`.)
+- **General hygiene, as warnings.** `no-unused-vars`, `prefer-const`, `no-var`, `eqeqeq`, and `curly` (`multi-line` — braces required only when a body spans multiple lines, matching the brace-free single-line style) run as **warnings**, not errors: CI runs `npm run lint` with no `--max-warnings`, so they surface cleanup without gating merges. Policy: architecture/deployment/correctness rules are errors; general style is warnings.
+- **`no-undef` (error).** Undefined-identifier detection is on. Browser and Web Worker globals are maintained **by hand** in `BROWSER_GLOBALS` ([eslint.config.js](eslint.config.js)) — a deliberate choice to avoid the `globals` dependency, consistent with the minimal-footprint stance. The first time you use a new browser API (e.g. `navigator`), add it to that list or lint will flag it.
 
 ## Where do I put new code?
 
 | If you're adding… | Put it in | Notes |
 |---|---|---|
-| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chart-controls/{name}Controls.js` | Register in `chart-controls/index.js` and `config/chartDefaults.js`. |
-| A new state field | The relevant domain in `appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
+| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. |
+| A new state field | The relevant domain in `src/modules/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
 | A new DOM event handler | `src/modules/eventHandlers.js` (or an existing controller) | Translate the event into a facade call. Never mutate state directly. |
 | A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
 | A pure helper (formatting, parsing, color) | `src/utils/` | No DOM access. No state imports. |

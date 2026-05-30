@@ -5,7 +5,7 @@
  *
  * @param {Object} args
  * @param {HTMLElement} args.lista
- * @param {Array<{ nome: string, dados: Array<*>, colunas: Array<*>, tamanho: string }>} args.datasets
+ * @param {Array<{ name: string, rows: Array<*>, columns: Array<*>, sizeLabel: string }>} args.datasets
  * @param {number} args.indiceAtivo - Active dataset index; `-1` if none.
  * @param {(key: string, ...args: *) => string} args.traduzir
  * @param {() => string} args.getLocale
@@ -31,42 +31,42 @@ export function renderFileListDOM({
 	const normalizedFilter = String(filtro || '').trim().toLowerCase();
 	const indexedDatasets = datasets.map((dataset, index) => ({ dataset, index }));
 	const filteredDatasets = normalizedFilter
-		? indexedDatasets.filter(({ dataset }) => String(dataset.nome || '').toLowerCase().includes(normalizedFilter))
+		? indexedDatasets.filter(({ dataset }) => String(dataset.name || '').toLowerCase().includes(normalizedFilter))
 		: indexedDatasets;
 	const safeLimit = Number.isFinite(limiteVisivel) && limiteVisivel > 0 ? Math.floor(limiteVisivel) : 15;
 	const visibleDatasets = filteredDatasets.slice(0, safeLimit);
 
 	visibleDatasets.forEach(({ dataset, index }) => {
 		const item = document.createElement('div');
-		item.className = `arquivo-item ${index === activeIndex ? 'ativo' : ''}`;
+		item.className = `file-item ${index === activeIndex ? 'active' : ''}`;
 		item.dataset.idx = String(index);
 
 		const selectButton = document.createElement('button');
-		selectButton.className = 'arquivo-item-botao';
+		selectButton.className = 'file-item-button';
 		selectButton.type = 'button';
 		selectButton.dataset.acao = 'selecionar';
 		selectButton.dataset.idx = String(index);
 
 		const name = document.createElement('span');
-		name.className = 'arquivo-item-nome';
-		name.title = dataset.nome;
-		name.textContent = dataset.nome;
+		name.className = 'file-item-name';
+		name.title = dataset.name;
+		name.textContent = dataset.name;
 
 		const meta = document.createElement('span');
-		meta.className = 'arquivo-item-meta';
+		meta.className = 'file-item-meta';
 		meta.textContent = translate(
 			'chive-file-meta',
-			dataset.dados.length.toLocaleString(getLocale()),
-			dataset.colunas.length,
-			dataset.tamanho
+			dataset.rows.length.toLocaleString(getLocale()),
+			dataset.columns.length,
+			dataset.sizeLabel
 		);
 
 		const removeButton = document.createElement('button');
-		removeButton.className = 'arquivo-item-remover';
+		removeButton.className = 'file-item-remove';
 		removeButton.type = 'button';
 		removeButton.dataset.acao = 'remover';
 		removeButton.dataset.idx = String(index);
-		removeButton.setAttribute('aria-label', translate('chive-remove-file', dataset.nome));
+		removeButton.setAttribute('aria-label', translate('chive-remove-file', dataset.name));
 		removeButton.textContent = '×';
 
 		selectButton.appendChild(name);
@@ -78,7 +78,7 @@ export function renderFileListDOM({
 
 	if (filteredDatasets.length === 0) {
 		const empty = document.createElement('div');
-		empty.className = 'arquivo-lista-vazia';
+		empty.className = 'file-list-empty';
 		empty.textContent = translate('chive-files-no-match');
 		list.appendChild(empty);
 	}

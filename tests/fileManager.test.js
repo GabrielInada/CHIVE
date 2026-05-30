@@ -33,7 +33,7 @@ vi.mock('../src/services/dataIngestService.js', () => ({
   progressLabelForStage: mocks.progressLabelForStage,
 }));
 
-vi.mock('../src/modules/appState.js', () => ({
+vi.mock('../src/modules/state/appState.js', () => ({
   addDataset: mocks.addDataset,
   removeDataset: mocks.removeDataset,
   setActiveDataset: mocks.setActiveDataset,
@@ -94,14 +94,14 @@ describe('fileManager', () => {
     initFileManager(null);
 
     mocks.processData.mockReturnValue({
-      dados: [{ a: 1 }],
-      colunas: [{ nome: 'a', tipo: 'numero' }],
+      rows: [{ a: 1 }],
+      columns: [{ name: 'a', type: 'number' }],
     });
     mocks.ingestFile.mockResolvedValue({
       ok: true,
       value: {
-        dados: [{ a: 1 }],
-        colunas: [{ nome: 'a', tipo: 'numero' }],
+        rows: [{ a: 1 }],
+        columns: [{ name: 'a', type: 'number' }],
         decimalSeparator: '.',
         statsNumeric: [],
         statsCategorical: [],
@@ -121,7 +121,7 @@ describe('fileManager', () => {
     });
   });
 
-  it('ignora upload vazio e nao limpa erros quando sem arquivos', async () => {
+  it('ignores empty upload and does not clear errors when no files', async () => {
     await handleFileUpload(null);
     await handleFileUpload([]);
 
@@ -129,7 +129,7 @@ describe('fileManager', () => {
     expect(mocks.addDataset).not.toHaveBeenCalled();
   });
 
-  it('processa CSV valido e adiciona dataset normalizado', async () => {
+  it('processes valid CSV and adds a normalized dataset', async () => {
     const onChange = vi.fn();
     initFileManager(onChange);
 
@@ -143,14 +143,14 @@ describe('fileManager', () => {
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
 
     const added = mocks.addDataset.mock.calls[0][0];
-    expect(added.nome).toBe('ok.csv');
-    expect(added.colunasSelecionadas).toEqual(['a']);
-    expect(added.configGraficos.bar.enabled).toBe(false);
+    expect(added.name).toBe('ok.csv');
+    expect(added.selectedColumns).toEqual(['a']);
+    expect(added.chartConfig.bar.enabled).toBe(false);
     expect(added.precomputedStats).toEqual({ numeric: [], categorical: [] });
     expect(onChange).toHaveBeenCalledTimes(1);
   });
 
-  it('trata erros de formato e cancelamento de arquivo grande', async () => {
+  it('handles format errors and large-file cancellation', async () => {
     await handleFileUpload([csvFile({ name: 'bad.xyz' })]);
     expect(mocks.showError).toHaveBeenCalledWith(`chive-error-format:bad.xyz`);
 
@@ -169,8 +169,8 @@ describe('fileManager', () => {
     mocks.ingestFile.mockResolvedValueOnce({
       ok: true,
       value: {
-        dados: [{ x: 1 }, { x: 2 }],
-        colunas: [{ nome: 'x', tipo: 'numero' }],
+        rows: [{ x: 1 }, { x: 2 }],
+        columns: [{ name: 'x', type: 'number' }],
         decimalSeparator: '.',
         statsNumeric: [],
         statsCategorical: [],
@@ -182,7 +182,7 @@ describe('fileManager', () => {
     expect(mocks.ingestFile).toHaveBeenCalledTimes(1);
     expect(mocks.ingestFile.mock.calls[0][0].options).toEqual(expect.objectContaining({ rowLimit: 2 }));
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
-    expect(mocks.addDataset.mock.calls[0][0].dados).toHaveLength(2);
+    expect(mocks.addDataset.mock.calls[0][0].rows).toHaveLength(2);
   });
 
   it('select/remove/get datasets encaminham para appState com tratamento de erro', () => {
@@ -207,8 +207,8 @@ describe('fileManager', () => {
     removeDatasetByIndex(5);
     expect(mocks.showError).toHaveBeenCalledWith('remove boom');
 
-    mocks.getAllDatasets.mockReturnValue([{ nome: 'X' }]);
-    expect(getLoadedDatasets()).toEqual([{ nome: 'X' }]);
+    mocks.getAllDatasets.mockReturnValue([{ name: 'X' }]);
+    expect(getLoadedDatasets()).toEqual([{ name: 'X' }]);
   });
 
   it('setupFileInputListeners cobre caminhos missing e interacoes de upload zone', async () => {
@@ -218,9 +218,9 @@ describe('fileManager', () => {
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-upload-zone-missing');
 
     const input = document.createElement('input');
-    input.id = 'input-arquivo';
+    input.id = 'file-input';
     const zone = document.createElement('div');
-    zone.id = 'zona-upload';
+    zone.id = 'upload-zone';
     document.body.innerHTML = '';
     document.body.appendChild(input);
     document.body.appendChild(zone);
@@ -256,12 +256,12 @@ describe('fileManager', () => {
     expect(mocks.clearErrors).toHaveBeenCalled();
   });
 
-  it('permite fazer re-upload do mesmo arquivo apos delete (regression: limpa input value)', async () => {
+  it('allows re-uploading the same file after delete (regression: clears input value)', async () => {
     const onChange = vi.fn();
     initFileManager(onChange);
 
     const input = document.createElement('input');
-    input.id = 'input-arquivo';
+    input.id = 'file-input';
     input.type = 'file';
 
     // Cria um getter/setter para value que funcione
@@ -288,7 +288,7 @@ describe('fileManager', () => {
     setupFileInputListeners();
     expect(capturedHandler).toBeDefined();
 
-    const testFile = csvFile({ name: 'dados.csv' });
+    const testFile = csvFile({ name: 'rows.csv' });
 
     // Simula change event com target = input
     const mockEvent1 = new Event('change');
@@ -298,7 +298,7 @@ describe('fileManager', () => {
     });
 
     // Primeiro upload
-    input.value = 'C:\\fakepath\\dados.csv';
+    input.value = 'C:\\fakepath\\rows.csv';
     Object.defineProperty(input, 'files', {
       value: [testFile],
       configurable: true,
@@ -315,7 +315,7 @@ describe('fileManager', () => {
     mocks.addDataset.mockClear();
 
     // Re-upload do MESMO arquivo
-    input.value = 'C:\\fakepath\\dados.csv'; // Mesmo path
+    input.value = 'C:\\fakepath\\rows.csv'; // Mesmo path
     Object.defineProperty(input, 'files', {
       value: [testFile],
       configurable: true,
@@ -329,28 +329,28 @@ describe('fileManager', () => {
 
     await capturedHandler(mockEvent2);
 
-    // Deve ter chamado addDataset novamente (só é possível porque value foi limpo no handler)
+    // addDataset should have been called again (only possible because value was cleared in the handler)
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
     expect(input.value).toBe('');
   });
 
-  it('cria dataset unido e trata erros de validacao', () => {
+  it('creates joined dataset and handles validation errors', () => {
     mocks.getAllDatasets.mockReturnValue([
       {
-        nome: 'A.csv',
-        dados: [{ id: '1', amount: 10 }],
-        colunas: [{ nome: 'id', tipo: 'texto' }, { nome: 'amount', tipo: 'numero' }],
+        name: 'A.csv',
+        rows: [{ id: '1', amount: 10 }],
+        columns: [{ name: 'id', type: 'text' }, { name: 'amount', type: 'number' }],
       },
       {
-        nome: 'B.csv',
-        dados: [{ id: '1', target: 99 }],
-        colunas: [{ nome: 'id', tipo: 'texto' }, { nome: 'target', tipo: 'numero' }],
+        name: 'B.csv',
+        rows: [{ id: '1', target: 99 }],
+        columns: [{ name: 'id', type: 'text' }, { name: 'target', type: 'number' }],
       },
     ]);
 
     mocks.processData.mockReturnValue({
-      dados: [{ id: '1', target: 99 }],
-      colunas: [{ nome: 'id', tipo: 'texto' }, { nome: 'target', tipo: 'numero' }],
+      rows: [{ id: '1', target: 99 }],
+      columns: [{ name: 'id', type: 'text' }, { name: 'target', type: 'number' }],
     });
     mocks.addDataset.mockReturnValue(2);
 
@@ -378,7 +378,7 @@ describe('fileManager', () => {
     expect(invalid.message).toBe('chive-join-error-select-different-files');
   });
 
-  it('usa confirmFn injetada no lugar de window.confirm', async () => {
+  it('uses injected confirmFn instead of window.confirm', async () => {
     const confirmMock = vi.fn(() => false);
     initFileManager(null, confirmMock);
 

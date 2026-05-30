@@ -113,7 +113,7 @@ describe('renderLineChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-line-numeric');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-line-numeric');
 	});
 
 	it('maps no-x-values reason to x-specific empty-state', () => {
@@ -127,7 +127,7 @@ describe('renderLineChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-line-x');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-line-x');
 	});
 
 	it('falls back to generic empty-state for any other failure', () => {
@@ -141,6 +141,6 @@ describe('renderLineChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-line');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-line');
 	});
 });

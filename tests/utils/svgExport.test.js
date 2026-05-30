@@ -12,7 +12,7 @@ describe('svgExport utils', () => {
     document.body.innerHTML = '';
   });
 
-  it('retorna erros quando container/svg não existem', () => {
+  it('returns errors when container/svg do not exist', () => {
     expect(captureSvgMarkupFromContainer('missing')).toEqual({ ok: false, reason: 'container-not-found' });
 
     const div = document.createElement('div');
@@ -22,7 +22,7 @@ describe('svgExport utils', () => {
     expect(captureSvgMarkupFromContainer('container')).toEqual({ ok: false, reason: 'svg-not-found' });
   });
 
-  it('captura SVG e injeta atributos obrigatórios', () => {
+  it('captures SVG and injects required attributes', () => {
     const div = document.createElement('div');
     div.id = 'chart';
     div.innerHTML = '<svg width="100" height="50"><rect width="100" height="50" /></svg>';
@@ -35,7 +35,7 @@ describe('svgExport utils', () => {
     expect(result.svgMarkup).toContain('viewBox="0 0 100 50"');
   });
 
-  it('baixa SVG com nome sanitizado e valida markup vazio', () => {
+  it('downloads SVG with sanitized name and rejects empty markup', () => {
     expect(downloadSvgMarkup('', 'Chart')).toEqual({ ok: false, reason: 'empty-markup' });
 
     const createObjectURL = vi.fn(() => 'blob:mock');

@@ -7,7 +7,7 @@ import { isNullish } from '../utils/formatters.js';
  *
  * Pure functions for CSV/JSON parsing, type/decimal detection, row
  * normalization, dataset joins, and per-column statistics. No DOM, no
- * state, no I/O — safe to use in workers and tests.
+ * state, no I/O, safe to use in workers and tests.
  *
  * @typedef {import('../types.js').ColumnSpec} ColumnSpec
  * @typedef {import('../types.js').JoinDatasetsOptions} JoinDatasetsOptions
@@ -114,14 +114,14 @@ function sanitizePrefix(fileName, fallback) {
  *
  * @param {JoinDatasetsOptions} options
  * @returns {JoinResult}
- * @throws {Error} `'join-invalid-datasets'` — `leftRows` or `rightRows` is not an array.
- * @throws {Error} `'join-keys-required'` — either key array is missing or empty.
- * @throws {Error} `'join-keys-mismatch'` — key arrays have different lengths.
+ * @throws {Error} `'join-invalid-datasets'`, `leftRows` or `rightRows` is not an array.
+ * @throws {Error} `'join-keys-required'`, either key array is missing or empty.
+ * @throws {Error} `'join-keys-mismatch'`, key arrays have different lengths.
  *
  * @example
  *   const result = joinDatasets({
- *       leftRows: ordersDataset.dados,
- *       rightRows: customersDataset.dados,
+ *       leftRows: ordersDataset.rows,
+ *       rightRows: customersDataset.rows,
  *       leftKeys: ['customerId'],
  *       rightKeys: ['id'],
  *       joinType: 'left',
@@ -446,7 +446,7 @@ export function detectDelimiter(firstLine) {
  */
 export function parseCsv(text) {
 	if (!text || text.trim().length === 0) {
-		throw new Error('O arquivo CSV está vazio.');
+		throw new Error('The CSV file is empty.');
 	}
 
 	const firstLine = text.split(/\r?\n/).find(line => line.trim().length > 0) || '';
@@ -454,7 +454,7 @@ export function parseCsv(text) {
 	const rows = dsvFormat(delimiter).parse(text);
 
 	if (rows.columns) delete rows.columns;
-	if (rows.length === 0) throw new Error('O arquivo CSV está vazio.');
+	if (rows.length === 0) throw new Error('The CSV file is empty.');
 
 	return rows;
 }
@@ -498,9 +498,9 @@ function stripDangerousKeys(value) {
  *
  * @param {string} text - Raw file content.
  * @returns {Array<Object<string, *>>} Parsed rows.
- * @throws {Error} `'O arquivo JSON contém erros de sintaxe…'` — `JSON.parse` failed.
- * @throws {Error} `'O arquivo JSON está vazio.'` / `'O array de dados no JSON está vazio.'` — zero rows.
- * @throws {Error} `'Formato JSON não reconhecido…'` — root is neither an array nor an object with an array-valued key.
+ * @throws {Error} `'JSON file contains syntax errors…'`, `JSON.parse` failed.
+ * @throws {Error} `'The JSON file is empty.'` / `'The data array in the JSON is empty.'`, zero rows.
+ * @throws {Error} `'Unrecognized JSON format…'`, root is neither an array nor an object with an array-valued key.
  */
 export function parseJson(text) {
 	let parsed;
@@ -508,11 +508,11 @@ export function parseJson(text) {
 	try {
 		parsed = JSON.parse(text);
 	} catch {
-		throw new Error('O arquivo JSON contém erros de sintaxe. Verifique o formato.');
+		throw new Error('JSON file contains syntax errors. Verify the format.');
 	}
 
 	if (Array.isArray(parsed)) {
-		if (parsed.length === 0) throw new Error('O arquivo JSON está vazio.');
+		if (parsed.length === 0) throw new Error('The JSON file is empty.');
 		return stripDangerousKeys(parsed);
 	}
 
@@ -520,24 +520,24 @@ export function parseJson(text) {
 		const chaveArray = Object.keys(parsed).find(chave => Array.isArray(parsed[chave]));
 		if (chaveArray) {
 			const arr = parsed[chaveArray];
-			if (arr.length === 0) throw new Error('O array de dados no JSON está vazio.');
+			if (arr.length === 0) throw new Error('The data array in the JSON is empty.');
 			return stripDangerousKeys(arr);
 		}
 	}
 
-	throw new Error('Formato JSON não reconhecido. O arquivo deve ser um array de objetos: [{...}, {...}]');
+	throw new Error('Unrecognized JSON format. The file must be an array of objects: [{...}, {...}]');
 }
 
 /**
  * Detect column types and normalize numeric values in a single pass.
  *
  * The decimal separator is detected once for the whole dataset (it is a
- * file-level property — all numeric columns in one upload share the same
- * convention). Then each column gets a `tipo` from `detectType`, and
+ * file-level property, all numeric columns in one upload share the same
+ * convention). Then each column gets a `type` from `detectType`, and
  * numeric cells are parsed into actual numbers via `normalizeNumericString`.
  *
  * @param {Array<Object<string, *>>} rawData - Rows as produced by `parseCsv` or `parseJson`.
- * @returns {{ dados: Array<Object<string, *>>, colunas: ColumnSpec[] }} - `dados` is the normalized row set; `colunas` lists `{ nome, tipo }` in source order. Empty input returns empty arrays.
+ * @returns {{ rows: Array<Object<string, *>>, columns: ColumnSpec[] }} - `rows` is the normalized row set; `columns` lists `{ name, type }` in source order. Empty input returns empty arrays.
  * @throws {Error} When `rawData` is not an array.
  */
 export function processData(rawData) {
@@ -546,7 +546,7 @@ export function processData(rawData) {
 	}
 
 	if (rawData.length === 0) {
-		return { dados: [], colunas: [] };
+		return { rows: [], columns: [] };
 	}
 
 	// Detect decimal separator once from a flat sample of all raw values.
@@ -563,15 +563,15 @@ export function processData(rawData) {
 
 	const columns = columnNames.map(name => {
 		const values = rawData.map(row => row[name]);
-		return { nome: name, tipo: detectType(values, decimalSeparator) };
+		return { name: name, type: detectType(values, decimalSeparator) };
 	});
 
 	const rows = rawData.map(row => {
 		const convertedRow = {};
 
-		columns.forEach(({ nome: name, tipo }) => {
+		columns.forEach(({ name: name, type }) => {
 			const value = row[name];
-			if (tipo === 'numero' && value !== '' && value !== null && value !== undefined) {
+			if (type === 'number' && value !== '' && value !== null && value !== undefined) {
 				const normalized = normalizeNumericString(String(value), decimalSeparator);
 				convertedRow[name] = Number(normalized);
 			} else {
@@ -582,12 +582,12 @@ export function processData(rawData) {
 		return convertedRow;
 	});
 
-	return { dados: rows, colunas: columns };
+	return { rows: rows, columns: columns };
 }
 
 /**
  * Compute per-column numeric statistics (n, min, max, mean, median).
- * Columns with `tipo !== 'numero'` are skipped; numeric columns with no
+ * Columns with `type !== 'number'` are skipped; numeric columns with no
  * finite values are also skipped (the function does not return null
  * placeholders).
  *
@@ -597,21 +597,21 @@ export function processData(rawData) {
  */
 export function calculateStatistics(rows, columns) {
 	return columns
-		.filter(column => column.tipo === 'numero')
-		.map(({ nome }) => {
+		.filter(column => column.type === 'number')
+		.map(({ name }) => {
 			const values = rows
-				.map(row => row[nome])
+				.map(row => row[name])
 				.filter(value => value !== null && value !== undefined && !isNaN(value));
 
 			if (values.length === 0) return null;
 
 			return {
-				nome,
+				name,
 				n: values.length,
 				min: min(values),
 				max: max(values),
-				media: mean(values),
-				mediana: median(values),
+				mean: mean(values),
+				median: median(values),
 			};
 		})
 		.filter(Boolean);
@@ -640,14 +640,14 @@ function isMissingValue(value) {
  */
 export function calculateCategoricalStatistics(rows, columns) {
 	return columns
-		.filter(column => column.tipo !== 'numero')
-		.map(({ nome }) => {
+		.filter(column => column.type !== 'number')
+		.map(({ name }) => {
 			const counts = new Map();
 			let missing = 0;
 			let n = 0;
 
 			for (let i = 0; i < rows.length; i++) {
-				const value = rows[i]?.[nome];
+				const value = rows[i]?.[name];
 				if (isMissingValue(value)) {
 					missing++;
 					continue;
@@ -662,7 +662,7 @@ export function calculateCategoricalStatistics(rows, columns) {
 
 			if (n === 0) {
 				return {
-					nome,
+					name,
 					n: 0,
 					missing,
 					missingPct: total > 0 ? missing / total : 0,
@@ -691,7 +691,7 @@ export function calculateCategoricalStatistics(rows, columns) {
 				.reduce((sum, c) => sum + c, 0);
 
 			return {
-				nome,
+				name,
 				n,
 				missing,
 				missingPct: total > 0 ? missing / total : 0,

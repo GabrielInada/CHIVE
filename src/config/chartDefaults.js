@@ -3,11 +3,11 @@
  *
  * `createDefaultChartConfig` returns the canonical fresh shape that every
  * new dataset starts with; `mergeChartConfigWithDefaults` deep-merges a
- * (possibly-partial) saved config onto the defaults — user-set fields
+ * (possibly-partial) saved config onto the defaults, user-set fields
  * always win on overlap, missing fields fall back to the default.
  *
  * The chart-specific sub-shapes live alongside the defaults here; each
- * mirrors what `chart-controls/<type>Controls.js` writes. Reach for
+ * mirrors what `chartControls/<type>Controls.js` writes. Reach for
  * `src/config/charts.js` for the per-chart constants that feed these.
  *
  * @typedef {import('../types.js').ChartConfig} ChartConfig
@@ -22,14 +22,14 @@ import { normalizeGlobalFilter, createEmptyGlobalFilter } from '../utils/globalF
  * bindings (`category`, `x`, `y`, …) `null` until the user picks one in
  * the sidebar.
  *
- * Mutating the returned object is safe — it is freshly constructed on
+ * Mutating the returned object is safe, it is freshly constructed on
  * each call.
  *
  * @returns {ChartConfig}
  */
 export function createDefaultChartConfig() {
 	return {
-		aba: 'preview',
+		activeTab: 'preview',
 		globalFilter: createEmptyGlobalFilter(),
 		bar: {
 			enabled: false,
@@ -244,7 +244,7 @@ function pickGlobalFilter(config) {
 }
 
 /**
- * Deep-merge `configGraficos` onto the defaults. User-set fields always
+ * Deep-merge `chartConfig` onto the defaults. User-set fields always
  * win; missing fields fall back to defaults. The merge is per-chart-type
  * (each `bar`, `scatter`, … block is independently shallow-merged), with
  * one nested case (`scatter.regression`) handled explicitly.
@@ -254,12 +254,12 @@ function pickGlobalFilter(config) {
  * into a one-element `nestingColumns` array. This preserves pre-multilevel
  * bubble configs across reloads.
  *
- * @param {*} configGraficos - Saved (possibly partial) chart config, or `null`/`undefined`.
+ * @param {*} chartConfig - Saved (possibly partial) chart config, or `null`/`undefined`.
  * @returns {ChartConfig} Merged, fully-populated config.
  */
-export function mergeChartConfigWithDefaults(configGraficos) {
+export function mergeChartConfigWithDefaults(chartConfig) {
 	const defaults = createDefaultChartConfig();
-	const config = configGraficos || {};
+	const config = chartConfig || {};
 
 	return {
 		...defaults,

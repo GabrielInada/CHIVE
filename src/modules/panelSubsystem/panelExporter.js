@@ -1,0 +1,128 @@
+/**
+ * CHIVE panel SVG exporter.
+ *
+ * Walks the rendered `#panel-layout-canvas` and composes a single
+ * standalone SVG file containing every visible slot's chart plus the
+ * block borders. The output is positioned in absolute coordinates
+ * relative to the canvas, what you see is what you save.
+ *
+ * @typedef {import('../../types.js').Result} Result
+ */
+
+import { t } from '../../services/i18nService.js';
+import { downloadSvgMarkup, ensureSvgAttributes } from '../../utils/svgExport.js';
+import { normalizeHexColor } from './resizeMath.js';
+import { fail } from '../../utils/result.js';
+
+/**
+ * Export the live panel canvas as a single SVG file. Clones each slot's
+ * live SVG, positions clones at their on-screen coordinates relative to
+ * the canvas, adds border rectangles for blocks with borders enabled,
+ * and triggers a browser download via {@link downloadSvgMarkup}.
+ *
+ * Catches unexpected serialization errors so the caller can surface a
+ * translated message via `feedbackCallback`.
+ *
+ * @param {((message: string, kind?: 'success' | 'error') => void) | null | undefined} feedbackCallback - Used to surface unexpected errors; ignored when null.
+ * @returns {Result} `{ ok: true }` on success. `{ ok: false, reason }` where reason is `'canvas-not-found'`, `'empty-canvas'`, or `'export-error'`.
+ */
+export function exportPanelLayoutSvg(feedbackCallback) {
+	const canvas = document.getElementById('panel-layout-canvas');
+	if (!canvas) {
+		return fail('canvas-not-found');
+	}
+
+	const rectCanvas = canvas.getBoundingClientRect();
+	if (rectCanvas.width <= 0 || rectCanvas.height <= 0) {
+		return fail('empty-canvas');
+	}
+
+	try {
+		const serializer = new XMLSerializer();
+		const docSvg = document.implementation.createDocument(
+			'http://www.w3.org/2000/svg',
+			'svg',
+			null
+		);
+		const svgRoot = docSvg.documentElement;
+
+		svgRoot.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+		svgRoot.setAttribute('width', String(Math.round(rectCanvas.width)));
+		svgRoot.setAttribute('height', String(Math.round(rectCanvas.height)));
+		svgRoot.setAttribute(
+			'viewBox',
+			`0 0 ${Math.round(rectCanvas.width)} ${Math.round(rectCanvas.height)}`
+		);
+
+		// Add background
+		const bg = docSvg.createElementNS('http://www.w3.org/2000/svg', 'rect');
+		bg.setAttribute('x', '0');
+		bg.setAttribute('y', '0');
+		bg.setAttribute('width', '100%');
+		bg.setAttribute('height', '100%');
+		bg.setAttribute('fill', '#fbfaf6');
+		svgRoot.appendChild(bg);
+
+		const allSlots = canvas.querySelectorAll('[data-panel-slot]');
+		allSlots.forEach(slotEl => {
+			const includeSlotBorder = slotEl.dataset.panelBorderEnabled === '1';
+			if (!includeSlotBorder) return;
+			const slotBorderColor = normalizeHexColor(slotEl.dataset.panelBorderColor, '#5d645d');
+				const slotRect = slotEl.getBoundingClientRect();
+				const x = slotRect.left - rectCanvas.left;
+				const y = slotRect.top - rectCanvas.top;
+				const w = slotRect.width;
+				const h = slotRect.height;
+
+				const border = docSvg.createElementNS('http://www.w3.org/2000/svg', 'rect');
+				border.setAttribute('x', String(x));
+				border.setAttribute('y', String(y));
+				border.setAttribute('width', String(w));
+				border.setAttribute('height', String(h));
+				border.setAttribute('fill', 'none');
+				border.setAttribute('stroke', slotBorderColor);
+				border.setAttribute('stroke-width', '2');
+				border.setAttribute('rx', '8');
+				border.setAttribute('ry', '8');
+				if (slotEl.classList.contains('empty')) {
+					border.setAttribute('stroke-dasharray', '6 4');
+				}
+				svgRoot.appendChild(border);
+		});
+
+		// Add each chart in rendered slots (all blocks), clone the LIVE SVG from the DOM
+		const slotElements = canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]');
+		slotElements.forEach(slotEl => {
+			const liveSvg = slotEl.querySelector('svg');
+			if (!liveSvg) return;
+
+			const slotRect = slotEl.getBoundingClientRect();
+			const x = slotRect.left - rectCanvas.left;
+			const y = slotRect.top - rectCanvas.top;
+			const w = slotRect.width;
+			const h = slotRect.height;
+
+			const chartSvg = liveSvg.cloneNode(true);
+			ensureSvgAttributes(chartSvg);
+
+			chartSvg.setAttribute('x', String(x));
+			chartSvg.setAttribute('y', String(y));
+			chartSvg.setAttribute('width', String(w));
+			chartSvg.setAttribute('height', String(h));
+
+			if (!chartSvg.getAttribute('preserveAspectRatio')) {
+				chartSvg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+			}
+
+			svgRoot.appendChild(docSvg.importNode(chartSvg, true));
+		});
+
+		const svgString = serializer.serializeToString(svgRoot);
+		return downloadSvgMarkup(svgString, 'panel-layout');
+	} catch (err) {
+		if (feedbackCallback) {
+			feedbackCallback(t('chive-panel-export-error'), 'error');
+		}
+		return fail('export-error');
+	}
+}

@@ -49,9 +49,9 @@ export function renderPieChartSection({ config, rows, filterCallbacks }) {
 			customSliceColors: config.customSliceColors,
 			locale: getLocale(),
 			labels: {
-				categoria: t('chive-chart-control-pie-category'),
-				contagem: t('chive-tooltip-count'),
-				percentual: t('chive-tooltip-percentage'),
+				category: t('chive-chart-control-pie-category'),
+				count: t('chive-tooltip-count'),
+				percentage: t('chive-tooltip-percentage'),
 				other: t('chive-chart-pie-other'),
 				focusOnThis: t('chive-tooltip-show-only-this'),
 				addToFilter: t('chive-tooltip-add-to-filter'),
@@ -61,9 +61,9 @@ export function renderPieChartSection({ config, rows, filterCallbacks }) {
 	);
 
 	if (!result.ok) {
-		const chave = result.reason === 'sum-no-numeric'
+		const key = result.reason === 'sum-no-numeric'
 			? 'chive-chart-empty-pie-sum'
 			: 'chive-chart-empty-pie';
-		showChartMessage(CHART_CONTAINERS.pie, t(chave));
+		showChartMessage(CHART_CONTAINERS.pie, t(key));
 	}
 }

@@ -30,11 +30,11 @@ export function showFeedback(message, duration = 2200) {
 	}
 
 	toast.textContent = message;
-	toast.classList.add('visivel');
+	toast.classList.add('visible');
 
 	if (feedbackTimer) window.clearTimeout(feedbackTimer);
 	feedbackTimer = window.setTimeout(() => {
-		toast.classList.remove('visivel');
+		toast.classList.remove('visible');
 	}, duration);
 }
 
@@ -53,21 +53,21 @@ export function showFeedbackMessage(message, duration = 2200) {
  * @param {number} duration - Auto-dismiss duration in ms (0 = no autodismiss)
  */
 export function showError(message, duration = 0) {
-	const errorsContainer = document.getElementById('erros-container');
+	const errorsContainer = document.getElementById('errors-container');
 	if (!errorsContainer) {
 		showFeedback(message, duration || 2200);
 		return;
 	}
 
 	const errorDiv = document.createElement('div');
-	errorDiv.className = 'aviso-erro';
+	errorDiv.className = 'error-notice';
 	errorDiv.role = 'alert';
 
 	const content = document.createElement('div');
 	content.textContent = message;
 
 	const closeBtn = document.createElement('button');
-	closeBtn.className = 'btn-fechar-aviso';
+	closeBtn.className = 'btn-close-notice';
 	closeBtn.type = 'button';
 	closeBtn.textContent = '×';
 	closeBtn.addEventListener('click', () => {
@@ -101,7 +101,7 @@ export function showErrorMessage(message, duration = 0) {
  * Clear all error messages
  */
 export function clearErrors() {
-	const errorsContainer = document.getElementById('erros-container');
+	const errorsContainer = document.getElementById('errors-container');
 	if (errorsContainer) {
 		errorsContainer.replaceChildren();
 	}
@@ -120,7 +120,7 @@ export function hideErrorMessage() {
  * @param {string} message - Loading message
  */
 export function showLoading(message) {
-	const loadingEl = document.getElementById('loading-estado');
+	const loadingEl = document.getElementById('loading-state');
 	if (loadingEl) {
 		loadingEl.replaceChildren();
 		const spinner = document.createElement('div');
@@ -137,7 +137,7 @@ export function showLoading(message) {
  * Hide loading state
  */
 export function hideLoading() {
-	const loadingEl = document.getElementById('loading-estado');
+	const loadingEl = document.getElementById('loading-state');
 	if (loadingEl) {
 		loadingEl.hidden = true;
 	}
@@ -149,7 +149,7 @@ export function hideLoading() {
 export function clearAllFeedback() {
 	const toast = document.getElementById('toast-feedback');
 	if (toast) {
-		toast.classList.remove('visivel');
+		toast.classList.remove('visible');
 	}
 	clearErrors();
 	hideLoading();
@@ -211,8 +211,8 @@ export function showProgress(initialLabel = '') {
 	document.body.appendChild(toast);
 	// WHY: rAF defers the class-add to the next frame, which forces a layout
 	// pass between the initial mount and the transition trigger. Without this,
-	// the .visivel transition runs on the initial style (no visual fade-in).
-	requestAnimationFrame(() => toast.classList.add('visivel'));
+	// the .visible transition runs on the initial style (no visual fade-in).
+	requestAnimationFrame(() => toast.classList.add('visible'));
 
 	let cancelHandler = null;
 	// 'callback' while in-flight (× aborts host work);
@@ -246,7 +246,7 @@ export function showProgress(initialLabel = '') {
 			if (message) labelEl.textContent = message;
 			// WHY: succeed flips cancelMode to 'close' (× now dismisses; it no longer
 			// invokes the host's cancel handler) and auto-closes after autoCloseMs.
-			// Symmetric with fail() — except fail does NOT auto-close, since an error
+			// Symmetric with fail(), except fail does NOT auto-close, since an error
 			// must stay visible until the user has read it.
 			cancelMode = 'close';
 			if (autoCloseTimer) window.clearTimeout(autoCloseTimer);
@@ -256,12 +256,12 @@ export function showProgress(initialLabel = '') {
 			toast.classList.add('failure');
 			if (message) labelEl.textContent = message;
 			cancelMode = 'close';
-			// No auto-close — user must dismiss via × so the error stays readable.
+			// No auto-close, user must dismiss via × so the error stays readable.
 		},
 		close() {
 			if (autoCloseTimer) window.clearTimeout(autoCloseTimer);
 			cancelBtn.removeEventListener('click', onCancelClick);
-			toast.classList.remove('visivel');
+			toast.classList.remove('visible');
 			window.setTimeout(() => {
 				if (toast.parentNode) toast.parentNode.removeChild(toast);
 			}, 200);

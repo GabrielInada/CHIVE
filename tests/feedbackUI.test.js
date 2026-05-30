@@ -16,33 +16,33 @@ describe('feedbackUI', () => {
     document.body.innerHTML = '';
   });
 
-  it('cria toast de feedback e remove visibilidade após timeout', () => {
+  it('creates feedback toast and removes visibility after timeout', () => {
     showFeedback('ok', 100);
     const toast = document.getElementById('toast-feedback');
     expect(toast).toBeTruthy();
-    expect(toast.classList.contains('visivel')).toBe(true);
+    expect(toast.classList.contains('visible')).toBe(true);
 
     vi.advanceTimersByTime(120);
-    expect(toast.classList.contains('visivel')).toBe(false);
+    expect(toast.classList.contains('visible')).toBe(false);
   });
 
-  it('mostra erro no container quando existe e permite fechar', () => {
+  it('shows error in container when it exists and allows closing', () => {
     const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'erros-container';
+    errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
     showError('boom');
 
-    const error = errorsContainer.querySelector('.aviso-erro');
+    const error = errorsContainer.querySelector('.error-notice');
     expect(error).toBeTruthy();
     expect(error.textContent).toContain('boom');
 
-    const close = errorsContainer.querySelector('.btn-fechar-aviso');
+    const close = errorsContainer.querySelector('.btn-close-notice');
     close.click();
-    expect(errorsContainer.querySelector('.aviso-erro')).toBeNull();
+    expect(errorsContainer.querySelector('.error-notice')).toBeNull();
   });
 
-  it('faz fallback para toast se container de erro não existir', () => {
+  it('falls back to toast when error container does not exist', () => {
     showError('fallback', 100);
     const toast = document.getElementById('toast-feedback');
     expect(toast).toBeTruthy();
@@ -51,14 +51,14 @@ describe('feedbackUI', () => {
 
   it('auto-dismiss error when duration is specified', () => {
     const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'erros-container';
+    errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
     showError('timed error', 200);
-    expect(errorsContainer.querySelector('.aviso-erro')).toBeTruthy();
+    expect(errorsContainer.querySelector('.error-notice')).toBeTruthy();
 
     vi.advanceTimersByTime(250);
-    expect(errorsContainer.querySelector('.aviso-erro')).toBeNull();
+    expect(errorsContainer.querySelector('.error-notice')).toBeNull();
   });
 
   it('reuses existing toast element on repeated calls', () => {
@@ -79,17 +79,17 @@ describe('feedbackUI', () => {
   it('showErrorMessage alias works', async () => {
     const { showErrorMessage } = await import('../src/modules/feedbackUI.js');
     const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'erros-container';
+    errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
     showErrorMessage('alias error');
-    expect(errorsContainer.querySelector('.aviso-erro')).toBeTruthy();
+    expect(errorsContainer.querySelector('.error-notice')).toBeTruthy();
   });
 
   it('hideErrorMessage alias clears errors', async () => {
     const { hideErrorMessage } = await import('../src/modules/feedbackUI.js');
     const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'erros-container';
+    errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
     showError('x');
@@ -107,11 +107,11 @@ describe('feedbackUI', () => {
 
   it('limpa erros e loading em clearAllFeedback', () => {
     const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'erros-container';
+    errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
     const loading = document.createElement('div');
-    loading.id = 'loading-estado';
+    loading.id = 'loading-state';
     loading.hidden = true;
     document.body.appendChild(loading);
 

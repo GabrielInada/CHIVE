@@ -21,9 +21,9 @@ import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
 import { getNumericColumnNames } from '../utils/columnHelpers.js';
 import {
-	LAYOUTS_PAINEL,
+	PANEL_LAYOUTS,
 	getLayoutConfig as getPanelLayoutConfig,
-} from './panel/layoutConfig.js';
+} from './panelSubsystem/layoutConfig.js';
 import {
 	getPanelBlocks,
 	getActiveDataset,
@@ -35,14 +35,14 @@ import {
 	clearPanel,
 	onStateChange,
 	STATE_EVENTS,
-} from './appState.js';
+} from './state/appState.js';
 import {
 	renderSidebarPanel as renderSidebar,
 	renderCanvasPanel as renderCanvas,
 	fillLayoutSelect,
-} from './panel/panelRenderer.js';
-import { exportPanelLayoutSvg as exportSvg } from './panel/panelExporter.js';
-import { SUPPORTED_PANEL_CHART_TYPES } from './panel/renderChartFromSpec.js';
+} from './panelSubsystem/panelRenderer.js';
+import { exportPanelLayoutSvg as exportSvg } from './panelSubsystem/panelExporter.js';
+import { SUPPORTED_PANEL_CHART_TYPES } from './panelSubsystem/renderChartFromSpec.js';
 
 // Callback for feedback UI (will be set by main.js)
 let feedbackCallback = null;
@@ -57,7 +57,7 @@ let panelManagerInitialized = false;
  * @param {((message: string, kind?: 'success' | 'error') => void) | null} [feedbackFn] - Callback for user feedback. When `null`, panel actions fall back to silent operation.
  */
 export function initPanelManager(feedbackFn = null) {
-	// Always update the feedback callback — callers may legitimately
+	// Always update the feedback callback, callers may legitimately
 	// pass a different function without intending to re-register listeners.
 	feedbackCallback = feedbackFn;
 
@@ -107,7 +107,7 @@ function handleLayoutChange() {
 
 /**
  * Capture a chart's current state as a snapshot and add it to the panel.
- * Reads the active dataset, merges its `configGraficos` with chart defaults,
+ * Reads the active dataset, merges its `chartConfig` with chart defaults,
  * applies the global filter, and stores a {@link ChartSnapshot} via the
  * panel facade.
  *
@@ -127,20 +127,20 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 		const dataset = getActiveDataset();
 		if (!dataset) return fail('no-dataset');
 
-		const mergedConfig = mergeChartConfigWithDefaults(dataset.configGraficos);
-		const allColumnNames = Array.isArray(dataset.colunas)
-			? dataset.colunas.map(column => column?.nome).filter(Boolean)
+		const mergedConfig = mergeChartConfigWithDefaults(dataset.chartConfig);
+		const allColumnNames = Array.isArray(dataset.columns)
+			? dataset.columns.map(column => column?.name).filter(Boolean)
 			: [];
-		const numericColumnNames = getNumericColumnNames(dataset.colunas || []);
+		const numericColumnNames = getNumericColumnNames(dataset.columns || []);
 		const safeGlobalFilter = resolveGlobalFilterForColumns(mergedConfig.globalFilter, allColumnNames);
-		const filteredRows = applyGlobalFilterRules(dataset.dados || [], safeGlobalFilter, numericColumnNames);
+		const filteredRows = applyGlobalFilterRules(dataset.rows || [], safeGlobalFilter, numericColumnNames);
 
 		const chartId = addChartSnapshot({
-			nome: chartBaseName,
+			name: chartBaseName,
 			type,
 			config: structuredClone(mergedConfig[type] || {}),
 			dataSnapshot: structuredClone(filteredRows),
-			columnsSnapshot: structuredClone(dataset.colunas || []),
+			columnsSnapshot: structuredClone(dataset.columns || []),
 			metadata,
 			metaSummary: typeof metadata?.summary === 'string' ? metadata.summary : '',
 		});
@@ -217,7 +217,7 @@ export function renderCanvasPanel() {
  * @fires STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED - When the change applies.
  */
 export function changeLayout(layoutId) {
-	if (!LAYOUTS_PAINEL[layoutId]) {
+	if (!PANEL_LAYOUTS[layoutId]) {
 		return;
 	}
 	const blocks = getPanelBlocks();
@@ -237,12 +237,12 @@ export function exportPanelLayoutSvg() {
 
 /**
  * Wire change/click listeners on the layout `<select>` and the export
- * button. Idempotent in practice — both elements get a fresh listener
+ * button. Idempotent in practice, both elements get a fresh listener
  * each call, so callers should invoke this at most once.
  */
 export function setupPanelEventListeners() {
 	const selectLayout = document.getElementById('select-panel-layout');
-	const btnExportar = document.getElementById('btn-exportar-painel');
+	const btnExportar = document.getElementById('btn-export-panel');
 
 	if (selectLayout) {
 		selectLayout.addEventListener('change', e => {
@@ -283,7 +283,7 @@ export function initializeLayoutSelector() {
 }
 
 /**
- * Reset the panel to a single fresh `layout-2col` block and re-render.
+ * Reset the panel to a single fresh `template-2col` block and re-render.
  *
  * @fires STATE_EVENTS.PANEL_CLEARED
  */

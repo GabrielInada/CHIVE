@@ -38,7 +38,7 @@ import {
 	computeAdaptiveMargins,
 	aggregateCategoricalPairs,
 	pickMostFrequentCategory,
-	normalizarDominio,
+	normalizeDomain,
 } from './scatterPlotAxisHelpers.js';
 import {
 	computeRegression,
@@ -66,100 +66,100 @@ const SCATTER_PALETTES = {
  * `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows.
- * @param {string} eixoX - X-axis column name.
- * @param {string} eixoY - Y-axis column name.
- * @param {Object} [opcoes={}] - Render options bag.
+ * @param {Array<Object<string, *>>} rows - Source rows.
+ * @param {string} xColumn - X-axis column name.
+ * @param {string} yColumn - Y-axis column name.
+ * @param {Object} [options={}] - Render options bag.
  * @returns {Result}
  */
-export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
-	if (!container || !eixoX || !eixoY) return fail();
-	const xScale = opcoes.xScale === 'log' ? 'log' : 'linear';
-	const yScale = opcoes.yScale === 'log' ? 'log' : 'linear';
-	const showXAxisLabel = opcoes.showXAxisLabel !== false;
-	const showYAxisLabel = opcoes.showYAxisLabel !== false;
-	const radius = Number.isFinite(Number(opcoes.radius)) ? Number(opcoes.radius) : SCATTER_PLOT.defaultRadius;
-	const opacity = Number.isFinite(Number(opcoes.opacity)) ? Number(opcoes.opacity) : SCATTER_PLOT.defaultOpacity;
-	const sizeMode = opcoes.sizeMode === 'numeric' ? 'numeric' : 'uniform';
-	const sizeField = opcoes.sizeField || null;
-	const sizeMin = Number.isFinite(Number(opcoes.sizeMin)) ? Math.max(0.5, Number(opcoes.sizeMin)) : 2;
-	const sizeMax = Number.isFinite(Number(opcoes.sizeMax)) ? Math.max(sizeMin, Number(opcoes.sizeMax)) : 12;
-	const color = isValidHexColor(String(opcoes.color || '').trim())
-		? String(opcoes.color).trim()
+export function renderScatterPlot(container, rows, xColumn, yColumn, options = {}) {
+	if (!container || !xColumn || !yColumn) return fail();
+	const xScaleType = options.xScale === 'log' ? 'log' : 'linear';
+	const yScaleType = options.yScale === 'log' ? 'log' : 'linear';
+	const showXAxisLabel = options.showXAxisLabel !== false;
+	const showYAxisLabel = options.showYAxisLabel !== false;
+	const radius = Number.isFinite(Number(options.radius)) ? Number(options.radius) : SCATTER_PLOT.defaultRadius;
+	const opacity = Number.isFinite(Number(options.opacity)) ? Number(options.opacity) : SCATTER_PLOT.defaultOpacity;
+	const sizeMode = options.sizeMode === 'numeric' ? 'numeric' : 'uniform';
+	const sizeField = options.sizeField || null;
+	const sizeMin = Number.isFinite(Number(options.sizeMin)) ? Math.max(0.5, Number(options.sizeMin)) : 2;
+	const sizeMax = Number.isFinite(Number(options.sizeMax)) ? Math.max(sizeMin, Number(options.sizeMax)) : 12;
+	const color = isValidHexColor(String(options.color || '').trim())
+		? String(options.color).trim()
 		: CHART_COLORS.scatter;
-	const colorMode = ['uniform', 'numeric', 'category'].includes(opcoes.colorMode)
-		? opcoes.colorMode
+	const colorMode = ['uniform', 'numeric', 'category'].includes(options.colorMode)
+		? options.colorMode
 		: 'uniform';
-	const colorField = opcoes.colorField || null;
-	const gradientMinColor = isValidHexColor(String(opcoes.gradientMinColor || '').trim())
-		? String(opcoes.gradientMinColor).trim()
+	const colorField = options.colorField || null;
+	const gradientMinColor = isValidHexColor(String(options.gradientMinColor || '').trim())
+		? String(options.gradientMinColor).trim()
 		: color;
-	const gradientMaxColor = isValidHexColor(String(opcoes.gradientMaxColor || '').trim())
-		? String(opcoes.gradientMaxColor).trim()
+	const gradientMaxColor = isValidHexColor(String(options.gradientMaxColor || '').trim())
+		? String(options.gradientMaxColor).trim()
 		: '#ffffff';
-	const colorScheme = SCATTER_PALETTES[opcoes.colorScheme] ? opcoes.colorScheme : 'Bold';
-	const gradientDistribution = opcoes.gradientDistribution === 'rank' ? 'rank' : 'value';
-	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
-		? Math.max(220, Math.min(720, Number(opcoes.chartHeight)))
+	const colorScheme = SCATTER_PALETTES[options.colorScheme] ? options.colorScheme : 'Bold';
+	const gradientDistribution = options.gradientDistribution === 'rank' ? 'rank' : 'value';
+	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(options.chartHeight))
+		? Math.max(220, Math.min(720, Number(options.chartHeight)))
 		: CHART_DIMENSIONS.scatter.height;
-	const categoricalPairMode = opcoes.categoricalPairMode === 'aggregate' ? 'aggregate' : 'jitter';
+	const categoricalPairMode = options.categoricalPairMode === 'aggregate' ? 'aggregate' : 'jitter';
  	const labels = {
-		eixoX: opcoes.labels?.eixoX || 'X',
-		eixoY: opcoes.labels?.eixoY || 'Y',
-		indice: opcoes.labels?.indice || 'Index',
-		count: opcoes.labels?.count || 'Count',
-		regressionSlope: opcoes.labels?.regressionSlope || 'Slope',
-		regressionIntercept: opcoes.labels?.regressionIntercept || 'Intercept',
-		regressionR2: opcoes.labels?.regressionR2 || 'R²',
-		regressionN: opcoes.labels?.regressionN || 'Points',
-		regressionGroup: opcoes.labels?.regressionGroup || 'Group',
+		xAxis: options.labels?.xAxis || 'X',
+		yAxis: options.labels?.yAxis || 'Y',
+		index: options.labels?.index || 'Index',
+		count: options.labels?.count || 'Count',
+		regressionSlope: options.labels?.regressionSlope || 'Slope',
+		regressionIntercept: options.labels?.regressionIntercept || 'Intercept',
+		regressionR2: options.labels?.regressionR2 || 'R²',
+		regressionN: options.labels?.regressionN || 'Points',
+		regressionGroup: options.labels?.regressionGroup || 'Group',
 	};
 	const axisLabels = {
-		x: opcoes.axisLabels?.x || eixoX,
-		y: opcoes.axisLabels?.y || eixoY,
+		x: options.axisLabels?.x || xColumn,
+		y: options.axisLabels?.y || yColumn,
 	};
-	const locale = opcoes.locale || undefined;
+	const locale = options.locale || undefined;
 	const configuredAxisTypes = {
-		x: opcoes.axisTypes?.x,
-		y: opcoes.axisTypes?.y,
+		x: options.axisTypes?.x,
+		y: options.axisTypes?.y,
 	};
 
-	let pontos = dados.map((linha, index) => ({
-		xRaw: linha?.[eixoX],
-		yRaw: linha?.[eixoY],
-		x: Number(linha?.[eixoX]),
-		y: Number(linha?.[eixoY]),
-		xCategory: normalizeCategoryValue(linha?.[eixoX]),
-		yCategory: normalizeCategoryValue(linha?.[eixoY]),
+	let points = rows.map((row, index) => ({
+		xRaw: row?.[xColumn],
+		yRaw: row?.[yColumn],
+		x: Number(row?.[xColumn]),
+		y: Number(row?.[yColumn]),
+		xCategory: normalizeCategoryValue(row?.[xColumn]),
+		yCategory: normalizeCategoryValue(row?.[yColumn]),
 		index,
-		raw: linha,
+		raw: row,
 	}));
 
 	const axisTypes = {
-		x: inferAxisType(pontos.map(ponto => ponto.xRaw), configuredAxisTypes.x),
-		y: inferAxisType(pontos.map(ponto => ponto.yRaw), configuredAxisTypes.y),
+		x: inferAxisType(points.map(point => point.xRaw), configuredAxisTypes.x),
+		y: inferAxisType(points.map(point => point.yRaw), configuredAxisTypes.y),
 	};
 
-	const effectiveXScale = axisTypes.x === AXIS_TYPE_VALUES.numeric
-		? xScale
+	const effectiveXScaleType = axisTypes.x === AXIS_TYPE_VALUES.numeric
+		? xScaleType
 		: 'linear';
-	const effectiveYScale = axisTypes.y === AXIS_TYPE_VALUES.numeric
-		? yScale
+	const effectiveYScaleType = axisTypes.y === AXIS_TYPE_VALUES.numeric
+		? yScaleType
 		: 'linear';
 
-	pontos = pontos.filter(ponto => {
-		if (axisTypes.x === AXIS_TYPE_VALUES.numeric && !Number.isFinite(ponto.x)) return false;
-		if (axisTypes.y === AXIS_TYPE_VALUES.numeric && !Number.isFinite(ponto.y)) return false;
+	points = points.filter(point => {
+		if (axisTypes.x === AXIS_TYPE_VALUES.numeric && !Number.isFinite(point.x)) return false;
+		if (axisTypes.y === AXIS_TYPE_VALUES.numeric && !Number.isFinite(point.y)) return false;
 		return true;
 	});
 
-	if (effectiveXScale === 'log') {
-		pontos = pontos.filter(ponto => ponto.x > 0);
+	if (effectiveXScaleType === 'log') {
+		points = points.filter(point => point.x > 0);
 	}
 
-	if (effectiveYScale === 'log') {
-		pontos = pontos.filter(ponto => ponto.y > 0);
+	if (effectiveYScaleType === 'log') {
+		points = points.filter(point => point.y > 0);
 	}
 
 	const shouldAggregateCategoricalPairs = (
@@ -169,35 +169,35 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	);
 
 	if (shouldAggregateCategoricalPairs) {
-		pontos = aggregateCategoricalPairs(pontos);
+		points = aggregateCategoricalPairs(points);
 	}
 
-	if (pontos.length === 0) {
-		return fail(effectiveXScale === 'log' || effectiveYScale === 'log' ? 'log-no-positive' : undefined);
+	if (points.length === 0) {
+		return fail(effectiveXScaleType === 'log' || effectiveYScaleType === 'log' ? 'log-no-positive' : undefined);
 	}
 
 	container.replaceChildren();
 	hideChartTooltip();
-	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
-	const altura = chartHeight;
-	const margem = computeAdaptiveMargins(CHART_DIMENSIONS.scatter.margins, pontos, axisTypes);
+	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
+	const height = chartHeight;
+	const margin = computeAdaptiveMargins(CHART_DIMENSIONS.scatter.margins, points, axisTypes);
 	const titleOffset = customTitle ? 20 : 0;
-	const larguraInterna = Math.max(40, largura - margem.left - margem.right);
-	const alturaInterna = Math.max(40, altura - margem.top - margem.bottom - titleOffset);
+	const innerWidth = Math.max(40, width - margin.left - margin.right);
+	const innerHeight = Math.max(40, height - margin.top - margin.bottom - titleOffset);
 
 	const svg = select(container)
 		.append('svg')
-		.attr('width', largura)
-		.attr('height', altura);
+		.attr('width', width)
+		.attr('height', height);
 
-	const grupo = svg
+	const group = svg
 		.append('g')
-		.attr('transform', `translate(${margem.left},${margem.top + titleOffset})`);
+		.attr('transform', `translate(${margin.left},${margin.top + titleOffset})`);
 
 	if (customTitle) {
 		svg
 			.append('text')
-			.attr('x', largura / 2)
+			.attr('x', width / 2)
 			.attr('y', 16)
 			.attr('text-anchor', 'middle')
 			.attr('font-size', 13)
@@ -207,10 +207,10 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	}
 
 	let pinnedIndex = null;
-	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterCallbacks = options.filterCallbacks || {};
 	const filterLabels = filterCallbacks.filterActionLabels || {};
-	const xColumn = typeof opcoes.xColumn === 'string' ? opcoes.xColumn : null;
-	const yColumn = typeof opcoes.yColumn === 'string' ? opcoes.yColumn : null;
+	const xFilterColumn = typeof options.xColumn === 'string' ? options.xColumn : null;
+	const yFilterColumn = typeof options.yColumn === 'string' ? options.yColumn : null;
 	const actionLabels = {
 		focus: filterLabels.focus || 'Show only this',
 		add: filterLabels.add || 'Add to filter',
@@ -219,29 +219,29 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		bringBack: filterLabels.bringBack || 'Bring back',
 	};
 
-	const montarConteudoTooltip = ponto => {
+	const buildTooltipContent = point => {
 		const wrapper = document.createElement('div');
 
 		const xValue = axisTypes.x === AXIS_TYPE_VALUES.numeric
-			? formatNumber(ponto.x, locale)
-			: ponto.xCategory;
+			? formatNumber(point.x, locale)
+			: point.xCategory;
 		const yValue = axisTypes.y === AXIS_TYPE_VALUES.numeric
-			? formatNumber(ponto.y, locale)
-			: ponto.yCategory;
+			? formatNumber(point.y, locale)
+			: point.yCategory;
 
 		wrapper.appendChild(createTooltipLine(axisLabels.x, xValue));
 		wrapper.appendChild(createTooltipLine(axisLabels.y, yValue));
-		if (ponto.isAggregate) {
-			wrapper.appendChild(createTooltipLine(labels.count, formatNumber(ponto.count, locale)));
+		if (point.isAggregate) {
+			wrapper.appendChild(createTooltipLine(labels.count, formatNumber(point.count, locale)));
 		} else {
-			wrapper.appendChild(createTooltipLine(labels.indice, formatNumber(ponto.index + 1, locale)));
+			wrapper.appendChild(createTooltipLine(labels.index, formatNumber(point.index + 1, locale)));
 		}
 
 		return wrapper;
 	};
 
-	const exibirTooltip = (event, ponto) => {
-		showChartTooltip(montarConteudoTooltip(ponto), event.pageX, event.pageY);
+	const showTooltip = (event, point) => {
+		showChartTooltip(buildTooltipContent(point), event.pageX, event.pageY);
 	};
 
 	const buildAxisActionSet = (column, rawValue, headingLabel) => {
@@ -278,30 +278,30 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		return { node: wrap, state };
 	};
 
-	const exibirTooltipFixado = (event, ponto, onDismiss) => {
-		const content = montarConteudoTooltip(ponto);
+	const showPinnedTooltip = (event, point, onDismiss) => {
+		const content = buildTooltipContent(point);
 		const actionSets = [];
 		let primaryState = null;
 		let primaryColumn = null;
 		let primaryToken = null;
 
-		if (axisTypes.x === AXIS_TYPE_VALUES.categorical && xColumn) {
-			const xResult = buildAxisActionSet(xColumn, ponto.xCategory, `${axisLabels.x}`);
+		if (axisTypes.x === AXIS_TYPE_VALUES.categorical && xFilterColumn) {
+			const xResult = buildAxisActionSet(xFilterColumn, point.xCategory, `${axisLabels.x}`);
 			if (xResult) {
 				actionSets.push(xResult.node);
 				primaryState = xResult.state;
-				primaryColumn = xColumn;
-				primaryToken = toCategoryToken(ponto.xCategory);
+				primaryColumn = xFilterColumn;
+				primaryToken = toCategoryToken(point.xCategory);
 			}
 		}
-		if (axisTypes.y === AXIS_TYPE_VALUES.categorical && yColumn) {
-			const yResult = buildAxisActionSet(yColumn, ponto.yCategory, `${axisLabels.y}`);
+		if (axisTypes.y === AXIS_TYPE_VALUES.categorical && yFilterColumn) {
+			const yResult = buildAxisActionSet(yFilterColumn, point.yCategory, `${axisLabels.y}`);
 			if (yResult) {
 				actionSets.push(yResult.node);
 				if (!primaryState) {
 					primaryState = yResult.state;
-					primaryColumn = yColumn;
-					primaryToken = toCategoryToken(ponto.yCategory);
+					primaryColumn = yFilterColumn;
+					primaryToken = toCategoryToken(point.yCategory);
 				}
 			}
 		}
@@ -315,9 +315,9 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			: null;
 
 		const headerTitle = axisTypes.x === AXIS_TYPE_VALUES.categorical
-			? String(ponto.xCategory ?? '')
+			? String(point.xCategory ?? '')
 			: axisTypes.y === AXIS_TYPE_VALUES.categorical
-				? String(ponto.yCategory ?? '')
+				? String(point.yCategory ?? '')
 				: '';
 
 		showPinnedChartTooltip(content, event.pageX, event.pageY, {
@@ -333,62 +333,62 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		void primaryToken;
 	};
 
-	let escalaX;
+	let xScale;
 	if (axisTypes.x === AXIS_TYPE_VALUES.numeric) {
-		const dominioX = normalizarDominio(extent(pontos, ponto => ponto.x));
-		escalaX = (effectiveXScale === 'log' ? scaleLog() : scaleLinear())
-			.domain(dominioX)
+		const xDomain = normalizeDomain(extent(points, point => point.x));
+		xScale = (effectiveXScaleType === 'log' ? scaleLog() : scaleLinear())
+			.domain(xDomain)
 			.nice()
-			.range([0, larguraInterna]);
+			.range([0, innerWidth]);
 	} else {
-		escalaX = scalePoint()
-			.domain(buildCategoryDomain(pontos, 'xCategory'))
-			.range([0, larguraInterna])
+		xScale = scalePoint()
+			.domain(buildCategoryDomain(points, 'xCategory'))
+			.range([0, innerWidth])
 			.padding(0.5);
 	}
 
-	let escalaY;
+	let yScale;
 	if (axisTypes.y === AXIS_TYPE_VALUES.numeric) {
-		const dominioY = normalizarDominio(extent(pontos, ponto => ponto.y));
-		escalaY = (effectiveYScale === 'log' ? scaleLog() : scaleLinear())
-			.domain(dominioY)
+		const yDomain = normalizeDomain(extent(points, point => point.y));
+		yScale = (effectiveYScaleType === 'log' ? scaleLog() : scaleLinear())
+			.domain(yDomain)
 			.nice()
-			.range([alturaInterna, 0]);
+			.range([innerHeight, 0]);
 	} else {
-		escalaY = scalePoint()
-			.domain(buildCategoryDomain(pontos, 'yCategory'))
-			.range([alturaInterna, 0])
+		yScale = scalePoint()
+			.domain(buildCategoryDomain(points, 'yCategory'))
+			.range([innerHeight, 0])
 			.padding(0.5);
 	}
 
 	const xJitterFor = axisTypes.x === AXIS_TYPE_VALUES.categorical && !shouldAggregateCategoricalPairs
-		? buildCategoryJitterScale(escalaX)
+		? buildCategoryJitterScale(xScale)
 		: () => 0;
 	const yJitterFor = axisTypes.y === AXIS_TYPE_VALUES.categorical && !shouldAggregateCategoricalPairs
-		? buildCategoryJitterScale(escalaY)
+		? buildCategoryJitterScale(yScale)
 		: () => 0;
 
-	const getPointX = ponto => {
-		if (axisTypes.x === AXIS_TYPE_VALUES.numeric) return escalaX(ponto.x);
-		return (escalaX(ponto.xCategory) || 0) + xJitterFor(ponto.index, 1.7);
+	const getPointX = point => {
+		if (axisTypes.x === AXIS_TYPE_VALUES.numeric) return xScale(point.x);
+		return (xScale(point.xCategory) || 0) + xJitterFor(point.index, 1.7);
 	};
 
-	const getPointY = ponto => {
-		if (axisTypes.y === AXIS_TYPE_VALUES.numeric) return escalaY(ponto.y);
-		return (escalaY(ponto.yCategory) || 0) + yJitterFor(ponto.index, 2.3);
+	const getPointY = point => {
+		if (axisTypes.y === AXIS_TYPE_VALUES.numeric) return yScale(point.y);
+		return (yScale(point.yCategory) || 0) + yJitterFor(point.index, 2.3);
 	};
 
-	const aggregatedCounts = pontos
-		.filter(ponto => ponto.isAggregate)
-		.map(ponto => Number(ponto.count) || 0);
+	const aggregatedCounts = points
+		.filter(point => point.isAggregate)
+		.map(point => Number(point.count) || 0);
 	const minAggregatedCount = aggregatedCounts.length > 0 ? Math.min(...aggregatedCounts) : 1;
 	const maxAggregatedCount = aggregatedCounts.length > 0 ? Math.max(...aggregatedCounts) : 1;
 	const maxAggregateRadius = Math.max(radius + 6, radius * 2.1);
 
 	let sizeScale = null;
 	if (sizeMode === 'numeric' && sizeField && !shouldAggregateCategoricalPairs) {
-		const sizeValues = pontos
-			.map(ponto => Number(ponto.raw?.[sizeField]))
+		const sizeValues = points
+			.map(point => Number(point.raw?.[sizeField]))
 			.filter(Number.isFinite);
 		if (sizeValues.length > 0) {
 			const minV = Math.min(...sizeValues);
@@ -399,14 +399,14 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		}
 	}
 
-	const getPointRadius = ponto => {
-		if (ponto.isAggregate) {
+	const getPointRadius = point => {
+		if (point.isAggregate) {
 			if (maxAggregatedCount === minAggregatedCount) return maxAggregateRadius;
-			const progress = ((ponto.count || minAggregatedCount) - minAggregatedCount) / (maxAggregatedCount - minAggregatedCount);
+			const progress = ((point.count || minAggregatedCount) - minAggregatedCount) / (maxAggregatedCount - minAggregatedCount);
 			return radius + ((maxAggregateRadius - radius) * progress);
 		}
 		if (sizeScale) {
-			const v = Number(ponto.raw?.[sizeField]);
+			const v = Number(point.raw?.[sizeField]);
 			if (Number.isFinite(v)) return sizeScale(v);
 		}
 		return radius;
@@ -414,35 +414,35 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 
 	let getPointColor = () => color;
 	if (colorMode === 'numeric' && colorField) {
-		const getNumericColorValue = ponto => {
-			if (!ponto.isAggregate) {
-				return Number(ponto.raw?.[colorField]);
+		const getNumericColorValue = point => {
+			if (!point.isAggregate) {
+				return Number(point.raw?.[colorField]);
 			}
-			const values = (ponto.rawRows || [])
+			const values = (point.rawRows || [])
 				.map(row => Number(row?.[colorField]))
 				.filter(Number.isFinite);
 			if (values.length === 0) return NaN;
 			return values.reduce((acc, value) => acc + value, 0) / values.length;
 		};
 
-		const numericValues = pontos
-			.map(ponto => getNumericColorValue(ponto))
+		const numericValues = points
+			.map(point => getNumericColorValue(point))
 			.filter(Number.isFinite);
 		if (numericValues.length > 0) {
 			const min = Math.min(...numericValues);
 			const max = Math.max(...numericValues);
 			const delta = max - min || 1;
 			if (gradientDistribution === 'rank') {
-				const rankMap = buildRankMap(pontos, ponto => getNumericColorValue(ponto));
+				const rankMap = buildRankMap(points, point => getNumericColorValue(point));
 				const rankDenom = Math.max(rankMap.size - 1, 1);
-				getPointColor = ponto => {
-					const rank = rankMap.get(ponto);
+				getPointColor = point => {
+					const rank = rankMap.get(point);
 					if (rank === undefined) return color;
 					return interpolateColor(gradientMinColor, gradientMaxColor, rank / rankDenom);
 				};
 			} else {
-				getPointColor = ponto => {
-					const v = getNumericColorValue(ponto);
+				getPointColor = point => {
+					const v = getNumericColorValue(point);
 					if (!Number.isFinite(v)) return color;
 					return interpolateColor(gradientMinColor, gradientMaxColor, (v - min) / delta);
 				};
@@ -453,60 +453,60 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	let getCategoryColorValue = null;
 	let categoryMap = null;
 	if (colorMode === 'category' && colorField) {
-		getCategoryColorValue = ponto => {
-			if (!ponto.isAggregate) {
-				return normalizeCategoryValue(ponto.raw?.[colorField]);
+		getCategoryColorValue = point => {
+			if (!point.isAggregate) {
+				return normalizeCategoryValue(point.raw?.[colorField]);
 			}
-			return pickMostFrequentCategory(ponto.rawRows || [], colorField);
+			return pickMostFrequentCategory(point.rawRows || [], colorField);
 		};
 
 		const palette = SCATTER_PALETTES[colorScheme];
 		categoryMap = new Map();
-		pontos.forEach(ponto => {
-			const cat = getCategoryColorValue(ponto);
+		points.forEach(point => {
+			const cat = getCategoryColorValue(point);
 			if (!categoryMap.has(cat)) {
 				categoryMap.set(cat, palette[categoryMap.size % palette.length]);
 			}
 		});
-		getPointColor = ponto => {
-			const cat = getCategoryColorValue(ponto);
+		getPointColor = point => {
+			const cat = getCategoryColorValue(point);
 			return categoryMap.get(cat) || color;
 		};
 	}
 
 	const regressionRender = renderRegressionLayer({
-		opcoes,
-		pontos,
+		options,
+		points,
 		axisTypes,
-		effectiveXScale,
-		effectiveYScale,
+		effectiveXScaleType,
+		effectiveYScaleType,
 		colorMode,
 		colorField,
 		categoryMap,
 		getCategoryColorValue,
-		grupo,
-		escalaX,
-		escalaY,
-		larguraInterna,
-		alturaInterna,
+		group,
+		xScale,
+		yScale,
+		innerWidth,
+		innerHeight,
 		color,
 		labels,
 		isPinned: () => pinnedIndex !== null,
 	});
 
-	grupo
+	group
 		.selectAll('circle')
-		.data(pontos)
+		.data(points)
 		.enter()
 		.append('circle')
-		.attr('cx', ponto => getPointX(ponto))
-		.attr('cy', ponto => getPointY(ponto))
-		.attr('r', ponto => getPointRadius(ponto))
-		.attr('fill', ponto => getPointColor(ponto))
+		.attr('cx', point => getPointX(point))
+		.attr('cy', point => getPointY(point))
+		.attr('r', point => getPointRadius(point))
+		.attr('fill', point => getPointColor(point))
 		.attr('opacity', opacity)
-		.on('mouseenter', (event, ponto) => {
+		.on('mouseenter', (event, point) => {
 			if (pinnedIndex !== null) return;
-			exibirTooltip(event, ponto);
+			showTooltip(event, point);
 		})
 		.on('mousemove', event => {
 			if (pinnedIndex !== null) return;
@@ -516,15 +516,15 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 			if (pinnedIndex !== null) return;
 			hideChartTooltip();
 		})
-		.on('click', (event, ponto) => {
+		.on('click', (event, point) => {
 			event.stopPropagation();
-			if (pinnedIndex === ponto.index) {
+			if (pinnedIndex === point.index) {
 				pinnedIndex = null;
 				hideChartTooltip();
 				return;
 			}
-			pinnedIndex = ponto.index;
-			exibirTooltipFixado(event, ponto, () => {
+			pinnedIndex = point.index;
+			showPinnedTooltip(event, point, () => {
 				pinnedIndex = null;
 				hideChartTooltip();
 			});
@@ -535,21 +535,21 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 		hideChartTooltip();
 	});
 
-	const xAxis = grupo
+	const xAxis = group
 		.append('g')
-		.attr('transform', `translate(0,${alturaInterna})`)
+		.attr('transform', `translate(0,${innerHeight})`)
 		.call(
 			axisTypes.x === AXIS_TYPE_VALUES.numeric
-				? axisBottom(escalaX).ticks(8)
-				: axisBottom(escalaX).tickFormat(value => truncateCategoryTick(value))
+				? axisBottom(xScale).ticks(8)
+				: axisBottom(xScale).tickFormat(value => truncateCategoryTick(value))
 		);
 
-	const yAxis = grupo
+	const yAxis = group
 		.append('g')
 		.call(
 			axisTypes.y === AXIS_TYPE_VALUES.numeric
-				? axisLeft(escalaY).ticks(8)
-				: axisLeft(escalaY).tickFormat(value => String(value))
+				? axisLeft(yScale).ticks(8)
+				: axisLeft(yScale).tickFormat(value => String(value))
 		);
 
 	if (axisTypes.x === AXIS_TYPE_VALUES.categorical) {
@@ -568,10 +568,10 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	}
 
 	if (showXAxisLabel) {
-		grupo
+		group
 			.append('text')
-			.attr('x', larguraInterna / 2)
-			.attr('y', alturaInterna + margem.bottom - 14)
+			.attr('x', innerWidth / 2)
+			.attr('y', innerHeight + margin.bottom - 14)
 			.attr('text-anchor', 'middle')
 			.attr('fill', '#5f5a53')
 			.attr('font-size', 11)
@@ -579,11 +579,11 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 	}
 
 	if (showYAxisLabel) {
-		grupo
+		group
 			.append('text')
 			.attr('transform', 'rotate(-90)')
-			.attr('x', -alturaInterna / 2)
-			.attr('y', -margem.left + 16)
+			.attr('x', -innerHeight / 2)
+			.attr('y', -margin.left + 16)
 			.attr('text-anchor', 'middle')
 			.attr('fill', '#5f5a53')
 			.attr('font-size', 11)
@@ -592,11 +592,11 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 
 	if (regressionRender) {
 		renderRegressionAnnotation({
-			grupo,
-			larguraInterna,
+			group,
+			innerWidth,
 			regressionRender,
-			xScale: effectiveXScale,
-			yScale: effectiveYScale,
+			xScale: effectiveXScaleType,
+			yScale: effectiveYScaleType,
 		});
 	}
 
@@ -604,28 +604,28 @@ export function renderScatterPlot(container, dados, eixoX, eixoY, opcoes = {}) {
 }
 
 function renderRegressionLayer({
-	opcoes,
-	pontos,
+	options,
+	points,
 	axisTypes,
-	effectiveXScale,
-	effectiveYScale,
+	effectiveXScaleType,
+	effectiveYScaleType,
 	colorMode,
 	colorField,
 	categoryMap,
 	getCategoryColorValue,
-	grupo,
-	escalaX,
-	escalaY,
-	larguraInterna,
-	alturaInterna,
+	group,
+	xScale,
+	yScale,
+	innerWidth,
+	innerHeight,
 	color,
 	labels,
 	isPinned,
 }) {
-	const config = opcoes.regression;
+	const config = options.regression;
 	if (!config || config.enabled !== true) return null;
 	if (axisTypes.x !== AXIS_TYPE_VALUES.numeric || axisTypes.y !== AXIS_TYPE_VALUES.numeric) return null;
-	if (pontos.length < 2) return null;
+	if (points.length < 2) return null;
 
 	const perCategoryRequested = config.mode === 'perCategory';
 	const canDoPerCategory = perCategoryRequested
@@ -636,12 +636,12 @@ function renderRegressionLayer({
 	const effectiveMode = canDoPerCategory ? 'perCategory' : 'overall';
 
 	const groupBy = effectiveMode === 'perCategory' ? getCategoryColorValue : null;
-	const xDomain = escalaX.domain();
+	const xDomain = xScale.domain();
 
 	const results = computeRegression({
-		pontos,
-		xScale: effectiveXScale,
-		yScale: effectiveYScale,
+		points,
+		xScale: effectiveXScaleType,
+		yScale: effectiveYScaleType,
 		xDomain,
 		groupBy,
 	}).filter(r => r.fit && r.fit.ok && Array.isArray(r.sampleLine));
@@ -658,18 +658,18 @@ function renderRegressionLayer({
 		: '#3f3a33';
 
 	const clipId = `scatter-clip-${++scatterClipIdCounter}`;
-	let defs = grupo.select('defs');
-	if (defs.empty()) defs = grupo.append('defs');
+	let defs = group.select('defs');
+	if (defs.empty()) defs = group.append('defs');
 	defs.append('clipPath')
 		.attr('id', clipId)
 		.append('rect')
 		.attr('x', 0)
 		.attr('y', 0)
-		.attr('width', larguraInterna)
-		.attr('height', alturaInterna);
+		.attr('width', innerWidth)
+		.attr('height', innerHeight);
 
-	const yDomain = escalaY.domain();
-	const yLog = effectiveYScale === 'log';
+	const yDomain = yScale.domain();
+	const yLog = effectiveYScaleType === 'log';
 	const yClampLow = yLog ? Math.max(yDomain[0] * 1e-6, Number.MIN_VALUE) : null;
 	const clampY = value => {
 		if (!yLog) return value;
@@ -677,18 +677,18 @@ function renderRegressionLayer({
 		return Math.max(value, yClampLow);
 	};
 
-	const layer = grupo.append('g')
+	const layer = group.append('g')
 		.attr('class', 'scatter-regression-layer')
 		.attr('clip-path', `url(#${clipId})`);
 
 	const lineGenerator = d3line()
-		.x(d => escalaX(d.x))
-		.y(d => escalaY(d.y));
+		.x(d => xScale(d.x))
+		.y(d => yScale(d.y));
 
 	const areaGenerator = d3area()
-		.x(d => escalaX(d.x))
-		.y0(d => escalaY(clampY(d.yLow)))
-		.y1(d => escalaY(clampY(d.yHigh)));
+		.x(d => xScale(d.x))
+		.y0(d => yScale(clampY(d.yLow)))
+		.y1(d => yScale(clampY(d.yHigh)));
 
 	const resultsWithColor = results.map(r => {
 		const groupColor = effectiveMode === 'perCategory'
@@ -764,7 +764,7 @@ function formatRegressionNumber(value) {
 	return Number(value.toPrecision(4)).toString();
 }
 
-function renderRegressionAnnotation({ grupo, larguraInterna, regressionRender, xScale, yScale }) {
+function renderRegressionAnnotation({ group, innerWidth, regressionRender, xScale, yScale }) {
 	const { results, mode, config } = regressionRender;
 	if (mode !== 'overall') return;
 	if (results.length === 0) return;
@@ -774,11 +774,11 @@ function renderRegressionAnnotation({ grupo, larguraInterna, regressionRender, x
 	const overall = results[0];
 	const { slope, intercept, r2 } = overall.fit;
 
-	const annotation = grupo.append('g').attr('class', 'scatter-regression-annotation');
+	const annotation = group.append('g').attr('class', 'scatter-regression-annotation');
 	let yOffset = 12;
 	if (showEquation) {
 		annotation.append('text')
-			.attr('x', larguraInterna - 6)
+			.attr('x', innerWidth - 6)
 			.attr('y', yOffset)
 			.attr('text-anchor', 'end')
 			.attr('font-size', 11)
@@ -788,7 +788,7 @@ function renderRegressionAnnotation({ grupo, larguraInterna, regressionRender, x
 	}
 	if (showR2) {
 		annotation.append('text')
-			.attr('x', larguraInterna - 6)
+			.attr('x', innerWidth - 6)
 			.attr('y', yOffset)
 			.attr('text-anchor', 'end')
 			.attr('font-size', 11)

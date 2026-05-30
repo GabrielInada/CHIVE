@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createUiStateFacade } from '../../src/modules/uiStateFacade.js';
+import { createUiStateFacade } from '../../src/modules/state/uiStateFacade.js';
 
 describe('uiStateFacade', () => {
 	it('changes sidebar mode and emits event', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
-			ui: { sidebarMode: 'dados', previewRows: 10 },
+			ui: { sidebarMode: 'data', previewRows: 10 },
 		};
 		const facade = createUiStateFacade({ appState, emitStateChange });
 
@@ -18,7 +18,7 @@ describe('uiStateFacade', () => {
 	it('rejects invalid sidebar mode', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
-			ui: { sidebarMode: 'dados', previewRows: 10 },
+			ui: { sidebarMode: 'data', previewRows: 10 },
 		};
 		const facade = createUiStateFacade({ appState, emitStateChange });
 
@@ -28,11 +28,11 @@ describe('uiStateFacade', () => {
 	it('does not emit when setting same sidebar mode', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
-			ui: { sidebarMode: 'dados', previewRows: 10 },
+			ui: { sidebarMode: 'data', previewRows: 10 },
 		};
 		const facade = createUiStateFacade({ appState, emitStateChange });
 
-		facade.setSidebarMode('dados');
+		facade.setSidebarMode('data');
 
 		expect(emitStateChange).not.toHaveBeenCalled();
 	});
@@ -40,7 +40,7 @@ describe('uiStateFacade', () => {
 	it('sets preview rows and emits event', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
-			ui: { sidebarMode: 'dados', previewRows: 10 },
+			ui: { sidebarMode: 'data', previewRows: 10 },
 		};
 		const facade = createUiStateFacade({ appState, emitStateChange });
 
@@ -53,7 +53,7 @@ describe('uiStateFacade', () => {
 	it('rejects preview rows less than 1', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
-			ui: { sidebarMode: 'dados', previewRows: 10 },
+			ui: { sidebarMode: 'data', previewRows: 10 },
 		};
 		const facade = createUiStateFacade({ appState, emitStateChange });
 

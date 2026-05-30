@@ -4,7 +4,7 @@
  * `{ chartType: null }` for the explicit "Clear" action.
  */
 
-import { CHART_TYPES, PREVIEW_SVGS, CATEGORY_KEYS } from '../../modules/chart-controls/chartTypes.js';
+import { CHART_TYPES, PREVIEW_SVGS, CATEGORY_KEYS } from '../../modules/chartControls/chartTypes.js';
 
 /**
  * Build one chart-type card: preview SVG, name, category tag,
@@ -15,7 +15,7 @@ import { CHART_TYPES, PREVIEW_SVGS, CATEGORY_KEYS } from '../../modules/chart-co
 function buildChartCard(type, translate, isActive) {
 	const card = document.createElement('button');
 	card.type = 'button';
-	card.className = `preset-card chart-picker-card${isActive ? ' selecionado' : ''}`;
+	card.className = `preset-card chart-picker-card${isActive ? ' selected' : ''}`;
 	card.dataset.chartType = type;
 
 	const preview = document.createElement('span');
@@ -25,7 +25,7 @@ function buildChartCard(type, translate, isActive) {
 	card.appendChild(preview);
 
 	const name = document.createElement('div');
-	name.className = 'preset-card-nome';
+	name.className = 'preset-card-name';
 	name.textContent = translate(`chive-chart-toggle-${type}`);
 	card.appendChild(name);
 
@@ -46,9 +46,9 @@ function buildChartCard(type, translate, isActive) {
  * Open the chart-type picker dialog. Returns a Promise that resolves
  * with the user's choice:
  *
- *   - `{ chartType: 'bar' | 'scatter' | ... }` — a chart card was clicked.
- *   - `{ chartType: null }` — the "Clear" button was clicked.
- *   - `null` — cancel, Escape, or backdrop click.
+ *   - `{ chartType: 'bar' | 'scatter' | ... }`, a chart card was clicked.
+ *   - `{ chartType: null }`, the "Clear" button was clicked.
+ *   - `null`, cancel, Escape, or backdrop click.
  *
  * @param {Object} args
  * @param {string | null} [args.activeChartType=null] - Pre-selected card.
@@ -79,12 +79,12 @@ export function openChartTypePickerDialog({ activeChartType = null, translate })
 
 		const clearButton = document.createElement('button');
 		clearButton.type = 'button';
-		clearButton.className = 'btn-secundario';
+		clearButton.className = 'btn-secondary';
 		clearButton.textContent = translate('chive-chart-picker-clear');
 
 		const cancelButton = document.createElement('button');
 		cancelButton.type = 'button';
-		cancelButton.className = 'btn-secundario';
+		cancelButton.className = 'btn-secondary';
 		cancelButton.textContent = translate('chive-chart-picker-cancel');
 
 		footer.appendChild(clearButton);

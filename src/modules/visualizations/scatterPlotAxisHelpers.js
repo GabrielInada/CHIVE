@@ -18,27 +18,27 @@ export const AXIS_TYPE_VALUES = {
 };
 
 /**
- * True when `axisType` names a numeric-style value (`'numeric'`,
- * `'number'`, `'numero'`). Case-insensitive.
+ * True when `axisType` names a numeric-style value (`'numeric'`, `'number'`).
+ * Case-insensitive.
  *
  * @param {string} axisType
  * @returns {boolean}
  */
 export function isNumericLikeAxisType(axisType) {
 	const value = String(axisType || '').toLowerCase();
-	return value === 'numeric' || value === 'number' || value === 'numero';
+	return value === 'numeric' || value === 'number';
 }
 
 /**
  * True when `axisType` names a categorical-style value (`'categorical'`,
- * `'category'`, `'text'`, `'texto'`, `'date'`, `'data'`). Case-insensitive.
+ * `'category'`, `'text'`, `'date'`). Case-insensitive.
  *
  * @param {string} axisType
  * @returns {boolean}
  */
 export function isCategoricalLikeAxisType(axisType) {
 	const value = String(axisType || '').toLowerCase();
-	return value === 'categorical' || value === 'category' || value === 'text' || value === 'texto' || value === 'date' || value === 'data';
+	return value === 'categorical' || value === 'category' || value === 'text' || value === 'date';
 }
 
 /**
@@ -70,7 +70,7 @@ export function inferAxisType(axisValues, configuredAxisType) {
 /**
  * Deterministic pseudo-random jitter in `[-1, 1]`, seeded by `index` and
  * `axisSeed`. Uses the standard `sin(x) * 43758.5...` hash so the same
- * `(index, axisSeed)` always produces the same offset — important so the
+ * `(index, axisSeed)` always produces the same offset, important so the
  * categorical scatter does not visually "shuffle" between renders.
  *
  * @param {number} index
@@ -86,15 +86,15 @@ export function deterministicJitter(index, axisSeed) {
 /**
  * Build a categorical-domain array (unique values in encounter order).
  *
- * @param {Array<Object<string, *>>} pontos
+ * @param {Array<Object<string, *>>} points
  * @param {string} key
  * @returns {Array<*>}
  */
-export function buildCategoryDomain(pontos, key) {
+export function buildCategoryDomain(points, key) {
 	const seen = new Set();
 	const domain = [];
-	pontos.forEach(ponto => {
-		const value = ponto[key];
+	points.forEach(point => {
+		const value = point[key];
 		if (seen.has(value)) return;
 		seen.add(value);
 		domain.push(value);
@@ -143,7 +143,7 @@ export function estimateLongestCategoryLength(points, key) {
 
 /**
  * Grow the left/bottom margins when the corresponding axis is categorical,
- * so long category labels do not get clipped. Returns a new object — does
+ * so long category labels do not get clipped. Returns a new object, does
  * not mutate `baseMargins`.
  *
  * @param {{ top: number, right: number, bottom: number, left: number }} baseMargins
@@ -208,7 +208,7 @@ export function aggregateCategoricalPairs(points) {
 /**
  * Find the most-frequent normalized value of `rows[].[fieldName]`. Ties
  * broken alphabetically by {@link compareStrings} so the result is stable.
- * Returns `'—'` when `rows` is empty.
+ * Returns `'N/A'` when `rows` is empty.
  *
  * @param {Array<Object<string, *>>} rows
  * @param {string} fieldName
@@ -222,7 +222,7 @@ export function pickMostFrequentCategory(rows, fieldName) {
 		categoryCount.set(category, (categoryCount.get(category) || 0) + 1);
 	});
 
-	let bestCategory = '—';
+	let bestCategory = 'N/A';
 	let bestCount = -1;
 	for (const [category, count] of categoryCount.entries()) {
 		if (count > bestCount) {
@@ -246,11 +246,11 @@ export function pickMostFrequentCategory(rows, fieldName) {
  * @param {[number, number]} extent
  * @returns {[number, number]}
  */
-export function normalizarDominio([minimo, maximo]) {
-	if (!Number.isFinite(minimo) || !Number.isFinite(maximo)) return [0, 1];
-	if (minimo === maximo) {
-		const delta = minimo === 0 ? 1 : Math.abs(minimo * 0.1);
-		return [minimo - delta, maximo + delta];
+export function normalizeDomain([minimum, maximum]) {
+	if (!Number.isFinite(minimum) || !Number.isFinite(maximum)) return [0, 1];
+	if (minimum === maximum) {
+		const delta = minimum === 0 ? 1 : Math.abs(minimum * 0.1);
+		return [minimum - delta, maximum + delta];
 	}
-	return [minimo, maximo];
+	return [minimum, maximum];
 }

@@ -4,15 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { escapeHtml, formatNumber } from '../../src/utils/formatters.js';
 
 describe('formatters', () => {
-  it('escapa caracteres HTML sensiveis', () => {
+  it('escapes sensitive HTML characters', () => {
     const value = `<div class="x">O'Reilly & Co</div>`;
     expect(escapeHtml(value)).toBe('&lt;div class=&quot;x&quot;&gt;O&#39;Reilly &amp; Co&lt;/div&gt;');
   });
 
-  it('formata numeros com regras de precisao', () => {
-    expect(formatNumber(null, 'en-US')).toBe('—');
-    expect(formatNumber('', 'en-US')).toBe('—');
-    expect(formatNumber('foo', 'en-US')).toBe('—');
+  it('formats numbers with precision rules', () => {
+    expect(formatNumber(null, 'en-US')).toBe('N/A');
+    expect(formatNumber('', 'en-US')).toBe('N/A');
+    expect(formatNumber('foo', 'en-US')).toBe('N/A');
 
     expect(formatNumber(1234, 'en-US')).toBe('1,234');
     expect(formatNumber(123.45, 'en-US')).toBe('123.5');

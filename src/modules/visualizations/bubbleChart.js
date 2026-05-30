@@ -42,7 +42,7 @@ function getBubblePalette(colorScheme) {
 
 /**
  * Render a bubble chart into `container`. Returns `ok()` on success, or
- * `fail()` when `colunaCategoria` is missing, when sum/mean aggregation
+ * `fail()` when `categoryColumn` is missing, when sum/mean aggregation
  * is requested without a usable `valueColumn`, or when no rows remain
  * after aggregation.
  *
@@ -54,59 +54,59 @@ function getBubblePalette(colorScheme) {
  * `labels` bag.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows.
- * @param {string} colunaCategoria - Root category column name (required).
- * @param {Object} [opcoes={}] - Render options bag.
+ * @param {Array<Object<string, *>>} rows - Source rows.
+ * @param {string} categoryColumn - Root category column name (required).
+ * @param {Object} [options={}] - Render options bag.
  * @returns {Result}
  */
-export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}) {
-	if (!container || !colunaCategoria) return fail();
+export function renderBubbleChart(container, rows, categoryColumn, options = {}) {
+	if (!container || !categoryColumn) return fail();
 
-	const measureMode = BUBBLE_CHART.measureModes.includes(opcoes.measureMode)
-		? opcoes.measureMode
+	const measureMode = BUBBLE_CHART.measureModes.includes(options.measureMode)
+		? options.measureMode
 		: BUBBLE_CHART.defaultMeasureMode;
-	const valueColumn = opcoes.valueColumn || null;
-	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : BUBBLE_CHART.defaultTopN;
-	const padding = Number.isFinite(Number(opcoes.padding))
-		? Number(opcoes.padding)
+	const valueColumn = options.valueColumn || null;
+	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : BUBBLE_CHART.defaultTopN;
+	const padding = Number.isFinite(Number(options.padding))
+		? Number(options.padding)
 		: BUBBLE_CHART.defaultPadding;
-	const labelMode = BUBBLE_CHART.labelModes.includes(opcoes.labelMode)
-		? opcoes.labelMode
+	const labelMode = BUBBLE_CHART.labelModes.includes(options.labelMode)
+		? options.labelMode
 		: BUBBLE_CHART.defaultLabelMode;
-	const autoLabelMinRadius = Number.isFinite(Number(opcoes.autoLabelMinRadius))
-		? Number(opcoes.autoLabelMinRadius)
+	const autoLabelMinRadius = Number.isFinite(Number(options.autoLabelMinRadius))
+		? Number(options.autoLabelMinRadius)
 		: BUBBLE_CHART.autoLabelMinRadius;
 	const parentLabelMinRadius = BUBBLE_CHART.parentLabelMinRadius;
-	const nestingMode = BUBBLE_CHART.nestingModes.includes(opcoes.nestingMode)
-		? opcoes.nestingMode
+	const nestingMode = BUBBLE_CHART.nestingModes.includes(options.nestingMode)
+		? options.nestingMode
 		: BUBBLE_CHART.defaultNestingMode;
-	const nestingColumns = resolveNestingColumns(opcoes);
-	const locale = opcoes.locale || undefined;
-	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
-		? Math.max(400, Math.min(900, Number(opcoes.chartHeight)))
+	const nestingColumns = resolveNestingColumns(options);
+	const locale = options.locale || undefined;
+	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(options.chartHeight))
+		? Math.max(400, Math.min(900, Number(options.chartHeight)))
 		: CHART_DIMENSIONS.bubble.height;
-	const colorScheme = String(opcoes.colorScheme || '').trim() || 'Tableau10';
+	const colorScheme = String(options.colorScheme || '').trim() || 'Tableau10';
 	const labels = {
-		categoria: opcoes.labels?.categoria || 'Category',
-		contagem: opcoes.labels?.contagem || 'Count',
-		soma: opcoes.labels?.soma || 'Sum',
-		media: opcoes.labels?.media || 'Mean',
-		grupo: opcoes.labels?.grupo || 'Group',
-		filhos: opcoes.labels?.filhos || 'Children',
-		nivel: opcoes.labels?.nivel || 'Level',
+		category: options.labels?.category || 'Category',
+		count: options.labels?.count || 'Count',
+		sum: options.labels?.sum || 'Sum',
+		mean: options.labels?.mean || 'Mean',
+		group: options.labels?.group || 'Group',
+		children: options.labels?.children || 'Children',
+		level: options.labels?.level || 'Level',
 	};
 
 	if (nestingMode === 'grouped' && nestingColumns.length === 0) {
 		// Backward compat: also check legacy groupColumn
-		if (!opcoes.groupColumn) {
+		if (!options.groupColumn) {
 			return fail('no-nesting-columns');
 		}
 	}
 
 	const aggregation = aggregateBubbles({
-		rows: dados,
-		categoryColumn: colunaCategoria,
+		rows: rows,
+		categoryColumn: categoryColumn,
 		measureMode,
 		valueColumn,
 		nestingColumns,
@@ -122,23 +122,23 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	container.replaceChildren();
 	hideChartTooltip();
 
-	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.bubble.width, 320);
-	const altura = chartHeight;
-	const margem = CHART_DIMENSIONS.bubble.margins;
+	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bubble.width, 320);
+	const height = chartHeight;
+	const margin = CHART_DIMENSIONS.bubble.margins;
 	const titleOffset = customTitle ? 20 : 0;
-	const larguraInterna = largura - margem.left - margem.right;
-	const alturaInterna = altura - margem.top - margem.bottom - titleOffset;
+	const innerWidth = width - margin.left - margin.right;
+	const innerHeight = height - margin.top - margin.bottom - titleOffset;
 
 	const svg = select(container)
 		.append('svg')
-		.attr('width', largura)
-		.attr('height', altura)
-		.attr('viewBox', `0 0 ${largura} ${altura}`);
+		.attr('width', width)
+		.attr('height', height)
+		.attr('viewBox', `0 0 ${width} ${height}`);
 
 	if (customTitle) {
 		svg
 			.append('text')
-			.attr('x', largura / 2)
+			.attr('x', width / 2)
 			.attr('y', 16)
 			.attr('text-anchor', 'middle')
 			.attr('font-size', 13)
@@ -149,7 +149,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 
 	const viewport = svg
 		.append('g')
-		.attr('transform', `translate(${margem.left},${margem.top + titleOffset})`);
+		.attr('transform', `translate(${margin.left},${margin.top + titleOffset})`);
 
 	// Build hierarchy based on nesting mode
 	let hierarchyData;
@@ -164,7 +164,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	const maxDepth = isGrouped ? nestingColumns.length + 1 : 1;
 	const root = hierarchy(hierarchyData).sum(d => d.value || 0);
 	const packLayout = pack()
-		.size([larguraInterna, alturaInterna])
+		.size([innerWidth, innerHeight])
 		.padding(d => {
 			if (!isGrouped) return Math.max(0, padding);
 			if (d.depth === 0) {
@@ -182,14 +182,14 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	// Color domain: by top-level nesting group names (depth 1 children of root)
 	let colorDomain;
 	if (isGrouped && root.children) {
-		colorDomain = root.children.map(c => c.data.groupName || '—');
+		colorDomain = root.children.map(c => c.data.groupName || 'N/A');
 	} else {
 		colorDomain = Array.from(new Set(leaves.map(item => item.data.group)));
 	}
 	const colorScale = scaleOrdinal(getBubblePalette(colorScheme)).domain(colorDomain);
 
 	let pinnedNode = null;
-	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterCallbacks = options.filterCallbacks || {};
 	const filterLabels = filterCallbacks.filterActionLabels || {};
 	const actionLabels = {
 		focus: filterLabels.focus || 'Show only this',
@@ -253,8 +253,8 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	};
 
 	const zoomStack = [];
-	const zoomDuration = Number.isFinite(Number(opcoes.zoomTransitionDuration))
-		? Number(opcoes.zoomTransitionDuration)
+	const zoomDuration = Number.isFinite(Number(options.zoomTransitionDuration))
+		? Number(options.zoomTransitionDuration)
 		: BUBBLE_CHART.zoomTransitionDuration;
 	const zoomPadding = BUBBLE_CHART.zoomScalePadding;
 
@@ -327,10 +327,10 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		pinnedNode = null;
 		hideChartTooltip();
 
-		const scale = Math.min(larguraInterna, alturaInterna) / (2 * targetNode.r * zoomPadding);
-		const tx = larguraInterna / 2 - targetNode.x * scale;
-		const ty = alturaInterna / 2 - targetNode.y * scale;
-		const transform = `translate(${margem.left + tx},${margem.top + titleOffset + ty}) scale(${scale})`;
+		const scale = Math.min(innerWidth, innerHeight) / (2 * targetNode.r * zoomPadding);
+		const tx = innerWidth / 2 - targetNode.x * scale;
+		const ty = innerHeight / 2 - targetNode.y * scale;
+		const transform = `translate(${margin.left + tx},${margin.top + titleOffset + ty}) scale(${scale})`;
 
 		if (zoomDuration > 0) {
 			viewport.transition().duration(zoomDuration).attr('transform', transform);
@@ -355,7 +355,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 		hideChartTooltip();
 		zoomStack.length = 0;
 
-		const transform = `translate(${margem.left},${margem.top + titleOffset})`;
+		const transform = `translate(${margin.left},${margin.top + titleOffset})`;
 
 		if (zoomDuration > 0) {
 			viewport.transition().duration(zoomDuration).attr('transform', transform);
@@ -385,27 +385,27 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 	}
 
 	const measureLabel = measureMode === 'mean'
-		? labels.media
+		? labels.mean
 		: measureMode === 'sum'
-			? labels.soma
-			: labels.contagem;
+			? labels.sum
+			: labels.count;
 
 	const createLeafTooltip = item => {
 		const wrapper = document.createElement('div');
-		wrapper.appendChild(createTooltipLine(labels.categoria, item.data.category));
+		wrapper.appendChild(createTooltipLine(labels.category, item.data.category));
 		wrapper.appendChild(createTooltipLine(measureLabel, formatNumber(item.data.value, locale)));
 		if (isGrouped) {
-			wrapper.appendChild(createTooltipLine(labels.grupo, getTopLevelGroup(item)));
+			wrapper.appendChild(createTooltipLine(labels.group, getTopLevelGroup(item)));
 		}
 		return wrapper;
 	};
 
 	const createParentTooltip = item => {
 		const wrapper = document.createElement('div');
-		wrapper.appendChild(createTooltipLine(labels.grupo, item.data.groupName));
+		wrapper.appendChild(createTooltipLine(labels.group, item.data.groupName));
 		wrapper.appendChild(createTooltipLine(measureLabel, formatNumber(item.value, locale)));
-		wrapper.appendChild(createTooltipLine(labels.filhos, item.children.length));
-		wrapper.appendChild(createTooltipLine(labels.nivel, item.depth));
+		wrapper.appendChild(createTooltipLine(labels.children, item.children.length));
+		wrapper.appendChild(createTooltipLine(labels.level, item.depth));
 		return wrapper;
 	};
 
@@ -512,11 +512,11 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 
 	node.append('title').text(d => {
 		const lines = [
-			`${labels.categoria}: ${d.data.category}`,
+			`${labels.category}: ${d.data.category}`,
 			`${measureLabel}: ${formatNumber(d.data.value, locale)}`,
 		];
 		if (isGrouped) {
-			lines.push(`${labels.grupo}: ${getTopLevelGroup(d)}`);
+			lines.push(`${labels.group}: ${getTopLevelGroup(d)}`);
 		}
 		return lines.join('\n');
 	});
@@ -559,7 +559,7 @@ export function renderBubbleChart(container, dados, colunaCategoria, opcoes = {}
 				event,
 				createLeafTooltip(item),
 				String(item.data.category),
-				colunaCategoria,
+				categoryColumn,
 				item.data.category,
 				() => {
 					pinnedNode = null;

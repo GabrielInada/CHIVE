@@ -3,33 +3,34 @@
  * cells (numeric/text), and a footer row showing per-column type tags.
  */
 
-import { t } from '../../services/i18nService.js';
-import { formatNumber, translateType, isEmptyValue } from '../../utils/formatters.js';
+import { t, translateType, getLocale } from '../../services/i18nService.js';
+import { formatNumber, isEmptyValue } from '../../utils/formatters.js';
 
 /**
- * Render the preview table into `#container-tabela`. Caps rows at `limit`.
+ * Render the preview table into `#table-container`. Caps rows at `limit`.
  * Renders a "no columns selected" placeholder when `visibleColumns` is
  * empty.
  *
  * @param {Array<Object<string, *>>} rows
- * @param {Array<{ nome: string, tipo: string }>} visibleColumns
+ * @param {Array<{ name: string, type: string }>} visibleColumns
  * @param {number} limit
  * @returns {void}
  */
 export function renderTablePreview(rows, visibleColumns, limit) {
-	const tableContainer = document.getElementById('container-tabela');
+	const tableContainer = document.getElementById('table-container');
 	if (visibleColumns.length === 0) {
 		tableContainer.replaceChildren();
 		const empty = document.createElement('div');
-		empty.className = 'tabela-sem-colunas';
+		empty.className = 'table-no-columns';
 		empty.textContent = t('chive-no-columns-selected');
 		tableContainer.appendChild(empty);
 		return;
 	}
 
 	const previewRows = rows.slice(0, limit);
+	const locale = getLocale();
 	const table = document.createElement('table');
-	table.className = 'tabela-preview';
+	table.className = 'table-preview';
 
 	const thead = document.createElement('thead');
 	const trHead = document.createElement('tr');
@@ -37,10 +38,10 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 	thIndex.classList.add('row-index');
 	thIndex.textContent = '#';
 	trHead.appendChild(thIndex);
-	visibleColumns.forEach(({ nome, tipo }) => {
+	visibleColumns.forEach(({ name, type }) => {
 		const th = document.createElement('th');
-		if (tipo === 'numero') th.classList.add('num');
-		th.textContent = nome;
+		if (type === 'number') th.classList.add('num');
+		th.textContent = name;
 		trHead.appendChild(th);
 	});
 	thead.appendChild(trHead);
@@ -52,13 +53,13 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 		tdIndex.classList.add('row-index');
 		tdIndex.textContent = String(i + 1);
 		tr.appendChild(tdIndex);
-		visibleColumns.forEach(({ nome, tipo }) => {
+		visibleColumns.forEach(({ name, type }) => {
 			const td = document.createElement('td');
-			if (tipo === 'numero') td.classList.add('num');
-			const value = row[nome];
+			if (type === 'number') td.classList.add('num');
+			const value = row[name];
 			const displayValue = isEmptyValue(value)
 				? '—'
-				: (tipo === 'numero' ? formatNumber(value) : String(value));
+				: (type === 'number' ? formatNumber(value, locale) : String(value));
 			td.textContent = displayValue;
 			tr.appendChild(td);
 		});
@@ -70,9 +71,9 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 	const tdFootIndex = document.createElement('td');
 	tdFootIndex.classList.add('row-index');
 	trFoot.appendChild(tdFootIndex);
-	visibleColumns.forEach(({ tipo }) => {
+	visibleColumns.forEach(({ type }) => {
 		const td = document.createElement('td');
-		td.textContent = translateType(tipo);
+		td.textContent = translateType(type);
 		trFoot.appendChild(td);
 	});
 	tfoot.appendChild(trFoot);

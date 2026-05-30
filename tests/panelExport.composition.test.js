@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import * as appState from '../src/modules/appState.js';
+import * as appState from '../src/modules/state/appState.js';
 
 const baixarSvgMarkupMock = vi.fn((svgMarkup, fileNameBase) => {
   return {
@@ -43,15 +43,15 @@ function rect(left, top, width, height) {
 }
 
 /**
- * Inject a live <svg> into each chart-bearing slot's .painel-slot-svg container.
+ * Inject a live <svg> into each chart-bearing slot's .panel-slot-svg container.
  * After Phase 1, the exporter clones the LIVE SVG from the DOM (no longer reads
  * a serialized svgMarkup string from state). Tests that exercise export geometry
  * therefore need to put real SVG elements in the slots before calling export.
  */
 function injectLiveSlotSvgs() {
-  document.querySelectorAll('[data-panel-slot][data-panel-chart-id] .painel-slot-svg').forEach(slotSvgEl => {
+  document.querySelectorAll('[data-panel-slot][data-panel-chart-id] .panel-slot-svg').forEach(slotSvgEl => {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    // Intentionally NO width/height/x/y here — the exporter sets those fresh,
+    // Intentionally NO width/height/x/y here, the exporter sets those fresh,
     // and tests rely on them appearing in canonical x y width height order in
     // the serialized output.
     svg.setAttribute('viewBox', '0 0 10 10');
@@ -66,8 +66,8 @@ function injectLiveSlotSvgs() {
 function resetAppStateForTest() {
   appState.replaceAllState({
     data: { datasets: [], activeIndex: -1 },
-    panel: { charts: [], slots: {}, layout: 'layout-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
-    ui: { sidebarMode: 'dados', previewRows: 10 },
+    panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+    ui: { sidebarMode: 'data', previewRows: 10 },
   });
 }
 
@@ -102,7 +102,7 @@ describe('panel export composition (phase 2)', () => {
 
   it('includes slot border outlines in export when block border option is enabled', () => {
     const chartA = appState.addChartSnapshot({
-      nome: 'Chart A',
+      name: 'Chart A',
       svgMarkup: '<svg viewBox="0 0 10 10"><rect width="10" height="10" /></svg>',
     });
     const blockA = appState.getState().panel.blocks[0].id;
@@ -115,10 +115,10 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(0, 0, 600, 400);
 
     const filledSlot = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const emptySlot = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
     );
     filledSlot.getBoundingClientRect = () => rect(20, 30, 260, 150);
     emptySlot.getBoundingClientRect = () => rect(300, 30, 260, 150);
@@ -135,12 +135,12 @@ describe('panel export composition (phase 2)', () => {
 
   it('exports charts from multiple blocks using slot geometry in canvas coordinates', () => {
     const chartA = appState.addChartSnapshot({
-      nome: 'Chart A',
+      name: 'Chart A',
       svgMarkup: '<svg viewBox="0 0 10 10"><rect width="10" height="10" /></svg>',
     });
-    const blockB = appState.addPanelBlock('layout-2col');
+    const blockB = appState.addPanelBlock('template-2col');
     const chartB = appState.addChartSnapshot({
-      nome: 'Chart B',
+      name: 'Chart B',
       svgMarkup: '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" /></svg>',
     });
 
@@ -154,10 +154,10 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(100, 50, 1000, 800);
 
     const slotA = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const slotB = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-2"]`
     );
 
     slotA.getBoundingClientRect = () => rect(150, 110, 300, 200);
@@ -181,10 +181,10 @@ describe('panel export composition (phase 2)', () => {
   });
 
   it('exports charts in deterministic DOM order across blocks and slots', () => {
-    const chartA = appState.addChartSnapshot({ nome: 'A', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const blockB = appState.addPanelBlock('layout-2col');
-    const chartB = appState.addChartSnapshot({ nome: 'B', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const chartC = appState.addChartSnapshot({ nome: 'C', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const chartA = appState.addChartSnapshot({ name: 'A', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const blockB = appState.addPanelBlock('template-2col');
+    const chartB = appState.addChartSnapshot({ name: 'B', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const chartC = appState.addChartSnapshot({ name: 'C', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
 
     const blockA = appState.getState().panel.blocks[0].id;
     appState.assignChartToPanelBlockSlot(blockA, 'slot-1', chartA);
@@ -197,13 +197,13 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(0, 0, 1000, 700);
 
     const slotA1 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const slotA2 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
     );
     const slotB1 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-1"]`
     );
 
     slotA1.getBoundingClientRect = () => rect(10, 10, 111, 101);
@@ -228,12 +228,12 @@ describe('panel export composition (phase 2)', () => {
   });
 
   it('exports all filled slots after template and proportion updates', () => {
-    const chart1 = appState.addChartSnapshot({ nome: '1', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const chart2 = appState.addChartSnapshot({ nome: '2', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const chart3 = appState.addChartSnapshot({ nome: '3', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const chart1 = appState.addChartSnapshot({ name: '1', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const chart2 = appState.addChartSnapshot({ name: '2', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const chart3 = appState.addChartSnapshot({ name: '3', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
 
     const blockA = appState.getState().panel.blocks[0].id;
-    appState.setPanelBlockTemplate(blockA, 'layout-hero2');
+    appState.setPanelBlockTemplate(blockA, 'template-hero2');
     appState.updatePanelBlockProportions(blockA, { splitMain: 68, splitRight: 37 });
 
     appState.assignChartToPanelBlockSlot(blockA, 'slot-1', chart1);
@@ -246,13 +246,13 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(50, 40, 900, 600);
 
     const slot1 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const slot2 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
     );
     const slot3 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-3"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-3"]`
     );
 
     slot1.getBoundingClientRect = () => rect(100, 80, 500, 520);
@@ -272,18 +272,18 @@ describe('panel export composition (phase 2)', () => {
   });
 
   it('exports mixed templates in one composition with stable coordinates', () => {
-    const c1 = appState.addChartSnapshot({ nome: 'c1', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const c2 = appState.addChartSnapshot({ nome: 'c2', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const c3 = appState.addChartSnapshot({ nome: 'c3', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const c4 = appState.addChartSnapshot({ nome: 'c4', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const c5 = appState.addChartSnapshot({ nome: 'c5', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const c6 = appState.addChartSnapshot({ nome: 'c6', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c1 = appState.addChartSnapshot({ name: 'c1', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c2 = appState.addChartSnapshot({ name: 'c2', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c3 = appState.addChartSnapshot({ name: 'c3', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c4 = appState.addChartSnapshot({ name: 'c4', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c5 = appState.addChartSnapshot({ name: 'c5', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const c6 = appState.addChartSnapshot({ name: 'c6', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
 
     const blockA = appState.getState().panel.blocks[0].id;
-    const blockB = appState.addPanelBlock('layout-3col');
-    const blockC = appState.addPanelBlock('layout-1x2');
+    const blockB = appState.addPanelBlock('template-3col');
+    const blockC = appState.addPanelBlock('template-1x2');
 
-    appState.setPanelBlockTemplate(blockA, 'layout-hero2');
+    appState.setPanelBlockTemplate(blockA, 'template-hero2');
     appState.updatePanelBlockProportions(blockA, { splitMain: 66, splitRight: 40 });
     appState.updatePanelBlockProportions(blockB, { a: 25, b: 35, c: 40 });
     appState.updatePanelBlockProportions(blockC, { split: 55 });
@@ -301,22 +301,22 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(20, 10, 1200, 900);
 
     const a1 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     const a2 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-2"]`
     );
     const a3 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-3"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-3"]`
     );
     const b1 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-1"]`
     );
     const b3 = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-3"]`
+      `.panel-block[data-panel-block-id="${blockB}"] [data-panel-slot="slot-3"]`
     );
     const c2slot = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockC}"] [data-panel-slot="slot-2"]`
+      `.panel-block[data-panel-block-id="${blockC}"] [data-panel-slot="slot-2"]`
     );
 
     a1.getBoundingClientRect = () => rect(60, 40, 700, 420);
@@ -342,8 +342,8 @@ describe('panel export composition (phase 2)', () => {
   });
 
   it('does not export charts from slots cleared or invalidated by chart removal', () => {
-    const kept = appState.addChartSnapshot({ nome: 'kept', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
-    const removed = appState.addChartSnapshot({ nome: 'removed', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const kept = appState.addChartSnapshot({ name: 'kept', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
+    const removed = appState.addChartSnapshot({ name: 'removed', svgMarkup: '<svg><rect width="1" height="1" /></svg>' });
 
     const blockA = appState.getState().panel.blocks[0].id;
     appState.assignChartToPanelBlockSlot(blockA, 'slot-1', kept);
@@ -357,7 +357,7 @@ describe('panel export composition (phase 2)', () => {
     canvas.getBoundingClientRect = () => rect(0, 0, 800, 500);
 
     const keptSlot = document.querySelector(
-      `.painel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
+      `.panel-block[data-panel-block-id="${blockA}"] [data-panel-slot="slot-1"]`
     );
     keptSlot.getBoundingClientRect = () => rect(20, 30, 300, 200);
 

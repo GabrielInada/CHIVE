@@ -8,7 +8,7 @@
  *   return fail()                   → { ok: false }
  *   return fail('no-data')          → { ok: false, reason: 'no-data' }
  *
- * The success-data fields spread onto the result object — there is no
+ * The success-data fields spread onto the result object, there is no
  * `.value` wrapper. Pick reasons from a stable string set; callers branch
  * on `reason` to localize.
  *

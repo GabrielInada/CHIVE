@@ -45,10 +45,10 @@ export function renderTreemapChartSection({ config, rows, filterCallbacks }) {
 			colorScheme: config.colorScheme,
 			locale: getLocale(),
 			labels: {
-				categoria: t('chive-chart-control-treemap-category'),
-				contagem: t('chive-tooltip-count'),
-				soma: t('chive-tooltip-sum'),
-				percentual: t('chive-tooltip-percentage'),
+				category: t('chive-chart-control-treemap-category'),
+				count: t('chive-tooltip-count'),
+				sum: t('chive-tooltip-sum'),
+				percentage: t('chive-tooltip-percentage'),
 				focusOnThis: t('chive-tooltip-show-only-this'),
 				addToFilter: t('chive-tooltip-add-to-filter'),
 			},
@@ -57,9 +57,9 @@ export function renderTreemapChartSection({ config, rows, filterCallbacks }) {
 	);
 
 	if (!result.ok) {
-		const chave = result.reason === 'no-value-column'
+		const key = result.reason === 'no-value-column'
 			? 'chive-chart-empty-treemap-numeric'
 			: 'chive-chart-empty-treemap';
-		showChartMessage(CHART_CONTAINERS.treemap, t(chave));
+		showChartMessage(CHART_CONTAINERS.treemap, t(key));
 	}
 }

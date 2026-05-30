@@ -13,10 +13,10 @@
  * @typedef {import('../types.js').PresetCatalogEntry} PresetCatalogEntry
  */
 
-const irisCsvUrl = new URL('./dataset-iris.csv', import.meta.url).href;
-const amazonianTreesCsvUrl = new URL('./dataset-amazonian-trees.csv', import.meta.url).href;
-const amazonMultilevelNestingCsvUrl = new URL('./dataset-amazon-multilevel-nesting.csv', import.meta.url).href;
-const monthlyVisitsCsvUrl = new URL('./dataset-monthly-visits.csv', import.meta.url).href;
+const irisCsvUrl = new URL('./presets/dataset-iris.csv', import.meta.url).href;
+const amazonianTreesCsvUrl = new URL('./presets/dataset-amazonian-trees.csv', import.meta.url).href;
+const amazonMultilevelNestingCsvUrl = new URL('./presets/dataset-amazon-multilevel-nesting.csv', import.meta.url).href;
+const monthlyVisitsCsvUrl = new URL('./presets/dataset-monthly-visits.csv', import.meta.url).href;
 
 // Template to append future real datasets from src/data:
 // const yourCsvUrl = new URL('./dataset-your-name.csv', import.meta.url).href;
@@ -41,7 +41,7 @@ const monthlyVisitsCsvUrl = new URL('./dataset-monthly-visits.csv', import.meta.
  * picker dialog.
  *
  * The `PresetCatalogEntry` typedef notes its fields don't include `rows`/`columns`
- * as derived — these are author-asserted metadata used by the picker dialog
+ * as derived, these are author-asserted metadata used by the picker dialog
  * to show expected dimensions before the user commits to a load.
  *
  * @type {PresetCatalogEntry[]}

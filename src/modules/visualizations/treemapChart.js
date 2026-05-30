@@ -43,7 +43,7 @@ function truncate(text, maxLen) {
 
 /**
  * Render a treemap into `container`. Unlike the other renderers, this one
- * returns nothing (`void`) — failure modes are handled by early returns
+ * returns nothing (`void`), failure modes are handled by early returns
  * that leave the container empty.
  *
  * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
@@ -52,92 +52,92 @@ function truncate(text, maxLen) {
  * `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
- * @param {Array<Object<string, *>>} dados - Source rows.
- * @param {string} colunaCategoria - Categorical column name (required).
- * @param {Object} [opcoes={}] - Render options bag.
+ * @param {Array<Object<string, *>>} rows - Source rows.
+ * @param {string} categoryColumn - Categorical column name (required).
+ * @param {Object} [options={}] - Render options bag.
  * @returns {void}
  */
-export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
-	if (!container || !colunaCategoria) return { ok: false };
+export function renderTreeMap(container, rows, categoryColumn, options = {}) {
+	if (!container || !categoryColumn) return { ok: false };
 
-	const measureMode = TREEMAP_CHART.measureModes.includes(opcoes.measureMode)
-		? opcoes.measureMode
+	const measureMode = TREEMAP_CHART.measureModes.includes(options.measureMode)
+		? options.measureMode
 		: TREEMAP_CHART.defaultMeasureMode;
-	const valueColumn = opcoes.valueColumn || null;
-	const topN = Number.isFinite(Number(opcoes.topN)) ? Number(opcoes.topN) : TREEMAP_CHART.defaultTopN;
-	const padding = Number.isFinite(Number(opcoes.padding)) ? clamp(Number(opcoes.padding), 1, 6) : TREEMAP_CHART.defaultPadding;
-	const showLabels = opcoes.showLabels !== false;
-	const showValues = opcoes.showValues !== false;
-	const customTitle = String(opcoes.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(opcoes.chartHeight))
-		? clamp(Number(opcoes.chartHeight), 220, 720)
+	const valueColumn = options.valueColumn || null;
+	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : TREEMAP_CHART.defaultTopN;
+	const padding = Number.isFinite(Number(options.padding)) ? clamp(Number(options.padding), 1, 6) : TREEMAP_CHART.defaultPadding;
+	const showLabels = options.showLabels !== false;
+	const showValues = options.showValues !== false;
+	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(options.chartHeight))
+		? clamp(Number(options.chartHeight), 220, 720)
 		: 380;
-	const colorMode = opcoes.colorMode || 'scheme';
-	const colorScheme = opcoes.colorScheme || 'Bold';
-	const uniformColor = isValidHexColor(String(opcoes.color || '').trim())
-		? String(opcoes.color).trim()
+	const colorMode = options.colorMode || 'scheme';
+	const colorScheme = options.colorScheme || 'Bold';
+	const uniformColor = isValidHexColor(String(options.color || '').trim())
+		? String(options.color).trim()
 		: CHART_COLORS.treemap;
-	const locale = opcoes.locale || undefined;
+	const locale = options.locale || undefined;
 	const labels = {
-		categoria: opcoes.labels?.categoria || 'Category',
-		contagem: opcoes.labels?.contagem || 'Count',
-		soma: opcoes.labels?.soma || 'Sum',
-		percentual: opcoes.labels?.percentual || 'Percentage',
-		focusOnThis: opcoes.labels?.focusOnThis || 'Show only this',
-		addToFilter: opcoes.labels?.addToFilter || 'Add to global filter',
+		category: options.labels?.category || 'Category',
+		count: options.labels?.count || 'Count',
+		sum: options.labels?.sum || 'Sum',
+		percentage: options.labels?.percentage || 'Percentage',
+		focusOnThis: options.labels?.focusOnThis || 'Show only this',
+		addToFilter: options.labels?.addToFilter || 'Add to global filter',
 	};
 
 	// Aggregate data
 	const hasValueColumn = measureMode === 'count'
 		? true
-		: dados.some(linha => Object.prototype.hasOwnProperty.call(linha, valueColumn));
+		: rows.some(row => Object.prototype.hasOwnProperty.call(row, valueColumn));
 
 	if (measureMode === 'sum' && (!valueColumn || !hasValueColumn)) {
 		return { ok: false, reason: 'no-value-column' };
 	}
 
-	const contador = new Map();
-	dados.forEach(linha => {
-		const valorBruto = linha[colunaCategoria];
-		const categoria = isNullish(valorBruto) || valorBruto === ''
-			? '—'
-			: String(valorBruto);
+	const counter = new Map();
+	rows.forEach(row => {
+		const rawValue = row[categoryColumn];
+		const category = isNullish(rawValue) || rawValue === ''
+			? 'N/A'
+			: String(rawValue);
 		if (measureMode === 'sum') {
-			const valor = Number(linha[valueColumn]);
-			if (!Number.isFinite(valor)) return;
-			contador.set(categoria, (contador.get(categoria) || 0) + valor);
+			const value = Number(row[valueColumn]);
+			if (!Number.isFinite(value)) return;
+			counter.set(category, (counter.get(category) || 0) + value);
 		} else {
-			contador.set(categoria, (contador.get(categoria) || 0) + 1);
+			counter.set(category, (counter.get(category) || 0) + 1);
 		}
 	});
 
-	if (contador.size === 0) return { ok: false };
+	if (counter.size === 0) return { ok: false };
 
-	let entradas = Array.from(contador.entries())
+	let entries = Array.from(counter.entries())
 		.filter(([, v]) => v > 0)
 		.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]));
 
-	if (topN > 0) entradas = entradas.slice(0, topN);
-	if (entradas.length === 0) return { ok: false };
+	if (topN > 0) entries = entries.slice(0, topN);
+	if (entries.length === 0) return { ok: false };
 
-	const total = entradas.reduce((acc, [, v]) => acc + v, 0);
+	const total = entries.reduce((acc, [, v]) => acc + v, 0);
 
 	container.replaceChildren();
 	hideChartTooltip();
 
-	const largura = Math.max(container.clientWidth || CHART_DIMENSIONS.bar?.width || 700, 320);
+	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bar?.width || 700, 320);
 	const titleOffset = customTitle ? 24 : 0;
-	const altura = chartHeight;
+	const height = chartHeight;
 
 	const svg = select(container)
 		.append('svg')
-		.attr('width', largura)
-		.attr('height', altura);
+		.attr('width', width)
+		.attr('height', height);
 
 	if (customTitle) {
 		svg
 			.append('text')
-			.attr('x', largura / 2)
+			.attr('x', width / 2)
 			.attr('y', 16)
 			.attr('text-anchor', 'middle')
 			.attr('font-size', 13)
@@ -146,12 +146,12 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 			.text(customTitle);
 	}
 
-	const treemapWidth = largura;
-	const treemapHeight = altura - titleOffset;
+	const treemapWidth = width;
+	const treemapHeight = height - titleOffset;
 
 	const rootData = {
 		name: 'root',
-		children: entradas.map(([nome, valor]) => ({ name: nome, value: valor })),
+		children: entries.map(([name, value]) => ({ name, value })),
 	};
 
 	const root = hierarchy(rootData)
@@ -173,7 +173,7 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 	};
 
 	let pinnedName = null;
-	const filterCallbacks = opcoes.filterCallbacks || {};
+	const filterCallbacks = options.filterCallbacks || {};
 	const filterLabels = filterCallbacks.filterActionLabels || {};
 	const actionLabels = {
 		focus: filterLabels.focus || labels.focusOnThis,
@@ -185,11 +185,11 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 
 	const buildTooltipContent = (d, pct) => {
 		const wrapper = document.createElement('div');
-		const valorLabel = measureMode === 'sum' ? labels.soma : labels.contagem;
+		const valueLabel = measureMode === 'sum' ? labels.sum : labels.count;
 
-		wrapper.appendChild(createTooltipLine(labels.categoria, String(d.data.name)));
-		wrapper.appendChild(createTooltipLine(valorLabel, formatNumber(d.data.value, locale)));
-		wrapper.appendChild(createTooltipLine(labels.percentual, `${pct.toFixed(1)}%`));
+		wrapper.appendChild(createTooltipLine(labels.category, String(d.data.name)));
+		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(d.data.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.percentage, `${pct.toFixed(1)}%`));
 		return wrapper;
 	};
 
@@ -241,13 +241,13 @@ export function renderTreeMap(container, dados, colunaCategoria, opcoes = {}) {
 			const content = buildTooltipContent(d, pct);
 			const token = toCategoryToken(d.data.name);
 			const state = typeof filterCallbacks.getTokenFilterState === 'function'
-				? filterCallbacks.getTokenFilterState(colunaCategoria, token)
+				? filterCallbacks.getTokenFilterState(categoryColumn, token)
 				: null;
 			const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
-				? !!filterCallbacks.isShowOnlyThisRedundant(colunaCategoria, token)
+				? !!filterCallbacks.isShowOnlyThisRedundant(categoryColumn, token)
 				: false;
 			const actions = buildCategoricalFilterActions({
-				column: colunaCategoria,
+				column: categoryColumn,
 				token,
 				state,
 				labels: actionLabels,

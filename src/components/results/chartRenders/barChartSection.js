@@ -15,7 +15,7 @@ import { showChartMessage } from './sharedRenderHelpers.js';
  * Render the bar-chart section for the current dataset.
  *
  * @param {Object} args
- * @param {Object} args.config - The bar config block (`configGraficos.bar`).
+ * @param {Object} args.config - The bar config block (`chartConfig.bar`).
  * @param {Array<Object<string, *>>} args.rows - Already filtered by the global filter.
  * @param {Object} args.filterCallbacks - Bag of tooltip filter action handlers.
  * @returns {void}
@@ -45,7 +45,7 @@ export function renderBarChartSection({ config, rows, filterCallbacks }) {
 		{
 			customTitle: config.customTitle,
 			chartHeight: config.chartHeight,
-			ordenacao: config.sort,
+			sort: config.sort,
 			topN: config.topN,
 			color: config.color,
 			colorMode: config.colorMode,
@@ -63,11 +63,11 @@ export function renderBarChartSection({ config, rows, filterCallbacks }) {
 			},
 			locale: getLocale(),
 			labels: {
-				categoria: t('chive-chart-control-bar-category'),
-				contagem: t('chive-tooltip-count'),
-				soma: t('chive-tooltip-sum'),
-				media: t('chive-tooltip-mean'),
-				percentual: t('chive-tooltip-percentage'),
+				category: t('chive-chart-control-bar-category'),
+				count: t('chive-tooltip-count'),
+				sum: t('chive-tooltip-sum'),
+				mean: t('chive-tooltip-mean'),
+				percentage: t('chive-tooltip-percentage'),
 				focusOnThis: t('chive-tooltip-show-only-this'),
 				addToFilter: t('chive-tooltip-add-to-filter'),
 			},
@@ -75,9 +75,9 @@ export function renderBarChartSection({ config, rows, filterCallbacks }) {
 		}
 	);
 	if (!result.ok) {
-		const chave = result.reason === 'no-numeric' || result.reason === 'no-value-column'
+		const key = result.reason === 'no-numeric' || result.reason === 'no-value-column'
 			? 'chive-chart-empty-bar-numeric'
 			: 'chive-chart-empty-bar';
-		showChartMessage(CHART_CONTAINERS.bar, t(chave));
+		showChartMessage(CHART_CONTAINERS.bar, t(key));
 	}
 }

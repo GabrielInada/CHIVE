@@ -238,9 +238,9 @@ describe('getTopLevelGroup', () => {
 		expect(getTopLevelGroup(level1)).toBe('L1');
 	});
 
-	it('falls back through groupName → group → category → em-dash', () => {
+	it('falls back through groupName → group → category → N/A', () => {
 		const orphan = { parent: null, depth: 0, data: {} };
-		expect(getTopLevelGroup(orphan)).toBe('—');
+		expect(getTopLevelGroup(orphan)).toBe('N/A');
 		const withGroup = { parent: null, depth: 0, data: { group: 'g' } };
 		expect(getTopLevelGroup(withGroup)).toBe('g');
 		const withCategory = { parent: null, depth: 0, data: { category: 'c' } };

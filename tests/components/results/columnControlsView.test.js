@@ -13,27 +13,27 @@ describe('columnControlsView', () => {
 		renderColumnControlsDOM({
 			acoesContainer,
 			listaColunas,
-			colunas: [
-				{ nome: 'cidade', tipo: 'texto' },
-				{ nome: 'valor', tipo: 'numero' },
+			columns: [
+				{ name: 'cidade', type: 'text' },
+				{ name: 'valor', type: 'number' },
 			],
 			nomesSelecionados: new Set(['cidade']),
-			filtroAtivo: 'texto',
+			filtroAtivo: 'text',
 			nomesColunas: ['cidade', 'valor'],
 			nomesNumericas: ['valor'],
 			nomesTexto: ['cidade'],
 			traduzir: key => key,
-			translateType: tipo => tipo,
+			translateType: type => type,
 			aoAlterarSelecaoColuna,
 		});
 
 		expect(acoesContainer.querySelectorAll('[data-acao-coluna]').length).toBe(4);
-		expect(listaColunas.querySelectorAll('.coluna-checkbox').length).toBe(2);
+		expect(listaColunas.querySelectorAll('.column-checkbox').length).toBe(2);
 
-		acoesContainer.querySelector('[data-acao-coluna="numericas"]').click();
+		acoesContainer.querySelector('[data-acao-coluna="numeric"]').click();
 		expect(aoAlterarSelecaoColuna).toHaveBeenCalledWith(['valor']);
 
-		const checkboxes = listaColunas.querySelectorAll('.coluna-checkbox');
+		const checkboxes = listaColunas.querySelectorAll('.column-checkbox');
 		checkboxes[1].checked = true;
 		checkboxes[1].dispatchEvent(new Event('change', { bubbles: true }));
 		expect(aoAlterarSelecaoColuna).toHaveBeenCalledWith(['cidade', 'valor']);

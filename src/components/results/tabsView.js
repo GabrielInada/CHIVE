@@ -1,5 +1,5 @@
 /**
- * Tabs view — preview / charts / dashboard switcher plus the global-filter
+ * Tabs view, preview / charts / dashboard switcher plus the global-filter
  * trigger button that only shows on the charts tab.
  *
  * Listeners are wired exactly once (module-local flag); subsequent
@@ -20,9 +20,9 @@ function getTabElements() {
 		tabPreview: document.getElementById('tab-preview'),
 		tabCharts: document.getElementById('tab-charts'),
 		tabPanel: document.getElementById('tab-panel'),
-		previewPanel: document.getElementById('painel-preview'),
-		chartsPanel: document.getElementById('painel-charts'),
-		dashboardPanel: document.getElementById('painel-panel'),
+		previewPanel: document.getElementById('tab-content-preview'),
+		chartsPanel: document.getElementById('tab-content-charts'),
+		dashboardPanel: document.getElementById('tab-content-dashboard'),
 		globalFilterTrigger: document.getElementById('btn-global-filter'),
 		globalFilterLabel: document.getElementById('global-filter-trigger-label'),
 		globalFilterBadge: document.getElementById('global-filter-trigger-badge'),
@@ -30,7 +30,7 @@ function getTabElements() {
 }
 
 /**
- * Wire tab + global-filter button click handlers. Idempotent — listeners
+ * Wire tab + global-filter button click handlers. Idempotent, listeners
  * are attached once, and subsequent calls only swap the currently-active
  * callbacks.
  *
@@ -49,17 +49,17 @@ export function setupTabListeners(onChartConfigChange, onGlobalFilterOpen) {
 
 	tabPreview.addEventListener('click', () => {
 		if (!currentOnChartConfigChange) return;
-		currentOnChartConfigChange({ aba: 'preview' });
+		currentOnChartConfigChange({ activeTab: 'preview' });
 	});
 
 	tabCharts.addEventListener('click', () => {
 		if (!currentOnChartConfigChange) return;
-		currentOnChartConfigChange({ aba: 'charts' });
+		currentOnChartConfigChange({ activeTab: 'charts' });
 	});
 
 	tabPanel.addEventListener('click', () => {
 		if (!currentOnChartConfigChange) return;
-		currentOnChartConfigChange({ aba: 'panel' });
+		currentOnChartConfigChange({ activeTab: 'panel' });
 	});
 
 	if (globalFilterTrigger) {
@@ -88,12 +88,12 @@ export function updateTabsUI(activeTab) {
 	const chartsActive = activeTab === 'charts';
 	const panelActive = activeTab === 'panel';
 
-	tabPreview.classList.toggle('ativo', previewActive);
-	tabCharts.classList.toggle('ativo', chartsActive);
-	tabPanel.classList.toggle('ativo', panelActive);
-	previewPanel.classList.toggle('ativo', previewActive);
-	chartsPanel.classList.toggle('ativo', chartsActive);
-	dashboardPanel.classList.toggle('ativo', panelActive);
+	tabPreview.classList.toggle('active', previewActive);
+	tabCharts.classList.toggle('active', chartsActive);
+	tabPanel.classList.toggle('active', panelActive);
+	previewPanel.classList.toggle('active', previewActive);
+	chartsPanel.classList.toggle('active', chartsActive);
+	dashboardPanel.classList.toggle('active', panelActive);
 }
 
 /**
@@ -132,7 +132,7 @@ export function updateGlobalFilterTrigger({
 
 	const active = hasDataset && isGlobalFilterActive(globalFilter);
 	globalFilterTrigger.dataset.active = active ? 'true' : 'false';
-	globalFilterTrigger.classList.toggle('ativo', active);
+	globalFilterTrigger.classList.toggle('active', active);
 
 	if (active) {
 		const count = countGlobalFilterRules(globalFilter);

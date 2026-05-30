@@ -5,8 +5,8 @@
  * reused across all charts via {@link ensureTooltip}. Tooltips have two
  * modes:
  *
- * - **Hover** — `showChartTooltip` + `moveChartTooltip` track the cursor.
- * - **Pinned** — `showPinnedChartTooltip` (or `pinTooltip` after a hover)
+ * - **Hover**, `showChartTooltip` + `moveChartTooltip` track the cursor.
+ * - **Pinned**, `showPinnedChartTooltip` (or `pinTooltip` after a hover)
  *   sticks the tooltip in place, traps Tab focus, and listens for Escape /
  *   outside-click to dismiss.
  *
@@ -15,7 +15,7 @@
  * action buttons (built via {@link buildCategoricalFilterActions} on the
  * chart side).
  *
- * Highest-traffic helper in the viz layer — imported by every chart.
+ * Highest-traffic helper in the viz layer, imported by every chart.
  */
 
 const TOOLTIP_OFFSET = 12;

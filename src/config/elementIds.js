@@ -31,9 +31,9 @@ export const CHART_BLOCKS = {
 // Panel elements
 export const PANEL_IDS = {
 	canvas: 'panel-layout-canvas',
-	chartList: 'lista-painel-charts',
+	chartList: 'panel-chart-list',
 	layoutSelect: 'select-panel-layout',
-	exportButton: 'btn-exportar-painel',
+	exportButton: 'btn-export-panel',
 };
 
 // Tab elements
@@ -45,19 +45,19 @@ export const TAB_IDS = {
 
 // Tab panel containers
 export const TAB_PANELS = {
-	preview: 'painel-preview',
-	charts: 'painel-charts',
-	panel: 'painel-panel',
+	preview: 'tab-content-preview',
+	charts: 'tab-content-charts',
+	panel: 'tab-content-dashboard',
 };
 
 // Results/data view elements
 export const VIEW_IDS = {
-	fileInfo: 'info-arquivo',
-	columnPanel: 'painel-colunas',
-	emptyState: 'estado-vazio',
-	dataState: 'estado-dados',
-	resultTabs: 'resultado-tabs',
-	tableContainer: 'container-tabela',
+	fileInfo: 'file-info',
+	columnPanel: 'columns-panel',
+	emptyState: 'empty-state',
+	dataState: 'data-state',
+	resultTabs: 'result-tabs',
+	tableContainer: 'table-container',
 	statsContainer: 'container-stats',
 	chartsGrid: 'charts-grid',
 	chartsEmptyState: 'charts-empty-state',
@@ -66,42 +66,42 @@ export const VIEW_IDS = {
 
 // Sidebar elements
 export const SIDEBAR_IDS = {
-	panelDados: 'sidebar-panel-dados',
+	panelData: 'sidebar-panel-data',
 	panelViz: 'sidebar-panel-viz',
-	panelPanel: 'sidebar-panel-panel',
+	panelDashboard: 'sidebar-panel-dashboard',
 	toggleButton: 'btn-toggle-sidebar',
 };
 
 // Navigation buttons
 export const NAV_BUTTONS = {
-	advance: 'btn-avancar',
-	editColumns: 'btn-editar-colunas',
-	goToPanel: 'btn-ir-painel',
-	backToViz: 'btn-voltar-viz',
+	advance: 'btn-advance',
+	editColumns: 'btn-edit-columns',
+	goToPanel: 'btn-go-to-panel',
+	backToViz: 'btn-back-to-viz',
 };
 
 // Feedback/status elements
 export const FEEDBACK_IDS = {
 	toast: 'toast-feedback',
-	errorMessage: 'mensagem-erro',
-	errorContainer: 'erros-container',
-	loadingState: 'loading-estado',
-	devWarning: 'aviso-dev',
+	errorMessage: 'error-message',
+	errorContainer: 'errors-container',
+	loadingState: 'loading-state',
+	devWarning: 'dev-warning',
 };
 
 // File management elements
 export const FILE_IDS = {
-	fileInput: 'input-arquivo',
-	uploadZone: 'zona-upload',
-	fileSummary: 'arquivo-resumo-texto',
-	fileListContent: 'lista-arquivos-conteudo',
+	fileInput: 'file-input',
+	uploadZone: 'upload-zone',
+	fileSummary: 'file-summary-text',
+	fileListContent: 'file-list-content',
 };
 
 // Badge elements
 export const BADGE_IDS = {
 	charts: 'badge-charts',
-	rows: 'badge-linhas',
-	numColumns: 'badge-num-colunas',
+	rows: 'badge-rows',
+	numColumns: 'badge-num-columns',
 };
 
 // Language elements

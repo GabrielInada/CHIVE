@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDataStateFacade } from '../../src/modules/dataStateFacade.js';
+import { createDataStateFacade } from '../../src/modules/state/dataStateFacade.js';
 
 const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
 
@@ -7,9 +7,9 @@ function makeFacade(initialConfig = null) {
 	const emitStateChange = vi.fn();
 	const dataset = {
 		id: 'ds-1',
-		dados: [{}],
-		colunas: [],
-		configGraficos: initialConfig || {
+		rows: [{}],
+		columns: [],
+		chartConfig: initialConfig || {
 			bar: { enabled: false, category: 'col1' },
 			scatter: { enabled: false },
 			pie: { enabled: false },
@@ -31,9 +31,9 @@ describe('dataStateFacade.setActiveChartType', () => {
 	it('enables exactly one chart and disables the rest', () => {
 		const { facade, dataset } = makeFacade();
 		facade.setActiveChartType('bar');
-		expect(dataset.configGraficos.bar.enabled).toBe(true);
+		expect(dataset.chartConfig.bar.enabled).toBe(true);
 		CHART_TYPES.filter(t => t !== 'bar').forEach(type => {
-			expect(dataset.configGraficos[type].enabled).toBe(false);
+			expect(dataset.chartConfig[type].enabled).toBe(false);
 		});
 	});
 
@@ -41,10 +41,10 @@ describe('dataStateFacade.setActiveChartType', () => {
 		const { facade, dataset } = makeFacade();
 		facade.setActiveChartType('bar');
 		facade.setActiveChartType('scatter');
-		expect(dataset.configGraficos.bar.enabled).toBe(false);
-		expect(dataset.configGraficos.scatter.enabled).toBe(true);
+		expect(dataset.chartConfig.bar.enabled).toBe(false);
+		expect(dataset.chartConfig.scatter.enabled).toBe(true);
 		CHART_TYPES.filter(t => t !== 'scatter').forEach(type => {
-			expect(dataset.configGraficos[type].enabled).toBe(false);
+			expect(dataset.chartConfig[type].enabled).toBe(false);
 		});
 	});
 
@@ -53,7 +53,7 @@ describe('dataStateFacade.setActiveChartType', () => {
 		facade.setActiveChartType('pie');
 		facade.setActiveChartType(null);
 		CHART_TYPES.forEach(type => {
-			expect(dataset.configGraficos[type].enabled).toBe(false);
+			expect(dataset.chartConfig[type].enabled).toBe(false);
 		});
 	});
 
@@ -67,32 +67,32 @@ describe('dataStateFacade.setActiveChartType', () => {
 			treemap: { enabled: false },
 		});
 		facade.setActiveChartType('bubble');
-		expect(dataset.configGraficos.bubble.enabled).toBe(true);
-		expect(dataset.configGraficos.bar.enabled).toBe(false);
-		expect(dataset.configGraficos.scatter.enabled).toBe(false);
-		expect(dataset.configGraficos.pie.enabled).toBe(false);
+		expect(dataset.chartConfig.bubble.enabled).toBe(true);
+		expect(dataset.chartConfig.bar.enabled).toBe(false);
+		expect(dataset.chartConfig.scatter.enabled).toBe(false);
+		expect(dataset.chartConfig.pie.enabled).toBe(false);
 	});
 
 	it('merges activatedOverrides into the activated chart config', () => {
 		const { facade, dataset } = makeFacade();
 		facade.setActiveChartType('bar', { category: 'newCol', expanded: true });
-		expect(dataset.configGraficos.bar.enabled).toBe(true);
-		expect(dataset.configGraficos.bar.category).toBe('newCol');
-		expect(dataset.configGraficos.bar.expanded).toBe(true);
+		expect(dataset.chartConfig.bar.enabled).toBe(true);
+		expect(dataset.chartConfig.bar.category).toBe('newCol');
+		expect(dataset.chartConfig.bar.expanded).toBe(true);
 	});
 
 	it('ignores activatedOverrides when chartType is null', () => {
 		const { facade, dataset } = makeFacade();
 		facade.setActiveChartType(null, { category: 'shouldNotApply' });
-		expect(dataset.configGraficos.bar.category).toBe('col1');
-		expect(dataset.configGraficos.bar.enabled).toBe(false);
+		expect(dataset.chartConfig.bar.category).toBe('col1');
+		expect(dataset.chartConfig.bar.enabled).toBe(false);
 	});
 
 	it('is a no-op for unknown chart types', () => {
 		const { facade, emitStateChange, dataset } = makeFacade();
-		const before = JSON.stringify(dataset.configGraficos);
+		const before = JSON.stringify(dataset.chartConfig);
 		facade.setActiveChartType('histogram');
-		expect(JSON.stringify(dataset.configGraficos)).toBe(before);
+		expect(JSON.stringify(dataset.chartConfig)).toBe(before);
 		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 
@@ -125,9 +125,9 @@ describe('dataStateFacade.setActiveChartType', () => {
 			treemap: { enabled: false },
 		});
 		facade.setActiveChartType('scatter');
-		expect(dataset.configGraficos.bar.category).toBe('a');
-		expect(dataset.configGraficos.bar.color).toBe('#abc');
-		expect(dataset.configGraficos.scatter.x).toBe('x1');
-		expect(dataset.configGraficos.scatter.y).toBe('y1');
+		expect(dataset.chartConfig.bar.category).toBe('a');
+		expect(dataset.chartConfig.bar.color).toBe('#abc');
+		expect(dataset.chartConfig.scatter.x).toBe('x1');
+		expect(dataset.chartConfig.scatter.y).toBe('y1');
 	});
 });

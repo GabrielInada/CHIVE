@@ -1,12 +1,12 @@
 /**
- * Stats view — renders the numeric and categorical stat strips below the
+ * Stats view, renders the numeric and categorical stat strips below the
  * table preview. Reuses worker-precomputed stats when possible (see
  * {@link getNumericStats}); falls back to live computation for joined
  * datasets or filtered slices.
  */
 
 import { calculateStatistics, calculateCategoricalStatistics } from '../../services/dataService.js';
-import { getActiveDataset } from '../../modules/appState.js';
+import { getActiveDataset } from '../../modules/state/appState.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { formatNumber } from '../../utils/formatters.js';
 
@@ -20,11 +20,11 @@ import { formatNumber } from '../../utils/formatters.js';
 function getNumericStats(rows, visibleColumns) {
 	const dataset = getActiveDataset();
 	const precomputed = dataset?.precomputedStats?.numeric;
-	if (Array.isArray(precomputed) && dataset.dados === rows) {
+	if (Array.isArray(precomputed) && dataset.rows === rows) {
 		const visibleNames = new Set(
-			visibleColumns.filter(c => c.tipo === 'numero').map(c => c.nome),
+			visibleColumns.filter(c => c.type === 'number').map(c => c.name),
 		);
-		return precomputed.filter(stat => visibleNames.has(stat.nome));
+		return precomputed.filter(stat => visibleNames.has(stat.name));
 	}
 	return calculateStatistics(rows, visibleColumns);
 }
@@ -33,26 +33,26 @@ function getNumericStats(rows, visibleColumns) {
 function getCategoricalStats(rows, visibleColumns) {
 	const dataset = getActiveDataset();
 	const precomputed = dataset?.precomputedStats?.categorical;
-	if (Array.isArray(precomputed) && dataset.dados === rows) {
+	if (Array.isArray(precomputed) && dataset.rows === rows) {
 		const visibleNames = new Set(
-			visibleColumns.filter(c => c.tipo !== 'numero').map(c => c.nome),
+			visibleColumns.filter(c => c.type !== 'number').map(c => c.name),
 		);
-		return precomputed.filter(stat => visibleNames.has(stat.nome));
+		return precomputed.filter(stat => visibleNames.has(stat.name));
 	}
 	return calculateCategoricalStatistics(rows, visibleColumns);
 }
 
 /** @private */
-function createStatLine(label, valor) {
-	const linha = document.createElement('div');
-	linha.className = 'stat-linha';
+function createStatLine(label, value) {
+	const row = document.createElement('div');
+	row.className = 'stat-row';
 	const spanLabel = document.createElement('span');
 	spanLabel.textContent = label;
-	const spanValor = document.createElement('span');
-	spanValor.textContent = valor;
-	linha.appendChild(spanLabel);
-	linha.appendChild(spanValor);
-	return linha;
+	const spanValue = document.createElement('span');
+	spanValue.textContent = value;
+	row.appendChild(spanLabel);
+	row.appendChild(spanValue);
+	return row;
 }
 
 /** @private */
@@ -73,7 +73,7 @@ function truncateText(text, maxLength = 18) {
  * visible.
  *
  * @param {Array<Object<string, *>>} rows
- * @param {Array<{ nome: string, tipo: string }>} visibleColumns
+ * @param {Array<{ name: string, type: string }>} visibleColumns
  * @returns {void}
  */
 export function renderStats(rows, visibleColumns) {
@@ -82,25 +82,26 @@ export function renderStats(rows, visibleColumns) {
 
 	if (stats.length > 0) {
 		cardStats.style.display = 'block';
-		document.getElementById('badge-num-colunas').textContent = t('chive-stats-badge', stats.length);
+		document.getElementById('badge-num-columns').textContent = t('chive-stats-badge', stats.length);
 		const containerStats = document.getElementById('container-stats');
 		containerStats.replaceChildren();
+		const locale = getLocale();
 
 		stats.forEach(stat => {
 			const coluna = document.createElement('div');
 			coluna.className = 'stat-col';
 
-			const nome = document.createElement('div');
-			nome.className = 'stat-col-nome';
-			nome.title = stat.nome;
-			nome.textContent = stat.nome;
+			const name = document.createElement('div');
+			name.className = 'stat-col-name';
+			name.title = stat.name;
+			name.textContent = stat.name;
 
-			coluna.appendChild(nome);
-			coluna.appendChild(createStatLine(t('chive-stat-valid'), stat.n.toLocaleString(getLocale())));
-			coluna.appendChild(createStatLine(t('chive-stat-min'), formatNumber(stat.min)));
-			coluna.appendChild(createStatLine(t('chive-stat-max'), formatNumber(stat.max)));
-			coluna.appendChild(createStatLine(t('chive-stat-mean'), formatNumber(stat.media)));
-			coluna.appendChild(createStatLine(t('chive-stat-median'), formatNumber(stat.mediana)));
+			coluna.appendChild(name);
+			coluna.appendChild(createStatLine(t('chive-stat-valid'), stat.n.toLocaleString(locale)));
+			coluna.appendChild(createStatLine(t('chive-stat-min'), formatNumber(stat.min, locale)));
+			coluna.appendChild(createStatLine(t('chive-stat-max'), formatNumber(stat.max, locale)));
+			coluna.appendChild(createStatLine(t('chive-stat-mean'), formatNumber(stat.mean, locale)));
+			coluna.appendChild(createStatLine(t('chive-stat-median'), formatNumber(stat.median, locale)));
 
 			containerStats.appendChild(coluna);
 		});
@@ -118,7 +119,7 @@ export function renderStats(rows, visibleColumns) {
  * render an "empty" placeholder line.
  *
  * @param {Array<Object<string, *>>} rows
- * @param {Array<{ nome: string, tipo: string }>} visibleColumns
+ * @param {Array<{ name: string, type: string }>} visibleColumns
  * @returns {void}
  */
 export function renderCategoricalStats(rows, visibleColumns) {
@@ -127,7 +128,7 @@ export function renderCategoricalStats(rows, visibleColumns) {
 
 	const stats = getCategoricalStats(rows, visibleColumns);
 	const container = document.getElementById('container-cat-stats');
-	const badge = document.getElementById('badge-cat-colunas');
+	const badge = document.getElementById('badge-cat-columns');
 
 	if (stats.length === 0) {
 		card.style.display = 'none';
@@ -146,11 +147,11 @@ export function renderCategoricalStats(rows, visibleColumns) {
 		const coluna = document.createElement('div');
 		coluna.className = 'stat-col';
 
-		const nome = document.createElement('div');
-		nome.className = 'stat-col-nome';
-		nome.title = stat.nome;
-		nome.textContent = stat.nome;
-		coluna.appendChild(nome);
+		const name = document.createElement('div');
+		name.className = 'stat-col-name';
+		name.title = stat.name;
+		name.textContent = stat.name;
+		coluna.appendChild(name);
 
 		if (stat.empty) {
 			coluna.appendChild(createStatLine(t('chive-cat-stat-non-empty'), '0'));
@@ -159,7 +160,7 @@ export function renderCategoricalStats(rows, visibleColumns) {
 				`${stat.missing.toLocaleString(locale)} (${formatPct(stat.missingPct)})`,
 			));
 			const empty = document.createElement('div');
-			empty.className = 'stat-linha';
+			empty.className = 'stat-row';
 			const span = document.createElement('span');
 			span.textContent = t('chive-cat-stat-empty');
 			empty.appendChild(span);

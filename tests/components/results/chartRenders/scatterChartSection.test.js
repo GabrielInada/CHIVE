@@ -122,7 +122,7 @@ describe('renderScatterChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-scatter-log');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-scatter-log');
 	});
 
 	it('shows the generic empty-state for any other failure reason', () => {
@@ -136,7 +136,7 @@ describe('renderScatterChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(container.querySelector('.chart-vazio').textContent).toBe('chive-chart-empty-scatter');
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-scatter');
 	});
 
 	it('renders happy path with correct container, rows, and chart args', () => {

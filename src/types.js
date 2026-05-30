@@ -1,16 +1,12 @@
 /**
- * CHIVE — centralized JSDoc typedef catalog.
+ * CHIVE centralized JSDoc typedef catalog.
  *
  * No runtime exports. Consumers reference these shapes via:
  *   @typedef {import('../types.js').Dataset} Dataset
  *
  * Pull the relative path of this file from wherever the consumer lives.
  * Typedefs are not values, so barrels (modules/index.js) do not propagate
- * them — always import directly from this file.
- *
- * Field names follow the codebase's mixed Portuguese/English convention
- * (dataset.nome, dataset.dados, dataset.colunas) — do not rename for English
- * consistency; renaming breaks persistence and a large surface of callers.
+ * them. Always import directly from this file.
  *
  * @see CONTRIBUTING.md  "Documentation Conventions" section
  * @see ARCHITECTURE.md
@@ -25,22 +21,22 @@
  */
 
 /**
- * Detected column data type. Values are Portuguese for historical reasons.
+ * Detected column data type.
  *
- * @typedef {'numero' | 'texto' | 'data'} ColumnType
+ * @typedef {'number' | 'text' | 'date'} ColumnType
  */
 
 /**
  * Panel layout template identifier. Each template owns its own slot set
  * (see {@link PanelBlockProportions} for the per-template proportions shape).
  *
- * @typedef {'layout-single' | 'layout-2col' | 'layout-hero2' | 'layout-3col' | 'layout-1x2'} PanelTemplateId
+ * @typedef {'template-single' | 'template-2col' | 'template-hero2' | 'template-3col' | 'template-1x2'} PanelTemplateId
  */
 
 /**
  * Sidebar mode currently active in the UI.
  *
- * @typedef {'dados' | 'viz' | 'panel'} SidebarMode
+ * @typedef {'data' | 'viz' | 'panel'} SidebarMode
  */
 
 // ─── Data domain ────────────────────────────────────────────────────────
@@ -49,8 +45,8 @@
  * Column metadata as detected by the ingest worker.
  *
  * @typedef {Object} ColumnSpec
- * @property {string} nome - Column name as it appears in the source file.
- * @property {ColumnType} tipo - Detected type. Falls back to `'texto'` when no rule matches.
+ * @property {string} name - Column name as it appears in the source file.
+ * @property {ColumnType} type - Detected type. Falls back to `'text'` when no rule matches.
  */
 
 /**
@@ -68,12 +64,12 @@
  *
  * @typedef {Object} Dataset
  * @property {string} id - Stable UUID (or `dataset-<ts>-<n>` fallback when `crypto.randomUUID` is unavailable). Stamped by `addDataset` if missing.
- * @property {string} nome - Display name. Original filename for uploads, derived label for joins.
- * @property {string} tamanho - Pre-formatted size label (not raw bytes).
- * @property {Array<Object<string, *>>} dados - Parsed rows. Each row's keys match `colunas[i].nome`.
- * @property {ColumnSpec[]} colunas - Detected columns in source order.
- * @property {string[]} colunasSelecionadas - Names of currently visible columns (subset of `colunas[].nome`).
- * @property {ChartConfig} configGraficos - Per-chart-type configuration.
+ * @property {string} name - Display name. Original filename for uploads, derived label for joins.
+ * @property {string} sizeLabel - Pre-formatted size label (not raw bytes).
+ * @property {Array<Object<string, *>>} rows - Parsed rows. Each row's keys match `columns[i].name`.
+ * @property {ColumnSpec[]} columns - Detected columns in source order.
+ * @property {string[]} selectedColumns - Names of currently visible columns (subset of `columns[].name`).
+ * @property {ChartConfig} chartConfig - Per-chart-type configuration.
  * @property {PrecomputedStats} [precomputedStats] - Worker-computed stats, optional.
  */
 
@@ -102,8 +98,8 @@
 
 /**
  * Universal fields present on every per-chart config block. Each chart type
- * extends this with type-specific fields (axis bindings, color scales, …) —
- * those extras are intentionally not enumerated here to keep this typedef
+ * extends this with type-specific fields (axis bindings, color scales, …).
+ * Those extras are intentionally not enumerated here to keep this typedef
  * stable. See `src/config/chartDefaults.js` for the full per-chart shape.
  *
  * @typedef {Object} ChartTypeConfig
@@ -111,18 +107,18 @@
  * @property {boolean} expanded - Sidebar config panel expansion state.
  * @property {string} customTitle - User-overridden title; empty string means use the default.
  * @property {number} chartHeight - Render height in pixels.
- * @property {string} [color] - Primary color (hex). Optional — not every chart uses a single color.
+ * @property {string} [color] - Primary color (hex). Optional, not every chart uses a single color.
  * @property {string} [colorMode] - Color application mode (chart-specific values).
  */
 
 /**
  * Per-dataset chart configuration. One block per supported chart type plus
  * the active-tab marker and global filter. The per-chart entries are
- * superset-typed as `ChartTypeConfig` — see `src/config/chartDefaults.js` for
+ * superset-typed as `ChartTypeConfig`. See `src/config/chartDefaults.js` for
  * each chart type's full field set.
  *
  * @typedef {Object} ChartConfig
- * @property {string} aba - Active tab id (e.g. `'preview'`, `'viz'`).
+ * @property {string} activeTab - Active tab id (e.g. `'preview'`, `'viz'`).
  * @property {GlobalFilter} globalFilter
  * @property {ChartTypeConfig} bar
  * @property {ChartTypeConfig} scatter
@@ -136,19 +132,19 @@
 
 /**
  * Column-name buckets passed into per-chart `build`/`attachListeners`/
- * `computeDefaults` by the chart-controls registry. Derived from the active
+ * `computeDefaults` by the chartControls registry. Derived from the active
  * dataset's visible columns by `getColumnContext()` in
- * `chart-controls/index.js`.
+ * `chartControls/chartControlsManager.js`.
  *
  * `baseCategoricalOrAll` is the fallback list when no categorical columns
  * exist (the chart-picker still needs to offer *something*).
  *
  * @typedef {Object} ChartControlContext
- * @property {string[]} numericas - Numeric (`'numero'`) column names.
- * @property {string[]} categoricas - Categorical (non-numeric) column names.
- * @property {string[]} datas - Date (`'data'`) column names.
- * @property {string[]} todasColunas - All currently visible column names.
- * @property {string[]} baseCategoricalOrAll - `categoricas` when non-empty, else `todasColunas`.
+ * @property {string[]} numeric - Numeric (`'number'`) column names.
+ * @property {string[]} categorical - Categorical (non-numeric) column names.
+ * @property {string[]} dates - Date (`'date'`) column names.
+ * @property {string[]} allColumns - All currently visible column names.
+ * @property {string[]} baseCategoricalOrAll - `categorical` when non-empty, else `allColumns`.
  */
 
 // ─── Panel domain ───────────────────────────────────────────────────────
@@ -156,11 +152,11 @@
 /**
  * Block proportion shape. Union: the layout template determines which fields are present.
  *
- * - `layout-single`:  `{ split: 100 }`
- * - `layout-2col`:    `{ split: number }` (20–80)
- * - `layout-1x2`:     `{ split: number }` (20–80)
- * - `layout-hero2`:   `{ splitMain: number, splitRight: number }`
- * - `layout-3col`:    `{ a: number, b: number, c: number }`
+ * - `template-single`:  `{ split: 100 }`
+ * - `template-2col`:    `{ split: number }` (20 to 80)
+ * - `template-1x2`:     `{ split: number }` (20 to 80)
+ * - `template-hero2`:   `{ splitMain: number, splitRight: number }`
+ * - `template-3col`:    `{ a: number, b: number, c: number }`
  *
  * @typedef {Object} PanelBlockProportions
  * @property {number} [split]
@@ -202,9 +198,9 @@
  *
  * @typedef {Object} ChartSnapshot
  * @property {number} id - Monotonic; assigned by `addChartSnapshot`.
- * @property {string} nome - Sanitized title, max 100 chars.
+ * @property {string} name - Sanitized title, max 100 chars.
  * @property {ChartTypeKey | null} type
- * @property {Object | null} config - Frozen copy of `configGraficos[type]` at capture time.
+ * @property {Object | null} config - Frozen copy of `chartConfig[type]` at capture time.
  * @property {Array<Object<string, *>>} dataSnapshot - Copy of the rows used.
  * @property {ColumnSpec[]} columnsSnapshot
  * @property {Object | null} metadata - Chart-specific render metadata (axis ranges, scales, …).
@@ -251,7 +247,7 @@
 
 /**
  * Canonical event-name string emitted by the state bus. Values match
- * `STATE_EVENTS` in `src/modules/stateEvents.js`. The wildcard `'*'` is
+ * `STATE_EVENTS` in `src/modules/state/stateEvents.js`. The wildcard `'*'` is
  * reserved for sink-style subscribers (`stateSync`, `persistenceService`).
  *
  * @typedef {(
@@ -283,7 +279,7 @@
 /**
  * Standardized success/failure shape produced by `ok()` / `fail()` in
  * `src/utils/result.js`. The success variant spreads its data fields onto
- * the result — there is no `.value` wrapper. Failures carry an optional
+ * the result. There is no `.value` wrapper. Failures carry an optional
  * `reason` string.
  *
  * @typedef {{ ok: true, [key: string]: * } | { ok: false, reason?: string }} Result
@@ -296,8 +292,8 @@
  * when `ingestFile` resolves successfully.
  *
  * @typedef {Object} IngestPayload
- * @property {Array<Object<string, *>>} dados - Normalized rows (numeric columns parsed; missing values preserved).
- * @property {ColumnSpec[]} colunas - Detected columns in source order.
+ * @property {Array<Object<string, *>>} rows - Normalized rows (numeric columns parsed; missing values preserved).
+ * @property {ColumnSpec[]} columns - Detected columns in source order.
  * @property {Object<string, Object>} statsNumeric - Per-column numeric stats (n, min, max, mean, median).
  * @property {Object<string, Object>} statsCategorical - Per-column categorical stats (mode, top-N, missingness).
  * @property {number} [truncatedFrom] - Original row count before the worker capped to `rowLimit`. Absent when no truncation occurred.
@@ -307,11 +303,11 @@
  * One progress tick emitted by the worker. Stages run roughly in this
  * order: `'parsing'` → `'decimal-detection'` → `'type-detection'` →
  * `'normalize'` → `'stats'`. `percent` is the overall pipeline progress
- * (0–100), not a per-stage value.
+ * (0 to 100), not a per-stage value.
  *
  * @typedef {Object} IngestProgress
  * @property {string} stage
- * @property {number} percent - 0–100 inclusive.
+ * @property {number} percent - 0 to 100 inclusive.
  * @property {string} [label] - Localized label when the worker chose to send one; otherwise the host derives one via `progressLabelForStage`.
  */
 
@@ -332,12 +328,12 @@
 
 /**
  * Done-state result body posted back by the Worker. Distinct from
- * {@link IngestPayload} — this is the wire shape; the host service may
+ * {@link IngestPayload}. This is the wire shape; the host service may
  * reshape it before exposing to callers.
  *
  * @typedef {Object} IngestWorkerDoneResult
- * @property {Array<Object<string, *>>} dados
- * @property {ColumnSpec[]} colunas
+ * @property {Array<Object<string, *>>} rows
+ * @property {ColumnSpec[]} columns
  * @property {string} decimalSeparator - Detected separator (`'.'` or `','`).
  * @property {NumericColumnStats[] | []} statsNumeric - Empty array when no rows.
  * @property {CategoricalColumnStats[] | []} statsCategorical - Empty array when no rows.
@@ -363,7 +359,7 @@
 
 /**
  * Options bag passed to `joinDatasets`. The left/right key arrays form a
- * composite key — `leftKeys[i]` is matched against `rightKeys[i]`.
+ * composite key. `leftKeys[i]` is matched against `rightKeys[i]`.
  *
  * Key normalization is applied before comparison: by default values are
  * trimmed and case-insensitive. Numbers, booleans, and Dates are encoded
@@ -395,12 +391,12 @@
  * Output of `calculateStatistics` for one numeric column.
  *
  * @typedef {Object} NumericColumnStats
- * @property {string} nome
+ * @property {string} name
  * @property {number} n
  * @property {number} min
  * @property {number} max
- * @property {number} media - Arithmetic mean.
- * @property {number} mediana
+ * @property {number} mean - Arithmetic mean.
+ * @property {number} median
  */
 
 /**
@@ -410,10 +406,10 @@
  * counts so downstream renderers can render a uniform "no data" state.
  *
  * @typedef {Object} CategoricalColumnStats
- * @property {string} nome
+ * @property {string} name
  * @property {number} n - Count of non-missing values.
  * @property {number} missing
- * @property {number} missingPct - 0–1 inclusive.
+ * @property {number} missingPct - 0 to 1 inclusive.
  * @property {number} unique - Distinct value count.
  * @property {number} uniquenessRate - `unique / n` (0 when `n === 0`).
  * @property {string | null} mode - Most-frequent value as a string; `null` only when `n === 0`. Ties broken by `localeCompare`.
@@ -431,7 +427,7 @@
  *
  * @typedef {Object} PresetDescriptor
  * @property {string} [id]
- * @property {string} [nome]
+ * @property {string} [name]
  * @property {Array<Object<string, *>>} [data] - Inline rows.
  * @property {string} [dataUrl] - Remote source. Resolved with a 10s timeout.
  * @property {string} [dataFormat] - Wins over URL extension when distinguishing CSV vs JSON.
@@ -439,7 +435,7 @@
  */
 
 /**
- * Resolved preset source. Discriminated by `mode` — callers should narrow
+ * Resolved preset source. Discriminated by `mode`; callers should narrow
  * before reading fields specific to one variant.
  *
  * @typedef {(
@@ -472,10 +468,10 @@
 /**
  * Imperative handle returned by `feedbackUI.showProgress` for driving a
  * non-modal progress toast. The toast has three terminal states:
- *   - **In flight** — `update()` reports percent/label progress.
- *   - **Succeeded** — `succeed()` flips the toast to its success style and
+ *   - **In flight**: `update()` reports percent/label progress.
+ *   - **Succeeded**: `succeed()` flips the toast to its success style and
  *     auto-closes after `autoCloseMs` (default 1500).
- *   - **Failed**    — `fail()` flips the toast to its failure style and
+ *   - **Failed**: `fail()` flips the toast to its failure style and
  *     stays open until the user dismisses it.
  *
  * `close()` is idempotent and removes the toast from the DOM.
