@@ -90,7 +90,7 @@ When moving, renaming, or adding documentation:
 - **Mutable vs cloned returns**: functions that return a live state reference must say `"Live reference, do not mutate."` in the `@returns` description. Cloned returns say `"Deep clone."`. This footgun is real. Mutating a getter return bypasses the facade and breaks reactivity. See [`appState.js`](src/modules/state/appState.js) for examples.
 - **Events**: use `@fires STATE_EVENTS.FOO` (the constant name, not the string literal `'foo'`). Functions that conditionally emit must say so in the description.
 - **Facade-only-write invariant**: facade module banners reference `@see ARCHITECTURE.md`. Exact state/facade/event details live in `docs/ARCHITECTURE_REFERENCE.md`. Mutation helpers under `src/modules/panelSubsystem/*` and similar are `@internal` and must not be imported from outside the module that backs them.
-- **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only; the editor and Claude use it for hover/intellisense without type validation.
+- **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only; editors can use it for hover/intellisense without type validation.
 - **No HTML site generation** (no typedoc / no jsdoc CLI). Hover and source reading are the deliverable.
 
 ## Architecture invariants: do not break
