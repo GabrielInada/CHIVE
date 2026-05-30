@@ -13,7 +13,8 @@ Which file or section needs work?
 - [ ] `README.md`
 - [ ] `ARCHITECTURE.md`
 - [ ] `CONTRIBUTING.md`
-- [ ] `CLAUDE.md`
+- [ ] `docs/`
+- [ ] `src/styles/STYLES_ORGANIZATION.md`
 - [ ] Inline JSDoc / code comments
 - [ ] Other: ___
 

@@ -76,6 +76,13 @@ npm run test:watch   # Tests in watch mode
 
 Public functions on the state core, services, and orchestrators carry JSDoc so the IDE can read each function's contract without re-reading the file. The conventions below match the existing style; please match them rather than inventing a new one.
 
+When moving, renaming, or adding documentation:
+
+- Search for old file names and paths with `rg`.
+- Check Markdown links changed by the edit.
+- Update issue templates when a top-level or user-facing doc target changes.
+- Update the README documentation map when a new user-facing doc is added.
+
 - **Format**: `/** ... */` blocks, tab-indented. `@param {Type} name - description`. `@returns {Type} description` (omit only when the function is `void`).
 - **Minimum verbosity**: a 1-line summary plus `@param`/`@returns`. Add `@example`, `@fires`, `@throws`, `@deprecated`, or `@private` only where they convey something a reader could not infer from the signature.
 - **Project typedefs** live in [`src/types.js`](src/types.js) (`AppState`, `Dataset`, `ChartConfig`, `PanelBlock`, `ChartSnapshot`, `StateEventType`, …). Import via `@typedef {import('../types.js').Foo} Foo` at the top of the consuming file, then reference `Foo` unqualified downstream. Barrels do not propagate typedefs; always import from `src/types.js` directly.
