@@ -4,7 +4,7 @@ import chiveRules from './eslint-rules/index.js';
 const STATELESS_RENDERER_MESSAGE =
 	'Renderers and DOM builders (src/components/, src/features/, ' +
 	'modules/visualizations/, panelSubsystem presentation files) do not ' +
-	'call write facades (ARCHITECTURE.md §4). Only read-only facade members ' +
+	'call write facades (ARCHITECTURE.md Layers section). Only read-only facade members ' +
 	'are importable here. Route writes through panelManager.js, ' +
 	'chartControls listeners, or modules/eventHandlers.';
 

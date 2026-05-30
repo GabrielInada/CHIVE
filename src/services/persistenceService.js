@@ -334,9 +334,9 @@ export async function clearPersistedState() {
  * Subscribe to wildcard state events and persist a debounced snapshot.
  * Returns control handles so callers can flush on `beforeunload`.
  *
- * Wildcard subscription is OK here: per ARCHITECTURE.md §7, the wildcard slot
- * is reserved for state-bus consumers (stateSync, persistenceService). UI code
- * still subscribes only to typed events.
+ * Wildcard subscription is OK here: wildcard is reserved for state-bus
+ * consumers (stateSync, persistenceService). UI code still subscribes only
+ * to typed events.
  *
  * `STATE_HYDRATED` is skipped, saving the snapshot we just loaded would be
  * a no-op write at best and a race condition at worst.

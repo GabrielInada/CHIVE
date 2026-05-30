@@ -2,7 +2,7 @@
 
 Welcome. This document is the contributor's rulebook. Read it before opening your first PR.
 
-For end-user setup and deployment, see [README.md](README.md). For the architectural shape of the codebase, see [ARCHITECTURE.md](ARCHITECTURE.md).
+For end-user setup and deployment, see [README.md](README.md). For the architectural shape of the codebase, see [ARCHITECTURE.md](ARCHITECTURE.md). For exact state, facade, event, and subscriber details, see [docs/ARCHITECTURE_REFERENCE.md](docs/ARCHITECTURE_REFERENCE.md).
 
 > [!CAUTION]
 > Issues and PRs that don't follow the guidelines below may be closed until they match the expected shape.
@@ -82,13 +82,14 @@ When moving, renaming, or adding documentation:
 - Check Markdown links changed by the edit.
 - Update issue templates when a top-level or user-facing doc target changes.
 - Update the README documentation map when a new user-facing doc is added.
+- Update [`docs/ARCHITECTURE_REFERENCE.md`](docs/ARCHITECTURE_REFERENCE.md) when adding, removing, or renaming a state field, facade method, `STATE_EVENTS` constant, or production subscriber.
 
 - **Format**: `/** ... */` blocks, tab-indented. `@param {Type} name - description`. `@returns {Type} description` (omit only when the function is `void`).
 - **Minimum verbosity**: a 1-line summary plus `@param`/`@returns`. Add `@example`, `@fires`, `@throws`, `@deprecated`, or `@private` only where they convey something a reader could not infer from the signature.
 - **Project typedefs** live in [`src/types.js`](src/types.js) (`AppState`, `Dataset`, `ChartConfig`, `PanelBlock`, `ChartSnapshot`, `StateEventType`, …). Import via `@typedef {import('../types.js').Foo} Foo` at the top of the consuming file, then reference `Foo` unqualified downstream. Barrels do not propagate typedefs; always import from `src/types.js` directly.
 - **Mutable vs cloned returns**: functions that return a live state reference must say `"Live reference, do not mutate."` in the `@returns` description. Cloned returns say `"Deep clone."`. This footgun is real. Mutating a getter return bypasses the facade and breaks reactivity. See [`appState.js`](src/modules/state/appState.js) for examples.
 - **Events**: use `@fires STATE_EVENTS.FOO` (the constant name, not the string literal `'foo'`). Functions that conditionally emit must say so in the description.
-- **Facade-only-write invariant**: facade module banners reference `@see ARCHITECTURE.md`. Mutation helpers under `src/modules/panelSubsystem/*` and similar are `@internal` and must not be imported from outside the module that backs them.
+- **Facade-only-write invariant**: facade module banners reference `@see ARCHITECTURE.md`. Exact state/facade/event details live in `docs/ARCHITECTURE_REFERENCE.md`. Mutation helpers under `src/modules/panelSubsystem/*` and similar are `@internal` and must not be imported from outside the module that backs them.
 - **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only; the editor and Claude use it for hover/intellisense without type validation.
 - **No HTML site generation** (no typedoc / no jsdoc CLI). Hover and source reading are the deliverable.
 
@@ -103,7 +104,7 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 - Renderers and DOM builders do not call write facades. They read durable state via getters and derive DOM from it; user input is surfaced through callbacks injected by the controller layer. Module-local transient UI state (search query, dialog draft, focus anchor) is allowed; durable application state goes through a facade.
 - `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`stateSync.js`, `persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js`; use a typed subscription.
 
-**The write-facade boundary is enforced by lint.** ESLint (`npm run lint`) restricts renderer and DOM-builder files (`src/components/`, `src/features/`, and an explicit list of presentation files under `src/modules/panelSubsystem/`, see `eslint.config.js`) to read-only imports from `modules/state/appState.js`: the `get*` functions, `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing any write function from those directories is an error. If you need a write from a renderer or DOM builder, you're writing it in the wrong layer; route it through `panelManager.js` (for panel-state writes), a chartControls listener, or `eventHandlers.js`, all outside the linted scope. When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
+**The write-facade boundary is enforced by lint.** ESLint (`npm run lint`) restricts renderer and DOM-builder files (`src/components/`, `src/features/`, `src/modules/visualizations/`, and an explicit list of presentation files under `src/modules/panelSubsystem/`, see `eslint.config.js`) to read-only imports from `modules/state/appState.js`: the `get*` functions, `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing any write function from those directories is an error. If you need a write from a renderer or DOM builder, you're writing it in the wrong layer; route it through `panelManager.js` (for panel-state writes), a chartControls listener, or `eventHandlers.js`, all outside the linted scope. When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
 
 **Mutation of facade getter returns is blocked across all of `src/`.** A `no-restricted-syntax` rule in `eslint.config.js` catches the *inline* forms, `getActiveDataset().X = y` and `getActiveDataset().X.Y = z` at depths 1 to 3, against the mutable-ref getters (`getActiveDataset`, `getAllDatasets`, `getPanelCharts`, `getChartSnapshot`, `getPanelBlocks`, `getState`). The *aliased* form (`const ds = getActiveDataset(); ds.X = y`) is caught by a local rule, `chive/no-facade-getter-mutation` ([eslint-rules/no-facade-getter-mutation.js](eslint-rules/no-facade-getter-mutation.js)): it is scope-aware and import-gated (only getters imported from `modules/index.js` or `modules/state/appState.js` count, so DOM `el.dataset.x = y` writes and same-named DI params are not flagged), and it exempts the facade internals under `src/modules/state/` that legitimately use the aliased-write pattern. One gap remains by design: *sub-property* aliasing (`const c = getActiveDataset().chartConfig; c.X = y`) is caught by neither rule. Do not write it; route writes through a facade method. When a new mutable-ref getter is added to `appState.js`, update **both** `FACADE_MUTABLE_GETTERS` in `eslint.config.js` and `TRACKED_GETTERS` in the local rule.
 

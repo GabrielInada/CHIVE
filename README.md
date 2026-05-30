@@ -136,7 +136,8 @@ The default runtime still trusts external origins for JavaScript modules and fon
 
 ## Documentation
 
-- [Architecture](ARCHITECTURE.md): internal state, event flow, facades, and rendering boundaries.
+- [Architecture overview](ARCHITECTURE.md): fast mental model for state, events, facades, and rendering boundaries.
+- [Architecture reference](docs/ARCHITECTURE_REFERENCE.md): exact state schema, facade methods, event registry, and subscribers.
 - [Contributing](CONTRIBUTING.md): development workflow, code conventions, lint rules, and tests.
 - [Stylesheet organization](src/styles/STYLES_ORGANIZATION.md): CSS layers, feature ownership, and responsive rules.
 - Planned follow-ups: user guide, chart/data reference, and privacy/security trust model.

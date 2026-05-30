@@ -27,7 +27,7 @@ import { updateSidebarUI } from '../uiManager.js';
  * Subscribe wildcard to {@link syncWindowGlobals} and run an initial
  * sync. Called once during app boot from `main.js`. Wildcard
  * subscription is sanctioned for state-bus consumers, see
- * `ARCHITECTURE.md`.
+ * `docs/ARCHITECTURE_REFERENCE.md`.
  */
 export function initializeStateSync() {
 	// Sync globals whenever state changes
