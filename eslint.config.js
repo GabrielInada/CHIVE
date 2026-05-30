@@ -2,9 +2,11 @@ import js from '@eslint/js';
 import chiveRules from './eslint-rules/index.js';
 
 const STATELESS_RENDERER_MESSAGE =
-	'Renderers (src/components/, src/features/) must be stateless ' +
-	'(ARCHITECTURE.md §4). Only read-only facade members are importable here. ' +
-	'Route writes through chartControls listeners or modules/eventHandlers.';
+	'Renderers and DOM builders (src/components/, src/features/, ' +
+	'modules/visualizations/, panelSubsystem presentation files) do not ' +
+	'call write facades (ARCHITECTURE.md §4). Only read-only facade members ' +
+	'are importable here. Route writes through panelManager.js, ' +
+	'chartControls listeners, or modules/eventHandlers.';
 
 // Read-only facade surface that renderers may import from appState.js.
 // If you add a new READ function to appState.js, add it here too. Anything
@@ -147,12 +149,42 @@ export default [
 	// AFTER (A) because it redeclares `no-restricted-imports`; it repeats the
 	// bare-import bans alongside the facade-read restriction.
 	{
-		files: ['src/components/**/*.js', 'src/features/**/*.js'],
+		files: ['src/components/**/*.js', 'src/features/**/*.js', 'src/modules/visualizations/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/state/appState.js'],
+					group: ['**/state/appState.js'],
+					allowImportNames: APP_STATE_READS,
+					message: STATELESS_RENDERER_MESSAGE,
+				}],
+			}],
+		},
+	},
+
+	// (B2) panelSubsystem presentation files: same renderer-statelessness rule
+	// as (B). Explicit file list because naming is not consistent across the
+	// subsystem (no `*Renderer.js` prefix to glob on). `panelStateMutations.js`
+	// and `blockStateHelpers.js` are intentionally absent, they back the panel
+	// facade and need write access. `panelManager.js` lives at
+	// `src/modules/panelManager.js` (outside this directory) and is naturally
+	// exempt.
+	{
+		files: [
+			'src/modules/panelSubsystem/panelRenderer.js',
+			'src/modules/panelSubsystem/panelResize.js',
+			'src/modules/panelSubsystem/domBuilders.js',
+			'src/modules/panelSubsystem/renderChartFromSpec.js',
+			'src/modules/panelSubsystem/slotLifecycle.js',
+			'src/modules/panelSubsystem/panelExporter.js',
+			'src/modules/panelSubsystem/layoutConfig.js',
+			'src/modules/panelSubsystem/resizeMath.js',
+		],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/state/appState.js'],
 					allowImportNames: APP_STATE_READS,
 					message: STATELESS_RENDERER_MESSAGE,
 				}],

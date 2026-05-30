@@ -29,13 +29,6 @@ import {
 	getPanelCharts,
 	getPanelBlocks,
 	getChartSnapshot,
-	assignChartToPanelBlockSlot,
-	setPanelBlockTemplate,
-	addPanelBlock,
-	removePanelBlock,
-	movePanelBlock,
-	updatePanelBlockBorder,
-	validatePanelSlots,
 } from '../state/appState.js';
 import { applyBlockProportions, renderGuidedResizeHandles, startBlockHeightResizeDrag } from './panelResize.js';
 import { mountSlot, teardownAllSlots } from './slotLifecycle.js';
@@ -136,17 +129,24 @@ export function renderSidebarPanel(removeChartFromPanel) {
  * {@link createBlockElement}, wires resize listeners, and mounts each
  * slot's chart via {@link mountSlot}.
  *
- * `renderCanvasPanelFn` is passed back into per-block listeners so they
- * can trigger their own re-render in response to a block mutation,
- * this avoids importing back through `panelManager.js`.
+ * The renderer never imports panel write facades; every user action that
+ * mutates panel state is surfaced through the callback bag below.
+ * panelManager.js owns the callbacks and re-renders via STATE_EVENTS
+ * subscriptions, not via direct calls from these handlers.
  *
  * No-op when the canvas element is missing.
  *
- * @param {() => void} renderCanvasPanelFn - Self-reference passed through to listeners that need to re-render.
- * @param {((message: string, kind?: 'success' | 'error') => void) | null | undefined} feedbackCallback - Used for max-blocks errors; ignored when null.
+ * @param {Object} callbacks
+ * @param {(templateId: string) => void} callbacks.onAddBlock
+ * @param {(blockId: string, newIndex: number) => void} callbacks.onMoveBlock
+ * @param {(blockId: string) => void} callbacks.onRemoveBlock
+ * @param {(blockId: string, templateId: string) => void} callbacks.onChangeBlockTemplate
+ * @param {(blockId: string, patch: { enabled?: boolean, color?: string }) => void} callbacks.onUpdateBlockBorder
+ * @param {(blockId: string, slotId: string, chartId: number | string | null) => void} callbacks.onAssignSlot
+ * @param {(blockId: string, proportions: Object) => void} callbacks.onUpdateBlockProportions
+ * @param {(blockId: string, heightPx: number) => void} callbacks.onUpdateBlockHeight
  */
-export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
-	validatePanelSlots();
+export function renderCanvasPanel(callbacks) {
 	const canvas = document.getElementById('panel-layout-canvas');
 	if (!canvas) return;
 	const blocks = getPanelBlocks();
@@ -163,21 +163,16 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
 			index,
 			totalBlocks: blocks.length,
 			desktopDnd,
-			renderCanvasPanelFn,
+			callbacks,
 		});
-		attachBlockResizeListener(blockEl, block, gridDiv, renderCanvasPanelFn);
+		attachBlockResizeListener(blockEl, block, gridDiv, callbacks);
 		stack.appendChild(blockEl);
 	});
 
 	const addControls = createAddBlockControls({
 		layouts: PANEL_LAYOUTS,
 		translate: t,
-		onAddBlock: templateId => {
-			const newBlockId = addPanelBlock(templateId);
-			if (newBlockId === null && feedbackCallback) {
-				feedbackCallback(t('chive-panel-max-blocks'), 'error');
-			}
-		},
+		onAddBlock: callbacks.onAddBlock,
 	});
 
 	canvas.appendChild(stack);
@@ -200,7 +195,7 @@ export function renderCanvasPanel(renderCanvasPanelFn, feedbackCallback) {
  *
  * @private
  */
-function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanvasPanelFn }) {
+function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks }) {
 	const layout = getTemplateForBlock(block);
 	const blockEl = document.createElement('section');
 	blockEl.className = 'panel-block';
@@ -210,9 +205,9 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 		blockId: block.id,
 		index,
 		totalBlocks,
-		onMoveUp: () => movePanelBlock(block.id, index - 1),
-		onMoveDown: () => movePanelBlock(block.id, index + 1),
-		onRemove: () => removePanelBlock(block.id),
+		onMoveUp: () => callbacks.onMoveBlock(block.id, index - 1),
+		onMoveDown: () => callbacks.onMoveBlock(block.id, index + 1),
+		onRemove: () => callbacks.onRemoveBlock(block.id),
 	});
 
 	const templateSelect = createBlockTemplateSelect({
@@ -220,11 +215,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 		templateId: block.templateId,
 		layouts: PANEL_LAYOUTS,
 		translate: t,
-		onTemplateChange: e => {
-			setPanelBlockTemplate(block.id, e.target.value);
-			fillLayoutSelect();
-			renderCanvasPanelFn();
-		},
+		onTemplateChange: e => callbacks.onChangeBlockTemplate(block.id, e.target.value),
 	});
 
 	const gridDiv = document.createElement('div');
@@ -236,7 +227,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 		gridDiv.style.setProperty('--panel-slot-border-color', borderColor);
 	}
 	applyBlockProportions(gridDiv, block);
-	renderGuidedResizeHandles(gridDiv, block, renderCanvasPanelFn);
+	renderGuidedResizeHandles(gridDiv, block, callbacks.onUpdateBlockProportions);
 
 	const borderControls = createBlockBorderControls({
 		blockId: block.id,
@@ -244,20 +235,17 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 		borderColor: block.borderColor,
 		translate: t,
 		normalizeHexColor,
-		onToggleBorder: enabled => {
-			updatePanelBlockBorder(block.id, { enabled });
-			renderCanvasPanelFn();
-		},
+		onToggleBorder: enabled => callbacks.onUpdateBlockBorder(block.id, { enabled }),
+		// WHY: preview-only path; writes CSS variables for live feedback while the
+		// user drags the color picker. onChangeColor is the commit path that lands
+		// the durable write through the callback bag.
 		onPreviewColor: previewColor => {
 			gridDiv.style.setProperty('--panel-slot-border-color', previewColor);
 			gridDiv.querySelectorAll('[data-panel-slot]').forEach(slotEl => {
 				slotEl.dataset.panelBorderColor = previewColor;
 			});
 		},
-		onChangeColor: color => {
-			updatePanelBlockBorder(block.id, { color });
-			renderCanvasPanelFn();
-		},
+		onChangeColor: color => callbacks.onUpdateBlockBorder(block.id, { color }),
 	});
 
 	layout.slots.forEach(slotId => {
@@ -270,10 +258,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 			borderColor,
 			desktopDnd,
 			translate: t,
-			onClearSlot: () => {
-				assignChartToPanelBlockSlot(block.id, slotId, null);
-				renderCanvasPanelFn();
-			},
+			onClearSlot: () => callbacks.onAssignSlot(block.id, slotId, null),
 			onDropData: ({ targetSlotId, targetBlockId, sourceSlotId, sourceBlockId, chartId }) => {
 				if (!chartId || !getChartSnapshot(chartId)) return;
 
@@ -284,17 +269,15 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
 					const targetBlock = stateBlocks.find(item => item.id === targetBlockId);
 					const targetChartId = targetBlock?.slots?.[targetSlotId] ?? null;
 
-					assignChartToPanelBlockSlot(targetBlockId, targetSlotId, chartId);
+					callbacks.onAssignSlot(targetBlockId, targetSlotId, chartId);
 					if (targetChartId !== null && targetChartId !== undefined) {
-						assignChartToPanelBlockSlot(sourceBlockId, sourceSlotId, targetChartId);
+						callbacks.onAssignSlot(sourceBlockId, sourceSlotId, targetChartId);
 					} else {
-						assignChartToPanelBlockSlot(sourceBlockId, sourceSlotId, null);
+						callbacks.onAssignSlot(sourceBlockId, sourceSlotId, null);
 					}
 				} else {
-					assignChartToPanelBlockSlot(targetBlockId, targetSlotId, chartId);
+					callbacks.onAssignSlot(targetBlockId, targetSlotId, chartId);
 				}
-
-				renderCanvasPanelFn();
 			},
 		});
 
@@ -315,7 +298,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, renderCanva
  *
  * @private
  */
-function attachBlockResizeListener(blockEl, block, gridDiv, renderCanvasPanelFn) {
+function attachBlockResizeListener(blockEl, block, gridDiv, callbacks) {
 	const handle = document.createElement('button');
 	handle.type = 'button';
 	handle.className = 'panel-block-size-handle';
@@ -323,7 +306,7 @@ function attachBlockResizeListener(blockEl, block, gridDiv, renderCanvasPanelFn)
 	handle.setAttribute('aria-label', t('chive-panel-resize-block-height'));
 	handle.addEventListener('mousedown', event => {
 		event.preventDefault();
-		startBlockHeightResizeDrag(block.id, gridDiv, event.clientY, renderCanvasPanelFn);
+		startBlockHeightResizeDrag(block.id, gridDiv, event.clientY, callbacks.onUpdateBlockHeight);
 	});
 	blockEl.appendChild(handle);
 }
