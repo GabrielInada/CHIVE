@@ -139,6 +139,8 @@ The default runtime still trusts external origins for JavaScript modules and fon
 - [Architecture overview](ARCHITECTURE.md): fast mental model for state, events, facades, and rendering boundaries.
 - [Architecture reference](docs/ARCHITECTURE_REFERENCE.md): exact state schema, facade methods, event registry, and subscribers.
 - [Privacy and security](docs/PRIVACY_AND_SECURITY.md): browser storage, runtime network dependencies, and trust boundaries.
+- [Translation contributor guide](docs/I18N.md): how to add or update UI strings across supported locales.
+- [Preset dataset contributor guide](docs/PRESET_DATASETS.md): how to add bundled sample datasets and their attribution.
 - [Security policy](SECURITY.md): where to report security concerns.
 - [Contributing](CONTRIBUTING.md): development workflow, code conventions, lint rules, and tests.
 - [Stylesheet organization](src/styles/STYLES_ORGANIZATION.md): CSS layers, feature ownership, and responsive rules.

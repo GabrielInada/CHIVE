@@ -85,6 +85,11 @@ Before opening a PR, check that:
 - **Join and preset dataset UIs:** Keep orchestration in modules/components and reuse existing event-driven patterns
 - **No TypeScript:** plain JS with ES modules. ESLint exists, but its config is intentionally narrow and architecture-focused.
 
+## Translations and presets
+
+- For UI strings, update `src/i18n/en.json`, `src/i18n/pt-BR.json`, and `src/i18n/qqq.json` together. See [Translation Contributor Guide](docs/I18N.md).
+- For bundled sample datasets, add files under `src/data/presets/`, register them in `src/data/presetCatalog.js`, and add the required translation keys. See [Preset Dataset Contributor Guide](docs/PRESET_DATASETS.md).
+
 ## Documentation conventions
 
 Public functions on the state core, services, and orchestrators carry JSDoc so the IDE can read each function's contract without re-reading the file. The conventions below match the existing style; please match them rather than inventing a new one.

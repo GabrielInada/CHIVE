@@ -461,6 +461,7 @@
  * @property {string} sourceLinkLabel - Anchor text for `sourceUrl`; may be empty.
  * @property {string} dataUrl - Bundled file URL resolved at module-load time.
  * @property {'csv' | 'json'} dataFormat
+ * @property {string[]} [dropColumns] - Columns the loader strips after parse.
  */
 
 // ─── UI feedback (feedbackUI.showProgress) ──────────────────────────────
