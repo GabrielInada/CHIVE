@@ -14,7 +14,7 @@ CHIVE is a client-side browser tool for exploring CSV/JSON data, building intera
 - **Stable** reflects the released state of the project and is the recommended version for normal use.
 - **Preview** reflects `develop` and is intended for trying upcoming features before they are merged into `main`.
 
-Both deployments serve the same source files unchanged: `index.html`, `about.html`, and `src/`. No production build step runs at deploy time.
+Both deployments serve the same source files unchanged: `index.html`, `about.html`, `src/`, and `vendor/`. No production build step runs at deploy time.
 
 ## What You Can Do
 
@@ -41,7 +41,7 @@ Both deployments serve the same source files unchanged: `index.html`, `about.htm
 
 ## Local Development
 
-Install Node.js LTS, then install dependencies once:
+Install an active Node.js LTS release, version 22 or newer, then install dependencies once:
 
 ```powershell
 npm install
@@ -80,7 +80,8 @@ CHIVE is designed to run from a static web server. The app runtime uses:
 
 1. Native browser ES modules through `<script type="module">`.
 2. External runtime dependencies loaded from `https://esm.sh` with full URLs in source files.
-3. Google Fonts loaded from `fonts.googleapis.com` and `fonts.gstatic.com`.
+3. A vendored SQLite-WASM runtime loaded from `vendor/sqlite/` (`sqlite3.js`, `sqlite3.wasm`, and companion files referenced by the loader).
+4. Google Fonts loaded from `fonts.googleapis.com` and `fonts.gstatic.com`.
 
 ### Requirements
 
@@ -89,7 +90,9 @@ CHIVE is designed to run from a static web server. The app runtime uses:
    - `index.html`
    - `about.html`
    - `src/`
-3. Allow these external origins in the default setup:
+   - `vendor/`
+3. Serve `vendor/sqlite/sqlite3.wasm` as `application/wasm` when possible. Browsers can fall back to non-streaming compilation, but the correct MIME avoids a slower path.
+4. Allow these external origins in the default setup:
    - `https://esm.sh`
    - `https://fonts.googleapis.com`
    - `https://fonts.gstatic.com`
@@ -107,6 +110,7 @@ CHIVE is designed to run from a static web server. The app runtime uses:
 3. Load a bundled sample dataset or upload a small CSV/JSON file.
 4. Verify the table preview renders.
 5. Create at least one chart.
+6. Make a change, wait a couple of seconds for the auto-save, reload, and confirm the dataset restores.
 
 ## Local Static Test
 
@@ -127,10 +131,12 @@ Checklist:
 
 ## Data And Privacy
 
-CHIVE has no application backend in the default deployments. Uploaded datasets are parsed and visualized in the browser. The app uses browser storage so work can survive refreshes:
+CHIVE has no application backend in the default deployments. Uploaded datasets are parsed and visualized in the browser. The app uses browser storage so saved work can survive refreshes:
 
-- IndexedDB stores dataset and dashboard panel state.
-- `localStorage` stores small UI preferences.
+- IndexedDB stores one SQLite project byte image containing datasets and dashboard panel state.
+- `localStorage` stores small UI preferences and the selected locale.
+
+Project changes auto-save: a save runs automatically a couple of seconds after you stop editing, and CHIVE also attempts a best-effort save when the page hides. Hard crashes or interrupted closes can still lose changes made since the last successful save.
 
 The default runtime still trusts external origins for JavaScript modules and fonts. If you need stricter controls for sensitive data, self-host CHIVE and review the CDN/font trust boundary before use. See [Privacy and security](docs/PRIVACY_AND_SECURITY.md) for the detailed trust model.
 

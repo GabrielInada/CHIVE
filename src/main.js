@@ -11,7 +11,7 @@
  *   4. Initialize fileManager / chartControls / panelManager.
  *   5. Wire global DOM listeners via `eventHandlers`.
  *   6. Subscribe `refreshView` to dataset/columns/config state events.
- *   7. Enable debounced auto-save; flush on `beforeunload`.
+ *   7. Enable debounced auto-save.
  *   8. Initial render.
  *   9. Re-render on locale changes.
  *   10. Surface internal module errors via feedback toast.
@@ -24,6 +24,7 @@ import {
 	isPersistenceAvailable,
 	hydrateState,
 	enablePersistenceAutoSave,
+	getPersistenceErrorMessageKey,
 } from './services/persistenceService.js';
 import { ingestFile, progressLabelForStage } from './services/dataIngestService.js';
 import { loadPresetSource, PresetFetchTimeoutError } from './services/presetService.js';
@@ -126,11 +127,11 @@ initializeAllEventHandlers();
 // 6. Setup UI subscriptions
 setupStateSubscriptions();
 
-// 7. Wire debounced auto-save AFTER subscriptions; flush on tab close so
-//    the last in-flight change survives. enablePersistenceAutoSave skips
-//    the STATE_HYDRATED event internally to avoid resaving the load.
-const persistenceHandle = enablePersistenceAutoSave(getState);
-window.addEventListener('beforeunload', () => persistenceHandle.flush());
+// 7. Wire auto-save AFTER subscriptions. The controller tracks semantic
+//    project events, debounces saves, and flushes on tab hide/close.
+enablePersistenceAutoSave(getState, {
+	onSaveError: reportPersistenceSaveError,
+});
 
 // 8. Initial view render
 refreshView();
@@ -165,6 +166,10 @@ function rehydratePanelChartSpecs(panel) {
 		return { ...spec, config: merged[spec.type] };
 	});
 	return { ...panel, charts };
+}
+
+function reportPersistenceSaveError(error) {
+	showError(t(getPersistenceErrorMessageKey(error)));
 }
 
 // =============================================================================

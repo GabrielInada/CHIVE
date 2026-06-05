@@ -7,6 +7,7 @@ on:
       - index.html
       - about.html
       - src/**
+      - vendor/**
       - .github/workflows/deploy-pages.yml
   workflow_dispatch:
 
@@ -35,6 +36,7 @@ jobs:
           mkdir _site
           cp index.html about.html _site/
           cp -R src _site/src
+          cp -R vendor _site/vendor
           touch _site/.nojekyll
 
       - name: Upload Pages artifact

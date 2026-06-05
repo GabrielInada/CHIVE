@@ -33,15 +33,27 @@ CHIVE uses browser storage so work can survive refreshes:
 
 | Storage | Name | Purpose |
 |---|---|---|
-| IndexedDB | `chive-state` | Datasets, selected active dataset, dashboard panel charts, layout blocks, slots, and panel counters. |
+| IndexedDB | `chive-sqlite` | A single SQLite database byte image at store `db`, key `project`. Contains datasets, selected active dataset id, dashboard panel charts, layout blocks, slots, and panel counters. |
 | `localStorage` | `chive.ui` | Small UI preferences such as sidebar mode and preview row count. |
 | `localStorage` | `chive-locale` | Selected interface language. |
+| `localStorage` | `chive.migrated` | One-time migration tombstone that prevents old raw IndexedDB data from being re-imported after a clear. |
 
-The IndexedDB schema currently uses database version `2` with these object
-stores:
+The SQLite project schema separates lightweight work metadata from heavy row
+payloads:
 
-- `datasets`: one record per loaded dataset.
-- `panel`: a singleton record for dashboard panel state.
+- `datasets`: dataset metadata/config, selected columns, precomputed stats, and a deterministic fingerprint.
+- `app_state`: active dataset id and panel state without row payloads.
+- `dataset_payload`: dataset rows as JSON.
+- `panel_snapshot_payload`: saved chart snapshot rows and columns.
+
+Project changes auto-save: a debounced save writes the SQLite byte image to
+IndexedDB a couple of seconds after the last edit, and CHIVE attempts a
+best-effort save when the page hides. Hard crashes or interrupted closes can
+still lose changes made since the last successful save.
+
+Existing installs with the old raw IndexedDB database `chive-state` are imported
+once when no SQLite project exists. After a successful import or an empty legacy
+check, `chive.migrated` is set so old data is not resurrected later.
 
 CHIVE does not use cookies, `sessionStorage`, service workers, WebSockets, or
 analytics code in the current source.
@@ -56,10 +68,14 @@ Use the browser's site-data controls for the CHIVE origin you use:
 3. Delete the stored data for that origin.
 4. Reload CHIVE.
 
-Clearing storage removes persisted datasets, panel state, UI preferences, and
-the saved language choice for that origin. Different deployments and local
-development URLs have separate browser storage because the browser keys storage
-by origin.
+Clearing browser site data removes persisted datasets, panel state, UI
+preferences, and the saved language choice for that origin. Different
+deployments and local development URLs have separate browser storage because
+the browser keys storage by origin.
+
+CHIVE's in-app clear path removes the SQLite project, the old `chive-state`
+database, and `chive.ui`, then sets the `chive.migrated` tombstone. It does not
+remove `chive-locale`.
 
 ## External Network Dependencies
 
@@ -84,7 +100,7 @@ separately.
 Using CHIVE means trusting these parts of your local environment and runtime:
 
 - The browser and its storage implementation.
-- The static host serving `index.html`, `about.html`, `src/`, and related
+- The static host serving `index.html`, `about.html`, `src/`, `vendor/`, and related
   assets.
 - `esm.sh`, because runtime modules from that CDN execute JavaScript in the
   page.
@@ -103,8 +119,9 @@ privacy claim is "CHIVE does not upload your dataset to a CHIVE backend", not
 - Runtime module imports from `esm.sh` do not currently use Subresource
   Integrity.
 - Google Fonts are loaded from external origins rather than vendored locally.
-- There is no offline/vendor-local runtime dependency mode in the current
-  source tree.
+- There is no full offline/vendor-local runtime dependency mode in the current
+  source tree. SQLite-WASM is vendored locally; D3, banana-i18n, and Google
+  Fonts are still external in the default runtime.
 - The default deployments do not document a project-specific Content Security
   Policy or deployment-hardening profile.
 

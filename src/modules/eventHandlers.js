@@ -90,10 +90,7 @@ function setupSidebarNavigationButtons() {
 function navigateToTab(tabName) {
 	const dataset = getActiveDataset();
 	if (dataset?.chartConfig) {
-		updateActiveDatasetConfig({
-			...dataset.chartConfig,
-			activeTab: tabName,
-		});
+		updateActiveDatasetConfig({ activeTab: tabName });
 	}
 	switchTab(tabName);
 }

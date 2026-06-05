@@ -184,12 +184,65 @@ subscribes to `WILDCARD` and mirrors selected state into legacy `window.*`
 globals.
 
 [`src/services/persistenceService.js`](../src/services/persistenceService.js)
-subscribes to `WILDCARD` after hydration and writes a debounced snapshot to
-IndexedDB and `localStorage`. It skips `STATE_HYDRATED`.
+subscribes to `WILDCARD` after hydration and tracks semantic project dirtiness
+to schedule the debounced auto-save. It ignores `STATE_HYDRATED`, UI preference
+events (`SIDEBAR_MODE_CHANGED`, `PREVIEW_ROWS_CHANGED`), and `CONFIG_UPDATED`
+payloads that are exactly `{ activeTab }`. UI preferences are written
+immediately to `localStorage`; project content is written by the debounced
+`saveNow()` or the best-effort page-hide close net.
 
 There are also non-bus render triggers: file-manager callbacks after dataset
 add/remove/select, locale-change events, initial boot render, and live-preview
 rendering while controls are being adjusted.
+
+## Persistence
+
+Project persistence is implemented in
+[`src/services/persistenceService.js`](../src/services/persistenceService.js)
+with engine/storage details behind `src/services/persistence/`.
+
+The runtime path is:
+
+1. Boot calls `hydrateState()`.
+2. `blobBackend.hydrate()` reads IndexedDB database `chive-sqlite`, store `db`,
+   key `project`.
+3. The stored value is a single SQLite database byte image (`Uint8Array`),
+   deserialized into sqlite-wasm in memory.
+4. `sqliteCore.readSnapshot()` reads project tables and reattaches chart
+   snapshot payloads.
+5. `persistenceService` validates datasets, applies the optional panel
+   transform, reads `chive.ui`, and calls `replaceAllState()`.
+
+Saves are automatic. `enablePersistenceAutoSave(getState)` subscribes to the
+state bus, marks the project dirty on content events, and schedules a debounced
+`saveNow()` (default ~2s quiet window) so a burst of edits collapses into one
+whole-DB write. `saveNow()` coalesces concurrent calls by returning the same
+in-flight promise. On success it clears dirty only if no newer revision was
+emitted during the save; if a mid-save edit occurred, it starts one follow-up
+save after the first promise settles. Failures keep dirty set and surface
+through the injected error callback (an error toast); there is no native
+unsaved-changes prompt.
+
+The SQLite schema version is `1`:
+
+| Table | Purpose |
+|---|---|
+| `meta` | `format = chive-project`, `schema_version = 1`. |
+| `datasets` | Dataset metadata/config, selected columns, stats, display size, deterministic fingerprint, and `position` for dataset list order. |
+| `app_state` | JSON docs for `data_state` (`activeDatasetId`) and `panel` without row payloads. |
+| `dataset_payload` | Dataset rows JSON, one row per dataset id. |
+| `panel_snapshot_payload` | Saved chart snapshot rows/columns keyed by chart id. |
+
+The split keeps the schema ready for future full vs. work-only project exports:
+work tables can be copied without row payload tables. Local persistence always
+writes payloads; missing payloads during normal hydrate are treated as malformed
+data and collapse to validation-safe empty/dropped records.
+
+Existing users with the old raw IndexedDB database `chive-state` are imported
+once by `legacyIndexedDbReader.js` when no SQLite project exists and
+`localStorage.chive.migrated` is absent. `clearPersistedState()` deletes the new
+SQLite DB, best-effort deletes `chive-state`, removes `chive.ui`, and sets the
+migration tombstone without touching `chive-locale`.
 
 ## Mutation Rules
 

@@ -441,6 +441,8 @@
 	"chive-progress-failed": "Upload failed: $1",
 
 	"chive-error-internal": "An internal application error occurred.",
+	"chive-save-failed": "Unable to save this project right now.",
+	"chive-save-failed-quota": "Unable to save. Browser storage quota is full.",
 	"chive-chart-color-palette": "Color palette",
 	"chive-chart-color-palette-help": "Colorblind-Safe is recommended for accessibility. Other palettes offer different visual styles.",
 	"chive-chart-palette-tableau10": "Standard",
