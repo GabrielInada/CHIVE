@@ -29,7 +29,7 @@ CHIVE is plain JavaScript (browser ES modules, no TypeScript) designed for stati
 
 1. Make sure your PR has a bug report, feature proposal, or documentation issue associated with it. If not, open one first.
 2. Fork the repo and clone your fork to your machine.
-3. Install the NPM dependencies with `npm install`.
+3. Install an active Node.js LTS release, version 22 or newer, then install the NPM dependencies with `npm install`.
 4. Create a branch from `develop` using the pattern `feat/<short-name>` (see [Branching workflow](#branching-workflow) below).
 5. Make your changes in `src/`, then add or update tests in `tests/` mirroring the file structure.
 6. Run `npm run lint` and fix any errors. General hygiene warnings should be reviewed, but they do not fail CI.

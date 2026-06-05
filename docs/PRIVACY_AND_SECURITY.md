@@ -29,7 +29,7 @@ deployments.
 
 ## Browser Storage
 
-CHIVE uses browser storage so work can survive refreshes:
+CHIVE uses browser storage so auto-saved work can survive refreshes:
 
 | Storage | Name | Purpose |
 |---|---|---|

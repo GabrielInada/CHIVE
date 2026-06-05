@@ -131,7 +131,7 @@ Checklist:
 
 ## Data And Privacy
 
-CHIVE has no application backend in the default deployments. Uploaded datasets are parsed and visualized in the browser. The app uses browser storage so saved work can survive refreshes:
+CHIVE has no application backend in the default deployments. Uploaded datasets are parsed and visualized in the browser. The app uses browser storage so auto-saved work can survive refreshes:
 
 - IndexedDB stores one SQLite project byte image containing datasets and dashboard panel state.
 - `localStorage` stores small UI preferences and the selected locale.
