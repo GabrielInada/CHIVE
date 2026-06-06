@@ -351,6 +351,65 @@
  * )} IngestWorkerResponse
  */
 
+// ─── Persistence worker (workerBackend → persistWorker → blobBackend) ────
+
+/**
+ * One dataset as it travels in a {@link PersistWorkerRequest}. Carries dataset
+ * metadata always; the heavy `rows` payload is either included or replaced by
+ * `rowsCached: true` when the worker already holds an identical copy from a
+ * prior save (reference-identity dedup on the host). Never infer "cached" from
+ * a missing `rows`, the flag is explicit so a legitimately empty `rows: []`
+ * round-trips correctly.
+ *
+ * @typedef {Object} PersistWorkerDataset
+ * @property {string} id
+ * @property {Array<Object<string, *>>} [rows] - Present unless `rowsCached`.
+ * @property {boolean} [rowsCached] - When `true`, the worker fills `rows` from its cache.
+ */
+
+/**
+ * One panel chart as it travels in a {@link PersistWorkerRequest}. Like
+ * {@link PersistWorkerDataset}, the heavy `dataSnapshot` / `columnsSnapshot`
+ * payloads are independently either included or flagged cached.
+ *
+ * @typedef {Object} PersistWorkerChart
+ * @property {number} id
+ * @property {Array<Object<string, *>>} [dataSnapshot] - Present unless `dataSnapshotCached`.
+ * @property {boolean} [dataSnapshotCached]
+ * @property {ColumnSpec[]} [columnsSnapshot] - Present unless `columnsSnapshotCached`.
+ * @property {boolean} [columnsSnapshotCached]
+ */
+
+/**
+ * Wire shape posted to the persistence Worker via `postMessage`. The `id` is
+ * reflected on every response so the host can correlate concurrent ops. Only
+ * `persist` carries a `snapshot`; `hydrate` and `clear` are bare. The snapshot
+ * mirrors {@link AppState} except dataset rows and chart snapshots may be
+ * dedup-flagged (see {@link PersistWorkerDataset} / {@link PersistWorkerChart}).
+ * The host side lives in `services/persistence/workerBackend.js`; the worker
+ * side lives in `workers/persistWorker.js`.
+ *
+ * @typedef {Object} PersistWorkerRequest
+ * @property {number} id - Correlation id; mirrored on every response.
+ * @property {'persist' | 'hydrate' | 'clear'} op - Backend operation to run.
+ * @property {Object} [snapshot] - Present only for `persist`. Cache-flagged AppState.
+ */
+
+/**
+ * Discriminated union covering every message the persistence Worker can post
+ * back. Discriminate via `ok`. A `needsResync` failure means a payload was
+ * flagged cached but missing from the worker cache (host/worker desync); the
+ * host clears its cache and retries once with full payloads. The `error`
+ * envelope preserves `name` so `QuotaExceededError` still classifies on the
+ * host (see `isQuotaError` in `persistenceService.js`).
+ *
+ * @typedef {(
+ *   { id: number, ok: true, result: Object | null }
+ *   | { id: number, ok: false, needsResync: true }
+ *   | { id: number, ok: false, error: { name: string, message: string } }
+ * )} PersistWorkerResponse
+ */
+
 // ─── Join (dataService.joinDatasets) ────────────────────────────────────
 
 /**

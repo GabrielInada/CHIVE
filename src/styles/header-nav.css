@@ -53,6 +53,7 @@ header {
 }
 
 .header-lang {
+    margin-left: auto;
     flex-shrink: 0;
 }
 

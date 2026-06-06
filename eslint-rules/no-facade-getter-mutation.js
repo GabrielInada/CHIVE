@@ -25,6 +25,7 @@ const TRACKED_GETTERS = new Set([
 	'getChartSnapshot',
 	'getPanelBlocks',
 	'getState',
+	'getPersistenceSnapshot',
 ]);
 
 // A getter only counts as a facade getter when imported from one of these.

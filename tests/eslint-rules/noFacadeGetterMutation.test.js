@@ -42,6 +42,9 @@ ruleTester.run('no-facade-getter-mutation', rule, {
 
 		// Passing the alias to a function is not a direct mutation (out of scope).
 		`${FROM_BARREL}\nconst blocks = getPanelBlocks();\nrender(blocks);\nconst first = blocks[0];`,
+
+		// The live-ref persistence snapshot getter, read-only.
+		`import { getPersistenceSnapshot } from '../modules/index.js';\nconst s = getPersistenceSnapshot();\nconst n = s.ui.previewRows;`,
 	],
 
 	invalid: [
@@ -92,6 +95,11 @@ ruleTester.run('no-facade-getter-mutation', rule, {
 		// `as`-renamed import is still tracked by its local name.
 		{
 			code: `import { getState as gs } from '../modules/state/appState.js';\nconst s = gs();\ns.ui = {};`,
+			errors: [{ messageId: 'facadeMutation' }],
+		},
+		// The live-ref persistence snapshot getter, mutated through an alias.
+		{
+			code: `import { getPersistenceSnapshot } from '../modules/state/appState.js';\nconst s = getPersistenceSnapshot();\ns.data.datasets.push({});`,
 			errors: [{ messageId: 'facadeMutation' }],
 		},
 	],

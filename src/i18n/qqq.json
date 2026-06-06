@@ -440,6 +440,8 @@
 	"chive-progress-failed": "Failure message shown in the progress toast when the ingest worker errors out. $1 = error reason.",
 
 	"chive-error-internal": "Fallback error message for unexpected internal application failures.",
+	"chive-save-failed": "Error toast shown when a project auto-save fails.",
+	"chive-save-failed-quota": "Error toast shown when saving fails because browser storage quota is full.",
 	"chive-chart-color-palette": "Label for quick-apply color palette preset buttons (Pastel, Bold, Colorblind-Safe).",
 	"chive-chart-color-palette-help": "Help text below palette buttons explaining that Colorblind-Safe is the accessibility-first default.",
 	"chive-chart-palette-tableau10": "Display name for the Tableau10 palette (the 'Standard' option).",

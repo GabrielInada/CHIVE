@@ -17,6 +17,7 @@
     "d3": "^7.9.0"
   },
   "devDependencies": {
+    "@sqlite.org/sqlite-wasm": "^3.53.0-build1",
     "@vitest/coverage-v8": "^4.1.0",
     "eslint": "^9.0.0",
     "fake-indexeddb": "^6.2.5",
