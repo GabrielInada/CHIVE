@@ -27,6 +27,7 @@ Both deployments serve the same source files unchanged: `index.html`, `about.htm
 - Join datasets through the browser UI.
 - Save chart snapshots into dashboard panel layouts.
 - Export the dashboard panel as SVG.
+- Export/import full CHIVE project files, or export a work-only project file without row payloads.
 - Switch the UI between English and Brazilian Portuguese.
 
 ## Quick Start
@@ -38,6 +39,7 @@ Both deployments serve the same source files unchanged: `index.html`, `about.htm
 5. Configure the chart columns and options in the sidebar.
 6. Add useful charts to the panel.
 7. Arrange the panel layout and export it as SVG when needed.
+8. Use the Project menu in the results toolbar to export or import a full project file.
 
 ## Local Development
 
@@ -137,6 +139,8 @@ CHIVE has no application backend in the default deployments. Uploaded datasets a
 - `localStorage` stores small UI preferences and the selected locale.
 
 Project changes auto-save: a save runs automatically a couple of seconds after you stop editing, and CHIVE also attempts a best-effort save when the page hides. Hard crashes or interrupted closes can still lose changes made since the last successful save.
+
+Project export downloads a SQLite-backed `.chive.sqlite3` file. Full exports include dataset rows and saved chart snapshot payloads; work-only exports omit those heavy payloads and are meant for layout/work transfer only. Import currently accepts full project files and replaces the current datasets and panel.
 
 The default runtime still trusts external origins for JavaScript modules and fonts. If you need stricter controls for sensitive data, self-host CHIVE and review the CDN/font trust boundary before use. See [Privacy and security](docs/PRIVACY_AND_SECURITY.md) for the detailed trust model.
 

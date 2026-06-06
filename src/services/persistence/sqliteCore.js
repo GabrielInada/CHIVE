@@ -93,9 +93,12 @@ function getActiveDatasetId(snapshot, datasets) {
 		: null;
 }
 
-function assertMeta(db) {
+export function assertMeta(db, { requireMeta = false } = {}) {
 	const rows = selectRows(db, 'SELECT key, value FROM meta');
-	if (rows.length === 0) return;
+	if (rows.length === 0) {
+		if (requireMeta) throw new Error('Missing CHIVE SQLite project metadata');
+		return;
+	}
 	const meta = Object.fromEntries(rows.map(row => [row.key, row.value]));
 	if (meta.format && meta.format !== SQLITE_FORMAT) {
 		throw new Error(`Unsupported CHIVE SQLite format: ${meta.format}`);

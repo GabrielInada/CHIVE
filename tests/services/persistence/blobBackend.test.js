@@ -100,4 +100,41 @@ describe('blobBackend', () => {
 		await backend.clear();
 		expect(await backend.hydrate()).toBeNull();
 	});
+
+	it('exports full SQLite bytes without writing browser persistence and imports them back', async () => {
+		const backend = nextBackend();
+		const bytes = await backend.exportBytes(makeSnapshot());
+
+		expect(bytes).toBeInstanceOf(Uint8Array);
+		expect(bytes.byteLength).toBeGreaterThan(0);
+		expect(await backend.hydrate()).toBeNull();
+
+		const imported = await backend.importBytes(bytes);
+		expect(imported.data.datasets[0].rows).toEqual([{ x: 1 }]);
+		expect(imported.panel.charts[0].dataSnapshot).toEqual([{ x: 1 }]);
+	});
+
+	it('work-only export keeps project metadata but omits heavy payload tables', async () => {
+		const backend = nextBackend();
+		const snapshot = makeSnapshot();
+		snapshot.data.datasets[0].rows = [{ x: 'payload'.repeat(10000) }];
+		snapshot.panel.charts[0].dataSnapshot = snapshot.data.datasets[0].rows;
+
+		const fullBytes = await backend.exportBytes(snapshot);
+		const workOnlyBytes = await backend.exportBytes(snapshot, { workOnly: true });
+		const imported = await backend.importBytes(workOnlyBytes);
+
+		expect(imported.data.datasets[0].id).toBe('ds-1');
+		expect(imported.data.datasets[0].rows).toBeNull();
+		expect(imported.panel.charts[0].dataSnapshot).toEqual([]);
+		expect(imported.panel.charts[0].columnsSnapshot).toEqual([]);
+		expect(workOnlyBytes.byteLength).toBeLessThan(fullBytes.byteLength);
+	});
+
+	it('rejects invalid or empty import bytes', async () => {
+		const backend = nextBackend();
+
+		await expect(backend.importBytes(new Uint8Array())).rejects.toMatchObject({ name: 'EmptyProjectFileError' });
+		await expect(backend.importBytes(new Uint8Array([1, 2, 3]))).rejects.toThrow(/database|deserialize/i);
+	});
 });

@@ -92,6 +92,12 @@ export const FEEDBACK_IDS = {
 // File management elements
 export const FILE_IDS = {
 	fileInput: 'file-input',
+	projectImportInput: 'project-import-input',
+	projectMenuButton: 'btn-project-menu',
+	projectMenuPanel: 'project-menu-panel',
+	projectExportButton: 'btn-project-export',
+	projectExportWorkOnlyButton: 'btn-project-export-work-only',
+	projectImportButton: 'btn-project-import',
 	uploadZone: 'upload-zone',
 	fileSummary: 'file-summary-text',
 	fileListContent: 'file-list-content',

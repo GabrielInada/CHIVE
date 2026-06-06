@@ -7,9 +7,12 @@ import {
 	isPersistenceAvailable,
 	hydrateState,
 	persistState,
+	exportProject,
+	importProjectBytes,
 	clearPersistedState,
 	enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey,
+	getProjectImportErrorMessageKey,
 	isActiveTabOnlyPatch,
 	isProjectDirtyEvent,
 } from '../../src/services/persistenceService.js';
@@ -163,6 +166,74 @@ describe('persistenceService', () => {
 	it('does not write UI prefs as part of persistState', async () => {
 		await persistState(makeSnapshot());
 		expect(localStorage.getItem('chive.ui')).toBeNull();
+	});
+
+	it('exports full project bytes and imports them as the saved current project', async () => {
+		const exported = await exportProject(makeSnapshot());
+		expect(exported.ok).toBe(true);
+		expect(exported.bytes).toBeInstanceOf(Uint8Array);
+		expect(exported.fileName).toMatch(/^chive-project-.*\.chive\.sqlite3$/);
+
+		await clearPersistedState();
+		const replaceAllState = vi.fn();
+		const transformPanel = vi.fn(panel => ({
+			...panel,
+			charts: panel.charts.map(chart => ({ ...chart, config: { ...chart.config, imported: true } })),
+		}));
+		const imported = await importProjectBytes(exported.bytes, { replaceAllState, transformPanel });
+
+		expect(imported.ok).toBe(true);
+		expect(replaceAllState).toHaveBeenCalledTimes(1);
+		expect(replaceAllState.mock.calls[0][0].data.datasets.map(dataset => dataset.id)).toEqual(['ds-1', 'ds-2']);
+		expect(replaceAllState.mock.calls[0][0].panel.charts[0].config.imported).toBe(true);
+
+		const hydratedReplace = vi.fn();
+		await hydrateState({ replaceAllState: hydratedReplace });
+		expect(hydratedReplace.mock.calls[0][0].data.datasets.map(dataset => dataset.id)).toEqual(['ds-1', 'ds-2']);
+	});
+
+	it('rejects work-only project imports in v1', async () => {
+		const exported = await exportProject(makeSnapshot(), { workOnly: true });
+		expect(exported.ok).toBe(true);
+		expect(exported.fileName).toContain('-work-only-');
+
+		const replaceAllState = vi.fn();
+		const imported = await importProjectBytes(exported.bytes, { replaceAllState });
+
+		expect(imported.ok).toBe(false);
+		expect(getProjectImportErrorMessageKey(imported.error)).toBe('chive-project-import-work-only-error');
+		expect(replaceAllState).not.toHaveBeenCalled();
+	});
+
+	it('runtime import clears the current panel when the file has no panel doc', async () => {
+		const persist = vi.fn(async () => {});
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: async () => null,
+			importBytes: async () => ({
+				data: {
+					datasets: [goodRecord('only')],
+					activeDatasetId: 'only',
+				},
+				panel: null,
+			}),
+			persist,
+			clear: vi.fn(),
+		});
+		const replaceAllState = vi.fn();
+
+		const imported = await importProjectBytes(new Uint8Array([1]), { replaceAllState });
+
+		expect(imported.ok).toBe(true);
+		expect(replaceAllState.mock.calls[0][0].panel).toEqual({
+			charts: [],
+			slots: {},
+			layout: 'template-2col',
+			blocks: [],
+			nextBlockId: 1,
+			nextChartId: 0,
+		});
+		expect(persist.mock.calls[0][0].panel.charts).toEqual([]);
 	});
 
 	it('does not call replaceAllState on first visit', async () => {

@@ -58,6 +58,8 @@ function spyFallback(dbName) {
 		available: () => real.available(),
 		hydrate: vi.fn(() => real.hydrate()),
 		persist: vi.fn(snapshot => real.persist(snapshot)),
+		exportBytes: vi.fn((snapshot, options) => real.exportBytes(snapshot, options)),
+		importBytes: vi.fn(bytes => real.importBytes(bytes)),
 		clear: vi.fn(() => real.clear()),
 	};
 }
@@ -116,6 +118,26 @@ describe('workerBackend, happy path + correlation', () => {
 		expect(hydrated.data.datasets[0].id).toBe('ds-1');
 		expect(hydrated.data.datasets[0].rows).toEqual(rows);
 		expect(workers).toHaveLength(1);     // single long-lived worker reused
+	});
+
+	it('exports and imports project bytes through the worker', async () => {
+		const db = nextDb();
+		const backend = createWorkerBackend({
+			workerFactory: () => { const w = new MockWorker(); attachRealHandler(w, db); return w; },
+			fallbackBackendFactory: () => spyFallback(`${db}-fb`),
+			timeoutMs: 5000,
+		});
+
+		const rows = [{ x: 3 }, { x: 4 }];
+		const bytes = await backend.exportBytes(snap({ rows }));
+		const imported = await backend.importBytes(bytes);
+
+		expect(bytes).toBeInstanceOf(Uint8Array);
+		expect(imported.data.datasets[0].rows).toEqual(rows);
+
+		const workOnlyBytes = await backend.exportBytes(snap({ rows }), { workOnly: true });
+		const workOnly = await backend.importBytes(workOnlyBytes);
+		expect(workOnly.data.datasets[0].rows).toBeNull();
 	});
 
 	it('returns null on first hydrate and after clear', async () => {

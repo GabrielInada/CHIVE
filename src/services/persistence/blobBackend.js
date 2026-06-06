@@ -11,7 +11,7 @@
 
 import sqlite3InitModule from '../../../vendor/sqlite/sqlite3.js';
 import { computeDatasetFingerprint } from '../../utils/datasetFingerprint.js';
-import { applySchema, readSnapshot, writeSnapshot } from './sqliteCore.js';
+import { applySchema, assertMeta, readSnapshot, writeSnapshot } from './sqliteCore.js';
 
 export const SQLITE_IDB_NAME = 'chive-sqlite';
 export const SQLITE_IDB_STORE = 'db';
@@ -68,7 +68,7 @@ function deleteDatabase(dbName) {
 	});
 }
 
-async function recordToBytes(record) {
+export async function recordToBytes(record) {
 	if (!record) return null;
 	if (ArrayBuffer.isView(record)) {
 		return new Uint8Array(record.buffer, record.byteOffset, record.byteLength);
@@ -82,7 +82,7 @@ async function recordToBytes(record) {
 	return null;
 }
 
-function openSerializedDb(sqlite3, bytes) {
+export function openSerializedDb(sqlite3, bytes) {
 	const db = new sqlite3.oo1.DB('/chive-hydrate.sqlite3', 'ct');
 	sqlite3.capi.sqlite3_trace_v2(db.pointer, 0, 0, 0);
 	const ptr = sqlite3.wasm.allocFromTypedArray(bytes);
@@ -111,6 +111,29 @@ async function fingerprintDatasets(snapshot) {
 		fingerprints.set(dataset.id, await computeDatasetFingerprint(dataset));
 	}
 	return fingerprints;
+}
+
+function stripPayloadTables(db) {
+	db.exec(`
+		DELETE FROM dataset_payload;
+		DELETE FROM panel_snapshot_payload;
+		VACUUM;
+	`);
+}
+
+async function serializeSnapshot(sqlite3, snapshot, { workOnly = false, dbPath = '/chive-export.sqlite3' } = {}) {
+	const fingerprintsByDatasetId = await fingerprintDatasets(snapshot);
+	let db;
+	try {
+		db = new sqlite3.oo1.DB(dbPath, 'ct');
+		sqlite3.capi.sqlite3_trace_v2(db.pointer, 0, 0, 0);
+		applySchema(db);
+		writeSnapshot(db, snapshot, { fingerprintsByDatasetId });
+		if (workOnly) stripPayloadTables(db);
+		return sqlite3.capi.sqlite3_js_db_export(db).slice();
+	} finally {
+		if (db) db.close();
+	}
 }
 
 /**
@@ -161,20 +184,33 @@ export function createBlobBackend({
 	async function persist(snapshot) {
 		if (!available()) throw new Error('IndexedDB is unavailable');
 		const sqlite3 = await getSqlite3();
-		const fingerprintsByDatasetId = await fingerprintDatasets(snapshot);
+		const bytes = await serializeSnapshot(sqlite3, snapshot, { dbPath: '/chive-persist.sqlite3' });
+		const idb = await openProjectStore({ dbName, storeName });
+		try {
+			await writeRecord(idb, storeName, projectKey, bytes);
+		} finally {
+			idb.close();
+		}
+	}
+
+	async function exportBytes(snapshot, { workOnly = false } = {}) {
+		const sqlite3 = await getSqlite3();
+		return serializeSnapshot(sqlite3, snapshot, { workOnly });
+	}
+
+	async function importBytes(record) {
+		const bytes = await recordToBytes(record);
+		if (!bytes || bytes.length === 0) {
+			const error = new Error('Project file is empty or unreadable');
+			error.name = 'EmptyProjectFileError';
+			throw error;
+		}
+		const sqlite3 = await getSqlite3();
 		let db;
 		try {
-			db = new sqlite3.oo1.DB('/chive-persist.sqlite3', 'ct');
-			sqlite3.capi.sqlite3_trace_v2(db.pointer, 0, 0, 0);
-			applySchema(db);
-			writeSnapshot(db, snapshot, { fingerprintsByDatasetId });
-			const bytes = sqlite3.capi.sqlite3_js_db_export(db);
-			const idb = await openProjectStore({ dbName, storeName });
-			try {
-				await writeRecord(idb, storeName, projectKey, bytes.slice());
-			} finally {
-				idb.close();
-			}
+			db = openSerializedDb(sqlite3, bytes);
+			assertMeta(db, { requireMeta: true });
+			return readSnapshot(db);
 		} finally {
 			if (db) db.close();
 		}
@@ -189,6 +225,8 @@ export function createBlobBackend({
 		available,
 		hydrate,
 		persist,
+		exportBytes,
+		importBytes,
 		clear,
 	};
 }

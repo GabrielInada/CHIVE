@@ -1,7 +1,7 @@
 /**
  * CHIVE persistence worker backend (main-thread host side).
  *
- * Implements the `{ available, hydrate, persist, clear }` backend seam by
+ * Implements the `{ available, hydrate, persist, exportBytes, importBytes, clear }` backend seam by
  * delegating to a long-lived persistence Worker (`workers/persistWorker.js`),
  * which runs `createBlobBackend()` off the main thread. This module must NOT
  * statically import `blobBackend`/sqlite, that would pull SQLite-WASM back onto
@@ -55,6 +55,16 @@ function safeStructuredClone(value) {
 		: JSON.parse(JSON.stringify(value));
 }
 
+function cloneBytes(bytes) {
+	if (ArrayBuffer.isView(bytes)) {
+		return new Uint8Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+	}
+	if (Object.prototype.toString.call(bytes) === '[object ArrayBuffer]') {
+		return new Uint8Array(bytes.slice(0));
+	}
+	return bytes;
+}
+
 /**
  * Rebuild a real `Error` from a worker's `{ name, message }` envelope so
  * `isQuotaError` (which keys off `error.name`) still classifies quota failures.
@@ -76,9 +86,9 @@ const chartColsKey = id => `chart:${id}:cols`;
 /**
  * @param {Object} [options]
  * @param {() => Worker} [options.workerFactory] - Spawns the persist worker (tests inject a mock).
- * @param {() => { persist: Function, hydrate: Function, clear: Function }} [options.fallbackBackendFactory] - Main-thread fallback (tests inject a unique blobBackend).
+ * @param {() => { persist: Function, hydrate: Function, clear: Function, exportBytes?: Function, importBytes?: Function }} [options.fallbackBackendFactory] - Main-thread fallback (tests inject a unique blobBackend).
  * @param {number} [options.timeoutMs] - Watchdog timeout. Generous by default so a big first save on a slow device does not false-trip.
- * @returns {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, clear: () => Promise<void> }}
+ * @returns {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes: (snapshot: Partial<AppState>, options?: { workOnly?: boolean }) => Promise<Uint8Array>, importBytes: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<void> }}
  */
 export function createWorkerBackend({ workerFactory, fallbackBackendFactory, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
 	const spawn = workerFactory || defaultWorkerFactory;
@@ -172,6 +182,14 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		return { op: 'persist', meta, refByKey, presentKeys };
 	}
 
+	function captureExportRecord(snapshot, { workOnly = false } = {}) {
+		return {
+			...capturePersistRecord(snapshot),
+			op: 'export',
+			workOnly: Boolean(workOnly),
+		};
+	}
+
 	/**
 	 * Build the persist message from a record, deciding cached-vs-included per
 	 * payload against the live `sentPayloads`. Returns the message and the set
@@ -258,6 +276,15 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		return { ...meta, data: { ...meta.data, datasets }, panel };
 	}
 
+	function buildExportMessage(record, id) {
+		return {
+			id,
+			op: 'export',
+			snapshot: rebuildFull(record),
+			workOnly: Boolean(record.workOnly),
+		};
+	}
+
 	// ─── sentPayloads bookkeeping ───────────────────────────────────────────
 
 	/**
@@ -309,7 +336,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			} else if (entry.record.op === 'clear') {
 				sentPayloads.clear();
 			}
-			entry.resolve(entry.record.op === 'hydrate' ? (msg.result ?? null) : undefined);
+			entry.resolve(['hydrate', 'export', 'import'].includes(entry.record.op) ? (msg.result ?? null) : undefined);
 			return;
 		}
 
@@ -331,6 +358,11 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	 * @param {Object} entry
 	 */
 	function handleNeedsResync(entry) {
+		if (entry.record.op !== 'persist') {
+			clearEntry(entry);
+			entry.reject(new Error('persistence cache resync requested for non-persist op'));
+			return;
+		}
 		sentPayloads.clear();
 		if (entry.retried) {
 			clearEntry(entry);
@@ -414,7 +446,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	async function runEntryOnFallback(entry) {
 		try {
 			const op = entry.record.op;
-			const stable = op === 'persist'
+			const stable = op === 'persist' || op === 'export'
 				? safeStructuredClone(rebuildFull(entry.record))
 				: null;
 			const fb = await getFallbackBackend();
@@ -424,6 +456,12 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			} else if (op === 'hydrate') {
 				const result = await fb.hydrate();
 				entry.resolve(result ?? null);
+			} else if (op === 'export') {
+				const result = await fb.exportBytes(stable, { workOnly: Boolean(entry.record.workOnly) });
+				entry.resolve(result);
+			} else if (op === 'import') {
+				const result = await fb.importBytes(entry.record.bytes);
+				entry.resolve(result);
 			} else if (op === 'clear') {
 				await fb.clear();
 				entry.resolve(undefined);
@@ -438,7 +476,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	// ─── Op dispatch ────────────────────────────────────────────────────────
 
 	/**
-	 * @param {{ op: 'persist' | 'hydrate' | 'clear', [k: string]: * }} record
+	 * @param {{ op: 'persist' | 'hydrate' | 'export' | 'import' | 'clear', [k: string]: * }} record
 	 * @returns {Promise<*>}
 	 */
 	function runOp(record) {
@@ -478,6 +516,10 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 				const built = buildPersistMessage(record, entry.id, false);
 				message = built.message;
 				entry.includedKeys = built.includedKeys;
+			} else if (record.op === 'export') {
+				message = buildExportMessage(record, entry.id);
+			} else if (record.op === 'import') {
+				message = { id: entry.id, op: 'import', bytes: record.bytes };
 			} else {
 				message = { id: entry.id, op: record.op };
 			}
@@ -508,11 +550,20 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		return runOp(record);
 	}
 
+	function exportBytes(snapshot, options = {}) {
+		const record = captureExportRecord(snapshot, options);
+		return runOp(record);
+	}
+
+	function importBytes(bytes) {
+		return runOp({ op: 'import', bytes: cloneBytes(bytes) });
+	}
+
 	function clear() {
 		return runOp({ op: 'clear' });
 	}
 
-	return { available, hydrate, persist, clear };
+	return { available, hydrate, persist, exportBytes, importBytes, clear };
 }
 
 export const workerBackend = createWorkerBackend();
