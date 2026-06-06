@@ -383,16 +383,19 @@
 /**
  * Wire shape posted to the persistence Worker via `postMessage`. The `id` is
  * reflected on every response so the host can correlate concurrent ops. Only
- * `persist` carries a `snapshot`; `hydrate` and `clear` are bare. The snapshot
- * mirrors {@link AppState} except dataset rows and chart snapshots may be
- * dedup-flagged (see {@link PersistWorkerDataset} / {@link PersistWorkerChart}).
+ * `persist` and `export` carry a `snapshot`; `import` carries SQLite bytes;
+ * `hydrate` and `clear` are bare. The snapshot mirrors {@link AppState} except
+ * dataset rows and chart snapshots may be dedup-flagged on `persist` (see
+ * {@link PersistWorkerDataset} / {@link PersistWorkerChart}).
  * The host side lives in `services/persistence/workerBackend.js`; the worker
  * side lives in `workers/persistWorker.js`.
  *
  * @typedef {Object} PersistWorkerRequest
  * @property {number} id - Correlation id; mirrored on every response.
- * @property {'persist' | 'hydrate' | 'clear'} op - Backend operation to run.
- * @property {Object} [snapshot] - Present only for `persist`. Cache-flagged AppState.
+ * @property {'persist' | 'hydrate' | 'export' | 'import' | 'clear'} op - Backend operation to run.
+ * @property {Object} [snapshot] - Present for `persist` and `export`.
+ * @property {boolean} [workOnly] - When `export`, omit dataset rows and panel snapshot payloads.
+ * @property {Uint8Array | ArrayBuffer} [bytes] - Serialized SQLite bytes for `import`.
  */
 
 /**
@@ -404,7 +407,7 @@
  * host (see `isQuotaError` in `persistenceService.js`).
  *
  * @typedef {(
- *   { id: number, ok: true, result: Object | null }
+ *   { id: number, ok: true, result: Object | Uint8Array | null }
  *   | { id: number, ok: false, needsResync: true }
  *   | { id: number, ok: false, error: { name: string, message: string } }
  * )} PersistWorkerResponse

@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
-import { applySchema, readSnapshot, writeSnapshot } from '../../../src/services/persistence/sqliteCore.js';
+import { applySchema, assertMeta, readSnapshot, writeSnapshot } from '../../../src/services/persistence/sqliteCore.js';
 
 let sqlite3;
 
@@ -118,6 +118,17 @@ describe('sqliteCore', () => {
 		try {
 			expect(() => writeSnapshot(db, makeSnapshot(), { fingerprintsByDatasetId: new Map() }))
 				.toThrow('Missing fingerprint for dataset ds-b');
+		} finally {
+			db.close();
+		}
+	});
+
+	it('requires CHIVE metadata when requested for project import', () => {
+		const db = makeDb('/missing-meta-test.sqlite3');
+		try {
+			applySchema(db);
+			expect(() => assertMeta(db)).not.toThrow();
+			expect(() => assertMeta(db, { requireMeta: true })).toThrow('Missing CHIVE SQLite project metadata');
 		} finally {
 			db.close();
 		}

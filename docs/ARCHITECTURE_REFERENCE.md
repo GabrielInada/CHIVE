@@ -245,6 +245,18 @@ if a mid-save edit occurred, it starts one follow-up save after the first promis
 settles. Failures keep dirty set and surface through the injected error callback
 (an error toast); there is no native unsaved-changes prompt.
 
+Project transfer uses the same backend seam. `exportProject()` sends a
+live-reference snapshot to `workerBackend.exportBytes()`, which serializes a
+SQLite byte image in the worker and returns it to the UI for download. Full
+exports include `dataset_payload` and `panel_snapshot_payload`; work-only
+exports write a normal image first, then clear those payload tables and `VACUUM`
+before the byte export so metadata, panel layout, and deterministic dataset
+fingerprints remain intact. `importProjectBytes()` accepts full project bytes,
+validates the `meta` marker before normalizing app state, persists the imported
+project as the new local SQLite project, then calls `replaceAllState()`.
+Work-only imports are intentionally rejected in v1 because dataset re-linking
+semantics are not implemented yet.
+
 The SQLite schema version is `1`:
 
 | Table | Purpose |
@@ -255,10 +267,12 @@ The SQLite schema version is `1`:
 | `dataset_payload` | Dataset rows JSON, one row per dataset id. |
 | `panel_snapshot_payload` | Saved chart snapshot rows/columns keyed by chart id. |
 
-The split keeps the schema ready for future full vs. work-only project exports:
-work tables can be copied without row payload tables. Local persistence always
-writes payloads; missing payloads during normal hydrate are treated as malformed
-data and collapse to validation-safe empty/dropped records.
+The split powers full vs. work-only project exports: work-only files preserve
+metadata and layout without row payload table contents. Local persistence always
+writes payloads; missing dataset payloads during normal hydrate/import are
+treated as malformed data and collapse to validation-safe empty/dropped records,
+except that project import detects `rows: null` and rejects the file as a
+work-only import.
 
 Existing users with the old raw IndexedDB database `chive-state` are imported
 once by `legacyIndexedDbReader.js` when no SQLite project exists and

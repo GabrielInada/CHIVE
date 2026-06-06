@@ -55,6 +55,13 @@ IndexedDB a couple of seconds after the last edit, and CHIVE attempts a
 best-effort save when the page hides. Hard crashes or interrupted closes can
 still lose changes made since the last successful save.
 
+Project export downloads a `.chive.sqlite3` file from the browser. Full exports
+contain dataset rows and saved chart snapshot payloads. Work-only exports omit
+the row contents of `dataset_payload` and `panel_snapshot_payload`, but still
+contain dataset names, column metadata, chart configuration, panel layout, and
+deterministic dataset fingerprints. Project import currently accepts only full
+exports and replaces the current datasets and panel after confirmation.
+
 Existing installs with the old raw IndexedDB database `chive-state` are imported
 once when no SQLite project exists. After a successful import or an empty legacy
 check, `chive.migrated` is set so old data is not resurrected later.

@@ -37,6 +37,7 @@ renderFileList,
 import { initChartControls, renderChartControlsSidebar, renderCharts } from './features/chartFeatures.js';
 import { createDefaultChartConfig, mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 import { getNumericColumns } from './utils/columnHelpers.js';
+import { rehydratePanelChartSpecs } from './utils/panelHydration.js';
 
 import {
 getState,
@@ -152,26 +153,6 @@ showError(message);
 });
 }
 
-/**
- * Re-merge each persisted chart spec against the current chart defaults
- * so old specs absorb any new keys added to `chartDefaults.js` since
- * they were saved. Cheap; runs once on hydration. Passed as the
- * `transformPanel` hook into `persistenceService.hydrateState`.
- *
- * @private
- * @param {Object} panel - Raw panel record from IndexedDB.
- * @returns {Object} Same shape with `charts` upgraded.
- */
-function rehydratePanelChartSpecs(panel) {
-	if (!panel || !Array.isArray(panel.charts)) return panel;
-	const charts = panel.charts.map(spec => {
-		if (!spec || !spec.type) return spec;
-		const merged = mergeChartConfigWithDefaults({ [spec.type]: spec.config || {} });
-		return { ...spec, config: merged[spec.type] };
-	});
-	return { ...panel, charts };
-}
-
 function reportPersistenceSaveError(error) {
 	showError(t(getPersistenceErrorMessageKey(error)));
 }
@@ -191,8 +172,8 @@ refreshView();
 }
 
 /**
- * Subscribe `refreshView` to the three state events whose payloads
- * affect what's rendered: active dataset, columns, and config.
+ * Subscribe `refreshView` to the state events whose payloads affect
+ * what's rendered: active dataset, columns, config, and runtime imports.
  *
  * @private
  */
@@ -209,6 +190,10 @@ refreshView();
 
 // Re-render when config changes
 onStateChange(STATE_EVENTS.CONFIG_UPDATED, () => {
+refreshView();
+});
+
+onStateChange(STATE_EVENTS.STATE_HYDRATED, () => {
 refreshView();
 });
 

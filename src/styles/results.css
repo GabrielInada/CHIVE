@@ -44,6 +44,7 @@
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
+  margin-bottom: 28px;
 }
 
 .result-tabs-group {
@@ -57,6 +58,10 @@
   align-items: center;
   gap: 8px;
   margin-left: auto;
+}
+
+#project-import-input {
+  display: none;
 }
 
 .result-tab {
@@ -143,6 +148,65 @@
 
 .global-filter-trigger-badge[hidden] {
   display: none;
+}
+
+.project-menu {
+  position: relative;
+}
+
+.project-menu-trigger {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.project-menu-trigger:hover,
+.project-menu-trigger[aria-expanded="true"] {
+  border-color: var(--accent);
+  background: rgba(26, 71, 42, 0.08);
+}
+
+.project-menu-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 20;
+  width: max-content;
+  min-width: 190px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+  padding: 6px;
+}
+
+.project-menu-panel[hidden] {
+  display: none;
+}
+
+.project-menu-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.project-menu-item:hover {
+  background: rgba(26, 71, 42, 0.08);
+  color: var(--accent);
 }
 
 /* Global filter modal body */

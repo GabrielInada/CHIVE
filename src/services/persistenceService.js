@@ -21,6 +21,14 @@ import {
 } from './persistence/legacyIndexedDbReader.js';
 
 const UI_LOCAL_STORAGE_KEY = 'chive.ui';
+export const PROJECT_FILE_EXTENSION = '.chive.sqlite3';
+export const PROJECT_FILE_MIME = 'application/vnd.chive.project+sqlite3';
+const PROJECT_IMPORT_ERROR_NAMES = Object.freeze({
+	EMPTY_FILE: 'EmptyProjectFileError',
+	EMPTY_PROJECT: 'EmptyProjectImportError',
+	UNSUPPORTED_FILE: 'UnsupportedProjectFileError',
+	WORK_ONLY: 'WorkOnlyProjectImportError',
+});
 
 // The worker backend runs SQLite off the main thread. It does NOT statically
 // import sqlite, so this default keeps SQLite-WASM off the boot/main bundle
@@ -31,7 +39,7 @@ let activeBackend = workerBackend;
 /**
  * Swap the storage backend. Used by tests and future storage strategies.
  *
- * @param {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, clear: () => Promise<void> } | null} backend
+ * @param {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes?: (snapshot: Partial<AppState>, options?: { workOnly?: boolean }) => Promise<Uint8Array>, importBytes?: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<void> } | null} backend
  */
 export function configurePersistenceBackend(backend) {
 	activeBackend = backend || workerBackend;
@@ -157,6 +165,12 @@ function errorFrom(value, fallbackMessage = 'Persistence failed') {
 	return error;
 }
 
+function namedError(name, message) {
+	const error = new Error(message);
+	error.name = name;
+	return error;
+}
+
 function isQuotaError(error) {
 	return error?.name === 'QuotaExceededError'
 		|| String(error?.message || '').toLowerCase().includes('quota');
@@ -170,6 +184,56 @@ function isQuotaError(error) {
  */
 export function getPersistenceErrorMessageKey(error) {
 	return isQuotaError(error) ? 'chive-save-failed-quota' : 'chive-save-failed';
+}
+
+function hasWorkOnlyDatasets(storedSnapshot) {
+	const rawDatasets = Array.isArray(storedSnapshot?.data?.datasets)
+		? storedSnapshot.data.datasets
+		: [];
+	return rawDatasets.some(dataset => dataset && dataset.rows === null);
+}
+
+function buildProjectFileName({ workOnly = false } = {}) {
+	const stamp = new Date().toISOString()
+		.replace(/\.\d{3}Z$/, 'Z')
+		.replace(/[:]/g, '-');
+	const suffix = workOnly ? '-work-only' : '';
+	return `chive-project${suffix}-${stamp}${PROJECT_FILE_EXTENSION}`;
+}
+
+function createEmptyPanelSnapshot() {
+	return {
+		charts: [],
+		slots: {},
+		layout: 'template-2col',
+		blocks: [],
+		nextBlockId: 1,
+		nextChartId: 0,
+	};
+}
+
+/**
+ * Translation key for an import failure.
+ *
+ * @param {Error | null | undefined} error
+ * @returns {string}
+ */
+export function getProjectImportErrorMessageKey(error) {
+	if (isQuotaError(error)) return 'chive-save-failed-quota';
+	if (error?.name === PROJECT_IMPORT_ERROR_NAMES.WORK_ONLY) return 'chive-project-import-work-only-error';
+	if (error?.name === PROJECT_IMPORT_ERROR_NAMES.EMPTY_FILE) return 'chive-project-import-empty-file-error';
+	if (error?.name === PROJECT_IMPORT_ERROR_NAMES.EMPTY_PROJECT) return 'chive-project-import-empty-project-error';
+	const message = String(error?.message || '').toLowerCase();
+	if (
+		error?.name === PROJECT_IMPORT_ERROR_NAMES.UNSUPPORTED_FILE
+		|| message.includes('unsupported chive sqlite')
+		|| message.includes('missing chive sqlite')
+		|| message.includes('deserialize failed')
+		|| message.includes('no such table: meta')
+	) {
+		return 'chive-project-import-invalid-error';
+	}
+	return 'chive-project-import-error';
 }
 
 async function importLegacyStateIfNeeded() {
@@ -263,6 +327,96 @@ export async function persistState(snapshot) {
 	} catch (err) {
 		const error = errorFrom(err);
 		console.warn('[chive:persist] save failed:', error);
+		return { ok: false, error };
+	}
+}
+
+/**
+ * Serialize the current project to SQLite bytes.
+ *
+ * @param {Partial<AppState>} snapshot
+ * @param {{ workOnly?: boolean }} [options]
+ * @returns {Promise<{ ok: boolean, bytes?: Uint8Array, fileName?: string, error?: Error }>}
+ */
+export async function exportProject(snapshot, { workOnly = false } = {}) {
+	if (!snapshot || typeof snapshot !== 'object') {
+		return { ok: false, error: new Error('No state snapshot was provided') };
+	}
+	if (!isPersistenceAvailable()) {
+		return { ok: false, error: new Error('IndexedDB is unavailable') };
+	}
+	if (typeof activeBackend?.exportBytes !== 'function') {
+		return { ok: false, error: new Error('Project export is unavailable') };
+	}
+
+	try {
+		const bytes = await activeBackend.exportBytes(snapshot, { workOnly: Boolean(workOnly) });
+		return {
+			ok: true,
+			bytes,
+			fileName: buildProjectFileName({ workOnly: Boolean(workOnly) }),
+		};
+	} catch (err) {
+		const error = errorFrom(err, 'Project export failed');
+		console.warn('[chive:persist] project export failed:', error);
+		return { ok: false, error };
+	}
+}
+
+/**
+ * Import a full CHIVE SQLite project, persist it as the current browser
+ * project, then replace in-memory state. Work-only imports are intentionally
+ * rejected in v1 because dataset re-linking semantics are not implemented.
+ *
+ * @param {Uint8Array | ArrayBuffer} bytes
+ * @param {Object} hooks
+ * @param {(snapshot: Partial<AppState>) => void} hooks.replaceAllState
+ * @param {(panel: Object) => Object} [hooks.transformPanel]
+ * @returns {Promise<{ ok: boolean, snapshot?: Partial<AppState>, error?: Error }>}
+ */
+export async function importProjectBytes(bytes, { replaceAllState, transformPanel } = {}) {
+	if (typeof replaceAllState !== 'function') {
+		return { ok: false, error: new Error('replaceAllState hook is required') };
+	}
+	if (!isPersistenceAvailable()) {
+		return { ok: false, error: new Error('IndexedDB is unavailable') };
+	}
+	if (typeof activeBackend?.importBytes !== 'function') {
+		return { ok: false, error: new Error('Project import is unavailable') };
+	}
+
+	try {
+		const storedSnapshot = await activeBackend.importBytes(bytes);
+		if (hasWorkOnlyDatasets(storedSnapshot)) {
+			throw namedError(
+				PROJECT_IMPORT_ERROR_NAMES.WORK_ONLY,
+				'Work-only project imports are not supported yet',
+			);
+		}
+
+		const normalized = normalizeStoredSnapshot(storedSnapshot, { transformPanel });
+		if (!hasHydratableState(normalized, null)) {
+			throw namedError(PROJECT_IMPORT_ERROR_NAMES.EMPTY_PROJECT, 'Project file does not contain importable data');
+		}
+		const importPanel = normalized.panel || createEmptyPanelSnapshot();
+
+		const persistResult = await persistState({
+			data: normalized.data,
+			panel: importPanel,
+			ui: {},
+		});
+		if (!persistResult.ok) {
+			return { ok: false, error: errorFrom(persistResult.error, 'Project import save failed') };
+		}
+
+		replaceAllState({
+			data: normalized.data,
+			panel: importPanel,
+		});
+		return { ok: true, snapshot: { ...normalized, panel: importPanel } };
+	} catch (err) {
+		const error = errorFrom(err, 'Project import failed');
+		console.warn('[chive:persist] project import failed:', error);
 		return { ok: false, error };
 	}
 }

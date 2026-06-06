@@ -11,6 +11,8 @@ function spyBackend(overrides = {}) {
 	return {
 		persist: vi.fn(() => Promise.resolve()),
 		hydrate: vi.fn(() => Promise.resolve(null)),
+		exportBytes: vi.fn(() => Promise.resolve(new Uint8Array([1, 2, 3]))),
+		importBytes: vi.fn(() => Promise.resolve({ data: { datasets: [] }, panel: null })),
 		clear: vi.fn(() => Promise.resolve()),
 		...overrides,
 	};
@@ -138,6 +140,26 @@ describe('createPersistHandler', () => {
 		expect(backend.clear).toHaveBeenCalledTimes(1);
 		expect(h.rowsCache.size).toBe(0);
 		expect(h.snapshotCache.size).toBe(0);
+	});
+
+	it('delegates project export and import ops through the serialized chain', async () => {
+		const imported = { data: { datasets: [{ id: 'ds-1' }] }, panel: null };
+		const backend = spyBackend({
+			exportBytes: vi.fn(() => Promise.resolve(new Uint8Array([7, 8]))),
+			importBytes: vi.fn(() => Promise.resolve(imported)),
+		});
+		const posts = [];
+		const h = createPersistHandler(backend, m => posts.push(m));
+		const snapshot = { data: { datasets: [] }, panel: null };
+		const bytes = new Uint8Array([1, 2, 3]);
+
+		await h.handleMessage({ id: 10, op: 'export', snapshot, workOnly: true });
+		await h.handleMessage({ id: 11, op: 'import', bytes });
+
+		expect(backend.exportBytes).toHaveBeenCalledWith(snapshot, { workOnly: true });
+		expect(backend.importBytes).toHaveBeenCalledWith(bytes);
+		expect(posts[0]).toEqual({ id: 10, ok: true, result: new Uint8Array([7, 8]) });
+		expect(posts[1]).toEqual({ id: 11, ok: true, result: imported });
 	});
 
 	it('serializes ops: a clear waits for an in-flight persist and ordering is preserved', async () => {

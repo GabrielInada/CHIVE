@@ -44,7 +44,7 @@ function replaceMap(target, next) {
  * recovery logic directly with a synthetic `post` and a real
  * `createBlobBackend`, without spawning a Worker.
  *
- * @param {{ persist: Function, hydrate: Function, clear: Function }} backend - A `createBlobBackend()` instance.
+ * @param {{ persist: Function, hydrate: Function, clear: Function, exportBytes?: Function, importBytes?: Function }} backend - A `createBlobBackend()` instance.
  * @param {(msg: PersistWorkerResponse) => void} post - Outgoing-message sink (`self.postMessage` in a worker; a spy in tests).
  * @returns {{ handleMessage: (msg: PersistWorkerRequest) => Promise<void>, rowsCache: Map, snapshotCache: Map }}
  */
@@ -150,6 +150,16 @@ export function createPersistHandler(backend, post) {
 			if (op === 'hydrate') {
 				const result = await backend.hydrate();
 				post({ id, ok: true, result: result ?? null });
+				return;
+			}
+			if (op === 'export') {
+				const result = await backend.exportBytes(msg.snapshot, { workOnly: Boolean(msg.workOnly) });
+				post({ id, ok: true, result });
+				return;
+			}
+			if (op === 'import') {
+				const result = await backend.importBytes(msg.bytes);
+				post({ id, ok: true, result });
 				return;
 			}
 			if (op === 'clear') {
