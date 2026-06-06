@@ -413,12 +413,12 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	 */
 	async function runEntryOnFallback(entry) {
 		try {
-			const fb = await getFallbackBackend();
 			const op = entry.record.op;
+			const stable = op === 'persist'
+				? safeStructuredClone(rebuildFull(entry.record))
+				: null;
+			const fb = await getFallbackBackend();
 			if (op === 'persist') {
-				// Clone before the async write: the rebuilt snapshot reattaches live
-				// payload refs, which could change mid-persist.
-				const stable = safeStructuredClone(rebuildFull(entry.record));
 				await fb.persist(stable);
 				entry.resolve(undefined);
 			} else if (op === 'hydrate') {

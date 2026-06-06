@@ -231,6 +231,28 @@ describe('workerBackend, startup failure → disable + fallback', () => {
 		expect(spawnCalls).toBe(1);                         // disabled after the first failure, never retried
 	});
 
+	it('fallback persist clones the captured payload before any async fallback work', async () => {
+		const rows = [{ x: 1 }];
+		const fallback = {
+			hydrate: vi.fn(),
+			clear: vi.fn(),
+			persist: vi.fn(async () => {}),
+		};
+		const backend = createWorkerBackend({
+			workerFactory: () => { throw new Error('Worker is not defined'); },
+			fallbackBackendFactory: () => fallback,
+			timeoutMs: 5000,
+		});
+
+		const save = backend.persist(snap({ rows, withChart: false }));
+		rows[0].x = 99;
+		rows.push({ x: 2 });
+		await save;
+
+		expect(fallback.persist).toHaveBeenCalledTimes(1);
+		expect(fallback.persist.mock.calls[0][0].data.datasets[0].rows).toEqual([{ x: 1 }]);
+	});
+
 	it('an async onerror at startup falls back and disables worker mode', async () => {
 		const db = nextDb();
 		const fallback = spyFallback(`${db}-fb`);
