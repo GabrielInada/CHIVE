@@ -40,6 +40,7 @@ import { getNumericColumns } from './utils/columnHelpers.js';
 
 import {
 getState,
+getPersistenceSnapshot,
 getActiveDataset,
 onStateChange,
 STATE_EVENTS,
@@ -129,7 +130,10 @@ setupStateSubscriptions();
 
 // 7. Wire auto-save AFTER subscriptions. The controller tracks semantic
 //    project events, debounces saves, and flushes on tab hide/close.
-enablePersistenceAutoSave(getState, {
+//    getPersistenceSnapshot (no JSON clone, live refs) keeps the heavy deep
+//    clone getState performs off the save hot path; the worker backend dedups
+//    unchanged row/snapshot payloads by reference.
+enablePersistenceAutoSave(getPersistenceSnapshot, {
 	onSaveError: reportPersistenceSaveError,
 });
 

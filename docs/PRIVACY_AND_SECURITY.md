@@ -21,6 +21,10 @@ file APIs and processes the content locally in the page:
 - CSV/TSV/DSV-like text and JSON are parsed by CHIVE's JavaScript code.
 - Data ingest runs through a browser Web Worker so larger files do not block the
   main UI thread.
+- Project auto-save also runs through a browser Web Worker, so writing the SQLite
+  byte image to IndexedDB does not block the main UI thread. This adds no new
+  network origin: the worker and its vendored SQLite-WASM are same-origin assets
+  served with CHIVE.
 - Charts are rendered in the browser using D3 and SVG/DOM.
 - Dashboard panel exports are generated from the rendered SVG in the browser.
 
@@ -138,6 +142,12 @@ For stricter environments:
 - Review or vendor runtime dependencies instead of loading them from a CDN.
 - Consider serving local fonts or replacing the external font dependency.
 - Apply a Content Security Policy that matches your hosted dependency choices.
+  Because data ingest and project saves run in Web Workers, and the saves use
+  vendored SQLite-WASM, a strict policy must permit them from the same origin,
+  for example `worker-src 'self'` plus same-origin WASM fetch/compile (which,
+  depending on the final policy, may also require `script-src 'wasm-unsafe-eval'`).
+  These are necessary for the worker/SQLite path but are not necessarily the only
+  directives a hardened deployment needs.
 - Clear browser storage after use if datasets should not persist on the
   device.
 

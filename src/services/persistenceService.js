@@ -12,7 +12,7 @@
 
 import { onStateChange, STATE_EVENTS } from '../modules/state/stateEvents.js';
 import { debounce } from '../utils/debounce.js';
-import { blobBackend } from './persistence/blobBackend.js';
+import { workerBackend } from './persistence/workerBackend.js';
 import {
 	deleteLegacyState,
 	hasLegacyMigrationMarker,
@@ -22,7 +22,11 @@ import {
 
 const UI_LOCAL_STORAGE_KEY = 'chive.ui';
 
-let activeBackend = blobBackend;
+// The worker backend runs SQLite off the main thread. It does NOT statically
+// import sqlite, so this default keeps SQLite-WASM off the boot/main bundle
+// (it loads in the worker chunk, or via the worker backend's dynamic-import
+// fallback only when a worker is unavailable).
+let activeBackend = workerBackend;
 
 /**
  * Swap the storage backend. Used by tests and future storage strategies.
@@ -30,7 +34,7 @@ let activeBackend = blobBackend;
  * @param {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, clear: () => Promise<void> } | null} backend
  */
 export function configurePersistenceBackend(backend) {
-	activeBackend = backend || blobBackend;
+	activeBackend = backend || workerBackend;
 }
 
 /**

@@ -19,8 +19,9 @@ changes to subscribers.
 
 The pattern exists because CHIVE has a narrow browser-only runtime, D3 owns the
 chart DOM imperatively, and the project deliberately keeps its dependency
-surface small. The async surfaces that do exist, IndexedDB persistence and the
-data-ingest Web Worker, plug in through service/facade boundaries.
+surface small. The async surfaces that do exist, IndexedDB persistence (which
+runs in a long-lived Web Worker) and the data-ingest Web Worker, plug in through
+service/facade boundaries.
 
 | Alternative | What It Would Buy | Why CHIVE Does Not Use It |
 |---|---|---|
@@ -78,6 +79,7 @@ must not be mutated by callers.
 | Method | Domain | Mutates | Emits | Notes |
 |---|---|---|---|---|
 | `getState()` | all | No | No | Returns a deep clone of the full state. |
+| `getPersistenceSnapshot()` | all | No | No | Returns a no-clone, live-reference view (`{ data, panel, ui }`) used by the save path. Keeps the deep clone off the auto-save hot path. Do not mutate. |
 | `getActiveDataset()` | data | No | No | Returns a live dataset reference or `null`. Do not mutate. |
 | `getAllDatasets()` | data | No | No | Returns the live datasets array. Do not mutate. |
 | `getPanelCharts()` | panel | No | No | Returns the live chart snapshot array. Do not mutate. |
@@ -201,11 +203,24 @@ Project persistence is implemented in
 [`src/services/persistenceService.js`](../src/services/persistenceService.js)
 with engine/storage details behind `src/services/persistence/`.
 
+All SQLite work runs **off the main thread** in a long-lived Web Worker. The
+default backend is `workerBackend`
+([`src/services/persistence/workerBackend.js`](../src/services/persistence/workerBackend.js)),
+which delegates `hydrate`/`persist`/`clear` to
+[`src/workers/persistWorker.js`](../src/workers/persistWorker.js); the worker
+constructs a `createBlobBackend()` so fingerprinting, schema, the whole-DB
+export, and the IndexedDB write never block the UI thread. `workerBackend` does
+not statically import sqlite, so SQLite-WASM stays out of the main bundle (it is
+loaded in the worker chunk, or via a dynamic-import fallback). If a worker is
+unavailable (spawn/parse/CSP failure, a crash, or a watchdog timeout), the
+backend transparently completes the operation on a main-thread `blobBackend`
+fallback so the latest edit is never silently lost.
+
 The runtime path is:
 
 1. Boot calls `hydrateState()`.
-2. `blobBackend.hydrate()` reads IndexedDB database `chive-sqlite`, store `db`,
-   key `project`.
+2. `workerBackend.hydrate()` runs `blobBackend.hydrate()` in the worker, which
+   reads IndexedDB database `chive-sqlite`, store `db`, key `project`.
 3. The stored value is a single SQLite database byte image (`Uint8Array`),
    deserialized into sqlite-wasm in memory.
 4. `sqliteCore.readSnapshot()` reads project tables and reattaches chart
@@ -213,15 +228,22 @@ The runtime path is:
 5. `persistenceService` validates datasets, applies the optional panel
    transform, reads `chive.ui`, and calls `replaceAllState()`.
 
-Saves are automatic. `enablePersistenceAutoSave(getState)` subscribes to the
-state bus, marks the project dirty on content events, and schedules a debounced
-`saveNow()` (default ~2s quiet window) so a burst of edits collapses into one
-whole-DB write. `saveNow()` coalesces concurrent calls by returning the same
-in-flight promise. On success it clears dirty only if no newer revision was
-emitted during the save; if a mid-save edit occurred, it starts one follow-up
-save after the first promise settles. Failures keep dirty set and surface
-through the injected error callback (an error toast); there is no native
-unsaved-changes prompt.
+Saves are automatic. `enablePersistenceAutoSave(getPersistenceSnapshot)`
+subscribes to the state bus, marks the project dirty on content events, and
+schedules a debounced `saveNow()` (default ~2s quiet window) so a burst of edits
+collapses into one whole-DB write. The save path reads
+`getPersistenceSnapshot()` (live references, no clone) rather than `getState()`,
+so a metadata-only save no longer deep-clones every dataset row on the main
+thread. The worker additionally caches row and chart-snapshot payloads by id:
+the host omits a payload from the `postMessage` when its array reference is
+unchanged since the last save (sound because dataset `rows` and chart
+`dataSnapshot`/`columnsSnapshot` are immutable per id), and the worker refills it
+from cache. A capped cache-miss resync self-heals any host/worker drift.
+`saveNow()` coalesces concurrent calls by returning the same in-flight promise.
+On success it clears dirty only if no newer revision was emitted during the save;
+if a mid-save edit occurred, it starts one follow-up save after the first promise
+settles. Failures keep dirty set and surface through the injected error callback
+(an error toast); there is no native unsaved-changes prompt.
 
 The SQLite schema version is `1`:
 

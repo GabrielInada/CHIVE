@@ -24,18 +24,27 @@ const APP_STATE_READS = [
 ];
 
 // Facade getters that return mutable refs (objects/arrays). The inline mutation
-// guard below blocks `getXxx().a.b = c` assignments across all of src/. The
-// aliased form (`const d = getXxx(); d.a = b`) is caught separately by the
-// local `chive/no-facade-getter-mutation` rule. If a new mutable-ref getter is
-// added to appState.js, add it here too (and to the local rule's getter list).
-const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState)';
+// guard below blocks `getXxx().a.b = c` assignments AND inline mutating-method
+// calls (`getXxx().a.push(...)`) across all of src/. The aliased form
+// (`const d = getXxx(); d.a = b`) is caught separately by the local
+// `chive/no-facade-getter-mutation` rule. If a new mutable-ref getter is added
+// to appState.js, add it here too (and to the local rule's getter list).
+const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState|getPersistenceSnapshot)';
+
+// Array methods that mutate the receiver in place. Kept in sync with
+// MUTATING_METHODS in eslint-rules/no-facade-getter-mutation.js.
+const FACADE_MUTATING_METHODS = '(push|pop|shift|unshift|splice|sort|reverse|fill|copyWithin)';
 
 const FACADE_MUTATION_MESSAGE =
 	'Mutating a facade getter return is forbidden, these are read-only views. ' +
 	'Use the corresponding facade write method (updateActiveDatasetConfig, ' +
 	'addChartSnapshot, …). See CONTRIBUTING.md §Architecture invariants.';
 
-// Inline facade-mutation selectors: catch `getXxx().a = b` at depths 1 to 3.
+// Inline facade-mutation selectors: catch `getXxx().a = b` (assignment) and
+// `getXxx().a.push(...)` (mutating method call) at depths 1 to 3. A direct
+// `getXxx().push(...)` is depth 1 (the getter call is the method's `.object`).
+// Mutating methods chained off a copy (`getXxx().slice().sort()`) are not
+// matched because the method's `.object` is the `slice()` call, not the getter.
 const FACADE_MUTATION_SELECTORS = [
 	{
 		selector: `AssignmentExpression[left.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
@@ -47,6 +56,18 @@ const FACADE_MUTATION_SELECTORS = [
 	},
 	{
 		selector: `AssignmentExpression[left.object.object.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
+		message: FACADE_MUTATION_MESSAGE,
+	},
+	{
+		selector: `CallExpression[callee.property.name=/^${FACADE_MUTATING_METHODS}$/][callee.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
+		message: FACADE_MUTATION_MESSAGE,
+	},
+	{
+		selector: `CallExpression[callee.property.name=/^${FACADE_MUTATING_METHODS}$/][callee.object.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
+		message: FACADE_MUTATION_MESSAGE,
+	},
+	{
+		selector: `CallExpression[callee.property.name=/^${FACADE_MUTATING_METHODS}$/][callee.object.object.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
 		message: FACADE_MUTATION_MESSAGE,
 	},
 ];

@@ -123,6 +123,33 @@ export function getState() {
 	return JSON.parse(JSON.stringify(appState));
 }
 
+/**
+ * Assemble the persistence-shaped snapshot from LIVE references, with no
+ * deep clone. This is the save path's read accessor: it lets the worker
+ * backend reference-compare dataset rows / chart snapshots to skip
+ * re-sending unchanged payloads, and it keeps the heavy JSON clone that
+ * {@link getState} performs off the auto-save hot path.
+ *
+ * The returned object is a fresh envelope, but `datasets`, `panel`, and `ui`
+ * are the real state references. Do not mutate them, treat this exactly like
+ * {@link getAllDatasets} / {@link getPanelCharts}. The reference-identity
+ * dedup in the worker backend is sound only because dataset `rows` and chart
+ * `dataSnapshot`/`columnsSnapshot` are immutable per id (changing data means
+ * remove+add with a new array, never an in-place edit).
+ *
+ * @returns {AppState} Live-reference view. Do not mutate.
+ */
+export function getPersistenceSnapshot() {
+	return {
+		data: {
+			datasets: appState.data.datasets,
+			activeIndex: appState.data.activeIndex,
+		},
+		panel: appState.panel,
+		ui: appState.ui,
+	};
+}
+
 // ─── Data domain ────────────────────────────────────────────────────────
 
 /**
