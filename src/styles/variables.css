@@ -14,8 +14,8 @@
   --tag-num: #e8f4ed;
   --tag-txt: #fef3e2;
   --tag-dat: #e8eaf4;
-  --font-display: 'Source Serif 4', Georgia, serif;
-  --font-sans: 'Source Sans 3', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'IBM Plex Serif', Georgia, serif;
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
 }
 

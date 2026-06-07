@@ -83,7 +83,7 @@ CHIVE is designed to run from a static web server. The app runtime uses:
 1. Native browser ES modules through `<script type="module">`.
 2. Vendored JavaScript runtime dependencies loaded from `vendor/d3/` and `vendor/banana-i18n/`.
 3. A vendored SQLite-WASM runtime loaded from `vendor/sqlite/` (`sqlite3.js`, `sqlite3.wasm`, and companion files referenced by the loader).
-4. Google Fonts loaded from `fonts.googleapis.com` and `fonts.gstatic.com`.
+4. Vendored fonts loaded from `vendor/fonts/`.
 
 ### Requirements
 
@@ -93,12 +93,9 @@ CHIVE is designed to run from a static web server. The app runtime uses:
    - `about.html`
    - `src/`
    - `vendor/`
-3. Serve vendored `.js` files with a JavaScript MIME type and `vendor/sqlite/sqlite3.wasm` as `application/wasm` when possible. Browsers can fall back to non-streaming WASM compilation, but the correct MIME avoids a slower path.
-4. Allow these external origins in the default setup:
-   - `https://fonts.googleapis.com`
-   - `https://fonts.gstatic.com`
+3. Serve vendored `.js` files with a JavaScript MIME type, font files with a font MIME type when possible, and `vendor/sqlite/sqlite3.wasm` as `application/wasm` when possible. Browsers can fall back to non-streaming WASM compilation, but the correct MIME avoids a slower path.
 
-The default CHIVE runtime does not require an external JavaScript CDN.
+The default CHIVE runtime does not require external JavaScript or font CDNs.
 
 ### Deploy Steps
 
@@ -143,7 +140,7 @@ Project changes auto-save: a save runs automatically a couple of seconds after y
 
 Project export downloads a SQLite-backed `.chive.sqlite3` file. Full exports include dataset rows and saved chart snapshot payloads; work-only exports omit those heavy payloads and are meant for layout/work transfer only. Import currently accepts full project files and replaces the current datasets and panel.
 
-The default runtime still trusts external origins for fonts. JavaScript runtime dependencies are served from the same static host as vendored files. If you need stricter controls for sensitive data, self-host CHIVE and review the font trust boundary before use. See [Privacy and security](docs/PRIVACY_AND_SECURITY.md) for the detailed trust model.
+JavaScript runtime dependencies and fonts are served from the same static host as vendored files. If you need stricter controls for sensitive data, self-host CHIVE and review the static-host trust boundary before use. See [Privacy and security](docs/PRIVACY_AND_SECURITY.md) for the detailed trust model.
 
 ## Documentation
 

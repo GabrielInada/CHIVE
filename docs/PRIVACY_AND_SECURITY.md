@@ -10,9 +10,8 @@ use a CHIVE application backend, and uploaded datasets are parsed, stored, and
 visualized in the browser.
 
 That does not mean the whole page is isolated from the network. To load CHIVE,
-the browser must trust the static host that serves the app and the external
-origins used for fonts. Runtime JavaScript dependencies are vendored and served
-from the same static host.
+the browser must trust the static host that serves the app. Runtime JavaScript
+dependencies and fonts are vendored and served from the same static host.
 
 ## Data Processing
 
@@ -91,15 +90,11 @@ remove `chive-locale`.
 
 ## External Network Dependencies
 
-In the default static runtime, CHIVE loads these external origins:
+In the default static runtime, CHIVE does not load external origins during page
+startup.
 
-| Origin | Used For | Notes |
-|---|---|---|
-| `https://fonts.googleapis.com` | Google Fonts CSS. | Requested by `index.html` and `about.html`. |
-| `https://fonts.gstatic.com` | Google Fonts font files. | Requested by the Google Fonts stylesheet. |
-
-D3, banana-i18n, and SQLite-WASM are served as same-origin vendored files from
-`vendor/`.
+D3, banana-i18n, SQLite-WASM, and fonts are served as same-origin vendored files
+from `vendor/`.
 
 The stable deployment is currently documented as
 `https://apps.roberto.eti.br/chive/`. The preview deployment is currently
@@ -115,9 +110,7 @@ Using CHIVE means trusting these parts of your local environment and runtime:
 
 - The browser and its storage implementation.
 - The static host serving `index.html`, `about.html`, `src/`, `vendor/`, and related
-  assets, including vendored runtime JavaScript.
-- Google Fonts origins, because font CSS and font files are requested at page
-  load.
+  assets, including vendored runtime JavaScript and fonts.
 - Browser extensions, browser policies, and device-level monitoring outside
   CHIVE's control.
 
@@ -128,10 +121,8 @@ privacy claim is "CHIVE does not upload your dataset to a CHIVE backend", not
 
 ## Current Limitations
 
-- Google Fonts are loaded from external origins rather than vendored locally.
-- There is no full offline/vendor-local runtime dependency mode in the current
-  source tree because Google Fonts are still external in the default runtime.
-  Runtime JavaScript dependencies are vendored locally.
+- Runtime JavaScript dependencies and fonts are vendored locally, but deployment
+  hardening still depends on the chosen static host and browser policy.
 - The default deployments do not document a project-specific Content Security
   Policy or deployment-hardening profile.
 
@@ -139,14 +130,12 @@ privacy claim is "CHIVE does not upload your dataset to a CHIVE backend", not
 
 For ordinary exploratory work, CHIVE's browser-only model keeps uploaded data
 out of a CHIVE server. For sensitive or regulated datasets, use CHIVE only if
-you accept the browser, static host, font, extension, and local-device trust
-boundary.
+you accept the browser, static host, extension, and local-device trust boundary.
 
 For stricter environments:
 
 - Self-host the repository from an environment you control.
 - Review vendored runtime dependencies before deployment.
-- Consider serving local fonts or replacing the external font dependency.
 - Apply a Content Security Policy that matches your hosted dependency choices.
   Because data ingest and project saves run in Web Workers, and the saves use
   vendored SQLite-WASM, a strict policy must permit them from the same origin,
