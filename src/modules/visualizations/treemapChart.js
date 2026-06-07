@@ -9,7 +9,7 @@
  * are intentionally undocumented per the Tier 5 plan.
  */
 
-import { hierarchy, select, treemap, treemapSquarify } from 'https://esm.sh/d3@7.9.0';
+import { hierarchy, select, treemap, treemapSquarify } from '../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,

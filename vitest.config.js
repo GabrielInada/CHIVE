@@ -8,13 +8,5 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
 	test: {
 		setupFiles: ['./tests/setup/indexeddb.js'],
-		// Source files import d3 via the same full URL the (former) importmap
-		// pointed to so the worker can resolve it without an importmap. Tests
-		// run under Node, alias the URL to the local `d3` package so we don't
-		// hit the network during `npm test`.
-		alias: {
-			'https://esm.sh/d3@7.9.0': 'd3',
-			'https://esm.sh/banana-i18n@2.4.0': 'banana-i18n',
-		},
 	},
 });

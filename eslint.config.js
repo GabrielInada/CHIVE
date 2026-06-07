@@ -78,15 +78,19 @@ const FACADE_MUTATION_SELECTORS = [
 const BARE_IMPORT_BANS = [
 	{
 		name: 'd3',
-		message: 'Import the full CDN URL (https://esm.sh/d3@7.9.0). A bare "d3" specifier only resolves under a bundler and breaks raw-static hosting.',
+		message: 'Import the checked-in vendor module (`vendor/d3/d3.js`) via a relative path. A bare "d3" specifier only resolves under a bundler and breaks raw-static hosting.',
 	},
 	{
 		name: 'banana-i18n',
-		message: 'Import the full CDN URL (https://esm.sh/banana-i18n@2.4.0). A bare specifier only resolves under a bundler and breaks raw-static hosting.',
+		message: 'Import the checked-in vendor module (`vendor/banana-i18n/banana-i18n.js`) via a relative path. A bare specifier only resolves under a bundler and breaks raw-static hosting.',
 	},
 ];
 
 const VITE_ONLY_SYNTAX_SELECTORS = [
+	{
+		selector: ':matches(ImportDeclaration, ImportExpression, ExportNamedDeclaration, ExportAllDeclaration)[source.value=/^https:\\/\\/esm\\.sh\\//]',
+		message: 'Runtime JavaScript dependencies must load from checked-in vendor modules, not esm.sh.',
+	},
 	{
 		selector: ':matches(ImportDeclaration, ImportExpression, ExportNamedDeclaration, ExportAllDeclaration)[source.value=/\\?(worker|url|raw)(&|$)/]',
 		message: 'Vite-only import suffix (?worker / ?url / ?raw) breaks raw-static hosting. Build workers with `new Worker(new URL(...), import.meta.url)` instead.',
