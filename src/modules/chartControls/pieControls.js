@@ -77,10 +77,10 @@ function getPieSectorValues(dataset, config) {
  * @param {Dataset} dataset
  * @param {string[]} categoryOptions - Categorical (or fallback "all") column names for the category select.
  * @param {string[]} numericOptions - Numeric column names; populates the sum value-column select.
- * @param {string[]} [allColumns=[]] - All visible column names; kept for API parity.
+ * @param {string[]} [_allColumns=[]] - All visible column names; kept for API parity.
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
-export function createPieChartControls(dataset, categoryOptions, numericOptions, allColumns = []) {
+export function createPieChartControls(dataset, categoryOptions, numericOptions, _allColumns = []) {
 	const config = dataset.chartConfig.pie;
 	const sectorValues = getPieSectorValues(dataset, config);
 

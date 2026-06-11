@@ -96,7 +96,6 @@ vi.mock('../src/modules/state/appState.js', () => ({
 
 import {
   initializeAllEventHandlers,
-  setupResultsViewListeners,
 } from '../src/modules/eventHandlers.js';
 
 function setupDom() {
@@ -271,23 +270,5 @@ describe('eventHandlers', () => {
       expect.objectContaining({ replaceAllState: mocks.replaceAllState }),
     );
     expect(mocks.progressHandle.succeed).toHaveBeenCalledWith('tr:chive-project-import-success');
-  });
-
-  it('setupResultsViewListeners registers listeners without breaking flow', () => {
-    setupResultsViewListeners();
-
-    const list = document.getElementById('column-list-content');
-    const checkbox = document.createElement('input');
-    checkbox.type = 'checkbox';
-    list.appendChild(checkbox);
-
-    checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-
-    const action = document.createElement('button');
-    action.dataset.acaoColuna = 'mock';
-    document.body.appendChild(action);
-    action.click();
-
-    expect(true).toBe(true);
   });
 });

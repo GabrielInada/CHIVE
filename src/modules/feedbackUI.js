@@ -10,8 +10,6 @@
  * @typedef {import('../types.js').ProgressHandle} ProgressHandle
  */
 
-import { t } from '../services/i18nService.js';
-
 let feedbackTimer = null;
 let errorTimer = null;
 

@@ -18,7 +18,7 @@
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
-import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import { createSelectControl } from './shared.js';
@@ -41,10 +41,10 @@ import {
  * @param {Dataset} dataset
  * @param {string[]} categoryOptions - Categorical (or fallback "all") columns for the X-axis select.
  * @param {string[]} [numericOptions=[]] - Numeric columns for the sum/mean value-column select.
- * @param {string[]} [allColumns=[]] - All visible column names (kept for API parity; not used here).
+ * @param {string[]} [_allColumns=[]] - All visible column names (kept for API parity; not used here).
  * @returns {HTMLElement[]} Array of `chart-control-section` elements ready to append to the params pane.
  */
-export function createBarChartControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
+export function createBarChartControls(dataset, categoryOptions, numericOptions = [], _allColumns = []) {
 	const config = dataset.chartConfig.bar;
 	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;

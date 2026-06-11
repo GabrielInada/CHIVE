@@ -206,7 +206,7 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 		renderSidebarPanel();
 		renderCanvasPanel();
 		return ok({ chartId });
-	} catch (err) {
+	} catch {
 		if (feedbackCallback) {
 			feedbackCallback(t('chive-panel-add-error'), 'error');
 		}

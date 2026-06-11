@@ -13,7 +13,6 @@
 import {
 	getState,
 	getActiveDataset,
-	getAllDatasets,
 	onStateChange,
 	STATE_EVENTS,
 	updateActiveDatasetConfig,

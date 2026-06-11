@@ -29,10 +29,10 @@ import { createSelectControl } from './shared.js';
  * @param {Dataset} dataset
  * @param {string[]} categoryOptions - Categorical (or fallback "all") column names for the category select.
  * @param {string[]} [numericOptions=[]] - Numeric column names; populates the sum value-column select.
- * @param {string[]} [allColumns=[]] - All visible column names; kept for API parity.
+ * @param {string[]} [_allColumns=[]] - All visible column names; kept for API parity.
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
-export function createTreeMapControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
+export function createTreeMapControls(dataset, categoryOptions, numericOptions = [], _allColumns = []) {
 	const config = dataset.chartConfig.treemap;
 	const measureMode = TREEMAP_CHART.measureModes.includes(config.measureMode) ? config.measureMode : 'count';
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;

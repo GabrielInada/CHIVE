@@ -28,7 +28,6 @@ import {
 } from './services/persistenceService.js';
 import { ingestFile, progressLabelForStage } from './services/dataIngestService.js';
 import { loadPresetSource, PresetFetchTimeoutError } from './services/presetService.js';
-import { PREVIEW_DEFAULT_ROWS } from './config/limits.js';
 import {
 renderEmptyState,
 renderDataInterface,
@@ -80,7 +79,6 @@ showFeedback,
 showFeedbackMessage,
 showError,
 showErrorMessage,
-hideErrorMessage,
 showProgress,
 switchTab,
 } from './modules/index.js';

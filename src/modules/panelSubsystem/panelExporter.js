@@ -119,7 +119,7 @@ export function exportPanelLayoutSvg(feedbackCallback) {
 
 		const svgString = serializer.serializeToString(svgRoot);
 		return downloadSvgMarkup(svgString, 'panel-layout');
-	} catch (err) {
+	} catch {
 		if (feedbackCallback) {
 			feedbackCallback(t('chive-panel-export-error'), 'error');
 		}

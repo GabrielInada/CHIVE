@@ -241,7 +241,6 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
  * @returns {void}
  */
 export function setupBubbleChartControlListeners(dataset, baseBubble, numericOptions, allColumnsOrCallback = [], onConfigChangedMaybe) {
-	const allColumns = typeof allColumnsOrCallback === 'function' ? [] : allColumnsOrCallback;
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;

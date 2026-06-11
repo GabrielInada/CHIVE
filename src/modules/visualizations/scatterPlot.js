@@ -618,7 +618,6 @@ function renderRegressionLayer({
 	yScale,
 	innerWidth,
 	innerHeight,
-	color,
 	labels,
 	isPinned,
 }) {
