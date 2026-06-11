@@ -12,7 +12,7 @@
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
-import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
 	setupSelectListeners,
@@ -239,7 +239,6 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
  * @returns {void}
  */
 export function setupNetworkGraphControlListeners(dataset, allOptions, numericOptionsOrCallback = [], onConfigChangedMaybe) {
-	const numericOptions = Array.isArray(numericOptionsOrCallback) ? numericOptionsOrCallback : [];
 	const onConfigChanged = typeof numericOptionsOrCallback === 'function'
 		? numericOptionsOrCallback
 		: onConfigChangedMaybe;

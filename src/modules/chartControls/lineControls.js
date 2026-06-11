@@ -18,7 +18,6 @@ import {
 	createSelectControl,
 	createSliderControl,
 	createTextControl,
-	normalizeHexColor,
 } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {

@@ -475,30 +475,3 @@ function setupDatasetListeners() {
 	});
 }
 
-/**
- * Wire delegated listeners on the results view (column list, column
- * action buttons). Note: the inner callbacks reference TODO comments
- * pointing at `resultsView.js` for the actual wiring, this function
- * currently sets up the delegation skeleton but the callbacks are not
- * yet routed. Tracked as a follow-up refactor; documented as-is.
- */
-export function setupResultsViewListeners() {
-	// Column selection
-	const listaColunas = document.getElementById('column-list-content');
-	if (listaColunas) {
-		listaColunas.addEventListener('change', event => {
-			if (event.target.type === 'checkbox' && !event.target.disabled) {
-				// Callback will be in resultsView.js setup
-			}
-		});
-	}
-
-	// Column action buttons
-	document.addEventListener('click', event => {
-		const acoesBtn = event.target.closest('[data-acao-coluna]');
-		if (acoesBtn) {
-			const acao = acoesBtn.dataset.acaoColuna;
-			// Callback will be in resultsView.js setup
-		}
-	});
-}

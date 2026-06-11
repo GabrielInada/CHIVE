@@ -19,7 +19,6 @@ import {
 	FILTER_CATEGORY_LIMIT,
 	createDefaultFilterConfig,
 	getCategoricalFilterOptions,
-	normalizeFilterConfig,
 } from '../../utils/chartFilters.js';
 import { createEmptyGlobalFilter, normalizeGlobalFilter } from '../../utils/globalFilter.js';
 
