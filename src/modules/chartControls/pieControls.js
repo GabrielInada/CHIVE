@@ -268,16 +268,6 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 		!dataset.chartConfig.pie.enabled
 	));
 
-	displayControls.push(createSliderControl(
-		'viz-slider-pie-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 360),
-		220,
-		720,
-		10,
-		!dataset.chartConfig.pie.enabled
-	));
-
 	const labelPositionDiv = document.createElement('div');
 	labelPositionDiv.className = 'chart-controle';
 
@@ -467,7 +457,6 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 	setupSliderListeners([
 		{ id: 'viz-slider-pie-pad-angle', key: 'padAngle' },
 		{ id: 'viz-slider-pie-zoom', key: 'zoomScale' },
-		{ id: 'viz-slider-pie-height', key: 'chartHeight' },
 	], dataset, 'pie', onConfigChanged);
 
 	// Reset zoom button (custom: resets slider DOM + config)

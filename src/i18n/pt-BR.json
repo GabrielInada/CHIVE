@@ -137,7 +137,7 @@
 	"chive-chart-control-axis-label-x": "Mostrar rótulo do eixo X",
 	"chive-chart-control-axis-label-y": "Mostrar rótulo do eixo Y",
 	"chive-chart-control-common-title": "Título do gráfico",
-	"chive-chart-control-common-height": "Altura do gráfico",
+	"chive-chart-resize-height": "Redimensionar altura do gráfico",
 	"chive-chart-control-bar-category": "Categoria (barras)",
 	"chive-chart-control-treemap-category": "Categoria",
 	"chive-chart-control-treemap-measure": "Medida",

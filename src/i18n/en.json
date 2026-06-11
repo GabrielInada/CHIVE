@@ -137,7 +137,7 @@
 	"chive-chart-control-axis-label-x": "Show X axis label",
 	"chive-chart-control-axis-label-y": "Show Y axis label",
 	"chive-chart-control-common-title": "Chart title",
-	"chive-chart-control-common-height": "Chart height",
+	"chive-chart-resize-height": "Resize chart height",
 	"chive-chart-control-bar-category": "Category (bar chart)",
 	"chive-chart-control-treemap-category": "Category",
 	"chive-chart-control-treemap-measure": "Measure",

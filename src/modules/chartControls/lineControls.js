@@ -185,16 +185,6 @@ export function createLineChartControls(dataset, numericOptions = [], dateOption
 		disabled,
 	));
 
-	displayControls.push(createSliderControl(
-		'viz-slider-line-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 320),
-		220,
-		720,
-		10,
-		disabled,
-	));
-
 	// Quiet "unused" warning while leaving the date list available for future
 	// affordances (e.g. surfacing date columns first in the X picker).
 	void dateOptions;
@@ -268,7 +258,6 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	], dataset, 'line', onConfigChanged);
 
 	setupTextInputListener('viz-input-line-title', 'customTitle', dataset, 'line', onConfigChanged);
-	setupSliderListener('viz-slider-line-height', 'chartHeight', dataset, 'line', onConfigChanged);
 	setupSliderListener('viz-slider-line-stroke-width', 'strokeWidth', dataset, 'line', onConfigChanged);
 
 	setupColorInputListener('viz-input-line-color', 'color', CHART_COLORS.line, dataset, 'line', onConfigChanged);

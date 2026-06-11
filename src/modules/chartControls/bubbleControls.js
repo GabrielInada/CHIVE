@@ -189,16 +189,6 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 		disabled
 	));
 
-	displayControls.push(createSliderControl(
-		'viz-slider-bubble-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 700),
-		400,
-		900,
-		10,
-		disabled
-	));
-
 	displayControls.push(createSelectControl(
 		'viz-select-bubble-label-mode',
 		t('chive-chart-control-bubble-label-mode'),
@@ -332,7 +322,6 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 		});
 	}
 
-	setupSliderListener('viz-slider-bubble-height', 'chartHeight', dataset, 'bubble', onConfigChanged);
 	setupSliderListener('viz-slider-bubble-padding', 'padding', dataset, 'bubble', onConfigChanged);
 	setupTextInputListener('viz-input-bubble-title', 'customTitle', dataset, 'bubble', onConfigChanged);
 	setupColorPresetListeners('viz-bubble-color-preset', {}, {}, dataset, 'bubble', onConfigChanged, COLOR_PRESETS);

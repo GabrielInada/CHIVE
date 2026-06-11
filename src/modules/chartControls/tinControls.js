@@ -93,15 +93,6 @@ export function createTinControls(dataset, numericOptions, allColumns = []) {
 		80,
 		disabled,
 	));
-	displayControls.push(createSliderControl(
-		'viz-slider-tin-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 460),
-		220,
-		900,
-		10,
-		disabled,
-	));
 	displayControls.push(createCheckboxControl(
 		'viz-toggle-tin-x-label',
 		t('chive-chart-control-axis-label-x'),
@@ -431,7 +422,6 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 	], dataset, 'tin', onConfigChanged);
 
 	setupTextInputListener('viz-input-tin-title', 'customTitle', dataset, 'tin', onConfigChanged);
-	setupSliderListener('viz-slider-tin-height', 'chartHeight', dataset, 'tin', onConfigChanged);
 	setupSliderListener('viz-slider-tin-subdivision', 'subdivisionDepth', dataset, 'tin', onConfigChanged);
 	setupSliderListener('viz-slider-tin-point-radius', 'pointRadius', dataset, 'tin', onConfigChanged);
 	setupSliderListener('viz-slider-tin-isoline-count', 'isolineCount', dataset, 'tin', onConfigChanged);

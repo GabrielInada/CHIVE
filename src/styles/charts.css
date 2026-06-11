@@ -104,6 +104,8 @@
   border-radius: 8px;
   background: var(--surface);
   padding: 12px;
+  padding-bottom: 20px;
+  position: relative;
 }
 
 .chart-block-top {
@@ -153,6 +155,40 @@
 .chart-container {
   min-height: 360px;
   overflow: hidden;
+}
+
+/* Height drag handle, mirrors .panel-block-size-handle */
+.chart-height-resize-handle {
+  position: absolute;
+  left: 50%;
+  bottom: 5px;
+  transform: translateX(-50%);
+  width: 44px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(255, 253, 248, 0.72);
+  cursor: ns-resize;
+  touch-action: none;
+  opacity: 0.3;
+  z-index: 4;
+  transition: opacity 0.18s ease, border-color 0.18s ease;
+}
+
+.chart-block:hover .chart-height-resize-handle,
+.chart-block.is-resizing .chart-height-resize-handle {
+  opacity: 0.75;
+}
+
+.chart-height-resize-handle:hover,
+.chart-height-resize-handle:focus-visible {
+  opacity: 1;
+  border-color: var(--accent);
+}
+
+.chart-block.is-resizing {
+  cursor: ns-resize;
+  user-select: none;
 }
 
 .chart-empty {

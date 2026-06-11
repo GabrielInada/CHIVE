@@ -38,6 +38,7 @@ import { initChartControls, renderChartControlsSidebar, renderCharts } from './f
 import { createDefaultChartConfig, mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 import { getNumericColumns } from './utils/columnHelpers.js';
 import { rehydratePanelChartSpecs } from './utils/panelHydration.js';
+import { throttle } from './utils/throttle.js';
 
 import {
 getState,
@@ -120,7 +121,11 @@ exposeGlobals();
 
 // 4. Initialize modules
 initFileManager(handleDatasetsChanged);
-initChartControls(null, livePreviewRender);
+// WHY: 120ms rate limit on live preview. Color pickers and height drags emit
+// events every frame; unthrottled, each one re-renders the active chart plus
+// the canvas panel, which stutters on heavy charts (TIN triangulation).
+// Leading+trailing throttle keeps the first and final values painted.
+initChartControls(null, throttle(livePreviewRender, 120));
 initPanelManager(showFeedback);
 
 // 5. Setup event handlers (must be after modules initialized)
