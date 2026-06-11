@@ -6,7 +6,9 @@
  *
  * Note: this module wires listeners by hand (per-element `addEventListener`)
  * rather than via the `setupSelectListeners`/etc. helpers used by other
- * modules, same effect, more verbose.
+ * modules, same effect, more verbose. The color input is the exception:
+ * it goes through `setupColorInputListener` so the chart live-updates
+ * while the picker is open, like every other chart's color input.
  *
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
@@ -15,6 +17,7 @@
 import { CHART_COLORS, TREEMAP_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
 import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
+import { setupColorInputListener } from './controlListenerHelpers.js';
 import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -92,16 +95,6 @@ export function createTreeMapControls(dataset, categoryOptions, numericOptions =
 		t('chive-chart-control-common-title'),
 		config.customTitle,
 		80,
-		isDisabled
-	));
-
-	displayControls.push(createSliderControl(
-		'viz-slider-treemap-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 380),
-		220,
-		720,
-		10,
 		isDisabled
 	));
 
@@ -247,21 +240,6 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 		});
 	}
 
-	const sliderHeight = document.getElementById('viz-slider-treemap-height');
-	if (sliderHeight) {
-		const syncOutput = () => {
-			const output = sliderHeight.parentElement?.querySelector('output');
-			if (output) output.textContent = sliderHeight.value;
-		};
-		sliderHeight.addEventListener('input', syncOutput);
-		sliderHeight.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				treemap: { ...dataset.chartConfig.treemap, chartHeight: Number(sliderHeight.value) },
-			});
-			onConfigChanged?.();
-		});
-	}
-
 	const sliderPadding = document.getElementById('viz-slider-treemap-padding');
 	if (sliderPadding) {
 		const syncOutput = () => {
@@ -308,18 +286,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 		});
 	}
 
-	const inputColor = document.getElementById('viz-input-treemap-color');
-	if (inputColor) {
-		inputColor.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
-				treemap: {
-					...dataset.chartConfig.treemap,
-					color: normalizeHexColor(inputColor.value, CHART_COLORS.treemap),
-				},
-			});
-			onConfigChanged?.();
-		});
-	}
+	setupColorInputListener('viz-input-treemap-color', 'color', CHART_COLORS.treemap, dataset, 'treemap', onConfigChanged);
 
 	const presetButtons = document.querySelectorAll('button[data-color-preset-control="viz-treemap-color-preset"]');
 	presetButtons.forEach(button => {

@@ -2,10 +2,10 @@
  * Live chart preview stub.
  *
  * Holds a single callback that, when set, is invoked by the chartControls
- * listeners on every change to trigger a live re-render of the chart
- * (without waiting for the user to save). Live preview is currently
- * disabled at the wiring level (`initChartControls` is typically called
- * with `null`), these functions are no-ops in that case.
+ * listeners and the chart height drag to trigger a live re-render of the
+ * chart (without waiting for the commit write). main.js registers a
+ * throttled `livePreviewRender` here; when no callback is registered
+ * these functions are no-ops.
  */
 
 let liveRenderCallback = null;

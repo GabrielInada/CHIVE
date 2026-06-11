@@ -120,16 +120,6 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		disabled
 	));
 
-	displayControls.push(createSliderControl(
-		'viz-slider-network-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 420),
-		220,
-		720,
-		10,
-		disabled
-	));
-
 	displayControls.push(createCheckboxControl(
 		'viz-toggle-network-node-labels',
 		t('chive-chart-control-network-node-labels'),
@@ -269,7 +259,6 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 		{ id: 'viz-slider-network-link-opacity', key: 'linkOpacity' },
 		{ id: 'viz-slider-network-zoom', key: 'zoomScale' },
 		{ id: 'viz-slider-network-alpha-decay', key: 'alphaDecay' },
-		{ id: 'viz-slider-network-height', key: 'chartHeight' },
 	], dataset, 'network', onConfigChanged);
 
 	// Reset zoom button (custom: resets slider DOM + config)

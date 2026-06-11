@@ -134,16 +134,6 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 		isDisabled
 	));
 
-	displayControls.push(createSliderControl(
-		'viz-slider-bar-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 320),
-		220,
-		720,
-		10,
-		isDisabled
-	));
-
 	displayControls.push(createCheckboxControl(
 		'viz-toggle-bar-x-label',
 		t('chive-chart-control-axis-label-x'),
@@ -332,7 +322,6 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 		{ id: 'viz-toggle-bar-y-label', key: 'showYAxisLabel' },
 	], dataset, 'bar', onConfigChanged);
 	setupTextInputListener('viz-input-bar-title', 'customTitle', dataset, 'bar', onConfigChanged);
-	setupSliderListener('viz-slider-bar-height', 'chartHeight', dataset, 'bar', onConfigChanged);
 }
 
 /**

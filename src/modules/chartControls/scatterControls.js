@@ -137,16 +137,6 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled
 	));
 
-	displayControls.push(createSliderControl(
-		'viz-slider-scatter-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 320),
-		220,
-		720,
-		10,
-		disabled
-	));
-
 	// ====== STYLING SECTION (Colors and appearance) ======
 	const stylingControls = [];
 
@@ -503,7 +493,6 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 	], dataset, 'scatter', onConfigChanged);
 
 	setupTextInputListener('viz-input-scatter-title', 'customTitle', dataset, 'scatter', onConfigChanged);
-	setupSliderListener('viz-slider-scatter-height', 'chartHeight', dataset, 'scatter', onConfigChanged);
 	setupSliderListener('viz-slider-scatter-size-min', 'sizeMin', dataset, 'scatter', onConfigChanged);
 	setupSliderListener('viz-slider-scatter-size-max', 'sizeMax', dataset, 'scatter', onConfigChanged);
 
