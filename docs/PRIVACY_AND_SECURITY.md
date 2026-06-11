@@ -104,6 +104,16 @@ Bundled preset datasets are files served with CHIVE. If you click external
 source links shown for a preset, your browser navigates to that external site
 separately.
 
+## Docker Deployment (Optional)
+
+The optional Docker image (see the README) serves every runtime asset from a
+single origin and adds a hardened Nginx config: conservative security headers and
+an enforcing local-only Content Security Policy. The CSP keeps a documented
+`'unsafe-eval'` exception because D3's CSV parser requires it, so the image is
+more locked down than a plain static host but is not a fully hardened, eval-free
+profile. It does not change the trust model below, and these properties apply to
+the Docker image only, not to the default non-Docker deployments.
+
 ## Trust Model
 
 Using CHIVE means trusting these parts of your local environment and runtime:
