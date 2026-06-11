@@ -152,7 +152,8 @@ JavaScript runtime dependencies and fonts are served from the same static host a
 - [Security policy](SECURITY.md): where to report security concerns.
 - [Contributing](CONTRIBUTING.md): development workflow, code conventions, lint rules, and tests.
 - [Stylesheet organization](src/styles/STYLES_ORGANIZATION.md): CSS layers, feature ownership, and responsive rules.
-- Planned follow-ups: user guide and chart/data reference.
+- [Chart and data reference](docs/CHART_REFERENCE.md): which columns and modes each chart type needs, plus the common empty states.
+- Planned follow-up: user guide.
 
 ## Project Status
 

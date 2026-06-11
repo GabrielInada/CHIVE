@@ -141,7 +141,7 @@ Beyond renderer statelessness, `npm run lint` enforces these additional rule cla
 
 | If you're adding… | Put it in | Notes |
 |---|---|---|
-| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. |
+| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. Document its data contract, modes, and empty states in `docs/CHART_REFERENCE.md`. |
 | A new state field | The relevant domain in `src/modules/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
 | A new DOM event handler | `src/modules/eventHandlers.js` (or an existing controller) | Translate the event into a facade call. Never mutate state directly. |
 | A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
