@@ -87,7 +87,6 @@ must not be mutated by callers.
 | `getPanelBlocks()` | panel | May insert default block | No | Returns live blocks. Ensures a default block exists. Do not mutate. |
 | `sanitizeChartName(name)` | utility | No | No | Coerces to string, trims, and caps display names at 100 chars. |
 | `validatePanelSlots()` | panel | `panel.slots`, `block.slots` | No | Drops slot assignments pointing at missing chart snapshots. |
-| `exposeGlobals()` | compatibility | `window.*` only | No | Mirrors selected state into legacy globals. |
 
 `onStateChange` and `STATE_EVENTS` are re-exported from
 [`stateEvents.js`](../src/modules/state/stateEvents.js) through
@@ -133,8 +132,7 @@ must not be mutated by callers.
 
 Every typed event also reaches wildcard subscribers and dispatches a
 `chive-state-changed` `CustomEvent` on `window`. The production wildcard
-subscribers are `stateSync.js` and `persistenceService.js`; persistence ignores
-`STATE_HYDRATED`.
+subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
 
 | Event | Value | Emitted By | Payload | Typed Production Subscribers |
 |---|---|---|---|---|
@@ -157,7 +155,7 @@ subscribers are `stateSync.js` and `persistenceService.js`; persistence ignores
 | `STATE_EVENTS.SIDEBAR_MODE_CHANGED` | `sidebarModeChanged` | `setSidebarMode` | sidebar mode | none |
 | `STATE_EVENTS.PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `setPreviewRows` | row count | none |
 | `STATE_EVENTS.STATE_HYDRATED` | `stateHydrated` | `replaceAllState` | none | none |
-| `STATE_EVENTS.WILDCARD` | `*` | not emitted directly | wildcard callbacks receive `{ type, data }` after typed emits | `stateSync.js`, `persistenceService.js` |
+| `STATE_EVENTS.WILDCARD` | `*` | not emitted directly | wildcard callbacks receive `{ type, data }` after typed emits | `persistenceService.js` |
 
 ## Subscriber Map
 
@@ -180,10 +178,6 @@ the broadest UI render path.
 
 Chart add/remove/slot events re-render the panel sidebar and canvas. Layout
 events re-render the canvas and refresh the layout selector.
-
-[`src/modules/state/stateSync.js`](../src/modules/state/stateSync.js)
-subscribes to `WILDCARD` and mirrors selected state into legacy `window.*`
-globals.
 
 [`src/services/persistenceService.js`](../src/services/persistenceService.js)
 subscribes to `WILDCARD` after hydration and tracks semantic project dirtiness

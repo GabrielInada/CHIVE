@@ -259,7 +259,7 @@ describe('appState (edge cases - branch coverage)', () => {
 		});
 	});
 
-	describe('getState and exposeGlobals', () => {
+	describe('getState', () => {
 		it('getState returns deep clone of state', async () => {
 			const { getState } = await import('../src/modules/state/appState.js');
 			addDataset({ rows: [{ x: 1 }], columns: ['x'] });
@@ -267,23 +267,6 @@ describe('appState (edge cases - branch coverage)', () => {
 			expect(state.data.datasets.length).toBe(1);
 			state.data.datasets.push({ rows: [], columns: [] });
 			expect(getState().data.datasets.length).toBe(1);
-		});
-
-		it('exposeGlobals sets window properties', async () => {
-			const { exposeGlobals, getAllDatasets } = await import('../src/modules/state/appState.js');
-			addDataset({ rows: [{ a: 1 }], columns: ['a'], selectedColumns: ['a'] });
-			exposeGlobals();
-			expect(window.datasetsCarregados).toBe(getAllDatasets());
-			expect(window.dadosCarregados).toBeTruthy();
-			expect(window.chartsPainel).toBeDefined();
-		});
-
-		it('exposeGlobals handles no active dataset', async () => {
-			const { exposeGlobals } = await import('../src/modules/state/appState.js');
-			exposeGlobals();
-			expect(window.dadosCarregados).toBeNull();
-			expect(window.colunasDetectadas).toBeNull();
-			expect(window.colunasSelecionadasAtivas).toBeNull();
 		});
 	});
 

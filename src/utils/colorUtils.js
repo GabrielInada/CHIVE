@@ -82,6 +82,19 @@ export function isValidHexColor(value) {
 }
 
 /**
+ * Validate and normalize a hex color string. Trims whitespace; returns
+ * `fallback` when the input is not a valid `#RRGGBB`.
+ *
+ * @param {*} value
+ * @param {string} [fallback]
+ * @returns {string}
+ */
+export function normalizeHexColor(value, fallback) {
+	const color = String(value || '').trim();
+	return isValidHexColor(color) ? color : fallback;
+}
+
+/**
  * Stricter counterpart to {@link hexToRgb}: returns `null` (not zeroed RGB)
  * when the input is not a valid hex color. Callers that need to branch on
  * validity should prefer this.

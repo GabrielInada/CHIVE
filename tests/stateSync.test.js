@@ -5,32 +5,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   getState: vi.fn(),
   getActiveDataset: vi.fn(),
-  getAllDatasets: vi.fn(),
-  onStateChange: vi.fn(),
   updateActiveDatasetConfig: vi.fn(),
   updateActiveDatasetColumns: vi.fn(),
   setSidebarMode: vi.fn(),
-  exposeGlobals: vi.fn(),
 }));
 
 vi.mock('../src/modules/state/appState.js', () => ({
   getState: mocks.getState,
   getActiveDataset: mocks.getActiveDataset,
-  getAllDatasets: mocks.getAllDatasets,
-  onStateChange: mocks.onStateChange,
-  STATE_EVENTS: { WILDCARD: '*' },
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
   updateActiveDatasetColumns: mocks.updateActiveDatasetColumns,
   setSidebarMode: mocks.setSidebarMode,
-  exposeGlobals: mocks.exposeGlobals,
 }));
 
 import {
   debugLogState,
   getStateSummary,
-  initializeStateSync,
   switchSidebarMode,
-  syncWindowGlobals,
   updateActiveDatasetChartConfig,
   updateActiveDatasetColumnSelection,
 } from '../src/modules/state/stateSync.js';
@@ -62,23 +53,6 @@ describe('stateSync', () => {
 
     mocks.getState.mockReturnValue(buildState());
     mocks.getActiveDataset.mockReturnValue({ name: 'B' });
-  });
-
-  it('initializeStateSync registers global listener and syncs immediately', () => {
-    let stateListener = null;
-    mocks.onStateChange.mockImplementation((scope, callback) => {
-      if (scope === '*') {
-        stateListener = callback;
-      }
-    });
-
-    initializeStateSync();
-
-    expect(mocks.onStateChange).toHaveBeenCalledWith('*', expect.any(Function));
-    expect(mocks.exposeGlobals).toHaveBeenCalledTimes(1);
-
-    stateListener();
-    expect(mocks.exposeGlobals).toHaveBeenCalledTimes(2);
   });
 
   it('forwards columns and config updates to appState', () => {
@@ -118,10 +92,5 @@ describe('stateSync', () => {
     const debug = debugLogState();
     expect(debug.summary).toBeTruthy();
     expect(debug.state).toEqual(buildState());
-  });
-
-  it('syncWindowGlobals expands globals directly', () => {
-    syncWindowGlobals();
-    expect(mocks.exposeGlobals).toHaveBeenCalledTimes(1);
   });
 });

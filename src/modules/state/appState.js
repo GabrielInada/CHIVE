@@ -486,23 +486,3 @@ export function replaceAllState({ data, panel, ui } = {}) {
 
 	emitStateChange(STATE_EVENTS.STATE_HYDRATED);
 }
-
-/**
- * Mirror selected state fields onto `window.*` globals for legacy hooks
- * that still read from globals. New code must not depend on these, read
- * via the getters in this module instead.
- *
- * @deprecated Legacy compatibility shim. Slated for removal once all
- *   external hooks migrate to the typed getters; until then, `stateSync`
- *   refreshes these on every emission.
- */
-export function exposeGlobals() {
-	window.datasetsCarregados = appState.data.datasets;
-	window.datasetAtivo = getActiveDataset();
-	window.dadosCarregados = getActiveDataset()?.rows || null;
-	window.colunasDetectadas = getActiveDataset()?.columns || null;
-	window.colunasSelecionadasAtivas = getActiveDataset()?.selectedColumns || null;
-	window.chartsPainel = appState.panel.charts;
-	window.slotsPainel = appState.panel.slots;
-	window.layoutPainelAtual = appState.panel.layout;
-}
