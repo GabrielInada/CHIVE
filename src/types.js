@@ -248,7 +248,7 @@
 /**
  * Canonical event-name string emitted by the state bus. Values match
  * `STATE_EVENTS` in `src/modules/state/stateEvents.js`. The wildcard `'*'` is
- * reserved for sink-style subscribers (`stateSync`, `persistenceService`).
+ * reserved for sink-style subscribers (`persistenceService`).
  *
  * @typedef {(
  *   'activeDataset' | 'datasetAdded' | 'datasetRemoved' | 'configUpdated' | 'columnsUpdated'

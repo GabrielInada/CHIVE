@@ -10,20 +10,7 @@
  * need to import from one place.
  */
 
-import { isValidHexColor } from '../../utils/colorUtils.js';
-
-/**
- * Validate and normalize a hex color string. Trims whitespace; returns
- * `fallback` when the input is not a valid `#RRGGBB`.
- *
- * @param {*} value
- * @param {string} fallback
- * @returns {string}
- */
-export function normalizeHexColor(value, fallback) {
-	const color = String(value || '').trim();
-	return isValidHexColor(color) ? color : fallback;
-}
+import { normalizeHexColor } from '../../utils/colorUtils.js';
 
 /**
  * Build a labeled checkbox control.
@@ -251,7 +238,7 @@ import { t } from '../../services/i18nService.js';
  */
 export const COLOR_PRESETS = CHART_COLOR_PALETTES;
 
-export { hexToRgb, rgbToHex, interpolateColor } from '../../utils/colorUtils.js';
+export { hexToRgb, rgbToHex, interpolateColor, normalizeHexColor } from '../../utils/colorUtils.js';
 
 const PALETTE_LABEL_KEYS = {
 	Tableau10: 'chive-chart-palette-tableau10',

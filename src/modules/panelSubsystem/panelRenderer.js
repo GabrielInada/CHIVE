@@ -205,6 +205,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks }
 		blockId: block.id,
 		index,
 		totalBlocks,
+		translate: t,
 		onMoveUp: () => callbacks.onMoveBlock(block.id, index - 1),
 		onMoveDown: () => callbacks.onMoveBlock(block.id, index + 1),
 		onRemove: () => callbacks.onRemoveBlock(block.id),

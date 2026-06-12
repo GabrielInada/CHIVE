@@ -45,8 +45,6 @@ getPersistenceSnapshot,
 getActiveDataset,
 onStateChange,
 STATE_EVENTS,
-exposeGlobals,
-initializeStateSync,
 setPreviewRows,
 addDataset,
 normalizeActiveDatasetConfig,
@@ -103,9 +101,9 @@ await initializeI18n();
 // Only run app logic on pages that have the main app UI
 if (!document.getElementById('file-info')) return;
 
-// 2. Hydrate persisted state BEFORE any subscriber (incl. stateSync) is wired,
-//    so the act of restoring doesn't immediately schedule a redundant save and
-//    refreshView sees the restored state on first paint.
+// 2. Hydrate persisted state BEFORE any subscriber is wired, so the act of
+//    restoring doesn't immediately schedule a redundant save and refreshView
+//    sees the restored state on first paint.
 if (isPersistenceAvailable()) {
 	await hydrateState({
 		replaceAllState,
@@ -113,11 +111,7 @@ if (isPersistenceAvailable()) {
 	});
 }
 
-// 3. Initialize state management
-initializeStateSync();
-exposeGlobals();
-
-// 4. Initialize modules
+// 3. Initialize modules
 initFileManager(handleDatasetsChanged);
 // WHY: 120ms rate limit on live preview. Color pickers and height drags emit
 // events every frame; unthrottled, each one re-renders the active chart plus
@@ -126,13 +120,13 @@ initFileManager(handleDatasetsChanged);
 initChartControls(null, throttle(livePreviewRender, 120));
 initPanelManager(showFeedback);
 
-// 5. Setup event handlers (must be after modules initialized)
+// 4. Setup event handlers (must be after modules initialized)
 initializeAllEventHandlers();
 
-// 6. Setup UI subscriptions
+// 5. Setup UI subscriptions
 setupStateSubscriptions();
 
-// 7. Wire auto-save AFTER subscriptions. The controller tracks semantic
+// 6. Wire auto-save AFTER subscriptions. The controller tracks semantic
 //    project events, debounces saves, and flushes on tab hide/close.
 //    getPersistenceSnapshot (no JSON clone, live refs) keeps the heavy deep
 //    clone getState performs off the save hot path; the worker backend dedups
@@ -141,15 +135,15 @@ enablePersistenceAutoSave(getPersistenceSnapshot, {
 	onSaveError: reportPersistenceSaveError,
 });
 
-// 8. Initial view render
+// 7. Initial view render
 refreshView();
 
-// 9. Re-render dynamic content on locale changes
+// 8. Re-render dynamic content on locale changes
 window.addEventListener('chive-locale-changed', () => {
 refreshView();
 });
 
-// 10. Surface internal module errors in UI feedback
+// 9. Surface internal module errors in UI feedback
 window.addEventListener('chive-internal-error', event => {
 const message = event?.detail?.message || t('chive-error-internal');
 showError(message);
@@ -303,9 +297,6 @@ renderChartControlsSidebar(dataset);
 initializeLayoutSelector();
 renderSidebarPanel();
 renderCanvasPanel();
-
-// Sync window globals for backwards compatibility
-exposeGlobals();
 }
 
 /**
