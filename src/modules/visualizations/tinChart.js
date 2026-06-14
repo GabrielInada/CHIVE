@@ -6,6 +6,15 @@
  * isolines, hull outline, and an optional threshold line. The most
  * option-dense of the chart renderers.
  *
+ * The surface fill is quantized: each subdivided leaf triangle is filed into one
+ * of `TIN_CHART.rampBuckets` color buckets by its mean-Z, and every leaf in a
+ * bucket is merged into a single <path>. That caps the fill DOM (and SVG export)
+ * at one node per bucket instead of one per leaf, so a render that would emit tens
+ * of thousands of polygons stays cheap enough to repaint live while a color picker
+ * drags. The trade-off is fills deviating from the exact ramp by at most half a
+ * bucket; flat fill mode is quantized the same way, and a constant-Z surface
+ * paints at the ramp's low color.
+ *
  * Internal D3 helpers (Delaunay setup, isoline extraction, color-ramp
  * resolution) are intentionally undocumented per the Tier 5 plan.
  *
@@ -71,27 +80,62 @@ function clampDepth(value) {
 	return Math.max(TIN_CHART.minSubdivisionDepth, Math.min(TIN_CHART.maxSubdivisionDepth, n));
 }
 
+/**
+ * Resolve the effective subdivision depth for the surface fill. Renderer-internal;
+ * exported only so it can be unit-tested without a DOM or a Delaunay run.
+ *
+ * Flat mode and constant-Z surfaces collapse to depth 0 (every leaf would share a
+ * single color bucket, so subdivision adds nothing). Otherwise the requested depth
+ * is clamped to the configured bounds and then stepped down until the leaf count
+ * fits the surface budget, which bounds the geometry/path work for large datasets.
+ *
+ * @param {Object} args
+ * @param {number} args.requestedDepth
+ * @param {string} args.fillMode - 'flat' collapses to depth 0.
+ * @param {number} args.zMin
+ * @param {number} args.zMax
+ * @param {number} args.triangleCount - Base Delaunay triangle count.
+ * @returns {number} Effective depth, never negative.
+ */
+export function resolveSurfaceDepth({ requestedDepth, fillMode, zMin, zMax, triangleCount }) {
+	if (fillMode === 'flat' || zMin === zMax) return 0;
+	let depth = clampDepth(requestedDepth);
+	while (depth > 0 && triangleCount * 4 ** depth > TIN_CHART.maxSurfaceLeaves) {
+		depth--;
+	}
+	return depth;
+}
+
 function midpoint(a, b) {
 	return { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2, z: (a.z + b.z) / 2 };
 }
 
-// Recursively subdivides a triangle into 4^depth flat-colored sub-triangles.
-// Each leaf gets the mean-Z color of its 3 vertices, this approximates a
-// Gouraud-shaded fill in pure SVG so the chart still exports cleanly.
-function emitSubdivided(triangle, depth, colorAt, outPolygons) {
+/** Format a screen coordinate for a path `d` string. 2dp keeps the payload small. */
+function fmtCoord(n) {
+	return String(Math.round(n * 100) / 100);
+}
+
+// Recursively subdivides a triangle into 4^depth sub-triangles and files each
+// leaf into a color bucket by its mean-Z. Leaves go straight into the per-bucket
+// path-fragment lists rather than an intermediate object per leaf, so a single
+// render can produce hundreds of thousands of facets without the matching GC
+// churn; the caller merges each bucket's fragments into one <path>.
+function emitSubdivided(triangle, depth, bucketAt, bucketFragments) {
 	if (depth <= 0) {
-		const meanZ = (triangle[0].z + triangle[1].z + triangle[2].z) / 3;
-		outPolygons.push({ vertices: triangle, fill: colorAt(meanZ) });
+		const [a, b, c] = triangle;
+		const meanZ = (a.z + b.z + c.z) / 3;
+		const fragment = `M${fmtCoord(a.x)},${fmtCoord(a.y)}L${fmtCoord(b.x)},${fmtCoord(b.y)}L${fmtCoord(c.x)},${fmtCoord(c.y)}Z`;
+		bucketFragments[bucketAt(meanZ)].push(fragment);
 		return;
 	}
 	const [a, b, c] = triangle;
 	const ab = midpoint(a, b);
 	const bc = midpoint(b, c);
 	const ca = midpoint(c, a);
-	emitSubdivided([a, ab, ca], depth - 1, colorAt, outPolygons);
-	emitSubdivided([b, bc, ab], depth - 1, colorAt, outPolygons);
-	emitSubdivided([c, ca, bc], depth - 1, colorAt, outPolygons);
-	emitSubdivided([ab, bc, ca], depth - 1, colorAt, outPolygons);
+	emitSubdivided([a, ab, ca], depth - 1, bucketAt, bucketFragments);
+	emitSubdivided([b, bc, ab], depth - 1, bucketAt, bucketFragments);
+	emitSubdivided([c, ca, bc], depth - 1, bucketAt, bucketFragments);
+	emitSubdivided([ab, bc, ca], depth - 1, bucketAt, bucketFragments);
 }
 
 // Computes the iso-segment crossings for a single Z level across an array of
@@ -189,8 +233,6 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 	if (!container || !xColumn || !yColumn || !zColumn) return fail();
 
 	const fillMode = options.fillMode === 'flat' ? 'flat' : 'smooth';
-	const subdivisionDepth = clampDepth(options.subdivisionDepth);
-	const effectiveSubdivisionDepth = fillMode === 'flat' ? 0 : subdivisionDepth;
 	const gradientMin = normalizeColor(options.gradientMinColor, CHART_COLORS.tin);
 	const gradientMax = normalizeColor(options.gradientMaxColor, '#ffffff');
 	const gradientDistribution = options.gradientDistribution === 'rank' ? 'rank' : 'value';
@@ -314,10 +356,12 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 		? t => rampInterp(Math.max(0, Math.min(1, t)))
 		: t => interpolateColor(gradientMin, gradientMax, Math.max(0, Math.min(1, t)));
 
-	let colorAt;
+	// Maps a Z value to its 0..1 ramp position. Quantization into color buckets
+	// happens in bucketAt; the legend still samples the continuous ramp.
+	let tForZ;
 	if (gradientDistribution === 'rank') {
 		const sortedZ = [...points.map(p => p.z)].sort((a, b) => a - b);
-		const rankFor = z => {
+		tForZ = z => {
 			let lo = 0;
 			let hi = sortedZ.length;
 			while (lo < hi) {
@@ -327,11 +371,16 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 			}
 			return lo / Math.max(sortedZ.length - 1, 1);
 		};
-		colorAt = z => sampleRamp(rankFor(z));
 	} else {
 		const zDelta = zMax - zMin || 1;
-		colorAt = z => sampleRamp((z - zMin) / zDelta);
+		tForZ = z => (z - zMin) / zDelta;
 	}
+
+	const bucketCount = TIN_CHART.rampBuckets;
+	const bucketAt = z => Math.min(
+		bucketCount - 1,
+		Math.floor(Math.max(0, Math.min(1, tForZ(z))) * bucketCount),
+	);
 
 	// In screen coordinates so the Delaunay triangulation matches what the
 	// user sees (otherwise scale flipping on Y can change which triangles form).
@@ -345,8 +394,16 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 	const delaunay = Delaunay.from(screenPoints, d => d.sx, d => d.sy);
 
 	const trianglesGroup = group.append('g').attr('class', 'tin-triangles');
-	const polygons = [];
 	const tris = delaunay.triangles;
+	const triangleCount = tris.length / 3;
+	const effectiveSubdivisionDepth = resolveSurfaceDepth({
+		requestedDepth: options.subdivisionDepth,
+		fillMode,
+		zMin,
+		zMax,
+		triangleCount,
+	});
+	const bucketFragments = Array.from({ length: bucketCount }, () => []);
 	for (let i = 0; i < tris.length; i += 3) {
 		const a = screenPoints[tris[i]];
 		const b = screenPoints[tris[i + 1]];
@@ -356,17 +413,21 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 			{ x: b.sx, y: b.sy, z: b.z },
 			{ x: c.sx, y: c.sy, z: c.z },
 		];
-		emitSubdivided(triangle, effectiveSubdivisionDepth, colorAt, polygons);
+		emitSubdivided(triangle, effectiveSubdivisionDepth, bucketAt, bucketFragments);
 	}
 
-	trianglesGroup
-		.selectAll('polygon')
-		.data(polygons)
-		.enter()
-		.append('polygon')
-		.attr('points', d => d.vertices.map(v => `${v.x},${v.y}`).join(' '))
-		.attr('fill', d => d.fill)
-		.attr('stroke', 'none');
+	// One <path> per non-empty bucket instead of one <polygon> per leaf. A
+	// constant-Z surface (single bucket, depth 0) paints at the ramp's low color
+	// to match the pre-bucketing output; otherwise each bucket uses its center.
+	const constantZ = zMin === zMax;
+	for (let bucket = 0; bucket < bucketCount; bucket++) {
+		const fragments = bucketFragments[bucket];
+		if (fragments.length === 0) continue;
+		trianglesGroup.append('path')
+			.attr('d', fragments.join(''))
+			.attr('fill', sampleRamp(constantZ ? 0 : (bucket + 0.5) / bucketCount))
+			.attr('stroke', 'none');
+	}
 
 	if (showHull) {
 		const hull = delaunay.hullPolygon();
@@ -618,5 +679,5 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 		.attr('fill', '#5f5a53')
 		.text(formatNumber(zMax, locale));
 
-	return ok({ triangles: tris.length / 3, polygons: polygons.length });
+	return ok({ triangles: triangleCount, polygons: triangleCount * 4 ** effectiveSubdivisionDepth });
 }

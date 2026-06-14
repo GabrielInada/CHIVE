@@ -171,6 +171,30 @@ describe('panelManager (branch coverage)', () => {
 			expect(call.name).toBe('My Bar Chart');
 			expect(typeof call.name).toBe('string');
 		});
+
+		// Guards the invariant livePreviewRender relies on: panel snapshots are
+		// captured by value, so a live color-picker edit of the active config can
+		// never mutate an already-added panel chart. (See structuredClone in
+		// panelManager.addChartToPanel.)
+		it('snapshots config by value so later active-config edits do not mutate it', () => {
+			initPanelManager();
+			const liveConfig = { bar: { category: 'a', enabled: true, color: '#111111' } };
+			mocks.appState.getActiveDataset.mockReturnValue({
+				name: 'fixture.csv',
+				rows: [{ a: 1 }],
+				columns: [{ name: 'a', type: 'number' }],
+				selectedColumns: ['a'],
+				chartConfig: liveConfig,
+			});
+
+			const result = addChartToPanel('container', 'Chart', { type: 'bar' });
+			expect(result.ok).toBe(true);
+			const snap = mocks.appState.addChartSnapshot.mock.calls[0][0];
+			expect(snap.config.color).toBe('#111111');
+
+			liveConfig.bar.color = '#999999';
+			expect(snap.config.color).toBe('#111111');
+		});
 	});
 
 	describe('addChartToPanel() error paths', () => {
