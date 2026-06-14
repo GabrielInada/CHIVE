@@ -100,6 +100,8 @@
 	"chive-preset-amazon-multilevel-nesting-desc": "Short description for Amazon Multi-level Nesting dataset card in modal, highlighting hierarchy columns and suitability for deep bubble nesting tests.",
 	"chive-preset-monthly-visits-name": "Display name for Monthly Visits sample dataset preset.",
 	"chive-preset-monthly-visits-desc": "Short description for Monthly Visits sample dataset card in modal, highlighting missing values and suitability for line-chart/time-series tests.",
+	"chive-preset-tin-surface-name": "Display name for Terrain Surface sample dataset preset.",
+	"chive-preset-tin-surface-desc": "Short description for Terrain Surface sample dataset card in modal, highlighting scattered x/y/z points and suitability for TIN triangulation/contour tests.",
 
 	"chive-section-columns": "Heading for the column selection section.",
 	"chive-section-viz-manage": "Heading for the sidebar section where user enables/disables charts and edits chart parameters.",

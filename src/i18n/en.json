@@ -100,6 +100,8 @@
 	"chive-preset-amazon-multilevel-nesting-desc": "Amazon forest observations with 4 hierarchy columns (ecoregion, forest type, family, genus) and numeric metrics. 48 rows, ideal for testing deep bubble nesting and zoom drill-down.",
 	"chive-preset-monthly-visits-name": "Monthly Visits",
 	"chive-preset-monthly-visits-desc": "Synthetic monthly web traffic over two years with one missing value, ideal for line charts and time-series experiments.",
+	"chive-preset-tin-surface-name": "Terrain Surface",
+	"chive-preset-tin-surface-desc": "Synthetic scattered x/y/z points forming a continuous elevation surface. 600 rows, ideal for TIN triangulation and contour experiments.",
 
 	"chive-section-columns": "Detected columns",
 	"chive-section-viz-manage": "Manage visualizations",

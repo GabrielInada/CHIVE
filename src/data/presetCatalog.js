@@ -17,6 +17,7 @@ const irisCsvUrl = new URL('./presets/dataset-iris.csv', import.meta.url).href;
 const amazonianTreesCsvUrl = new URL('./presets/dataset-amazonian-trees.csv', import.meta.url).href;
 const amazonMultilevelNestingCsvUrl = new URL('./presets/dataset-amazon-multilevel-nesting.csv', import.meta.url).href;
 const monthlyVisitsCsvUrl = new URL('./presets/dataset-monthly-visits.csv', import.meta.url).href;
+const tinSurfaceCsvUrl = new URL('./presets/dataset-tin-surface.csv', import.meta.url).href;
 
 // Template to append future real datasets from src/data/presets:
 // const yourCsvUrl = new URL('./presets/dataset-your-name.csv', import.meta.url).href;
@@ -98,6 +99,19 @@ export const PRESET_CATALOG = [
     sourceUrl: '',
     sourceLinkLabel: '',
     dataUrl: monthlyVisitsCsvUrl,
+    dataFormat: 'csv',
+  },
+  {
+    id: 'tin-surface',
+    nameKey: 'chive-preset-tin-surface-name',
+    descKey: 'chive-preset-tin-surface-desc',
+    rows: 600,
+    columns: 3,
+    tags: ['terrain', 'surface', 'tin-chart'],
+    sourceLabel: 'CHIVE Sample',
+    sourceUrl: '',
+    sourceLinkLabel: '',
+    dataUrl: tinSurfaceCsvUrl,
     dataFormat: 'csv',
   },
 ];

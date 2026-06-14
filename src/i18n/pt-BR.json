@@ -100,6 +100,8 @@
 	"chive-preset-amazon-multilevel-nesting-desc": "Observações florestais amazônicas com 4 colunas hierárquicas (ecorregião, tipo de floresta, família e gênero) e métricas numéricas. 48 linhas, ideal para testar bolhas com nesting profundo e zoom progressivo.",
 	"chive-preset-monthly-visits-name": "Visitas Mensais",
 	"chive-preset-monthly-visits-desc": "Tráfego mensal sintético de site ao longo de dois anos, com um valor ausente, ideal para gráficos de linhas e experimentos de série temporal.",
+	"chive-preset-tin-surface-name": "Superfície de Terreno",
+	"chive-preset-tin-surface-desc": "Pontos x/y/z sintéticos dispersos que formam uma superfície de elevação contínua. 600 linhas, ideal para triangulação TIN e experimentos de isolinhas.",
 
 	"chive-section-columns": "Colunas detectadas",
 	"chive-section-viz-manage": "Gerenciar visualizações",
