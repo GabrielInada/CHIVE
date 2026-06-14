@@ -114,8 +114,8 @@ if (isPersistenceAvailable()) {
 // 3. Initialize modules
 initFileManager(handleDatasetsChanged);
 // WHY: 120ms rate limit on live preview. Color pickers and height drags emit
-// events every frame; unthrottled, each one re-renders the active chart plus
-// the canvas panel, which stutters on heavy charts (TIN triangulation).
+// events every frame; unthrottled, each one re-renders the active chart, which
+// stutters on heavy charts (TIN triangulation).
 // Leading+trailing throttle keeps the first and final values painted.
 initChartControls(null, throttle(livePreviewRender, 120));
 initPanelManager(showFeedback);
@@ -207,6 +207,12 @@ refreshView();
  * rebuilding the controls sidebar, which would steal focus from the
  * picker.
  *
+ * The canvas panel is deliberately not re-rendered here: panel blocks
+ * paint from frozen snapshots captured at add time (structuredClone in
+ * panelManager), so a live config edit can never change them. The picker's
+ * `change` (commit) event re-renders the panel through the normal
+ * CONFIG_UPDATED → refreshView path, still from the frozen snapshot.
+ *
  * @private
  */
 function livePreviewRender() {
@@ -221,7 +227,6 @@ function livePreviewRender() {
 	const visibleColumns = dataset.columns.filter(column => selectedNames.has(column.name));
 	const visibleNumericColumns = getNumericColumns(visibleColumns);
 	renderCharts(dataset.chartConfig, dataset.rows, visibleColumns, visibleNumericColumns);
-	renderCanvasPanel();
 }
 
 // =============================================================================

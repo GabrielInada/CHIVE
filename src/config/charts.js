@@ -200,6 +200,8 @@ export const TIN_CHART = {
   defaultSubdivisionDepth: 3,
   minSubdivisionDepth: 0,
   maxSubdivisionDepth: 4,
+  rampBuckets: 128,
+  maxSurfaceLeaves: 262144,
   defaultPointRadius: 3,
   defaultEdgeColor: '#5f5a53',
   defaultHullColor: '#3f3a33',
