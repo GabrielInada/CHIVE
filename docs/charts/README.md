@@ -1,0 +1,74 @@
+# Chart deep dives
+
+This directory holds one in-depth, code-plus-theory walkthrough per CHIVE chart type. Each
+doc explains the chart from the config a dataset stores, through the sidebar controls, into the
+renderer, and out to the panel and export paths, and pairs the implementation with the
+mathematical or algorithmic theory it rests on.
+
+These are the companion to the higher-level docs one directory up:
+
+- [CHART_REFERENCE.md](../CHART_REFERENCE.md) is the simplified matrix: which columns and
+  settings each chart needs, how aggregation works, and the exact empty-state messages. Start
+  there to pick a chart; come here to understand how it works.
+- [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md) documents the shared state, panel,
+  and event architecture these renderers plug into.
+
+## The charts
+
+| Chart | Deep dive | What it does | Foundations focus |
+|---|---|---|---|
+| Bar | [bar-chart.md](bar-chart.md) | Compares a measure across categories | Aggregation, band/linear scales, color encodings |
+| Scatter | [scatter-plot.md](scatter-plot.md) | Relationships between two columns | Axis types, log/sqrt scales, OLS regression + CI band |
+| Pie / Donut | [pie-chart.md](pie-chart.md) | Part-to-whole composition | Arc geometry, value-to-angle, Top-N rollup |
+| Bubble | [bubble-chart.md](bubble-chart.md) | Group size and nested hierarchy | Circle packing, multi-level hierarchy, drill-down |
+| Network | [network-graph.md](network-graph.md) | Relationships between entities | Force-directed simulation, nodes from edges |
+| Treemap | [treemap-chart.md](treemap-chart.md) | Part-to-whole as nested area | Squarified tiling, area encoding |
+| Line | [line-chart.md](line-chart.md) | Trends over an ordered dimension | Time scales, curve interpolation, missing-value modes |
+| TIN | [tin-chart.md](tin-chart.md) | Continuous surface from scattered points | Delaunay triangulation, interpolation, contours |
+
+## How each doc is organized
+
+Every doc follows the same skeleton (scaled to the chart's complexity), so once you have read
+one you can navigate any of them:
+
+1. What the chart is
+2. **Foundations** (the math/algorithm/domain theory behind it)
+3. The big picture (data flow)
+4. The data model (`chartConfig.<type>` keys and the `*_CHART` constants)
+5. The control sidebar
+6. The render entry chain (results view + panel)
+7. Inside the renderer (the step-by-step internals)
+8. The color / scale system
+9. Performance notes
+10. Live preview and interaction
+11. SVG and export
+12. Invariants and edge cases
+13. Tests
+14. Quick reference (element IDs, DOM structure, tuning knobs)
+
+## Shared infrastructure
+
+The renderers share a small set of building blocks, documented once and referenced from each
+doc rather than repeated:
+
+- **Result envelope**: `ok()` / `fail(reason)` from [result.js](../../src/utils/result.js).
+- **Render dispatch**: the [visualizations barrel](../../src/modules/visualizations/index.js)
+  and the panel dispatcher
+  [renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js).
+- **Section adapters**: one `*ChartSection.js` per chart under
+  [chartRenders/](../../src/components/results/chartRenders/), which map config to the renderer
+  options bag and surface localized empty states via `showChartMessage`.
+- **Color utilities**: [colorUtils.js](../../src/utils/colorUtils.js) (`interpolateColor`,
+  `buildRankMap`, `buildSliceColor`, `isValidHexColor`).
+- **Tooltips and click-to-filter**: [tooltip.js](../../src/modules/visualizations/tooltip.js).
+  The categorical filter-action subsystem is documented in detail in the bar chart's
+  [section 7.6](bar-chart.md) and reused by pie, treemap, bubble, scatter, and network.
+- **Live preview throttle**: the color-picker live path is documented in the TIN chart's
+  [section 10](tin-chart.md) and shared by every chart's color inputs.
+- **Frozen panel snapshots**: see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md).
+
+## Keeping these current
+
+Each doc is derived from its renderer, controls, config, and tests. When you change a chart's
+behavior, update its deep dive alongside [CHART_REFERENCE.md](../CHART_REFERENCE.md): the data
+contracts, the option keys, the empty states, and any new algorithm or interaction.

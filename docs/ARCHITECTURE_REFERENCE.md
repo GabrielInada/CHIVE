@@ -5,6 +5,9 @@ This is the implementation reference for the architecture described in
 model; use this file when you need exact state, facade, event, subscriber, or
 panel lifecycle details.
 
+For chart-level internals (each renderer's pipeline, its controls, and the math or algorithm
+behind it), see the per-chart deep dives in [charts/](charts/README.md).
+
 The code remains the source of truth. When a state field, facade method,
 `STATE_EVENTS` constant, or production subscriber changes, update this
 reference in the same PR.
