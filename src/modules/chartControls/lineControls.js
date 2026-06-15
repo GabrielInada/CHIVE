@@ -11,7 +11,7 @@
 
 import { CHART_COLORS, LINE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
+import { updateActiveDatasetConfig } from '../state/appState.js';
 import {
 	createCheckboxControl,
 	createColorInputControl,
@@ -213,7 +213,7 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	if (xSelect) {
 		xSelect.addEventListener('change', () => {
 			const selected = allOptions.includes(xSelect.value) ? xSelect.value : null;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				line: { ...dataset.chartConfig.line, x: selected },
 			});
 			onConfigChanged?.();
@@ -224,7 +224,7 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	if (ySelect) {
 		ySelect.addEventListener('change', () => {
 			const selected = numericOptions.includes(ySelect.value) ? ySelect.value : null;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				line: { ...dataset.chartConfig.line, y: selected },
 			});
 			onConfigChanged?.();

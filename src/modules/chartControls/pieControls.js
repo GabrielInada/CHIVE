@@ -16,8 +16,7 @@ import { CHART_COLORS, PIE_CHART } from '../../config/charts.js';
 import { isNullish } from '../../utils/formatters.js';
 import { compareStrings } from '../../utils/chartFilters.js';
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
-import { normalizeActiveDatasetConfig } from '../state/appState.js';
+import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../state/appState.js';
 import { triggerLiveRender } from './livePreview.js';
 import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
@@ -402,7 +401,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const nextValueColumn = measureMode === 'sum'
 				? (numeric.includes(currentValueColumn) ? currentValueColumn : (numeric[0] || null))
 				: currentValueColumn;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: {
 					...dataset.chartConfig.pie,
 					measureMode,
@@ -430,7 +429,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				innerSlider.value = String(innerRadius);
 				syncSliderOutput(innerSlider);
 			}
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: { ...dataset.chartConfig.pie, innerRadius },
 			});
 			onConfigChanged?.();
@@ -447,7 +446,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				innerSlider.value = String(innerRadius);
 				syncSliderOutput(innerSlider);
 			}
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: { ...dataset.chartConfig.pie, outerRadius, innerRadius },
 			});
 			onConfigChanged?.();
@@ -468,7 +467,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				pieZoomSlider.value = String(PIE_CHART.defaultZoomScale);
 				syncSliderOutput(pieZoomSlider);
 			}
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: { ...dataset.chartConfig.pie, zoomScale: PIE_CHART.defaultZoomScale },
 			});
 			onConfigChanged?.();
@@ -497,7 +496,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				nextSliceColors[sector] = presetColors[index % presetColors.length];
 			});
 
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: {
 					...dataset.chartConfig.pie,
 					colorScheme: presetName,
@@ -536,7 +535,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
 			nextSliceColors[sector] = normalizeHexColor(input.value, CHART_COLORS.pie);
 
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: {
 					...dataset.chartConfig.pie,
 					customSliceColors: nextSliceColors,

@@ -4,15 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetChartConfig: vi.fn(),
+	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/stateSync.js', () => ({
-	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
+vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
+	...(await importOriginal()),
+	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
 vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
@@ -160,7 +161,7 @@ describe('barControls listeners', () => {
 		measureSelect.value = 'sum';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bar: expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }),
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
@@ -177,7 +178,7 @@ describe('barControls listeners', () => {
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bar: expect.objectContaining({ measureMode: 'count', valueColumn: null }),
 		});
 	});
@@ -197,7 +198,7 @@ describe('barControls listeners', () => {
 		select.value = 'gibberish';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bar: expect.objectContaining({ colorMode: 'uniform' }),
 		});
 	});
@@ -213,7 +214,7 @@ describe('barControls listeners', () => {
 		valueColumnSelect.value = '';
 		valueColumnSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bar: expect.objectContaining({ valueColumn: null }),
 		});
 	});
@@ -229,8 +230,8 @@ describe('barControls listeners', () => {
 		topnSelect.value = '20';
 		topnSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetChartConfig.mock.calls[0][0];
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
 		expect(call.bar.topN).toBe(20);
 		expect(typeof call.bar.topN).toBe('number');
 	});
@@ -246,7 +247,7 @@ describe('barControls listeners', () => {
 		checkbox.checked = false;
 		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bar: expect.objectContaining({ showXAxisLabel: false }),
 		});
 	});

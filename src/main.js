@@ -58,6 +58,7 @@ disableStateLog,
 getStateLog,
 clearStateLog,
 } from './modules/state/stateEvents.js';
+import { getStateSummary } from './modules/state/stateDebug.js';
 import {
 initPanelManager,
 initializeLayoutSelector,
@@ -152,6 +153,38 @@ showError(message);
 
 function reportPersistenceSaveError(error) {
 	showError(t(getPersistenceErrorMessageKey(error)));
+}
+
+/**
+ * Generic internal-error text, resilient to an i18n subsystem that may
+ * itself have failed to initialize (so the translation lookup cannot make
+ * the error handler throw).
+ *
+ * @private
+ * @returns {string}
+ */
+function internalErrorMessage() {
+	try {
+		return t('chive-error-internal');
+	} catch {
+		return 'An internal application error occurred.';
+	}
+}
+
+/**
+ * Last-resort handler for a failure during {@link initializeApplication}.
+ * `initializeI18n` reveals `document.body` only as its final step, so a
+ * failure before that point would otherwise leave a blank, hidden page.
+ * Force the body visible, log the real error for diagnosis, and surface a
+ * generic message to the user.
+ *
+ * @private
+ * @param {unknown} error
+ */
+function reportInitializationError(error) {
+	document.body.style.visibility = 'visible';
+	console.error('CHIVE initialization failed:', error);
+	showError(internalErrorMessage());
 }
 
 // =============================================================================
@@ -460,10 +493,14 @@ async function handlePresetDatasetRequest(preset) {
 // DOM ready: start app
 // =============================================================================
 
+function bootstrap() {
+	initializeApplication().catch(reportInitializationError);
+}
+
 if (document.readyState === 'loading') {
-document.addEventListener('DOMContentLoaded', initializeApplication);
+document.addEventListener('DOMContentLoaded', bootstrap);
 } else {
-initializeApplication();
+bootstrap();
 }
 
 // Debugging surface exposed on `window.chiveDebug`. NOT a stable API,
@@ -471,6 +508,7 @@ initializeApplication();
 // browser console for poking at state + toggling the in-memory state log.
 window.chiveDebug = {
 getState,
+getStateSummary,
 getActiveDataset,
 getLoadedDatasets,
 updateDatasetColumns,

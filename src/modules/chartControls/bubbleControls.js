@@ -15,7 +15,7 @@
 
 import { BUBBLE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
+import { updateActiveDatasetConfig } from '../state/appState.js';
 import { createTextControl, createSliderControl, createSelectControl, createColorPresetControl, COLOR_PRESETS } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
@@ -266,7 +266,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 				// Set this level and truncate deeper levels
 				const updated = currentNesting.slice(0, levelIndex);
 				updated[levelIndex] = newValue;
-				updateActiveDatasetChartConfig({
+				updateActiveDatasetConfig({
 					bubble: {
 						...dataset.chartConfig.bubble,
 						nestingColumns: updated,
@@ -276,7 +276,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 			} else {
 				// Clearing this level: truncate from this level onward
 				const updated = currentNesting.slice(0, levelIndex);
-				updateActiveDatasetChartConfig({
+				updateActiveDatasetConfig({
 					bubble: {
 						...dataset.chartConfig.bubble,
 						nestingColumns: updated,
@@ -297,7 +297,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 			const currentValueColumn = numericOptions.includes(dataset.chartConfig.bubble?.valueColumn)
 				? dataset.chartConfig.bubble?.valueColumn
 				: null;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				bubble: {
 					...dataset.chartConfig.bubble,
 					measureMode: nextMode,
@@ -311,7 +311,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 	const valueSelect = document.getElementById('viz-select-bubble-value-column');
 	if (valueSelect) {
 		valueSelect.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				bubble: {
 					...dataset.chartConfig.bubble,
 					valueColumn: numericOptions.includes(valueSelect.value) ? valueSelect.value : null,

@@ -4,15 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetChartConfig: vi.fn(),
+	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../src/modules/state/stateSync.js', () => ({
-	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
+vi.mock('../../src/modules/state/appState.js', async (importOriginal) => ({
+	...(await importOriginal()),
+	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
 import { createBarChartControls, setupBarChartControlListeners } from '../../src/modules/chartControls/barControls.js';
@@ -77,7 +78,7 @@ describe('barControls measure mode', () => {
 
 		measureSelect.value = 'sum';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bar: expect.objectContaining({
 				measureMode: 'sum',
 				valueColumn: null,
@@ -88,7 +89,7 @@ describe('barControls measure mode', () => {
 		dataset.chartConfig.bar.valueColumn = null;
 		valueSelect.value = 'valor';
 		valueSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bar: expect.objectContaining({
 				valueColumn: 'valor',
 			}),
@@ -97,7 +98,7 @@ describe('barControls measure mode', () => {
 		dataset.chartConfig.bar.valueColumn = 'valor';
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bar: expect.objectContaining({
 				measureMode: 'count',
 				valueColumn: null,

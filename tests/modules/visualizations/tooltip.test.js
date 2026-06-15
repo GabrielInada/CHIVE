@@ -197,6 +197,39 @@ describe('tooltip', () => {
 		expect(isTooltipPinned()).toBe(false);
 	});
 
+	it('hideChartTooltip before any tooltip was shown does not append a node', () => {
+		hideChartTooltip();
+		expect(document.querySelectorAll('.chart-tooltip')).toHaveLength(0);
+	});
+
+	it('unpinTooltip before any tooltip was shown does not append a node', () => {
+		unpinTooltip();
+		expect(document.querySelectorAll('.chart-tooltip')).toHaveLength(0);
+	});
+
+	it('isTooltipPinned before any tooltip was shown is false and creates no node', () => {
+		expect(isTooltipPinned()).toBe(false);
+		expect(document.querySelectorAll('.chart-tooltip')).toHaveLength(0);
+	});
+
+	it('hideChartTooltip clears pinned listeners even when the node was removed externally', () => {
+		const onDismiss = vi.fn();
+		showPinnedChartTooltip(document.createElement('div'), 100, 100, {
+			headerTitle: 'orphan',
+			onDismiss,
+		});
+		// Simulate a full-page re-render removing the node out from under us.
+		document.querySelector('.chart-tooltip').remove();
+
+		hideChartTooltip();
+		// No stray node is recreated by the hide path.
+		expect(document.querySelectorAll('.chart-tooltip')).toHaveLength(0);
+
+		// The document-level Escape listener was removed, so dismiss does not fire.
+		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+		expect(onDismiss).not.toHaveBeenCalled();
+	});
+
 	it('createTooltipFilterAction returns a button that invokes the supplied onClick', () => {
 		const calls = [];
 		const button = createTooltipFilterAction({

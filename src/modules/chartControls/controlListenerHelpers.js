@@ -10,8 +10,7 @@
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  */
 
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
-import { normalizeActiveDatasetConfig } from '../state/appState.js';
+import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../state/appState.js';
 import { normalizeHexColor } from './shared.js';
 import { triggerLiveRender } from './livePreview.js';
 
@@ -23,7 +22,7 @@ import { triggerLiveRender } from './livePreview.js';
  */
 function makeUpdater(dataset, chartKey, onConfigChanged) {
 	return (partialUpdate) => {
-		updateActiveDatasetChartConfig({
+		updateActiveDatasetConfig({
 			[chartKey]: {
 				...dataset.chartConfig[chartKey],
 				...partialUpdate,

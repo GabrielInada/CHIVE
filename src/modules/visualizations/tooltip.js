@@ -77,9 +77,15 @@ function clearPinState(el) {
  * @returns {void}
  */
 export function hideChartTooltip() {
-	const el = ensureTooltip();
-	el.style.display = 'none';
-	clearPinState(el);
+	if (!tooltipEl) return;
+	clearPinState(tooltipEl);
+	if (tooltipEl.isConnected) {
+		tooltipEl.style.display = 'none';
+	} else {
+		// Node was removed by a full-page re-render; drop the ref so the next
+		// ensureTooltip() recreates and re-attaches it.
+		tooltipEl = null;
+	}
 }
 
 /**
@@ -249,8 +255,8 @@ export function pinTooltip(anchor, options = {}) {
  * @returns {void}
  */
 export function unpinTooltip() {
-	const el = ensureTooltip();
-	clearPinState(el);
+	if (!tooltipEl) return;
+	clearPinState(tooltipEl);
 }
 
 /**
@@ -272,7 +278,7 @@ export function repositionPinnedTooltip() {
  * @returns {boolean}
  */
 export function isTooltipPinned() {
-	return ensureTooltip().classList.contains(PINNED_CLASS);
+	return !!tooltipEl && tooltipEl.classList.contains(PINNED_CLASS);
 }
 
 /**

@@ -4,15 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetChartConfig: vi.fn(),
+	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/stateSync.js', () => ({
-	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
+vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
+	...(await importOriginal()),
+	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
 import { createScatterPlotControls, setupScatterPlotControlListeners } from '../../../src/modules/chartControls/scatterControls.js';
@@ -112,7 +113,7 @@ describe('scatterControls axis listeners', () => {
 		xSelect.value = 'category';
 		xSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			scatter: expect.objectContaining({
 				x: 'category',
 				xScale: 'linear',
@@ -133,7 +134,7 @@ describe('scatterControls axis listeners', () => {
 		xScale.value = 'log';
 		xScale.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			scatter: expect.objectContaining({
 				xScale: 'linear',
 			}),
@@ -153,7 +154,7 @@ describe('scatterControls axis listeners', () => {
 		pairMode.value = 'aggregate';
 		pairMode.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			scatter: expect.objectContaining({
 				categoricalPairMode: 'aggregate',
 			}),

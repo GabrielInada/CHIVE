@@ -6,6 +6,7 @@
  */
 
 import { PRESET_CATALOG } from '../../data/presetCatalog.js';
+import { installDialogFocus } from '../../modules/dialogFocus.js';
 
 /**
  * Build one preset card: name, description, row/column counts, optional
@@ -115,11 +116,15 @@ export function openPresetDatasetsDialog({ translate }) {
 		overlay.appendChild(dialog);
 		document.body.appendChild(overlay);
 
+		const focusControl = installDialogFocus(overlay, dialog);
+
 		let selectedId = null;
 
 		const closeDialog = result => {
 			document.removeEventListener('keydown', onEscape);
+			focusControl.release();
 			overlay.remove();
+			focusControl.restoreFocus();
 			resolve(result);
 		};
 

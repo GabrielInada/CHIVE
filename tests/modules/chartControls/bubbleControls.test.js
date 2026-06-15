@@ -4,15 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetChartConfig: vi.fn(),
+	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/stateSync.js', () => ({
-	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
+vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
+	...(await importOriginal()),
+	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
 import { createBubbleChartControls, setupBubbleChartControlListeners } from '../../../src/modules/chartControls/bubbleControls.js';
@@ -81,7 +82,7 @@ describe('bubbleControls measure mode', () => {
 
 		measureSelect.value = 'sum';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bubble: expect.objectContaining({
 				measureMode: 'sum',
 				valueColumn: 'valor',
@@ -92,7 +93,7 @@ describe('bubbleControls measure mode', () => {
 		dataset.chartConfig.bubble.valueColumn = 'valor';
 		valueSelect.value = 'valor';
 		valueSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bubble: expect.objectContaining({
 				valueColumn: 'valor',
 			}),
@@ -101,7 +102,7 @@ describe('bubbleControls measure mode', () => {
 		dataset.chartConfig.bubble.valueColumn = 'valor';
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bubble: expect.objectContaining({
 				measureMode: 'count',
 				valueColumn: null,
@@ -139,7 +140,7 @@ describe('bubbleControls nesting mode', () => {
 		nestingSelect.value = 'grouped';
 		nestingSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bubble: expect.objectContaining({
 				nestingMode: 'grouped',
 			}),
@@ -219,7 +220,7 @@ describe('bubbleControls progressive nesting selectors', () => {
 		level0.value = '';
 		level0.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			bubble: expect.objectContaining({
 				nestingColumns: [],
 				groupColumn: null,
