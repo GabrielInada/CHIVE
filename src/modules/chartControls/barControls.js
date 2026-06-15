@@ -3,7 +3,7 @@
  *
  * Builds the right-sidebar control group for the bar chart and wires its
  * listeners. Listeners mutate the active dataset's `chartConfig.bar` via
- * {@link updateActiveDatasetChartConfig} and call back into the host so the
+ * {@link updateActiveDatasetConfig} and call back into the host so the
  * chart re-renders.
  *
  * Consumed by the registry in `chartControls/chartControlsManager.js`. The three exports
@@ -17,7 +17,7 @@
 
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
+import { updateActiveDatasetConfig } from '../state/appState.js';
 import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -236,7 +236,7 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 /**
  * Wire listeners for every bar-chart control element produced by
  * {@link createBarChartControls}. Mutates `dataset.chartConfig.bar`
- * via {@link updateActiveDatasetChartConfig} and invokes the
+ * via {@link updateActiveDatasetConfig} and invokes the
  * `onConfigChanged` callback so the host can re-render.
  *
  * The `allColumnsOrCallback` parameter is overloaded for backward
@@ -271,7 +271,7 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 			const currentValueColumn = numericOptions.includes(dataset.chartConfig.bar?.valueColumn)
 				? dataset.chartConfig.bar?.valueColumn
 				: null;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				bar: {
 					...dataset.chartConfig.bar,
 					measureMode: nextMode,
@@ -286,7 +286,7 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	const selectBarValueColumn = document.getElementById('viz-select-bar-value-column');
 	if (selectBarValueColumn) {
 		selectBarValueColumn.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				bar: {
 					...dataset.chartConfig.bar,
 					valueColumn: numericOptions.includes(selectBarValueColumn.value)

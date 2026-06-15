@@ -17,8 +17,7 @@
 
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../config/elementIds.js';
 import { CHART_HEIGHT_LIMITS } from '../../config/charts.js';
-import { getActiveDataset, normalizeActiveDatasetConfig } from '../state/appState.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
+import { getActiveDataset, normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../state/appState.js';
 import { triggerLiveRender } from './livePreview.js';
 import { t } from '../../services/i18nService.js';
 import { clamp } from '../../utils/formatters.js';
@@ -88,7 +87,7 @@ function commitChartHeight(chartKey, heightPx) {
 	if (!dataset) return;
 	const { min, max } = CHART_HEIGHT_LIMITS[chartKey];
 	const next = Math.round(clamp(heightPx, min, max));
-	updateActiveDatasetChartConfig({
+	updateActiveDatasetConfig({
 		[chartKey]: { ...dataset.chartConfig[chartKey], chartHeight: next },
 	});
 }

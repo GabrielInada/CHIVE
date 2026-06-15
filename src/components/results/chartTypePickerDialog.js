@@ -5,6 +5,7 @@
  */
 
 import { CHART_TYPES, PREVIEW_SVGS, CATEGORY_KEYS } from '../../modules/chartControls/chartTypes.js';
+import { installDialogFocus } from '../../modules/dialogFocus.js';
 
 /**
  * Build one chart-type card: preview SVG, name, category tag,
@@ -94,9 +95,13 @@ export function openChartTypePickerDialog({ activeChartType = null, translate })
 		overlay.appendChild(dialog);
 		document.body.appendChild(overlay);
 
+		const focusControl = installDialogFocus(overlay, dialog);
+
 		const closeDialog = result => {
 			document.removeEventListener('keydown', onEscape);
+			focusControl.release();
 			overlay.remove();
+			focusControl.restoreFocus();
 			resolve(result);
 		};
 

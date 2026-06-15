@@ -43,6 +43,7 @@ const mocks = vi.hoisted(() => ({
     },
   })),
   updateActiveDatasetConfig: vi.fn(),
+  isAnyDialogOpen: vi.fn(() => false),
 }));
 
 vi.mock('../src/services/i18nService.js', () => ({
@@ -92,6 +93,10 @@ vi.mock('../src/modules/state/appState.js', () => ({
   getPersistenceSnapshot: mocks.getPersistenceSnapshot,
   replaceAllState: mocks.replaceAllState,
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
+}));
+
+vi.mock('../src/modules/dialogFocus.js', () => ({
+  isAnyDialogOpen: mocks.isAnyDialogOpen,
 }));
 
 import {
@@ -214,6 +219,43 @@ describe('eventHandlers', () => {
 
     document.querySelector('[data-dataset-remove="1"]').click();
     expect(mocks.removeDatasetByIndex).toHaveBeenCalledWith(1);
+  });
+
+  it('Ctrl/Cmd+O opens the file picker and prevents default when no dialog is open', () => {
+    mocks.isAnyDialogOpen.mockReturnValue(false);
+    initializeAllEventHandlers();
+    const clickSpy = vi.spyOn(document.getElementById('file-input'), 'click');
+
+    const event = new KeyboardEvent('keydown', { key: 'o', ctrlKey: true, bubbles: true, cancelable: true });
+    document.dispatchEvent(event);
+
+    expect(event.defaultPrevented).toBe(true);
+    expect(clickSpy).toHaveBeenCalled();
+  });
+
+  it('Ctrl/Cmd+O does not open the file picker behind an open modal dialog', () => {
+    mocks.isAnyDialogOpen.mockReturnValue(true);
+    initializeAllEventHandlers();
+    const clickSpy = vi.spyOn(document.getElementById('file-input'), 'click');
+
+    const event = new KeyboardEvent('keydown', { key: 'o', metaKey: true, bubbles: true, cancelable: true });
+    document.dispatchEvent(event);
+
+    // Default is still prevented so the browser's native open dialog never shows.
+    expect(event.defaultPrevented).toBe(true);
+    expect(clickSpy).not.toHaveBeenCalled();
+  });
+
+  it('skips global shortcuts when the event was already defaultPrevented', () => {
+    mocks.isAnyDialogOpen.mockReturnValue(false);
+    initializeAllEventHandlers();
+    const clickSpy = vi.spyOn(document.getElementById('file-input'), 'click');
+
+    const event = new KeyboardEvent('keydown', { key: 'o', ctrlKey: true, bubbles: true, cancelable: true });
+    event.preventDefault();
+    document.dispatchEvent(event);
+
+    expect(clickSpy).not.toHaveBeenCalled();
   });
 
   it('handles project export and import controls', async () => {

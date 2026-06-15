@@ -10,7 +10,7 @@
  */
 
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
+import { updateActiveDatasetConfig } from '../state/appState.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
 import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -270,7 +270,7 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 				const output = networkZoomSlider.parentElement?.querySelector('output');
 				if (output) output.textContent = networkZoomSlider.value;
 			}
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				network: {
 					...dataset.chartConfig.network,
 					zoomScale: NETWORK_GRAPH.defaultZoomScale,

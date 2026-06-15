@@ -21,6 +21,7 @@ import {
 	getCategoricalFilterOptions,
 } from '../../utils/chartFilters.js';
 import { createEmptyGlobalFilter, normalizeGlobalFilter } from '../../utils/globalFilter.js';
+import { installDialogFocus } from '../../modules/dialogFocus.js';
 
 let nextRuleUid = 1;
 
@@ -449,6 +450,8 @@ export function openGlobalFilterDialog({
 		overlay.appendChild(dialog);
 		document.body.appendChild(overlay);
 
+		const focusControl = installDialogFocus(overlay, dialog);
+
 		const onEscape = event => {
 			if (event.key !== 'Escape') return;
 			closeDialog('cancel', null);
@@ -456,7 +459,9 @@ export function openGlobalFilterDialog({
 
 		const closeDialog = (action, filterOut) => {
 			document.removeEventListener('keydown', onEscape);
+			focusControl.release();
 			overlay.remove();
+			focusControl.restoreFocus();
 			resolve({ action, filter: filterOut });
 		};
 

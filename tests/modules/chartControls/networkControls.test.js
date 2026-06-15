@@ -4,15 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetChartConfig: vi.fn(),
+	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/stateSync.js', () => ({
-	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
+vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
+	...(await importOriginal()),
+	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
 vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
@@ -122,7 +123,7 @@ describe('networkControls listeners', () => {
 		target.value = 'weight';
 		target.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			network: expect.objectContaining({ target: 'weight' }),
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
@@ -139,7 +140,7 @@ describe('networkControls listeners', () => {
 		select.value = 'uniform';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			network: expect.objectContaining({ edgeColorMode: 'uniform' }),
 		});
 	});
@@ -153,8 +154,8 @@ describe('networkControls listeners', () => {
 
 		document.getElementById('viz-btn-network-reset-zoom').click();
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetChartConfig.mock.calls[0][0];
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
 		expect(call.network.zoomScale).toBeTypeOf('number');
 		expect(call.network.zoomScale).not.toBe(2);
 	});
@@ -170,8 +171,8 @@ describe('networkControls listeners', () => {
 		expect(bold).not.toBeNull();
 		bold.click();
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetChartConfig.mock.calls[0][0];
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
 		expect(call.network.colorScheme).toBe('Bold');
 		expect(call.network.sourceNodeColor).toMatch(/^#[0-9a-fA-F]{6}$/);
 		expect(call.network.targetNodeColor).toMatch(/^#[0-9a-fA-F]{6}$/);

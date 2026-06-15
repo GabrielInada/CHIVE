@@ -16,7 +16,7 @@
 
 import { CHART_COLORS, TREEMAP_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
+import { updateActiveDatasetConfig } from '../state/appState.js';
 import { setupColorInputListener } from './controlListenerHelpers.js';
 import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
@@ -184,7 +184,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	const selectCategory = document.getElementById('viz-select-treemap-category');
 	if (selectCategory) {
 		selectCategory.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				treemap: { ...dataset.chartConfig.treemap, category: selectCategory.value || null },
 			});
 			onConfigChanged?.();
@@ -198,7 +198,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 			const currentValueColumn = numericOptions.includes(dataset.chartConfig.treemap?.valueColumn)
 				? dataset.chartConfig.treemap?.valueColumn
 				: null;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				treemap: {
 					...dataset.chartConfig.treemap,
 					measureMode: nextMode,
@@ -213,7 +213,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	if (selectValueColumn) {
 		selectValueColumn.addEventListener('change', () => {
 			const nextValue = numericOptions.includes(selectValueColumn.value) ? selectValueColumn.value : null;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				treemap: { ...dataset.chartConfig.treemap, valueColumn: nextValue },
 			});
 			onConfigChanged?.();
@@ -223,7 +223,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	const selectTopN = document.getElementById('viz-select-treemap-topn');
 	if (selectTopN) {
 		selectTopN.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				treemap: { ...dataset.chartConfig.treemap, topN: Number(selectTopN.value) },
 			});
 			onConfigChanged?.();
@@ -233,7 +233,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	const inputTitle = document.getElementById('viz-input-treemap-title');
 	if (inputTitle) {
 		inputTitle.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				treemap: { ...dataset.chartConfig.treemap, customTitle: String(inputTitle.value || '').trim() },
 			});
 			onConfigChanged?.();
@@ -248,7 +248,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 		};
 		sliderPadding.addEventListener('input', syncOutput);
 		sliderPadding.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				treemap: { ...dataset.chartConfig.treemap, padding: Number(sliderPadding.value) },
 			});
 			onConfigChanged?.();
@@ -258,7 +258,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	const toggleLabels = document.getElementById('viz-toggle-treemap-labels');
 	if (toggleLabels) {
 		toggleLabels.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				treemap: { ...dataset.chartConfig.treemap, showLabels: toggleLabels.checked },
 			});
 			onConfigChanged?.();
@@ -268,7 +268,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	const toggleValues = document.getElementById('viz-toggle-treemap-values');
 	if (toggleValues) {
 		toggleValues.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				treemap: { ...dataset.chartConfig.treemap, showValues: toggleValues.checked },
 			});
 			onConfigChanged?.();
@@ -279,7 +279,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	if (selectColorMode) {
 		selectColorMode.addEventListener('change', () => {
 			const nextMode = ['scheme', 'uniform'].includes(selectColorMode.value) ? selectColorMode.value : 'scheme';
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				treemap: { ...dataset.chartConfig.treemap, colorMode: nextMode },
 			});
 			onConfigChanged?.();
@@ -294,7 +294,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 			const presetName = button.dataset.presetName;
 			const palette = COLOR_PRESETS[presetName] || [];
 			if (palette.length === 0) return;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				treemap: {
 					...dataset.chartConfig.treemap,
 					colorScheme: presetName,

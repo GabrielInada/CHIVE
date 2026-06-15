@@ -12,6 +12,7 @@
  */
 
 import { renderChartFromSpec } from './renderChartFromSpec.js';
+import { hideChartTooltip } from '../visualizations/tooltip.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 const slotState = new WeakMap();
@@ -109,6 +110,9 @@ export function teardownSlot(container) {
 		slotState.delete(container);
 	}
 	stopNetworkSimulation(container);
+	// Clear any active/pinned tooltip so a teardown mid-pin does not orphan the
+	// document-level keydown/mousedown listeners attachPinnedListeners registers.
+	hideChartTooltip();
 	container.replaceChildren();
 }
 

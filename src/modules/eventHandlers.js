@@ -32,6 +32,7 @@ import {
 	updateActiveDatasetConfig,
 } from './state/appState.js';
 import { CHART_CONTAINERS, FILE_IDS } from '../config/elementIds.js';
+import { isAnyDialogOpen } from './dialogFocus.js';
 
 const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
 	Object.entries(CHART_CONTAINERS).map(([type, id]) => [id, type])
@@ -440,9 +441,14 @@ function buildChartSnapshotMetadata(containerId) {
  */
 function setupGlobalKeyboardListeners() {
 	document.addEventListener('keydown', event => {
+		// Let a focused control (e.g. an open dialog's Tab trap) suppress global
+		// shortcuts by consuming the event first.
+		if (event.defaultPrevented) return;
 		// Ctrl+O or Cmd+O: open file picker
 		if ((event.ctrlKey || event.metaKey) && event.key === 'o') {
 			event.preventDefault();
+			// Never open the picker behind an open modal dialog.
+			if (isAnyDialogOpen()) return;
 			document.getElementById('file-input')?.click();
 		}
 	});

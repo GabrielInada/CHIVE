@@ -10,6 +10,7 @@ const renderers = vi.hoisted(() => ({
 	renderPieChart: vi.fn(() => ({ ok: true })),
 	renderScatterPlot: vi.fn(() => ({ ok: true })),
 	renderTreeMap: vi.fn(() => ({ ok: true })),
+	renderTinChart: vi.fn(() => ({ ok: true })),
 }));
 
 vi.mock('../../../src/modules/visualizations/index.js', () => renderers);
@@ -130,5 +131,26 @@ describe('renderChartFromSpec', () => {
 		expect(opts.axisTypes).toEqual({ x: 'number', y: 'number' });
 		expect(opts.curve).toBe('monotone');
 		expect(opts.missingMode).toBe('gap');
+	});
+
+	it('dispatches tin with x, y, z as positional args and without filterCallbacks', () => {
+		renderChartFromSpec(container, makeSpec('tin', { x: 'a', y: 'b', z: 'a' }));
+		expect(renderers.renderTinChart).toHaveBeenCalledTimes(1);
+		const [, rows, x, y, z, opts] = renderers.renderTinChart.mock.calls[0];
+		expect(rows).toBe(baseRows);
+		expect(x).toBe('a');
+		expect(y).toBe('b');
+		expect(z).toBe('a');
+		// TIN is the lone renderer that does not receive filterCallbacks; the
+		// shared baseOptions must not introduce it.
+		expect('filterCallbacks' in opts).toBe(false);
+	});
+
+	it('passes shared baseOptions (customTitle, chartHeight, locale) through to renderers', () => {
+		renderChartFromSpec(container, makeSpec('bar', { category: 'a', customTitle: 'My chart', chartHeight: 480 }));
+		const [, , , opts] = renderers.renderBarChart.mock.calls[0];
+		expect(opts.customTitle).toBe('My chart');
+		expect(opts.chartHeight).toBe(480);
+		expect(opts.locale).toBe('en');
 	});
 });
