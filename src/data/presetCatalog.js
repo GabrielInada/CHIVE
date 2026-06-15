@@ -6,7 +6,7 @@
  * an entry. Asset URLs are resolved at module-load time via
  * `new URL(..., import.meta.url)` so they work under any Vite base path.
  *
- * To add a new preset, drop the file into `src/data/`, register a URL
+ * To add a new preset, drop the file into `src/data/presets/`, register a URL
  * constant below, and push an entry onto {@link PRESET_CATALOG} (see
  * the commented template).
  *
@@ -17,10 +17,11 @@ const irisCsvUrl = new URL('./presets/dataset-iris.csv', import.meta.url).href;
 const amazonianTreesCsvUrl = new URL('./presets/dataset-amazonian-trees.csv', import.meta.url).href;
 const amazonMultilevelNestingCsvUrl = new URL('./presets/dataset-amazon-multilevel-nesting.csv', import.meta.url).href;
 const monthlyVisitsCsvUrl = new URL('./presets/dataset-monthly-visits.csv', import.meta.url).href;
+const tinSurfaceCsvUrl = new URL('./presets/dataset-tin-surface.csv', import.meta.url).href;
 
-// Template to append future real datasets from src/data:
-// const yourCsvUrl = new URL('./dataset-your-name.csv', import.meta.url).href;
-// const yourJsonUrl = new URL('./dataset-your-name.json', import.meta.url).href;
+// Template to append future real datasets from src/data/presets:
+// const yourCsvUrl = new URL('./presets/dataset-your-name.csv', import.meta.url).href;
+// const yourJsonUrl = new URL('./presets/dataset-your-name.json', import.meta.url).href;
 // PRESET_CATALOG.push({
 //   id: 'your-id',
 //   nameKey: 'chive-preset-your-name',
@@ -33,6 +34,7 @@ const monthlyVisitsCsvUrl = new URL('./presets/dataset-monthly-visits.csv', impo
 //   sourceLinkLabel: 'Source',
 //   dataUrl: yourCsvUrl,
 //   dataFormat: 'csv',
+//   dropColumns: [],
 // });
 // JSON variant: use dataUrl: yourJsonUrl and dataFormat: 'json'.
 
@@ -97,6 +99,19 @@ export const PRESET_CATALOG = [
     sourceUrl: '',
     sourceLinkLabel: '',
     dataUrl: monthlyVisitsCsvUrl,
+    dataFormat: 'csv',
+  },
+  {
+    id: 'tin-surface',
+    nameKey: 'chive-preset-tin-surface-name',
+    descKey: 'chive-preset-tin-surface-desc',
+    rows: 600,
+    columns: 3,
+    tags: ['terrain', 'surface', 'tin-chart'],
+    sourceLabel: 'CHIVE Sample',
+    sourceUrl: '',
+    sourceLinkLabel: '',
+    dataUrl: tinSurfaceCsvUrl,
     dataFormat: 'csv',
   },
 ];

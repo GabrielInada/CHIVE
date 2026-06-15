@@ -11,7 +11,7 @@
  * @typedef {import('../../types.js').Result} Result
  */
 
-import { hierarchy, pack, scaleOrdinal, select } from 'https://esm.sh/d3@7.9.0';
+import { hierarchy, pack, scaleOrdinal, select } from '../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,

@@ -280,14 +280,15 @@ export function renderEmptyState() {
   if (els['columns-panel']) els['columns-panel'].style.display = 'none';
   if (els['empty-state']) els['empty-state'].style.display = 'flex';
   if (els['data-state']) els['data-state'].style.display = 'none';
-  if (els['result-tabs']) els['result-tabs'].style.display = 'none';
-  const emptyFilterBtn = document.getElementById('btn-global-filter');
-  if (emptyFilterBtn) {
-    emptyFilterBtn.hidden = true;
-    emptyFilterBtn.disabled = true;
-    emptyFilterBtn.classList.remove('active');
-    emptyFilterBtn.dataset.active = 'false';
-  }
+  if (els['result-tabs']) els['result-tabs'].style.display = 'flex';
+  updateTabs('preview', null, null, {
+    triggerState: {
+      hasDataset: false,
+      globalFilter: null,
+      filteredCount: 0,
+      totalCount: 0,
+    },
+  });
   if (els['table-container']) els['table-container'].replaceChildren();
   if (els['container-stats']) els['container-stats'].replaceChildren();
   if (els['container-cat-stats']) els['container-cat-stats'].replaceChildren();
@@ -392,7 +393,7 @@ export function renderDataInterface(
 
   const allColumnNames = columns.map(column => column.name);
   const safeGlobalFilter = resolveGlobalFilterForColumns(config.globalFilter, allColumnNames);
-  const filteredRowsForTrigger = applyGlobalFilterRules(rows, safeGlobalFilter, numericNames);
+  const filteredRows = applyGlobalFilterRules(rows, safeGlobalFilter, numericNames);
 
   const rawRulesCount = Array.isArray(config.globalFilter?.rules) ? config.globalFilter.rules.length : 0;
   const hadLegacyColumn = Boolean(config.globalFilter && !Array.isArray(config.globalFilter.rules) && config.globalFilter.column);
@@ -451,7 +452,7 @@ export function renderDataInterface(
     triggerState: {
       hasDataset: true,
       globalFilter: safeGlobalFilter,
-      filteredCount: filteredRowsForTrigger.length,
+      filteredCount: filteredRows.length,
       totalCount: rows.length,
     },
     onGlobalFilterOpen: async () => {
@@ -483,15 +484,15 @@ export function renderDataInterface(
   }
   document.getElementById('badge-rows').textContent = t(
     'chive-badge-preview',
-    rows.length.toLocaleString(getLocale()),
-    Math.min(rowLimit, rows.length),
+    filteredRows.length.toLocaleString(getLocale()),
+    Math.min(rowLimit, filteredRows.length),
     visibleColumns.length,
     columns.length
   );
 
-  renderTablePreview(rows, visibleColumns, rowLimit);
-  renderStats(rows, visibleColumns);
-  renderCategoricalStats(rows, visibleColumns);
+  renderTablePreview(filteredRows, visibleColumns, rowLimit);
+  renderStats(filteredRows, visibleColumns);
+  renderCategoricalStats(filteredRows, visibleColumns);
   renderCharts(config, rows, visibleColumns, visibleNumericColumns, {
     onAddToGlobalFilter: handleAddToGlobalFilter,
     onFocusGlobalFilter: handleShowOnlyThis,

@@ -8,6 +8,8 @@
  * {@link openJoinBuilderDialog}.
  */
 
+import { installDialogFocus } from '../../modules/dialogFocus.js';
+
 /** @private */
 function createOption(value, label, selected = false) {
 	const option = document.createElement('option');
@@ -268,6 +270,8 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		overlay.appendChild(dialog);
 		document.body.appendChild(overlay);
 
+		const focusControl = installDialogFocus(overlay, dialog);
+
 		const onEscape = event => {
 			if (event.key !== 'Escape') return;
 			closeDialog(null);
@@ -275,7 +279,9 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 
 		const closeDialog = result => {
 			document.removeEventListener('keydown', onEscape);
+			focusControl.release();
 			overlay.remove();
+			focusControl.restoreFocus();
 			resolve(result);
 		};
 

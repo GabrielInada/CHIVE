@@ -4,15 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetChartConfig: vi.fn(),
+	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/stateSync.js', () => ({
-	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
+vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
+	...(await importOriginal()),
+	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
 vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
@@ -103,7 +104,7 @@ describe('lineControls listeners', () => {
 		select.value = 'monotone';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			line: expect.objectContaining({ curve: 'monotone' }),
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
@@ -120,7 +121,7 @@ describe('lineControls listeners', () => {
 		select.value = 'gap';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			line: expect.objectContaining({ missingMode: 'gap' }),
 		});
 	});
@@ -136,7 +137,7 @@ describe('lineControls listeners', () => {
 		ySelect.value = '';
 		ySelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			line: expect.objectContaining({ y: null }),
 		});
 	});
@@ -152,7 +153,7 @@ describe('lineControls listeners', () => {
 		checkbox.checked = false;
 		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			line: expect.objectContaining({ sortX: false }),
 		});
 	});

@@ -11,7 +11,7 @@
  *   4. Initialize fileManager / chartControls / panelManager.
  *   5. Wire global DOM listeners via `eventHandlers`.
  *   6. Subscribe `refreshView` to dataset/columns/config state events.
- *   7. Enable debounced auto-save; flush on `beforeunload`.
+ *   7. Enable debounced auto-save.
  *   8. Initial render.
  *   9. Re-render on locale changes.
  *   10. Surface internal module errors via feedback toast.
@@ -24,10 +24,10 @@ import {
 	isPersistenceAvailable,
 	hydrateState,
 	enablePersistenceAutoSave,
+	getPersistenceErrorMessageKey,
 } from './services/persistenceService.js';
 import { ingestFile, progressLabelForStage } from './services/dataIngestService.js';
 import { loadPresetSource, PresetFetchTimeoutError } from './services/presetService.js';
-import { PREVIEW_DEFAULT_ROWS } from './config/limits.js';
 import {
 renderEmptyState,
 renderDataInterface,
@@ -36,14 +36,15 @@ renderFileList,
 import { initChartControls, renderChartControlsSidebar, renderCharts } from './features/chartFeatures.js';
 import { createDefaultChartConfig, mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 import { getNumericColumns } from './utils/columnHelpers.js';
+import { rehydratePanelChartSpecs } from './utils/panelHydration.js';
+import { throttle } from './utils/throttle.js';
 
 import {
 getState,
+getPersistenceSnapshot,
 getActiveDataset,
 onStateChange,
 STATE_EVENTS,
-exposeGlobals,
-initializeStateSync,
 setPreviewRows,
 addDataset,
 normalizeActiveDatasetConfig,
@@ -57,6 +58,7 @@ disableStateLog,
 getStateLog,
 clearStateLog,
 } from './modules/state/stateEvents.js';
+import { getStateSummary } from './modules/state/stateDebug.js';
 import {
 initPanelManager,
 initializeLayoutSelector,
@@ -76,7 +78,6 @@ showFeedback,
 showFeedbackMessage,
 showError,
 showErrorMessage,
-hideErrorMessage,
 showProgress,
 switchTab,
 } from './modules/index.js';
@@ -101,9 +102,9 @@ await initializeI18n();
 // Only run app logic on pages that have the main app UI
 if (!document.getElementById('file-info')) return;
 
-// 2. Hydrate persisted state BEFORE any subscriber (incl. stateSync) is wired,
-//    so the act of restoring doesn't immediately schedule a redundant save and
-//    refreshView sees the restored state on first paint.
+// 2. Hydrate persisted state BEFORE any subscriber is wired, so the act of
+//    restoring doesn't immediately schedule a redundant save and refreshView
+//    sees the restored state on first paint.
 if (isPersistenceAvailable()) {
 	await hydrateState({
 		replaceAllState,
@@ -111,60 +112,79 @@ if (isPersistenceAvailable()) {
 	});
 }
 
-// 3. Initialize state management
-initializeStateSync();
-exposeGlobals();
-
-// 4. Initialize modules
+// 3. Initialize modules
 initFileManager(handleDatasetsChanged);
-initChartControls(null, livePreviewRender);
+// WHY: 120ms rate limit on live preview. Color pickers and height drags emit
+// events every frame; unthrottled, each one re-renders the active chart, which
+// stutters on heavy charts (TIN triangulation).
+// Leading+trailing throttle keeps the first and final values painted.
+initChartControls(null, throttle(livePreviewRender, 120));
 initPanelManager(showFeedback);
 
-// 5. Setup event handlers (must be after modules initialized)
+// 4. Setup event handlers (must be after modules initialized)
 initializeAllEventHandlers();
 
-// 6. Setup UI subscriptions
+// 5. Setup UI subscriptions
 setupStateSubscriptions();
 
-// 7. Wire debounced auto-save AFTER subscriptions; flush on tab close so
-//    the last in-flight change survives. enablePersistenceAutoSave skips
-//    the STATE_HYDRATED event internally to avoid resaving the load.
-const persistenceHandle = enablePersistenceAutoSave(getState);
-window.addEventListener('beforeunload', () => persistenceHandle.flush());
+// 6. Wire auto-save AFTER subscriptions. The controller tracks semantic
+//    project events, debounces saves, and flushes on tab hide/close.
+//    getPersistenceSnapshot (no JSON clone, live refs) keeps the heavy deep
+//    clone getState performs off the save hot path; the worker backend dedups
+//    unchanged row/snapshot payloads by reference.
+enablePersistenceAutoSave(getPersistenceSnapshot, {
+	onSaveError: reportPersistenceSaveError,
+});
 
-// 8. Initial view render
+// 7. Initial view render
 refreshView();
 
-// 9. Re-render dynamic content on locale changes
+// 8. Re-render dynamic content on locale changes
 window.addEventListener('chive-locale-changed', () => {
 refreshView();
 });
 
-// 10. Surface internal module errors in UI feedback
+// 9. Surface internal module errors in UI feedback
 window.addEventListener('chive-internal-error', event => {
 const message = event?.detail?.message || t('chive-error-internal');
 showError(message);
 });
 }
 
+function reportPersistenceSaveError(error) {
+	showError(t(getPersistenceErrorMessageKey(error)));
+}
+
 /**
- * Re-merge each persisted chart spec against the current chart defaults
- * so old specs absorb any new keys added to `chartDefaults.js` since
- * they were saved. Cheap; runs once on hydration. Passed as the
- * `transformPanel` hook into `persistenceService.hydrateState`.
+ * Generic internal-error text, resilient to an i18n subsystem that may
+ * itself have failed to initialize (so the translation lookup cannot make
+ * the error handler throw).
  *
  * @private
- * @param {Object} panel - Raw panel record from IndexedDB.
- * @returns {Object} Same shape with `charts` upgraded.
+ * @returns {string}
  */
-function rehydratePanelChartSpecs(panel) {
-	if (!panel || !Array.isArray(panel.charts)) return panel;
-	const charts = panel.charts.map(spec => {
-		if (!spec || !spec.type) return spec;
-		const merged = mergeChartConfigWithDefaults({ [spec.type]: spec.config || {} });
-		return { ...spec, config: merged[spec.type] };
-	});
-	return { ...panel, charts };
+function internalErrorMessage() {
+	try {
+		return t('chive-error-internal');
+	} catch {
+		return 'An internal application error occurred.';
+	}
+}
+
+/**
+ * Last-resort handler for a failure during {@link initializeApplication}.
+ * `initializeI18n` reveals `document.body` only as its final step, so a
+ * failure before that point would otherwise leave a blank, hidden page.
+ * Force the body visible, log the real error for diagnosis, and surface a
+ * generic message to the user.
+ *
+ * @private
+ * @param {unknown} error
+ */
+function reportInitializationError(error) {
+	document.body.style.visibility = 'visible';
+	console.error('CHIVE initialization failed:', error);
+	showError(internalErrorMessage());
 }
 
 // =============================================================================
@@ -182,8 +202,8 @@ refreshView();
 }
 
 /**
- * Subscribe `refreshView` to the three state events whose payloads
- * affect what's rendered: active dataset, columns, and config.
+ * Subscribe `refreshView` to the state events whose payloads affect
+ * what's rendered: active dataset, columns, config, and runtime imports.
  *
  * @private
  */
@@ -203,6 +223,10 @@ onStateChange(STATE_EVENTS.CONFIG_UPDATED, () => {
 refreshView();
 });
 
+onStateChange(STATE_EVENTS.STATE_HYDRATED, () => {
+refreshView();
+});
+
 }
 
 // =============================================================================
@@ -215,6 +239,12 @@ refreshView();
  * picker is open) so the chart updates as the user drags, without
  * rebuilding the controls sidebar, which would steal focus from the
  * picker.
+ *
+ * The canvas panel is deliberately not re-rendered here: panel blocks
+ * paint from frozen snapshots captured at add time (structuredClone in
+ * panelManager), so a live config edit can never change them. The picker's
+ * `change` (commit) event re-renders the panel through the normal
+ * CONFIG_UPDATED → refreshView path, still from the frozen snapshot.
  *
  * @private
  */
@@ -230,7 +260,6 @@ function livePreviewRender() {
 	const visibleColumns = dataset.columns.filter(column => selectedNames.has(column.name));
 	const visibleNumericColumns = getNumericColumns(visibleColumns);
 	renderCharts(dataset.chartConfig, dataset.rows, visibleColumns, visibleNumericColumns);
-	renderCanvasPanel();
 }
 
 // =============================================================================
@@ -306,9 +335,6 @@ renderChartControlsSidebar(dataset);
 initializeLayoutSelector();
 renderSidebarPanel();
 renderCanvasPanel();
-
-// Sync window globals for backwards compatibility
-exposeGlobals();
 }
 
 /**
@@ -467,10 +493,14 @@ async function handlePresetDatasetRequest(preset) {
 // DOM ready: start app
 // =============================================================================
 
+function bootstrap() {
+	initializeApplication().catch(reportInitializationError);
+}
+
 if (document.readyState === 'loading') {
-document.addEventListener('DOMContentLoaded', initializeApplication);
+document.addEventListener('DOMContentLoaded', bootstrap);
 } else {
-initializeApplication();
+bootstrap();
 }
 
 // Debugging surface exposed on `window.chiveDebug`. NOT a stable API,
@@ -478,6 +508,7 @@ initializeApplication();
 // browser console for poking at state + toggling the in-memory state log.
 window.chiveDebug = {
 getState,
+getStateSummary,
 getActiveDataset,
 getLoadedDatasets,
 updateDatasetColumns,

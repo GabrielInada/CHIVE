@@ -6,7 +6,7 @@
  * normalizer used by both the renderer and the exporter.
  */
 
-import { isValidHexColor } from '../../utils/colorUtils.js';
+import { normalizeHexColor as normalizeHex } from '../../utils/colorUtils.js';
 
 /**
  * Clamp `value` to `[min, max]` and coerce non-finite inputs to `min`.
@@ -26,17 +26,16 @@ export function clampPercent(value, min = 20, max = 80) {
 }
 
 /**
- * Normalize a possibly-invalid hex color to a known-good value. Trims
- * whitespace and validates via {@link isValidHexColor}; returns the
- * fallback when the input is anything else.
+ * Normalize a possibly-invalid hex color to a known-good value. Thin
+ * wrapper over the shared `colorUtils` normalizer that bakes in the
+ * panel's default slot-border gray as the fallback.
  *
  * @param {*} color
  * @param {string} [fallback='#5d645d']
  * @returns {string}
  */
 export function normalizeHexColor(color, fallback = '#5d645d') {
-	const value = String(color || '').trim();
-	return isValidHexColor(value) ? value : fallback;
+	return normalizeHex(color, fallback);
 }
 
 /**

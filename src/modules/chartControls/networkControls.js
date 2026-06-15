@@ -10,9 +10,9 @@
  */
 
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
+import { updateActiveDatasetConfig } from '../state/appState.js';
 import { NETWORK_GRAPH } from '../../config/charts.js';
-import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createColorPresetControl, COLOR_PRESETS, createSelectControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
 	setupSelectListeners,
@@ -117,16 +117,6 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		t('chive-chart-control-common-title'),
 		config.customTitle,
 		80,
-		disabled
-	));
-
-	displayControls.push(createSliderControl(
-		'viz-slider-network-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 420),
-		220,
-		720,
-		10,
 		disabled
 	));
 
@@ -249,7 +239,6 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
  * @returns {void}
  */
 export function setupNetworkGraphControlListeners(dataset, allOptions, numericOptionsOrCallback = [], onConfigChangedMaybe) {
-	const numericOptions = Array.isArray(numericOptionsOrCallback) ? numericOptionsOrCallback : [];
 	const onConfigChanged = typeof numericOptionsOrCallback === 'function'
 		? numericOptionsOrCallback
 		: onConfigChangedMaybe;
@@ -269,7 +258,6 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 		{ id: 'viz-slider-network-link-opacity', key: 'linkOpacity' },
 		{ id: 'viz-slider-network-zoom', key: 'zoomScale' },
 		{ id: 'viz-slider-network-alpha-decay', key: 'alphaDecay' },
-		{ id: 'viz-slider-network-height', key: 'chartHeight' },
 	], dataset, 'network', onConfigChanged);
 
 	// Reset zoom button (custom: resets slider DOM + config)
@@ -282,7 +270,7 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 				const output = networkZoomSlider.parentElement?.querySelector('output');
 				if (output) output.textContent = networkZoomSlider.value;
 			}
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				network: {
 					...dataset.chartConfig.network,
 					zoomScale: NETWORK_GRAPH.defaultZoomScale,

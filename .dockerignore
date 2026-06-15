@@ -1,0 +1,17 @@
+# Keep the build context small and avoid copying non-runtime files into the
+# image. The Dockerfile only COPYs index.html, about.html, src/, and vendor/,
+# but trimming the context speeds builds and avoids leaking local artifacts.
+node_modules
+.git
+.github
+dist
+coverage
+internalDocs
+tests
+docs
+*.config.js
+package.json
+package-lock.json
+Dockerfile
+docker-compose.yml
+.dockerignore

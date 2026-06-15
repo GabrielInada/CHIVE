@@ -16,8 +16,7 @@ import { CHART_COLORS, PIE_CHART } from '../../config/charts.js';
 import { isNullish } from '../../utils/formatters.js';
 import { compareStrings } from '../../utils/chartFilters.js';
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
-import { normalizeActiveDatasetConfig } from '../state/appState.js';
+import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../state/appState.js';
 import { triggerLiveRender } from './livePreview.js';
 import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
 import { createColorPresetControl, createColorPickerGridControl, COLOR_PRESETS } from './shared.js';
@@ -77,10 +76,10 @@ function getPieSectorValues(dataset, config) {
  * @param {Dataset} dataset
  * @param {string[]} categoryOptions - Categorical (or fallback "all") column names for the category select.
  * @param {string[]} numericOptions - Numeric column names; populates the sum value-column select.
- * @param {string[]} [allColumns=[]] - All visible column names; kept for API parity.
+ * @param {string[]} [_allColumns=[]] - All visible column names; kept for API parity.
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
-export function createPieChartControls(dataset, categoryOptions, numericOptions, allColumns = []) {
+export function createPieChartControls(dataset, categoryOptions, numericOptions, _allColumns = []) {
 	const config = dataset.chartConfig.pie;
 	const sectorValues = getPieSectorValues(dataset, config);
 
@@ -268,16 +267,6 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
 		!dataset.chartConfig.pie.enabled
 	));
 
-	displayControls.push(createSliderControl(
-		'viz-slider-pie-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 360),
-		220,
-		720,
-		10,
-		!dataset.chartConfig.pie.enabled
-	));
-
 	const labelPositionDiv = document.createElement('div');
 	labelPositionDiv.className = 'chart-controle';
 
@@ -412,7 +401,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const nextValueColumn = measureMode === 'sum'
 				? (numeric.includes(currentValueColumn) ? currentValueColumn : (numeric[0] || null))
 				: currentValueColumn;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: {
 					...dataset.chartConfig.pie,
 					measureMode,
@@ -440,7 +429,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				innerSlider.value = String(innerRadius);
 				syncSliderOutput(innerSlider);
 			}
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: { ...dataset.chartConfig.pie, innerRadius },
 			});
 			onConfigChanged?.();
@@ -457,7 +446,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				innerSlider.value = String(innerRadius);
 				syncSliderOutput(innerSlider);
 			}
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: { ...dataset.chartConfig.pie, outerRadius, innerRadius },
 			});
 			onConfigChanged?.();
@@ -467,7 +456,6 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 	setupSliderListeners([
 		{ id: 'viz-slider-pie-pad-angle', key: 'padAngle' },
 		{ id: 'viz-slider-pie-zoom', key: 'zoomScale' },
-		{ id: 'viz-slider-pie-height', key: 'chartHeight' },
 	], dataset, 'pie', onConfigChanged);
 
 	// Reset zoom button (custom: resets slider DOM + config)
@@ -479,7 +467,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				pieZoomSlider.value = String(PIE_CHART.defaultZoomScale);
 				syncSliderOutput(pieZoomSlider);
 			}
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: { ...dataset.chartConfig.pie, zoomScale: PIE_CHART.defaultZoomScale },
 			});
 			onConfigChanged?.();
@@ -508,7 +496,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				nextSliceColors[sector] = presetColors[index % presetColors.length];
 			});
 
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: {
 					...dataset.chartConfig.pie,
 					colorScheme: presetName,
@@ -547,7 +535,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
 			nextSliceColors[sector] = normalizeHexColor(input.value, CHART_COLORS.pie);
 
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				pie: {
 					...dataset.chartConfig.pie,
 					customSliceColors: nextSliceColors,

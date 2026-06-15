@@ -14,7 +14,7 @@ CHIVE is a client-side browser tool for exploring CSV/JSON data, building intera
 - **Stable** reflects the released state of the project and is the recommended version for normal use.
 - **Preview** reflects `develop` and is intended for trying upcoming features before they are merged into `main`.
 
-Both deployments serve the same source files unchanged: `index.html`, `about.html`, and `src/`. No production build step runs at deploy time.
+Both deployments serve the same source files unchanged: `index.html`, `about.html`, `src/`, and `vendor/`. No production build step runs at deploy time.
 
 ## What You Can Do
 
@@ -27,6 +27,7 @@ Both deployments serve the same source files unchanged: `index.html`, `about.htm
 - Join datasets through the browser UI.
 - Save chart snapshots into dashboard panel layouts.
 - Export the dashboard panel as SVG.
+- Export/import full CHIVE project files, or export a work-only project file without row payloads.
 - Switch the UI between English and Brazilian Portuguese.
 
 ## Quick Start
@@ -38,10 +39,11 @@ Both deployments serve the same source files unchanged: `index.html`, `about.htm
 5. Configure the chart columns and options in the sidebar.
 6. Add useful charts to the panel.
 7. Arrange the panel layout and export it as SVG when needed.
+8. Use the Project menu in the results toolbar to export or import a full project file.
 
 ## Local Development
 
-Install Node.js LTS, then install dependencies once:
+Install an active Node.js LTS release, version 22 or newer, then install dependencies once:
 
 ```powershell
 npm install
@@ -66,8 +68,8 @@ Useful commands:
 
 ```powershell
 npm run dev          # Start Vite dev server
-npm run build        # Production build into dist/
-npm run preview      # Preview the production build
+npm run build        # Optional Vite production build into dist/
+npm run preview      # Preview the optional Vite build
 npm run lint         # Run ESLint architecture/deployment guards
 npm run lint:fix     # Apply safe automatic lint fixes
 npm test             # Run all tests once
@@ -79,8 +81,9 @@ npm run test:watch   # Run tests in watch mode
 CHIVE is designed to run from a static web server. The app runtime uses:
 
 1. Native browser ES modules through `<script type="module">`.
-2. External runtime dependencies loaded from `https://esm.sh` with full URLs in source files.
-3. Google Fonts loaded from `fonts.googleapis.com` and `fonts.gstatic.com`.
+2. Vendored JavaScript runtime dependencies loaded from `vendor/d3/` and `vendor/banana-i18n/`.
+3. A vendored SQLite-WASM runtime loaded from `vendor/sqlite/` (`sqlite3.js`, `sqlite3.wasm`, and companion files referenced by the loader).
+4. Vendored fonts loaded from `vendor/fonts/`.
 
 ### Requirements
 
@@ -89,10 +92,10 @@ CHIVE is designed to run from a static web server. The app runtime uses:
    - `index.html`
    - `about.html`
    - `src/`
-3. Allow these external origins in the default setup:
-   - `https://esm.sh`
-   - `https://fonts.googleapis.com`
-   - `https://fonts.gstatic.com`
+   - `vendor/`
+3. Serve vendored `.js` files with a JavaScript MIME type, font files with a font MIME type when possible, and `vendor/sqlite/sqlite3.wasm` as `application/wasm` when possible. Browsers can fall back to non-streaming WASM compilation, but the correct MIME avoids a slower path.
+
+The default CHIVE runtime does not require external JavaScript or font CDNs.
 
 ### Deploy Steps
 
@@ -107,6 +110,7 @@ CHIVE is designed to run from a static web server. The app runtime uses:
 3. Load a bundled sample dataset or upload a small CSV/JSON file.
 4. Verify the table preview renders.
 5. Create at least one chart.
+6. Make a change, wait a couple of seconds for the auto-save, reload, and confirm the dataset restores.
 
 ## Local Static Test
 
@@ -125,21 +129,61 @@ Checklist:
 3. File upload or sample dataset loading works.
 4. At least one chart renders.
 
+## Docker (Optional)
+
+Docker is an optional way to self-host CHIVE with a hardened Nginx config. It does
+not change the app: the image serves the same static files (`index.html`,
+`about.html`, `src/`, `vendor/`) and there is still no backend. The raw-static
+deployment above remains fully supported and is not affected.
+
+Run it with Docker Compose from the project root:
+
+```powershell
+docker compose up --build
+```
+
+Then open <http://localhost:8080/>.
+
+Equivalent plain Docker commands:
+
+```powershell
+docker build -t chive .
+docker run --rm -p 8080:80 chive
+```
+
+The image serves all runtime assets from a single origin and ships an enforcing
+local-only Content-Security-Policy (with a documented `'unsafe-eval'` exception
+that D3's CSV parser requires). The policy was manually verified after a
+Report-Only smoke test. For dependency changes, temporarily switch the header in
+`docker/security-headers.conf` back to `Content-Security-Policy-Report-Only`,
+retest in the browser console, then return it to enforcing. See
+[Privacy and security](docs/PRIVACY_AND_SECURITY.md) for the trust model.
+
 ## Data And Privacy
 
-CHIVE has no application backend in the default deployments. Uploaded datasets are parsed and visualized in the browser. The app uses browser storage so work can survive refreshes:
+CHIVE has no application backend in the default deployments. Uploaded datasets are parsed and visualized in the browser. The app uses browser storage so auto-saved work can survive refreshes:
 
-- IndexedDB stores dataset and dashboard panel state.
-- `localStorage` stores small UI preferences.
+- IndexedDB stores one SQLite project byte image containing datasets and dashboard panel state.
+- `localStorage` stores small UI preferences and the selected locale.
 
-The default runtime still trusts external origins for JavaScript modules and fonts. If you need stricter controls for sensitive data, self-host CHIVE and review the CDN/font trust boundary before use.
+Project changes auto-save: a save runs automatically a couple of seconds after you stop editing, and CHIVE also attempts a best-effort save when the page hides. Hard crashes or interrupted closes can still lose changes made since the last successful save.
+
+Project export downloads a SQLite-backed `.chive.sqlite3` file. Full exports include dataset rows and saved chart snapshot payloads; work-only exports omit those heavy payloads and are meant for layout/work transfer only. Import currently accepts full project files and replaces the current datasets and panel.
+
+JavaScript runtime dependencies and fonts are served from the same static host as vendored files. If you need stricter controls for sensitive data, self-host CHIVE and review the static-host trust boundary before use. See [Privacy and security](docs/PRIVACY_AND_SECURITY.md) for the detailed trust model.
 
 ## Documentation
 
-- [Architecture](ARCHITECTURE.md): internal state, event flow, facades, and rendering boundaries.
+- [Architecture overview](ARCHITECTURE.md): fast mental model for state, events, facades, and rendering boundaries.
+- [Architecture reference](docs/ARCHITECTURE_REFERENCE.md): exact state schema, facade methods, event registry, and subscribers.
+- [Privacy and security](docs/PRIVACY_AND_SECURITY.md): browser storage, runtime network dependencies, and trust boundaries.
+- [Translation contributor guide](docs/I18N.md): how to add or update UI strings across supported locales.
+- [Preset dataset contributor guide](docs/PRESET_DATASETS.md): how to add bundled sample datasets and their attribution.
+- [Security policy](SECURITY.md): where to report security concerns.
 - [Contributing](CONTRIBUTING.md): development workflow, code conventions, lint rules, and tests.
 - [Stylesheet organization](src/styles/STYLES_ORGANIZATION.md): CSS layers, feature ownership, and responsive rules.
-- Planned follow-ups: user guide, chart/data reference, and privacy/security trust model.
+- [Chart and data reference](docs/CHART_REFERENCE.md): which columns and modes each chart type needs, plus the common empty states.
+- Planned follow-up: user guide.
 
 ## Project Status
 

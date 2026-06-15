@@ -19,7 +19,7 @@ const mocks = vi.hoisted(() => {
 	return { mockBanana, MockBanana };
 });
 
-vi.mock('banana-i18n', () => ({
+vi.mock('../../vendor/banana-i18n/banana-i18n.js', () => ({
 	default: mocks.MockBanana,
 }));
 

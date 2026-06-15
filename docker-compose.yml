@@ -1,0 +1,9 @@
+# One-command local/LAN run for the CHIVE static image:
+#   docker compose up --build
+# Then open http://localhost:8080/
+services:
+  chive:
+    build: .
+    ports:
+      - "8080:80"
+    restart: unless-stopped

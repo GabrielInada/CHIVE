@@ -8,7 +8,7 @@
  * `window` so dynamic UI can refresh.
  */
 
-import Banana from 'https://esm.sh/banana-i18n@2.4.0';
+import Banana from '../../vendor/banana-i18n/banana-i18n.js';
 import ptBR from '../i18n/pt-BR.json' with { type: 'json' };
 import en from '../i18n/en.json' with { type: 'json' };
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_STORAGE_KEY } from '../config/locale.js';

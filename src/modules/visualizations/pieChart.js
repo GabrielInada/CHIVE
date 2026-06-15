@@ -12,7 +12,7 @@
  * @typedef {import('../../types.js').Result} Result
  */
 
-import { arc, pie, select, zoom, zoomIdentity } from 'https://esm.sh/d3@7.9.0';
+import { arc, pie, select, zoom, zoomIdentity } from '../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,

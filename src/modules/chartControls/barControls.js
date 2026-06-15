@@ -3,7 +3,7 @@
  *
  * Builds the right-sidebar control group for the bar chart and wires its
  * listeners. Listeners mutate the active dataset's `chartConfig.bar` via
- * {@link updateActiveDatasetChartConfig} and call back into the host so the
+ * {@link updateActiveDatasetConfig} and call back into the host so the
  * chart re-renders.
  *
  * Consumed by the registry in `chartControls/chartControlsManager.js`. The three exports
@@ -17,8 +17,8 @@
 
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
-import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor } from './shared.js';
+import { updateActiveDatasetConfig } from '../state/appState.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import { createSelectControl } from './shared.js';
@@ -41,10 +41,10 @@ import {
  * @param {Dataset} dataset
  * @param {string[]} categoryOptions - Categorical (or fallback "all") columns for the X-axis select.
  * @param {string[]} [numericOptions=[]] - Numeric columns for the sum/mean value-column select.
- * @param {string[]} [allColumns=[]] - All visible column names (kept for API parity; not used here).
+ * @param {string[]} [_allColumns=[]] - All visible column names (kept for API parity; not used here).
  * @returns {HTMLElement[]} Array of `chart-control-section` elements ready to append to the params pane.
  */
-export function createBarChartControls(dataset, categoryOptions, numericOptions = [], allColumns = []) {
+export function createBarChartControls(dataset, categoryOptions, numericOptions = [], _allColumns = []) {
 	const config = dataset.chartConfig.bar;
 	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;
@@ -131,16 +131,6 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 		t('chive-chart-control-common-title'),
 		config.customTitle,
 		80,
-		isDisabled
-	));
-
-	displayControls.push(createSliderControl(
-		'viz-slider-bar-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 320),
-		220,
-		720,
-		10,
 		isDisabled
 	));
 
@@ -246,7 +236,7 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
 /**
  * Wire listeners for every bar-chart control element produced by
  * {@link createBarChartControls}. Mutates `dataset.chartConfig.bar`
- * via {@link updateActiveDatasetChartConfig} and invokes the
+ * via {@link updateActiveDatasetConfig} and invokes the
  * `onConfigChanged` callback so the host can re-render.
  *
  * The `allColumnsOrCallback` parameter is overloaded for backward
@@ -281,7 +271,7 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 			const currentValueColumn = numericOptions.includes(dataset.chartConfig.bar?.valueColumn)
 				? dataset.chartConfig.bar?.valueColumn
 				: null;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				bar: {
 					...dataset.chartConfig.bar,
 					measureMode: nextMode,
@@ -296,7 +286,7 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	const selectBarValueColumn = document.getElementById('viz-select-bar-value-column');
 	if (selectBarValueColumn) {
 		selectBarValueColumn.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				bar: {
 					...dataset.chartConfig.bar,
 					valueColumn: numericOptions.includes(selectBarValueColumn.value)
@@ -332,7 +322,6 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 		{ id: 'viz-toggle-bar-y-label', key: 'showYAxisLabel' },
 	], dataset, 'bar', onConfigChanged);
 	setupTextInputListener('viz-input-bar-title', 'customTitle', dataset, 'bar', onConfigChanged);
-	setupSliderListener('viz-slider-bar-height', 'chartHeight', dataset, 'bar', onConfigChanged);
 }
 
 /**

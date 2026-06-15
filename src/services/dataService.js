@@ -1,4 +1,4 @@
-import { dsvFormat, max, mean, median, min } from 'https://esm.sh/d3@7.9.0';
+import { dsvFormat, max, mean, median, min } from '../../vendor/d3/d3.js';
 import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS, DECIMAL_DETECTION } from '../config/types.js';
 import { isNullish } from '../utils/formatters.js';
 

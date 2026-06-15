@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetChartConfig: vi.fn(),
+	updateActiveDatasetConfig: vi.fn(),
 	normalizeActiveDatasetConfig: vi.fn(),
 }));
 
@@ -12,12 +12,9 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/stateSync.js', () => ({
-	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
-}));
-
 vi.mock('../../../src/modules/state/appState.js', () => ({
 	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
+	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
 vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
@@ -128,7 +125,7 @@ describe('pieControls listeners', () => {
 		measureSelect.value = 'sum';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			pie: expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }),
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
@@ -145,8 +142,8 @@ describe('pieControls listeners', () => {
 		expect(boldButton).not.toBeNull();
 		boldButton.click();
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetChartConfig.mock.calls[0][0];
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
 		expect(call.pie.colorScheme).toBe('Bold');
 		// One mapped color per distinct sector
 		expect(Object.keys(call.pie.customSliceColors).sort()).toEqual(['East', 'North', 'South']);
@@ -174,7 +171,7 @@ describe('pieControls listeners', () => {
 		sliceInput.dispatchEvent(new Event('input', { bubbles: true }));
 
 		// No emitting facade call on input.
-		expect(mocks.updateActiveDatasetChartConfig).not.toHaveBeenCalled();
+		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
 
 		// Non-emitting facade write happened; the normalizer sets customSliceColors[North].
 		expect(mocks.normalizeActiveDatasetConfig).toHaveBeenCalledTimes(1);
@@ -184,8 +181,8 @@ describe('pieControls listeners', () => {
 
 		sliceInput.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetChartConfig.mock.calls[0][0];
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
 		expect(call.pie.customSliceColors.North).toBe('#ff0000');
 	});
 });

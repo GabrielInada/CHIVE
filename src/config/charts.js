@@ -87,6 +87,23 @@ export const CHART_DIMENSIONS = {
   },
 };
 
+/**
+ * Per-type bounds for `chartConfig[type].chartHeight`. Each pair must match
+ * the renderer's internal clamp in `src/modules/visualizations/`; the height
+ * drag handle clamps against these so the dragged box and the rendered SVG
+ * agree at the range edges.
+ */
+export const CHART_HEIGHT_LIMITS = {
+  bar: { min: 220, max: 720 },
+  line: { min: 220, max: 720 },
+  scatter: { min: 220, max: 720 },
+  pie: { min: 220, max: 720 },
+  network: { min: 220, max: 720 },
+  treemap: { min: 220, max: 720 },
+  bubble: { min: 400, max: 900 },
+  tin: { min: 220, max: 900 },
+};
+
 export const BAR_CHART = {
   padding: 0.14,
   ticks: 6,
@@ -183,6 +200,8 @@ export const TIN_CHART = {
   defaultSubdivisionDepth: 3,
   minSubdivisionDepth: 0,
   maxSubdivisionDepth: 4,
+  rampBuckets: 128,
+  maxSurfaceLeaves: 262144,
   defaultPointRadius: 3,
   defaultEdgeColor: '#5f5a53',
   defaultHullColor: '#3f3a33',

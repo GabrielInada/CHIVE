@@ -4,15 +4,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetChartConfig: vi.fn(),
+	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/stateSync.js', () => ({
-	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
+vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
+	...(await importOriginal()),
+	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
 vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
@@ -113,7 +114,7 @@ describe('treemapControls listeners', () => {
 		measure.value = 'count';
 		measure.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			treemap: expect.objectContaining({ measureMode: 'count', valueColumn: null }),
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
@@ -130,7 +131,7 @@ describe('treemapControls listeners', () => {
 		measure.value = 'sum';
 		measure.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			treemap: expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }),
 		});
 	});
@@ -146,7 +147,7 @@ describe('treemapControls listeners', () => {
 		select.value = '20';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledWith({
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			treemap: expect.objectContaining({ topN: 20 }),
 		});
 	});
@@ -162,8 +163,8 @@ describe('treemapControls listeners', () => {
 		expect(bold).not.toBeNull();
 		bold.click();
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetChartConfig.mock.calls[0][0];
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
 		expect(call.treemap.colorScheme).toBe('Bold');
 		expect(call.treemap.color).toMatch(/^#[0-9a-fA-F]{6}$/);
 	});

@@ -43,6 +43,7 @@ import { renderChartParamsDOM } from '../../components/results/chartParamsView.j
 import { openChartTypePickerDialog } from '../../components/results/chartTypePickerDialog.js';
 
 import { setLiveRenderCallback } from './livePreview.js';
+import { ensureChartHeightResizeHandles } from './chartHeightResize.js';
 
 let onChartConfigChangeCallback = null;
 const trackedSidebarContainers = new WeakSet();
@@ -381,6 +382,9 @@ export function renderChartControlsSidebar(dataset) {
 	const paramsContainer = document.getElementById('viz-chart-params');
 	if (!paramsContainer) return;
 
+	// Runs here (not in chartsView) because the handles write chart config
+	// and this render fires on boot, config changes, and locale changes.
+	ensureChartHeightResizeHandles();
 	ensureSidebarInteractionTracking(paramsContainer);
 	const scrollAnchor = getSidebarScrollAnchor(paramsContainer);
 	const controlSectionState = captureControlSectionExpansionState(paramsContainer);

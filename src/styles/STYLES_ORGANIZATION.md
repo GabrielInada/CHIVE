@@ -206,8 +206,8 @@ All colors, fonts, and spacing are defined in `variables.css`:
 --tag-num       /* Numeric data tag background */
 --tag-txt       /* Text data tag background */
 --tag-dat       /* Date data tag background */
---font-display  /* Display font (Source Serif 4) */
---font-sans     /* UI/body font (Source Sans 3) */
+--font-display  /* Display font (IBM Plex Serif) */
+--font-sans     /* UI/body font (IBM Plex Sans) */
 --font-mono     /* Monospace font (JetBrains Mono) */
 ```
 

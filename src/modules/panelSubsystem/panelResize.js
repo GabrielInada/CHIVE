@@ -12,11 +12,7 @@ import {
 	clampPercent,
 	computeDynamicMinHeight,
 } from './resizeMath.js';
-import {
-	getPanelBlocks,
-	updatePanelBlockProportions,
-	updatePanelBlockHeight,
-} from '../state/appState.js';
+import { getPanelBlocks } from '../state/appState.js';
 import { t } from '../../services/i18nService.js';
 
 /**
@@ -69,9 +65,9 @@ function applyDynamicBlockHeight(gridDiv, block) {
  *
  * @param {HTMLElement} gridDiv
  * @param {PanelBlock} block
- * @param {() => void} renderCanvasPanel - Self-reference invoked after each proportion mutation so the canvas redraws.
+ * @param {(blockId: string, partialProportions: Object) => void} onUpdateBlockProportions - Write callback supplied by panelManager; the drag handler calls it on every mousemove.
  */
-export function renderGuidedResizeHandles(gridDiv, block, renderCanvasPanel) {
+export function renderGuidedResizeHandles(gridDiv, block, onUpdateBlockProportions) {
 	if (!gridDiv || !block?.proportions) return;
 
 	const handles = [];
@@ -127,7 +123,7 @@ export function renderGuidedResizeHandles(gridDiv, block, renderCanvasPanel) {
 
 		handle.addEventListener('mousedown', event => {
 			event.preventDefault();
-			startGuidedResizeDrag(block.id, block.templateId, handleConfig.key, gridDiv, renderCanvasPanel);
+			startGuidedResizeDrag(block.id, block.templateId, handleConfig.key, gridDiv, onUpdateBlockProportions);
 		});
 
 		gridDiv.appendChild(handle);
@@ -138,11 +134,13 @@ export function renderGuidedResizeHandles(gridDiv, block, renderCanvasPanel) {
  * Begin a guided proportion drag. Attaches `mousemove`/`mouseup` to
  * `window` so the drag survives the cursor leaving the grid. The
  * `mousemove` handler maps cursor position to a new proportion and
- * writes it via {@link updatePanelBlockProportions}.
+ * surfaces it via the injected `onUpdateBlockProportions` callback;
+ * panelManager owns the facade write. Re-render happens through the
+ * STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED subscription.
  *
  * @private
  */
-function startGuidedResizeDrag(blockId, templateId, key, gridDiv, renderCanvasPanel) {
+function startGuidedResizeDrag(blockId, templateId, key, gridDiv, onUpdateBlockProportions) {
 	const rect = gridDiv.getBoundingClientRect();
 	if (!rect.width || !rect.height) return;
 	gridDiv.classList.add('is-resizing');
@@ -156,16 +154,16 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv, renderCanvasPa
 
 		if (templateId === 'template-2col' && key === 'split') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
-			updatePanelBlockProportions(blockId, { split: clampPercent(next, 20, 80) });
+			onUpdateBlockProportions(blockId, { split: clampPercent(next, 20, 80) });
 		} else if (templateId === 'template-1x2' && key === 'split') {
 			const next = ((event.clientY - rect.top) / rect.height) * 100;
-			updatePanelBlockProportions(blockId, { split: clampPercent(next, 20, 80) });
+			onUpdateBlockProportions(blockId, { split: clampPercent(next, 20, 80) });
 		} else if (templateId === 'template-hero2' && key === 'splitMain') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
-			updatePanelBlockProportions(blockId, { splitMain: clampPercent(next, 20, 80) });
+			onUpdateBlockProportions(blockId, { splitMain: clampPercent(next, 20, 80) });
 		} else if (templateId === 'template-hero2' && key === 'splitRight') {
 			const next = ((event.clientY - rect.top) / rect.height) * 100;
-			updatePanelBlockProportions(blockId, { splitRight: clampPercent(next, 20, 80) });
+			onUpdateBlockProportions(blockId, { splitRight: clampPercent(next, 20, 80) });
 		} else if (templateId === 'template-3col' && key === 'a') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
 			const a = clampPercent(next, 20, 60);
@@ -173,17 +171,15 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv, renderCanvasPa
 			let b = clampPercent(currentBlock.proportions.b ?? 33, 20, 60);
 			if (b > remaining - 20) b = remaining - 20;
 			const c = 100 - a - b;
-			updatePanelBlockProportions(blockId, { a, b, c });
+			onUpdateBlockProportions(blockId, { a, b, c });
 		} else if (templateId === 'template-3col' && key === 'ab') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
 			const a = clampPercent(currentBlock.proportions.a ?? 33, 20, 60);
 			const ab = clampPercent(next, a + 20, 80);
 			const b = ab - a;
 			const c = 100 - ab;
-			updatePanelBlockProportions(blockId, { a, b, c });
+			onUpdateBlockProportions(blockId, { a, b, c });
 		}
-
-		renderCanvasPanel();
 	};
 
 	const onUp = () => {
@@ -199,15 +195,17 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv, renderCanvasPa
 /**
  * Begin a block-height drag (the bottom resize handle). Like the guided
  * proportion drag, attaches listeners to `window` so the drag tracks
- * outside the grid. Each `mousemove` writes the new height via
- * {@link updatePanelBlockHeight} (which clamps).
+ * outside the grid. Each `mousemove` surfaces the new height via the
+ * injected `onUpdateBlockHeight` callback; panelManager owns the facade
+ * write (which clamps). Re-render happens through the
+ * STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED subscription.
  *
  * @param {string} blockId
  * @param {HTMLElement} gridDiv
  * @param {number} startClientY - The `event.clientY` at drag start.
- * @param {() => void} renderCanvasPanel
+ * @param {(blockId: string, heightPx: number) => void} onUpdateBlockHeight
  */
-export function startBlockHeightResizeDrag(blockId, gridDiv, startClientY, renderCanvasPanel) {
+export function startBlockHeightResizeDrag(blockId, gridDiv, startClientY, onUpdateBlockHeight) {
 	const rect = gridDiv.getBoundingClientRect();
 	if (!rect.height) return;
 
@@ -219,8 +217,7 @@ export function startBlockHeightResizeDrag(blockId, gridDiv, startClientY, rende
 	const onMove = event => {
 		const deltaY = event.clientY - startY;
 		const nextHeight = startHeight + deltaY;
-		updatePanelBlockHeight(blockId, nextHeight);
-		renderCanvasPanel();
+		onUpdateBlockHeight(blockId, nextHeight);
 	};
 
 	const onUp = () => {

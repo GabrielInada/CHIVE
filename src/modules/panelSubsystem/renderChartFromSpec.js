@@ -52,12 +52,38 @@ function buildColumnTypeIndex(columnsSnapshot) {
 	return index;
 }
 
+/**
+ * Options shared by every panel renderer. `filterCallbacks` is intentionally
+ * NOT included: TIN does not pass it, so keep it explicit per renderer instead
+ * of folding it into the shared base.
+ *
+ * @private
+ * @param {Object} config
+ * @returns {{ customTitle: *, chartHeight: *, locale: string }}
+ */
+function baseOptions(config) {
+	return {
+		customTitle: config.customTitle,
+		chartHeight: config.chartHeight,
+		locale: getLocale(),
+	};
+}
+
+/**
+ * Clamp `config.measureMode` to a supported value, defaulting to `'count'`.
+ *
+ * @private
+ * @param {Object} config
+ * @returns {'count' | 'sum' | 'mean'}
+ */
+function normalizeMeasureMode(config) {
+	return ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
+}
+
 /** @private */
 function renderBar(container, spec) {
 	const config = spec.config || {};
-	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode)
-		? config.measureMode
-		: 'count';
+	const measureMode = normalizeMeasureMode(config);
 	const yAxisLabel = measureMode === 'mean'
 		? t('chive-tooltip-mean')
 		: measureMode === 'sum'
@@ -65,8 +91,7 @@ function renderBar(container, spec) {
 			: t('chive-tooltip-count');
 
 	return renderBarChart(container, spec.dataSnapshot, config.category, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
+		...baseOptions(config),
 		sort: config.sort,
 		topN: config.topN,
 		color: config.color,
@@ -83,7 +108,6 @@ function renderBar(container, spec) {
 			x: config.category || t('chive-chart-control-bar-category'),
 			y: yAxisLabel,
 		},
-		locale: getLocale(),
 		labels: {
 			category: t('chive-chart-control-bar-category'),
 			count: t('chive-tooltip-count'),
@@ -102,8 +126,7 @@ function renderScatter(container, spec) {
 	const config = spec.config || {};
 	const columnTypeByName = buildColumnTypeIndex(spec.columnsSnapshot);
 	return renderScatterPlot(container, spec.dataSnapshot, config.x, config.y, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
+		...baseOptions(config),
 		xScale: config.xScale,
 		yScale: config.yScale,
 		radius: config.radius,
@@ -131,7 +154,6 @@ function renderScatter(container, spec) {
 			x: columnTypeByName[config.x],
 			y: columnTypeByName[config.y],
 		},
-		locale: getLocale(),
 		labels: {
 			xAxis: t('chive-chart-control-scatter-x'),
 			yAxis: t('chive-chart-control-scatter-y'),
@@ -153,8 +175,7 @@ function renderScatter(container, spec) {
 function renderNetwork(container, spec) {
 	const config = spec.config || {};
 	return renderNetworkGraph(container, spec.dataSnapshot, config.source, config.target, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
+		...baseOptions(config),
 		weightColumn: config.weight,
 		groupColumn: config.group,
 		nodeRadius: config.nodeRadius,
@@ -168,7 +189,6 @@ function renderNetwork(container, spec) {
 		zoomScale: config.zoomScale,
 		alphaDecay: config.alphaDecay,
 		showLegend: config.showLegend,
-		locale: getLocale(),
 		labels: {
 			node: t('chive-chart-control-network-source'),
 			linkWeight: t('chive-chart-control-network-weight'),
@@ -185,8 +205,7 @@ function renderNetwork(container, spec) {
 function renderPie(container, spec) {
 	const config = spec.config || {};
 	return renderPieChart(container, spec.dataSnapshot, config.category, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
+		...baseOptions(config),
 		measureMode: config.measureMode,
 		valueColumn: config.valueColumn,
 		innerRadius: config.innerRadius,
@@ -201,7 +220,6 @@ function renderPie(container, spec) {
 		showLegend: config.showLegend,
 		labelPosition: config.labelPosition,
 		customSliceColors: config.customSliceColors,
-		locale: getLocale(),
 		labels: {
 			category: t('chive-chart-control-pie-category'),
 			count: t('chive-tooltip-count'),
@@ -217,12 +235,9 @@ function renderPie(container, spec) {
 /** @private */
 function renderBubble(container, spec) {
 	const config = spec.config || {};
-	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode)
-		? config.measureMode
-		: 'count';
+	const measureMode = normalizeMeasureMode(config);
 	return renderBubbleChart(container, spec.dataSnapshot, config.category, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
+		...baseOptions(config),
 		topN: config.topN,
 		measureMode,
 		valueColumn: config.valueColumn,
@@ -232,7 +247,6 @@ function renderBubble(container, spec) {
 		padding: config.padding,
 		labelMode: config.labelMode,
 		colorScheme: config.colorScheme,
-		locale: getLocale(),
 		labels: {
 			category: t('chive-chart-control-bubble-category'),
 			count: t('chive-tooltip-count'),
@@ -250,8 +264,7 @@ function renderBubble(container, spec) {
 function renderTreemap(container, spec) {
 	const config = spec.config || {};
 	return renderTreeMap(container, spec.dataSnapshot, config.category, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
+		...baseOptions(config),
 		measureMode: config.measureMode,
 		valueColumn: config.valueColumn,
 		topN: config.topN,
@@ -261,7 +274,6 @@ function renderTreemap(container, spec) {
 		color: config.color,
 		colorMode: config.colorMode,
 		colorScheme: config.colorScheme,
-		locale: getLocale(),
 		labels: {
 			category: t('chive-chart-control-treemap-category'),
 			count: t('chive-tooltip-count'),
@@ -279,8 +291,7 @@ function renderLine(container, spec) {
 	const config = spec.config || {};
 	const columnTypeByName = buildColumnTypeIndex(spec.columnsSnapshot);
 	return renderLineChart(container, spec.dataSnapshot, config.x, config.y, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
+		...baseOptions(config),
 		curve: config.curve,
 		missingMode: config.missingMode,
 		strokeWidth: config.strokeWidth,
@@ -299,7 +310,6 @@ function renderLine(container, spec) {
 			x: columnTypeByName[config.x],
 			y: columnTypeByName[config.y],
 		},
-		locale: getLocale(),
 		filterCallbacks: EMPTY_FILTER_CALLBACKS,
 	});
 }
@@ -308,8 +318,7 @@ function renderLine(container, spec) {
 function renderTin(container, spec) {
 	const config = spec.config || {};
 	return renderTinChart(container, spec.dataSnapshot, config.x, config.y, config.z, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
+		...baseOptions(config),
 		fillMode: config.fillMode,
 		subdivisionDepth: config.subdivisionDepth,
 		colorRamp: config.colorRamp,
@@ -346,7 +355,6 @@ function renderTin(container, spec) {
 			y: config.y || t('chive-chart-control-tin-y'),
 			z: config.z || t('chive-chart-control-tin-z'),
 		},
-		locale: getLocale(),
 	});
 }
 

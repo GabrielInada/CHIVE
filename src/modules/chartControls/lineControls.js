@@ -11,14 +11,13 @@
 
 import { CHART_COLORS, LINE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
+import { updateActiveDatasetConfig } from '../state/appState.js';
 import {
 	createCheckboxControl,
 	createColorInputControl,
 	createSelectControl,
 	createSliderControl,
 	createTextControl,
-	normalizeHexColor,
 } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
@@ -185,16 +184,6 @@ export function createLineChartControls(dataset, numericOptions = [], dateOption
 		disabled,
 	));
 
-	displayControls.push(createSliderControl(
-		'viz-slider-line-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 320),
-		220,
-		720,
-		10,
-		disabled,
-	));
-
 	// Quiet "unused" warning while leaving the date list available for future
 	// affordances (e.g. surfacing date columns first in the X picker).
 	void dateOptions;
@@ -224,7 +213,7 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	if (xSelect) {
 		xSelect.addEventListener('change', () => {
 			const selected = allOptions.includes(xSelect.value) ? xSelect.value : null;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				line: { ...dataset.chartConfig.line, x: selected },
 			});
 			onConfigChanged?.();
@@ -235,7 +224,7 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	if (ySelect) {
 		ySelect.addEventListener('change', () => {
 			const selected = numericOptions.includes(ySelect.value) ? ySelect.value : null;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				line: { ...dataset.chartConfig.line, y: selected },
 			});
 			onConfigChanged?.();
@@ -268,7 +257,6 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	], dataset, 'line', onConfigChanged);
 
 	setupTextInputListener('viz-input-line-title', 'customTitle', dataset, 'line', onConfigChanged);
-	setupSliderListener('viz-slider-line-height', 'chartHeight', dataset, 'line', onConfigChanged);
 	setupSliderListener('viz-slider-line-stroke-width', 'strokeWidth', dataset, 'line', onConfigChanged);
 
 	setupColorInputListener('viz-input-line-color', 'color', CHART_COLORS.line, dataset, 'line', onConfigChanged);

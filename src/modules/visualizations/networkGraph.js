@@ -24,7 +24,7 @@ import {
 	drag,
 	zoom,
 	zoomIdentity,
-} from 'https://esm.sh/d3@7.9.0';
+} from '../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -40,7 +40,7 @@ import { toCategoryToken } from '../../utils/chartFilters.js';
 import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
-import { ok, fail } from '../../utils/result.js';
+import { fail } from '../../utils/result.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 

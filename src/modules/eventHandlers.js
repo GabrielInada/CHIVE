@@ -12,17 +12,33 @@
  */
 
 import { t } from '../services/i18nService.js';
+import {
+	PROJECT_FILE_MIME,
+	exportProject,
+	getProjectImportErrorMessageKey,
+	importProjectBytes,
+} from '../services/persistenceService.js';
+import { downloadBytes } from '../utils/downloadBytes.js';
+import { rehydratePanelChartSpecs } from '../utils/panelHydration.js';
 import { downloadSvgFromContainer } from '../utils/svgExport.js';
 import { addChartToPanel, setupPanelEventListeners } from './panelManager.js';
-import { showError, showFeedback } from './feedbackUI.js';
+import { showError, showFeedback, showProgress } from './feedbackUI.js';
 import { setupFileInputListeners, selectDataset, removeDatasetByIndex } from './fileManager.js';
 import { setupTabListeners, setupSidebarToggleListener, switchTab } from './uiManager.js';
-import { getActiveDataset, updateActiveDatasetConfig } from './state/appState.js';
-import { CHART_CONTAINERS } from '../config/elementIds.js';
+import {
+	getActiveDataset,
+	getPersistenceSnapshot,
+	replaceAllState,
+	updateActiveDatasetConfig,
+} from './state/appState.js';
+import { CHART_CONTAINERS, FILE_IDS } from '../config/elementIds.js';
+import { isAnyDialogOpen } from './dialogFocus.js';
 
 const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
 	Object.entries(CHART_CONTAINERS).map(([type, id]) => [id, type])
 );
+
+let projectTransferBusy = false;
 
 /**
  * Wire all DOM listeners. Calls eight setup functions in sequence:
@@ -31,6 +47,7 @@ const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
  *   - `setupSidebarToggleListener` (uiManager)
  *   - `setupSidebarNavigationButtons` (here, private)
  *   - `setupPanelEventListeners` (panelManager)
+ *   - `setupProjectTransferListeners` (here, private, project export/import)
  *   - `setupChartActionListeners` (here, private, download SVG + add-to-panel buttons)
  *   - `setupGlobalKeyboardListeners` (here, private, Ctrl/Cmd+O)
  *   - `setupDatasetListeners` (here, private, delegated select/remove)
@@ -43,9 +60,123 @@ export function initializeAllEventHandlers() {
 	setupSidebarToggleListener();
 	setupSidebarNavigationButtons();
 	setupPanelEventListeners();
+	setupProjectTransferListeners();
 	setupChartActionListeners();
 	setupGlobalKeyboardListeners();
 	setupDatasetListeners();
+}
+
+function setupProjectTransferListeners() {
+	const menuButton = document.getElementById(FILE_IDS.projectMenuButton);
+	const menuPanel = document.getElementById(FILE_IDS.projectMenuPanel);
+
+	if (menuButton && menuPanel) {
+		menuButton.addEventListener('click', event => {
+			event.stopPropagation();
+			setProjectMenuOpen(menuPanel.hidden);
+		});
+		document.addEventListener('click', event => {
+			if (menuPanel.hidden) return;
+			if (event.target.closest('.project-menu')) return;
+			setProjectMenuOpen(false);
+		});
+		document.addEventListener('keydown', event => {
+			if (event.key === 'Escape') setProjectMenuOpen(false);
+		});
+	}
+
+	document.getElementById(FILE_IDS.projectExportButton)
+		?.addEventListener('click', () => {
+			setProjectMenuOpen(false);
+			void handleProjectExport({ workOnly: false });
+		});
+	document.getElementById(FILE_IDS.projectExportWorkOnlyButton)
+		?.addEventListener('click', () => {
+			setProjectMenuOpen(false);
+			void handleProjectExport({ workOnly: true });
+		});
+	document.getElementById(FILE_IDS.projectImportButton)
+		?.addEventListener('click', () => {
+			setProjectMenuOpen(false);
+			document.getElementById(FILE_IDS.projectImportInput)?.click();
+		});
+
+	const importInput = document.getElementById(FILE_IDS.projectImportInput);
+	if (importInput) {
+		importInput.addEventListener('change', event => {
+			const file = event.target?.files?.[0] || null;
+			void handleProjectImport(file, importInput);
+		});
+	}
+}
+
+function setProjectMenuOpen(open) {
+	const menuButton = document.getElementById(FILE_IDS.projectMenuButton);
+	const menuPanel = document.getElementById(FILE_IDS.projectMenuPanel);
+	if (!menuButton || !menuPanel) return;
+	menuPanel.hidden = !open;
+	menuButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+
+async function handleProjectExport({ workOnly = false } = {}) {
+	if (projectTransferBusy) return;
+	projectTransferBusy = true;
+	const progress = showProgress(t('chive-project-exporting'));
+	try {
+		progress.update(20);
+		const result = await exportProject(getPersistenceSnapshot(), { workOnly });
+		if (!result.ok) {
+			progress.fail(t('chive-project-export-error'));
+			return;
+		}
+
+		progress.update(85);
+		const downloadResult = downloadBytes(result.bytes, result.fileName, { mimeType: PROJECT_FILE_MIME });
+		if (!downloadResult.ok) {
+			progress.fail(t('chive-project-export-error'));
+			return;
+		}
+		progress.succeed(t('chive-project-export-success'));
+	} catch {
+		progress.fail(t('chive-project-export-error'));
+	} finally {
+		projectTransferBusy = false;
+	}
+}
+
+async function handleProjectImport(file, input) {
+	if (!file || projectTransferBusy) {
+		if (input) input.value = '';
+		return;
+	}
+
+	const confirmed = window.confirm(t('chive-project-import-confirm'));
+	if (!confirmed) {
+		input.value = '';
+		return;
+	}
+
+	projectTransferBusy = true;
+	const progress = showProgress(t('chive-project-importing'));
+	try {
+		progress.update(20);
+		const bytes = new Uint8Array(await file.arrayBuffer());
+		progress.update(55);
+		const result = await importProjectBytes(bytes, {
+			replaceAllState,
+			transformPanel: rehydratePanelChartSpecs,
+		});
+		if (!result.ok) {
+			progress.fail(t(getProjectImportErrorMessageKey(result.error)));
+			return;
+		}
+		progress.succeed(t('chive-project-import-success'));
+	} catch (err) {
+		progress.fail(t(getProjectImportErrorMessageKey(err)));
+	} finally {
+		input.value = '';
+		projectTransferBusy = false;
+	}
 }
 
 /**
@@ -90,10 +221,7 @@ function setupSidebarNavigationButtons() {
 function navigateToTab(tabName) {
 	const dataset = getActiveDataset();
 	if (dataset?.chartConfig) {
-		updateActiveDatasetConfig({
-			...dataset.chartConfig,
-			activeTab: tabName,
-		});
+		updateActiveDatasetConfig({ activeTab: tabName });
 	}
 	switchTab(tabName);
 }
@@ -313,9 +441,14 @@ function buildChartSnapshotMetadata(containerId) {
  */
 function setupGlobalKeyboardListeners() {
 	document.addEventListener('keydown', event => {
+		// Let a focused control (e.g. an open dialog's Tab trap) suppress global
+		// shortcuts by consuming the event first.
+		if (event.defaultPrevented) return;
 		// Ctrl+O or Cmd+O: open file picker
 		if ((event.ctrlKey || event.metaKey) && event.key === 'o') {
 			event.preventDefault();
+			// Never open the picker behind an open modal dialog.
+			if (isAnyDialogOpen()) return;
 			document.getElementById('file-input')?.click();
 		}
 	});
@@ -348,30 +481,3 @@ function setupDatasetListeners() {
 	});
 }
 
-/**
- * Wire delegated listeners on the results view (column list, column
- * action buttons). Note: the inner callbacks reference TODO comments
- * pointing at `resultsView.js` for the actual wiring, this function
- * currently sets up the delegation skeleton but the callbacks are not
- * yet routed. Tracked as a follow-up refactor; documented as-is.
- */
-export function setupResultsViewListeners() {
-	// Column selection
-	const listaColunas = document.getElementById('column-list-content');
-	if (listaColunas) {
-		listaColunas.addEventListener('change', event => {
-			if (event.target.type === 'checkbox' && !event.target.disabled) {
-				// Callback will be in resultsView.js setup
-			}
-		});
-	}
-
-	// Column action buttons
-	document.addEventListener('click', event => {
-		const acoesBtn = event.target.closest('[data-acao-coluna]');
-		if (acoesBtn) {
-			const acao = acoesBtn.dataset.acaoColuna;
-			// Callback will be in resultsView.js setup
-		}
-	});
-}

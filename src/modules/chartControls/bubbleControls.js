@@ -15,7 +15,7 @@
 
 import { BUBBLE_CHART } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
+import { updateActiveDatasetConfig } from '../state/appState.js';
 import { createTextControl, createSliderControl, createSelectControl, createColorPresetControl, COLOR_PRESETS } from './shared.js';
 import { groupControls } from './controlGrouping.js';
 import {
@@ -189,16 +189,6 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
 		disabled
 	));
 
-	displayControls.push(createSliderControl(
-		'viz-slider-bubble-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 700),
-		400,
-		900,
-		10,
-		disabled
-	));
-
 	displayControls.push(createSelectControl(
 		'viz-select-bubble-label-mode',
 		t('chive-chart-control-bubble-label-mode'),
@@ -251,7 +241,6 @@ export function createBubbleChartControls(dataset, categoryOptions, numericOptio
  * @returns {void}
  */
 export function setupBubbleChartControlListeners(dataset, baseBubble, numericOptions, allColumnsOrCallback = [], onConfigChangedMaybe) {
-	const allColumns = typeof allColumnsOrCallback === 'function' ? [] : allColumnsOrCallback;
 	const onConfigChanged = typeof allColumnsOrCallback === 'function'
 		? allColumnsOrCallback
 		: onConfigChangedMaybe;
@@ -277,7 +266,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 				// Set this level and truncate deeper levels
 				const updated = currentNesting.slice(0, levelIndex);
 				updated[levelIndex] = newValue;
-				updateActiveDatasetChartConfig({
+				updateActiveDatasetConfig({
 					bubble: {
 						...dataset.chartConfig.bubble,
 						nestingColumns: updated,
@@ -287,7 +276,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 			} else {
 				// Clearing this level: truncate from this level onward
 				const updated = currentNesting.slice(0, levelIndex);
-				updateActiveDatasetChartConfig({
+				updateActiveDatasetConfig({
 					bubble: {
 						...dataset.chartConfig.bubble,
 						nestingColumns: updated,
@@ -308,7 +297,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 			const currentValueColumn = numericOptions.includes(dataset.chartConfig.bubble?.valueColumn)
 				? dataset.chartConfig.bubble?.valueColumn
 				: null;
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				bubble: {
 					...dataset.chartConfig.bubble,
 					measureMode: nextMode,
@@ -322,7 +311,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 	const valueSelect = document.getElementById('viz-select-bubble-value-column');
 	if (valueSelect) {
 		valueSelect.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				bubble: {
 					...dataset.chartConfig.bubble,
 					valueColumn: numericOptions.includes(valueSelect.value) ? valueSelect.value : null,
@@ -332,7 +321,6 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 		});
 	}
 
-	setupSliderListener('viz-slider-bubble-height', 'chartHeight', dataset, 'bubble', onConfigChanged);
 	setupSliderListener('viz-slider-bubble-padding', 'padding', dataset, 'bubble', onConfigChanged);
 	setupTextInputListener('viz-input-bubble-title', 'customTitle', dataset, 'bubble', onConfigChanged);
 	setupColorPresetListeners('viz-bubble-color-preset', {}, {}, dataset, 'bubble', onConfigChanged, COLOR_PRESETS);

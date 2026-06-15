@@ -10,8 +10,7 @@
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  */
 
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
-import { normalizeActiveDatasetConfig } from '../state/appState.js';
+import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../state/appState.js';
 import { normalizeHexColor } from './shared.js';
 import { triggerLiveRender } from './livePreview.js';
 
@@ -23,7 +22,7 @@ import { triggerLiveRender } from './livePreview.js';
  */
 function makeUpdater(dataset, chartKey, onConfigChanged) {
 	return (partialUpdate) => {
-		updateActiveDatasetChartConfig({
+		updateActiveDatasetConfig({
 			[chartKey]: {
 				...dataset.chartConfig[chartKey],
 				...partialUpdate,
@@ -107,8 +106,8 @@ export function setupTextInputListener(elementId, configKey, dataset, chartKey, 
  *     After the write, the registered live-render callback re-paints
  *     only the chart visualizations.
  *   - `change`, fires when the picker closes. Goes through the emitting
- *     facade so `CONFIG_UPDATED` fires, the auto-save subscription
- *     debounces the write into IndexedDB, and the sidebar refreshes.
+ *     facade so `CONFIG_UPDATED` fires, the auto-save controller marks the
+ *     project dirty, and the sidebar refreshes.
  *
  * Values are normalized via {@link normalizeHexColor} with the provided
  * `defaultColor` as the fallback.

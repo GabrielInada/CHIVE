@@ -123,6 +123,33 @@ export function getState() {
 	return JSON.parse(JSON.stringify(appState));
 }
 
+/**
+ * Assemble the persistence-shaped snapshot from LIVE references, with no
+ * deep clone. This is the save path's read accessor: it lets the worker
+ * backend reference-compare dataset rows / chart snapshots to skip
+ * re-sending unchanged payloads, and it keeps the heavy JSON clone that
+ * {@link getState} performs off the auto-save hot path.
+ *
+ * The returned object is a fresh envelope, but `datasets`, `panel`, and `ui`
+ * are the real state references. Do not mutate them, treat this exactly like
+ * {@link getAllDatasets} / {@link getPanelCharts}. The reference-identity
+ * dedup in the worker backend is sound only because dataset `rows` and chart
+ * `dataSnapshot`/`columnsSnapshot` are immutable per id (changing data means
+ * remove+add with a new array, never an in-place edit).
+ *
+ * @returns {AppState} Live-reference view. Do not mutate.
+ */
+export function getPersistenceSnapshot() {
+	return {
+		data: {
+			datasets: appState.data.datasets,
+			activeIndex: appState.data.activeIndex,
+		},
+		panel: appState.panel,
+		ui: appState.ui,
+	};
+}
+
 // ─── Data domain ────────────────────────────────────────────────────────
 
 /**
@@ -458,24 +485,4 @@ export function replaceAllState({ data, panel, ui } = {}) {
 	}
 
 	emitStateChange(STATE_EVENTS.STATE_HYDRATED);
-}
-
-/**
- * Mirror selected state fields onto `window.*` globals for legacy hooks
- * that still read from globals. New code must not depend on these, read
- * via the getters in this module instead.
- *
- * @deprecated Legacy compatibility shim. Slated for removal once all
- *   external hooks migrate to the typed getters; until then, `stateSync`
- *   refreshes these on every emission.
- */
-export function exposeGlobals() {
-	window.datasetsCarregados = appState.data.datasets;
-	window.datasetAtivo = getActiveDataset();
-	window.dadosCarregados = getActiveDataset()?.rows || null;
-	window.colunasDetectadas = getActiveDataset()?.columns || null;
-	window.colunasSelecionadasAtivas = getActiveDataset()?.selectedColumns || null;
-	window.chartsPainel = appState.panel.charts;
-	window.slotsPainel = appState.panel.slots;
-	window.layoutPainelAtual = appState.panel.layout;
 }

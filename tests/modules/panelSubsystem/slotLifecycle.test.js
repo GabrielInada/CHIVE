@@ -9,6 +9,12 @@ const dispatch = vi.hoisted(() => ({
 
 vi.mock('../../../src/modules/panelSubsystem/renderChartFromSpec.js', () => dispatch);
 
+const tooltipMock = vi.hoisted(() => ({
+	hideChartTooltip: vi.fn(),
+}));
+
+vi.mock('../../../src/modules/visualizations/tooltip.js', () => tooltipMock);
+
 import { mountSlot, teardownSlot, teardownAllSlots } from '../../../src/modules/panelSubsystem/slotLifecycle.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
@@ -40,6 +46,7 @@ describe('slotLifecycle', () => {
 		window.requestAnimationFrame = (cb) => { cb(); return 1; };
 		window.cancelAnimationFrame = vi.fn();
 		dispatch.renderChartFromSpec.mockClear();
+		tooltipMock.hideChartTooltip.mockClear();
 	});
 
 	afterEach(() => {
@@ -75,6 +82,15 @@ describe('slotLifecycle', () => {
 		expect(stop).toHaveBeenCalled();
 		expect(container[SIMULATION_KEY]).toBeNull();
 		expect(container.innerHTML).toBe('');
+	});
+
+	it('teardownSlot clears any active tooltip so a mid-pin teardown does not orphan listeners', () => {
+		const container = document.createElement('div');
+		mountSlot(container, { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] });
+
+		teardownSlot(container);
+
+		expect(tooltipMock.hideChartTooltip).toHaveBeenCalled();
 	});
 
 	it('teardownAllSlots cleans every panel-slot-svg under root', () => {

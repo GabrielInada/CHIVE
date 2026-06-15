@@ -84,7 +84,7 @@ describe('tabsView', () => {
 		}).not.toThrow();
 	});
 
-	it('hides global filter trigger when not on charts tab', async () => {
+	it('shows global filter trigger on preview and hides it on panel', async () => {
 		const { updateTabs } = await import('../../../src/components/results/tabsView.js');
 
 		updateTabs('preview', vi.fn(), null, {
@@ -92,6 +92,12 @@ describe('tabsView', () => {
 		});
 
 		const trigger = document.getElementById('btn-global-filter');
+		expect(trigger.hidden).toBe(false);
+
+		updateTabs('panel', vi.fn(), null, {
+			triggerState: { hasDataset: true, globalFilter: { column: null }, filteredCount: 0, totalCount: 0 },
+		});
+
 		expect(trigger.hidden).toBe(true);
 	});
 

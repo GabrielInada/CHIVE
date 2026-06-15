@@ -3,16 +3,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-	updateActiveDatasetChartConfig: vi.fn(),
+	updateActiveDatasetConfig: vi.fn(),
 	normalizeActiveDatasetConfig: vi.fn(),
-}));
-
-vi.mock('../../../src/modules/state/stateSync.js', () => ({
-	updateActiveDatasetChartConfig: mocks.updateActiveDatasetChartConfig,
 }));
 
 vi.mock('../../../src/modules/state/appState.js', () => ({
 	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
+	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
 import { setupColorInputListener } from '../../../src/modules/chartControls/controlListenerHelpers.js';
@@ -46,7 +43,7 @@ describe('controlListenerHelpers setupColorInputListener', () => {
 		input.dispatchEvent(new Event('input'));
 
 		// No emitting facade call (would rebuild the sidebar and disrupt the picker).
-		expect(mocks.updateActiveDatasetChartConfig).not.toHaveBeenCalled();
+		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
 
 		// Non-emitting facade write happened with a normalizer that produces the new color.
 		expect(mocks.normalizeActiveDatasetConfig).toHaveBeenCalledTimes(1);
@@ -67,8 +64,8 @@ describe('controlListenerHelpers setupColorInputListener', () => {
 		input.value = '#00ff00';
 		input.dispatchEvent(new Event('change'));
 
-		expect(mocks.updateActiveDatasetChartConfig).toHaveBeenCalledTimes(1);
-		const callArg = mocks.updateActiveDatasetChartConfig.mock.calls[0][0];
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		const callArg = mocks.updateActiveDatasetConfig.mock.calls[0][0];
 		expect(callArg.bar.color.toLowerCase()).toBe('#00ff00');
 	});
 

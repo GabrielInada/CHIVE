@@ -10,7 +10,7 @@
  * @typedef {import('../../types.js').Result} Result
  */
 
-import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from 'https://esm.sh/d3@7.9.0';
+import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from '../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,

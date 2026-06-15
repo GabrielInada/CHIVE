@@ -1,6 +1,6 @@
 /**
  * Tabs view, preview / charts / dashboard switcher plus the global-filter
- * trigger button that only shows on the charts tab.
+ * trigger button that shows on dataset-facing tabs.
  *
  * Listeners are wired exactly once (module-local flag); subsequent
  * `updateTabs` calls just swap the current callbacks. This avoids
@@ -97,7 +97,7 @@ export function updateTabsUI(activeTab) {
 }
 
 /**
- * Update the global-filter trigger button: visibility (charts tab only),
+ * Update the global-filter trigger button: visibility (preview/charts tabs),
  * disabled state, active-class, and the label/badge text that reflect
  * the current filter rule count and filtered-row counts.
  *
@@ -119,10 +119,10 @@ export function updateGlobalFilterTrigger({
 	const { globalFilterTrigger, globalFilterLabel, globalFilterBadge } = getTabElements();
 	if (!globalFilterTrigger || !globalFilterLabel) return;
 
-	const showOnCharts = activeTab === 'charts';
-	globalFilterTrigger.hidden = !showOnCharts;
+	const showOnDatasetTab = activeTab === 'preview' || activeTab === 'charts';
+	globalFilterTrigger.hidden = !showOnDatasetTab;
 
-	if (!showOnCharts) {
+	if (!showOnDatasetTab) {
 		return;
 	}
 

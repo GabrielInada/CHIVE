@@ -2,9 +2,11 @@ import js from '@eslint/js';
 import chiveRules from './eslint-rules/index.js';
 
 const STATELESS_RENDERER_MESSAGE =
-	'Renderers (src/components/, src/features/) must be stateless ' +
-	'(ARCHITECTURE.md §4). Only read-only facade members are importable here. ' +
-	'Route writes through chartControls listeners or modules/eventHandlers.';
+	'Renderers and DOM builders (src/components/, src/features/, ' +
+	'modules/visualizations/, panelSubsystem presentation files) do not ' +
+	'call write facades (ARCHITECTURE.md Layers section). Only read-only facade members ' +
+	'are importable here. Route writes through panelManager.js, ' +
+	'chartControls listeners, or modules/eventHandlers.';
 
 // Read-only facade surface that renderers may import from appState.js.
 // If you add a new READ function to appState.js, add it here too. Anything
@@ -22,18 +24,27 @@ const APP_STATE_READS = [
 ];
 
 // Facade getters that return mutable refs (objects/arrays). The inline mutation
-// guard below blocks `getXxx().a.b = c` assignments across all of src/. The
-// aliased form (`const d = getXxx(); d.a = b`) is caught separately by the
-// local `chive/no-facade-getter-mutation` rule. If a new mutable-ref getter is
-// added to appState.js, add it here too (and to the local rule's getter list).
-const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState)';
+// guard below blocks `getXxx().a.b = c` assignments AND inline mutating-method
+// calls (`getXxx().a.push(...)`) across all of src/. The aliased form
+// (`const d = getXxx(); d.a = b`) is caught separately by the local
+// `chive/no-facade-getter-mutation` rule. If a new mutable-ref getter is added
+// to appState.js, add it here too (and to the local rule's getter list).
+const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState|getPersistenceSnapshot)';
+
+// Array methods that mutate the receiver in place. Kept in sync with
+// MUTATING_METHODS in eslint-rules/no-facade-getter-mutation.js.
+const FACADE_MUTATING_METHODS = '(push|pop|shift|unshift|splice|sort|reverse|fill|copyWithin)';
 
 const FACADE_MUTATION_MESSAGE =
 	'Mutating a facade getter return is forbidden, these are read-only views. ' +
 	'Use the corresponding facade write method (updateActiveDatasetConfig, ' +
 	'addChartSnapshot, …). See CONTRIBUTING.md §Architecture invariants.';
 
-// Inline facade-mutation selectors: catch `getXxx().a = b` at depths 1 to 3.
+// Inline facade-mutation selectors: catch `getXxx().a = b` (assignment) and
+// `getXxx().a.push(...)` (mutating method call) at depths 1 to 3. A direct
+// `getXxx().push(...)` is depth 1 (the getter call is the method's `.object`).
+// Mutating methods chained off a copy (`getXxx().slice().sort()`) are not
+// matched because the method's `.object` is the `slice()` call, not the getter.
 const FACADE_MUTATION_SELECTORS = [
 	{
 		selector: `AssignmentExpression[left.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
@@ -47,6 +58,18 @@ const FACADE_MUTATION_SELECTORS = [
 		selector: `AssignmentExpression[left.object.object.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
 		message: FACADE_MUTATION_MESSAGE,
 	},
+	{
+		selector: `CallExpression[callee.property.name=/^${FACADE_MUTATING_METHODS}$/][callee.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
+		message: FACADE_MUTATION_MESSAGE,
+	},
+	{
+		selector: `CallExpression[callee.property.name=/^${FACADE_MUTATING_METHODS}$/][callee.object.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
+		message: FACADE_MUTATION_MESSAGE,
+	},
+	{
+		selector: `CallExpression[callee.property.name=/^${FACADE_MUTATING_METHODS}$/][callee.object.object.object.callee.name=/^${FACADE_MUTABLE_GETTERS}$/]`,
+		message: FACADE_MUTATION_MESSAGE,
+	},
 ];
 
 // Raw-static deployment guards. CHIVE can be served raw from src/ with no build
@@ -55,15 +78,19 @@ const FACADE_MUTATION_SELECTORS = [
 const BARE_IMPORT_BANS = [
 	{
 		name: 'd3',
-		message: 'Import the full CDN URL (https://esm.sh/d3@7.9.0). A bare "d3" specifier only resolves under a bundler and breaks raw-static hosting.',
+		message: 'Import the checked-in vendor module (`vendor/d3/d3.js`) via a relative path. A bare "d3" specifier only resolves under a bundler and breaks raw-static hosting.',
 	},
 	{
 		name: 'banana-i18n',
-		message: 'Import the full CDN URL (https://esm.sh/banana-i18n@2.4.0). A bare specifier only resolves under a bundler and breaks raw-static hosting.',
+		message: 'Import the checked-in vendor module (`vendor/banana-i18n/banana-i18n.js`) via a relative path. A bare specifier only resolves under a bundler and breaks raw-static hosting.',
 	},
 ];
 
 const VITE_ONLY_SYNTAX_SELECTORS = [
+	{
+		selector: ':matches(ImportDeclaration, ImportExpression, ExportNamedDeclaration, ExportAllDeclaration)[source.value=/^https:\\/\\/esm\\.sh\\//]',
+		message: 'Runtime JavaScript dependencies must load from checked-in vendor modules, not esm.sh.',
+	},
 	{
 		selector: ':matches(ImportDeclaration, ImportExpression, ExportNamedDeclaration, ExportAllDeclaration)[source.value=/\\?(worker|url|raw)(&|$)/]',
 		message: 'Vite-only import suffix (?worker / ?url / ?raw) breaks raw-static hosting. Build workers with `new Worker(new URL(...), import.meta.url)` instead.',
@@ -85,6 +112,10 @@ const BROWSER_GLOBALS = {
 	URL: 'readonly',
 	localStorage: 'readonly',
 	crypto: 'readonly',
+	globalThis: 'readonly',
+	TextEncoder: 'readonly',
+	ArrayBuffer: 'readonly',
+	Uint8Array: 'readonly',
 	fetch: 'readonly',
 	setTimeout: 'readonly',
 	clearTimeout: 'readonly',
@@ -147,12 +178,42 @@ export default [
 	// AFTER (A) because it redeclares `no-restricted-imports`; it repeats the
 	// bare-import bans alongside the facade-read restriction.
 	{
-		files: ['src/components/**/*.js', 'src/features/**/*.js'],
+		files: ['src/components/**/*.js', 'src/features/**/*.js', 'src/modules/visualizations/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/state/appState.js'],
+					group: ['**/state/appState.js'],
+					allowImportNames: APP_STATE_READS,
+					message: STATELESS_RENDERER_MESSAGE,
+				}],
+			}],
+		},
+	},
+
+	// (B2) panelSubsystem presentation files: same renderer-statelessness rule
+	// as (B). Explicit file list because naming is not consistent across the
+	// subsystem (no `*Renderer.js` prefix to glob on). `panelStateMutations.js`
+	// and `blockStateHelpers.js` are intentionally absent, they back the panel
+	// facade and need write access. `panelManager.js` lives at
+	// `src/modules/panelManager.js` (outside this directory) and is naturally
+	// exempt.
+	{
+		files: [
+			'src/modules/panelSubsystem/panelRenderer.js',
+			'src/modules/panelSubsystem/panelResize.js',
+			'src/modules/panelSubsystem/domBuilders.js',
+			'src/modules/panelSubsystem/renderChartFromSpec.js',
+			'src/modules/panelSubsystem/slotLifecycle.js',
+			'src/modules/panelSubsystem/panelExporter.js',
+			'src/modules/panelSubsystem/layoutConfig.js',
+			'src/modules/panelSubsystem/resizeMath.js',
+		],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/state/appState.js'],
 					allowImportNames: APP_STATE_READS,
 					message: STATELESS_RENDERER_MESSAGE,
 				}],

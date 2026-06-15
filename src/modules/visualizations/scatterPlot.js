@@ -13,7 +13,7 @@
  * @typedef {import('../../types.js').Result} Result
  */
 
-import { area as d3area, axisBottom, axisLeft, extent, line as d3line, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from 'https://esm.sh/d3@7.9.0';
+import { area as d3area, axisBottom, axisLeft, extent, line as d3line, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from '../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -618,7 +618,6 @@ function renderRegressionLayer({
 	yScale,
 	innerWidth,
 	innerHeight,
-	color,
 	labels,
 	isPinned,
 }) {

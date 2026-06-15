@@ -39,20 +39,7 @@
     opacity: 0.95;
 }
 
-/* Ajuste do header para distribuir melhor os elementos */
-header {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 16px 20px;
-    border-bottom: 1px solid var(--border);
-}
-
 .logo {
-    flex-shrink: 0;
-}
-
-.header-lang {
     flex-shrink: 0;
 }
 
@@ -66,10 +53,6 @@ header {
     .header-steps {
         font-size: 12px;
     }
-
-    header {
-        flex-wrap: wrap;
-    }
 }
 
 @media (max-width: 480px) {
@@ -78,9 +61,5 @@ header {
         order: 3;
         width: 100%;
         margin: 8px 0 0 0;
-    }
-
-    header {
-        padding: 12px;
     }
 }

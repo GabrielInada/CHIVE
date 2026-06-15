@@ -19,18 +19,19 @@
  * @param {string} params.blockId
  * @param {number} params.index - Position in the block stack (0-based).
  * @param {number} params.totalBlocks
+ * @param {(key: string, ...params: *) => string} params.translate
  * @param {() => void} params.onMoveUp
  * @param {() => void} params.onMoveDown
  * @param {() => void} params.onRemove
  * @returns {HTMLElement}
  */
-export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMoveDown, onRemove }) {
+export function createBlockHeader({ blockId, index, totalBlocks, translate, onMoveUp, onMoveDown, onRemove }) {
 	const header = document.createElement('div');
 	header.className = 'panel-block-header';
 
 	const title = document.createElement('span');
 	title.className = 'panel-block-title';
-	title.textContent = `Block ${index + 1}`;
+	title.textContent = translate('chive-panel-block-title', index + 1);
 
 	const actions = document.createElement('div');
 	actions.className = 'panel-block-actions';
@@ -40,6 +41,7 @@ export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMov
 	upBtn.className = 'panel-block-btn';
 	upBtn.dataset.panelBlockUp = blockId;
 	upBtn.textContent = '↑';
+	upBtn.setAttribute('aria-label', translate('chive-panel-block-move-up'));
 	upBtn.disabled = index === 0;
 	upBtn.addEventListener('click', onMoveUp);
 
@@ -48,6 +50,7 @@ export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMov
 	downBtn.className = 'panel-block-btn';
 	downBtn.dataset.panelBlockDown = blockId;
 	downBtn.textContent = '↓';
+	downBtn.setAttribute('aria-label', translate('chive-panel-block-move-down'));
 	downBtn.disabled = index === totalBlocks - 1;
 	downBtn.addEventListener('click', onMoveDown);
 
@@ -56,6 +59,7 @@ export function createBlockHeader({ blockId, index, totalBlocks, onMoveUp, onMov
 	removeBtn.className = 'panel-block-btn panel-block-btn-danger';
 	removeBtn.dataset.panelBlockRemove = blockId;
 	removeBtn.textContent = '×';
+	removeBtn.setAttribute('aria-label', translate('chive-panel-block-remove'));
 	removeBtn.disabled = totalBlocks <= 1;
 	removeBtn.addEventListener('click', onRemove);
 

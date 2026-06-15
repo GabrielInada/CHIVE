@@ -12,8 +12,7 @@
 
 import { CHART_COLORS } from '../../config/charts.js';
 import { t } from '../../services/i18nService.js';
-import { updateActiveDatasetChartConfig } from '../state/stateSync.js';
-import { normalizeActiveDatasetConfig } from '../state/appState.js';
+import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../state/appState.js';
 import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, normalizeHexColor, createSelectControl } from './shared.js';
 import { COLOR_PRESETS, createColorPresetControl } from './shared.js';
 import { groupControls } from './controlGrouping.js';
@@ -134,16 +133,6 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		t('chive-chart-control-common-title'),
 		config.customTitle,
 		80,
-		disabled
-	));
-
-	displayControls.push(createSliderControl(
-		'viz-slider-scatter-height',
-		t('chive-chart-control-common-height'),
-		Number(config.chartHeight || 320),
-		220,
-		720,
-		10,
 		disabled
 	));
 
@@ -382,7 +371,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 		select.addEventListener('change', () => {
 			const selected = allOptions.includes(select.value) ? select.value : null;
 			const currentScale = dataset.chartConfig.scatter?.[scaleKey] === 'log' ? 'log' : 'linear';
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				scatter: {
 					...dataset.chartConfig.scatter,
 					[axisKey]: selected,
@@ -438,7 +427,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 			const currentField = dataset.chartConfig.scatter.colorField;
 			const currentRegression = dataset.chartConfig.scatter.regression || {};
 			const nextRegressionMode = value === 'category' ? currentRegression.mode : 'overall';
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				scatter: {
 					...dataset.chartConfig.scatter,
 					colorMode: value === 'uniform' ? 'uniform' : value,
@@ -471,7 +460,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 			triggerLiveRender();
 		});
 		inputScatterColor.addEventListener('change', () => {
-			updateActiveDatasetChartConfig({
+			updateActiveDatasetConfig({
 				scatter: {
 					...dataset.chartConfig.scatter,
 					colorMode: 'uniform',
@@ -503,14 +492,13 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 	], dataset, 'scatter', onConfigChanged);
 
 	setupTextInputListener('viz-input-scatter-title', 'customTitle', dataset, 'scatter', onConfigChanged);
-	setupSliderListener('viz-slider-scatter-height', 'chartHeight', dataset, 'scatter', onConfigChanged);
 	setupSliderListener('viz-slider-scatter-size-min', 'sizeMin', dataset, 'scatter', onConfigChanged);
 	setupSliderListener('viz-slider-scatter-size-max', 'sizeMax', dataset, 'scatter', onConfigChanged);
 
 	const updateRegression = patch => {
 		const currentScatter = dataset.chartConfig.scatter || {};
 		const currentRegression = currentScatter.regression || {};
-		updateActiveDatasetChartConfig({
+		updateActiveDatasetConfig({
 			scatter: {
 				...currentScatter,
 				regression: { ...currentRegression, ...patch },
@@ -552,7 +540,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 					}
 				}
 			}
-			updateActiveDatasetChartConfig({ scatter: nextScatter });
+			updateActiveDatasetConfig({ scatter: nextScatter });
 			onConfigChanged?.();
 		});
 	}
