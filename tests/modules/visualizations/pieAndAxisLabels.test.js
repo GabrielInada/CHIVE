@@ -353,6 +353,84 @@ describe('pie chart and axis labels', () => {
 		expect(noNumericResult.reason).toBe('no-numeric');
 	});
 
+	it('covers bar chart sorting, topN, color modes, title, and hidden axis labels', () => {
+		const container = document.getElementById('bar');
+		const rows = [
+			{ categoria: 'B', valor: 10 },
+			{ categoria: 'A', valor: 5 },
+			{ categoria: 'C', valor: 20 },
+			{ categoria: '', valor: 1 },
+			{ categoria: null, valor: 2 },
+		];
+
+		let result = renderBarChart(container, rows, 'categoria', {
+			sort: 'label-asc',
+			topN: 3,
+			colorMode: 'gradient',
+			gradientDistribution: 'rank',
+			gradientMinColor: '#000000',
+			gradientMaxColor: '#ffffff',
+			customTitle: 'Ranked Bars',
+			showXAxisLabel: false,
+			showYAxisLabel: false,
+			chartHeight: 999,
+		});
+		expect(result.ok).toBe(true);
+		expect(container.textContent).toContain('Ranked Bars');
+		expect(container.querySelectorAll('rect').length).toBe(3);
+		expect(container.textContent).not.toContain('categoria');
+
+		result = renderBarChart(container, rows, 'categoria', {
+			sort: 'label-desc',
+			colorMode: 'gradient-manual',
+			manualThresholdPct: -50,
+			gradientMinColor: '#111111',
+			gradientMaxColor: '#eeeeee',
+		});
+		expect(result.ok).toBe(true);
+		expect(Array.from(container.querySelectorAll('rect')).some(rect => rect.getAttribute('fill') === '#111111')).toBe(true);
+
+		result = renderBarChart(container, rows, 'categoria', {
+			sort: 'count-asc',
+			colorMode: 'gradient-manual',
+			manualThresholdPct: 150,
+			gradientMinColor: '#111111',
+			gradientMaxColor: '#eeeeee',
+		});
+		expect(result.ok).toBe(true);
+		expect(container.querySelectorAll('rect').length).toBeGreaterThan(0);
+	});
+
+	it('covers bar chart invalid arguments, empty rows, invalid measure mode, and pinned toggle interactions', () => {
+		const container = document.getElementById('bar');
+		expect(renderBarChart(null, [], 'categoria').ok).toBe(false);
+		expect(renderBarChart(container, [], '').ok).toBe(false);
+		expect(renderBarChart(container, [], 'categoria').ok).toBe(false);
+
+		const result = renderBarChart(container, [{ categoria: 'A' }], 'categoria', {
+			measureMode: 'not-real',
+			filterCallbacks: {
+				getTokenFilterState: () => 'excluded',
+				onBringBackGlobalFilter: () => {},
+				filterActionLabels: {
+					stateExcluded: 'Excluded',
+					bringBack: 'Bring back',
+				},
+			},
+		});
+		expect(result.ok).toBe(true);
+		const firstBar = container.querySelector('rect');
+		firstBar.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 1, pageY: 1 }));
+		firstBar.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, pageX: 2, pageY: 2 }));
+		firstBar.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+		firstBar.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		expect(document.querySelector('.chart-tooltip__filter-state--excluded')).not.toBeNull();
+		firstBar.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 3, pageY: 3 }));
+		firstBar.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		expect(document.querySelector('.chart-tooltip').style.display).toBe('none');
+		container.querySelector('svg').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+	});
+
 	it('supports toggling axis labels in bar and scatter charts', () => {
 		const barContainer = document.getElementById('bar');
 		const scatterContainer = document.getElementById('scatter');
@@ -389,5 +467,76 @@ describe('pie chart and axis labels', () => {
 		});
 		expect(scatterContainer.textContent).not.toContain('Scatter Axis X Custom');
 		expect(scatterContainer.textContent).toContain('Scatter Axis Y Custom');
+	});
+
+	it('covers pie invalid args, hidden labels/legend, custom slice colors, and invalid radius options', () => {
+		const container = document.getElementById('pie');
+		expect(renderPieChart(null, [], 'categoria').ok).toBe(false);
+		expect(renderPieChart(container, [], '').ok).toBe(false);
+
+		const result = renderPieChart(container, [
+			{ categoria: 'A' },
+			{ categoria: 'B' },
+			{ categoria: 'A' },
+		], 'categoria', {
+			color: 'bad-color',
+			customSliceColors: { A: '#123456' },
+			showCategoryLabel: false,
+			showValueLabel: false,
+			showLegend: false,
+			labelPosition: 'unknown',
+			innerRadius: Number.NaN,
+			outerRadius: Number.NaN,
+			padAngle: Number.NaN,
+			zoomScale: 99,
+			chartHeight: 100,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('path')?.getAttribute('fill')).toBe('#123456');
+		expect(container.querySelector('.pie-legend')).toBeNull();
+		expect(container.querySelectorAll('text').length).toBe(0);
+	});
+
+	it('covers pie Other-slice pinned tooltip without filter actions and included/excluded filter states', () => {
+		const container = document.getElementById('pie');
+		const rows = ['A', 'A', 'B', 'C', 'D'].map(categoria => ({ categoria }));
+		let result = renderPieChart(container, rows, 'categoria', {
+			topN: 1,
+			topNMode: 'other',
+			labels: { other: 'Other' },
+			filterCallbacks: {
+				onFocusGlobalFilter: () => {},
+				onAddToGlobalFilter: () => {},
+				onExcludeGlobalFilter: () => {},
+				getTokenFilterState: () => null,
+			},
+		});
+		expect(result.ok).toBe(true);
+		const otherSlice = Array.from(container.querySelectorAll('path')).find(path => path.__data__?.data?.isOther);
+		otherSlice.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		expect(document.querySelectorAll('.chart-tooltip__action').length).toBe(0);
+
+		result = renderPieChart(container, rows, 'categoria', {
+			filterCallbacks: {
+				onRemoveFromGlobalFilter: () => {},
+				getTokenFilterState: () => 'included',
+				filterActionLabels: { stateIncluded: 'Included', remove: 'Remove' },
+			},
+		});
+		expect(result.ok).toBe(true);
+		container.querySelector('path').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		expect(document.querySelector('.chart-tooltip__filter-state--included')).not.toBeNull();
+
+		result = renderPieChart(container, rows, 'categoria', {
+			filterCallbacks: {
+				onBringBackGlobalFilter: () => {},
+				getTokenFilterState: () => 'excluded',
+				filterActionLabels: { stateExcluded: 'Excluded', bringBack: 'Bring back' },
+			},
+		});
+		expect(result.ok).toBe(true);
+		container.querySelector('path').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		expect(document.querySelector('.chart-tooltip__filter-state--excluded')).not.toBeNull();
 	});
 });

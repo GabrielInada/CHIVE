@@ -432,7 +432,7 @@ async function handlePresetDatasetRequest(preset) {
 
 		if (source.mode === 'inline') {
 			// Inline presets are tiny demo arrays, sync processData is cheap.
-			let rows = source.rows;
+			rows = source.rows;
 			if (source.dropColumns.length > 0) {
 				const dropSet = new Set(source.dropColumns);
 				rows = rows.map(row => {

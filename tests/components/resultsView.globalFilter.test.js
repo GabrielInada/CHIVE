@@ -71,7 +71,7 @@ vi.mock('../../src/components/results/globalFilterDialog.js', () => ({
 	openGlobalFilterDialog: mocks.openGlobalFilterDialog,
 }));
 
-import { renderDataInterface } from '../../src/components/resultsView.js';
+import { renderDataInterface, renderEmptyState, renderFileList } from '../../src/components/resultsView.js';
 
 function setupDom() {
 	document.body.innerHTML = `
@@ -89,6 +89,41 @@ function setupDom() {
 		<p class="upload-text-main"></p>
 		<p class="upload-text-sub"></p>
 		<div id="file-summary-text"></div>
+	`;
+}
+
+function setupFileListDom() {
+	document.body.innerHTML = `
+		<section id="file-info">
+			<div id="file-summary-text"></div>
+			<div id="file-list-content"></div>
+		</section>
+	`;
+}
+
+function setupEmptyStateDom() {
+	document.body.innerHTML = `
+		<section id="file-info"></section>
+		<section id="columns-panel"></section>
+		<section id="empty-state"></section>
+		<section id="data-state"></section>
+		<nav id="result-tabs"></nav>
+		<div id="table-container"><span>old table</span></div>
+		<div id="container-stats"><span>old stats</span></div>
+		<div id="container-cat-stats"><span>old cats</span></div>
+		<section id="card-cat-stats"></section>
+		<div id="chart-bar-container"><svg></svg></div>
+		<div id="chart-scatter-container"><svg></svg></div>
+		<div id="chart-network-container"><svg></svg></div>
+		<div id="chart-pie-container"><svg></svg></div>
+		<div id="chart-bubble-container"><svg></svg></div>
+		<span id="badge-charts">7</span>
+		<button id="btn-advance"></button>
+		<div id="dev-warning"></div>
+		<div id="upload-zone" class="loaded"></div>
+		<span class="upload-icon"></span>
+		<p class="upload-text-main"></p>
+		<p class="upload-text-sub"></p>
 	`;
 }
 
@@ -127,5 +162,207 @@ describe('renderDataInterface global filter behavior', () => {
 			include: ['v:A'],
 		}));
 		expect(document.getElementById('badge-rows').textContent).toBe('chive-badge-preview:1,1,2,2');
+	});
+
+	it('wires preview-row changes and ignores invalid row counts', () => {
+		const onPreviewRowsChange = vi.fn();
+		const rows = [{ region: 'A', value: 1 }];
+		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+		const select = document.getElementById('select-preview-rows');
+		select.appendChild(new Option('25', '25'));
+		select.appendChild(new Option('0', '0'));
+
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, onPreviewRowsChange, null, null, {
+			activeTab: 'preview',
+			globalFilter: { rules: [] },
+		}, vi.fn());
+
+		select.value = '25';
+		select.dispatchEvent(new Event('change'));
+		select.value = '0';
+		select.dispatchEvent(new Event('change'));
+
+		expect(onPreviewRowsChange).toHaveBeenCalledTimes(1);
+		expect(onPreviewRowsChange).toHaveBeenCalledWith(25);
+	});
+
+	it('forwards chart tooltip global-filter callbacks to chart config changes', () => {
+		const onChartConfigChange = vi.fn();
+		const rows = [{ region: 'A', value: 1 }, { region: 'B', value: 2 }];
+		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+		const config = {
+			activeTab: 'charts',
+			globalFilter: {
+				rules: [{ column: 'region', mode: 'categorical', include: ['v:A'], exclude: ['v:B'] }],
+			},
+		};
+
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, config, onChartConfigChange);
+
+		const callbacks = mocks.renderCharts.mock.calls[0][4];
+		callbacks.onAddToGlobalFilter('region', 'v:C');
+		callbacks.onFocusGlobalFilter('region', 'v:C');
+		callbacks.onExcludeGlobalFilter('region', 'v:C');
+		callbacks.onRemoveFromGlobalFilter('region', 'v:A');
+		callbacks.onBringBackGlobalFilter('region', 'v:B');
+		callbacks.onAddToGlobalFilter('missing', 'v:x');
+		callbacks.onAddToGlobalFilter('region', 42);
+
+		expect(onChartConfigChange).toHaveBeenCalledTimes(5);
+		expect(onChartConfigChange.mock.calls[0][0].globalFilter.rules[0].include).toContain('v:C');
+		expect(onChartConfigChange.mock.calls[1][0].globalFilter.rules[0]).toEqual(expect.objectContaining({
+			column: 'region',
+			include: ['v:C'],
+		}));
+		expect(onChartConfigChange.mock.calls[2][0].globalFilter.rules[0].exclude).toContain('v:C');
+		expect(onChartConfigChange.mock.calls[3][0].globalFilter.rules[0].include).not.toContain('v:A');
+		expect(onChartConfigChange.mock.calls[4][0].globalFilter.rules[0].exclude).not.toContain('v:B');
+		expect(callbacks.getTokenFilterState('region', 'v:A')).toBe('included');
+		expect(callbacks.isShowOnlyThisRedundant('region', 'v:A')).toBe(false);
+	});
+
+	it('opens the global-filter dialog and applies returned filters', async () => {
+		const onChartConfigChange = vi.fn();
+		const rows = [{ region: 'A', value: 1 }];
+		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+		const nextFilter = { combine: 'AND', rules: [{ column: 'region', mode: 'categorical', include: ['v:A'] }] };
+		mocks.openGlobalFilterDialog.mockResolvedValueOnce({ action: 'apply', filter: nextFilter });
+
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+			activeTab: 'preview',
+			globalFilter: { rules: [] },
+		}, onChartConfigChange);
+
+		await mocks.updateTabs.mock.calls[0][3].onGlobalFilterOpen();
+
+		expect(mocks.openGlobalFilterDialog).toHaveBeenCalledWith(expect.objectContaining({
+			rows,
+			allColumns: ['region', 'value'],
+			numericColumns: ['value'],
+			initialFilter: expect.objectContaining({ rules: [] }),
+			translate: mocks.t,
+		}));
+		expect(onChartConfigChange).toHaveBeenCalledWith({ globalFilter: nextFilter });
+	});
+
+	it('normalizes stale global filters through the chart-config callback', () => {
+		const onChartConfigChange = vi.fn();
+		const rows = [{ region: 'A', value: 1 }];
+		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+			activeTab: 'preview',
+			globalFilter: { column: 'missing', mode: 'categorical', include: ['v:x'] },
+		}, onChartConfigChange);
+
+		expect(onChartConfigChange).toHaveBeenCalledWith({
+			globalFilter: expect.objectContaining({ rules: [] }),
+		});
+	});
+});
+
+describe('renderFileList orchestration', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		mocks.renderFileListDOM.mockImplementation(({ lista, datasets, filtro, limiteVisivel }) => {
+			lista.replaceChildren();
+			const count = filtro ? 1 : datasets.length;
+			return {
+				total: datasets.length,
+				filtered: count,
+				rendered: Math.min(count, limiteVisivel),
+				hasMore: count > limiteVisivel,
+			};
+		});
+		mocks.openJoinBuilderDialog.mockResolvedValue({ leftIndex: 0, rightIndex: 1 });
+		mocks.openPresetDatasetsDialog.mockResolvedValue({ id: 'iris' });
+		setupFileListDom();
+	});
+
+	it('renders file tools, paginates, searches, and forwards join/preset choices', async () => {
+		const datasets = Array.from({ length: 20 }, (_, index) => ({
+			name: `Data ${index}.csv`,
+			rows: [{ id: index }],
+			columns: [{ name: 'id' }],
+			sizeLabel: `${index} KB`,
+		}));
+		const onSelect = vi.fn();
+		const onRemove = vi.fn();
+		const onCreateJoin = vi.fn();
+		const onLoadPreset = vi.fn();
+
+		renderFileList(datasets, 1, onSelect, onRemove, onCreateJoin, onLoadPreset);
+
+		expect(document.getElementById('file-summary-text').textContent).toBe('chive-files-loaded:20');
+		expect(document.getElementById('file-selected-meta').textContent).toContain('Data 1.csv');
+		expect(document.getElementById('btn-join-files').disabled).toBe(false);
+		expect(document.getElementById('files-pagination').textContent).toContain('chive-files-show-more');
+
+		document.querySelector('.files-pagination-btn').click();
+		expect(mocks.renderFileListDOM.mock.calls.at(-1)[0].limiteVisivel).toBe(30);
+
+		const search = document.getElementById('files-filter-input');
+		search.value = 'iris';
+		search.dispatchEvent(new Event('input'));
+		expect(mocks.renderFileListDOM.mock.calls.at(-1)[0]).toEqual(expect.objectContaining({
+			filtro: 'iris',
+			limiteVisivel: 15,
+		}));
+
+		document.getElementById('btn-join-files').click();
+		await Promise.resolve();
+		expect(onCreateJoin).toHaveBeenCalledWith({ leftIndex: 0, rightIndex: 1 });
+
+		document.getElementById('btn-preset-datasets').click();
+		await Promise.resolve();
+		expect(onLoadPreset).toHaveBeenCalledWith({ id: 'iris' });
+	});
+
+	it('disables the join action when there are fewer than two datasets', () => {
+		renderFileList([
+			{ name: 'Only.csv', rows: [], columns: [], sizeLabel: '0 KB' },
+		], 0, vi.fn(), vi.fn(), vi.fn(), vi.fn());
+
+		expect(document.getElementById('btn-join-files').disabled).toBe(true);
+	});
+});
+
+describe('renderEmptyState', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		setupEmptyStateDom();
+	});
+
+	it('clears active result content and restores empty upload state', () => {
+		renderEmptyState();
+
+		expect(document.getElementById('columns-panel').style.display).toBe('none');
+		expect(document.getElementById('empty-state').style.display).toBe('flex');
+		expect(document.getElementById('data-state').style.display).toBe('none');
+		expect(document.getElementById('table-container').children.length).toBe(0);
+		expect(document.getElementById('container-stats').children.length).toBe(0);
+		expect(document.getElementById('card-cat-stats').style.display).toBe('none');
+		expect(document.getElementById('chart-bar-container').children.length).toBe(0);
+		expect(document.getElementById('badge-charts').textContent).toBe('0');
+		expect(document.getElementById('btn-advance').disabled).toBe(true);
+		expect(document.getElementById('upload-zone').classList.contains('loaded')).toBe(false);
+		expect(document.querySelector('.upload-text-main').textContent).toBe('chive-upload-main');
+		expect(mocks.updateTabs).toHaveBeenCalledWith('preview', null, null, {
+			triggerState: {
+				hasDataset: false,
+				globalFilter: null,
+				filteredCount: 0,
+				totalCount: 0,
+			},
+		});
+	});
+
+	it('tolerates a sparse DOM with optional result elements missing', () => {
+		document.body.innerHTML = '<section id="result-tabs"></section>';
+
+		expect(() => renderEmptyState()).not.toThrow();
+		expect(mocks.updateTabs).toHaveBeenCalledWith('preview', null, null, expect.objectContaining({
+			triggerState: expect.objectContaining({ hasDataset: false }),
+		}));
 	});
 });

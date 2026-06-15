@@ -136,6 +136,78 @@ describe('renderScatterPlot rendering', () => {
 		expect(new Set(fills(container))).toEqual(new Set(['#FF6B6B', '#4ECDC4']));
 	});
 
+	it('falls back for invalid color, invalid sizing, missing color fields, and constant numeric domains', () => {
+		const container = document.getElementById('scatter');
+		const rows = [
+			{ x: 1, y: 1, size: 'bad', colorValue: 5 },
+			{ x: 2, y: 2, size: 10, colorValue: 5 },
+			{ x: 3, y: 3, size: 20, colorValue: 'bad' },
+		];
+
+		let result = renderScatterPlot(container, rows, 'x', 'y', {
+			color: 'bad-color',
+			radius: 'bad',
+			opacity: 'bad',
+			sizeMode: 'numeric',
+			sizeField: 'missing',
+			sizeMin: -10,
+			sizeMax: -5,
+			colorMode: 'numeric',
+			colorField: 'missing',
+			gradientMinColor: 'bad',
+			gradientMaxColor: 'bad',
+			colorScheme: 'missing',
+			chartHeight: 999,
+		});
+		expect(result.ok).toBe(true);
+		expect(new Set(radii(container)).size).toBe(1);
+		expect(new Set(fills(container)).size).toBe(1);
+
+		result = renderScatterPlot(container, rows, 'x', 'y', {
+			sizeMode: 'numeric',
+			sizeField: 'size',
+			sizeMin: 8,
+			sizeMax: 2,
+			colorMode: 'numeric',
+			colorField: 'colorValue',
+			gradientMinColor: '#000000',
+			gradientMaxColor: '#ffffff',
+		});
+		expect(result.ok).toBe(true);
+		expect(radii(container).some(radius => radius === 8)).toBe(true);
+		expect(fills(container)).toContain('#000000');
+	});
+
+	it('colors aggregated categorical pairs from numeric means and most frequent categories', () => {
+		const container = document.getElementById('scatter');
+		const rows = [
+			{ x: 'A', y: 'North', value: 1, group: 'alpha' },
+			{ x: 'A', y: 'North', value: 3, group: 'alpha' },
+			{ x: 'B', y: 'South', value: 10, group: 'beta' },
+		];
+
+		let result = renderScatterPlot(container, rows, 'x', 'y', {
+			axisTypes: { x: 'text', y: 'text' },
+			categoricalPairMode: 'aggregate',
+			colorMode: 'numeric',
+			colorField: 'value',
+			gradientMinColor: '#000000',
+			gradientMaxColor: '#ffffff',
+		});
+		expect(result.ok).toBe(true);
+		expect(new Set(fills(container)).size).toBe(2);
+
+		result = renderScatterPlot(container, rows, 'x', 'y', {
+			axisTypes: { x: 'text', y: 'text' },
+			categoricalPairMode: 'aggregate',
+			colorMode: 'category',
+			colorField: 'group',
+			colorScheme: 'Colorblind-Safe',
+		});
+		expect(result.ok).toBe(true);
+		expect(new Set(fills(container)).size).toBe(2);
+	});
+
 	it('renders a custom title', () => {
 		const container = document.getElementById('scatter');
 		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', { customTitle: 'My scatter' });
@@ -198,6 +270,49 @@ describe('renderScatterPlot interaction', () => {
 		expect(tooltip.style.display).toBe('none');
 	});
 
+	it('renders categorical pinned filter actions and state badges', () => {
+		const container = document.getElementById('scatter');
+		const calls = { remove: [], bringBack: [] };
+		const rows = [
+			{ group: 'A', segment: 'North', value: 1 },
+			{ group: 'B', segment: 'South', value: 2 },
+		];
+
+		let result = renderScatterPlot(container, rows, 'group', 'value', {
+			axisTypes: { x: 'text', y: 'number' },
+			xColumn: 'group',
+			filterCallbacks: {
+				onRemoveFromGlobalFilter: (column, token) => calls.remove.push([column, token]),
+				getTokenFilterState: () => 'included',
+				filterActionLabels: { stateIncluded: 'Included', remove: 'Remove' },
+			},
+		});
+		expect(result.ok).toBe(true);
+		dispatchMouse(circles(container)[0], 'click');
+		expect(document.querySelector('.chart-tooltip__filter-state--included')).not.toBeNull();
+		document.querySelector('.chart-tooltip__action').click();
+		expect(calls.remove).toEqual([['group', 'v:A']]);
+
+		result = renderScatterPlot(container, rows, 'group', 'segment', {
+			axisTypes: { x: 'text', y: 'text' },
+			xColumn: 'group',
+			yColumn: 'segment',
+			filterCallbacks: {
+				onAddToGlobalFilter: () => {},
+				onExcludeGlobalFilter: () => {},
+				onBringBackGlobalFilter: (column, token) => calls.bringBack.push([column, token]),
+				getTokenFilterState: () => 'excluded',
+				isShowOnlyThisRedundant: () => true,
+				filterActionLabels: { add: 'Add', exclude: 'Hide', bringBack: 'Bring back' },
+			},
+		});
+		expect(result.ok).toBe(true);
+		dispatchMouse(circles(container)[0], 'click');
+		expect(document.querySelectorAll('.chart-tooltip__action-set-wrap').length).toBe(2);
+		expect(Array.from(document.querySelectorAll('.chart-tooltip__action')).map(button => button.textContent))
+			.toEqual(['Bring back', 'Bring back']);
+	});
+
 	it('clears a pinned tooltip on background click', () => {
 		const container = document.getElementById('scatter');
 		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y');
@@ -233,6 +348,61 @@ describe('renderScatterPlot regression overlay', () => {
 		expect(container.querySelector('.scatter-regression-line')).not.toBeNull();
 		expect(container.querySelector('.scatter-regression-band')).not.toBeNull();
 		expect(container.querySelector('.scatter-regression-annotation')).not.toBeNull();
+	});
+
+	it('renders per-category regression and omits overall annotation', () => {
+		const container = document.getElementById('scatter');
+		const rows = [
+			{ x: 1, y: 1, group: 'A' },
+			{ x: 2, y: 2, group: 'A' },
+			{ x: 3, y: 3, group: 'A' },
+			{ x: 1, y: 3, group: 'B' },
+			{ x: 2, y: 4, group: 'B' },
+			{ x: 3, y: 5, group: 'B' },
+		];
+
+		const result = renderScatterPlot(container, rows, 'x', 'y', {
+			colorMode: 'category',
+			colorField: 'group',
+			regression: {
+				enabled: true,
+				mode: 'perCategory',
+				lineWidth: 'bad',
+				lineOpacity: 'bad',
+				bandOpacity: 'bad',
+				overallColor: '',
+			},
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelectorAll('.scatter-regression-line').length).toBe(2);
+		expect(container.querySelector('.scatter-regression-annotation')).toBeNull();
+		dispatchMouse(container.querySelector('.scatter-regression-line'), 'mouseenter');
+		expect(document.querySelector('.chart-tooltip').textContent).toContain('Group');
+	});
+
+	it('supports regression with hidden line, hidden annotation parts, and pinned-point hover suppression', () => {
+		const container = document.getElementById('scatter');
+		const result = renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', {
+			regression: {
+				enabled: true,
+				showLine: false,
+				showCI: true,
+				showEquation: false,
+				showR2: false,
+			},
+		});
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('.scatter-regression-line')).toBeNull();
+		expect(container.querySelector('.scatter-regression-band')).not.toBeNull();
+		expect(container.querySelector('.scatter-regression-annotation')).toBeNull();
+
+		const point = circles(container)[0];
+		dispatchMouse(point, 'click');
+		dispatchMouse(point, 'mouseenter');
+		dispatchMouse(point, 'mousemove');
+		dispatchMouse(point, 'mouseleave');
+		expect(document.querySelector('.chart-tooltip--fixado')).not.toBeNull();
 	});
 
 	it('omits the confidence band when showCI is false', () => {
