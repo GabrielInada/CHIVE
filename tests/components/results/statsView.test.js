@@ -158,4 +158,12 @@ describe('statsView', () => {
 		document.body.innerHTML = '';
 		expect(() => renderCategoricalStats(rows, visibleColumns)).not.toThrow();
 	});
+
+	it('hides categorical card when stats are empty even if the container is absent', () => {
+		document.body.innerHTML = '<section id="card-cat-stats"></section>';
+		mocks.calculateCategoricalStatistics.mockReturnValueOnce([]);
+
+		expect(() => renderCategoricalStats(rows, visibleColumns)).not.toThrow();
+		expect(document.getElementById('card-cat-stats').style.display).toBe('none');
+	});
 });

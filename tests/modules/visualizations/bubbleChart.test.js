@@ -3,6 +3,16 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderBubbleChart } from '../../../src/modules/visualizations/bubbleChart.js';
 
+function mouse(type, options = {}) {
+	return new MouseEvent(type, {
+		bubbles: true,
+		cancelable: true,
+		pageX: 100,
+		pageY: 120,
+		...options,
+	});
+}
+
 describe('bubble chart visualization', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '<div id="bubble"></div>';
@@ -206,6 +216,188 @@ describe('bubble chart visualization', () => {
 		expect(result.ok).toBe(true);
 		const parentGroups = container.querySelectorAll('g.bubble-parent');
 		expect(parentGroups.length).toBe(2);
+	});
+
+	it('uses fallback options, clamps height, renders title, and falls back to the default palette', () => {
+		const container = document.getElementById('bubble');
+		const rows = [
+			{ categoria: 'A', valor: 10 },
+			{ categoria: 'B', valor: 20 },
+		];
+
+		const result = renderBubbleChart(container, rows, 'categoria', {
+			measureMode: 'unknown',
+			topN: 'bad',
+			padding: 'bad',
+			labelMode: 'bad',
+			autoLabelMinRadius: 'bad',
+			nestingMode: 'bad',
+			colorScheme: 'Missing',
+			customTitle: '  Bubble title  ',
+			chartHeight: 100,
+			labels: {},
+		});
+
+		expect(result.ok).toBe(true);
+		const svg = container.querySelector('svg');
+		expect(svg.getAttribute('height')).toBe('400');
+		expect(container.textContent).toContain('Bubble title');
+		expect(container.querySelector('g.bubble-node circle').getAttribute('fill')).toBeTruthy();
+	});
+
+	it('supports hover-only labels and outside labels for small bubbles', () => {
+		const container = document.getElementById('bubble');
+		const rows = Array.from({ length: 12 }, (_, index) => ({ categoria: `Item ${index}` }));
+
+		renderBubbleChart(container, rows, 'categoria', { labelMode: 'hover' });
+		expect(container.querySelectorAll('text.bubble-leaf-label')).toHaveLength(0);
+
+		container.innerHTML = '';
+		renderBubbleChart(container, rows, 'categoria', {
+			labelMode: 'all',
+			autoLabelMinRadius: 999,
+		});
+		const outsideLabels = Array.from(container.querySelectorAll('text.bubble-leaf-label'))
+			.filter(label => label.getAttribute('dominant-baseline') === 'hanging');
+		expect(outsideLabels.length).toBeGreaterThan(0);
+	});
+
+	it('returns no-value-column when sum mode has no value column', () => {
+		const container = document.getElementById('bubble');
+
+		const result = renderBubbleChart(container, [{ categoria: 'A' }], 'categoria', {
+			measureMode: 'sum',
+		});
+
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('no-value-column');
+	});
+
+	it('shows, moves, hides, pins, and unpins parent tooltips', () => {
+		const container = document.getElementById('bubble');
+		const rows = [
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'B', grupo: 'X' },
+			{ categoria: 'C', grupo: 'Y' },
+		];
+
+		renderBubbleChart(container, rows, 'categoria', {
+			nestingMode: 'grouped',
+			nestingColumns: ['grupo'],
+			zoomTransitionDuration: 0,
+		});
+
+		const parent = container.querySelector('g.bubble-parent');
+		const circle = parent.querySelector('circle');
+		parent.dispatchEvent(mouse('mouseenter'));
+		expect(document.querySelector('.chart-tooltip')?.style.display).toBe('block');
+		expect(circle.getAttribute('fill-opacity')).toBe('0.25');
+		parent.dispatchEvent(mouse('mousemove'));
+		parent.dispatchEvent(mouse('mouseleave'));
+		expect(document.querySelector('.chart-tooltip')?.style.display).toBe('none');
+
+		parent.dispatchEvent(mouse('click'));
+		expect(document.querySelector('.chart-tooltip')?.classList.contains('chart-tooltip--fixado')).toBe(true);
+		parent.dispatchEvent(mouse('mouseenter'));
+		parent.dispatchEvent(mouse('mousemove'));
+		parent.dispatchEvent(mouse('mouseleave'));
+		expect(document.querySelector('.chart-tooltip')?.classList.contains('chart-tooltip--fixado')).toBe(true);
+
+		parent.dispatchEvent(mouse('click'));
+		expect(document.querySelector('.chart-tooltip')?.style.display).toBe('none');
+	});
+
+	it('shows parent filter actions and state badges for included tokens', () => {
+		const container = document.getElementById('bubble');
+		const calls = [];
+		renderBubbleChart(container, [
+			{ categoria: 'A', regiao: 'North', estado: 'PA' },
+			{ categoria: 'B', regiao: 'North', estado: 'AM' },
+		], 'categoria', {
+			nestingMode: 'grouped',
+			nestingColumns: ['regiao', 'estado'],
+			filterCallbacks: {
+				filterActionLabels: { remove: 'Remove', stateIncluded: 'Already included' },
+				getTokenFilterState: () => 'included',
+				isShowOnlyThisRedundant: () => true,
+				onRemoveFromGlobalFilter: (column, token) => calls.push(['remove', column, token]),
+			},
+		});
+
+		const parent = container.querySelector('g.bubble-parent[data-depth="1"]');
+		parent.dispatchEvent(mouse('click'));
+
+		const tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip.textContent).toContain('Already included');
+		expect(tooltip.textContent).toContain('Remove');
+		tooltip.querySelector('.chart-tooltip__action').click();
+		expect(calls[0]).toEqual(['remove', 'regiao', 'v:North']);
+	});
+
+	it('shows leaf filter actions for excluded and unfiltered tokens and honors redundant focus', () => {
+		const container = document.getElementById('bubble');
+		const calls = [];
+		const rows = [
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'B', grupo: 'Y' },
+		];
+
+		renderBubbleChart(container, rows, 'categoria', {
+			filterCallbacks: {
+				filterActionLabels: {
+					focus: 'Only',
+					add: 'Add',
+					exclude: 'Hide',
+					bringBack: 'Bring back',
+					stateExcluded: 'Hidden',
+				},
+				getTokenFilterState: (_column, token) => (token === 'v:A' ? 'excluded' : null),
+				isShowOnlyThisRedundant: (_column, token) => token === 'v:B',
+				onFocusGlobalFilter: (column, token) => calls.push(['focus', column, token]),
+				onAddToGlobalFilter: (column, token) => calls.push(['add', column, token]),
+				onExcludeGlobalFilter: (column, token) => calls.push(['exclude', column, token]),
+				onBringBackGlobalFilter: (column, token) => calls.push(['back', column, token]),
+			},
+		});
+
+		const leaves = Array.from(container.querySelectorAll('g.bubble-node'));
+		const leafA = leaves.find(node => node.textContent.includes('A'));
+		const leafB = leaves.find(node => node.textContent.includes('B'));
+
+		leafA.dispatchEvent(mouse('click'));
+		expect(document.querySelector('.chart-tooltip').textContent).toContain('Hidden');
+		Array.from(document.querySelectorAll('.chart-tooltip__action'))
+			.find(button => button.textContent === 'Bring back')
+			.click();
+		expect(calls).toContainEqual(['back', 'categoria', 'v:A']);
+
+		leafB.dispatchEvent(mouse('click'));
+		const actionLabels = Array.from(document.querySelectorAll('.chart-tooltip__action')).map(button => button.textContent);
+		expect(actionLabels).toEqual(['Add', 'Hide']);
+		document.querySelectorAll('.chart-tooltip__action')[0].click();
+		document.querySelectorAll('.chart-tooltip__action')[1].click();
+		expect(calls).toContainEqual(['add', 'categoria', 'v:B']);
+		expect(calls).toContainEqual(['exclude', 'categoria', 'v:B']);
+	});
+
+	it('renders pinned leaf tooltip without action sets when callbacks are absent', () => {
+		const container = document.getElementById('bubble');
+		renderBubbleChart(container, [
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'B', grupo: 'Y' },
+		], 'categoria');
+
+		const leaf = container.querySelector('g.bubble-node');
+		leaf.dispatchEvent(mouse('click'));
+
+		expect(document.querySelector('.chart-tooltip')?.classList.contains('chart-tooltip--fixado')).toBe(true);
+		expect(document.querySelectorAll('.chart-tooltip__action')).toHaveLength(0);
+		leaf.dispatchEvent(mouse('mouseenter'));
+		leaf.dispatchEvent(mouse('mousemove'));
+		leaf.dispatchEvent(mouse('mouseleave'));
+		expect(document.querySelector('.chart-tooltip')?.classList.contains('chart-tooltip--fixado')).toBe(true);
+		leaf.dispatchEvent(mouse('click'));
+		expect(document.querySelector('.chart-tooltip')?.style.display).toBe('none');
 	});
 });
 

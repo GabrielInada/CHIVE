@@ -16,7 +16,11 @@ vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
-import { createBubbleChartControls, setupBubbleChartControlListeners } from '../../../src/modules/chartControls/bubbleControls.js';
+import {
+	computeDefaults,
+	createBubbleChartControls,
+	setupBubbleChartControlListeners,
+} from '../../../src/modules/chartControls/bubbleControls.js';
 
 function createDataset(measureMode = 'count', valueColumn = null, nestingMode = 'flat', nestingColumns = []) {
 	return {
@@ -51,6 +55,25 @@ function createDataset(measureMode = 'count', valueColumn = null, nestingMode = 
 	};
 }
 
+function appendControls(controls) {
+	controls.forEach(control => document.body.appendChild(control));
+}
+
+function selectValue(id, value) {
+	const select = document.getElementById(id);
+	if (![...select.options].some(option => option.value === value)) {
+		const option = document.createElement('option');
+		option.value = value;
+		select.appendChild(option);
+	}
+	select.value = value;
+	select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function lastConfig() {
+	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].bubble;
+}
+
 describe('bubbleControls measure mode', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -67,6 +90,20 @@ describe('bubbleControls measure mode', () => {
 		const sumControls = createBubbleChartControls(createDataset('sum', 'valor'), ['categoria'], ['valor'], ['categoria', 'grupo']);
 		sumControls.forEach(control => document.body.appendChild(control));
 		expect(document.getElementById('viz-select-bubble-value-column').disabled).toBe(false);
+	});
+
+	it('renders disabled controls and falls back invalid modes/options', () => {
+		const dataset = createDataset('bad', 'old', 'bad', []);
+		dataset.chartConfig.bubble.enabled = false;
+		dataset.chartConfig.bubble.padding = null;
+		dataset.chartConfig.bubble.colorScheme = '';
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']));
+
+		expect(document.getElementById('viz-select-bubble-measure').value).toBe('count');
+		expect(document.getElementById('viz-select-bubble-nesting-mode').value).toBe('flat');
+		expect(document.getElementById('viz-slider-bubble-padding').value).toBe('3');
+		expect(document.getElementById('viz-select-bubble-category').disabled).toBe(true);
+		expect(document.querySelector('button[data-color-preset-control="viz-bubble-color-preset"][data-preset-name="Tableau10"]').disabled).toBe(true);
 	});
 
 	it('emits measure/value updates and clears value column when switching back to count', () => {
@@ -111,6 +148,23 @@ describe('bubbleControls measure mode', () => {
 
 		expect(onConfigChanged).toHaveBeenCalledTimes(3);
 	});
+
+	it('coerces invalid measure and value-column selections', () => {
+		const dataset = createDataset('sum', 'old');
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']));
+
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], vi.fn());
+
+		selectValue('viz-select-bubble-measure', 'bogus');
+		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
+
+		dataset.chartConfig.bubble.valueColumn = 'old';
+		selectValue('viz-select-bubble-measure', 'mean');
+		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'mean', valueColumn: 'valor' }));
+
+		selectValue('viz-select-bubble-value-column', 'missing');
+		expect(lastConfig().valueColumn).toBeNull();
+	});
 });
 
 describe('bubbleControls nesting mode', () => {
@@ -146,6 +200,47 @@ describe('bubbleControls nesting mode', () => {
 			}),
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+	});
+
+	it('coerces generic select, title, slider, and palette listeners', () => {
+		const dataset = createDataset('count', null, 'flat');
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']));
+
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], vi.fn());
+
+		selectValue('viz-select-bubble-category', 'grupo');
+		expect(lastConfig().category).toBe('grupo');
+
+		selectValue('viz-select-bubble-nesting-mode', 'unknown');
+		expect(lastConfig().nestingMode).toBe('flat');
+
+		selectValue('viz-select-bubble-topn', '20');
+		expect(lastConfig().topN).toBe(20);
+
+		selectValue('viz-select-bubble-label-mode', 'bad');
+		expect(lastConfig().labelMode).toBe('auto');
+
+		const title = document.getElementById('viz-input-bubble-title');
+		title.value = '  Bubble panel  ';
+		title.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig().customTitle).toBe('Bubble panel');
+
+		const padding = document.getElementById('viz-slider-bubble-padding');
+		padding.value = '6';
+		padding.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(padding.parentElement.querySelector('output').textContent).toBe('6');
+		padding.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig().padding).toBe(6);
+
+		document.querySelector('button[data-color-preset-control="viz-bubble-color-preset"][data-preset-name="Bold"]').click();
+		expect(lastConfig().colorScheme).toBe('Bold');
+	});
+
+	it('safely skips listener setup when controls are absent', () => {
+		const dataset = createDataset();
+
+		expect(() => setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], vi.fn())).not.toThrow();
+		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
 	});
 });
 
@@ -229,6 +324,25 @@ describe('bubbleControls progressive nesting selectors', () => {
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
 	});
 
+	it('sets a nesting level and truncates deeper levels from that point', () => {
+		const dataset = createDataset('count', null, 'grouped', ['grupo', 'regiao']);
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado']));
+
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado'], vi.fn());
+
+		selectValue('viz-select-bubble-nesting-level-1', 'estado');
+		expect(lastConfig()).toEqual(expect.objectContaining({
+			nestingColumns: ['grupo', 'estado'],
+			groupColumn: 'grupo',
+		}));
+
+		selectValue('viz-select-bubble-nesting-level-1', '');
+		expect(lastConfig()).toEqual(expect.objectContaining({
+			nestingColumns: ['grupo'],
+			groupColumn: 'grupo',
+		}));
+	});
+
 	it('flat mode nesting selectors are disabled', () => {
 		const dataset = createDataset('count', null, 'flat', []);
 		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao']);
@@ -252,5 +366,27 @@ describe('bubbleControls progressive nesting selectors', () => {
 		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
 		expect(level0).not.toBeNull();
 		expect(level0.value).toBe('grupo');
+	});
+});
+
+describe('bubbleControls computeDefaults', () => {
+	it('preserves valid category and sum/mean value columns', () => {
+		const dataset = createDataset('sum', 'valor');
+		expect(computeDefaults(dataset, {
+			baseCategoricalOrAll: ['categoria', 'grupo'],
+			numeric: ['valor'],
+		})).toEqual({ category: 'categoria', valueColumn: 'valor' });
+	});
+
+	it('falls back category and value columns while preserving count-mode value', () => {
+		expect(computeDefaults(createDataset('mean', 'old'), {
+			baseCategoricalOrAll: ['grupo'],
+			numeric: ['valor'],
+		})).toEqual({ category: 'grupo', valueColumn: 'valor' });
+
+		expect(computeDefaults(createDataset('count', 'old'), {
+			baseCategoricalOrAll: [],
+			numeric: [],
+		})).toEqual({ category: null, valueColumn: 'old' });
 	});
 });

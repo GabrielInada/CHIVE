@@ -79,6 +79,19 @@ function appendControls(controls) {
 	controls.forEach(control => document.body.appendChild(control));
 }
 
+function changeSelect(id, value) {
+	const select = document.getElementById(id);
+	if (!Array.from(select.options).some(option => option.value === value)) {
+		select.appendChild(new Option(value, value));
+	}
+	select.value = value;
+	select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function lastTinConfig() {
+	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].tin;
+}
+
 describe('tinControls UI structure', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -129,6 +142,48 @@ describe('tinControls UI structure', () => {
 		expect(document.getElementById('viz-select-tin-isoline-mode').disabled).toBe(true);
 		expect(document.getElementById('viz-slider-tin-isoline-count').disabled).toBe(true);
 		expect(document.getElementById('viz-slider-tin-isoline-width').disabled).toBe(true);
+	});
+
+	it('falls back invalid options and disables all controls when chart is off', () => {
+		const dataset = createDataset({
+			enabled: false,
+			x: null,
+			y: null,
+			z: null,
+			customTitle: 'Surface',
+			fillMode: 'unsupported',
+			subdivisionDepth: undefined,
+			colorRamp: 'not-a-ramp',
+			colorScheme: '',
+			gradientDistribution: '',
+			showEdges: false,
+			showPoints: false,
+			showHull: false,
+			showIsolines: true,
+			isolineMode: 'step',
+			isolineStep: 'bad',
+			colorIsolinesByZ: true,
+			showIsolineLabels: true,
+			showThreshold: true,
+			thresholdValue: 'bad',
+		});
+
+		appendControls(createTinControls(dataset, ['lon', 'lat', 'elev'], []));
+
+		expect(document.getElementById('viz-select-tin-x').value).toBe('');
+		expect(document.getElementById('viz-select-tin-fill-mode').value).toBe('smooth');
+		expect(document.getElementById('viz-select-tin-color-ramp').value).toBe('custom');
+		const selectedPreset = document.querySelector('button[data-color-preset-control="viz-tin-color-preset"][data-preset-name="Colorblind-Safe"]');
+		expect(selectedPreset?.style.border).toContain('2px');
+		expect(document.getElementById('viz-select-tin-gradient-distribution').value).toBe('value');
+		expect(document.getElementById('viz-slider-tin-subdivision').disabled).toBe(true);
+		expect(document.getElementById('viz-input-tin-edge-color').disabled).toBe(true);
+		expect(document.getElementById('viz-slider-tin-point-radius').disabled).toBe(true);
+		expect(document.getElementById('viz-input-tin-hull-color').disabled).toBe(true);
+		expect(document.getElementById('viz-input-tin-isoline-color').disabled).toBe(true);
+		expect(document.getElementById('viz-input-tin-isoline-min-color').disabled).toBe(true);
+		expect(document.getElementById('viz-slider-tin-isoline-label-size').disabled).toBe(true);
+		expect(document.getElementById('viz-input-tin-threshold-value').disabled).toBe(true);
 	});
 });
 
@@ -222,6 +277,36 @@ describe('tinControls listeners', () => {
 			tin: expect.objectContaining({ showIsolines: true }),
 		});
 	});
+
+	it('coerces invalid select listener values to safe defaults', () => {
+		const dataset = createDataset();
+		appendControls(createTinControls(dataset, ['lon', 'lat', 'elev'], []));
+		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], vi.fn());
+
+		changeSelect('viz-select-tin-y', 'not-numeric');
+		expect(lastTinConfig().y).toBeNull();
+
+		changeSelect('viz-select-tin-z', 'elev');
+		expect(lastTinConfig().z).toBe('elev');
+
+		changeSelect('viz-select-tin-gradient-distribution', 'bogus');
+		expect(lastTinConfig().gradientDistribution).toBe('value');
+
+		changeSelect('viz-select-tin-fill-mode', 'bogus');
+		expect(lastTinConfig().fillMode).toBe('smooth');
+
+		changeSelect('viz-select-tin-isoline-mode', 'bogus');
+		expect(lastTinConfig().isolineMode).toBe('count');
+
+		changeSelect('viz-select-tin-color-ramp', 'bogus');
+		expect(lastTinConfig().colorRamp).toBe('custom');
+	});
+
+	it('still wires listeners when controls are absent', () => {
+		const dataset = createDataset();
+		expect(() => setupTinControlListeners(dataset, ['lon'], [], vi.fn())).not.toThrow();
+		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+	});
 });
 
 describe('tinControls computeDefaults', () => {
@@ -249,5 +334,16 @@ describe('tinControls computeDefaults', () => {
 		// the avoid list empties the candidate pool and y/z fall back to null.
 		expect(result.y).toBeNull();
 		expect(result.z).toBeNull();
+	});
+
+	it('replaces duplicate existing picks with distinct available numerics', () => {
+		const dataset = createDataset({ x: 'lon', y: 'lon', z: 'lat' });
+		const result = computeDefaults(dataset, { numeric: ['lon', 'lat', 'elev'] });
+		expect(result).toEqual({ x: 'lon', y: 'elev', z: 'lat' });
+	});
+
+	it('falls back to nulls when chartConfig is absent', () => {
+		const result = computeDefaults({}, {});
+		expect(result).toEqual({ x: null, y: null, z: null });
 	});
 });

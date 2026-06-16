@@ -36,6 +36,8 @@ const mocks = vi.hoisted(() => ({
 	setupTreeMapControlListeners: vi.fn(),
 	createLineChartControls: vi.fn(() => []),
 	setupLineChartControlListeners: vi.fn(),
+	createTinControls: vi.fn(() => []),
+	setupTinControlListeners: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -99,6 +101,12 @@ vi.mock('../../../src/modules/chartControls/lineControls.js', async (importOrigi
 	...await importOriginal(),
 	createLineChartControls: mocks.createLineChartControls,
 	setupLineChartControlListeners: mocks.setupLineChartControlListeners,
+}));
+
+vi.mock('../../../src/modules/chartControls/tinControls.js', async (importOriginal) => ({
+	...await importOriginal(),
+	createTinControls: mocks.createTinControls,
+	setupTinControlListeners: mocks.setupTinControlListeners,
 }));
 
 vi.mock('../../../src/modules/chartControls/previews.js', () => ({
@@ -177,6 +185,22 @@ describe('renderChartControlsSidebar', () => {
 		expect(mocks.setupBarChartControlListeners).not.toHaveBeenCalled();
 	});
 
+	it.each([
+		['pie', 'createPieChartControls', 'setupPieChartControlListeners'],
+		['bubble', 'createBubbleChartControls', 'setupBubbleChartControlListeners'],
+		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners'],
+		['treemap', 'createTreeMapControls', 'setupTreeMapControlListeners'],
+		['line', 'createLineChartControls', 'setupLineChartControlListeners'],
+		['tin', 'createTinControls', 'setupTinControlListeners'],
+	])('renders and wires %s controls through the registry', (chartType, buildMock, listenerMock) => {
+		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive(chartType));
+
+		renderChartControlsSidebar({ chartConfig: {} });
+
+		expect(mocks[buildMock]).toHaveBeenCalledTimes(1);
+		expect(mocks[listenerMock]).toHaveBeenCalledTimes(1);
+	});
+
 	it('shows the params empty-state placeholder when no chart is active', () => {
 		renderChartControlsSidebar({ chartConfig: {} });
 		const empty = document.querySelector('#viz-chart-params .viz-params-empty');
@@ -190,6 +214,17 @@ describe('renderChartControlsSidebar', () => {
 		const empty = document.querySelector('#viz-chart-params .table-no-columns');
 		expect(empty).not.toBeNull();
 		expect(document.querySelector('.viz-chart-picker-trigger')).toBeNull();
+	});
+
+	it('shows global empty-state when every column is hidden', () => {
+		mocks.filterVisibleColumns.mockReturnValueOnce([]);
+
+		renderChartControlsSidebar({ chartConfig: {} });
+
+		const empty = document.querySelector('#viz-chart-params .table-no-columns');
+		expect(empty).not.toBeNull();
+		expect(empty?.textContent).toBe('chive-chart-sidebar-empty');
+		expect(mocks.mergeChartConfigWithDefaults).not.toHaveBeenCalled();
 	});
 
 	it('clicking the trigger opens the picker with current activeChartType', () => {

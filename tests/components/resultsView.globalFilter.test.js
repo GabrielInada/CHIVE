@@ -259,6 +259,97 @@ describe('renderDataInterface global filter behavior', () => {
 			globalFilter: expect.objectContaining({ rules: [] }),
 		});
 	});
+
+	it('reports numeric, text, and mixed column-selection filters to the column controls', () => {
+		const rows = [{ region: 'A', category: 'Retail', value: 1 }];
+		const columns = [
+			{ name: 'region', type: 'text' },
+			{ name: 'category', type: 'text' },
+			{ name: 'value', type: 'number' },
+			{ name: 'score', type: 'number' },
+		];
+
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, ['value', 'score'], null, {
+			activeTab: 'preview',
+			globalFilter: { rules: [] },
+		}, vi.fn());
+		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].filtroAtivo).toBe('numeric');
+
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, ['region', 'category'], null, {
+			activeTab: 'preview',
+			globalFilter: { rules: [] },
+		}, vi.fn());
+		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].filtroAtivo).toBe('text');
+
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, ['region', 'value'], null, {
+			activeTab: 'preview',
+			globalFilter: { rules: [] },
+		}, vi.fn());
+		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].filtroAtivo).toBeNull();
+	});
+
+	it('handles missing preview selector, invalid preview row defaults, and no change callback', () => {
+		document.getElementById('select-preview-rows').remove();
+		const rows = [{ region: 'A', value: 1 }];
+		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+
+		expect(() => renderDataInterface(rows, columns, 'data.csv', '2 KB', -5, null, null, null, {
+			activeTab: 'preview',
+			globalFilter: { rules: [] },
+		}, vi.fn())).not.toThrow();
+
+		expect(mocks.renderTablePreview).toHaveBeenCalledWith(rows, columns, 10);
+	});
+
+	it('ignores invalid global-filter callback payloads for every chart action', () => {
+		const onChartConfigChange = vi.fn();
+		const rows = [{ region: 'A', value: 1 }];
+		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+			activeTab: 'charts',
+			globalFilter: { rules: [] },
+		}, onChartConfigChange);
+
+		const callbacks = mocks.renderCharts.mock.calls[0][4];
+		callbacks.onAddToGlobalFilter('missing', 'v:A');
+		callbacks.onFocusGlobalFilter('region', 42);
+		callbacks.onExcludeGlobalFilter(42, 'v:A');
+		callbacks.onRemoveFromGlobalFilter('missing', 'v:A');
+		callbacks.onBringBackGlobalFilter('region', 42);
+
+		expect(onChartConfigChange).not.toHaveBeenCalled();
+	});
+
+	it('handles global-filter dialog clear, cancel, and disabled callback paths', async () => {
+		const onChartConfigChange = vi.fn();
+		const rows = [{ region: 'A', value: 1 }];
+		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+		const cleared = { combine: 'AND', rules: [] };
+
+		mocks.openGlobalFilterDialog.mockResolvedValueOnce({ action: 'clear', filter: cleared });
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+			activeTab: 'preview',
+			globalFilter: { rules: [] },
+		}, onChartConfigChange);
+		await mocks.updateTabs.mock.calls.at(-1)[3].onGlobalFilterOpen();
+		expect(onChartConfigChange).toHaveBeenCalledWith({ globalFilter: cleared });
+
+		mocks.openGlobalFilterDialog.mockResolvedValueOnce(null);
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+			activeTab: 'preview',
+			globalFilter: { rules: [] },
+		}, onChartConfigChange);
+		await mocks.updateTabs.mock.calls.at(-1)[3].onGlobalFilterOpen();
+		expect(onChartConfigChange).toHaveBeenCalledTimes(1);
+
+		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+			activeTab: 'preview',
+			globalFilter: { rules: [] },
+		}, null);
+		await mocks.updateTabs.mock.calls.at(-1)[3].onGlobalFilterOpen();
+		expect(mocks.openGlobalFilterDialog).toHaveBeenCalledTimes(2);
+	});
 });
 
 describe('renderFileList orchestration', () => {
@@ -324,6 +415,74 @@ describe('renderFileList orchestration', () => {
 		], 0, vi.fn(), vi.fn(), vi.fn(), vi.fn());
 
 		expect(document.getElementById('btn-join-files').disabled).toBe(true);
+	});
+
+	it('reuses and moves existing header/tool nodes and handles invalid active index', () => {
+		document.body.innerHTML = `
+			<div id="file-selected-meta"></div>
+			<div id="files-tools"></div>
+			<section id="file-info">
+				<div id="files-top-fixed"></div>
+				<div id="file-summary-text"></div>
+				<div id="file-list-content"></div>
+			</section>
+		`;
+		mocks.renderFileListDOM.mockReturnValue({ total: 1, filtered: 1, rendered: 1, hasMore: false });
+
+		renderFileList([
+			{ name: 'Only.csv', rows: [], columns: [], sizeLabel: '0 KB' },
+		], 10, vi.fn(), vi.fn());
+
+		const sticky = document.getElementById('files-top-fixed');
+		expect(sticky.parentElement.id).toBe('file-info');
+		expect(document.getElementById('file-selected-meta').parentElement).toBe(sticky);
+		expect(document.getElementById('files-tools').parentElement).toBe(sticky);
+		expect(document.getElementById('file-selected-meta').style.display).toBe('none');
+		expect(document.getElementById('file-selected-meta').getAttribute('title')).toBeNull();
+	});
+
+	it('renders show-less pagination and resets visible count when clicked', () => {
+		mocks.renderFileListDOM
+			.mockReturnValueOnce({ total: 20, filtered: 20, rendered: 20, hasMore: false })
+			.mockReturnValueOnce({ total: 20, filtered: 20, rendered: 15, hasMore: true });
+
+		renderFileList(Array.from({ length: 20 }, (_, index) => ({
+			name: `Data ${index}.csv`,
+			rows: [],
+			columns: [],
+			sizeLabel: '1 KB',
+		})), -1, vi.fn(), vi.fn());
+
+		expect(document.getElementById('files-pagination').textContent).toContain('chive-files-show-less');
+		document.querySelector('.files-pagination-btn').click();
+		expect(mocks.renderFileListDOM.mock.calls.at(-1)[0].limiteVisivel).toBe(15);
+	});
+
+	it('ignores canceled join and preset dialogs and tolerates absent optional callbacks', async () => {
+		mocks.openJoinBuilderDialog.mockResolvedValueOnce(null);
+		mocks.openPresetDatasetsDialog.mockResolvedValueOnce(null);
+		mocks.renderFileListDOM.mockReturnValue({ total: 2, filtered: 2, rendered: 2, hasMore: false });
+		const onCreateJoin = vi.fn();
+		const onLoadPreset = vi.fn();
+		const datasets = [
+			{ name: 'A.csv', rows: [], columns: [], sizeLabel: '1 KB' },
+			{ name: 'B.csv', rows: [], columns: [], sizeLabel: '1 KB' },
+		];
+
+		renderFileList(datasets, 0, vi.fn(), vi.fn(), onCreateJoin, onLoadPreset);
+		document.getElementById('btn-join-files').click();
+		document.getElementById('btn-preset-datasets').click();
+		await Promise.resolve();
+
+		expect(onCreateJoin).not.toHaveBeenCalled();
+		expect(onLoadPreset).not.toHaveBeenCalled();
+
+		mocks.openJoinBuilderDialog.mockResolvedValueOnce({ leftIndex: 0, rightIndex: 1 });
+		mocks.openPresetDatasetsDialog.mockResolvedValueOnce({ id: 'sample' });
+		renderFileList(datasets, 0, vi.fn(), vi.fn());
+		document.getElementById('btn-join-files').click();
+		document.getElementById('btn-preset-datasets').click();
+		await Promise.resolve();
 	});
 });
 
