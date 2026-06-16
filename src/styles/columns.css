@@ -8,7 +8,7 @@
 .column-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-2);
   max-height: 260px;
   overflow-y: auto;
   padding-right: 2px;
@@ -17,20 +17,20 @@
 .column-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 4px;
+  gap: var(--space-2);
+  margin-bottom: var(--space-1);
 }
 
 .column-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 7px 10px;
+  gap: var(--space-3);
+  padding: 7px var(--space-4);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 5px;
-  font-size: 11px;
+  border-radius: var(--radius);
+  font-size: var(--font-size-sm);
   cursor: pointer;
 }
 
@@ -47,14 +47,14 @@
 }
 
 .type-tag {
-  font-size: 9px;
+  font-size: var(--font-size-2xs);
   padding: 2px 7px;
-  border-radius: 3px;
+  border-radius: var(--radius-sm);
   font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   flex-shrink: 0;
-  margin-left: 8px;
+  margin-left: var(--space-3);
 }
 
 .type-tag.numero {
@@ -64,18 +64,18 @@
 
 .type-tag.texto {
   background: var(--tag-txt);
-  color: #7a5200;
+  color: var(--tag-txt-fg);
 }
 
 .type-tag.data {
   background: var(--tag-dat);
-  color: #2c3a8c;
+  color: var(--tag-dat-fg);
 }
 
 /* Estado ativo nos botões de filtro */
 .column-action.active {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(26, 71, 42, 0.08);
+  background: rgba(var(--accent-rgb), 0.08);
   font-weight: 500;
 }

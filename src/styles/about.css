@@ -1,3 +1,7 @@
+/* @feature: about
+   About page: hero, team grid, sidebar card, page-specific footer.
+   Loaded directly by about.html, outside the cascade-layer system. */
+
 /* About Hero */
 .about-hero {
     position: relative;
@@ -41,7 +45,7 @@
 }
 
 .about-hero-copy {
-    margin-top: 16px;
+    margin-top: var(--space-6);
     max-width: 600px;
     font-family: var(--font-sans);
     font-size: 16px;
@@ -64,7 +68,7 @@
     grid-column: 1;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: var(--space-7);
 }
 
 .about-subtitle {
@@ -72,12 +76,12 @@
     font-size: 26px;
     font-weight: 700;
     color: var(--text);
-    margin: 0 0 8px 0;
+    margin: 0 0 var(--space-3) 0;
 }
 
 .about-column p {
     font-family: var(--font-sans);
-    font-size: 15px;
+    font-size: var(--font-size-lg);
     line-height: 1.85;
     color: var(--muted);
     text-align: justify;
@@ -86,7 +90,7 @@
 
 /* Team section */
 .about-team {
-    margin-top: 16px;
+    margin-top: var(--space-6);
 }
 
 .about-team h3 {
@@ -94,13 +98,13 @@
     font-size: 20px;
     font-weight: 700;
     color: var(--text);
-    margin: 0 0 20px 0;
+    margin: 0 0 var(--space-7) 0;
 }
 
 .about-team-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
+    gap: var(--space-6);
 }
 
 .team-card {
@@ -108,13 +112,13 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: 20px 20px 20px 24px;
+    padding: var(--space-7) var(--space-7) var(--space-7) var(--space-8);
     overflow: hidden;
-    transition: box-shadow 0.2s, transform 0.2s;
+    transition: box-shadow var(--dur-slow), transform var(--dur-slow);
 }
 
 .team-card:hover {
-    box-shadow: 0 8px 28px rgba(26, 71, 42, 0.1);
+    box-shadow: 0 8px 28px rgba(var(--accent-rgb), 0.1);
     transform: translateY(-2px);
 }
 
@@ -136,7 +140,7 @@
     font-family: var(--font-display);
     font-size: 16px;
     font-weight: 700;
-    margin: 0 0 10px 0;
+    margin: 0 0 var(--space-4) 0;
     color: var(--text);
     line-height: 1.3;
 }
@@ -144,12 +148,12 @@
 .team-role {
     display: inline-flex;
     align-items: center;
-    padding: 3px 10px;
-    border-radius: 999px;
-    background: rgba(26, 71, 42, 0.08);
+    padding: 3px var(--space-4);
+    border-radius: var(--radius-pill);
+    background: rgba(var(--accent-rgb), 0.08);
     color: var(--accent);
     font-family: var(--font-sans);
-    font-size: 11px;
+    font-size: var(--font-size-sm);
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -161,14 +165,14 @@
 }
 
 .team-role--researcher {
-    background: rgba(45, 106, 79, 0.1);
-    color: #2d6a4f;
+    background: rgba(var(--success-rgb), 0.1);
+    color: var(--success);
 }
 
 .team-meta {
-    margin-top: 10px;
+    margin-top: var(--space-4);
     font-family: var(--font-sans);
-    font-size: 13px;
+    font-size: var(--font-size-md);
     color: var(--muted);
     line-height: 1.5;
 }
@@ -184,11 +188,11 @@
     border-radius: 16px;
     overflow: hidden;
     height: fit-content;
-    box-shadow: 0 4px 24px rgba(26, 71, 42, 0.06);
+    box-shadow: 0 4px 24px rgba(var(--accent-rgb), 0.06);
 }
 
 .sidebar-section {
-    padding: 24px 24px;
+    padding: var(--space-8) var(--space-8);
     border-bottom: 1px solid var(--border);
 }
 
@@ -198,18 +202,18 @@
 
 .sidebar-section h3 {
     font-family: var(--font-display);
-    font-size: 15px;
+    font-size: var(--font-size-lg);
     font-weight: 700;
     color: var(--text);
-    margin: 0 0 12px 0;
+    margin: 0 0 var(--space-5) 0;
 }
 
 .sidebar-section p {
     font-family: var(--font-sans);
-    font-size: 13px;
+    font-size: var(--font-size-md);
     line-height: 1.65;
     color: var(--muted);
-    margin-bottom: 10px;
+    margin-bottom: var(--space-4);
 }
 
 .sidebar-section p:last-child {
@@ -221,7 +225,7 @@
     text-decoration: none;
     font-weight: 500;
     border-bottom: 1px solid transparent;
-    transition: border-color 0.15s;
+    transition: border-color var(--dur-fast);
 }
 
 .sidebar-section a:hover {
@@ -234,26 +238,26 @@
     margin: 0;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: var(--space-3);
 }
 
 .sidebar-section li {
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: var(--font-size-ui);
     color: var(--muted);
-    padding: 6px 10px;
+    padding: var(--space-2) var(--space-4);
     background: var(--bg);
-    border-radius: 6px;
+    border-radius: var(--radius-md);
 }
 
 /* Footer */
 .footer {
     text-align: center;
-    padding: 32px 20px;
+    padding: 32px var(--space-7);
     border-top: 1px solid var(--border);
     color: var(--muted);
     font-family: var(--font-sans);
-    font-size: 12px;
+    font-size: var(--font-size-ui);
     background: var(--surface);
 }
 
@@ -285,7 +289,7 @@
 
 @media (max-width: 640px) {
     .about-hero {
-        padding: 48px 20px 44px;
+        padding: 48px var(--space-7) 44px;
     }
 
     .about-hero::after {
@@ -297,7 +301,7 @@
     }
 
     .about-wrapper {
-        padding: 32px 16px;
+        padding: 32px var(--space-6);
         gap: 32px;
     }
 
@@ -306,6 +310,6 @@
     }
 
     .about-sidebar {
-        border-radius: 12px;
+        border-radius: var(--radius-xl);
     }
 }
