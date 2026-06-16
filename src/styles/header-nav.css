@@ -6,7 +6,7 @@
 .header-nav {
     display: flex;
     gap: 18px;
-    margin: 0 20px;
+    margin: 0 var(--space-7);
 }
 
 .header-nav a {
@@ -14,10 +14,10 @@
     text-decoration: none;
     font-family: var(--font-sans);
     font-weight: 400;
-    font-size: 13px;
-    transition: color 0.2s ease, opacity 0.2s ease, background 0.2s ease;
-    padding: 10px 16px;
-    border-radius: 999px;
+    font-size: var(--font-size-md);
+    transition: color var(--dur-slow) ease, opacity var(--dur-slow) ease, background var(--dur-slow) ease;
+    padding: var(--space-4) var(--space-6);
+    border-radius: var(--radius-pill);
     background: transparent;
     border: 1px solid transparent;
     display: inline-flex;
@@ -46,20 +46,20 @@
 /* Responsive para telas menores */
 @media (max-width: 768px) {
     .header-nav {
-        gap: 16px;
-        margin: 0 12px;
+        gap: var(--space-6);
+        margin: 0 var(--space-5);
     }
 
     .header-steps {
-        font-size: 12px;
+        font-size: var(--font-size-ui);
     }
 }
 
 @media (max-width: 480px) {
     .header-nav {
-        gap: 12px;
+        gap: var(--space-5);
         order: 3;
         width: 100%;
-        margin: 8px 0 0 0;
+        margin: var(--space-3) 0 0 0;
     }
 }

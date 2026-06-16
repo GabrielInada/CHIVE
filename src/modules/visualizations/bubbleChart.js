@@ -26,6 +26,7 @@ import { BUBBLE_CHART, CHART_COLOR_PALETTES, CHART_DIMENSIONS } from '../../conf
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { toCategoryToken } from '../../utils/chartFilters.js';
 import { ok, fail } from '../../utils/result.js';
+import { setupChartSvg } from './chartScaffold.js';
 import {
 	resolveNestingColumns,
 	aggregateBubbles,
@@ -119,37 +120,23 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 		return fail();
 	}
 
-	container.replaceChildren();
-	hideChartTooltip();
-
 	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bubble.width, 320);
 	const height = chartHeight;
 	const margin = CHART_DIMENSIONS.bubble.margins;
-	const titleOffset = customTitle ? 20 : 0;
-	const innerWidth = width - margin.left - margin.right;
-	const innerHeight = height - margin.top - margin.bottom - titleOffset;
-
-	const svg = select(container)
-		.append('svg')
-		.attr('width', width)
-		.attr('height', height)
-		.attr('viewBox', `0 0 ${width} ${height}`);
-
-	if (customTitle) {
-		svg
-			.append('text')
-			.attr('x', width / 2)
-			.attr('y', 16)
-			.attr('text-anchor', 'middle')
-			.attr('font-size', 13)
-			.attr('font-weight', 600)
-			.attr('fill', '#3f3a33')
-			.text(customTitle);
-	}
-
-	const viewport = svg
-		.append('g')
-		.attr('transform', `translate(${margin.left},${margin.top + titleOffset})`);
+	const {
+		svg,
+		group: viewport,
+		innerWidth,
+		innerHeight,
+		appliedTitleOffset: titleOffset,
+	} = setupChartSvg(container, {
+		width,
+		height,
+		margin,
+		customTitle,
+		viewBox: true,
+	});
+	hideChartTooltip();
 
 	// Build hierarchy based on nesting mode
 	let hierarchyData;

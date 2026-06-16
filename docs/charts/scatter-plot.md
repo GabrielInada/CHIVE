@@ -20,9 +20,17 @@ category.
 
 Key files:
 
-- Renderer: [scatterPlot.js](../../src/modules/visualizations/scatterPlot.js)
-- Axis helpers (type inference, jitter, margins, aggregation): [scatterPlotAxisHelpers.js](../../src/modules/visualizations/scatterPlotAxisHelpers.js)
-- Regression math (OLS + CI band): [scatterPlotRegression.js](../../src/modules/visualizations/scatterPlotRegression.js)
+- Renderer / orchestrator: [scatterPlot.js](../../src/modules/visualizations/scatterPlot.js)
+- Scatter internals folder: [scatterPlot/](../../src/modules/visualizations/scatterPlot/)
+- Option normalization: [options.js](../../src/modules/visualizations/scatterPlot/options.js)
+- Point preparation (map / infer / filter / aggregate): [data.js](../../src/modules/visualizations/scatterPlot/data.js)
+- Scale + position accessors: [scales.js](../../src/modules/visualizations/scatterPlot/scales.js)
+- Size/color encoding: [encoding.js](../../src/modules/visualizations/scatterPlot/encoding.js)
+- Palettes: [palettes.js](../../src/modules/visualizations/scatterPlot/palettes.js)
+- Tooltip + filter interactions: [interactions.js](../../src/modules/visualizations/scatterPlot/interactions.js)
+- Regression render layer (band / line / annotation): [regressionLayer.js](../../src/modules/visualizations/scatterPlot/regressionLayer.js)
+- Axis helpers (type inference, jitter, margins, aggregation): [axisHelpers.js](../../src/modules/visualizations/scatterPlot/axisHelpers.js)
+- Regression math (OLS + CI band): [regression.js](../../src/modules/visualizations/scatterPlot/regression.js)
 - Sidebar controls: [scatterControls.js](../../src/modules/chartControls/scatterControls.js)
 - Config constants: [charts.js](../../src/config/charts.js) (`SCATTER_PLOT`)
 - Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js) (the `scatter` block)
@@ -235,7 +243,7 @@ explicitly.
 | `showLine` / `showCI` | Draw the line / the 95% band | `true` / `true` |
 | `showEquation` / `showR2` | Annotate the equation / R² (overall mode) | `true` / `true` |
 | `lineWidth` / `lineOpacity` / `bandOpacity` | Line and band styling | `2` / `0.9` / `0.18` |
-| `overallColor` | Line color in overall mode | `null` (falls back to `#3f3a33`) |
+| `overallColor` | Line color in overall mode (`#RRGGBB` only) | `null` (falls back to `#3f3a33`) |
 
 ### 4.4 The constants behind the defaults
 
@@ -326,7 +334,26 @@ is consistent), and calls `renderScatterPlot`. On failure it shows
 ## 7. Inside `renderScatterPlot`
 
 `renderScatterPlot(container, rows, xColumn, yColumn, options = {})` returns a `Result`. The
-pipeline:
+function is an **orchestrator**: each pipeline phase below lives in its own peer module and
+is wired together here. The mapping:
+
+| Phase (subsection) | Module | Entry point |
+|---|---|---|
+| Option parsing (7.1) | `scatterPlot/options.js` | `normalizeScatterOptions` |
+| Point extraction / filter / aggregate (7.2, 7.3) | `scatterPlot/data.js` | `buildScatterPoints` |
+| Scales + jitter accessors (7.4, 7.5 jitter) | `scatterPlot/scales.js` | `buildScatterScales` |
+| Size + color resolvers (7.5) | `scatterPlot/encoding.js` | `buildRadiusAccessor`, `buildColorAccessor` |
+| Regression overlay (7.6) | `scatterPlot/regressionLayer.js` | `renderRegressionLayer`, `renderRegressionAnnotation` |
+| Tooltips + pinned filter actions (7.7) | `scatterPlot/interactions.js` | `createScatterInteractions` |
+
+The SVG/axis scaffolding (container reset, sized svg, title, translated group, bottom/left
+axes, axis labels) comes from the shared [chartScaffold.js](../../src/modules/visualizations/chartScaffold.js).
+The orchestrator owns only the layout math, the circle draw and its event wiring (the
+`pinnedIndex` state), and the order in which the phases run. That order is load-bearing: the
+regression **layer** is drawn before the circles (so it sits behind them) and the regression
+**annotation** after the axes (see the DOM diagram in section 14).
+
+The pipeline:
 
 ### 7.1 Guard and option parsing
 
@@ -395,8 +422,12 @@ titles are drawn, and the function returns `ok()`.
 - **Scales**: `scaleLinear` / `scaleLog` (numeric), `scalePoint` (categorical), `scaleSqrt`
   (size). `normalizeDomain` guards against degenerate (single-value or non-finite) extents.
 - **Color**: `interpolateColor` (clamped RGB lerp) for numeric gradients, with value or rank
-  (`buildRankMap`) distribution; a fixed qualitative palette (`SCATTER_PALETTES`, keyed by
-  scheme) for category color. All from [colorUtils.js](../../src/utils/colorUtils.js).
+  (`buildRankMap`) distribution, both from [colorUtils.js](../../src/utils/colorUtils.js); a
+  fixed qualitative palette for category color. The palettes are owned by
+  [palettes.js](../../src/modules/visualizations/scatterPlot/palettes.js) as a frozen
+  constant, reached through `getScatterPalette(scheme)` /
+  `resolveScatterColorScheme(scheme)` (both fall back to `Bold`) so callers cannot mutate
+  them.
 
 ---
 
@@ -430,9 +461,10 @@ scatter chart's interaction layer on top of that.
 
 Pure SVG throughout: `<circle>` points, `<path>` regression line and band (inside a
 `<clipPath>` so they never spill past the plot area), `<g>` axes, and `<text>` annotations. A
-module-level counter gives each regression clip-path a unique id so multiple scatter charts
-on one page (results view plus panel slots) do not collide. The panel exporter clones the
-live `<svg>`; there is no separate export path.
+counter in [regressionLayer.js](../../src/modules/visualizations/scatterPlot/regressionLayer.js)
+gives each regression clip-path a unique id so multiple scatter charts on one page (results
+view plus panel slots) do not collide. The panel exporter clones the live `<svg>`; there is
+no separate export path.
 
 ---
 
@@ -448,7 +480,8 @@ live `<svg>`; there is no separate export path.
 - **Single-value or non-finite extent** is padded by `normalizeDomain` so scales never
   collapse.
 - **Regression** needs both axes numeric and `>= 2` points for a line, `>= 3` for a CI band;
-  a zero-variance x (all equal) yields no fit.
+  a zero-variance x (all equal) yields no fit. `regression.overallColor` must be a strict
+  `#RRGGBB` color; invalid strings fall back to `#3f3a33`.
 - **Deterministic jitter**: the categorical cloud is stable across re-renders.
 - **Stateless renders** and **frozen panel snapshots** behave as for every chart (panel
   tooltips carry no filter actions).
@@ -460,11 +493,23 @@ Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
 
 ## 13. Tests
 
-- [scatterPlotRegression.test.js](../../tests/modules/visualizations/scatterPlotRegression.test.js)
+- [regression.test.js](../../tests/modules/visualizations/scatterPlot/regression.test.js)
   covers the OLS math, R², the CI band, and log-space fitting (pure, no DOM).
-- [scatterPlotAxisHelpers.test.js](../../tests/modules/visualizations/scatterPlotAxisHelpers.test.js)
+- [axisHelpers.test.js](../../tests/modules/visualizations/scatterPlot/axisHelpers.test.js)
   covers axis-type inference, jitter determinism, adaptive margins, aggregation, and domain
   normalization.
+- The pipeline modules each have a focused unit test (pure, no DOM):
+  [options.test.js](../../tests/modules/visualizations/scatterPlot/options.test.js)
+  (option semantics and fallbacks),
+  [data.test.js](../../tests/modules/visualizations/scatterPlot/data.test.js)
+  (point prep, filtering, aggregation),
+  [scales.test.js](../../tests/modules/visualizations/scatterPlot/scales.test.js)
+  (scale mapping and jitter), and
+  [encoding.test.js](../../tests/modules/visualizations/scatterPlot/encoding.test.js)
+  (size/color accessors and the frozen palettes).
+- [scatterPlotRender.test.js](../../tests/modules/visualizations/scatterPlotRender.test.js)
+  is the behavior guard for the orchestrator, interactions, regression overlay (incl. DOM
+  stacking order and clip-id uniqueness), log scale, and aggregation.
 - [scatterPlotAxes.test.js](../../tests/modules/visualizations/scatterPlotAxes.test.js)
   covers axis rendering behavior.
 - [chartColors.test.js](../../tests/modules/visualizations/chartColors.test.js) exercises the

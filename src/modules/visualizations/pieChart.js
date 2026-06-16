@@ -28,6 +28,7 @@ import { formatNumber, isNullish, clamp } from '../../utils/formatters.js';
 import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
 import { buildSliceColor as _buildSliceColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
+import { appendChartTitle } from './chartScaffold.js';
 
 /** @private */
 function buildSliceColor(baseHex, index) {
@@ -160,15 +161,7 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 	const viewport = svg.append('g');
 
 	if (customTitle) {
-		svg
-			.append('text')
-			.attr('x', width / 2)
-			.attr('y', 16)
-			.attr('text-anchor', 'middle')
-			.attr('font-size', 13)
-			.attr('font-weight', 600)
-			.attr('fill', '#3f3a33')
-			.text(customTitle);
+		appendChartTitle(svg, { width, text: customTitle });
 	}
 
 	const group = viewport

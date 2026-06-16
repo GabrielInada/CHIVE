@@ -227,6 +227,27 @@ describe('renderScatterPlot rendering', () => {
 		expect(texts(c2)).not.toContain('XLAB');
 		expect(texts(c2)).not.toContain('YLAB');
 	});
+
+	it('preserves categorical x-axis tick rotation attributes', () => {
+		const container = document.getElementById('scatter');
+		const rows = [
+			{ group: 'Northwest territory', value: 1 },
+			{ group: 'Southeast territory', value: 2 },
+		];
+
+		renderScatterPlot(container, rows, 'group', 'value', {
+			axisTypes: { x: 'text', y: 'number' },
+		});
+
+		const rotatedTicks = Array.from(container.querySelectorAll('.tick text'))
+			.filter(tick => tick.getAttribute('transform') === 'rotate(-28)');
+		expect(rotatedTicks.length).toBeGreaterThan(0);
+		for (const tick of rotatedTicks) {
+			expect(tick.style.textAnchor).toBe('end');
+			expect(tick.getAttribute('dx')).toBe('-0.55em');
+			expect(tick.getAttribute('dy')).toBe('0.2em');
+		}
+	});
 });
 
 describe('renderScatterPlot interaction', () => {
@@ -422,6 +443,21 @@ describe('renderScatterPlot regression overlay', () => {
 		expect(tooltip).not.toBeNull();
 		expect(tooltip.textContent).toContain('Slope');
 	});
+
+	it('uses valid overall regression colors and rejects invalid ones', () => {
+		const container = document.getElementById('scatter');
+		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', {
+			regression: { enabled: true, overallColor: '#123456' },
+		});
+		expect(container.querySelector('.scatter-regression-line').getAttribute('stroke')).toBe('#123456');
+
+		document.body.innerHTML = '<div id="scatter"></div>';
+		const c2 = document.getElementById('scatter');
+		renderScatterPlot(c2, NUMERIC_ROWS, 'x', 'y', {
+			regression: { enabled: true, overallColor: 'url(#not-allowed)' },
+		});
+		expect(c2.querySelector('.scatter-regression-line').getAttribute('stroke')).toBe('#3f3a33');
+	});
 });
 
 describe('renderScatterPlot log scale', () => {
@@ -471,5 +507,46 @@ describe('renderScatterPlot categorical aggregation', () => {
 		expect(result.ok).toBe(true);
 		// Two distinct (x, y) category pairs -> two bubbles.
 		expect(circles(container).length).toBe(2);
+	});
+});
+
+describe('renderScatterPlot regression DOM stacking', () => {
+	beforeEach(() => {
+		document.body.innerHTML = '<div id="scatter"></div>';
+	});
+
+	afterEach(() => {
+		hideChartTooltip();
+	});
+
+	const hasClass = (node, cls) => (node.getAttribute('class') || '').split(/\s+/).includes(cls);
+
+	it('paints the regression layer behind points and the annotation after the axes', () => {
+		const container = document.getElementById('scatter');
+		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', { regression: { enabled: true } });
+
+		const group = container.querySelector('svg > g');
+		const kids = Array.from(group.children);
+		const layerIdx = kids.findIndex(node => hasClass(node, 'scatter-regression-layer'));
+		const circleIdx = kids.findIndex(node => node.tagName.toLowerCase() === 'circle');
+		const annotationIdx = kids.findIndex(node => hasClass(node, 'scatter-regression-annotation'));
+
+		expect(layerIdx).toBeGreaterThanOrEqual(0);
+		expect(circleIdx).toBeGreaterThan(layerIdx);
+		expect(annotationIdx).toBeGreaterThan(circleIdx);
+	});
+
+	it('gives each rendered chart a unique regression clip-path id', () => {
+		const c1 = document.getElementById('scatter');
+		renderScatterPlot(c1, NUMERIC_ROWS, 'x', 'y', { regression: { enabled: true } });
+		const id1 = c1.querySelector('clipPath').id;
+
+		document.body.innerHTML = '<div id="scatter2"></div>';
+		const c2 = document.getElementById('scatter2');
+		renderScatterPlot(c2, NUMERIC_ROWS, 'x', 'y', { regression: { enabled: true } });
+		const id2 = c2.querySelector('clipPath').id;
+
+		expect(id1).toMatch(/^scatter-clip-/);
+		expect(id1).not.toBe(id2);
 	});
 });

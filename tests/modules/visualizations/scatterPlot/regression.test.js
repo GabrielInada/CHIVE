@@ -6,7 +6,7 @@ import {
 	computeRegression,
 	formatRegressionEquation,
 	formatR2,
-} from '../../../src/modules/visualizations/scatterPlotRegression.js';
+} from '../../../../src/modules/visualizations/scatterPlot/regression.js';
 
 describe('tCrit95', () => {
 	it('returns the lookup-table value for df in [1, 30]', () => {

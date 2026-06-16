@@ -6,14 +6,14 @@
   background: var(--accent);
   color: #fff;
   border: none;
-  padding: 10px 20px;
-  border-radius: 5px;
+  padding: var(--space-4) var(--space-7);
+  border-radius: var(--radius);
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: var(--font-size-ui);
   font-weight: 500;
   cursor: pointer;
   width: 100%;
-  transition: opacity 0.15s;
+  transition: opacity var(--dur-fast);
 }
 
 .btn-primary:hover {
@@ -35,15 +35,15 @@
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
-  border-radius: 999px;
-  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+  padding: var(--space-1) var(--space-3);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   cursor: pointer;
 }
 
 .column-action:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(26, 71, 42, 0.05);
+  background: rgba(var(--accent-rgb), 0.05);
 }
