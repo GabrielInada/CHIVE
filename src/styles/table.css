@@ -9,7 +9,7 @@
 
 .table-preview thead th {
   background: var(--surface);
-  padding: 8px 14px;
+  padding: var(--space-3) 14px;
   text-align: left;
   font-weight: 500;
   color: var(--accent);
@@ -23,7 +23,7 @@
 .table-preview tfoot td {
   background: var(--bg);
   padding: 5px 14px;
-  font-size: 10px;
+  font-size: var(--font-size-xs);
   color: var(--muted);
   border-top: 1px solid var(--border);
 }
@@ -43,9 +43,9 @@
 }
 
 .table-no-columns {
-  padding: 26px 20px;
+  padding: 26px var(--space-7);
   text-align: center;
-  font-size: 12px;
+  font-size: var(--font-size-ui);
   color: var(--muted);
 }
 
@@ -61,8 +61,8 @@
   font-size: 10.5px;
   color: var(--muted);
   background: var(--bg);
-  padding-left: 10px;
-  padding-right: 10px;
+  padding-left: var(--space-4);
+  padding-right: var(--space-4);
   border-right: 1px solid var(--border);
   user-select: none;
 }
@@ -80,14 +80,14 @@
 
 .stat-col {
   background: var(--surface);
-  padding: 16px 18px;
+  padding: var(--space-6) 18px;
 }
 
 .stat-col-name {
-  font-size: 11px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   color: var(--accent);
-  margin-bottom: 10px;
+  margin-bottom: var(--space-4);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -96,7 +96,7 @@
 .stat-row {
   display: flex;
   justify-content: space-between;
-  font-size: 11px;
+  font-size: var(--font-size-sm);
   padding: 3px 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.04);
   color: var(--muted);

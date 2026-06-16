@@ -1,5 +1,7 @@
 /* @feature: foundation
-   Global design tokens: colors, typography, spacing, shadows
+   Global design tokens: colors (+ rgb channels and error palette),
+   typography, and spacing / radius / font-size / transition scales.
+   Shadows are intentionally kept inline per-component (mostly one-offs).
    Used by all features */
 
 :root {
@@ -14,9 +16,52 @@
   --tag-num: #e8f4ed;
   --tag-txt: #fef3e2;
   --tag-dat: #e8eaf4;
+  --tag-txt-fg: #7a5200;
+  --tag-dat-fg: #2c3a8c;
+  /* RGB channels for translucent fills: rgba(var(--accent-rgb), 0.08) */
+  --accent-rgb: 26, 71, 42;
+  --success-rgb: 45, 106, 79;
+  --text-rgb: 28, 26, 23;
+  /* Error / alert palette */
+  --error: #b91c1c;
+  --error-light: #fca5a5;
+  --error-bg: #fff5f5;
+  --error-bg-soft: #fff7f7;
+  --error-bg-hover: #ffeaea;
+  --error-medium: #a33a3a;
+  --error-border-muted: #d9b8b8;
   --font-display: 'IBM Plex Serif', Georgia, serif;
   --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  /* Spacing scale (gap, padding, margin) */
+  --space-1: 4px;
+  --space-2: 6px;
+  --space-3: 8px;
+  --space-4: 10px;
+  --space-5: 12px;
+  --space-6: 16px;
+  --space-7: 20px;
+  --space-8: 24px;
+  /* Border radius scale */
+  --radius-sm: 3px;
+  --radius: 5px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-pill: 999px;
+  /* Font size scale (body is 14px) */
+  --font-size-2xs: 9px;
+  --font-size-xs: 10px;
+  --font-size-sm: 11px;
+  --font-size-ui: 12px;
+  --font-size-md: 13px;
+  --font-size-body: 14px;
+  --font-size-lg: 15px;
+  /* Transition durations */
+  --dur-fast: 0.15s;
+  --dur: 0.18s;
+  --dur-slow: 0.2s;
+  --dur-slower: 0.24s;
 }
 
 *, *::before, *::after {

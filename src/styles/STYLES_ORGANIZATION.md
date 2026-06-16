@@ -192,7 +192,9 @@ Examples:
 
 ## Common Variables
 
-All colors, fonts, and spacing are defined in `variables.css`:
+All colors, fonts, and scales are defined in `variables.css`.
+
+**Colors:**
 
 ```css
 --bg            /* Background */
@@ -206,10 +208,50 @@ All colors, fonts, and spacing are defined in `variables.css`:
 --tag-num       /* Numeric data tag background */
 --tag-txt       /* Text data tag background */
 --tag-dat       /* Date data tag background */
+--tag-txt-fg    /* Text data tag foreground */
+--tag-dat-fg    /* Date data tag foreground */
+--error         /* Error / alert family: --error, --error-light,
+                   --error-bg, --error-bg-soft, --error-bg-hover,
+                   --error-medium, --error-border-muted */
+```
+
+**RGB channels** (for translucent fills, e.g. `rgba(var(--accent-rgb), 0.08)`):
+
+```css
+--accent-rgb    /* 26, 71, 42  (channel form of --accent) */
+--success-rgb   /* 45, 106, 79 (channel form of --success) */
+--text-rgb      /* 28, 26, 23  (channel form of --text) */
+```
+
+**Fonts:**
+
+```css
 --font-display  /* Display font (IBM Plex Serif) */
 --font-sans     /* UI/body font (IBM Plex Sans) */
 --font-mono     /* Monospace font (JetBrains Mono) */
 ```
+
+**Scales** (use these for new rules instead of raw literals; off-scale values stay inline):
+
+```css
+/* spacing (gap, padding, margin) */
+--space-1: 4px;  --space-2: 6px;  --space-3: 8px;  --space-4: 10px;
+--space-5: 12px; --space-6: 16px; --space-7: 20px; --space-8: 24px;
+
+/* border radius */
+--radius-sm: 3px; --radius: 5px; --radius-md: 6px;
+--radius-lg: 8px; --radius-xl: 12px; --radius-pill: 999px;
+
+/* font size (body is 14px) */
+--font-size-2xs: 9px;  --font-size-xs: 10px; --font-size-sm: 11px;
+--font-size-ui: 12px;  --font-size-md: 13px; --font-size-body: 14px;
+--font-size-lg: 15px;
+
+/* transition durations */
+--dur-fast: 0.15s; --dur: 0.18s; --dur-slow: 0.2s; --dur-slower: 0.24s;
+```
+
+Box-shadows are intentionally **not** tokenized; their values are mostly one-offs and stay inline per component.
 
 ## Responsive Breakpoints Strategy
 
