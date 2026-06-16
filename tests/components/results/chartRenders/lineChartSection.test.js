@@ -102,6 +102,23 @@ describe('renderLineChartSection', () => {
 		expect(mocks.renderLineChart.mock.calls[0][4].axisTypes.x).toBeUndefined();
 	});
 
+	it('falls back to default height and localized axis labels', () => {
+		const { container } = setupDom();
+		renderLineChartSection({
+			config: defaultConfig({ x: '', y: '', chartHeight: 0 }),
+			rows: [],
+			columnTypeByName: {},
+			filterCallbacks,
+		});
+
+		const [, , , , opts] = mocks.renderLineChart.mock.calls[0];
+		expect(container.style.minHeight).toBe('320px');
+		expect(opts.axisLabels).toEqual({
+			x: 'chive-chart-control-line-x',
+			y: 'chive-chart-control-line-y',
+		});
+	});
+
 	it('maps no-numeric reason to numeric empty-state', () => {
 		const { container } = setupDom();
 		mocks.renderLineChart.mockReturnValueOnce({ ok: false, reason: 'no-numeric' });

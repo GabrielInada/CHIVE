@@ -12,7 +12,16 @@ vi.mock('../../../src/modules/state/appState.js', () => ({
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
-import { setupColorInputListener } from '../../../src/modules/chartControls/controlListenerHelpers.js';
+import {
+	setupCheckboxListeners,
+	setupColorInputListener,
+	setupColorPresetListeners,
+	setupNumberInputListener,
+	setupSelectListeners,
+	setupSliderListener,
+	setupSliderListeners,
+	setupTextInputListener,
+} from '../../../src/modules/chartControls/controlListenerHelpers.js';
 import { setLiveRenderCallback } from '../../../src/modules/chartControls/livePreview.js';
 
 describe('controlListenerHelpers setupColorInputListener', () => {
@@ -27,6 +36,7 @@ describe('controlListenerHelpers setupColorInputListener', () => {
 			chartConfig: {
 				bar: {
 					color: initialColor,
+					enabled: false,
 				},
 			},
 		};
@@ -82,5 +92,133 @@ describe('controlListenerHelpers setupColorInputListener', () => {
 		const normalizer = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
 		const result = normalizer({ bar: { color: '#000000' } });
 		expect(result.bar.color).toBe('#abcdef');
+	});
+});
+
+describe('controlListenerHelpers generic listeners', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		setLiveRenderCallback(null);
+		document.body.innerHTML = `
+			<select id="select-mode"><option value="7">7</option></select>
+			<input id="check-enabled" type="checkbox">
+			<input id="title-input" value="  Chart title  ">
+			<input id="number-input" value="12.5">
+			<label><input id="slider-input" type="range" value="42"><output>0</output></label>
+			<input id="slider-no-output" type="range" value="9">
+			<button data-color-preset-control="bar-colors" data-preset-name="warm" type="button"></button>
+			<button data-color-preset-control="bar-colors" data-preset-name="empty" type="button"></button>
+			<button data-color-preset-control="bar-colors" data-preset-name="missing" type="button"></button>
+		`;
+	});
+
+	function dataset() {
+		return {
+			chartConfig: {
+				bar: {
+					mode: 'old',
+					enabled: false,
+					title: '',
+					size: 1,
+					height: 10,
+					color: '#000000',
+					gradientMaxColor: '#ffffff',
+				},
+			},
+		};
+	}
+
+	it('wires select, checkbox, and text inputs with transforms and callbacks', () => {
+		const changed = vi.fn();
+		const ds = dataset();
+
+		setupSelectListeners([
+			{ id: 'select-mode', key: 'mode', transform: value => Number(value) },
+			{ id: 'missing-select', key: 'missing' },
+		], ds, 'bar', changed);
+		setupCheckboxListeners([
+			{ id: 'check-enabled', key: 'enabled' },
+			{ id: 'missing-check', key: 'missing' },
+		], ds, 'bar', changed);
+		setupTextInputListener('title-input', 'title', ds, 'bar', changed);
+		setupTextInputListener('missing-title', 'title', ds, 'bar', changed);
+
+		document.getElementById('select-mode').dispatchEvent(new Event('change'));
+		document.getElementById('check-enabled').checked = true;
+		document.getElementById('check-enabled').dispatchEvent(new Event('change'));
+		document.getElementById('title-input').dispatchEvent(new Event('change'));
+
+		expect(mocks.updateActiveDatasetConfig.mock.calls[0][0].bar).toEqual(expect.objectContaining({ mode: 7 }));
+		expect(mocks.updateActiveDatasetConfig.mock.calls[1][0].bar).toEqual(expect.objectContaining({ enabled: true }));
+		expect(mocks.updateActiveDatasetConfig.mock.calls[2][0].bar).toEqual(expect.objectContaining({ title: 'Chart title' }));
+		expect(changed).toHaveBeenCalledTimes(3);
+	});
+
+	it('wires number inputs with finite parsing and default fallback', () => {
+		const ds = dataset();
+		const changed = vi.fn();
+		setupNumberInputListener('number-input', 'size', 5, ds, 'bar', changed);
+		setupNumberInputListener('missing-number', 'size', 5, ds, 'bar', changed);
+
+		const input = document.getElementById('number-input');
+		input.dispatchEvent(new Event('change'));
+		expect(mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].bar.size).toBe(12.5);
+
+		input.value = 'not numeric';
+		input.dispatchEvent(new Event('change'));
+		expect(mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].bar.size).toBe(5);
+		expect(changed).toHaveBeenCalledTimes(2);
+	});
+
+	it('wires sliders, syncs sibling outputs, and supports batched sliders', () => {
+		const ds = dataset();
+		const changed = vi.fn();
+		setupSliderListener('slider-input', 'height', ds, 'bar', changed);
+		setupSliderListener('missing-slider', 'height', ds, 'bar', changed);
+		setupSliderListeners([{ id: 'slider-no-output', key: 'size' }], ds, 'bar', changed);
+
+		const slider = document.getElementById('slider-input');
+		slider.value = '77';
+		slider.dispatchEvent(new Event('input'));
+		expect(slider.parentElement.querySelector('output').textContent).toBe('77');
+		slider.dispatchEvent(new Event('change'));
+		expect(mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].bar.height).toBe(77);
+
+		const noOutput = document.getElementById('slider-no-output');
+		noOutput.value = '13';
+		noOutput.dispatchEvent(new Event('input'));
+		noOutput.dispatchEvent(new Event('change'));
+		expect(mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].bar.size).toBe(13);
+	});
+
+	it('applies color preset buttons and ignores empty or missing palettes', () => {
+		const ds = dataset();
+		const changed = vi.fn();
+		setupColorPresetListeners(
+			'bar-colors',
+			{ color: 0, gradientMaxColor: -1, fallbackColor: 99 },
+			{ fallbackColor: '#123456' },
+			ds,
+			'bar',
+			changed,
+			{
+				warm: ['#111111', 'not-a-color', '#eeeeee'],
+				empty: [],
+			},
+		);
+
+		document.querySelector('[data-preset-name="warm"]').click();
+		const update = mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].bar;
+		expect(update).toEqual(expect.objectContaining({
+			colorScheme: 'warm',
+			color: '#111111',
+			gradientMaxColor: '#eeeeee',
+			fallbackColor: '#123456',
+		}));
+		expect(changed).toHaveBeenCalledTimes(1);
+
+		document.querySelector('[data-preset-name="empty"]').click();
+		document.querySelector('[data-preset-name="missing"]').click();
+		expect(changed).toHaveBeenCalledTimes(1);
 	});
 });

@@ -10,6 +10,28 @@ Section 2 covers the mathematical and cartographic theory the chart rests on (wh
 a TIN *is*, independent of this codebase); everything from section 3 onward is how
 CHIVE implements it.
 
+## Scope and evidence
+
+CHIVE's TIN chart is an SVG renderer for numeric `(x, y, z)` rows. It is not a
+general GIS DEM system: it does not know coordinate reference systems, map
+projections, geodesic distance, terrain units, survey uncertainty, or measurement
+error. Unless a section explicitly says otherwise, "surface" means CHIVE's
+piecewise-linear height-field model over the triangulated input points.
+
+The CHIVE-specific behavior in this document is derived from these source files and
+tests:
+
+- Renderer: [tinChart.js](../../src/modules/visualizations/tinChart.js)
+- Sidebar controls: [tinControls.js](../../src/modules/chartControls/tinControls.js)
+- Config constants: [charts.js](../../src/config/charts.js)
+- Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js)
+- Bundled preset catalog: [presetCatalog.js](../../src/data/presetCatalog.js)
+- Renderer tests: [tinChart.test.js](../../tests/modules/visualizations/tinChart.test.js)
+
+Use "guarantee" narrowly when maintaining this file: a statement should be backed by
+source/tests, by the mathematical model under stated assumptions, or by documented
+measurements. Design intent and visual judgment should be phrased as such.
+
 ---
 
 ## 1. What a TIN chart is
@@ -27,9 +49,9 @@ numeric columns.
 
 The name itself is the data structure: a **T**riangulated **I**rregular **N**etwork
 is a mesh of triangles built over *irregularly* spaced sample points (as opposed to
-a regular grid). It is one of the two standard ways geographic information systems
-represent a terrain surface, and the chart is, at its core, a small terrain-modeling
-engine applied to arbitrary numeric data.
+a regular grid). In GIS and surveying, TINs are one common way to represent terrain
+or other sampled scalar surfaces. CHIVE applies that representation to arbitrary
+numeric data, but it does not add GIS metadata or terrain-domain validation.
 
 Key files:
 
@@ -76,10 +98,11 @@ Digital elevation models (DEMs) come in two classic families:
 - **TIN:** heights kept at their original irregular sample locations, connected into
   triangles. This is what CHIVE uses.
 
-The TIN's advantages are exactly why it exists in surveying and GIS:
+The TIN model is useful in surveying and GIS because:
 
-- It is **exact at the sample points** (each `zᵢ` is a vertex height; no resampling
-  loss there).
+- The model uses each sample `zᵢ` as a vertex height. In CHIVE's rendered fill, the
+  displayed color is still mean-z sampled and 128-bucket quantized (sections 7.7 and
+  8.2), so the color layer should not be described as exact at every source point.
 - It **adapts to the data**: dense triangles where samples are dense (rugged or
   well-surveyed areas), large triangles where samples are sparse (flat or
   under-sampled areas). Detail follows the data instead of a fixed cell size.
@@ -92,12 +115,13 @@ subsections describe.
 
 ### 2.3 Delaunay triangulation: the geometry
 
-Given the sample points' `(x, y)` positions, infinitely many triangulations are
-possible. The **Delaunay triangulation** is the canonical good one, defined by the
-**empty-circumcircle property**: a triangle belongs to the triangulation only if the
-circle through its three vertices contains no other sample point in its interior.
+Given the sample points' `(x, y)` positions, many triangulations can be possible. The
+**Delaunay triangulation** is a common default for scattered-point interpolation,
+defined by the **empty-circumcircle property**: a triangle belongs to the
+triangulation only if the circle through its three vertices contains no other sample
+point in its interior.
 
-Two facts make this the right choice for a surface:
+Two facts make it a practical choice for CHIVE's surface model:
 
 - **It maximizes the minimum angle** across all possible triangulations of the point
   set. In plain terms, it avoids long, thin "sliver" triangles as much as the points
@@ -117,7 +141,8 @@ Properties worth knowing:
   (e.g. points on a perfect grid) are degenerate and any consistent tie-break is
   acceptable.
 - CHIVE computes it with d3-delaunay (Delaunator under the hood, an O(n log n)
-  sweep-hull algorithm), so even tens of thousands of points triangulate quickly.
+  sweep-hull algorithm). Actual render time still depends on browser, hardware, row
+  count, point layout, overlay settings, and SVG export work.
 
 ### 2.4 Linear interpolation over a triangle (barycentric)
 
@@ -147,9 +172,9 @@ CHIVE does not evaluate this interpolant per pixel. It approximates the colored
 surface by flat-shading small sub-triangles, each painted by its **mean vertex
 height** `(z₁ + z₂ + z₃)/3`. There is a precise justification for the mean: the
 centroid of a triangle has barycentric coordinates `(1/3, 1/3, 1/3)`, so for the
-linear interpolant the mean of the vertex heights is *exactly* the true surface
-height at the triangle's centroid. Coloring a sub-triangle by its mean-z is
-therefore sampling the real surface at that sub-triangle's center.
+linear interpolant the mean of the vertex heights equals the model height at the
+triangle's centroid. Coloring a sub-triangle by its mean-z therefore samples CHIVE's
+piecewise-linear model at that sub-triangle's center.
 
 ### 2.5 Midpoint subdivision: refining how the surface is sampled
 
@@ -186,11 +211,12 @@ are the curving brown lines of equal elevation; their spacing is the **contour
 interval**, and closely spaced contours mean steep ground, widely spaced means
 gentle.
 
-On a piecewise-linear TIN this has an exact, cheap construction. Within one triangle
-the surface is a plane, so the intersection of that plane with the horizontal plane
-`z = L` is a **straight line segment**. The full contour at level `L` is therefore a
-polyline assembled from one segment per crossed triangle. This is the simplicial
-form of **marching squares**, usually called **marching triangles**:
+On a piecewise-linear TIN this has an exact construction within each non-degenerate
+triangle. The surface inside one triangle is a plane, so the intersection of that
+plane with the horizontal plane `z = L` is a **straight line segment**. CHIVE emits
+independent per-triangle contour segments; it does not stitch adjacent segments into
+continuous polylines or smooth them. This is the simplicial form of **marching
+squares**, usually called **marching triangles**:
 
 - For a triangle, look at each of its three edges. An edge between vertices of height
   `z₁` and `z₂` is crossed by level `L` exactly when `(z₁ − L)` and `(z₂ − L)` have
@@ -213,10 +239,10 @@ Choosing the levels is a cartographic decision with two conventions:
 Filling a surface by height is, in cartographic terms, **hypsometric tinting** (also
 called layer tinting): elevation bands shown as colors. The classic convention runs
 greens for lowlands through yellows and browns for hills to white for peaks, with
-blues for water and bathymetry. CHIVE's built-in **terrain** ramp follows exactly
-this convention (deep water → shore → grass → foothills → mountain → snow); the other
-ramps (viridis, plasma, etc.) are perceptually uniform scientific gradients used the
-same way.
+blues for water and bathymetry. CHIVE's built-in **terrain** ramp is a hand-picked
+gradient meant to evoke that convention (deep water → shore → grass → foothills →
+mountain → snow); the other ramps (viridis, plasma, etc.) are D3 scientific color
+gradients used for the same z-to-color mapping.
 
 The choice between the two **distribution** modes is the classic thematic-map
 **classification** question — how to map a continuous quantity onto color bands:
@@ -225,12 +251,11 @@ The choice between the two **distribution** modes is the classic thematic-map
   height: `t = (z − z_min) / (z_max − z_min)`. It preserves the true vertical
   proportions, but a single tall outlier compresses everything else into a narrow
   slice of the ramp.
-- **rank** = **quantile** classification. Color is driven by a value's position in
-  the sorted data: each color band holds roughly the same number of samples. Formally
-  this maps z through the **empirical cumulative distribution** `Fₙ(z)` (the fraction
-  of samples ≤ z). It reveals structure in skewed or clustered data (e.g. a mostly
-  flat field with a few peaks) at the cost of distorting the true vertical scale. Ties
-  share a rank.
+- **rank** = empirical-rank classification. CHIVE sorts the input vertex z values,
+  then maps any queried z value (including interpolated leaf mean-z values that were
+  not original rows) by binary search into that sorted distribution. This can reveal
+  structure in skewed or clustered data at the cost of distorting the true vertical
+  scale. Ties share a rank.
 
 ### 2.8 The threshold contour as an index/feature line
 
@@ -496,14 +521,15 @@ convention).
 - If `colorRamp` is a named scientific ramp, it uses the matching D3 interpolator
   from `D3_RAMP_BY_NAME` (`viridis, plasma, magma, inferno, turbo, grays`) or the
   synthesized `terrain` ramp (an `interpolateRgbBasis` through deep-water → shore →
-  grass → foothills → mountain → snow — the hypsometric convention of section 2.7).
+  grass → foothills → mountain → snow, intended to evoke the hypsometric convention
+  of section 2.7).
 - Otherwise (`custom`) it linearly interpolates between `gradientMinColor` and
   `gradientMaxColor` via `interpolateColor` from
   [colorUtils.js](../../src/utils/colorUtils.js).
 
 `sampleRamp` is used by the surface fill, the legend strip, and (indirectly) every
-bucket color. The legend always samples the continuous ramp, regardless of fill
-quantization.
+bucket color. The legend samples the continuous ramp, while the surface fill uses
+bucket-center colors after quantization.
 
 ### 7.6 z → ramp position (`tForZ`) and distribution modes
 
@@ -513,8 +539,10 @@ classification step of section 2.7, in code. Two modes:
 - **value** (equal-interval): `t = (z − zMin) / (zMax − zMin)`. Linear in the actual
   value, so outliers stretch the rest of the data into a narrow band of the ramp.
 - **rank** (quantile): a binary search over the sorted z values returns the quantile
-  position `rank / (n−1)` — the empirical CDF. This spreads colors evenly across the
-  data's order, so clusters and outliers don't dominate. Ties share the same rank.
+  position `rank / (n−1)` against the input vertex z values. Interpolated leaf
+  mean-z values are then queried against that same sorted distribution, so this mode
+  is rank-like rather than a strict equal-count binning of rendered leaf colors. Ties
+  share the same rank.
 
 > Note: `tForZ` deliberately reimplements rank with a binary search rather than
 > reusing `buildRankMap` from colorUtils. `buildRankMap` is item-keyed and gives
@@ -545,8 +573,10 @@ section 8 for the visual tradeoff and section 9 for why this matters.
 The points are projected to screen coordinates (`sx`, `sy`) **before**
 triangulating: `Delaunay.from(screenPoints, d => d.sx, d => d.sy)` (the Delaunay
 construction of section 2.3, via d3-delaunay). Triangulating in screen space (rather
-than data space) ensures the mesh matches what the user sees; otherwise the y-axis
-flip could change which triangles form.
+than raw data space) makes the mesh depend on the rendered coordinate system. That
+means non-uniform x/y scaling, chart aspect ratio, and the inverted screen y-axis can
+affect Delaunay adjacency. This is the behavior the renderer implements; it is not a
+claim that raw-coordinate triangulation would be equivalent.
 
 ### 7.9 Effective depth (`resolveSurfaceDepth`)
 
@@ -566,8 +596,10 @@ Policy, in order:
    (0–4) via `clampDepth`.
 3. **Leaf budget:** while `triangleCount * 4 ** depth > TIN_CHART.maxSurfaceLeaves`,
    decrement depth (floored at 0). This caps total geometry work on very large
-   datasets — without it, row count is unbounded and a big import could freeze the
-   tab for seconds. It degrades gracefully (coarser surface) instead of hanging.
+   renders. Uploads are already bounded elsewhere by `FILE_SIZE_LIMIT_BYTES` (15 MB)
+   and `ROW_LIMIT` (200000 rows), but a large allowed dataset can still be expensive
+   to triangulate, subdivide, overlay, and export. The fallback is a coarser surface
+   fill, not input rejection.
 
 ### 7.10 Subdivision and bucketed path emission (`emitSubdivided`)
 
@@ -575,7 +607,7 @@ For each base Delaunay triangle, `emitSubdivided` recursively splits it into
 `4 ** depth` leaf sub-triangles by edge midpoints (the 1-to-4 midpoint subdivision of
 section 2.5; recall this only refines color sampling of a planar facet, it does not
 change the geometry). At a leaf, it computes the mean-z of the three vertices (the
-facet's true height at the leaf centroid, section 2.4) and appends a path fragment
+model height at the leaf centroid, section 2.4) and appends a path fragment
 **directly into the bucket's fragment list**:
 
 ```js
@@ -605,9 +637,9 @@ for (let bucket = 0; bucket < bucketCount; bucket++) {
 
 So a render that would have produced ~63,000 `<polygon>` elements (≈500 points at
 depth 3) now produces **at most 128 `<path>` elements**. Constant-z surfaces are
-special-cased to paint at `sampleRamp(0)` (the ramp's low color) to exactly match
-the pre-quantization behavior. The triangles group keeps its `.tin-triangles`
-class.
+special-cased to paint at `sampleRamp(0)` (the ramp's low color), matching the
+tested low-color behavior after bucketing. The triangles group keeps its
+`.tin-triangles` class.
 
 ### 7.11 Convex hull
 
@@ -633,7 +665,8 @@ of section 2.6: for each edge it tests the sign change `d1 = v1.z − level`,
 `t = d1 / (d1 − d2)`. The two crossings of a triangle become one segment; degenerate
 (zero-length) crossings are skipped. The function also tracks the longest segment per
 level, used to anchor an optional label (with its rotation angle normalized to stay
-readable).
+readable). Segments are emitted independently per triangle; CHIVE does not join them
+into continuous contour polylines.
 
 Per segment, two lines are drawn:
 
@@ -682,8 +715,8 @@ up-right of the point.
 - Axis title text is drawn when `showXAxisLabel` / `showYAxisLabel`.
 - The **legend** is a horizontal gradient strip below the chart: 12 `<rect>` stops,
   each filled by `sampleRamp(i/12)`, with the `zMin` and `zMax` values labeled at
-  the ends. The legend always reflects the continuous ramp, so it shows the true
-  gradient even though the surface fill is quantized into 128 buckets.
+  the ends. The legend samples the continuous ramp, so it represents the configured
+  ramp rather than the exact set of bucket colors used by the surface fill.
 
 ### 7.18 Return value
 
@@ -710,15 +743,15 @@ through a hand-picked elevation gradient (the hypsometric tint of section 2.7).
 The fill is quantized into 128 buckets (section 7.7). The color a triangle gets is
 its bucket's **center** color: `sampleRamp((bucket + 0.5) / 128)`. This means a
 triangle's fill can deviate from its "exact" ramp color by at most half a bucket —
-1/256 of the ramp range. On a faceted surface this is visually indistinguishable;
-the place to watch for it is smooth gradients (e.g. a black→white custom ramp on a
-gently varying surface), where banding could theoretically appear. At 128 buckets it
-doesn't in practice, and raising `rampBuckets` is a cheap one-line change if a
-dataset ever needs it.
+1/256 of the ramp domain before color-space interpolation effects. This is a
+deliberate fidelity/performance tradeoff. Banding is most likely to be visible on
+smooth, low-noise gradients (for example, a black→white custom ramp on a gently
+varying surface). Raising `rampBuckets` is the implementation knob if future tested
+datasets need finer color resolution.
 
 Flat fill mode is quantized the same way (it gains element-merging too: ~990
-triangles → ≤128 paths). Constant-z surfaces paint at the ramp's low color to match
-the exact pre-quantization output.
+triangles → ≤128 paths). Constant-z surfaces paint at the ramp's low color; this
+behavior is covered by renderer tests.
 
 ### 8.3 Color math reference
 
@@ -737,8 +770,9 @@ The renderer is stateless: every render re-triangulates, re-subdivides, and rebu
 every SVG node. The killer was node count. At the default depth 3, ~500 points →
 ~990 base triangles → ~63,000 leaf triangles, each previously its own `<polygon>`
 with a unique fill string. At max depth 4 it was ~253,000 elements. Creating tens of
-thousands of SVG nodes blocks the main thread for hundreds of ms — far past the
-120ms live-preview throttle window — so dragging the color picker stuttered.
+thousands of SVG nodes made color-picker dragging visibly stutter on heavy TIN
+renders. This section describes the design problem and fix; it does not claim a
+current benchmark unless one is added with browser, hardware, dataset, and options.
 
 The cost is dominated by per-element DOM overhead (allocation, style resolution,
 hit-testing, display-list bookkeeping, GC churn), not pixel rasterization. So the fix
@@ -750,7 +784,7 @@ Quantize the ramp into 128 buckets, group leaves by bucket, and emit one `<path>
 per bucket (all of a bucket's triangles as subpaths in one `d` string). DOM drops
 from ~63,000 polygons to ≤128 paths — roughly 500×. Because the fills were already
 flat per-leaf approximations of a planar facet (not a true gradient, section 2.5),
-quantizing them is visually nearly free.
+quantization is expected to be a small visual tradeoff compared with the DOM savings.
 
 Supporting choices:
 
@@ -767,11 +801,11 @@ Supporting choices:
 
 This fixes the **fill** node count, which dominated. The Delaunay triangulation and
 subdivision CPU still run each render (the smaller half of the cost). It is a
-color-picker/render performance fix, **not** a full client-side DoS guard: for huge
-imported datasets, Delaunay construction itself, the points/edges/z-label overlays,
-isoline segment counts, and panel-export payload size all remain unbounded. Capping
-input size is a cross-cutting concern for all chart types, deliberately out of scope
-here.
+color-picker/render performance fix, **not** a full client-side DoS guard. CHIVE has
+upload-level caps (`FILE_SIZE_LIMIT_BYTES = 15 MB`, `ROW_LIMIT = 200000`), but within
+those caps Delaunay construction, points/edges/z-label overlays, isoline segment
+counts, and panel-export payload size can still be large. Broader input-size policy is
+cross-cutting across chart types and is outside this renderer-specific change.
 
 ### 9.4 The live-preview panel skip
 
@@ -808,8 +842,10 @@ values always paint). `livePreviewRender` re-renders only the chart visualizatio
 (`renderCharts`), not the controls and not the panel. The chart-height drag handle
 shares this same path, so it benefits from the same optimization.
 
-Because a single TIN render now fits comfortably under the 120ms throttle window,
-the picker tracks the drag smoothly instead of queuing back-to-back long tasks.
+The intended outcome is that typical TIN renders complete quickly enough for the
+120ms live-preview throttle to stay responsive. If this document later records a
+specific timing claim, include the browser/version, hardware, dataset row count,
+render options, date, and measurement method.
 
 ---
 
@@ -818,13 +854,32 @@ the picker tracks the drag smoothly instead of queuing back-to-back long tasks.
 The renderer emits pure SVG (no `<canvas>`, no embedded raster), which is what makes
 direct SVG export possible. The bucketed-path change keeps this property and makes
 exports dramatically smaller (≤128 paths instead of tens of thousands of polygons),
-and the 2dp coordinate formatting shrinks them further. If a dataset ever outgrows
-SVG entirely, the documented escape hatch is a `<canvas>` surface layer under an SVG
-overlay — explicitly not done here because the bucketed-path fix is sufficient.
+and the 2dp coordinate formatting shrinks them further. A future `<canvas>` surface
+layer under an SVG overlay would be a possible direction for datasets that remain too
+large for SVG, but that is not implemented here.
 
 ---
 
 ## 12. Invariants and edge cases
+
+### Known limitations and non-claims
+
+- **No CRS/projection semantics:** x and y are numeric chart coordinates only. CHIVE
+  does not know coordinate reference systems, map projections, geodesic distance, or
+  whether units are meters, degrees, pixels, or something else.
+- **No uncertainty model:** the chart does not estimate measurement error, sampling
+  uncertainty, interpolation confidence, or confidence bands.
+- **No extrapolation outside the hull:** the TIN surface exists only over the convex
+  hull of valid points. The renderer draws that hull when `showHull` is enabled, but
+  it does not fill or predict outside it.
+- **No stitched/smoothed contours:** isolines and threshold contours are independent
+  per-triangle line segments, not topologically stitched contour paths.
+- **Degenerate point layouts are not fully characterized:** fewer than three valid
+  points are tested. Duplicate x/y positions, collinear points, and other Delaunay
+  degeneracies should be documented only when source behavior is explicitly tested.
+- **Large allowed datasets can still be expensive:** upload caps limit input size,
+  but heavy overlays, isolines, Delaunay construction, and SVG export can still stress
+  the browser.
 
 - **< 3 valid points** → `fail('insufficient-points')`, section adapter shows a
   specific empty state (a triangle is the minimum triangulable set, section 2.3).

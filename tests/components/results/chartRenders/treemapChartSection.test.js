@@ -108,4 +108,16 @@ describe('renderTreemapChartSection', () => {
 		expect(opts.colorMode).toBe('uniform');
 		expect(opts.filterCallbacks).toBe(filterCallbacks);
 	});
+
+	it('falls back to the default chart height', () => {
+		const { container } = setupDom();
+
+		renderTreemapChartSection({
+			config: defaultConfig({ chartHeight: 0 }),
+			rows: [],
+			filterCallbacks,
+		});
+
+		expect(container.style.minHeight).toBe('380px');
+	});
 });

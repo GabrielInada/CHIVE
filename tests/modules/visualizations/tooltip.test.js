@@ -13,6 +13,8 @@ describe('tooltip', () => {
 	let createTooltipFilterAction;
 	let createTooltipActionGroup;
 	let createTooltipExcludeAction;
+	let createTooltipLine;
+	let createNamedActionGroup;
 	let showPinnedChartTooltip;
 	let buildCategoricalFilterActions;
 	let createFilterStateBadge;
@@ -35,6 +37,8 @@ describe('tooltip', () => {
 		createTooltipFilterAction = mod.createTooltipFilterAction;
 		createTooltipActionGroup = mod.createTooltipActionGroup;
 		createTooltipExcludeAction = mod.createTooltipExcludeAction;
+		createTooltipLine = mod.createTooltipLine;
+		createNamedActionGroup = mod.createNamedActionGroup;
 		showPinnedChartTooltip = mod.showPinnedChartTooltip;
 		buildCategoricalFilterActions = mod.buildCategoricalFilterActions;
 		createFilterStateBadge = mod.createFilterStateBadge;
@@ -283,6 +287,28 @@ describe('tooltip', () => {
 		expect(calls).toEqual([]);
 	});
 
+	it('createTooltipActionGroup skips invalid actions and supports title/aria labels', () => {
+		const group = createTooltipActionGroup([
+			null,
+			{ label: '   ' },
+			{ label: 'Info', title: 'More info', ariaLabel: 'Open more info', onClick: () => {} },
+		]);
+
+		expect(group.querySelectorAll('button')).toHaveLength(1);
+		const button = group.querySelector('button');
+		expect(button.title).toBe('More info');
+		expect(button.getAttribute('aria-label')).toBe('Open more info');
+
+		const emptyGroup = createTooltipActionGroup('not-array');
+		expect(emptyGroup.querySelectorAll('button')).toHaveLength(0);
+	});
+
+	it('createTooltipLine renders label/value rows safely', () => {
+		const row = createTooltipLine('Region', '<North>');
+		expect(row.querySelector('strong').textContent).toBe('Region:');
+		expect(row.textContent).toBe('Region: <North>');
+	});
+
 	it('showPinnedChartTooltip renders a header with title and a working close button', () => {
 		const onDismiss = vi.fn();
 		const content = document.createElement('div');
@@ -304,6 +330,35 @@ describe('tooltip', () => {
 		expect(onDismiss).toHaveBeenCalledTimes(1);
 	});
 
+	it('composes pinned shells for string, empty, and mixed action-set content', () => {
+		showPinnedChartTooltip('plain text', 10, 20);
+		let tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip.querySelector('.chart-tooltip__header')).toBeNull();
+		expect(tooltip.textContent).toContain('plain text');
+
+		const nodeGroup = createTooltipActionGroup([{ label: 'Do it', onClick: () => {} }]);
+		showPinnedChartTooltip(undefined, 20, 30, {
+			headerTitle: '',
+			actionSets: [null, 'not-a-node', nodeGroup],
+			stateBadge: createFilterStateBadge({ state: 'included' }),
+		});
+		tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip.querySelector('.chart-tooltip__divider')).not.toBeNull();
+		expect(tooltip.querySelectorAll('.chart-tooltip__actions')).toHaveLength(1);
+		expect(tooltip.querySelector('.chart-tooltip__filter-state--included')).not.toBeNull();
+	});
+
+	it('createNamedActionGroup wraps labeled groups and returns a bare group without a label', () => {
+		const labeled = createNamedActionGroup([{ label: 'Apply', onClick: () => {} }], 'Rule');
+		expect(labeled.className).toContain('chart-tooltip__action-set-wrap');
+		expect(labeled.textContent).toContain('Rule');
+		expect(labeled.querySelector('.chart-tooltip__actions')).not.toBeNull();
+
+		const bare = createNamedActionGroup([{ label: 'Apply', onClick: () => {} }]);
+		expect(bare.className).toContain('chart-tooltip__actions');
+		expect(bare.className).toContain('chart-tooltip__action-set');
+	});
+
 	it('Escape key dismisses a pinned tooltip with onDismiss', () => {
 		const onDismiss = vi.fn();
 		showPinnedChartTooltip(document.createElement('div'), 100, 100, {
@@ -313,6 +368,55 @@ describe('tooltip', () => {
 		const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
 		document.dispatchEvent(event);
 		expect(onDismiss).toHaveBeenCalledTimes(1);
+	});
+
+	it('traps Tab and Shift+Tab between pinned tooltip actions', () => {
+		const group = createTooltipActionGroup([
+			{ label: 'First', onClick: () => {} },
+			{ label: 'Second', onClick: () => {} },
+		]);
+		showPinnedChartTooltip('Focus trap', 100, 100, {
+			headerTitle: 'Trap',
+			onDismiss: vi.fn(),
+			actionSets: [group],
+		});
+
+		const buttons = Array.from(document.querySelectorAll('button.chart-tooltip__action:not([disabled]), button.chart-tooltip__close'));
+		expect(document.activeElement).toBe(buttons[0]);
+
+		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+		expect(document.activeElement).toBe(buttons[1]);
+
+		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+		expect(document.activeElement).toBe(buttons[0]);
+
+		const outside = document.createElement('button');
+		document.body.appendChild(outside);
+		outside.focus();
+		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+		expect(document.activeElement).toBe(buttons[0]);
+	});
+
+	it('leaves Tab alone when a pinned tooltip has no focusable actions', () => {
+		showPinnedChartTooltip('No buttons', 100, 100, { headerTitle: 'Read-only' });
+
+		expect(() => document.dispatchEvent(new KeyboardEvent('keydown', {
+			key: 'Tab',
+			bubbles: true,
+			cancelable: true,
+		}))).not.toThrow();
+	});
+
+	it('replaces previous pinned document listeners when pinning a new tooltip', () => {
+		const firstDismiss = vi.fn();
+		const secondDismiss = vi.fn();
+
+		showPinnedChartTooltip('First', 100, 100, { headerTitle: 'First', onDismiss: firstDismiss });
+		showPinnedChartTooltip('Second', 120, 120, { headerTitle: 'Second', onDismiss: secondDismiss });
+		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }));
+
+		expect(firstDismiss).not.toHaveBeenCalled();
+		expect(secondDismiss).toHaveBeenCalledTimes(1);
 	});
 
 	it('Escape on an unpinned tooltip is a no-op', () => {
@@ -426,5 +530,49 @@ describe('tooltip', () => {
 		expect(included.textContent).toContain('In filter');
 		const excluded = createFilterStateBadge({ state: 'excluded', excludedLabel: 'Excluded' });
 		expect(excluded.className).toContain('chart-tooltip__filter-state--excluded');
+	});
+
+	it('uses default filter action labels and omits unavailable callbacks', () => {
+		const unfiltered = buildCategoricalFilterActions({
+			column: 'region',
+			token: 'v:North',
+			state: null,
+			labels: {},
+			onAdd: undefined,
+			onExclude: undefined,
+		});
+		expect(unfiltered).toEqual([]);
+
+		const included = buildCategoricalFilterActions({
+			column: 'region',
+			token: 'v:North',
+			state: 'included',
+			labels: {},
+			onRemove: undefined,
+		});
+		expect(included).toEqual([]);
+
+		const excluded = buildCategoricalFilterActions({
+			column: 'region',
+			token: 'v:North',
+			state: 'excluded',
+			labels: {},
+			onBringBack: undefined,
+		});
+		expect(excluded).toEqual([]);
+
+		const defaults = buildCategoricalFilterActions({
+			column: 'region',
+			token: 'v:North',
+			state: null,
+			labels: {},
+			onFocus: () => {},
+			onAdd: () => {},
+			onExclude: () => {},
+		});
+		expect(defaults.map(action => action.label)).toEqual(['Show only this', 'Add to filter', 'Hide this']);
+
+		expect(createFilterStateBadge({ state: 'included' }).textContent).toContain('In filter');
+		expect(createFilterStateBadge({ state: 'excluded' }).textContent).toContain('Excluded');
 	});
 });
