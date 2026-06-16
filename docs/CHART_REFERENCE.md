@@ -45,7 +45,7 @@ Required columns and behavior below are taken from the renderers in
 | Network | Source column, target column | Weight column, group column, physics and zoom | Relationships between entities | None bundled; see [CSV examples](#csv-examples-for-network-and-tin) |
 | Treemap | Category column (+ numeric value column for sum) | Top N, labels, color mode | Hierarchical composition | Amazonian Trees |
 | Line | X column (any type) + numeric Y column | Axis type, curve, missing-value mode, aggregate mode, sort X | Time series and trends | Monthly Visits |
-| TIN | Numeric X, Y, and Z columns | Color ramp, isolines, threshold, edges/points/hull | Terrain and surface interpolation | None bundled; see [CSV examples](#csv-examples-for-network-and-tin) |
+| TIN | Numeric X, Y, and Z columns | Color ramp, isolines, threshold, edges/points/hull | Terrain and surface interpolation | Terrain Surface |
 
 ## Per-chart reference
 
@@ -162,8 +162,8 @@ Required columns and behavior below are taken from the renderers in
   distribution, isolines, threshold line, edges, points, hull, and Z labels.
 - **Aggregation behavior:** none. Every qualifying row is a vertex. Triangulation needs at
   least three points with finite X, Y, and Z.
-- **Good sample dataset:** none bundled. Use the
-  [TIN CSV example](#csv-examples-for-network-and-tin).
+- **Good sample dataset:** Terrain Surface (`x`, `y`, `z`), a bundled synthetic sample
+  registered as `tin-surface`.
 - **Common empty states:** any of X/Y/Z missing; fewer than three finite points.
 
 ## Filters and chart data
@@ -209,8 +209,10 @@ versions are in `src/i18n/pt-BR.json`.
 
 ## CSV examples for Network and TIN
 
-CHIVE does not bundle a preset for network or TIN data. Copy one of these into a file, save
-it with a `.csv` extension, and upload it through the normal file picker.
+CHIVE does not currently bundle a network preset. TIN does have the bundled Terrain
+Surface preset; the TIN CSV below is only a tiny manual example. Copy either example
+into a file, save it with a `.csv` extension, and upload it through the normal file
+picker when you want a minimal hand-made dataset.
 
 ### Network edge list
 
