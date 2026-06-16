@@ -227,6 +227,27 @@ describe('renderScatterPlot rendering', () => {
 		expect(texts(c2)).not.toContain('XLAB');
 		expect(texts(c2)).not.toContain('YLAB');
 	});
+
+	it('preserves categorical x-axis tick rotation attributes', () => {
+		const container = document.getElementById('scatter');
+		const rows = [
+			{ group: 'Northwest territory', value: 1 },
+			{ group: 'Southeast territory', value: 2 },
+		];
+
+		renderScatterPlot(container, rows, 'group', 'value', {
+			axisTypes: { x: 'text', y: 'number' },
+		});
+
+		const rotatedTicks = Array.from(container.querySelectorAll('.tick text'))
+			.filter(tick => tick.getAttribute('transform') === 'rotate(-28)');
+		expect(rotatedTicks.length).toBeGreaterThan(0);
+		for (const tick of rotatedTicks) {
+			expect(tick.style.textAnchor).toBe('end');
+			expect(tick.getAttribute('dx')).toBe('-0.55em');
+			expect(tick.getAttribute('dy')).toBe('0.2em');
+		}
+	});
 });
 
 describe('renderScatterPlot interaction', () => {

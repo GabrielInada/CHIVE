@@ -41,6 +41,7 @@ import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { fail } from '../../utils/result.js';
+import { appendChartTitle } from './chartScaffold.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 
@@ -169,15 +170,12 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 	const viewport = svg.append('g');
 
 	if (customTitle) {
-		svg
-			.append('text')
-			.attr('x', 0)
-			.attr('y', -(height / 2) + 18)
-			.attr('text-anchor', 'middle')
-			.attr('font-size', 13)
-			.attr('font-weight', 600)
-			.attr('fill', '#3f3a33')
-			.text(customTitle);
+		appendChartTitle(svg, {
+			width,
+			text: customTitle,
+			x: 0,
+			y: -(height / 2) + 18,
+		});
 	}
 
 	const links = network.links.map(link => ({ ...link }));

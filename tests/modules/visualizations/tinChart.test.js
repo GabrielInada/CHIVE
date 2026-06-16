@@ -500,6 +500,14 @@ describe('renderTinChart', () => {
 		expect(viridisStops.join('|')).not.toBe(customStops.join('|'));
 	});
 
+	it('keeps the legend below the reserved chart area', () => {
+		const container = document.getElementById('tin');
+		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', { subdivisionDepth: 0 });
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('.tin-legend').getAttribute('transform')).toBe('translate(56,402)');
+	});
+
 	it('preserves the custom two-color gradient when colorRamp is custom (regression guard)', () => {
 		const container = document.getElementById('tin');
 		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {

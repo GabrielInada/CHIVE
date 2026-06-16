@@ -34,13 +34,18 @@ import {
 	interpolateTurbo,
 	interpolateViridis,
 	scaleLinear,
-	select,
 } from '../../../vendor/d3/d3.js';
 import { CHART_COLORS, CHART_DIMENSIONS, TIN_CHART, TIN_COLOR_RAMPS } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
 import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
+import {
+	appendAxisLabels,
+	appendBottomAxis,
+	appendLeftAxis,
+	setupChartSvg,
+} from './chartScaffold.js';
 
 /** @private */
 function normalizeColor(value, fallback) {
@@ -307,36 +312,27 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 
 	if (points.length < 3) return fail('insufficient-points');
 
-	container.replaceChildren();
-	hideChartTooltip();
-
 	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.tin.width, 320);
 	const height = chartHeight;
 	const margin = { ...CHART_DIMENSIONS.tin.margins };
-	const titleOffset = customTitle ? 20 : 0;
 	const legendHeight = 14;
 	const legendGap = 22;
-	const innerWidth = Math.max(40, width - margin.left - margin.right);
-	const innerHeight = Math.max(40, height - margin.top - margin.bottom - titleOffset - legendGap);
-
-	const svg = select(container)
-		.append('svg')
-		.attr('width', width)
-		.attr('height', height);
-
-	if (customTitle) {
-		svg.append('text')
-			.attr('x', width / 2)
-			.attr('y', 16)
-			.attr('text-anchor', 'middle')
-			.attr('font-size', 13)
-			.attr('font-weight', 600)
-			.attr('fill', '#3f3a33')
-			.text(customTitle);
-	}
-
-	const group = svg.append('g')
-		.attr('transform', `translate(${margin.left},${margin.top + titleOffset})`);
+	const {
+		svg,
+		group,
+		innerWidth,
+		innerHeight,
+		appliedTitleOffset: titleOffset,
+	} = setupChartSvg(container, {
+		width,
+		height,
+		margin,
+		customTitle,
+		minInnerWidth: 40,
+		minInnerHeight: 40,
+		innerHeightReserve: legendGap,
+	});
+	hideChartTooltip();
 
 	const [xMin, xMax] = extent(points, p => p.x);
 	const [yMin, yMax] = extent(points, p => p.y);
@@ -620,33 +616,23 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 		});
 	}
 
-	group.append('g')
-		.attr('transform', `translate(0,${innerHeight})`)
-		.call(axisBottom(xScale).ticks(6));
+	appendBottomAxis(group, {
+		axis: axisBottom(xScale).ticks(6),
+		innerHeight,
+	});
 
-	group.append('g')
-		.call(axisLeft(yScale).ticks(6));
+	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(6) });
 
-	if (showXAxisLabel) {
-		group.append('text')
-			.attr('x', innerWidth / 2)
-			.attr('y', innerHeight + margin.bottom - 14)
-			.attr('text-anchor', 'middle')
-			.attr('fill', '#5f5a53')
-			.attr('font-size', 11)
-			.text(axisLabels.x);
-	}
-
-	if (showYAxisLabel) {
-		group.append('text')
-			.attr('transform', 'rotate(-90)')
-			.attr('x', -innerHeight / 2)
-			.attr('y', -margin.left + 16)
-			.attr('text-anchor', 'middle')
-			.attr('fill', '#5f5a53')
-			.attr('font-size', 11)
-			.text(axisLabels.y);
-	}
+	appendAxisLabels(group, {
+		innerWidth,
+		innerHeight,
+		marginLeft: margin.left,
+		marginBottom: margin.bottom,
+		axisLabels,
+		showX: showXAxisLabel,
+		showY: showYAxisLabel,
+		xBottomInset: 14,
+	});
 
 	const legendY = margin.top + titleOffset + innerHeight + legendGap - legendHeight;
 	const legendLeft = margin.left;

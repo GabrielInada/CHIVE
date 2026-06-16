@@ -13,7 +13,7 @@
  * @typedef {import('../../types.js').Result} Result
  */
 
-import { area as d3area, axisBottom, axisLeft, extent, line as d3line, scaleLinear, scaleLog, scalePoint, scaleSqrt, select } from '../../../vendor/d3/d3.js';
+import { area as d3area, axisBottom, axisLeft, extent, line as d3line, scaleLinear, scaleLog, scalePoint, scaleSqrt } from '../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -45,6 +45,12 @@ import {
 	formatRegressionEquation,
 	formatR2,
 } from './scatterPlotRegression.js';
+import {
+	appendAxisLabels,
+	appendBottomAxis,
+	appendLeftAxis,
+	setupChartSvg,
+} from './chartScaffold.js';
 
 let scatterClipIdCounter = 0;
 
@@ -176,35 +182,18 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		return fail(effectiveXScaleType === 'log' || effectiveYScaleType === 'log' ? 'log-no-positive' : undefined);
 	}
 
-	container.replaceChildren();
-	hideChartTooltip();
 	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
 	const height = chartHeight;
 	const margin = computeAdaptiveMargins(CHART_DIMENSIONS.scatter.margins, points, axisTypes);
-	const titleOffset = customTitle ? 20 : 0;
-	const innerWidth = Math.max(40, width - margin.left - margin.right);
-	const innerHeight = Math.max(40, height - margin.top - margin.bottom - titleOffset);
-
-	const svg = select(container)
-		.append('svg')
-		.attr('width', width)
-		.attr('height', height);
-
-	const group = svg
-		.append('g')
-		.attr('transform', `translate(${margin.left},${margin.top + titleOffset})`);
-
-	if (customTitle) {
-		svg
-			.append('text')
-			.attr('x', width / 2)
-			.attr('y', 16)
-			.attr('text-anchor', 'middle')
-			.attr('font-size', 13)
-			.attr('font-weight', 600)
-			.attr('fill', '#3f3a33')
-			.text(customTitle);
-	}
+	const { svg, group, innerWidth, innerHeight } = setupChartSvg(container, {
+		width,
+		height,
+		margin,
+		customTitle,
+		minInnerWidth: 40,
+		minInnerHeight: 40,
+	});
+	hideChartTooltip();
 
 	let pinnedIndex = null;
 	const filterCallbacks = options.filterCallbacks || {};
@@ -535,31 +524,21 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		hideChartTooltip();
 	});
 
-	const xAxis = group
-		.append('g')
-		.attr('transform', `translate(0,${innerHeight})`)
-		.call(
-			axisTypes.x === AXIS_TYPE_VALUES.numeric
-				? axisBottom(xScale).ticks(8)
-				: axisBottom(xScale).tickFormat(value => truncateCategoryTick(value))
-		);
+	appendBottomAxis(group, {
+		axis: axisTypes.x === AXIS_TYPE_VALUES.numeric
+			? axisBottom(xScale).ticks(8)
+			: axisBottom(xScale).tickFormat(value => truncateCategoryTick(value)),
+		innerHeight,
+		tickRotation: axisTypes.x === AXIS_TYPE_VALUES.categorical
+			? { angle: -28, dx: '-0.55em', dy: '0.2em' }
+			: null,
+	});
 
-	const yAxis = group
-		.append('g')
-		.call(
-			axisTypes.y === AXIS_TYPE_VALUES.numeric
-				? axisLeft(yScale).ticks(8)
-				: axisLeft(yScale).tickFormat(value => String(value))
-		);
-
-	if (axisTypes.x === AXIS_TYPE_VALUES.categorical) {
-		xAxis
-			.selectAll('text')
-			.style('text-anchor', 'end')
-			.attr('dx', '-0.55em')
-			.attr('dy', '0.2em')
-			.attr('transform', 'rotate(-28)');
-	}
+	const yAxis = appendLeftAxis(group, {
+		axis: axisTypes.y === AXIS_TYPE_VALUES.numeric
+			? axisLeft(yScale).ticks(8)
+			: axisLeft(yScale).tickFormat(value => String(value)),
+	});
 
 	if (axisTypes.y === AXIS_TYPE_VALUES.categorical) {
 		yAxis
@@ -567,28 +546,16 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 			.style('font-size', '10px');
 	}
 
-	if (showXAxisLabel) {
-		group
-			.append('text')
-			.attr('x', innerWidth / 2)
-			.attr('y', innerHeight + margin.bottom - 14)
-			.attr('text-anchor', 'middle')
-			.attr('fill', '#5f5a53')
-			.attr('font-size', 11)
-			.text(axisLabels.x);
-	}
-
-	if (showYAxisLabel) {
-		group
-			.append('text')
-			.attr('transform', 'rotate(-90)')
-			.attr('x', -innerHeight / 2)
-			.attr('y', -margin.left + 16)
-			.attr('text-anchor', 'middle')
-			.attr('fill', '#5f5a53')
-			.attr('font-size', 11)
-			.text(axisLabels.y);
-	}
+	appendAxisLabels(group, {
+		innerWidth,
+		innerHeight,
+		marginLeft: margin.left,
+		marginBottom: margin.bottom,
+		axisLabels,
+		showX: showXAxisLabel,
+		showY: showYAxisLabel,
+		xBottomInset: 14,
+	});
 
 	if (regressionRender) {
 		renderRegressionAnnotation({

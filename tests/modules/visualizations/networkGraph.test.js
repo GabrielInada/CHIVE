@@ -207,6 +207,10 @@ describe('network graph visualization', () => {
 		expect(result.ok).toBe(true);
 		expect(previousSimulation.stop).toHaveBeenCalledTimes(1);
 		expect(container.textContent).toContain('Network Title');
+		const title = Array.from(container.querySelectorAll('text'))
+			.find(node => node.textContent === 'Network Title');
+		expect(title.getAttribute('x')).toBe('0');
+		expect(title.getAttribute('y')).toBe('-342');
 		expect(container.querySelector('.network-legend')).toBeNull();
 		expect(container.querySelector('.network-labels')).toBeNull();
 		expect(container.querySelector('line').getAttribute('stroke')).toBe('#7d7d7d');

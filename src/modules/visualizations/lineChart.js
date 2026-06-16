@@ -30,7 +30,6 @@ import {
 	scaleLinear,
 	scalePoint,
 	scaleUtc,
-	select,
 } from '../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
@@ -43,6 +42,12 @@ import { formatDate, formatNumber, isNullish } from '../../utils/formatters.js';
 import { compareStrings } from '../../utils/chartFilters.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
+import {
+	appendAxisLabels,
+	appendBottomAxis,
+	appendLeftAxis,
+	setupChartSvg,
+} from './chartScaffold.js';
 
 const CURVE_BY_KEY = {
 	linear: curveLinear,
@@ -226,38 +231,22 @@ export function renderLineChart(container, rows, xColumn, yColumn, options = {})
 	const definedPoints = points.filter(p => Number.isFinite(p.y));
 	if (definedPoints.length === 0) return fail('no-numeric');
 
-	container.replaceChildren();
-	hideChartTooltip();
-
 	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.line.width, 320);
 	const height = chartHeight;
 	const margin = { ...CHART_DIMENSIONS.line.margins };
 	if (xKind === AXIS_KIND.categorical) {
 		margin.bottom = Math.max(margin.bottom, 64);
 	}
-	const titleOffset = customTitle ? 20 : 0;
-	const innerWidth = Math.max(40, width - margin.left - margin.right);
-	const innerHeight = Math.max(40, height - margin.top - margin.bottom - titleOffset);
-
-	const svg = select(container)
-		.append('svg')
-		.attr('width', width)
-		.attr('height', height)
-		.attr('viewBox', `0 0 ${width} ${height}`);
-
-	if (customTitle) {
-		svg.append('text')
-			.attr('x', width / 2)
-			.attr('y', 16)
-			.attr('text-anchor', 'middle')
-			.attr('font-size', 13)
-			.attr('font-weight', 600)
-			.attr('fill', '#3f3a33')
-			.text(customTitle);
-	}
-
-	const group = svg.append('g')
-		.attr('transform', `translate(${margin.left},${margin.top + titleOffset})`);
+	const { group, innerWidth, innerHeight } = setupChartSvg(container, {
+		width,
+		height,
+		margin,
+		customTitle,
+		viewBox: true,
+		minInnerWidth: 40,
+		minInnerHeight: 40,
+	});
+	hideChartTooltip();
 
 	const xScale = buildXScale(xKind, definedPoints, [0, innerWidth]);
 	const yValues = definedPoints.map(p => p.y);
@@ -332,51 +321,34 @@ export function renderLineChart(container, rows, xColumn, yColumn, options = {})
 			.on('mouseleave', () => hideChartTooltip());
 	}
 
-	const xAxis = group.append('g')
-		.attr('transform', `translate(0,${innerHeight})`)
-		.call(
-			xKind === AXIS_KIND.date
+	appendBottomAxis(group, {
+		axis: xKind === AXIS_KIND.date
+			? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0)
+			: xKind === AXIS_KIND.numeric
 				? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0)
-				: xKind === AXIS_KIND.numeric
-					? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0)
-					: axisBottom(xScale).tickFormat(value => truncateCategoryTick(value))
-		);
+				: axisBottom(xScale).tickFormat(value => truncateCategoryTick(value)),
+		innerHeight,
+		tickRotation: xKind === AXIS_KIND.categorical
+			? { angle: -28, dx: '-0.55em', dy: '0.2em' }
+			: null,
+	});
 
-	if (xKind === AXIS_KIND.categorical) {
-		xAxis.selectAll('text')
-			.style('text-anchor', 'end')
-			.attr('dx', '-0.55em')
-			.attr('dy', '0.2em')
-			.attr('transform', 'rotate(-28)');
-	}
-
-	group.append('g')
-		.call(axisLeft(yScale).ticks(Math.max(2, Math.round(innerHeight / 40))))
+	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(Math.max(2, Math.round(innerHeight / 40))) })
 		.call(g => g.select('.domain').remove())
 		.call(g => g.selectAll('.tick line').clone()
 			.attr('x2', innerWidth)
 			.attr('stroke-opacity', 0.1));
 
-	if (showXAxisLabel) {
-		group.append('text')
-			.attr('x', innerWidth / 2)
-			.attr('y', innerHeight + margin.bottom - 8)
-			.attr('text-anchor', 'middle')
-			.attr('fill', '#5f5a53')
-			.attr('font-size', 11)
-			.text(axisLabels.x);
-	}
-
-	if (showYAxisLabel) {
-		group.append('text')
-			.attr('transform', 'rotate(-90)')
-			.attr('x', -innerHeight / 2)
-			.attr('y', -margin.left + 16)
-			.attr('text-anchor', 'middle')
-			.attr('fill', '#5f5a53')
-			.attr('font-size', 11)
-			.text(axisLabels.y);
-	}
+	appendAxisLabels(group, {
+		innerWidth,
+		innerHeight,
+		marginLeft: margin.left,
+		marginBottom: margin.bottom,
+		axisLabels,
+		showX: showXAxisLabel,
+		showY: showYAxisLabel,
+		xBottomInset: 8,
+	});
 
 	return ok();
 }

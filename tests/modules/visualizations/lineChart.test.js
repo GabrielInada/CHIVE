@@ -161,6 +161,33 @@ describe('renderLineChart', () => {
 		expect(container.textContent).toContain('Very long categor');
 	});
 
+	it('preserves categorical tick rotation and y-axis gridline clones', () => {
+		const container = document.getElementById('line');
+		const rows = [
+			{ bucket: 'Alpha category', y: 1 },
+			{ bucket: 'Beta category', y: 3 },
+			{ bucket: 'Gamma category', y: 2 },
+		];
+
+		const result = renderLineChart(container, rows, 'bucket', 'y', {
+			sortX: false,
+		});
+
+		expect(result.ok).toBe(true);
+		const rotatedTicks = Array.from(container.querySelectorAll('.tick text'))
+			.filter(tick => tick.getAttribute('transform') === 'rotate(-28)');
+		expect(rotatedTicks.length).toBeGreaterThan(0);
+		for (const tick of rotatedTicks) {
+			expect(tick.style.textAnchor).toBe('end');
+			expect(tick.getAttribute('dx')).toBe('-0.55em');
+			expect(tick.getAttribute('dy')).toBe('0.2em');
+		}
+
+		const gridlines = Array.from(container.querySelectorAll('.tick line'))
+			.filter(line => line.getAttribute('stroke-opacity') === '0.1' && Number(line.getAttribute('x2')) > 0);
+		expect(gridlines.length).toBeGreaterThan(0);
+	});
+
 	it('covers sum and count aggregation branches for repeated X values', () => {
 		const container = document.getElementById('line');
 		const rows = [

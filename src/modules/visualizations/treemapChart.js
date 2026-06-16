@@ -24,6 +24,7 @@ import { CHART_COLORS, CHART_DIMENSIONS, TREEMAP_CHART } from '../../config/char
 import { formatNumber, isNullish, clamp } from '../../utils/formatters.js';
 import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
+import { appendChartTitle } from './chartScaffold.js';
 
 const COLOR_PALETTE = {
 	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
@@ -135,15 +136,7 @@ export function renderTreeMap(container, rows, categoryColumn, options = {}) {
 		.attr('height', height);
 
 	if (customTitle) {
-		svg
-			.append('text')
-			.attr('x', width / 2)
-			.attr('y', 16)
-			.attr('text-anchor', 'middle')
-			.attr('font-size', 13)
-			.attr('font-weight', 600)
-			.attr('fill', '#3f3a33')
-			.text(customTitle);
+		appendChartTitle(svg, { width, text: customTitle });
 	}
 
 	const treemapWidth = width;

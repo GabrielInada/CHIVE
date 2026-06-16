@@ -44,6 +44,14 @@ describe('bubble chart visualization', () => {
 		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
 	});
 
+	it('keeps the no-title viewport transform at the chart margins', () => {
+		const container = document.getElementById('bubble');
+		const result = renderBubbleChart(container, [{ categoria: 'A' }], 'categoria');
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('svg > g').getAttribute('transform')).toBe('translate(10,10)');
+	});
+
 	it('supports count, sum, and mean aggregation plus top-N filtering', () => {
 		const container = document.getElementById('bubble');
 		const rows = [

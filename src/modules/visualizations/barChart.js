@@ -10,7 +10,7 @@
  * @typedef {import('../../types.js').Result} Result
  */
 
-import { axisBottom, axisLeft, max, scaleBand, scaleLinear, select } from '../../../vendor/d3/d3.js';
+import { axisBottom, axisLeft, max, scaleBand, scaleLinear } from '../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -26,6 +26,12 @@ import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
 import { interpolateColor, buildRankMap, isValidHexColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
+import {
+	appendAxisLabels,
+	appendBottomAxis,
+	appendLeftAxis,
+	setupChartSvg,
+} from './chartScaffold.js';
 
 // WHY: every count-based sort uses `|| compareStrings(a[0], b[0])` as a tiebreaker
 // so categories with equal counts have a deterministic visual order. Without the
@@ -167,35 +173,16 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 	if (entries.length === 0) return fail();
 	const totalContagem = entries.reduce((acc, item) => acc + item[1], 0);
 
-	container.replaceChildren();
- 	hideChartTooltip();
 	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bar.width, 320);
 	const height = chartHeight;
 	const margin = CHART_DIMENSIONS.bar.margins;
-	const titleOffset = customTitle ? 20 : 0;
-	const innerWidth = width - margin.left - margin.right;
-	const innerHeight = height - margin.top - margin.bottom - titleOffset;
-
-	const svg = select(container)
-		.append('svg')
-		.attr('width', width)
-		.attr('height', height);
-
-	const group = svg
-		.append('g')
-		.attr('transform', `translate(${margin.left},${margin.top + titleOffset})`);
-
-	if (customTitle) {
-		svg
-			.append('text')
-			.attr('x', width / 2)
-			.attr('y', 16)
-			.attr('text-anchor', 'middle')
-			.attr('font-size', 13)
-			.attr('font-weight', 600)
-			.attr('fill', '#3f3a33')
-			.text(customTitle);
-	}
+	const { svg, group, innerWidth, innerHeight } = setupChartSvg(container, {
+		width,
+		height,
+		margin,
+		customTitle,
+	});
+	hideChartTooltip();
 
 	let pinnedCategory = null;
 
@@ -344,42 +331,24 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		hideChartTooltip();
 	});
 
-	group
-		.append('g')
-		.attr('transform', `translate(0,${innerHeight})`)
-		.call(axisBottom(xScale))
-		.selectAll('text')
-		.style('text-anchor', 'end')
-		.attr('dx', '-0.6em')
-		.attr('dy', '0.15em')
-		.attr('transform', 'rotate(-30)');
+	appendBottomAxis(group, {
+		axis: axisBottom(xScale),
+		innerHeight,
+		tickRotation: { angle: -30, dx: '-0.6em', dy: '0.15em' },
+	});
 
-	group
-		.append('g')
-		.call(axisLeft(yScale).ticks(BAR_CHART.ticks));
+	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(BAR_CHART.ticks) });
 
-	if (showXAxisLabel) {
-		group
-			.append('text')
-			.attr('x', innerWidth / 2)
-			.attr('y', innerHeight + margin.bottom - 18)
-			.attr('text-anchor', 'middle')
-			.attr('fill', '#5f5a53')
-			.attr('font-size', 11)
-			.text(axisLabels.x);
-	}
-
-	if (showYAxisLabel) {
-		group
-			.append('text')
-			.attr('transform', 'rotate(-90)')
-			.attr('x', -innerHeight / 2)
-			.attr('y', -margin.left + 16)
-			.attr('text-anchor', 'middle')
-			.attr('fill', '#5f5a53')
-			.attr('font-size', 11)
-			.text(axisLabels.y);
-	}
+	appendAxisLabels(group, {
+		innerWidth,
+		innerHeight,
+		marginLeft: margin.left,
+		marginBottom: margin.bottom,
+		axisLabels,
+		showX: showXAxisLabel,
+		showY: showYAxisLabel,
+		xBottomInset: 18,
+	});
 
 	return ok();
 }
