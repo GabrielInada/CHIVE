@@ -124,4 +124,141 @@ describe('renderLineChart', () => {
 		expect(container.textContent).toContain('Day');
 		expect(container.textContent).toContain('Visits');
 	});
+
+	it('returns failure for empty rows and for rows without usable X values', () => {
+		const container = document.getElementById('line');
+
+		expect(renderLineChart(container, [], 'x', 'y').ok).toBe(false);
+		expect(renderLineChart(container, [{ x: '', y: 1 }, { x: null, y: 2 }], 'x', 'y', {
+			axisTypes: { x: 'number' },
+		})).toEqual({ ok: false, reason: 'no-x-values' });
+		expect(renderLineChart(container, [{ d: 'not-a-date', y: 1 }], 'd', 'y', {
+			axisTypes: { x: 'date' },
+		})).toEqual({ ok: false, reason: 'no-x-values' });
+	});
+
+	it('renders categorical axes, skips null categories, preserves order when sortX is false, and hides labels', () => {
+		const container = document.getElementById('line');
+		const rows = [
+			{ bucket: 'Very long category name that should truncate', y: 2 },
+			{ bucket: null, y: 4 },
+			{ bucket: 'Alpha', y: 1 },
+			{ bucket: 'Beta', y: 3 },
+		];
+
+		const result = renderLineChart(container, rows, 'bucket', 'y', {
+			sortX: false,
+			showXAxisLabel: false,
+			showYAxisLabel: false,
+			missingMode: 'gap',
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('svg')).not.toBeNull();
+		const textValues = Array.from(container.querySelectorAll('text')).map(node => node.textContent);
+		expect(textValues).not.toContain('bucket');
+		expect(textValues).not.toContain('y');
+		expect(container.textContent).toContain('Very long categor');
+	});
+
+	it('covers sum and count aggregation branches for repeated X values', () => {
+		const container = document.getElementById('line');
+		const rows = [
+			{ x: 1, y: 10 },
+			{ x: 1, y: 20 },
+			{ x: 2, y: '' },
+			{ x: 2, y: 30 },
+		];
+
+		const sum = renderLineChart(container, rows, 'x', 'y', {
+			axisTypes: { x: 'numeric' },
+			aggregateMode: 'sum',
+			showPoints: true,
+		});
+		expect(sum.ok).toBe(true);
+		expect(container.querySelectorAll('circle.line-point')).toHaveLength(2);
+
+		container.innerHTML = '';
+		const count = renderLineChart(container, rows, 'x', 'y', {
+			axisTypes: { x: 'numeric' },
+			aggregateMode: 'count',
+			showPoints: true,
+		});
+		expect(count.ok).toBe(true);
+		expect(container.querySelectorAll('circle.line-point')).toHaveLength(2);
+	});
+
+	it('uses renderer fallbacks for invalid options and constant domains', () => {
+		const container = document.getElementById('line');
+		const rows = [
+			{ x: 5, y: 10 },
+			{ x: 5, y: 10 },
+		];
+
+		const result = renderLineChart(container, rows, 'x', 'y', {
+			axisTypes: { x: 'unknown' },
+			aggregateMode: 'bad',
+			curve: 'bad',
+			missingMode: 'bad',
+			strokeWidth: 'bad',
+			color: 'bad',
+			ghostStrokeColor: 'bad',
+			chartHeight: 'bad',
+			showPoints: true,
+		});
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('path.line-path-main').getAttribute('stroke')).toBe('#4e79a7');
+		expect(container.querySelector('path.line-path-main').getAttribute('stroke-width')).toBe('1.5');
+		expect(container.querySelectorAll('circle.line-point')).toHaveLength(2);
+	});
+
+	it('clamps numeric dimensions and shows point tooltips on mouse events', () => {
+		const container = document.getElementById('line');
+		const rows = [
+			{ x: 1, y: 10 },
+			{ x: 2, y: 20 },
+		];
+
+		const result = renderLineChart(container, rows, 'x', 'y', {
+			axisTypes: { x: 'number' },
+			strokeWidth: 99,
+			chartHeight: 1000,
+			color: '#123456',
+			showPoints: true,
+			axisLabels: { x: 'Day', y: 'Visits' },
+			locale: 'en-US',
+		});
+
+		expect(result.ok).toBe(true);
+		const svg = container.querySelector('svg');
+		expect(svg.getAttribute('height')).toBe('720');
+		const path = container.querySelector('path.line-path-main');
+		expect(path.getAttribute('stroke-width')).toBe('8');
+		expect(path.getAttribute('stroke')).toBe('#123456');
+
+		const point = container.querySelector('circle.line-point');
+		point.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 20, pageY: 30 }));
+		expect(document.querySelector('.chart-tooltip')?.textContent).toContain('Day');
+		point.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, pageX: 40, pageY: 50 }));
+		point.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+		expect(document.querySelector('.chart-tooltip')?.style.display).toBe('none');
+	});
+
+	it('formats numeric and date tooltip values through the point renderer', () => {
+		const container = document.getElementById('line');
+		renderLineChart(container, [
+			{ d: '2024-01-01', y: 10 },
+			{ d: '2024-02-01', y: 20 },
+		], 'd', 'y', {
+			axisTypes: { x: 'date' },
+			showPoints: true,
+			axisLabels: { x: 'When', y: 'Total' },
+		});
+
+		const point = container.querySelector('circle.line-point');
+		point.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 20, pageY: 30 }));
+		expect(document.querySelector('.chart-tooltip')?.textContent).toContain('When');
+		expect(document.querySelector('.chart-tooltip')?.textContent).toContain('Total');
+	});
 });

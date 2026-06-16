@@ -4,7 +4,10 @@ import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { createBlobBackend } from '../../../src/services/persistence/blobBackend.js';
 import { createPersistHandler } from '../../../src/workers/persistWorker.js';
-import { createWorkerBackend } from '../../../src/services/persistence/workerBackend.js';
+import {
+	__setPersistWorkerFactoryForTesting,
+	createWorkerBackend,
+} from '../../../src/services/persistence/workerBackend.js';
 
 let sqlite3Ready;
 let counter = 0;
@@ -98,10 +101,44 @@ function nextDb() {
 }
 
 afterEach(() => {
+	__setPersistWorkerFactoryForTesting(null);
 	vi.restoreAllMocks();
 });
 
 describe('workerBackend, happy path + correlation', () => {
+	it('uses the default worker factory test seam when no instance factory is passed', async () => {
+		const worker = new MockWorker();
+		worker._deliver = data => queueMicrotask(() => worker.emit({ id: data.id, ok: true, result: null }));
+		__setPersistWorkerFactoryForTesting(() => worker);
+		const backend = createWorkerBackend({
+			fallbackBackendFactory: () => spyFallback(nextDb()),
+			timeoutMs: 5000,
+		});
+
+		await backend.persist(snap());
+
+		expect(worker.posted[0].op).toBe('persist');
+	});
+
+	it('reports unavailable and avoids spawning a worker when indexedDB is missing for hydrate', async () => {
+		const originalIndexedDB = globalThis.indexedDB;
+		let spawnCalls = 0;
+		Object.defineProperty(globalThis, 'indexedDB', { value: undefined, configurable: true });
+		const backend = createWorkerBackend({
+			workerFactory: () => { spawnCalls += 1; return new MockWorker(); },
+			fallbackBackendFactory: () => spyFallback(nextDb()),
+			timeoutMs: 5000,
+		});
+
+		try {
+			expect(backend.available()).toBe(false);
+			await expect(backend.hydrate()).resolves.toBeNull();
+			expect(spawnCalls).toBe(0);
+		} finally {
+			Object.defineProperty(globalThis, 'indexedDB', { value: originalIndexedDB, configurable: true });
+		}
+	});
+
 	it('round-trips persist → hydrate through the worker', async () => {
 		const db = nextDb();
 		const workers = [];
@@ -195,9 +232,122 @@ describe('workerBackend, happy path + correlation', () => {
 
 		await expect(backend.persist(snap())).resolves.toBeUndefined();
 	});
+
+	it('ignores unknown response ids and then resolves the matching op', async () => {
+		let worker;
+		const backend = createWorkerBackend({
+			workerFactory: () => {
+				worker = new MockWorker();
+				worker._deliver = data => queueMicrotask(() => {
+					worker.emit({ id: data.id + 100, ok: true, result: 'stale' });
+					worker.emit({ id: data.id, ok: true, result: null });
+				});
+				return worker;
+			},
+			fallbackBackendFactory: () => spyFallback(nextDb()),
+			timeoutMs: 5000,
+		});
+
+		await expect(backend.persist(snap())).resolves.toBeUndefined();
+		expect(worker.posted).toHaveLength(1);
+	});
+
+	it('clones typed-array and ArrayBuffer import payloads before posting', async () => {
+		const workers = [];
+		const backend = createWorkerBackend({
+			workerFactory: () => {
+				const w = new MockWorker();
+				w._deliver = data => queueMicrotask(() => w.emit({ id: data.id, ok: true, result: { ok: true } }));
+				workers.push(w);
+				return w;
+			},
+			fallbackBackendFactory: () => spyFallback(nextDb()),
+			timeoutMs: 5000,
+		});
+
+		const source = new Uint8Array([1, 2, 3, 4]);
+		const view = new Uint8Array(source.buffer, 1, 2);
+		await backend.importBytes(view);
+		source[1] = 99;
+		expect(Array.from(workers[0].posted[0].bytes)).toEqual([2, 3]);
+
+		const buffer = new Uint8Array([5, 6, 7]).buffer;
+		await backend.importBytes(buffer);
+		expect(Array.from(workers[0].posted[1].bytes)).toEqual([5, 6, 7]);
+	});
 });
 
 describe('workerBackend, watchdog + fallback', () => {
+	it('a synchronous postMessage throw before proof drains through fallback and disables worker mode', async () => {
+		const fallback = {
+			persist: vi.fn(async () => {}),
+			hydrate: vi.fn(async () => null),
+			clear: vi.fn(async () => {}),
+			exportBytes: vi.fn(),
+			importBytes: vi.fn(),
+		};
+		let spawnCalls = 0;
+		const backend = createWorkerBackend({
+			workerFactory: () => {
+				spawnCalls += 1;
+				const w = new MockWorker();
+				w.postMessage = data => {
+					w.posted.push(data);
+					throw new Error('post failed');
+				};
+				return w;
+			},
+			fallbackBackendFactory: () => fallback,
+			timeoutMs: 5000,
+		});
+
+		await backend.persist(snap({ rows: [{ x: 1 }] }));
+		await backend.persist(snap({ rows: [{ x: 2 }] }));
+
+		expect(fallback.persist).toHaveBeenCalledTimes(2);
+		expect(spawnCalls).toBe(1);
+	});
+
+	it('a synchronous postMessage throw after proof resets but does not disable future workers', async () => {
+		const fallback = {
+			persist: vi.fn(async () => {}),
+			hydrate: vi.fn(async () => null),
+			clear: vi.fn(async () => {}),
+			exportBytes: vi.fn(),
+			importBytes: vi.fn(),
+		};
+		const workers = [];
+		const backend = createWorkerBackend({
+			workerFactory: () => {
+				const w = new MockWorker();
+				workers.push(w);
+				if (workers.length === 1) {
+					let calls = 0;
+					w._deliver = data => {
+						calls += 1;
+						if (calls === 1) {
+							queueMicrotask(() => w.emit({ id: data.id, ok: true, result: null }));
+							return;
+						}
+						throw new Error('post failed');
+					};
+				} else {
+					w._deliver = data => queueMicrotask(() => w.emit({ id: data.id, ok: true, result: null }));
+				}
+				return w;
+			},
+			fallbackBackendFactory: () => fallback,
+			timeoutMs: 5000,
+		});
+
+		await backend.persist(snap({ rows: [{ x: 1 }] }));
+		await backend.persist(snap({ rows: [{ x: 2 }] }));
+		await backend.persist(snap({ rows: [{ x: 3 }] }));
+
+		expect(fallback.persist).toHaveBeenCalledTimes(1);
+		expect(workers).toHaveLength(2);
+	});
+
 	it('a timeout completes the op via the fallback from the captured record (edit not lost)', async () => {
 		const db = nextDb();
 		const fallback = spyFallback(`${db}-fb`);
@@ -233,9 +383,77 @@ describe('workerBackend, watchdog + fallback', () => {
 
 		expect(workers.length).toBeGreaterThanOrEqual(2);
 	});
+
+	it('falls back export, import, hydrate, and clear when worker startup fails', async () => {
+		const bytes = new Uint8Array([1, 2, 3]);
+		const fallback = {
+			hydrate: vi.fn(async () => ({ data: { datasets: [] } })),
+			persist: vi.fn(async () => {}),
+			exportBytes: vi.fn(async (_snapshot, options) => new Uint8Array(options.workOnly ? [9] : [8])),
+			importBytes: vi.fn(async input => ({ imported: Array.from(input) })),
+			clear: vi.fn(async () => {}),
+		};
+		const backend = createWorkerBackend({
+			workerFactory: () => { throw new Error('Worker is not defined'); },
+			fallbackBackendFactory: () => fallback,
+			timeoutMs: 5000,
+		});
+
+		await expect(backend.hydrate()).resolves.toEqual({ data: { datasets: [] } });
+		await expect(backend.exportBytes(snap(), { workOnly: true })).resolves.toEqual(new Uint8Array([9]));
+		await expect(backend.importBytes(bytes)).resolves.toEqual({ imported: [1, 2, 3] });
+		await expect(backend.clear()).resolves.toBeUndefined();
+		expect(fallback.exportBytes.mock.calls[0][1]).toEqual({ workOnly: true });
+	});
+
+	it('rejects fallback import errors using worker-style error normalization', async () => {
+		const fallback = {
+			hydrate: vi.fn(),
+			persist: vi.fn(),
+			exportBytes: vi.fn(),
+			importBytes: vi.fn(async () => {
+				throw { name: 'ImportFailed', message: 'bad bytes' };
+			}),
+			clear: vi.fn(),
+		};
+		const backend = createWorkerBackend({
+			workerFactory: () => { throw new Error('Worker is not defined'); },
+			fallbackBackendFactory: () => fallback,
+			timeoutMs: 5000,
+		});
+
+		await expect(backend.importBytes(new Uint8Array([1]))).rejects.toMatchObject({
+			name: 'ImportFailed',
+			message: 'bad bytes',
+		});
+	});
 });
 
 describe('workerBackend, startup failure → disable + fallback', () => {
+	it('falls back to JSON cloning when structuredClone is unavailable', async () => {
+		const originalStructuredClone = globalThis.structuredClone;
+		const fallback = {
+			hydrate: vi.fn(),
+			clear: vi.fn(),
+			persist: vi.fn(async () => {}),
+		};
+		Object.defineProperty(globalThis, 'structuredClone', { value: undefined, configurable: true });
+		const backend = createWorkerBackend({
+			workerFactory: () => { throw new Error('Worker is not defined'); },
+			fallbackBackendFactory: () => fallback,
+			timeoutMs: 5000,
+		});
+
+		try {
+			const rows = [{ x: 1 }];
+			await backend.persist(snap({ rows, withChart: false }));
+			rows[0].x = 9;
+			expect(fallback.persist.mock.calls[0][0].data.datasets[0].rows).toEqual([{ x: 1 }]);
+		} finally {
+			Object.defineProperty(globalThis, 'structuredClone', { value: originalStructuredClone, configurable: true });
+		}
+	});
+
 	it('a synchronous spawn throw falls back from the record and disables worker mode', async () => {
 		const db = nextDb();
 		const fallback = spyFallback(`${db}-fb`);
@@ -561,9 +779,46 @@ describe('workerBackend, Stage 2 payload cache', () => {
 		expect(afterClear.data.datasets[0].rowsCached).toBeUndefined();
 		expect(Array.isArray(afterClear.data.datasets[0].rows)).toBe(true);
 	});
+
+	it('prunes removed dataset and chart payload keys from the host cache', async () => {
+		const { backend, workers } = freshDelegating();
+		const rows = [{ x: 1 }];
+		const data = [{ x: 1 }];
+		const cols = [{ name: 'x', type: 'number' }];
+
+		await backend.persist(snap({ rows, dataSnapshot: data, columnsSnapshot: cols }));
+		await backend.persist({
+			data: { datasets: [], activeIndex: -1 },
+			panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
+			ui: { sidebarMode: 'data' },
+		});
+		await backend.persist(snap({ rows, dataSnapshot: data, columnsSnapshot: cols }));
+
+		const restored = workers[0].posted.at(-1).snapshot;
+		expect(restored.data.datasets[0].rowsCached).toBeUndefined();
+		expect(restored.panel.charts[0].dataSnapshotCached).toBeUndefined();
+		expect(restored.panel.charts[0].columnsSnapshotCached).toBeUndefined();
+		expect(restored.data.datasets[0].rows).toBe(rows);
+		expect(restored.panel.charts[0].dataSnapshot).toBe(data);
+		expect(restored.panel.charts[0].columnsSnapshot).toBe(cols);
+	});
 });
 
 describe('workerBackend, needsResync recovery', () => {
+	it('rejects needsResync responses for non-persist operations', async () => {
+		const backend = createWorkerBackend({
+			workerFactory: () => {
+				const w = new MockWorker();
+				w._deliver = data => queueMicrotask(() => w.emit({ id: data.id, ok: false, needsResync: true }));
+				return w;
+			},
+			fallbackBackendFactory: () => spyFallback(nextDb()),
+			timeoutMs: 5000,
+		});
+
+		await expect(backend.hydrate()).rejects.toThrow(/non-persist/i);
+	});
+
 	it('retries full once on needsResync, persists the originally captured payloads, then dedups them next save', async () => {
 		const db = nextDb();
 		let nthPersist = 0;

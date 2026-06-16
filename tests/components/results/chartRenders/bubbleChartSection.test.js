@@ -125,4 +125,16 @@ describe('renderBubbleChartSection', () => {
 		expect(block.style.display).toBe('block');
 		expect(container.style.minHeight).toBe('800px');
 	});
+
+	it('falls back to the default chart height', () => {
+		const { container } = setupDom();
+		renderBubbleChartSection({
+			config: defaultConfig({ chartHeight: 0 }),
+			rows: [],
+			filterCallbacks,
+		});
+
+		expect(container.style.minHeight).toBe('700px');
+		expect(mocks.renderBubbleChart.mock.calls[0][3].measureMode).toBe('count');
+	});
 });

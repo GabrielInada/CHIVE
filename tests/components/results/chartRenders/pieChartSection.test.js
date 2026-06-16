@@ -128,4 +128,16 @@ describe('renderPieChartSection', () => {
 		expect(container.style.minHeight).toBe('420px');
 		expect(mocks.renderPieChart).toHaveBeenCalledTimes(1);
 	});
+
+	it('falls back to the default chart height', () => {
+		const { container } = setupDom();
+
+		renderPieChartSection({
+			config: defaultConfig({ chartHeight: 0 }),
+			rows: [],
+			filterCallbacks,
+		});
+
+		expect(container.style.minHeight).toBe('360px');
+	});
 });

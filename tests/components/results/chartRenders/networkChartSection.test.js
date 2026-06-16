@@ -115,15 +115,16 @@ describe('renderNetworkChartSection', () => {
 	});
 
 	it('falls back to the i18n key when source/target column names are empty', () => {
-		setupDom();
+		const { container } = setupDom();
 
 		renderNetworkChartSection({
-			config: defaultConfig({ source: '', target: '' }),
+			config: defaultConfig({ source: '', target: '', chartHeight: 0 }),
 			rows: [],
 			filterCallbacks,
 		});
 
 		const opts = mocks.renderNetworkGraph.mock.calls[0][4];
+		expect(container.style.minHeight).toBe('420px');
 		expect(opts.labels.source).toBe('chive-chart-control-network-source');
 		expect(opts.labels.target).toBe('chive-chart-control-network-target');
 	});

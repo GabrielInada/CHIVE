@@ -73,6 +73,14 @@ describe('renderChartFromSpec', () => {
 		expect(opts.filterCallbacks).toEqual({});
 	});
 
+	it('labels bar aggregates for sum and mean measures', () => {
+		renderChartFromSpec(container, makeSpec('bar', { category: 'a', measureMode: 'sum' }));
+		renderChartFromSpec(container, makeSpec('bar', { category: 'a', measureMode: 'mean' }));
+
+		expect(renderers.renderBarChart.mock.calls[0][3].axisLabels.y).toBe('chive-tooltip-sum');
+		expect(renderers.renderBarChart.mock.calls[1][3].axisLabels.y).toBe('chive-tooltip-mean');
+	});
+
 	it('dispatches scatter with x, y as positional args and resolves axisTypes from columnsSnapshot', () => {
 		renderChartFromSpec(container, makeSpec('scatter', { x: 'a', y: 'b' }));
 		expect(renderers.renderScatterPlot).toHaveBeenCalledTimes(1);
@@ -83,6 +91,20 @@ describe('renderChartFromSpec', () => {
 		expect(opts.axisTypes).toEqual({ x: 'number', y: 'text' });
 		expect(opts.xColumn).toBe('a');
 		expect(opts.yColumn).toBe('b');
+	});
+
+	it('builds axis type indexes from valid columns only', () => {
+		renderChartFromSpec(container, {
+			...makeSpec('scatter', { x: 'a', y: 'missing' }),
+			columnsSnapshot: [null, { type: 'number' }, { name: 'a', type: 'number' }],
+		});
+		renderChartFromSpec(container, {
+			...makeSpec('line', { x: 'a', y: 'b' }),
+			columnsSnapshot: null,
+		});
+
+		expect(renderers.renderScatterPlot.mock.calls[0][4].axisTypes).toEqual({ x: 'number', y: undefined });
+		expect(renderers.renderLineChart.mock.calls[0][4].axisTypes).toEqual({ x: undefined, y: undefined });
 	});
 
 	it('dispatches network with source, target as positional args', () => {
@@ -144,6 +166,56 @@ describe('renderChartFromSpec', () => {
 		// TIN is the lone renderer that does not receive filterCallbacks; the
 		// shared baseOptions must not introduce it.
 		expect('filterCallbacks' in opts).toBe(false);
+	});
+
+	it('uses localized fallback labels when chart columns are missing', () => {
+		renderChartFromSpec(container, makeSpec('bar', { category: '' }));
+		renderChartFromSpec(container, makeSpec('scatter', { x: '', y: '' }));
+		renderChartFromSpec(container, makeSpec('network', { source: '', target: '' }));
+		renderChartFromSpec(container, makeSpec('line', { x: '', y: '' }));
+		renderChartFromSpec(container, makeSpec('tin', { x: '', y: '', z: '' }));
+
+		expect(renderers.renderBarChart.mock.calls[0][3].axisLabels.x).toBe('chive-chart-control-bar-category');
+		expect(renderers.renderScatterPlot.mock.calls[0][4].axisLabels).toEqual({
+			x: 'chive-chart-control-scatter-x',
+			y: 'chive-chart-control-scatter-y',
+		});
+		expect(renderers.renderNetworkGraph.mock.calls[0][4].labels.source).toBe('chive-chart-control-network-source');
+		expect(renderers.renderNetworkGraph.mock.calls[0][4].labels.target).toBe('chive-chart-control-network-target');
+		expect(renderers.renderLineChart.mock.calls[0][4].axisLabels).toEqual({
+			x: 'chive-chart-control-line-x',
+			y: 'chive-chart-control-line-y',
+		});
+		expect(renderers.renderTinChart.mock.calls[0][5].axisLabels).toEqual({
+			x: 'chive-chart-control-tin-x',
+			y: 'chive-chart-control-tin-y',
+			z: 'chive-chart-control-tin-z',
+		});
+	});
+
+	it('accepts chart specs without config objects', () => {
+		for (const type of SUPPORTED_PANEL_CHART_TYPES) {
+			const spec = makeSpec(type);
+			delete spec.config;
+			expect(renderChartFromSpec(container, spec).ok).toBe(true);
+		}
+
+		expect(renderers.renderBarChart).toHaveBeenCalled();
+		expect(renderers.renderScatterPlot).toHaveBeenCalled();
+		expect(renderers.renderNetworkGraph).toHaveBeenCalled();
+		expect(renderers.renderPieChart).toHaveBeenCalled();
+		expect(renderers.renderBubbleChart).toHaveBeenCalled();
+		expect(renderers.renderTreeMap).toHaveBeenCalled();
+		expect(renderers.renderLineChart).toHaveBeenCalled();
+		expect(renderers.renderTinChart).toHaveBeenCalled();
+	});
+
+	it('returns renderer failure results unchanged', () => {
+		renderers.renderLineChart.mockReturnValueOnce({ ok: false, reason: 'renderer-failed' });
+
+		const result = renderChartFromSpec(container, makeSpec('line', { x: 'a', y: 'a' }));
+
+		expect(result).toEqual({ ok: false, reason: 'renderer-failed' });
 	});
 
 	it('passes shared baseOptions (customTitle, chartHeight, locale) through to renderers', () => {

@@ -67,6 +67,21 @@ function appendControls(controls) {
 	controls.forEach(control => document.body.appendChild(control));
 }
 
+function selectValue(id, value) {
+	const select = document.getElementById(id);
+	if (![...select.options].some(option => option.value === value)) {
+		const option = document.createElement('option');
+		option.value = value;
+		select.appendChild(option);
+	}
+	select.value = value;
+	select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function lastConfig() {
+	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].pie;
+}
+
 describe('pieControls UI structure', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -104,6 +119,55 @@ describe('pieControls UI structure', () => {
 		expect(sliceInputs.length).toBe(3); // North, South, East
 		const tokens = Array.from(sliceInputs).map(input => input.dataset.colorItem).sort();
 		expect(tokens).toEqual(['East', 'North', 'South']);
+	});
+
+	it('omits sector color controls when there is no usable category data', () => {
+		const dataset = createDataset({ category: null });
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
+		appendControls(controls);
+
+		expect(document.querySelector('button[data-color-preset-control="viz-pie-color-preset"]')).toBeNull();
+		expect(document.querySelector('input[data-color-grid-control="viz-pie-color-grid"]')).toBeNull();
+
+		document.body.innerHTML = '';
+		const noRowsDataset = createDataset();
+		noRowsDataset.rows = null;
+		appendControls(createPieChartControls(noRowsDataset, ['region'], ['sales'], ['region', 'sales']));
+		expect(document.querySelector('input[data-color-grid-control="viz-pie-color-grid"]')).toBeNull();
+	});
+
+	it('orders sum-mode sectors, buckets missing categories, and skips invalid numbers', () => {
+		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
+		dataset.rows = [
+			{ region: 'North', sales: 10 },
+			{ region: '', sales: 7 },
+			{ region: null, sales: 5 },
+			{ region: 'South', sales: 'bad' },
+			{ region: 'East', sales: 9 },
+		];
+
+		appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
+
+		const tokens = Array.from(document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]'))
+			.map(input => input.dataset.colorItem);
+		expect(tokens).toEqual(['N/A', 'North', 'East']);
+	});
+
+	it('renders disabled controls and fallback selections for invalid options', () => {
+		const dataset = createDataset({
+			enabled: false,
+			topN: 'bad',
+			topNMode: 'truncate',
+			labelPosition: 'inside',
+			customSliceColors: null,
+		});
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
+		appendControls(controls);
+
+		expect(document.getElementById('viz-select-pie-topn').value).toBe('0');
+		expect(document.getElementById('viz-select-pie-topn-mode').value).toBe('truncate');
+		expect(document.getElementById('viz-select-pie-category').disabled).toBe(true);
+		expect(document.querySelector('input[data-color-grid-control="viz-pie-color-grid"]').disabled).toBe(true);
 	});
 });
 
@@ -184,6 +248,134 @@ describe('pieControls listeners', () => {
 		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
 		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
 		expect(call.pie.customSliceColors.North).toBe('#ff0000');
+	});
+
+	it('handles missing DOM controls as no-ops', () => {
+		const dataset = createDataset();
+
+		expect(() => setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], vi.fn())).not.toThrow();
+		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+	});
+
+	it('coerces select values and supports the legacy callback argument position', () => {
+		const dataset = createDataset();
+		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales'], ['region', 'team', 'sales']);
+		appendControls(controls);
+
+		const onConfigChanged = vi.fn();
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], onConfigChanged);
+
+		selectValue('viz-select-pie-category', 'team');
+		expect(lastConfig().category).toBe('team');
+
+		selectValue('viz-select-pie-value-column', '');
+		expect(lastConfig().valueColumn).toBeNull();
+
+		selectValue('viz-select-pie-label-position', 'sideways');
+		expect(lastConfig().labelPosition).toBe('inside');
+
+		selectValue('viz-select-pie-topn', '20');
+		expect(lastConfig().topN).toBe(20);
+
+		selectValue('viz-select-pie-topn-mode', 'unknown');
+		expect(lastConfig().topNMode).toBe('other');
+
+		expect(onConfigChanged).toHaveBeenCalledTimes(5);
+	});
+
+	it('keeps or clears the value column when measure mode changes', () => {
+		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
+		const controls = createPieChartControls(dataset, ['region'], ['sales', 'profit'], ['region', 'sales', 'profit']);
+		appendControls(controls);
+
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales', 'profit'], ['region', 'sales', 'profit'], vi.fn());
+
+		selectValue('viz-select-pie-measure', 'count');
+		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'count', valueColumn: 'sales' }));
+
+		dataset.chartConfig.pie.valueColumn = 'profit';
+		selectValue('viz-select-pie-measure', 'sum');
+		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: 'profit' }));
+
+		dataset.chartConfig.pie.valueColumn = 'old';
+		selectValue('viz-select-pie-measure', 'sum');
+		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }));
+
+		document.body.innerHTML = '';
+		const noNumericDataset = createDataset({ measureMode: 'count', valueColumn: 'old' });
+		appendControls(createPieChartControls(noNumericDataset, ['region'], [], ['region']));
+		setupPieChartControlListeners(noNumericDataset, noNumericDataset.chartConfig.pie, [], ['region'], vi.fn());
+		selectValue('viz-select-pie-measure', 'sum');
+		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: null }));
+	});
+
+	it('clamps inner and outer radius changes and updates visible slider output', () => {
+		const dataset = createDataset({ innerRadius: 40, outerRadius: 50 });
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
+		appendControls(controls);
+
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
+
+		const inner = document.getElementById('viz-slider-pie-inner-radius');
+		const outer = document.getElementById('viz-slider-pie-outer-radius');
+
+		outer.value = '45';
+		inner.value = '60';
+		inner.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(inner.parentElement.querySelector('output').textContent).toBe('60');
+		inner.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig().innerRadius).toBe(37);
+		expect(inner.value).toBe('37');
+		expect(inner.parentElement.querySelector('output').textContent).toBe('37');
+
+		inner.value = '40';
+		outer.value = '30';
+		outer.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig()).toEqual(expect.objectContaining({ outerRadius: 30, innerRadius: 22 }));
+		expect(inner.value).toBe('22');
+	});
+
+	it('resets zoom with and without the zoom slider present', () => {
+		const dataset = createDataset({ zoomScale: 2 });
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
+		appendControls(controls);
+
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
+
+		const zoom = document.getElementById('viz-slider-pie-zoom');
+		zoom.value = '3';
+		document.getElementById('viz-btn-pie-reset-zoom').click();
+		expect(lastConfig().zoomScale).toBe(1);
+		expect(zoom.value).toBe('1');
+		expect(zoom.parentElement.querySelector('output').textContent).toBe('1');
+
+		document.body.innerHTML = '<button id="viz-btn-pie-reset-zoom" type="button"></button>';
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
+		document.getElementById('viz-btn-pie-reset-zoom').click();
+		expect(lastConfig().zoomScale).toBe(1);
+	});
+
+	it('ignores unknown presets and color-grid events with no sector token', () => {
+		const dataset = createDataset();
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
+		appendControls(controls);
+		const unknownPreset = document.createElement('button');
+		unknownPreset.dataset.colorPresetControl = 'viz-pie-color-preset';
+		unknownPreset.dataset.presetName = 'Missing';
+		document.body.appendChild(unknownPreset);
+
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
+
+		unknownPreset.click();
+		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+
+		const sliceInput = document.querySelector('input[data-color-grid-control="viz-pie-color-grid"]');
+		delete sliceInput.dataset.colorItem;
+		sliceInput.dispatchEvent(new Event('input', { bubbles: true }));
+		sliceInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(mocks.normalizeActiveDatasetConfig).not.toHaveBeenCalled();
+		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
 	});
 });
 

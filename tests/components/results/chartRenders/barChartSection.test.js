@@ -97,6 +97,20 @@ describe('renderBarChartSection', () => {
 		expect(calledOpts.locale).toBe('en');
 	});
 
+	it('falls back to default height and category axis label', () => {
+		const { container } = setupDom();
+
+		renderBarChartSection({
+			config: defaultConfig({ category: '', chartHeight: 0 }),
+			rows: [],
+			filterCallbacks,
+		});
+
+		const [, , , calledOpts] = mocks.renderBarChart.mock.calls[0];
+		expect(container.style.minHeight).toBe('320px');
+		expect(calledOpts.axisLabels.x).toBe('chive-chart-control-bar-category');
+	});
+
 	it('coerces invalid measureMode to count', () => {
 		setupDom();
 		renderBarChartSection({

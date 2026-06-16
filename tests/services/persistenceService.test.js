@@ -146,6 +146,80 @@ describe('persistenceService', () => {
 		expect(isPersistenceAvailable()).toBe(true);
 	});
 
+	it('reports unavailable when backend availability throws or is missing', () => {
+		configurePersistenceBackend({
+			available: () => { throw new Error('blocked'); },
+			hydrate: vi.fn(),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+		expect(isPersistenceAvailable()).toBe(false);
+
+		configurePersistenceBackend({
+			hydrate: vi.fn(),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+		expect(isPersistenceAvailable()).toBe(false);
+	});
+
+	it('returns typed failures for invalid snapshots, unavailable storage, and missing import/export hooks', async () => {
+		configurePersistenceBackend({
+			available: () => false,
+			hydrate: vi.fn(),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+		await expect(persistState(null)).resolves.toEqual(expect.objectContaining({ ok: false }));
+		await expect(persistState(makeSnapshot())).resolves.toEqual(expect.objectContaining({ ok: false }));
+		await expect(exportProject(makeSnapshot())).resolves.toEqual(expect.objectContaining({ ok: false }));
+		await expect(importProjectBytes(new Uint8Array([1]), { replaceAllState: vi.fn() }))
+			.resolves.toEqual(expect.objectContaining({ ok: false }));
+
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: vi.fn(),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+		await expect(exportProject(null)).resolves.toEqual(expect.objectContaining({ ok: false }));
+		await expect(exportProject(makeSnapshot())).resolves.toEqual(expect.objectContaining({ ok: false }));
+		await expect(importProjectBytes(new Uint8Array([1]), {})).resolves.toEqual(expect.objectContaining({ ok: false }));
+		await expect(importProjectBytes(new Uint8Array([1]), { replaceAllState: vi.fn() }))
+			.resolves.toEqual(expect.objectContaining({ ok: false }));
+	});
+
+	it('handles backend read/write exceptions without throwing', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: vi.fn(async () => { throw new Error('read failed'); }),
+			persist: vi.fn(async () => { throw Object.assign(new Error('quota full'), { name: 'QuotaExceededError' }); }),
+			exportBytes: vi.fn(async () => { throw 'export failed'; }),
+			importBytes: vi.fn(async () => { throw { name: 'UnsupportedProjectFileError', message: 'unsupported chive sqlite' }; }),
+			clear: vi.fn(async () => { throw new Error('clear failed'); }),
+		});
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+		expect(replaceAllState).not.toHaveBeenCalled();
+
+		const persist = await persistState(makeSnapshot());
+		expect(persist.ok).toBe(false);
+		expect(getPersistenceErrorMessageKey(persist.error)).toBe('chive-save-failed-quota');
+
+		const exported = await exportProject(makeSnapshot());
+		expect(exported.ok).toBe(false);
+		expect(exported.error.message).toBe('export failed');
+
+		const imported = await importProjectBytes(new Uint8Array([1]), { replaceAllState });
+		expect(imported.ok).toBe(false);
+		expect(getProjectImportErrorMessageKey(imported.error)).toBe('chive-project-import-invalid-error');
+
+		await expect(clearPersistedState()).resolves.toBeUndefined();
+		warn.mockRestore();
+	});
+
 	it('persists project state to SQLite and hydrates UI prefs from localStorage', async () => {
 		localStorage.setItem('chive.ui', JSON.stringify({ sidebarMode: 'panel', previewRows: 25 }));
 		const result = await persistState(makeSnapshot());
@@ -250,6 +324,15 @@ describe('persistenceService', () => {
 		expect(replaceAllState.mock.calls[0][0].ui).toEqual({ sidebarMode: 'viz', previewRows: 5 });
 	});
 
+	it('ignores malformed UI prefs and invalid replace hooks during hydrate', async () => {
+		localStorage.setItem('chive.ui', '{bad json');
+		await expect(hydrateState({ replaceAllState: null })).resolves.toBeUndefined();
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+		expect(replaceAllState).not.toHaveBeenCalled();
+	});
+
 	it('applies transformPanel before replaceAllState', async () => {
 		await persistState(makeSnapshot());
 		const transformPanel = vi.fn(panel => ({
@@ -262,6 +345,59 @@ describe('persistenceService', () => {
 
 		expect(transformPanel).toHaveBeenCalledTimes(1);
 		expect(replaceAllState.mock.calls[0][0].panel.charts[0].config.augmented).toBe(true);
+	});
+
+	it('falls back to the raw panel when transformPanel fails or returns null', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		await persistState(makeSnapshot());
+
+		const replaceAfterThrow = vi.fn();
+		await hydrateState({
+			replaceAllState: replaceAfterThrow,
+			transformPanel: () => { throw new Error('transform failed'); },
+		});
+		expect(replaceAfterThrow.mock.calls[0][0].panel.charts).toHaveLength(1);
+
+		const replaceAfterNull = vi.fn();
+		await hydrateState({
+			replaceAllState: replaceAfterNull,
+			transformPanel: () => null,
+		});
+		expect(replaceAfterNull.mock.calls[0][0].panel.charts).toHaveLength(1);
+		warn.mockRestore();
+	});
+
+	it('normalizes malformed stored snapshots at the service boundary', async () => {
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: async () => ({
+				data: {
+					activeDatasetId: 'good',
+					datasets: [
+						{
+							id: 'good',
+							name: 'good.csv',
+							rows: [],
+							columns: [{ name: 'x', type: 'number' }],
+							selectedColumns: 'bad',
+							chartConfig: { bar: { category: 'x' }, scatter: 'bad' },
+						},
+						'bad',
+					],
+				},
+				panel: { key: 'singleton', activeDatasetId: 'good', charts: [] },
+			}),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+		const snapshot = replaceAllState.mock.calls[0][0];
+		expect(snapshot.data.activeIndex).toBe(0);
+		expect(snapshot.data.datasets[0].selectedColumns).toEqual([]);
+		expect(snapshot.data.datasets[0].chartConfig).toEqual({ bar: { category: 'x' } });
+		expect(snapshot.panel).toEqual({ charts: [] });
 	});
 
 	it('drops malformed hydrated dataset records at the service boundary', async () => {
@@ -393,6 +529,65 @@ describe('persistenceService', () => {
 			expect(activeController.getStatus().dirty).toBe(false);
 			await vi.advanceTimersByTimeAsync(2000);
 			expect(persist).not.toHaveBeenCalled();
+		});
+
+		it('returns a noop controller when getState is not a function', async () => {
+			const controller = enablePersistenceAutoSave(null);
+
+			await expect(controller.saveNow()).resolves.toEqual(expect.objectContaining({ ok: false }));
+			expect(controller.getStatus()).toEqual({
+				dirty: false,
+				saving: false,
+				lastSavedAt: null,
+				lastError: null,
+			});
+			expect(() => controller.dispose()).not.toThrow();
+		});
+
+		it('saveNow skips clean state and dispose removes listeners idempotently', async () => {
+			vi.useFakeTimers();
+			const persist = vi.fn(async () => {});
+			configurePersistenceBackend({
+				available: () => true,
+				hydrate: async () => null,
+				persist,
+				clear: vi.fn(),
+			});
+
+			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+			expect(await activeController.saveNow()).toEqual({ ok: true, skipped: true });
+			activeController.dispose();
+			activeController.dispose();
+
+			expect(persist).not.toHaveBeenCalled();
+		});
+
+		it('flushes dirty state on pagehide and hidden visibility changes', async () => {
+			vi.useFakeTimers();
+			const persist = vi.fn(async () => {});
+			configurePersistenceBackend({
+				available: () => true,
+				hydrate: async () => null,
+				persist,
+				clear: vi.fn(),
+			});
+			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+			window.dispatchEvent(new Event('pagehide'));
+			await Promise.resolve();
+			expect(persist).toHaveBeenCalledTimes(1);
+
+			emitStateChange(STATE_EVENTS.CHART_ADDED, { chartId: 1 });
+			Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
+			document.dispatchEvent(new Event('visibilitychange'));
+			await Promise.resolve();
+			expect(persist).toHaveBeenCalledTimes(1);
+
+			Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
+			document.dispatchEvent(new Event('visibilitychange'));
+			await Promise.resolve();
+			expect(persist).toHaveBeenCalledTimes(2);
 		});
 
 		it('coalesces a burst of edits into a single debounced save', async () => {

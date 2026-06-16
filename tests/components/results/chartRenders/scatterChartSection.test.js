@@ -111,6 +111,23 @@ describe('renderScatterChartSection', () => {
 		expect(mocks.renderScatterPlot.mock.calls[0][4].axisTypes.y).toBe('numerico');
 	});
 
+	it('falls back to default height and localized axis labels', () => {
+		const { container } = setupDom();
+		renderScatterChartSection({
+			config: defaultConfig({ x: '', y: '', chartHeight: 0 }),
+			rows: [],
+			columnTypeByName: {},
+			filterCallbacks,
+		});
+
+		const [, , , , opts] = mocks.renderScatterPlot.mock.calls[0];
+		expect(container.style.minHeight).toBe('320px');
+		expect(opts.axisLabels).toEqual({
+			x: 'chive-chart-control-scatter-x',
+			y: 'chive-chart-control-scatter-y',
+		});
+	});
+
 	it('shows the log-specific empty-state when reason is log-no-positive', () => {
 		const { container } = setupDom();
 		mocks.renderScatterPlot.mockReturnValueOnce({ ok: false, reason: 'log-no-positive' });

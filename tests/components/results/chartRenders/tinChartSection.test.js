@@ -134,6 +134,30 @@ describe('renderTinChartSection', () => {
 		expect(opts.locale).toBe('en');
 	});
 
+	it('handles missing block and falls back to default height and axis labels', () => {
+		let { container } = setupDom({ withBlock: false });
+		renderTinChartSection({
+			config: defaultConfig({ x: '', y: '', z: '', chartHeight: 0 }),
+			rows: [],
+		});
+
+		const opts = mocks.renderTinChart.mock.calls[0][5];
+		expect(container.style.minHeight).toBe('460px');
+		expect(opts.axisLabels).toEqual({
+			x: 'chive-chart-control-tin-x',
+			y: 'chive-chart-control-tin-y',
+			z: 'chive-chart-control-tin-z',
+		});
+
+		({ container } = setupDom({ withBlock: false }));
+		container.appendChild(document.createElement('span'));
+		renderTinChartSection({
+			config: defaultConfig({ enabled: false }),
+			rows: [],
+		});
+		expect(container.children.length).toBe(0);
+	});
+
 	it('maps insufficient-points reason to specific empty-state', () => {
 		const { container } = setupDom();
 		mocks.renderTinChart.mockReturnValueOnce({ ok: false, reason: 'insufficient-points' });
