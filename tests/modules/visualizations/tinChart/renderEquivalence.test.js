@@ -102,7 +102,7 @@ describe('tinChart render equivalence (pure-move guard)', () => {
 		it(`is byte-stable: ${name}`, () => {
 			const { html, result } = render(options);
 			expect(result.ok).toBe(true);
-			expect({ triangles: result.triangles, polygons: result.polygons }).toMatchSnapshot();
+			expect(result).toMatchSnapshot();
 			expect(html).toMatchSnapshot();
 		});
 	}

@@ -18,11 +18,11 @@ function makeStubGroup() {
 	return { group, handlers };
 }
 
-function hitEvent(z) {
+function hitEvent(z, pageX = 12, pageY = 34) {
 	return {
 		target: { classList: { contains: c => c === 'tin-isoline-hit' }, dataset: { z: String(z) } },
-		pageX: 12,
-		pageY: 34,
+		pageX,
+		pageY,
 	};
 }
 
@@ -52,9 +52,12 @@ describe('createIsolineHoverHandlers', () => {
 		expect(tooltip.style.display).toBe('block');
 		expect(tooltip.textContent).toContain('Elev');
 		expect(tooltip.textContent).toContain('7');
+		const initialPosition = { left: tooltip.style.left, top: tooltip.style.top };
 
-		handlers.pointermove(hitEvent(7));
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('block');
+		handlers.pointermove(hitEvent(7, 120, 140));
+		tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip.style.display).toBe('block');
+		expect({ left: tooltip.style.left, top: tooltip.style.top }).not.toEqual(initialPosition);
 
 		handlers.pointerout(hitEvent(7));
 		expect(document.querySelector('.chart-tooltip').style.display).toBe('none');

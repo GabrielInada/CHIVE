@@ -612,15 +612,18 @@ describe('tinChart isoline/threshold hover (integration)', () => {
 		const hit = container.querySelector('.tin-isolines line.tin-isoline-hit');
 		expect(hit).not.toBeNull();
 
-		hit.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
+		hit.dispatchEvent(new MouseEvent('pointerover', { bubbles: true, clientX: 10, clientY: 20 }));
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
 		expect(tooltip.style.display).toBe('block');
 		// Tooltip line is "z: <value>"; the data-z drives the value.
 		expect(tooltip.textContent).toContain('z');
+		const initialPosition = { left: tooltip.style.left, top: tooltip.style.top };
 
-		hit.dispatchEvent(new MouseEvent('pointermove', { bubbles: true }));
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('block');
+		hit.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 120, clientY: 140 }));
+		const movedTooltip = document.querySelector('.chart-tooltip');
+		expect(movedTooltip.style.display).toBe('block');
+		expect({ left: movedTooltip.style.left, top: movedTooltip.style.top }).not.toEqual(initialPosition);
 
 		hit.dispatchEvent(new MouseEvent('pointerout', { bubbles: true }));
 		expect(document.querySelector('.chart-tooltip').style.display).toBe('none');
