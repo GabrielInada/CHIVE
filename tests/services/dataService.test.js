@@ -15,6 +15,23 @@ import {
 } from '../../src/services/dataService.js';
 
 describe('dataService', () => {
+  it('exposes exactly the 11 documented exports (no internal leaks through the facade)', async () => {
+    const mod = await import('../../src/services/dataService.js');
+    expect(Object.keys(mod).sort()).toEqual([
+      'calculateCategoricalStatistics',
+      'calculateStatistics',
+      'detectDecimalSeparator',
+      'detectDelimiter',
+      'detectType',
+      'formatFileSize',
+      'joinDatasets',
+      'normalizeNumericString',
+      'parseCsv',
+      'parseJson',
+      'processData',
+    ]);
+  });
+
   it('detects number and text types correctly', () => {
     expect(detectType(['1', '2', '3', '4'])).toBe('number');
     expect(detectType(['abc', 'def', 'ghi'])).toBe('text');
