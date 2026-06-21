@@ -1,0 +1,66 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`tinControls UI structure > matches the section and control-order structure snapshot 1`] = `
+[
+  {
+    "controlKeys": [
+      "viz-select-tin-x",
+      "viz-select-tin-y",
+      "viz-select-tin-z",
+    ],
+    "expanded": "true",
+    "section": "data",
+  },
+  {
+    "controlKeys": [
+      "viz-input-tin-title",
+      "viz-toggle-tin-x-label",
+      "viz-toggle-tin-y-label",
+    ],
+    "expanded": "true",
+    "section": "display",
+  },
+  {
+    "controlKeys": [
+      "viz-select-tin-fill-mode",
+      "viz-slider-tin-subdivision",
+      "viz-select-tin-color-ramp",
+      "viz-input-tin-gradient-min",
+      "viz-input-tin-gradient-max",
+      "viz-select-tin-gradient-distribution",
+      "viz-tin-color-preset",
+    ],
+    "expanded": "false",
+    "section": "surface",
+  },
+  {
+    "controlKeys": [
+      "viz-toggle-tin-edges",
+      "viz-input-tin-edge-color",
+      "viz-toggle-tin-points",
+      "viz-slider-tin-point-radius",
+      "viz-toggle-tin-z-labels",
+      "viz-toggle-tin-hull",
+      "viz-input-tin-hull-color",
+      "viz-toggle-tin-isolines",
+      "viz-select-tin-isoline-mode",
+      "viz-slider-tin-isoline-count",
+      "viz-input-tin-isoline-step",
+      "viz-input-tin-isoline-color",
+      "viz-slider-tin-isoline-width",
+      "viz-toggle-tin-color-isolines-by-z",
+      "viz-input-tin-isoline-min-color",
+      "viz-input-tin-isoline-max-color",
+      "viz-toggle-tin-isoline-labels",
+      "viz-slider-tin-isoline-label-size",
+      "viz-input-tin-isoline-label-color",
+      "viz-toggle-tin-threshold",
+      "viz-input-tin-threshold-value",
+      "viz-input-tin-threshold-color",
+      "viz-slider-tin-threshold-width",
+    ],
+    "expanded": "false",
+    "section": "overlays",
+  },
+]
+`;
