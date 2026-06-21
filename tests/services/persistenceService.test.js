@@ -142,6 +142,17 @@ describe('persistenceService', () => {
 		configurePersistenceBackend(null);
 	});
 
+	it('exposes exactly the 14 documented exports (no internal leaks through the facade)', async () => {
+		const mod = await import('../../src/services/persistenceService.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'PROJECT_FILE_EXTENSION', 'PROJECT_FILE_MIME', 'clearPersistedState',
+			'configurePersistenceBackend', 'enablePersistenceAutoSave', 'exportProject',
+			'getPersistenceErrorMessageKey', 'getProjectImportErrorMessageKey', 'hydrateState',
+			'importProjectBytes', 'isActiveTabOnlyPatch', 'isPersistenceAvailable',
+			'isProjectDirtyEvent', 'persistState',
+		].sort());
+	});
+
 	it('reports availability from the active backend', () => {
 		expect(isPersistenceAvailable()).toBe(true);
 	});
@@ -484,6 +495,21 @@ describe('persistenceService', () => {
 	describe('enablePersistenceAutoSave()', () => {
 		afterEach(() => {
 			vi.useRealTimers();
+		});
+
+		it('auto-save targets a backend swapped in AFTER the controller was created (live binding)', async () => {
+			vi.useFakeTimers();
+			const first = vi.fn(async () => {});
+			const second = vi.fn(async () => {});
+			configurePersistenceBackend({ available: () => true, hydrate: async () => null, persist: first, clear: vi.fn() });
+			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+			configurePersistenceBackend({ available: () => true, hydrate: async () => null, persist: second, clear: vi.fn() });
+
+			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+			await vi.advanceTimersByTimeAsync(2000);
+
+			expect(first).not.toHaveBeenCalled();
+			expect(second).toHaveBeenCalledTimes(1);
 		});
 
 		it('auto-saves project changes after the debounce and ignores activeTab-only changes', async () => {
