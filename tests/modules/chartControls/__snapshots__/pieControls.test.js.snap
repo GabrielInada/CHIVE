@@ -1,0 +1,42 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`pieControls UI structure > matches the section and control-order structure snapshot 1`] = `
+[
+  {
+    "controlKeys": [
+      "viz-select-pie-category",
+      "viz-select-pie-measure",
+      "viz-select-pie-value-column",
+      "viz-select-pie-topn",
+      "viz-select-pie-topn-mode",
+    ],
+    "expanded": "true",
+    "section": "data",
+  },
+  {
+    "controlKeys": [
+      "viz-slider-pie-inner-radius",
+      "viz-slider-pie-outer-radius",
+      "viz-slider-pie-pad-angle",
+      "viz-slider-pie-zoom",
+      "viz-toggle-pie-category-label",
+      "viz-toggle-pie-value-label",
+      "viz-toggle-pie-legend",
+      "viz-input-pie-title",
+      "viz-select-pie-label-position",
+      "viz-btn-pie-reset-zoom",
+    ],
+    "expanded": "true",
+    "section": "display",
+  },
+  {
+    "controlKeys": [
+      "viz-input-pie-color",
+      "viz-pie-color-preset",
+      "viz-pie-color-grid",
+    ],
+    "expanded": "false",
+    "section": "styling",
+  },
+]
+`;

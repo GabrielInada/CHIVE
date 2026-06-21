@@ -27,6 +27,17 @@ import {
 	computeDefaults,
 } from '../../../src/modules/chartControls/pieControls.js';
 
+describe('pieControls public surface', () => {
+	it('exposes exactly the three documented pie-control exports (no internal leaks)', async () => {
+		const mod = await import('../../../src/modules/chartControls/pieControls.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'computeDefaults',
+			'createPieChartControls',
+			'setupPieChartControlListeners',
+		]);
+	});
+});
+
 function createDataset(overrides = {}) {
 	return {
 		rows: [
@@ -86,6 +97,33 @@ describe('pieControls UI structure', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		document.body.innerHTML = '';
+	});
+
+	// Locks the per-section grouping and control ordering across the split into
+	// the pieControls/ folder. The behavioral tests assert individual ids/states;
+	// this pins the whole structure (section id, expansion, ordered control keys)
+	// so a future move cannot silently reorder or regroup controls.
+	it('matches the section and control-order structure snapshot', () => {
+		const dataset = createDataset();
+		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales'], ['region', 'team', 'sales']);
+
+		const structure = controls.map(section => {
+			const content = section.querySelector('.chart-section-content');
+			const controlKeys = Array.from(content.children).map(control => {
+				const idElement = control.matches('[id]') ? control : control.querySelector('[id]');
+				if (idElement?.id) return idElement.id;
+				return control.querySelector('[data-color-preset-control]')?.dataset.colorPresetControl;
+			});
+			expect(controlKeys).not.toContain(undefined);
+
+			return {
+				section: section.dataset.section,
+				expanded: section.querySelector('.chart-section-header').getAttribute('aria-expanded'),
+				controlKeys,
+			};
+		});
+
+		expect(structure).toMatchSnapshot();
 	});
 
 	it('offers categorical columns plus an empty (none) option in the category select', () => {
