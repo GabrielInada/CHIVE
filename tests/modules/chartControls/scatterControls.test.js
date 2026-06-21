@@ -78,6 +78,17 @@ function lastConfig() {
 	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].scatter;
 }
 
+describe('scatterControls public surface', () => {
+	it('exposes exactly the three documented scatter-control exports (no internal leaks)', async () => {
+		const mod = await import('../../../src/modules/chartControls/scatterControls.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'computeDefaults',
+			'createScatterPlotControls',
+			'setupScatterPlotControlListeners',
+		]);
+	});
+});
+
 describe('scatterControls axis options', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
