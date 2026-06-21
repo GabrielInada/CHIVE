@@ -1,0 +1,161 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scatterControls UI structure > matches the section and control-order structure snapshot for each color mode 1`] = `
+{
+  "category": [
+    {
+      "controlKeys": [
+        "viz-select-x",
+        "viz-select-y",
+        "viz-select-scatter-xscale",
+        "viz-select-scatter-yscale",
+        "viz-select-scatter-categorical-mode",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-toggle-scatter-x-label",
+        "viz-toggle-scatter-y-label",
+        "viz-input-scatter-title",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-toggle-scatter-regression-enabled",
+        "viz-select-scatter-regression-mode",
+        "viz-toggle-scatter-regression-ci",
+        "viz-toggle-scatter-regression-equation",
+        "viz-toggle-scatter-regression-r2",
+      ],
+      "expanded": "false",
+      "section": "analytics",
+    },
+    {
+      "controlKeys": [
+        "viz-select-scatter-radius",
+        "viz-select-scatter-opacity",
+        "viz-select-scatter-size-mode",
+        "viz-select-scatter-size-field",
+        "viz-slider-scatter-size-min",
+        "viz-slider-scatter-size-max",
+        "viz-select-scatter-color-mode",
+        "viz-select-scatter-color-field",
+        "viz-input-scatter-color",
+        "viz-input-scatter-gradient-min",
+        "viz-input-scatter-gradient-max",
+        "viz-select-scatter-color-scheme",
+        "viz-scatter-color-preset",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+  ],
+  "numeric": [
+    {
+      "controlKeys": [
+        "viz-select-x",
+        "viz-select-y",
+        "viz-select-scatter-xscale",
+        "viz-select-scatter-yscale",
+        "viz-select-scatter-categorical-mode",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-toggle-scatter-x-label",
+        "viz-toggle-scatter-y-label",
+        "viz-input-scatter-title",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-toggle-scatter-regression-enabled",
+        "viz-select-scatter-regression-mode",
+        "viz-toggle-scatter-regression-ci",
+        "viz-toggle-scatter-regression-equation",
+        "viz-toggle-scatter-regression-r2",
+      ],
+      "expanded": "false",
+      "section": "analytics",
+    },
+    {
+      "controlKeys": [
+        "viz-select-scatter-radius",
+        "viz-select-scatter-opacity",
+        "viz-select-scatter-size-mode",
+        "viz-select-scatter-size-field",
+        "viz-slider-scatter-size-min",
+        "viz-slider-scatter-size-max",
+        "viz-select-scatter-color-mode",
+        "viz-select-scatter-color-field",
+        "viz-input-scatter-color",
+        "viz-input-scatter-gradient-min",
+        "viz-input-scatter-gradient-max",
+        "viz-select-scatter-gradient-distribution",
+        "viz-scatter-color-preset",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+  ],
+  "uniform": [
+    {
+      "controlKeys": [
+        "viz-select-x",
+        "viz-select-y",
+        "viz-select-scatter-xscale",
+        "viz-select-scatter-yscale",
+        "viz-select-scatter-categorical-mode",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-toggle-scatter-x-label",
+        "viz-toggle-scatter-y-label",
+        "viz-input-scatter-title",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-toggle-scatter-regression-enabled",
+        "viz-select-scatter-regression-mode",
+        "viz-toggle-scatter-regression-ci",
+        "viz-toggle-scatter-regression-equation",
+        "viz-toggle-scatter-regression-r2",
+      ],
+      "expanded": "false",
+      "section": "analytics",
+    },
+    {
+      "controlKeys": [
+        "viz-select-scatter-radius",
+        "viz-select-scatter-opacity",
+        "viz-select-scatter-size-mode",
+        "viz-select-scatter-size-field",
+        "viz-slider-scatter-size-min",
+        "viz-slider-scatter-size-max",
+        "viz-select-scatter-color-mode",
+        "viz-select-scatter-color-field",
+        "viz-input-scatter-color",
+        "viz-input-scatter-gradient-min",
+        "viz-input-scatter-gradient-max",
+        "viz-scatter-color-preset",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+  ],
+}
+`;

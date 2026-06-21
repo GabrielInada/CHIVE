@@ -3,9 +3,13 @@
  *
  * Builds the right-sidebar control group for the scatter plot: the Data,
  * Display, Analytics (regression), and Styling sections, returned as
- * `chart-control-section` elements. Largest of the per-chart builders because
- * of the axis-scale (linear/log) cross-constraints, the size-field/color-field
- * mappings, and the optional OLS regression section.
+ * `chart-control-section` elements. The most option-dense Cartesian builder
+ * because of the axis-scale (linear/log) cross-constraints, the
+ * size-field/color-field mappings, and the optional OLS regression section, so
+ * `createScatterPlotControls` is a thin orchestrator over one module-private
+ * helper per section (`buildDataControls`, `buildDisplayControls`,
+ * `buildStylingControls`, `buildAnalyticsControls`); the large Styling section
+ * is itself the concat of `buildMarkerControls` and `buildColorControls`.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
@@ -29,17 +33,46 @@ import { groupControls } from '../controlGrouping.js';
  */
 export function createScatterPlotControls(dataset, numericOptions, allOptions = []) {
 	const config = dataset.chartConfig.scatter;
-	const disabled = !dataset.chartConfig.scatter.enabled;
+	const disabled = !config.enabled;
 	const categoryOptions = allOptions.filter(option => !numericOptions.includes(option));
 
-	// ====== DATA & AGGREGATION SECTION (X/Y axes) ======
-	const dataControls = [];
+	// Build each section's controls in the original construction order (Data ->
+	// Display -> Styling -> Analytics), then group them in the section order the
+	// sidebar renders (Data -> Display -> Analytics -> Styling). The two orders
+	// differ, so the arrays are precomputed before grouping rather than built
+	// inline inside `groupControls`.
+	const dataControls = buildDataControls(config, numericOptions, allOptions, disabled);
+	const displayControls = buildDisplayControls(config, disabled);
+	const stylingControls = buildStylingControls(config, numericOptions, categoryOptions, disabled);
+	const analyticsControls = buildAnalyticsControls(config, numericOptions, categoryOptions, disabled);
+
+	return groupControls([
+		{ id: 'data', title: 'Data & Aggregation', controls: dataControls, expanded: true, icon: 'data' },
+		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
+		{ id: 'analytics', title: t('chive-chart-control-scatter-regression-section'), controls: analyticsControls, expanded: false, icon: 'advanced' },
+		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
+	]);
+}
+
+/**
+ * Build the Data & Aggregation controls: X/Y axis selects, the per-axis
+ * linear/log scale selects (disabled when the chosen axis is categorical), and
+ * the categorical-pair mode (enabled only when both axes are categorical).
+ *
+ * @param {Dataset['chartConfig']['scatter']} config
+ * @param {string[]} numericOptions
+ * @param {string[]} allOptions
+ * @param {boolean} disabled
+ * @returns {HTMLElement[]}
+ */
+function buildDataControls(config, numericOptions, allOptions, disabled) {
+	const controls = [];
 
 	const xOptions = [
 		{ value: '', label: t('chive-chart-option-none') },
 		...allOptions.map(opt => ({ value: opt, label: opt })),
 	];
-	dataControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-x',
 		t('chive-chart-control-scatter-x'),
 		xOptions,
@@ -51,7 +84,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: '', label: t('chive-chart-option-none') },
 		...allOptions.map(opt => ({ value: opt, label: opt })),
 	];
-	dataControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-y',
 		t('chive-chart-control-scatter-y'),
 		yOptions,
@@ -63,7 +96,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: 'linear', label: t('chive-chart-scale-linear') },
 		{ value: 'log', label: t('chive-chart-scale-log') },
 	];
-	dataControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-scatter-xscale',
 		t('chive-chart-control-scatter-xscale'),
 		xScaleOptions,
@@ -75,7 +108,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: 'linear', label: t('chive-chart-scale-linear') },
 		{ value: 'log', label: t('chive-chart-scale-log') },
 	];
-	dataControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-scatter-yscale',
 		t('chive-chart-control-scatter-yscale'),
 		yScaleOptions,
@@ -93,7 +126,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: 'jitter', label: t('chive-chart-control-scatter-categorical-mode-jitter') },
 		{ value: 'aggregate', label: t('chive-chart-control-scatter-categorical-mode-aggregate') },
 	];
-	dataControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-scatter-categorical-mode',
 		t('chive-chart-control-scatter-categorical-mode'),
 		categoricalModeOptions,
@@ -101,24 +134,35 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || !bothAxesCategorical,
 	));
 
-	// ====== DISPLAY SECTION (Labels and dimensions) ======
-	const displayControls = [];
+	return controls;
+}
 
-	displayControls.push(createCheckboxControl(
+/**
+ * Build the Display controls: the X/Y axis-label toggles and the custom-title
+ * text input.
+ *
+ * @param {Dataset['chartConfig']['scatter']} config
+ * @param {boolean} disabled
+ * @returns {HTMLElement[]}
+ */
+function buildDisplayControls(config, disabled) {
+	const controls = [];
+
+	controls.push(createCheckboxControl(
 		'viz-toggle-scatter-x-label',
 		t('chive-chart-control-axis-label-x'),
 		config.showXAxisLabel,
 		disabled
 	));
 
-	displayControls.push(createCheckboxControl(
+	controls.push(createCheckboxControl(
 		'viz-toggle-scatter-y-label',
 		t('chive-chart-control-axis-label-y'),
 		config.showYAxisLabel,
 		disabled
 	));
 
-	displayControls.push(createTextControl(
+	controls.push(createTextControl(
 		'viz-input-scatter-title',
 		t('chive-chart-control-common-title'),
 		config.customTitle,
@@ -126,8 +170,38 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled
 	));
 
-	// ====== STYLING SECTION (Colors and appearance) ======
-	const stylingControls = [];
+	return controls;
+}
+
+/**
+ * Build the Styling controls as the marker controls followed by the color
+ * controls. Concatenating in this order preserves the exact control order the
+ * structure snapshot pins.
+ *
+ * @param {Dataset['chartConfig']['scatter']} config
+ * @param {string[]} numericOptions
+ * @param {string[]} categoryOptions
+ * @param {boolean} disabled
+ * @returns {HTMLElement[]}
+ */
+function buildStylingControls(config, numericOptions, categoryOptions, disabled) {
+	return [
+		...buildMarkerControls(config, numericOptions, disabled),
+		...buildColorControls(config, numericOptions, categoryOptions, disabled),
+	];
+}
+
+/**
+ * Build the marker styling controls: radius, opacity, the size encoding mode,
+ * and (gated on numeric size mode) the size field and min/max radius sliders.
+ *
+ * @param {Dataset['chartConfig']['scatter']} config
+ * @param {string[]} numericOptions
+ * @param {boolean} disabled
+ * @returns {HTMLElement[]}
+ */
+function buildMarkerControls(config, numericOptions, disabled) {
+	const controls = [];
 
 	const radiusOptions = [
 		{ value: '2', label: '2' },
@@ -135,7 +209,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: '4', label: '4' },
 		{ value: '6', label: '6' },
 	];
-	stylingControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-scatter-radius',
 		t('chive-chart-control-scatter-radius'),
 		radiusOptions,
@@ -149,7 +223,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: '0.7', label: '70%' },
 		{ value: '1', label: '100%' },
 	];
-	stylingControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-scatter-opacity',
 		t('chive-chart-control-scatter-opacity'),
 		opacityOptions,
@@ -161,7 +235,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		{ value: 'uniform', label: t('chive-chart-size-uniform') },
 		{ value: 'numeric', label: t('chive-chart-size-numeric') },
 	];
-	stylingControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-scatter-size-mode',
 		t('chive-chart-control-scatter-size-mode'),
 		sizeModeOptions,
@@ -169,7 +243,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled,
 	));
 
-	stylingControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-scatter-size-field',
 		t('chive-chart-control-scatter-size-field'),
 		[
@@ -180,7 +254,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || config.sizeMode !== 'numeric',
 	));
 
-	stylingControls.push(createSliderControl(
+	controls.push(createSliderControl(
 		'viz-slider-scatter-size-min',
 		t('chive-chart-control-scatter-size-min'),
 		Number(config.sizeMin || 2),
@@ -190,7 +264,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || config.sizeMode !== 'numeric',
 	));
 
-	stylingControls.push(createSliderControl(
+	controls.push(createSliderControl(
 		'viz-slider-scatter-size-max',
 		t('chive-chart-control-scatter-size-max'),
 		Number(config.sizeMax || 12),
@@ -200,12 +274,30 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || config.sizeMode !== 'numeric',
 	));
 
+	return controls;
+}
+
+/**
+ * Build the color styling controls: color mode, color field (numeric or
+ * categorical depending on mode), the uniform color, the gradient endpoints,
+ * the mode-specific gradient-distribution (numeric) or color-scheme (category)
+ * control, and the color-preset palette picker.
+ *
+ * @param {Dataset['chartConfig']['scatter']} config
+ * @param {string[]} numericOptions
+ * @param {string[]} categoryOptions
+ * @param {boolean} disabled
+ * @returns {HTMLElement[]}
+ */
+function buildColorControls(config, numericOptions, categoryOptions, disabled) {
+	const controls = [];
+
 	const colorModeOptions = [
 		{ value: 'uniform', label: t('chive-chart-color-uniform') },
 		{ value: 'numeric', label: t('chive-chart-color-scatter-numeric') },
 		{ value: 'category', label: t('chive-chart-color-scatter-category') },
 	];
-	stylingControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-scatter-color-mode',
 		t('chive-chart-color-mode'),
 		colorModeOptions,
@@ -216,7 +308,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	const colorFieldOptions = config.colorMode === 'category'
 		? categoryOptions
 		: numericOptions;
-	stylingControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-scatter-color-field',
 		t('chive-chart-color-scatter-field'),
 		[
@@ -227,7 +319,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || config.colorMode === 'uniform',
 	));
 
-	stylingControls.push(createColorInputControl(
+	controls.push(createColorInputControl(
 		'viz-input-scatter-color',
 		t('chive-chart-control-scatter-color'),
 		config.color,
@@ -235,7 +327,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || config.colorMode !== 'uniform',
 	));
 
-	stylingControls.push(createColorInputControl(
+	controls.push(createColorInputControl(
 		'viz-input-scatter-gradient-min',
 		t('chive-chart-color-gradient-min'),
 		config.gradientMinColor,
@@ -243,7 +335,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || config.colorMode === 'uniform',
 	));
 
-	stylingControls.push(createColorInputControl(
+	controls.push(createColorInputControl(
 		'viz-input-scatter-gradient-max',
 		t('chive-chart-color-gradient-max'),
 		config.gradientMaxColor,
@@ -252,7 +344,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	));
 
 	if (config.colorMode === 'numeric') {
-		stylingControls.push(createSelectControl(
+		controls.push(createSelectControl(
 			'viz-select-scatter-gradient-distribution',
 			t('chive-chart-color-gradient-distribution'),
 			[
@@ -265,7 +357,7 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	}
 
 	if (config.colorMode === 'category') {
-		stylingControls.push(createSelectControl(
+		controls.push(createSelectControl(
 			'viz-select-scatter-color-scheme',
 			t('chive-chart-color-scheme'),
 			Object.keys(COLOR_PRESETS).map(name => ({ value: name, label: name })),
@@ -274,14 +366,28 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		));
 	}
 
-	stylingControls.push(createColorPresetControl(
+	controls.push(createColorPresetControl(
 		'viz-scatter-color-preset',
 		t('chive-chart-color-palette'),
 		config.colorScheme || 'Bold',
 		disabled
 	));
 
-	// ====== ANALYTICS SECTION (Trendline / regression) ======
+	return controls;
+}
+
+/**
+ * Build the Analytics controls: the OLS regression toggle (enabled only when
+ * both axes are numeric) and the dependent mode/CI/equation/R^2 controls
+ * (enabled only once regression is on).
+ *
+ * @param {Dataset['chartConfig']['scatter']} config
+ * @param {string[]} numericOptions
+ * @param {string[]} categoryOptions
+ * @param {boolean} disabled
+ * @returns {HTMLElement[]}
+ */
+function buildAnalyticsControls(config, numericOptions, categoryOptions, disabled) {
 	const regressionConfig = config.regression || {};
 	const bothAxesNumeric = Boolean(
 		config.x
@@ -291,16 +397,16 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 	);
 	const regressionEnabled = regressionConfig.enabled === true;
 	const hasCategoricalColumns = categoryOptions.length > 0;
-	const analyticsControls = [];
+	const controls = [];
 
-	analyticsControls.push(createCheckboxControl(
+	controls.push(createCheckboxControl(
 		'viz-toggle-scatter-regression-enabled',
 		t('chive-chart-control-scatter-regression-enabled'),
 		regressionEnabled,
 		disabled || !bothAxesNumeric,
 	));
 
-	analyticsControls.push(createSelectControl(
+	controls.push(createSelectControl(
 		'viz-select-scatter-regression-mode',
 		t('chive-chart-control-scatter-regression-mode'),
 		[
@@ -311,32 +417,26 @@ export function createScatterPlotControls(dataset, numericOptions, allOptions = 
 		disabled || !regressionEnabled || !hasCategoricalColumns,
 	));
 
-	analyticsControls.push(createCheckboxControl(
+	controls.push(createCheckboxControl(
 		'viz-toggle-scatter-regression-ci',
 		t('chive-chart-control-scatter-regression-show-ci'),
 		regressionConfig.showCI !== false,
 		disabled || !regressionEnabled,
 	));
 
-	analyticsControls.push(createCheckboxControl(
+	controls.push(createCheckboxControl(
 		'viz-toggle-scatter-regression-equation',
 		t('chive-chart-control-scatter-regression-show-equation'),
 		regressionConfig.showEquation !== false,
 		disabled || !regressionEnabled,
 	));
 
-	analyticsControls.push(createCheckboxControl(
+	controls.push(createCheckboxControl(
 		'viz-toggle-scatter-regression-r2',
 		t('chive-chart-control-scatter-regression-show-r2'),
 		regressionConfig.showR2 !== false,
 		disabled || !regressionEnabled,
 	));
 
-	// ====== Group and return all sections ======
-	return groupControls([
-		{ id: 'data', title: 'Data & Aggregation', controls: dataControls, expanded: true, icon: 'data' },
-		{ id: 'display', title: 'Display', controls: displayControls, expanded: true, icon: 'display' },
-		{ id: 'analytics', title: t('chive-chart-control-scatter-regression-section'), controls: analyticsControls, expanded: false, icon: 'advanced' },
-		{ id: 'styling', title: 'Styling', controls: stylingControls, expanded: false, icon: 'styling' },
-	]);
+	return controls;
 }
