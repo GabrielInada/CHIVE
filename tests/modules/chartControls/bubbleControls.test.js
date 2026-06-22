@@ -74,6 +74,77 @@ function lastConfig() {
 	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].bubble;
 }
 
+describe('bubbleControls public surface', () => {
+	it('exposes exactly the three documented bubble-control exports (no internal leaks)', async () => {
+		const mod = await import('../../../src/modules/chartControls/bubbleControls.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'computeDefaults',
+			'createBubbleChartControls',
+			'setupBubbleChartControlListeners',
+		]);
+	});
+});
+
+describe('bubbleControls section structure', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	const allColumns = ['categoria', 'grupo', 'regiao', 'estado'];
+
+	// Records each nesting select as { id, value, disabled } (keeping the resolved
+	// <select> element separate from its string key) so the snapshot pins the
+	// progressive reveal, the flat-mode disabling, and the legacy-groupColumn
+	// migration, not just the control ids. Every other control records its id
+	// string; the id-less color-preset wrapper records its data attribute (a
+	// string with no backing id element, which is why el and key are kept apart).
+	function extractStructure(controls) {
+		return controls.map(section => {
+			const content = section.querySelector('.chart-section-content');
+			const controlKeys = Array.from(content.children).map(control => {
+				const el = control.matches('[id]') ? control : control.querySelector('[id]');
+				if (el && el.id.startsWith('viz-select-bubble-nesting-level-')) {
+					return { id: el.id, value: el.value, disabled: el.disabled };
+				}
+				return el?.id ?? control.querySelector('[data-color-preset-control]')?.dataset.colorPresetControl;
+			});
+			expect(controlKeys).not.toContain(undefined);
+
+			return {
+				section: section.dataset.section,
+				expanded: section.querySelector('.chart-section-header').getAttribute('aria-expanded'),
+				controlKeys,
+			};
+		});
+	}
+
+	function structureFor(nestingMode, nestingColumns, groupColumn) {
+		// createDataset forces groupColumn from nestingColumns, so override it
+		// explicitly to separate the genuinely-empty cases from the legacy fallback.
+		const dataset = createDataset('count', null, nestingMode, nestingColumns);
+		dataset.chartConfig.bubble.groupColumn = groupColumn;
+		return extractStructure(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
+	}
+
+	it('matches the section and control-order structure snapshot across nesting states', () => {
+		// flat mode always renders exactly one level (maxInitialNestingControlsVisible
+		// is 1), so flat-empty vs flat-retained differ only by the level-0 select's
+		// value/disabled. grouped-one carries a stale groupColumn ('estado') to prove
+		// the canonical nestingColumns wins over the legacy fallback.
+		const byState = {
+			'flat-empty': structureFor('flat', [], null),
+			'flat-retained': structureFor('flat', ['grupo'], null),
+			'grouped-empty': structureFor('grouped', [], null),
+			'grouped-legacy': structureFor('grouped', [], 'grupo'),
+			'grouped-one': structureFor('grouped', ['grupo'], 'estado'),
+			'grouped-two': structureFor('grouped', ['grupo', 'regiao'], null),
+		};
+
+		expect(byState).toMatchSnapshot();
+	});
+});
+
 describe('bubbleControls measure mode', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
