@@ -58,6 +58,62 @@ function appendControls(controls) {
 	controls.forEach(control => document.body.appendChild(control));
 }
 
+describe('barControls public surface', () => {
+	it('exposes exactly the three documented bar-control exports (no internal leaks)', async () => {
+		const mod = await import('../../../src/modules/chartControls/barControls.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'computeDefaults',
+			'createBarChartControls',
+			'setupBarChartControlListeners',
+		]);
+	});
+});
+
+describe('barControls section structure', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	function extractStructure(controls) {
+		return controls.map(section => {
+			const content = section.querySelector('.chart-section-content');
+			const controlKeys = Array.from(content.children).map(control => {
+				const idElement = control.matches('[id]') ? control : control.querySelector('[id]');
+				if (idElement?.id) return idElement.id;
+				return control.querySelector('[data-color-preset-control]')?.dataset.colorPresetControl;
+			});
+			expect(controlKeys).not.toContain(undefined);
+
+			return {
+				section: section.dataset.section,
+				expanded: section.querySelector('.chart-section-header').getAttribute('aria-expanded'),
+				controlKeys,
+			};
+		});
+	}
+
+	it('matches the section and control-order structure snapshot for each color mode', () => {
+		// Drive all three color modes: uniform omits both conditional styling
+		// controls, gradient surfaces gradient-distribution, and gradient-manual
+		// surfaces the threshold slider, so the snapshot pins each conditional's
+		// exact slot in the styling section (not just its presence).
+		const byMode = {};
+		for (const colorMode of ['uniform', 'gradient', 'gradient-manual']) {
+			const dataset = createDataset({ colorMode });
+			const controls = createBarChartControls(
+				dataset,
+				['region', 'team'],
+				['sales'],
+				['region', 'team', 'sales'],
+			);
+			byMode[colorMode] = extractStructure(controls);
+		}
+
+		expect(byMode).toMatchSnapshot();
+	});
+});
+
 describe('barControls UI structure', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
