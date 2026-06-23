@@ -98,11 +98,12 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 		level: options.labels?.level || 'Level',
 	};
 
+	// Grouped mode needs at least one resolved nesting column. The resolver already
+	// performs the valid legacy-groupColumn fallback, so an invalid truthy
+	// groupColumn (e.g. {} or 1) leaves nestingColumns empty and must fail here
+	// rather than silently rendering flat.
 	if (nestingMode === 'grouped' && nestingColumns.length === 0) {
-		// Backward compat: also check legacy groupColumn
-		if (!options.groupColumn) {
-			return fail('no-nesting-columns');
-		}
+		return fail('no-nesting-columns');
 	}
 
 	const aggregation = aggregateBubbles({

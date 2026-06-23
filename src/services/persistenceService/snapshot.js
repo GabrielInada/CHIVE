@@ -8,6 +8,9 @@
  * Internal to the persistenceService facade.
  */
 
+import { normalizeColumnNameList } from '../../utils/columnHelpers.js';
+import { BUBBLE_CHART } from '../../config/charts.js';
+
 /**
  * @internal
  * @param {*} value
@@ -17,15 +20,39 @@ export function isPlainObject(value) {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
+// Bound the bubble chart's nesting depth at hydrate/import, the only place with
+// declared-column context. An attacker-/corruption-controlled persisted config
+// could carry an unbounded `nestingColumns`, which feeds quadratic control and
+// renderer work; clamp it to declared, non-category columns capped at the shared
+// maximum, and keep the legacy `groupColumn` pointer coherent with the head.
+function sanitizeBubbleConfig(bubbleConfig, declaredColumnNames) {
+	const allowed = new Set(
+		normalizeColumnNameList(declaredColumnNames, { max: Infinity }).filter(name => name !== bubbleConfig.category),
+	);
+	const normalizedNesting = normalizeColumnNameList(
+		bubbleConfig.nestingColumns,
+		{ allowed, max: BUBBLE_CHART.maxNestingDepth },
+	);
+	const validLegacyGroup = normalizeColumnNameList([bubbleConfig.groupColumn], { allowed, max: 1 })[0] || null;
+	return {
+		...bubbleConfig,
+		nestingColumns: normalizedNesting,
+		groupColumn: normalizedNesting.length ? normalizedNesting[0] : validLegacyGroup,
+	};
+}
+
 // Drop chart-spec entries that aren't plain objects; renderers read sub-keys
 // and would explode on a string/number/array. Missing keys are absorbed later
-// by mergeChartConfigWithDefaults.
-function sanitizeChartConfig(chartConfig) {
+// by mergeChartConfigWithDefaults. The bubble block is additionally depth-bounded
+// against the record's declared columns.
+function sanitizeChartConfig(chartConfig, declaredColumnNames) {
 	if (!isPlainObject(chartConfig)) return {};
 	const sanitized = {};
 	for (const [chartKey, chartTypeConfig] of Object.entries(chartConfig)) {
 		if (isPlainObject(chartTypeConfig)) {
-			sanitized[chartKey] = chartTypeConfig;
+			sanitized[chartKey] = chartKey === 'bubble'
+				? sanitizeBubbleConfig(chartTypeConfig, declaredColumnNames)
+				: chartTypeConfig;
 		}
 	}
 	return sanitized;
@@ -43,10 +70,11 @@ function validateDatasetRecord(record) {
 		column => isPlainObject(column) && typeof column.name === 'string' && typeof column.type === 'string'
 	);
 	if (!columnsOk) return null;
+	const declaredColumnNames = record.columns.map(column => column.name);
 	return {
 		...record,
 		selectedColumns: Array.isArray(record.selectedColumns) ? record.selectedColumns : [],
-		chartConfig: sanitizeChartConfig(record.chartConfig),
+		chartConfig: sanitizeChartConfig(record.chartConfig, declaredColumnNames),
 	};
 }
 

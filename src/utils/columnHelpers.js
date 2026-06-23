@@ -67,6 +67,47 @@ export function getCategoricalColumnNames(columns) {
 }
 
 /**
+ * Normalize a list of candidate column names: drop non-string / empty entries,
+ * de-duplicate (first occurrence wins), optionally keep only names present in
+ * `allowed`, then hard-cap the length. Non-array input yields an empty array.
+ *
+ * @param {*} names - Candidate column names (any value; non-arrays yield `[]`).
+ * @param {{ allowed?: Set<string> | null, max?: number }} [options]
+ * @param {Set<string> | null} [options.allowed] - When set, keep only names it contains.
+ * @param {number} [options.max=Infinity] - Hard length cap. Only explicit Infinity is uncapped; a finite value is floored to a non-negative integer; anything else (NaN, -Infinity) caps to nothing.
+ * @returns {string[]}
+ */
+export function normalizeColumnNameList(names, { allowed = null, max = Infinity } = {}) {
+	if (!Array.isArray(names)) return [];
+	// Normalize the cap up front, fail-closed: only an explicit Infinity means
+	// "uncapped"; a finite max is floored to a non-negative integer; anything
+	// else (NaN, -Infinity) is an invalid limit and caps to nothing, so a bad
+	// limit can never silently leave the list unbounded. (max === 0 must also
+	// return [] — the break is checked after the push, so without the early
+	// return a zero cap would still yield one item.)
+	let limit;
+	if (max === Infinity) {
+		limit = Infinity;
+	} else if (Number.isFinite(max)) {
+		limit = Math.max(0, Math.floor(max));
+	} else {
+		limit = 0;
+	}
+	if (limit === 0) return [];
+	const seen = new Set();
+	const out = [];
+	for (const name of names) {
+		if (typeof name !== 'string' || name === '') continue;
+		if (allowed && !allowed.has(name)) continue;
+		if (seen.has(name)) continue;
+		seen.add(name);
+		out.push(name);
+		if (out.length >= limit) break;
+	}
+	return out;
+}
+
+/**
  * Date columns only.
  *
  * @param {ColumnSpec[]} columns

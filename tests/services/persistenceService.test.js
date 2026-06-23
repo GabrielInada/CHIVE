@@ -411,6 +411,142 @@ describe('persistenceService', () => {
 		expect(snapshot.panel).toEqual({ charts: [] });
 	});
 
+	it('bounds a hostile bubble nestingColumns against declared columns at hydrate', async () => {
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: async () => ({
+				data: {
+					activeDatasetId: 'good',
+					datasets: [
+						{
+							id: 'good',
+							name: 'good.csv',
+							rows: [],
+							columns: [
+								{ name: 'categoria', type: 'text' },
+								...Array.from({ length: 10 }, (_, i) => ({ name: `c${i}`, type: 'text' })),
+							],
+							selectedColumns: [],
+							chartConfig: {
+								bar: { category: 'x' },
+								bubble: {
+									category: 'categoria',
+									// duplicate, empty, null, the category, an undeclared column,
+									// plus more valid columns than the hard cap allows.
+									nestingColumns: ['c0', 'c0', '', null, 'categoria', 'undeclared', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'],
+									groupColumn: 'undeclared',
+									topN: 20,
+								},
+							},
+						},
+					],
+				},
+				panel: null,
+			}),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+		const bubble = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
+
+		// type-clean + de-duplicated + declared-only + category-excluded + capped to 8.
+		// (This equality also fails if the implementation spread the raw block AFTER
+		// the sanitized fields, re-admitting the unbounded array.)
+		expect(bubble.nestingColumns).toEqual(['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']);
+		expect(bubble.nestingColumns).toHaveLength(8);
+		expect(bubble.nestingColumns).not.toContain('categoria');
+		expect(bubble.nestingColumns).not.toContain('undeclared');
+		// legacy pointer kept coherent with the canonical head; benign keys preserved.
+		expect(bubble.groupColumn).toBe('c0');
+		expect(bubble.topN).toBe(20);
+		expect(bubble.category).toBe('categoria');
+		// other chart blocks pass through untouched.
+		expect(replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bar).toEqual({ category: 'x' });
+	});
+
+	it('keeps a valid legacy groupColumn (and drops an undeclared one) when canonical filters away', async () => {
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: async () => ({
+				data: {
+					activeDatasetId: 'good',
+					datasets: [
+						{
+							id: 'good',
+							name: 'good.csv',
+							rows: [],
+							columns: [
+								{ name: 'categoria', type: 'text' },
+								{ name: 'grupo', type: 'text' },
+								{ name: 'regiao', type: 'text' },
+							],
+							selectedColumns: [],
+							chartConfig: {
+								bubble: {
+									category: 'categoria',
+									nestingColumns: ['undeclared1', 'undeclared2'],
+									groupColumn: 'grupo',
+								},
+							},
+						},
+					],
+				},
+				panel: null,
+			}),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+		const bubble = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
+
+		expect(bubble.nestingColumns).toEqual([]);
+		expect(bubble.groupColumn).toBe('grupo'); // valid legacy retained
+	});
+
+	it('drops an undeclared legacy groupColumn to null when canonical is empty', async () => {
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: async () => ({
+				data: {
+					activeDatasetId: 'good',
+					datasets: [
+						{
+							id: 'good',
+							name: 'good.csv',
+							rows: [],
+							columns: [
+								{ name: 'categoria', type: 'text' },
+								{ name: 'grupo', type: 'text' },
+							],
+							selectedColumns: [],
+							chartConfig: {
+								bubble: {
+									category: 'categoria',
+									nestingColumns: [],
+									groupColumn: 'undeclared',
+								},
+							},
+						},
+					],
+				},
+				panel: null,
+			}),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+		const bubble = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
+
+		expect(bubble.nestingColumns).toEqual([]);
+		expect(bubble.groupColumn).toBeNull();
+	});
+
 	it('drops malformed hydrated dataset records at the service boundary', async () => {
 		configurePersistenceBackend({
 			available: () => true,
