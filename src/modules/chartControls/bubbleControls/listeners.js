@@ -12,6 +12,7 @@
 
 import { BUBBLE_CHART } from '../../../config/charts.js';
 import { updateActiveDatasetConfig } from '../../state/appState.js';
+import { normalizeColumnNameList, filterVisibleColumns } from '../../../utils/columnHelpers.js';
 import { COLOR_PRESETS } from '../shared.js';
 import {
 	setupSelectListeners,
@@ -19,7 +20,7 @@ import {
 	setupTextInputListener,
 	setupColorPresetListeners,
 } from '../controlListenerHelpers.js';
-import { resolveNestingColumnsFromConfig } from './nestingColumns.js';
+import { resolveNestingColumnsFromConfig, computeNestingControlCount } from './nestingColumns.js';
 
 /**
  * Wire listeners for every bubble-chart control. Handles the progressive
@@ -48,38 +49,43 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 		{ id: 'viz-select-bubble-label-mode', key: 'labelMode', transform: v => (['all', 'hover', 'auto'].includes(v) ? v : 'auto') },
 	], dataset, 'bubble', onConfigChanged);
 
-	// Progressive nesting level listeners
-	const nestingColumns = resolveNestingColumnsFromConfig(dataset.chartConfig.bubble);
-	const maxLevels = nestingColumns.length + 1;
+	// Allowlist of eligible (visible, non-category) columns. The 5-arg path passes
+	// the visible columns explicitly (an empty array means allow-nothing); the
+	// legacy callback-only overload carries no columns, so reconstruct the same set
+	// from the dataset so the write sink allowlist-filters on both signatures.
+	const category = dataset.chartConfig.bubble.category;
+	const allowedColumns = Array.isArray(allColumnsOrCallback)
+		? allColumnsOrCallback
+		: (Array.isArray(dataset.columns) ? filterVisibleColumns(dataset).map(column => column.name) : []);
+	const allowed = new Set(
+		normalizeColumnNameList(allowedColumns, { max: Infinity }).filter(name => name !== category),
+	);
+
+	// Progressive nesting level listeners. The wiring count comes from the same
+	// shared helper as the builder, so the two never disagree on the level set.
+	const maxLevels = computeNestingControlCount(dataset.chartConfig.bubble, allowed);
 	for (let i = 0; i < maxLevels; i++) {
 		const selectEl = document.getElementById(`viz-select-bubble-nesting-level-${i}`);
 		if (!selectEl) continue;
 		const levelIndex = i;
 		selectEl.addEventListener('change', () => {
-			const currentNesting = resolveNestingColumnsFromConfig(dataset.chartConfig.bubble);
+			const currentNesting = resolveNestingColumnsFromConfig(dataset.chartConfig.bubble, allowed);
 			const newValue = selectEl.value || null;
+			const updated = currentNesting.slice(0, levelIndex);
 			if (newValue) {
-				// Set this level and truncate deeper levels
-				const updated = currentNesting.slice(0, levelIndex);
+				// Set this level; deeper levels were already truncated by the slice.
 				updated[levelIndex] = newValue;
-				updateActiveDatasetConfig({
-					bubble: {
-						...dataset.chartConfig.bubble,
-						nestingColumns: updated,
-						groupColumn: updated[0] || null,
-					},
-				});
-			} else {
-				// Clearing this level: truncate from this level onward
-				const updated = currentNesting.slice(0, levelIndex);
-				updateActiveDatasetConfig({
-					bubble: {
-						...dataset.chartConfig.bubble,
-						nestingColumns: updated,
-						groupColumn: updated[0] || null,
-					},
-				});
 			}
+			// Normalize at the write sink so even a forged option cannot persist an
+			// out-of-allowlist or over-cap entry.
+			const normalized = normalizeColumnNameList(updated, { allowed, max: BUBBLE_CHART.maxNestingDepth });
+			updateActiveDatasetConfig({
+				bubble: {
+					...dataset.chartConfig.bubble,
+					nestingColumns: normalized,
+					groupColumn: normalized[0] || null,
+				},
+			});
 			onConfigChanged?.();
 		});
 	}

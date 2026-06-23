@@ -254,6 +254,7 @@ export const BUBBLE_CHART = {
   shallowPaddingBoost: 2,
   deepPaddingMin: 1,
   maxInitialNestingControlsVisible: 1,
+  maxNestingDepth: 8,
 };
 
 export const CHART_COLOR_PALETTES = {

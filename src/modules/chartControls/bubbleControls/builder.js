@@ -17,9 +17,10 @@
 
 import { BUBBLE_CHART } from '../../../config/charts.js';
 import { t } from '../../../services/i18nService.js';
+import { normalizeColumnNameList } from '../../../utils/columnHelpers.js';
 import { createTextControl, createSliderControl, createSelectControl, createColorPresetControl } from '../shared.js';
 import { groupControls } from '../controlGrouping.js';
-import { resolveNestingColumnsFromConfig } from './nestingColumns.js';
+import { resolveNestingColumnsFromConfig, computeNestingControlCount } from './nestingColumns.js';
 
 /**
  * Build progressive nesting-level selectors. Each filled level appends a
@@ -34,7 +35,13 @@ import { resolveNestingColumnsFromConfig } from './nestingColumns.js';
  * @returns {HTMLElement[]}
  */
 function createNestingControls(config, categoryColumn, allColumns, disabled) {
-	const nestingColumns = resolveNestingColumnsFromConfig(config);
+	// Normalize allColumns first (drops '' / non-string / duplicates) so an empty
+	// or junk column name cannot inflate allowed.size and spawn a useless trailing
+	// selector; the category is excluded because it is never a valid nesting level.
+	const allowed = new Set(
+		normalizeColumnNameList(allColumns, { max: Infinity }).filter(name => name !== categoryColumn),
+	);
+	const nestingColumns = resolveNestingColumnsFromConfig(config, allowed);
 	const nestingMode = BUBBLE_CHART.nestingModes.includes(config.nestingMode)
 		? config.nestingMode
 		: BUBBLE_CHART.defaultNestingMode;
@@ -43,10 +50,9 @@ function createNestingControls(config, categoryColumn, allColumns, disabled) {
 	const isGrouped = nestingMode === 'grouped';
 	const nestingDisabled = disabled || !isGrouped;
 
-	// Determine how many selectors to show: existing levels + 1 empty (if all filled)
-	const levelCount = isGrouped
-		? Math.max(BUBBLE_CHART.maxInitialNestingControlsVisible, nestingColumns.length + (nestingColumns.length > 0 ? 1 : 0))
-		: BUBBLE_CHART.maxInitialNestingControlsVisible;
+	// One shared source of truth for the level count (flat-vs-grouped + capacity
+	// bound), kept identical to the listeners' wiring count.
+	const levelCount = computeNestingControlCount(config, allowed);
 
 	for (let i = 0; i < levelCount; i++) {
 		// Exclude already-selected columns at other levels and the category column
