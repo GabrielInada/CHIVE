@@ -4,17 +4,17 @@ CHIVE is a client-side browser tool for exploring CSV/JSON data, building intera
 
 ![CHIVE workspace preview](docs/assets/readme-preview.png)
 
-## Live Deployments
+## Documented Deployments
 
 | Environment | URL | Branch | Host |
 |---|---|---|---|
 | **Stable** | [apps.roberto.eti.br/chive](https://apps.roberto.eti.br/chive/) | `main` | Self-hosted server |
 | **Preview** | [gabrielinada.github.io/CHIVE](https://gabrielinada.github.io/CHIVE/) | `develop` | GitHub Pages |
 
-- **Stable** reflects the released state of the project and is the recommended version for normal use.
-- **Preview** reflects `develop` and is intended for trying upcoming features before they are merged into `main`.
+- **Stable** is the documented public endpoint for the released state of the project and is the recommended version for normal use when available.
+- **Preview** reflects `develop`, is deployed by the GitHub Pages workflow, and is intended for trying upcoming features before they are merged into `main`.
 
-Both deployments serve the same source files unchanged: `index.html`, `about.html`, `src/`, and `vendor/`. No production build step runs at deploy time.
+CHIVE's static runtime serves the source files unchanged: `index.html`, `about.html`, `src/`, and `vendor/`. The GitHub Pages preview workflow copies that set directly; self-hosted deployments should serve the same raw-static set. No production build step is required at deploy time.
 
 ## What You Can Do
 
@@ -43,7 +43,7 @@ Both deployments serve the same source files unchanged: `index.html`, `about.htm
 
 ## Local Development
 
-Install an active Node.js LTS release, version 22 or newer, then install dependencies once:
+Install an active Node.js LTS release that satisfies the engine requirements of the locked dependencies, then install dependencies once. If install or local tooling reports an unsupported Node.js version, switch to a newer active LTS release and retry.
 
 ```powershell
 npm install
@@ -168,7 +168,7 @@ CHIVE has no application backend in the default deployments. Uploaded datasets a
 
 Project changes auto-save: a save runs automatically a couple of seconds after you stop editing, and CHIVE also attempts a best-effort lifecycle save when the page hides, freezes, or closes. Hard crashes or interrupted closes can still lose changes made since the last successful save.
 
-Project export downloads a SQLite-backed `.chive.sqlite3` file. Full exports include dataset rows and saved chart snapshot payloads; work-only exports omit those heavy payloads and are meant for layout/work transfer only. Import currently accepts full project files and replaces the current datasets and panel.
+Project export downloads a SQLite-backed `.chive.sqlite3` file. Full exports include dataset rows and saved chart snapshot payloads; work-only exports omit those heavy payloads and are meant for layout/work transfer only. Import accepts full project files and replaces the current datasets and panel.
 
 JavaScript runtime dependencies and fonts are served from the same static host as vendored files. If you need stricter controls for sensitive data, self-host CHIVE and review the static-host trust boundary before use. See [Privacy and security](docs/PRIVACY_AND_SECURITY.md) for the detailed trust model.
 
@@ -183,7 +183,7 @@ JavaScript runtime dependencies and fonts are served from the same static host a
 - [Contributing](CONTRIBUTING.md): development workflow, code conventions, lint rules, and tests.
 - [Stylesheet organization](src/styles/STYLES_ORGANIZATION.md): CSS layers, feature ownership, and responsive rules.
 - [Chart and data reference](docs/CHART_REFERENCE.md): which columns and modes each chart type needs, plus the common empty states.
-- Planned follow-up: user guide.
+- [User guide](docs/USER_GUIDE.md): practical walkthrough for loading data, charting, filtering, dashboards, import/export, and storage basics.
 
 ## Project Status
 

@@ -142,7 +142,7 @@ Required columns and behavior below are taken from the renderers in
 - **Deep dive:** [charts/line-chart.md](charts/line-chart.md) for curves, missing-value modes, and tests.
 - **Required data:** an X column (date, numeric, or categorical) and a numeric Y column.
 - **Optional settings:** X axis type, curve (linear / monotone / step variants / basis /
-  cardinal), missing-value mode (skip / connect / break), aggregate mode, sort X, point
+  cardinal), missing-value mode (connect / gap / interpolate), aggregate mode, sort X, point
   markers, stroke width, color, axis labels.
 - **Aggregation behavior:** with `aggregateMode` none, points are plotted as-is. `count`,
   `sum`, and `mean` group points by X value. Date X values are parsed as dates; invalid
@@ -203,16 +203,17 @@ exactly what to fix.
 | Line: no usable X | No usable X values in the selected column. |
 | TIN: X/Y/Z missing | Select valid numeric X, Y and Z columns to render the TIN. |
 | TIN: fewer than three points | Need at least 3 rows with finite X, Y and Z values to triangulate a terrain. |
+| No chart selected | No visualization selected. |
 
 These strings live in `src/i18n/en.json` (keys `chive-chart-empty-*`); the Portuguese
 versions are in `src/i18n/pt-BR.json`.
 
 ## CSV examples for Network and TIN
 
-CHIVE does not currently bundle a network preset. TIN does have the bundled Terrain
-Surface preset; the TIN CSV below is only a tiny manual example. Copy either example
-into a file, save it with a `.csv` extension, and upload it through the normal file
-picker when you want a minimal hand-made dataset.
+The bundled presets include Terrain Surface for TIN but no network preset. The
+TIN CSV below is only a tiny manual example. Copy either example into a file,
+save it with a `.csv` extension, and upload it through the normal file picker
+when you want a minimal hand-made dataset.
 
 ### Network edge list
 
@@ -245,10 +246,10 @@ x,y,z
 Map `x`, `y`, and `z` to the X, Y, and Z columns. All three must be numeric, and you need at
 least three rows to triangulate a surface.
 
-## Keeping this reference current
+## Maintaining this reference
 
 When you add or change a chart type, update this file: its required and optional columns,
 its aggregation modes, and any new empty-state message. The data contracts here are derived
 from `src/modules/visualizations/`, `src/modules/chartControls/`, and the `chive-chart-empty-*`
 keys in `src/i18n/en.json`; keep those and this document in agreement. For the full per-chart
-mechanics, keep the matching deep dive in [charts/](charts/README.md) current in the same pass.
+mechanics, update the matching deep dive in [charts/](charts/README.md) in the same pass.

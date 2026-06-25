@@ -18,7 +18,7 @@ These are the companion to the higher-level docs one directory up:
 | Chart | Deep dive | What it does | Foundations focus |
 |---|---|---|---|
 | Bar | [bar-chart.md](bar-chart.md) | Compares a measure across categories | Aggregation, band/linear scales, color encodings |
-| Scatter | [scatter-plot.md](scatter-plot.md) | Relationships between two columns | Axis types, log/sqrt scales, OLS regression + CI band |
+| Scatter | [scatter-plot.md](scatter-plot.md) | Relationships between two columns | Axis types, linear/log scales, OLS regression + CI band |
 | Pie / Donut | [pie-chart.md](pie-chart.md) | Part-to-whole composition | Arc geometry, value-to-angle, Top-N rollup |
 | Bubble | [bubble-chart.md](bubble-chart.md) | Group size and nested hierarchy | Circle packing, multi-level hierarchy, drill-down |
 | Network | [network-graph.md](network-graph.md) | Relationships between entities | Force-directed simulation, nodes from edges |
@@ -67,7 +67,7 @@ doc rather than repeated:
   [section 10](tin-chart.md) and shared by every chart's color inputs.
 - **Frozen panel snapshots**: see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md).
 
-## Keeping these current
+## Maintaining These Deep Dives
 
 Each doc is derived from its renderer, controls, config, and tests. When you change a chart's
 behavior, update its deep dive alongside [CHART_REFERENCE.md](../CHART_REFERENCE.md): the data

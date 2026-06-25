@@ -144,7 +144,7 @@ path reads it from the snapshot's `columnsSnapshot`; see
 | `missingMode` | `'connect'`, `'gap'`, or `'interpolate'` | `'connect'` |
 | `aggregateMode` | `'none'`, `'mean'`, `'sum'`, or `'count'` | `'none'` |
 | `sortX` | Sort points by X before drawing | `true` |
-| `strokeWidth` | Line width in px (0.5 to 8) | `1.5` |
+| `strokeWidth` | Line width in px (UI slider 0.5 to 6; renderer clamps saved/imported values to 0.5 to 8) | `1.5` |
 | `color` | Line color | `CHART_COLORS.line` (`#4e79a7`) |
 | `ghostStrokeColor` | Dashed bridge color (interpolate mode) | `#cccccc` |
 | `showPoints` | Draw a marker per defined point | `false` |
@@ -156,7 +156,7 @@ path reads it from the snapshot's `columnsSnapshot`; see
 [charts.js](../../src/config/charts.js): `CHART_COLORS.line` = `#4e79a7`;
 `CHART_HEIGHT_LIMITS.line` = `{ min: 220, max: 720 }`; `LINE_CHART` holds the `curveOptions`
 list, `missingModes` (`['connect', 'gap', 'interpolate']`), `aggregateModes`
-(`['none', 'mean', 'sum', 'count']`), the stroke-width options, `pointRadius` (3), and the
+(`['none', 'mean', 'sum', 'count']`), the default stroke width, `pointRadius` (3), and the
 default ghost color.
 
 ---

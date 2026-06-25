@@ -60,7 +60,7 @@ Project export downloads a `.chive.sqlite3` file from the browser. Full exports
 contain dataset rows and saved chart snapshot payloads. Work-only exports omit
 the row contents of `dataset_payload` and `panel_snapshot_payload`, but still
 contain dataset names, column metadata, chart configuration, panel layout, and
-deterministic dataset fingerprints. Project import currently accepts only full
+deterministic dataset fingerprints. Project import accepts only full
 exports and replaces the current datasets and panel after confirmation.
 
 Existing installs with the old raw IndexedDB database `chive-state` are imported
@@ -68,7 +68,7 @@ once when no SQLite project exists. After a successful import or an empty legacy
 check, `chive.migrated` is set so old data is not resurrected later.
 
 CHIVE does not use cookies, `sessionStorage`, service workers, WebSockets, or
-analytics code in the current source.
+analytics code.
 
 ## Clearing Stored Data
 
@@ -97,9 +97,10 @@ startup.
 D3, banana-i18n, SQLite-WASM, and fonts are served as same-origin vendored files
 from `vendor/`.
 
-The stable deployment is currently documented as
-`https://apps.roberto.eti.br/chive/`. The preview deployment is currently
-documented as `https://gabrielinada.github.io/CHIVE/`.
+The documented stable endpoint is `https://apps.roberto.eti.br/chive/`.
+The documented preview endpoint is `https://gabrielinada.github.io/CHIVE/`.
+Deployment availability is operational, but neither endpoint requires CHIVE to
+send uploaded datasets to a CHIVE application backend.
 
 Bundled preset datasets are files served with CHIVE. If you click external
 source links shown for a preset, your browser navigates to that external site
@@ -130,7 +131,7 @@ could read data after you load it into the page. This is why CHIVE's accurate
 privacy claim is "CHIVE does not upload your dataset to a CHIVE backend", not
 "your data can never leave your machine."
 
-## Current Limitations
+## Limitations
 
 - Runtime JavaScript dependencies and fonts are vendored locally, but deployment
   hardening still depends on the chosen static host and browser policy.

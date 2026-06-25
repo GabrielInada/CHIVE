@@ -13,6 +13,7 @@ Which file or section needs work?
 - [ ] `README.md`
 - [ ] `ARCHITECTURE.md`
 - [ ] `docs/ARCHITECTURE_REFERENCE.md`
+- [ ] `docs/USER_GUIDE.md`
 - [ ] `CONTRIBUTING.md`
 - [ ] `docs/`
 - [ ] `src/styles/STYLES_ORGANIZATION.md`

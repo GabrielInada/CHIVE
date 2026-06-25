@@ -118,7 +118,7 @@
  * each chart type's full field set.
  *
  * @typedef {Object} ChartConfig
- * @property {string} activeTab - Active tab id (e.g. `'preview'`, `'viz'`).
+ * @property {string} activeTab - Active tab id (e.g. `'preview'`, `'charts'`, `'panel'`).
  * @property {GlobalFilter} globalFilter
  * @property {ChartTypeConfig} bar
  * @property {ChartTypeConfig} scatter

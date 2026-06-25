@@ -771,8 +771,8 @@ every SVG node. The killer was node count. At the default depth 3, ~500 points â
 ~990 base triangles â†’ ~63,000 leaf triangles, each previously its own `<polygon>`
 with a unique fill string. At max depth 4 it was ~253,000 elements. Creating tens of
 thousands of SVG nodes made color-picker dragging visibly stutter on heavy TIN
-renders. This section describes the design problem and fix; it does not claim a
-current benchmark unless one is added with browser, hardware, dataset, and options.
+renders. This section describes the design problem and fix; add a benchmark only
+with browser, hardware, dataset, and options.
 
 The cost is dominated by per-element DOM overhead (allocation, style resolution,
 hit-testing, display-list bookkeeping, GC churn), not pixel rasterization. So the fix

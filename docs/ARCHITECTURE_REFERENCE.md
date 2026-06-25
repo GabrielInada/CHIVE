@@ -157,14 +157,14 @@ subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
 | `STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED` | `panelBlockSlotAssigned` | `assignChartToPanelBlockSlot` | `{ blockId, slotId, chartId }` | `panelManager.js` |
 | `STATE_EVENTS.SIDEBAR_MODE_CHANGED` | `sidebarModeChanged` | `setSidebarMode` | sidebar mode | none |
 | `STATE_EVENTS.PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `setPreviewRows` | row count | none |
-| `STATE_EVENTS.STATE_HYDRATED` | `stateHydrated` | `replaceAllState` | none | none |
+| `STATE_EVENTS.STATE_HYDRATED` | `stateHydrated` | `replaceAllState` | none | `main.js` |
 | `STATE_EVENTS.WILDCARD` | `*` | not emitted directly | wildcard callbacks receive `{ type, data }` after typed emits | `persistenceService.js` |
 
 ## Subscriber Map
 
 [`src/main.js`](../src/main.js) subscribes to `ACTIVE_DATASET`,
-`COLUMNS_UPDATED`, and `CONFIG_UPDATED`. Each handler calls `refreshView()`,
-the broadest UI render path.
+`COLUMNS_UPDATED`, `CONFIG_UPDATED`, and `STATE_HYDRATED`. Each handler calls
+`refreshView()`, the broadest UI render path.
 
 [`src/modules/panelManager.js`](../src/modules/panelManager.js) subscribes to:
 
