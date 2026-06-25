@@ -71,7 +71,7 @@ or **categorical**:
   parse as finite numbers, the axis is numeric, else categorical. This 80% threshold matches
   the column-type detection in the data service, so a mostly-numeric column with a few stray
   labels still reads as numeric.
-- Date columns classify as categorical on a scatter axis.
+- Date columns currently classify as categorical on a scatter axis.
 
 A numeric axis uses a continuous scale; a categorical axis uses a point scale (discrete
 positions). The two axes are independent, so all four combinations are possible

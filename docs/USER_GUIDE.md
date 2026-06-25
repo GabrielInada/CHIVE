@@ -77,7 +77,7 @@ CHIVE auto-saves browser work and can also transfer project files manually.
 - Work-only export downloads the same project format without dataset rows or
   saved chart row payloads. Use it for layout/work transfer when row data should
   not be included.
-- Project import accepts full project files. Import replaces the
+- Project import currently accepts full project files. Import replaces the
   current datasets and panel after confirmation.
 
 Different deployment URLs and local development ports have separate browser

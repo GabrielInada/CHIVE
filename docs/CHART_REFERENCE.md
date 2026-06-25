@@ -210,10 +210,10 @@ versions are in `src/i18n/pt-BR.json`.
 
 ## CSV examples for Network and TIN
 
-The bundled presets include Terrain Surface for TIN but no network preset. The
-TIN CSV below is only a tiny manual example. Copy either example into a file,
-save it with a `.csv` extension, and upload it through the normal file picker
-when you want a minimal hand-made dataset.
+CHIVE does not currently bundle a network preset. TIN does have the bundled
+Terrain Surface preset; the TIN CSV below is only a tiny manual example. Copy
+either example into a file, save it with a `.csv` extension, and upload it
+through the normal file picker when you want a minimal hand-made dataset.
 
 ### Network edge list
 
