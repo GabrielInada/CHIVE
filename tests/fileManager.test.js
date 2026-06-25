@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   formatFileSize: vi.fn(size => `${size}B`),
   ingestFile: vi.fn(),
   progressLabelForStage: vi.fn(stage => `label:${stage}`),
+  ingestErrorMessage: vi.fn(reason => reason || 'parse-generic'),
   addDataset: vi.fn(),
   removeDataset: vi.fn(),
   setActiveDataset: vi.fn(),
@@ -31,6 +32,7 @@ vi.mock('../src/services/dataService.js', () => ({
 vi.mock('../src/services/dataIngestService.js', () => ({
   ingestFile: mocks.ingestFile,
   progressLabelForStage: mocks.progressLabelForStage,
+  ingestErrorMessage: mocks.ingestErrorMessage,
 }));
 
 vi.mock('../src/modules/state/appState.js', () => ({
@@ -116,6 +118,7 @@ describe('fileManager', () => {
       onCancel: vi.fn(),
     }));
     mocks.joinDatasets.mockReturnValue({
+      ok: true,
       rows: [{ id: '1' }],
       outputColumns: ['id'],
     });
@@ -159,10 +162,15 @@ describe('fileManager', () => {
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-cancelled');
   });
 
-  it('surfaces ingest worker errors via showError and the progress toast', async () => {
-    mocks.ingestFile.mockResolvedValueOnce({ ok: false, reason: 'parse fail' });
+  it('surfaces ingest worker errors via the mapped message, not the raw reason', async () => {
+    mocks.ingestErrorMessage.mockReturnValueOnce('mapped-detail');
+    mocks.ingestFile.mockResolvedValueOnce({ ok: false, reason: 'csv-empty' });
     await handleFileUpload([csvFile()]);
-    expect(mocks.showError).toHaveBeenCalledWith('chive-error-parse: parse fail');
+
+    expect(mocks.ingestErrorMessage).toHaveBeenCalledWith('csv-empty');
+    expect(mocks.showError).toHaveBeenCalledWith('chive-error-parse: mapped-detail');
+    const progress = mocks.showProgress.mock.results.at(-1).value;
+    expect(progress.fail).toHaveBeenCalledWith('chive-progress-failed:mapped-detail');
   });
 
   it('forwards ROW_LIMIT to the worker; truncation is handled there, not in fileManager', async () => {
@@ -376,6 +384,49 @@ describe('fileManager', () => {
     });
     expect(invalid.ok).toBe(false);
     expect(invalid.message).toBe('chive-join-error-select-different-files');
+  });
+
+  it('returns the generic join error when joinDatasets fails, without processing or adding', () => {
+    mocks.getAllDatasets.mockReturnValue([
+      { name: 'A.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
+      { name: 'B.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
+    ]);
+    mocks.joinDatasets.mockReturnValueOnce({ ok: false, reason: 'join-keys-mismatch' });
+
+    const result = createJoinedDataset({
+      leftIndex: 0,
+      rightIndex: 1,
+      leftKeys: ['id'],
+      rightKeys: ['id'],
+      leftColumns: ['id'],
+      rightColumns: ['id'],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toBe('chive-join-error-generic');
+    expect(mocks.processData).not.toHaveBeenCalled();
+    expect(mocks.addDataset).not.toHaveBeenCalled();
+  });
+
+  it('returns the generic join error when post-join processing throws (safety net)', () => {
+    mocks.getAllDatasets.mockReturnValue([
+      { name: 'A.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
+      { name: 'B.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
+    ]);
+    mocks.processData.mockImplementationOnce(() => { throw new Error('boom'); });
+
+    const result = createJoinedDataset({
+      leftIndex: 0,
+      rightIndex: 1,
+      leftKeys: ['id'],
+      rightKeys: ['id'],
+      leftColumns: ['id'],
+      rightColumns: ['id'],
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.message).toBe('chive-join-error-generic');
+    expect(mocks.addDataset).not.toHaveBeenCalled();
   });
 
   it('uses injected confirmFn instead of window.confirm', async () => {

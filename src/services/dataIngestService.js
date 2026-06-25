@@ -35,6 +35,35 @@ export function progressLabelForStage(stage, fileName) {
 	return undefined;
 }
 
+/** Parser reason code -> i18n key for the localized parse-error detail. @private */
+const INGEST_ERROR_KEYS = {
+	'csv-empty': 'chive-ingest-error-csv-empty',
+	'json-syntax': 'chive-ingest-error-json-syntax',
+	'json-empty': 'chive-ingest-error-json-empty',
+	'json-array-empty': 'chive-ingest-error-json-array-empty',
+	'json-unrecognized': 'chive-ingest-error-json-unrecognized',
+};
+
+/**
+ * Map an ingest failure `reason` (from {@link ingestFile}) to a user-facing
+ * detail string. Known parse reasons resolve to a localized message; any other
+ * non-empty reason is returned as-is (a diagnostic id like `'worker-error'`);
+ * a falsy reason yields the neutral `'ingest-error'`.
+ *
+ * Never returns `undefined`, and never returns the generic parse-prefix text
+ * (`chive-error-parse`) that callers add around it, so the toast cannot read
+ * "Could not parse file: Could not parse file".
+ *
+ * @param {string} [reason]
+ * @returns {string}
+ */
+export function ingestErrorMessage(reason) {
+	const key = INGEST_ERROR_KEYS[reason];
+	if (key) return t(key);
+	if (reason) return String(reason);
+	return 'ingest-error';
+}
+
 let workerFactory = null;
 
 /**
@@ -157,7 +186,16 @@ export async function ingestFile(input, config = {}) {
 
 			if (message.type === 'error') {
 				finalize();
-				resolve(fail(message.message || 'ingest-error'));
+				// Prefer the stable parser `reason`; fall back to the onmessage catch-all
+				// `message`. Stay type-safe so a forged/garbage payload cannot put a
+				// non-string on `result.reason`.
+				const reason =
+					typeof message.reason === 'string' && message.reason
+						? message.reason
+						: typeof message.message === 'string' && message.message
+							? message.message
+							: 'ingest-error';
+				resolve(fail(reason));
 			}
 		};
 

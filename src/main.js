@@ -26,8 +26,8 @@ import {
 	enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey,
 } from './services/persistenceService.js';
-import { ingestFile, progressLabelForStage } from './services/dataIngestService.js';
-import { loadPresetSource, PresetFetchTimeoutError } from './services/presetService.js';
+import { ingestFile, progressLabelForStage, ingestErrorMessage } from './services/dataIngestService.js';
+import { loadPresetSource } from './services/presetService.js';
 import {
 renderEmptyState,
 renderDataInterface,
@@ -405,8 +405,9 @@ function handleJoinDatasetRequest(spec) {
  * sync for inline), and adds the resulting dataset. The progress toast
  * carries the cancellation signal for both the fetch and the worker.
  *
- * `PresetFetchTimeoutError` surfaces a dedicated timeout message;
- * everything else is reported as a generic join/preset error.
+ * `loadPresetSource` returns a result: `{ ok:false, reason:'preset-fetch-timeout' }`
+ * surfaces a dedicated timeout message, `'cancelled'` closes the toast quietly,
+ * and every other reason is reported as a generic join/preset error.
  *
  * @private
  * @param {import('./types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
@@ -423,7 +424,22 @@ async function handlePresetDatasetRequest(preset) {
 	progress.onCancel(() => abortController.abort());
 
 	try {
-		const source = await loadPresetSource(preset, { signal: abortController.signal });
+		const result = await loadPresetSource(preset, { signal: abortController.signal });
+
+		if (!result.ok) {
+			if (result.reason === 'cancelled') {
+				progress.close();
+			} else if (result.reason === 'preset-fetch-timeout') {
+				progress.fail(t('chive-preset-fetch-timeout', [presetName]));
+				showError(t('chive-join-error-generic'));
+			} else {
+				progress.fail(t('chive-progress-failed', [result.reason || 'preset-error']));
+				showError(t('chive-join-error-generic'));
+			}
+			return;
+		}
+
+		const source = result.value;
 
 		let rows;
 		let columns;
@@ -458,7 +474,7 @@ async function handlePresetDatasetRequest(preset) {
 
 			if (!result.ok) {
 				if (result.reason === 'cancelled') progress.close();
-				else progress.fail(t('chive-progress-failed', [result.reason]));
+				else progress.fail(t('chive-progress-failed', [ingestErrorMessage(result.reason)]));
 				return;
 			}
 
@@ -480,11 +496,8 @@ async function handlePresetDatasetRequest(preset) {
 		progress.succeed(t('chive-preset-load-success', [presetName]));
 		refreshView();
 	} catch (err) {
-		if (err instanceof PresetFetchTimeoutError) {
-			progress.fail(t('chive-preset-fetch-timeout', [presetName]));
-		} else {
-			progress.fail(t('chive-progress-failed', [err?.message || 'error']));
-		}
+		// Genuinely-unexpected throws from processData/addDataset/selectDataset.
+		progress.fail(t('chive-progress-failed', [err?.message || 'error']));
 		showError(t('chive-join-error-generic'));
 	}
 }

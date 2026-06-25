@@ -15,7 +15,7 @@
 
 import { t } from '../services/i18nService.js';
 import { processData, formatFileSize, joinDatasets } from '../services/dataService.js';
-import { ingestFile, progressLabelForStage } from '../services/dataIngestService.js';
+import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../services/dataIngestService.js';
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './state/appState.js';
 import { showError, clearErrors, showProgress } from './feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/limits.js';
@@ -123,8 +123,9 @@ async function processFileForDataset(file) {
 			progress.close();
 			throw new Error(t('chive-error-cancelled'));
 		}
-		progress.fail(t('chive-progress-failed', [result.reason]));
-		throw new Error(`${t('chive-error-parse')}: ${result.reason}`);
+		const message = ingestErrorMessage(result.reason);
+		progress.fail(t('chive-progress-failed', [message]));
+		throw new Error(`${t('chive-error-parse')}: ${message}`);
 	}
 
 	const { rows, columns, statsNumeric, statsCategorical, truncatedFrom } = result.value;
@@ -308,6 +309,10 @@ export function createJoinedDataset(spec = {}) {
 				caseSensitive: false,
 			},
 		});
+
+		if (!result.ok) {
+			return { ok: false, message: t('chive-join-error-generic') };
+		}
 
 		const processed = processData(result.rows);
 		const fallbackColumns = result.outputColumns.map(columnName => ({ name: columnName, type: 'text' }));
