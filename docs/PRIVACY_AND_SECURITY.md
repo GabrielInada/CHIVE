@@ -52,8 +52,9 @@ payloads:
 
 Project changes auto-save: a debounced save writes the SQLite byte image to
 IndexedDB a couple of seconds after the last edit, and CHIVE attempts a
-best-effort save when the page hides. Hard crashes or interrupted closes can
-still lose changes made since the last successful save.
+best-effort lifecycle save when the page hides, freezes, or closes. Hard
+crashes or interrupted closes can still lose changes made since the last
+successful save.
 
 Project export downloads a `.chive.sqlite3` file from the browser. Full exports
 contain dataset rows and saved chart snapshot payloads. Work-only exports omit

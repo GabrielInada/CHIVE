@@ -128,7 +128,7 @@ initializeAllEventHandlers();
 setupStateSubscriptions();
 
 // 6. Wire auto-save AFTER subscriptions. The controller tracks semantic
-//    project events, debounces saves, and flushes on tab hide/close.
+//    project events, debounces saves, and flushes on page hide/freeze/close.
 //    getPersistenceSnapshot (no JSON clone, live refs) keeps the heavy deep
 //    clone getState performs off the save hot path; the worker backend dedups
 //    unchanged row/snapshot payloads by reference.

@@ -166,7 +166,7 @@ CHIVE has no application backend in the default deployments. Uploaded datasets a
 - IndexedDB stores one SQLite project byte image containing datasets and dashboard panel state.
 - `localStorage` stores small UI preferences and the selected locale.
 
-Project changes auto-save: a save runs automatically a couple of seconds after you stop editing, and CHIVE also attempts a best-effort save when the page hides. Hard crashes or interrupted closes can still lose changes made since the last successful save.
+Project changes auto-save: a save runs automatically a couple of seconds after you stop editing, and CHIVE also attempts a best-effort lifecycle save when the page hides, freezes, or closes. Hard crashes or interrupted closes can still lose changes made since the last successful save.
 
 Project export downloads a SQLite-backed `.chive.sqlite3` file. Full exports include dataset rows and saved chart snapshot payloads; work-only exports omit those heavy payloads and are meant for layout/work transfer only. Import currently accepts full project files and replaces the current datasets and panel.
 
