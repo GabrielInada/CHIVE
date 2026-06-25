@@ -42,48 +42,9 @@ import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { fail } from '../../utils/result.js';
 import { appendChartTitle } from './chartScaffold.js';
+import { buildNetworkData } from './networkGraph/data.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
-
-function sanitizeNodeValue(value) {
-	if (isNullish(value)) return '';
-	return String(value).trim();
-}
-
-function buildNetworkData(rows, sourceColumn, targetColumn, weightColumn, groupColumn) {
-	const nodeMap = new Map();
-	const links = [];
-
-	rows.forEach(row => {
-		const source = sanitizeNodeValue(row[sourceColumn]);
-		const target = sanitizeNodeValue(row[targetColumn]);
-		if (!source || !target) return;
-
-		const rawWeight = weightColumn ? Number(row[weightColumn]) : 1;
-		const weight = Number.isFinite(rawWeight) && rawWeight > 0 ? rawWeight : 1;
-		const rawGroup = groupColumn ? sanitizeNodeValue(row[groupColumn]) : '';
-		const group = rawGroup || 'default';
-
-		if (!nodeMap.has(source)) {
-			nodeMap.set(source, { id: source, group });
-		} else if (groupColumn && nodeMap.get(source).group === 'default' && rawGroup) {
-			nodeMap.get(source).group = rawGroup;
-		}
-
-		if (!nodeMap.has(target)) {
-			nodeMap.set(target, { id: target, group });
-		} else if (groupColumn && nodeMap.get(target).group === 'default' && rawGroup) {
-			nodeMap.get(target).group = rawGroup;
-		}
-
-		links.push({ source, target, value: weight });
-	});
-
-	return {
-		nodes: Array.from(nodeMap.values()),
-		links,
-	};
-}
 
 function stopPreviousSimulation(container) {
 	const previous = container?.[SIMULATION_KEY];
