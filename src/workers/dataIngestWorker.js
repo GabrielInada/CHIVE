@@ -75,21 +75,26 @@ export function chunkedNormalize(rawData, columns, decimalSeparator, onChunk, ch
 }
 
 /**
- * Run the full ingest pipeline. Throws on parse/empty-file errors; the
- * onmessage wrapper catches and posts an `error` message.
+ * Run the full ingest pipeline. On a parse/empty-file failure, posts an
+ * `error` message carrying the parser's stable `reason` code and returns;
+ * the onmessage wrapper still catches genuinely-unexpected throws.
  *
  * Exported so tests can drive the pipeline directly with a synthetic
  * `post` function.
  *
  * @param {IngestWorkerRequest} payload - Inbound request body.
  * @param {(msg: IngestWorkerResponse) => void} post - Sink for outgoing messages (`self.postMessage` in worker context, a mock in tests).
- * @throws {Error} When the parser fails or the file is malformed.
  */
 export function runIngest({ id, kind, text, options = {} }, post) {
 	const rowLimit = Number.isFinite(options.rowLimit) ? options.rowLimit : Infinity;
 
 	post({ id, type: 'progress', stage: 'parsing', percent: 0 });
-	let rawData = kind === 'json' ? parseJson(text) : parseCsv(text);
+	const parsed = kind === 'json' ? parseJson(text) : parseCsv(text);
+	if (!parsed.ok) {
+		post({ id, type: 'error', reason: parsed.reason });
+		return;
+	}
+	let rawData = parsed.rows;
 	post({ id, type: 'progress', stage: 'parsing', percent: 30 });
 
 	// Drop unwanted columns before any per-column work (preset use case).

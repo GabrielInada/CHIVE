@@ -1,4 +1,5 @@
 import { isNullish } from '../../utils/formatters.js';
+import { ok, fail } from '../../utils/result.js';
 
 /**
  * CHIVE dataset-join helpers.
@@ -108,10 +109,9 @@ function sanitizePrefix(fileName, fallback) {
  * Unmatched cells in left/right/full joins are emitted as `null`.
  *
  * @param {JoinDatasetsOptions} options
- * @returns {JoinResult}
- * @throws {Error} `'join-invalid-datasets'`, `leftRows` or `rightRows` is not an array.
- * @throws {Error} `'join-keys-required'`, either key array is missing or empty.
- * @throws {Error} `'join-keys-mismatch'`, key arrays have different lengths.
+ * @returns {JoinResult} `{ ok:true, rows, outputColumns }` on success; `{ ok:false, reason }` for
+ *   `'join-invalid-datasets'` (a rows arg is not an array), `'join-keys-required'` (a key array is
+ *   missing or empty), or `'join-keys-mismatch'` (key arrays have different lengths).
  *
  * @example
  *   const result = joinDatasets({
@@ -141,15 +141,15 @@ export function joinDatasets({
 	normalization = { trim: true, caseSensitive: false },
 }) {
 	if (!Array.isArray(leftRows) || !Array.isArray(rightRows)) {
-		throw new Error('join-invalid-datasets');
+		return fail('join-invalid-datasets');
 	}
 
 	if (!Array.isArray(leftKeys) || !Array.isArray(rightKeys) || leftKeys.length === 0 || rightKeys.length === 0) {
-		throw new Error('join-keys-required');
+		return fail('join-keys-required');
 	}
 
 	if (leftKeys.length !== rightKeys.length) {
-		throw new Error('join-keys-mismatch');
+		return fail('join-keys-mismatch');
 	}
 
 	const normalizedJoinType = ['inner', 'left', 'right', 'full'].includes(joinType) ? joinType : 'inner';
@@ -226,11 +226,11 @@ export function joinDatasets({
 		});
 	}
 
-	return {
+	return ok({
 		rows: outputRows,
 		outputColumns: [
 			...leftColumnMap.map(item => item.output),
 			...rightColumnMap.map(item => item.output),
 		],
-	};
+	});
 }

@@ -453,6 +453,11 @@
 	"chive-error-cancelled": "Operation cancelled.",
 	"chive-error-parse": "Could not parse file",
 	"chive-error-empty-file": "The file appears to be empty.",
+	"chive-ingest-error-csv-empty": "The CSV file is empty.",
+	"chive-ingest-error-json-syntax": "JSON file contains syntax errors. Verify the format.",
+	"chive-ingest-error-json-empty": "The JSON file is empty.",
+	"chive-ingest-error-json-array-empty": "The data array in the JSON is empty.",
+	"chive-ingest-error-json-unrecognized": "Unrecognized JSON format. The file must be an array of objects: [{...}, {...}]",
 
 	"chive-progress-parsing": "Parsing $1…",
 	"chive-progress-detecting-types": "Detecting column types…",

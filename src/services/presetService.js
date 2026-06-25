@@ -8,20 +8,25 @@
  *
  * @typedef {import('../types.js').PresetDescriptor} PresetDescriptor
  * @typedef {import('../types.js').PresetSource} PresetSource
+ * @typedef {import('../types.js').Result} Result
  */
+
+import { ok, fail } from '../utils/result.js';
 
 const PRESET_FETCH_TIMEOUT_MS = 10000;
 
 /**
- * Thrown by {@link loadPresetSource} when the 10s fetch timeout fires
- * before the response resolves. Distinguishable from a user-initiated
- * abort, which throws the caller's `signal.reason` (typically `DOMException`).
+ * Classify a fetch/body-read failure into a stable reason. A user-initiated
+ * abort wins over the timeout (so cancel reads as `'cancelled'`, matching the
+ * worker-ingest path); the composed timeout reads as `'preset-fetch-timeout'`;
+ * anything else (a genuine network error) is `'preset-fetch-network'`.
+ *
+ * @private
  */
-export class PresetFetchTimeoutError extends Error {
-	constructor() {
-		super('preset-fetch-timeout');
-		this.name = 'PresetFetchTimeoutError';
-	}
+function fetchFailureReason(signal, timeoutSignal) {
+	if (signal?.aborted) return 'cancelled';
+	if (timeoutSignal.aborted) return 'preset-fetch-timeout';
+	return 'preset-fetch-network';
 }
 
 /**
@@ -36,18 +41,18 @@ export class PresetFetchTimeoutError extends Error {
  *
  * @param {PresetDescriptor} preset
  * @param {{ signal?: AbortSignal, timeoutMs?: number }} [options]
- * @returns {Promise<PresetSource>}
- * @throws {PresetFetchTimeoutError} The fetch did not complete within `timeoutMs`.
- * @throws {Error} `'preset-data-missing'`, preset has neither `data` nor a usable `dataUrl`.
- * @throws {Error} `'preset-fetch-failed:<status>'`, server returned a non-2xx response.
+ * @returns {Promise<Result>} `ok({ value: PresetSource })` on success, or `fail(reason)` with one of:
+ *   `'preset-data-missing'` (neither `data` nor a usable `dataUrl`), `'cancelled'` (caller aborted),
+ *   `'preset-fetch-timeout'` (no response within `timeoutMs`), `'preset-fetch-failed:<status>'`
+ *   (non-2xx response), or `'preset-fetch-network'` (the fetch/body read failed otherwise).
  */
 export async function loadPresetSource(preset, { signal, timeoutMs = PRESET_FETCH_TIMEOUT_MS } = {}) {
 	if (Array.isArray(preset?.data)) {
-		return { mode: 'inline', rows: preset.data, dropColumns: preset.dropColumns || [] };
+		return ok({ value: { mode: 'inline', rows: preset.data, dropColumns: preset.dropColumns || [] } });
 	}
 
 	if (typeof preset?.dataUrl !== 'string' || !preset.dataUrl.trim()) {
-		throw new Error('preset-data-missing');
+		return fail('preset-data-missing');
 	}
 
 	const timeoutSignal = AbortSignal.timeout(timeoutMs);
@@ -58,24 +63,22 @@ export async function loadPresetSource(preset, { signal, timeoutMs = PRESET_FETC
 	let response;
 	try {
 		response = await fetch(preset.dataUrl, { signal: combinedSignal });
-	} catch (err) {
-		if (timeoutSignal.aborted) throw new PresetFetchTimeoutError();
-		throw err;
+	} catch {
+		return fail(fetchFailureReason(signal, timeoutSignal));
 	}
 
 	if (!response.ok) {
-		throw new Error(`preset-fetch-failed:${response.status}`);
+		return fail(`preset-fetch-failed:${response.status}`);
 	}
 
 	let rawText;
 	try {
 		rawText = await response.text();
-	} catch (err) {
-		if (timeoutSignal.aborted) throw new PresetFetchTimeoutError();
-		throw err;
+	} catch {
+		return fail(fetchFailureReason(signal, timeoutSignal));
 	}
 
 	const format = String(preset.dataFormat || '').toLowerCase();
 	const kind = format === 'json' || preset.dataUrl.toLowerCase().endsWith('.json') ? 'json' : 'csv';
-	return { mode: 'fetched', kind, text: rawText, dropColumns: preset.dropColumns || [] };
+	return ok({ value: { mode: 'fetched', kind, text: rawText, dropColumns: preset.dropColumns || [] } });
 }

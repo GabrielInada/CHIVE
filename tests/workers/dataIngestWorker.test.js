@@ -130,8 +130,10 @@ describe('runIngest', () => {
 		expect(percents[percents.length - 1]).toBe(100);
 	});
 
-	it('throws when the parser yields an empty CSV (the Worker entry will catch + post error)', () => {
-		const { post } = collectMessages();
-		expect(() => runIngest({ id: 't', kind: 'csv', text: '' }, post)).toThrow();
+	it('posts an error message with the parser reason when the CSV is empty', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 't', kind: 'csv', text: '' }, post);
+		expect(msgs).toContainEqual({ id: 't', type: 'error', reason: 'csv-empty' });
+		expect(msgs.some(m => m.type === 'done')).toBe(false);
 	});
 });

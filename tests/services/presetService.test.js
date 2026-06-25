@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { loadPresetSource, PresetFetchTimeoutError } from '../../src/services/presetService.js';
+import { loadPresetSource } from '../../src/services/presetService.js';
 
 describe('loadPresetSource', () => {
 	let originalFetch;
@@ -22,20 +22,35 @@ describe('loadPresetSource', () => {
 		const preset = { data: [{ x: 1 }, { x: 2 }], dropColumns: ['drop_me'] };
 		const result = await loadPresetSource(preset);
 
-		expect(result).toEqual({ mode: 'inline', rows: preset.data, dropColumns: ['drop_me'] });
+		expect(result.ok).toBe(true);
+		expect(result.value).toEqual({ mode: 'inline', rows: preset.data, dropColumns: ['drop_me'] });
 		expect(mockFetch).not.toHaveBeenCalled();
 	});
 
-	it('throws preset-data-missing when neither data nor dataUrl is present', async () => {
-		await expect(loadPresetSource({})).rejects.toThrow('preset-data-missing');
-		await expect(loadPresetSource({ dataUrl: '   ' })).rejects.toThrow('preset-data-missing');
+	it('fails with preset-data-missing when neither data nor dataUrl is present', async () => {
+		const noData = await loadPresetSource({});
+		expect(noData.ok).toBe(false);
+		expect(noData.reason).toBe('preset-data-missing');
+
+		const blankUrl = await loadPresetSource({ dataUrl: '   ' });
+		expect(blankUrl.ok).toBe(false);
+		expect(blankUrl.reason).toBe('preset-data-missing');
 	});
 
-	it('throws preset-fetch-failed:NNN when the response is non-OK', async () => {
+	it('fails with preset-fetch-failed:NNN when the response is non-OK', async () => {
 		globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
 
-		await expect(loadPresetSource({ dataUrl: 'https://example.test/data.csv' }))
-			.rejects.toThrow('preset-fetch-failed:503');
+		const result = await loadPresetSource({ dataUrl: 'https://example.test/data.csv' });
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('preset-fetch-failed:503');
+	});
+
+	it('fails with preset-fetch-network when fetch rejects for a non-abort reason', async () => {
+		globalThis.fetch = vi.fn().mockRejectedValue(new Error('network down'));
+
+		const result = await loadPresetSource({ dataUrl: 'https://example.test/data.csv' });
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('preset-fetch-network');
 	});
 
 	it('returns a fetched source with kind=csv for a .csv URL on a 200 response', async () => {
@@ -46,7 +61,8 @@ describe('loadPresetSource', () => {
 
 		const result = await loadPresetSource({ dataUrl: 'https://example.test/data.csv' });
 
-		expect(result).toEqual({
+		expect(result.ok).toBe(true);
+		expect(result.value).toEqual({
 			mode: 'fetched',
 			kind: 'csv',
 			text: 'x,y\n1,2',
@@ -65,10 +81,11 @@ describe('loadPresetSource', () => {
 			dataFormat: 'json',
 		});
 
-		expect(result.kind).toBe('json');
+		expect(result.ok).toBe(true);
+		expect(result.value.kind).toBe('json');
 	});
 
-	it('throws PresetFetchTimeoutError when fetch hangs past the timeout', async () => {
+	it('fails with preset-fetch-timeout when fetch hangs past the timeout', async () => {
 		// Mock fetch as a never-resolving promise that rejects with AbortError
 		// when its signal aborts (the standard fetch behavior).
 		globalThis.fetch = vi.fn().mockImplementation((url, init) => new Promise((_, reject) => {
@@ -81,13 +98,15 @@ describe('loadPresetSource', () => {
 
 		// AbortSignal.timeout uses an internal timer queue that Vitest's fake
 		// timers don't intercept; use a tiny real timeout via the override.
-		await expect(loadPresetSource(
+		const result = await loadPresetSource(
 			{ dataUrl: 'https://example.test/slow.csv' },
 			{ timeoutMs: 20 },
-		)).rejects.toBeInstanceOf(PresetFetchTimeoutError);
+		);
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('preset-fetch-timeout');
 	});
 
-	it('throws the original AbortError when the caller signal fires before the timeout', async () => {
+	it('fails with cancelled when the caller signal fires before the timeout', async () => {
 		const controller = new AbortController();
 
 		globalThis.fetch = vi.fn().mockImplementation((url, init) => new Promise((_, reject) => {
@@ -102,13 +121,14 @@ describe('loadPresetSource', () => {
 			{ dataUrl: 'https://example.test/slow.csv' },
 			{ signal: controller.signal, timeoutMs: 60000 /* well past the test */ },
 		);
-		const assertion = expect(promise).rejects.not.toBeInstanceOf(PresetFetchTimeoutError);
 
 		controller.abort();
-		await assertion;
+		const result = await promise;
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('cancelled');
 	});
 
-	it('throws PresetFetchTimeoutError when the body-read stalls past the timeout', async () => {
+	it('fails with preset-fetch-timeout when the body-read stalls past the timeout', async () => {
 		// Headers arrive immediately, but text() never resolves until aborted.
 		globalThis.fetch = vi.fn().mockImplementation((url, init) => Promise.resolve({
 			ok: true,
@@ -121,9 +141,11 @@ describe('loadPresetSource', () => {
 			}),
 		}));
 
-		await expect(loadPresetSource(
+		const result = await loadPresetSource(
 			{ dataUrl: 'https://example.test/stalled-body.csv' },
 			{ timeoutMs: 20 },
-		)).rejects.toBeInstanceOf(PresetFetchTimeoutError);
+		);
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('preset-fetch-timeout');
 	});
 });

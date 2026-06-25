@@ -19,7 +19,7 @@ import { detectDecimalSeparator, detectType, normalizeNumericString } from './ty
  * convention). Then each column gets a `type` from `detectType`, and
  * numeric cells are parsed into actual numbers via `normalizeNumericString`.
  *
- * @param {Array<Object<string, *>>} rawData - Rows as produced by `parseCsv` or `parseJson`.
+ * @param {Array<Object<string, *>>} rawData - The rows from a `parseCsv`/`parseJson` result (`result.rows`).
  * @returns {{ rows: Array<Object<string, *>>, columns: ColumnSpec[] }} - `rows` is the normalized row set; `columns` lists `{ name, type }` in source order. Empty input returns empty arrays.
  * @throws {Error} When `rawData` is not an array.
  */

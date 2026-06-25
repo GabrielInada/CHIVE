@@ -1,4 +1,5 @@
 import { dsvFormat } from '../../../vendor/d3/d3.js';
+import { ok, fail } from '../../utils/result.js';
 
 /**
  * CHIVE file-parsing helpers.
@@ -6,6 +7,12 @@ import { dsvFormat } from '../../../vendor/d3/d3.js';
  * Pure functions for delimiter detection, CSV parsing (via d3's
  * `dsvFormat`), and JSON parsing with prototype-pollution hardening. No
  * DOM, no state, no I/O, safe to use in workers and tests.
+ *
+ * `parseCsv`/`parseJson` return a {@link Result}: `ok({ rows })` on success,
+ * `fail(reason)` with a stable reason code on failure (the worker maps the
+ * reason to a localized message).
+ *
+ * @typedef {import('../../types.js').Result} Result
  */
 
 /**
@@ -38,11 +45,11 @@ export function detectDelimiter(firstLine) {
  * Inspects the first line to detect the delimiter, then parses the full content.
  *
  * @param {string} text - Full file content as a string
- * @returns {Array<Object>} Parsed rows as plain objects
+ * @returns {Result} `ok({ rows })` with parsed rows as plain objects, or `fail('csv-empty')`.
  */
 export function parseCsv(text) {
 	if (!text || text.trim().length === 0) {
-		throw new Error('The CSV file is empty.');
+		return fail('csv-empty');
 	}
 
 	const firstLine = text.split(/\r?\n/).find(line => line.trim().length > 0) || '';
@@ -50,9 +57,9 @@ export function parseCsv(text) {
 	const rows = dsvFormat(delimiter).parse(text);
 
 	if (rows.columns) delete rows.columns;
-	if (rows.length === 0) throw new Error('The CSV file is empty.');
+	if (rows.length === 0) return fail('csv-empty');
 
-	return rows;
+	return ok({ rows });
 }
 
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -93,10 +100,10 @@ function stripDangerousKeys(value) {
  * recursively from every row.
  *
  * @param {string} text - Raw file content.
- * @returns {Array<Object<string, *>>} Parsed rows.
- * @throws {Error} `'JSON file contains syntax errors…'`, `JSON.parse` failed.
- * @throws {Error} `'The JSON file is empty.'` / `'The data array in the JSON is empty.'`, zero rows.
- * @throws {Error} `'Unrecognized JSON format…'`, root is neither an array nor an object with an array-valued key.
+ * @returns {Result} `ok({ rows })` with parsed rows, or `fail(reason)` with one of:
+ *   `'json-syntax'` (`JSON.parse` failed), `'json-empty'` (top-level array is empty),
+ *   `'json-array-empty'` (the array-valued key holds zero rows), `'json-unrecognized'`
+ *   (root is neither an array nor an object with an array-valued key).
  */
 export function parseJson(text) {
 	let parsed;
@@ -104,22 +111,22 @@ export function parseJson(text) {
 	try {
 		parsed = JSON.parse(text);
 	} catch {
-		throw new Error('JSON file contains syntax errors. Verify the format.');
+		return fail('json-syntax');
 	}
 
 	if (Array.isArray(parsed)) {
-		if (parsed.length === 0) throw new Error('The JSON file is empty.');
-		return stripDangerousKeys(parsed);
+		if (parsed.length === 0) return fail('json-empty');
+		return ok({ rows: stripDangerousKeys(parsed) });
 	}
 
 	if (typeof parsed === 'object' && parsed !== null) {
 		const chaveArray = Object.keys(parsed).find(chave => Array.isArray(parsed[chave]));
 		if (chaveArray) {
 			const arr = parsed[chaveArray];
-			if (arr.length === 0) throw new Error('The data array in the JSON is empty.');
-			return stripDangerousKeys(arr);
+			if (arr.length === 0) return fail('json-array-empty');
+			return ok({ rows: stripDangerousKeys(arr) });
 		}
 	}
 
-	throw new Error('Unrecognized JSON format. The file must be an array of objects: [{...}, {...}]');
+	return fail('json-unrecognized');
 }

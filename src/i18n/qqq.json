@@ -452,6 +452,11 @@
 	"chive-error-cancelled": "Generic message thrown when the user cancels an in-progress operation (e.g. a worker-driven file ingest).",
 	"chive-error-parse": "Prefix shown before a parser error message when a CSV/JSON file fails to parse.",
 	"chive-error-empty-file": "Error shown when an uploaded file has no rows after parsing.",
+	"chive-ingest-error-csv-empty": "Parse-error detail: the uploaded CSV file is empty or has no data rows.",
+	"chive-ingest-error-json-syntax": "Parse-error detail: the uploaded JSON file is not valid JSON.",
+	"chive-ingest-error-json-empty": "Parse-error detail: the uploaded JSON is a top-level array with no items.",
+	"chive-ingest-error-json-array-empty": "Parse-error detail: the JSON object's data array has no items.",
+	"chive-ingest-error-json-unrecognized": "Parse-error detail: the JSON root is neither an array of objects nor an object with an array-valued key.",
 
 	"chive-progress-parsing": "Progress-toast label while the ingest worker is reading a file. $1 = file or preset name.",
 	"chive-progress-detecting-types": "Progress-toast label while the ingest worker is auto-detecting column types and decimal separator.",

@@ -4,8 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	ingestFile,
 	progressLabelForStage,
+	ingestErrorMessage,
 	__setIngestWorkerFactoryForTesting,
 } from '../../src/services/dataIngestService.js';
+import { t } from '../../src/services/i18nService.js';
 
 class MockWorker {
 	constructor() {
@@ -133,6 +135,39 @@ describe('ingestFile', () => {
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('parse-failed');
 		expect(worker.terminated).toBe(true);
+	});
+
+	it('prefers the reason field over message on a type=error', async () => {
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({ id: data.id, type: 'error', reason: 'csv-empty', message: 'legacy-text' });
+			});
+		});
+
+		const result = await ingestFile({ kind: 'csv', text: 'invalid' });
+		expect(result.reason).toBe('csv-empty');
+	});
+
+	it('falls back to message when reason is not a string', async () => {
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({ id: data.id, type: 'error', reason: 123, message: 'legacy-text' });
+			});
+		});
+
+		const result = await ingestFile({ kind: 'csv', text: 'invalid' });
+		expect(result.reason).toBe('legacy-text');
+	});
+
+	it('falls back to ingest-error for a garbage error payload', async () => {
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({ id: data.id, type: 'error', reason: 123, message: null });
+			});
+		});
+
+		const result = await ingestFile({ kind: 'csv', text: 'invalid' });
+		expect(result.reason).toBe('ingest-error');
 	});
 
 	it('ignores stale messages whose id does not match the in-flight request', async () => {
@@ -307,5 +342,23 @@ describe('progressLabelForStage', () => {
 
 	it('returns undefined for unknown stages', () => {
 		expect(progressLabelForStage('mystery', 'x')).toBeUndefined();
+	});
+});
+
+describe('ingestErrorMessage', () => {
+	it('maps a known parse reason to its localized message', () => {
+		// Compare against t(key) (not an English literal) so it is locale-independent.
+		expect(ingestErrorMessage('csv-empty')).toBe(t('chive-ingest-error-csv-empty'));
+		expect(ingestErrorMessage('json-syntax')).toBe(t('chive-ingest-error-json-syntax'));
+		expect(ingestErrorMessage('json-unrecognized')).toBe(t('chive-ingest-error-json-unrecognized'));
+	});
+
+	it('returns an unknown non-empty reason unchanged as a diagnostic', () => {
+		expect(ingestErrorMessage('worker-error')).toBe('worker-error');
+	});
+
+	it('returns the neutral ingest-error id for a falsy reason (never undefined)', () => {
+		expect(ingestErrorMessage('')).toBe('ingest-error');
+		expect(ingestErrorMessage(undefined)).toBe('ingest-error');
 	});
 });

@@ -96,23 +96,33 @@ describe('dataService', () => {
     });
   });
 
-  it('parses CSV and rejects empty CSV', () => {
-    const rows = parseCsv('a,b\n1,2\n3,4');
-    expect(rows.length).toBe(2);
-    expect(rows[0].a).toBe('1');
+  it('parses CSV and fails on empty CSV', () => {
+    const parsed = parseCsv('a,b\n1,2\n3,4');
+    expect(parsed.ok).toBe(true);
+    expect(parsed.rows.length).toBe(2);
+    expect(parsed.rows[0].a).toBe('1');
 
-    expect(() => parseCsv('')).toThrow('The CSV file is empty.');
+    const empty = parseCsv('');
+    expect(empty.ok).toBe(false);
+    expect(empty.reason).toBe('csv-empty');
   });
 
-  it('parses JSON in supported formats and rejects invalid', () => {
+  it('parses JSON in supported formats and fails on invalid', () => {
     const arr = parseJson('[{"a":1},{"a":2}]');
-    expect(arr.length).toBe(2);
+    expect(arr.ok).toBe(true);
+    expect(arr.rows.length).toBe(2);
 
     const nested = parseJson('{"items":[{"x":1}]}');
-    expect(nested.length).toBe(1);
+    expect(nested.ok).toBe(true);
+    expect(nested.rows.length).toBe(1);
 
-    expect(() => parseJson('{')).toThrow('JSON file contains syntax errors. Verify the format.');
-    expect(() => parseJson('{"foo":1}')).toThrow('Unrecognized JSON format. The file must be an array of objects: [{...}, {...}]');
+    const syntax = parseJson('{');
+    expect(syntax.ok).toBe(false);
+    expect(syntax.reason).toBe('json-syntax');
+
+    const unrecognized = parseJson('{"foo":1}');
+    expect(unrecognized.ok).toBe(false);
+    expect(unrecognized.reason).toBe('json-unrecognized');
   });
 
   it('processes rows converting numeric columns and computes statistics', () => {
@@ -171,8 +181,9 @@ describe('dataService', () => {
 
     it('converts US format with thousand separator (values quoted in CSV)', () => {
       const csv = 'id,value\n1,"1,234.56"\n2,"2,345.67"\n3,"3,456.78"';
-      const rows = parseCsv(csv);
-      const result = processData(rows);
+      const parsed = parseCsv(csv);
+      expect(parsed.ok).toBe(true);
+      const result = processData(parsed.rows);
       expect(result.columns.find(c => c.name === 'value')?.type).toBe('number');
       expect(result.rows[0].value).toBeCloseTo(1234.56);
       expect(result.rows[1].value).toBeCloseTo(2345.67);
@@ -180,8 +191,9 @@ describe('dataService', () => {
 
     it('converts European format end-to-end with semicolon delimiter', () => {
       const csv = 'id;valor\n1;3,14\n2;2,71\n3;1,41';
-      const rows = parseCsv(csv);
-      const result = processData(rows);
+      const parsed = parseCsv(csv);
+      expect(parsed.ok).toBe(true);
+      const result = processData(parsed.rows);
       expect(result.columns.find(c => c.name === 'valor')?.type).toBe('number');
       expect(result.rows[0].valor).toBeCloseTo(3.14);
       expect(result.rows[2].valor).toBeCloseTo(1.41);
@@ -236,8 +248,9 @@ describe('dataService', () => {
 
     it('converts US integers with thousand separator', () => {
       const csv = 'id,value\n1,"1,000"\n2,"2,000"\n3,"3,000"\n4,"4,000"\n5,"5,000"';
-      const rows = parseCsv(csv);
-      const result = processData(rows);
+      const parsed = parseCsv(csv);
+      expect(parsed.ok).toBe(true);
+      const result = processData(parsed.rows);
       expect(result.columns.find(c => c.name === 'value')?.type).toBe('number');
       expect(result.rows[0].value).toBe(1000);
       expect(result.rows[4].value).toBe(5000);
@@ -317,46 +330,54 @@ describe('dataService', () => {
   });
 
   describe('joinDatasets input validation', () => {
-    it('throws when datasets are not arrays', () => {
-      expect(() => joinDatasets({
+    it('fails when datasets are not arrays', () => {
+      const r = joinDatasets({
         leftRows: 'not array',
         rightRows: [],
         leftKeys: ['id'],
         rightKeys: ['id'],
         leftDatasetName: 'a.csv',
         rightDatasetName: 'b.csv',
-      })).toThrow('join-invalid-datasets');
+      });
+      expect(r.ok).toBe(false);
+      expect(r.reason).toBe('join-invalid-datasets');
     });
 
-    it('throws when keys are missing or empty', () => {
-      expect(() => joinDatasets({
+    it('fails when keys are missing or empty', () => {
+      const empty = joinDatasets({
         leftRows: [],
         rightRows: [],
         leftKeys: [],
         rightKeys: ['id'],
         leftDatasetName: 'a.csv',
         rightDatasetName: 'b.csv',
-      })).toThrow('join-keys-required');
+      });
+      expect(empty.ok).toBe(false);
+      expect(empty.reason).toBe('join-keys-required');
 
-      expect(() => joinDatasets({
+      const nullKeys = joinDatasets({
         leftRows: [],
         rightRows: [],
         leftKeys: null,
         rightKeys: ['id'],
         leftDatasetName: 'a.csv',
         rightDatasetName: 'b.csv',
-      })).toThrow('join-keys-required');
+      });
+      expect(nullKeys.ok).toBe(false);
+      expect(nullKeys.reason).toBe('join-keys-required');
     });
 
-    it('throws when key counts do not match', () => {
-      expect(() => joinDatasets({
+    it('fails when key counts do not match', () => {
+      const r = joinDatasets({
         leftRows: [],
         rightRows: [],
         leftKeys: ['id', 'name'],
         rightKeys: ['key'],
         leftDatasetName: 'a.csv',
         rightDatasetName: 'b.csv',
-      })).toThrow('join-keys-mismatch');
+      });
+      expect(r.ok).toBe(false);
+      expect(r.reason).toBe('join-keys-mismatch');
     });
 
     it('supports left join with non-matching rows', () => {
@@ -371,6 +392,7 @@ describe('dataService', () => {
         leftDatasetName: 'left.csv',
         rightDatasetName: 'right.csv',
       });
+      expect(result.ok).toBe(true);
       expect(result.rows.length).toBe(2);
       expect(result.rows[1].score).toBeNull();
     });
@@ -444,59 +466,72 @@ describe('dataService', () => {
   });
 
   describe('parseCsv edge cases', () => {
-    it('throws for CSV with only header and no rows', () => {
-      expect(() => parseCsv('a,b,c\n')).toThrow('The CSV file is empty.');
+    it('fails for CSV with only header and no rows', () => {
+      const r = parseCsv('a,b,c\n');
+      expect(r.ok).toBe(false);
+      expect(r.reason).toBe('csv-empty');
     });
 
     it('parses CSV with blank rows, including them in the result', () => {
-      const rows = parseCsv('a,b\n1,2\n\n3,4');
-      expect(rows.length).toBe(3);
-      expect(rows[0].a).toBe('1');
-      expect(rows[2].a).toBe('3');
+      const parsed = parseCsv('a,b\n1,2\n\n3,4');
+      expect(parsed.ok).toBe(true);
+      expect(parsed.rows.length).toBe(3);
+      expect(parsed.rows[0].a).toBe('1');
+      expect(parsed.rows[2].a).toBe('3');
     });
   });
 
   describe('parseJson edge cases', () => {
-    it('throws for empty JSON array', () => {
-      expect(() => parseJson('[]')).toThrow('The JSON file is empty.');
+    it('fails for empty JSON array', () => {
+      const r = parseJson('[]');
+      expect(r.ok).toBe(false);
+      expect(r.reason).toBe('json-empty');
     });
 
-    it('throws for nested object with empty array', () => {
-      expect(() => parseJson('{"items":[]}')).toThrow('The data array in the JSON is empty.');
+    it('fails for nested object with empty array', () => {
+      const r = parseJson('{"items":[]}');
+      expect(r.ok).toBe(false);
+      expect(r.reason).toBe('json-array-empty');
     });
   });
 
   describe('parseJson dangerous-key stripping', () => {
     it('strips __proto__ at the top level of each row', () => {
       const result = parseJson('[{"a":1,"__proto__":"polluted"}]');
-      expect(result).toEqual([{ a: 1 }]);
-      expect(Object.prototype.hasOwnProperty.call(result[0], '__proto__')).toBe(false);
+      expect(result.ok).toBe(true);
+      expect(result.rows).toEqual([{ a: 1 }]);
+      expect(Object.prototype.hasOwnProperty.call(result.rows[0], '__proto__')).toBe(false);
       expect({}.polluted).toBeUndefined();
     });
 
     it('strips constructor and prototype keys', () => {
       const result = parseJson('[{"name":"x","constructor":"y","prototype":"z"}]');
-      expect(result).toEqual([{ name: 'x' }]);
+      expect(result.ok).toBe(true);
+      expect(result.rows).toEqual([{ name: 'x' }]);
     });
 
     it('strips dangerous keys at nested depth', () => {
       const result = parseJson('[{"a":{"__proto__":"polluted","b":1}}]');
-      expect(result).toEqual([{ a: { b: 1 } }]);
+      expect(result.ok).toBe(true);
+      expect(result.rows).toEqual([{ a: { b: 1 } }]);
     });
 
     it('strips dangerous keys inside nested arrays', () => {
       const result = parseJson('[{"items":[{"__proto__":"polluted","ok":true}]}]');
-      expect(result).toEqual([{ items: [{ ok: true }] }]);
+      expect(result.ok).toBe(true);
+      expect(result.rows).toEqual([{ items: [{ ok: true }] }]);
     });
 
     it('strips dangerous keys from the nested-array root form', () => {
       const result = parseJson('{"rows":[{"__proto__":"polluted","x":1}]}');
-      expect(result).toEqual([{ x: 1 }]);
+      expect(result.ok).toBe(true);
+      expect(result.rows).toEqual([{ x: 1 }]);
     });
 
     it('preserves null, primitives, and keys with similar-but-different names', () => {
       const result = parseJson('[{"a":null,"b":0,"c":"","__proto__":"x","_proto_":"keep"}]');
-      expect(result).toEqual([{ a: null, b: 0, c: '', _proto_: 'keep' }]);
+      expect(result.ok).toBe(true);
+      expect(result.rows).toEqual([{ a: null, b: 0, c: '', _proto_: 'keep' }]);
     });
   });
 
@@ -566,21 +601,24 @@ describe('dataService', () => {
   });
 
   it('parses TSV with delimiter auto-detection', () => {
-    const rows = parseCsv('a\tb\n1\t2\n3\t4');
-    expect(rows.length).toBe(2);
-    expect(rows[0].a).toBe('1');
-    expect(rows[0].b).toBe('2');
+    const parsed = parseCsv('a\tb\n1\t2\n3\t4');
+    expect(parsed.ok).toBe(true);
+    expect(parsed.rows.length).toBe(2);
+    expect(parsed.rows[0].a).toBe('1');
+    expect(parsed.rows[0].b).toBe('2');
   });
 
   it('parses semicolon-delimited file with auto-detection', () => {
-    const rows = parseCsv('a;b\n1;2\n3;4');
-    expect(rows.length).toBe(2);
-    expect(rows[0].a).toBe('1');
+    const parsed = parseCsv('a;b\n1;2\n3;4');
+    expect(parsed.ok).toBe(true);
+    expect(parsed.rows.length).toBe(2);
+    expect(parsed.rows[0].a).toBe('1');
   });
 
   it('parses pipe-delimited file with auto-detection', () => {
-    const rows = parseCsv('a|b\n1|2\n3|4');
-    expect(rows.length).toBe(2);
-    expect(rows[0].a).toBe('1');
+    const parsed = parseCsv('a|b\n1|2\n3|4');
+    expect(parsed.ok).toBe(true);
+    expect(parsed.rows.length).toBe(2);
+    expect(parsed.rows[0].a).toBe('1');
   });
 });

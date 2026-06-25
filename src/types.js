@@ -344,10 +344,13 @@
  * Discriminated union covering every message the Worker can post back.
  * Discriminate via `type` (`'progress'` | `'done'` | `'error'`).
  *
+ * The `'error'` arm carries a stable `reason` code (from the parser) and/or a `message` (from the
+ * onmessage catch-all for unexpected throws); the host prefers `reason`.
+ *
  * @typedef {(
  *   { id: number, type: 'progress', stage: string, percent: number }
  *   | { id: number, type: 'done', result: IngestWorkerDoneResult }
- *   | { id: number, type: 'error', message: string }
+ *   | { id: number, type: 'error', reason?: string, message?: string }
  * )} IngestWorkerResponse
  */
 
@@ -442,9 +445,15 @@
  */
 
 /**
- * @typedef {Object} JoinResult
- * @property {Array<Object<string, *>>} rows - Merged rows. Unmatched cells (in left/right/full joins) are `null`.
- * @property {string[]} outputColumns - Output column names in left-then-right order, with conflicts renamed (e.g. `'a.salary'`, `'b.salary'`, plus `_2`, `_3` suffixes for further collisions).
+ * Result of `joinDatasets`. On success carries the merged `rows` (unmatched cells in
+ * left/right/full joins are `null`) and `outputColumns` (left-then-right order, with conflicts
+ * renamed `'a.salary'`, `'b.salary'`, plus `_2`, `_3` suffixes for further collisions). On failure
+ * carries a stable `reason`.
+ *
+ * @typedef {(
+ *   { ok: true, rows: Array<Object<string, *>>, outputColumns: string[] }
+ *   | { ok: false, reason: string }
+ * )} JoinResult
  */
 
 // ─── Stats (dataService.calculate*) ─────────────────────────────────────
