@@ -1,0 +1,103 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`networkGraph structural equivalence (pure-move guard) > is structurally stable: default (no weight/group) 1`] = `
+{
+  "result": {
+    "linksCount": 4,
+    "nodesCount": 3,
+    "ok": true,
+  },
+  "structure": {
+    "linkCount": 4,
+    "linkStrokes": [
+      "url(#network-link-gradient-0-f4bipx)",
+      "url(#network-link-gradient-1-f4bipx)",
+      "url(#network-link-gradient-2-f4bipx)",
+      "url(#network-link-gradient-3-f4bipx)",
+    ],
+    "nodeCount": 3,
+    "nodes": [
+      {
+        "fill": "#e3743d",
+        "id": "A",
+      },
+      {
+        "fill": "#A78483",
+        "id": "B",
+      },
+      {
+        "fill": "#6b94c9",
+        "id": "C",
+      },
+    ],
+  },
+}
+`;
+
+exports[`networkGraph structural equivalence (pure-move guard) > is structurally stable: uniform edge color 1`] = `
+{
+  "result": {
+    "linksCount": 4,
+    "nodesCount": 3,
+    "ok": true,
+  },
+  "structure": {
+    "linkCount": 4,
+    "linkStrokes": [
+      "#7d7d7d",
+      "#7d7d7d",
+      "#7d7d7d",
+      "#7d7d7d",
+    ],
+    "nodeCount": 3,
+    "nodes": [
+      {
+        "fill": "#e3743d",
+        "id": "A",
+      },
+      {
+        "fill": "#A78483",
+        "id": "B",
+      },
+      {
+        "fill": "#6b94c9",
+        "id": "C",
+      },
+    ],
+  },
+}
+`;
+
+exports[`networkGraph structural equivalence (pure-move guard) > is structurally stable: with weightColumn + groupColumn 1`] = `
+{
+  "result": {
+    "linksCount": 4,
+    "nodesCount": 3,
+    "ok": true,
+  },
+  "structure": {
+    "linkCount": 4,
+    "linkStrokes": [
+      "url(#network-link-gradient-0-f4bipx)",
+      "url(#network-link-gradient-1-f4bipx)",
+      "url(#network-link-gradient-2-f4bipx)",
+      "url(#network-link-gradient-3-f4bipx)",
+    ],
+    "nodeCount": 3,
+    "nodes": [
+      {
+        "fill": "#e3743d",
+        "id": "A",
+      },
+      {
+        "fill": "#A78483",
+        "id": "B",
+      },
+      {
+        "fill": "#6b94c9",
+        "id": "C",
+      },
+    ],
+  },
+}
+`;
