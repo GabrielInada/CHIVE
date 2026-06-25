@@ -1,0 +1,286 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`treemapControls section structure > matches the section/control-order and disabled-state snapshot across measure and color modes 1`] = `
+{
+  "count-scheme": [
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-category",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-measure",
+        },
+        {
+          "disabled": true,
+          "id": "viz-select-treemap-value-column",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-topn",
+        },
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-input-treemap-title",
+        },
+        {
+          "disabled": false,
+          "id": "viz-slider-treemap-padding",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-treemap-labels",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-treemap-values",
+        },
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-color-mode",
+        },
+        {
+          "disabled": true,
+          "id": "viz-input-treemap-color",
+        },
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-treemap-color-preset",
+        },
+      ],
+      "expanded": "false",
+      "section": "advanced",
+    },
+  ],
+  "count-uniform": [
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-category",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-measure",
+        },
+        {
+          "disabled": true,
+          "id": "viz-select-treemap-value-column",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-topn",
+        },
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-input-treemap-title",
+        },
+        {
+          "disabled": false,
+          "id": "viz-slider-treemap-padding",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-treemap-labels",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-treemap-values",
+        },
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-color-mode",
+        },
+        {
+          "disabled": false,
+          "id": "viz-input-treemap-color",
+        },
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-treemap-color-preset",
+        },
+      ],
+      "expanded": "false",
+      "section": "advanced",
+    },
+  ],
+  "sum-scheme": [
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-category",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-measure",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-value-column",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-topn",
+        },
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-input-treemap-title",
+        },
+        {
+          "disabled": false,
+          "id": "viz-slider-treemap-padding",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-treemap-labels",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-treemap-values",
+        },
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-color-mode",
+        },
+        {
+          "disabled": true,
+          "id": "viz-input-treemap-color",
+        },
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-treemap-color-preset",
+        },
+      ],
+      "expanded": "false",
+      "section": "advanced",
+    },
+  ],
+  "sum-uniform": [
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-category",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-measure",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-value-column",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-topn",
+        },
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-input-treemap-title",
+        },
+        {
+          "disabled": false,
+          "id": "viz-slider-treemap-padding",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-treemap-labels",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-treemap-values",
+        },
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-treemap-color-mode",
+        },
+        {
+          "disabled": false,
+          "id": "viz-input-treemap-color",
+        },
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-treemap-color-preset",
+        },
+      ],
+      "expanded": "false",
+      "section": "advanced",
+    },
+  ],
+}
+`;

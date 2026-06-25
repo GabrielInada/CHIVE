@@ -1,0 +1,150 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`lineControls section structure > matches the section/control-order and disabled-state snapshot across missing modes 1`] = `
+{
+  "connect": [
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-line-x",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-line-y",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-line-aggregate",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-line-sort-x",
+        },
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-line-curve",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-line-missing",
+        },
+        {
+          "disabled": false,
+          "id": "viz-slider-line-stroke-width",
+        },
+        {
+          "disabled": false,
+          "id": "viz-input-line-color",
+        },
+        {
+          "disabled": true,
+          "id": "viz-input-line-ghost-color",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-line-show-points",
+        },
+      ],
+      "expanded": "true",
+      "section": "styling",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-toggle-line-x-label",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-line-y-label",
+        },
+        {
+          "disabled": false,
+          "id": "viz-input-line-title",
+        },
+      ],
+      "expanded": "false",
+      "section": "display",
+    },
+  ],
+  "interpolate": [
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-line-x",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-line-y",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-line-aggregate",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-line-sort-x",
+        },
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-select-line-curve",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-line-missing",
+        },
+        {
+          "disabled": false,
+          "id": "viz-slider-line-stroke-width",
+        },
+        {
+          "disabled": false,
+          "id": "viz-input-line-color",
+        },
+        {
+          "disabled": false,
+          "id": "viz-input-line-ghost-color",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-line-show-points",
+        },
+      ],
+      "expanded": "true",
+      "section": "styling",
+    },
+    {
+      "controlKeys": [
+        {
+          "disabled": false,
+          "id": "viz-toggle-line-x-label",
+        },
+        {
+          "disabled": false,
+          "id": "viz-toggle-line-y-label",
+        },
+        {
+          "disabled": false,
+          "id": "viz-input-line-title",
+        },
+      ],
+      "expanded": "false",
+      "section": "display",
+    },
+  ],
+}
+`;
