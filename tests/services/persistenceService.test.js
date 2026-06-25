@@ -125,6 +125,24 @@ function writeLegacyState({ datasets, panelRecord }) {
 	});
 }
 
+function setDocumentVisibilityState(value) {
+	const original = Object.getOwnPropertyDescriptor(document, 'visibilityState');
+	Object.defineProperty(document, 'visibilityState', { configurable: true, value });
+	return () => {
+		if (original) {
+			Object.defineProperty(document, 'visibilityState', original);
+		} else {
+			delete document.visibilityState;
+		}
+	};
+}
+
+async function flushMicrotasks(count = 3) {
+	for (let i = 0; i < count; i += 1) {
+		await Promise.resolve();
+	}
+}
+
 describe('persistenceService', () => {
 	let activeController = null;
 
@@ -741,15 +759,91 @@ describe('persistenceService', () => {
 			expect(persist).toHaveBeenCalledTimes(1);
 
 			emitStateChange(STATE_EVENTS.CHART_ADDED, { chartId: 1 });
-			Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
-			document.dispatchEvent(new Event('visibilitychange'));
-			await Promise.resolve();
+			let restoreVisibilityState = setDocumentVisibilityState('visible');
+			try {
+				document.dispatchEvent(new Event('visibilitychange'));
+				await Promise.resolve();
+			} finally {
+				restoreVisibilityState();
+			}
 			expect(persist).toHaveBeenCalledTimes(1);
 
-			Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
-			document.dispatchEvent(new Event('visibilitychange'));
-			await Promise.resolve();
+			restoreVisibilityState = setDocumentVisibilityState('hidden');
+			try {
+				document.dispatchEvent(new Event('visibilitychange'));
+				await Promise.resolve();
+			} finally {
+				restoreVisibilityState();
+			}
 			expect(persist).toHaveBeenCalledTimes(2);
+		});
+
+		it('flushes dirty state on freeze lifecycle events', async () => {
+			vi.useFakeTimers();
+			const persist = vi.fn(async () => {});
+			configurePersistenceBackend({
+				available: () => true,
+				hydrate: async () => null,
+				persist,
+				clear: vi.fn(),
+			});
+			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+			document.dispatchEvent(new Event('freeze'));
+			await Promise.resolve();
+
+			expect(persist).toHaveBeenCalledTimes(1);
+		});
+
+		it('coalesces lifecycle flush triggers while a save is in flight', async () => {
+			vi.useFakeTimers();
+			let resolvePersist;
+			const persist = vi.fn(() => new Promise(resolve => {
+				resolvePersist = resolve;
+			}));
+			configurePersistenceBackend({
+				available: () => true,
+				hydrate: async () => null,
+				persist,
+				clear: vi.fn(),
+			});
+			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+			const restoreVisibilityState = setDocumentVisibilityState('hidden');
+			try {
+				document.dispatchEvent(new Event('visibilitychange'));
+				window.dispatchEvent(new Event('pagehide'));
+				document.dispatchEvent(new Event('freeze'));
+			} finally {
+				restoreVisibilityState();
+			}
+
+			expect(persist).toHaveBeenCalledTimes(1);
+
+			resolvePersist();
+			await flushMicrotasks();
+			expect(activeController.getStatus().dirty).toBe(false);
+		});
+
+		it('dispose removes the freeze listener before dirty state can flush', async () => {
+			vi.useFakeTimers();
+			const persist = vi.fn(async () => {});
+			configurePersistenceBackend({
+				available: () => true,
+				hydrate: async () => null,
+				persist,
+				clear: vi.fn(),
+			});
+			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+			activeController.dispose();
+			document.dispatchEvent(new Event('freeze'));
+			await vi.advanceTimersByTimeAsync(2000);
+
+			expect(persist).not.toHaveBeenCalled();
 		});
 
 		it('coalesces a burst of edits into a single debounced save', async () => {

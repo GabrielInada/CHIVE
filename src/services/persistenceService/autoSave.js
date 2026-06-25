@@ -122,9 +122,15 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 		scheduleSave();
 	});
 
-	// Opportunistic close-net: flush a pending debounce when the tab hides or
-	// closes. Best-effort only (MDN: unload-tied IndexedDB writes are not
-	// guaranteed to complete), so there is no native unsaved-changes prompt.
+	// Best-effort close-net: start a pending save as early as the browser gives
+	// us a reliable lifecycle signal. `visibilitychange` -> hidden is the
+	// primary path while the page is still alive; `pagehide` and the Page
+	// Lifecycle `freeze` event, where supported, are backstops. There is no
+	// synchronous unload fallback for the multi-MB SQLite byte image: IndexedDB
+	// is async, localStorage is too small/string-only, OPFS sync handles are
+	// worker-only and unused here, sendBeacon would require a backend, and this
+	// write path can cross the persistence worker boundary. `saveInFlight`
+	// coalesces duplicate lifecycle triggers, and a clean state is a no-op.
 	function flushPendingSave() {
 		scheduleSave.cancel();
 		if (dirty) void saveNow();
@@ -136,6 +142,7 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 
 	if (typeof document !== 'undefined') {
 		document.addEventListener('visibilitychange', handleVisibilityChange);
+		document.addEventListener('freeze', flushPendingSave);
 	}
 	if (typeof window !== 'undefined') {
 		window.addEventListener('pagehide', flushPendingSave);
@@ -152,6 +159,7 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 			}
 			if (typeof document !== 'undefined') {
 				document.removeEventListener('visibilitychange', handleVisibilityChange);
+				document.removeEventListener('freeze', flushPendingSave);
 			}
 		},
 		getStatus,
