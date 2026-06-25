@@ -188,7 +188,7 @@ to schedule the debounced auto-save. It ignores `STATE_HYDRATED`, UI preference
 events (`SIDEBAR_MODE_CHANGED`, `PREVIEW_ROWS_CHANGED`), and `CONFIG_UPDATED`
 payloads that are exactly `{ activeTab }`. UI preferences are written
 immediately to `localStorage`; project content is written by the debounced
-`saveNow()` or the best-effort page-hide close net.
+`saveNow()` or the best-effort page-lifecycle close net.
 
 There are also non-bus render triggers: file-manager callbacks after dataset
 add/remove/select, locale-change events, initial boot render, and live-preview
@@ -241,6 +241,13 @@ On success it clears dirty only if no newer revision was emitted during the save
 if a mid-save edit occurred, it starts one follow-up save after the first promise
 settles. Failures keep dirty set and surface through the injected error callback
 (an error toast); there is no native unsaved-changes prompt.
+
+The lifecycle close net is explicitly best-effort. `visibilitychange` to hidden
+is the primary trigger while the page is still alive; `pagehide` and the Page
+Lifecycle `freeze` event, where supported, are backstops. Browser unload cannot
+guarantee a synchronous multi-MB SQLite byte-image write to IndexedDB, especially
+through the worker route, so interrupted closes can still lose changes made
+since the last successful save.
 
 Project transfer uses the same backend seam. `exportProject()` sends a
 live-reference snapshot to `workerBackend.exportBytes()`, which serializes a
