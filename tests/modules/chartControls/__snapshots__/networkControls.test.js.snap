@@ -1,0 +1,102 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`networkControls section structure > matches the section/control-order and disabled-state snapshot 1`] = `
+[
+  {
+    "controlKeys": [
+      {
+        "disabled": false,
+        "id": "viz-select-network-source",
+      },
+      {
+        "disabled": false,
+        "id": "viz-select-network-target",
+      },
+      {
+        "disabled": false,
+        "id": "viz-select-network-weight",
+      },
+      {
+        "disabled": false,
+        "id": "viz-select-network-group",
+      },
+    ],
+    "expanded": "true",
+    "section": "data",
+  },
+  {
+    "controlKeys": [
+      {
+        "disabled": false,
+        "id": "viz-slider-network-link-distance",
+      },
+      {
+        "disabled": false,
+        "id": "viz-slider-network-zoom",
+      },
+      {
+        "disabled": false,
+        "id": "viz-toggle-network-show-legend",
+      },
+      {
+        "disabled": false,
+        "id": "viz-input-network-title",
+      },
+      {
+        "disabled": false,
+        "id": "viz-toggle-network-node-labels",
+      },
+      {
+        "disabled": false,
+        "id": "viz-btn-network-reset-zoom",
+      },
+    ],
+    "expanded": "true",
+    "section": "display",
+  },
+  {
+    "controlKeys": [
+      {
+        "disabled": false,
+        "id": "viz-slider-network-node-radius",
+      },
+      {
+        "disabled": false,
+        "id": "viz-slider-network-link-opacity",
+      },
+      {
+        "disabled": false,
+        "id": "viz-input-network-source-color",
+      },
+      {
+        "disabled": false,
+        "id": "viz-input-network-target-color",
+      },
+      {
+        "disabled": false,
+        "id": "viz-select-network-edge-color-mode",
+      },
+      {
+        "disabled": false,
+        "id": "viz-network-color-preset",
+      },
+    ],
+    "expanded": "false",
+    "section": "styling",
+  },
+  {
+    "controlKeys": [
+      {
+        "disabled": false,
+        "id": "viz-slider-network-charge",
+      },
+      {
+        "disabled": false,
+        "id": "viz-slider-network-alpha-decay",
+      },
+    ],
+    "expanded": "false",
+    "section": "advanced",
+  },
+]
+`;

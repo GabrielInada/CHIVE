@@ -60,6 +60,57 @@ function appendControls(controls) {
 	controls.forEach(control => document.body.appendChild(control));
 }
 
+function extractStructure(controls) {
+	return controls.map(section => {
+		const content = section.querySelector('.chart-section-content');
+		const controlKeys = Array.from(content.children).map(control => {
+			const idElement = control.matches('[id]') ? control : control.querySelector('[id]');
+			const presetElement = control.querySelector('[data-color-preset-control]');
+			const stateElement = idElement ?? presetElement ?? control.querySelector('button,input,select');
+			const entry = {
+				id: idElement?.id ?? presetElement?.dataset.colorPresetControl,
+				disabled: stateElement?.disabled === true,
+			};
+			expect(entry.id).toBeDefined();
+			return entry;
+		});
+
+		return {
+			section: section.dataset.section,
+			expanded: section.querySelector('.chart-section-header').getAttribute('aria-expanded'),
+			controlKeys,
+		};
+	});
+}
+
+describe('networkControls public surface', () => {
+	it('exposes exactly the three documented network-control exports (no internal leaks)', async () => {
+		const mod = await import('../../../src/modules/chartControls/networkControls.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'computeDefaults',
+			'createNetworkGraphControls',
+			'setupNetworkGraphControlListeners',
+		]);
+	});
+});
+
+describe('networkControls section structure', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('matches the section/control-order and disabled-state snapshot', () => {
+		// The four sections (Data/Display/Styling/Advanced) are static and the
+		// only disabled dimension is the global enabled flag, so one enabled
+		// dataset pins the section order, the reset-zoom button slot, and the
+		// color-preset slot.
+		const dataset = createDataset();
+		const controls = createNetworkGraphControls(dataset, ['from', 'to', 'weight'], ['weight'], ['from', 'to']);
+		expect(extractStructure(controls)).toMatchSnapshot();
+	});
+});
+
 describe('networkControls UI structure', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -125,6 +176,27 @@ describe('networkControls listeners', () => {
 
 		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			network: expect.objectContaining({ target: 'weight' }),
+		});
+		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+	});
+
+	it('resolves the callback from the 3-arg overload (callback in slot 3)', () => {
+		// The 4-arg form (dataset, allOptions, numericOptions, callback) is
+		// covered by the source/target test above; this pins the legacy
+		// callback-in-slot-3 overload so the split keeps it working.
+		const dataset = createDataset();
+		const controls = createNetworkGraphControls(dataset, ['from', 'to'], [], []);
+		appendControls(controls);
+
+		const onConfigChanged = vi.fn();
+		setupNetworkGraphControlListeners(dataset, ['from', 'to'], onConfigChanged);
+
+		const source = document.getElementById('viz-select-network-source');
+		source.value = 'to';
+		source.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
+			network: expect.objectContaining({ source: 'to' }),
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
 	});
