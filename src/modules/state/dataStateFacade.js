@@ -11,7 +11,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  *
- * @see ARCHITECTURE.md
+ * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
 

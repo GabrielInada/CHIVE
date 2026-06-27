@@ -12,12 +12,12 @@ message instead of a drawing. This document lists, per chart type, the required 
 optional settings, how aggregation works, and the exact empty-state messages you may see.
 
 For the bundled sample datasets referenced below, see the
-[Preset dataset contributor guide](PRESET_DATASETS.md). For how chart data is snapshotted
-into the dashboard panel, see the [Architecture reference](ARCHITECTURE_REFERENCE.md).
+[Preset dataset contributor guide](../development/preset-datasets.md). For how chart data is snapshotted
+into the dashboard panel, see the [Architecture reference](../development/architecture-reference.md).
 
 For an in-depth, code-level walkthrough of a single chart (the underlying math or algorithm,
-the renderer internals, the controls, and the tests), see the per-chart **deep dives** in
-[charts/](charts/README.md).
+the renderer internals, the controls, and the tests), see the per-chart
+[chart deep dives](../development/charts/README.md).
 
 ## Data model overview
 
@@ -52,7 +52,7 @@ Required columns and behavior below are taken from the renderers in
 ### Bar chart
 
 - **Best for:** comparing a measure across categories.
-- **Deep dive:** [charts/bar-chart.md](charts/bar-chart.md) for the renderer internals, math, and tests.
+- **Deep dive:** [bar.md](../development/charts/bar.md) for the renderer internals, math, and tests.
 - **Required data:** a category column. In `count` mode (default) that is all you need.
 - **Optional settings:** sort order, top N, color mode (uniform / gradient), X and Y axis
   label toggles.
@@ -66,7 +66,7 @@ Required columns and behavior below are taken from the renderers in
 ### Scatter plot
 
 - **Best for:** relationships, correlation, and cluster spotting between two columns.
-- **Deep dive:** [charts/scatter-plot.md](charts/scatter-plot.md) for the renderer internals, math, and tests.
+- **Deep dive:** [scatter.md](../development/charts/scatter.md) for the renderer internals, math, and tests.
 - **Required data:** an X column and a Y column. Each may be numeric or categorical.
 - **Optional settings:** linear/log scale per axis, point radius and opacity, a size field,
   a color field with uniform / numeric / category color modes, categorical-pair mode
@@ -82,7 +82,7 @@ Required columns and behavior below are taken from the renderers in
 ### Pie / donut chart
 
 - **Best for:** part-to-whole summaries across a handful of categories.
-- **Deep dive:** [charts/pie-chart.md](charts/pie-chart.md) for the renderer internals, geometry, and tests.
+- **Deep dive:** [pie.md](../development/charts/pie.md) for the renderer internals, geometry, and tests.
 - **Required data:** a categorical column. `count` mode (default) needs nothing more.
 - **Optional settings:** inner radius (pie vs donut), outer radius, pad angle, top N with an
   "other" or truncate mode, category/value labels, legend, per-slice color overrides.
@@ -94,7 +94,7 @@ Required columns and behavior below are taken from the renderers in
 ### Bubble chart
 
 - **Best for:** showing group size and, optionally, nested hierarchy.
-- **Deep dive:** [charts/bubble-chart.md](charts/bubble-chart.md) for circle packing, nesting, and tests.
+- **Deep dive:** [bubble.md](../development/charts/bubble.md) for circle packing, nesting, and tests.
 - **Required data:** a category column. Grouped nesting additionally requires at least one
   nesting column.
 - **Optional settings:** measure mode, value column, top N, padding, label mode
@@ -111,7 +111,7 @@ Required columns and behavior below are taken from the renderers in
 ### Network graph
 
 - **Best for:** relationships between entities as nodes and edges.
-- **Deep dive:** [charts/network-graph.md](charts/network-graph.md) for the force simulation and tests.
+- **Deep dive:** [network.md](../development/charts/network.md) for the force simulation and tests.
 - **Required data:** a source column and a target column. Each row is one edge between two
   node identifiers.
 - **Optional settings:** a numeric weight column (defaults to 1 when absent), a group column
@@ -127,7 +127,7 @@ Required columns and behavior below are taken from the renderers in
 ### Treemap chart
 
 - **Best for:** hierarchical composition where area encodes magnitude.
-- **Deep dive:** [charts/treemap-chart.md](charts/treemap-chart.md) for squarified tiling and tests.
+- **Deep dive:** [treemap.md](../development/charts/treemap.md) for squarified tiling and tests.
 - **Required data:** a category column. `count` mode (default) needs nothing more.
 - **Optional settings:** top N, padding, label and value toggles, color mode
   (scheme / uniform), color scheme.
@@ -139,7 +139,7 @@ Required columns and behavior below are taken from the renderers in
 ### Line chart
 
 - **Best for:** time series and ordered trends.
-- **Deep dive:** [charts/line-chart.md](charts/line-chart.md) for curves, missing-value modes, and tests.
+- **Deep dive:** [line.md](../development/charts/line.md) for curves, missing-value modes, and tests.
 - **Required data:** an X column (date, numeric, or categorical) and a numeric Y column.
 - **Optional settings:** X axis type, curve (linear / monotone / step variants / basis /
   cardinal), missing-value mode (connect / gap / interpolate), aggregate mode, sort X, point
@@ -154,7 +154,7 @@ Required columns and behavior below are taken from the renderers in
 ### TIN chart
 
 - **Best for:** terrain and continuous-surface interpolation from scattered points.
-- **Deep dive:** [charts/tin-chart.md](charts/tin-chart.md) for triangulation, interpolation, and tests.
+- **Deep dive:** [tin.md](../development/charts/tin.md) for triangulation, interpolation, and tests.
 - **Required data:** numeric X, Y, and Z columns. X and Y are coordinates; Z is the surface
   value.
 - **Optional settings:** fill mode (smooth / flat), subdivision depth, color ramp presets
@@ -252,4 +252,4 @@ When you add or change a chart type, update this file: its required and optional
 its aggregation modes, and any new empty-state message. The data contracts here are derived
 from `src/modules/visualizations/`, `src/modules/chartControls/`, and the `chive-chart-empty-*`
 keys in `src/i18n/en.json`; keep those and this document in agreement. For the full per-chart
-mechanics, update the matching deep dive in [charts/](charts/README.md) in the same pass.
+mechanics, update the matching [chart deep dive](../development/charts/README.md) in the same pass.

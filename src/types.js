@@ -9,7 +9,7 @@
  * them. Always import directly from this file.
  *
  * @see CONTRIBUTING.md  "Documentation Conventions" section
- * @see ARCHITECTURE.md
+ * @see docs/development/architecture.md
  */
 
 // ─── Primitives & unions ────────────────────────────────────────────────

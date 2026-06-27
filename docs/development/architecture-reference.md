@@ -1,7 +1,7 @@
 # CHIVE Architecture Reference
 
 This is the implementation reference for the architecture described in
-[ARCHITECTURE.md](../ARCHITECTURE.md). Use the overview first for the mental
+[Architecture overview](architecture.md). Use the overview first for the mental
 model; use this file when you need exact state, facade, event, subscriber, or
 panel lifecycle details.
 
@@ -38,7 +38,7 @@ service/facade boundaries.
 ## State Schema
 
 The private state object is declared in
-[`src/modules/state/appState.js`](../src/modules/state/appState.js):
+[`src/modules/state/appState.js`](../../src/modules/state/appState.js):
 
 ```js
 const appState = {
@@ -92,7 +92,7 @@ must not be mutated by callers.
 | `validatePanelSlots()` | panel | `panel.slots`, `block.slots` | No | Drops slot assignments pointing at missing chart snapshots. |
 
 `onStateChange` and `STATE_EVENTS` are re-exported from
-[`stateEvents.js`](../src/modules/state/stateEvents.js) through
+[`stateEvents.js`](../../src/modules/state/stateEvents.js) through
 `appState.js`.
 
 ### Data Facade Methods
@@ -162,11 +162,11 @@ subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
 
 ## Subscriber Map
 
-[`src/main.js`](../src/main.js) subscribes to `ACTIVE_DATASET`,
+[`src/main.js`](../../src/main.js) subscribes to `ACTIVE_DATASET`,
 `COLUMNS_UPDATED`, `CONFIG_UPDATED`, and `STATE_HYDRATED`. Each handler calls
 `refreshView()`, the broadest UI render path.
 
-[`src/modules/panelManager.js`](../src/modules/panelManager.js) subscribes to:
+[`src/modules/panelManager.js`](../../src/modules/panelManager.js) subscribes to:
 
 - `CHART_ADDED`
 - `CHART_REMOVED`
@@ -182,7 +182,7 @@ subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
 Chart add/remove/slot events re-render the panel sidebar and canvas. Layout
 events re-render the canvas and refresh the layout selector.
 
-[`src/services/persistenceService.js`](../src/services/persistenceService.js)
+[`src/services/persistenceService.js`](../../src/services/persistenceService.js)
 subscribes to `WILDCARD` after hydration and tracks semantic project dirtiness
 to schedule the debounced auto-save. It ignores `STATE_HYDRATED`, UI preference
 events (`SIDEBAR_MODE_CHANGED`, `PREVIEW_ROWS_CHANGED`), and `CONFIG_UPDATED`
@@ -197,14 +197,14 @@ rendering while controls are being adjusted.
 ## Persistence
 
 Project persistence is implemented in
-[`src/services/persistenceService.js`](../src/services/persistenceService.js)
+[`src/services/persistenceService.js`](../../src/services/persistenceService.js)
 with engine/storage details behind `src/services/persistence/`.
 
 All SQLite work runs **off the main thread** in a long-lived Web Worker. The
 default backend is `workerBackend`
-([`src/services/persistence/workerBackend.js`](../src/services/persistence/workerBackend.js)),
+([`src/services/persistence/workerBackend.js`](../../src/services/persistence/workerBackend.js)),
 which delegates `hydrate`/`persist`/`clear` to
-[`src/workers/persistWorker.js`](../src/workers/persistWorker.js); the worker
+[`src/workers/persistWorker.js`](../../src/workers/persistWorker.js); the worker
 constructs a `createBlobBackend()` so fingerprinting, schema, the whole-DB
 export, and the IndexedDB write never block the UI thread. `workerBackend` does
 not statically import sqlite, so SQLite-WASM stays out of the main bundle (it is

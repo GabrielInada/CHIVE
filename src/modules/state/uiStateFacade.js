@@ -7,7 +7,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  *
  * @typedef {import('../../types.js').SidebarMode} SidebarMode
  *
- * @see ARCHITECTURE.md
+ * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
 

@@ -34,4 +34,4 @@ end-user guide.
 | I18n | `src/config/locale.js`, `src/services/i18nService.js`, `tests/i18n.keyParity.test.js` | I18N guide matches `pt-BR` default, `en` support, `chive-locale`, and parity requirements. |
 | Architecture/state events | `src/modules/state/`, `src/main.js`, `src/modules/panelManager.js` | Architecture reference updated to include `STATE_HYDRATED` as a `main.js` subscriber. |
 | Stylesheet breakpoints | CSS media queries under `src/styles/` | Stylesheet organization line anchors updated to matching breakpoint locations. |
-| Issue templates | `.github/ISSUE_TEMPLATE/` | Documentation template now includes `docs/USER_GUIDE.md`. |
+| Issue templates | `.github/ISSUE_TEMPLATE/` | Documentation template lists the reader-oriented documentation areas. |

@@ -3,15 +3,15 @@
 This document explains how CHIVE's bar chart works, from the config a dataset stores,
 through the sidebar controls, into the renderer, and out to the panel/export paths. It is
 meant to be read top to bottom the first time and used as a reference afterwards. File
-links are relative to this document (which lives in `docs/charts/`).
+links are relative to this document (which lives in `docs/development/charts/`).
 
 Section 2 covers the data-transformation and encoding ideas the chart rests on (what a bar
 chart *is*, independent of this codebase); everything from section 3 onward is how CHIVE
 implements it.
 
 For the high-level "which columns does it need" summary, see the bar row in
-[CHART_REFERENCE.md](../CHART_REFERENCE.md). For the shared state/panel/event architecture,
-see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md).
+[Chart and data reference](../../user/chart-reference.md). For the shared state/panel/event architecture,
+see [Architecture reference](../architecture-reference.md).
 
 ---
 
@@ -29,13 +29,13 @@ click-to-filter interactions shared with the other categorical charts.
 
 Key files:
 
-- Renderer: [barChart.js](../../src/modules/visualizations/barChart.js)
-- Sidebar controls: [barControls.js](../../src/modules/chartControls/barControls.js)
-- Config constants: [charts.js](../../src/config/charts.js) (`BAR_CHART`)
-- Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js) (the `bar` block)
-- Section adapter (results view): [barChartSection.js](../../src/components/results/chartRenders/barChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js)
-- Shared tooltip + filter actions: [tooltip.js](../../src/modules/visualizations/tooltip.js)
+- Renderer: [barChart.js](../../../src/modules/visualizations/barChart.js)
+- Sidebar controls: [barControls.js](../../../src/modules/chartControls/barControls.js)
+- Config constants: [charts.js](../../../src/config/charts.js) (`BAR_CHART`)
+- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bar` block)
+- Section adapter (results view): [barChartSection.js](../../../src/components/results/chartRenders/barChartSection.js)
+- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Shared tooltip + filter actions: [tooltip.js](../../../src/modules/visualizations/tooltip.js)
 
 ---
 
@@ -141,8 +141,8 @@ The renderer is **stateless**: every call wipes the container
 (`container.replaceChildren()`) and rebuilds the whole SVG from scratch. Re-rendering is the
 only update mechanism. The rows handed in are already global-filtered; the renderer does its
 own grouping on top of them. (Panel snapshots are frozen `structuredClone`s captured when
-the chart was added; see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md) and the
-TIN doc's [section 6.2](tin-chart.md) for the snapshot lifecycle.)
+the chart was added; see [Architecture reference](../architecture-reference.md) and the
+TIN doc's [section 6.2](tin.md) for the snapshot lifecycle.)
 
 ---
 
@@ -152,7 +152,7 @@ TIN doc's [section 6.2](tin-chart.md) for the snapshot lifecycle.)
 
 Each dataset owns a `chartConfig` object, and `chartConfig.bar` is the bar chart's slice of
 it. The canonical fresh shape is built by `createDefaultChartConfig()` in
-[chartDefaults.js](../../src/config/chartDefaults.js); a saved or partial config is
+[chartDefaults.js](../../../src/config/chartDefaults.js); a saved or partial config is
 deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in the same file
 (user-set fields win, missing fields fall back to default).
 
@@ -179,7 +179,7 @@ deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in the same 
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../src/config/charts.js) holds the bounds and shared values:
+[charts.js](../../../src/config/charts.js) holds the bounds and shared values:
 
 - `CHART_COLORS.bar` = `#d4622a` (the default uniform/min-gradient color).
 - `CHART_DIMENSIONS.bar` = `{ width: 700, height: 320, margins: { top:12, right:12, bottom:90, left:52 } }`. The large bottom margin (90) leaves room for rotated category labels.
@@ -190,10 +190,10 @@ deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in the same 
 
 ## 5. The control sidebar
 
-[barControls.js](../../src/modules/chartControls/barControls.js) builds the right-sidebar
+[barControls.js](../../../src/modules/chartControls/barControls.js) builds the right-sidebar
 control group and wires every input to a config write. It exposes three functions,
 registered in the chart-controls manager registry
-([chartControlsManager.js](../../src/modules/chartControls/chartControlsManager.js)):
+([chartControlsManager.js](../../../src/modules/chartControls/chartControlsManager.js)):
 
 - `createBarChartControls(dataset, categoryOptions, numericOptions, allColumns)` builds the DOM.
 - `setupBarChartControlListeners(dataset, baseBar, numericOptions, …, onConfigChanged)` wires events.
@@ -226,7 +226,7 @@ nothing:
 ### 5.3 Listener wiring
 
 `setupBarChartControlListeners` uses the shared helpers in
-[controlListenerHelpers.js](../../src/modules/chartControls/controlListenerHelpers.js)
+[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js)
 (`setupSelectListeners`, `setupCheckboxListeners`, `setupTextInputListener`,
 `setupSliderListener`, `setupColorInputListener`, `setupColorPresetListeners`). Two controls
 have custom listeners instead of the generic select helper:
@@ -247,9 +247,9 @@ renderer never reads the DOM controls; it only reads config the listeners have w
 
 ### 6.1 Results view
 
-[chartsView.js](../../src/components/results/chartsView.js) decides which chart blocks to
+[chartsView.js](../../../src/components/results/chartsView.js) decides which chart blocks to
 show and calls `renderBarChartSection({ config, rows, filterCallbacks })`
-([barChartSection.js](../../src/components/results/chartRenders/barChartSection.js)). That
+([barChartSection.js](../../../src/components/results/chartRenders/barChartSection.js)). That
 adapter:
 
 1. Resolves the block (`CHART_BLOCKS.bar`) and container (`CHART_CONTAINERS.bar`) elements.
@@ -266,7 +266,7 @@ adapter:
 ### 6.2 Panel view
 
 `renderChartFromSpec.renderBar()`
-([renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js)) maps
+([renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)) maps
 `spec.config` into the same options bag and calls the identical `renderBarChart` against
 `spec.dataSnapshot`. The one difference: panel charts pass a frozen empty
 `filterCallbacks`, so panel tooltips do **not** offer click-to-filter actions (those would
@@ -330,7 +330,7 @@ from `getBarColor`:
 ### 7.6 Interaction: hover and click-to-filter
 
 This is the shared categorical-tooltip subsystem from
-[tooltip.js](../../src/modules/visualizations/tooltip.js), used by bar, pie, treemap, and
+[tooltip.js](../../../src/modules/visualizations/tooltip.js), used by bar, pie, treemap, and
 bubble:
 
 - **Hover** shows a tooltip with the category, the measure value, and (except in mean mode)
@@ -355,7 +355,7 @@ returns `ok()`.
 
 ## 8. The color system
 
-Three modes, all built on [colorUtils.js](../../src/utils/colorUtils.js):
+Three modes, all built on [colorUtils.js](../../../src/utils/colorUtils.js):
 
 - **uniform**: a single validated hex color.
 - **gradient**: `interpolateColor(gradientMinColor, gradientMaxColor, t)`, a clamped linear
@@ -381,7 +381,7 @@ bounds the rect count regardless of dataset size. The work scales with row count
 aggregation pass (a single linear scan building the `Map`s), not in the DOM. There is no
 subdivision or quantization machinery like the TIN chart needs. The color picker's live
 preview runs through the same throttled path described in the TIN doc's
-[section 10](tin-chart.md), which is more than fast enough here.
+[section 10](tin.md), which is more than fast enough here.
 
 ---
 
@@ -391,7 +391,7 @@ Color and title edits use the shared live-preview path: the color inputs write t
 non-emitting facade and call `triggerLiveRender()` on every `input` event (so a drag tracks
 the picker without rebuilding the sidebar), and commit through the normal emitting updater on
 `change`. The chart-height drag handle shares the same path. See the TIN doc's
-[section 10](tin-chart.md) for the full mechanism; the bar chart plugs into it unchanged.
+[section 10](tin.md) for the full mechanism; the bar chart plugs into it unchanged.
 
 The click-to-filter pinned tooltips (section 7.6) are the bar chart's own interaction layer
 on top of that.
@@ -423,31 +423,31 @@ screen shows are what gets serialized.
 - **Panel snapshots are frozen**: a saved panel bar chart does not track later edits to the
   active dataset's config, and its tooltips carry no filter actions.
 
-The empty-state strings live in [en.json](../../src/i18n/en.json) (keys
+The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
 `chive-chart-empty-bar*`); Portuguese equivalents are in
-[pt-BR.json](../../src/i18n/pt-BR.json).
+[pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ---
 
 ## 13. Tests
 
-- [chartColors.test.js](../../tests/modules/visualizations/chartColors.test.js) exercises
+- [chartColors.test.js](../../../tests/modules/visualizations/chartColors.test.js) exercises
   `renderBarChart`'s color options (uniform vs gradient output).
-- [barChartSection.test.js](../../tests/components/results/chartRenders/barChartSection.test.js)
+- [barChartSection.test.js](../../../tests/components/results/chartRenders/barChartSection.test.js)
   covers the section adapter: enable/disable, empty-state message selection.
-- [barControls.test.js](../../tests/modules/chartControls/barControls.test.js) (and the
-  legacy [tests/modules/barControls.test.js](../../tests/modules/barControls.test.js)) cover
+- [barControls.test.js](../../../tests/modules/chartControls/barControls.test.js) (and the
+  legacy [tests/modules/barControls.test.js](../../../tests/modules/barControls.test.js)) cover
   control building and the measure-mode / value-column listener logic.
-- [renderChartFromSpec.test.js](../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
   covers the panel dispatch path.
-- [chartsView.test.js](../../tests/components/results/chartsView.test.js) covers view-level
+- [chartsView.test.js](../../../tests/components/results/chartsView.test.js) covers view-level
   orchestration of which blocks render.
 
 ---
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../src/config/elementIds.js)): container
+**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
 `chart-bar-container`, block `chart-block-bar`. Control IDs are `viz-…-bar-…`
 (e.g. `viz-select-bar`, `viz-select-bar-measure`, `viz-input-bar-gradient-min`,
 `viz-slider-bar-threshold`).
@@ -464,7 +464,7 @@ The empty-state strings live in [en.json](../../src/i18n/en.json) (keys
     <text> axis titles    (optional)
 ```
 
-**Tuning knobs** ([charts.js](../../src/config/charts.js) `BAR_CHART`): `padding` (band
+**Tuning knobs** ([charts.js](../../../src/config/charts.js) `BAR_CHART`): `padding` (band
 gap), `ticks` (y axis), `defaultSort`, `defaultTopN`, `defaultMeasureMode`.
 
 **Foundations → implementation map:**

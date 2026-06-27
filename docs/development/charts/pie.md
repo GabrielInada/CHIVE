@@ -3,25 +3,25 @@
 This document explains how CHIVE's pie/donut chart works, from the config a dataset stores,
 through the sidebar controls, into the renderer, and out to the panel/export paths. It is
 meant to be read top to bottom the first time and used as a reference afterwards. File
-links are relative to this document (which lives in `docs/charts/`).
+links are relative to this document (which lives in `docs/development/charts/`).
 
 Section 2 covers the geometry and encoding ideas the chart rests on (angle as a share of a
 whole), independent of this codebase; everything from section 3 onward is how CHIVE
 implements it.
 
 For the high-level "which columns does it need" summary, see the pie row in
-[CHART_REFERENCE.md](../CHART_REFERENCE.md). For the shared state/panel/event architecture,
-see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md).
+[Chart and data reference](../../user/chart-reference.md). For the shared state/panel/event architecture,
+see [Architecture reference](../architecture-reference.md).
 
 Key files:
 
-- Renderer: [pieChart.js](../../src/modules/visualizations/pieChart.js)
-- Sidebar controls: [pieControls.js](../../src/modules/chartControls/pieControls.js)
-- Config constants: [charts.js](../../src/config/charts.js) (`PIE_CHART`)
-- Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js) (the `pie` block)
-- Section adapter (results view): [pieChartSection.js](../../src/components/results/chartRenders/pieChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js)
-- Color math: [colorUtils.js](../../src/utils/colorUtils.js) (`buildSliceColor`)
+- Renderer: [pieChart.js](../../../src/modules/visualizations/pieChart.js)
+- Sidebar controls: [pieControls.js](../../../src/modules/chartControls/pieControls.js)
+- Config constants: [charts.js](../../../src/config/charts.js) (`PIE_CHART`)
+- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `pie` block)
+- Section adapter (results view): [pieChartSection.js](../../../src/components/results/chartRenders/pieChartSection.js)
+- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Color math: [colorUtils.js](../../../src/utils/colorUtils.js) (`buildSliceColor`)
 
 ---
 
@@ -47,7 +47,7 @@ tooltips.
 The category column partitions the rows; each group is reduced to a single number by the
 **measure mode**: `count` (rows per category) or `sum` (total of a numeric value column).
 Missing/empty categories collapse to one `N/A` group. This is the same count/sum vocabulary
-the bar chart uses (see the bar doc's [section 2.2](bar-chart.md)); the pie just omits
+the bar chart uses (see the bar doc's [section 2.2](bar.md)); the pie just omits
 `mean`, because a mean has no meaningful "share of total."
 
 ### 2.2 From value to angle
@@ -117,7 +117,7 @@ Two draw paths, both ending at `renderPieChart`.
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG. Rows are
 already global-filtered; the renderer aggregates on top of them. Panel snapshots are frozen
-`structuredClone`s (see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md)).
+`structuredClone`s (see [Architecture reference](../architecture-reference.md)).
 
 ---
 
@@ -127,7 +127,7 @@ already global-filtered; the renderer aggregates on top of them. Panel snapshots
 
 `chartConfig.pie` is the pie slice of each dataset's `chartConfig`, built fresh by
 `createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../src/config/chartDefaults.js).
+[chartDefaults.js](../../../src/config/chartDefaults.js).
 
 ### 4.2 The `chartConfig.pie` keys
 
@@ -151,7 +151,7 @@ already global-filtered; the renderer aggregates on top of them. Panel snapshots
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../src/config/charts.js): `CHART_COLORS.pie` = `#5f7c33`;
+[charts.js](../../../src/config/charts.js): `CHART_COLORS.pie` = `#5f7c33`;
 `CHART_DIMENSIONS.pie` = 700x360 with 16px margins; `CHART_HEIGHT_LIMITS.pie` =
 `{ min: 220, max: 720 }`; `PIE_CHART` holds the radius bounds (`minOuterRadius: 20`,
 `maxOuterRadius: 140`), pad-angle bounds (0 to 12 degrees), zoom bounds (0.3 to 4),
@@ -161,7 +161,7 @@ already global-filtered; the renderer aggregates on top of them. Panel snapshots
 
 ## 5. The control sidebar
 
-[pieControls.js](../../src/modules/chartControls/pieControls.js) builds three sections via the
+[pieControls.js](../../../src/modules/chartControls/pieControls.js) builds three sections via the
 standard `createPieChartControls` / `setupPieChartControlListeners` / `computeDefaults`
 exports.
 
@@ -195,7 +195,7 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
   `customSliceColors` for each (not a single gradient).
 - **Per-slice color grid**: each swatch writes through the non-emitting facade on `input`
   (live drag preview, no sidebar rebuild) and commits through the emitting facade on `change`,
-  the same live-preview discipline the TIN color picker uses (TIN doc [section 10](tin-chart.md)).
+  the same live-preview discipline the TIN color picker uses (TIN doc [section 10](tin.md)).
 
 ---
 
@@ -204,7 +204,7 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
 ### 6.1 Results view
 
 `renderPieChartSection({ config, rows, filterCallbacks })`
-([pieChartSection.js](../../src/components/results/chartRenders/pieChartSection.js)) resolves
+([pieChartSection.js](../../../src/components/results/chartRenders/pieChartSection.js)) resolves
 the block/container, hides+clears when disabled, sets the min-height, maps config into the
 options bag (with localized labels including the `Other` label), and calls `renderPieChart`.
 On failure it shows `chive-chart-empty-pie-sum` for `sum-no-numeric`, else
@@ -248,7 +248,7 @@ One `<path>` per slice. Fill precedence: the `Other` slice uses `PIE_CHART.other
 a category with a `customSliceColors` override uses that; otherwise `buildSliceColor` darkens
 the base color by 8% per index step so adjacent wedges are distinguishable. Each wedge has a
 white stroke. Hover shows a category/value/percentage tooltip; click pins the shared
-categorical filter-action tooltip (the bar doc's [section 7.6](bar-chart.md)), except the
+categorical filter-action tooltip (the bar doc's [section 7.6](bar.md)), except the
 `Other` slice, which pins a plain tooltip with no filter actions (it is an aggregate, not a
 real category).
 
@@ -265,7 +265,7 @@ angular share. An optional legend lists the first 8 entries with color swatches.
 ## 8. The color system
 
 - **Base + shade**: `buildSliceColor(base, index)` from
-  [colorUtils.js](../../src/utils/colorUtils.js) darkens the base color 8% per step (capped at
+  [colorUtils.js](../../../src/utils/colorUtils.js) darkens the base color 8% per step (capped at
   8 steps), giving a monochrome family from one color.
 - **Per-slice overrides**: `customSliceColors[categoryToken]` wins over the shade for that
   category, set via the color grid or a palette preset.
@@ -280,7 +280,7 @@ angular share. An optional legend lists the first 8 entries with color swatches.
 The pie emits one `<path>` per visible slice plus labels and a small legend, and Top-N bounds
 the slice count, so it is light regardless of dataset size; the only row-scaled work is the
 single aggregation pass. Color and radius edits flow through the shared throttled live-preview
-path (TIN doc [section 10](tin-chart.md)).
+path (TIN doc [section 10](tin.md)).
 
 ---
 
@@ -318,25 +318,25 @@ there is no separate export path.
 - **Stateless renders** and **frozen panel snapshots** behave as for every chart (panel
   wedges carry no filter actions).
 
-Empty-state strings live in [en.json](../../src/i18n/en.json) (`chive-chart-empty-pie*`);
-Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
+Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-pie*`);
+Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ---
 
 ## 13. Tests
 
-- [pieAndAxisLabels.test.js](../../tests/modules/visualizations/pieAndAxisLabels.test.js)
+- [pieAndAxisLabels.test.js](../../../tests/modules/visualizations/pieAndAxisLabels.test.js)
   covers the renderer (slices, labels, top-N behavior).
-- [pieControls.test.js](../../tests/modules/chartControls/pieControls.test.js) covers control
+- [pieControls.test.js](../../../tests/modules/chartControls/pieControls.test.js) covers control
   building, the radius cross-constraint, and the per-slice color logic.
-- [renderChartFromSpec.test.js](../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
   covers the panel dispatch path.
 
 ---
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../src/config/elementIds.js)): container
+**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
 `chart-pie-container`, block `chart-block-pie`. Control IDs are `viz-…-pie-…`
 (e.g. `viz-select-pie-category`, `viz-slider-pie-inner-radius`,
 `viz-select-pie-topn-mode`, `viz-pie-color-grid`).
@@ -353,7 +353,7 @@ Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
   <g> legend                (first 8 entries, optional)
 ```
 
-**Tuning knobs** ([charts.js](../../src/config/charts.js) `PIE_CHART`): radius bounds, pad-angle
+**Tuning knobs** ([charts.js](../../../src/config/charts.js) `PIE_CHART`): radius bounds, pad-angle
 bounds, zoom bounds, `otherSliceColor`, `defaultTopN`/`defaultTopNMode`.
 
 **Foundations → implementation map:**

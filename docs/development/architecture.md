@@ -8,7 +8,7 @@ It intentionally omits exhaustive implementation tables so it stays readable.
 Those omissions are not shortcuts: the overview should remain accurate. For
 exact state shape, facade methods, event payloads, emitters, subscribers, and
 implementation checklists, see the
-[Architecture Reference](docs/ARCHITECTURE_REFERENCE.md).
+[Architecture Reference](architecture-reference.md).
 
 ## 1. Pattern In One Paragraph
 
@@ -39,7 +39,7 @@ events, and the data-ingest Web Worker is wrapped behind a service boundary.
 Neither requires a framework-level state model.
 
 For the longer tradeoff analysis, see
-[Architecture Reference: Detailed Rationale](docs/ARCHITECTURE_REFERENCE.md#detailed-rationale).
+[Architecture Reference: Detailed Rationale](architecture-reference.md#detailed-rationale).
 
 ## 3. System Map
 
@@ -70,9 +70,9 @@ ownership boundaries: state writes enter through facades, state changes leave
 through the bus, and renderers read state rather than owning it.
 
 For exact subscribers and payloads, see
-[Architecture Reference: Event Registry](docs/ARCHITECTURE_REFERENCE.md#event-registry)
+[Architecture Reference: Event Registry](architecture-reference.md#event-registry)
 and
-[Architecture Reference: Subscriber Map](docs/ARCHITECTURE_REFERENCE.md#subscriber-map).
+[Architecture Reference: Subscriber Map](architecture-reference.md#subscriber-map).
 
 ## 4. Layers
 
@@ -105,10 +105,10 @@ These are the rules that keep the app reactive and debuggable:
 
 Some facade methods intentionally do not emit, and hydration intentionally emits
 only once after replacing slices. Those exceptions are documented in
-[Architecture Reference: Mutation Rules](docs/ARCHITECTURE_REFERENCE.md#mutation-rules).
+[Architecture Reference: Mutation Rules](architecture-reference.md#mutation-rules).
 
 Contributor-facing enforcement details live in
-[CONTRIBUTING.md](CONTRIBUTING.md#architecture-invariants-do-not-break).
+[CONTRIBUTING.md](../../CONTRIBUTING.md#architecture-invariants-do-not-break).
 
 ## 6. Reactive Flow
 
@@ -134,10 +134,10 @@ renderers do not mutate application state.
 
 ## 7. Where To Look Next
 
-- [Architecture Reference](docs/ARCHITECTURE_REFERENCE.md): exact state schema,
+- [Architecture Reference](architecture-reference.md): exact state schema,
   facade method index, event registry, subscriber map, mutation rules, panel
   lifecycle, and implementation checklists.
-- [CONTRIBUTING.md](CONTRIBUTING.md): development workflow, architecture
+- [CONTRIBUTING.md](../../CONTRIBUTING.md): development workflow, architecture
   invariants, lint rules, tests, and debugging helpers.
-- [src/styles/STYLES_ORGANIZATION.md](src/styles/STYLES_ORGANIZATION.md): CSS
+- [Stylesheet organization](styles.md): CSS
   layer order and stylesheet ownership.

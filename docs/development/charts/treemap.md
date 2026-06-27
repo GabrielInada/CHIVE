@@ -3,23 +3,23 @@
 This document explains how CHIVE's treemap works, from the config a dataset stores, through
 the sidebar controls, into the renderer, and out to the panel/export paths. It is meant to be
 read top to bottom the first time and used as a reference afterwards. File links are relative
-to this document (which lives in `docs/charts/`).
+to this document (which lives in `docs/development/charts/`).
 
 Section 2 covers the space-filling and squarified-tiling theory the chart rests on,
 independent of this codebase; everything from section 3 onward is how CHIVE implements it.
 
 For the high-level "which columns does it need" summary, see the treemap row in
-[CHART_REFERENCE.md](../CHART_REFERENCE.md). For the shared state/panel/event architecture,
-see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md).
+[Chart and data reference](../../user/chart-reference.md). For the shared state/panel/event architecture,
+see [Architecture reference](../architecture-reference.md).
 
 Key files:
 
-- Renderer: [treemapChart.js](../../src/modules/visualizations/treemapChart.js)
-- Sidebar controls: [treemapControls.js](../../src/modules/chartControls/treemapControls.js)
-- Config constants: [charts.js](../../src/config/charts.js) (`TREEMAP_CHART`)
-- Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js) (the `treemap` block)
-- Section adapter (results view): [treemapChartSection.js](../../src/components/results/chartRenders/treemapChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Renderer: [treemapChart.js](../../../src/modules/visualizations/treemapChart.js)
+- Sidebar controls: [treemapControls.js](../../../src/modules/chartControls/treemapControls.js)
+- Config constants: [charts.js](../../../src/config/charts.js) (`TREEMAP_CHART`)
+- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `treemap` block)
+- Section adapter (results view): [treemapChartSection.js](../../../src/components/results/chartRenders/treemapChartSection.js)
+- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
 
@@ -56,7 +56,7 @@ tiling.
 
 A treemap can represent a hierarchy (nested tiles), but CHIVE's treemap is deliberately
 **flat**: one level of category tiles. Hierarchical, nested composition is the bubble chart's
-job (see [bubble-chart.md](bubble-chart.md), which nests circles); the treemap here is the
+job (see [bubble.md](bubble.md), which nests circles); the treemap here is the
 rectangular, area-accurate counterpart to a single-level pie or bar. Internally it still uses
 D3's `hierarchy`, but the tree is just root plus one row of leaves.
 
@@ -97,7 +97,7 @@ Two draw paths, both ending at `renderTreeMap`.
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG. Rows are
 already global-filtered; aggregation happens on top of them. Panel snapshots are frozen
-`structuredClone`s (see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md)).
+`structuredClone`s (see [Architecture reference](../architecture-reference.md)).
 
 ---
 
@@ -107,7 +107,7 @@ already global-filtered; aggregation happens on top of them. Panel snapshots are
 
 `chartConfig.treemap` is the treemap slice of each dataset's `chartConfig`, built fresh by
 `createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../src/config/chartDefaults.js).
+[chartDefaults.js](../../../src/config/chartDefaults.js).
 
 ### 4.2 The `chartConfig.treemap` keys
 
@@ -127,7 +127,7 @@ already global-filtered; aggregation happens on top of them. Panel snapshots are
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../src/config/charts.js): `CHART_COLORS.treemap` = `#5a7d99`;
+[charts.js](../../../src/config/charts.js): `CHART_COLORS.treemap` = `#5a7d99`;
 `CHART_HEIGHT_LIMITS.treemap` = `{ min: 220, max: 720 }`; `TREEMAP_CHART` holds the measure
 modes, `defaultTopN: 20`, and the padding options (`[1, 2, 4]`, default 2). The scheme palettes
 are defined in the renderer (`COLOR_PALETTE`: Bold, Pastel, Colorblind-Safe).
@@ -136,7 +136,7 @@ are defined in the renderer (`COLOR_PALETTE`: Bold, Pastel, Colorblind-Safe).
 
 ## 5. The control sidebar
 
-[treemapControls.js](../../src/modules/chartControls/treemapControls.js) builds four sections
+[treemapControls.js](../../../src/modules/chartControls/treemapControls.js) builds four sections
 via the standard `createTreeMapControls` / `setupTreeMapControlListeners` / `computeDefaults`
 exports.
 
@@ -164,7 +164,7 @@ uniform `color` to the palette's first swatch. `computeDefaults` picks the categ
 ### 6.1 Results view
 
 `renderTreemapChartSection({ config, rows, filterCallbacks })`
-([treemapChartSection.js](../../src/components/results/chartRenders/treemapChartSection.js))
+([treemapChartSection.js](../../../src/components/results/chartRenders/treemapChartSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
 into the options bag, and calls `renderTreeMap`. On failure it shows
 `chive-chart-empty-treemap-numeric` for `no-value-column`, else `chive-chart-empty-treemap`.
@@ -208,7 +208,7 @@ to fit.
 ### 7.4 Interaction
 
 Hover shows a category/value/percentage tooltip; click pins the shared categorical
-filter-action tooltip (the bar doc's [section 7.6](bar-chart.md)) for the category column;
+filter-action tooltip (the bar doc's [section 7.6](bar.md)) for the category column;
 clicking the background dismisses it.
 
 ---
@@ -227,14 +227,14 @@ magnitude, so there is no gradient or rank distribution here.
 The treemap emits one `<g>`/`<rect>` (plus up to two label `<text>`s) per visible tile, and
 Top-N bounds the tile count, so it is light regardless of dataset size; the only row-scaled
 work is the single aggregation pass. Color and padding edits flow through the shared throttled
-live-preview path (TIN doc [section 10](tin-chart.md)).
+live-preview path (TIN doc [section 10](tin.md)).
 
 ---
 
 ## 10. Live preview and interaction
 
 The color input uses the shared live-preview path (non-emitting facade on `input`, commit on
-`change`; see TIN doc [section 10](tin-chart.md)) so dragging the picker updates the tiles
+`change`; see TIN doc [section 10](tin.md)) so dragging the picker updates the tiles
 live. Other controls commit on change. The click-to-filter pinned tooltips are the treemap's
 interaction layer on top of that.
 
@@ -260,25 +260,25 @@ labels. The panel exporter clones the live `<svg>`; there is no separate export 
 - **Stateless renders** and **frozen panel snapshots** behave as for every chart (panel tiles
   carry no filter actions).
 
-Empty-state strings live in [en.json](../../src/i18n/en.json) (`chive-chart-empty-treemap*`);
-Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
+Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-treemap*`);
+Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ---
 
 ## 13. Tests
 
-- [treemapControls.test.js](../../tests/modules/chartControls/treemapControls.test.js) covers
+- [treemapControls.test.js](../../../tests/modules/chartControls/treemapControls.test.js) covers
   control building and the measure/value and color-mode logic.
-- [treemapChartSection.test.js](../../tests/components/results/chartRenders/treemapChartSection.test.js)
+- [treemapChartSection.test.js](../../../tests/components/results/chartRenders/treemapChartSection.test.js)
   covers the section adapter, including the empty-state message selection.
-- [renderChartFromSpec.test.js](../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
   covers the panel dispatch path.
 
 ---
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../src/config/elementIds.js)): container
+**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
 `chart-treemap-container`, block `chart-block-treemap`. Control IDs are `viz-…-treemap-…`
 (e.g. `viz-select-treemap-category`, `viz-select-treemap-measure`,
 `viz-slider-treemap-padding`, `viz-select-treemap-color-mode`).
@@ -294,7 +294,7 @@ Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
       <text> <text>         (optional label + value)
 ```
 
-**Tuning knobs** ([charts.js](../../src/config/charts.js) `TREEMAP_CHART`): `defaultTopN`,
+**Tuning knobs** ([charts.js](../../../src/config/charts.js) `TREEMAP_CHART`): `defaultTopN`,
 `paddingOptions`, `measureModes`.
 
 **Foundations → implementation map:**

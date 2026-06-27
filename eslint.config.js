@@ -4,7 +4,7 @@ import chiveRules from './eslint-rules/index.js';
 const STATELESS_RENDERER_MESSAGE =
 	'Renderers and DOM builders (src/components/, src/features/, ' +
 	'modules/visualizations/, panelSubsystem presentation files) do not ' +
-	'call write facades (ARCHITECTURE.md Layers section). Only read-only facade members ' +
+	'call write facades (docs/development/architecture.md Layers section). Only read-only facade members ' +
 	'are importable here. Route writes through panelManager.js, ' +
 	'chartControls listeners, or modules/eventHandlers.';
 
@@ -101,7 +101,7 @@ const VITE_ONLY_SYNTAX_SELECTORS = [
 	},
 ];
 
-// Hand-maintained (dep-free, by choice, see ARCHITECTURE.md's minimal-footprint
+// Hand-maintained (dep-free, by choice, see docs/development/architecture.md's minimal-footprint
 // stance). Combined window + Web Worker scope, since the ingest worker is linted
 // too. Add a global the first time a new browser/worker API is referenced in
 // src/; the set below is exactly what src/ uses today.

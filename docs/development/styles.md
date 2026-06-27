@@ -261,11 +261,11 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 
 | Breakpoint | Scope | File(s) | What changes |
 |------------|-------|---------|--------------|
-| **1024px** | About page | [about.css:265](about.css#L265) | About-page grid collapses from 2-column to 1-column; hero padding shrinks |
-| **900px** | Main app layout | [responsive.css:5](responsive.css#L5), [panel.css:479](panel.css#L479) | Workspace stacks; header switches to column; sidebar narrows; panel block adjustments |
-| **768px** | Header chrome | [header-nav.css:47](header-nav.css#L47) | Header nav gap/margins shrink; header wraps |
-| **640px** | About page + results | [about.css:290](about.css#L290), [results.css:356](results.css#L356) | About hero compresses; team grid becomes 1-column; results-area tweaks |
-| **480px** | Header chrome | [header-nav.css:58](header-nav.css#L58) | Header nav reflows to full-width row below logo |
+| **1024px** | About page | [about.css:265](../../src/styles/about.css#L265) | About-page grid collapses from 2-column to 1-column; hero padding shrinks |
+| **900px** | Main app layout | [responsive.css:5](../../src/styles/responsive.css#L5), [panel.css:479](../../src/styles/panel.css#L479) | Workspace stacks; header switches to column; sidebar narrows; panel block adjustments |
+| **768px** | Header chrome | [header-nav.css:47](../../src/styles/header-nav.css#L47) | Header nav gap/margins shrink; header wraps |
+| **640px** | About page + results | [about.css:290](../../src/styles/about.css#L290), [results.css:356](../../src/styles/results.css#L356) | About hero compresses; team grid becomes 1-column; results-area tweaks |
+| **480px** | Header chrome | [header-nav.css:58](../../src/styles/header-nav.css#L58) | Header nav reflows to full-width row below logo |
 
 ### Main-app breakpoint: 900px
 

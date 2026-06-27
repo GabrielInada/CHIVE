@@ -3,24 +3,24 @@
 This document explains how CHIVE's bubble chart works, from the config a dataset stores,
 through the sidebar controls, into the renderer, and out to the panel/export paths. It is
 meant to be read top to bottom the first time and used as a reference afterwards. File
-links are relative to this document (which lives in `docs/charts/`).
+links are relative to this document (which lives in `docs/development/charts/`).
 
 Section 2 covers the circle-packing and hierarchy theory the chart rests on, independent of
 this codebase; everything from section 3 onward is how CHIVE implements it.
 
 For the high-level "which columns does it need" summary, see the bubble row in
-[CHART_REFERENCE.md](../CHART_REFERENCE.md). For the shared state/panel/event architecture,
-see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md).
+[Chart and data reference](../../user/chart-reference.md). For the shared state/panel/event architecture,
+see [Architecture reference](../architecture-reference.md).
 
 Key files:
 
-- Renderer: [bubbleChart.js](../../src/modules/visualizations/bubbleChart.js)
-- Hierarchy helpers (aggregation, tree building, ancestor walks): [bubbleChartHierarchy.js](../../src/modules/visualizations/bubbleChartHierarchy.js)
-- Sidebar controls: [bubbleControls.js](../../src/modules/chartControls/bubbleControls.js)
-- Config constants: [charts.js](../../src/config/charts.js) (`BUBBLE_CHART`, `CHART_COLOR_PALETTES`)
-- Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js) (the `bubble` block)
-- Section adapter (results view): [bubbleChartSection.js](../../src/components/results/chartRenders/bubbleChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Renderer: [bubbleChart.js](../../../src/modules/visualizations/bubbleChart.js)
+- Hierarchy helpers (aggregation, tree building, ancestor walks): [bubbleChartHierarchy.js](../../../src/modules/visualizations/bubbleChartHierarchy.js)
+- Sidebar controls: [bubbleControls.js](../../../src/modules/chartControls/bubbleControls.js)
+- Config constants: [charts.js](../../../src/config/charts.js) (`BUBBLE_CHART`, `CHART_COLOR_PALETTES`)
+- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bubble` block)
+- Section adapter (results view): [bubbleChartSection.js](../../../src/components/results/chartRenders/bubbleChartSection.js)
+- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
 
@@ -43,7 +43,7 @@ Like bar and pie, the bubble chart aggregates: each category is reduced to a mea
 `count`, `sum`, or `mean` of a value column. That measure becomes the circle's **area** (not
 its radius), because area is the honest visual encoding of magnitude (the same area-true
 reasoning the scatter chart's size encoding uses, see the scatter doc's
-[section 2.4](scatter-plot.md)). A circle representing twice the value covers twice the area.
+[section 2.4](scatter.md)). A circle representing twice the value covers twice the area.
 
 ### 2.2 Circle packing
 
@@ -56,7 +56,7 @@ cluster is compact. CHIVE uses D3's `pack` layout, which:
   and keeps the packing tight.
 
 The result is a space-filling, area-proportional picture, the circular cousin of the
-treemap's rectangles (see [treemap-chart.md](treemap-chart.md)).
+treemap's rectangles (see [treemap.md](treemap.md)).
 
 ### 2.3 Flat vs grouped (the hierarchy)
 
@@ -112,7 +112,7 @@ Two draw paths, both ending at `renderBubbleChart`.
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG (and resets
 any drill-down). Rows are already global-filtered; aggregation and hierarchy building happen
 on top of them. Panel snapshots are frozen `structuredClone`s
-(see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md)).
+(see [Architecture reference](../architecture-reference.md)).
 
 ---
 
@@ -122,7 +122,7 @@ on top of them. Panel snapshots are frozen `structuredClone`s
 
 `chartConfig.bubble` is the bubble slice of each dataset's `chartConfig`, built fresh by
 `createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../src/config/chartDefaults.js). The merge has special handling for
+[chartDefaults.js](../../../src/config/chartDefaults.js). The merge has special handling for
 `bubble`: a legacy single `groupColumn` is promoted into a one-element `nestingColumns` array
 so pre-multilevel configs keep working.
 
@@ -145,7 +145,7 @@ so pre-multilevel configs keep working.
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../src/config/charts.js): `CHART_DIMENSIONS.bubble` is square (700x700) with
+[charts.js](../../../src/config/charts.js): `CHART_DIMENSIONS.bubble` is square (700x700) with
 small margins; `CHART_HEIGHT_LIMITS.bubble` = `{ min: 400, max: 900 }` (taller floor than
 other charts, since packing needs room); `BUBBLE_CHART` holds the measure/label/nesting option
 lists, `autoLabelMinRadius` (20) and `parentLabelMinRadius` (40) label thresholds, padding
@@ -156,7 +156,7 @@ ordinal color palettes (Tableau10, Pastel, Bold, Colorblind-Safe).
 
 ## 5. The control sidebar
 
-[bubbleControls.js](../../src/modules/chartControls/bubbleControls.js) builds three sections
+[bubbleControls.js](../../../src/modules/chartControls/bubbleControls.js) builds three sections
 via the standard `createBubbleChartControls` / `setupBubbleChartControlListeners` /
 `computeDefaults` exports.
 
@@ -193,7 +193,7 @@ are disabled unless `nestingMode === 'grouped'`.
 ### 6.1 Results view
 
 `renderBubbleChartSection({ config, rows, filterCallbacks })`
-([bubbleChartSection.js](../../src/components/results/chartRenders/bubbleChartSection.js))
+([bubbleChartSection.js](../../../src/components/results/chartRenders/bubbleChartSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
 into the options bag, and calls `renderBubbleChart`. On failure it shows distinct messages:
 `no-value-column`/`no-numeric` to `chive-chart-empty-bubble-numeric`,
@@ -221,7 +221,7 @@ to 80 chars). In grouped mode with no nesting columns (and no legacy `groupColum
 
 ### 7.2 Aggregation (`aggregateBubbles`)
 
-[bubbleChartHierarchy.js](../../src/modules/visualizations/bubbleChartHierarchy.js) reduces
+[bubbleChartHierarchy.js](../../../src/modules/visualizations/bubbleChartHierarchy.js) reduces
 rows to one bubble per category, each carrying its measured value, its top-level group, and
 its full nesting path. Sum/mean without a usable value column returns `'no-value-column'`; no
 parseable values returns `'no-numeric'`. Bubbles are sorted descending by value (with a stable
@@ -251,7 +251,7 @@ current zoom scale).
 - **Hover** shows a leaf tooltip (category, measure, and group when nested) or a parent
   tooltip (group, measure, child count, depth).
 - **Click** pins the shared categorical filter-action tooltip (the bar doc's
-  [section 7.6](bar-chart.md)); a leaf filters on the category column, a parent filters on the
+  [section 7.6](bar.md)); a leaf filters on the category column, a parent filters on the
   nesting column at its depth.
 - **Double-click a parent** drills in (`applyZoom`): the viewport transitions to frame that
   subtree and non-descendants are dimmed and made non-interactive. **Clicking the background**
@@ -277,14 +277,14 @@ The bubble chart emits one `<g>` + `<circle>` per leaf, plus one per intermediat
 grouped mode, so DOM cost scales with the number of distinct categories and groups, which
 `topN` bounds. The pack layout is a one-time O(n) pass. Drill-down uses SVG transforms and
 opacity rather than re-rendering, so navigation is cheap. Padding and palette edits flow
-through the shared throttled live-preview path (TIN doc [section 10](tin-chart.md)).
+through the shared throttled live-preview path (TIN doc [section 10](tin.md)).
 
 ---
 
 ## 10. Live preview and interaction
 
 Padding, label mode, palette, and title edits use the shared live-preview path (non-emitting
-facade on `input`, commit on `change`; see TIN doc [section 10](tin-chart.md)). Drill-down
+facade on `input`, commit on `change`; see TIN doc [section 10](tin.md)). Drill-down
 zoom, hover highlighting, and the click-to-filter pinned tooltips are the bubble chart's
 interaction layer on top of that, and they live entirely inside one render (no config writes).
 
@@ -314,28 +314,28 @@ The panel exporter clones the live `<svg>`; there is no separate export path.
 - **Drill-down resets** on every render (the chart is stateless).
 - **Frozen panel snapshots**: panel bubbles carry no filter actions.
 
-Empty-state strings live in [en.json](../../src/i18n/en.json) (`chive-chart-empty-bubble*`);
-Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
+Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-bubble*`);
+Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ---
 
 ## 13. Tests
 
-- [bubbleChart.test.js](../../tests/modules/visualizations/bubbleChart.test.js) covers the
+- [bubbleChart.test.js](../../../tests/modules/visualizations/bubbleChart.test.js) covers the
   renderer (flat and grouped, packing output, labels).
-- [bubbleChartHierarchy.test.js](../../tests/modules/visualizations/bubbleChartHierarchy.test.js)
+- [bubbleChartHierarchy.test.js](../../../tests/modules/visualizations/bubbleChartHierarchy.test.js)
   covers the pure helpers: aggregation, multi-level tree building, ancestor/descendant walks
   (no DOM).
-- [bubbleControls.test.js](../../tests/modules/chartControls/bubbleControls.test.js) covers the
+- [bubbleControls.test.js](../../../tests/modules/chartControls/bubbleControls.test.js) covers the
   progressive nesting controls and the measure/value cross-constraint.
-- [renderChartFromSpec.test.js](../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
   covers the panel dispatch path.
 
 ---
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../src/config/elementIds.js)): container
+**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
 `chart-bubble-container`, block `chart-block-bubble`. Control IDs are `viz-…-bubble-…`
 (e.g. `viz-select-bubble-category`, `viz-select-bubble-nesting-mode`,
 `viz-select-bubble-nesting-level-0`, `viz-slider-bubble-padding`).
@@ -352,7 +352,7 @@ Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
       <title> <circle> <text>
 ```
 
-**Tuning knobs** ([charts.js](../../src/config/charts.js) `BUBBLE_CHART`): `defaultPadding`,
+**Tuning knobs** ([charts.js](../../../src/config/charts.js) `BUBBLE_CHART`): `defaultPadding`,
 `autoLabelMinRadius`, `parentLabelMinRadius`, `zoomTransitionDuration`, padding boosts.
 
 **Foundations → implementation map:**

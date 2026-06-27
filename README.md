@@ -64,100 +64,16 @@ npm run lint
 npm test
 ```
 
-Useful commands:
+For the full contributor workflow and command list, see
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
-```powershell
-npm run dev          # Start Vite dev server
-npm run build        # Optional Vite production build into dist/
-npm run preview      # Preview the optional Vite build
-npm run lint         # Run ESLint architecture/deployment guards
-npm run lint:fix     # Apply safe automatic lint fixes
-npm test             # Run all tests once
-npm run test:watch   # Run tests in watch mode
-```
+## Deployment
 
-## Static Deployment
+CHIVE runs from static files and has no required production build step. For
+hosting requirements, MIME types, smoke tests, and optional Docker hosting, see:
 
-CHIVE is designed to run from a static web server. The app runtime uses:
-
-1. Native browser ES modules through `<script type="module">`.
-2. Vendored JavaScript runtime dependencies loaded from `vendor/d3/` and `vendor/banana-i18n/`.
-3. A vendored SQLite-WASM runtime loaded from `vendor/sqlite/` (`sqlite3.js`, `sqlite3.wasm`, and companion files referenced by the loader).
-4. Vendored fonts loaded from `vendor/fonts/`.
-
-### Requirements
-
-1. Serve files over HTTP/HTTPS. Do not open the app with `file://`.
-2. Serve these files and folders at minimum:
-   - `index.html`
-   - `about.html`
-   - `src/`
-   - `vendor/`
-3. Serve vendored `.js` files with a JavaScript MIME type, font files with a font MIME type when possible, and `vendor/sqlite/sqlite3.wasm` as `application/wasm` when possible. Browsers can fall back to non-streaming WASM compilation, but the correct MIME avoids a slower path.
-
-The default CHIVE runtime does not require external JavaScript or font CDNs.
-
-### Deploy Steps
-
-1. Upload the project files as static content.
-2. Serve them with a static web server such as Nginx, Apache, Caddy, IIS, or GitHub Pages.
-3. Open `index.html` through HTTP/HTTPS.
-
-### Post-Deploy Smoke Test
-
-1. Open the app URL.
-2. Check that the browser console has no module, CORS, or CSP errors.
-3. Load a bundled sample dataset or upload a small CSV/JSON file.
-4. Verify the table preview renders.
-5. Create at least one chart.
-6. Make a change, wait a couple of seconds for the auto-save, reload, and confirm the dataset restores.
-
-## Local Static Test
-
-To test the production-style static runtime locally, run a static server from the project root:
-
-```powershell
-python -m http.server 8080
-```
-
-Then open <http://localhost:8080/>.
-
-Checklist:
-
-1. App shell loads successfully.
-2. Browser console has no red errors.
-3. File upload or sample dataset loading works.
-4. At least one chart renders.
-
-## Docker (Optional)
-
-Docker is an optional way to self-host CHIVE with a hardened Nginx config. It does
-not change the app: the image serves the same static files (`index.html`,
-`about.html`, `src/`, `vendor/`) and there is still no backend. The raw-static
-deployment above remains fully supported and is not affected.
-
-Run it with Docker Compose from the project root:
-
-```powershell
-docker compose up --build
-```
-
-Then open <http://localhost:8080/>.
-
-Equivalent plain Docker commands:
-
-```powershell
-docker build -t chive .
-docker run --rm -p 8080:80 chive
-```
-
-The image serves all runtime assets from a single origin and ships an enforcing
-local-only Content-Security-Policy (with a documented `'unsafe-eval'` exception
-that D3's CSV parser requires). The policy was manually verified after a
-Report-Only smoke test. For dependency changes, temporarily switch the header in
-`docker/security-headers.conf` back to `Content-Security-Policy-Report-Only`,
-retest in the browser console, then return it to enforcing. See
-[Privacy and security](docs/PRIVACY_AND_SECURITY.md) for the trust model.
+- [Static hosting](docs/deployment/static-hosting.md)
+- [Docker deployment](docs/deployment/docker.md)
 
 ## Data And Privacy
 
@@ -170,20 +86,14 @@ Project changes auto-save: a save runs automatically a couple of seconds after y
 
 Project export downloads a SQLite-backed `.chive.sqlite3` file. Full exports include dataset rows and saved chart snapshot payloads; work-only exports omit those heavy payloads and are meant for layout/work transfer only. Import currently accepts full project files and replaces the current datasets and panel.
 
-JavaScript runtime dependencies and fonts are served from the same static host as vendored files. If you need stricter controls for sensitive data, self-host CHIVE and review the static-host trust boundary before use. See [Privacy and security](docs/PRIVACY_AND_SECURITY.md) for the detailed trust model.
+JavaScript runtime dependencies and fonts are served from the same static host as vendored files. If you need stricter controls for sensitive data, self-host CHIVE and review the static-host trust boundary before use. See [Privacy and security](docs/user/privacy-security.md) for the detailed trust model.
 
 ## Documentation
 
-- [Architecture overview](ARCHITECTURE.md): fast mental model for state, events, facades, and rendering boundaries.
-- [Architecture reference](docs/ARCHITECTURE_REFERENCE.md): exact state schema, facade methods, event registry, and subscribers.
-- [Privacy and security](docs/PRIVACY_AND_SECURITY.md): browser storage, runtime network dependencies, and trust boundaries.
-- [Translation contributor guide](docs/I18N.md): how to add or update UI strings across supported locales.
-- [Preset dataset contributor guide](docs/PRESET_DATASETS.md): how to add bundled sample datasets and their attribution.
-- [Security policy](SECURITY.md): where to report security concerns.
-- [Contributing](CONTRIBUTING.md): development workflow, code conventions, lint rules, and tests.
-- [Stylesheet organization](src/styles/STYLES_ORGANIZATION.md): CSS layers, feature ownership, and responsive rules.
-- [Chart and data reference](docs/CHART_REFERENCE.md): which columns and modes each chart type needs, plus the common empty states.
-- [User guide](docs/USER_GUIDE.md): practical walkthrough for loading data, charting, filtering, dashboards, import/export, and storage basics.
+Start with the [documentation hub](docs/README.md). It groups the docs by
+reader path: using CHIVE, deploying it, contributing code, understanding the
+architecture, adding charts/datasets/translations, and maintaining docs or
+vendored assets.
 
 ## Project Status
 

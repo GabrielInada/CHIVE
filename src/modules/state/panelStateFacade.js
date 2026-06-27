@@ -34,7 +34,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  * @typedef {import('../../types.js').PanelTemplateId} PanelTemplateId
  * @typedef {import('../../types.js').PanelBlockProportions} PanelBlockProportions
  *
- * @see ARCHITECTURE.md
+ * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
 

@@ -3,15 +3,15 @@
 This document explains how CHIVE's scatter plot works, from the config a dataset stores,
 through the sidebar controls, into the renderer, and out to the panel/export paths. It is
 meant to be read top to bottom the first time and used as a reference afterwards. File
-links are relative to this document (which lives in `docs/charts/`).
+links are relative to this document (which lives in `docs/development/charts/`).
 
 Section 2 covers the statistical and visual-encoding theory the chart rests on (axis types,
 log scales, size/color encodings, and ordinary-least-squares regression), independent of
 this codebase; everything from section 3 onward is how CHIVE implements it.
 
 For the high-level "which columns does it need" summary, see the scatter row in
-[CHART_REFERENCE.md](../CHART_REFERENCE.md). For the shared state/panel/event architecture,
-see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md).
+[Chart and data reference](../../user/chart-reference.md). For the shared state/panel/event architecture,
+see [Architecture reference](../architecture-reference.md).
 
 It is the most analytically dense renderer in the app: it adapts to numeric or categorical
 axes, supports linear and log scales, encodes a third and fourth variable through point size
@@ -20,22 +20,22 @@ category.
 
 Key files:
 
-- Renderer / orchestrator: [scatterPlot.js](../../src/modules/visualizations/scatterPlot.js)
-- Scatter internals folder: [scatterPlot/](../../src/modules/visualizations/scatterPlot/)
-- Option normalization: [options.js](../../src/modules/visualizations/scatterPlot/options.js)
-- Point preparation (map / infer / filter / aggregate): [data.js](../../src/modules/visualizations/scatterPlot/data.js)
-- Scale + position accessors: [scales.js](../../src/modules/visualizations/scatterPlot/scales.js)
-- Size/color encoding: [encoding.js](../../src/modules/visualizations/scatterPlot/encoding.js)
-- Palettes: [palettes.js](../../src/modules/visualizations/scatterPlot/palettes.js)
-- Tooltip + filter interactions: [interactions.js](../../src/modules/visualizations/scatterPlot/interactions.js)
-- Regression render layer (band / line / annotation): [regressionLayer.js](../../src/modules/visualizations/scatterPlot/regressionLayer.js)
-- Axis helpers (type inference, jitter, margins, aggregation): [axisHelpers.js](../../src/modules/visualizations/scatterPlot/axisHelpers.js)
-- Regression math (OLS + CI band): [regression.js](../../src/modules/visualizations/scatterPlot/regression.js)
-- Sidebar controls: [scatterControls.js](../../src/modules/chartControls/scatterControls.js)
-- Config constants: [charts.js](../../src/config/charts.js) (`SCATTER_PLOT`)
-- Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js) (the `scatter` block)
-- Section adapter (results view): [scatterChartSection.js](../../src/components/results/chartRenders/scatterChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Renderer / orchestrator: [scatterPlot.js](../../../src/modules/visualizations/scatterPlot.js)
+- Scatter internals folder: [scatterPlot/](../../../src/modules/visualizations/scatterPlot)
+- Option normalization: [options.js](../../../src/modules/visualizations/scatterPlot/options.js)
+- Point preparation (map / infer / filter / aggregate): [data.js](../../../src/modules/visualizations/scatterPlot/data.js)
+- Scale + position accessors: [scales.js](../../../src/modules/visualizations/scatterPlot/scales.js)
+- Size/color encoding: [encoding.js](../../../src/modules/visualizations/scatterPlot/encoding.js)
+- Palettes: [palettes.js](../../../src/modules/visualizations/scatterPlot/palettes.js)
+- Tooltip + filter interactions: [interactions.js](../../../src/modules/visualizations/scatterPlot/interactions.js)
+- Regression render layer (band / line / annotation): [regressionLayer.js](../../../src/modules/visualizations/scatterPlot/regressionLayer.js)
+- Axis helpers (type inference, jitter, margins, aggregation): [axisHelpers.js](../../../src/modules/visualizations/scatterPlot/axisHelpers.js)
+- Regression math (OLS + CI band): [regression.js](../../../src/modules/visualizations/scatterPlot/regression.js)
+- Sidebar controls: [scatterControls.js](../../../src/modules/chartControls/scatterControls.js)
+- Config constants: [charts.js](../../../src/config/charts.js) (`SCATTER_PLOT`)
+- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `scatter` block)
+- Section adapter (results view): [scatterChartSection.js](../../../src/components/results/chartRenders/scatterChartSection.js)
+- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
 
@@ -197,7 +197,7 @@ The renderer is **stateless**: each call wipes the container and rebuilds the SV
 are already global-filtered; the renderer derives points, axis types, scales, and the
 regression from them. The panel path additionally passes the snapshot's column types so axis
 classification matches what the live view showed (see
-[ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md) for the snapshot lifecycle).
+[Architecture reference](../architecture-reference.md) for the snapshot lifecycle).
 
 ---
 
@@ -207,7 +207,7 @@ classification matches what the live view showed (see
 
 `chartConfig.scatter` is the scatter slice of each dataset's `chartConfig`. The fresh shape
 comes from `createDefaultChartConfig()` in
-[chartDefaults.js](../../src/config/chartDefaults.js); saved configs are deep-merged onto the
+[chartDefaults.js](../../../src/config/chartDefaults.js); saved configs are deep-merged onto the
 defaults by `mergeChartConfigWithDefaults()`, which handles the nested `regression` block
 explicitly.
 
@@ -247,7 +247,7 @@ explicitly.
 
 ### 4.4 The constants behind the defaults
 
-[charts.js](../../src/config/charts.js): `CHART_COLORS.scatter` = `#1a472a`;
+[charts.js](../../../src/config/charts.js): `CHART_COLORS.scatter` = `#1a472a`;
 `CHART_DIMENSIONS.scatter` = `{ width: 700, height: 320, margins: { top:12, right:12,
 bottom:44, left:52 } }` (grown adaptively for categorical axes, section 7.4);
 `CHART_HEIGHT_LIMITS.scatter` = `{ min: 220, max: 720 }`; `SCATTER_PLOT` holds the tick count
@@ -257,7 +257,7 @@ bottom:44, left:52 } }` (grown adaptively for categorical axes, section 7.4);
 
 ## 5. The control sidebar
 
-[scatterControls.js](../../src/modules/chartControls/scatterControls.js) is the largest
+[scatterControls.js](../../../src/modules/chartControls/scatterControls.js) is the largest
 control module because of the axis/scale cross-constraints, the size and color field
 mappings, and the regression section. It exposes the standard three functions
 (`createScatterPlotControls`, `setupScatterPlotControlListeners`, `computeDefaults`).
@@ -291,7 +291,7 @@ mappings, and the regression section. It exposes the standard three functions
 ### 5.3 Listener wiring and cross-constraints
 
 Most controls use the shared helpers in
-[controlListenerHelpers.js](../../src/modules/chartControls/controlListenerHelpers.js). The
+[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js). The
 interesting custom listeners encode the cross-constraints:
 
 - **Axis selects**: picking a non-numeric column for an axis forces that axis's scale back to
@@ -317,7 +317,7 @@ numeric column that is not X, each scale defaulting to linear unless its column 
 ### 6.1 Results view
 
 `renderScatterChartSection({ config, rows, columnTypeByName, filterCallbacks })`
-([scatterChartSection.js](../../src/components/results/chartRenders/scatterChartSection.js))
+([scatterChartSection.js](../../../src/components/results/chartRenders/scatterChartSection.js))
 resolves the block/container, hides+clears when disabled, sets the container min-height, maps
 config into the options bag (including `axisTypes` taken from `columnTypeByName` so detection
 is consistent), and calls `renderScatterPlot`. On failure it shows
@@ -347,7 +347,7 @@ is wired together here. The mapping:
 | Tooltips + pinned filter actions (7.7) | `scatterPlot/interactions.js` | `createScatterInteractions` |
 
 The SVG/axis scaffolding (container reset, sized svg, title, translated group, bottom/left
-axes, axis labels) comes from the shared [chartScaffold.js](../../src/modules/visualizations/chartScaffold.js).
+axes, axis labels) comes from the shared [chartScaffold.js](../../../src/modules/visualizations/chartScaffold.js).
 The orchestrator owns only the layout math, the circle draw and its event wiring (the
 `pinnedIndex` state), and the order in which the phases run. That order is load-bearing: the
 regression **layer** is drawn before the circles (so it sits behind them) and the regression
@@ -411,7 +411,7 @@ top-right corner.
 One `<circle>` per point, positioned/sized/colored by the resolvers, at the configured
 opacity. Hover shows an x/y (and index or count) tooltip; click pins a tooltip that, for
 categorical axes, carries the shared categorical filter actions (the same subsystem the bar
-chart documents in its [section 7.6](bar-chart.md)). Numeric axes use 8-tick
+chart documents in its [section 7.6](bar.md)). Numeric axes use 8-tick
 `axisBottom`/`axisLeft`; categorical x-axis labels are truncated and rotated. Optional axis
 titles are drawn, and the function returns `ok()`.
 
@@ -422,9 +422,9 @@ titles are drawn, and the function returns `ok()`.
 - **Scales**: `scaleLinear` / `scaleLog` (numeric), `scalePoint` (categorical), `scaleSqrt`
   (size). `normalizeDomain` guards against degenerate (single-value or non-finite) extents.
 - **Color**: `interpolateColor` (clamped RGB lerp) for numeric gradients, with value or rank
-  (`buildRankMap`) distribution, both from [colorUtils.js](../../src/utils/colorUtils.js); a
+  (`buildRankMap`) distribution, both from [colorUtils.js](../../../src/utils/colorUtils.js); a
   fixed qualitative palette for category color. The palettes are owned by
-  [palettes.js](../../src/modules/visualizations/scatterPlot/palettes.js) as a frozen
+  [palettes.js](../../../src/modules/visualizations/scatterPlot/palettes.js) as a frozen
   constant, reached through `getScatterPalette(scheme)` /
   `resolveScatterColorScheme(scheme)` (both fall back to `Bold`) so callers cannot mutate
   them.
@@ -439,14 +439,14 @@ that bound it. The regression and stats passes are linear scans plus a fixed-siz
 line (80 points), so they are cheap relative to point rendering. There is no quantization
 layer like the TIN chart; for very large row counts the practical mitigation is filtering or
 switching to aggregate mode. Color/size edits flow through the shared throttled live-preview
-path (TIN doc [section 10](tin-chart.md)).
+path (TIN doc [section 10](tin.md)).
 
 ---
 
 ## 10. Live preview and interaction
 
 Color, size, and title edits use the shared live-preview path (write through a non-emitting
-facade on `input`, commit on `change`; see TIN doc [section 10](tin-chart.md)). The scatter
+facade on `input`, commit on `change`; see TIN doc [section 10](tin.md)). The scatter
 chart adds one wrinkle: the **uniform color input has its own handler** that, on every
 `input`, both writes the color and forces `colorMode: 'uniform'` (clearing `colorField`)
 through the facade, then calls `triggerLiveRender()`. This keeps the live preview consistent
@@ -461,7 +461,7 @@ scatter chart's interaction layer on top of that.
 
 Pure SVG throughout: `<circle>` points, `<path>` regression line and band (inside a
 `<clipPath>` so they never spill past the plot area), `<g>` axes, and `<text>` annotations. A
-counter in [regressionLayer.js](../../src/modules/visualizations/scatterPlot/regressionLayer.js)
+counter in [regressionLayer.js](../../../src/modules/visualizations/scatterPlot/regressionLayer.js)
 gives each regression clip-path a unique id so multiple scatter charts on one page (results
 view plus panel slots) do not collide. The panel exporter clones the live `<svg>`; there is
 no separate export path.
@@ -486,45 +486,45 @@ no separate export path.
 - **Stateless renders** and **frozen panel snapshots** behave as for every chart (panel
   tooltips carry no filter actions).
 
-Empty-state strings live in [en.json](../../src/i18n/en.json) (`chive-chart-empty-scatter*`);
-Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
+Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-scatter*`);
+Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ---
 
 ## 13. Tests
 
-- [regression.test.js](../../tests/modules/visualizations/scatterPlot/regression.test.js)
+- [regression.test.js](../../../tests/modules/visualizations/scatterPlot/regression.test.js)
   covers the OLS math, R², the CI band, and log-space fitting (pure, no DOM).
-- [axisHelpers.test.js](../../tests/modules/visualizations/scatterPlot/axisHelpers.test.js)
+- [axisHelpers.test.js](../../../tests/modules/visualizations/scatterPlot/axisHelpers.test.js)
   covers axis-type inference, jitter determinism, adaptive margins, aggregation, and domain
   normalization.
 - The pipeline modules each have a focused unit test (pure, no DOM):
-  [options.test.js](../../tests/modules/visualizations/scatterPlot/options.test.js)
+  [options.test.js](../../../tests/modules/visualizations/scatterPlot/options.test.js)
   (option semantics and fallbacks),
-  [data.test.js](../../tests/modules/visualizations/scatterPlot/data.test.js)
+  [data.test.js](../../../tests/modules/visualizations/scatterPlot/data.test.js)
   (point prep, filtering, aggregation),
-  [scales.test.js](../../tests/modules/visualizations/scatterPlot/scales.test.js)
+  [scales.test.js](../../../tests/modules/visualizations/scatterPlot/scales.test.js)
   (scale mapping and jitter), and
-  [encoding.test.js](../../tests/modules/visualizations/scatterPlot/encoding.test.js)
+  [encoding.test.js](../../../tests/modules/visualizations/scatterPlot/encoding.test.js)
   (size/color accessors and the frozen palettes).
-- [scatterPlotRender.test.js](../../tests/modules/visualizations/scatterPlotRender.test.js)
+- [scatterPlotRender.test.js](../../../tests/modules/visualizations/scatterPlotRender.test.js)
   is the behavior guard for the orchestrator, interactions, regression overlay (incl. DOM
   stacking order and clip-id uniqueness), log scale, and aggregation.
-- [scatterPlotAxes.test.js](../../tests/modules/visualizations/scatterPlotAxes.test.js)
+- [scatterPlotAxes.test.js](../../../tests/modules/visualizations/scatterPlotAxes.test.js)
   covers axis rendering behavior.
-- [chartColors.test.js](../../tests/modules/visualizations/chartColors.test.js) exercises the
+- [chartColors.test.js](../../../tests/modules/visualizations/chartColors.test.js) exercises the
   renderer's color options.
-- [scatterControls.test.js](../../tests/modules/chartControls/scatterControls.test.js) covers
+- [scatterControls.test.js](../../../tests/modules/chartControls/scatterControls.test.js) covers
   the control building and the axis/scale and color-mode cross-constraints.
-- [scatterChartSection.test.js](../../tests/components/results/chartRenders/scatterChartSection.test.js)
-  and [renderChartFromSpec.test.js](../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [scatterChartSection.test.js](../../../tests/components/results/chartRenders/scatterChartSection.test.js)
+  and [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
   cover the results and panel paths.
 
 ---
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../src/config/elementIds.js)): container
+**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
 `chart-scatter-container`, block `chart-block-scatter`. Control IDs are `viz-…` or
 `viz-…-scatter-…` (e.g. `viz-select-x`, `viz-select-y`, `viz-select-scatter-xscale`,
 `viz-select-scatter-color-mode`, `viz-toggle-scatter-regression-enabled`).
@@ -543,7 +543,7 @@ Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
     <g class="scatter-regression-annotation">  (equation + R², overall mode)
 ```
 
-**Tuning knobs** ([charts.js](../../src/config/charts.js) `SCATTER_PLOT`): `ticks`,
+**Tuning knobs** ([charts.js](../../../src/config/charts.js) `SCATTER_PLOT`): `ticks`,
 `defaultRadius`, `defaultOpacity`, `defaultScale`.
 
 **Foundations → implementation map:**

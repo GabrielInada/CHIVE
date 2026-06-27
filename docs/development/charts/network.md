@@ -3,26 +3,26 @@
 This document explains how CHIVE's network graph works, from the config a dataset stores,
 through the sidebar controls, into the renderer, and out to the panel/export paths. It is
 meant to be read top to bottom the first time and used as a reference afterwards. File
-links are relative to this document (which lives in `docs/charts/`).
+links are relative to this document (which lives in `docs/development/charts/`).
 
 Section 2 covers the graph and force-simulation theory the chart rests on, independent of
 this codebase; everything from section 3 onward is how CHIVE implements it.
 
 For the high-level "which columns does it need" summary, see the network row in
-[CHART_REFERENCE.md](../CHART_REFERENCE.md). For the shared state/panel/event architecture,
-see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md).
+[Chart and data reference](../../user/chart-reference.md). For the shared state/panel/event architecture,
+see [Architecture reference](../architecture-reference.md).
 
 The network graph is the one renderer that runs a **live physics simulation** rather than
 drawing a single static frame, which makes it the only chart that is not purely stateless.
 
 Key files:
 
-- Renderer: [networkGraph.js](../../src/modules/visualizations/networkGraph.js)
-- Sidebar controls: [networkControls.js](../../src/modules/chartControls/networkControls.js)
-- Config constants: [charts.js](../../src/config/charts.js) (`NETWORK_GRAPH`)
-- Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js) (the `network` block)
-- Section adapter (results view): [networkChartSection.js](../../src/components/results/chartRenders/networkChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Renderer: [networkGraph.js](../../../src/modules/visualizations/networkGraph.js)
+- Sidebar controls: [networkControls.js](../../../src/modules/chartControls/networkControls.js)
+- Config constants: [charts.js](../../../src/config/charts.js) (`NETWORK_GRAPH`)
+- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `network` block)
+- Section adapter (results view): [networkChartSection.js](../../../src/components/results/chartRenders/networkChartSection.js)
+- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
 
@@ -114,7 +114,7 @@ keeps ticking and repositioning nodes until it cools. The running simulation is 
 container under a private key so the **next** render can stop it before building a fresh
 layout, preventing an orphaned simulation from ticking on a replaced DOM. The container
 contents are still fully replaced each render. Panel snapshots are frozen `structuredClone`s
-(see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md)).
+(see [Architecture reference](../architecture-reference.md)).
 
 ---
 
@@ -124,7 +124,7 @@ contents are still fully replaced each render. Panel snapshots are frozen `struc
 
 `chartConfig.network` is the network slice of each dataset's `chartConfig`, built fresh by
 `createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../src/config/chartDefaults.js).
+[chartDefaults.js](../../../src/config/chartDefaults.js).
 
 ### 4.2 The `chartConfig.network` keys
 
@@ -148,7 +148,7 @@ contents are still fully replaced each render. Panel snapshots are frozen `struc
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../src/config/charts.js): `CHART_HEIGHT_LIMITS.network` = `{ min: 220,
+[charts.js](../../../src/config/charts.js): `CHART_HEIGHT_LIMITS.network` = `{ min: 220,
 max: 720 }`; `NETWORK_GRAPH` holds the force defaults (`defaultNodeRadius`,
 `defaultLinkDistance: 46`, `defaultChargeStrength: -80`, `defaultLinkOpacity`,
 `defaultAlphaDecay: 0.045`), the zoom bounds (`minZoomScale: 0.3`, `maxZoomScale: 4`), and the
@@ -158,7 +158,7 @@ alpha-decay clamp (`minAlphaDecay: 0.01`, `maxAlphaDecay: 0.2`).
 
 ## 5. The control sidebar
 
-[networkControls.js](../../src/modules/chartControls/networkControls.js) builds four sections
+[networkControls.js](../../../src/modules/chartControls/networkControls.js) builds four sections
 via the standard `createNetworkGraphControls` / `setupNetworkGraphControlListeners` /
 `computeDefaults` exports.
 
@@ -189,7 +189,7 @@ casual users get a sensible layout without touching physics, while power users c
 ### 6.1 Results view
 
 `renderNetworkChartSection({ config, rows, filterCallbacks })`
-([networkChartSection.js](../../src/components/results/chartRenders/networkChartSection.js))
+([networkChartSection.js](../../../src/components/results/chartRenders/networkChartSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
 into the options bag (note `weight`/`group` map to `weightColumn`/`groupColumn`, and the
 source/target column names are also passed as `sourceColumn`/`targetColumn` for the filter
@@ -246,7 +246,7 @@ settled layout as alpha decays.
   initialized to the saved `zoomScale`; the Reset Zoom control returns it to default.
 - **Hover** an edge shows source/target/weight; hover a node shows its id.
 - **Click** a node pins the shared categorical filter-action tooltip (the bar doc's
-  [section 7.6](bar-chart.md)), offering to filter the source column, the target column, or
+  [section 7.6](bar.md)), offering to filter the source column, the target column, or
   both (a node id can appear in either). The pinned tooltip is anchored to the node's moving
   screen position and follows it as the simulation ticks.
 
@@ -257,7 +257,7 @@ On success the renderer returns `{ ok: true, nodesCount, linksCount }`.
 ## 8. The color system
 
 Network color is **role-based**, not value-driven. `interpolateColor` from
-[colorUtils.js](../../src/utils/colorUtils.js) blends `sourceNodeColor` and `targetNodeColor`
+[colorUtils.js](../../../src/utils/colorUtils.js) blends `sourceNodeColor` and `targetNodeColor`
 for dual-role nodes and for the per-edge gradient stops. The color-preset palette seeds the
 two role colors (indices 0 and 1). There is no per-value gradient or rank distribution here;
 the only quantitative encoding is edge thickness.
@@ -270,7 +270,7 @@ The network is the heaviest interactive chart because the simulation runs many t
 render, each updating every node and edge in the DOM. Cost scales with node and edge count, so
 very large edge lists can be sluggish until the layout cools. The simulation-stop-on-rerender
 lifecycle prevents multiple simulations from stacking up. Physics, color, and zoom edits flow
-through the shared throttled live-preview path (TIN doc [section 10](tin-chart.md)); each edit
+through the shared throttled live-preview path (TIN doc [section 10](tin.md)); each edit
 re-renders and restarts the layout.
 
 ---
@@ -278,7 +278,7 @@ re-renders and restarts the layout.
 ## 10. Live preview and interaction
 
 Color, slider, and title edits use the shared live-preview path (non-emitting facade on
-`input`, commit on `change`; see TIN doc [section 10](tin-chart.md)). Because a network render
+`input`, commit on `change`; see TIN doc [section 10](tin.md)). Because a network render
 restarts the simulation, dragging a physics slider re-lays-out the graph live. Node drag,
 pan/zoom, and the click-to-filter pinned tooltips (anchored to moving nodes) are the network's
 own interaction layer on top of that.
@@ -307,25 +307,25 @@ panel network re-runs its own simulation from that snapshot.
 - **Frozen panel snapshots**: a panel network re-simulates from its snapshot and carries no
   filter actions in tooltips.
 
-The empty-state string lives in [en.json](../../src/i18n/en.json) (`chive-chart-empty-network`);
-the Portuguese equivalent is in [pt-BR.json](../../src/i18n/pt-BR.json).
+The empty-state string lives in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-network`);
+the Portuguese equivalent is in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ---
 
 ## 13. Tests
 
-- [networkGraph.test.js](../../tests/modules/visualizations/networkGraph.test.js) covers the
+- [networkGraph.test.js](../../../tests/modules/visualizations/networkGraph.test.js) covers the
   renderer: node derivation from edges, weight handling, color roles, and the result counts.
-- [networkControls.test.js](../../tests/modules/chartControls/networkControls.test.js) covers
+- [networkControls.test.js](../../../tests/modules/chartControls/networkControls.test.js) covers
   control building and the reset-zoom and preset listeners.
-- [renderChartFromSpec.test.js](../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
   covers the panel dispatch path.
 
 ---
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../src/config/elementIds.js)): container
+**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
 `chart-network-container`, block `chart-block-network`. Control IDs are `viz-…-network-…`
 (e.g. `viz-select-network-source`, `viz-slider-network-charge`,
 `viz-slider-network-alpha-decay`, `viz-select-network-edge-color-mode`).
@@ -343,7 +343,7 @@ the Portuguese equivalent is in [pt-BR.json](../../src/i18n/pt-BR.json).
   <g class="network-legend">      (source/target swatches, optional)
 ```
 
-**Tuning knobs** ([charts.js](../../src/config/charts.js) `NETWORK_GRAPH`):
+**Tuning knobs** ([charts.js](../../../src/config/charts.js) `NETWORK_GRAPH`):
 `defaultLinkDistance`, `defaultChargeStrength`, `defaultAlphaDecay`, zoom bounds, alpha-decay
 clamp.
 

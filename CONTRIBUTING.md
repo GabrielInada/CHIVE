@@ -2,7 +2,7 @@
 
 Welcome. This document is the contributor's rulebook. Read it before opening your first PR.
 
-For end-user setup and deployment, see [README.md](README.md). For the architectural shape of the codebase, see [ARCHITECTURE.md](ARCHITECTURE.md). For exact state, facade, event, and subscriber details, see [docs/ARCHITECTURE_REFERENCE.md](docs/ARCHITECTURE_REFERENCE.md).
+For end-user setup and deployment, see [README.md](README.md) and the [documentation hub](docs/README.md). For the architectural shape of the codebase, see [Architecture overview](docs/development/architecture.md). For exact state, facade, event, and subscriber details, see [Architecture reference](docs/development/architecture-reference.md).
 
 > [!CAUTION]
 > Issues and PRs that don't follow the guidelines below may be closed until they match the expected shape.
@@ -75,7 +75,7 @@ Before opening a PR, check that:
 ## Code conventions
 
 - **CSS class names use English kebab-case:** `.panel-`, `.table-`, `.chart-`, modifiers like `.active`, `.loaded`, `.empty`
-- **CSS architecture:** Cascade layers ordered: foundation → controls → data-view → visual-output → feedback. See `src/styles/STYLES_ORGANIZATION.md` for details.
+- **CSS architecture:** Cascade layers ordered: foundation → controls → data-view → visual-output → feedback. See [Stylesheet organization](docs/development/styles.md) for details.
 - **Module exports:** camelCase for functions, PascalCase for classes
 - **Dependency injection:** Event handlers and render functions are passed as callbacks for testability and to avoid circular dependencies
 - **Result pattern:** Functions returning success/failure use `ok(data)` / `fail(reason)` from `src/utils/result.js`
@@ -87,8 +87,8 @@ Before opening a PR, check that:
 
 ## Translations and presets
 
-- For UI strings, update `src/i18n/en.json`, `src/i18n/pt-BR.json`, and `src/i18n/qqq.json` together. See [Translation Contributor Guide](docs/I18N.md).
-- For bundled sample datasets, add files under `src/data/presets/`, register them in `src/data/presetCatalog.js`, and add the required translation keys. See [Preset Dataset Contributor Guide](docs/PRESET_DATASETS.md).
+- For UI strings, update `src/i18n/en.json`, `src/i18n/pt-BR.json`, and `src/i18n/qqq.json` together. See [Translation Contributor Guide](docs/development/i18n.md).
+- For bundled sample datasets, add files under `src/data/presets/`, register them in `src/data/presetCatalog.js`, and add the required translation keys. See [Preset Dataset Contributor Guide](docs/development/preset-datasets.md).
 
 ## Documentation conventions
 
@@ -99,21 +99,21 @@ When moving, renaming, or adding documentation:
 - Search for old file names and paths with `rg`.
 - Check Markdown links changed by the edit.
 - Update issue templates when a top-level or user-facing doc target changes.
-- Update the README documentation map when a new user-facing doc is added.
-- Update [`docs/ARCHITECTURE_REFERENCE.md`](docs/ARCHITECTURE_REFERENCE.md) when adding, removing, or renaming a state field, facade method, `STATE_EVENTS` constant, or production subscriber.
+- Update the documentation hub when a user-facing or top-level doc is added, moved, or renamed.
+- Update [Architecture reference](docs/development/architecture-reference.md) when adding, removing, or renaming a state field, facade method, `STATE_EVENTS` constant, or production subscriber.
 
 - **Format**: `/** ... */` blocks, tab-indented. `@param {Type} name - description`. `@returns {Type} description` (omit only when the function is `void`).
 - **Minimum verbosity**: a 1-line summary plus `@param`/`@returns`. Add `@example`, `@fires`, `@throws`, `@deprecated`, or `@private` only where they convey something a reader could not infer from the signature.
 - **Project typedefs** live in [`src/types.js`](src/types.js) (`AppState`, `Dataset`, `ChartConfig`, `PanelBlock`, `ChartSnapshot`, `StateEventType`, …). Import via `@typedef {import('../types.js').Foo} Foo` at the top of the consuming file, then reference `Foo` unqualified downstream. Barrels do not propagate typedefs; always import from `src/types.js` directly.
 - **Mutable vs cloned returns**: functions that return a live state reference must say `"Live reference, do not mutate."` in the `@returns` description. Cloned returns say `"Deep clone."`. This footgun is real. Mutating a getter return bypasses the facade and breaks reactivity. See [`appState.js`](src/modules/state/appState.js) for examples.
 - **Events**: use `@fires STATE_EVENTS.FOO` (the constant name, not the string literal `'foo'`). Functions that conditionally emit must say so in the description.
-- **Facade-only-write invariant**: facade module banners reference `@see ARCHITECTURE.md`. Exact state/facade/event details live in `docs/ARCHITECTURE_REFERENCE.md`. Mutation helpers under `src/modules/panelSubsystem/*` and similar are `@internal` and must not be imported from outside the module that backs them.
+- **Facade-only-write invariant**: facade module banners reference `@see docs/development/architecture.md`. Exact state/facade/event details live in `docs/development/architecture-reference.md`. Mutation helpers under `src/modules/panelSubsystem/*` and similar are `@internal` and must not be imported from outside the module that backs them.
 - **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only; editors can use it for hover/intellisense without type validation.
 - **No HTML site generation** (no typedoc / no jsdoc CLI). Hover and source reading are the deliverable.
 
 ## Architecture invariants: do not break
 
-Hard rules. Breaking any of them silently degrades reactivity, and the failure mode is "the UI looks fine until the day it doesn't." See [ARCHITECTURE.md](ARCHITECTURE.md) for the why.
+Hard rules. Breaking any of them silently degrades reactivity, and the failure mode is "the UI looks fine until the day it doesn't." See [Architecture overview](docs/development/architecture.md) for the why.
 
 - All writes to application state go through a facade. Never assign to `dataset.*`, `appState.*`, or anything returned from a getter (`getActiveDataset()`, `getAllDatasets()`, `getPanelCharts()`, …).
 - Event names live in `STATE_EVENTS`. Never use string literals in `src/`. (Tests intentionally keep literals to exercise the wire format; leave them alone.)
@@ -141,7 +141,7 @@ Beyond renderer statelessness, `npm run lint` enforces these additional rule cla
 
 | If you're adding… | Put it in | Notes |
 |---|---|---|
-| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. Document its data contract, modes, and empty states in `docs/CHART_REFERENCE.md`. |
+| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. Document its data contract, modes, and empty states in `docs/user/chart-reference.md`. |
 | A new state field | The relevant domain in `src/modules/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
 | A new DOM event handler | `src/modules/eventHandlers.js` (or an existing controller) | Translate the event into a facade call. Never mutate state directly. |
 | A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |

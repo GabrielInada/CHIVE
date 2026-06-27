@@ -104,7 +104,7 @@ Preset keys should follow the existing pattern:
 
 In `qqq.json`, explain where the text appears and what workflow the sample is
 meant to support. Follow the translation workflow in
-[Translation Contributor Guide](I18N.md).
+[Translation Contributor Guide](i18n.md).
 
 ## Validation Checklist
 

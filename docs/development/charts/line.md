@@ -3,23 +3,23 @@
 This document explains how CHIVE's line chart works, from the config a dataset stores,
 through the sidebar controls, into the renderer, and out to the panel/export paths. It is
 meant to be read top to bottom the first time and used as a reference afterwards. File
-links are relative to this document (which lives in `docs/charts/`).
+links are relative to this document (which lives in `docs/development/charts/`).
 
 Section 2 covers the time-series and interpolation theory the chart rests on, independent of
 this codebase; everything from section 3 onward is how CHIVE implements it.
 
 For the high-level "which columns does it need" summary, see the line row in
-[CHART_REFERENCE.md](../CHART_REFERENCE.md). For the shared state/panel/event architecture,
-see [ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md).
+[Chart and data reference](../../user/chart-reference.md). For the shared state/panel/event architecture,
+see [Architecture reference](../architecture-reference.md).
 
 Key files:
 
-- Renderer: [lineChart.js](../../src/modules/visualizations/lineChart.js)
-- Sidebar controls: [lineControls.js](../../src/modules/chartControls/lineControls.js)
-- Config constants: [charts.js](../../src/config/charts.js) (`LINE_CHART`)
-- Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js) (the `line` block)
-- Section adapter (results view): [lineChartSection.js](../../src/components/results/chartRenders/lineChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Renderer: [lineChart.js](../../../src/modules/visualizations/lineChart.js)
+- Sidebar controls: [lineControls.js](../../../src/modules/chartControls/lineControls.js)
+- Config constants: [charts.js](../../../src/config/charts.js) (`LINE_CHART`)
+- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `line` block)
+- Section adapter (results view): [lineChartSection.js](../../../src/components/results/chartRenders/lineChartSection.js)
+- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
 
@@ -121,7 +121,7 @@ The renderer is **stateless**: each call wipes the container and rebuilds the SV
 already global-filtered; the renderer builds, aggregates, sorts, and draws the series on top of
 them. Both paths pass the X column's detected type so the axis kind is consistent (the panel
 path reads it from the snapshot's `columnsSnapshot`; see
-[ARCHITECTURE_REFERENCE.md](../ARCHITECTURE_REFERENCE.md)).
+[Architecture reference](../architecture-reference.md)).
 
 ---
 
@@ -131,7 +131,7 @@ path reads it from the snapshot's `columnsSnapshot`; see
 
 `chartConfig.line` is the line slice of each dataset's `chartConfig`, built fresh by
 `createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../src/config/chartDefaults.js).
+[chartDefaults.js](../../../src/config/chartDefaults.js).
 
 ### 4.2 The `chartConfig.line` keys
 
@@ -153,7 +153,7 @@ path reads it from the snapshot's `columnsSnapshot`; see
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../src/config/charts.js): `CHART_COLORS.line` = `#4e79a7`;
+[charts.js](../../../src/config/charts.js): `CHART_COLORS.line` = `#4e79a7`;
 `CHART_HEIGHT_LIMITS.line` = `{ min: 220, max: 720 }`; `LINE_CHART` holds the `curveOptions`
 list, `missingModes` (`['connect', 'gap', 'interpolate']`), `aggregateModes`
 (`['none', 'mean', 'sum', 'count']`), the default stroke width, `pointRadius` (3), and the
@@ -163,7 +163,7 @@ default ghost color.
 
 ## 5. The control sidebar
 
-[lineControls.js](../../src/modules/chartControls/lineControls.js) builds three sections via the
+[lineControls.js](../../../src/modules/chartControls/lineControls.js) builds three sections via the
 standard `createLineChartControls` / `setupLineChartControlListeners` / `computeDefaults`
 exports.
 
@@ -193,7 +193,7 @@ present.
 ### 6.1 Results view
 
 `renderLineChartSection({ config, rows, columnTypeByName, filterCallbacks })`
-([lineChartSection.js](../../src/components/results/chartRenders/lineChartSection.js)) resolves
+([lineChartSection.js](../../../src/components/results/chartRenders/lineChartSection.js)) resolves
 the block/container, hides+clears when disabled, sets the min-height, maps config into the
 options bag (forwarding `axisTypes.x` from `columnTypeByName` so the renderer picks the right
 X scale), and calls `renderLineChart`. On failure it maps the reason to a message:
@@ -272,14 +272,14 @@ are mapped by key.
 The line chart emits one (or two, in interpolate mode) `<path>` elements plus optional point
 markers and the axes, so the DOM is tiny regardless of dataset size; the only row-scaled work
 is the build/aggregate/sort passes (linear). Color, stroke, and curve edits flow through the
-shared throttled live-preview path (TIN doc [section 10](tin-chart.md)).
+shared throttled live-preview path (TIN doc [section 10](tin.md)).
 
 ---
 
 ## 10. Live preview and interaction
 
 The color inputs (line and ghost) use the shared live-preview path (non-emitting facade on
-`input`, commit on `change`; see TIN doc [section 10](tin-chart.md)) so dragging the picker
+`input`, commit on `change`; see TIN doc [section 10](tin.md)) so dragging the picker
 updates the line live. Other controls commit on change. Point-marker hover tooltips are the
 line chart's only interaction layer; it has no click-to-filter (a line is a continuous series,
 not a set of filterable categories).
@@ -307,25 +307,25 @@ markers, and `<g>` axes with cloned gridline `<line>`s. The panel exporter clone
 - **Zero baseline**: the y domain always includes 0.
 - **Stateless renders** and **frozen panel snapshots** behave as for every chart.
 
-Empty-state strings live in [en.json](../../src/i18n/en.json) (`chive-chart-empty-line*`);
-Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
+Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-line*`);
+Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ---
 
 ## 13. Tests
 
-- [lineChart.test.js](../../tests/modules/visualizations/lineChart.test.js) covers the
+- [lineChart.test.js](../../../tests/modules/visualizations/lineChart.test.js) covers the
   renderer: axis-kind handling, aggregation, the missing-value modes, and curve selection.
-- [lineControls.test.js](../../tests/modules/chartControls/lineControls.test.js) covers control
+- [lineControls.test.js](../../../tests/modules/chartControls/lineControls.test.js) covers control
   building and the X/Y validation and ghost-color enable logic.
-- [renderChartFromSpec.test.js](../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
   covers the panel dispatch path.
 
 ---
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../src/config/elementIds.js)): container
+**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
 `chart-line-container`, block `chart-block-line`. Control IDs are `viz-…-line-…`
 (e.g. `viz-select-line-x`, `viz-select-line-curve`, `viz-select-line-missing`,
 `viz-toggle-line-sort-x`).
@@ -344,7 +344,7 @@ Portuguese equivalents in [pt-BR.json](../../src/i18n/pt-BR.json).
     <text> axis titles          (optional)
 ```
 
-**Tuning knobs** ([charts.js](../../src/config/charts.js) `LINE_CHART`): `curveOptions`,
+**Tuning knobs** ([charts.js](../../../src/config/charts.js) `LINE_CHART`): `curveOptions`,
 `missingModes`, `aggregateModes`, `defaultStrokeWidth`, `pointRadius`.
 
 **Foundations → implementation map:**

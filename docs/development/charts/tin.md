@@ -4,7 +4,7 @@ This document explains how CHIVE's TIN (Triangulated Irregular Network) surface
 chart works, from the config a dataset stores, through the sidebar controls, into
 the renderer, and out to the panel/export paths. It is meant to be read top to
 bottom the first time and used as a reference afterwards. File links are relative
-to this document (which lives in `docs/charts/`).
+to this document (which lives in `docs/development/charts/`).
 
 Section 2 covers the mathematical and cartographic theory the chart rests on (what
 a TIN *is*, independent of this codebase); everything from section 3 onward is how
@@ -21,12 +21,12 @@ piecewise-linear height-field model over the triangulated input points.
 The CHIVE-specific behavior in this document is derived from these source files and
 tests:
 
-- Renderer: [tinChart.js](../../src/modules/visualizations/tinChart.js)
-- Sidebar controls: [tinControls.js](../../src/modules/chartControls/tinControls.js)
-- Config constants: [charts.js](../../src/config/charts.js)
-- Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js)
-- Bundled preset catalog: [presetCatalog.js](../../src/data/presetCatalog.js)
-- Renderer tests: [tinChart.test.js](../../tests/modules/visualizations/tinChart.test.js)
+- Renderer: [tinChart.js](../../../src/modules/visualizations/tinChart.js)
+- Sidebar controls: [tinControls.js](../../../src/modules/chartControls/tinControls.js)
+- Config constants: [charts.js](../../../src/config/charts.js)
+- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
+- Bundled preset catalog: [presetCatalog.js](../../../src/data/presetCatalog.js)
+- Renderer tests: [tinChart.test.js](../../../tests/modules/visualizations/tinChart.test.js)
 
 Use "guarantee" narrowly when maintaining this file: a statement should be backed by
 source/tests, by the mathematical model under stated assumptions, or by documented
@@ -55,13 +55,13 @@ numeric data, but it does not add GIS metadata or terrain-domain validation.
 
 Key files:
 
-- Renderer: [tinChart.js](../../src/modules/visualizations/tinChart.js)
-- Sidebar controls: [tinControls.js](../../src/modules/chartControls/tinControls.js)
-- Config constants: [charts.js](../../src/config/charts.js)
-- Per-dataset config defaults: [chartDefaults.js](../../src/config/chartDefaults.js)
-- Color math: [colorUtils.js](../../src/utils/colorUtils.js)
-- Section adapter (main results view): [tinChartSection.js](../../src/components/results/chartRenders/tinChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Renderer: [tinChart.js](../../../src/modules/visualizations/tinChart.js)
+- Sidebar controls: [tinControls.js](../../../src/modules/chartControls/tinControls.js)
+- Config constants: [charts.js](../../../src/config/charts.js)
+- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
+- Color math: [colorUtils.js](../../../src/utils/colorUtils.js)
+- Section adapter (main results view): [tinChartSection.js](../../../src/components/results/chartRenders/tinChartSection.js)
+- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
 
@@ -317,7 +317,7 @@ the central tension the performance design (section 9) addresses.
 
 Each dataset owns a `chartConfig` object, and `chartConfig.tin` is the TIN chart's
 slice of it. The canonical fresh shape is built by `createDefaultChartConfig()` in
-[chartDefaults.js](../../src/config/chartDefaults.js) (the `tin:` block). A saved or
+[chartDefaults.js](../../../src/config/chartDefaults.js) (the `tin:` block). A saved or
 partial config is deep-merged onto these defaults by
 `mergeChartConfigWithDefaults()` in the same file (user-set fields win, missing
 fields fall back to default).
@@ -354,7 +354,7 @@ fields fall back to default).
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../src/config/charts.js) holds the bounds and shared values:
+[charts.js](../../../src/config/charts.js) holds the bounds and shared values:
 
 - `CHART_COLORS.tin` = `#5d8aa8` (the default min-gradient/base color).
 - `CHART_DIMENSIONS.tin` = `{ width: 700, height: 460, margins: { top:16, right:16, bottom:44, left:56 } }`.
@@ -368,10 +368,10 @@ fields fall back to default).
 
 ## 5. The control sidebar
 
-[tinControls.js](../../src/modules/chartControls/tinControls.js) builds the
+[tinControls.js](../../../src/modules/chartControls/tinControls.js) builds the
 right-sidebar control group and wires every input to a config write. It exposes
 three functions, registered in the chart-controls manager registry
-([chartControlsManager.js](../../src/modules/chartControls/chartControlsManager.js),
+([chartControlsManager.js](../../../src/modules/chartControls/chartControlsManager.js),
 the `tin:` entry):
 
 - `createTinControls(dataset, numericOptions, allColumns)` builds the DOM.
@@ -413,7 +413,7 @@ that does nothing. The pattern is a boolean passed as the `disabled` argument:
 ### 5.3 Listener wiring and value clamping
 
 `setupTinControlListeners` uses the shared helpers in
-[controlListenerHelpers.js](../../src/modules/chartControls/controlListenerHelpers.js):
+[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js):
 
 - **Selects** (`setupSelectListeners`): x/y/z transform to `null` if the chosen
   value is no longer a numeric column; `gradientDistribution`, `fillMode`,
@@ -438,13 +438,13 @@ controls; it only reads config that the listeners have written.
 
 ### 6.1 Results view
 
-[chartsView.js](../../src/components/results/chartsView.js) decides which chart blocks
+[chartsView.js](../../../src/components/results/chartsView.js) decides which chart blocks
 to show. It calls `renderTinChartSection({ config: chartConfig.tin, rows })`
-([tinChartSection.js](../../src/components/results/chartRenders/tinChartSection.js)).
+([tinChartSection.js](../../../src/components/results/chartRenders/tinChartSection.js)).
 That adapter:
 
 1. Resolves the block (`chart-block-tin`) and container (`chart-tin-container`)
-   elements (IDs in [elementIds.js](../../src/config/elementIds.js), as
+   elements (IDs in [elementIds.js](../../../src/config/elementIds.js), as
    `CHART_BLOCKS.tin` / `CHART_CONTAINERS.tin`).
 2. Hides the block and clears the container if the chart is disabled.
 3. Sets the container `min-height` to the configured `chartHeight`.
@@ -457,11 +457,11 @@ That adapter:
 ### 6.2 Panel view
 
 When a chart is added to the panel, `addChartToPanel`
-([panelManager.js](../../src/modules/panelManager.js)) captures a snapshot:
+([panelManager.js](../../../src/modules/panelManager.js)) captures a snapshot:
 `config`, `dataSnapshot`, and `columnsSnapshot` are each `structuredClone`d at
 capture time, so the snapshot is **frozen** and decoupled from later edits to the
 active dataset. `renderChartFromSpec.renderTin()`
-([renderChartFromSpec.js](../../src/modules/panelSubsystem/renderChartFromSpec.js))
+([renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js))
 maps `spec.config` to the same options bag and calls the identical
 `renderTinChart` against `spec.dataSnapshot`. This frozen-snapshot property is what
 lets the live preview skip re-rendering the panel (section 9.4 / 10).
@@ -525,7 +525,7 @@ convention).
   of section 2.7).
 - Otherwise (`custom`) it linearly interpolates between `gradientMinColor` and
   `gradientMaxColor` via `interpolateColor` from
-  [colorUtils.js](../../src/utils/colorUtils.js).
+  [colorUtils.js](../../../src/utils/colorUtils.js).
 
 `sampleRamp` is used by the surface fill, the legend strip, and (indirectly) every
 bucket color. The legend samples the continuous ramp, while the surface fill uses
@@ -755,7 +755,7 @@ behavior is covered by renderer tests.
 
 ### 8.3 Color math reference
 
-[colorUtils.js](../../src/utils/colorUtils.js): `interpolateColor(min, max, t)` (clamped
+[colorUtils.js](../../../src/utils/colorUtils.js): `interpolateColor(min, max, t)` (clamped
 linear RGB lerp, used by the custom ramp and color-by-z contours), `hexToRgb` /
 `rgbToHex` / `toHex`, `isValidHexColor` / `normalizeHexColor` (validation/fallback
 used by the controls and `normalizeColor` inside the renderer).
@@ -809,7 +809,7 @@ cross-cutting across chart types and is outside this renderer-specific change.
 
 ### 9.4 The live-preview panel skip
 
-Separately, `livePreviewRender` in [main.js](../../src/main.js) used to also call
+Separately, `livePreviewRender` in [main.js](../../../src/main.js) used to also call
 `renderCanvasPanel()` on every tick, re-rendering all panel blocks even when hidden —
 doubling the work if a TIN chart was in the panel. That call was removed: panel
 blocks paint from frozen `structuredClone` snapshots (section 6.2), so a live config
@@ -825,7 +825,7 @@ The live preview is what makes a color drag feel responsive without rebuilding t
 whole sidebar (which would steal focus from the open picker).
 
 Two events are wired on each color input (`setupColorInputListener` in
-[controlListenerHelpers.js](../../src/modules/chartControls/controlListenerHelpers.js)):
+[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js)):
 
 - **`input`** (fires continuously while the picker is open): writes the new color
   through `normalizeActiveDatasetConfig` — a **non-emitting** facade that updates
@@ -835,7 +835,7 @@ Two events are wired on each color input (`setupColorInputListener` in
   updater so `CONFIG_UPDATED` fires, auto-save marks the project dirty, and the
   sidebar refreshes.
 
-`triggerLiveRender` ([livePreview.js](../../src/modules/chartControls/livePreview.js))
+`triggerLiveRender` ([livePreview.js](../../../src/modules/chartControls/livePreview.js))
 invokes a registered callback. `main.js` registers
 `throttle(livePreviewRender, 120)` (leading + trailing, so the first and final
 values always paint). `livePreviewRender` re-renders only the chart visualizations
@@ -899,7 +899,7 @@ large for SVG, but that is not implemented here.
 
 ## 13. Tests
 
-[tinChart.test.js](../../tests/modules/visualizations/tinChart.test.js) covers the
+[tinChart.test.js](../../../tests/modules/visualizations/tinChart.test.js) covers the
 renderer. Notable cases after the bucketed-path change:
 
 - Subpath count (`M` count across `.tin-triangles path`) equals
@@ -917,7 +917,7 @@ renderer. Notable cases after the bucketed-path change:
 
 Plus the existing isoline/threshold/hit-line/tooltip/legend coverage, untouched by
 the change.
-[panelManager.edges.test.js](../../tests/modules/panelSubsystem/panelManager.edges.test.js)
+[panelManager.edges.test.js](../../../tests/modules/panelSubsystem/panelManager.edges.test.js)
 has a snapshot-isolation regression test guarding that a panel snapshot's config is
 captured by value (so the live-preview panel skip is safe).
 
@@ -925,7 +925,7 @@ captured by value (so the live-preview panel skip is safe).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../src/config/elementIds.js)): container
+**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
 `chart-tin-container`, block `chart-block-tin`. Control IDs are `viz-…-tin-…`
 (e.g. `viz-select-tin-x`, `viz-slider-tin-subdivision`,
 `viz-input-tin-gradient-min`).
@@ -948,7 +948,7 @@ captured by value (so the live-preview panel skip is safe).
   <g class="tin-legend">         (12-stop gradient strip + min/max labels)
 ```
 
-**Tuning knobs** ([charts.js](../../src/config/charts.js) `TIN_CHART`):
+**Tuning knobs** ([charts.js](../../../src/config/charts.js) `TIN_CHART`):
 `rampBuckets` (color resolution vs path count), `maxSurfaceLeaves` (geometry budget),
 `maxSubdivisionDepth`, `maxIsolineLevels`.
 

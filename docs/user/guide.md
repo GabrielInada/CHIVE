@@ -50,7 +50,7 @@ scatter, pie/donut, bubble, network, treemap, line, and TIN charts.
   already saved to the dashboard panel stay frozen until you add them again.
 
 For exact column requirements and chart-specific empty states, see
-[Chart and data reference](CHART_REFERENCE.md).
+[Chart and data reference](chart-reference.md).
 
 ## Build A Dashboard Panel
 
@@ -93,4 +93,4 @@ The browser still must trust the static host serving CHIVE, the vendored runtime
 JavaScript and fonts, the browser itself, installed extensions, and local device
 policies. For sensitive or regulated datasets, self-host CHIVE from an
 environment you control and review the trust model in
-[Privacy and security](PRIVACY_AND_SECURITY.md).
+[Privacy and security](privacy-security.md).

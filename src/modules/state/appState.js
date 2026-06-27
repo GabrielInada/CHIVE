@@ -29,7 +29,7 @@ export { onStateChange, STATE_EVENTS };
  * @typedef {import('../../types.js').SidebarMode} SidebarMode
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  *
- * @see ARCHITECTURE.md
+ * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
 
