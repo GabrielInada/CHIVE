@@ -8,6 +8,12 @@ panel lifecycle details.
 For chart-level internals (each renderer's pipeline, its controls, and the math or algorithm
 behind it), see the per-chart deep dives in [charts/](charts/README.md).
 
+| Field | Value |
+|---|---|
+| Audience | Contributors changing state, facades, events, persistence, subscribers, or panel lifecycle code. |
+| Source of truth | Exact state schema, facade exports, event registry, subscriber behavior, persistence flow, and panel snapshot lifecycle. |
+| Update when | State fields, facade methods, `STATE_EVENTS`, persistence schema, production subscribers, or panel lifecycle behavior change. |
+
 The code remains the source of truth. When a state field, facade method,
 `STATE_EVENTS` constant, or production subscriber changes, update this
 reference in the same PR.

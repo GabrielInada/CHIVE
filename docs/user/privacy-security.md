@@ -3,6 +3,12 @@
 This document describes CHIVE's default privacy and security model as shipped
 from this repository.
 
+| Field | Value |
+|---|---|
+| Audience | Users and deployers evaluating data handling and trust boundaries. |
+| Source of truth | Browser storage keys, import/export payloads, backend/network claims, Docker trust implications, and security reporting. |
+| Update when | Storage keys, persistence schema, import/export payloads, runtime network behavior, Docker security headers, or deployment trust boundaries change. |
+
 ## Short Summary
 
 CHIVE is a browser-only static web application. The default deployments do not
@@ -106,15 +112,17 @@ Bundled preset datasets are files served with CHIVE. If you click external
 source links shown for a preset, your browser navigates to that external site
 separately.
 
-## Docker Deployment (Optional)
+## Docker Trust Boundary
 
-The optional Docker image (see the README) serves every runtime asset from a
-single origin and adds a hardened Nginx config: conservative security headers and
-an enforcing local-only Content Security Policy. The CSP keeps a documented
-`'unsafe-eval'` exception because D3's CSV parser requires it, so the image is
-more locked down than a plain static host but is not a fully hardened, eval-free
-profile. It does not change the trust model below, and these properties apply to
-the Docker image only, not to the default non-Docker deployments.
+The optional Docker image serves every runtime asset from a single origin and
+adds conservative security headers plus an enforcing local-only Content
+Security Policy. The policy keeps a documented `'unsafe-eval'` exception because
+D3's CSV parser requires it, so Docker hosting is not a fully hardened,
+eval-free profile. It does not change the trust model below, and these
+properties apply to the Docker image only, not to the default non-Docker
+deployments.
+
+For operational Docker steps, see [Docker deployment](../deployment/docker.md).
 
 ## Trust Model
 

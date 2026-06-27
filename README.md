@@ -14,7 +14,9 @@ CHIVE is a client-side browser tool for exploring CSV/JSON data, building intera
 - **Stable** is the documented public endpoint for the released state of the project and is the recommended version for normal use when available.
 - **Preview** reflects `develop`, is deployed by the GitHub Pages workflow, and is intended for trying upcoming features before they are merged into `main`.
 
-CHIVE's static runtime serves the source files unchanged: `index.html`, `about.html`, `src/`, and `vendor/`. The GitHub Pages preview workflow copies that set directly; self-hosted deployments should serve the same raw-static set. No production build step is required at deploy time.
+CHIVE's static runtime serves the source files unchanged. For the exact file
+set, MIME guidance, smoke tests, and self-hosting notes, see
+[Static hosting](docs/deployment/static-hosting.md).
 
 ## What You Can Do
 
@@ -77,16 +79,11 @@ hosting requirements, MIME types, smoke tests, and optional Docker hosting, see:
 
 ## Data And Privacy
 
-CHIVE has no application backend in the default deployments. Uploaded datasets are parsed and visualized in the browser. The app uses browser storage so auto-saved work can survive refreshes:
-
-- IndexedDB stores one SQLite project byte image containing datasets and dashboard panel state.
-- `localStorage` stores small UI preferences and the selected locale.
-
-Project changes auto-save: a save runs automatically a couple of seconds after you stop editing, and CHIVE also attempts a best-effort lifecycle save when the page hides, freezes, or closes. Hard crashes or interrupted closes can still lose changes made since the last successful save.
-
-Project export downloads a SQLite-backed `.chive.sqlite3` file. Full exports include dataset rows and saved chart snapshot payloads; work-only exports omit those heavy payloads and are meant for layout/work transfer only. Import currently accepts full project files and replaces the current datasets and panel.
-
-JavaScript runtime dependencies and fonts are served from the same static host as vendored files. If you need stricter controls for sensitive data, self-host CHIVE and review the static-host trust boundary before use. See [Privacy and security](docs/user/privacy-security.md) for the detailed trust model.
+CHIVE has no application backend in the default deployments. Uploaded datasets
+are parsed and visualized in the browser, and browser storage is used for
+auto-save. For exact storage keys, import/export payloads, runtime network
+behavior, and trust boundaries, see
+[Privacy and security](docs/user/privacy-security.md).
 
 ## Documentation
 

@@ -4,6 +4,12 @@ This reference tells you which columns and settings each CHIVE chart expects, so
 can pick the right chart for a dataset and understand why a chart shows an empty state
 instead of a visualization.
 
+| Field | Value |
+|---|---|
+| Audience | CHIVE users choosing chart types and diagnosing chart empty states. |
+| Source of truth | User-facing chart requirements, chart options, aggregation behavior, sample choices, and empty-state messages. |
+| Update when | Chart controls, required columns, aggregation modes, empty-state keys, or bundled chart samples change. |
+
 ## Purpose
 
 CHIVE charts render from the columns you select in the sidebar. When required columns

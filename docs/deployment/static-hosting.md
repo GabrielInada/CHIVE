@@ -1,6 +1,14 @@
 # Static Hosting
 
-CHIVE is designed to run from a static web server. The app runtime uses:
+CHIVE is designed to run from a static web server.
+
+| Field | Value |
+|---|---|
+| Audience | Deployers serving CHIVE from static hosting. |
+| Source of truth | Raw static file set, MIME guidance, and static-runtime smoke tests. |
+| Update when | Required runtime files, vendored assets, worker/WASM loading, MIME needs, or deployment smoke checks change. |
+
+The app runtime uses:
 
 1. Native browser ES modules through `<script type="module">`.
 2. Vendored JavaScript runtime dependencies loaded from `vendor/d3/` and

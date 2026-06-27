@@ -25,6 +25,8 @@ project overview; the sections below point to the deeper guides by reader goal.
 
 - [Contributing](../CONTRIBUTING.md): issue flow, branch workflow, local checks,
   coding conventions, lint rules, and tests.
+- [Contributor reference](development/contributor-reference.md): detailed JSDoc,
+  lint guard, code placement, testing, and debugging notes.
 - [Architecture overview](development/architecture.md): mental model for state,
   events, facades, rendering boundaries, and invariants.
 - [Architecture reference](development/architecture-reference.md): exact state
@@ -44,9 +46,6 @@ project overview; the sections below point to the deeper guides by reader goal.
 
 ## Maintain Documentation And Assets
 
-- [Documentation audit checklist](maintenance/documentation-audit.md): source of
-  truth checklist for setup, deployment, chart, storage, architecture, and style
-  docs.
 - [Security policy](../SECURITY.md): supported deployments and vulnerability
   reporting channel.
 - [Vendored runtime dependencies](../vendor/README.md): keep checked-in runtime

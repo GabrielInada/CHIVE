@@ -2,7 +2,7 @@
 
 Welcome. This document is the contributor's rulebook. Read it before opening your first PR.
 
-For end-user setup and deployment, see [README.md](README.md) and the [documentation hub](docs/README.md). For the architectural shape of the codebase, see [Architecture overview](docs/development/architecture.md). For exact state, facade, event, and subscriber details, see [Architecture reference](docs/development/architecture-reference.md).
+For end-user setup and deployment, see [README.md](README.md) and the [documentation hub](docs/README.md). For the architectural shape of the codebase, see [Architecture overview](docs/development/architecture.md). For exact state, facade, event, and subscriber details, see [Architecture reference](docs/development/architecture-reference.md). For detailed JSDoc, lint, code placement, testing, and debugging notes, see [Contributor reference](docs/development/contributor-reference.md).
 
 > [!CAUTION]
 > Issues and PRs that don't follow the guidelines below may be closed until they match the expected shape.
@@ -35,7 +35,7 @@ CHIVE is plain JavaScript (browser ES modules, no TypeScript) designed for stati
 6. Run `npm run lint` and fix any errors. General hygiene warnings should be reviewed, but they do not fail CI.
 7. Run `npm test` and verify all tests pass.
 8. Run `npm run dev` and smoke-check the affected feature in a browser at <http://localhost:5173>.
-9. If your change touches imports, workers, assets, deployment, or runtime dependency loading, run a production-style static smoke test from the project root: `python -m http.server 8080`, then open <http://localhost:8080/>. This catches the raw-static deployment issues described in [ESLint guards](#eslint-guards).
+9. If your change touches imports, workers, assets, deployment, or runtime dependency loading, run a production-style static smoke test from the project root: `python -m http.server 8080`, then open <http://localhost:8080/>. This catches the raw-static deployment issues described in [ESLint guards](docs/development/contributor-reference.md#eslint-guards).
 10. Open a pull request against the **[`develop`](https://github.com/GabrielInada/CHIVE/tree/develop)** branch.
 
 Common commands:
@@ -92,7 +92,7 @@ Before opening a PR, check that:
 
 ## Documentation conventions
 
-Public functions on the state core, services, and orchestrators carry JSDoc so the IDE can read each function's contract without re-reading the file. The conventions below match the existing style; please match them rather than inventing a new one.
+Public functions on the state core, services, and orchestrators carry JSDoc so the IDE can read each function's contract without re-reading the file. Keep JSDoc and docs close to the existing style.
 
 When moving, renaming, or adding documentation:
 
@@ -102,14 +102,8 @@ When moving, renaming, or adding documentation:
 - Update the documentation hub when a user-facing or top-level doc is added, moved, or renamed.
 - Update [Architecture reference](docs/development/architecture-reference.md) when adding, removing, or renaming a state field, facade method, `STATE_EVENTS` constant, or production subscriber.
 
-- **Format**: `/** ... */` blocks, tab-indented. `@param {Type} name - description`. `@returns {Type} description` (omit only when the function is `void`).
-- **Minimum verbosity**: a 1-line summary plus `@param`/`@returns`. Add `@example`, `@fires`, `@throws`, `@deprecated`, or `@private` only where they convey something a reader could not infer from the signature.
-- **Project typedefs** live in [`src/types.js`](src/types.js) (`AppState`, `Dataset`, `ChartConfig`, `PanelBlock`, `ChartSnapshot`, `StateEventType`, …). Import via `@typedef {import('../types.js').Foo} Foo` at the top of the consuming file, then reference `Foo` unqualified downstream. Barrels do not propagate typedefs; always import from `src/types.js` directly.
-- **Mutable vs cloned returns**: functions that return a live state reference must say `"Live reference, do not mutate."` in the `@returns` description. Cloned returns say `"Deep clone."`. This footgun is real. Mutating a getter return bypasses the facade and breaks reactivity. See [`appState.js`](src/modules/state/appState.js) for examples.
-- **Events**: use `@fires STATE_EVENTS.FOO` (the constant name, not the string literal `'foo'`). Functions that conditionally emit must say so in the description.
-- **Facade-only-write invariant**: facade module banners reference `@see docs/development/architecture.md`. Exact state/facade/event details live in `docs/development/architecture-reference.md`. Mutation helpers under `src/modules/panelSubsystem/*` and similar are `@internal` and must not be imported from outside the module that backs them.
-- **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only; editors can use it for hover/intellisense without type validation.
-- **No HTML site generation** (no typedoc / no jsdoc CLI). Hover and source reading are the deliverable.
+For exact JSDoc rules and documentation maintenance notes, see
+[Contributor reference](docs/development/contributor-reference.md#documentation-and-jsdoc-conventions).
 
 ## Architecture invariants: do not break
 
@@ -122,45 +116,24 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 - Renderers and DOM builders do not call write facades. They read durable state via getters and derive DOM from it; user input is surfaced through callbacks injected by the controller layer. Module-local transient UI state (search query, dialog draft, focus anchor) is allowed; durable application state goes through a facade.
 - `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js`; use a typed subscription.
 
-**The write-facade boundary is enforced by lint.** ESLint (`npm run lint`) restricts renderer and DOM-builder files (`src/components/`, `src/features/`, `src/modules/visualizations/`, and an explicit list of presentation files under `src/modules/panelSubsystem/`, see `eslint.config.js`) to read-only imports from `modules/state/appState.js`: the `get*` functions, `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing any write function from those directories is an error. If you need a write from a renderer or DOM builder, you're writing it in the wrong layer; route it through `panelManager.js` (for panel-state writes), a chartControls listener, or `eventHandlers.js`, all outside the linted scope. When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
-
-**Mutation of facade getter returns is blocked across all of `src/`.** A `no-restricted-syntax` rule in `eslint.config.js` catches the *inline* forms, both assignments (`getActiveDataset().X = y`, `getActiveDataset().X.Y = z`) and in-place mutating method calls (`getAllDatasets().push(...)`, `getActiveDataset().rows.sort()`) at depths 1 to 3, against the mutable-ref getters (`getActiveDataset`, `getAllDatasets`, `getPanelCharts`, `getChartSnapshot`, `getPanelBlocks`, `getState`, `getPersistenceSnapshot`). `getPersistenceSnapshot` is the save path's read-only live-reference view; treat it exactly like the other live getters (never mutate the returned `data`/`panel`/`ui`). The *aliased* form (`const ds = getActiveDataset(); ds.X = y`) is caught by a local rule, `chive/no-facade-getter-mutation` ([eslint-rules/no-facade-getter-mutation.js](eslint-rules/no-facade-getter-mutation.js)): it is scope-aware and import-gated (only getters imported from `modules/index.js` or `modules/state/appState.js` count, so DOM `el.dataset.x = y` writes and same-named DI params are not flagged), and it exempts the facade internals under `src/modules/state/` that legitimately use the aliased-write pattern. One gap remains by design: *sub-property* aliasing (`const c = getActiveDataset().chartConfig; c.X = y`) is caught by neither rule. Do not write it; route writes through a facade method. When a new mutable-ref getter is added to `appState.js`, update **both** `FACADE_MUTABLE_GETTERS` in `eslint.config.js` and `TRACKED_GETTERS` in the local rule.
-
-**CI runs lint + tests on every push and PR** (`.github/workflows/lint-and-test.yml`, targeting `main` and `develop`). Even if you forget `npm run lint` locally, the merge gate catches it.
-
-### ESLint guards
-
-Beyond renderer statelessness, `npm run lint` enforces these additional rule classes ([eslint.config.js](eslint.config.js)):
-
-- **Raw-static deployment guards.** CHIVE is meant to run served raw from `src/` and `vendor/` with no build step, so bundler-/Vite-only import forms are hard errors — they pass dev/test/Vite but break when source is served directly. Banned: bare `d3` / `banana-i18n` imports (use the checked-in modules under `vendor/d3/` and `vendor/banana-i18n/` through relative paths — see `BARE_IMPORT_BANS`), `https://esm.sh` runtime imports, the `?worker` / `?url` / `?raw` suffixes, and `import.meta.glob` / `import.meta.env`. `import.meta.url` stays allowed: it is the standard form for `new Worker(new URL(…), import.meta.url)` and preset asset URLs. Runtime dependencies that must run in the browser should be vendored into `vendor/` with their license files committed, then smoke-tested with a plain static server.
-- **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not import "upward": neither may import `modules/`, `components/`, `features/`, or `services/`. (Type/number/date formatting in `utils/formatters.js` is pure — callers pass `locale`; the localized type-label helper `translateType` lives in `services/i18nService.js`.)
-- **General hygiene, as warnings.** `no-unused-vars`, `prefer-const`, `no-var`, `eqeqeq`, and `curly` (`multi-line` — braces required only when a body spans multiple lines, matching the brace-free single-line style) run as **warnings**, not errors: CI runs `npm run lint` with no `--max-warnings`, so they surface cleanup without gating merges. Policy: architecture/deployment/correctness rules are errors; general style is warnings.
-- **`no-undef` (error).** Undefined-identifier detection is on. Browser and Web Worker globals are maintained **by hand** in `BROWSER_GLOBALS` ([eslint.config.js](eslint.config.js)) — a deliberate choice to avoid the `globals` dependency, consistent with the minimal-footprint stance. The first time you use a new browser API (e.g. `navigator`), add it to that list or lint will flag it.
+Lint guard details and the known aliasing gap are documented in
+[Contributor reference](docs/development/contributor-reference.md#architecture-guard-details).
 
 ## Where do I put new code?
 
-| If you're adding… | Put it in | Notes |
-|---|---|---|
-| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. Document its data contract, modes, and empty states in `docs/user/chart-reference.md`. |
-| A new state field | The relevant domain in `src/modules/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
-| A new DOM event handler | `src/modules/eventHandlers.js` (or an existing controller) | Translate the event into a facade call. Never mutate state directly. |
-| A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
-| A pure helper (formatting, parsing, color) | `src/utils/` | No DOM access. No state imports. |
-| A new derived selector | The facade that owns the underlying domain | Keep getters thin; don't compute heavy aggregates inside them. |
+See [Contributor reference](docs/development/contributor-reference.md#where-do-i-put-new-code)
+for the code placement table.
 
 ## Testing
 
-- Framework: Vitest with jsdom environment
-- Files needing DOM must declare `// @vitest-environment jsdom` at the top
-- Tests live in `tests/` mirroring `src/` structure
-- Patterns: `describe`/`it`/`expect`, `beforeEach` for state reset, `vi.mock()` for mocking
-- **Windows stale cache issue:** Vitest on Windows may fail all suites with `Cannot read properties of undefined (reading 'config')` after file changes.
-  - PowerShell fix: `Remove-Item -Recurse -Force node_modules/.vite, node_modules/.vitest`
-  - Bash fix: `rm -rf node_modules/.vite node_modules/.vitest`
-  - Then rerun: `npm test`
+Run `npm run lint` and `npm test` before opening a PR. Add or update tests in
+`tests/` when behavior changes, mirroring the `src/` structure. For jsdom setup,
+mocking patterns, and the Windows stale-cache workaround, see
+[Contributor reference](docs/development/contributor-reference.md#testing).
 
 ## Debugging
 
-- `window.chiveDebug` exposes thirteen entries grouped as: state getters (`getState`, `getActiveDataset`, `getLoadedDatasets`), facade mutators (`updateDatasetColumns`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`, `showError`), and four state-log helpers (`enableStateLog`, `disableStateLog`, `getStateLog`, `clearStateLog`).
-- `chiveDebug.enableStateLog()` prints every emit as `[chive:state] <type> <data>` and stores the last 100 entries; `getStateLog()` returns them, `clearStateLog()` resets the buffer, `disableStateLog()` turns it off.
-- To diagnose a surprising re-render: enable the log, perform the action, then read `getStateLog()` to see the exact event chain that fired.
+Use `window.chiveDebug` for state reads, selected facade mutators, UI helpers,
+and state-event logging. See
+[Contributor reference](docs/development/contributor-reference.md#debugging) for
+the exposed entries and state-log workflow.

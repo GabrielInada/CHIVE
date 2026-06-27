@@ -3,6 +3,12 @@
 This guide documents how to add or update the bundled sample datasets shown by
 CHIVE's "Load sample dataset" dialog.
 
+| Field | Value |
+|---|---|
+| Audience | Contributors adding or updating bundled sample datasets. |
+| Source of truth | Preset file placement, catalog metadata, source attribution, translation keys, and row/column expectations. |
+| Update when | Preset catalog fields, bundled dataset files, sample metadata, source links, or preset i18n behavior change. |
+
 ## Purpose
 
 Preset datasets give users immediate examples for testing uploads, table

@@ -5,6 +5,12 @@ doc explains the chart from the config a dataset stores, through the sidebar con
 renderer, and out to the panel and export paths, and pairs the implementation with the
 mathematical or algorithmic theory it rests on.
 
+| Field | Value |
+|---|---|
+| Audience | Contributors changing chart renderers, controls, panel rendering, or tests. |
+| Source of truth | Implementation-level chart data flow, algorithms, config, edge cases, and test coverage. |
+| Update when | A chart renderer, control surface, panel adapter, algorithm, empty-state path, or test contract changes. |
+
 These are the companion to the higher-level docs one directory up:
 
 - [Chart and data reference](../../user/chart-reference.md) is the simplified matrix: which columns and

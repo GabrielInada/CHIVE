@@ -4,6 +4,12 @@ This guide covers the normal CHIVE workflow from loading data through exporting
 work. For setup, deployment, and contributor details, use the README and the
 developer docs.
 
+| Field | Value |
+|---|---|
+| Audience | People using CHIVE in the browser. |
+| Source of truth | User workflow, supported file flows, charting path, panel workflow, and practical limitations. |
+| Update when | Upload, charting, filtering, panel, import/export, or visible privacy behavior changes. |
+
 ## Load Data
 
 Start from either a bundled sample dataset or a local file.
@@ -70,18 +76,35 @@ chart when you want the panel to reflect updated data, filters, or settings.
 
 CHIVE auto-saves browser work and can also transfer project files manually.
 
-- Auto-save stores one SQLite byte image in IndexedDB for the current origin.
-  UI preferences and the selected locale are stored in `localStorage`.
+- Auto-save keeps work in browser storage for the current origin.
 - Full project export downloads a `.chive.sqlite3` file containing datasets,
   chart snapshots, and panel layout.
 - Work-only export downloads the same project format without dataset rows or
   saved chart row payloads. Use it for layout/work transfer when row data should
   not be included.
-- Project import currently accepts full project files. Import replaces the
-  current datasets and panel after confirmation.
+- Project import restores a full project file and replaces the current datasets
+  and panel after confirmation.
 
 Different deployment URLs and local development ports have separate browser
 storage because browsers scope storage by origin.
+
+For exact storage keys, payload contents, and trust boundaries, see
+[Privacy and security](privacy-security.md).
+
+## Known Limitations
+
+- Project import currently accepts full project files. Work-only project files
+  are export-only.
+- CHIVE does not currently bundle a network preset. Use the manual CSV example
+  in [Chart and data reference](chart-reference.md#csv-examples-for-network-and-tin).
+- Scatter date columns currently classify as categorical axes. See the
+  [scatter chart deep dive](../development/charts/scatter.md#22-axis-types-numeric-vs-categorical)
+  for the current axis behavior.
+- TIN is a visualization tool for scattered points, not a GIS/DEM engine. It
+  does not model CRS, projection, or uncertainty. See the
+  [TIN chart deep dive](../development/charts/tin.md#known-limitations-and-non-claims).
+- The optional Docker deployment keeps a documented CSP exception required by
+  D3 CSV parsing. See [Docker deployment](../deployment/docker.md).
 
 ## Privacy Basics
 

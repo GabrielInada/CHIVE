@@ -2,6 +2,12 @@
 
 This document describes the organizational structure of stylesheets and their alignment with code features.
 
+| Field | Value |
+|---|---|
+| Audience | Contributors changing CSS, layout, responsive behavior, or feature styling. |
+| Source of truth | CSS bundle ownership, cascade layer order, feature file map, naming conventions, and responsive breakpoints. |
+| Update when | CSS files move, cascade layers change, feature ownership changes, or responsive breakpoints are added or removed. |
+
 ## Architecture
 
 All stylesheets are imported through a bundler pattern with cascade layers:

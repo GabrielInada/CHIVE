@@ -6,6 +6,12 @@ does not change the app: the image serves the same static files (`index.html`,
 deployment described in [Static hosting](static-hosting.md) remains fully
 supported and is not affected.
 
+| Field | Value |
+|---|---|
+| Audience | Deployers using the optional Docker/Nginx hosting path. |
+| Source of truth | Docker build/run commands, Nginx header behavior, and Docker-specific CSP notes. |
+| Update when | Dockerfile, Compose config, Nginx headers, exposed port, or runtime asset requirements change. |
+
 Run it with Docker Compose from the project root:
 
 ```powershell

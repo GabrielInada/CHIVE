@@ -17,7 +17,6 @@ Which file or section needs work?
 - [ ] `docs/user/`
 - [ ] `docs/deployment/`
 - [ ] `docs/development/`
-- [ ] `docs/maintenance/`
 - [ ] `vendor/README.md`
 - [ ] Inline JSDoc / code comments
 - [ ] Other: ___
