@@ -97,6 +97,11 @@ getter is added to `appState.js`, update both `FACADE_MUTABLE_GETTERS` in
 **CI runs lint and tests on every push and PR** through
 `.github/workflows/lint-and-test.yml`, targeting `main` and `develop`.
 
+CI runs `npm run lint`, `npm run lint:css`, and `npm test`. The CSS lint step is
+owned by [Stylesheet organization](styles.md): it checks `src/styles/**/*.css`,
+ignores vendored CSS, blocks on correctness errors, and keeps selector/custom
+property naming conventions warning-only during the first rollout.
+
 ## ESLint Guards
 
 Beyond renderer statelessness, `npm run lint` enforces these rule classes in

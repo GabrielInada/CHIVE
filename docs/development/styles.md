@@ -196,6 +196,23 @@ Examples:
 - `.column-actions`: Column action buttons
 - `#empty-state`: Empty state container
 
+## CSS Linting
+
+Stylelint checks project-owned CSS under `src/styles/**/*.css`:
+
+```bash
+npm run lint:css
+```
+
+Use `npm run lint:css:fix` for safe automatic fixes. Vendored CSS, including
+`vendor/fonts/fonts.css`, is intentionally ignored so checked-in third-party
+assets can stay close to upstream.
+
+The first Stylelint rollout is conservative: CSS correctness issues fail CI,
+while class-name and custom-property naming conventions are warnings. Treat
+warnings as cleanup signals, but do not refactor unrelated selectors only to
+make a feature change pass.
+
 ## Common Variables
 
 All colors, fonts, and scales are defined in `variables.css`.

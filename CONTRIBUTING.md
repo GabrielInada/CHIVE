@@ -46,6 +46,8 @@ npm run build        # Optional Vite production build -> dist/
 npm run preview      # Preview the optional Vite build
 npm run lint         # Run ESLint architecture/deployment guards
 npm run lint:fix     # Apply safe automatic lint fixes; architecture errors usually need manual fixes
+npm run lint:css     # Run Stylelint CSS correctness checks
+npm run lint:css:fix # Apply safe Stylelint fixes
 npm test             # Run all tests once (vitest run)
 npm run test:watch   # Tests in watch mode
 ```
@@ -55,6 +57,7 @@ Before opening a PR, check that:
 - The PR links the relevant bug report, feature proposal, or documentation issue.
 - Tests were added or updated when behavior changed.
 - `npm run lint` passes without errors.
+- `npm run lint:css` passes without errors when CSS changed.
 - `npm test` passes.
 - The affected feature was smoke-checked with `npm run dev`.
 - The local static smoke test was run if the change affects raw-static runtime behavior.
@@ -75,7 +78,7 @@ Before opening a PR, check that:
 ## Code conventions
 
 - **CSS class names use English kebab-case:** `.panel-`, `.table-`, `.chart-`, modifiers like `.active`, `.loaded`, `.empty`
-- **CSS architecture:** Cascade layers ordered: foundation → controls → data-view → visual-output → feedback. See [Stylesheet organization](docs/development/styles.md) for details.
+- **CSS architecture:** Cascade layers ordered: foundation → controls → data-view → visual-output → feedback. Stylelint checks project-owned CSS under `src/styles/`; vendor CSS is not linted. See [Stylesheet organization](docs/development/styles.md) for details.
 - **Module exports:** camelCase for functions, PascalCase for classes
 - **Dependency injection:** Event handlers and render functions are passed as callbacks for testability and to avoid circular dependencies
 - **Result pattern:** Functions returning success/failure use `ok(data)` / `fail(reason)` from `src/utils/result.js`
