@@ -9,7 +9,8 @@
  *      render sees the restored state.
  *   3. Initialize fileManager / chartControls / panelManager.
  *   4. Wire global DOM listeners via `eventHandlers`.
- *   5. Subscribe `refreshView` to the ACTIVE_DATASET, COLUMNS_UPDATED,
+ *   5. Subscribe a microtask-coalesced `scheduleRefreshView` to the
+ *      ACTIVE_DATASET, DATASET_ADDED, DATASET_REMOVED, COLUMNS_UPDATED,
  *      CONFIG_UPDATED, and STATE_HYDRATED state events.
  *   6. Enable debounced auto-save.
  *   7. Initial render.
@@ -19,22 +20,20 @@
  * @typedef {import('./types.js').AppState} AppState
  */
 
-import { initializeI18n, t, processData } from './services/index.js';
+import { initializeI18n, t } from './services/index.js';
 import {
 	isPersistenceAvailable,
 	hydrateState,
 	enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey,
 } from './services/persistenceService.js';
-import { ingestFile, progressLabelForStage, ingestErrorMessage } from './services/dataIngestService.js';
-import { loadPresetSource } from './services/presetService.js';
 import {
 renderEmptyState,
 renderDataInterface,
 renderFileList,
 } from './components/index.js';
 import { initChartControls, renderChartControlsSidebar, renderCharts } from './features/chartFeatures.js';
-import { createDefaultChartConfig, mergeChartConfigWithDefaults } from './config/chartDefaults.js';
+import { mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 import { getNumericColumns } from './utils/columnHelpers.js';
 import { rehydratePanelChartSpecs } from './utils/panelHydration.js';
 import { throttle } from './utils/throttle.js';
@@ -46,7 +45,6 @@ getActiveDataset,
 onStateChange,
 STATE_EVENTS,
 setPreviewRows,
-addDataset,
 normalizeActiveDatasetConfig,
 updateActiveDatasetColumns,
 updateActiveDatasetConfig,
@@ -70,7 +68,8 @@ initFileManager,
 getLoadedDatasets,
 selectDataset,
 removeDatasetByIndex,
-createJoinedDataset,
+handleJoinDatasetRequest,
+handlePresetDatasetRequest,
 initializeAllEventHandlers,
 } from './modules/index.js';
 import {
@@ -78,7 +77,6 @@ showFeedback,
 showFeedbackMessage,
 showError,
 showErrorMessage,
-showProgress,
 switchTab,
 } from './modules/index.js';
 
@@ -113,7 +111,7 @@ if (isPersistenceAvailable()) {
 }
 
 // 3. Initialize modules
-initFileManager(handleDatasetsChanged);
+initFileManager();
 // WHY: 120ms rate limit on live preview. Color pickers and height drags emit
 // events every frame; unthrottled, each one re-renders the active chart, which
 // stutters on heavy charts (TIN triangulation).
@@ -191,42 +189,48 @@ function reportInitializationError(error) {
 // STATE SUBSCRIPTIONS & CALLBACKS
 // =============================================================================
 
+// Coalesces refreshView() across a synchronous burst of state events so e.g. an
+// add-then-select (DATASET_ADDED + ACTIVE_DATASET in the same tick) paints once.
+let refreshQueued = false;
+
 /**
- * Callback fileManager invokes after any add/remove/select. Triggers a
- * full re-render.
+ * Schedule a coalesced `refreshView()` on the next microtask. Multiple calls in
+ * the same tick collapse into a single render. The `queued` flag is cleared
+ * before running so a thrown render cannot permanently wedge future schedules;
+ * a render error is reported via the `chive-internal-error` channel (surfaced as
+ * a toast) rather than escaping as an unhandled microtask rejection.
  *
  * @private
  */
-function handleDatasetsChanged() {
-refreshView();
+function scheduleRefreshView() {
+	if (refreshQueued) return;
+	refreshQueued = true;
+	Promise.resolve().then(() => {
+		refreshQueued = false;
+		try {
+			refreshView();
+		} catch (err) {
+			window.dispatchEvent(new CustomEvent('chive-internal-error', {
+				detail: { type: 'refresh-error', message: String(err?.message || err) },
+			}));
+		}
+	});
 }
 
 /**
- * Subscribe `refreshView` to the state events whose payloads affect
- * what's rendered: active dataset, columns, config, and runtime imports.
+ * Subscribe the coalesced `scheduleRefreshView` to the state events whose
+ * payloads affect what's rendered: dataset add/remove/select, columns, config,
+ * and runtime imports (hydration).
  *
  * @private
  */
 function setupStateSubscriptions() {
-// Re-render when active dataset changes
-onStateChange(STATE_EVENTS.ACTIVE_DATASET, () => {
-refreshView();
-});
-
-// Re-render when columns change
-onStateChange(STATE_EVENTS.COLUMNS_UPDATED, () => {
-refreshView();
-});
-
-// Re-render when config changes
-onStateChange(STATE_EVENTS.CONFIG_UPDATED, () => {
-refreshView();
-});
-
-onStateChange(STATE_EVENTS.STATE_HYDRATED, () => {
-refreshView();
-});
-
+onStateChange(STATE_EVENTS.ACTIVE_DATASET, scheduleRefreshView);
+onStateChange(STATE_EVENTS.DATASET_ADDED, scheduleRefreshView);
+onStateChange(STATE_EVENTS.DATASET_REMOVED, scheduleRefreshView);
+onStateChange(STATE_EVENTS.COLUMNS_UPDATED, scheduleRefreshView);
+onStateChange(STATE_EVENTS.CONFIG_UPDATED, scheduleRefreshView);
+onStateChange(STATE_EVENTS.STATE_HYDRATED, scheduleRefreshView);
 }
 
 // =============================================================================
@@ -272,9 +276,9 @@ function livePreviewRender() {
  * (no-emit by design, emitting would re-enter via CONFIG_UPDATED and
  * loop), then delegates rendering to specialized modules.
  *
- * Called after any state change the file subscribes to (active dataset,
- * columns, config) and after explicit user actions like preset/join
- * imports.
+ * Invoked through {@link scheduleRefreshView} by the state subscriptions
+ * (dataset add/remove/select, columns, config, hydration), and called directly
+ * for non-bus renders: boot, locale changes, and preview-row changes.
  *
  * @private
  */
@@ -376,130 +380,6 @@ function updatePreviewRows(rows) {
 		// Ignore invalid values and preserve current preview state.
 	}
 	refreshView();
-}
-
-/**
- * Handle a join request from the dataset-list UI. Delegates to
- * `fileManager.createJoinedDataset`; on success, activates the new
- * dataset and shows a success toast. Failures surface as error toasts
- * with the translated message.
- *
- * @private
- * @param {Object} spec - Forwarded to `createJoinedDataset`.
- */
-function handleJoinDatasetRequest(spec) {
-	const result = createJoinedDataset(spec);
-	if (!result?.ok) {
-		showError(result?.message || t('chive-join-error-generic'));
-		return;
-	}
-
-	selectDataset(result.index);
-	showFeedback(t('chive-join-success', [result.datasetName]));
-	refreshView();
-}
-
-/**
- * Handle a preset dataset request. Resolves the preset source (inline
- * or fetched), runs the ingest pipeline (worker for fetched / `processData`
- * sync for inline), and adds the resulting dataset. The progress toast
- * carries the cancellation signal for both the fetch and the worker.
- *
- * `loadPresetSource` returns a result: `{ ok:false, reason:'preset-fetch-timeout' }`
- * surfaces a dedicated timeout message, `'cancelled'` closes the toast quietly,
- * and every other reason is reported as a generic join/preset error.
- *
- * @private
- * @param {import('./types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
- */
-async function handlePresetDatasetRequest(preset) {
-	if (!preset) {
-		showError(t('chive-join-error-generic'));
-		return;
-	}
-
-	const presetName = t(preset.nameKey);
-	const progress = showProgress(t('chive-progress-parsing', [presetName]));
-	const abortController = new AbortController();
-	progress.onCancel(() => abortController.abort());
-
-	try {
-		const result = await loadPresetSource(preset, { signal: abortController.signal });
-
-		if (!result.ok) {
-			if (result.reason === 'cancelled') {
-				progress.close();
-			} else if (result.reason === 'preset-fetch-timeout') {
-				progress.fail(t('chive-preset-fetch-timeout', [presetName]));
-				showError(t('chive-join-error-generic'));
-			} else {
-				progress.fail(t('chive-progress-failed', [result.reason || 'preset-error']));
-				showError(t('chive-join-error-generic'));
-			}
-			return;
-		}
-
-		const source = result.value;
-
-		let rows;
-		let columns;
-		let statsNumeric = [];
-		let statsCategorical = [];
-
-		if (source.mode === 'inline') {
-			// Inline presets are tiny demo arrays, sync processData is cheap.
-			rows = source.rows;
-			if (source.dropColumns.length > 0) {
-				const dropSet = new Set(source.dropColumns);
-				rows = rows.map(row => {
-					const next = { ...row };
-					dropSet.forEach(key => { delete next[key]; });
-					return next;
-				});
-			}
-			const processed = processData(rows);
-			rows = processed.rows;
-			columns = processed.columns;
-			progress.update(100);
-		} else {
-			const result = await ingestFile(
-				{ kind: source.kind, text: source.text, options: { dropColumns: source.dropColumns } },
-				{
-					signal: abortController.signal,
-					onProgress: ({ stage, percent }) => {
-						progress.update(percent, progressLabelForStage(stage, presetName));
-					},
-				},
-			);
-
-			if (!result.ok) {
-				if (result.reason === 'cancelled') progress.close();
-				else progress.fail(t('chive-progress-failed', [ingestErrorMessage(result.reason)]));
-				return;
-			}
-
-			({ rows, columns, statsNumeric, statsCategorical } = result.value);
-		}
-
-		const dataset = {
-			name: presetName,
-			sizeLabel: t('chive-preset-generated-size', [preset.rows]),
-			rows,
-			columns,
-			selectedColumns: columns.map(c => c.name),
-			chartConfig: createDefaultChartConfig(),
-			precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
-		};
-
-		const index = addDataset(dataset);
-		selectDataset(index);
-		progress.succeed(t('chive-preset-load-success', [presetName]));
-		refreshView();
-	} catch (err) {
-		// Genuinely-unexpected throws from processData/addDataset/selectDataset.
-		progress.fail(t('chive-progress-failed', [err?.message || 'error']));
-		showError(t('chive-join-error-generic'));
-	}
 }
 
 // =============================================================================

@@ -16,29 +16,29 @@
 import { t } from '../services/i18nService.js';
 import { processData, formatFileSize, joinDatasets } from '../services/dataService.js';
 import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../services/dataIngestService.js';
+import { loadPresetSource } from '../services/presetService.js';
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './state/appState.js';
-import { showError, clearErrors, showProgress } from './feedbackUI.js';
+import { showError, showFeedback, clearErrors, showProgress } from './feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/limits.js';
 import { DELIMITED_EXTENSIONS } from '../config/formats.js';
 import { createDefaultChartConfig } from '../config/chartDefaults.js';
-
-// Callback when dataset list changes
-let onDatasetsChangeCallback = null;
 
 // Confirmation function for user prompts, injectable for testing, defaults to window.confirm
 let confirmFn = message => window.confirm(message);
 
 /**
- * Initialize the file manager. Wire the change callback (invoked after
- * each successful add/remove/select) and the confirmation function used
- * for the over-limit file-size prompt. The confirmation hook is
- * injectable for testing, production callers can omit it.
+ * Initialize the file manager. Wires the confirmation function used for the
+ * over-limit file-size prompt (injectable for testing; production callers can
+ * omit it).
  *
- * @param {(() => void) | null} [changeCallback] - Called when the dataset list changes.
- * @param {((message: string) => boolean) | null} [confirmCallback] - Defaults to `window.confirm`.
+ * Dataset-list renders are not wired here: every add/remove/select routes
+ * through the data facade and emits `DATASET_ADDED` / `DATASET_REMOVED` /
+ * `ACTIVE_DATASET`, which `main.js` subscribes to. There is no change callback.
+ *
+ * @param {{ confirmCallback?: ((message: string) => boolean) | null }} [options] - `confirmCallback` defaults to `window.confirm`. Tolerates `null`/omitted.
  */
-export function initFileManager(changeCallback = null, confirmCallback = null) {
-	onDatasetsChangeCallback = changeCallback;
+export function initFileManager(options = {}) {
+	const { confirmCallback = null } = options ?? {};
 	confirmFn = confirmCallback || (message => window.confirm(message));
 }
 
@@ -47,7 +47,9 @@ export function initFileManager(changeCallback = null, confirmCallback = null) {
  * individual files are caught and routed to `showError`; the loop
  * continues so a single bad file does not block the rest of the batch.
  *
- * The change callback fires once after the entire batch (not per file).
+ * Each successful file calls `addDataset`, which emits `DATASET_ADDED`; the
+ * `main.js` subscription re-renders the dataset view (coalesced per microtask),
+ * so a batch renders progressively, one paint per added file.
  *
  * @param {FileList | File[] | null | undefined} files
  * @returns {Promise<void>}
@@ -64,10 +66,6 @@ export async function handleFileUpload(files) {
 		} catch (err) {
 			showError(err.message || t('chive-error-upload-processing'));
 		}
-	}
-
-	if (onDatasetsChangeCallback) {
-		onDatasetsChangeCallback();
 	}
 }
 
@@ -168,30 +166,26 @@ function readFile(file) {
 }
 
 /**
- * Select a dataset as active
+ * Select a dataset as active. The facade emits `ACTIVE_DATASET`, which drives
+ * the re-render.
  * @param {number} index - Dataset index
  */
 export function selectDataset(index) {
 	try {
 		setActiveDataset(index);
-		if (onDatasetsChangeCallback) {
-			onDatasetsChangeCallback();
-		}
 	} catch (err) {
 		showError(err.message);
 	}
 }
 
 /**
- * Remove a dataset
+ * Remove a dataset. The facade emits `DATASET_REMOVED`, which drives the
+ * re-render.
  * @param {number} index - Dataset index
  */
 export function removeDatasetByIndex(index) {
 	try {
 		removeDataset(index);
-		if (onDatasetsChangeCallback) {
-			onDatasetsChangeCallback();
-		}
 	} catch (err) {
 		showError(err.message);
 	}
@@ -327,9 +321,6 @@ export function createJoinedDataset(spec = {}) {
 		};
 
 		const index = addDataset(dataset);
-		if (onDatasetsChangeCallback) {
-			onDatasetsChangeCallback();
-		}
 
 		return { ok: true, index, datasetName };
 	} catch {
@@ -397,5 +388,127 @@ export function setupFileInputListeners() {
 		});
 	} else {
 		showError(t('chive-error-upload-zone-missing'));
+	}
+}
+
+/**
+ * Handle a join request from the dataset-list UI. Delegates to
+ * {@link createJoinedDataset}; on success, activates the new dataset and shows a
+ * success toast. Failures surface as error toasts with the translated message.
+ * Re-render is driven by the `DATASET_ADDED` / `ACTIVE_DATASET` emits.
+ *
+ * @param {Object} spec - Forwarded to `createJoinedDataset`.
+ */
+export function handleJoinDatasetRequest(spec) {
+	const result = createJoinedDataset(spec);
+	if (!result?.ok) {
+		showError(result?.message || t('chive-join-error-generic'));
+		return;
+	}
+
+	selectDataset(result.index);
+	showFeedback(t('chive-join-success', [result.datasetName]));
+}
+
+/**
+ * Handle a preset dataset request. Resolves the preset source (inline or
+ * fetched), runs the ingest pipeline (worker for fetched / `processData` sync
+ * for inline), and adds the resulting dataset. The progress toast carries the
+ * cancellation signal for both the fetch and the worker. Re-render is driven by
+ * the `DATASET_ADDED` / `ACTIVE_DATASET` emits.
+ *
+ * `loadPresetSource` returns a result: `{ ok:false, reason:'preset-fetch-timeout' }`
+ * surfaces a dedicated timeout message, `'cancelled'` closes the toast quietly,
+ * and every other reason is reported as a generic join/preset error.
+ *
+ * @param {import('../types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
+ * @returns {Promise<void>}
+ */
+export async function handlePresetDatasetRequest(preset) {
+	if (!preset) {
+		showError(t('chive-join-error-generic'));
+		return;
+	}
+
+	const presetName = t(preset.nameKey);
+	const progress = showProgress(t('chive-progress-parsing', [presetName]));
+	const abortController = new AbortController();
+	progress.onCancel(() => abortController.abort());
+
+	try {
+		const result = await loadPresetSource(preset, { signal: abortController.signal });
+
+		if (!result.ok) {
+			if (result.reason === 'cancelled') {
+				progress.close();
+			} else if (result.reason === 'preset-fetch-timeout') {
+				progress.fail(t('chive-preset-fetch-timeout', [presetName]));
+				showError(t('chive-join-error-generic'));
+			} else {
+				progress.fail(t('chive-progress-failed', [result.reason || 'preset-error']));
+				showError(t('chive-join-error-generic'));
+			}
+			return;
+		}
+
+		const source = result.value;
+
+		let rows;
+		let columns;
+		let statsNumeric = [];
+		let statsCategorical = [];
+
+		if (source.mode === 'inline') {
+			// Inline presets are tiny demo arrays, sync processData is cheap.
+			rows = source.rows;
+			if (source.dropColumns.length > 0) {
+				const dropSet = new Set(source.dropColumns);
+				rows = rows.map(row => {
+					const next = { ...row };
+					dropSet.forEach(key => { delete next[key]; });
+					return next;
+				});
+			}
+			const processed = processData(rows);
+			rows = processed.rows;
+			columns = processed.columns;
+			progress.update(100);
+		} else {
+			const ingestResult = await ingestFile(
+				{ kind: source.kind, text: source.text, options: { dropColumns: source.dropColumns } },
+				{
+					signal: abortController.signal,
+					onProgress: ({ stage, percent }) => {
+						progress.update(percent, progressLabelForStage(stage, presetName));
+					},
+				},
+			);
+
+			if (!ingestResult.ok) {
+				if (ingestResult.reason === 'cancelled') progress.close();
+				else progress.fail(t('chive-progress-failed', [ingestErrorMessage(ingestResult.reason)]));
+				return;
+			}
+
+			({ rows, columns, statsNumeric, statsCategorical } = ingestResult.value);
+		}
+
+		const dataset = {
+			name: presetName,
+			sizeLabel: t('chive-preset-generated-size', [preset.rows]),
+			rows,
+			columns,
+			selectedColumns: columns.map(c => c.name),
+			chartConfig: createDefaultChartConfig(),
+			precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
+		};
+
+		const index = addDataset(dataset);
+		selectDataset(index);
+		progress.succeed(t('chive-preset-load-success', [presetName]));
+	} catch (err) {
+		// Genuinely-unexpected throws from processData/addDataset/selectDataset.
+		progress.fail(t('chive-progress-failed', [err?.message || 'error']));
+		showError(t('chive-join-error-generic'));
 	}
 }

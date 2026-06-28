@@ -32,6 +32,7 @@ const mocks = vi.hoisted(() => ({
 		STATE_EVENTS: {
 			CHART_ADDED: 'chartAdded',
 			CHART_REMOVED: 'chartRemoved',
+			PANEL_CLEARED: 'panelCleared',
 			PANEL_BLOCK_SLOT_ASSIGNED: 'panelBlockSlotAssigned',
 			PANEL_BLOCK_ADDED: 'panelBlockAdded',
 			PANEL_BLOCK_REMOVED: 'panelBlockRemoved',
