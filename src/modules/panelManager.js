@@ -79,6 +79,7 @@ export function initPanelManager(feedbackFn = null) {
 	// Re-render when state changes
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_ADDED, handleChartStateChange));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_REMOVED, handleChartStateChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_CLEARED, handlePanelCleared));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, handleChartStateChange));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_ADDED, handleLayoutChange));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_REMOVED, handleLayoutChange));
@@ -114,6 +115,18 @@ function handleChartStateChange() {
  * @private
  */
 function handleLayoutChange() {
+	renderCanvasPanel();
+	fillLayoutSelect();
+}
+
+/**
+ * Handle a panel clear. `clearPanel()` empties the chart snapshots AND resets
+ * blocks/layout to the default template, so refresh the sidebar, the canvas, and
+ * the layout selector.
+ * @private
+ */
+function handlePanelCleared() {
+	renderSidebarPanel();
 	renderCanvasPanel();
 	fillLayoutSelect();
 }
@@ -203,8 +216,7 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 			metaSummary: typeof metadata?.summary === 'string' ? metadata.summary : '',
 		});
 
-		renderSidebarPanel();
-		renderCanvasPanel();
+		// Re-render is driven by the CHART_ADDED subscription, not a direct call.
 		return ok({ chartId });
 	} catch {
 		if (feedbackCallback) {
@@ -215,16 +227,14 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 }
 
 /**
- * Remove a chart snapshot from the panel. Delegates to the panel facade,
- * then re-renders sidebar + canvas.
+ * Remove a chart snapshot from the panel. Delegates to the panel facade; the
+ * CHART_REMOVED subscription re-renders the sidebar + canvas.
  *
  * @param {number | string} chartId
  * @fires STATE_EVENTS.CHART_REMOVED - When the snapshot existed.
  */
 export function removeChartFromPanel(chartId) {
 	removeChartSnapshot(chartId);
-	renderSidebarPanel();
-	renderCanvasPanel();
 }
 
 /**
@@ -352,12 +362,12 @@ export function initializeLayoutSelector() {
 }
 
 /**
- * Reset the panel to a single fresh `template-2col` block and re-render.
+ * Reset the panel to a single fresh `template-2col` block. Delegates to the
+ * panel facade; the PANEL_CLEARED subscription re-renders sidebar, canvas, and
+ * the layout selector.
  *
  * @fires STATE_EVENTS.PANEL_CLEARED
  */
 export function clearPanelData() {
 	clearPanel();
-	renderSidebarPanel();
-	renderCanvasPanel();
 }

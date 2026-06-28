@@ -10,11 +10,13 @@ const mocks = vi.hoisted(() => ({
   ingestFile: vi.fn(),
   progressLabelForStage: vi.fn(stage => `label:${stage}`),
   ingestErrorMessage: vi.fn(reason => reason || 'parse-generic'),
+  loadPresetSource: vi.fn(),
   addDataset: vi.fn(),
   removeDataset: vi.fn(),
   setActiveDataset: vi.fn(),
   getAllDatasets: vi.fn(),
   showError: vi.fn(),
+  showFeedback: vi.fn(),
   clearErrors: vi.fn(),
   showProgress: vi.fn(),
 }));
@@ -35,6 +37,10 @@ vi.mock('../src/services/dataIngestService.js', () => ({
   ingestErrorMessage: mocks.ingestErrorMessage,
 }));
 
+vi.mock('../src/services/presetService.js', () => ({
+  loadPresetSource: mocks.loadPresetSource,
+}));
+
 vi.mock('../src/modules/state/appState.js', () => ({
   addDataset: mocks.addDataset,
   removeDataset: mocks.removeDataset,
@@ -44,6 +50,7 @@ vi.mock('../src/modules/state/appState.js', () => ({
 
 vi.mock('../src/modules/feedbackUI.js', () => ({
   showError: mocks.showError,
+  showFeedback: mocks.showFeedback,
   clearErrors: mocks.clearErrors,
   showProgress: mocks.showProgress,
 }));
@@ -58,6 +65,8 @@ import {
   handleFileUpload,
   initFileManager,
   createJoinedDataset,
+  handleJoinDatasetRequest,
+  handlePresetDatasetRequest,
   removeDatasetByIndex,
   selectDataset,
   setupFileInputListeners,
@@ -93,8 +102,12 @@ describe('fileManager', () => {
     vi.clearAllMocks();
     global.FileReader = FileReaderMock;
     window.confirm = vi.fn(() => true);
-    initFileManager(null);
+    initFileManager();
 
+    mocks.loadPresetSource.mockResolvedValue({
+      ok: true,
+      value: { mode: 'inline', rows: [{ a: 1 }], dropColumns: [] },
+    });
     mocks.processData.mockReturnValue({
       rows: [{ a: 1 }],
       columns: [{ name: 'a', type: 'number' }],
@@ -133,9 +146,6 @@ describe('fileManager', () => {
   });
 
   it('processes valid CSV and adds a normalized dataset', async () => {
-    const onChange = vi.fn();
-    initFileManager(onChange);
-
     await handleFileUpload([csvFile()]);
 
     expect(mocks.clearErrors).toHaveBeenCalledTimes(1);
@@ -150,7 +160,6 @@ describe('fileManager', () => {
     expect(added.selectedColumns).toEqual(['a']);
     expect(added.chartConfig.bar.enabled).toBe(false);
     expect(added.precomputedStats).toEqual({ numeric: [], categorical: [] });
-    expect(onChange).toHaveBeenCalledTimes(1);
   });
 
   it('handles format errors and large-file cancellation', async () => {
@@ -194,14 +203,10 @@ describe('fileManager', () => {
   });
 
   it('select/remove/get datasets encaminham para appState com tratamento de erro', () => {
-    const onChange = vi.fn();
-    initFileManager(onChange);
-
     selectDataset(1);
     removeDatasetByIndex(0);
     expect(mocks.setActiveDataset).toHaveBeenCalledWith(1);
     expect(mocks.removeDataset).toHaveBeenCalledWith(0);
-    expect(onChange).toHaveBeenCalledTimes(2);
 
     mocks.setActiveDataset.mockImplementationOnce(() => {
       throw new Error('select boom');
@@ -265,9 +270,6 @@ describe('fileManager', () => {
   });
 
   it('allows re-uploading the same file after delete (regression: clears input value)', async () => {
-    const onChange = vi.fn();
-    initFileManager(onChange);
-
     const input = document.createElement('input');
     input.id = 'file-input';
     input.type = 'file';
@@ -431,11 +433,129 @@ describe('fileManager', () => {
 
   it('uses injected confirmFn instead of window.confirm', async () => {
     const confirmMock = vi.fn(() => false);
-    initFileManager(null, confirmMock);
+    initFileManager({ confirmCallback: confirmMock });
 
     await handleFileUpload([csvFile({ size: 30 })]);
 
     expect(confirmMock).toHaveBeenCalledTimes(1);
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-cancelled');
+  });
+
+  describe('handleJoinDatasetRequest', () => {
+    it('activates the joined dataset and shows feedback on success', () => {
+      mocks.getAllDatasets.mockReturnValue([
+        { name: 'A.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
+        { name: 'B.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
+      ]);
+      mocks.processData.mockReturnValue({ rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] });
+      mocks.addDataset.mockReturnValue(2);
+
+      handleJoinDatasetRequest({
+        leftIndex: 0,
+        rightIndex: 1,
+        leftKeys: ['id'],
+        rightKeys: ['id'],
+        leftColumns: ['id'],
+        rightColumns: ['id'],
+        joinType: 'inner',
+      });
+
+      expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+      expect(mocks.setActiveDataset).toHaveBeenCalledWith(2);
+      expect(mocks.showFeedback).toHaveBeenCalled();
+    });
+
+    it('surfaces the error and does not activate when the join is invalid', () => {
+      mocks.getAllDatasets.mockReturnValue([{ name: 'only-one.csv' }]);
+
+      handleJoinDatasetRequest({ leftIndex: 0, rightIndex: 1, leftKeys: ['id'], rightKeys: ['id'] });
+
+      expect(mocks.showError).toHaveBeenCalledWith('chive-join-error-min-files');
+      expect(mocks.setActiveDataset).not.toHaveBeenCalled();
+      expect(mocks.showFeedback).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('handlePresetDatasetRequest', () => {
+    it('adds and activates an inline preset', async () => {
+      mocks.addDataset.mockReturnValueOnce(3);
+
+      await handlePresetDatasetRequest({ nameKey: 'preset-name', rows: 1 });
+
+      expect(mocks.loadPresetSource).toHaveBeenCalledWith(
+        { nameKey: 'preset-name', rows: 1 },
+        { signal: expect.any(AbortSignal) },
+      );
+      expect(mocks.processData).toHaveBeenCalledWith([{ a: 1 }]);
+      expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+      const added = mocks.addDataset.mock.calls[0][0];
+      expect(added.name).toBe('preset-name');
+      expect(added.selectedColumns).toEqual(['a']);
+      expect(added.precomputedStats).toEqual({ numeric: [], categorical: [] });
+      expect(mocks.setActiveDataset).toHaveBeenCalledWith(3);
+      const progress = mocks.showProgress.mock.results.at(-1).value;
+      expect(progress.succeed).toHaveBeenCalledWith('chive-preset-load-success:preset-name');
+    });
+
+    it('reports a null preset as a generic error', async () => {
+      await handlePresetDatasetRequest(null);
+
+      expect(mocks.showError).toHaveBeenCalledWith('chive-join-error-generic');
+      expect(mocks.addDataset).not.toHaveBeenCalled();
+    });
+
+    it('maps a fetched-ingest failure and adds nothing', async () => {
+      mocks.loadPresetSource.mockResolvedValueOnce({
+        ok: true,
+        value: { mode: 'fetched', kind: 'csv', text: 'a,b', dropColumns: ['drop'] },
+      });
+      mocks.ingestFile.mockResolvedValueOnce({ ok: false, reason: 'csv-empty' });
+      mocks.ingestErrorMessage.mockReturnValueOnce('mapped-detail');
+
+      await handlePresetDatasetRequest({ nameKey: 'preset-name', rows: 1 });
+
+      expect(mocks.ingestFile).toHaveBeenCalledWith(
+        expect.objectContaining({ options: expect.objectContaining({ dropColumns: ['drop'] }) }),
+        expect.anything(),
+      );
+      expect(mocks.ingestErrorMessage).toHaveBeenCalledWith('csv-empty');
+      const progress = mocks.showProgress.mock.results.at(-1).value;
+      expect(progress.fail).toHaveBeenCalledWith('chive-progress-failed:mapped-detail');
+      expect(mocks.addDataset).not.toHaveBeenCalled();
+      expect(mocks.setActiveDataset).not.toHaveBeenCalled();
+    });
+
+    it('closes the toast on cancellation without error or dataset work', async () => {
+      mocks.loadPresetSource.mockResolvedValueOnce({ ok: false, reason: 'cancelled' });
+
+      await handlePresetDatasetRequest({ nameKey: 'preset-name', rows: 1 });
+
+      const progress = mocks.showProgress.mock.results.at(-1).value;
+      expect(progress.close).toHaveBeenCalled();
+      expect(mocks.showError).not.toHaveBeenCalled();
+      expect(mocks.addDataset).not.toHaveBeenCalled();
+    });
+
+    it('shows the timeout message and generic error on a fetch timeout', async () => {
+      mocks.loadPresetSource.mockResolvedValueOnce({ ok: false, reason: 'preset-fetch-timeout' });
+
+      await handlePresetDatasetRequest({ nameKey: 'preset-name', rows: 1 });
+
+      const progress = mocks.showProgress.mock.results.at(-1).value;
+      expect(progress.fail).toHaveBeenCalledWith('chive-preset-fetch-timeout:preset-name');
+      expect(mocks.showError).toHaveBeenCalledWith('chive-join-error-generic');
+      expect(mocks.addDataset).not.toHaveBeenCalled();
+    });
+
+    it('shows the generic failure on a network error', async () => {
+      mocks.loadPresetSource.mockResolvedValueOnce({ ok: false, reason: 'preset-fetch-network' });
+
+      await handlePresetDatasetRequest({ nameKey: 'preset-name', rows: 1 });
+
+      const progress = mocks.showProgress.mock.results.at(-1).value;
+      expect(progress.fail).toHaveBeenCalledWith('chive-progress-failed:preset-fetch-network');
+      expect(mocks.showError).toHaveBeenCalledWith('chive-join-error-generic');
+      expect(mocks.addDataset).not.toHaveBeenCalled();
+    });
   });
 });

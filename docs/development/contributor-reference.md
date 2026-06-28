@@ -72,9 +72,9 @@ restricts renderer and DOM-builder files (`src/components/`, `src/features/`,
 to read-only imports from `modules/state/appState.js`: the `get*` functions,
 `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing
 any write function from those directories is an error. If you need a write from
-a renderer or DOM builder, route it through `panelManager.js`, a chart-controls
-listener, or `eventHandlers.js`, all outside the linted scope. When a new facade
-read is added, update `APP_STATE_READS` in `eslint.config.js`.
+a renderer or DOM builder, route it through a feature manager (`panelManager.js`,
+a chart-controls listener, or `eventHandlers.js`), all outside the linted scope.
+When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
 
 **Mutation of facade getter returns is blocked across all of `src/`.** A
 `no-restricted-syntax` rule in `eslint.config.js` catches inline assignments and
@@ -131,7 +131,7 @@ Beyond renderer statelessness, `npm run lint` enforces these rule classes in
 |---|---|---|
 | A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. Document its data contract, modes, and empty states in [Chart and data reference](../user/chart-reference.md). |
 | A new state field | The relevant domain in `src/modules/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
-| A new DOM event handler | `src/modules/eventHandlers.js` or an existing controller | Translate the event into a facade call. Never mutate state directly. |
+| A new DOM event handler | `src/modules/eventHandlers.js` or an existing feature manager | Translate the event into a facade call. Never mutate state directly. |
 | A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
 | A pure helper | `src/utils/` | No DOM access. No state imports. |
 | A new derived selector | The facade that owns the underlying domain | Keep getters thin; do not compute heavy aggregates inside them. |

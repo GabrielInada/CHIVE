@@ -116,8 +116,8 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 - Event names live in `STATE_EVENTS`. Never use string literals in `src/`. (Tests intentionally keep literals to exercise the wire format; leave them alone.)
 - Subscribers must not synchronously emit a state event from inside their callback (re-entrancy loop). Defer with `queueMicrotask` if you need a follow-up mutation.
 - For normalize-on-read paths (e.g. applying chart-config defaults during render), use `normalizeActiveDatasetConfig`; it writes without emitting, which is the only safe shape for that case.
-- Renderers and DOM builders do not call write facades. They read durable state via getters and derive DOM from it; user input is surfaced through callbacks injected by the controller layer. Module-local transient UI state (search query, dialog draft, focus anchor) is allowed; durable application state goes through a facade.
-- `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`persistenceService.js`) that genuinely need every emission. Do not subscribe to it from controllers, renderers, or `main.js`; use a typed subscription.
+- Renderers and DOM builders do not call write facades. They read durable state via getters and derive DOM from it; user input is surfaced through callbacks injected by a feature manager (e.g. `panelManager`, `eventHandlers`, a chart-controls listener). Module-local transient UI state (search query, dialog draft, focus anchor) is allowed; durable application state goes through a facade.
+- `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`persistenceService.js`) that genuinely need every emission. Do not subscribe to it from feature managers, renderers, or `main.js`; use a typed subscription.
 
 Lint guard details and the known aliasing gap are documented in
 [Contributor reference](docs/development/contributor-reference.md#architecture-guard-details).
