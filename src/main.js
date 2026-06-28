@@ -7,14 +7,14 @@
  *   2. Hydrate persisted state from IndexedDB BEFORE wiring subscribers,
  *      so restoration does not trigger a redundant save and the first
  *      render sees the restored state.
- *   3. Initialize state sync + expose backwards-compat globals.
- *   4. Initialize fileManager / chartControls / panelManager.
- *   5. Wire global DOM listeners via `eventHandlers`.
- *   6. Subscribe `refreshView` to dataset/columns/config state events.
- *   7. Enable debounced auto-save.
- *   8. Initial render.
- *   9. Re-render on locale changes.
- *   10. Surface internal module errors via feedback toast.
+ *   3. Initialize fileManager / chartControls / panelManager.
+ *   4. Wire global DOM listeners via `eventHandlers`.
+ *   5. Subscribe `refreshView` to the ACTIVE_DATASET, COLUMNS_UPDATED,
+ *      CONFIG_UPDATED, and STATE_HYDRATED state events.
+ *   6. Enable debounced auto-save.
+ *   7. Initial render.
+ *   8. Re-render on locale changes.
+ *   9. Surface internal module errors via feedback toast.
  *
  * @typedef {import('./types.js').AppState} AppState
  */

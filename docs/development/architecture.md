@@ -101,7 +101,7 @@ These are the rules that keep the app reactive and debuggable:
 - Renderers are stateless with respect to application state: they read and
   render, but they do not own writes.
 - Wildcard subscriptions are reserved for sink-style state-bus consumers such
-  as persistence and legacy global synchronization.
+  as persistence.
 
 Some facade methods intentionally do not emit, and hydration intentionally emits
 only once after replacing slices. Those exceptions are documented in
@@ -114,12 +114,14 @@ Contributor-facing enforcement details live in
 
 Example: a user toggles a column-visibility checkbox.
 
-1. A controller receives the DOM event and calls
-   `updateActiveDatasetColumns(columns)`.
-2. The data facade writes `dataset.selectedColumns`.
-3. The facade emits `STATE_EVENTS.COLUMNS_UPDATED`.
-4. `main.js` receives the event and calls `refreshView()`.
-5. `refreshView()` reads state via getters and delegates rendering to
+1. A renderer's DOM handler invokes `aoAlterarSelecaoColuna`, the callback
+   propagated through `renderDataInterface`.
+2. In this flow, that callback is `main.js`'s `updateDatasetColumns`, which
+   calls `updateActiveDatasetColumns(columns)`.
+3. The data facade writes `dataset.selectedColumns`.
+4. The facade emits `STATE_EVENTS.COLUMNS_UPDATED`.
+5. `main.js` receives the event and calls `refreshView()`.
+6. `refreshView()` reads state via getters and delegates rendering to
    components and chart modules.
 
 Panel changes follow the same ownership pattern but usually have a narrower
