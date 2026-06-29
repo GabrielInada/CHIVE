@@ -72,7 +72,7 @@ vi.mock('../src/services/persistenceService.js', () => ({
 }));
 
 
-vi.mock('../src/components/index.js', () => ({
+vi.mock('../src/components/resultsView.js', () => ({
 	renderEmptyState: mocks.renderEmptyState,
 	renderDataInterface: mocks.renderDataInterface,
 	renderFileList: mocks.renderFileList,

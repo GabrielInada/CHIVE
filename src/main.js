@@ -31,7 +31,7 @@ import {
 renderEmptyState,
 renderDataInterface,
 renderFileList,
-} from './components/index.js';
+} from './components/resultsView.js';
 import { initChartControls, renderChartControlsSidebar, renderCharts } from './features/chartFeatures.js';
 import { mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 import { getNumericColumns } from './utils/columnHelpers.js';
