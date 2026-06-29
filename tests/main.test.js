@@ -59,7 +59,7 @@ const mocks = vi.hoisted(() => ({
 	getStateSummary: vi.fn(),
 }));
 
-vi.mock('../src/services/index.js', () => ({
+vi.mock('../src/services/i18nService.js', () => ({
 	initializeI18n: mocks.initializeI18n,
 	t: mocks.t,
 }));

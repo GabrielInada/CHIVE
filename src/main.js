@@ -20,7 +20,7 @@
  * @typedef {import('./types.js').AppState} AppState
  */
 
-import { initializeI18n, t } from './services/index.js';
+import { initializeI18n, t } from './services/i18nService.js';
 import {
 	isPersistenceAvailable,
 	hydrateState,
