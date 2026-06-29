@@ -100,7 +100,7 @@ vi.mock('../src/utils/throttle.js', () => ({
 	throttle: mocks.throttle,
 }));
 
-vi.mock('../src/modules/index.js', () => ({
+vi.mock('../src/modules/state/appState.js', () => ({
 	getState: mocks.getState,
 	getPersistenceSnapshot: mocks.getPersistenceSnapshot,
 	getActiveDataset: mocks.getActiveDataset,
@@ -111,21 +111,36 @@ vi.mock('../src/modules/index.js', () => ({
 	updateActiveDatasetColumns: mocks.updateActiveDatasetColumns,
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 	replaceAllState: mocks.replaceAllState,
+}));
+
+vi.mock('../src/modules/panelManager.js', () => ({
 	initPanelManager: mocks.initPanelManager,
 	initializeLayoutSelector: mocks.initializeLayoutSelector,
 	renderSidebarPanel: mocks.renderSidebarPanel,
 	renderCanvasPanel: mocks.renderCanvasPanel,
+}));
+
+vi.mock('../src/modules/fileManager.js', () => ({
 	initFileManager: mocks.initFileManager,
 	getLoadedDatasets: mocks.getLoadedDatasets,
 	selectDataset: mocks.selectDataset,
 	removeDatasetByIndex: mocks.removeDatasetByIndex,
 	handleJoinDatasetRequest: mocks.handleJoinDatasetRequest,
 	handlePresetDatasetRequest: mocks.handlePresetDatasetRequest,
+}));
+
+vi.mock('../src/modules/eventHandlers.js', () => ({
 	initializeAllEventHandlers: mocks.initializeAllEventHandlers,
+}));
+
+vi.mock('../src/modules/feedbackUI.js', () => ({
 	showFeedback: mocks.showFeedback,
 	showFeedbackMessage: mocks.showFeedbackMessage,
 	showError: mocks.showError,
 	showErrorMessage: mocks.showErrorMessage,
+}));
+
+vi.mock('../src/modules/uiManager.js', () => ({
 	switchTab: mocks.switchTab,
 }));
 

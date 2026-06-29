@@ -12,7 +12,6 @@ const ruleTester = new RuleTester({
 });
 
 const FROM_APPSTATE = "import { getActiveDataset, getAllDatasets, getPanelBlocks, getState } from '../modules/state/appState.js';";
-const FROM_BARREL = "import { getState, getPanelBlocks } from '../modules/index.js';";
 
 ruleTester.run('no-facade-getter-mutation', rule, {
 	valid: [
@@ -37,14 +36,14 @@ ruleTester.run('no-facade-getter-mutation', rule, {
 		// Getter with a matching name but imported from an unrelated module.
 		`import { getActiveDataset } from '../utils/helpers.js';\nconst d = getActiveDataset();\nd.x = 1;`,
 
-		// Aliased getter from the barrel, read-only.
-		`${FROM_BARREL}\nconst s = getState();\nconst mode = s.ui.sidebarMode;`,
+		// Aliased getter, read-only.
+		`${FROM_APPSTATE}\nconst s = getState();\nconst mode = s.ui.sidebarMode;`,
 
 		// Passing the alias to a function is not a direct mutation (out of scope).
-		`${FROM_BARREL}\nconst blocks = getPanelBlocks();\nrender(blocks);\nconst first = blocks[0];`,
+		`${FROM_APPSTATE}\nconst blocks = getPanelBlocks();\nrender(blocks);\nconst first = blocks[0];`,
 
 		// The live-ref persistence snapshot getter, read-only.
-		`import { getPersistenceSnapshot } from '../modules/index.js';\nconst s = getPersistenceSnapshot();\nconst n = s.ui.previewRows;`,
+		`import { getPersistenceSnapshot } from '../modules/state/appState.js';\nconst s = getPersistenceSnapshot();\nconst n = s.ui.previewRows;`,
 	],
 
 	invalid: [
@@ -87,9 +86,9 @@ ruleTester.run('no-facade-getter-mutation', rule, {
 			code: `${FROM_APPSTATE}\nconst d = getActiveDataset();\nObject.assign(d, { x: 1 });`,
 			errors: [{ messageId: 'facadeMutation' }],
 		},
-		// Aliased getter from the barrel, mutated.
+		// Aliased getter, mutated via an in-place array method.
 		{
-			code: `${FROM_BARREL}\nconst blocks = getPanelBlocks();\nblocks.sort();`,
+			code: `${FROM_APPSTATE}\nconst blocks = getPanelBlocks();\nblocks.sort();`,
 			errors: [{ messageId: 'facadeMutation' }],
 		},
 		// `as`-renamed import is still tracked by its local name.

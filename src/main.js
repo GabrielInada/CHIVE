@@ -49,7 +49,7 @@ normalizeActiveDatasetConfig,
 updateActiveDatasetColumns,
 updateActiveDatasetConfig,
 replaceAllState,
-} from './modules/index.js';
+} from './modules/state/appState.js';
 import {
 enableStateLog,
 disableStateLog,
@@ -62,7 +62,7 @@ initPanelManager,
 initializeLayoutSelector,
 renderSidebarPanel,
 renderCanvasPanel,
-} from './modules/index.js';
+} from './modules/panelManager.js';
 import {
 initFileManager,
 getLoadedDatasets,
@@ -70,15 +70,15 @@ selectDataset,
 removeDatasetByIndex,
 handleJoinDatasetRequest,
 handlePresetDatasetRequest,
-initializeAllEventHandlers,
-} from './modules/index.js';
+} from './modules/fileManager.js';
+import { initializeAllEventHandlers } from './modules/eventHandlers.js';
 import {
 showFeedback,
 showFeedbackMessage,
 showError,
 showErrorMessage,
-switchTab,
-} from './modules/index.js';
+} from './modules/feedbackUI.js';
+import { switchTab } from './modules/uiManager.js';
 
 // =============================================================================
 // APPLICATION INITIALIZATION
