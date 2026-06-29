@@ -13,7 +13,14 @@ const renderers = vi.hoisted(() => ({
 	renderTinChart: vi.fn(() => ({ ok: true })),
 }));
 
-vi.mock('../../../src/modules/visualizations/index.js', () => renderers);
+vi.mock('../../../src/modules/visualizations/barChart.js', () => ({ renderBarChart: renderers.renderBarChart }));
+vi.mock('../../../src/modules/visualizations/bubbleChart.js', () => ({ renderBubbleChart: renderers.renderBubbleChart }));
+vi.mock('../../../src/modules/visualizations/lineChart.js', () => ({ renderLineChart: renderers.renderLineChart }));
+vi.mock('../../../src/modules/visualizations/networkGraph.js', () => ({ renderNetworkGraph: renderers.renderNetworkGraph }));
+vi.mock('../../../src/modules/visualizations/pieChart.js', () => ({ renderPieChart: renderers.renderPieChart }));
+vi.mock('../../../src/modules/visualizations/scatterPlot.js', () => ({ renderScatterPlot: renderers.renderScatterPlot }));
+vi.mock('../../../src/modules/visualizations/tinChart.js', () => ({ renderTinChart: renderers.renderTinChart }));
+vi.mock('../../../src/modules/visualizations/treemapChart.js', () => ({ renderTreeMap: renderers.renderTreeMap }));
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: vi.fn((key) => key),
 	getLocale: vi.fn(() => 'en'),

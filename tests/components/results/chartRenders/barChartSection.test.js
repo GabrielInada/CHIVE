@@ -8,7 +8,7 @@ const mocks = vi.hoisted(() => ({
 	getLocale: vi.fn(() => 'en'),
 }));
 
-vi.mock('../../../../src/modules/visualizations/index.js', () => ({
+vi.mock('../../../../src/modules/visualizations/barChart.js', () => ({
 	renderBarChart: mocks.renderBarChart,
 }));
 

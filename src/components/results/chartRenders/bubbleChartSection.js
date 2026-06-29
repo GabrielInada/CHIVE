@@ -3,7 +3,7 @@
  */
 
 import { t, getLocale } from '../../../services/i18nService.js';
-import { renderBubbleChart } from '../../../modules/visualizations/index.js';
+import { renderBubbleChart } from '../../../modules/visualizations/bubbleChart.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
 import { showChartMessage } from './sharedRenderHelpers.js';
 

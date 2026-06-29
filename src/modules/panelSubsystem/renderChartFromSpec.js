@@ -20,16 +20,14 @@
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
-import {
-	renderBarChart,
-	renderBubbleChart,
-	renderLineChart,
-	renderNetworkGraph,
-	renderPieChart,
-	renderScatterPlot,
-	renderTinChart,
-	renderTreeMap,
-} from '../visualizations/index.js';
+import { renderBarChart } from '../visualizations/barChart.js';
+import { renderBubbleChart } from '../visualizations/bubbleChart.js';
+import { renderLineChart } from '../visualizations/lineChart.js';
+import { renderNetworkGraph } from '../visualizations/networkGraph.js';
+import { renderPieChart } from '../visualizations/pieChart.js';
+import { renderScatterPlot } from '../visualizations/scatterPlot.js';
+import { renderTinChart } from '../visualizations/tinChart.js';
+import { renderTreeMap } from '../visualizations/treemapChart.js';
 import { fail } from '../../utils/result.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
