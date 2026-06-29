@@ -5,8 +5,8 @@
  *   @typedef {import('../types.js').Dataset} Dataset
  *
  * Pull the relative path of this file from wherever the consumer lives.
- * Typedefs are not values, so barrels (modules/index.js) do not propagate
- * them. Always import directly from this file.
+ * Typedefs are not values, so barrel files do not propagate them. Always
+ * import directly from this file.
  *
  * @see CONTRIBUTING.md  "Documentation Conventions" section
  * @see docs/development/architecture.md

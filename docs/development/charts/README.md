@@ -58,9 +58,10 @@ The renderers share a small set of building blocks, documented once and referenc
 doc rather than repeated:
 
 - **Result envelope**: `ok()` / `fail(reason)` from [result.js](../../../src/utils/result.js).
-- **Render dispatch**: the [visualizations barrel](../../../src/modules/visualizations/index.js)
-  and the panel dispatcher
-  [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js).
+- **Render dispatch**: dispatch goes through
+  [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js),
+  which routes each spec to the matching chart entry function under
+  [src/modules/visualizations/](../../../src/modules/visualizations).
 - **Section adapters**: one `*ChartSection.js` per chart under
   [chartRenders/](../../../src/components/results/chartRenders), which map config to the renderer
   options bag and surface localized empty states via `showChartMessage`.

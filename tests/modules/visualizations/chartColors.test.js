@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderBarChart } from '../../../src/modules/visualizations/barChart.js';
 import { renderScatterPlot } from '../../../src/modules/visualizations/scatterPlot.js';
-import { CHART_COLORS } from '../../../src/config/index.js';
+import { CHART_COLORS } from '../../../src/config/charts.js';
 
 describe('visualization color options', () => {
 	beforeEach(() => {
