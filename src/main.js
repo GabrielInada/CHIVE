@@ -291,9 +291,9 @@ function renderDatasetListView(datasets, activeIndex) {
 }
 
 /**
- * Render the "no dataset loaded" results pane (empty state, cleared chart
- * containers, reset upload zone). The panel render and the tab reset are
- * the caller's responsibility.
+ * Render the "no dataset loaded" results pane; delegates to
+ * {@link renderEmptyState}. The panel render and the tab reset are the
+ * caller's responsibility.
  *
  * @private
  */
