@@ -18,6 +18,7 @@
  *   9. Surface internal module errors via feedback toast.
  *
  * @typedef {import('./types.js').AppState} AppState
+ * @typedef {import('./types.js').Dataset} Dataset
  */
 
 import { initializeI18n, t } from './services/i18nService.js';
@@ -271,10 +272,95 @@ function livePreviewRender() {
 // =============================================================================
 
 /**
- * Master view update. Reads state via getters, normalizes the active
- * dataset's config in place via {@link normalizeActiveDatasetConfig}
- * (no-emit by design, emitting would re-enter via CONFIG_UPDATED and
- * loop), then delegates rendering to specialized modules.
+ * Render the dataset file list (left rail): the file-info header, search,
+ * pagination, the active-dataset meta row, and the Join/Preset tools.
+ *
+ * @private
+ * @param {Dataset[]} datasets - All loaded datasets.
+ * @param {number} activeIndex - Active dataset index, or -1 when none.
+ */
+function renderDatasetListView(datasets, activeIndex) {
+	renderFileList(
+		datasets,
+		activeIndex,
+		selectDataset,
+		removeDatasetByIndex,
+		handleJoinDatasetRequest,
+		handlePresetDatasetRequest
+	);
+}
+
+/**
+ * Render the "no dataset loaded" results pane (empty state, cleared chart
+ * containers, reset upload zone). The panel render and the tab reset are
+ * the caller's responsibility.
+ *
+ * @private
+ */
+function renderEmptyWorkspace() {
+	renderEmptyState();
+}
+
+/**
+ * Render the active dataset's results pane: column controls, preview table,
+ * stats, charts, and global-filter state, all via {@link renderDataInterface}.
+ * Normalizes the active config in place first via
+ * {@link normalizeActiveDatasetConfig} (no-emit by design; emitting would
+ * re-enter through CONFIG_UPDATED and loop). No-op when no dataset is active.
+ *
+ * @private
+ * @param {Dataset | null} dataset - The active dataset, or null when none.
+ * @param {number} previewRows - Number of rows to show in the preview table.
+ */
+function renderActiveDatasetWorkspace(dataset, previewRows) {
+	if (!dataset) return;
+	normalizeActiveDatasetConfig(mergeChartConfigWithDefaults);
+	renderDataInterface(
+		dataset.rows,
+		dataset.columns,
+		dataset.name,
+		dataset.sizeLabel,
+		previewRows,
+		updatePreviewRows,
+		dataset.selectedColumns,
+		updateDatasetColumns,
+		dataset.chartConfig,
+		updateDatasetConfig
+	);
+}
+
+/**
+ * Render the chart-controls sidebar for the active dataset. No-op when no
+ * dataset is active.
+ *
+ * @private
+ * @param {Dataset | null} dataset - The active dataset, or null when none.
+ */
+function renderChartControlsView(dataset) {
+	if (!dataset) return;
+	renderChartControlsSidebar(dataset);
+}
+
+/**
+ * Render the panel workspace: the sidebar (saved snapshots) and the canvas
+ * (layout with mounted slots). `withLayoutSelector` repopulates the layout
+ * `<select>`; it is on for the active path and off for the empty path, matching
+ * the prior behavior where the empty state left the layout selector untouched.
+ *
+ * @private
+ * @param {{ withLayoutSelector?: boolean }} [options]
+ */
+function renderPanelWorkspace({ withLayoutSelector = true } = {}) {
+	if (withLayoutSelector) initializeLayoutSelector();
+	renderSidebarPanel();
+	renderCanvasPanel();
+}
+
+/**
+ * Master view update. Reads state once via {@link getState}, then composes the
+ * specialized render paths: the dataset list, then either the empty workspace or
+ * the active dataset workspace plus its chart controls, then the panel
+ * workspace. Each path delegates to its owning render module.
  *
  * Invoked through {@link scheduleRefreshView} by the state subscriptions
  * (dataset add/remove/select, columns, config, hydration), and called directly
@@ -283,62 +369,25 @@ function livePreviewRender() {
  * @private
  */
 function refreshView() {
-const state = getState();
-const datasets = getLoadedDatasets();
-const activeIndex = state.data.activeIndex;
-const dataset = getActiveDataset();
+	const state = getState();
+	const datasets = getLoadedDatasets();
+	const activeIndex = state.data.activeIndex;
+	const dataset = getActiveDataset();
 
-// Handle empty state
-if (datasets.length === 0) {
-renderFileList(
-datasets,
-activeIndex,
-selectDataset,
-removeDatasetByIndex,
-handleJoinDatasetRequest,
-handlePresetDatasetRequest
-);
-renderEmptyState();
-renderSidebarPanel();
-renderCanvasPanel();
-switchTab('preview');
-return;
-}
+	renderDatasetListView(datasets, activeIndex);
 
-// Render datasets list
-renderFileList(
-datasets,
-activeIndex,
-selectDataset,
-removeDatasetByIndex,
-handleJoinDatasetRequest,
-handlePresetDatasetRequest
-);
+	// Empty state: no active dataset workspace, and the layout selector is left
+	// untouched (matches the prior empty-path behavior).
+	if (datasets.length === 0) {
+		renderEmptyWorkspace();
+		renderPanelWorkspace({ withLayoutSelector: false });
+		switchTab('preview');
+		return;
+	}
 
-// Render data preview and stats
-if (dataset) {
-	normalizeActiveDatasetConfig(mergeChartConfigWithDefaults);
-renderDataInterface(
-dataset.rows,
-dataset.columns,
-dataset.name,
-dataset.sizeLabel,
-state.ui.previewRows,
-updatePreviewRows,
-dataset.selectedColumns,
-updateDatasetColumns,
-dataset.chartConfig,
-updateDatasetConfig
-);
-
-// Render visualization controls
-renderChartControlsSidebar(dataset);
-}
-
-// Render panel UI
-initializeLayoutSelector();
-renderSidebarPanel();
-renderCanvasPanel();
+	renderActiveDatasetWorkspace(dataset, state.ui.previewRows);
+	renderChartControlsView(dataset);
+	renderPanelWorkspace();
 }
 
 /**
