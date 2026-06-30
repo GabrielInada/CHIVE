@@ -131,7 +131,7 @@ Example: a user toggles a column-visibility checkbox.
 3. The data facade writes `dataset.selectedColumns`.
 4. The facade emits `STATE_EVENTS.COLUMNS_UPDATED`.
 5. `main.js`'s subscription schedules `refreshView()` (coalesced to one render
-   per microtask via `scheduleRefreshView`, so a synchronous burst of events
+   per microtask via `scheduleFullRefresh`, so a synchronous burst of events
    paints once).
 6. `refreshView()` reads state via getters and delegates rendering to
    components and chart modules.

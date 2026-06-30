@@ -171,7 +171,7 @@ subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
 [`src/main.js`](../../src/main.js) subscribes to `ACTIVE_DATASET`,
 `DATASET_ADDED`, `DATASET_REMOVED`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`, and
 `STATE_HYDRATED`. Each handler **schedules** `refreshView()` (the broadest UI
-render path) through `scheduleRefreshView`, a microtask-coalesced wrapper, so a
+render path) through `scheduleFullRefresh`, a microtask-coalesced wrapper, so a
 synchronous burst of events (e.g. add-then-select) paints once.
 
 [`src/modules/panelManager.js`](../../src/modules/panelManager.js) subscribes to:

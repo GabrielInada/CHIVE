@@ -9,7 +9,7 @@
  *      render sees the restored state.
  *   3. Initialize fileManager / chartControls / panelManager.
  *   4. Wire global DOM listeners via `eventHandlers`.
- *   5. Subscribe a microtask-coalesced `scheduleRefreshView` to the
+ *   5. Subscribe a microtask-coalesced `scheduleFullRefresh` to the
  *      ACTIVE_DATASET, DATASET_ADDED, DATASET_REMOVED, COLUMNS_UPDATED,
  *      CONFIG_UPDATED, and STATE_HYDRATED state events.
  *   6. Enable debounced auto-save.
@@ -195,15 +195,28 @@ function reportInitializationError(error) {
 let refreshQueued = false;
 
 /**
+ * Report a render error through the `chive-internal-error` channel (surfaced as a
+ * toast) rather than letting it escape as an unhandled rejection.
+ *
+ * @private
+ * @param {unknown} err
+ */
+function reportRefreshError(err) {
+	window.dispatchEvent(new CustomEvent('chive-internal-error', {
+		detail: { type: 'refresh-error', message: String(err?.message || err) },
+	}));
+}
+
+/**
  * Schedule a coalesced `refreshView()` on the next microtask. Multiple calls in
  * the same tick collapse into a single render. The `queued` flag is cleared
  * before running so a thrown render cannot permanently wedge future schedules;
- * a render error is reported via the `chive-internal-error` channel (surfaced as
- * a toast) rather than escaping as an unhandled microtask rejection.
+ * a render error is reported via {@link reportRefreshError} rather than escaping
+ * as an unhandled microtask rejection.
  *
  * @private
  */
-function scheduleRefreshView() {
+function scheduleFullRefresh() {
 	if (refreshQueued) return;
 	refreshQueued = true;
 	Promise.resolve().then(() => {
@@ -211,27 +224,25 @@ function scheduleRefreshView() {
 		try {
 			refreshView();
 		} catch (err) {
-			window.dispatchEvent(new CustomEvent('chive-internal-error', {
-				detail: { type: 'refresh-error', message: String(err?.message || err) },
-			}));
+			reportRefreshError(err);
 		}
 	});
 }
 
 /**
- * Subscribe the coalesced `scheduleRefreshView` to the state events whose
+ * Subscribe the coalesced `scheduleFullRefresh` to the state events whose
  * payloads affect what's rendered: dataset add/remove/select, columns, config,
  * and runtime imports (hydration).
  *
  * @private
  */
 function setupStateSubscriptions() {
-onStateChange(STATE_EVENTS.ACTIVE_DATASET, scheduleRefreshView);
-onStateChange(STATE_EVENTS.DATASET_ADDED, scheduleRefreshView);
-onStateChange(STATE_EVENTS.DATASET_REMOVED, scheduleRefreshView);
-onStateChange(STATE_EVENTS.COLUMNS_UPDATED, scheduleRefreshView);
-onStateChange(STATE_EVENTS.CONFIG_UPDATED, scheduleRefreshView);
-onStateChange(STATE_EVENTS.STATE_HYDRATED, scheduleRefreshView);
+onStateChange(STATE_EVENTS.ACTIVE_DATASET, scheduleFullRefresh);
+onStateChange(STATE_EVENTS.DATASET_ADDED, scheduleFullRefresh);
+onStateChange(STATE_EVENTS.DATASET_REMOVED, scheduleFullRefresh);
+onStateChange(STATE_EVENTS.COLUMNS_UPDATED, scheduleFullRefresh);
+onStateChange(STATE_EVENTS.CONFIG_UPDATED, scheduleFullRefresh);
+onStateChange(STATE_EVENTS.STATE_HYDRATED, scheduleFullRefresh);
 }
 
 // =============================================================================
@@ -362,7 +373,7 @@ function renderPanelWorkspace({ withLayoutSelector = true } = {}) {
  * the active dataset workspace plus its chart controls, then the panel
  * workspace. Each path delegates to its owning render module.
  *
- * Invoked through {@link scheduleRefreshView} by the state subscriptions
+ * Invoked through {@link scheduleFullRefresh} by the state subscriptions
  * (dataset add/remove/select, columns, config, hydration), and called directly
  * for non-bus renders: boot, locale changes, and preview-row changes.
  *
