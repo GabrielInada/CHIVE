@@ -90,7 +90,9 @@ must not be mutated by callers.
 | `getState()` | all | No | No | Returns a deep clone of the full state. |
 | `getPersistenceSnapshot()` | all | No | No | Returns a no-clone, live-reference view (`{ data, panel, ui }`) used by the save path. Keeps the deep clone off the auto-save hot path. Do not mutate. |
 | `getActiveDataset()` | data | No | No | Returns a live dataset reference or `null`. Do not mutate. |
+| `getActiveDatasetIndex()` | data | No | No | Returns the active dataset index, or `-1` when none. Primitive number. |
 | `getAllDatasets()` | data | No | No | Returns the live datasets array. Do not mutate. |
+| `getPreviewRows()` | ui | No | No | Returns the preview-table row count. Primitive number. |
 | `getPanelCharts()` | panel | No | No | Returns the live chart snapshot array. Do not mutate. |
 | `getChartSnapshot(chartId)` | panel | No | No | Returns a live snapshot reference or `null`. Do not mutate. |
 | `getPanelBlocks()` | panel | May insert default block | No | Returns live blocks. Ensures a default block exists. Do not mutate. |
@@ -162,17 +164,21 @@ subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
 | `STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED` | `panelBlockTemplateChanged` | `setPanelBlockTemplate` | `{ blockId, templateId }` | `panelManager.js` |
 | `STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED` | `panelBlockSlotAssigned` | `assignChartToPanelBlockSlot` | `{ blockId, slotId, chartId }` | `panelManager.js` |
 | `STATE_EVENTS.SIDEBAR_MODE_CHANGED` | `sidebarModeChanged` | `setSidebarMode` | sidebar mode | none |
-| `STATE_EVENTS.PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `setPreviewRows` | row count | none |
+| `STATE_EVENTS.PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `setPreviewRows` | row count | `main.js` |
 | `STATE_EVENTS.STATE_HYDRATED` | `stateHydrated` | `replaceAllState` | none | `main.js` |
 | `STATE_EVENTS.WILDCARD` | `*` | not emitted directly | wildcard callbacks receive `{ type, data }` after typed emits | `persistenceService.js` |
 
 ## Subscriber Map
 
-[`src/main.js`](../../src/main.js) subscribes to `ACTIVE_DATASET`,
-`DATASET_ADDED`, `DATASET_REMOVED`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`, and
-`STATE_HYDRATED`. Each handler **schedules** `refreshView()` (the broadest UI
-render path) through `scheduleFullRefresh`, a microtask-coalesced wrapper, so a
-synchronous burst of events (e.g. add-then-select) paints once.
+[`src/main.js`](../../src/main.js) schedules a full `refreshView()` through
+`scheduleFullRefresh` for `ACTIVE_DATASET`, `DATASET_ADDED`, `DATASET_REMOVED`, and
+`STATE_HYDRATED` (a microtask-coalesced wrapper, so a synchronous burst such as
+add-then-select paints once). The narrowed events repaint only their regions
+through `scheduleRegion`: `COLUMNS_UPDATED` the workspace and chart-controls
+regions; `CONFIG_UPDATED` the same, plus the panel region when the payload switches
+to the panel tab; `PREVIEW_ROWS_CHANGED` the workspace region. Boot and the
+`chiveDebug` handle render synchronously through `runFullRefreshNow`; nothing calls
+`refreshView()` bare.
 
 [`src/modules/panelManager.js`](../../src/modules/panelManager.js) subscribes to:
 
@@ -204,9 +210,11 @@ immediately to `localStorage`; project content is written by the debounced
 
 Dataset add/remove/select now render through the bus (the data facade emits
 `DATASET_ADDED`/`DATASET_REMOVED`/`ACTIVE_DATASET`, which `main.js` subscribes
-to). The remaining non-bus render triggers call `refreshView()` directly: initial
-boot render, locale-change events, live-preview rendering while controls are being
-adjusted, preview-row changes, and manual `chiveDebug` calls.
+to). Boot and manual `chiveDebug` calls do a synchronous full render through
+`runFullRefreshNow`; everything else is scheduled (locale and the full-refresh bus
+events through `scheduleFullRefresh`, preview-row changes through a workspace region
+flush). `refreshView()` is never called bare. Live-preview rendering while controls
+are adjusted stays its own narrow path (charts only).
 
 ## Persistence
 

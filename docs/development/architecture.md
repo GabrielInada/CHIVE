@@ -141,11 +141,13 @@ subscriber. For example, block layout events are handled by `panelManager`,
 which redraws the panel canvas instead of routing through the broad
 `refreshView()` path.
 
-Dataset, committed-config, and panel renders are now uniformly bus-driven. The
-remaining renders that call `refreshView()` directly are: boot, locale changes,
-live color/height preview, preview-row changes, and manual `chiveDebug` calls.
-The invariant is not "every render comes from the bus"; the invariant is that
-renderers do not mutate application state.
+Dataset, committed-config, and panel renders are now uniformly bus-driven. Boot
+and manual `chiveDebug` calls do a synchronous full render through
+`runFullRefreshNow`; locale and the full-refresh bus events schedule one through
+`scheduleFullRefresh`, and preview-row changes repaint only the workspace region.
+Live color/height preview stays its own charts-only path. `refreshView()` is never
+called bare. The invariant is not "every render comes from the bus"; the invariant
+is that renderers do not mutate application state.
 
 ## 7. Where To Look Next
 

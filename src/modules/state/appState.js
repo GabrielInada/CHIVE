@@ -160,6 +160,13 @@ export function getActiveDataset() {
 }
 
 /**
+ * @returns {number} Active dataset index, or `-1` when none is selected.
+ */
+export function getActiveDatasetIndex() {
+	return dataState.getActiveDatasetIndex();
+}
+
+/**
  * @returns {Dataset[]} Live reference to the datasets array. Do not mutate.
  */
 export function getAllDatasets() {
@@ -431,6 +438,13 @@ export function setSidebarMode(mode) {
  */
 export function setPreviewRows(rows) {
 	return uiState.setPreviewRows(rows);
+}
+
+/**
+ * @returns {number} Current preview-table row count.
+ */
+export function getPreviewRows() {
+	return uiState.getPreviewRows();
 }
 
 /**

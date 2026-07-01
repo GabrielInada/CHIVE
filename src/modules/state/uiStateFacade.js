@@ -3,7 +3,7 @@ import { STATE_EVENTS } from './stateEvents.js';
 /**
  * CHIVE UI-domain facade.
  *
- * Owns every write into `appState.ui`. Re-exported through `appState.js`,  * call those wrappers, not these methods, from outside this module.
+ * Owns the reads and writes for `appState.ui`. Re-exported through `appState.js`,  * call those wrappers, not these methods, from outside this module.
  *
  * @typedef {import('../../types.js').SidebarMode} SidebarMode
  *
@@ -20,6 +20,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  * @returns {{
  *   setSidebarMode: (mode: SidebarMode) => void,
  *   setPreviewRows: (rows: number) => void,
+ *   getPreviewRows: () => number,
  * }}
  */
 export function createUiStateFacade({ appState, emitStateChange }) {
@@ -54,8 +55,16 @@ export function createUiStateFacade({ appState, emitStateChange }) {
 		emitStateChange(STATE_EVENTS.PREVIEW_ROWS_CHANGED, rows);
 	}
 
+	/**
+	 * @returns {number} Current preview-table row count.
+	 */
+	function getPreviewRows() {
+		return appState.ui.previewRows;
+	}
+
 	return {
 		setSidebarMode,
 		setPreviewRows,
+		getPreviewRows,
 	};
 }

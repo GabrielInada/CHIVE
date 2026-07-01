@@ -13,6 +13,8 @@ const STATELESS_RENDERER_MESSAGE =
 // not in this list is treated as a write and blocked.
 const APP_STATE_READS = [
 	'getActiveDataset',
+	'getActiveDatasetIndex',
+	'getPreviewRows',
 	'getAllDatasets',
 	'getPanelCharts',
 	'getChartSnapshot',

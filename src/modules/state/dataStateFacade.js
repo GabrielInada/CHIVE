@@ -45,6 +45,7 @@ function generateDatasetId() {
  * @param {(eventType: import('../../types.js').StateEventType, data?: *) => void} deps.emitStateChange
  * @returns {{
  *   getActiveDataset: () => (Dataset | null),
+ *   getActiveDatasetIndex: () => number,
  *   getAllDatasets: () => Dataset[],
  *   setActiveDataset: (index: number) => void,
  *   addDataset: (dataset: Dataset) => number,
@@ -64,6 +65,13 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 			return null;
 		}
 		return appState.data.datasets[appState.data.activeIndex];
+	}
+
+	/**
+	 * @returns {number} Active dataset index, or `-1` when none is selected.
+	 */
+	function getActiveDatasetIndex() {
+		return appState.data.activeIndex;
 	}
 
 	/**
@@ -226,6 +234,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 
 	return {
 		getActiveDataset,
+		getActiveDatasetIndex,
 		getAllDatasets,
 		setActiveDataset,
 		addDataset,
