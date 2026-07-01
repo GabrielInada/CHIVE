@@ -20,10 +20,13 @@ import { showProgress } from '../feedbackUI.js';
 import { FILE_IDS } from '../../config/elementIds.js';
 
 let projectTransferBusy = false;
+let menuDismissListenersReady = false;
 
 /**
  * Internal workflow setup, called by `eventHandlers.js`.
- * Wires the project menu toggle and the export/import buttons.
+ * Wires the project menu toggle and the export/import buttons. Global menu-dismiss
+ * listeners are registered once; element-scoped controls are wired for the current
+ * DOM on every call.
  */
 export function setupProjectTransferListeners() {
 	const menuButton = document.getElementById(FILE_IDS.projectMenuButton);
@@ -34,15 +37,9 @@ export function setupProjectTransferListeners() {
 			event.stopPropagation();
 			setProjectMenuOpen(menuPanel.hidden);
 		});
-		document.addEventListener('click', event => {
-			if (menuPanel.hidden) return;
-			if (event.target.closest('.project-menu')) return;
-			setProjectMenuOpen(false);
-		});
-		document.addEventListener('keydown', event => {
-			if (event.key === 'Escape') setProjectMenuOpen(false);
-		});
 	}
+
+	ensureMenuDismissListeners();
 
 	document.getElementById(FILE_IDS.projectExportButton)
 		?.addEventListener('click', () => {
@@ -67,6 +64,34 @@ export function setupProjectTransferListeners() {
 			void handleProjectImport(file, importInput);
 		});
 	}
+}
+
+/**
+ * Register the global menu-dismiss listeners once. Kept outside the
+ * `menuButton && menuPanel` check on purpose: both handlers look the panel up
+ * fresh and bail when it is absent, so registering unconditionally lets the menu
+ * still dismiss if it is inserted or rebuilt after setup.
+ *
+ * @private
+ */
+function ensureMenuDismissListeners() {
+	if (menuDismissListenersReady) return;
+	document.addEventListener('click', onDocumentClickCloseMenu);
+	document.addEventListener('keydown', onDocumentKeydownCloseMenu);
+	menuDismissListenersReady = true;
+}
+
+/** @private */
+function onDocumentClickCloseMenu(event) {
+	const menuPanel = document.getElementById(FILE_IDS.projectMenuPanel);
+	if (!menuPanel || menuPanel.hidden) return;
+	if (event.target.closest('.project-menu')) return;
+	setProjectMenuOpen(false);
+}
+
+/** @private */
+function onDocumentKeydownCloseMenu(event) {
+	if (event.key === 'Escape') setProjectMenuOpen(false);
 }
 
 /**

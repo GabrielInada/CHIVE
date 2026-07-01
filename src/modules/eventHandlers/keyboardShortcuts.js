@@ -7,21 +7,29 @@
 
 import { isAnyDialogOpen } from '../dialogFocus.js';
 
+let keyboardListenersReady = false;
+
 /**
  * Internal workflow setup, called by `eventHandlers.js`.
- * Wires the global keyboard shortcuts.
+ * Wires the global keyboard shortcuts. Safe to call more than once: the global
+ * listener registers only on the first call.
  */
 export function setupGlobalKeyboardListeners() {
-	document.addEventListener('keydown', event => {
-		// Let a focused control (e.g. an open dialog's Tab trap) suppress global
-		// shortcuts by consuming the event first.
-		if (event.defaultPrevented) return;
-		// Ctrl+O or Cmd+O: open file picker
-		if ((event.ctrlKey || event.metaKey) && event.key === 'o') {
-			event.preventDefault();
-			// Never open the picker behind an open modal dialog.
-			if (isAnyDialogOpen()) return;
-			document.getElementById('file-input')?.click();
-		}
-	});
+	if (keyboardListenersReady) return;
+	document.addEventListener('keydown', onGlobalKeydown);
+	keyboardListenersReady = true;
+}
+
+/** @private */
+function onGlobalKeydown(event) {
+	// Let a focused control (e.g. an open dialog's Tab trap) suppress global
+	// shortcuts by consuming the event first.
+	if (event.defaultPrevented) return;
+	// Ctrl+O or Cmd+O: open file picker
+	if ((event.ctrlKey || event.metaKey) && event.key === 'o') {
+		event.preventDefault();
+		// Never open the picker behind an open modal dialog.
+		if (isAnyDialogOpen()) return;
+		document.getElementById('file-input')?.click();
+	}
 }
