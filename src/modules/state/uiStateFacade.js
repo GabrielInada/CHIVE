@@ -3,7 +3,8 @@ import { STATE_EVENTS } from './stateEvents.js';
 /**
  * CHIVE UI-domain facade.
  *
- * Owns the reads and writes for `appState.ui`. Re-exported through `appState.js`,  * call those wrappers, not these methods, from outside this module.
+ * Owns the reads and writes for `appState.ui`. Re-exported through `appState.js`,
+ * call those wrappers, not these methods, from outside this module.
  *
  * @typedef {import('../../types.js').SidebarMode} SidebarMode
  *
