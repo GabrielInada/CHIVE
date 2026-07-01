@@ -790,7 +790,6 @@ describe('bubble chart zoom stack (multi-level drill-down)', () => {
 		renderBubbleChart(container, multiLevelData, 'categoria', multiLevelOpts);
 
 		const viewportG = container.querySelector('svg > g');
-		const originalTransform = viewportG.getAttribute('transform');
 
 		// Drill into depth-1
 		const depth1Parent = container.querySelector('g.bubble-parent[data-depth="1"]');

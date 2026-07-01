@@ -12,16 +12,24 @@ import { addChartToPanel } from '../panelManager.js';
 import { showError, showFeedback } from '../feedbackUI.js';
 import { getChartSnapshotTitle, buildChartSnapshotMetadata } from './chartSnapshotMetadata.js';
 
+let chartActionListenersReady = false;
+
 /**
  * Internal workflow setup, called by `eventHandlers.js`.
- * Delegated listener for chart action buttons (download-svg, add-panel).
+ * Delegated listener for chart action buttons (download-svg, add-panel). Safe to
+ * call more than once: the delegated listener registers only on the first call.
  */
 export function setupChartActionListeners() {
-	document.addEventListener('click', event => {
-		const actionBtn = event.target.closest('[data-chart-action]');
-		if (!actionBtn) return;
-		handleChartAction(actionBtn);
-	});
+	if (chartActionListenersReady) return;
+	document.addEventListener('click', onChartActionClick);
+	chartActionListenersReady = true;
+}
+
+/** @private */
+function onChartActionClick(event) {
+	const actionBtn = event.target.closest('[data-chart-action]');
+	if (!actionBtn) return;
+	handleChartAction(actionBtn);
 }
 
 /**

@@ -139,6 +139,19 @@ const BROWSER_GLOBALS = {
 	DedicatedWorkerGlobalScope: 'readonly',
 };
 
+const TEST_GLOBALS = {
+	...BROWSER_GLOBALS,
+	global: 'readonly',
+	File: 'readonly',
+	Event: 'readonly',
+	MouseEvent: 'readonly',
+	KeyboardEvent: 'readonly',
+	Option: 'readonly',
+	queueMicrotask: 'readonly',
+	DOMException: 'readonly',
+	HTMLAnchorElement: 'readonly',
+};
+
 export default [
 	js.configs.recommended,
 
@@ -265,6 +278,25 @@ export default [
 		plugins: { chive: chiveRules },
 		rules: {
 			'chive/no-facade-getter-mutation': 'error',
+		},
+	},
+
+	// (F) Tests run under Vitest/jsdom. Keep them in `npm run lint` without
+	// applying src architecture guards to test harness code.
+	{
+		files: ['tests/**/*.js'],
+		languageOptions: {
+			ecmaVersion: 'latest',
+			sourceType: 'module',
+			globals: TEST_GLOBALS,
+		},
+		rules: {
+			'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+			'prefer-const': 'warn',
+			'no-var': 'warn',
+			'eqeqeq': 'warn',
+			'curly': ['warn', 'multi-line'],
+			'no-undef': 'error',
 		},
 	},
 ];

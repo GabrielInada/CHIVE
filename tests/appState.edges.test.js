@@ -102,7 +102,7 @@ describe('appState (edge cases - branch coverage)', () => {
 		});
 
 		it('merges config into active dataset', () => {
-			const idx = addDataset({
+			addDataset({
 				rows: [{}],
 				columns: [],
 				chartConfig: { type: 'bar' },
