@@ -6,13 +6,15 @@ const STATELESS_RENDERER_MESSAGE =
 	'modules/visualizations/, panelSubsystem presentation files) do not ' +
 	'call write facades (docs/development/architecture.md Layers section). Only read-only facade members ' +
 	'are importable here. Route writes through panelManager.js, ' +
-	'chartControls listeners, or modules/eventHandlers.';
+	'chartControls listeners, or event handler workflow modules.';
 
 // Read-only facade surface that renderers may import from appState.js.
 // If you add a new READ function to appState.js, add it here too. Anything
 // not in this list is treated as a write and blocked.
 const APP_STATE_READS = [
 	'getActiveDataset',
+	'getActiveDatasetIndex',
+	'getPreviewRows',
 	'getAllDatasets',
 	'getPanelCharts',
 	'getChartSnapshot',

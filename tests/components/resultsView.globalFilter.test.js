@@ -72,6 +72,7 @@ vi.mock('../../src/components/results/globalFilterDialog.js', () => ({
 }));
 
 import { renderDataInterface, renderEmptyState, renderFileList } from '../../src/components/resultsView.js';
+import { CHART_CONTAINERS } from '../../src/config/elementIds.js';
 
 function setupDom() {
 	document.body.innerHTML = `
@@ -117,6 +118,9 @@ function setupEmptyStateDom() {
 		<div id="chart-network-container"><svg></svg></div>
 		<div id="chart-pie-container"><svg></svg></div>
 		<div id="chart-bubble-container"><svg></svg></div>
+		<div id="chart-treemap-container"><svg></svg></div>
+		<div id="chart-line-container"><svg></svg></div>
+		<div id="chart-tin-container"><svg></svg></div>
 		<span id="badge-charts">7</span>
 		<button id="btn-advance"></button>
 		<div id="dev-warning"></div>
@@ -501,7 +505,9 @@ describe('renderEmptyState', () => {
 		expect(document.getElementById('table-container').children.length).toBe(0);
 		expect(document.getElementById('container-stats').children.length).toBe(0);
 		expect(document.getElementById('card-cat-stats').style.display).toBe('none');
-		expect(document.getElementById('chart-bar-container').children.length).toBe(0);
+		for (const containerId of Object.values(CHART_CONTAINERS)) {
+			expect(document.getElementById(containerId).children.length).toBe(0);
+		}
 		expect(document.getElementById('badge-charts').textContent).toBe('0');
 		expect(document.getElementById('btn-advance').disabled).toBe(true);
 		expect(document.getElementById('upload-zone').classList.contains('loaded')).toBe(false);

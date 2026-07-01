@@ -108,6 +108,32 @@ describe('dataStateFacade', () => {
 		expect(appState.data.datasets[0].chartConfig).toEqual({ color: 'red', title: 'Test' });
 	});
 
+	it('getActiveDatasetIndex returns the committed active index', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: { datasets: [{ rows: [{}] }, { rows: [{}] }], activeIndex: 1 },
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		expect(facade.getActiveDatasetIndex()).toBe(1);
+		facade.setActiveDataset(0);
+		expect(facade.getActiveDatasetIndex()).toBe(0);
+	});
+
+	it('getActiveDatasetIndex returns -1 when no dataset is active', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: { datasets: [], activeIndex: -1 },
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		expect(facade.getActiveDatasetIndex()).toBe(-1);
+	});
+
 	it('getAllDatasets returns datasets array', () => {
 		const emitStateChange = vi.fn();
 		const datasets = [{ rows: [{}], columns: [] }];

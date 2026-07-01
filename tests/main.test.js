@@ -22,6 +22,8 @@ const mocks = vi.hoisted(() => ({
 	getState: vi.fn(),
 	getPersistenceSnapshot: vi.fn(),
 	getActiveDataset: vi.fn(),
+	getActiveDatasetIndex: vi.fn(),
+	getPreviewRows: vi.fn(),
 	onStateChange: vi.fn(),
 	STATE_EVENTS: {
 		ACTIVE_DATASET: 'active-dataset',
@@ -30,6 +32,7 @@ const mocks = vi.hoisted(() => ({
 		COLUMNS_UPDATED: 'columns-updated',
 		CONFIG_UPDATED: 'config-updated',
 		STATE_HYDRATED: 'state-hydrated',
+		PREVIEW_ROWS_CHANGED: 'preview-rows-changed',
 	},
 	setPreviewRows: vi.fn(),
 	normalizeActiveDatasetConfig: vi.fn(),
@@ -104,6 +107,8 @@ vi.mock('../src/modules/state/appState.js', () => ({
 	getState: mocks.getState,
 	getPersistenceSnapshot: mocks.getPersistenceSnapshot,
 	getActiveDataset: mocks.getActiveDataset,
+	getActiveDatasetIndex: mocks.getActiveDatasetIndex,
+	getPreviewRows: mocks.getPreviewRows,
 	onStateChange: mocks.onStateChange,
 	STATE_EVENTS: mocks.STATE_EVENTS,
 	setPreviewRows: mocks.setPreviewRows,
@@ -193,6 +198,8 @@ function resetDefaults() {
 	mocks.getState.mockReturnValue({ data: { activeIndex: -1 }, ui: { previewRows: 10 } });
 	mocks.getPersistenceSnapshot.mockReturnValue({ snapshot: true });
 	mocks.getActiveDataset.mockReturnValue(null);
+	mocks.getActiveDatasetIndex.mockReturnValue(-1);
+	mocks.getPreviewRows.mockReturnValue(10);
 	mocks.getLoadedDatasets.mockReturnValue([]);
 }
 
@@ -242,7 +249,7 @@ describe('main.js bootstrap', () => {
 		expect(mocks.initChartControls).toHaveBeenCalledWith(null, expect.any(Function));
 		expect(mocks.initPanelManager).toHaveBeenCalledWith(mocks.showFeedback);
 		expect(mocks.initializeAllEventHandlers).toHaveBeenCalledTimes(1);
-		expect(mocks.onStateChange).toHaveBeenCalledTimes(6);
+		expect(mocks.onStateChange).toHaveBeenCalledTimes(7);
 		expect(mocks.enablePersistenceAutoSave).toHaveBeenCalledWith(
 			mocks.getPersistenceSnapshot,
 			{ onSaveError: expect.any(Function) },
@@ -261,7 +268,10 @@ describe('main.js bootstrap', () => {
 		mocks.enablePersistenceAutoSave.mock.calls[0][1].onSaveError(new Error('db'));
 		expect(mocks.showError).toHaveBeenCalledWith('chive-persistence-error');
 
+		// Locale changes now route through scheduleFullRefresh, so the re-render
+		// lands on the next microtask rather than synchronously.
 		windowListeners.get('chive-locale-changed')();
+		await Promise.resolve();
 		expect(mocks.renderEmptyState).toHaveBeenCalledTimes(2);
 
 		windowListeners.get('chive-internal-error')({ detail: { message: 'boom' } });
@@ -368,9 +378,197 @@ describe('main.js bootstrap', () => {
 		expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'chive-internal-error' }));
 
 		mocks.renderFileList.mockClear();
+		stateCallbacks[mocks.STATE_EVENTS.DATASET_ADDED]();
+		await Promise.resolve();
+		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
+	});
+
+	it('repaints workspace and chart-controls on a columns change, not the list or panel', async () => {
+		document.body.innerHTML = '<div id="file-info"></div>';
+		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
+		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
+		mocks.getActiveDataset.mockReturnValue(baseDataset);
+		mocks.getActiveDatasetIndex.mockReturnValue(0);
+		mocks.getPreviewRows.mockReturnValue(25);
+
+		await importMain();
+
+		const stateCallbacks = Object.fromEntries(mocks.onStateChange.mock.calls.map(([event, callback]) => [event, callback]));
+		mocks.renderDataInterface.mockClear();
+		mocks.renderChartControlsSidebar.mockClear();
+		mocks.renderFileList.mockClear();
+		mocks.renderSidebarPanel.mockClear();
+		mocks.renderCanvasPanel.mockClear();
+		mocks.getState.mockClear();
+
+		stateCallbacks[mocks.STATE_EVENTS.COLUMNS_UPDATED]();
+		await Promise.resolve();
+
+		expect(mocks.renderDataInterface).toHaveBeenCalledTimes(1);
+		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
+		expect(mocks.renderFileList).not.toHaveBeenCalled();
+		expect(mocks.renderSidebarPanel).not.toHaveBeenCalled();
+		expect(mocks.renderCanvasPanel).not.toHaveBeenCalled();
+		// The region flush uses the cheap getters, never the deep-cloning getState.
+		expect(mocks.getState).not.toHaveBeenCalled();
+	});
+
+	it('repaints only the workspace region on a preview-rows change, without a full state read', async () => {
+		document.body.innerHTML = '<div id="file-info"></div>';
+		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
+		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
+		mocks.getActiveDataset.mockReturnValue(baseDataset);
+		mocks.getActiveDatasetIndex.mockReturnValue(0);
+		mocks.getPreviewRows.mockReturnValue(40);
+
+		await importMain();
+
+		const stateCallbacks = Object.fromEntries(mocks.onStateChange.mock.calls.map(([event, callback]) => [event, callback]));
+		mocks.renderDataInterface.mockClear();
+		mocks.renderFileList.mockClear();
+		mocks.renderChartControlsSidebar.mockClear();
+		mocks.renderSidebarPanel.mockClear();
+		mocks.renderCanvasPanel.mockClear();
+		mocks.getState.mockClear();
+
+		// PREVIEW_ROWS_CHANGED repaints only the workspace region on the next microtask.
+		stateCallbacks[mocks.STATE_EVENTS.PREVIEW_ROWS_CHANGED]();
+		expect(mocks.renderDataInterface).not.toHaveBeenCalled();
+
+		await Promise.resolve();
+
+		expect(mocks.renderDataInterface).toHaveBeenCalledTimes(1);
+		// Renders with the committed getPreviewRows(), not whatever getState held.
+		expect(mocks.renderDataInterface.mock.calls[0][4]).toBe(40);
+		expect(mocks.renderFileList).not.toHaveBeenCalled();
+		expect(mocks.renderChartControlsSidebar).not.toHaveBeenCalled();
+		expect(mocks.renderSidebarPanel).not.toHaveBeenCalled();
+		expect(mocks.renderCanvasPanel).not.toHaveBeenCalled();
+		// The region flush uses the cheap getters, never the deep-cloning getState.
+		expect(mocks.getState).not.toHaveBeenCalled();
+	});
+
+	it('routes CONFIG_UPDATED by payload: chart options skip the panel, the panel tab repaints it', async () => {
+		document.body.innerHTML = '<div id="file-info"></div>';
+		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
+		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
+		mocks.getActiveDataset.mockReturnValue(baseDataset);
+		mocks.getActiveDatasetIndex.mockReturnValue(0);
+		mocks.getPreviewRows.mockReturnValue(25);
+
+		await importMain();
+
+		const stateCallbacks = Object.fromEntries(mocks.onStateChange.mock.calls.map(([event, callback]) => [event, callback]));
+
+		// A chart-option payload repaints workspace + controls, never the panel, and
+		// never reads the deep-cloning getState.
+		mocks.renderDataInterface.mockClear();
+		mocks.renderChartControlsSidebar.mockClear();
+		mocks.renderSidebarPanel.mockClear();
+		mocks.renderCanvasPanel.mockClear();
+		mocks.getState.mockClear();
+		stateCallbacks[mocks.STATE_EVENTS.CONFIG_UPDATED]({ bar: { enabled: true } });
+		await Promise.resolve();
+		expect(mocks.renderDataInterface).toHaveBeenCalledTimes(1);
+		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
+		expect(mocks.renderSidebarPanel).not.toHaveBeenCalled();
+		expect(mocks.renderCanvasPanel).not.toHaveBeenCalled();
+		expect(mocks.getState).not.toHaveBeenCalled();
+
+		// Switching to the panel tab also repaints the panel, after the workspace
+		// (canonical flush order: the workspace reveals the tab before the panel sizes).
+		mocks.renderDataInterface.mockClear();
+		mocks.renderCanvasPanel.mockClear();
+		stateCallbacks[mocks.STATE_EVENTS.CONFIG_UPDATED]({ activeTab: 'panel' });
+		await Promise.resolve();
+		expect(mocks.renderDataInterface).toHaveBeenCalledTimes(1);
+		expect(mocks.renderCanvasPanel).toHaveBeenCalledTimes(1);
+		expect(mocks.renderDataInterface.mock.invocationCallOrder[0])
+			.toBeLessThan(mocks.renderCanvasPanel.mock.invocationCallOrder[0]);
+	});
+
+	it('lets a full refresh subsume a region scheduled in the same tick (both orders)', async () => {
+		document.body.innerHTML = '<div id="file-info"></div>';
+		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
+		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
+		mocks.getActiveDataset.mockReturnValue(baseDataset);
+		mocks.getActiveDatasetIndex.mockReturnValue(0);
+		mocks.getPreviewRows.mockReturnValue(25);
+
+		await importMain();
+
+		const stateCallbacks = Object.fromEntries(mocks.onStateChange.mock.calls.map(([event, callback]) => [event, callback]));
+
+		// Region first, then full: the full subsumes the region (one full render).
+		mocks.renderFileList.mockClear();
+		mocks.renderDataInterface.mockClear();
+		stateCallbacks[mocks.STATE_EVENTS.COLUMNS_UPDATED]();
+		stateCallbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
+		await Promise.resolve();
+		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
+		expect(mocks.renderDataInterface).toHaveBeenCalledTimes(1);
+
+		// Full first, then region: the region scheduler bails (full pending).
+		mocks.renderFileList.mockClear();
+		mocks.renderDataInterface.mockClear();
+		stateCallbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
 		stateCallbacks[mocks.STATE_EVENTS.COLUMNS_UPDATED]();
 		await Promise.resolve();
 		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
+		expect(mocks.renderDataInterface).toHaveBeenCalledTimes(1);
+	});
+
+	it('suppresses a CONFIG_UPDATED emitted during a full refresh (render-time sanitize)', async () => {
+		document.body.innerHTML = '<div id="file-info"></div>';
+		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
+		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
+		mocks.getActiveDataset.mockReturnValue(baseDataset);
+		mocks.getActiveDatasetIndex.mockReturnValue(0);
+		mocks.getPreviewRows.mockReturnValue(25);
+
+		await importMain();
+
+		const stateCallbacks = Object.fromEntries(mocks.onStateChange.mock.calls.map(([event, callback]) => [event, callback]));
+
+		// renderDataInterface emits CONFIG_UPDATED mid-render (the global-filter
+		// sanitize). Under fullQueued it must schedule no follow-up region render.
+		mocks.renderDataInterface.mockClear();
+		mocks.renderDataInterface.mockImplementationOnce(() => {
+			stateCallbacks[mocks.STATE_EVENTS.CONFIG_UPDATED]({ globalFilter: { rules: [] } });
+		});
+
+		stateCallbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect(mocks.renderDataInterface).toHaveBeenCalledTimes(1);
+	});
+
+	it('runs the debug refreshView handle as a synchronous full render', async () => {
+		document.body.innerHTML = '<div id="file-info"></div>';
+
+		await importMain();
+
+		mocks.renderFileList.mockClear();
+		mocks.renderEmptyState.mockClear();
+
+		// chiveDebug.refreshView is runFullRefreshNow: a full render, synchronously.
+		window.chiveDebug.refreshView();
+		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
+		expect(mocks.renderEmptyState).toHaveBeenCalledTimes(1);
+	});
+
+	it('lets a boot render error reject initialization instead of swallowing it', async () => {
+		document.body.innerHTML = '<div id="file-info"></div>';
+		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+		mocks.renderFileList.mockImplementationOnce(() => { throw new Error('boot render boom'); });
+
+		await importMain();
+
+		// runFullRefreshNow does not catch, so the throw rejects initializeApplication()
+		// and reaches reportInitializationError rather than the refresh-error channel.
+		expect(consoleError).toHaveBeenCalledWith('CHIVE initialization failed:', expect.any(Error));
+		consoleError.mockRestore();
 	});
 
 	it('surfaces initialization failures and falls back when translation is unavailable', async () => {

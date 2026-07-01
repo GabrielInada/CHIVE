@@ -130,22 +130,26 @@ Example: a user toggles a column-visibility checkbox.
    calls `updateActiveDatasetColumns(columns)`.
 3. The data facade writes `dataset.selectedColumns`.
 4. The facade emits `STATE_EVENTS.COLUMNS_UPDATED`.
-5. `main.js`'s subscription schedules `refreshView()` (coalesced to one render
-   per microtask via `scheduleRefreshView`, so a synchronous burst of events
-   paints once).
-6. `refreshView()` reads state via getters and delegates rendering to
-   components and chart modules.
+5. `main.js`'s `COLUMNS_UPDATED` subscription schedules the workspace and
+   chart-controls regions via `scheduleRegion` (coalesced to one flush per
+   microtask, so a synchronous burst of events paints once). Broad events
+   (dataset add/remove/select, hydration, locale) schedule a full refresh via
+   `scheduleFullRefresh` instead.
+6. The region flush reads state via cheap getters and delegates rendering to
+   the workspace and chart-controls renderers.
 
 Panel changes follow the same ownership pattern but usually have a narrower
 subscriber. For example, block layout events are handled by `panelManager`,
 which redraws the panel canvas instead of routing through the broad
 `refreshView()` path.
 
-Dataset, committed-config, and panel renders are now uniformly bus-driven. The
-remaining renders that call `refreshView()` directly are: boot, locale changes,
-live color/height preview, preview-row changes, and manual `chiveDebug` calls.
-The invariant is not "every render comes from the bus"; the invariant is that
-renderers do not mutate application state.
+Dataset, committed-config, and panel renders are now uniformly bus-driven. Boot
+and manual `chiveDebug` calls do a synchronous full render through
+`runFullRefreshNow`; locale and the full-refresh bus events schedule one through
+`scheduleFullRefresh`, and preview-row changes repaint only the workspace region.
+Live color/height preview stays its own charts-only path. `refreshView()` is never
+called bare. The invariant is not "every render comes from the bus"; the invariant
+is that renderers do not mutate application state.
 
 ## 7. Where To Look Next
 

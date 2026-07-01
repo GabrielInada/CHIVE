@@ -50,6 +50,18 @@ describe('uiStateFacade', () => {
 		expect(emitStateChange).toHaveBeenCalledWith('previewRowsChanged', 25);
 	});
 
+	it('getPreviewRows returns the committed preview-row count', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			ui: { sidebarMode: 'data', previewRows: 10 },
+		};
+		const facade = createUiStateFacade({ appState, emitStateChange });
+
+		expect(facade.getPreviewRows()).toBe(10);
+		facade.setPreviewRows(25);
+		expect(facade.getPreviewRows()).toBe(25);
+	});
+
 	it('rejects preview rows less than 1', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
