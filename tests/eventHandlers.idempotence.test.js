@@ -191,11 +191,23 @@ describe('eventHandlers global-listener idempotence', () => {
     const panelB = document.getElementById('project-menu-panel');
     panelB.hidden = false;
 
-    // Outside click must come from document.body: a click dispatched on document
-    // would throw in the handler's event.target.closest(...).
+    // Use document.body to match the existing outside-click integration path.
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(panelB.hidden).toBe(true);
+  });
+
+  it('treats a document-target click as outside the project menu', async () => {
+    spyTrackedAddEventListener();
+    document.body.innerHTML = PROJECT_MENU_HTML;
+    const { setupProjectTransferListeners } = await import('../src/modules/eventHandlers/projectTransfer.js');
+    setupProjectTransferListeners();
+
+    const panel = document.getElementById('project-menu-panel');
+    panel.hidden = false;
+
+    expect(() => document.dispatchEvent(new MouseEvent('click', { bubbles: true }))).not.toThrow();
+    expect(panel.hidden).toBe(true);
   });
 
   it('registers dismiss listeners even when the menu is absent at setup time', async () => {

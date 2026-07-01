@@ -85,7 +85,7 @@ function ensureMenuDismissListeners() {
 function onDocumentClickCloseMenu(event) {
 	const menuPanel = document.getElementById(FILE_IDS.projectMenuPanel);
 	if (!menuPanel || menuPanel.hidden) return;
-	if (event.target.closest('.project-menu')) return;
+	if (typeof event.target?.closest === 'function' && event.target.closest('.project-menu')) return;
 	setProjectMenuOpen(false);
 }
 
