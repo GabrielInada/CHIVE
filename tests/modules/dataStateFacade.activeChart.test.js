@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createDataStateFacade } from '../../src/modules/state/dataStateFacade.js';
 
-const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
+const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
 
 function makeFacade(initialConfig = null) {
 	const emitStateChange = vi.fn();
@@ -113,6 +113,19 @@ describe('dataStateFacade.setActiveChartType', () => {
 		facade.setActiveChartType('scatter');
 		expect(emitStateChange).toHaveBeenCalledTimes(1);
 		expect(emitStateChange).toHaveBeenCalledWith('configUpdated', { activeChartType: 'scatter' });
+	});
+
+	it('canonicalizes the config: fills every default block including line and tin', () => {
+		const { facade, dataset } = makeFacade();
+		facade.setActiveChartType('bar');
+		// All eight blocks exist and are default-filled after canonicalization.
+		CHART_TYPES.forEach(type => {
+			expect(dataset.chartConfig[type]).toBeDefined();
+		});
+		expect(dataset.chartConfig.bar.sort).toBeDefined();
+		expect(dataset.chartConfig.line.curve).toBeDefined();
+		expect(dataset.chartConfig.tin).toBeDefined();
+		expect(dataset.chartConfig.globalFilter).toEqual({ rules: [], combine: 'AND' });
 	});
 
 	it('preserves non-enabled fields of other chart types when switching', () => {

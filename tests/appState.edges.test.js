@@ -101,7 +101,7 @@ describe('appState (edge cases - branch coverage)', () => {
 			expect(() => updateActiveDatasetColumns(['x'])).not.toThrow();
 		});
 
-		it('merges config into active dataset', () => {
+		it('merges config into active dataset (and canonicalizes)', () => {
 			addDataset({
 				rows: [{}],
 				columns: [],
@@ -110,7 +110,11 @@ describe('appState (edge cases - branch coverage)', () => {
 			updateActiveDatasetConfig({ title: 'Test' });
 
 			const active = getActiveDataset();
-			expect(active.chartConfig).toEqual({ type: 'bar', title: 'Test' });
+			// Custom + patched top-level fields survive the merge, and the stored
+			// config is canonical (default blocks filled, empty global filter).
+			expect(active.chartConfig).toMatchObject({ type: 'bar', title: 'Test' });
+			expect(active.chartConfig.bar).toBeDefined();
+			expect(active.chartConfig.globalFilter).toEqual({ rules: [], combine: 'AND' });
 		});
 
 		it('updates column selection in active dataset', () => {

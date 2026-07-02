@@ -339,6 +339,45 @@ describe('persistenceService', () => {
 		expect(persist.mock.calls[0][0].panel.charts).toEqual([]);
 	});
 
+	it('persists canonical dataset config before replacing state (import ordering)', async () => {
+		const persist = vi.fn(async () => {});
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: async () => null,
+			importBytes: async () => ({
+				data: {
+					datasets: [{
+						id: 'only',
+						name: 'only.csv',
+						rows: [{ x: 1 }],
+						columns: [{ name: 'x', type: 'number' }],
+						selectedColumns: ['x'],
+						chartConfig: {
+							bar: { enabled: true },
+							globalFilter: { rules: [{ column: 'gone', mode: 'categorical', include: ['v:N'] }] },
+						},
+					}],
+					activeDatasetId: 'only',
+				},
+				panel: null,
+			}),
+			persist,
+			clear: vi.fn(),
+		});
+		const replaceAllState = vi.fn();
+
+		const imported = await importProjectBytes(new Uint8Array([1]), { replaceAllState });
+
+		expect(imported.ok).toBe(true);
+		// importProjectBytes persists BEFORE replaceAllState, so this proves the stored
+		// bytes are canonical, not only the in-memory copy: partial bar block is
+		// default-filled and the stale filter (column not in the dataset) is trimmed.
+		const persistedConfig = persist.mock.calls[0][0].data.datasets[0].chartConfig;
+		expect(persistedConfig.bar.enabled).toBe(true);
+		expect(persistedConfig.bar.sort).toBeDefined();
+		expect(persistedConfig.globalFilter.rules).toEqual([]);
+	});
+
 	it('does not call replaceAllState on first visit', async () => {
 		const replaceAllState = vi.fn();
 		await hydrateState({ replaceAllState });
@@ -425,7 +464,13 @@ describe('persistenceService', () => {
 		const snapshot = replaceAllState.mock.calls[0][0];
 		expect(snapshot.data.activeIndex).toBe(0);
 		expect(snapshot.data.datasets[0].selectedColumns).toEqual([]);
-		expect(snapshot.data.datasets[0].chartConfig).toEqual({ bar: { category: 'x' } });
+		const chartConfig = snapshot.data.datasets[0].chartConfig;
+		// The bar block is kept and default-filled; the malformed `scatter: 'bad'` is
+		// dropped by sanitize then replaced with the default block by canonicalize.
+		expect(chartConfig.bar.category).toBe('x');
+		expect(chartConfig.scatter).toBeDefined();
+		expect(chartConfig.scatter.enabled).toBe(false);
+		expect(chartConfig.globalFilter).toEqual({ rules: [], combine: 'AND' });
 		expect(snapshot.panel).toEqual({ charts: [] });
 	});
 
@@ -480,8 +525,10 @@ describe('persistenceService', () => {
 		expect(bubble.groupColumn).toBe('c0');
 		expect(bubble.topN).toBe(20);
 		expect(bubble.category).toBe('categoria');
-		// other chart blocks pass through untouched.
-		expect(replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bar).toEqual({ category: 'x' });
+		// other chart blocks keep their saved fields and are default-filled by canonicalize.
+		const bar = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bar;
+		expect(bar.category).toBe('x');
+		expect(bar.enabled).toBe(false);
 	});
 
 	it('keeps a valid legacy groupColumn (and drops an undeclared one) when canonical filters away', async () => {
@@ -521,7 +568,11 @@ describe('persistenceService', () => {
 		await hydrateState({ replaceAllState });
 		const bubble = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
 
-		expect(bubble.nestingColumns).toEqual([]);
+		// The undeclared nesting entries are dropped by sanitize, leaving an empty
+		// array with a valid legacy groupColumn; canonicalize then promotes that group
+		// into nestingColumns (same rendered result as before, promotion just moves to
+		// the restore boundary instead of the first render).
+		expect(bubble.nestingColumns).toEqual(['grupo']);
 		expect(bubble.groupColumn).toBe('grupo'); // valid legacy retained
 	});
 
@@ -589,7 +640,19 @@ describe('persistenceService', () => {
 		await hydrateState({ replaceAllState });
 
 		expect(warn).toHaveBeenCalledWith(expect.stringContaining('dropped 3 malformed dataset record'));
-		expect(replaceAllState.mock.calls[0][0].data.datasets).toEqual([goodRecord('keep')]);
+		const datasets = replaceAllState.mock.calls[0][0].data.datasets;
+		expect(datasets).toHaveLength(1);
+		const kept = goodRecord('keep');
+		expect(datasets[0]).toMatchObject({
+			id: kept.id,
+			name: kept.name,
+			rows: kept.rows,
+			columns: kept.columns,
+			selectedColumns: kept.selectedColumns,
+		});
+		// chartConfig is canonicalized ({} -> full default shape) at the restore boundary.
+		expect(datasets[0].chartConfig.bar).toBeDefined();
+		expect(datasets[0].chartConfig.globalFilter).toEqual({ rules: [], combine: 'AND' });
 		warn.mockRestore();
 	});
 

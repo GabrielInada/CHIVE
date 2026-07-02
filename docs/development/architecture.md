@@ -151,6 +151,15 @@ Live color/height preview stays its own charts-only path. `refreshView()` is nev
 called bare. The invariant is not "every render comes from the bus"; the invariant
 is that renderers do not mutate application state.
 
+Temporary exception: chart config is now canonicalized at the state boundaries
+(persistence restore, `addDataset`, and the emitting config writes) via
+`canonicalizeChartConfig`, so state reaching render is already canonical. Two
+render-time repairs still write config as a redundant safety net, the in-place
+normalize in `renderActiveDatasetWorkspace` (`main.js`) and the stale-filter self-heal
+in `resultsView.js`. They are slated for removal in a follow-up; until then the
+"renderers do not mutate state" invariant is the direction this foundation moves
+toward, not yet fully achieved.
+
 ## 7. Where To Look Next
 
 - [Architecture Reference](architecture-reference.md): exact state schema,

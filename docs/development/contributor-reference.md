@@ -105,7 +105,10 @@ property naming conventions warning-only during the first rollout.
 
 ## ESLint Guards
 
-Beyond renderer statelessness, `npm run lint` enforces these rule classes in
+Beyond renderer statelessness (the target direction, not yet fully achieved: chart
+config is canonicalized at the state boundaries via `canonicalizeChartConfig`, but two
+render-time config repairs in `main.js`/`resultsView.js` remain as a redundant safety
+net pending a follow-up removal), `npm run lint` enforces these rule classes in
 [`eslint.config.js`](../../eslint.config.js):
 
 - **Raw-static deployment guards.** CHIVE is meant to run served raw from `src/`

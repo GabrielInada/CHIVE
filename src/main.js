@@ -437,9 +437,14 @@ function renderEmptyWorkspace() {
 /**
  * Render the active dataset's results pane: column controls, preview table,
  * stats, charts, and global-filter state, all via {@link renderDataInterface}.
- * Normalizes the active config in place first via
- * {@link normalizeActiveDatasetConfig} (no-emit by design; emitting would
- * re-enter through CONFIG_UPDATED and loop). No-op when no dataset is active.
+ *
+ * The in-place `normalizeActiveDatasetConfig` call below is now a redundant,
+ * temporary safety net: config is canonicalized at the state boundaries
+ * (persistence restore, `addDataset`, and the emitting config writes) via
+ * `canonicalizeChartConfig`, so state reaching render is already canonical. It is
+ * kept (no-emit by design; emitting would re-enter through CONFIG_UPDATED and
+ * loop) until a follow-up removes the render-time repairs. No-op when no dataset
+ * is active.
  *
  * @private
  * @param {Dataset | null} dataset - The active dataset, or null when none.
@@ -539,9 +544,9 @@ updateActiveDatasetColumns(columns);
 /**
  * Apply a chart-config change. Delegates to the data facade; the CONFIG_UPDATED
  * subscription repaints the workspace and chart-controls regions (and the panel
- * region when the active tab switches to the panel). The merge-with-defaults step
- * lives in the workspace render's normalize-on-read path
- * ({@link normalizeActiveDatasetConfig}), so this function does not repeat it.
+ * region when the active tab switches to the panel). The facade canonicalizes the
+ * config (default-fill + stale-filter trim) on write, so this function does not
+ * repeat it.
  *
  * @private
  * @param {Object} config

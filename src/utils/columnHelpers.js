@@ -108,6 +108,27 @@ export function normalizeColumnNameList(names, { allowed = null, max = Infinity 
 }
 
 /**
+ * Extract a dataset's column names, tolerant of the loose shapes that reach
+ * state boundaries: `{ name }` column objects and bare strings both yield
+ * names. Returns `undefined` when `dataset.columns` is not an array, so callers
+ * can distinguish "no trustworthy column context" (skip filter trimming) from
+ * "genuinely zero columns" (`[]`, trim everything).
+ *
+ * @param {Dataset | { columns?: * } | null | undefined} dataset
+ * @returns {string[] | undefined}
+ */
+export function getDatasetColumnNames(dataset) {
+	const columns = dataset?.columns;
+	if (!Array.isArray(columns)) return undefined;
+	// Reuse normalizeColumnNameList so name filtering + de-dup match the rest of
+	// the codebase; the non-array guard above keeps "no context" distinct from [].
+	return normalizeColumnNameList(
+		columns.map(col => (typeof col === 'string' ? col : col?.name)),
+		{ max: Infinity },
+	);
+}
+
+/**
  * Date columns only.
  *
  * @param {ColumnSpec[]} columns

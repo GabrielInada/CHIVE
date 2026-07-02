@@ -110,9 +110,9 @@ must not be mutated by callers.
 | `setActiveDataset(index)` | `data.activeIndex` | `ACTIVE_DATASET` | Payload is the selected index. Throws when out of range. |
 | `addDataset(dataset)` | `data.datasets`, maybe `data.activeIndex` | `DATASET_ADDED` | Stamps `dataset.id` when missing. Returns new index. |
 | `removeDataset(index)` | `data.datasets`, `data.activeIndex`, `panel.charts`, `panel.slots` | `DATASET_REMOVED` | Clears panel snapshots and legacy slots because they may reference removed data. |
-| `updateActiveDatasetConfig(updates)` | active `dataset.chartConfig` | `CONFIG_UPDATED` | Shallow-merges updates. No-op when no active dataset exists. |
+| `updateActiveDatasetConfig(updates)` | active `dataset.chartConfig` | `CONFIG_UPDATED` | Shallow-merges updates then canonicalizes; emits the raw patch. No-op when no active dataset exists. |
 | `updateActiveDatasetColumns(columnNames)` | active `dataset.selectedColumns` | `COLUMNS_UPDATED` | Replaces the selected-column list. No-op when no active dataset exists. |
-| `normalizeActiveDatasetConfig(normalizer)` | active `dataset.chartConfig` | No | Normalize-on-read exception. Do not add an emit here. |
+| `normalizeActiveDatasetConfig(normalizer)` | active `dataset.chartConfig` | No | Non-emitting escape hatch (live-preview + redundant render repair). Do not add an emit here. |
 | `setActiveChartType(chartType, activatedOverrides)` | active `dataset.chartConfig` | `CONFIG_UPDATED` | Radio-style chart activation. Emits `{ activeChartType }`. |
 
 ### Panel Facade Methods
@@ -314,8 +314,19 @@ migration tombstone without touching `chive-locale`.
 - Production code uses `STATE_EVENTS.*` constants, not string literals.
 - Do not synchronously emit a state event from inside a state subscriber.
 - `STATE_EVENTS.WILDCARD` is reserved for sink-style state-bus consumers.
-- `normalizeActiveDatasetConfig` is the normalize-on-read exception: it writes
-  without emitting to avoid `CONFIG_UPDATED` re-entry.
+- Chart config is canonicalized at the state boundaries via `canonicalizeChartConfig`
+  (`config/chartDefaults.js`): default-filled, legacy-migrated, and trimmed of
+  global-filter rules whose column is gone. It runs at persistence restore
+  (`normalizeStoredSnapshot`, so both the persisted bytes and hydrated memory are
+  canonical), `addDataset`, and the emitting config writes (`updateActiveDatasetConfig`,
+  `setActiveChartType`), plus defensively in `replaceAllState`. "Canonical" here means
+  object/default shape, legacy migration, and stale-filter cleanup, not scalar/enum value
+  validation, and it does not strip unknown top-level keys.
+- `normalizeActiveDatasetConfig` is the non-emitting escape hatch: it writes without
+  emitting to avoid `CONFIG_UPDATED` re-entry. With boundary canonicalization in place it
+  is no longer the primary normalization path; it now backs the intentional live-preview
+  writes (color/height) and the redundant render-time repairs pending their follow-up
+  removal.
 - `getPanelBlocks` and `validatePanelSlots` may repair panel state without
   emitting; callers use them for internal consistency cleanup, not user-visible
   mutations.

@@ -1,5 +1,7 @@
 import { emitStateChange, onStateChange, STATE_EVENTS } from './stateEvents.js';
 import { createPanelBlock as buildPanelBlock } from '../panelSubsystem/blockStateHelpers.js';
+import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
+import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
 import { createDataStateFacade } from './dataStateFacade.js';
 import { createUiStateFacade } from './uiStateFacade.js';
 import { createPanelStateFacade } from './panelStateFacade.js';
@@ -233,9 +235,13 @@ export function updateActiveDatasetColumns(columnNames) {
 
 /**
  * Apply a normalizer to the active dataset's `chartConfig`
- * **without emitting**. Intended for normalize-on-read paths (e.g. defaults
- * applied during render). Emitting here would re-enter `refreshView` via
- * the CONFIG_UPDATED subscription and loop. Use
+ * **without emitting**. Config is now canonicalized at the state boundaries
+ * (persistence restore, `addDataset`, and the emitting config writes) via
+ * `canonicalizeChartConfig`, so this is no longer the primary normalization path.
+ * It remains a temporary escape hatch for the intentional non-emitting
+ * live-preview writes (color picker, chart-height drag) and the redundant
+ * render-time repair, both pending the render-repair follow-up. Emitting here
+ * would re-enter `refreshView` via the CONFIG_UPDATED subscription and loop; use
  * {@link updateActiveDatasetConfig} when an emit is wanted.
  *
  * @param {(config: Object) => Object} normalizer
@@ -460,7 +466,20 @@ export function getPreviewRows() {
  */
 export function replaceAllState({ data, panel, ui } = {}) {
 	if (data && typeof data === 'object') {
-		appState.data.datasets = Array.isArray(data.datasets) ? data.datasets : [];
+		const rawDatasets = Array.isArray(data.datasets) ? data.datasets : [];
+		// Defensive canonicalization: replaceAllState is a public hydration escape
+		// hatch that can receive unsanitized input. Map to shallow copies with a
+		// canonical chartConfig (no in-place mutation of the caller's objects); leave
+		// non-object entries untouched so a malformed entry cannot throw here.
+		appState.data.datasets = rawDatasets.map(dataset => {
+			if (dataset === null || typeof dataset !== 'object' || Array.isArray(dataset)) {
+				return dataset;
+			}
+			return {
+				...dataset,
+				chartConfig: canonicalizeChartConfig(dataset.chartConfig, getDatasetColumnNames(dataset)),
+			};
+		});
 		const idx = Number.isInteger(data.activeIndex) ? data.activeIndex : -1;
 		appState.data.activeIndex = idx >= -1 && idx < appState.data.datasets.length ? idx : -1;
 	}

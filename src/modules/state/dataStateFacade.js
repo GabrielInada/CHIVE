@@ -1,4 +1,6 @@
 import { STATE_EVENTS } from './stateEvents.js';
+import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
+import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
 
 /**
  * CHIVE data-domain facade.
@@ -98,7 +100,10 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 
 	/**
 	 * Append a dataset. If `dataset.id` is missing, a stable id is stamped
-	 * in place so persistence can address the dataset across reloads. When
+	 * in place so persistence can address the dataset across reloads. The
+	 * `chartConfig` is canonicalized in place (default-filled, legacy-migrated,
+	 * stale filters trimmed) before the emit, so callers pushing a partial config
+	 * still land canonical state and DATASET_ADDED carries the stored dataset. When
 	 * no dataset is currently active, the new one is auto-activated.
 	 *
 	 * @param {Dataset} dataset - Must have a `rows` array.
@@ -113,6 +118,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (!dataset.id) {
 			dataset.id = generateDatasetId();
 		}
+		dataset.chartConfig = canonicalizeChartConfig(dataset.chartConfig, getDatasetColumnNames(dataset));
 		appState.data.datasets.push(dataset);
 		const index = appState.data.datasets.length - 1;
 		if (appState.data.activeIndex === -1) {
@@ -150,8 +156,14 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	}
 
 	/**
-	 * Shallow-merge `updates` into the active dataset's `chartConfig`.
-	 * No-op when no dataset is active.
+	 * Shallow-merge `updates` into the active dataset's `chartConfig`, then
+	 * canonicalize the result (default-filled, stale filters trimmed against the
+	 * dataset's columns). The shallow-merge contract is unchanged: a partial chart
+	 * block still replaces the whole block, and canonicalization only refills
+	 * defaults, it does not restore previously-set custom fields. The emitted
+	 * payload stays the raw `updates` (a routing hint), even when canonicalization
+	 * changes state beyond the patch (e.g. trimming a stale filter). No-op when no
+	 * dataset is active.
 	 *
 	 * @param {Object} updates - Partial `ChartConfig`-shaped patch.
 	 * @fires STATE_EVENTS.CONFIG_UPDATED
@@ -160,10 +172,10 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
 
-		dataset.chartConfig = {
-			...dataset.chartConfig,
-			...updates,
-		};
+		dataset.chartConfig = canonicalizeChartConfig(
+			{ ...dataset.chartConfig, ...updates },
+			getDatasetColumnNames(dataset),
+		);
 		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, updates);
 	}
 
@@ -183,10 +195,14 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	}
 
 	/**
-	 * Apply `normalizer` to `chartConfig` **without emitting**. Intended
-	 * for normalize-on-read paths, e.g. applying chart-config defaults
-	 * during a render. Emitting here would re-enter `refreshView` via the
-	 * CONFIG_UPDATED subscription and loop indefinitely.
+	 * Apply `normalizer` to `chartConfig` **without emitting**. Config is now
+	 * canonicalized at the state boundaries (persistence restore, `addDataset`, and
+	 * the emitting config writes) via `canonicalizeChartConfig`, so this is no longer
+	 * the primary normalization path. It remains a temporary escape hatch for the
+	 * intentional non-emitting live-preview writes (color picker, chart-height drag)
+	 * and the redundant render-time repair, both pending the render-repair follow-up.
+	 * Emitting here would re-enter `refreshView` via the CONFIG_UPDATED subscription
+	 * and loop indefinitely.
 	 *
 	 * **Do not** add an emit to this function. If you need an emit, use
 	 * {@link updateActiveDatasetConfig} instead.
@@ -228,7 +244,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (chartType && activatedOverrides && typeof activatedOverrides === 'object') {
 			next[chartType] = { ...next[chartType], ...activatedOverrides };
 		}
-		dataset.chartConfig = next;
+		dataset.chartConfig = canonicalizeChartConfig(next, getDatasetColumnNames(dataset));
 		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { activeChartType: chartType });
 	}
 
