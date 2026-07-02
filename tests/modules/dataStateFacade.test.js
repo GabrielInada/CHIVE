@@ -161,6 +161,29 @@ describe('dataStateFacade', () => {
 		expect(emitStateChange).toHaveBeenCalledWith('configUpdated', { globalFilter: staleFilter });
 	});
 
+	it('updateActiveDatasetConfig repairs malformed existing config before merging a patch', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: {
+				datasets: [{ rows: [{}], columns: [], chartConfig: 'bad' }],
+				activeIndex: 0,
+			},
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		facade.updateActiveDatasetConfig({ title: 'Test' });
+
+		const config = appState.data.datasets[0].chartConfig;
+		expect(config.title).toBe('Test');
+		expect(config.bar).toBeDefined();
+		expect(config).not.toHaveProperty('0');
+		expect(config).not.toHaveProperty('1');
+		expect(config).not.toHaveProperty('2');
+		expect(emitStateChange).toHaveBeenCalledWith('configUpdated', { title: 'Test' });
+	});
+
 	it('updateActiveDatasetConfig emits an activeTab-only payload for a tab switch', () => {
 		const emitStateChange = vi.fn();
 		const appState = {

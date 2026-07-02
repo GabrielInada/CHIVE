@@ -128,6 +128,31 @@ describe('dataStateFacade.setActiveChartType', () => {
 		expect(dataset.chartConfig.globalFilter).toEqual({ rules: [], combine: 'AND' });
 	});
 
+	it('repairs malformed existing chart blocks before toggling a chart type', () => {
+		const { facade, dataset } = makeFacade({
+			bar: 'bad',
+			scatter: { enabled: false },
+		});
+
+		facade.setActiveChartType('bar');
+
+		expect(dataset.chartConfig.bar.enabled).toBe(true);
+		expect(dataset.chartConfig.bar.sort).toBeDefined();
+		expect(dataset.chartConfig.bar).not.toHaveProperty('0');
+		expect(dataset.chartConfig.bar).not.toHaveProperty('1');
+		expect(dataset.chartConfig.bar).not.toHaveProperty('2');
+	});
+
+	it('ignores malformed activatedOverrides instead of spreading index keys', () => {
+		const { facade, dataset } = makeFacade();
+
+		facade.setActiveChartType('bar', ['bad']);
+
+		expect(dataset.chartConfig.bar.enabled).toBe(true);
+		expect(dataset.chartConfig.bar.category).toBe('col1');
+		expect(dataset.chartConfig.bar).not.toHaveProperty('0');
+	});
+
 	it('preserves non-enabled fields of other chart types when switching', () => {
 		const { facade, dataset } = makeFacade({
 			bar: { enabled: true, category: 'a', color: '#abc' },

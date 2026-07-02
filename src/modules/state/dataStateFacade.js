@@ -22,6 +22,15 @@ const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'l
 let datasetIdCounter = 0;
 
 /**
+ * @private
+ * @param {*} value
+ * @returns {boolean}
+ */
+function isPlainObject(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/**
  * Produce a stable dataset id. Uses `crypto.randomUUID` when available;
  * falls back to `dataset-<timestamp>-<n>` in environments without crypto
  * (notably some Vitest configurations).
@@ -171,10 +180,13 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	function updateActiveDatasetConfig(updates) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
+		const columnNames = getDatasetColumnNames(dataset);
+		const current = canonicalizeChartConfig(dataset.chartConfig, columnNames);
+		const patch = isPlainObject(updates) ? updates : {};
 
 		dataset.chartConfig = canonicalizeChartConfig(
-			{ ...dataset.chartConfig, ...updates },
-			getDatasetColumnNames(dataset),
+			{ ...current, ...patch },
+			columnNames,
 		);
 		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, updates);
 	}
@@ -235,16 +247,17 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (!dataset) return;
 		if (chartType !== null && !CHART_TYPES.includes(chartType)) return;
 
-		const current = dataset.chartConfig || {};
+		const columnNames = getDatasetColumnNames(dataset);
+		const current = canonicalizeChartConfig(dataset.chartConfig, columnNames);
 		const next = { ...current };
 		CHART_TYPES.forEach(type => {
-			const previous = current[type] || {};
+			const previous = isPlainObject(current[type]) ? current[type] : {};
 			next[type] = { ...previous, enabled: type === chartType };
 		});
-		if (chartType && activatedOverrides && typeof activatedOverrides === 'object') {
+		if (chartType && isPlainObject(activatedOverrides)) {
 			next[chartType] = { ...next[chartType], ...activatedOverrides };
 		}
-		dataset.chartConfig = canonicalizeChartConfig(next, getDatasetColumnNames(dataset));
+		dataset.chartConfig = canonicalizeChartConfig(next, columnNames);
 		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { activeChartType: chartType });
 	}
 

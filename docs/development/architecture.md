@@ -152,9 +152,9 @@ called bare. The invariant is not "every render comes from the bus"; the invaria
 is that renderers do not mutate application state.
 
 Temporary exception: chart config is now canonicalized at the state boundaries
-(persistence restore, `addDataset`, and the emitting config writes) via
-`canonicalizeChartConfig`, so state reaching render is already canonical. Two
-render-time repairs still write config as a redundant safety net, the in-place
+(persistence restore, `addDataset`, the emitting config writes, and defensively in
+`replaceAllState`) via `canonicalizeChartConfig`, so state reaching render is
+already canonical. Two render-time repairs still write config as a redundant safety net, the in-place
 normalize in `renderActiveDatasetWorkspace` (`main.js`) and the stale-filter self-heal
 in `resultsView.js`. They are slated for removal in a follow-up; until then the
 "renderers do not mutate state" invariant is the direction this foundation moves
