@@ -207,14 +207,12 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	}
 
 	/**
-	 * Apply `normalizer` to `chartConfig` **without emitting**. Config is now
+	 * Apply `normalizer` to `chartConfig` **without emitting**. Config is
 	 * canonicalized at the state boundaries (persistence restore, `addDataset`, and
-	 * the emitting config writes) via `canonicalizeChartConfig`, so this is no longer
-	 * the primary normalization path. It remains a temporary escape hatch for the
-	 * intentional non-emitting live-preview writes (color picker, chart-height drag)
-	 * and the redundant render-time repair, both pending the render-repair follow-up.
-	 * Emitting here would re-enter `refreshView` via the CONFIG_UPDATED subscription
-	 * and loop indefinitely.
+	 * the emitting config writes) via `canonicalizeChartConfig`; this escape hatch
+	 * exists for the intentional non-emitting live-preview writes (color picker,
+	 * chart-height drag). Emitting here would re-enter `refreshView` via the
+	 * CONFIG_UPDATED subscription and loop indefinitely.
 	 *
 	 * **Do not** add an emit to this function. If you need an emit, use
 	 * {@link updateActiveDatasetConfig} instead.

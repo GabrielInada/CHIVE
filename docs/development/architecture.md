@@ -149,16 +149,15 @@ and manual `chiveDebug` calls do a synchronous full render through
 `scheduleFullRefresh`, and preview-row changes repaint only the workspace region.
 Live color/height preview stays its own charts-only path. `refreshView()` is never
 called bare. The invariant is not "every render comes from the bus"; the invariant
-is that renderers do not mutate application state.
+is that renderers do not write state during render.
 
-Temporary exception: chart config is now canonicalized at the state boundaries
-(persistence restore, `addDataset`, the emitting config writes, and defensively in
-`replaceAllState`) via `canonicalizeChartConfig`, so state reaching render is
-already canonical. Two render-time repairs still write config as a redundant safety net, the in-place
-normalize in `renderActiveDatasetWorkspace` (`main.js`) and the stale-filter self-heal
-in `resultsView.js`. They are slated for removal in a follow-up; until then the
-"renderers do not mutate state" invariant is the direction this foundation moves
-toward, not yet fully achieved.
+Committed chart config backs that invariant concretely: it is canonicalized at
+the state boundaries (persistence restore, `addDataset`, the emitting config
+writes, and defensively in `replaceAllState`) via `canonicalizeChartConfig`.
+Renderers may derive local display defaults from what they read, but they do not
+write repairs back during render. The invariant is deliberately narrow: render
+and setup paths still attach handlers that mutate state later, and views still
+read state through getters; what render itself never does is write.
 
 ## 7. Where To Look Next
 

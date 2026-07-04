@@ -105,11 +105,10 @@ property naming conventions warning-only during the first rollout.
 
 ## ESLint Guards
 
-Beyond renderer statelessness (the target direction, not yet fully achieved: chart
-config is canonicalized at the state boundaries via `canonicalizeChartConfig`, but two
-render-time config repairs in `main.js`/`resultsView.js` remain as a redundant safety
-net pending a follow-up removal), `npm run lint` enforces these rule classes in
-[`eslint.config.js`](../../eslint.config.js):
+Beyond the no-write-during-render invariant (renderers do not write state during
+render; chart config is canonicalized at the state boundaries via
+`canonicalizeChartConfig`, so render never repairs it), `npm run lint` enforces
+these rule classes in [`eslint.config.js`](../../eslint.config.js):
 
 - **Raw-static deployment guards.** CHIVE is meant to run served raw from `src/`
   and `vendor/` with no build step, so bundler-/Vite-only import forms are hard

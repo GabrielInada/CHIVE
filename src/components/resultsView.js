@@ -390,12 +390,6 @@ export function renderDataInterface(
   const safeGlobalFilter = resolveGlobalFilterForColumns(config.globalFilter, allColumnNames);
   const filteredRows = applyGlobalFilterRules(rows, safeGlobalFilter, numericNames);
 
-  const rawRulesCount = Array.isArray(config.globalFilter?.rules) ? config.globalFilter.rules.length : 0;
-  const hadLegacyColumn = Boolean(config.globalFilter && !Array.isArray(config.globalFilter.rules) && config.globalFilter.column);
-  if ((rawRulesCount > safeGlobalFilter.rules.length || hadLegacyColumn) && onChartConfigChange) {
-    onChartConfigChange({ globalFilter: safeGlobalFilter });
-  }
-
   const handleAddToGlobalFilter = onChartConfigChange
     ? (column, token) => {
       if (typeof column !== 'string' || typeof token !== 'string') return;

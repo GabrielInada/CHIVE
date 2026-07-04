@@ -112,7 +112,7 @@ must not be mutated by callers.
 | `removeDataset(index)` | `data.datasets`, `data.activeIndex`, `panel.charts`, `panel.slots` | `DATASET_REMOVED` | Clears panel snapshots and legacy slots because they may reference removed data. |
 | `updateActiveDatasetConfig(updates)` | active `dataset.chartConfig` | `CONFIG_UPDATED` | Shallow-merges updates then canonicalizes; emits the raw patch. No-op when no active dataset exists. |
 | `updateActiveDatasetColumns(columnNames)` | active `dataset.selectedColumns` | `COLUMNS_UPDATED` | Replaces the selected-column list. No-op when no active dataset exists. |
-| `normalizeActiveDatasetConfig(normalizer)` | active `dataset.chartConfig` | No | Non-emitting escape hatch (live-preview + redundant render repair). Do not add an emit here. |
+| `normalizeActiveDatasetConfig(normalizer)` | active `dataset.chartConfig` | No | Non-emitting escape hatch (live-preview writes). Do not add an emit here. |
 | `setActiveChartType(chartType, activatedOverrides)` | active `dataset.chartConfig` | `CONFIG_UPDATED` | Radio-style chart activation. Emits `{ activeChartType }`. |
 
 ### Panel Facade Methods
@@ -323,10 +323,9 @@ migration tombstone without touching `chive-locale`.
   object/default shape, legacy migration, and stale-filter cleanup, not scalar/enum value
   validation, and it does not strip unknown top-level keys.
 - `normalizeActiveDatasetConfig` is the non-emitting escape hatch: it writes without
-  emitting to avoid `CONFIG_UPDATED` re-entry. With boundary canonicalization in place it
-  is no longer the primary normalization path; it now backs the intentional live-preview
-  writes (color/height) and the redundant render-time repairs pending their follow-up
-  removal.
+  emitting to avoid `CONFIG_UPDATED` re-entry. It backs the intentional live-preview
+  writes (color/height); with boundary canonicalization in place, nothing else
+  should need it.
 - `getPanelBlocks` and `validatePanelSlots` may repair panel state without
   emitting; callers use them for internal consistency cleanup, not user-visible
   mutations.
