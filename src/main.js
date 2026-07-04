@@ -34,7 +34,6 @@ renderDataInterface,
 renderFileList,
 } from './components/resultsView.js';
 import { initChartControls, renderChartControlsSidebar, renderCharts } from './features/chartFeatures.js';
-import { mergeChartConfigWithDefaults } from './config/chartDefaults.js';
 import { getNumericColumns } from './utils/columnHelpers.js';
 import { rehydratePanelChartSpecs } from './utils/panelHydration.js';
 import { throttle } from './utils/throttle.js';
@@ -48,7 +47,6 @@ getPreviewRows,
 onStateChange,
 STATE_EVENTS,
 setPreviewRows,
-normalizeActiveDatasetConfig,
 updateActiveDatasetColumns,
 updateActiveDatasetConfig,
 replaceAllState,
@@ -197,8 +195,9 @@ function reportInitializationError(error) {
 // microtask (dataset add/remove/select, hydration, locale); scheduleRegion()
 // drains a dirty-region set, repainting only the affected areas. runFullRefreshNow()
 // is the synchronous full-render entry for boot and the debug handle. Never call
-// refreshView() bare: it would not set `fullQueued`, so a render-time region emit
-// or a region queued in the same tick would not be suppressed.
+// refreshView() bare: it would not set `fullQueued`, so a region queued in the
+// same tick (a synchronous burst of events) would not be coalesced, and the
+// guard would stop protecting against re-entrant emits during a render.
 
 // Render areas a region flush can repaint (typo-safe registry, mirrors STATE_EVENTS).
 const RENDER_REGIONS = Object.freeze({
@@ -437,9 +436,11 @@ function renderEmptyWorkspace() {
 /**
  * Render the active dataset's results pane: column controls, preview table,
  * stats, charts, and global-filter state, all via {@link renderDataInterface}.
- * Normalizes the active config in place first via
- * {@link normalizeActiveDatasetConfig} (no-emit by design; emitting would
- * re-enter through CONFIG_UPDATED and loop). No-op when no dataset is active.
+ *
+ * Committed chart config is canonicalized at the state boundaries (persistence
+ * restore, `addDataset`, and the emitting config writes) via
+ * `canonicalizeChartConfig`, so render does not repair it; the renderers derive
+ * any local display defaults themselves. No-op when no dataset is active.
  *
  * @private
  * @param {Dataset | null} dataset - The active dataset, or null when none.
@@ -447,7 +448,6 @@ function renderEmptyWorkspace() {
  */
 function renderActiveDatasetWorkspace(dataset, previewRows) {
 	if (!dataset) return;
-	normalizeActiveDatasetConfig(mergeChartConfigWithDefaults);
 	renderDataInterface(
 		dataset.rows,
 		dataset.columns,
@@ -539,9 +539,9 @@ updateActiveDatasetColumns(columns);
 /**
  * Apply a chart-config change. Delegates to the data facade; the CONFIG_UPDATED
  * subscription repaints the workspace and chart-controls regions (and the panel
- * region when the active tab switches to the panel). The merge-with-defaults step
- * lives in the workspace render's normalize-on-read path
- * ({@link normalizeActiveDatasetConfig}), so this function does not repeat it.
+ * region when the active tab switches to the panel). The facade canonicalizes the
+ * config (default-fill + stale-filter trim) on write, so this function does not
+ * repeat it.
  *
  * @private
  * @param {Object} config

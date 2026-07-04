@@ -95,7 +95,7 @@ describe('dataStateFacade', () => {
 		expect(() => facade.updateActiveDatasetColumns(['a'])).not.toThrow();
 	});
 
-	it('updateActiveDatasetConfig merges into existing config', () => {
+	it('updateActiveDatasetConfig merges the patch and canonicalizes the config', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
 			data: { datasets: [{ rows: [{}], columns: [], chartConfig: { color: 'red' } }], activeIndex: 0 },
@@ -105,7 +105,96 @@ describe('dataStateFacade', () => {
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
 		facade.updateActiveDatasetConfig({ title: 'Test' });
-		expect(appState.data.datasets[0].chartConfig).toEqual({ color: 'red', title: 'Test' });
+		const config = appState.data.datasets[0].chartConfig;
+		// Custom + patched top-level fields survive the merge...
+		expect(config).toMatchObject({ color: 'red', title: 'Test' });
+		// ...and the stored config is now canonical (default blocks filled).
+		expect(config.bar).toBeDefined();
+		expect(config.scatter).toBeDefined();
+		expect(config.globalFilter).toEqual({ rules: [], combine: 'AND' });
+		// The emitted payload stays the raw patch (a routing hint).
+		expect(emitStateChange).toHaveBeenCalledWith('configUpdated', { title: 'Test' });
+	});
+
+	it('emits DATASET_ADDED with the stored, canonical dataset (payload identity)', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: { datasets: [], activeIndex: -1 },
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		const index = facade.addDataset({
+			rows: [{ a: 1 }],
+			columns: [{ name: 'a', type: 'number' }],
+			chartConfig: { bar: { enabled: true } },
+		});
+
+		const payload = emitStateChange.mock.calls.find(([type]) => type === 'datasetAdded')[1];
+		// The emit carries the stored dataset object, not the stale caller input.
+		expect(payload.dataset).toBe(appState.data.datasets[index]);
+		// Its config is canonical: the partial bar block is default-filled.
+		expect(payload.dataset.chartConfig.bar.enabled).toBe(true);
+		expect(payload.dataset.chartConfig.bar.sort).toBeDefined();
+		expect(payload.dataset.chartConfig.scatter).toBeDefined();
+	});
+
+	it('updateActiveDatasetConfig trims a stale filter in state but emits the raw patch', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: {
+				datasets: [{ rows: [{}], columns: [{ name: 'age', type: 'number' }], chartConfig: {} }],
+				activeIndex: 0,
+			},
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		const staleFilter = { rules: [{ column: 'gone', mode: 'categorical', include: ['v:N'] }] };
+		facade.updateActiveDatasetConfig({ globalFilter: staleFilter });
+
+		// State stores the trimmed canonical filter (the absent column is gone)...
+		expect(appState.data.datasets[0].chartConfig.globalFilter.rules).toEqual([]);
+		// ...but the emitted payload is still the raw, untrimmed patch.
+		expect(emitStateChange).toHaveBeenCalledWith('configUpdated', { globalFilter: staleFilter });
+	});
+
+	it('updateActiveDatasetConfig repairs malformed existing config before merging a patch', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: {
+				datasets: [{ rows: [{}], columns: [], chartConfig: 'bad' }],
+				activeIndex: 0,
+			},
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		facade.updateActiveDatasetConfig({ title: 'Test' });
+
+		const config = appState.data.datasets[0].chartConfig;
+		expect(config.title).toBe('Test');
+		expect(config.bar).toBeDefined();
+		expect(config).not.toHaveProperty('0');
+		expect(config).not.toHaveProperty('1');
+		expect(config).not.toHaveProperty('2');
+		expect(emitStateChange).toHaveBeenCalledWith('configUpdated', { title: 'Test' });
+	});
+
+	it('updateActiveDatasetConfig emits an activeTab-only payload for a tab switch', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: { datasets: [{ rows: [{}], columns: [], chartConfig: {} }], activeIndex: 0 },
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		facade.updateActiveDatasetConfig({ activeTab: 'bar' });
+		expect(emitStateChange).toHaveBeenCalledWith('configUpdated', { activeTab: 'bar' });
 	});
 
 	it('getActiveDatasetIndex returns the committed active index', () => {

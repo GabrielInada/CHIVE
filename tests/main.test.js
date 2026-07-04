@@ -15,7 +15,6 @@ const mocks = vi.hoisted(() => ({
 	initChartControls: vi.fn(),
 	renderChartControlsSidebar: vi.fn(),
 	renderCharts: vi.fn(),
-	mergeChartConfigWithDefaults: vi.fn(),
 	getNumericColumns: vi.fn(),
 	rehydratePanelChartSpecs: vi.fn(),
 	throttle: vi.fn(),
@@ -85,10 +84,6 @@ vi.mock('../src/features/chartFeatures.js', () => ({
 	initChartControls: mocks.initChartControls,
 	renderChartControlsSidebar: mocks.renderChartControlsSidebar,
 	renderCharts: mocks.renderCharts,
-}));
-
-vi.mock('../src/config/chartDefaults.js', () => ({
-	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 
 vi.mock('../src/utils/columnHelpers.js', () => ({
@@ -192,7 +187,6 @@ function resetDefaults() {
 	mocks.isPersistenceAvailable.mockReturnValue(true);
 	mocks.hydrateState.mockResolvedValue(undefined);
 	mocks.getPersistenceErrorMessageKey.mockReturnValue('chive-persistence-error');
-	mocks.mergeChartConfigWithDefaults.mockImplementation(config => config);
 	mocks.getNumericColumns.mockImplementation(columns => columns.filter(column => column.type === 'number'));
 	mocks.throttle.mockImplementation(fn => fn);
 	mocks.getState.mockReturnValue({ data: { activeIndex: -1 }, ui: { previewRows: 10 } });
@@ -296,7 +290,7 @@ describe('main.js bootstrap', () => {
 			mocks.handleJoinDatasetRequest,
 			mocks.handlePresetDatasetRequest,
 		);
-		expect(mocks.normalizeActiveDatasetConfig).toHaveBeenCalledWith(mocks.mergeChartConfigWithDefaults);
+		expect(mocks.normalizeActiveDatasetConfig).not.toHaveBeenCalled();
 		expect(mocks.renderDataInterface).toHaveBeenCalledWith(
 			baseDataset.rows,
 			baseDataset.columns,
@@ -518,7 +512,7 @@ describe('main.js bootstrap', () => {
 		expect(mocks.renderDataInterface).toHaveBeenCalledTimes(1);
 	});
 
-	it('suppresses a CONFIG_UPDATED emitted during a full refresh (render-time sanitize)', async () => {
+	it('suppresses region work from a CONFIG_UPDATED emitted during a full refresh', async () => {
 		document.body.innerHTML = '<div id="file-info"></div>';
 		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
 		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
@@ -530,8 +524,9 @@ describe('main.js bootstrap', () => {
 
 		const stateCallbacks = Object.fromEntries(mocks.onStateChange.mock.calls.map(([event, callback]) => [event, callback]));
 
-		// renderDataInterface emits CONFIG_UPDATED mid-render (the global-filter
-		// sanitize). Under fullQueued it must schedule no follow-up region render.
+		// Synthetic re-entrancy probe: no production render emits mid-render, but
+		// the fullQueued guard must still swallow one defensively rather than
+		// schedule a follow-up region render.
 		mocks.renderDataInterface.mockClear();
 		mocks.renderDataInterface.mockImplementationOnce(() => {
 			stateCallbacks[mocks.STATE_EVENTS.CONFIG_UPDATED]({ globalFilter: { rules: [] } });

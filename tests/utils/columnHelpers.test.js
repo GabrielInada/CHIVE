@@ -9,6 +9,7 @@ import {
   getCategoricalColumnNames,
   getDateColumns,
   getDateColumnNames,
+  getDatasetColumnNames,
   normalizeColumnNameList,
 } from '../../src/utils/columnHelpers.js';
 
@@ -86,5 +87,31 @@ describe('normalizeColumnNameList', () => {
   it('only explicit Infinity (and the default) is uncapped', () => {
     expect(normalizeColumnNameList(['a', 'b', 'c'], { max: Infinity })).toEqual(['a', 'b', 'c']);
     expect(normalizeColumnNameList(['a', 'b', 'c'])).toEqual(['a', 'b', 'c']);
+  });
+});
+
+describe('getDatasetColumnNames', () => {
+  it('extracts names from { name } column objects', () => {
+    const dataset = { columns: [{ name: 'a', type: 'number' }, { name: 'b', type: 'text' }] };
+    expect(getDatasetColumnNames(dataset)).toEqual(['a', 'b']);
+  });
+
+  it('extracts names from bare-string columns', () => {
+    expect(getDatasetColumnNames({ columns: ['a', 'b'] })).toEqual(['a', 'b']);
+  });
+
+  it('returns undefined when columns is not an array (no trustworthy context)', () => {
+    expect(getDatasetColumnNames({ columns: undefined })).toBeUndefined();
+    expect(getDatasetColumnNames({})).toBeUndefined();
+    expect(getDatasetColumnNames(null)).toBeUndefined();
+  });
+
+  it('returns [] for a genuinely empty columns array', () => {
+    expect(getDatasetColumnNames({ columns: [] })).toEqual([]);
+  });
+
+  it('drops invalid entries and de-duplicates', () => {
+    const dataset = { columns: [{ name: 'a' }, 'a', { type: 'number' }, '', 'b'] };
+    expect(getDatasetColumnNames(dataset)).toEqual(['a', 'b']);
   });
 });

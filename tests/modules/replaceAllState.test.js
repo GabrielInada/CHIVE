@@ -91,6 +91,44 @@ describe('replaceAllState()', () => {
 		expect(getState().data.activeIndex).toBe(-1);
 	});
 
+	it('canonicalizes each object dataset chartConfig on hydrate', () => {
+		replaceAllState({
+			data: {
+				datasets: [makeDataset({ chartConfig: { bar: { enabled: true } } })],
+				activeIndex: 0,
+			},
+		});
+		const config = getActiveDataset().chartConfig;
+		expect(config.bar.enabled).toBe(true);
+		expect(config.bar.sort).toBeDefined(); // default-filled
+		expect(config.scatter).toBeDefined();
+		expect(config.globalFilter).toEqual({ rules: [], combine: 'AND' });
+	});
+
+	it('trims a stale global filter against the dataset columns on hydrate', () => {
+		replaceAllState({
+			data: {
+				datasets: [makeDataset({
+					chartConfig: { globalFilter: { rules: [{ column: 'gone', mode: 'categorical', include: ['v:N'] }] } },
+				})],
+				activeIndex: 0,
+			},
+		});
+		expect(getActiveDataset().chartConfig.globalFilter.rules).toEqual([]);
+	});
+
+	it('leaves a non-object dataset entry unchanged without throwing', () => {
+		expect(() => replaceAllState({
+			data: { datasets: [makeDataset({ id: 'ok' }), 'bad', null], activeIndex: 0 },
+		})).not.toThrow();
+		const datasets = getAllDatasets();
+		expect(datasets).toHaveLength(3);
+		expect(datasets[1]).toBe('bad');
+		expect(datasets[2]).toBeNull();
+		// The valid object entry is still canonicalized.
+		expect(datasets[0].chartConfig.bar).toBeDefined();
+	});
+
 	it('falls back to a default block when persisted blocks are empty', () => {
 		replaceAllState({ panel: { blocks: [] } });
 		expect(getPanelBlocks().length).toBeGreaterThan(0);

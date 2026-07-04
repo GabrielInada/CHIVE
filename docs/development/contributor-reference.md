@@ -105,8 +105,10 @@ property naming conventions warning-only during the first rollout.
 
 ## ESLint Guards
 
-Beyond renderer statelessness, `npm run lint` enforces these rule classes in
-[`eslint.config.js`](../../eslint.config.js):
+Beyond the no-write-during-render invariant (renderers do not write state during
+render; chart config is canonicalized at the state boundaries via
+`canonicalizeChartConfig`, so render never repairs it), `npm run lint` enforces
+these rule classes in [`eslint.config.js`](../../eslint.config.js):
 
 - **Raw-static deployment guards.** CHIVE is meant to run served raw from `src/`
   and `vendor/` with no build step, so bundler-/Vite-only import forms are hard

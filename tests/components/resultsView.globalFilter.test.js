@@ -249,19 +249,35 @@ describe('renderDataInterface global filter behavior', () => {
 		expect(onChartConfigChange).toHaveBeenCalledWith({ globalFilter: nextFilter });
 	});
 
-	it('normalizes stale global filters through the chart-config callback', () => {
+	it.each([
+		{
+			label: 'a stale rule referencing a missing column',
+			globalFilter: { rules: [{ column: 'missing', mode: 'categorical', include: ['v:x'], exclude: [] }] },
+			expectedRules: [],
+			expectedPreviewRows: 2,
+		},
+		{
+			label: 'the legacy single-filter shape',
+			globalFilter: { column: 'region', mode: 'categorical', include: ['v:A'] },
+			expectedRules: [expect.objectContaining({ column: 'region', include: ['v:A'] })],
+			expectedPreviewRows: 1,
+		},
+	])('derives $label locally without writing config back during render', ({ globalFilter, expectedRules, expectedPreviewRows }) => {
 		const onChartConfigChange = vi.fn();
-		const rows = [{ region: 'A', value: 1 }];
+		const rows = [{ region: 'A', value: 1 }, { region: 'B', value: 2 }];
 		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
 
 		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
 			activeTab: 'preview',
-			globalFilter: { column: 'missing', mode: 'categorical', include: ['v:x'] },
+			globalFilter,
 		}, onChartConfigChange);
 
-		expect(onChartConfigChange).toHaveBeenCalledWith({
-			globalFilter: expect.objectContaining({ rules: [] }),
-		});
+		// Checked before any dialog/token callback runs: those still write config
+		// legitimately, but the render itself must not.
+		expect(onChartConfigChange).not.toHaveBeenCalled();
+		const triggerState = mocks.updateTabs.mock.calls[0][3].triggerState;
+		expect(triggerState.globalFilter.rules).toEqual(expectedRules);
+		expect(mocks.renderTablePreview.mock.calls[0][0]).toHaveLength(expectedPreviewRows);
 	});
 
 	it('reports numeric, text, and mixed column-selection filters to the column controls', () => {

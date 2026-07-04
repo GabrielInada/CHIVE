@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createDataStateFacade } from '../../src/modules/state/dataStateFacade.js';
 
-const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap'];
+const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
 
 function makeFacade(initialConfig = null) {
 	const emitStateChange = vi.fn();
@@ -113,6 +113,44 @@ describe('dataStateFacade.setActiveChartType', () => {
 		facade.setActiveChartType('scatter');
 		expect(emitStateChange).toHaveBeenCalledTimes(1);
 		expect(emitStateChange).toHaveBeenCalledWith('configUpdated', { activeChartType: 'scatter' });
+	});
+
+	it('canonicalizes the config: fills every default block including line and tin', () => {
+		const { facade, dataset } = makeFacade();
+		facade.setActiveChartType('bar');
+		// All eight blocks exist and are default-filled after canonicalization.
+		CHART_TYPES.forEach(type => {
+			expect(dataset.chartConfig[type]).toBeDefined();
+		});
+		expect(dataset.chartConfig.bar.sort).toBeDefined();
+		expect(dataset.chartConfig.line.curve).toBeDefined();
+		expect(dataset.chartConfig.tin).toBeDefined();
+		expect(dataset.chartConfig.globalFilter).toEqual({ rules: [], combine: 'AND' });
+	});
+
+	it('repairs malformed existing chart blocks before toggling a chart type', () => {
+		const { facade, dataset } = makeFacade({
+			bar: 'bad',
+			scatter: { enabled: false },
+		});
+
+		facade.setActiveChartType('bar');
+
+		expect(dataset.chartConfig.bar.enabled).toBe(true);
+		expect(dataset.chartConfig.bar.sort).toBeDefined();
+		expect(dataset.chartConfig.bar).not.toHaveProperty('0');
+		expect(dataset.chartConfig.bar).not.toHaveProperty('1');
+		expect(dataset.chartConfig.bar).not.toHaveProperty('2');
+	});
+
+	it('ignores malformed activatedOverrides instead of spreading index keys', () => {
+		const { facade, dataset } = makeFacade();
+
+		facade.setActiveChartType('bar', ['bad']);
+
+		expect(dataset.chartConfig.bar.enabled).toBe(true);
+		expect(dataset.chartConfig.bar.category).toBe('col1');
+		expect(dataset.chartConfig.bar).not.toHaveProperty('0');
 	});
 
 	it('preserves non-enabled fields of other chart types when switching', () => {

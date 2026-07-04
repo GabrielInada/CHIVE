@@ -10,6 +10,7 @@
 
 import { normalizeColumnNameList } from '../../utils/columnHelpers.js';
 import { BUBBLE_CHART } from '../../config/charts.js';
+import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
 
 /**
  * @internal
@@ -42,9 +43,10 @@ function sanitizeBubbleConfig(bubbleConfig, declaredColumnNames) {
 }
 
 // Drop chart-spec entries that aren't plain objects; renderers read sub-keys
-// and would explode on a string/number/array. Missing keys are absorbed later
-// by mergeChartConfigWithDefaults. The bubble block is additionally depth-bounded
-// against the record's declared columns.
+// and would explode on a string/number/array. The bubble block is additionally
+// depth-bounded against the record's declared columns. validateDatasetRecord then
+// runs canonicalizeChartConfig on the result to fill defaults and trim stale
+// global-filter rules, so restored configs are canonical before render.
 function sanitizeChartConfig(chartConfig, declaredColumnNames) {
 	if (!isPlainObject(chartConfig)) return {};
 	const sanitized = {};
@@ -71,10 +73,11 @@ function validateDatasetRecord(record) {
 	);
 	if (!columnsOk) return null;
 	const declaredColumnNames = record.columns.map(column => column.name);
+	const sanitizedChartConfig = sanitizeChartConfig(record.chartConfig, declaredColumnNames);
 	return {
 		...record,
 		selectedColumns: Array.isArray(record.selectedColumns) ? record.selectedColumns : [],
-		chartConfig: sanitizeChartConfig(record.chartConfig, declaredColumnNames),
+		chartConfig: canonicalizeChartConfig(sanitizedChartConfig, declaredColumnNames),
 	};
 }
 

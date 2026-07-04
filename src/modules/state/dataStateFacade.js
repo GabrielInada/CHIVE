@@ -1,4 +1,6 @@
 import { STATE_EVENTS } from './stateEvents.js';
+import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
+import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
 
 /**
  * CHIVE data-domain facade.
@@ -18,6 +20,15 @@ import { STATE_EVENTS } from './stateEvents.js';
 const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
 
 let datasetIdCounter = 0;
+
+/**
+ * @private
+ * @param {*} value
+ * @returns {boolean}
+ */
+function isPlainObject(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
 
 /**
  * Produce a stable dataset id. Uses `crypto.randomUUID` when available;
@@ -98,7 +109,10 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 
 	/**
 	 * Append a dataset. If `dataset.id` is missing, a stable id is stamped
-	 * in place so persistence can address the dataset across reloads. When
+	 * in place so persistence can address the dataset across reloads. The
+	 * `chartConfig` is canonicalized in place (default-filled, legacy-migrated,
+	 * stale filters trimmed) before the emit, so callers pushing a partial config
+	 * still land canonical state and DATASET_ADDED carries the stored dataset. When
 	 * no dataset is currently active, the new one is auto-activated.
 	 *
 	 * @param {Dataset} dataset - Must have a `rows` array.
@@ -113,6 +127,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (!dataset.id) {
 			dataset.id = generateDatasetId();
 		}
+		dataset.chartConfig = canonicalizeChartConfig(dataset.chartConfig, getDatasetColumnNames(dataset));
 		appState.data.datasets.push(dataset);
 		const index = appState.data.datasets.length - 1;
 		if (appState.data.activeIndex === -1) {
@@ -150,8 +165,14 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	}
 
 	/**
-	 * Shallow-merge `updates` into the active dataset's `chartConfig`.
-	 * No-op when no dataset is active.
+	 * Shallow-merge `updates` into the active dataset's `chartConfig`, then
+	 * canonicalize the result (default-filled, stale filters trimmed against the
+	 * dataset's columns). The shallow-merge contract is unchanged: a partial chart
+	 * block still replaces the whole block, and canonicalization only refills
+	 * defaults, it does not restore previously-set custom fields. The emitted
+	 * payload stays the raw `updates` (a routing hint), even when canonicalization
+	 * changes state beyond the patch (e.g. trimming a stale filter). No-op when no
+	 * dataset is active.
 	 *
 	 * @param {Object} updates - Partial `ChartConfig`-shaped patch.
 	 * @fires STATE_EVENTS.CONFIG_UPDATED
@@ -159,11 +180,14 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	function updateActiveDatasetConfig(updates) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
+		const columnNames = getDatasetColumnNames(dataset);
+		const current = canonicalizeChartConfig(dataset.chartConfig, columnNames);
+		const patch = isPlainObject(updates) ? updates : {};
 
-		dataset.chartConfig = {
-			...dataset.chartConfig,
-			...updates,
-		};
+		dataset.chartConfig = canonicalizeChartConfig(
+			{ ...current, ...patch },
+			columnNames,
+		);
 		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, updates);
 	}
 
@@ -183,9 +207,11 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	}
 
 	/**
-	 * Apply `normalizer` to `chartConfig` **without emitting**. Intended
-	 * for normalize-on-read paths, e.g. applying chart-config defaults
-	 * during a render. Emitting here would re-enter `refreshView` via the
+	 * Apply `normalizer` to `chartConfig` **without emitting**. Config is
+	 * canonicalized at the state boundaries (persistence restore, `addDataset`, and
+	 * the emitting config writes) via `canonicalizeChartConfig`; this escape hatch
+	 * exists for the intentional non-emitting live-preview writes (color picker,
+	 * chart-height drag). Emitting here would re-enter `refreshView` via the
 	 * CONFIG_UPDATED subscription and loop indefinitely.
 	 *
 	 * **Do not** add an emit to this function. If you need an emit, use
@@ -219,16 +245,17 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (!dataset) return;
 		if (chartType !== null && !CHART_TYPES.includes(chartType)) return;
 
-		const current = dataset.chartConfig || {};
+		const columnNames = getDatasetColumnNames(dataset);
+		const current = canonicalizeChartConfig(dataset.chartConfig, columnNames);
 		const next = { ...current };
 		CHART_TYPES.forEach(type => {
-			const previous = current[type] || {};
+			const previous = isPlainObject(current[type]) ? current[type] : {};
 			next[type] = { ...previous, enabled: type === chartType };
 		});
-		if (chartType && activatedOverrides && typeof activatedOverrides === 'object') {
+		if (chartType && isPlainObject(activatedOverrides)) {
 			next[chartType] = { ...next[chartType], ...activatedOverrides };
 		}
-		dataset.chartConfig = next;
+		dataset.chartConfig = canonicalizeChartConfig(next, columnNames);
 		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { activeChartType: chartType });
 	}
 

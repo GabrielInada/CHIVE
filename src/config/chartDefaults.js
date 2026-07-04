@@ -14,7 +14,7 @@
  */
 
 import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, LINE_CHART, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TIN_CHART, TREEMAP_CHART } from './charts.js';
-import { normalizeGlobalFilter, createEmptyGlobalFilter } from '../utils/globalFilter.js';
+import { normalizeGlobalFilter, createEmptyGlobalFilter, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
 
 /**
  * Build a fresh {@link ChartConfig}. Every new dataset starts with this
@@ -230,6 +230,19 @@ export function createDefaultChartConfig() {
 }
 
 /**
+ * Return `value` when it is a plain object, otherwise an empty object. Keeps
+ * malformed input (string/array/number/null) from spreading stray keys into a
+ * merged config.
+ *
+ * @private
+ * @param {*} value
+ * @returns {Object}
+ */
+function asPlainObject(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+/**
  * Pull the global filter out of a saved config, normalizing legacy shapes.
  *
  * @private
@@ -259,7 +272,12 @@ function pickGlobalFilter(config) {
  */
 export function mergeChartConfigWithDefaults(chartConfig) {
 	const defaults = createDefaultChartConfig();
-	const config = chartConfig || {};
+	// Guard against non-object input: a string/array/number would otherwise spread
+	// into stray index keys instead of being treated as "no saved config". The same
+	// guard runs per chart block below, so a malformed block also falls back to
+	// defaults wherever this function is called (render, capture, hydration, controls).
+	const config = asPlainObject(chartConfig);
+	const scatterConfig = asPlainObject(config.scatter);
 
 	return {
 		...defaults,
@@ -267,30 +285,30 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 		globalFilter: pickGlobalFilter(config),
 		bar: {
 			...defaults.bar,
-			...(config.bar || {}),
+			...asPlainObject(config.bar),
 		},
 		scatter: {
 			...defaults.scatter,
-			...(config.scatter || {}),
+			...scatterConfig,
 			regression: {
 				...defaults.scatter.regression,
-				...((config.scatter && config.scatter.regression) || {}),
+				...asPlainObject(scatterConfig.regression),
 			},
 		},
 		network: {
 			...defaults.network,
-			...(config.network || {}),
+			...asPlainObject(config.network),
 		},
 		pie: {
 			...defaults.pie,
-			...(config.pie || {}),
+			...asPlainObject(config.pie),
 		},
 		treemap: {
 			...defaults.treemap,
-			...(config.treemap || {}),
+			...asPlainObject(config.treemap),
 		},
 		bubble: (() => {
-			const merged = { ...defaults.bubble, ...(config.bubble || {}) };
+			const merged = { ...defaults.bubble, ...asPlainObject(config.bubble) };
 			if (Array.isArray(merged.nestingColumns) && merged.nestingColumns.length > 0) {
 				// nestingColumns already set, keep it
 			} else if (merged.groupColumn && typeof merged.groupColumn === 'string') {
@@ -302,11 +320,32 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 		})(),
 		line: {
 			...defaults.line,
-			...(config.line || {}),
+			...asPlainObject(config.line),
 		},
 		tin: {
 			...defaults.tin,
-			...(config.tin || {}),
+			...asPlainObject(config.tin),
 		},
+	};
+}
+
+/**
+ * Bring a (possibly-partial or legacy) chart config to its canonical shape:
+ * default-filled and legacy-migrated via {@link mergeChartConfigWithDefaults},
+ * then stale global-filter rules trimmed against `columnNames`. Pure and
+ * idempotent. "Canonical" here means object/default shape, legacy migration, and
+ * stale-column filter cleanup; it does not validate scalar/enumerated values and
+ * does not strip unknown top-level keys.
+ *
+ * @param {*} chartConfig - Saved (possibly partial/malformed) chart config.
+ * @param {string[]} [columnNames] - Dataset column names. Omit when column context is not trustworthy: filter rules are then kept (shape-normalized) rather than trimmed, since `resolveGlobalFilterForColumns` would treat a non-array as "no columns" and drop them all.
+ * @returns {ChartConfig} Canonical config.
+ */
+export function canonicalizeChartConfig(chartConfig, columnNames) {
+	const merged = mergeChartConfigWithDefaults(chartConfig);
+	if (!Array.isArray(columnNames)) return merged;
+	return {
+		...merged,
+		globalFilter: resolveGlobalFilterForColumns(merged.globalFilter, columnNames),
 	};
 }
