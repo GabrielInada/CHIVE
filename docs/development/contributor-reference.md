@@ -75,7 +75,9 @@ any write function from those directories is an error. If you need a write from
 a renderer or DOM builder, route it through a feature manager (`panelManager.js`,
 a chart-controls listener, or an `eventHandlers/` workflow module), all outside the
 linted scope.
-When a new facade read is added, update `APP_STATE_READS` in `eslint.config.js`.
+When a new renderer-safe read is added, update `APP_STATE_READS` in
+`eslint.config.js`; reads meant for persistence, debug, or internal use are
+not added there (`getPersistenceSnapshot` is the precedent).
 
 **Mutation of facade getter returns is blocked across all of `src/`.** A
 `no-restricted-syntax` rule in `eslint.config.js` catches inline assignments and

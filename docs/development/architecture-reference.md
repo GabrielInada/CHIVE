@@ -103,6 +103,27 @@ must not be mutated by callers.
 [`stateEvents.js`](../../src/modules/state/stateEvents.js) through
 `appState.js`.
 
+### Live-Reference Read Policy
+
+Live references are a deliberate choice where identity, rows, snapshots, or
+large data make cloning expensive or semantically important (the save path's
+reference-identity dedup depends on them). When a call site needs only a
+primitive or small derived value, use or add a focused selector such as
+`getActiveDatasetIndex()` or `getPreviewRows()` instead of pulling a whole
+live object. Do not add broad clone-based "safe getters" for datasets, rows,
+configs, panel charts, or snapshots without a proven need.
+
+Bookkeeping when the read surface changes: any new object- or array-returning
+read facade whose result must be treated read-only (this includes the
+clone-returning `getState()`) gets a row in the table above and an entry in
+both lint guard lists (`FACADE_MUTABLE_GETTERS` in `eslint.config.js` and
+`TRACKED_GETTERS` in `eslint-rules/no-facade-getter-mutation.js`). A new
+renderer-safe read also goes in `APP_STATE_READS`; reads meant for
+persistence, debug, or internal use are not added there
+(`getPersistenceSnapshot()` is the precedent). The `getPanelBlocks()`
+insert-on-read side effect is a known issue tracked separately from this
+policy.
+
 ### Data Facade Methods
 
 | Method | Mutates | Emits | Notes |

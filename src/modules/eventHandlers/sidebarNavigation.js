@@ -6,7 +6,7 @@
  * and switches the visible tab.
  */
 
-import { getActiveDataset, updateActiveDatasetConfig } from '../state/appState.js';
+import { updateActiveDatasetConfig } from '../state/appState.js';
 import { switchTab } from '../uiManager.js';
 
 /**
@@ -45,13 +45,11 @@ export function setupSidebarNavigationButtons() {
 }
 
 /**
- * Navigate UI and active dataset config to a specific tab
+ * Navigate UI and active dataset config to a specific tab. The facade is the
+ * no-dataset guard: updateActiveDatasetConfig no-ops without an active dataset.
  * @private
  */
 function navigateToTab(tabName) {
-	const dataset = getActiveDataset();
-	if (dataset?.chartConfig) {
-		updateActiveDatasetConfig({ activeTab: tabName });
-	}
+	updateActiveDatasetConfig({ activeTab: tabName });
 	switchTab(tabName);
 }

@@ -189,7 +189,6 @@ function resetDefaults() {
 	mocks.getPersistenceErrorMessageKey.mockReturnValue('chive-persistence-error');
 	mocks.getNumericColumns.mockImplementation(columns => columns.filter(column => column.type === 'number'));
 	mocks.throttle.mockImplementation(fn => fn);
-	mocks.getState.mockReturnValue({ data: { activeIndex: -1 }, ui: { previewRows: 10 } });
 	mocks.getPersistenceSnapshot.mockReturnValue({ snapshot: true });
 	mocks.getActiveDataset.mockReturnValue(null);
 	mocks.getActiveDatasetIndex.mockReturnValue(-1);
@@ -276,12 +275,16 @@ describe('main.js bootstrap', () => {
 
 	it('renders the active dataset path and exposes debug callbacks', async () => {
 		document.body.innerHTML = '<div id="file-info"></div>';
-		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
 		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
 		mocks.getActiveDataset.mockReturnValue(baseDataset);
+		mocks.getActiveDatasetIndex.mockReturnValue(0);
+		mocks.getPreviewRows.mockReturnValue(25);
 
 		await importMain();
 
+		// The boot full refresh reads through the cheap getters; getState backs
+		// only the debug handle.
+		expect(mocks.getState).not.toHaveBeenCalled();
 		expect(mocks.renderFileList).toHaveBeenCalledWith(
 			[baseDataset],
 			0,
@@ -379,7 +382,6 @@ describe('main.js bootstrap', () => {
 
 	it('repaints workspace and chart-controls on a columns change, not the list or panel', async () => {
 		document.body.innerHTML = '<div id="file-info"></div>';
-		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
 		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
 		mocks.getActiveDataset.mockReturnValue(baseDataset);
 		mocks.getActiveDatasetIndex.mockReturnValue(0);
@@ -403,13 +405,12 @@ describe('main.js bootstrap', () => {
 		expect(mocks.renderFileList).not.toHaveBeenCalled();
 		expect(mocks.renderSidebarPanel).not.toHaveBeenCalled();
 		expect(mocks.renderCanvasPanel).not.toHaveBeenCalled();
-		// The region flush uses the cheap getters, never the deep-cloning getState.
+		// No render path reads the deep-cloning getState; it backs only the debug handle.
 		expect(mocks.getState).not.toHaveBeenCalled();
 	});
 
 	it('repaints only the workspace region on a preview-rows change, without a full state read', async () => {
 		document.body.innerHTML = '<div id="file-info"></div>';
-		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
 		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
 		mocks.getActiveDataset.mockReturnValue(baseDataset);
 		mocks.getActiveDatasetIndex.mockReturnValue(0);
@@ -438,13 +439,12 @@ describe('main.js bootstrap', () => {
 		expect(mocks.renderChartControlsSidebar).not.toHaveBeenCalled();
 		expect(mocks.renderSidebarPanel).not.toHaveBeenCalled();
 		expect(mocks.renderCanvasPanel).not.toHaveBeenCalled();
-		// The region flush uses the cheap getters, never the deep-cloning getState.
+		// No render path reads the deep-cloning getState; it backs only the debug handle.
 		expect(mocks.getState).not.toHaveBeenCalled();
 	});
 
 	it('routes CONFIG_UPDATED by payload: chart options skip the panel, the panel tab repaints it', async () => {
 		document.body.innerHTML = '<div id="file-info"></div>';
-		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
 		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
 		mocks.getActiveDataset.mockReturnValue(baseDataset);
 		mocks.getActiveDatasetIndex.mockReturnValue(0);
@@ -483,7 +483,6 @@ describe('main.js bootstrap', () => {
 
 	it('lets a full refresh subsume a region scheduled in the same tick (both orders)', async () => {
 		document.body.innerHTML = '<div id="file-info"></div>';
-		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
 		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
 		mocks.getActiveDataset.mockReturnValue(baseDataset);
 		mocks.getActiveDatasetIndex.mockReturnValue(0);
@@ -514,7 +513,6 @@ describe('main.js bootstrap', () => {
 
 	it('suppresses region work from a CONFIG_UPDATED emitted during a full refresh', async () => {
 		document.body.innerHTML = '<div id="file-info"></div>';
-		mocks.getState.mockReturnValue({ data: { activeIndex: 0 }, ui: { previewRows: 25 } });
 		mocks.getLoadedDatasets.mockReturnValue([baseDataset]);
 		mocks.getActiveDataset.mockReturnValue(baseDataset);
 		mocks.getActiveDatasetIndex.mockReturnValue(0);
@@ -546,11 +544,14 @@ describe('main.js bootstrap', () => {
 
 		mocks.renderFileList.mockClear();
 		mocks.renderEmptyState.mockClear();
+		mocks.getState.mockClear();
 
-		// chiveDebug.refreshView is runFullRefreshNow: a full render, synchronously.
+		// chiveDebug.refreshView is runFullRefreshNow: a full render, synchronously,
+		// through the cheap getters (getState backs only the debug handle itself).
 		window.chiveDebug.refreshView();
 		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
 		expect(mocks.renderEmptyState).toHaveBeenCalledTimes(1);
+		expect(mocks.getState).not.toHaveBeenCalled();
 	});
 
 	it('lets a boot render error reject initialization instead of swallowing it', async () => {
