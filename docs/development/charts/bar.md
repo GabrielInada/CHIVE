@@ -33,7 +33,7 @@ Key files:
 - Sidebar controls: [barControls.js](../../../src/modules/chartControls/barControls.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`BAR_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bar` block)
-- Section adapter (results view): [barChartSection.js](../../../src/components/results/chartRenders/barChartSection.js)
+- Section adapter (dataset workspace): [barChartSection.js](../../../src/components/datasetWorkspace/chartRenders/barChartSection.js)
 - Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 - Shared tooltip + filter actions: [tooltip.js](../../../src/modules/visualizations/tooltip.js)
 
@@ -107,7 +107,7 @@ Bar order and bar count are editorial decisions, not properties of the data:
 
 ## 3. The big picture (data flow)
 
-There are two ways a bar chart gets drawn: the **live results view** (the main chart area,
+There are two ways a bar chart gets drawn: the **live dataset workspace** (the main chart area,
 driven by the active dataset's config) and the **panel** (saved chart snapshots assembled
 into a dashboard). Both end at the same renderer, `renderBarChart`.
 
@@ -119,7 +119,7 @@ into a dashboard). Both end at the same renderer, `renderBarChart`.
        sidebar edits    │                          │  render
    (barControls.js) ────┘                          ▼
         write config                  chartsView.renderCharts()
-                                      → renderBarChartSection()        [results view]
+                                      → renderBarChartSection()        [dataset workspace]
                                         → renderBarChart(container, rows, category, opts)
                                               │
    "Add to panel"                            │
@@ -245,11 +245,11 @@ renderer never reads the DOM controls; it only reads config the listeners have w
 
 ## 6. The render entry chain
 
-### 6.1 Results view
+### 6.1 Dataset workspace
 
-[chartsView.js](../../../src/components/results/chartsView.js) decides which chart blocks to
+[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides which chart blocks to
 show and calls `renderBarChartSection({ config, rows, filterCallbacks })`
-([barChartSection.js](../../../src/components/results/chartRenders/barChartSection.js)). That
+([barChartSection.js](../../../src/components/datasetWorkspace/chartRenders/barChartSection.js)). That
 adapter:
 
 1. Resolves the block (`CHART_BLOCKS.bar`) and container (`CHART_CONTAINERS.bar`) elements.
@@ -433,14 +433,14 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
 
 - [chartColors.test.js](../../../tests/modules/visualizations/chartColors.test.js) exercises
   `renderBarChart`'s color options (uniform vs gradient output).
-- [barChartSection.test.js](../../../tests/components/results/chartRenders/barChartSection.test.js)
+- [barChartSection.test.js](../../../tests/components/datasetWorkspace/chartRenders/barChartSection.test.js)
   covers the section adapter: enable/disable, empty-state message selection.
 - [barControls.test.js](../../../tests/modules/chartControls/barControls.test.js) (and the
   legacy [tests/modules/barControls.test.js](../../../tests/modules/barControls.test.js)) cover
   control building and the measure-mode / value-column listener logic.
 - [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
   covers the panel dispatch path.
-- [chartsView.test.js](../../../tests/components/results/chartsView.test.js) covers view-level
+- [chartsView.test.js](../../../tests/components/datasetWorkspace/chartsView.test.js) covers view-level
   orchestration of which blocks render.
 
 ---

@@ -18,7 +18,7 @@ Key files:
 - Sidebar controls: [treemapControls.js](../../../src/modules/chartControls/treemapControls.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`TREEMAP_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `treemap` block)
-- Section adapter (results view): [treemapChartSection.js](../../../src/components/results/chartRenders/treemapChartSection.js)
+- Section adapter (dataset workspace): [treemapChartSection.js](../../../src/components/datasetWorkspace/chartRenders/treemapChartSection.js)
 - Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
@@ -82,7 +82,7 @@ Two draw paths, both ending at `renderTreeMap`.
        sidebar edits    │                          │  render
  (treemapControls.js) ──┘                          ▼
         write config                  chartsView.renderCharts()
-                                      → renderTreemapChartSection()        [results view]
+                                      → renderTreemapChartSection()        [dataset workspace]
                                         → renderTreeMap(container, rows, category, opts)
                                               │
    "Add to panel" → structuredClone snapshot │
@@ -161,10 +161,10 @@ uniform `color` to the palette's first swatch. `computeDefaults` picks the categ
 
 ## 6. The render entry chain
 
-### 6.1 Results view
+### 6.1 Dataset workspace
 
 `renderTreemapChartSection({ config, rows, filterCallbacks })`
-([treemapChartSection.js](../../../src/components/results/chartRenders/treemapChartSection.js))
+([treemapChartSection.js](../../../src/components/datasetWorkspace/chartRenders/treemapChartSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
 into the options bag, and calls `renderTreeMap`. On failure it shows
 `chive-chart-empty-treemap-numeric` for `no-value-column`, else `chive-chart-empty-treemap`.
@@ -269,7 +269,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 - [treemapControls.test.js](../../../tests/modules/chartControls/treemapControls.test.js) covers
   control building and the measure/value and color-mode logic.
-- [treemapChartSection.test.js](../../../tests/components/results/chartRenders/treemapChartSection.test.js)
+- [treemapChartSection.test.js](../../../tests/components/datasetWorkspace/chartRenders/treemapChartSection.test.js)
   covers the section adapter, including the empty-state message selection.
 - [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
   covers the panel dispatch path.

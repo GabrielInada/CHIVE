@@ -24,7 +24,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 	getLocale: mocks.getLocale,
 }));
 
-import { renderCategoricalStats, renderStats } from '../../../src/components/results/statsView.js';
+import { renderCategoricalStats, renderStats } from '../../../src/components/datasetWorkspace/statsView.js';
 
 const rows = [
 	{ region: 'North', value: 10 },

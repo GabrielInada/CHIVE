@@ -18,7 +18,7 @@ Key files:
 - Sidebar controls: [lineControls.js](../../../src/modules/chartControls/lineControls.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`LINE_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `line` block)
-- Section adapter (results view): [lineChartSection.js](../../../src/components/results/chartRenders/lineChartSection.js)
+- Section adapter (dataset workspace): [lineChartSection.js](../../../src/components/datasetWorkspace/chartRenders/lineChartSection.js)
 - Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
@@ -104,7 +104,7 @@ Two draw paths, both ending at `renderLineChart`.
        sidebar edits    │                          │  render
    (lineControls.js) ───┘                          ▼
         write config                  chartsView.renderCharts()
-                                      → renderLineChartSection()        [results view]
+                                      → renderLineChartSection()        [dataset workspace]
                                         → renderLineChart(container, rows, x, y, opts)
                                               │
    "Add to panel" → structuredClone snapshot │
@@ -190,10 +190,10 @@ present.
 
 ## 6. The render entry chain
 
-### 6.1 Results view
+### 6.1 Dataset workspace
 
 `renderLineChartSection({ config, rows, columnTypeByName, filterCallbacks })`
-([lineChartSection.js](../../../src/components/results/chartRenders/lineChartSection.js)) resolves
+([lineChartSection.js](../../../src/components/datasetWorkspace/chartRenders/lineChartSection.js)) resolves
 the block/container, hides+clears when disabled, sets the min-height, maps config into the
 options bag (forwarding `axisTypes.x` from `columnTypeByName` so the renderer picks the right
 X scale), and calls `renderLineChart`. On failure it maps the reason to a message:

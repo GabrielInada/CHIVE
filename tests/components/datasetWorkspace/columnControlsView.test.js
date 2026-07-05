@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from 'vitest';
-import { renderColumnControlsDOM } from '../../../src/components/results/columnControlsView.js';
+import { renderColumnControlsDOM } from '../../../src/components/datasetWorkspace/columnControlsView.js';
 
 describe('columnControlsView', () => {
 	it('renders action buttons and checkbox list, then emits selections', () => {

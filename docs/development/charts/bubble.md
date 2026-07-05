@@ -19,7 +19,7 @@ Key files:
 - Sidebar controls: [bubbleControls.js](../../../src/modules/chartControls/bubbleControls.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`BUBBLE_CHART`, `CHART_COLOR_PALETTES`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bubble` block)
-- Section adapter (results view): [bubbleChartSection.js](../../../src/components/results/chartRenders/bubbleChartSection.js)
+- Section adapter (dataset workspace): [bubbleChartSection.js](../../../src/components/datasetWorkspace/chartRenders/bubbleChartSection.js)
 - Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
@@ -96,7 +96,7 @@ Two draw paths, both ending at `renderBubbleChart`.
        sidebar edits    │                          │  render
  (bubbleControls.js) ───┘                          ▼
         write config                  chartsView.renderCharts()
-                                      → renderBubbleChartSection()        [results view]
+                                      → renderBubbleChartSection()        [dataset workspace]
                                         → renderBubbleChart(container, rows, category, opts)
                                               │
    "Add to panel" → structuredClone snapshot │
@@ -190,10 +190,10 @@ are disabled unless `nestingMode === 'grouped'`.
 
 ## 6. The render entry chain
 
-### 6.1 Results view
+### 6.1 Dataset workspace
 
 `renderBubbleChartSection({ config, rows, filterCallbacks })`
-([bubbleChartSection.js](../../../src/components/results/chartRenders/bubbleChartSection.js))
+([bubbleChartSection.js](../../../src/components/datasetWorkspace/chartRenders/bubbleChartSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
 into the options bag, and calls `renderBubbleChart`. On failure it shows distinct messages:
 `no-value-column`/`no-numeric` to `chive-chart-empty-bubble-numeric`,

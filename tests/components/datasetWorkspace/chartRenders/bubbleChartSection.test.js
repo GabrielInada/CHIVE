@@ -17,7 +17,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	getLocale: mocks.getLocale,
 }));
 
-import { renderBubbleChartSection } from '../../../../src/components/results/chartRenders/bubbleChartSection.js';
+import { renderBubbleChartSection } from '../../../../src/components/datasetWorkspace/chartRenders/bubbleChartSection.js';
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/config/elementIds.js';
 
 function setupDom() {

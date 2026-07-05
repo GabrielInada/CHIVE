@@ -21,7 +21,7 @@ Key files:
 - Sidebar controls: [networkControls.js](../../../src/modules/chartControls/networkControls.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`NETWORK_GRAPH`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `network` block)
-- Section adapter (results view): [networkChartSection.js](../../../src/components/results/chartRenders/networkChartSection.js)
+- Section adapter (dataset workspace): [networkChartSection.js](../../../src/components/datasetWorkspace/chartRenders/networkChartSection.js)
 - Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
@@ -96,7 +96,7 @@ Two draw paths, both ending at `renderNetworkGraph`.
        sidebar edits    │                          │  render
  (networkControls.js) ──┘                          ▼
         write config                  chartsView.renderCharts()
-                                      → renderNetworkChartSection()        [results view]
+                                      → renderNetworkChartSection()        [dataset workspace]
                                         → renderNetworkGraph(container, rows, source, target, opts)
                                               │
    "Add to panel" → structuredClone snapshot │
@@ -186,10 +186,10 @@ casual users get a sensible layout without touching physics, while power users c
 
 ## 6. The render entry chain
 
-### 6.1 Results view
+### 6.1 Dataset workspace
 
 `renderNetworkChartSection({ config, rows, filterCallbacks })`
-([networkChartSection.js](../../../src/components/results/chartRenders/networkChartSection.js))
+([networkChartSection.js](../../../src/components/datasetWorkspace/chartRenders/networkChartSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
 into the options bag (note `weight`/`group` map to `weightColumn`/`groupColumn`, and the
 source/target column names are also passed as `sourceColumn`/`targetColumn` for the filter

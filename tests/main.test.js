@@ -74,13 +74,13 @@ vi.mock('../src/services/persistenceService.js', () => ({
 }));
 
 
-vi.mock('../src/components/resultsView.js', () => ({
+vi.mock('../src/components/datasetWorkspace/datasetWorkspaceView.js', () => ({
 	renderEmptyState: mocks.renderEmptyState,
 	renderDataInterface: mocks.renderDataInterface,
 	renderFileList: mocks.renderFileList,
 }));
 
-vi.mock('../src/components/results/chartsView.js', () => ({
+vi.mock('../src/components/datasetWorkspace/chartsView.js', () => ({
 	renderCharts: mocks.renderCharts,
 }));
 

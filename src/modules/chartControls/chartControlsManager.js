@@ -39,8 +39,8 @@ import { createPieChartControls, setupPieChartControlListeners, computeDefaults 
 import { createTreeMapControls, setupTreeMapControlListeners, computeDefaults as computeTreemapDefaults } from './treemapControls.js';
 import { createTinControls, setupTinControlListeners, computeDefaults as computeTinDefaults } from './tinControls.js';
 import { CHART_TYPES } from './chartTypes.js';
-import { renderChartParamsDOM } from '../../components/results/chartParamsView.js';
-import { openChartTypePickerDialog } from '../../components/results/chartTypePickerDialog.js';
+import { renderChartParamsDOM } from '../../components/datasetWorkspace/chartParamsView.js';
+import { openChartTypePickerDialog } from '../../components/datasetWorkspace/chartTypePickerDialog.js';
 
 import { setLiveRenderCallback } from './livePreview.js';
 import { ensureChartHeightResizeHandles } from './chartHeightResize.js';

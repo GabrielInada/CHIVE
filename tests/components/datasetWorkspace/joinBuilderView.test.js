@@ -15,7 +15,7 @@ vi.mock('../../../src/modules/dialogFocus.js', () => ({
 	installDialogFocus: focusMocks.installDialogFocus,
 }));
 
-import { openJoinBuilderDialog } from '../../../src/components/results/joinBuilderView.js';
+import { openJoinBuilderDialog } from '../../../src/components/datasetWorkspace/joinBuilderView.js';
 
 const translate = (key, ...args) => (args.length ? `${key}:${args.join(',')}` : key);
 

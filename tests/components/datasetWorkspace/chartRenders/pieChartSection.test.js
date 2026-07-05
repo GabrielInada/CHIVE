@@ -17,7 +17,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	getLocale: mocks.getLocale,
 }));
 
-import { renderPieChartSection } from '../../../../src/components/results/chartRenders/pieChartSection.js';
+import { renderPieChartSection } from '../../../../src/components/datasetWorkspace/chartRenders/pieChartSection.js';
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/config/elementIds.js';
 
 function setupDom() {

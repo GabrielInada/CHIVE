@@ -60,7 +60,7 @@ Key files:
 - Config constants: [charts.js](../../../src/config/charts.js)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
 - Color math: [colorUtils.js](../../../src/utils/colorUtils.js)
-- Section adapter (main results view): [tinChartSection.js](../../../src/components/results/chartRenders/tinChartSection.js)
+- Section adapter (dataset workspace): [tinChartSection.js](../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js)
 - Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
@@ -270,7 +270,7 @@ reference.
 
 ## 3. The big picture (data flow)
 
-There are two ways a TIN chart gets drawn: the **live results view** (the main
+There are two ways a TIN chart gets drawn: the **live dataset workspace** (the main
 chart area, driven by the active dataset's config) and the **panel** (saved chart
 snapshots assembled into a dashboard). Both end at the same renderer,
 `renderTinChart`.
@@ -283,7 +283,7 @@ snapshots assembled into a dashboard). Both end at the same renderer,
        sidebar edits    │                          │  render
    (tinControls.js) ────┘                          ▼
         write config                  chartsView.renderCharts()
-                                      → renderTinChartSection()      [results view]
+                                      → renderTinChartSection()      [dataset workspace]
                                         → renderTinChart(container, rows, x,y,z, opts)
                                               │
    "Add to panel"                            │
@@ -436,11 +436,11 @@ controls; it only reads config that the listeners have written.
 
 ## 6. The render entry chain
 
-### 6.1 Results view
+### 6.1 Dataset workspace
 
-[chartsView.js](../../../src/components/results/chartsView.js) decides which chart blocks
+[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides which chart blocks
 to show. It calls `renderTinChartSection({ config: chartConfig.tin, rows })`
-([tinChartSection.js](../../../src/components/results/chartRenders/tinChartSection.js)).
+([tinChartSection.js](../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js)).
 That adapter:
 
 1. Resolves the block (`chart-block-tin`) and container (`chart-tin-container`)

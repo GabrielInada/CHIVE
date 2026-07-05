@@ -30,32 +30,32 @@ vi.mock('../../../src/utils/globalFilter.js', () => ({
 	applyGlobalFilterRules: mocks.applyGlobalFilterRules,
 }));
 
-vi.mock('../../../src/components/results/chartRenders/barChartSection.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/chartRenders/barChartSection.js', () => ({
 	renderBarChartSection: mocks.renderBarChartSection,
 }));
-vi.mock('../../../src/components/results/chartRenders/lineChartSection.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/chartRenders/lineChartSection.js', () => ({
 	renderLineChartSection: mocks.renderLineChartSection,
 }));
-vi.mock('../../../src/components/results/chartRenders/scatterChartSection.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/chartRenders/scatterChartSection.js', () => ({
 	renderScatterChartSection: mocks.renderScatterChartSection,
 }));
-vi.mock('../../../src/components/results/chartRenders/pieChartSection.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/chartRenders/pieChartSection.js', () => ({
 	renderPieChartSection: mocks.renderPieChartSection,
 }));
-vi.mock('../../../src/components/results/chartRenders/bubbleChartSection.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/chartRenders/bubbleChartSection.js', () => ({
 	renderBubbleChartSection: mocks.renderBubbleChartSection,
 }));
-vi.mock('../../../src/components/results/chartRenders/networkChartSection.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/chartRenders/networkChartSection.js', () => ({
 	renderNetworkChartSection: mocks.renderNetworkChartSection,
 }));
-vi.mock('../../../src/components/results/chartRenders/treemapChartSection.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/chartRenders/treemapChartSection.js', () => ({
 	renderTreemapChartSection: mocks.renderTreemapChartSection,
 }));
-vi.mock('../../../src/components/results/chartRenders/tinChartSection.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js', () => ({
 	renderTinChartSection: mocks.renderTinChartSection,
 }));
 
-import { renderCharts } from '../../../src/components/results/chartsView.js';
+import { renderCharts } from '../../../src/components/datasetWorkspace/chartsView.js';
 import { CHART_BLOCKS, CHART_CONTAINERS, VIEW_IDS, BADGE_IDS } from '../../../src/config/elementIds.js';
 
 const CHART_TYPES = ['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin'];

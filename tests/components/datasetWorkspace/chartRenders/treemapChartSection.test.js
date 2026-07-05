@@ -17,7 +17,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	getLocale: mocks.getLocale,
 }));
 
-import { renderTreemapChartSection } from '../../../../src/components/results/chartRenders/treemapChartSection.js';
+import { renderTreemapChartSection } from '../../../../src/components/datasetWorkspace/chartRenders/treemapChartSection.js';
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/config/elementIds.js';
 
 function setupDom() {

@@ -20,59 +20,59 @@ const mocks = vi.hoisted(() => ({
 	openGlobalFilterDialog: vi.fn(),
 }));
 
-vi.mock('../../src/services/i18nService.js', () => ({
+vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 	getLocale: mocks.getLocale,
 	translateType: mocks.translateType,
 }));
 
-vi.mock('../../src/config/chartDefaults.js', () => ({
+vi.mock('../../../src/config/chartDefaults.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 
-vi.mock('../../src/components/results/chartsView.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/chartsView.js', () => ({
 	renderCharts: mocks.renderCharts,
 }));
 
-vi.mock('../../src/utils/columnHelpers.js', () => ({
+vi.mock('../../../src/utils/columnHelpers.js', () => ({
 	getNumericColumns: mocks.getNumericColumns,
 }));
 
-vi.mock('../../src/components/results/tabsView.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/tabsView.js', () => ({
 	updateTabs: mocks.updateTabs,
 }));
 
-vi.mock('../../src/components/results/tablePreviewView.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/tablePreviewView.js', () => ({
 	renderTablePreview: mocks.renderTablePreview,
 }));
 
-vi.mock('../../src/components/results/statsView.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/statsView.js', () => ({
 	renderStats: mocks.renderStats,
 	renderCategoricalStats: mocks.renderCategoricalStats,
 }));
 
-vi.mock('../../src/components/results/fileListView.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/fileListView.js', () => ({
 	renderFileListDOM: mocks.renderFileListDOM,
 }));
 
-vi.mock('../../src/components/results/columnControlsView.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/columnControlsView.js', () => ({
 	renderColumnControlsDOM: mocks.renderColumnControlsDOM,
 }));
 
-vi.mock('../../src/components/results/joinBuilderView.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/joinBuilderView.js', () => ({
 	openJoinBuilderDialog: mocks.openJoinBuilderDialog,
 }));
 
-vi.mock('../../src/components/results/presetDatasetsView.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/presetDatasetsView.js', () => ({
 	openPresetDatasetsDialog: mocks.openPresetDatasetsDialog,
 }));
 
-vi.mock('../../src/components/results/globalFilterDialog.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/globalFilterDialog.js', () => ({
 	openGlobalFilterDialog: mocks.openGlobalFilterDialog,
 }));
 
-import { renderDataInterface, renderEmptyState, renderFileList } from '../../src/components/resultsView.js';
-import { CHART_CONTAINERS } from '../../src/config/elementIds.js';
+import { renderDataInterface, renderEmptyState, renderFileList } from '../../../src/components/datasetWorkspace/datasetWorkspaceView.js';
+import { CHART_CONTAINERS } from '../../../src/config/elementIds.js';
 
 function setupDom() {
 	document.body.innerHTML = `
