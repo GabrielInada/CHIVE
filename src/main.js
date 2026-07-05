@@ -490,7 +490,8 @@ function renderPanelWorkspace({ withLayoutSelector = true } = {}) {
 }
 
 /**
- * Master view update. Reads state once via {@link getState}, then composes the
+ * Master view update. Gathers what it needs up front through the cheap getters
+ * (same read surface as the region flush, no deep clone), then composes the
  * specialized render paths: the dataset list, then either the empty workspace or
  * the active dataset workspace plus its chart controls, then the panel
  * workspace. Each path delegates to its owning render module.
@@ -504,10 +505,10 @@ function renderPanelWorkspace({ withLayoutSelector = true } = {}) {
  * @private
  */
 function refreshView() {
-	const state = getState();
 	const datasets = getLoadedDatasets();
-	const activeIndex = state.data.activeIndex;
+	const activeIndex = getActiveDatasetIndex();
 	const dataset = getActiveDataset();
+	const previewRows = getPreviewRows();
 
 	renderDatasetListView(datasets, activeIndex);
 
@@ -520,7 +521,7 @@ function refreshView() {
 		return;
 	}
 
-	renderActiveDatasetWorkspace(dataset, state.ui.previewRows);
+	renderActiveDatasetWorkspace(dataset, previewRows);
 	renderChartControlsView(dataset);
 	renderPanelWorkspace();
 }

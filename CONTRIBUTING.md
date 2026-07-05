@@ -81,6 +81,7 @@ Before opening a PR, check that:
 - **CSS architecture:** Cascade layers ordered: foundation → controls → data-view → visual-output → feedback. Stylelint checks project-owned CSS under `src/styles/`; vendor CSS is not linted. See [Stylesheet organization](docs/development/styles.md) for details.
 - **Module exports:** camelCase for functions, PascalCase for classes
 - **Dependency injection:** Event handlers and render functions are passed as callbacks for testability and to avoid circular dependencies
+- **State reads:** when adding or changing a call site that needs only a primitive or small derived value, prefer a focused selector (`getActiveDatasetIndex()`, `getPreviewRows()`) over pulling a whole live object from a getter. See the [live-reference read policy](docs/development/architecture-reference.md#live-reference-read-policy)
 - **Result pattern:** Functions returning success/failure use `ok(data)` / `fail(reason)` from `src/utils/result.js`
 - **DOM IDs:** Use constants from `src/config/elementIds.js` instead of hardcoded strings
 - **Color utilities:** Use shared functions from `src/utils/colorUtils.js`; never duplicate hex/rgb conversion logic

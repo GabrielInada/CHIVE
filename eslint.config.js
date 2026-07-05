@@ -8,9 +8,11 @@ const STATELESS_RENDERER_MESSAGE =
 	'are importable here. Route writes through panelManager.js, ' +
 	'chartControls listeners, or event handler workflow modules.';
 
-// Read-only facade surface that renderers may import from appState.js.
-// If you add a new READ function to appState.js, add it here too. Anything
-// not in this list is treated as a write and blocked.
+// Renderer-safe read surface that renderers may import from appState.js.
+// Add a new read here only when renderers should use it; reads meant for
+// persistence, debug, or internal use (e.g. getPersistenceSnapshot) are
+// deliberately absent. Anything not in this list is treated as a write and
+// blocked.
 const APP_STATE_READS = [
 	'getActiveDataset',
 	'getActiveDatasetIndex',
@@ -25,12 +27,14 @@ const APP_STATE_READS = [
 	'sanitizeChartName',
 ];
 
-// Facade getters that return mutable refs (objects/arrays). The inline mutation
-// guard below blocks `getXxx().a.b = c` assignments AND inline mutating-method
-// calls (`getXxx().a.push(...)`) across all of src/. The aliased form
-// (`const d = getXxx(); d.a = b`) is caught separately by the local
-// `chive/no-facade-getter-mutation` rule. If a new mutable-ref getter is added
-// to appState.js, add it here too (and to the local rule's getter list).
+// Object- and array-returning read facades whose results must be treated
+// read-only (getState returns a clone, but its result is still not a legal
+// write target). The inline mutation guard below blocks `getXxx().a.b = c`
+// assignments AND inline mutating-method calls (`getXxx().a.push(...)`)
+// across all of src/. The aliased form (`const d = getXxx(); d.a = b`) is
+// caught separately by the local `chive/no-facade-getter-mutation` rule. If a
+// new object- or array-returning read facade is added to appState.js, add it
+// here too (and to the local rule's getter list).
 const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState|getPersistenceSnapshot)';
 
 // Array methods that mutate the receiver in place. Kept in sync with
