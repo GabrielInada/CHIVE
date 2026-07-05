@@ -119,6 +119,7 @@ function render(container, options = {}) {
 
 describe('renderScatter3dChart', () => {
 	let warnSpy;
+	let getContextSpy;
 
 	beforeEach(() => {
 		document.body.innerHTML = '';
@@ -127,10 +128,21 @@ describe('renderScatter3dChart', () => {
 		three.FakePointsMaterial.instances = [];
 		three.FakeWebGLRenderer.failNext = false;
 		three.FakePointsMaterial.failNext = false;
+		getContextSpy = vi.spyOn(window.HTMLCanvasElement.prototype, 'getContext').mockImplementation(type => {
+			if (type !== '2d') return null;
+			return {
+				font: '',
+				fillStyle: '',
+				textAlign: '',
+				textBaseline: '',
+				fillText: vi.fn(),
+			};
+		});
 		warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 	});
 
 	afterEach(() => {
+		getContextSpy.mockRestore();
 		warnSpy.mockRestore();
 	});
 

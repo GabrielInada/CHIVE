@@ -36,7 +36,7 @@ import { mountSlot, teardownAllSlots } from './slotLifecycle.js';
 
 /**
  * Render the sidebar list of saved chart snapshots into
- * `#panel-chart-list`. Each item gets a thumbnail (live D3 render via
+ * `#panel-chart-list`. Each item gets a thumbnail (live chart render via
  * {@link mountSlot}) and a remove button wired to the provided callback.
  *
  * No-op when the container element is missing.
@@ -98,7 +98,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
 		topo.appendChild(titleWrap);
 		topo.appendChild(removeBtn);
 
-		// Preview section (live D3 render)
+		// Preview section (live chart render)
 		const preview = document.createElement('div');
 		preview.className = 'panel-item-preview';
 
