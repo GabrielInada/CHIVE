@@ -2,11 +2,11 @@ import js from '@eslint/js';
 import chiveRules from './eslint-rules/index.js';
 
 const STATELESS_RENDERER_MESSAGE =
-	'Renderers and DOM builders (src/components/, src/features/, ' +
+	'Renderers and DOM builders (src/components/, ' +
 	'modules/visualizations/, panelSubsystem presentation files) do not ' +
 	'call write facades (docs/development/architecture.md Layers section). Only read-only facade members ' +
-	'are importable here. Route writes through panelManager.js, ' +
-	'chartControls listeners, or event handler workflow modules.';
+	'are importable here. Route writes through feature controllers, ' +
+	'chart-control listeners, or event-handler modules.';
 
 // Renderer-safe read surface that renderers may import from appState.js.
 // Add a new read here only when renderers should use it; reads meant for
@@ -197,7 +197,7 @@ export default [
 	// AFTER (A) because it redeclares `no-restricted-imports`; it repeats the
 	// bare-import bans alongside the facade-read restriction.
 	{
-		files: ['src/components/**/*.js', 'src/features/**/*.js', 'src/modules/visualizations/**/*.js'],
+		files: ['src/components/**/*.js', 'src/modules/visualizations/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,

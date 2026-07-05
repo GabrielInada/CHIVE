@@ -32,6 +32,8 @@ project overview; the sections below point to the deeper guides by reader goal.
 - [Architecture reference](development/architecture-reference.md): exact state
   schema, facade methods, event registry, subscribers, persistence, and panel
   lifecycle.
+- [Source map](development/source-map.md): source tree layout, naming
+  vocabulary, and where new code goes.
 - [Stylesheet organization](development/styles.md): CSS layers, feature
   ownership, naming conventions, and responsive breakpoints.
 
