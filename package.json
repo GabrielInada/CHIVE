@@ -17,7 +17,8 @@
   },
   "dependencies": {
     "banana-i18n": "^2.4.0",
-    "d3": "^7.9.0"
+    "d3": "^7.9.0",
+    "three": "^0.185.1"
   },
   "devDependencies": {
     "@sqlite.org/sqlite-wasm": "^3.53.0-build1",

@@ -90,6 +90,10 @@ const BARE_IMPORT_BANS = [
 		name: 'banana-i18n',
 		message: 'Import the checked-in vendor module (`vendor/banana-i18n/banana-i18n.js`) via a relative path. A bare specifier only resolves under a bundler and breaks raw-static hosting.',
 	},
+	{
+		name: 'three',
+		message: 'Import the checked-in vendor module (`vendor/three/three.module.js`) via a relative path. A bare "three" specifier only resolves under a bundler and breaks raw-static hosting.',
+	},
 ];
 
 const VITE_ONLY_SYNTAX_SELECTORS = [
