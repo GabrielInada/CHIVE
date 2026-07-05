@@ -7,7 +7,7 @@
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderTinChart } from '../../../modules/visualizations/tinChart.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
-import { showChartMessage } from './sharedRenderHelpers.js';
+import { clearChartContainer, showChartMessage } from '../../../utils/chartContainerLifecycle.js';
 
 /**
  * Render the TIN-chart section.
@@ -22,7 +22,7 @@ export function renderTinChartSection({ config, rows }) {
 	const container = document.getElementById(CHART_CONTAINERS.tin);
 	if (!config || !config.enabled) {
 		if (block) block.style.display = 'none';
-		container?.replaceChildren();
+		clearChartContainer(container);
 		return;
 	}
 	if (block) block.style.display = 'block';

@@ -16,6 +16,7 @@ import { t, getLocale, translateType } from '../../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { CHART_CONTAINERS } from '../../config/elementIds.js';
 import { getNumericColumns } from '../../utils/columnHelpers.js';
+import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
 
 import { renderCharts } from './chartsView.js';
 import { updateTabs } from './tabsView.js';
@@ -290,8 +291,7 @@ export function renderEmptyState() {
   if (els['container-cat-stats']) els['container-cat-stats'].replaceChildren();
   if (els['card-cat-stats']) els['card-cat-stats'].style.display = 'none';
   for (const containerId of Object.values(CHART_CONTAINERS)) {
-    const container = document.getElementById(containerId);
-    if (container) container.replaceChildren();
+    clearChartContainer(document.getElementById(containerId));
   }
   if (els['badge-charts']) els['badge-charts'].textContent = '0';
   if (els['btn-advance']) els['btn-advance'].disabled = true;

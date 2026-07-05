@@ -5,7 +5,7 @@
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderLineChart } from '../../../modules/visualizations/lineChart.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
-import { showChartMessage } from './sharedRenderHelpers.js';
+import { clearChartContainer, showChartMessage } from '../../../utils/chartContainerLifecycle.js';
 
 /**
  * Render the line-chart section. `columnTypeByName` is forwarded so the
@@ -23,7 +23,7 @@ export function renderLineChartSection({ config, rows, columnTypeByName, filterC
 	const container = document.getElementById(CHART_CONTAINERS.line);
 	if (!config.enabled) {
 		block.style.display = 'none';
-		container.replaceChildren();
+		clearChartContainer(container);
 		return;
 	}
 	block.style.display = 'block';

@@ -13,6 +13,7 @@
 import { t } from '../../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
+import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
 import { renderBarChartSection } from './chartRenders/barChartSection.js';
 import { renderLineChartSection } from './chartRenders/lineChartSection.js';
@@ -129,14 +130,14 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoTreemap.style.display = 'block';
 		blocoLine.style.display = 'block';
 		if (blocoTin) blocoTin.style.display = 'block';
-		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.pie).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.line).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.tin)?.replaceChildren();
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.bar));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.scatter));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.network));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.pie));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.bubble));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.treemap));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.line));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.tin));
 		return;
 	}
 
@@ -152,14 +153,14 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoTreemap.style.display = 'none';
 		blocoLine.style.display = 'none';
 		if (blocoTin) blocoTin.style.display = 'none';
-		document.getElementById(CHART_CONTAINERS.bar).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.scatter).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.network).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.pie).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.bubble).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.treemap).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.line).replaceChildren();
-		document.getElementById(CHART_CONTAINERS.tin)?.replaceChildren();
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.bar));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.scatter));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.network));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.pie));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.bubble));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.treemap));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.line));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.tin));
 		return;
 	}
 

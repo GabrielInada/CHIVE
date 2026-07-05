@@ -5,7 +5,7 @@
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderBubbleChart } from '../../../modules/visualizations/bubbleChart.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
-import { showChartMessage } from './sharedRenderHelpers.js';
+import { clearChartContainer, showChartMessage } from '../../../utils/chartContainerLifecycle.js';
 
 /**
  * Render the bubble-chart section. Surfaces `'no-value-column'`,
@@ -23,7 +23,7 @@ export function renderBubbleChartSection({ config, rows, filterCallbacks }) {
 	const container = document.getElementById(CHART_CONTAINERS.bubble);
 	if (!config.enabled) {
 		block.style.display = 'none';
-		container.replaceChildren();
+		clearChartContainer(container);
 		return;
 	}
 	block.style.display = 'block';
