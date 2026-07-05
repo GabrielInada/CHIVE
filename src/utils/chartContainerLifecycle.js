@@ -45,14 +45,17 @@ export function clearChartContainer(container) {
  * Show an empty-state message inside a chart container. Replaces the
  * container's contents with a single `.chart-empty` element. Used by every
  * `*ChartSection` adapter when the underlying renderer returns `fail`.
- * No-op when the container id does not resolve.
+ * Accepts the container element itself or its id (panel slot containers
+ * have no id). No-op when neither resolves.
  *
- * @param {string} containerId
+ * @param {HTMLElement | string | null | undefined} containerOrId
  * @param {string} message - Already localized.
  * @returns {void}
  */
-export function showChartMessage(containerId, message) {
-	const container = document.getElementById(containerId);
+export function showChartMessage(containerOrId, message) {
+	const container = typeof containerOrId === 'string'
+		? document.getElementById(containerOrId)
+		: containerOrId;
 	if (!container) return;
 	clearChartContainer(container);
 	const empty = document.createElement('div');

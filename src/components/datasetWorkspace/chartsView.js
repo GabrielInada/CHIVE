@@ -23,6 +23,7 @@ import { renderBubbleChartSection } from './chartRenders/bubbleChartSection.js';
 import { renderNetworkChartSection } from './chartRenders/networkChartSection.js';
 import { renderTreemapChartSection } from './chartRenders/treemapChartSection.js';
 import { renderTinChartSection } from './chartRenders/tinChartSection.js';
+import { renderScatter3dChartSection } from '../../charts/scatter3d/workspaceSection.js';
 
 /**
  * Render the active chart into its container. Single-chart-at-a-time: if
@@ -112,6 +113,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const blocoTreemap = document.getElementById(CHART_BLOCKS.treemap);
 	const blocoLine = document.getElementById(CHART_BLOCKS.line);
 	const blocoTin = document.getElementById(CHART_BLOCKS.tin);
+	const blocoScatter3d = document.getElementById(CHART_BLOCKS.scatter3d);
 
 	document.getElementById(BADGE_IDS.charts).textContent = t(
 		'chive-charts-badge',
@@ -130,6 +132,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoTreemap.style.display = 'block';
 		blocoLine.style.display = 'block';
 		if (blocoTin) blocoTin.style.display = 'block';
+		if (blocoScatter3d) blocoScatter3d.style.display = 'block';
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.bar));
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.scatter));
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.network));
@@ -138,10 +141,11 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.treemap));
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.line));
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.tin));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.scatter3d));
 		return;
 	}
 
-	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled && !chartConfig.treemap.enabled && !chartConfig.line.enabled && !chartConfig.tin.enabled) {
+	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.scatter3d.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled && !chartConfig.treemap.enabled && !chartConfig.line.enabled && !chartConfig.tin.enabled) {
 		chartsGrid.style.display = 'none';
 		emptyState.style.display = 'flex';
 		emptyState.textContent = t('chive-chart-empty-none');
@@ -153,6 +157,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		blocoTreemap.style.display = 'none';
 		blocoLine.style.display = 'none';
 		if (blocoTin) blocoTin.style.display = 'none';
+		if (blocoScatter3d) blocoScatter3d.style.display = 'none';
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.bar));
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.scatter));
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.network));
@@ -161,12 +166,13 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.treemap));
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.line));
 		clearChartContainer(document.getElementById(CHART_CONTAINERS.tin));
+		clearChartContainer(document.getElementById(CHART_CONTAINERS.scatter3d));
 		return;
 	}
 
 	// Single-chart-at-a-time: only the first enabled type renders. Legacy
 	// configs with multiple enabled flags converge to one on the next toggle.
-	const CHART_TYPE_ORDER = ['bar', 'line', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'tin'];
+	const CHART_TYPE_ORDER = ['bar', 'line', 'scatter', 'scatter3d', 'pie', 'bubble', 'network', 'treemap', 'tin'];
 	const activeChartType = CHART_TYPE_ORDER.find(type => chartConfig[type].enabled) || null;
 	CHART_TYPE_ORDER.forEach(type => {
 		if (type !== activeChartType) {
@@ -185,4 +191,5 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	renderNetworkChartSection({ config: chartConfig.network, rows: filteredRows, filterCallbacks });
 	renderTreemapChartSection({ config: chartConfig.treemap, rows: filteredRows, filterCallbacks });
 	renderTinChartSection({ config: chartConfig.tin, rows: filteredRows });
+	renderScatter3dChartSection({ config: chartConfig.scatter3d, rows: filteredRows });
 }

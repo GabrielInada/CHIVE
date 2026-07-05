@@ -108,7 +108,7 @@ describe('panelManager facade branches', () => {
     mocks.appState.addPanelBlock.mockReturnValueOnce(null);
     callbacks.onAddBlock('template-single');
 
-    expect(latestFeedback).toHaveBeenCalledWith('chive-panel-max-blocks', 'error');
+    expect(latestFeedback).toHaveBeenCalledWith('chive-panel-max-blocks');
     expect(firstFeedback).not.toHaveBeenCalled();
   });
 
@@ -171,13 +171,20 @@ describe('panelManager facade branches', () => {
     exportButton.click();
     mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'download-failed' });
     exportButton.click();
-    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: true });
+    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'no-exportable-charts' });
+    exportButton.click();
+    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: true, omittedChartCount: 0 });
+    exportButton.click();
+    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: true, omittedChartCount: 2 });
     exportButton.click();
 
-    expect(feedback).toHaveBeenCalledWith('Panel canvas not found', 'error');
-    expect(feedback).toHaveBeenCalledWith('Panel is empty', 'error');
-    expect(feedback).toHaveBeenCalledWith('chive-panel-export-error', 'error');
-    expect(feedback).toHaveBeenCalledWith('chive-panel-export-svg', 'success');
+    expect(feedback).toHaveBeenCalledWith('Panel canvas not found');
+    expect(feedback).toHaveBeenCalledWith('Panel is empty');
+    expect(feedback).toHaveBeenCalledWith('chive-panel-export-error');
+    expect(feedback).toHaveBeenCalledWith('chive-panel-export-no-exportable');
+    expect(feedback).toHaveBeenCalledWith('chive-panel-export-svg');
+    expect(feedback).toHaveBeenCalledWith('chive-panel-export-omitted');
+    expect(mocks.i18n.t).toHaveBeenCalledWith('chive-panel-export-omitted', 2);
   });
 
   it('tolerates missing controls and exposes sidebar, clear, lookup, and export helpers', () => {

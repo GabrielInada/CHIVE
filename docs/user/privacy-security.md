@@ -31,8 +31,12 @@ file APIs and processes the content locally in the page:
   byte image to IndexedDB does not block the main UI thread. This adds no new
   network origin: the worker and its vendored SQLite-WASM are same-origin assets
   served with CHIVE.
-- Charts are rendered in the browser using D3 and SVG/DOM.
-- Dashboard panel exports are generated from the rendered SVG in the browser.
+- Charts are rendered in the browser: most with D3 and SVG/DOM, the 3D
+  scatter with Three.js on a WebGL canvas. Nothing leaves the browser
+  either way.
+- Dashboard panel exports are generated from the rendered SVG in the
+  browser. Canvas-based charts have no SVG output yet and are omitted
+  from the export (the app says so when it happens).
 
 CHIVE does not upload your dataset to a CHIVE backend in the default
 deployments.

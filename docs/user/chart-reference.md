@@ -46,6 +46,7 @@ Required columns and behavior below are taken from the renderers in
 |---|---|---|---|---|
 | Bar | Category column (+ numeric value column for sum/mean) | Sort, top N, color mode, axis labels | Comparing categories | Iris, Amazonian Trees |
 | Scatter | X column, Y column | Size field, color field, log scale, regression, categorical-pair mode | Relationships and clusters | Iris |
+| 3D scatter | Numeric X, Y, and Z columns | Point size, opacity, color | Relationships across three numeric variables | Terrain Surface, Iris |
 | Pie / Donut | Category column (+ numeric value column for sum) | Inner/outer radius, top N, labels, legend | Part-to-whole summaries | Iris |
 | Bubble | Category column (+ nesting columns when grouped; numeric value column for sum/mean) | Nesting mode, top N, labels, color scheme | Group size and hierarchy | Amazon Multi-level Nesting, Amazonian Trees |
 | Network | Source column, target column | Weight column, group column, physics and zoom | Relationships between entities | None bundled; see [CSV examples](#csv-examples-for-network-and-tin) |
@@ -157,6 +158,26 @@ Required columns and behavior below are taken from the renderers in
   intentional missing value to exercise the missing-value modes).
 - **Common empty states:** missing X or Y; no finite Y values; no usable X values.
 
+### 3D scatter chart
+
+- **Best for:** relationships and clusters across three numeric variables, as a rotatable
+  WebGL point cloud (drag to rotate, scroll to zoom; arrow keys rotate, `+`/`-` zoom,
+  `Home` resets the camera).
+- **Deep dive:** [scatter3d.md](../development/charts/scatter3d.md) for the per-chart
+  package layout, sampling, and lifecycle.
+- **Required data:** numeric X, Y, and Z columns. Z maps to the vertical axis.
+- **Optional settings:** point size, point opacity, point color, custom title.
+- **Aggregation behavior:** none. Every row with finite X, Y, and Z is a point. Very large
+  datasets are sampled down to a render budget (the chart says how many of the valid points
+  it is showing; the rows carrying each axis minimum and maximum are always kept).
+- **Good sample dataset:** Terrain Surface (`x`, `y`, `z`), or Iris with three numeric
+  measurements.
+- **Pilot limitations:** requires WebGL; no SVG download button (panel exports omit it and
+  say so); no hover tooltips yet; pinch-zoom on touch devices is not supported (drag-rotate
+  works).
+- **Common empty states:** any of X/Y/Z missing; no rows with finite values in all three;
+  WebGL unavailable in the browser.
+
 ### TIN chart
 
 - **Best for:** terrain and continuous-surface interpolation from scattered points.
@@ -209,6 +230,9 @@ exactly what to fix.
 | Line: no usable X | No usable X values in the selected column. |
 | TIN: X/Y/Z missing | Select valid numeric X, Y and Z columns to render the TIN. |
 | TIN: fewer than three points | Need at least 3 rows with finite X, Y and Z values to triangulate a terrain. |
+| 3D scatter: X/Y/Z missing | Select numeric X, Y and Z columns to render the 3D scatter. |
+| 3D scatter: no finite rows | No rows with finite X, Y and Z values to plot. |
+| 3D scatter: no WebGL | 3D rendering is unavailable in this browser (WebGL is required). |
 | No chart selected | No visualization selected. |
 
 These strings live in `src/i18n/en.json` (keys `chive-chart-empty-*`); the Portuguese

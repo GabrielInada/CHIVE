@@ -31,6 +31,7 @@ These are the companion to the higher-level docs one directory up:
 | Treemap | [treemap.md](treemap.md) | Part-to-whole as nested area | Squarified tiling, area encoding |
 | Line | [line.md](line.md) | Trends over an ordered dimension | Time scales, curve interpolation, missing-value modes |
 | TIN | [tin.md](tin.md) | Continuous surface from scattered points | Delaunay triangulation, interpolation, contours |
+| 3D scatter | [scatter3d.md](scatter3d.md) | Three numeric variables as a rotatable point cloud | WebGL rendering, D3-to-Three scale contract, per-chart package layout, GPU lifecycle |
 
 ## How each doc is organized
 
@@ -61,10 +62,14 @@ doc rather than repeated:
 - **Render dispatch**: dispatch goes through
   [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js),
   which routes each spec to the matching chart entry function under
-  [src/modules/visualizations/](../../../src/modules/visualizations).
+  [src/modules/visualizations/](../../../src/modules/visualizations) or, for per-chart
+  packages, the package's panel adapter under [src/charts/](../../../src/charts)
+  (scatter3d today).
 - **Section adapters**: one `*ChartSection.js` per chart under
-  [chartRenders/](../../../src/components/datasetWorkspace/chartRenders), which map config to the renderer
-  options bag and surface localized empty states via `showChartMessage`.
+  [chartRenders/](../../../src/components/datasetWorkspace/chartRenders) (per-chart packages
+  bring their own `workspaceSection.js` instead), which map config to the renderer
+  options bag and surface localized empty states via `showChartMessage` from
+  [chartContainerLifecycle.js](../../../src/utils/chartContainerLifecycle.js).
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
   `buildRankMap`, `buildSliceColor`, `isValidHexColor`).
 - **Tooltips and click-to-filter**: [tooltip.js](../../../src/modules/visualizations/tooltip.js).

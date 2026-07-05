@@ -44,7 +44,8 @@ builder and choose the join keys, join type, and output columns.
 ## Build Charts
 
 Open the chart view and select one chart type at a time. CHIVE supports bar,
-scatter, pie/donut, bubble, network, treemap, line, and TIN charts.
+scatter, 3D scatter, pie/donut, bubble, network, treemap, line, and TIN
+charts.
 
 - Choose the required columns first. If required data is missing, the chart area
   shows an empty-state message that names what to fix.
@@ -67,7 +68,9 @@ Add useful chart states to the dashboard panel when you want a composed output.
 - Arrange chart snapshots into panel blocks and slots.
 - Change panel block templates, proportions, height, and borders from the panel
   controls.
-- Export the panel as SVG when you need a static graphic.
+- Export the panel as SVG when you need a static graphic. Canvas-based
+  charts (the 3D scatter) have no SVG output yet: the export completes
+  without them and tells you how many were left out.
 
 Panel snapshots are intentionally independent of later dataset edits. Re-add a
 chart when you want the panel to reflect updated data, filters, or settings.

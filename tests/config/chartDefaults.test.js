@@ -229,7 +229,7 @@ describe('chartDefaults', () => {
 			const result = canonicalizeChartConfig({ bar: { enabled: true } }, ['a']);
 			expect(result.bar.enabled).toBe(true);
 			expect(result.bar.sort).toBeDefined();
-			for (const type of ['scatter', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin']) {
+			for (const type of ['scatter', 'scatter3d', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin']) {
 				expect(result[type]).toBeDefined();
 			}
 		});

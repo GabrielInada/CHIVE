@@ -248,7 +248,7 @@ describe('panelManager (branch coverage)', () => {
 
 			addChartToPanel('container', 'Chart', { type: 'bar' });
 
-			expect(feedbackCb).toHaveBeenCalledWith(expect.any(String), 'error');
+			expect(feedbackCb).toHaveBeenCalledWith(expect.any(String));
 		});
 
 		it('does not throw on unhandled error', () => {

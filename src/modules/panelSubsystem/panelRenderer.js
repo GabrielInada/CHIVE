@@ -3,9 +3,10 @@
  *
  * Renders both panel surfaces, the sidebar list of saved chart snapshots
  * and the canvas grid of layout blocks. Both surfaces are rendered from
- * scratch on every call; teardown/re-mount lifecycles for slot SVGs go
- * through `slotLifecycle.js` so D3 resources (network simulations,
- * ResizeObservers, RAF handles) get cleaned up before each re-render.
+ * scratch on every call; teardown/re-mount lifecycles for slot charts
+ * (SVG or WebGL canvas) go through `slotLifecycle.js` so chart resources
+ * (network simulations, canvas dispose hooks, ResizeObservers, RAF
+ * handles) get cleaned up before each re-render.
  *
  * Caller wiring lives in `panelManager.js`. The exports here are pure
  * rendering, they do not subscribe to state changes; the manager

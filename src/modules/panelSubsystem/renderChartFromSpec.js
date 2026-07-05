@@ -3,8 +3,10 @@
  *
  * The single path through which panel slots render. `panelRenderer.js`
  * delegates here via {@link renderChartFromSpec} when mounting a slot;
- * this module then dispatches to the appropriate `render*Chart` function
- * in `modules/visualizations/`. Panel snapshots come into this module as
+ * this module then dispatches to the chart's renderer, an SVG
+ * `render*Chart` function in `modules/visualizations/` or a per-chart
+ * package adapter under `charts/` (scatter3d renders to a WebGL canvas).
+ * Panel snapshots come into this module as
  * `{ type, config, dataSnapshot, columnsSnapshot, metadata }`, see
  * {@link ChartSnapshot} for the full shape.
  *
@@ -28,6 +30,7 @@ import { renderPieChart } from '../visualizations/pieChart.js';
 import { renderScatterPlot } from '../visualizations/scatterPlot.js';
 import { renderTinChart } from '../visualizations/tinChart.js';
 import { renderTreeMap } from '../visualizations/treemapChart.js';
+import { renderScatter3dPanelChart } from '../../charts/scatter3d/panelAdapter.js';
 import { fail } from '../../utils/result.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
@@ -365,6 +368,7 @@ const RENDERERS = {
 	treemap: renderTreemap,
 	line: renderLine,
 	tin: renderTin,
+	scatter3d: renderScatter3dPanelChart,
 };
 
 /**
@@ -379,7 +383,7 @@ export const SUPPORTED_PANEL_CHART_TYPES = Object.freeze(Object.keys(RENDERERS))
 /**
  * Render a chart snapshot into `container` by dispatching on `spec.type`.
  *
- * @param {HTMLElement} container - Mount point for the chart's `<svg>`.
+ * @param {HTMLElement} container - Mount point for the chart's `<svg>` (or `<canvas>` for WebGL charts).
  * @param {ChartSnapshot} spec - Frozen snapshot built by `addChartSnapshot`.
  * @returns {Result} `{ ok: true }` on success; `{ ok: false, reason: 'invalid-args' }` when container or spec are missing; `{ ok: false, reason: 'unknown-type' }` when `spec.type` is not in {@link SUPPORTED_PANEL_CHART_TYPES}.
  */

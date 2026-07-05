@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createDataStateFacade } from '../../src/modules/state/dataStateFacade.js';
 
-const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
+const CHART_TYPES = ['bar', 'scatter', 'scatter3d', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
 
 function makeFacade(initialConfig = null) {
 	const emitStateChange = vi.fn();
@@ -44,6 +44,15 @@ describe('dataStateFacade.setActiveChartType', () => {
 		expect(dataset.chartConfig.bar.enabled).toBe(false);
 		expect(dataset.chartConfig.scatter.enabled).toBe(true);
 		CHART_TYPES.filter(t => t !== 'scatter').forEach(type => {
+			expect(dataset.chartConfig[type].enabled).toBe(false);
+		});
+	});
+
+	it('activates scatter3d (the type list gate accepts it)', () => {
+		const { facade, dataset } = makeFacade();
+		facade.setActiveChartType('scatter3d');
+		expect(dataset.chartConfig.scatter3d.enabled).toBe(true);
+		CHART_TYPES.filter(t => t !== 'scatter3d').forEach(type => {
 			expect(dataset.chartConfig[type].enabled).toBe(false);
 		});
 	});

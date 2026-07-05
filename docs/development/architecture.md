@@ -29,7 +29,10 @@ The architecture follows from CHIVE's constraints:
 
 - CHIVE runs in the browser with no application backend.
 - Uploaded datasets stay in browser memory and browser storage.
-- D3 owns chart rendering and mutates SVG/DOM directly.
+- D3 owns the chart math everywhere (scales, extents, layout) and renders
+  most charts to SVG/DOM directly. Three.js renders the 3D scatter to a
+  WebGL canvas from D3-computed scales; the contract is rows/config ->
+  chart model -> D3 math -> SVG or Three renderer.
 - The project keeps runtime dependencies small on purpose.
 - The contributor base benefits from explicit, inspectable control flow.
 - The state model is narrow: datasets, panel layout, and UI mode.
