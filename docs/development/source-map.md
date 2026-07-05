@@ -30,7 +30,7 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/modules/visualizations/` | Chart renderers (D3), some with subpackages (`scatterPlot/`, `lineChart/`, ...). Read-only with respect to application state. |
 | `src/services/` | Side-effecting services: `dataService/`, `persistenceService/` with the `persistence/` backends, `i18nService.js`, `presetService.js`, and `dataIngestService.js`. |
 | `src/data/` | Bundled preset datasets (`presets/`) and `presetCatalog.js`. |
-| `src/workers/` | `persistWorker.js`, the persistence worker. |
+| `src/workers/` | Background workers: `persistWorker.js` for persistence and `dataIngestWorker.js` for data ingest. |
 | `src/styles/` | CSS layer files. Source of truth: [Stylesheet organization](styles.md). |
 | `src/i18n/` | Locale JSON files. Source of truth: [Translation guide](i18n.md). |
 | `src/icons/` | App icons and static SVG assets. |
@@ -62,12 +62,21 @@ math helpers.
 
 | If you're adding... | Put it in | Notes |
 |---|---|---|
-| A new chart type | For current 2D chart work: `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. Document its data contract, modes, and empty states in [Chart and data reference](../user/chart-reference.md). The first Three.js-capable chart pilots the per-chart package layout instead; see [Direction](#direction). |
+| A new chart type | For current 2D chart work: `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` + `src/components/results/chartRenders/{name}ChartSection.js` | Follow the chart-type checklist below. The first Three.js-capable chart pilots the per-chart package layout instead; see [Direction](#direction). |
 | A new state field | The relevant domain in `src/modules/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
 | A new DOM event handler | The matching workflow file under `src/modules/eventHandlers/` (or an existing feature manager) | Translate the event into a facade call. Never mutate state directly. Register a global `document`/`window` listener once behind a module-level guard so a repeated `setup*` call cannot stack duplicates. |
 | A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
 | A pure helper | `src/utils/` | No DOM access. No state imports. |
 | A new derived selector | The facade that owns the underlying domain | Keep getters thin; do not compute heavy aggregates inside them. |
+
+For a new chart type, update the full chart surface in one pass:
+
+- Register the type, controls, defaults, workspace render, and panel dispatch in
+  `chartControls/chartTypes.js`, `chartControls/chartControlsManager.js`,
+  `config/chartDefaults.js`, `components/results/chartsView.js`, and
+  `panelSubsystem/renderChartFromSpec.js`.
+- Add i18n strings, tests, [Chart and data reference](../user/chart-reference.md)
+  coverage, and a chart deep dive.
 
 Non-JS additions have their own homes:
 
