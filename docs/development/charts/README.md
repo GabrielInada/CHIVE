@@ -42,7 +42,7 @@ one you can navigate any of them:
 3. The big picture (data flow)
 4. The data model (`chartConfig.<type>` keys and the `*_CHART` constants)
 5. The control sidebar
-6. The render entry chain (results view + panel)
+6. The render entry chain (dataset workspace + panel)
 7. Inside the renderer (the step-by-step internals)
 8. The color / scale system
 9. Performance notes
@@ -63,7 +63,7 @@ doc rather than repeated:
   which routes each spec to the matching chart entry function under
   [src/modules/visualizations/](../../../src/modules/visualizations).
 - **Section adapters**: one `*ChartSection.js` per chart under
-  [chartRenders/](../../../src/components/results/chartRenders), which map config to the renderer
+  [chartRenders/](../../../src/components/datasetWorkspace/chartRenders), which map config to the renderer
   options bag and surface localized empty states via `showChartMessage`.
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
   `buildRankMap`, `buildSliceColor`, `isValidHexColor`).

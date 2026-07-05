@@ -1,31 +1,31 @@
 /**
- * Top-level results-pane view.
+ * Top-level dataset workspace view.
  *
  * Orchestrates the right-hand pane: tabs (preview/stats/charts), the file
  * list + tools (search, join, preset), the column-controls strip, and the
- * chart-rendering flow. Most rendering is delegated to per-view modules
- * in `./results/`; this file wires them together and owns the global-filter
- * action handlers that the chart layer dispatches.
+ * chart-rendering flow. Most rendering is delegated to the sibling view
+ * modules in this package; this file wires them together and owns the
+ * global-filter action handlers that the chart layer dispatches.
  *
- * @typedef {import('../types.js').Dataset} Dataset
- * @typedef {import('../types.js').ColumnSpec} ColumnSpec
- * @typedef {import('../types.js').ChartConfig} ChartConfig
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
+ * @typedef {import('../../types.js').ChartConfig} ChartConfig
  */
 
-import { t, getLocale, translateType } from '../services/i18nService.js';
-import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
-import { CHART_CONTAINERS } from '../config/elementIds.js';
-import { getNumericColumns } from '../utils/columnHelpers.js';
+import { t, getLocale, translateType } from '../../services/i18nService.js';
+import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
+import { CHART_CONTAINERS } from '../../config/elementIds.js';
+import { getNumericColumns } from '../../utils/columnHelpers.js';
 
-import { renderCharts } from './results/chartsView.js';
-import { updateTabs } from './results/tabsView.js';
-import { renderTablePreview } from './results/tablePreviewView.js';
-import { renderStats, renderCategoricalStats } from './results/statsView.js';
-import { renderFileListDOM } from './results/fileListView.js';
-import { renderColumnControlsDOM } from './results/columnControlsView.js';
-import { openJoinBuilderDialog } from './results/joinBuilderView.js';
-import { openPresetDatasetsDialog } from './results/presetDatasetsView.js';
-import { openGlobalFilterDialog } from './results/globalFilterDialog.js';
+import { renderCharts } from './chartsView.js';
+import { updateTabs } from './tabsView.js';
+import { renderTablePreview } from './tablePreviewView.js';
+import { renderStats, renderCategoricalStats } from './statsView.js';
+import { renderFileListDOM } from './fileListView.js';
+import { renderColumnControlsDOM } from './columnControlsView.js';
+import { openJoinBuilderDialog } from './joinBuilderView.js';
+import { openPresetDatasetsDialog } from './presetDatasetsView.js';
+import { openGlobalFilterDialog } from './globalFilterDialog.js';
 import {
   applyGlobalFilterRules,
   createSingleCategoryGlobalFilter,
@@ -36,7 +36,7 @@ import {
   removeExcludeTokenFromFilter,
   removeIncludeTokenFromFilter,
   resolveGlobalFilterForColumns,
-} from '../utils/globalFilter.js';
+} from '../../utils/globalFilter.js';
 
 const FILE_LIST_PAGE_SIZE = 15;
 let fileListQuery = '';

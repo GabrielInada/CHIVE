@@ -21,7 +21,7 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/types.js` | Shared JSDoc typedefs (`AppState`, `Dataset`, `ChartConfig`, ...). Always imported directly, never through barrels. |
 | `src/config/` | Pure leaf layer: chart defaults, element IDs, limits, locale, and format constants. No imports from modules, components, or services. |
 | `src/utils/` | Pure leaf layer: DOM-free helpers (result pattern, color utilities, filters, formatters). Same import rule as `config/`. |
-| `src/components/` | Leaf renderers for the dataset workspace: `resultsView.js` plus `components/results/` (preview, stats, columns, dialogs, and the per-chart `chartRenders/` sections). The directory is named "results" for historical reasons; the area is the active dataset workspace, and new naming should say dataset workspace. |
+| `src/components/` | Leaf renderers for the dataset workspace: `components/datasetWorkspace/` holds the top view `datasetWorkspaceView.js` plus the preview, stats, columns, and dialog views and the per-chart `chartRenders/` sections. |
 | `src/modules/state/` | State core: `appState.js`, the data/panel/ui facades, `stateEvents.js`, and `stateDebug.js`. The only write path for application state. |
 | `src/modules/eventHandlers/` | DOM intent translation: workflow modules that turn user events into facade calls, wired by `modules/eventHandlers.js`. |
 | `src/modules/fileManager.js`, `panelManager.js`, `uiManager.js`, `chartControls/` | Feature managers: each owns a domain end to end (DOM intent, facade writes, bus subscriptions, render triggering). `chartControls/` also holds the per-chart controls packages (`barControls/`, `scatterControls/`, ...). |
@@ -44,7 +44,7 @@ with real work:
 |---|---|---|
 | Orchestrator | App boot, broad scheduling, global wiring | `main.js` fills this role |
 | Controller | Feature/domain flow ownership: DOM intent, facade writes, service calls, render coordination | a future `panelController.js` |
-| View | DOM building/rendering from inputs and callbacks | `components/results/tablePreviewView.js` |
+| View | DOM building/rendering from inputs and callbacks | `components/datasetWorkspace/tablePreviewView.js` |
 | Renderer | Chart/SVG rendering from explicit inputs | `modules/visualizations/scatterPlot.js` |
 | Service | Side effects, persistence, ingest, i18n, reusable domain operations | `services/persistenceService.js` |
 | Facade | State or service boundary | `modules/state/dataStateFacade.js` |
@@ -62,7 +62,7 @@ math helpers.
 
 | If you're adding... | Put it in | Notes |
 |---|---|---|
-| A new chart type | For current 2D chart work: `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` + `src/components/results/chartRenders/{name}ChartSection.js` | Follow the chart-type checklist below. The first Three.js-capable chart pilots the per-chart package layout instead; see [Direction](#direction). |
+| A new chart type | For current 2D chart work: `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` + `src/components/datasetWorkspace/chartRenders/{name}ChartSection.js` | Follow the chart-type checklist below. The first Three.js-capable chart pilots the per-chart package layout instead; see [Direction](#direction). |
 | A new state field | The relevant domain in `src/modules/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
 | A new DOM event handler | The matching workflow file under `src/modules/eventHandlers/` (or an existing feature manager) | Translate the event into a facade call. Never mutate state directly. Register a global `document`/`window` listener once behind a module-level guard so a repeated `setup*` call cannot stack duplicates. |
 | A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
@@ -73,7 +73,7 @@ For a new chart type, update the full chart surface in one pass:
 
 - Register the type, controls, defaults, workspace render, and panel dispatch in
   `chartControls/chartTypes.js`, `chartControls/chartControlsManager.js`,
-  `config/chartDefaults.js`, `components/results/chartsView.js`, and
+  `config/chartDefaults.js`, `components/datasetWorkspace/chartsView.js`, and
   `panelSubsystem/renderChartFromSpec.js`.
 - Add i18n strings, tests, [Chart and data reference](../user/chart-reference.md)
   coverage, and a chart deep dive.
@@ -95,8 +95,10 @@ The tree is moving toward a hybrid feature/domain structure in small,
 behavior-preserving steps. Structure follows ownership, not file history.
 The rules, in place of a speculative target tree:
 
-- The dataset workspace replaces the "results" naming. New code and docs say
-  dataset workspace; the file moves come later, with real work in that area.
+- The dataset workspace replaces the "results" naming, and the workspace
+  files now live in `components/datasetWorkspace/`. DOM element ids, CSS
+  classes, and i18n keys keep the old naming until they are touched with
+  real work.
 - Per-chart packages are the long-term chart direction: a chart's data prep,
   options, math/scales, renderers, controls, workspace section, and panel
   adapter live together. The first Three.js-capable chart pilots this layout;

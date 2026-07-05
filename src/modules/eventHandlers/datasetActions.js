@@ -1,8 +1,8 @@
 /**
  * CHIVE dataset action workflow.
  *
- * Delegated listeners for dataset row buttons (rendered in resultsView): select a
- * dataset or remove it by index.
+ * Delegated listeners for dataset row buttons (rendered in datasetWorkspaceView):
+ * select a dataset or remove it by index.
  */
 
 import { selectDataset, removeDatasetByIndex } from '../fileManager.js';
@@ -16,7 +16,7 @@ let datasetListenersReady = false;
  */
 export function setupDatasetListeners() {
 	if (datasetListenersReady) return;
-	// Delegated listeners for dataset buttons (rendered in resultsView)
+	// Delegated listeners for dataset buttons (rendered in datasetWorkspaceView)
 	document.addEventListener('click', onDatasetClick);
 	datasetListenersReady = true;
 }

@@ -16,7 +16,7 @@ vi.mock('../../../src/modules/dialogFocus.js', () => ({
 }));
 
 import { PRESET_CATALOG } from '../../../src/data/presetCatalog.js';
-import { openPresetDatasetsDialog } from '../../../src/components/results/presetDatasetsView.js';
+import { openPresetDatasetsDialog } from '../../../src/components/datasetWorkspace/presetDatasetsView.js';
 
 const translate = (key, ...args) => (args.length ? `${key}:${args.join(',')}` : key);
 

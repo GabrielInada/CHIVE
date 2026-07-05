@@ -34,7 +34,7 @@ Key files:
 - Sidebar controls: [scatterControls.js](../../../src/modules/chartControls/scatterControls.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`SCATTER_PLOT`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `scatter` block)
-- Section adapter (results view): [scatterChartSection.js](../../../src/components/results/chartRenders/scatterChartSection.js)
+- Section adapter (dataset workspace): [scatterChartSection.js](../../../src/components/datasetWorkspace/chartRenders/scatterChartSection.js)
 - Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
@@ -175,7 +175,7 @@ Two draw paths, both ending at `renderScatterPlot`.
        sidebar edits    │                          │  render
  (scatterControls.js) ──┘                          ▼
         write config                  chartsView.renderCharts()
-                                      → renderScatterChartSection()       [results view]
+                                      → renderScatterChartSection()       [dataset workspace]
                                         → renderScatterPlot(container, rows, x, y, opts)
                                               │
    "Add to panel"                            │
@@ -314,10 +314,10 @@ numeric column that is not X, each scale defaulting to linear unless its column 
 
 ## 6. The render entry chain
 
-### 6.1 Results view
+### 6.1 Dataset workspace
 
 `renderScatterChartSection({ config, rows, columnTypeByName, filterCallbacks })`
-([scatterChartSection.js](../../../src/components/results/chartRenders/scatterChartSection.js))
+([scatterChartSection.js](../../../src/components/datasetWorkspace/chartRenders/scatterChartSection.js))
 resolves the block/container, hides+clears when disabled, sets the container min-height, maps
 config into the options bag (including `axisTypes` taken from `columnTypeByName` so detection
 is consistent), and calls `renderScatterPlot`. On failure it shows
@@ -516,7 +516,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   renderer's color options.
 - [scatterControls.test.js](../../../tests/modules/chartControls/scatterControls.test.js) covers
   the control building and the axis/scale and color-mode cross-constraints.
-- [scatterChartSection.test.js](../../../tests/components/results/chartRenders/scatterChartSection.test.js)
+- [scatterChartSection.test.js](../../../tests/components/datasetWorkspace/chartRenders/scatterChartSection.test.js)
   and [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
   cover the results and panel paths.
 

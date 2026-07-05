@@ -14,7 +14,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 	getLocale: mocks.getLocale,
 }));
 
-import { renderTablePreview } from '../../../src/components/results/tablePreviewView.js';
+import { renderTablePreview } from '../../../src/components/datasetWorkspace/tablePreviewView.js';
 
 describe('renderTablePreview', () => {
 	beforeEach(() => {

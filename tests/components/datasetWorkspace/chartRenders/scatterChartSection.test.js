@@ -17,7 +17,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	getLocale: mocks.getLocale,
 }));
 
-import { renderScatterChartSection } from '../../../../src/components/results/chartRenders/scatterChartSection.js';
+import { renderScatterChartSection } from '../../../../src/components/datasetWorkspace/chartRenders/scatterChartSection.js';
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/config/elementIds.js';
 
 function setupDom() {

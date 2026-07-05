@@ -120,7 +120,7 @@ vi.mock('../../../src/modules/chartControls/previews.js', () => ({
 	PREVIEW_TIN_SVG: '<svg id="prev-tin" />',
 }));
 
-vi.mock('../../../src/components/results/chartTypePickerDialog.js', () => ({
+vi.mock('../../../src/components/datasetWorkspace/chartTypePickerDialog.js', () => ({
 	openChartTypePickerDialog: mocks.openChartTypePickerDialog,
 }));
 

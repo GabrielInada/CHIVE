@@ -32,8 +32,8 @@ import {
 renderEmptyState,
 renderDataInterface,
 renderFileList,
-} from './components/resultsView.js';
-import { renderCharts } from './components/results/chartsView.js';
+} from './components/datasetWorkspace/datasetWorkspaceView.js';
+import { renderCharts } from './components/datasetWorkspace/chartsView.js';
 import { initChartControls, renderChartControlsSidebar } from './modules/chartControls/chartControlsManager.js';
 import { getNumericColumns } from './utils/columnHelpers.js';
 import { rehydratePanelChartSpecs } from './utils/panelHydration.js';
@@ -424,7 +424,7 @@ function renderDatasetListView(datasets, activeIndex) {
 }
 
 /**
- * Render the "no dataset loaded" results pane; delegates to
+ * Render the "no dataset loaded" dataset workspace; delegates to
  * {@link renderEmptyState}. The panel render and the tab reset are the
  * caller's responsibility.
  *
@@ -435,7 +435,7 @@ function renderEmptyWorkspace() {
 }
 
 /**
- * Render the active dataset's results pane: column controls, preview table,
+ * Render the active dataset's workspace: column controls, preview table,
  * stats, charts, and global-filter state, all via {@link renderDataInterface}.
  *
  * Committed chart config is canonicalized at the state boundaries (persistence

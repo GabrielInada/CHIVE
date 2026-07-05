@@ -13,7 +13,7 @@ vi.mock('../../../src/modules/chartControls/previews.js', () => ({
 	PREVIEW_TIN_SVG: '<svg data-prev="tin" />',
 }));
 
-import { openChartTypePickerDialog } from '../../../src/components/results/chartTypePickerDialog.js';
+import { openChartTypePickerDialog } from '../../../src/components/datasetWorkspace/chartTypePickerDialog.js';
 import { CHART_TYPES } from '../../../src/modules/chartControls/chartTypes.js';
 
 const translate = key => `t:${key}`;

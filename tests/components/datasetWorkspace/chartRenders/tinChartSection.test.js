@@ -17,7 +17,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	getLocale: mocks.getLocale,
 }));
 
-import { renderTinChartSection } from '../../../../src/components/results/chartRenders/tinChartSection.js';
+import { renderTinChartSection } from '../../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js';
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/config/elementIds.js';
 
 function setupDom({ withContainer = true, withBlock = true } = {}) {

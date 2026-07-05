@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, expect, it, vi } from 'vitest';
-import { renderFileListDOM } from '../../../src/components/results/fileListView.js';
+import { renderFileListDOM } from '../../../src/components/datasetWorkspace/fileListView.js';
 
 describe('fileListView', () => {
 	it('renders file items and handles select/remove actions', () => {

@@ -19,7 +19,7 @@ Key files:
 - Sidebar controls: [pieControls.js](../../../src/modules/chartControls/pieControls.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`PIE_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `pie` block)
-- Section adapter (results view): [pieChartSection.js](../../../src/components/results/chartRenders/pieChartSection.js)
+- Section adapter (dataset workspace): [pieChartSection.js](../../../src/components/datasetWorkspace/chartRenders/pieChartSection.js)
 - Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 - Color math: [colorUtils.js](../../../src/utils/colorUtils.js) (`buildSliceColor`)
 
@@ -102,7 +102,7 @@ Two draw paths, both ending at `renderPieChart`.
        sidebar edits    │                          │  render
    (pieControls.js) ────┘                          ▼
         write config                  chartsView.renderCharts()
-                                      → renderPieChartSection()        [results view]
+                                      → renderPieChartSection()        [dataset workspace]
                                         → renderPieChart(container, rows, category, opts)
                                               │
    "Add to panel" → structuredClone snapshot │
@@ -201,10 +201,10 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
 
 ## 6. The render entry chain
 
-### 6.1 Results view
+### 6.1 Dataset workspace
 
 `renderPieChartSection({ config, rows, filterCallbacks })`
-([pieChartSection.js](../../../src/components/results/chartRenders/pieChartSection.js)) resolves
+([pieChartSection.js](../../../src/components/datasetWorkspace/chartRenders/pieChartSection.js)) resolves
 the block/container, hides+clears when disabled, sets the min-height, maps config into the
 options bag (with localized labels including the `Other` label), and calls `renderPieChart`.
 On failure it shows `chive-chart-empty-pie-sum` for `sum-no-numeric`, else

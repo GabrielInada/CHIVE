@@ -69,12 +69,12 @@ Generic reusable controls and sidebar card patterns.
 
 **Bundle via**: `controls.css` → `style.css`
 
-### Results/Data View (`@feature: results`)
+### Dataset Workspace/Data View (`@feature: results`)
 Dataset presentation, column management, and data summaries.
 
 | File | Purpose |
 |------|---------|
-| `results.css` | Results container, empty state, file list styling |
+| `results.css` | Dataset workspace container, empty state, file list styling |
 | `table.css` | Table preview (thead, tbody, tfoot, borders, highlights) |
 | `columns.css` | Column control buttons, selection UI, filter toggles |
 
@@ -287,7 +287,7 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 | **1024px** | About page | [about.css:265](../../src/styles/about.css#L265) | About-page grid collapses from 2-column to 1-column; hero padding shrinks |
 | **900px** | Main app layout | [responsive.css:5](../../src/styles/responsive.css#L5), [panel.css:479](../../src/styles/panel.css#L479) | Workspace stacks; header switches to column; sidebar narrows; panel block adjustments |
 | **768px** | Header chrome | [header-nav.css:47](../../src/styles/header-nav.css#L47) | Header nav gap/margins shrink; header wraps |
-| **640px** | About page + results | [about.css:290](../../src/styles/about.css#L290), [results.css:356](../../src/styles/results.css#L356) | About hero compresses; team grid becomes 1-column; results-area tweaks |
+| **640px** | About page + dataset workspace | [about.css:290](../../src/styles/about.css#L290), [results.css:356](../../src/styles/results.css#L356) | About hero compresses; team grid becomes 1-column; results-area tweaks |
 | **480px** | Header chrome | [header-nav.css:58](../../src/styles/header-nav.css#L58) | Header nav reflows to full-width row below logo |
 
 ### Main-app breakpoint: 900px
@@ -317,7 +317,7 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 Pick the home that matches the scope of the rule:
 
 1. **Main-app layout** (workspace, sidebar, content area) → `responsive.css` under the existing `@media (max-width: 900px)` block
-2. **Feature-internal** (e.g., panel slot rearrangement, results table) → the feature's own file (`panel.css`, `results.css`) at the breakpoint already in use there
+2. **Feature-internal** (e.g., panel slot rearrangement, dataset workspace table) → the feature's own file (`panel.css`, `results.css`) at the breakpoint already in use there
 3. **About page** → `about.css` (1024px or 640px blocks)
 4. **Header chrome** (nav, logo, language switcher) → `header-nav.css` (768px or 480px blocks)
 5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.active`) over new breakpoints when the difference is interaction-driven, not viewport-driven
