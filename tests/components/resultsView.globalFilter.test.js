@@ -30,7 +30,7 @@ vi.mock('../../src/config/chartDefaults.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 
-vi.mock('../../src/features/chartFeatures.js', () => ({
+vi.mock('../../src/components/results/chartsView.js', () => ({
 	renderCharts: mocks.renderCharts,
 }));
 

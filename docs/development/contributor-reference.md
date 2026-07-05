@@ -2,14 +2,14 @@
 
 Detailed contributor notes for CHIVE. Start with
 [CONTRIBUTING.md](../../CONTRIBUTING.md); use this file when a change needs the
-deeper rules behind documentation, JSDoc, architecture lint guards, code
-placement, testing, or debugging.
+deeper rules behind documentation, JSDoc, architecture lint guards, testing,
+or debugging.
 
 | Field | Value |
 |---|---|
 | Audience | Contributors and maintainers changing code, tests, or documentation. |
-| Source of truth | Detailed JSDoc conventions, lint guard explanations, code placement guidance, testing notes, and debugging helpers. |
-| Update when | Architecture guards, JSDoc style, code ownership, test setup, or debug exports change. |
+| Source of truth | Detailed JSDoc conventions, lint guard explanations, testing notes, and debugging helpers. |
+| Update when | Architecture guards, JSDoc style, test setup, or debug exports change. |
 
 ## Documentation And JSDoc Conventions
 
@@ -66,7 +66,7 @@ The architecture invariants in [CONTRIBUTING.md](../../CONTRIBUTING.md) are
 enforced partly by lint and partly by review.
 
 **The write-facade boundary is enforced by lint.** ESLint (`npm run lint`)
-restricts renderer and DOM-builder files (`src/components/`, `src/features/`,
+restricts renderer and DOM-builder files (`src/components/`,
 `src/modules/visualizations/`, and an explicit list of presentation files under
 `src/modules/panelSubsystem/`; see [`eslint.config.js`](../../eslint.config.js))
 to read-only imports from `modules/state/appState.js`: the `get*` functions,
@@ -132,14 +132,8 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
 
 ## Where Do I Put New Code?
 
-| If you're adding... | Put it in | Notes |
-|---|---|---|
-| A new chart type | `src/modules/visualizations/{name}.js` + `src/modules/chartControls/{name}Controls.js` | Register in `chartControls/chartControlsManager.js` and `config/chartDefaults.js`. Document its data contract, modes, and empty states in [Chart and data reference](../user/chart-reference.md). |
-| A new state field | The relevant domain in `src/modules/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
-| A new DOM event handler | The matching workflow file under `src/modules/eventHandlers/` (or an existing feature manager) | Translate the event into a facade call. Never mutate state directly. Register a global `document`/`window` listener once behind a module-level guard so a repeated `setup*` call cannot stack duplicates. |
-| A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
-| A pure helper | `src/utils/` | No DOM access. No state imports. |
-| A new derived selector | The facade that owns the underlying domain | Keep getters thin; do not compute heavy aggregates inside them. |
+The code placement table, source tree layout, and naming vocabulary live in
+the [Source map](source-map.md#where-do-i-put-new-code).
 
 ## Testing
 

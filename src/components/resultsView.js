@@ -15,9 +15,9 @@
 import { t, getLocale, translateType } from '../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
 import { CHART_CONTAINERS } from '../config/elementIds.js';
-import { renderCharts } from '../features/chartFeatures.js';
 import { getNumericColumns } from '../utils/columnHelpers.js';
 
+import { renderCharts } from './results/chartsView.js';
 import { updateTabs } from './results/tabsView.js';
 import { renderTablePreview } from './results/tablePreviewView.js';
 import { renderStats, renderCategoricalStats } from './results/statsView.js';

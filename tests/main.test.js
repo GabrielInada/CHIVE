@@ -80,10 +80,13 @@ vi.mock('../src/components/resultsView.js', () => ({
 	renderFileList: mocks.renderFileList,
 }));
 
-vi.mock('../src/features/chartFeatures.js', () => ({
+vi.mock('../src/components/results/chartsView.js', () => ({
+	renderCharts: mocks.renderCharts,
+}));
+
+vi.mock('../src/modules/chartControls/chartControlsManager.js', () => ({
 	initChartControls: mocks.initChartControls,
 	renderChartControlsSidebar: mocks.renderChartControlsSidebar,
-	renderCharts: mocks.renderCharts,
 }));
 
 vi.mock('../src/utils/columnHelpers.js', () => ({

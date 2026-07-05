@@ -164,6 +164,8 @@ read state through getters; what render itself never does is write.
 - [Architecture Reference](architecture-reference.md): exact state schema,
   facade method index, event registry, subscriber map, mutation rules, panel
   lifecycle, and implementation checklists.
+- [Source map](source-map.md): source tree layout, naming vocabulary, and
+  where new code goes.
 - [CONTRIBUTING.md](../../CONTRIBUTING.md): development workflow, architecture
   invariants, lint rules, tests, and debugging helpers.
 - [Stylesheet organization](styles.md): CSS

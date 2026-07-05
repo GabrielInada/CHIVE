@@ -33,7 +33,8 @@ renderEmptyState,
 renderDataInterface,
 renderFileList,
 } from './components/resultsView.js';
-import { initChartControls, renderChartControlsSidebar, renderCharts } from './features/chartFeatures.js';
+import { renderCharts } from './components/results/chartsView.js';
+import { initChartControls, renderChartControlsSidebar } from './modules/chartControls/chartControlsManager.js';
 import { getNumericColumns } from './utils/columnHelpers.js';
 import { rehydratePanelChartSpecs } from './utils/panelHydration.js';
 import { throttle } from './utils/throttle.js';

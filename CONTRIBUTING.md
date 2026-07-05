@@ -2,7 +2,7 @@
 
 Welcome. This document is the contributor's rulebook. Read it before opening your first PR.
 
-For end-user setup and deployment, see [README.md](README.md) and the [documentation hub](docs/README.md). For the architectural shape of the codebase, see [Architecture overview](docs/development/architecture.md). For exact state, facade, event, and subscriber details, see [Architecture reference](docs/development/architecture-reference.md). For detailed JSDoc, lint, code placement, testing, and debugging notes, see [Contributor reference](docs/development/contributor-reference.md).
+For end-user setup and deployment, see [README.md](README.md) and the [documentation hub](docs/README.md). For the architectural shape of the codebase, see [Architecture overview](docs/development/architecture.md). For exact state, facade, event, and subscriber details, see [Architecture reference](docs/development/architecture-reference.md). For source tree layout, naming, and code placement, see the [Source map](docs/development/source-map.md). For detailed JSDoc, lint, testing, and debugging notes, see [Contributor reference](docs/development/contributor-reference.md).
 
 > [!CAUTION]
 > Issues and PRs that don't follow the guidelines below may be closed until they match the expected shape.
@@ -125,8 +125,9 @@ Lint guard details and the known aliasing gap are documented in
 
 ## Where do I put new code?
 
-See [Contributor reference](docs/development/contributor-reference.md#where-do-i-put-new-code)
-for the code placement table.
+See the [Source map](docs/development/source-map.md#where-do-i-put-new-code)
+for the code placement table, the source tree layout, and the naming
+vocabulary.
 
 ## Testing
 
