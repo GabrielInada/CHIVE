@@ -95,6 +95,31 @@ describe('ingestFile', () => {
 		expect(worker.postMessages[0].options).toEqual({ rowLimit: 100, dropColumns: ['drop_me'] });
 	});
 
+	it('uses a counter fallback for worker message ids when crypto.randomUUID is unavailable', async () => {
+		const originalCrypto = globalThis.crypto;
+		vi.stubGlobal('crypto', {});
+		const randomSpy = vi.spyOn(Math, 'random').mockImplementation(() => {
+			throw new Error('Math.random should not be called for ingest ids');
+		});
+
+		try {
+			worker.onPost((data, w) => {
+				expect(data.id).toMatch(/^ingest-\d+-\d+$/);
+				queueMicrotask(() => {
+					w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
+				});
+			});
+
+			const result = await ingestFile({ kind: 'csv', text: 'x' });
+
+			expect(result.ok).toBe(true);
+			expect(randomSpy).not.toHaveBeenCalled();
+		} finally {
+			randomSpy.mockRestore();
+			vi.stubGlobal('crypto', originalCrypto);
+		}
+	});
+
 	it('resolves with cancelled when the AbortSignal fires before done', async () => {
 		const controller = new AbortController();
 

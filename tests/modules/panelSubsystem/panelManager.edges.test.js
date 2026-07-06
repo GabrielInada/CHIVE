@@ -20,10 +20,7 @@ const mocks = vi.hoisted(() => ({
 			selectedColumns: ['a'],
 			chartConfig: {},
 		})),
-		addChartSnapshot: vi.fn((_snap) => {
-			const id = Math.random();
-			return id;
-		}),
+		addChartSnapshot: vi.fn(() => 'chart-id'),
 		removeChartSnapshot: vi.fn(),
 		getChartSnapshot: vi.fn(),
 		assignChartToPanelBlockSlot: vi.fn(),

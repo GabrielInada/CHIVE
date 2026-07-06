@@ -1,0 +1,6 @@
+name: CHIVE CodeQL config
+
+paths-ignore:
+  - vendor/**
+  - dist/**
+  - coverage/**

@@ -4,9 +4,8 @@
  * Structural-equivalence guard for the networkGraph data-model extraction.
  *
  * Unlike the other renderers, network cannot use a full `outerHTML` snapshot:
- * it starts a D3 force simulation that mutates node positions asynchronously
- * and uses `Math.random()` for per-link gradient ids. So this guard mocks
- * `Math.random`, stops the simulation after each render, and pins only
+ * it starts a D3 force simulation that mutates node positions asynchronously.
+ * So this guard stops the simulation after each render, and pins only
  * immediately-stable structure derived from `buildNetworkData` (the thing the
  * extraction moves): the result object, the node/link counts, the node
  * ids+fills, and the link strokes. Gradient `<defs>` are created inside the
@@ -68,7 +67,6 @@ const CASES = {
 describe('networkGraph structural equivalence (pure-move guard)', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '<div id="network"></div>';
-		vi.spyOn(Math, 'random').mockReturnValue(0.42);
 	});
 
 	afterEach(() => {

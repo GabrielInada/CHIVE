@@ -65,6 +65,7 @@ export function ingestErrorMessage(reason) {
 }
 
 let workerFactory = null;
+let ingestIdCounter = 0;
 
 /**
  * Test seam, replace the worker constructor with a stub that mimics the
@@ -99,7 +100,8 @@ function generateId() {
 	if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
 		return crypto.randomUUID();
 	}
-	return `ingest-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+	ingestIdCounter += 1;
+	return `ingest-${Date.now()}-${ingestIdCounter}`;
 }
 
 /**
