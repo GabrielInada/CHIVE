@@ -144,8 +144,9 @@ above the canvas (`.chart-canvas-title`).
 ## 8. The color / scale system
 
 One uniform point color (config `color`) with `opacity` on a transparent
-`PointsMaterial`; `sizeAttenuation` keeps nearer points larger. Column
-encodings (color/size by column) are deliberately out of scope for the
+`PointsMaterial`; `sizeAttenuation` keeps nearer points larger. Controls provide
+hex colors, and imported/manual config should still provide a valid Three.js
+color string. Column encodings (color/size by column) are deliberately out of scope for the
 pilot. The positional scales are plain `scaleLinear` per axis onto
 `[-1, 1]`; zero-span (constant) columns are padded so positions stay
 finite.
@@ -173,7 +174,7 @@ page scroll, and the canvas has `touch-action: none` so touch drags do not
 fight scrolling. Touch pinch-zoom is a documented pilot gap; hover
 tooltips (raycaster hit-testing) are deferred.
 
-## 11. SVG and export
+## 11. Export behavior
 
 There is none yet, deliberately. The chart block ships without a download
 button, and the panel exporter counts canvas slots in `omittedChartCount`

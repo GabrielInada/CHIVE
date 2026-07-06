@@ -235,8 +235,8 @@ blend, section 2.4). Optional node-id `<text>` labels and a source/target legend
 
 On every simulation tick the renderer updates edge endpoints, node centers, label positions,
 and (in gradient mode) each edge gradient's coordinates, and repositions any pinned tooltip.
-This is the animation: the graph visibly relaxes from its initial random positions into the
-settled layout as alpha decays.
+This is the animation: the graph visibly relaxes from D3's deterministic initial placement
+into the settled layout as alpha decays.
 
 ### 7.5 Interaction: drag, zoom, hover, filter
 
@@ -289,9 +289,10 @@ own interaction layer on top of that.
 
 Pure SVG: a `<defs>` of per-edge `<linearGradient>`s, a `<g>` of edge `<line>`s, a `<g>` of
 node `<circle>`s (drag-enabled), optional `<text>` labels, and a legend, all under a zoomable
-viewport `<g>`. The panel exporter clones the live `<svg>` at its current settled state; there
-is no separate export path. A panel snapshot captures the data and config, so a re-rendered
-panel network re-runs its own simulation from that snapshot.
+viewport `<g>`. The panel exporter clones the live `<svg>` in its current rendered state; it
+does not wait for the simulation to settle and has no separate export path. A panel snapshot
+captures the data and config, so a re-rendered panel network re-runs its own simulation from
+that snapshot.
 
 ---
 

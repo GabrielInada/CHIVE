@@ -225,7 +225,8 @@ to 80 chars). In grouped mode with no nesting columns (and no legacy `groupColum
 rows to one bubble per category, each carrying its measured value, its top-level group, and
 its full nesting path. Sum/mean without a usable value column returns `'no-value-column'`; no
 parseable values returns `'no-numeric'`. Bubbles are sorted descending by value (with a stable
-tiebreaker) and capped to `topN`.
+tiebreaker) and capped to `topN`. The helper does not filter zero or negative aggregates
+before the D3 pack layout, so sum/mean mode is intended for non-negative measures.
 
 ### 7.3 Hierarchy and pack layout
 
@@ -311,6 +312,8 @@ The panel exporter clones the live `<svg>`; there is no separate export path.
   mode.").
 - **Missing/empty values** normalize to `N/A` groups and categories.
 - **Legacy `groupColumn`** is transparently treated as a one-level `nestingColumns`.
+- **Non-positive sum/mean aggregates** are not filtered by CHIVE before packing; use
+  non-negative value columns for meaningful bubble area.
 - **Drill-down resets** on every render (the chart is stateless).
 - **Frozen panel snapshots**: panel bubbles carry no filter actions.
 

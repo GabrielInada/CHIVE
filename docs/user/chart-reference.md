@@ -64,7 +64,8 @@ Required columns and behavior below are taken from the renderers in
 - **Optional settings:** sort order, top N, color mode (uniform / gradient), X and Y axis
   label toggles.
 - **Aggregation behavior:** `count` counts rows per category. `sum` and `mean` require a
-  numeric value column and aggregate that column per category.
+  numeric value column and aggregate that column per category. Signed values are allowed,
+  but bar sum/mean mode is clearest for measures that compare from a zero baseline.
 - **Good sample dataset:** Iris (category `Species`), Amazonian Trees (`family` with
   `abundance` or `biomass_kg`).
 - **Common empty states:** no category selected; `sum`/`mean` selected without a numeric
@@ -94,7 +95,8 @@ Required columns and behavior below are taken from the renderers in
 - **Optional settings:** inner radius (pie vs donut), outer radius, pad angle, top N with an
   "other" or truncate mode, category/value labels, legend, per-slice color overrides.
 - **Aggregation behavior:** `count` sizes slices by row count; `sum` sizes them by a numeric
-  value column.
+  value column. Use non-negative values for meaningful part-to-whole pies; zero or negative
+  category sums are not filtered before the D3 pie layout.
 - **Good sample dataset:** Iris (`Species`).
 - **Common empty states:** no categorical column; `sum` mode without a numeric value column.
 
@@ -108,8 +110,8 @@ Required columns and behavior below are taken from the renderers in
   (all / hover / auto), nesting mode (flat / grouped), nesting columns for progressive
   hierarchy, color scheme.
 - **Aggregation behavior:** `count` sizes bubbles by row count; `sum`/`mean` size them by a
-  numeric value column. In grouped nesting mode the nesting columns define the hierarchy and
-  drill-down.
+  numeric value column. Use non-negative values when bubble area should encode magnitude. In
+  grouped nesting mode the nesting columns define the hierarchy and drill-down.
 - **Good sample dataset:** Amazon Multi-level Nesting (`ecoregion → forestType → family →
   genus` with `abundance`), Amazonian Trees for a flat view.
 - **Common empty states:** no category; `sum`/`mean` without a numeric value column; grouped

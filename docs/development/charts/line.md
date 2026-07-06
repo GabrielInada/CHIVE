@@ -53,9 +53,9 @@ The X axis is classified from the column's detected type:
 - **categorical**: an ordinal point scale (`scalePoint`), evenly spacing discrete categories
   along the axis.
 
-Y is always numeric on a linear scale. Its domain includes **zero** (the minimum is clamped
-to at most 0), because a line chart's vertical position is read against a baseline and hiding
-zero exaggerates change.
+Y is always numeric on a linear scale. For positive or mixed-positive data, the lower bound
+is clamped to include **zero**. All-negative data stays in its negative range because the
+renderer only clamps the lower bound, not the upper bound.
 
 ### 2.3 Curve interpolation: what happens between points
 
@@ -304,7 +304,8 @@ markers, and `<g>` axes with cloned gridline `<line>`s. The panel exporter clone
 - **No finite Y values** → `fail('no-numeric')`, mapped to `chive-chart-empty-line-numeric`
   ("Select a numeric Y column with finite values to render the line chart.").
 - **Invalid dates** are dropped during point building; a degenerate numeric X domain is padded.
-- **Zero baseline**: the y domain always includes 0.
+- **Zero baseline**: positive or mixed-positive data includes 0; all-negative data keeps a
+  negative-only domain.
 - **Stateless renders** and **frozen panel snapshots** behave as for every chart.
 
 Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-line*`);

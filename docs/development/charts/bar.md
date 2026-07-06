@@ -295,7 +295,9 @@ on success or `fail(reason)` when it cannot draw. The pipeline in order:
 - **sum / mean mode**: requires `valueColumn` and that the rows actually carry that column,
   else `fail('no-value-column')`. Each row's value is `Number(...)`; non-finite values are
   skipped. A second `Map` tracks the per-category count so mean can divide. If, after this,
-  no category accumulated anything, `fail('no-numeric')`.
+  no category accumulated anything, `fail('no-numeric')`. Negative category totals are not
+  specially handled; bar sum/mean mode is clearest for measures that compare from a zero
+  baseline.
 
 ### 7.3 Sort, Top-N, and the empty guard
 
@@ -417,6 +419,8 @@ screen shows are what gets serialized.
   sum or mean mode.").
 - **Missing/empty categories** collapse into a single `N/A` bar, never many empty bars.
 - **Equal measures** keep a deterministic order via the `compareStrings` tiebreaker.
+- **Negative sum/mean aggregates** are allowed by aggregation, but the renderer keeps a
+  zero-based bar scale; use signed measures with care.
 - **Invalid colors** fall back through `isValidHexColor` to the chart's default color.
 - **Stateless renders**: the container is fully wiped each call, so any caller can re-render
   at any time safely.

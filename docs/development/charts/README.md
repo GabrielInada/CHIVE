@@ -48,7 +48,7 @@ one you can navigate any of them:
 8. The color / scale system
 9. Performance notes
 10. Live preview and interaction
-11. SVG and export
+11. Export behavior
 12. Invariants and edge cases
 13. Tests
 14. Quick reference (element IDs, DOM structure, tuning knobs)

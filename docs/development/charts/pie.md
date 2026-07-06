@@ -52,15 +52,18 @@ the bar chart uses (see the bar doc's [section 2.2](bar.md)); the pie just omits
 
 ### 2.2 From value to angle
 
-Each slice's angle is its value's fraction of the grand total, swept around the full circle:
+For positive sector values, each slice's angle is its value's fraction of the positive grand
+total, swept around the full circle:
 
 ```
 sliceAngle = (value / total) · 2π
 ```
 
-So the wedges always sum to a full turn, which is exactly why a pie reads as "parts of one
-whole." The `pie()` layout generator turns the sorted values into start/end angles, and the
-`arc()` generator turns each angle pair plus an inner and outer radius into an SVG path.
+So the wedges sum to a full turn when the rendered values are positive, which is exactly why a
+pie reads as "parts of one whole." Sum mode should be used with non-negative measures; the
+renderer does not currently filter negative category totals before handing values to D3. The
+`pie()` layout generator turns the sorted values into start/end angles, and the `arc()`
+generator turns each angle pair plus an inner and outer radius into an SVG path.
 
 ### 2.3 Donut, pad angle, and radius
 
@@ -226,8 +229,9 @@ On failure it shows `chive-chart-empty-pie-sum` for `sum-no-numeric`, else
 Returns `fail()` if container or category is missing. Options are clamped (colors validated,
 radii/pad-angle/zoom clamped to `PIE_CHART` bounds, height to 220 to 720, title to 80 chars).
 A `Map` aggregates count or sum per category (sum skips rows whose value is non-finite, and
-needs `valueColumn`). Entries are sorted descending by value with a `compareStrings`
-tiebreaker. No entries → `fail('sum-no-numeric')` in sum mode, else `fail()`.
+needs `valueColumn`). It does not filter zero or negative sums; D3's pie layout allocates
+proportional angle only to positive values. Entries are sorted descending by value with a
+`compareStrings` tiebreaker. No entries → `fail('sum-no-numeric')` in sum mode, else `fail()`.
 
 ### 7.2 Top-N
 
@@ -312,7 +316,9 @@ there is no separate export path.
   mapped to `chive-chart-empty-pie-sum` ("Select a visible numeric value column to render
   pie/donut in sum mode.").
 - **Missing/empty categories** collapse into a single `N/A` wedge.
-- **Top-N other** keeps the circle at 100%; **truncate** does not.
+- **Top-N other** keeps the rendered positive-value circle at 100%; **truncate** does not.
+- **Non-positive sum aggregates** are not filtered by CHIVE before the D3 pie layout; use
+  non-negative value columns for meaningful part-to-whole pies.
 - **Inner radius** is always kept below the outer radius so a donut never inverts.
 - **Tiny slices** are left unlabeled rather than drawing illegible text.
 - **Stateless renders** and **frozen panel snapshots** behave as for every chart (panel

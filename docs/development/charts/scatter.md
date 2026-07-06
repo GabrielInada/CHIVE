@@ -58,8 +58,9 @@ categorical rather than numeric.
 ### 2.1 The point cloud and what it shows
 
 Each row maps to a point. With both axes numeric, position is the encoding and the eye reads
-covariation directly. The chart deliberately does not connect or aggregate points (that is
-the line and bar charts' job); it shows the raw joint distribution of two variables.
+covariation directly. The chart deliberately does not connect points. It usually shows the raw
+joint distribution of two variables, except for the explicit two-categorical-axis aggregate
+mode described in section 2.7.
 
 ### 2.2 Axis types: numeric vs categorical
 
