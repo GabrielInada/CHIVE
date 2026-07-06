@@ -90,6 +90,10 @@ const BARE_IMPORT_BANS = [
 		name: 'banana-i18n',
 		message: 'Import the checked-in vendor module (`vendor/banana-i18n/banana-i18n.js`) via a relative path. A bare specifier only resolves under a bundler and breaks raw-static hosting.',
 	},
+	{
+		name: 'three',
+		message: 'Import the checked-in vendor module (`vendor/three/three.module.js`) via a relative path. A bare "three" specifier only resolves under a bundler and breaks raw-static hosting.',
+	},
 ];
 
 const VITE_ONLY_SYNTAX_SELECTORS = [
@@ -154,6 +158,9 @@ const TEST_GLOBALS = {
 	queueMicrotask: 'readonly',
 	DOMException: 'readonly',
 	HTMLAnchorElement: 'readonly',
+	// Canvas-chart interaction tests dispatch wheel/pointer events.
+	WheelEvent: 'readonly',
+	PointerEvent: 'readonly',
 };
 
 export default [
@@ -235,6 +242,55 @@ export default [
 					group: ['**/state/appState.js'],
 					allowImportNames: APP_STATE_READS,
 					message: STATELESS_RENDERER_MESSAGE,
+				}],
+			}],
+		},
+	},
+
+	// (B3) Per-chart package leaf files (src/charts/<name>/): data, options,
+	// scales, and math stay pure D3 math, interaction.js stays pure
+	// camera/input mechanics, and renderers draw from explicit inputs only.
+	// None of them may reach modules/, components/, or services/ (config,
+	// utils, and vendor modules only). Localized strings arrive through
+	// options.labels; state never enters a renderer.
+	{
+		files: [
+			'src/charts/*/data.js',
+			'src/charts/*/options.js',
+			'src/charts/*/scales.js',
+			'src/charts/*/math.js',
+			'src/charts/*/interaction.js',
+			'src/charts/*/renderers/**/*.js',
+		],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/modules/**', '**/components/**', '**/services/**'],
+					message: 'Chart package leaf files import only config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
+				}],
+			}],
+		},
+	},
+
+	// (B4) Per-chart package integration files: sections/adapters receive
+	// props and callbacks, never state; controls write through the shared
+	// chartControls helpers, which remain the config-write adapter. No
+	// panel internals and no workspace components (the container lifecycle
+	// and chart-message helpers live in utils for exactly this reason).
+	{
+		files: [
+			'src/charts/*/workspaceSection.js',
+			'src/charts/*/panelAdapter.js',
+			'src/charts/*/presentation.js',
+			'src/charts/*/controls/**/*.js',
+		],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/state/appState.js', '**/modules/state/**', '**/modules/panelSubsystem/**', '**/components/**'],
+					message: 'Chart package integration files do not import state, panel internals, or workspace components. Receive props/callbacks; controls write only through the shared chartControls helpers.',
 				}],
 			}],
 		},

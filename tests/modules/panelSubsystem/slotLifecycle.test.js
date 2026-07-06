@@ -16,6 +16,7 @@ const tooltipMock = vi.hoisted(() => ({
 vi.mock('../../../src/modules/visualizations/tooltip.js', () => tooltipMock);
 
 import { mountSlot, teardownSlot, teardownAllSlots } from '../../../src/modules/panelSubsystem/slotLifecycle.js';
+import { CHART_DISPOSE_HOOK } from '../../../src/utils/chartContainerLifecycle.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 
@@ -126,6 +127,39 @@ describe('slotLifecycle', () => {
 		FakeResizeObserver.instances[0].trigger();
 
 		expect(dispatch.renderChartFromSpec).toHaveBeenCalledWith(container, spec);
+	});
+
+	it('teardownSlot runs a stashed chart dispose hook and removes it', () => {
+		const container = document.createElement('div');
+		mountSlot(container, { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] });
+		const dispose = vi.fn();
+		container[CHART_DISPOSE_HOOK] = dispose;
+		container.innerHTML = '<canvas></canvas>';
+
+		teardownSlot(container);
+
+		expect(dispose).toHaveBeenCalledTimes(1);
+		expect(container[CHART_DISPOSE_HOOK]).toBeUndefined();
+		expect(container.innerHTML).toBe('');
+	});
+
+	it('the resize re-render runs the dispose hook before the replacement render', () => {
+		const container = document.createElement('div');
+		const spec = { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] };
+		mountSlot(container, spec);
+		dispatch.renderChartFromSpec.mockClear();
+
+		const callOrder = [];
+		container[CHART_DISPOSE_HOOK] = vi.fn(() => callOrder.push('dispose'));
+		dispatch.renderChartFromSpec.mockImplementationOnce(() => {
+			callOrder.push('render');
+			return { ok: true };
+		});
+
+		FakeResizeObserver.instances[0].trigger();
+
+		expect(callOrder).toEqual(['dispose', 'render']);
+		expect(container[CHART_DISPOSE_HOOK]).toBeUndefined();
 	});
 
 	it('mountSlot tearing down a previous mount before re-mounting (replace flow)', () => {

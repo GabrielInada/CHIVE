@@ -121,6 +121,7 @@ function setupEmptyStateDom() {
 		<div id="chart-treemap-container"><svg></svg></div>
 		<div id="chart-line-container"><svg></svg></div>
 		<div id="chart-tin-container"><svg></svg></div>
+		<div id="chart-scatter3d-container"><canvas></canvas></div>
 		<span id="badge-charts">7</span>
 		<button id="btn-advance"></button>
 		<div id="dev-warning"></div>

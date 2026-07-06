@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
 		treemap: { enabled: false, expanded: false },
 		line: { enabled: false, expanded: false },
 		tin: { enabled: false, expanded: false },
+		scatter3d: { enabled: false, expanded: false },
 		...(config || {}),
 	})),
 	onStateChange: vi.fn(),
@@ -38,6 +39,8 @@ const mocks = vi.hoisted(() => ({
 	setupLineChartControlListeners: vi.fn(),
 	createTinControls: vi.fn(() => []),
 	setupTinControlListeners: vi.fn(),
+	createScatter3dControls: vi.fn(() => []),
+	setupScatter3dControlListeners: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -109,6 +112,13 @@ vi.mock('../../../src/modules/chartControls/tinControls.js', async (importOrigin
 	setupTinControlListeners: mocks.setupTinControlListeners,
 }));
 
+vi.mock('../../../src/charts/scatter3d/controls/builder.js', () => ({
+	createScatter3dControls: mocks.createScatter3dControls,
+}));
+vi.mock('../../../src/charts/scatter3d/controls/listeners.js', () => ({
+	setupScatter3dControlListeners: mocks.setupScatter3dControlListeners,
+}));
+
 vi.mock('../../../src/modules/chartControls/previews.js', () => ({
 	PREVIEW_BAR_SVG: '<svg id="prev-bar" />',
 	PREVIEW_BUBBLE_SVG: '<svg id="prev-bubble" />',
@@ -118,6 +128,7 @@ vi.mock('../../../src/modules/chartControls/previews.js', () => ({
 	PREVIEW_TREEMAP_SVG: '<svg id="prev-treemap" />',
 	PREVIEW_LINE_SVG: '<svg id="prev-line" />',
 	PREVIEW_TIN_SVG: '<svg id="prev-tin" />',
+	PREVIEW_SCATTER3D_SVG: '<svg id="prev-scatter3d" />',
 }));
 
 vi.mock('../../../src/components/datasetWorkspace/chartTypePickerDialog.js', () => ({
@@ -146,6 +157,7 @@ function configWithActive(activeType) {
 		treemap: { enabled: activeType === 'treemap' },
 		line: { enabled: activeType === 'line' },
 		tin: { enabled: activeType === 'tin' },
+		scatter3d: { enabled: activeType === 'scatter3d' },
 	};
 }
 
@@ -192,6 +204,7 @@ describe('renderChartControlsSidebar', () => {
 		['treemap', 'createTreeMapControls', 'setupTreeMapControlListeners'],
 		['line', 'createLineChartControls', 'setupLineChartControlListeners'],
 		['tin', 'createTinControls', 'setupTinControlListeners'],
+		['scatter3d', 'createScatter3dControls', 'setupScatter3dControlListeners'],
 	])('renders and wires %s controls through the registry', (chartType, buildMock, listenerMock) => {
 		mocks.mergeChartConfigWithDefaults.mockReturnValueOnce(configWithActive(chartType));
 

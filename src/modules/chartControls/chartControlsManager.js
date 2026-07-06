@@ -38,6 +38,9 @@ import { createScatterPlotControls, setupScatterPlotControlListeners, computeDef
 import { createPieChartControls, setupPieChartControlListeners, computeDefaults as computePieDefaults } from './pieControls.js';
 import { createTreeMapControls, setupTreeMapControlListeners, computeDefaults as computeTreemapDefaults } from './treemapControls.js';
 import { createTinControls, setupTinControlListeners, computeDefaults as computeTinDefaults } from './tinControls.js';
+import { createScatter3dControls } from '../../charts/scatter3d/controls/builder.js';
+import { setupScatter3dControlListeners } from '../../charts/scatter3d/controls/listeners.js';
+import { computeDefaults as computeScatter3dDefaults } from '../../charts/scatter3d/controls/defaults.js';
 import { CHART_TYPES } from './chartTypes.js';
 import { renderChartParamsDOM } from '../../components/datasetWorkspace/chartParamsView.js';
 import { openChartTypePickerDialog } from '../../components/datasetWorkspace/chartTypePickerDialog.js';
@@ -284,6 +287,11 @@ const CHART_CONTROL_REGISTRY = {
 		build: (ds, ctx) => createTinControls(ds, ctx.numeric, ctx.allColumns),
 		attachListeners: (ds, ctx, cb) => setupTinControlListeners(ds, ctx.numeric, ctx.allColumns, cb),
 		computeDefaults: computeTinDefaults,
+	},
+	scatter3d: {
+		build: (ds, ctx) => createScatter3dControls(ds, ctx.numeric, ctx.allColumns),
+		attachListeners: (ds, ctx, cb) => setupScatter3dControlListeners(ds, ctx.numeric, ctx.allColumns, cb),
+		computeDefaults: computeScatter3dDefaults,
 	},
 };
 

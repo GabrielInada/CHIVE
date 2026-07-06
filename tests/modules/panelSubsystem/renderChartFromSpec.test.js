@@ -11,6 +11,7 @@ const renderers = vi.hoisted(() => ({
 	renderScatterPlot: vi.fn(() => ({ ok: true })),
 	renderTreeMap: vi.fn(() => ({ ok: true })),
 	renderTinChart: vi.fn(() => ({ ok: true })),
+	renderScatter3dPanelChart: vi.fn(() => ({ ok: true })),
 }));
 
 vi.mock('../../../src/modules/visualizations/barChart.js', () => ({ renderBarChart: renderers.renderBarChart }));
@@ -21,6 +22,7 @@ vi.mock('../../../src/modules/visualizations/pieChart.js', () => ({ renderPieCha
 vi.mock('../../../src/modules/visualizations/scatterPlot.js', () => ({ renderScatterPlot: renderers.renderScatterPlot }));
 vi.mock('../../../src/modules/visualizations/tinChart.js', () => ({ renderTinChart: renderers.renderTinChart }));
 vi.mock('../../../src/modules/visualizations/treemapChart.js', () => ({ renderTreeMap: renderers.renderTreeMap }));
+vi.mock('../../../src/charts/scatter3d/panelAdapter.js', () => ({ renderScatter3dPanelChart: renderers.renderScatter3dPanelChart }));
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: vi.fn((key) => key),
 	getLocale: vi.fn(() => 'en'),
@@ -55,7 +57,14 @@ describe('renderChartFromSpec', () => {
 	});
 
 	it('exposes the supported renderer types', () => {
-		expect(SUPPORTED_PANEL_CHART_TYPES).toEqual(['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin']);
+		expect(SUPPORTED_PANEL_CHART_TYPES).toEqual(['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin', 'scatter3d']);
+	});
+
+	it('dispatches scatter3d to the package panel adapter with the whole spec', () => {
+		const spec = makeSpec('scatter3d', { x: 'a', y: 'b', z: 'a' });
+		renderChartFromSpec(container, spec);
+		expect(renderers.renderScatter3dPanelChart).toHaveBeenCalledTimes(1);
+		expect(renderers.renderScatter3dPanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
 	it('returns invalid-args when container or spec is missing', () => {

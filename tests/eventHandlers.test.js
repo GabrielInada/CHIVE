@@ -226,6 +226,7 @@ function fullChartConfig(overrides = {}) {
     },
     line: { x: 'date', y: 'visits', curve: 'monotone', customTitle: '', ...overrides.line },
     tin: { x: 'x', y: 'y', z: 'elevation', customTitle: '', ...overrides.tin },
+    scatter3d: { x: 'width', y: 'height', z: 'depth', customTitle: '', ...overrides.scatter3d },
   };
 }
 
@@ -536,6 +537,7 @@ describe('eventHandlers', () => {
     ['treemap', { treemap: { measureMode: 'sum', valueColumn: 'biomass' } }, { measureMode: 'sum', valueColumn: 'biomass' }],
     ['line', {}, { x: 'date', y: 'visits', curve: 'monotone' }],
     ['tin', {}, { x: 'x', y: 'y', z: 'elevation' }],
+    ['scatter3d', {}, { x: 'width', y: 'height', z: 'depth' }],
   ])('builds add-panel snapshot metadata for %s charts', (type, overrides, expected) => {
     initializeAllEventHandlers();
     mocks.getActiveDataset.mockReturnValue({

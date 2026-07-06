@@ -86,7 +86,7 @@ Canvas layout, chart placement, and block management.
 | File | Bundled via | Purpose |
 |------|-------------|---------|
 | `panel.css` | `visual-output.css` | Panel layout, block styling, slot borders, drag-drop |
-| `charts.css` | `visual-output.css` | Chart controls, D3 containers, SVG base styles |
+| `charts.css` | `visual-output.css` | Chart controls, chart containers (SVG and WebGL canvas), canvas chart title/notice styles, the `.visually-hidden` a11y utility |
 | `visualizations.css` † | `controls.css` | D3-specific: bar charts, scatter plots, axes, legends |
 
 † Listed here because the Panel feature owns it, but it is imported via `controls.css` (not `visual-output.css`) so its rules cascade in the `controls` layer.

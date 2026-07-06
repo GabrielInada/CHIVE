@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 vi.mock('../../../src/modules/chartControls/previews.js', () => ({
 	PREVIEW_BAR_SVG: '<svg data-prev="bar" />',
 	PREVIEW_SCATTER_SVG: '<svg data-prev="scatter" />',
+	PREVIEW_SCATTER3D_SVG: '<svg data-prev="scatter3d" />',
 	PREVIEW_PIE_SVG: '<svg data-prev="pie" />',
 	PREVIEW_BUBBLE_SVG: '<svg data-prev="bubble" />',
 	PREVIEW_NETWORK_SVG: '<svg data-prev="network" />',

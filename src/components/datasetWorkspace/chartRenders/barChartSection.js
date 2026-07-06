@@ -9,7 +9,7 @@
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderBarChart } from '../../../modules/visualizations/barChart.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
-import { showChartMessage } from './sharedRenderHelpers.js';
+import { clearChartContainer, showChartMessage } from '../../../utils/chartContainerLifecycle.js';
 
 /**
  * Render the bar-chart section for the current dataset.
@@ -25,7 +25,7 @@ export function renderBarChartSection({ config, rows, filterCallbacks }) {
 	const container = document.getElementById(CHART_CONTAINERS.bar);
 	if (!config.enabled) {
 		block.style.display = 'none';
-		container.replaceChildren();
+		clearChartContainer(container);
 		return;
 	}
 	block.style.display = 'block';

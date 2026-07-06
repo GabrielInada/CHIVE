@@ -17,7 +17,7 @@ import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
 
-const CHART_TYPES = ['bar', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
+const CHART_TYPES = ['bar', 'scatter', 'scatter3d', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
 
 let datasetIdCounter = 0;
 

@@ -3,9 +3,10 @@
  *
  * Renders both panel surfaces, the sidebar list of saved chart snapshots
  * and the canvas grid of layout blocks. Both surfaces are rendered from
- * scratch on every call; teardown/re-mount lifecycles for slot SVGs go
- * through `slotLifecycle.js` so D3 resources (network simulations,
- * ResizeObservers, RAF handles) get cleaned up before each re-render.
+ * scratch on every call; teardown/re-mount lifecycles for slot charts
+ * (SVG or WebGL canvas) go through `slotLifecycle.js` so chart resources
+ * (network simulations, canvas dispose hooks, ResizeObservers, RAF
+ * handles) get cleaned up before each re-render.
  *
  * Caller wiring lives in `panelManager.js`. The exports here are pure
  * rendering, they do not subscribe to state changes; the manager
@@ -35,7 +36,7 @@ import { mountSlot, teardownAllSlots } from './slotLifecycle.js';
 
 /**
  * Render the sidebar list of saved chart snapshots into
- * `#panel-chart-list`. Each item gets a thumbnail (live D3 render via
+ * `#panel-chart-list`. Each item gets a thumbnail (live chart render via
  * {@link mountSlot}) and a remove button wired to the provided callback.
  *
  * No-op when the container element is missing.
@@ -97,7 +98,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
 		topo.appendChild(titleWrap);
 		topo.appendChild(removeBtn);
 
-		// Preview section (live D3 render)
+		// Preview section (live chart render)
 		const preview = document.createElement('div');
 		preview.className = 'panel-item-preview';
 

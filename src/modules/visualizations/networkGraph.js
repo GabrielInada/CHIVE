@@ -45,6 +45,7 @@ import { appendChartTitle } from './chartScaffold.js';
 import { buildNetworkData } from './networkGraph/data.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
+let gradientRenderCounter = 0;
 
 function stopPreviousSimulation(container) {
 	const previous = container?.[SIMULATION_KEY];
@@ -114,6 +115,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 	if (network.nodes.length === 0 || network.links.length === 0) {
 		return fail('insufficient-data');
 	}
+	const gradientPrefix = `network-link-gradient-${++gradientRenderCounter}`;
 
 	container.replaceChildren();
 	hideChartTooltip();
@@ -249,7 +251,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 		.enter()
 		.append('line')
 		.each(function setGradientId(d, index) {
-			d._gradientId = `network-link-gradient-${index}-${Math.random().toString(36).slice(2, 8)}`;
+			d._gradientId = `${gradientPrefix}-${index}`;
 		})
 		.attr('stroke', d => {
 			if (edgeColorMode === 'uniform') return '#7d7d7d';

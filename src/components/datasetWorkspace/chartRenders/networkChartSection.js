@@ -5,7 +5,7 @@
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderNetworkGraph } from '../../../modules/visualizations/networkGraph.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
-import { showChartMessage } from './sharedRenderHelpers.js';
+import { clearChartContainer, showChartMessage } from '../../../utils/chartContainerLifecycle.js';
 
 /**
  * Render the network-graph section.
@@ -21,7 +21,7 @@ export function renderNetworkChartSection({ config, rows, filterCallbacks }) {
 	const container = document.getElementById(CHART_CONTAINERS.network);
 	if (!config.enabled) {
 		block.style.display = 'none';
-		container.replaceChildren();
+		clearChartContainer(container);
 		return;
 	}
 	block.style.display = 'block';

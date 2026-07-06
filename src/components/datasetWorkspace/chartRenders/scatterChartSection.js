@@ -5,7 +5,7 @@
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderScatterPlot } from '../../../modules/visualizations/scatterPlot.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
-import { showChartMessage } from './sharedRenderHelpers.js';
+import { clearChartContainer, showChartMessage } from '../../../utils/chartContainerLifecycle.js';
 
 /**
  * Render the scatter-plot section.
@@ -22,7 +22,7 @@ export function renderScatterChartSection({ config, rows, columnTypeByName, filt
 	const container = document.getElementById(CHART_CONTAINERS.scatter);
 	if (!config.enabled) {
 		block.style.display = 'none';
-		container.replaceChildren();
+		clearChartContainer(container);
 		return;
 	}
 	block.style.display = 'block';

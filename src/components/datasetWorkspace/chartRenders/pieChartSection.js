@@ -5,7 +5,7 @@
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderPieChart } from '../../../modules/visualizations/pieChart.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../config/elementIds.js';
-import { showChartMessage } from './sharedRenderHelpers.js';
+import { clearChartContainer, showChartMessage } from '../../../utils/chartContainerLifecycle.js';
 
 /**
  * Render the pie-chart section.
@@ -21,7 +21,7 @@ export function renderPieChartSection({ config, rows, filterCallbacks }) {
 	const container = document.getElementById(CHART_CONTAINERS.pie);
 	if (!config.enabled) {
 		block.style.display = 'none';
-		container.replaceChildren();
+		clearChartContainer(container);
 		return;
 	}
 	block.style.display = 'block';

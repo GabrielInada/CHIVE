@@ -13,7 +13,7 @@
  * @typedef {import('../types.js').ChartConfig} ChartConfig
  */
 
-import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, LINE_CHART, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, TIN_CHART, TREEMAP_CHART } from './charts.js';
+import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, LINE_CHART, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, SCATTER3D_CHART, TIN_CHART, TREEMAP_CHART } from './charts.js';
 import { normalizeGlobalFilter, createEmptyGlobalFilter, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
 
 /**
@@ -226,6 +226,18 @@ export function createDefaultChartConfig() {
 			showXAxisLabel: true,
 			showYAxisLabel: true,
 		},
+		scatter3d: {
+			enabled: false,
+			expanded: false,
+			x: null,
+			y: null,
+			z: null,
+			customTitle: '',
+			chartHeight: 460,
+			pointSize: SCATTER3D_CHART.defaultPointSize,
+			opacity: SCATTER3D_CHART.defaultOpacity,
+			color: CHART_COLORS.scatter3d,
+		},
 	};
 }
 
@@ -325,6 +337,10 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 		tin: {
 			...defaults.tin,
 			...asPlainObject(config.tin),
+		},
+		scatter3d: {
+			...defaults.scatter3d,
+			...asPlainObject(config.scatter3d),
 		},
 	};
 }

@@ -2,17 +2,22 @@
  * CHIVE panel SVG exporter.
  *
  * Walks the rendered `#panel-layout-canvas` and composes a single
- * standalone SVG file containing every visible slot's chart plus the
- * block borders. The output is positioned in absolute coordinates
- * relative to the canvas, what you see is what you save.
+ * standalone SVG file with the block borders and every slot chart that
+ * HAS a live SVG. Chart slots without one (canvas-based charts such as
+ * scatter3d, or failed-render empty states) are omitted and counted in
+ * the result payload so the caller can tell the user; a raster path for
+ * canvas charts is a later tranche. The output is positioned in absolute
+ * coordinates relative to the canvas.
+ *
+ * Pure with respect to user feedback: returns Results only. panelManager
+ * owns every user-facing message.
  *
  * @typedef {import('../../types.js').Result} Result
  */
 
-import { t } from '../../services/i18nService.js';
 import { downloadSvgMarkup, ensureSvgAttributes } from '../../utils/svgExport.js';
 import { normalizeHexColor } from './resizeMath.js';
-import { fail } from '../../utils/result.js';
+import { ok, fail } from '../../utils/result.js';
 
 /**
  * Export the live panel canvas as a single SVG file. Clones each slot's
@@ -20,13 +25,14 @@ import { fail } from '../../utils/result.js';
  * the canvas, adds border rectangles for blocks with borders enabled,
  * and triggers a browser download via {@link downloadSvgMarkup}.
  *
- * Catches unexpected serialization errors so the caller can surface a
- * translated message via `feedbackCallback`.
- *
- * @param {((message: string, kind?: 'success' | 'error') => void) | null | undefined} feedbackCallback - Used to surface unexpected errors; ignored when null.
- * @returns {Result} `{ ok: true }` on success. `{ ok: false, reason }` where reason is `'canvas-not-found'`, `'empty-canvas'`, or `'export-error'`.
+ * @returns {Result} `ok({ omittedChartCount })` on success, where
+ *   `omittedChartCount` is the number of chart-bearing slots that had no
+ *   SVG to include. `{ ok: false, reason }` where reason is
+ *   `'canvas-not-found'`, `'empty-canvas'`, `'no-exportable-charts'`
+ *   (chart slots exist but none contains an SVG, nothing is downloaded),
+ *   or `'export-error'`.
  */
-export function exportPanelLayoutSvg(feedbackCallback) {
+export function exportPanelLayoutSvg() {
 	const canvas = document.getElementById('panel-layout-canvas');
 	if (!canvas) {
 		return fail('canvas-not-found');
@@ -90,11 +96,19 @@ export function exportPanelLayoutSvg(feedbackCallback) {
 				svgRoot.appendChild(border);
 		});
 
-		// Add each chart in rendered slots (all blocks), clone the LIVE SVG from the DOM
+		// Add each chart in rendered slots (all blocks), clone the LIVE SVG from
+		// the DOM. Slots without one (canvas charts, failed renders) are counted
+		// as omitted rather than silently dropped.
 		const slotElements = canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]');
+		let omittedChartCount = 0;
+		let exportedChartCount = 0;
 		slotElements.forEach(slotEl => {
 			const liveSvg = slotEl.querySelector('svg');
-			if (!liveSvg) return;
+			if (!liveSvg) {
+				omittedChartCount += 1;
+				return;
+			}
+			exportedChartCount += 1;
 
 			const slotRect = slotEl.getBoundingClientRect();
 			const x = slotRect.left - rectCanvas.left;
@@ -117,12 +131,18 @@ export function exportPanelLayoutSvg(feedbackCallback) {
 			svgRoot.appendChild(docSvg.importNode(chartSvg, true));
 		});
 
-		const svgString = serializer.serializeToString(svgRoot);
-		return downloadSvgMarkup(svgString, 'panel-layout');
-	} catch {
-		if (feedbackCallback) {
-			feedbackCallback(t('chive-panel-export-error'), 'error');
+		// Chart slots exist but none produced an SVG: an export would be an
+		// empty shell, so fail before downloading anything. An empty panel
+		// (no chart-bearing slots at all) still exports its shell as before.
+		if (slotElements.length > 0 && exportedChartCount === 0) {
+			return fail('no-exportable-charts');
 		}
+
+		const svgString = serializer.serializeToString(svgRoot);
+		const downloadResult = downloadSvgMarkup(svgString, 'panel-layout');
+		if (!downloadResult.ok) return downloadResult;
+		return ok({ omittedChartCount });
+	} catch {
 		return fail('export-error');
 	}
 }

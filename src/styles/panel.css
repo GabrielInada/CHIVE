@@ -446,6 +446,13 @@
   height: 100%;
 }
 
+/* Canvas charts (scatter3d) fill their slot like SVGs do; the renderer
+   sizes the backing store itself and re-renders on slot resize. */
+.panel-slot-svg canvas {
+  width: 100%;
+  height: 100%;
+}
+
 .panel-slot-clear {
   position: absolute;
   top: 6px;

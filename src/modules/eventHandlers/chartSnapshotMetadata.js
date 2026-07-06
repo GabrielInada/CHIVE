@@ -150,6 +150,20 @@ const CHART_SNAPSHOT_BUILDERS = {
 			summary: `${t('chive-chart-control-tin-x')}: ${x} · ${t('chive-chart-control-tin-y')}: ${y} · ${t('chive-chart-control-tin-z')}: ${z}`,
 		};
 	},
+
+	scatter3d: (config) => {
+		const scatter3d = config.scatter3d || {};
+		const x = scatter3d.x || '-';
+		const y = scatter3d.y || '-';
+		const z = scatter3d.z || '-';
+		return {
+			type: 'scatter3d',
+			x,
+			y,
+			z,
+			summary: `${t('chive-chart-control-scatter3d-x')}: ${x} · ${t('chive-chart-control-scatter3d-y')}: ${y} · ${t('chive-chart-control-scatter3d-z')}: ${z}`,
+		};
+	},
 };
 
 /**

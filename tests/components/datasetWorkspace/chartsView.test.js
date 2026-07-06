@@ -15,6 +15,7 @@ const mocks = vi.hoisted(() => ({
 	renderNetworkChartSection: vi.fn(),
 	renderTreemapChartSection: vi.fn(),
 	renderTinChartSection: vi.fn(),
+	renderScatter3dChartSection: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -54,15 +55,19 @@ vi.mock('../../../src/components/datasetWorkspace/chartRenders/treemapChartSecti
 vi.mock('../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js', () => ({
 	renderTinChartSection: mocks.renderTinChartSection,
 }));
+vi.mock('../../../src/charts/scatter3d/workspaceSection.js', () => ({
+	renderScatter3dChartSection: mocks.renderScatter3dChartSection,
+}));
 
 import { renderCharts } from '../../../src/components/datasetWorkspace/chartsView.js';
 import { CHART_BLOCKS, CHART_CONTAINERS, VIEW_IDS, BADGE_IDS } from '../../../src/config/elementIds.js';
 
-const CHART_TYPES = ['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin'];
+const CHART_TYPES = ['bar', 'scatter', 'scatter3d', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin'];
 const SECTION_MOCKS = {
 	bar: 'renderBarChartSection',
 	line: 'renderLineChartSection',
 	scatter: 'renderScatterChartSection',
+	scatter3d: 'renderScatter3dChartSection',
 	pie: 'renderPieChartSection',
 	bubble: 'renderBubbleChartSection',
 	network: 'renderNetworkChartSection',
@@ -105,6 +110,7 @@ function makeConfig(overrides = {}) {
 		treemap: { enabled: false, chartHeight: 380 },
 		line: { enabled: false, chartHeight: 320 },
 		tin: { enabled: false, chartHeight: 460 },
+		scatter3d: { enabled: false, chartHeight: 460 },
 	};
 	return { ...base, ...overrides };
 }

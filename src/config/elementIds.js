@@ -14,6 +14,7 @@ export const CHART_CONTAINERS = {
 	treemap: 'chart-treemap-container',
 	line: 'chart-line-container',
 	tin: 'chart-tin-container',
+	scatter3d: 'chart-scatter3d-container',
 };
 
 // Chart block wrappers (visibility containers)
@@ -26,6 +27,7 @@ export const CHART_BLOCKS = {
 	treemap: 'chart-block-treemap',
 	line: 'chart-block-line',
 	tin: 'chart-block-tin',
+	scatter3d: 'chart-block-scatter3d',
 };
 
 // Panel elements

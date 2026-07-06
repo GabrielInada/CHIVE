@@ -17,7 +17,7 @@
 /**
  * Canonical chart-type identifiers used throughout state and config.
  *
- * @typedef {'bar' | 'scatter' | 'pie' | 'bubble' | 'network' | 'treemap' | 'line' | 'tin'} ChartTypeKey
+ * @typedef {'bar' | 'scatter' | 'scatter3d' | 'pie' | 'bubble' | 'network' | 'treemap' | 'line' | 'tin'} ChartTypeKey
  */
 
 /**
@@ -122,6 +122,7 @@
  * @property {GlobalFilter} globalFilter
  * @property {ChartTypeConfig} bar
  * @property {ChartTypeConfig} scatter
+ * @property {ChartTypeConfig} scatter3d
  * @property {ChartTypeConfig} pie
  * @property {ChartTypeConfig} bubble
  * @property {ChartTypeConfig} network

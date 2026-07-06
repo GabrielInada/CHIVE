@@ -10,10 +10,10 @@ exports[`networkGraph structural equivalence (pure-move guard) > is structurally
   "structure": {
     "linkCount": 4,
     "linkStrokes": [
-      "url(#network-link-gradient-0-f4bipx)",
-      "url(#network-link-gradient-1-f4bipx)",
-      "url(#network-link-gradient-2-f4bipx)",
-      "url(#network-link-gradient-3-f4bipx)",
+      "url(#network-link-gradient-1-0)",
+      "url(#network-link-gradient-1-1)",
+      "url(#network-link-gradient-1-2)",
+      "url(#network-link-gradient-1-3)",
     ],
     "nodeCount": 3,
     "nodes": [
@@ -78,10 +78,10 @@ exports[`networkGraph structural equivalence (pure-move guard) > is structurally
   "structure": {
     "linkCount": 4,
     "linkStrokes": [
-      "url(#network-link-gradient-0-f4bipx)",
-      "url(#network-link-gradient-1-f4bipx)",
-      "url(#network-link-gradient-2-f4bipx)",
-      "url(#network-link-gradient-3-f4bipx)",
+      "url(#network-link-gradient-2-0)",
+      "url(#network-link-gradient-2-1)",
+      "url(#network-link-gradient-2-2)",
+      "url(#network-link-gradient-2-3)",
     ],
     "nodeCount": 3,
     "nodes": [

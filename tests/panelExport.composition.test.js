@@ -167,6 +167,8 @@ describe('panel export composition (phase 2)', () => {
     const result = exportPanelLayoutSvg();
 
     expect(result.ok).toBe(true);
+    // New payload shape: every SVG-bearing slot exported, none omitted.
+    expect(result.omittedChartCount).toBe(0);
     expect(baixarSvgMarkupMock).toHaveBeenCalledTimes(1);
 
     const [svgMarkup, fileNameBase] = baixarSvgMarkupMock.mock.calls[0];
