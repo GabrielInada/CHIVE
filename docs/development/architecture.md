@@ -88,7 +88,7 @@ and
 | Feature managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (`eventHandlers`, `fileManager`, `panelManager`, `chartControls`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
 | State Management Core | `appState`, facades, event registry, event bus. | The only normal path for application state mutation. |
 | Orchestrator | Boot and broad UI refresh in `main.js`. | Wires services/modules, subscribes to broad data/config events, and schedules full-view renders. |
-| Visualization Layer | Components, D3 charts, panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
+| Visualization Layer | Components, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
 | Services And Utilities | Persistence, i18n, ingest worker host, config, pure helpers. | Services may cross side-effect boundaries; config/utils should stay leaf helpers. |
 
 The important distinction is ownership, not file layout. A feature manager may
@@ -96,10 +96,11 @@ write facades, subscribe to the bus, and trigger renders for its own domain; wha
 it must not do is reach into another domain's state. `panelManager` is a clear
 case (manager + subscriber + render-trigger); `chartControls` and `uiManager`
 build UI *and* write facades, so they are managers, not leaf renderers. The leaf
-renderers (components, D3 charts, `panelSubsystem` views) stay strictly read-only
-with respect to application state: they receive callbacks from a manager and read
-via getters, but never import write facades. A service may perform I/O, but state
-changes still route through the state core boundary.
+renderers (components, chart renderers under `src/modules/visualizations`, chart
+packages under `src/charts/*`, and `panelSubsystem` views) stay strictly
+read-only with respect to application state: they receive callbacks from a
+manager and read via getters, but never import write facades. A service may
+perform I/O, but state changes still route through the state core boundary.
 
 ## 5. Invariants
 

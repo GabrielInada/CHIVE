@@ -355,9 +355,9 @@ migration tombstone without touching `chive-locale`.
 
 ## Panel Lifecycle
 
-Panel charts are stored as snapshot specs, not as pre-rendered SVG. A snapshot
-contains `{ id, name, type, config, dataSnapshot, columnsSnapshot, metadata,
-metaSummary, createdAt }`.
+Panel charts are stored as snapshot specs, not as pre-rendered SVG or canvas
+output. A snapshot contains `{ id, name, type, config, dataSnapshot,
+columnsSnapshot, metadata, metaSummary, createdAt }`.
 
 The lifecycle is:
 
@@ -371,13 +371,17 @@ The lifecycle is:
    `renderChartFromSpec`, and attaches a `ResizeObserver` for responsive
    re-rendering.
 6. `slotLifecycle.teardownSlot` disconnects the observer, cancels a pending
-   animation frame, stops any network-graph force simulation, and clears the
-   container.
+   animation frame, stops any network-graph force simulation, hides the shared
+   tooltip, and clears the container through `clearChartContainer`, including
+   canvas/WebGL dispose hooks.
 7. `panelExporter` clones live SVG nodes from the rendered DOM when exporting.
+   Canvas/WebGL charts are omitted from the SVG export and counted; a chart
+   panel with no exportable SVG charts returns `no-exportable-charts`.
 
 `renderChartFromSpec` supports the chart types exported by
 `SUPPORTED_PANEL_CHART_TYPES`: `bar`, `scatter`, `network`, `pie`, `bubble`,
-`treemap`, `line`, and `tin`.
+`treemap`, `line`, `tin`, and `scatter3d`. Renderers mount either SVG or canvas
+output depending on the chart type.
 
 ## Adding A State Feature
 
@@ -401,8 +405,10 @@ The lifecycle is:
 4. Emit a panel event only when a subscriber must react.
 5. Keep renderer callbacks injected from `panelManager`; renderers should not
    import write facades directly.
-6. If adding a chart type to panel export/rendering, update
-   `renderChartFromSpec.js` and `SUPPORTED_PANEL_CHART_TYPES`.
+6. If adding a chart type to panel rendering, add it to the `RENDERERS` map in
+   `renderChartFromSpec.js`; `SUPPORTED_PANEL_CHART_TYPES` is derived from that
+   map. If the type changes export behavior, update `panelExporter.js` and the
+   relevant tests.
 7. Update this reference and any relevant tests.
 
 ## Debugging State Events
