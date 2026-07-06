@@ -3,9 +3,10 @@
  *
  * Manages the mount/unmount lifecycle for chart slots inside the panel.
  * Each slot tracks a `ResizeObserver` (for responsive re-render), an
- * in-flight `requestAnimationFrame` token (debounce), and any D3 force
- * simulation attached by `network` charts. The lifecycle here ensures
- * none of those leak across re-renders.
+ * in-flight `requestAnimationFrame` token (debounce), any D3 force
+ * simulation attached by `network` charts, and any dispose hook a canvas
+ * renderer stashed on the container (run via `clearChartContainer`). The
+ * lifecycle here ensures none of those leak across re-renders.
  *
  * Storage is via a module-private `WeakMap` keyed by container element so
  * removing the container from the DOM also frees the entry.
@@ -13,6 +14,7 @@
 
 import { renderChartFromSpec } from './renderChartFromSpec.js';
 import { hideChartTooltip } from '../visualizations/tooltip.js';
+import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 const slotState = new WeakMap();
@@ -82,6 +84,9 @@ export function mountSlot(container, spec) {
 			current.frame = scheduler.schedule(() => {
 				current.frame = null;
 				stopNetworkSimulation(container);
+				// Dispose-aware clear: a canvas chart's stashed dispose hook must
+				// run before the replacement render creates a fresh context.
+				clearChartContainer(container);
 				renderChartFromSpec(container, current.spec);
 			});
 		});
@@ -113,7 +118,9 @@ export function teardownSlot(container) {
 	// Clear any active/pinned tooltip so a teardown mid-pin does not orphan the
 	// document-level keydown/mousedown listeners attachPinnedListeners registers.
 	hideChartTooltip();
-	container.replaceChildren();
+	// Dispose-aware clear: runs a canvas chart's stashed dispose hook, then
+	// empties the container. SVG charts never set the hook.
+	clearChartContainer(container);
 }
 
 /**

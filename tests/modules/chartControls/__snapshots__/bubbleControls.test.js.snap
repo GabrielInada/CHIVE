@@ -1,0 +1,230 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`bubbleControls section structure > matches the section and control-order structure snapshot across nesting states 1`] = `
+{
+  "flat-empty": [
+    {
+      "controlKeys": [
+        "viz-select-bubble-category",
+        "viz-select-bubble-nesting-mode",
+        "viz-select-bubble-measure",
+        "viz-select-bubble-value-column",
+        {
+          "disabled": true,
+          "id": "viz-select-bubble-nesting-level-0",
+          "value": "",
+        },
+        "viz-select-bubble-topn",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-input-bubble-title",
+        "viz-select-bubble-label-mode",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-slider-bubble-padding",
+        "viz-bubble-color-preset",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+  ],
+  "flat-retained": [
+    {
+      "controlKeys": [
+        "viz-select-bubble-category",
+        "viz-select-bubble-nesting-mode",
+        "viz-select-bubble-measure",
+        "viz-select-bubble-value-column",
+        {
+          "disabled": true,
+          "id": "viz-select-bubble-nesting-level-0",
+          "value": "grupo",
+        },
+        "viz-select-bubble-topn",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-input-bubble-title",
+        "viz-select-bubble-label-mode",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-slider-bubble-padding",
+        "viz-bubble-color-preset",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+  ],
+  "grouped-empty": [
+    {
+      "controlKeys": [
+        "viz-select-bubble-category",
+        "viz-select-bubble-nesting-mode",
+        "viz-select-bubble-measure",
+        "viz-select-bubble-value-column",
+        {
+          "disabled": false,
+          "id": "viz-select-bubble-nesting-level-0",
+          "value": "",
+        },
+        "viz-select-bubble-topn",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-input-bubble-title",
+        "viz-select-bubble-label-mode",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-slider-bubble-padding",
+        "viz-bubble-color-preset",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+  ],
+  "grouped-legacy": [
+    {
+      "controlKeys": [
+        "viz-select-bubble-category",
+        "viz-select-bubble-nesting-mode",
+        "viz-select-bubble-measure",
+        "viz-select-bubble-value-column",
+        {
+          "disabled": false,
+          "id": "viz-select-bubble-nesting-level-0",
+          "value": "grupo",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-bubble-nesting-level-1",
+          "value": "",
+        },
+        "viz-select-bubble-topn",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-input-bubble-title",
+        "viz-select-bubble-label-mode",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-slider-bubble-padding",
+        "viz-bubble-color-preset",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+  ],
+  "grouped-one": [
+    {
+      "controlKeys": [
+        "viz-select-bubble-category",
+        "viz-select-bubble-nesting-mode",
+        "viz-select-bubble-measure",
+        "viz-select-bubble-value-column",
+        {
+          "disabled": false,
+          "id": "viz-select-bubble-nesting-level-0",
+          "value": "grupo",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-bubble-nesting-level-1",
+          "value": "",
+        },
+        "viz-select-bubble-topn",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-input-bubble-title",
+        "viz-select-bubble-label-mode",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-slider-bubble-padding",
+        "viz-bubble-color-preset",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+  ],
+  "grouped-two": [
+    {
+      "controlKeys": [
+        "viz-select-bubble-category",
+        "viz-select-bubble-nesting-mode",
+        "viz-select-bubble-measure",
+        "viz-select-bubble-value-column",
+        {
+          "disabled": false,
+          "id": "viz-select-bubble-nesting-level-0",
+          "value": "grupo",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-bubble-nesting-level-1",
+          "value": "regiao",
+        },
+        {
+          "disabled": false,
+          "id": "viz-select-bubble-nesting-level-2",
+          "value": "",
+        },
+        "viz-select-bubble-topn",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-input-bubble-title",
+        "viz-select-bubble-label-mode",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-slider-bubble-padding",
+        "viz-bubble-color-preset",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+  ],
+}
+`;

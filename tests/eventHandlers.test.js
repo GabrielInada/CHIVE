@@ -226,6 +226,7 @@ function fullChartConfig(overrides = {}) {
     },
     line: { x: 'date', y: 'visits', curve: 'monotone', customTitle: '', ...overrides.line },
     tin: { x: 'x', y: 'y', z: 'elevation', customTitle: '', ...overrides.tin },
+    scatter3d: { x: 'width', y: 'height', z: 'depth', customTitle: '', ...overrides.scatter3d },
   };
 }
 
@@ -490,16 +491,20 @@ describe('eventHandlers', () => {
     expect(mocks.progressHandle.fail).toHaveBeenCalledWith('tr:chive-project-import-error');
   });
 
-  it('covers navigation branches without active chart config', () => {
-    mocks.getActiveDataset.mockReturnValueOnce(null);
+  it('delegates the tab write to the facade and always switches tabs', () => {
     initializeAllEventHandlers();
 
+    // Navigation no longer reads the active dataset; the no-dataset guard lives
+    // in the facade (updateActiveDatasetConfig no-ops without an active
+    // dataset), so this pins the delegation only.
+    mocks.updateActiveDatasetConfig.mockClear();
     document.getElementById('btn-advance').click();
-    expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalledWith({ activeTab: 'charts' });
+    expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
     expect(mocks.switchTab).toHaveBeenCalledWith('charts');
 
-    mocks.getActiveDataset.mockReturnValueOnce({});
+    mocks.updateActiveDatasetConfig.mockClear();
     document.getElementById('btn-edit-columns').click();
+    expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'preview' });
     expect(mocks.switchTab).toHaveBeenCalledWith('preview');
   });
 
@@ -532,6 +537,7 @@ describe('eventHandlers', () => {
     ['treemap', { treemap: { measureMode: 'sum', valueColumn: 'biomass' } }, { measureMode: 'sum', valueColumn: 'biomass' }],
     ['line', {}, { x: 'date', y: 'visits', curve: 'monotone' }],
     ['tin', {}, { x: 'x', y: 'y', z: 'elevation' }],
+    ['scatter3d', {}, { x: 'width', y: 'height', z: 'depth' }],
   ])('builds add-panel snapshot metadata for %s charts', (type, overrides, expected) => {
     initializeAllEventHandlers();
     mocks.getActiveDataset.mockReturnValue({

@@ -5,6 +5,7 @@
 export const CHART_TYPES = {
   BAR: 'bar',
   SCATTER: 'scatter',
+  SCATTER3D: 'scatter3d',
   NETWORK: 'network',
   PIE: 'pie',
   TREEMAP: 'treemap',
@@ -16,6 +17,7 @@ export const CHART_TYPES = {
 export const CHART_COLORS = {
   bar: '#d4622a',
   scatter: '#1a472a',
+  scatter3d: '#2f6b4f',
   network: '#3b6a9f',
   pie: '#5f7c33',
   treemap: '#5a7d99',
@@ -85,6 +87,16 @@ export const CHART_DIMENSIONS = {
       left: 56,
     },
   },
+  scatter3d: {
+    width: 700,
+    height: 460,
+    margins: {
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 0,
+    },
+  },
 };
 
 /**
@@ -102,6 +114,7 @@ export const CHART_HEIGHT_LIMITS = {
   treemap: { min: 220, max: 720 },
   bubble: { min: 400, max: 900 },
   tin: { min: 220, max: 900 },
+  scatter3d: { min: 280, max: 900 },
 };
 
 export const BAR_CHART = {
@@ -123,6 +136,33 @@ export const SCATTER_PLOT = {
   defaultRadius: 3,
   opacityOptions: [0.3, 0.5, 0.7, 1],
   defaultOpacity: 0.7,
+};
+
+export const SCATTER3D_CHART = {
+  defaultPointSize: 0.03,
+  minPointSize: 0.01,
+  maxPointSize: 0.1,
+  defaultOpacity: 0.85,
+  minOpacity: 0.1,
+  maxOpacity: 1,
+  // Rendered point budget; buildScatter3dPoints stride-samples above this,
+  // always keeping the rows that carry each axis min/max.
+  maxPoints: 50000,
+  // WebGL buffer cost scales with the square of the pixel ratio; cap it so
+  // high-DPR screens do not quadruple the framebuffer for a preview chart.
+  maxDevicePixelRatio: 2,
+  camera: {
+    fov: 45,
+    initialTheta: Math.PI / 4,
+    initialPhi: Math.PI / 3,
+    initialDistance: 4,
+    minDistance: 1.6,
+    maxDistance: 10,
+    rotateSpeed: 0.008,
+    zoomSpeed: 0.0015,
+    keyRotateStep: 0.15,
+    keyZoomStep: 0.4,
+  },
 };
 
 export const NETWORK_GRAPH = {
@@ -254,6 +294,7 @@ export const BUBBLE_CHART = {
   shallowPaddingBoost: 2,
   deepPaddingMin: 1,
   maxInitialNestingControlsVisible: 1,
+  maxNestingDepth: 8,
 };
 
 export const CHART_COLOR_PALETTES = {

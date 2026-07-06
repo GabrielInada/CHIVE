@@ -11,6 +11,7 @@ const mocks = vi.hoisted(() => ({
       GLOBAL_FILTER_CHANGED: 'global-filter-changed',
       CHART_ADDED: 'chart-added',
       CHART_REMOVED: 'chart-removed',
+      PANEL_CLEARED: 'panel-cleared',
       PANEL_BLOCK_SLOT_ASSIGNED: 'panel-block-slot-assigned',
       PANEL_BLOCK_ADDED: 'panel-block-added',
       PANEL_BLOCK_REMOVED: 'panel-block-removed',
@@ -97,7 +98,9 @@ describe('panelManager facade branches', () => {
     panelManager.initPanelManager(firstFeedback);
     panelManager.initPanelManager(latestFeedback);
 
-    expect(mocks.appState.onStateChange).toHaveBeenCalledTimes(10);
+    expect(mocks.appState.onStateChange).toHaveBeenCalledTimes(11);
+    const registeredEvents = mocks.appState.onStateChange.mock.calls.map(([event]) => event);
+    expect(registeredEvents).toContain('panel-cleared');
 
     panelManager.renderCanvasPanel();
     const callbacks = mocks.panelRenderer.renderCanvasPanel.mock.calls.at(-1)[0];
@@ -105,7 +108,7 @@ describe('panelManager facade branches', () => {
     mocks.appState.addPanelBlock.mockReturnValueOnce(null);
     callbacks.onAddBlock('template-single');
 
-    expect(latestFeedback).toHaveBeenCalledWith('chive-panel-max-blocks', 'error');
+    expect(latestFeedback).toHaveBeenCalledWith('chive-panel-max-blocks');
     expect(firstFeedback).not.toHaveBeenCalled();
   });
 
@@ -168,13 +171,20 @@ describe('panelManager facade branches', () => {
     exportButton.click();
     mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'download-failed' });
     exportButton.click();
-    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: true });
+    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'no-exportable-charts' });
+    exportButton.click();
+    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: true, omittedChartCount: 0 });
+    exportButton.click();
+    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: true, omittedChartCount: 2 });
     exportButton.click();
 
-    expect(feedback).toHaveBeenCalledWith('Panel canvas not found', 'error');
-    expect(feedback).toHaveBeenCalledWith('Panel is empty', 'error');
-    expect(feedback).toHaveBeenCalledWith('chive-panel-export-error', 'error');
-    expect(feedback).toHaveBeenCalledWith('chive-panel-export-svg', 'success');
+    expect(feedback).toHaveBeenCalledWith('Panel canvas not found');
+    expect(feedback).toHaveBeenCalledWith('Panel is empty');
+    expect(feedback).toHaveBeenCalledWith('chive-panel-export-error');
+    expect(feedback).toHaveBeenCalledWith('chive-panel-export-no-exportable');
+    expect(feedback).toHaveBeenCalledWith('chive-panel-export-svg');
+    expect(feedback).toHaveBeenCalledWith('chive-panel-export-omitted');
+    expect(mocks.i18n.t).toHaveBeenCalledWith('chive-panel-export-omitted', 2);
   });
 
   it('tolerates missing controls and exposes sidebar, clear, lookup, and export helpers', () => {
@@ -193,10 +203,15 @@ describe('panelManager facade branches', () => {
 
     expect(panelManager.getChartById('chart-1')).toEqual({ id: 'chart-1' });
 
+    // clearPanelData delegates to the facade; the re-render is driven by the
+    // PANEL_CLEARED subscription (the bus is mocked here, so it does not fan out),
+    // not by a direct render call.
+    mocks.panelRenderer.renderSidebarPanel.mockClear();
+    mocks.panelRenderer.renderCanvasPanel.mockClear();
     panelManager.clearPanelData();
     expect(mocks.appState.clearPanel).toHaveBeenCalled();
-    expect(mocks.panelRenderer.renderSidebarPanel).toHaveBeenCalled();
-    expect(mocks.panelRenderer.renderCanvasPanel).toHaveBeenCalled();
+    expect(mocks.panelRenderer.renderSidebarPanel).not.toHaveBeenCalled();
+    expect(mocks.panelRenderer.renderCanvasPanel).not.toHaveBeenCalled();
 
     expect(panelManager.exportPanelLayoutSvg()).toEqual({ ok: true });
     expect(mocks.panelExporter.exportPanelLayoutSvg).toHaveBeenCalled();

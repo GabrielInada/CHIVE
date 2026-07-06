@@ -7,6 +7,7 @@ import {
 	isIntermediate,
 	isDescendantOf,
 } from '../../../src/modules/visualizations/bubbleChartHierarchy.js';
+import { BUBBLE_CHART } from '../../../src/config/charts.js';
 
 describe('resolveNestingColumns', () => {
 	it('returns deduplicated string array from opcoes.nestingColumns', () => {
@@ -27,6 +28,21 @@ describe('resolveNestingColumns', () => {
 
 	it('prefers nestingColumns over groupColumn when both are set', () => {
 		expect(resolveNestingColumns({ nestingColumns: ['a'], groupColumn: 'b' })).toEqual(['a']);
+	});
+
+	it('caps an over-deep nestingColumns array at the shared maximum', () => {
+		const deep = Array.from({ length: BUBBLE_CHART.maxNestingDepth + 4 }, (_, i) => `col${i}`);
+		const resolved = resolveNestingColumns({ nestingColumns: deep });
+		expect(resolved).toHaveLength(BUBBLE_CHART.maxNestingDepth);
+		expect(resolved).toEqual(deep.slice(0, BUBBLE_CHART.maxNestingDepth));
+	});
+
+	it('falls back to a valid groupColumn when the canonical list normalizes to []', () => {
+		expect(resolveNestingColumns({ nestingColumns: [null, ''], groupColumn: 'region' })).toEqual(['region']);
+	});
+
+	it('rejects an empty-string groupColumn rather than yielding [""]', () => {
+		expect(resolveNestingColumns({ groupColumn: '' })).toEqual([]);
 	});
 });
 

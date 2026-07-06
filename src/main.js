@@ -7,34 +7,34 @@
  *   2. Hydrate persisted state from IndexedDB BEFORE wiring subscribers,
  *      so restoration does not trigger a redundant save and the first
  *      render sees the restored state.
- *   3. Initialize state sync + expose backwards-compat globals.
- *   4. Initialize fileManager / chartControls / panelManager.
- *   5. Wire global DOM listeners via `eventHandlers`.
- *   6. Subscribe `refreshView` to dataset/columns/config state events.
- *   7. Enable debounced auto-save.
- *   8. Initial render.
- *   9. Re-render on locale changes.
- *   10. Surface internal module errors via feedback toast.
+ *   3. Initialize fileManager / chartControls / panelManager.
+ *   4. Wire global DOM listeners via `eventHandlers`.
+ *   5. Subscribe each render-affecting state event to its scheduler
+ *      (`scheduleFullRefresh` for full repaints, `scheduleRegion` for narrowed
+ *      events); see `setupStateSubscriptions` for the canonical mapping.
+ *   6. Enable debounced auto-save.
+ *   7. Initial render.
+ *   8. Re-render on locale changes.
+ *   9. Surface internal module errors via feedback toast.
  *
  * @typedef {import('./types.js').AppState} AppState
+ * @typedef {import('./types.js').Dataset} Dataset
  */
 
-import { initializeI18n, t, processData } from './services/index.js';
+import { initializeI18n, t } from './services/i18nService.js';
 import {
 	isPersistenceAvailable,
 	hydrateState,
 	enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey,
 } from './services/persistenceService.js';
-import { ingestFile, progressLabelForStage } from './services/dataIngestService.js';
-import { loadPresetSource, PresetFetchTimeoutError } from './services/presetService.js';
 import {
 renderEmptyState,
 renderDataInterface,
 renderFileList,
-} from './components/index.js';
-import { initChartControls, renderChartControlsSidebar, renderCharts } from './features/chartFeatures.js';
-import { createDefaultChartConfig, mergeChartConfigWithDefaults } from './config/chartDefaults.js';
+} from './components/datasetWorkspace/datasetWorkspaceView.js';
+import { renderCharts } from './components/datasetWorkspace/chartsView.js';
+import { initChartControls, renderChartControlsSidebar } from './modules/chartControls/chartControlsManager.js';
 import { getNumericColumns } from './utils/columnHelpers.js';
 import { rehydratePanelChartSpecs } from './utils/panelHydration.js';
 import { throttle } from './utils/throttle.js';
@@ -43,15 +43,15 @@ import {
 getState,
 getPersistenceSnapshot,
 getActiveDataset,
+getActiveDatasetIndex,
+getPreviewRows,
 onStateChange,
 STATE_EVENTS,
 setPreviewRows,
-addDataset,
-normalizeActiveDatasetConfig,
 updateActiveDatasetColumns,
 updateActiveDatasetConfig,
 replaceAllState,
-} from './modules/index.js';
+} from './modules/state/appState.js';
 import {
 enableStateLog,
 disableStateLog,
@@ -64,23 +64,23 @@ initPanelManager,
 initializeLayoutSelector,
 renderSidebarPanel,
 renderCanvasPanel,
-} from './modules/index.js';
+} from './modules/panelManager.js';
 import {
 initFileManager,
 getLoadedDatasets,
 selectDataset,
 removeDatasetByIndex,
-createJoinedDataset,
-initializeAllEventHandlers,
-} from './modules/index.js';
+handleJoinDatasetRequest,
+handlePresetDatasetRequest,
+} from './modules/fileManager.js';
+import { initializeAllEventHandlers } from './modules/eventHandlers.js';
 import {
 showFeedback,
 showFeedbackMessage,
 showError,
 showErrorMessage,
-showProgress,
-switchTab,
-} from './modules/index.js';
+} from './modules/feedbackUI.js';
+import { switchTab } from './modules/uiManager.js';
 
 // =============================================================================
 // APPLICATION INITIALIZATION
@@ -113,7 +113,7 @@ if (isPersistenceAvailable()) {
 }
 
 // 3. Initialize modules
-initFileManager(handleDatasetsChanged);
+initFileManager();
 // WHY: 120ms rate limit on live preview. Color pickers and height drags emit
 // events every frame; unthrottled, each one re-renders the active chart, which
 // stutters on heavy charts (TIN triangulation).
@@ -128,7 +128,7 @@ initializeAllEventHandlers();
 setupStateSubscriptions();
 
 // 6. Wire auto-save AFTER subscriptions. The controller tracks semantic
-//    project events, debounces saves, and flushes on tab hide/close.
+//    project events, debounces saves, and flushes on page hide/freeze/close.
 //    getPersistenceSnapshot (no JSON clone, live refs) keeps the heavy deep
 //    clone getState performs off the save hot path; the worker backend dedups
 //    unchanged row/snapshot payloads by reference.
@@ -137,11 +137,11 @@ enablePersistenceAutoSave(getPersistenceSnapshot, {
 });
 
 // 7. Initial view render
-refreshView();
+runFullRefreshNow();
 
 // 8. Re-render dynamic content on locale changes
 window.addEventListener('chive-locale-changed', () => {
-refreshView();
+scheduleFullRefresh();
 });
 
 // 9. Surface internal module errors in UI feedback
@@ -191,42 +191,179 @@ function reportInitializationError(error) {
 // STATE SUBSCRIPTIONS & CALLBACKS
 // =============================================================================
 
+// State events repaint through two coalescing entries that share one `fullQueued`
+// guard, so "full wins": scheduleFullRefresh() repaints everything on the next
+// microtask (dataset add/remove/select, hydration, locale); scheduleRegion()
+// drains a dirty-region set, repainting only the affected areas. runFullRefreshNow()
+// is the synchronous full-render entry for boot and the debug handle. Never call
+// refreshView() bare: it would not set `fullQueued`, so a region queued in the
+// same tick (a synchronous burst of events) would not be coalesced, and the
+// guard would stop protecting against re-entrant emits during a render.
+
+// Render areas a region flush can repaint (typo-safe registry, mirrors STATE_EVENTS).
+const RENDER_REGIONS = Object.freeze({
+	list: 'list',
+	workspace: 'workspace',
+	controls: 'controls',
+	panel: 'panel',
+});
+
+const dirtyRegions = new Set();
+let regionFlushQueued = false;
+let fullQueued = false;
+
 /**
- * Callback fileManager invokes after any add/remove/select. Triggers a
- * full re-render.
+ * Report a render error through the `chive-internal-error` channel (surfaced as a
+ * toast) rather than letting it escape as an unhandled rejection.
  *
  * @private
+ * @param {unknown} err
  */
-function handleDatasetsChanged() {
-refreshView();
+function reportRefreshError(err) {
+	window.dispatchEvent(new CustomEvent('chive-internal-error', {
+		detail: { type: 'refresh-error', message: String(err?.message || err) },
+	}));
 }
 
 /**
- * Subscribe `refreshView` to the state events whose payloads affect
- * what's rendered: active dataset, columns, config, and runtime imports.
+ * Mark a render area dirty and schedule a single coalesced region flush on the
+ * next microtask. Regions dirtied in the same tick render once, in a fixed
+ * canonical order (list, workspace, controls, panel) so the workspace reveals the
+ * panel tab before the panel sizes against it. No-op while a full refresh is
+ * pending, which subsumes every region.
+ *
+ * @private
+ * @param {(typeof RENDER_REGIONS)[keyof typeof RENDER_REGIONS]} region
+ */
+function scheduleRegion(region) {
+	if (fullQueued) return;
+	dirtyRegions.add(region);
+	if (regionFlushQueued) return;
+	regionFlushQueued = true;
+	Promise.resolve().then(() => {
+		regionFlushQueued = false;
+		if (fullQueued) {
+			dirtyRegions.clear();
+			return;
+		}
+		const regions = new Set(dirtyRegions);
+		dirtyRegions.clear();
+		try {
+			if (regions.has(RENDER_REGIONS.list)) {
+				renderDatasetListView(getLoadedDatasets(), getActiveDatasetIndex());
+			}
+			if (regions.has(RENDER_REGIONS.workspace)) {
+				renderActiveDatasetWorkspace(getActiveDataset(), getPreviewRows());
+			}
+			if (regions.has(RENDER_REGIONS.controls)) {
+				renderChartControlsView(getActiveDataset());
+			}
+			if (regions.has(RENDER_REGIONS.panel)) {
+				renderPanelWorkspace();
+			}
+		} catch (err) {
+			reportRefreshError(err);
+		}
+	});
+}
+
+/**
+ * Schedule a coalesced full `refreshView()` on the next microtask. Holds
+ * `fullQueued` for the whole render (cleared in `finally`) so any region scheduled
+ * during it (e.g. the global-filter sanitize emit) is suppressed rather than
+ * double-painted, and a thrown render cannot wedge future schedules. Errors are
+ * reported via {@link reportRefreshError}, since a microtask rejection has nowhere
+ * to bubble.
+ *
+ * @private
+ */
+function scheduleFullRefresh() {
+	if (fullQueued) return;
+	fullQueued = true;
+	dirtyRegions.clear();
+	Promise.resolve().then(() => {
+		try {
+			refreshView();
+		} catch (err) {
+			reportRefreshError(err);
+		} finally {
+			dirtyRegions.clear();
+			fullQueued = false;
+		}
+	});
+}
+
+/**
+ * Run a full `refreshView()` synchronously with the same `fullQueued` protection
+ * as {@link scheduleFullRefresh}, for the non-bus callers that need an immediate
+ * paint: boot and the `window.chiveDebug` handle. Saves/restores the prior
+ * `fullQueued` so it is re-entrancy safe. Unlike the scheduled path it does NOT
+ * catch: a boot render error must reject `initializeApplication()` (the
+ * `chive-internal-error` listener is wired only after the first render), and a
+ * debug call surfaces the throw in the console.
+ *
+ * @private
+ */
+function runFullRefreshNow() {
+	const wasFullQueued = fullQueued;
+	fullQueued = true;
+	dirtyRegions.clear();
+	try {
+		refreshView();
+	} finally {
+		dirtyRegions.clear();
+		fullQueued = wasFullQueued;
+	}
+}
+
+/**
+ * Repaint the regions a column-selection change affects: the active workspace
+ * (preview table, stats, charts) and the chart-controls sidebar. The file list and
+ * panel are unaffected. Only fires with an active dataset, so the empty branch
+ * never applies.
+ *
+ * @private
+ */
+function onColumnsUpdated() {
+	scheduleRegion(RENDER_REGIONS.workspace);
+	scheduleRegion(RENDER_REGIONS.controls);
+}
+
+/**
+ * Route a config change by payload. Every CONFIG_UPDATED repaints the active
+ * workspace and the chart-controls sidebar (a chart option, chart-type activation,
+ * or global-filter change). An `activeTab` switch to the panel tab additionally
+ * repaints the panel so its blocks size against the now-visible container; the
+ * workspace region runs first in the canonical flush order, revealing the tab
+ * before the panel paints. Other payloads leave the panel alone: its blocks paint
+ * from frozen snapshots, so a config edit cannot change them. Only fires with an
+ * active dataset, so the empty branch never applies.
+ *
+ * @private
+ * @param {{ activeTab?: string } & Object} [patch] - The CONFIG_UPDATED payload.
+ */
+function onConfigUpdated(patch) {
+	scheduleRegion(RENDER_REGIONS.workspace);
+	scheduleRegion(RENDER_REGIONS.controls);
+	if (patch?.activeTab === 'panel') scheduleRegion(RENDER_REGIONS.panel);
+}
+
+/**
+ * Wire every render-affecting state event to its scheduler. Dataset
+ * add/remove/select and hydration take the full refresh; column and config changes
+ * repaint the workspace and chart-controls regions (config also the panel region
+ * when the panel tab opens), and preview-row changes the workspace region.
  *
  * @private
  */
 function setupStateSubscriptions() {
-// Re-render when active dataset changes
-onStateChange(STATE_EVENTS.ACTIVE_DATASET, () => {
-refreshView();
-});
-
-// Re-render when columns change
-onStateChange(STATE_EVENTS.COLUMNS_UPDATED, () => {
-refreshView();
-});
-
-// Re-render when config changes
-onStateChange(STATE_EVENTS.CONFIG_UPDATED, () => {
-refreshView();
-});
-
-onStateChange(STATE_EVENTS.STATE_HYDRATED, () => {
-refreshView();
-});
-
+onStateChange(STATE_EVENTS.ACTIVE_DATASET, scheduleFullRefresh);
+onStateChange(STATE_EVENTS.DATASET_ADDED, scheduleFullRefresh);
+onStateChange(STATE_EVENTS.DATASET_REMOVED, scheduleFullRefresh);
+onStateChange(STATE_EVENTS.COLUMNS_UPDATED, onColumnsUpdated);
+onStateChange(STATE_EVENTS.CONFIG_UPDATED, onConfigUpdated);
+onStateChange(STATE_EVENTS.STATE_HYDRATED, scheduleFullRefresh);
+onStateChange(STATE_EVENTS.PREVIEW_ROWS_CHANGED, () => scheduleRegion(RENDER_REGIONS.workspace));
 }
 
 // =============================================================================
@@ -243,8 +380,9 @@ refreshView();
  * The canvas panel is deliberately not re-rendered here: panel blocks
  * paint from frozen snapshots captured at add time (structuredClone in
  * panelManager), so a live config edit can never change them. The picker's
- * `change` (commit) event re-renders the panel through the normal
- * CONFIG_UPDATED → refreshView path, still from the frozen snapshot.
+ * `change` (commit) event fires CONFIG_UPDATED, but that no longer repaints the
+ * panel either (only an `activeTab` switch to the panel tab does); the panel keeps
+ * showing its frozen snapshot.
  *
  * @private
  */
@@ -267,79 +405,131 @@ function livePreviewRender() {
 // =============================================================================
 
 /**
- * Master view update. Reads state via getters, normalizes the active
- * dataset's config in place via {@link normalizeActiveDatasetConfig}
- * (no-emit by design, emitting would re-enter via CONFIG_UPDATED and
- * loop), then delegates rendering to specialized modules.
+ * Render the dataset file list (left rail): the file-info header, search,
+ * pagination, the active-dataset meta row, and the Join/Preset tools.
  *
- * Called after any state change the file subscribes to (active dataset,
- * columns, config) and after explicit user actions like preset/join
- * imports.
+ * @private
+ * @param {Dataset[]} datasets - All loaded datasets.
+ * @param {number} activeIndex - Active dataset index, or -1 when none.
+ */
+function renderDatasetListView(datasets, activeIndex) {
+	renderFileList(
+		datasets,
+		activeIndex,
+		selectDataset,
+		removeDatasetByIndex,
+		handleJoinDatasetRequest,
+		handlePresetDatasetRequest
+	);
+}
+
+/**
+ * Render the "no dataset loaded" dataset workspace; delegates to
+ * {@link renderEmptyState}. The panel render and the tab reset are the
+ * caller's responsibility.
+ *
+ * @private
+ */
+function renderEmptyWorkspace() {
+	renderEmptyState();
+}
+
+/**
+ * Render the active dataset's workspace: column controls, preview table,
+ * stats, charts, and global-filter state, all via {@link renderDataInterface}.
+ *
+ * Committed chart config is canonicalized at the state boundaries (persistence
+ * restore, `addDataset`, and the emitting config writes) via
+ * `canonicalizeChartConfig`, so render does not repair it; the renderers derive
+ * any local display defaults themselves. No-op when no dataset is active.
+ *
+ * @private
+ * @param {Dataset | null} dataset - The active dataset, or null when none.
+ * @param {number} previewRows - Number of rows to show in the preview table.
+ */
+function renderActiveDatasetWorkspace(dataset, previewRows) {
+	if (!dataset) return;
+	renderDataInterface(
+		dataset.rows,
+		dataset.columns,
+		dataset.name,
+		dataset.sizeLabel,
+		previewRows,
+		updatePreviewRows,
+		dataset.selectedColumns,
+		updateDatasetColumns,
+		dataset.chartConfig,
+		updateDatasetConfig
+	);
+}
+
+/**
+ * Render the chart-controls sidebar for the active dataset. No-op when no
+ * dataset is active.
+ *
+ * @private
+ * @param {Dataset | null} dataset - The active dataset, or null when none.
+ */
+function renderChartControlsView(dataset) {
+	if (!dataset) return;
+	renderChartControlsSidebar(dataset);
+}
+
+/**
+ * Render the panel workspace: the sidebar (saved snapshots) and the canvas
+ * (layout with mounted slots). `withLayoutSelector` repopulates the layout
+ * `<select>`; it is on for the active path and off for the empty path, matching
+ * the prior behavior where the empty state left the layout selector untouched.
+ *
+ * @private
+ * @param {{ withLayoutSelector?: boolean }} [options]
+ */
+function renderPanelWorkspace({ withLayoutSelector = true } = {}) {
+	if (withLayoutSelector) initializeLayoutSelector();
+	renderSidebarPanel();
+	renderCanvasPanel();
+}
+
+/**
+ * Master view update. Gathers what it needs up front through the cheap getters
+ * (same read surface as the region flush, no deep clone), then composes the
+ * specialized render paths: the dataset list, then either the empty workspace or
+ * the active dataset workspace plus its chart controls, then the panel
+ * workspace. Each path delegates to its owning render module.
+ *
+ * Reached two ways: asynchronously via {@link scheduleFullRefresh} for bus events
+ * that need a full repaint (plus the locale change), and synchronously via
+ * {@link runFullRefreshNow} for the non-bus callers that need an immediate paint
+ * (boot and the debug handle). Narrower events repaint only their regions through
+ * {@link scheduleRegion}, never this function; do not call it bare.
  *
  * @private
  */
 function refreshView() {
-const state = getState();
-const datasets = getLoadedDatasets();
-const activeIndex = state.data.activeIndex;
-const dataset = getActiveDataset();
+	const datasets = getLoadedDatasets();
+	const activeIndex = getActiveDatasetIndex();
+	const dataset = getActiveDataset();
+	const previewRows = getPreviewRows();
 
-// Handle empty state
-if (datasets.length === 0) {
-renderFileList(
-datasets,
-activeIndex,
-selectDataset,
-removeDatasetByIndex,
-handleJoinDatasetRequest,
-handlePresetDatasetRequest
-);
-renderEmptyState();
-renderSidebarPanel();
-renderCanvasPanel();
-switchTab('preview');
-return;
-}
+	renderDatasetListView(datasets, activeIndex);
 
-// Render datasets list
-renderFileList(
-datasets,
-activeIndex,
-selectDataset,
-removeDatasetByIndex,
-handleJoinDatasetRequest,
-handlePresetDatasetRequest
-);
+	// Empty state: no active dataset workspace, and the layout selector is left
+	// untouched (matches the prior empty-path behavior).
+	if (datasets.length === 0) {
+		renderEmptyWorkspace();
+		renderPanelWorkspace({ withLayoutSelector: false });
+		switchTab('preview');
+		return;
+	}
 
-// Render data preview and stats
-if (dataset) {
-	normalizeActiveDatasetConfig(mergeChartConfigWithDefaults);
-renderDataInterface(
-dataset.rows,
-dataset.columns,
-dataset.name,
-dataset.sizeLabel,
-state.ui.previewRows,
-updatePreviewRows,
-dataset.selectedColumns,
-updateDatasetColumns,
-dataset.chartConfig,
-updateDatasetConfig
-);
-
-// Render visualization controls
-renderChartControlsSidebar(dataset);
-}
-
-// Render panel UI
-initializeLayoutSelector();
-renderSidebarPanel();
-renderCanvasPanel();
+	renderActiveDatasetWorkspace(dataset, previewRows);
+	renderChartControlsView(dataset);
+	renderPanelWorkspace();
 }
 
 /**
  * Apply a column-selection change. Delegates to the data facade; the
- * COLUMNS_UPDATED subscription drives `refreshView` automatically.
+ * COLUMNS_UPDATED subscription repaints the workspace and chart-controls regions.
  *
  * @private
  * @param {string[]} columns
@@ -349,10 +539,10 @@ updateActiveDatasetColumns(columns);
 }
 
 /**
- * Apply a chart-config change. Delegates to the data facade; the
- * CONFIG_UPDATED subscription drives `refreshView`. The merge-with-
- * defaults step lives in `refreshView`'s normalize-on-read path
- * ({@link normalizeActiveDatasetConfig}), so this function does not
+ * Apply a chart-config change. Delegates to the data facade; the CONFIG_UPDATED
+ * subscription repaints the workspace and chart-controls regions (and the panel
+ * region when the active tab switches to the panel). The facade canonicalizes the
+ * config (default-fill + stale-filter trim) on write, so this function does not
  * repeat it.
  *
  * @private
@@ -363,8 +553,10 @@ updateActiveDatasetConfig(config);
 }
 
 /**
- * Set the preview-table row count. Invalid values are ignored
- * (`setPreviewRows` throws when `rows < 1`).
+ * Set the preview-table row count. Write-only: the committed change emits
+ * `PREVIEW_ROWS_CHANGED`, whose subscription repaints the workspace region.
+ * Invalid values are ignored (`setPreviewRows` throws when `rows < 1`), so they
+ * emit nothing and trigger no render.
  *
  * @private
  * @param {number} rows
@@ -374,118 +566,6 @@ function updatePreviewRows(rows) {
 		setPreviewRows(rows);
 	} catch {
 		// Ignore invalid values and preserve current preview state.
-	}
-	refreshView();
-}
-
-/**
- * Handle a join request from the dataset-list UI. Delegates to
- * `fileManager.createJoinedDataset`; on success, activates the new
- * dataset and shows a success toast. Failures surface as error toasts
- * with the translated message.
- *
- * @private
- * @param {Object} spec - Forwarded to `createJoinedDataset`.
- */
-function handleJoinDatasetRequest(spec) {
-	const result = createJoinedDataset(spec);
-	if (!result?.ok) {
-		showError(result?.message || t('chive-join-error-generic'));
-		return;
-	}
-
-	selectDataset(result.index);
-	showFeedback(t('chive-join-success', [result.datasetName]));
-	refreshView();
-}
-
-/**
- * Handle a preset dataset request. Resolves the preset source (inline
- * or fetched), runs the ingest pipeline (worker for fetched / `processData`
- * sync for inline), and adds the resulting dataset. The progress toast
- * carries the cancellation signal for both the fetch and the worker.
- *
- * `PresetFetchTimeoutError` surfaces a dedicated timeout message;
- * everything else is reported as a generic join/preset error.
- *
- * @private
- * @param {import('./types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
- */
-async function handlePresetDatasetRequest(preset) {
-	if (!preset) {
-		showError(t('chive-join-error-generic'));
-		return;
-	}
-
-	const presetName = t(preset.nameKey);
-	const progress = showProgress(t('chive-progress-parsing', [presetName]));
-	const abortController = new AbortController();
-	progress.onCancel(() => abortController.abort());
-
-	try {
-		const source = await loadPresetSource(preset, { signal: abortController.signal });
-
-		let rows;
-		let columns;
-		let statsNumeric = [];
-		let statsCategorical = [];
-
-		if (source.mode === 'inline') {
-			// Inline presets are tiny demo arrays, sync processData is cheap.
-			rows = source.rows;
-			if (source.dropColumns.length > 0) {
-				const dropSet = new Set(source.dropColumns);
-				rows = rows.map(row => {
-					const next = { ...row };
-					dropSet.forEach(key => { delete next[key]; });
-					return next;
-				});
-			}
-			const processed = processData(rows);
-			rows = processed.rows;
-			columns = processed.columns;
-			progress.update(100);
-		} else {
-			const result = await ingestFile(
-				{ kind: source.kind, text: source.text, options: { dropColumns: source.dropColumns } },
-				{
-					signal: abortController.signal,
-					onProgress: ({ stage, percent }) => {
-						progress.update(percent, progressLabelForStage(stage, presetName));
-					},
-				},
-			);
-
-			if (!result.ok) {
-				if (result.reason === 'cancelled') progress.close();
-				else progress.fail(t('chive-progress-failed', [result.reason]));
-				return;
-			}
-
-			({ rows, columns, statsNumeric, statsCategorical } = result.value);
-		}
-
-		const dataset = {
-			name: presetName,
-			sizeLabel: t('chive-preset-generated-size', [preset.rows]),
-			rows,
-			columns,
-			selectedColumns: columns.map(c => c.name),
-			chartConfig: createDefaultChartConfig(),
-			precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
-		};
-
-		const index = addDataset(dataset);
-		selectDataset(index);
-		progress.succeed(t('chive-preset-load-success', [presetName]));
-		refreshView();
-	} catch (err) {
-		if (err instanceof PresetFetchTimeoutError) {
-			progress.fail(t('chive-preset-fetch-timeout', [presetName]));
-		} else {
-			progress.fail(t('chive-progress-failed', [err?.message || 'error']));
-		}
-		showError(t('chive-join-error-generic'));
 	}
 }
 
@@ -514,7 +594,7 @@ getLoadedDatasets,
 updateDatasetColumns,
 updateDatasetConfig,
 switchTab,
-refreshView,
+refreshView: runFullRefreshNow,
 showFeedback: showFeedbackMessage,
 showError: showErrorMessage,
 enableStateLog,

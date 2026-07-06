@@ -40,6 +40,23 @@ describe('rehydratePanelChartSpecs', () => {
 		expect(config.showXAxisLabel).toBe(true);
 	});
 
+	it('re-merges a saved scatter3d spec against the new chart defaults', () => {
+		const panel = {
+			id: 'p1',
+			charts: [{ id: 'c1', type: 'scatter3d', config: { x: 'width', y: 'height', z: 'depth', pointSize: 0.08 } }],
+		};
+		const result = rehydratePanelChartSpecs(panel);
+		const config = result.charts[0].config;
+
+		// User-set fields survive the merge.
+		expect(config.x).toBe('width');
+		expect(config.pointSize).toBe(0.08);
+		// Default keys absent from the saved spec are now present.
+		expect(config.opacity).toBeDefined();
+		expect(config.color).toBeDefined();
+		expect(config.chartHeight).toBe(460);
+	});
+
 	it('fills a full default config when a spec has no config', () => {
 		const panel = { id: 'p1', charts: [{ id: 'c1', type: 'treemap' }] };
 		const result = rehydratePanelChartSpecs(panel);

@@ -7,23 +7,24 @@
  */
 
 import { compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
+import { normalizeColumnNameList } from '../../utils/columnHelpers.js';
+import { BUBBLE_CHART } from '../../config/charts.js';
 
 /**
  * Resolve the effective nesting-column list from a bubble options bag.
- * Prefers the canonical `nestingColumns` array; falls back to the legacy
- * single `groupColumn`. De-duplicates while preserving order.
+ * Normalizes the canonical `nestingColumns` (type-filter, de-dupe, and the shared
+ * depth cap) and returns it when non-empty; otherwise falls back to the legacy
+ * single `groupColumn`, routed through the same helper so an empty or non-string
+ * group drops to `[]` rather than becoming a `['']` level. No allowlist here: the
+ * renderer has no column metadata, so the cap is its independent defense.
  *
  * @param {Object} options
  * @returns {string[]}
  */
 export function resolveNestingColumns(options) {
-	if (Array.isArray(options.nestingColumns) && options.nestingColumns.length > 0) {
-		return [...new Set(options.nestingColumns.filter(c => c && typeof c === 'string'))];
-	}
-	if (options.groupColumn && typeof options.groupColumn === 'string') {
-		return [options.groupColumn];
-	}
-	return [];
+	const canonical = normalizeColumnNameList(options.nestingColumns, { max: BUBBLE_CHART.maxNestingDepth });
+	if (canonical.length > 0) return canonical;
+	return normalizeColumnNameList([options.groupColumn], { max: 1 });
 }
 
 /**

@@ -567,6 +567,34 @@ describe('bubble chart multi-level nesting', () => {
 		expect(result.reason).toBe('no-nesting-columns');
 	});
 
+	it('grouped mode with an invalid truthy groupColumn fails instead of rendering flat', () => {
+		const container = document.getElementById('bubble');
+		const rows = [
+			{ categoria: 'A', grupo: 'X' },
+			{ categoria: 'B', grupo: 'Y' },
+		];
+
+		for (const badGroup of [{}, 1, true]) {
+			container.innerHTML = '';
+			const result = renderBubbleChart(container, rows, 'categoria', {
+				nestingMode: 'grouped',
+				groupColumn: badGroup,
+			});
+			expect(result.ok).toBe(false);
+			expect(result.reason).toBe('no-nesting-columns');
+			expect(container.querySelectorAll('g.bubble-node').length).toBe(0);
+		}
+
+		// A valid string groupColumn in the same setup still resolves and renders grouped.
+		container.innerHTML = '';
+		const ok = renderBubbleChart(container, rows, 'categoria', {
+			nestingMode: 'grouped',
+			groupColumn: 'grupo',
+		});
+		expect(ok.ok).toBe(true);
+		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
+	});
+
 	it('intermediate nodes rendered for all depths', () => {
 		const container = document.getElementById('bubble');
 		const rows = [
@@ -762,7 +790,6 @@ describe('bubble chart zoom stack (multi-level drill-down)', () => {
 		renderBubbleChart(container, multiLevelData, 'categoria', multiLevelOpts);
 
 		const viewportG = container.querySelector('svg > g');
-		const originalTransform = viewportG.getAttribute('transform');
 
 		// Drill into depth-1
 		const depth1Parent = container.querySelector('g.bubble-parent[data-depth="1"]');

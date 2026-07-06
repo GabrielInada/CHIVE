@@ -11,7 +11,7 @@
  *     facade getter call, resolved via scope references. A name/AST matcher on
  *     `.dataset.*` / `.push(` would wrongly flag the many DOM
  *     `el.dataset.x = y` writes across the codebase.
- *   - Import-gated: the getter must be a named import from modules/index.js or
+ *   - Import-gated: the getter must be a named import from
  *     modules/state/appState.js. Otherwise a DI-injected param named like a
  *     getter (e.g. panelStateMutations.js) would be misread as a facade getter.
  *
@@ -28,8 +28,8 @@ const TRACKED_GETTERS = new Set([
 	'getPersistenceSnapshot',
 ]);
 
-// A getter only counts as a facade getter when imported from one of these.
-const FACADE_SOURCE_RE = /(?:^|\/)modules\/(?:index|state\/appState)\.js$/;
+// A getter only counts as a facade getter when imported from the state core.
+const FACADE_SOURCE_RE = /(?:^|\/)modules\/state\/appState\.js$/;
 
 const MUTATING_METHODS = new Set([
 	'push', 'pop', 'shift', 'unshift', 'splice',

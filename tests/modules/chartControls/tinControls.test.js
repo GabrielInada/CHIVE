@@ -26,6 +26,17 @@ import {
 	computeDefaults,
 } from '../../../src/modules/chartControls/tinControls.js';
 
+describe('tinControls public surface', () => {
+	it('exposes exactly the three documented tin-control exports (no internal leaks)', async () => {
+		const mod = await import('../../../src/modules/chartControls/tinControls.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'computeDefaults',
+			'createTinControls',
+			'setupTinControlListeners',
+		]);
+	});
+});
+
 function createDataset(overrides = {}) {
 	return {
 		chartConfig: {
@@ -96,6 +107,29 @@ describe('tinControls UI structure', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		document.body.innerHTML = '';
+	});
+
+	it('matches the section and control-order structure snapshot', () => {
+		const dataset = createDataset();
+		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], ['lon', 'lat', 'elev', 'name']);
+
+		const structure = controls.map(section => {
+			const content = section.querySelector('.chart-section-content');
+			const controlKeys = Array.from(content.children).map(control => {
+				const idElement = control.matches('[id]') ? control : control.querySelector('[id]');
+				if (idElement?.id) return idElement.id;
+				return control.querySelector('[data-color-preset-control]')?.dataset.colorPresetControl;
+			});
+			expect(controlKeys).not.toContain(undefined);
+
+			return {
+				section: section.dataset.section,
+				expanded: section.querySelector('.chart-section-header').getAttribute('aria-expanded'),
+				controlKeys,
+			};
+		});
+
+		expect(structure).toMatchSnapshot();
 	});
 
 	it('offers only numeric columns plus the none option for x/y/z', () => {

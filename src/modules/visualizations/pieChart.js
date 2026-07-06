@@ -24,11 +24,13 @@ import {
 	showPinnedChartTooltip,
 } from './tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
-import { formatNumber, isNullish, clamp } from '../../utils/formatters.js';
-import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
-import { buildSliceColor as _buildSliceColor, isValidHexColor } from '../../utils/colorUtils.js';
+import { formatNumber, clamp } from '../../utils/formatters.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
+import { buildSliceColor as _buildSliceColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
 import { appendChartTitle } from './chartScaffold.js';
+import { normalizePieOptions } from './pieChart/options.js';
+import { aggregatePieData } from './pieChart/data.js';
 
 /** @private */
 function buildSliceColor(baseHex, index) {
@@ -56,69 +58,36 @@ function buildSliceColor(baseHex, index) {
 export function renderPieChart(container, rows, categoryColumn, options = {}) {
 	if (!container || !categoryColumn) return fail();
 
-	const color = isValidHexColor(String(options.color || '').trim())
-		? String(options.color).trim()
-		: CHART_COLORS.pie;
-	const locale = options.locale || undefined;
-		const customSliceColors = options.customSliceColors || {};
-	const labels = {
-		category: options.labels?.category || 'Category',
-		count: options.labels?.count || 'Count',
-		percentage: options.labels?.percentage || 'Percentage',
-		other: options.labels?.other || 'Other',
-		focusOnThis: options.labels?.focusOnThis || 'Show only this',
-		addToFilter: options.labels?.addToFilter || 'Add to global filter',
-	};
-	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : 0;
-	const topNMode = options.topNMode === 'truncate' ? 'truncate' : 'other';
+	const {
+		color,
+		locale,
+		customSliceColors,
+		labels,
+		topN,
+		topNMode,
+		rawInner,
+		rawOuter,
+		measureMode,
+		valueColumn,
+		showCategoryLabel,
+		showValueLabel,
+		showLegend,
+		labelPosition,
+		customTitle,
+		chartHeight,
+		padAngleRad,
+		zoomScale,
+	} = normalizePieOptions(options);
 
-	const rawInner = Number(options.innerRadius);
-	const rawOuter = Number(options.outerRadius);
-	const rawPadAngle = Number(options.padAngle);
-	const measureMode = options.measureMode === 'sum' ? 'sum' : 'count';
-	const valueColumn = options.valueColumn || null;
-	const showCategoryLabel = options.showCategoryLabel !== false;
-	const showValueLabel = options.showValueLabel !== false;
-	const showLegend = options.showLegend !== false;
-	const labelPosition = options.labelPosition === 'outside' ? 'outside' : 'inside';
-	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(options.chartHeight))
-		? clamp(Number(options.chartHeight), 220, 720)
-		: CHART_DIMENSIONS.pie.height;
-
-	const counter = new Map();
-	rows.forEach(row => {
-		const rawValue = row[categoryColumn];
-		const category = isNullish(rawValue) || rawValue === ''
-			? 'N/A'
-			: String(rawValue);
-		if (measureMode === 'sum') {
-			if (!valueColumn) return;
-			const value = Number(row[valueColumn]);
-			if (!Number.isFinite(value)) return;
-			counter.set(category, (counter.get(category) || 0) + value);
-			return;
-		}
-		counter.set(category, (counter.get(category) || 0) + 1);
+	const aggregated = aggregatePieData(rows, categoryColumn, {
+		measureMode,
+		valueColumn,
+		topN,
+		topNMode,
+		otherLabel: labels.other,
 	});
-
-	const entries = Array.from(counter.entries())
-		.map(([category, value]) => ({ category, value }))
-		.sort((a, b) => b.value - a.value || compareStrings(a.category, b.category));
-	if (entries.length === 0) {
-		return fail(measureMode === 'sum' ? 'sum-no-numeric' : undefined);
-	}
-
-	if (topN > 0 && entries.length > topN) {
-		if (topNMode === 'truncate') {
-			entries.length = topN;
-		} else {
-			const head = entries.slice(0, topN);
-			const restValor = entries.slice(topN).reduce((sum, item) => sum + item.value, 0);
-			entries.length = 0;
-			entries.push(...head, { category: labels.other, value: restValor, isOther: true });
-		}
-	}
+	if (!aggregated.ok) return fail(aggregated.reason);
+	const { entries, total } = aggregated;
 
 	container.replaceChildren();
 	hideChartTooltip();
@@ -139,18 +108,6 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		Number.isFinite(rawInner) ? rawInner : PIE_CHART.defaultInnerRadius,
 		PIE_CHART.minInnerRadius,
 		Math.max(0, outerRadius - 8)
-	);
-	const total = entries.reduce((acc, item) => acc + item.value, 0);
-	const padAngleDeg = clamp(
-		Number.isFinite(rawPadAngle) ? rawPadAngle : PIE_CHART.defaultPadAngle,
-		PIE_CHART.minPadAngle,
-		PIE_CHART.maxPadAngle
-	);
-	const padAngleRad = (padAngleDeg * Math.PI) / 180;
-	const zoomScale = clamp(
-		Number.isFinite(Number(options.zoomScale)) ? Number(options.zoomScale) : PIE_CHART.defaultZoomScale,
-		PIE_CHART.minZoomScale,
-		PIE_CHART.maxZoomScale
 	);
 
 	const svg = select(container)

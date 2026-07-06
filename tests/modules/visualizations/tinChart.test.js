@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { renderTinChart, resolveSurfaceDepth } from '../../../src/modules/visualizations/tinChart.js';
+import { renderTinChart } from '../../../src/modules/visualizations/tinChart.js';
 import { hideChartTooltip } from '../../../src/modules/visualizations/tooltip.js';
 import { interpolateColor } from '../../../src/utils/colorUtils.js';
 import { TIN_CHART } from '../../../src/config/charts.js';
@@ -582,28 +582,91 @@ describe('renderTinChart', () => {
 	});
 });
 
-describe('resolveSurfaceDepth', () => {
-	const base = { fillMode: 'smooth', zMin: 0, zMax: 10, triangleCount: 10 };
+describe('tinChart public export surface', () => {
+	// Locks the facade after the split into the tinChart/ folder: the module must
+	// expose exactly the renderer and the re-exported depth resolver, nothing else.
+	it('exports exactly renderTinChart and resolveSurfaceDepth', async () => {
+		const mod = await import('../../../src/modules/visualizations/tinChart.js');
+		expect(Object.keys(mod).sort()).toEqual(['renderTinChart', 'resolveSurfaceDepth']);
+	});
+});
 
-	it('clamps the requested depth to the configured bounds', () => {
-		expect(resolveSurfaceDepth({ ...base, requestedDepth: 99 })).toBe(TIN_CHART.maxSubdivisionDepth);
-		expect(resolveSurfaceDepth({ ...base, requestedDepth: -5 })).toBe(TIN_CHART.minSubdivisionDepth);
+describe('tinChart isoline/threshold hover (integration)', () => {
+	beforeEach(() => {
+		document.body.innerHTML = '<div id="tin"></div>';
 	});
 
-	it('forces depth 0 in flat fill mode', () => {
-		expect(resolveSurfaceDepth({ ...base, fillMode: 'flat', requestedDepth: 4 })).toBe(0);
+	afterEach(() => {
+		hideChartTooltip();
 	});
 
-	it('forces depth 0 when Z is constant', () => {
-		expect(resolveSurfaceDepth({ ...base, zMin: 5, zMax: 5, requestedDepth: 4 })).toBe(0);
+	it('shows, moves, and hides the Z tooltip over an isoline hit line', () => {
+		const container = document.getElementById('tin');
+		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 5,
+			showEdges: false,
+			showPoints: false,
+		});
+		const hit = container.querySelector('.tin-isolines line.tin-isoline-hit');
+		expect(hit).not.toBeNull();
+
+		hit.dispatchEvent(new MouseEvent('pointerover', { bubbles: true, clientX: 10, clientY: 20 }));
+		const tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip).not.toBeNull();
+		expect(tooltip.style.display).toBe('block');
+		// Tooltip line is "z: <value>"; the data-z drives the value.
+		expect(tooltip.textContent).toContain('z');
+		const initialPosition = { left: tooltip.style.left, top: tooltip.style.top };
+
+		hit.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 120, clientY: 140 }));
+		const movedTooltip = document.querySelector('.chart-tooltip');
+		expect(movedTooltip.style.display).toBe('block');
+		expect({ left: movedTooltip.style.left, top: movedTooltip.style.top }).not.toEqual(initialPosition);
+
+		hit.dispatchEvent(new MouseEvent('pointerout', { bubbles: true }));
+		expect(document.querySelector('.chart-tooltip').style.display).toBe('none');
 	});
 
-	it('steps depth down to fit the leaf budget', () => {
-		// 1100 * 4^4 = 281600 exceeds the budget; 1100 * 4^3 = 70400 fits.
-		expect(resolveSurfaceDepth({ ...base, triangleCount: 1100, requestedDepth: 4 })).toBe(3);
+	it('shows the Z tooltip over a threshold hit line', () => {
+		const container = document.getElementById('tin');
+		const rows = [
+			{ x: 0, y: 0, z: 0 },
+			{ x: 10, y: 0, z: 0 },
+			{ x: 5, y: 10, z: 10 },
+		];
+		renderTinChart(container, rows, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: false,
+			showThreshold: true,
+			thresholdValue: 5,
+			showEdges: false,
+			showPoints: false,
+		});
+		const hit = container.querySelector('.tin-threshold-contour line.tin-isoline-hit');
+		expect(hit).not.toBeNull();
+
+		hit.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
+		const tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip).not.toBeNull();
+		expect(tooltip.style.display).toBe('block');
+		expect(tooltip.textContent).toContain('5');
 	});
 
-	it('floors at 0 when the base triangulation alone exceeds the budget', () => {
-		expect(resolveSurfaceDepth({ ...base, triangleCount: 300000, requestedDepth: 4 })).toBe(0);
+	it('ignores hover over a non-hit target', () => {
+		const container = document.getElementById('tin');
+		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+			subdivisionDepth: 0,
+			showIsolines: true,
+			isolineCount: 5,
+			showEdges: false,
+			showPoints: false,
+		});
+		// The visible (non-hit) isoline line carries no data-z and should not trigger a tooltip.
+		const visible = container.querySelector('.tin-isolines line:not(.tin-isoline-hit)');
+		visible.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
+		const tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip === null || tooltip.style.display === 'none').toBe(true);
 	});
 });

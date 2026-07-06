@@ -21,6 +21,7 @@ import {
 	createBubbleChartControls,
 	setupBubbleChartControlListeners,
 } from '../../../src/modules/chartControls/bubbleControls.js';
+import { BUBBLE_CHART } from '../../../src/config/charts.js';
 
 function createDataset(measureMode = 'count', valueColumn = null, nestingMode = 'flat', nestingColumns = []) {
 	return {
@@ -73,6 +74,77 @@ function selectValue(id, value) {
 function lastConfig() {
 	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].bubble;
 }
+
+describe('bubbleControls public surface', () => {
+	it('exposes exactly the three documented bubble-control exports (no internal leaks)', async () => {
+		const mod = await import('../../../src/modules/chartControls/bubbleControls.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'computeDefaults',
+			'createBubbleChartControls',
+			'setupBubbleChartControlListeners',
+		]);
+	});
+});
+
+describe('bubbleControls section structure', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	const allColumns = ['categoria', 'grupo', 'regiao', 'estado'];
+
+	// Records each nesting select as { id, value, disabled } (keeping the resolved
+	// <select> element separate from its string key) so the snapshot pins the
+	// progressive reveal, the flat-mode disabling, and the legacy-groupColumn
+	// migration, not just the control ids. Every other control records its id
+	// string; the id-less color-preset wrapper records its data attribute (a
+	// string with no backing id element, which is why el and key are kept apart).
+	function extractStructure(controls) {
+		return controls.map(section => {
+			const content = section.querySelector('.chart-section-content');
+			const controlKeys = Array.from(content.children).map(control => {
+				const el = control.matches('[id]') ? control : control.querySelector('[id]');
+				if (el && el.id.startsWith('viz-select-bubble-nesting-level-')) {
+					return { id: el.id, value: el.value, disabled: el.disabled };
+				}
+				return el?.id ?? control.querySelector('[data-color-preset-control]')?.dataset.colorPresetControl;
+			});
+			expect(controlKeys).not.toContain(undefined);
+
+			return {
+				section: section.dataset.section,
+				expanded: section.querySelector('.chart-section-header').getAttribute('aria-expanded'),
+				controlKeys,
+			};
+		});
+	}
+
+	function structureFor(nestingMode, nestingColumns, groupColumn) {
+		// createDataset forces groupColumn from nestingColumns, so override it
+		// explicitly to separate the genuinely-empty cases from the legacy fallback.
+		const dataset = createDataset('count', null, nestingMode, nestingColumns);
+		dataset.chartConfig.bubble.groupColumn = groupColumn;
+		return extractStructure(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
+	}
+
+	it('matches the section and control-order structure snapshot across nesting states', () => {
+		// flat mode always renders exactly one level (maxInitialNestingControlsVisible
+		// is 1), so flat-empty vs flat-retained differ only by the level-0 select's
+		// value/disabled. grouped-one carries a stale groupColumn ('estado') to prove
+		// the canonical nestingColumns wins over the legacy fallback.
+		const byState = {
+			'flat-empty': structureFor('flat', [], null),
+			'flat-retained': structureFor('flat', ['grupo'], null),
+			'grouped-empty': structureFor('grouped', [], null),
+			'grouped-legacy': structureFor('grouped', [], 'grupo'),
+			'grouped-one': structureFor('grouped', ['grupo'], 'estado'),
+			'grouped-two': structureFor('grouped', ['grupo', 'regiao'], null),
+		};
+
+		expect(byState).toMatchSnapshot();
+	});
+});
 
 describe('bubbleControls measure mode', () => {
 	beforeEach(() => {
@@ -366,6 +438,188 @@ describe('bubbleControls progressive nesting selectors', () => {
 		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
 		expect(level0).not.toBeNull();
 		expect(level0.value).toBe('grupo');
+	});
+});
+
+describe('bubbleControls nesting depth bound', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	const cap = BUBBLE_CHART.maxNestingDepth;
+	// More than `cap` eligible (non-category) columns, so the hard cap binds before
+	// the column count in the boundary tests.
+	const wideColumns = ['categoria', ...Array.from({ length: 10 }, (_, i) => `c${i}`)];
+
+	function nestingSelectCount() {
+		return document.querySelectorAll('[id^="viz-select-bubble-nesting-level-"]').length;
+	}
+
+	it('caps the rendered nesting-select count at the hard maximum', () => {
+		const overDeep = Array.from({ length: cap + 4 }, (_, i) => `c${i}`);
+		const dataset = createDataset('count', null, 'grouped', overDeep);
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], wideColumns));
+
+		const eligibleUniqueColumns = new Set(wideColumns.filter(name => name !== 'categoria')).size;
+		const upperBound = Math.max(
+			BUBBLE_CHART.maxInitialNestingControlsVisible,
+			Math.min(cap, eligibleUniqueColumns),
+		);
+		expect(nestingSelectCount()).toBeLessThanOrEqual(upperBound);
+		expect(nestingSelectCount()).toBe(cap);
+	});
+
+	it('shows one trailing empty selector at maxNestingDepth - 1 selected', () => {
+		const selected = Array.from({ length: cap - 1 }, (_, i) => `c${i}`);
+		const dataset = createDataset('count', null, 'grouped', selected);
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], wideColumns));
+
+		expect(nestingSelectCount()).toBe(cap); // (cap - 1) filled + 1 trailing empty
+		expect(document.getElementById(`viz-select-bubble-nesting-level-${cap - 1}`).value).toBe('');
+	});
+
+	it('shows no dead extra selector at exactly maxNestingDepth selected', () => {
+		const selected = Array.from({ length: cap }, (_, i) => `c${i}`);
+		const dataset = createDataset('count', null, 'grouped', selected);
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], wideColumns));
+
+		expect(nestingSelectCount()).toBe(cap); // all filled, no dead 9th
+		expect(document.getElementById(`viz-select-bubble-nesting-level-${cap - 1}`).value).toBe(`c${cap - 1}`);
+		expect(document.getElementById(`viz-select-bubble-nesting-level-${cap}`)).toBeNull();
+	});
+
+	it('shows no trailing selector when all eligible columns below the cap are selected', () => {
+		const allColumns = ['categoria', 'c0', 'c1', 'c2', 'c3'];
+		const dataset = createDataset('count', null, 'grouped', ['c0', 'c1', 'c2', 'c3']);
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
+
+		expect(nestingSelectCount()).toBe(4); // 4 eligible filled, no useless trailing empty
+	});
+
+	it('does not let an empty-string column inflate the capacity', () => {
+		const allColumns = ['categoria', 'c0', 'c1', 'c2', 'c3', ''];
+		const dataset = createDataset('count', null, 'grouped', ['c0', 'c1', 'c2', 'c3']);
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
+
+		expect(nestingSelectCount()).toBe(4); // '' dropped from allowed → no extra trailing selector
+	});
+
+	it('falls back to a valid legacy groupColumn when the canonical list filters away', () => {
+		const dataset = createDataset('count', null, 'grouped', ['nonexistent']);
+		dataset.chartConfig.bubble.groupColumn = 'grupo';
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao']));
+
+		expect(document.getElementById('viz-select-bubble-nesting-level-0').value).toBe('grupo');
+	});
+
+	it('does not wire a 9th nesting level beyond the cap', () => {
+		const selected = Array.from({ length: cap }, (_, i) => `c${i}`);
+		const dataset = createDataset('count', null, 'grouped', selected);
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], wideColumns));
+
+		// Forge a level-`cap` selector the builder never renders, BEFORE wiring, so the
+		// test proves no listener attaches (not merely that the element is absent).
+		const rogue = document.createElement('select');
+		rogue.id = `viz-select-bubble-nesting-level-${cap}`;
+		const option = document.createElement('option');
+		option.value = 'c0';
+		rogue.appendChild(option);
+		rogue.value = 'c0';
+		document.body.appendChild(rogue);
+
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], wideColumns, vi.fn());
+		rogue.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+	});
+
+	it('does not wire a second nesting level in flat mode', () => {
+		const dataset = createDataset('count', null, 'flat', []);
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao']));
+
+		const rogue = document.createElement('select');
+		rogue.id = 'viz-select-bubble-nesting-level-1';
+		const option = document.createElement('option');
+		option.value = 'grupo';
+		rogue.appendChild(option);
+		rogue.value = 'grupo';
+		document.body.appendChild(rogue);
+
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao'], vi.fn());
+		rogue.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+	});
+
+	it('does not resurrect a hidden out-of-allowlist entry on a level change', () => {
+		const allColumns = ['categoria', 'grupo', 'regiao'];
+		const dataset = createDataset('count', null, 'grouped', ['invalid', 'grupo']);
+		dataset.chartConfig.bubble.groupColumn = 'invalid';
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], allColumns, vi.fn());
+
+		selectValue('viz-select-bubble-nesting-level-1', 'regiao');
+		expect(lastConfig().nestingColumns).toEqual(['grupo', 'regiao']); // 'invalid' never resurfaces
+	});
+
+	it('does not resurrect a hidden category entry on a level change', () => {
+		const allColumns = ['categoria', 'grupo', 'regiao'];
+		const dataset = createDataset('count', null, 'grouped', ['categoria', 'grupo']);
+		dataset.chartConfig.bubble.groupColumn = 'categoria';
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], allColumns, vi.fn());
+
+		selectValue('viz-select-bubble-nesting-level-1', 'regiao');
+		expect(lastConfig().nestingColumns).toEqual(['grupo', 'regiao']); // 'categoria' never resurfaces
+	});
+
+	it('rejects a forged out-of-allowlist option at the write sink', () => {
+		const allColumns = ['categoria', 'grupo', 'regiao'];
+		const dataset = createDataset('count', null, 'grouped', ['grupo']);
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], allColumns, vi.fn());
+
+		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
+		const forged = document.createElement('option');
+		forged.value = 'forged_xyz';
+		level0.appendChild(forged);
+		level0.value = 'forged_xyz';
+		level0.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(lastConfig().nestingColumns).not.toContain('forged_xyz');
+		expect(lastConfig().nestingColumns).toEqual([]);
+	});
+
+	it('allowlist-filters on the explicit empty-array (allow-nothing) signature', () => {
+		const allColumns = ['categoria', 'grupo', 'regiao'];
+		const dataset = createDataset('count', null, 'grouped', ['grupo']);
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], [], vi.fn());
+
+		selectValue('viz-select-bubble-nesting-level-0', 'grupo');
+		expect(lastConfig().nestingColumns).toEqual([]); // empty allowlist allows nothing
+	});
+
+	it('allowlist-filters on the callback-only overload using the dataset visible columns', () => {
+		const allColumns = ['categoria', 'grupo', 'regiao'];
+		const dataset = createDataset('count', null, 'grouped', ['grupo']);
+		dataset.columns = [
+			{ name: 'categoria', type: 'text' },
+			{ name: 'grupo', type: 'text' },
+			{ name: 'regiao', type: 'text' },
+		];
+		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], vi.fn());
+
+		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
+		const forged = document.createElement('option');
+		forged.value = 'forged_xyz';
+		level0.appendChild(forged);
+		level0.value = 'forged_xyz';
+		level0.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(lastConfig().nestingColumns).not.toContain('forged_xyz');
 	});
 });
 

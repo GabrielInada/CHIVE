@@ -58,6 +58,27 @@ describe('tooltip', () => {
 		return tooltip;
 	}
 
+	it('exposes exactly the 15 documented exports (no internal leaks through the facade)', async () => {
+		const mod = await import('../../../src/modules/visualizations/tooltip.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'buildCategoricalFilterActions',
+			'createFilterStateBadge',
+			'createNamedActionGroup',
+			'createTooltipActionGroup',
+			'createTooltipExcludeAction',
+			'createTooltipFilterAction',
+			'createTooltipLine',
+			'hideChartTooltip',
+			'isTooltipPinned',
+			'moveChartTooltip',
+			'pinTooltip',
+			'repositionPinnedTooltip',
+			'showChartTooltip',
+			'showPinnedChartTooltip',
+			'unpinTooltip',
+		]);
+	});
+
 	it('creates tooltip element on first show and displays text content', () => {
 		showChartTooltip('Hello', 100, 200);
 		const tooltip = document.querySelector('.chart-tooltip');

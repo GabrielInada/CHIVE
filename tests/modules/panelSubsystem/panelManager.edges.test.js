@@ -20,10 +20,7 @@ const mocks = vi.hoisted(() => ({
 			selectedColumns: ['a'],
 			chartConfig: {},
 		})),
-		addChartSnapshot: vi.fn((snap) => {
-			const id = Math.random();
-			return id;
-		}),
+		addChartSnapshot: vi.fn(() => 'chart-id'),
 		removeChartSnapshot: vi.fn(),
 		getChartSnapshot: vi.fn(),
 		assignChartToPanelBlockSlot: vi.fn(),
@@ -32,6 +29,7 @@ const mocks = vi.hoisted(() => ({
 		STATE_EVENTS: {
 			CHART_ADDED: 'chartAdded',
 			CHART_REMOVED: 'chartRemoved',
+			PANEL_CLEARED: 'panelCleared',
 			PANEL_BLOCK_SLOT_ASSIGNED: 'panelBlockSlotAssigned',
 			PANEL_BLOCK_ADDED: 'panelBlockAdded',
 			PANEL_BLOCK_REMOVED: 'panelBlockRemoved',
@@ -247,7 +245,7 @@ describe('panelManager (branch coverage)', () => {
 
 			addChartToPanel('container', 'Chart', { type: 'bar' });
 
-			expect(feedbackCb).toHaveBeenCalledWith(expect.any(String), 'error');
+			expect(feedbackCb).toHaveBeenCalledWith(expect.any(String));
 		});
 
 		it('does not throw on unhandled error', () => {

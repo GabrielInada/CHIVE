@@ -159,7 +159,6 @@ describe('network graph visualization', () => {
 		const initialLeft = tooltip.style.left;
 
 		// Mutate the underlying datum and call repositionPinnedTooltip via tooltip module
-		const datum = window.d3?.select?.(firstNode)?.datum?.() ?? null;
 		// d3 isn't on window in this test; use d3-selection's internal __data__ instead
 		const directDatum = firstNode.__data__;
 		expect(directDatum).toBeTruthy();

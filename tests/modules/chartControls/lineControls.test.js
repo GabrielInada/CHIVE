@@ -71,6 +71,66 @@ function lastConfig() {
 	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].line;
 }
 
+function extractStructure(controls) {
+	return controls.map(section => {
+		const content = section.querySelector('.chart-section-content');
+		const controlKeys = Array.from(content.children).map(control => {
+			const idElement = control.matches('[id]') ? control : control.querySelector('[id]');
+			const presetElement = control.querySelector('[data-color-preset-control]');
+			const stateElement = idElement ?? presetElement ?? control.querySelector('button,input,select');
+			const entry = {
+				id: idElement?.id ?? presetElement?.dataset.colorPresetControl,
+				disabled: stateElement?.disabled === true,
+			};
+			expect(entry.id).toBeDefined();
+			return entry;
+		});
+
+		return {
+			section: section.dataset.section,
+			expanded: section.querySelector('.chart-section-header').getAttribute('aria-expanded'),
+			controlKeys,
+		};
+	});
+}
+
+describe('lineControls public surface', () => {
+	it('exposes exactly the three documented line-control exports (no internal leaks)', async () => {
+		const mod = await import('../../../src/modules/chartControls/lineControls.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'computeDefaults',
+			'createLineChartControls',
+			'setupLineChartControlListeners',
+		]);
+	});
+});
+
+describe('lineControls section structure', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('matches the section/control-order and disabled-state snapshot across missing modes', () => {
+		// Drive the missingMode dimension: 'interpolate' enables the ghost-color
+		// picker, every other mode disables it, so the snapshot pins that
+		// conditional disabled slot (not just control presence/order).
+		const byMode = {};
+		for (const missingMode of ['interpolate', 'connect']) {
+			const dataset = createDataset({ missingMode });
+			const controls = createLineChartControls(
+				dataset,
+				['visits', 'signups'],
+				['month'],
+				['month', 'visits', 'signups'],
+			);
+			byMode[missingMode] = extractStructure(controls);
+		}
+
+		expect(byMode).toMatchSnapshot();
+	});
+});
+
 describe('lineControls UI structure', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

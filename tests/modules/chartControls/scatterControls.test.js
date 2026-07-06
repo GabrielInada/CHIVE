@@ -78,6 +78,61 @@ function lastConfig() {
 	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].scatter;
 }
 
+describe('scatterControls public surface', () => {
+	it('exposes exactly the three documented scatter-control exports (no internal leaks)', async () => {
+		const mod = await import('../../../src/modules/chartControls/scatterControls.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'computeDefaults',
+			'createScatterPlotControls',
+			'setupScatterPlotControlListeners',
+		]);
+	});
+});
+
+describe('scatterControls UI structure', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	function extractStructure(controls) {
+		return controls.map(section => {
+			const content = section.querySelector('.chart-section-content');
+			const controlKeys = Array.from(content.children).map(control => {
+				const idElement = control.matches('[id]') ? control : control.querySelector('[id]');
+				if (idElement?.id) return idElement.id;
+				return control.querySelector('[data-color-preset-control]')?.dataset.colorPresetControl;
+			});
+			expect(controlKeys).not.toContain(undefined);
+
+			return {
+				section: section.dataset.section,
+				expanded: section.querySelector('.chart-section-header').getAttribute('aria-expanded'),
+				controlKeys,
+			};
+		});
+	}
+
+	it('matches the section and control-order structure snapshot for each color mode', () => {
+		// Drive all three color modes: uniform omits both conditional styling
+		// controls, numeric surfaces gradient-distribution, and category surfaces
+		// color-scheme, so the snapshot pins each conditional's exact slot in the
+		// marker -> color concat (not just its presence).
+		const byMode = {};
+		for (const colorMode of ['uniform', 'numeric', 'category']) {
+			const dataset = createDataset({ colorMode });
+			const controls = createScatterPlotControls(
+				dataset,
+				['value', 'otherValue'],
+				['value', 'otherValue', 'category'],
+			);
+			byMode[colorMode] = extractStructure(controls);
+		}
+
+		expect(byMode).toMatchSnapshot();
+	});
+});
+
 describe('scatterControls axis options', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();

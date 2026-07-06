@@ -1,0 +1,125 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`barControls section structure > matches the section and control-order structure snapshot for each color mode 1`] = `
+{
+  "gradient": [
+    {
+      "controlKeys": [
+        "viz-select-bar",
+        "viz-select-bar-measure",
+        "viz-select-bar-value-column",
+        "viz-select-bar-sort",
+        "viz-select-bar-topn",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-input-bar-title",
+        "viz-toggle-bar-x-label",
+        "viz-toggle-bar-y-label",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-select-bar-color-mode",
+        "viz-input-bar-color",
+        "viz-input-bar-gradient-min",
+        "viz-input-bar-gradient-max",
+        "viz-select-bar-gradient-distribution",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+    {
+      "controlKeys": [
+        "viz-bar-color-preset",
+      ],
+      "expanded": "false",
+      "section": "advanced",
+    },
+  ],
+  "gradient-manual": [
+    {
+      "controlKeys": [
+        "viz-select-bar",
+        "viz-select-bar-measure",
+        "viz-select-bar-value-column",
+        "viz-select-bar-sort",
+        "viz-select-bar-topn",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-input-bar-title",
+        "viz-toggle-bar-x-label",
+        "viz-toggle-bar-y-label",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-select-bar-color-mode",
+        "viz-input-bar-color",
+        "viz-input-bar-gradient-min",
+        "viz-input-bar-gradient-max",
+        "viz-slider-bar-threshold",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+    {
+      "controlKeys": [
+        "viz-bar-color-preset",
+      ],
+      "expanded": "false",
+      "section": "advanced",
+    },
+  ],
+  "uniform": [
+    {
+      "controlKeys": [
+        "viz-select-bar",
+        "viz-select-bar-measure",
+        "viz-select-bar-value-column",
+        "viz-select-bar-sort",
+        "viz-select-bar-topn",
+      ],
+      "expanded": "true",
+      "section": "data",
+    },
+    {
+      "controlKeys": [
+        "viz-input-bar-title",
+        "viz-toggle-bar-x-label",
+        "viz-toggle-bar-y-label",
+      ],
+      "expanded": "true",
+      "section": "display",
+    },
+    {
+      "controlKeys": [
+        "viz-select-bar-color-mode",
+        "viz-input-bar-color",
+        "viz-input-bar-gradient-min",
+        "viz-input-bar-gradient-max",
+      ],
+      "expanded": "false",
+      "section": "styling",
+    },
+    {
+      "controlKeys": [
+        "viz-bar-color-preset",
+      ],
+      "expanded": "false",
+      "section": "advanced",
+    },
+  ],
+}
+`;

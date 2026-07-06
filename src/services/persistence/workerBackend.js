@@ -391,6 +391,17 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	function onWorkerError(gen, event) {
 		if (gen !== currentGeneration) return;
 		if (event && typeof event.preventDefault === 'function') event.preventDefault();
+		// A worker error is otherwise invisible: the fallback rescues the write so
+		// no user-facing error fires. Log it like the other persist failures, and
+		// capture the full ErrorEvent (error/stack + filename/lineno/colno) so a
+		// worker-only failure mode stays debuggable.
+		console.warn('[chive:persist] worker error; falling back to main thread:', {
+			error: event?.error,
+			message: event?.message,
+			filename: event?.filename,
+			lineno: event?.lineno,
+			colno: event?.colno,
+		});
 		resetAndDrain(gen, !workerProven);              // startup onerror disables; post-success only resets
 	}
 

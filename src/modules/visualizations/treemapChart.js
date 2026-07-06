@@ -20,11 +20,12 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from './tooltip.js';
-import { CHART_COLORS, CHART_DIMENSIONS, TREEMAP_CHART } from '../../config/charts.js';
-import { formatNumber, isNullish, clamp } from '../../utils/formatters.js';
-import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
-import { isValidHexColor } from '../../utils/colorUtils.js';
+import { CHART_DIMENSIONS } from '../../config/charts.js';
+import { formatNumber, clamp } from '../../utils/formatters.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
 import { appendChartTitle } from './chartScaffold.js';
+import { normalizeTreemapOptions } from './treemapChart/options.js';
+import { aggregateTreemapData } from './treemapChart/data.js';
 
 const COLOR_PALETTE = {
 	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
@@ -61,67 +62,25 @@ function truncate(text, maxLen) {
 export function renderTreeMap(container, rows, categoryColumn, options = {}) {
 	if (!container || !categoryColumn) return { ok: false };
 
-	const measureMode = TREEMAP_CHART.measureModes.includes(options.measureMode)
-		? options.measureMode
-		: TREEMAP_CHART.defaultMeasureMode;
-	const valueColumn = options.valueColumn || null;
-	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : TREEMAP_CHART.defaultTopN;
-	const padding = Number.isFinite(Number(options.padding)) ? clamp(Number(options.padding), 1, 6) : TREEMAP_CHART.defaultPadding;
-	const showLabels = options.showLabels !== false;
-	const showValues = options.showValues !== false;
-	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(options.chartHeight))
-		? clamp(Number(options.chartHeight), 220, 720)
-		: 380;
-	const colorMode = options.colorMode || 'scheme';
-	const colorScheme = options.colorScheme || 'Bold';
-	const uniformColor = isValidHexColor(String(options.color || '').trim())
-		? String(options.color).trim()
-		: CHART_COLORS.treemap;
-	const locale = options.locale || undefined;
-	const labels = {
-		category: options.labels?.category || 'Category',
-		count: options.labels?.count || 'Count',
-		sum: options.labels?.sum || 'Sum',
-		percentage: options.labels?.percentage || 'Percentage',
-		focusOnThis: options.labels?.focusOnThis || 'Show only this',
-		addToFilter: options.labels?.addToFilter || 'Add to global filter',
-	};
+	const {
+		measureMode,
+		valueColumn,
+		topN,
+		padding,
+		showLabels,
+		showValues,
+		customTitle,
+		chartHeight,
+		colorMode,
+		colorScheme,
+		uniformColor,
+		locale,
+		labels,
+	} = normalizeTreemapOptions(options);
 
-	// Aggregate data
-	const hasValueColumn = measureMode === 'count'
-		? true
-		: rows.some(row => Object.prototype.hasOwnProperty.call(row, valueColumn));
-
-	if (measureMode === 'sum' && (!valueColumn || !hasValueColumn)) {
-		return { ok: false, reason: 'no-value-column' };
-	}
-
-	const counter = new Map();
-	rows.forEach(row => {
-		const rawValue = row[categoryColumn];
-		const category = isNullish(rawValue) || rawValue === ''
-			? 'N/A'
-			: String(rawValue);
-		if (measureMode === 'sum') {
-			const value = Number(row[valueColumn]);
-			if (!Number.isFinite(value)) return;
-			counter.set(category, (counter.get(category) || 0) + value);
-		} else {
-			counter.set(category, (counter.get(category) || 0) + 1);
-		}
-	});
-
-	if (counter.size === 0) return { ok: false };
-
-	let entries = Array.from(counter.entries())
-		.filter(([, v]) => v > 0)
-		.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]));
-
-	if (topN > 0) entries = entries.slice(0, topN);
-	if (entries.length === 0) return { ok: false };
-
-	const total = entries.reduce((acc, [, v]) => acc + v, 0);
+	const aggregated = aggregateTreemapData(rows, categoryColumn, { measureMode, valueColumn, topN });
+	if (!aggregated.ok) return aggregated;
+	const { entries, total } = aggregated;
 
 	container.replaceChildren();
 	hideChartTooltip();

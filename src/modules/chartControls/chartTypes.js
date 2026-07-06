@@ -15,6 +15,7 @@ import {
 	PREVIEW_NETWORK_SVG,
 	PREVIEW_PIE_SVG,
 	PREVIEW_SCATTER_SVG,
+	PREVIEW_SCATTER3D_SVG,
 	PREVIEW_TIN_SVG,
 	PREVIEW_TREEMAP_SVG,
 } from './previews.js';
@@ -25,7 +26,7 @@ import {
  *
  * @type {ReadonlyArray<ChartTypeKey>}
  */
-export const CHART_TYPES = ['bar', 'line', 'scatter', 'pie', 'bubble', 'network', 'treemap', 'tin'];
+export const CHART_TYPES = ['bar', 'line', 'scatter', 'scatter3d', 'pie', 'bubble', 'network', 'treemap', 'tin'];
 
 /**
  * Hardcoded preview SVG markup, keyed by {@link ChartTypeKey}. Consumed
@@ -36,6 +37,7 @@ export const CHART_TYPES = ['bar', 'line', 'scatter', 'pie', 'bubble', 'network'
 export const PREVIEW_SVGS = {
 	bar: PREVIEW_BAR_SVG,
 	scatter: PREVIEW_SCATTER_SVG,
+	scatter3d: PREVIEW_SCATTER3D_SVG,
 	pie: PREVIEW_PIE_SVG,
 	bubble: PREVIEW_BUBBLE_SVG,
 	network: PREVIEW_NETWORK_SVG,
@@ -54,6 +56,7 @@ export const PREVIEW_SVGS = {
 export const CATEGORY_KEYS = {
 	bar: 'chive-viz-category-comparison',
 	scatter: 'chive-viz-category-relationship',
+	scatter3d: 'chive-viz-category-relationship',
 	pie: 'chive-viz-category-composition',
 	bubble: 'chive-viz-category-hierarchy',
 	network: 'chive-viz-category-relationship',

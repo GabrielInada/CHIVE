@@ -66,7 +66,7 @@ let panelSubscriptions = [];
  * Initialize the panel manager. Wires panel-related state-event listeners
  * exactly once; subsequent calls update only the feedback callback.
  *
- * @param {((message: string, kind?: 'success' | 'error') => void) | null} [feedbackFn] - Callback for user feedback. When `null`, panel actions fall back to silent operation.
+ * @param {((message: string, durationMs?: number) => void) | null} [feedbackFn] - Callback for user feedback, `feedbackUI.showFeedback` in production (message plus optional toast duration). When `null`, panel actions fall back to silent operation.
  */
 export function initPanelManager(feedbackFn = null) {
 	// Always update the feedback callback, callers may legitimately
@@ -79,6 +79,7 @@ export function initPanelManager(feedbackFn = null) {
 	// Re-render when state changes
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_ADDED, handleChartStateChange));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_REMOVED, handleChartStateChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_CLEARED, handlePanelCleared));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, handleChartStateChange));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_ADDED, handleLayoutChange));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_REMOVED, handleLayoutChange));
@@ -118,6 +119,18 @@ function handleLayoutChange() {
 	fillLayoutSelect();
 }
 
+/**
+ * Handle a panel clear. `clearPanel()` empties the chart snapshots AND resets
+ * blocks/layout to the default template, so refresh the sidebar, the canvas, and
+ * the layout selector.
+ * @private
+ */
+function handlePanelCleared() {
+	renderSidebarPanel();
+	renderCanvasPanel();
+	fillLayoutSelect();
+}
+
 // =============================================================================
 // FACADE-WRITE CALLBACKS (injected into panelSubsystem renderers)
 // =============================================================================
@@ -131,7 +144,7 @@ function handleLayoutChange() {
 function handleAddBlock(templateId) {
 	const newBlockId = addPanelBlock(templateId);
 	if (newBlockId === null && feedbackCallback) {
-		feedbackCallback(t('chive-panel-max-blocks'), 'error');
+		feedbackCallback(t('chive-panel-max-blocks'));
 	}
 }
 
@@ -203,28 +216,25 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 			metaSummary: typeof metadata?.summary === 'string' ? metadata.summary : '',
 		});
 
-		renderSidebarPanel();
-		renderCanvasPanel();
+		// Re-render is driven by the CHART_ADDED subscription, not a direct call.
 		return ok({ chartId });
 	} catch {
 		if (feedbackCallback) {
-			feedbackCallback(t('chive-panel-add-error'), 'error');
+			feedbackCallback(t('chive-panel-add-error'));
 		}
 		return fail('add-error');
 	}
 }
 
 /**
- * Remove a chart snapshot from the panel. Delegates to the panel facade,
- * then re-renders sidebar + canvas.
+ * Remove a chart snapshot from the panel. Delegates to the panel facade; the
+ * CHART_REMOVED subscription re-renders the sidebar + canvas.
  *
  * @param {number | string} chartId
  * @fires STATE_EVENTS.CHART_REMOVED - When the snapshot existed.
  */
 export function removeChartFromPanel(chartId) {
 	removeChartSnapshot(chartId);
-	renderSidebarPanel();
-	renderCanvasPanel();
 }
 
 /**
@@ -296,12 +306,13 @@ export function changeLayout(layoutId) {
 
 /**
  * Export the rendered panel as an SVG file. Delegates to
- * `panel/panelExporter.js`.
+ * `panel/panelExporter.js`; all user feedback happens here, the exporter
+ * only returns Results.
  *
- * @returns {Result} `{ ok: true }` on success; `{ ok: false, reason }` where reason is `'canvas-not-found'` or `'empty-canvas'`.
+ * @returns {Result} `ok({ omittedChartCount })` on success; `{ ok: false, reason }` where reason is `'canvas-not-found'`, `'empty-canvas'`, `'no-exportable-charts'`, or `'export-error'`.
  */
 export function exportPanelLayoutSvg() {
-	return exportSvg(feedbackCallback);
+	return exportSvg();
 }
 
 /**
@@ -322,20 +333,23 @@ export function setupPanelEventListeners() {
 	if (btnExportar) {
 		btnExportar.addEventListener('click', () => {
 			const result = exportPanelLayoutSvg();
+			if (!feedbackCallback) return;
 			if (!result.ok) {
-				if (feedbackCallback) {
-					let msg = t('chive-panel-export-error');
-					if (result.reason === 'canvas-not-found') {
-						msg = 'Panel canvas not found';
-					} else if (result.reason === 'empty-canvas') {
-						msg = 'Panel is empty';
-					}
-					feedbackCallback(msg, 'error');
+				let msg = t('chive-panel-export-error');
+				if (result.reason === 'canvas-not-found') {
+					msg = 'Panel canvas not found';
+				} else if (result.reason === 'empty-canvas') {
+					msg = 'Panel is empty';
+				} else if (result.reason === 'no-exportable-charts') {
+					msg = t('chive-panel-export-no-exportable');
 				}
+				feedbackCallback(msg);
+			} else if (result.omittedChartCount > 0) {
+				// Success with a caveat: the file downloaded, but some chart
+				// slots had no SVG to include (canvas charts, failed renders).
+				feedbackCallback(t('chive-panel-export-omitted', result.omittedChartCount));
 			} else {
-				if (feedbackCallback) {
-					feedbackCallback(t('chive-panel-export-svg'), 'success');
-				}
+				feedbackCallback(t('chive-panel-export-svg'));
 			}
 		});
 	}
@@ -352,12 +366,12 @@ export function initializeLayoutSelector() {
 }
 
 /**
- * Reset the panel to a single fresh `template-2col` block and re-render.
+ * Reset the panel to a single fresh `template-2col` block. Delegates to the
+ * panel facade; the PANEL_CLEARED subscription re-renders sidebar, canvas, and
+ * the layout selector.
  *
  * @fires STATE_EVENTS.PANEL_CLEARED
  */
 export function clearPanelData() {
 	clearPanel();
-	renderSidebarPanel();
-	renderCanvasPanel();
 }

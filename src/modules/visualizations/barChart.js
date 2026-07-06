@@ -21,10 +21,9 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from './tooltip.js';
-import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
-import { formatNumber, isNullish } from '../../utils/formatters.js';
-import { toCategoryToken, compareStrings } from '../../utils/chartFilters.js';
-import { interpolateColor, buildRankMap, isValidHexColor } from '../../utils/colorUtils.js';
+import { BAR_CHART, CHART_DIMENSIONS } from '../../config/charts.js';
+import { formatNumber } from '../../utils/formatters.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
 import { ok, fail } from '../../utils/result.js';
 import {
 	appendAxisLabels,
@@ -32,26 +31,9 @@ import {
 	appendLeftAxis,
 	setupChartSvg,
 } from './chartScaffold.js';
-
-// WHY: every count-based sort uses `|| compareStrings(a[0], b[0])` as a tiebreaker
-// so categories with equal counts have a deterministic visual order. Without the
-// secondary string compare, sort stability varies by browser engine and the bar
-// order can flicker between renders on identical data.
-function sortCategories(entries, sort) {
-	if (sort === 'count-asc') {
-		return entries.sort((a, b) => a[1] - b[1] || compareStrings(a[0], b[0]));
-	}
-
-	if (sort === 'label-asc') {
-		return entries.sort((a, b) => compareStrings(a[0], b[0]));
-	}
-
-	if (sort === 'label-desc') {
-		return entries.sort((a, b) => compareStrings(b[0], a[0]));
-	}
-
-	return entries.sort((a, b) => b[1] - a[1] || compareStrings(a[0], b[0]));
-}
+import { normalizeBarOptions } from './barChart/options.js';
+import { aggregateBarData } from './barChart/data.js';
+import { createBarColorAccessor } from './barChart/color.js';
 
 /**
  * Render a bar chart into `container`. Returns `ok()` on success, or
@@ -77,101 +59,29 @@ function sortCategories(entries, sort) {
  */
 export function renderBarChart(container, rows, categoryColumn, options = {}) {
 	if (!container || !categoryColumn) return fail();
-	const sort = options.sort || BAR_CHART.defaultSort;
-	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : BAR_CHART.defaultTopN;
-	const showXAxisLabel = options.showXAxisLabel !== false;
-	const showYAxisLabel = options.showYAxisLabel !== false;
-	const labels = {
-		category: options.labels?.category || 'Category',
-		count: options.labels?.count || 'Count',
-		sum: options.labels?.sum || 'Sum',
-		mean: options.labels?.mean || 'Mean',
-		percentage: options.labels?.percentage || 'Percentage',
-		focusOnThis: options.labels?.focusOnThis || 'Show only this',
-		addToFilter: options.labels?.addToFilter || 'Add to global filter',
-	};
-	const measureMode = BAR_CHART.measureModes.includes(options.measureMode)
-		? options.measureMode
-		: BAR_CHART.defaultMeasureMode;
-	const valueColumn = options.valueColumn || null;
-	const hasValueColumn = (measureMode === 'count')
-		? true
-		: rows.some(row => Object.prototype.hasOwnProperty.call(row, valueColumn));
-	const axisLabels = {
-		x: options.axisLabels?.x || categoryColumn,
-		y: options.axisLabels?.y
-			|| (measureMode === 'mean'
-				? labels.mean
-				: measureMode === 'sum'
-					? labels.sum
-					: labels.count),
-	};
-	const color = isValidHexColor(String(options.color || '').trim())
-		? String(options.color).trim()
-		: CHART_COLORS.bar;
-	const colorMode = ['uniform', 'gradient', 'gradient-manual'].includes(options.colorMode)
-		? options.colorMode
-		: 'uniform';
-	const gradientMinColor = isValidHexColor(String(options.gradientMinColor || '').trim())
-		? String(options.gradientMinColor).trim()
-		: color;
-	const gradientMaxColor = isValidHexColor(String(options.gradientMaxColor || '').trim())
-		? String(options.gradientMaxColor).trim()
-		: '#ffffff';
-	const manualThresholdPct = Number.isFinite(Number(options.manualThresholdPct))
-		? Math.max(0, Math.min(100, Number(options.manualThresholdPct)))
-		: 50;
-	const gradientDistribution = options.gradientDistribution === 'rank' ? 'rank' : 'value';
-	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(options.chartHeight))
-		? Math.max(220, Math.min(720, Number(options.chartHeight)))
-		: CHART_DIMENSIONS.bar.height;
-	const locale = options.locale || undefined;
+	const {
+		sort,
+		topN,
+		showXAxisLabel,
+		showYAxisLabel,
+		labels,
+		measureMode,
+		valueColumn,
+		axisLabels,
+		color,
+		colorMode,
+		gradientMinColor,
+		gradientMaxColor,
+		manualThresholdPct,
+		gradientDistribution,
+		customTitle,
+		chartHeight,
+		locale,
+	} = normalizeBarOptions(options, categoryColumn);
 
-	const counter = new Map();
-	const counterN = new Map();
-
-	if (measureMode === 'count') {
-		rows.forEach(row => {
-			const rawValue = row[categoryColumn];
-			const category = isNullish(rawValue) || rawValue === ''
-				? 'N/A'
-				: String(rawValue);
-			counter.set(category, (counter.get(category) || 0) + 1);
-		});
-	} else {
-		if (!valueColumn || !hasValueColumn) return fail('no-value-column');
-		rows.forEach(row => {
-			const rawValue = row[categoryColumn];
-			const category = isNullish(rawValue) || rawValue === ''
-				? 'N/A'
-				: String(rawValue);
-			const value = Number(row[valueColumn]);
-			if (!Number.isFinite(value)) return;
-			counter.set(category, (counter.get(category) || 0) + value);
-			counterN.set(category, (counterN.get(category) || 0) + 1);
-		});
-
-		if (measureMode === 'mean') {
-			for (const [category, sum] of counter.entries()) {
-				counter.set(category, sum / (counterN.get(category) || 1));
-			}
-		}
-	}
-
-	if ((measureMode === 'sum' || measureMode === 'mean') && counter.size === 0) {
-		return fail('no-numeric');
-	}
-
-	let entries = Array.from(counter.entries());
-	entries = sortCategories(entries, sort);
-
-	if (topN > 0) {
-		entries = entries.slice(0, topN);
-	}
-
-	if (entries.length === 0) return fail();
-	const totalContagem = entries.reduce((acc, item) => acc + item[1], 0);
+	const aggregated = aggregateBarData(rows, categoryColumn, { measureMode, valueColumn, sort, topN });
+	if (!aggregated.ok) return fail(aggregated.reason);
+	const { entries, total: totalContagem } = aggregated;
 
 	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bar.width, 320);
 	const height = chartHeight;
@@ -264,30 +174,15 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		.nice()
 		.range([innerHeight, 0]);
 
-	const minValor = Math.min(...entries.map(item => item[1]));
-	const maxValor = Math.max(...entries.map(item => item[1]));
-	const deltaValor = maxValor - minValor || 1;
-	const thresholdValue = minValor + (deltaValor * (manualThresholdPct / 100));
-	const rankMap = (colorMode === 'gradient' && gradientDistribution === 'rank')
-		? buildRankMap(entries, item => item[1])
-		: null;
-	const rankDenom = Math.max(entries.length - 1, 1);
-
-	const getBarColor = (item) => {
-		if (colorMode === 'uniform') return color;
-		if (colorMode === 'gradient') {
-			if (rankMap) {
-				const rank = rankMap.get(item);
-				if (rank === undefined) return gradientMinColor;
-				return interpolateColor(gradientMinColor, gradientMaxColor, rank / rankDenom);
-			}
-			return interpolateColor(gradientMinColor, gradientMaxColor, (item[1] - minValor) / deltaValor);
-		}
-		if (colorMode === 'gradient-manual') {
-			return item[1] <= thresholdValue ? gradientMinColor : gradientMaxColor;
-		}
-		return color;
-	};
+	const getBarColor = createBarColorAccessor({
+		entries,
+		colorMode,
+		color,
+		gradientMinColor,
+		gradientMaxColor,
+		gradientDistribution,
+		manualThresholdPct,
+	});
 
 	group
 		.selectAll('rect')

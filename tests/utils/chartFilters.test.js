@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   FILTER_MISSING_TOKEN,
-  FILTER_CATEGORY_LIMIT,
   applyChartFilterRows,
   createDefaultFilterConfig,
   getCategoricalFilterOptions,

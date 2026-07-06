@@ -2,17 +2,21 @@ import js from '@eslint/js';
 import chiveRules from './eslint-rules/index.js';
 
 const STATELESS_RENDERER_MESSAGE =
-	'Renderers and DOM builders (src/components/, src/features/, ' +
+	'Renderers and DOM builders (src/components/, ' +
 	'modules/visualizations/, panelSubsystem presentation files) do not ' +
-	'call write facades (ARCHITECTURE.md Layers section). Only read-only facade members ' +
-	'are importable here. Route writes through panelManager.js, ' +
-	'chartControls listeners, or modules/eventHandlers.';
+	'call write facades (docs/development/architecture.md Layers section). Only read-only facade members ' +
+	'are importable here. Route writes through feature controllers, ' +
+	'chart-control listeners, or event-handler modules.';
 
-// Read-only facade surface that renderers may import from appState.js.
-// If you add a new READ function to appState.js, add it here too. Anything
-// not in this list is treated as a write and blocked.
+// Renderer-safe read surface that renderers may import from appState.js.
+// Add a new read here only when renderers should use it; reads meant for
+// persistence, debug, or internal use (e.g. getPersistenceSnapshot) are
+// deliberately absent. Anything not in this list is treated as a write and
+// blocked.
 const APP_STATE_READS = [
 	'getActiveDataset',
+	'getActiveDatasetIndex',
+	'getPreviewRows',
 	'getAllDatasets',
 	'getPanelCharts',
 	'getChartSnapshot',
@@ -23,12 +27,14 @@ const APP_STATE_READS = [
 	'sanitizeChartName',
 ];
 
-// Facade getters that return mutable refs (objects/arrays). The inline mutation
-// guard below blocks `getXxx().a.b = c` assignments AND inline mutating-method
-// calls (`getXxx().a.push(...)`) across all of src/. The aliased form
-// (`const d = getXxx(); d.a = b`) is caught separately by the local
-// `chive/no-facade-getter-mutation` rule. If a new mutable-ref getter is added
-// to appState.js, add it here too (and to the local rule's getter list).
+// Object- and array-returning read facades whose results must be treated
+// read-only (getState returns a clone, but its result is still not a legal
+// write target). The inline mutation guard below blocks `getXxx().a.b = c`
+// assignments AND inline mutating-method calls (`getXxx().a.push(...)`)
+// across all of src/. The aliased form (`const d = getXxx(); d.a = b`) is
+// caught separately by the local `chive/no-facade-getter-mutation` rule. If a
+// new object- or array-returning read facade is added to appState.js, add it
+// here too (and to the local rule's getter list).
 const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState|getPersistenceSnapshot)';
 
 // Array methods that mutate the receiver in place. Kept in sync with
@@ -84,6 +90,10 @@ const BARE_IMPORT_BANS = [
 		name: 'banana-i18n',
 		message: 'Import the checked-in vendor module (`vendor/banana-i18n/banana-i18n.js`) via a relative path. A bare specifier only resolves under a bundler and breaks raw-static hosting.',
 	},
+	{
+		name: 'three',
+		message: 'Import the checked-in vendor module (`vendor/three/three.module.js`) via a relative path. A bare "three" specifier only resolves under a bundler and breaks raw-static hosting.',
+	},
 ];
 
 const VITE_ONLY_SYNTAX_SELECTORS = [
@@ -101,7 +111,7 @@ const VITE_ONLY_SYNTAX_SELECTORS = [
 	},
 ];
 
-// Hand-maintained (dep-free, by choice, see ARCHITECTURE.md's minimal-footprint
+// Hand-maintained (dep-free, by choice, see docs/development/architecture.md's minimal-footprint
 // stance). Combined window + Web Worker scope, since the ingest worker is linted
 // too. Add a global the first time a new browser/worker API is referenced in
 // src/; the set below is exactly what src/ uses today.
@@ -135,6 +145,22 @@ const BROWSER_GLOBALS = {
 	Worker: 'readonly',
 	self: 'readonly',
 	DedicatedWorkerGlobalScope: 'readonly',
+};
+
+const TEST_GLOBALS = {
+	...BROWSER_GLOBALS,
+	global: 'readonly',
+	File: 'readonly',
+	Event: 'readonly',
+	MouseEvent: 'readonly',
+	KeyboardEvent: 'readonly',
+	Option: 'readonly',
+	queueMicrotask: 'readonly',
+	DOMException: 'readonly',
+	HTMLAnchorElement: 'readonly',
+	// Canvas-chart interaction tests dispatch wheel/pointer events.
+	WheelEvent: 'readonly',
+	PointerEvent: 'readonly',
 };
 
 export default [
@@ -178,7 +204,7 @@ export default [
 	// AFTER (A) because it redeclares `no-restricted-imports`; it repeats the
 	// bare-import bans alongside the facade-read restriction.
 	{
-		files: ['src/components/**/*.js', 'src/features/**/*.js', 'src/modules/visualizations/**/*.js'],
+		files: ['src/components/**/*.js', 'src/modules/visualizations/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
@@ -216,6 +242,55 @@ export default [
 					group: ['**/state/appState.js'],
 					allowImportNames: APP_STATE_READS,
 					message: STATELESS_RENDERER_MESSAGE,
+				}],
+			}],
+		},
+	},
+
+	// (B3) Per-chart package leaf files (src/charts/<name>/): data, options,
+	// scales, and math stay pure D3 math, interaction.js stays pure
+	// camera/input mechanics, and renderers draw from explicit inputs only.
+	// None of them may reach modules/, components/, or services/ (config,
+	// utils, and vendor modules only). Localized strings arrive through
+	// options.labels; state never enters a renderer.
+	{
+		files: [
+			'src/charts/*/data.js',
+			'src/charts/*/options.js',
+			'src/charts/*/scales.js',
+			'src/charts/*/math.js',
+			'src/charts/*/interaction.js',
+			'src/charts/*/renderers/**/*.js',
+		],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/modules/**', '**/components/**', '**/services/**'],
+					message: 'Chart package leaf files import only config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
+				}],
+			}],
+		},
+	},
+
+	// (B4) Per-chart package integration files: sections/adapters receive
+	// props and callbacks, never state; controls write through the shared
+	// chartControls helpers, which remain the config-write adapter. No
+	// panel internals and no workspace components (the container lifecycle
+	// and chart-message helpers live in utils for exactly this reason).
+	{
+		files: [
+			'src/charts/*/workspaceSection.js',
+			'src/charts/*/panelAdapter.js',
+			'src/charts/*/presentation.js',
+			'src/charts/*/controls/**/*.js',
+		],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/state/appState.js', '**/modules/state/**', '**/modules/panelSubsystem/**', '**/components/**'],
+					message: 'Chart package integration files do not import state, panel internals, or workspace components. Receive props/callbacks; controls write only through the shared chartControls helpers.',
 				}],
 			}],
 		},
@@ -263,6 +338,25 @@ export default [
 		plugins: { chive: chiveRules },
 		rules: {
 			'chive/no-facade-getter-mutation': 'error',
+		},
+	},
+
+	// (F) Tests run under Vitest/jsdom. Keep them in `npm run lint` without
+	// applying src architecture guards to test harness code.
+	{
+		files: ['tests/**/*.js'],
+		languageOptions: {
+			ecmaVersion: 'latest',
+			sourceType: 'module',
+			globals: TEST_GLOBALS,
+		},
+		rules: {
+			'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+			'prefer-const': 'warn',
+			'no-var': 'warn',
+			'eqeqeq': 'warn',
+			'curly': ['warn', 'multi-line'],
+			'no-undef': 'error',
 		},
 	},
 ];

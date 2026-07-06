@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { createBlobBackend } from '../../../src/services/persistence/blobBackend.js';
 import { createPersistHandler } from '../../../src/workers/persistWorker.js';
@@ -11,6 +11,7 @@ import {
 
 let sqlite3Ready;
 let counter = 0;
+let warnSpy;
 
 beforeAll(() => {
 	sqlite3Ready = sqlite3InitModule().then(sqlite3 => {
@@ -99,6 +100,12 @@ function nextDb() {
 	counter += 1;
 	return `wb-test-${counter}`;
 }
+
+beforeEach(() => {
+	// onWorkerError logs a diagnostic on every worker `onerror`; mock it so the
+	// crash tests stay quiet, and reuse the spy to assert the log shape.
+	warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+});
 
 afterEach(() => {
 	__setPersistWorkerFactoryForTesting(null);
@@ -539,6 +546,28 @@ describe('workerBackend, crash drains every pending op serially in send order', 
 		expect(fallback.persist).toHaveBeenCalledTimes(1);
 	});
 
+	it('logs the full ErrorEvent diagnostics before falling back', async () => {
+		const db = nextDb();
+		const fallback = spyFallback(`${db}-fb`);
+		let worker;
+		const backend = createWorkerBackend({
+			workerFactory: () => { worker = new MockWorker(); return worker; }, // silent
+			fallbackBackendFactory: () => fallback,
+			timeoutMs: 5000,
+		});
+
+		const workerError = new Error('boom');
+		const p = backend.persist(snap());
+		worker.emitError({ error: workerError, message: 'crash', filename: 'persistWorker.js', lineno: 42, colno: 7 });
+
+		await expect(p).resolves.toBeUndefined();
+		// The same error object is logged (so its stack survives), plus every ErrorEvent field.
+		expect(warnSpy).toHaveBeenCalledWith(
+			'[chive:persist] worker error; falling back to main thread:',
+			expect.objectContaining({ error: workerError, message: 'crash', filename: 'persistWorker.js', lineno: 42, colno: 7 }),
+		);
+	});
+
 	it('drains pending persist → clear in order (clear wins, store ends empty)', async () => {
 		const db = nextDb();
 		const fallback = spyFallback(`${db}-fb`);
@@ -614,6 +643,7 @@ describe('workerBackend, reset is idempotent + stale responses ignored', () => {
 
 		await expect(p).resolves.toBeUndefined();
 		expect(fallback.persist).toHaveBeenCalledTimes(1);  // exactly once
+		expect(warnSpy).not.toHaveBeenCalled();             // stale onerror returns at the gen guard, before the warn
 	});
 
 	it('ignores a late ok:true from an already-terminated worker (no sentPayloads write)', async () => {

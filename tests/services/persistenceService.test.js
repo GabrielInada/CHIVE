@@ -125,6 +125,24 @@ function writeLegacyState({ datasets, panelRecord }) {
 	});
 }
 
+function setDocumentVisibilityState(value) {
+	const original = Object.getOwnPropertyDescriptor(document, 'visibilityState');
+	Object.defineProperty(document, 'visibilityState', { configurable: true, value });
+	return () => {
+		if (original) {
+			Object.defineProperty(document, 'visibilityState', original);
+		} else {
+			delete document.visibilityState;
+		}
+	};
+}
+
+async function flushMicrotasks(count = 3) {
+	for (let i = 0; i < count; i += 1) {
+		await Promise.resolve();
+	}
+}
+
 describe('persistenceService', () => {
 	let activeController = null;
 
@@ -140,6 +158,17 @@ describe('persistenceService', () => {
 		await clearPersistedState();
 		localStorage.clear();
 		configurePersistenceBackend(null);
+	});
+
+	it('exposes exactly the 14 documented exports (no internal leaks through the facade)', async () => {
+		const mod = await import('../../src/services/persistenceService.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'PROJECT_FILE_EXTENSION', 'PROJECT_FILE_MIME', 'clearPersistedState',
+			'configurePersistenceBackend', 'enablePersistenceAutoSave', 'exportProject',
+			'getPersistenceErrorMessageKey', 'getProjectImportErrorMessageKey', 'hydrateState',
+			'importProjectBytes', 'isActiveTabOnlyPatch', 'isPersistenceAvailable',
+			'isProjectDirtyEvent', 'persistState',
+		].sort());
 	});
 
 	it('reports availability from the active backend', () => {
@@ -310,6 +339,45 @@ describe('persistenceService', () => {
 		expect(persist.mock.calls[0][0].panel.charts).toEqual([]);
 	});
 
+	it('persists canonical dataset config before replacing state (import ordering)', async () => {
+		const persist = vi.fn(async () => {});
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: async () => null,
+			importBytes: async () => ({
+				data: {
+					datasets: [{
+						id: 'only',
+						name: 'only.csv',
+						rows: [{ x: 1 }],
+						columns: [{ name: 'x', type: 'number' }],
+						selectedColumns: ['x'],
+						chartConfig: {
+							bar: { enabled: true },
+							globalFilter: { rules: [{ column: 'gone', mode: 'categorical', include: ['v:N'] }] },
+						},
+					}],
+					activeDatasetId: 'only',
+				},
+				panel: null,
+			}),
+			persist,
+			clear: vi.fn(),
+		});
+		const replaceAllState = vi.fn();
+
+		const imported = await importProjectBytes(new Uint8Array([1]), { replaceAllState });
+
+		expect(imported.ok).toBe(true);
+		// importProjectBytes persists BEFORE replaceAllState, so this proves the stored
+		// bytes are canonical, not only the in-memory copy: partial bar block is
+		// default-filled and the stale filter (column not in the dataset) is trimmed.
+		const persistedConfig = persist.mock.calls[0][0].data.datasets[0].chartConfig;
+		expect(persistedConfig.bar.enabled).toBe(true);
+		expect(persistedConfig.bar.sort).toBeDefined();
+		expect(persistedConfig.globalFilter.rules).toEqual([]);
+	});
+
 	it('does not call replaceAllState on first visit', async () => {
 		const replaceAllState = vi.fn();
 		await hydrateState({ replaceAllState });
@@ -396,8 +464,156 @@ describe('persistenceService', () => {
 		const snapshot = replaceAllState.mock.calls[0][0];
 		expect(snapshot.data.activeIndex).toBe(0);
 		expect(snapshot.data.datasets[0].selectedColumns).toEqual([]);
-		expect(snapshot.data.datasets[0].chartConfig).toEqual({ bar: { category: 'x' } });
+		const chartConfig = snapshot.data.datasets[0].chartConfig;
+		// The bar block is kept and default-filled; the malformed `scatter: 'bad'` is
+		// dropped by sanitize then replaced with the default block by canonicalize.
+		expect(chartConfig.bar.category).toBe('x');
+		expect(chartConfig.scatter).toBeDefined();
+		expect(chartConfig.scatter.enabled).toBe(false);
+		expect(chartConfig.globalFilter).toEqual({ rules: [], combine: 'AND' });
 		expect(snapshot.panel).toEqual({ charts: [] });
+	});
+
+	it('bounds a hostile bubble nestingColumns against declared columns at hydrate', async () => {
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: async () => ({
+				data: {
+					activeDatasetId: 'good',
+					datasets: [
+						{
+							id: 'good',
+							name: 'good.csv',
+							rows: [],
+							columns: [
+								{ name: 'categoria', type: 'text' },
+								...Array.from({ length: 10 }, (_, i) => ({ name: `c${i}`, type: 'text' })),
+							],
+							selectedColumns: [],
+							chartConfig: {
+								bar: { category: 'x' },
+								bubble: {
+									category: 'categoria',
+									// duplicate, empty, null, the category, an undeclared column,
+									// plus more valid columns than the hard cap allows.
+									nestingColumns: ['c0', 'c0', '', null, 'categoria', 'undeclared', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7', 'c8', 'c9'],
+									groupColumn: 'undeclared',
+									topN: 20,
+								},
+							},
+						},
+					],
+				},
+				panel: null,
+			}),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+		const bubble = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
+
+		// type-clean + de-duplicated + declared-only + category-excluded + capped to 8.
+		// (This equality also fails if the implementation spread the raw block AFTER
+		// the sanitized fields, re-admitting the unbounded array.)
+		expect(bubble.nestingColumns).toEqual(['c0', 'c1', 'c2', 'c3', 'c4', 'c5', 'c6', 'c7']);
+		expect(bubble.nestingColumns).toHaveLength(8);
+		expect(bubble.nestingColumns).not.toContain('categoria');
+		expect(bubble.nestingColumns).not.toContain('undeclared');
+		// legacy pointer kept coherent with the canonical head; benign keys preserved.
+		expect(bubble.groupColumn).toBe('c0');
+		expect(bubble.topN).toBe(20);
+		expect(bubble.category).toBe('categoria');
+		// other chart blocks keep their saved fields and are default-filled by canonicalize.
+		const bar = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bar;
+		expect(bar.category).toBe('x');
+		expect(bar.enabled).toBe(false);
+	});
+
+	it('keeps a valid legacy groupColumn (and drops an undeclared one) when canonical filters away', async () => {
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: async () => ({
+				data: {
+					activeDatasetId: 'good',
+					datasets: [
+						{
+							id: 'good',
+							name: 'good.csv',
+							rows: [],
+							columns: [
+								{ name: 'categoria', type: 'text' },
+								{ name: 'grupo', type: 'text' },
+								{ name: 'regiao', type: 'text' },
+							],
+							selectedColumns: [],
+							chartConfig: {
+								bubble: {
+									category: 'categoria',
+									nestingColumns: ['undeclared1', 'undeclared2'],
+									groupColumn: 'grupo',
+								},
+							},
+						},
+					],
+				},
+				panel: null,
+			}),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+		const bubble = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
+
+		// The undeclared nesting entries are dropped by sanitize, leaving an empty
+		// array with a valid legacy groupColumn; canonicalize then promotes that group
+		// into nestingColumns (same rendered result as before, promotion just moves to
+		// the restore boundary instead of the first render).
+		expect(bubble.nestingColumns).toEqual(['grupo']);
+		expect(bubble.groupColumn).toBe('grupo'); // valid legacy retained
+	});
+
+	it('drops an undeclared legacy groupColumn to null when canonical is empty', async () => {
+		configurePersistenceBackend({
+			available: () => true,
+			hydrate: async () => ({
+				data: {
+					activeDatasetId: 'good',
+					datasets: [
+						{
+							id: 'good',
+							name: 'good.csv',
+							rows: [],
+							columns: [
+								{ name: 'categoria', type: 'text' },
+								{ name: 'grupo', type: 'text' },
+							],
+							selectedColumns: [],
+							chartConfig: {
+								bubble: {
+									category: 'categoria',
+									nestingColumns: [],
+									groupColumn: 'undeclared',
+								},
+							},
+						},
+					],
+				},
+				panel: null,
+			}),
+			persist: vi.fn(),
+			clear: vi.fn(),
+		});
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+		const bubble = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
+
+		expect(bubble.nestingColumns).toEqual([]);
+		expect(bubble.groupColumn).toBeNull();
 	});
 
 	it('drops malformed hydrated dataset records at the service boundary', async () => {
@@ -424,7 +640,19 @@ describe('persistenceService', () => {
 		await hydrateState({ replaceAllState });
 
 		expect(warn).toHaveBeenCalledWith(expect.stringContaining('dropped 3 malformed dataset record'));
-		expect(replaceAllState.mock.calls[0][0].data.datasets).toEqual([goodRecord('keep')]);
+		const datasets = replaceAllState.mock.calls[0][0].data.datasets;
+		expect(datasets).toHaveLength(1);
+		const kept = goodRecord('keep');
+		expect(datasets[0]).toMatchObject({
+			id: kept.id,
+			name: kept.name,
+			rows: kept.rows,
+			columns: kept.columns,
+			selectedColumns: kept.selectedColumns,
+		});
+		// chartConfig is canonicalized ({} -> full default shape) at the restore boundary.
+		expect(datasets[0].chartConfig.bar).toBeDefined();
+		expect(datasets[0].chartConfig.globalFilter).toEqual({ rules: [], combine: 'AND' });
 		warn.mockRestore();
 	});
 
@@ -484,6 +712,21 @@ describe('persistenceService', () => {
 	describe('enablePersistenceAutoSave()', () => {
 		afterEach(() => {
 			vi.useRealTimers();
+		});
+
+		it('auto-save targets a backend swapped in AFTER the controller was created (live binding)', async () => {
+			vi.useFakeTimers();
+			const first = vi.fn(async () => {});
+			const second = vi.fn(async () => {});
+			configurePersistenceBackend({ available: () => true, hydrate: async () => null, persist: first, clear: vi.fn() });
+			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+			configurePersistenceBackend({ available: () => true, hydrate: async () => null, persist: second, clear: vi.fn() });
+
+			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+			await vi.advanceTimersByTimeAsync(2000);
+
+			expect(first).not.toHaveBeenCalled();
+			expect(second).toHaveBeenCalledTimes(1);
 		});
 
 		it('auto-saves project changes after the debounce and ignores activeTab-only changes', async () => {
@@ -579,15 +822,91 @@ describe('persistenceService', () => {
 			expect(persist).toHaveBeenCalledTimes(1);
 
 			emitStateChange(STATE_EVENTS.CHART_ADDED, { chartId: 1 });
-			Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' });
-			document.dispatchEvent(new Event('visibilitychange'));
-			await Promise.resolve();
+			let restoreVisibilityState = setDocumentVisibilityState('visible');
+			try {
+				document.dispatchEvent(new Event('visibilitychange'));
+				await Promise.resolve();
+			} finally {
+				restoreVisibilityState();
+			}
 			expect(persist).toHaveBeenCalledTimes(1);
 
-			Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' });
-			document.dispatchEvent(new Event('visibilitychange'));
-			await Promise.resolve();
+			restoreVisibilityState = setDocumentVisibilityState('hidden');
+			try {
+				document.dispatchEvent(new Event('visibilitychange'));
+				await Promise.resolve();
+			} finally {
+				restoreVisibilityState();
+			}
 			expect(persist).toHaveBeenCalledTimes(2);
+		});
+
+		it('flushes dirty state on freeze lifecycle events', async () => {
+			vi.useFakeTimers();
+			const persist = vi.fn(async () => {});
+			configurePersistenceBackend({
+				available: () => true,
+				hydrate: async () => null,
+				persist,
+				clear: vi.fn(),
+			});
+			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+			document.dispatchEvent(new Event('freeze'));
+			await Promise.resolve();
+
+			expect(persist).toHaveBeenCalledTimes(1);
+		});
+
+		it('coalesces lifecycle flush triggers while a save is in flight', async () => {
+			vi.useFakeTimers();
+			let resolvePersist;
+			const persist = vi.fn(() => new Promise(resolve => {
+				resolvePersist = resolve;
+			}));
+			configurePersistenceBackend({
+				available: () => true,
+				hydrate: async () => null,
+				persist,
+				clear: vi.fn(),
+			});
+			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+			const restoreVisibilityState = setDocumentVisibilityState('hidden');
+			try {
+				document.dispatchEvent(new Event('visibilitychange'));
+				window.dispatchEvent(new Event('pagehide'));
+				document.dispatchEvent(new Event('freeze'));
+			} finally {
+				restoreVisibilityState();
+			}
+
+			expect(persist).toHaveBeenCalledTimes(1);
+
+			resolvePersist();
+			await flushMicrotasks();
+			expect(activeController.getStatus().dirty).toBe(false);
+		});
+
+		it('dispose removes the freeze listener before dirty state can flush', async () => {
+			vi.useFakeTimers();
+			const persist = vi.fn(async () => {});
+			configurePersistenceBackend({
+				available: () => true,
+				hydrate: async () => null,
+				persist,
+				clear: vi.fn(),
+			});
+			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+			activeController.dispose();
+			document.dispatchEvent(new Event('freeze'));
+			await vi.advanceTimersByTimeAsync(2000);
+
+			expect(persist).not.toHaveBeenCalled();
 		});
 
 		it('coalesces a burst of edits into a single debounced save', async () => {

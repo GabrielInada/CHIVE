@@ -1,0 +1,74 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, labels only 1`] = `
+{
+  "ok": true,
+}
+`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, labels only 2`] = `"<svg width="640" height="400"><g transform="translate(0,0)"><g transform="translate(2,2)"><rect width="363" height="197" rx="2" fill="#FF6B6B" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="181.5" y="98.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">A</text></g><g transform="translate(2,201)"><rect width="363" height="197" rx="2" fill="#4ECDC4" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="181.5" y="98.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">C</text></g><g transform="translate(367,2)"><rect width="134" height="263" rx="2" fill="#45B7D1" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="67" y="131.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">B</text></g><g transform="translate(503,2)"><rect width="135" height="263" rx="2" fill="#FFA07A" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="67.5" y="131.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">D</text></g><g transform="translate(367,267)"><rect width="271" height="131" rx="2" fill="#98D8C8" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="135.5" y="65.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">N/A</text></g></g></svg>"`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, no labels or values 1`] = `
+{
+  "ok": true,
+}
+`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, no labels or values 2`] = `"<svg width="640" height="400"><g transform="translate(0,0)"><g transform="translate(2,2)"><rect width="363" height="197" rx="2" fill="#FF6B6B" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect></g><g transform="translate(2,201)"><rect width="363" height="197" rx="2" fill="#4ECDC4" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect></g><g transform="translate(367,2)"><rect width="134" height="263" rx="2" fill="#45B7D1" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect></g><g transform="translate(503,2)"><rect width="135" height="263" rx="2" fill="#FFA07A" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect></g><g transform="translate(367,267)"><rect width="271" height="131" rx="2" fill="#98D8C8" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect></g></g></svg>"`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, scheme color (default) 1`] = `
+{
+  "ok": true,
+}
+`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, scheme color (default) 2`] = `"<svg width="640" height="400"><g transform="translate(0,0)"><g transform="translate(2,2)"><rect width="363" height="197" rx="2" fill="#FF6B6B" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="181.5" y="91.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">A</text><text x="181.5" y="106.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">2</text></g><g transform="translate(2,201)"><rect width="363" height="197" rx="2" fill="#4ECDC4" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="181.5" y="91.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">C</text><text x="181.5" y="106.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">2</text></g><g transform="translate(367,2)"><rect width="134" height="263" rx="2" fill="#45B7D1" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="67" y="124.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">B</text><text x="67" y="139.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">1</text></g><g transform="translate(503,2)"><rect width="135" height="263" rx="2" fill="#FFA07A" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="67.5" y="124.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">D</text><text x="67.5" y="139.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">1</text></g><g transform="translate(367,267)"><rect width="271" height="131" rx="2" fill="#98D8C8" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="135.5" y="58.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">N/A</text><text x="135.5" y="73.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">1</text></g></g></svg>"`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, top-2 trim 1`] = `
+{
+  "ok": true,
+}
+`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, top-2 trim 2`] = `"<svg width="640" height="400"><g transform="translate(0,0)"><g transform="translate(2,2)"><rect width="636" height="197" rx="2" fill="#FF6B6B" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="318" y="91.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">A</text><text x="318" y="106.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">2</text></g><g transform="translate(2,201)"><rect width="636" height="197" rx="2" fill="#4ECDC4" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="318" y="91.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">C</text><text x="318" y="106.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">2</text></g></g></svg>"`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, uniform color 1`] = `
+{
+  "ok": true,
+}
+`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, uniform color 2`] = `"<svg width="640" height="400"><g transform="translate(0,0)"><g transform="translate(2,2)"><rect width="363" height="197" rx="2" fill="#336699" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="181.5" y="91.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">A</text><text x="181.5" y="106.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">2</text></g><g transform="translate(2,201)"><rect width="363" height="197" rx="2" fill="#336699" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="181.5" y="91.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">C</text><text x="181.5" y="106.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">2</text></g><g transform="translate(367,2)"><rect width="134" height="263" rx="2" fill="#336699" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="67" y="124.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">B</text><text x="67" y="139.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">1</text></g><g transform="translate(503,2)"><rect width="135" height="263" rx="2" fill="#336699" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="67.5" y="124.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">D</text><text x="67.5" y="139.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">1</text></g><g transform="translate(367,267)"><rect width="271" height="131" rx="2" fill="#336699" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="135.5" y="58.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">N/A</text><text x="135.5" y="73.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">1</text></g></g></svg>"`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, values only 1`] = `
+{
+  "ok": true,
+}
+`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: count, values only 2`] = `"<svg width="640" height="400"><g transform="translate(0,0)"><g transform="translate(2,2)"><rect width="363" height="197" rx="2" fill="#FF6B6B" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="181.5" y="98.5" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#fffef9" pointer-events="none">2</text></g><g transform="translate(2,201)"><rect width="363" height="197" rx="2" fill="#4ECDC4" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="181.5" y="98.5" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#fffef9" pointer-events="none">2</text></g><g transform="translate(367,2)"><rect width="134" height="263" rx="2" fill="#45B7D1" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="67" y="131.5" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#fffef9" pointer-events="none">1</text></g><g transform="translate(503,2)"><rect width="135" height="263" rx="2" fill="#FFA07A" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="67.5" y="131.5" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#fffef9" pointer-events="none">1</text></g><g transform="translate(367,267)"><rect width="271" height="131" rx="2" fill="#98D8C8" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="135.5" y="65.5" text-anchor="middle" dominant-baseline="middle" font-size="12" fill="#fffef9" pointer-events="none">1</text></g></g></svg>"`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: empty rows (fail) 1`] = `
+{
+  "ok": false,
+}
+`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: empty rows (fail) 2`] = `""`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: sum measure, scheme color 1`] = `
+{
+  "ok": true,
+}
+`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: sum measure, scheme color 2`] = `"<svg width="640" height="400"><g transform="translate(0,0)"><g transform="translate(2,2)"><rect width="454" height="225" rx="2" fill="#FF6B6B" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="227" y="105.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">B</text><text x="227" y="120.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">20</text></g><g transform="translate(2,229)"><rect width="454" height="169" rx="2" fill="#4ECDC4" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="227" y="77.5" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">A</text><text x="227" y="92.5" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">15</text></g><g transform="translate(458,2)"><rect width="180" height="282" rx="2" fill="#45B7D1" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="90" y="134" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">C</text><text x="90" y="149" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">10</text></g><g transform="translate(458,286)"><rect width="134" height="112" rx="2" fill="#FFA07A" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="67" y="49" text-anchor="middle" dominant-baseline="middle" font-size="13" fill="#fffef9" pointer-events="none">N/A</text><text x="67" y="64" text-anchor="middle" dominant-baseline="middle" font-size="11" fill="rgba(255,254,249,0.8)" pointer-events="none">3</text></g><g transform="translate(594,286)"><rect width="44" height="112" rx="2" fill="#98D8C8" opacity="0.88" stroke="#fffef9" stroke-width="1" style="cursor: pointer;"></rect><text x="22" y="49" text-anchor="middle" dominant-baseline="middle" font-size="8" fill="#fffef9" pointer-events="none">D</text><text x="22" y="64" text-anchor="middle" dominant-baseline="middle" font-size="7" fill="rgba(255,254,249,0.8)" pointer-events="none">1</text></g></g></svg>"`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: sum with missing valueColumn (fail) 1`] = `
+{
+  "ok": false,
+  "reason": "no-value-column",
+}
+`;
+
+exports[`treemapChart render equivalence (pure-move guard) > is byte-stable: sum with missing valueColumn (fail) 2`] = `""`;

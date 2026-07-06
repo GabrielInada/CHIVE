@@ -5,7 +5,7 @@
  * @typedef {import('../../types.js').StateChangeListener} StateChangeListener
  * @typedef {import('../../types.js').UnsubscribeFn} UnsubscribeFn
  *
- * @see ARCHITECTURE.md
+ * @see docs/development/architecture.md
  */
 
 /**

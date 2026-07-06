@@ -32,6 +32,22 @@ export const PREVIEW_SCATTER_SVG = `
 	</svg>
 `;
 
+export const PREVIEW_SCATTER3D_SVG = `
+	<svg viewBox="0 0 84 38" aria-hidden="true">
+		<polygon points="26,8 62,8 74,16 38,16" fill="none" stroke="#8da3ba" stroke-width="1.2"></polygon>
+		<polygon points="26,8 26,30 38,36 38,16" fill="none" stroke="#8da3ba" stroke-width="1.2"></polygon>
+		<polyline points="26,30 62,30 74,36 74,16" fill="none" stroke="#8da3ba" stroke-width="1.2"></polyline>
+		<line x1="62" y1="8" x2="62" y2="30" stroke="#8da3ba" stroke-width="1.2"></line>
+		<line x1="38" y1="36" x2="74" y2="36" stroke="#8da3ba" stroke-width="1.2"></line>
+		<circle cx="36" cy="24" r="2.4"></circle>
+		<circle cx="46" cy="14" r="2.4"></circle>
+		<circle cx="52" cy="26" r="2.4"></circle>
+		<circle cx="58" cy="19" r="2.4"></circle>
+		<circle cx="44" cy="31" r="2.4"></circle>
+		<circle cx="66" cy="24" r="2.4"></circle>
+	</svg>
+`;
+
 export const PREVIEW_NETWORK_SVG = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<line x1="14" y1="10" x2="40" y2="17" stroke="#8da3ba" stroke-width="1.6"></line>

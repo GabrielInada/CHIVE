@@ -69,6 +69,63 @@ function lastConfig() {
 	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].treemap;
 }
 
+function extractStructure(controls) {
+	return controls.map(section => {
+		const content = section.querySelector('.chart-section-content');
+		const controlKeys = Array.from(content.children).map(control => {
+			const idElement = control.matches('[id]') ? control : control.querySelector('[id]');
+			const presetElement = control.querySelector('[data-color-preset-control]');
+			const stateElement = idElement ?? presetElement ?? control.querySelector('button,input,select');
+			const entry = {
+				id: idElement?.id ?? presetElement?.dataset.colorPresetControl,
+				disabled: stateElement?.disabled === true,
+			};
+			expect(entry.id).toBeDefined();
+			return entry;
+		});
+
+		return {
+			section: section.dataset.section,
+			expanded: section.querySelector('.chart-section-header').getAttribute('aria-expanded'),
+			controlKeys,
+		};
+	});
+}
+
+describe('treemapControls public surface', () => {
+	it('exposes exactly the three documented treemap-control exports (no internal leaks)', async () => {
+		const mod = await import('../../../src/modules/chartControls/treemapControls.js');
+		expect(Object.keys(mod).sort()).toEqual([
+			'computeDefaults',
+			'createTreeMapControls',
+			'setupTreeMapControlListeners',
+		]);
+	});
+});
+
+describe('treemapControls section structure', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('matches the section/control-order and disabled-state snapshot across measure and color modes', () => {
+		// Drive both dynamic dimensions: measureMode (count disables the
+		// value-column select) and colorMode (scheme disables the uniform-color
+		// input), so the snapshot pins each conditional disabled slot.
+		const byMode = {};
+		for (const measureMode of ['count', 'sum']) {
+			for (const colorMode of ['scheme', 'uniform']) {
+				const dataset = createDataset({ measureMode, colorMode, valueColumn: 'sales' });
+				const controls = createTreeMapControls(dataset, ['region', 'team'], ['sales'], ['region', 'team', 'sales']);
+				byMode[`${measureMode}-${colorMode}`] = extractStructure(controls);
+			}
+		}
+
+		expect(byMode).toMatchSnapshot();
+	});
+});
+
 describe('treemapControls UI structure', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -151,6 +208,28 @@ describe('treemapControls listeners', () => {
 
 		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
 			treemap: expect.objectContaining({ measureMode: 'count', valueColumn: null }),
+		});
+		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+	});
+
+	it('resolves the callback from the 4-arg overload (callback in slot 4)', () => {
+		// The 5-arg form (dataset, baseCat, numericOptions, allColumns, callback)
+		// is covered by the tests above; the existing slot-4 test only checks the
+		// no-controls no-throw path. This mounts controls and dispatches a change
+		// so the legacy callback-in-slot-4 overload is proven to commit + notify.
+		const dataset = createDataset();
+		const controls = createTreeMapControls(dataset, ['region'], ['sales'], []);
+		appendControls(controls);
+
+		const onConfigChanged = vi.fn();
+		setupTreeMapControlListeners(dataset, ['region'], ['sales'], onConfigChanged);
+
+		const topN = document.getElementById('viz-select-treemap-topn');
+		topN.value = '20';
+		topN.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
+			treemap: expect.objectContaining({ topN: 20 }),
 		});
 		expect(onConfigChanged).toHaveBeenCalledTimes(1);
 	});

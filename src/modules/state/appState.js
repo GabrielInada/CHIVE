@@ -1,5 +1,7 @@
 import { emitStateChange, onStateChange, STATE_EVENTS } from './stateEvents.js';
 import { createPanelBlock as buildPanelBlock } from '../panelSubsystem/blockStateHelpers.js';
+import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
+import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
 import { createDataStateFacade } from './dataStateFacade.js';
 import { createUiStateFacade } from './uiStateFacade.js';
 import { createPanelStateFacade } from './panelStateFacade.js';
@@ -29,7 +31,7 @@ export { onStateChange, STATE_EVENTS };
  * @typedef {import('../../types.js').SidebarMode} SidebarMode
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  *
- * @see ARCHITECTURE.md
+ * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
 
@@ -160,6 +162,13 @@ export function getActiveDataset() {
 }
 
 /**
+ * @returns {number} Active dataset index, or `-1` when none is selected.
+ */
+export function getActiveDatasetIndex() {
+	return dataState.getActiveDatasetIndex();
+}
+
+/**
  * @returns {Dataset[]} Live reference to the datasets array. Do not mutate.
  */
 export function getAllDatasets() {
@@ -226,10 +235,12 @@ export function updateActiveDatasetColumns(columnNames) {
 
 /**
  * Apply a normalizer to the active dataset's `chartConfig`
- * **without emitting**. Intended for normalize-on-read paths (e.g. defaults
- * applied during render). Emitting here would re-enter `refreshView` via
- * the CONFIG_UPDATED subscription and loop. Use
- * {@link updateActiveDatasetConfig} when an emit is wanted.
+ * **without emitting**. Config is canonicalized at the state boundaries
+ * (persistence restore, `addDataset`, and the emitting config writes) via
+ * `canonicalizeChartConfig`; this escape hatch exists for the intentional
+ * non-emitting live-preview writes (color picker, chart-height drag). Emitting
+ * here would re-enter `refreshView` via the CONFIG_UPDATED subscription and
+ * loop; use {@link updateActiveDatasetConfig} when an emit is wanted.
  *
  * @param {(config: Object) => Object} normalizer
  */
@@ -434,6 +445,13 @@ export function setPreviewRows(rows) {
 }
 
 /**
+ * @returns {number} Current preview-table row count.
+ */
+export function getPreviewRows() {
+	return uiState.getPreviewRows();
+}
+
+/**
  * Atomically replace the entire state. Bypasses the facades, used by
  * `persistenceService` for hydration on boot.
  *
@@ -446,7 +464,20 @@ export function setPreviewRows(rows) {
  */
 export function replaceAllState({ data, panel, ui } = {}) {
 	if (data && typeof data === 'object') {
-		appState.data.datasets = Array.isArray(data.datasets) ? data.datasets : [];
+		const rawDatasets = Array.isArray(data.datasets) ? data.datasets : [];
+		// Defensive canonicalization: replaceAllState is a public hydration escape
+		// hatch that can receive unsanitized input. Map to shallow copies with a
+		// canonical chartConfig (no in-place mutation of the caller's objects); leave
+		// non-object entries untouched so a malformed entry cannot throw here.
+		appState.data.datasets = rawDatasets.map(dataset => {
+			if (dataset === null || typeof dataset !== 'object' || Array.isArray(dataset)) {
+				return dataset;
+			}
+			return {
+				...dataset,
+				chartConfig: canonicalizeChartConfig(dataset.chartConfig, getDatasetColumnNames(dataset)),
+			};
+		});
 		const idx = Number.isInteger(data.activeIndex) ? data.activeIndex : -1;
 		appState.data.activeIndex = idx >= -1 && idx < appState.data.datasets.length ? idx : -1;
 	}

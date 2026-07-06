@@ -1,7 +1,7 @@
 # Security Policy
 
 CHIVE is a browser-only static application. For the current data-handling and
-runtime trust model, see [Privacy And Security](docs/PRIVACY_AND_SECURITY.md).
+runtime trust model, see [Privacy And Security](docs/user/privacy-security.md).
 
 ## Reporting A Vulnerability
 
@@ -13,7 +13,7 @@ page, first. Do not attach sensitive datasets to public issues.
 
 ## Supported Versions
 
-CHIVE currently documents two deployments:
+CHIVE currently documents these deployments:
 
 | Deployment | Branch | Support expectation |
 |---|---|---|

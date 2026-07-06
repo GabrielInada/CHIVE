@@ -11,11 +11,13 @@ assignees: ''
 Which file or section needs work?
 
 - [ ] `README.md`
-- [ ] `ARCHITECTURE.md`
-- [ ] `docs/ARCHITECTURE_REFERENCE.md`
 - [ ] `CONTRIBUTING.md`
-- [ ] `docs/`
-- [ ] `src/styles/STYLES_ORGANIZATION.md`
+- [ ] `SECURITY.md`
+- [ ] `docs/README.md`
+- [ ] `docs/user/`
+- [ ] `docs/deployment/`
+- [ ] `docs/development/`
+- [ ] `vendor/README.md`
 - [ ] Inline JSDoc / code comments
 - [ ] Other: ___
 

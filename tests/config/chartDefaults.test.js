@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createDefaultChartConfig, mergeChartConfigWithDefaults } from '../../src/config/chartDefaults.js';
+import { canonicalizeChartConfig, createDefaultChartConfig, mergeChartConfigWithDefaults } from '../../src/config/chartDefaults.js';
 
 describe('chartDefaults', () => {
 	describe('createDefaultChartConfig', () => {
@@ -188,6 +188,129 @@ describe('chartDefaults', () => {
 			expect(result.globalFilter.rules).toHaveLength(2);
 			expect(result.globalFilter.rules[0].column).toBe('age');
 			expect(result.globalFilter.rules[1].column).toBe('region');
+		});
+
+		describe('malformed-shape hardening', () => {
+			const defaults = createDefaultChartConfig();
+
+			it('treats a non-object string config as no saved config', () => {
+				const result = mergeChartConfigWithDefaults('bad');
+				expect(result.bar).toEqual(defaults.bar);
+				expect(result).not.toHaveProperty('0');
+			});
+
+			it('treats a top-level array config as no saved config (plain-object guard, not typeof)', () => {
+				const result = mergeChartConfigWithDefaults([]);
+				expect(result.bar).toEqual(defaults.bar);
+				expect(result).not.toHaveProperty('0');
+			});
+
+			it('falls back to defaults for a non-object chart block', () => {
+				const result = mergeChartConfigWithDefaults({ bar: 'bad' });
+				expect(result.bar).toEqual(defaults.bar);
+				expect(result.bar).not.toHaveProperty('0');
+			});
+
+			it('falls back to defaults for a non-object nested scatter.regression', () => {
+				const result = mergeChartConfigWithDefaults({ scatter: { regression: 'bad' } });
+				expect(result.scatter.regression).toEqual(defaults.scatter.regression);
+			});
+
+			it('falls back to defaults for an array chart block', () => {
+				const result = mergeChartConfigWithDefaults({ pie: [] });
+				expect(result.pie).toEqual(defaults.pie);
+				expect(result.pie).not.toHaveProperty('0');
+			});
+		});
+	});
+
+	describe('canonicalizeChartConfig', () => {
+		it('fills all chart blocks from a partial config', () => {
+			const result = canonicalizeChartConfig({ bar: { enabled: true } }, ['a']);
+			expect(result.bar.enabled).toBe(true);
+			expect(result.bar.sort).toBeDefined();
+			for (const type of ['scatter', 'scatter3d', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin']) {
+				expect(result[type]).toBeDefined();
+			}
+		});
+
+		it('promotes a legacy bubble groupColumn into nestingColumns', () => {
+			const result = canonicalizeChartConfig({ bubble: { groupColumn: 'grupo' } }, ['grupo']);
+			expect(result.bubble.nestingColumns).toEqual(['grupo']);
+		});
+
+		it('migrates a legacy single-filter globalFilter to a one-rule array', () => {
+			const result = canonicalizeChartConfig(
+				{ globalFilter: { column: 'age', operator: 'gt', value: '30' } },
+				['age'],
+			);
+			expect(result.globalFilter.rules).toHaveLength(1);
+			expect(result.globalFilter.rules[0].column).toBe('age');
+		});
+
+		it('trims filter rules whose column is absent while keeping valid ones', () => {
+			const result = canonicalizeChartConfig(
+				{
+					globalFilter: {
+						rules: [
+							{ column: 'age', operator: 'gt', value: '30' },
+							{ column: 'gone', mode: 'categorical', include: ['v:N'] },
+						],
+					},
+				},
+				['age'],
+			);
+			expect(result.globalFilter.rules).toHaveLength(1);
+			expect(result.globalFilter.rules[0].column).toBe('age');
+		});
+
+		it('keeps normalized filter rules when columnNames is omitted (does not drop them)', () => {
+			const result = canonicalizeChartConfig({
+				globalFilter: { rules: [{ column: 'gone', mode: 'categorical', include: ['v:N'] }] },
+			});
+			expect(result.globalFilter.rules).toHaveLength(1);
+			expect(result.globalFilter.rules[0].column).toBe('gone');
+		});
+
+		it('is idempotent', () => {
+			const input = {
+				bubble: { groupColumn: 'grupo' },
+				globalFilter: {
+					rules: [
+						{ column: 'age', operator: 'gt', value: '30' },
+						{ column: 'gone', mode: 'categorical', include: ['v:N'] },
+					],
+				},
+			};
+			const once = canonicalizeChartConfig(input, ['age', 'grupo']);
+			const twice = canonicalizeChartConfig(once, ['age', 'grupo']);
+			expect(twice).toEqual(once);
+		});
+
+		describe('malformed-shape hardening', () => {
+			const defaults = createDefaultChartConfig();
+
+			it('falls back to defaults for a string config', () => {
+				const result = canonicalizeChartConfig('bad', ['a']);
+				expect(result.bar).toEqual(defaults.bar);
+				expect(result).not.toHaveProperty('0');
+			});
+
+			it('falls back to defaults for a top-level array config', () => {
+				const result = canonicalizeChartConfig([], ['a']);
+				expect(result.bar).toEqual(defaults.bar);
+				expect(result).not.toHaveProperty('0');
+			});
+
+			it('falls back to defaults for non-object chart blocks', () => {
+				const result = canonicalizeChartConfig(
+					{ bar: 'bad', scatter: { regression: 'bad' }, pie: [] },
+					['a'],
+				);
+				expect(result.bar).toEqual(defaults.bar);
+				expect(result.scatter.regression).toEqual(defaults.scatter.regression);
+				expect(result.pie).toEqual(defaults.pie);
+			});
 		});
 	});
 });
