@@ -16,7 +16,7 @@ export { onStateChange, STATE_EVENTS };
  * (data, ui, panel) whose methods are re-exported as the convenience API.
  *
  * Note on the two `createPanelBlock` symbols in this file:
- *   - The import from `./panel/blockStateHelpers.js` is aliased to
+ *   - The import from `../panelSubsystem/blockStateHelpers.js` is aliased to
  *     `buildPanelBlock`, a pure constructor that takes an explicit id.
  *   - The local `createPanelBlock` below is a closure that calls
  *     `buildPanelBlock` AND increments `appState.panel.nextBlockId`. This

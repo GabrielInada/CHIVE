@@ -24,9 +24,10 @@ import { STATE_EVENTS } from './stateEvents.js';
 /**
  * CHIVE panel-domain facade.
  *
- * Owns every write into `appState.panel`. The mutation helpers under
- * `./panel/` are `@internal` and must not be imported from outside this
- * module, they assume the caller is the facade and skip emission.
+ * Owns every write into `appState.panel`. The mutation helpers in
+ * `../panelSubsystem/panelStateMutations.js` are `@internal` and must not be
+ * imported from outside this module; they assume the caller is the facade and
+ * skip event emission.
  *
  * @typedef {import('../../types.js').AppState} AppState
  * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot

@@ -240,8 +240,11 @@ are adjusted stays its own narrow path (charts only).
 ## Persistence
 
 Project persistence is implemented in
-[`src/services/persistenceService.js`](../../src/services/persistenceService.js)
-with engine/storage details behind `src/services/persistence/`.
+[`src/services/persistenceService/`](../../src/services/persistenceService/)
+behind the stable public facade
+[`src/services/persistenceService.js`](../../src/services/persistenceService.js),
+with storage backends in
+[`src/services/persistence/`](../../src/services/persistence/).
 
 All SQLite work runs **off the main thread** in a long-lived Web Worker. The
 default backend is `workerBackend`
