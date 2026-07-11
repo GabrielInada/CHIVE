@@ -19,10 +19,10 @@
 import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { renderBarPanelChart } from '../bar/panelAdapter.js';
+import { renderBubblePanelChart } from '../bubble/panelAdapter.js';
 import { renderPiePanelChart } from '../pie/panelAdapter.js';
 import { renderScatter3dPanelChart } from '../scatter3d/panelAdapter.js';
 import { renderTreemapPanelChart } from '../treemap/panelAdapter.js';
-import { renderBubbleChart } from '../../modules/visualizations/bubbleChart.js';
 import { renderLineChart } from '../../modules/visualizations/lineChart.js';
 import { renderNetworkGraph } from '../../modules/visualizations/networkGraph.js';
 import { renderScatterPlot } from '../../modules/visualizations/scatterPlot.js';
@@ -58,13 +58,6 @@ function baseOptions(config) {
 		chartHeight: config.chartHeight,
 		locale: getLocale(),
 	};
-}
-
-/** @param {Object} config @returns {'count' | 'sum' | 'mean'} */
-function normalizeMeasureMode(config) {
-	return ['count', 'sum', 'mean'].includes(config.measureMode)
-		? config.measureMode
-		: 'count';
 }
 
 /** @type {PanelChartRenderer} */
@@ -148,34 +141,6 @@ function renderNetwork(container, spec) {
 }
 
 /** @type {PanelChartRenderer} */
-function renderBubble(container, spec) {
-	const config = spec.config || {};
-	const measureMode = normalizeMeasureMode(config);
-	return renderBubbleChart(container, spec.dataSnapshot, config.category, {
-		...baseOptions(config),
-		topN: config.topN,
-		measureMode,
-		valueColumn: config.valueColumn,
-		nestingColumns: config.nestingColumns,
-		groupColumn: config.groupColumn,
-		nestingMode: config.nestingMode,
-		padding: config.padding,
-		labelMode: config.labelMode,
-		colorScheme: config.colorScheme,
-		labels: {
-			category: t('chive-chart-control-bubble-category'),
-			count: t('chive-tooltip-count'),
-			sum: t('chive-tooltip-sum'),
-			mean: t('chive-tooltip-mean'),
-			group: t('chive-chart-control-bubble-group'),
-			children: t('chive-chart-control-bubble-node-children-count'),
-			level: t('chive-chart-control-bubble-node-depth'),
-		},
-		filterCallbacks: EMPTY_FILTER_CALLBACKS,
-	});
-}
-
-/** @type {PanelChartRenderer} */
 function renderLine(container, spec) {
 	const config = spec.config || {};
 	const columnTypeByName = buildColumnTypeIndex(spec.columnsSnapshot);
@@ -254,7 +219,7 @@ const PANEL_RENDERERS = Object.freeze({
 	scatter: renderScatter,
 	scatter3d: renderScatter3dPanelChart,
 	pie: renderPiePanelChart,
-	bubble: renderBubble,
+	bubble: renderBubblePanelChart,
 	network: renderNetwork,
 	treemap: renderTreemapPanelChart,
 	tin: renderTin,

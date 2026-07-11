@@ -18,8 +18,13 @@
 import { BUBBLE_CHART } from '../../../config/charts.js';
 import { t } from '../../../services/i18nService.js';
 import { normalizeColumnNameList } from '../../../utils/columnHelpers.js';
-import { createTextControl, createSliderControl, createSelectControl, createColorPresetControl } from '../shared.js';
-import { groupControls } from '../controlGrouping.js';
+import {
+	createTextControl,
+	createSliderControl,
+	createSelectControl,
+	createColorPresetControl,
+} from '../../../modules/chartControls/shared.js';
+import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
 import { resolveNestingColumnsFromConfig, computeNestingControlCount } from './nestingColumns.js';
 
 /**

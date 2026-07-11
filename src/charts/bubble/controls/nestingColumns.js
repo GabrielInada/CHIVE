@@ -2,10 +2,8 @@
  * Bubble-chart controls: shared nesting-column resolution.
  *
  * Package-private helpers shared by the bubble builder (via `createNestingControls`)
- * and the bubble listeners. They are documented `@internal` and are deliberately not
- * re-exported by the `bubbleControls.js` facade; the export-surface lock in the test
- * suite pins them off the public surface. (`@internal` is a documentation convention
- * only; JavaScript does not enforce module privacy.)
+ * and the bubble listeners. They are documented `@internal`; JavaScript does not
+ * enforce module privacy.
  */
 
 import { BUBBLE_CHART } from '../../../config/charts.js';

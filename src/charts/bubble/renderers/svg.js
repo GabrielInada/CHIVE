@@ -8,10 +8,10 @@
  * Internal D3 helpers (pack layout, label placement, palette interpolation)
  * are intentionally undocumented per the Tier 5 plan.
  *
- * @typedef {import('../../types.js').Result} Result
+ * @typedef {import('../../../types.js').Result} Result
  */
 
-import { hierarchy, pack, scaleOrdinal, select } from '../../../vendor/d3/d3.js';
+import { hierarchy, pack, scaleOrdinal, select } from '../../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -21,12 +21,12 @@ import {
 	moveChartTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
-} from '../../charts/shared/tooltip/tooltip.js';
-import { BUBBLE_CHART, CHART_COLOR_PALETTES, CHART_DIMENSIONS } from '../../config/charts.js';
-import { formatNumber, isNullish } from '../../utils/formatters.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
-import { ok, fail } from '../../utils/result.js';
-import { setupChartSvg } from '../../charts/shared/svg/scaffold.js';
+} from '../../shared/tooltip/tooltip.js';
+import { BUBBLE_CHART, CHART_COLOR_PALETTES, CHART_DIMENSIONS } from '../../../config/charts.js';
+import { formatNumber, isNullish } from '../../../utils/formatters.js';
+import { toCategoryToken } from '../../../utils/chartFilters.js';
+import { ok, fail } from '../../../utils/result.js';
+import { setupChartSvg } from '../../shared/svg/scaffold.js';
 import {
 	resolveNestingColumns,
 	aggregateBubbles,
@@ -34,7 +34,7 @@ import {
 	getTopLevelGroup,
 	isIntermediate,
 	isDescendantOf,
-} from './bubbleChartHierarchy.js';
+} from '../data.js';
 
 /** @private */
 function getBubblePalette(colorScheme) {

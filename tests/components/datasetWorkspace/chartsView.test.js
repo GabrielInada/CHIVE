@@ -43,7 +43,7 @@ vi.mock('../../../src/components/datasetWorkspace/chartRenders/scatterChartSecti
 vi.mock('../../../src/charts/pie/workspaceSection.js', () => ({
 	renderPieChartSection: mocks.renderPieChartSection,
 }));
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/bubbleChartSection.js', () => ({
+vi.mock('../../../src/charts/bubble/workspaceSection.js', () => ({
 	renderBubbleChartSection: mocks.renderBubbleChartSection,
 }));
 vi.mock('../../../src/components/datasetWorkspace/chartRenders/networkChartSection.js', () => ({

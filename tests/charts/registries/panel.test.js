@@ -4,7 +4,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const renderers = vi.hoisted(() => ({
 	renderBarPanelChart: vi.fn(() => ({ ok: true })),
-	renderBubbleChart: vi.fn(() => ({ ok: true })),
+	renderBubblePanelChart: vi.fn(() => ({ ok: true })),
 	renderLineChart: vi.fn(() => ({ ok: true })),
 	renderNetworkGraph: vi.fn(() => ({ ok: true })),
 	renderPiePanelChart: vi.fn(() => ({ ok: true })),
@@ -15,7 +15,7 @@ const renderers = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/charts/bar/panelAdapter.js', () => ({ renderBarPanelChart: renderers.renderBarPanelChart }));
-vi.mock('../../../src/modules/visualizations/bubbleChart.js', () => ({ renderBubbleChart: renderers.renderBubbleChart }));
+vi.mock('../../../src/charts/bubble/panelAdapter.js', () => ({ renderBubblePanelChart: renderers.renderBubblePanelChart }));
 vi.mock('../../../src/modules/visualizations/lineChart.js', () => ({ renderLineChart: renderers.renderLineChart }));
 vi.mock('../../../src/modules/visualizations/networkGraph.js', () => ({ renderNetworkGraph: renderers.renderNetworkGraph }));
 vi.mock('../../../src/charts/pie/panelAdapter.js', () => ({ renderPiePanelChart: renderers.renderPiePanelChart }));
@@ -135,12 +135,11 @@ describe('panel chart registry and render bridge', () => {
 		expect(renderers.renderPiePanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
-	it('dispatches bubble with category and falls back to count for invalid measureMode', () => {
-		renderChartFromSpec(container, makeSpec('bubble', { category: 'a', measureMode: 'bogus' }));
-		expect(renderers.renderBubbleChart).toHaveBeenCalledTimes(1);
-		const [, , category, opts] = renderers.renderBubbleChart.mock.calls[0];
-		expect(category).toBe('a');
-		expect(opts.measureMode).toBe('count');
+	it('dispatches bubble to the package panel adapter with the whole spec', () => {
+		const spec = makeSpec('bubble', { category: 'a', measureMode: 'bogus' });
+		renderChartFromSpec(container, spec);
+		expect(renderers.renderBubblePanelChart).toHaveBeenCalledTimes(1);
+		expect(renderers.renderBubblePanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
 	it('dispatches treemap to the package panel adapter with the whole spec', () => {
@@ -209,7 +208,7 @@ describe('panel chart registry and render bridge', () => {
 		expect(renderers.renderScatterPlot).toHaveBeenCalled();
 		expect(renderers.renderNetworkGraph).toHaveBeenCalled();
 		expect(renderers.renderPiePanelChart).toHaveBeenCalled();
-		expect(renderers.renderBubbleChart).toHaveBeenCalled();
+		expect(renderers.renderBubblePanelChart).toHaveBeenCalled();
 		expect(renderers.renderTreemapPanelChart).toHaveBeenCalled();
 		expect(renderers.renderLineChart).toHaveBeenCalled();
 		expect(renderers.renderTinChart).toHaveBeenCalled();

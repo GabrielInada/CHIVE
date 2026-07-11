@@ -14,13 +14,17 @@ see [Architecture reference](../architecture-reference.md).
 
 Key files:
 
-- Renderer: [bubbleChart.js](../../../src/modules/visualizations/bubbleChart.js)
-- Hierarchy helpers (aggregation, tree building, ancestor walks): [bubbleChartHierarchy.js](../../../src/modules/visualizations/bubbleChartHierarchy.js)
-- Sidebar controls: [bubbleControls.js](../../../src/modules/chartControls/bubbleControls.js)
+- SVG renderer: [svg.js](../../../src/charts/bubble/renderers/svg.js)
+- Data and hierarchy helpers: [data.js](../../../src/charts/bubble/data.js)
+- Sidebar controls: [builder.js](../../../src/charts/bubble/controls/builder.js),
+  [listeners.js](../../../src/charts/bubble/controls/listeners.js),
+  [defaults.js](../../../src/charts/bubble/controls/defaults.js), and
+  [nestingColumns.js](../../../src/charts/bubble/controls/nestingColumns.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`BUBBLE_CHART`, `CHART_COLOR_PALETTES`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bubble` block)
-- Section adapter (dataset workspace): [bubbleChartSection.js](../../../src/components/datasetWorkspace/chartRenders/bubbleChartSection.js)
-- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
+- Shared presentation flow: [presentation.js](../../../src/charts/bubble/presentation.js)
+- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bubble/workspaceSection.js)
+- Panel adapter: [panelAdapter.js](../../../src/charts/bubble/panelAdapter.js)
 
 ---
 
@@ -30,7 +34,7 @@ A bubble chart packs circles into a space, sizing each circle by a measure so th
 relative magnitude as area. In **flat** mode it is one circle per category (a compact
 alternative to a bar chart when you care about rough proportion, not precise comparison). In
 **grouped** mode it becomes a nested hierarchy: circles inside circles, one ring per nesting
-level, with click-to-drill-down navigation. It is CHIVE's tool for showing both group size
+level, with double-click drill-down navigation. It is CHIVE's tool for showing both group size
 and hierarchical composition.
 
 ---
@@ -86,27 +90,32 @@ a subtree visually coherent as you drill into it. In flat mode each category is 
 
 ## 3. The big picture (data flow)
 
-Two draw paths, both ending at `renderBubbleChart`.
+Two integration paths share the same presentation mapping and end at `renderBubbleChart`.
 
 ```
                  ┌────────────────────────────────────────────────┐
-                 │  Active dataset.chartConfig.bubble (live state) │
+                 │ Active dataset.chartConfig.bubble (live state) │
                  └────────────────────────────────────────────────┘
-                        │                          │
-       sidebar edits    │                          │  render
- (bubbleControls.js) ───┘                          ▼
-        write config                  chartsView.renderCharts()
-                                      → renderBubbleChartSection()        [dataset workspace]
-                                        → renderBubbleChart(container, rows, category, opts)
-                                              │
-   "Add to panel" → structuredClone snapshot │
-        │                                     │
-   panel.js renderBubble()                    │
-     → renderBubbleChart(container, spec.dataSnapshot, spec.config.category, …)
-                                              ▼
-                                   ┌──────────────────────┐
-                                   │   <svg> in container  │
-                                   └──────────────────────┘
+                         │                         │
+       sidebar edits     │                         │ render
+ (controls/listeners.js) ┘                         ▼
+        write config                 workspace registry
+                                     → renderBubbleChartSection()
+                                       → renderBubbleInto()
+                                         → renderBubbleChart()
+                         │
+   "Add to panel" → structuredClone snapshot
+                         │
+                         ▼
+                    panel registry
+                    → renderBubblePanelChart()
+                      → renderBubbleInto()
+                        → renderBubbleChart()
+                              │
+                              ▼
+                    ┌──────────────────────┐
+                    │  <svg> in container │
+                    └──────────────────────┘
 ```
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG (and resets
@@ -156,9 +165,9 @@ ordinal color palettes (Tableau10, Pastel, Bold, Colorblind-Safe).
 
 ## 5. The control sidebar
 
-[bubbleControls.js](../../../src/modules/chartControls/bubbleControls.js) builds three sections
-via the standard `createBubbleChartControls` / `setupBubbleChartControlListeners` /
-`computeDefaults` exports.
+The package's [controls directory](../../../src/charts/bubble/controls/) keeps the standard
+`createBubbleChartControls`, `setupBubbleChartControlListeners`, and `computeDefaults` roles
+in separate modules, with progressive nesting rules in `nestingColumns.js`.
 
 ### 5.1 The three sections
 
@@ -193,18 +202,19 @@ are disabled unless `nestingMode === 'grouped'`.
 ### 6.1 Dataset workspace
 
 `renderBubbleChartSection({ config, rows, filterCallbacks })`
-([bubbleChartSection.js](../../../src/components/datasetWorkspace/chartRenders/bubbleChartSection.js))
+([workspaceSection.js](../../../src/charts/bubble/workspaceSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
-into the options bag, and calls `renderBubbleChart`. On failure it shows distinct messages:
+through [presentation.js](../../../src/charts/bubble/presentation.js), and calls
+`renderBubbleChart`. On failure it shows distinct messages:
 `no-value-column`/`no-numeric` to `chive-chart-empty-bubble-numeric`,
 `no-nesting-columns`/`no-group-column` to `chive-chart-empty-bubble-nesting-required`, else
 `chive-chart-empty-bubble`.
 
 ### 6.2 Panel view
 
-The panel registry's `renderBubble()` maps `spec.config` into the same options (validating
-`measureMode`) and renders against `spec.dataSnapshot` with empty `filterCallbacks` (no
-click-to-filter in panels).
+[panelAdapter.js](../../../src/charts/bubble/panelAdapter.js) passes `spec.config` and
+`spec.dataSnapshot` through the same presentation flow with empty `filterCallbacks` (no
+click-to-filter in panels). The panel registry only dispatches to that adapter.
 
 ---
 
@@ -221,7 +231,7 @@ to 80 chars). In grouped mode with no nesting columns (and no legacy `groupColum
 
 ### 7.2 Aggregation (`aggregateBubbles`)
 
-[bubbleChartHierarchy.js](../../../src/modules/visualizations/bubbleChartHierarchy.js) reduces
+[data.js](../../../src/charts/bubble/data.js) reduces
 rows to one bubble per category, each carrying its measured value, its top-level group, and
 its full nesting path. Sum/mean without a usable value column returns `'no-value-column'`; no
 parseable values returns `'no-numeric'`. Bubbles are sorted descending by value (with a stable
@@ -275,19 +285,20 @@ encode group identity.
 ## 9. Performance notes
 
 The bubble chart emits one `<g>` + `<circle>` per leaf, plus one per intermediate group in
-grouped mode, so DOM cost scales with the number of distinct categories and groups, which
-`topN` bounds. The pack layout is a one-time O(n) pass. Drill-down uses SVG transforms and
-opacity rather than re-rendering, so navigation is cheap. Padding and palette edits flow
-through the shared throttled live-preview path (TIN doc [section 10](tin.md)).
+grouped mode. The default Top-N bounds the leaf count at 10; selecting 0 includes every
+category, so high-cardinality data can produce substantially more hierarchy, layout, and DOM
+work. Row aggregation scales with the input size, while hierarchy construction, packing, and
+DOM work scale with the visible leaves and groups. Drill-down uses SVG transforms and opacity
+rather than re-rendering the chart.
 
 ---
 
 ## 10. Live preview and interaction
 
-Padding, label mode, palette, and title edits use the shared live-preview path (non-emitting
-facade on `input`, commit on `change`; see TIN doc [section 10](tin.md)). Drill-down
-zoom, hover highlighting, and the click-to-filter pinned tooltips are the bubble chart's
-interaction layer on top of that, and they live entirely inside one render (no config writes).
+Bubble controls commit on `change`. Moving the padding slider updates its numeric output on
+`input`, but the chart is rendered only after the value is committed. Drill-down zoom, hover
+highlighting, and click-to-filter pinned tooltips are the chart's immediate interaction layer,
+and they live entirely inside one render without config writes.
 
 ---
 
@@ -324,13 +335,17 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 13. Tests
 
-- [bubbleChart.test.js](../../../tests/modules/visualizations/bubbleChart.test.js) covers the
+- [svg.test.js](../../../tests/charts/bubble/renderers/svg.test.js) covers the
   renderer (flat and grouped, packing output, labels).
-- [bubbleChartHierarchy.test.js](../../../tests/modules/visualizations/bubbleChartHierarchy.test.js)
+- [data.test.js](../../../tests/charts/bubble/data.test.js)
   covers the pure helpers: aggregation, multi-level tree building, ancestor/descendant walks
   (no DOM).
-- [bubbleControls.test.js](../../../tests/modules/chartControls/bubbleControls.test.js) covers the
+- [controls.test.js](../../../tests/charts/bubble/controls.test.js) covers the
   progressive nesting controls and the measure/value cross-constraint.
+- [workspaceSection.test.js](../../../tests/charts/bubble/workspaceSection.test.js) covers
+  workspace visibility and empty-state mapping.
+- [panelAdapter.test.js](../../../tests/charts/bubble/panelAdapter.test.js) covers frozen
+  snapshot mapping, localized labels, and failure passthrough.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 

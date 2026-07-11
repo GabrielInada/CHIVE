@@ -17,10 +17,10 @@ vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
 }));
 
 import {
-	computeDefaults,
 	createBubbleChartControls,
-	setupBubbleChartControlListeners,
-} from '../../../src/modules/chartControls/bubbleControls.js';
+} from '../../../src/charts/bubble/controls/builder.js';
+import { setupBubbleChartControlListeners } from '../../../src/charts/bubble/controls/listeners.js';
+import { computeDefaults } from '../../../src/charts/bubble/controls/defaults.js';
 import { BUBBLE_CHART } from '../../../src/config/charts.js';
 
 function createDataset(measureMode = 'count', valueColumn = null, nestingMode = 'flat', nestingColumns = []) {
@@ -75,13 +75,20 @@ function lastConfig() {
 	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].bubble;
 }
 
-describe('bubbleControls public surface', () => {
-	it('exposes exactly the three documented bubble-control exports (no internal leaks)', async () => {
-		const mod = await import('../../../src/modules/chartControls/bubbleControls.js');
-		expect(Object.keys(mod).sort()).toEqual([
-			'computeDefaults',
-			'createBubbleChartControls',
-			'setupBubbleChartControlListeners',
+describe('bubble controls module boundaries', () => {
+	it('keeps builder, listener, defaults, and nesting exports in dedicated modules', async () => {
+		const [builder, listeners, defaults, nesting] = await Promise.all([
+			import('../../../src/charts/bubble/controls/builder.js'),
+			import('../../../src/charts/bubble/controls/listeners.js'),
+			import('../../../src/charts/bubble/controls/defaults.js'),
+			import('../../../src/charts/bubble/controls/nestingColumns.js'),
+		]);
+		expect(Object.keys(builder)).toEqual(['createBubbleChartControls']);
+		expect(Object.keys(listeners)).toEqual(['setupBubbleChartControlListeners']);
+		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
+		expect(Object.keys(nesting).sort()).toEqual([
+			'computeNestingControlCount',
+			'resolveNestingColumnsFromConfig',
 		]);
 	});
 });

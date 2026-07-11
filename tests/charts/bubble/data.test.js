@@ -6,7 +6,7 @@ import {
 	getTopLevelGroup,
 	isIntermediate,
 	isDescendantOf,
-} from '../../../src/modules/visualizations/bubbleChartHierarchy.js';
+} from '../../../src/charts/bubble/data.js';
 import { BUBBLE_CHART } from '../../../src/config/charts.js';
 
 describe('resolveNestingColumns', () => {

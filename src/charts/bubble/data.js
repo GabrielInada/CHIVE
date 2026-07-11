@@ -3,7 +3,7 @@
  *
  * Pure utilities that turn rows into bubble nodes, then group them into a
  * multi-level hierarchy ready for D3's `pack` layout. Used by
- * `bubbleChart.js` and covered by unit tests.
+ * `renderers/svg.js` and covered by unit tests.
  */
 
 import { compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';

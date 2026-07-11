@@ -71,9 +71,10 @@ vi.mock('../../../src/charts/bar/controls/listeners.js', () => ({
 	setupBarChartControlListeners: mocks.setupBarChartControlListeners,
 }));
 
-vi.mock('../../../src/modules/chartControls/bubbleControls.js', async (importOriginal) => ({
-	...await importOriginal(),
+vi.mock('../../../src/charts/bubble/controls/builder.js', () => ({
 	createBubbleChartControls: mocks.createBubbleChartControls,
+}));
+vi.mock('../../../src/charts/bubble/controls/listeners.js', () => ({
 	setupBubbleChartControlListeners: mocks.setupBubbleChartControlListeners,
 }));
 

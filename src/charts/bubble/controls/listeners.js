@@ -11,15 +11,15 @@
  */
 
 import { BUBBLE_CHART } from '../../../config/charts.js';
-import { updateActiveDatasetConfig } from '../../state/appState.js';
 import { normalizeColumnNameList, filterVisibleColumns } from '../../../utils/columnHelpers.js';
-import { COLOR_PRESETS } from '../shared.js';
+import { COLOR_PRESETS } from '../../../modules/chartControls/shared.js';
 import {
+	commitChartConfigPatch,
 	setupSelectListeners,
 	setupSliderListener,
 	setupTextInputListener,
 	setupColorPresetListeners,
-} from '../controlListenerHelpers.js';
+} from '../../../modules/chartControls/controlListenerHelpers.js';
 import { resolveNestingColumnsFromConfig, computeNestingControlCount } from './nestingColumns.js';
 
 /**
@@ -79,14 +79,10 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 			// Normalize at the write sink so even a forged option cannot persist an
 			// out-of-allowlist or over-cap entry.
 			const normalized = normalizeColumnNameList(updated, { allowed, max: BUBBLE_CHART.maxNestingDepth });
-			updateActiveDatasetConfig({
-				bubble: {
-					...dataset.chartConfig.bubble,
-					nestingColumns: normalized,
-					groupColumn: normalized[0] || null,
-				},
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'bubble', {
+				nestingColumns: normalized,
+				groupColumn: normalized[0] || null,
+			}, onConfigChanged);
 		});
 	}
 
@@ -99,27 +95,19 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 			const currentValueColumn = numericOptions.includes(dataset.chartConfig.bubble?.valueColumn)
 				? dataset.chartConfig.bubble?.valueColumn
 				: null;
-			updateActiveDatasetConfig({
-				bubble: {
-					...dataset.chartConfig.bubble,
-					measureMode: nextMode,
-					valueColumn: nextMode === 'count' ? null : (currentValueColumn || numericOptions[0] || null),
-				},
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'bubble', {
+				measureMode: nextMode,
+				valueColumn: nextMode === 'count' ? null : (currentValueColumn || numericOptions[0] || null),
+			}, onConfigChanged);
 		});
 	}
 
 	const valueSelect = document.getElementById('viz-select-bubble-value-column');
 	if (valueSelect) {
 		valueSelect.addEventListener('change', () => {
-			updateActiveDatasetConfig({
-				bubble: {
-					...dataset.chartConfig.bubble,
-					valueColumn: numericOptions.includes(valueSelect.value) ? valueSelect.value : null,
-				},
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'bubble', {
+				valueColumn: numericOptions.includes(valueSelect.value) ? valueSelect.value : null,
+			}, onConfigChanged);
 		});
 	}
 

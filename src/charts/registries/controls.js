@@ -22,11 +22,9 @@ import { computeDefaults as computeBarDefaults } from '../bar/controls/defaults.
 import { createScatter3dControls } from '../scatter3d/controls/builder.js';
 import { setupScatter3dControlListeners } from '../scatter3d/controls/listeners.js';
 import { computeDefaults as computeScatter3dDefaults } from '../scatter3d/controls/defaults.js';
-import {
-	createBubbleChartControls,
-	setupBubbleChartControlListeners,
-	computeDefaults as computeBubbleDefaults,
-} from '../../modules/chartControls/bubbleControls.js';
+import { createBubbleChartControls } from '../bubble/controls/builder.js';
+import { setupBubbleChartControlListeners } from '../bubble/controls/listeners.js';
+import { computeDefaults as computeBubbleDefaults } from '../bubble/controls/defaults.js';
 import {
 	createLineChartControls,
 	setupLineChartControlListeners,

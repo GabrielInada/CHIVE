@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { renderBubbleChart } from '../../../src/modules/visualizations/bubbleChart.js';
+import { renderBubbleChart } from '../../../../src/charts/bubble/renderers/svg.js';
 
 function mouse(type, options = {}) {
 	return new MouseEvent(type, {
