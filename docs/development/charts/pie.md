@@ -20,7 +20,7 @@ Key files:
 - Config constants: [charts.js](../../../src/config/charts.js) (`PIE_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `pie` block)
 - Section adapter (dataset workspace): [pieChartSection.js](../../../src/components/datasetWorkspace/chartRenders/pieChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
 - Color math: [colorUtils.js](../../../src/utils/colorUtils.js) (`buildSliceColor`)
 
 ---
@@ -110,7 +110,7 @@ Two draw paths, both ending at `renderPieChart`.
                                               │
    "Add to panel" → structuredClone snapshot │
         │                                     │
-   renderChartFromSpec.renderPie()            │
+   panel.js renderPie()                       │
      → renderPieChart(container, spec.dataSnapshot, spec.config.category, …)
                                               ▼
                                    ┌──────────────────────┐
@@ -215,7 +215,7 @@ On failure it shows `chive-chart-empty-pie-sum` for `sum-no-numeric`, else
 
 ### 6.2 Panel view
 
-`renderChartFromSpec.renderPie()` maps `spec.config` into the same options and renders against
+The panel registry's `renderPie()` maps `spec.config` into the same options and renders against
 `spec.dataSnapshot` with empty `filterCallbacks` (no click-to-filter in panels).
 
 ---
@@ -335,7 +335,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   covers the renderer (slices, labels, top-N behavior).
 - [pieControls.test.js](../../../tests/modules/chartControls/pieControls.test.js) covers control
   building, the radius cross-constraint, and the per-slice color logic.
-- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 
 ---

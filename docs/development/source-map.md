@@ -28,7 +28,7 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/modules/feedbackUI.js`, `dialogFocus.js` | Cross-feature UI helpers: user feedback surface and dialog focus management. |
 | `src/modules/panelSubsystem/` | Panel rendering, export, resize, slot lifecycle, and the panel's internal mutation helpers. |
 | `src/modules/visualizations/` | Legacy D3/SVG chart renderers, some with subpackages (`scatterPlot/`, `lineChart/`, ...). Read-only with respect to application state and migrated one chart at a time. |
-| `src/charts/` | Chart presentation metadata (`catalog.js` and `previews.js`), per-chart packages (`charts/bar/` for SVG and `charts/scatter3d/` for Three.js/WebGL), and shared chart-only SVG and tooltip infrastructure under `charts/shared/`. A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
+| `src/charts/` | Chart presentation metadata (`catalog.js` and `previews.js`), independent controls/workspace/panel lookup under `registries/`, per-chart packages (`charts/bar/` for SVG and `charts/scatter3d/` for Three.js/WebGL), and shared chart-only infrastructure under `charts/shared/`. A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
 | `src/services/` | Side-effecting services: `dataService/`, `persistenceService/` with the `persistence/` backends, `i18nService.js`, `presetService.js`, and `dataIngestService.js`. |
 | `src/data/` | Bundled preset datasets (`presets/`) and `presetCatalog.js`. |
 | `src/workers/` | Background workers: `persistWorker.js` for persistence and `dataIngestWorker.js` for data ingest. |
@@ -50,7 +50,7 @@ with real work:
 | Service | Side effects, persistence, ingest, i18n, reusable domain operations | `services/persistenceService.js` |
 | Facade | State or service boundary | `modules/state/dataStateFacade.js` |
 | Catalog | Identity-keyed descriptive or presentation metadata | `charts/catalog.js` |
-| Registry | Supported-type implementation lookup for one integration surface | `modules/panelSubsystem/renderChartFromSpec.js` |
+| Registry | Supported-type implementation lookup for one integration surface | `charts/registries/workspace.js` |
 | Adapter | Bridge between a generic system and a chart/domain implementation | `charts/bar/panelAdapter.js` |
 
 Manager is legacy naming, still valid for existing files: `fileManager.js`,
@@ -75,9 +75,8 @@ For a new chart type, update the full chart surface in one pass:
 
 - Build the package's data/options modules, renderer, controls, workspace
   section, presentation flow, and panel adapter, then register those entry
-  points in `chartControls/chartControlsManager.js`,
-  `components/datasetWorkspace/chartsView.js`, and
-  `panelSubsystem/renderChartFromSpec.js`.
+  points in `charts/registries/controls.js`,
+  `charts/registries/workspace.js`, and `charts/registries/panel.js`.
 - Register the chart identity and visual precedence in
   `config/chartTypes.js`, its preview/category metadata in
   `charts/catalog.js` and `charts/previews.js`, and its default config block in
@@ -115,6 +114,10 @@ The rules, in place of a speculative target tree:
   adapter live together. `charts/scatter3d/` established the Three.js path and
   `charts/bar/` established the shared SVG path; remaining charts migrate one
   at a time when they are already being changed.
+- Chart integration stays split by surface. `charts/registries/controls.js`,
+  `workspace.js`, and `panel.js` each import only their own adapters and expose
+  canonical-order support lists; no universal chart registry joins those
+  import graphs.
 - D3 stays the math engine (scales, extents, grouping, hierarchy and layout
   math, interpolation, data transforms). Three.js owns
   scene/camera/material/geometry rendering only. The contract:

@@ -22,7 +22,7 @@ Key files:
 - Config constants: [charts.js](../../../src/config/charts.js) (`NETWORK_GRAPH`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `network` block)
 - Section adapter (dataset workspace): [networkChartSection.js](../../../src/components/datasetWorkspace/chartRenders/networkChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
 
 ---
 
@@ -101,7 +101,7 @@ Two draw paths, both ending at `renderNetworkGraph`.
                                               │
    "Add to panel" → structuredClone snapshot │
         │                                     │
-   renderChartFromSpec.renderNetwork()        │
+   panel.js renderNetwork()                   │
      → renderNetworkGraph(container, spec.dataSnapshot, source, target, …)
                                               ▼
                               ┌──────────────────────────────────┐
@@ -198,7 +198,7 @@ tooltips), and calls `renderNetworkGraph`. Any failure shows the single
 
 ### 6.2 Panel view
 
-`renderChartFromSpec.renderNetwork()` builds the same options from `spec.config` and renders
+The panel registry's `renderNetwork()` builds the same options from `spec.config` and renders
 against `spec.dataSnapshot` with empty `filterCallbacks` (no click-to-filter in panels).
 
 ---
@@ -319,7 +319,7 @@ the Portuguese equivalent is in [pt-BR.json](../../../src/i18n/pt-BR.json).
   renderer: node derivation from edges, weight handling, color roles, and the result counts.
 - [networkControls.test.js](../../../tests/modules/chartControls/networkControls.test.js) covers
   control building and the reset-zoom and preset listeners.
-- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 
 ---

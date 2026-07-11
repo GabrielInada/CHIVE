@@ -73,13 +73,16 @@ the shared `controlListenerHelpers.js`, which remains the config-write
 adapter; selects clamp to the numeric column list), and `defaults.js`
 (first three distinct numeric columns via the tin `pickPreferred`
 semantics, preserving still-valid user picks). The registry entry lives in
-[chartControlsManager.js](../../../src/modules/chartControls/chartControlsManager.js).
+[charts/registries/controls.js](../../../src/charts/registries/controls.js),
+which `chartControlsManager.js` consumes.
 
 ## 6. The render entry chain
 
 ### 6.1 Dataset workspace
 
-`chartsView.js` dispatches to the package's
+`chartsView.js` passes the shared context to the
+[workspace registry](../../../src/charts/registries/workspace.js), whose
+`scatter3d` entry dispatches to the package's
 [workspaceSection.js](../../../src/charts/scatter3d/workspaceSection.js),
 which owns the static block's visibility and delegates to
 [presentation.js](../../../src/charts/scatter3d/presentation.js): build the
@@ -92,7 +95,9 @@ post-render extras that need the ok payload: the accurate aria-label
 ### 6.2 Panel
 
 [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
-routes `scatter3d` specs to the package's
+validates the request, then the
+[panel registry](../../../src/charts/registries/panel.js) routes `scatter3d`
+specs to the package's
 [panelAdapter.js](../../../src/charts/scatter3d/panelAdapter.js), which maps
 the frozen snapshot onto the same presentation flow. Panel slot containers
 have no DOM id; the renderer generates a unique `aria-describedby` id in

@@ -61,7 +61,7 @@ Key files:
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
 - Color math: [colorUtils.js](../../../src/utils/colorUtils.js)
 - Section adapter (dataset workspace): [tinChartSection.js](../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
 
 ---
 
@@ -294,7 +294,7 @@ snapshots assembled into a dashboard). Both end at the same renderer,
    chartSnapshot { config, dataSnapshot, … }  │
         │                                     │
    renderCanvasPanel() → mountSlot()          │
-   → renderChartFromSpec.renderTin()          │
+   → panel.js renderTin()                     │
      → renderTinChart(container, spec.dataSnapshot, …, spec.config)
                                               ▼
                                    ┌──────────────────────┐
@@ -370,9 +370,9 @@ fields fall back to default).
 
 [tinControls.js](../../../src/modules/chartControls/tinControls.js) builds the
 right-sidebar control group and wires every input to a config write. It exposes
-three functions, registered in the chart-controls manager registry
-([chartControlsManager.js](../../../src/modules/chartControls/chartControlsManager.js),
-the `tin:` entry):
+three functions, registered in the
+[controls registry](../../../src/charts/registries/controls.js) under the
+`tin` entry and consumed by `chartControlsManager.js`:
 
 - `createTinControls(dataset, numericOptions, allColumns)` builds the DOM.
 - `setupTinControlListeners(dataset, numericOptions, allColumns, onConfigChanged)` wires events.
@@ -438,9 +438,11 @@ controls; it only reads config that the listeners have written.
 
 ### 6.1 Dataset workspace
 
-[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides which chart blocks
-to show. It calls `renderTinChartSection({ config: chartConfig.tin, rows })`
-([tinChartSection.js](../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js)).
+[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides
+which chart is active and delegates through the
+[workspace registry](../../../src/charts/registries/workspace.js). Its `tin`
+entry calls `renderTinChartSection({ config: chartConfig.tin, rows })` from
+[tinChartSection.js](../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js).
 That adapter:
 
 1. Resolves the block (`chart-block-tin`) and container (`chart-tin-container`)
@@ -460,9 +462,9 @@ When a chart is added to the panel, `addChartToPanel`
 ([panelManager.js](../../../src/modules/panelManager.js)) captures a snapshot:
 `config`, `dataSnapshot`, and `columnsSnapshot` are each `structuredClone`d at
 capture time, so the snapshot is **frozen** and decoupled from later edits to the
-active dataset. `renderChartFromSpec.renderTin()`
-([renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js))
-maps `spec.config` to the same options bag and calls the identical
+active dataset. The `tin` adapter in the
+[panel registry](../../../src/charts/registries/panel.js) maps `spec.config` to
+the same options bag after `renderChartFromSpec` validates the request, then calls the identical
 `renderTinChart` against `spec.dataSnapshot`. This frozen-snapshot property is what
 lets the live preview skip re-rendering the panel (section 9.4 / 10).
 

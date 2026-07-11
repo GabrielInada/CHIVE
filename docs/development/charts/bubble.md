@@ -20,7 +20,7 @@ Key files:
 - Config constants: [charts.js](../../../src/config/charts.js) (`BUBBLE_CHART`, `CHART_COLOR_PALETTES`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bubble` block)
 - Section adapter (dataset workspace): [bubbleChartSection.js](../../../src/components/datasetWorkspace/chartRenders/bubbleChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
 
 ---
 
@@ -101,7 +101,7 @@ Two draw paths, both ending at `renderBubbleChart`.
                                               │
    "Add to panel" → structuredClone snapshot │
         │                                     │
-   renderChartFromSpec.renderBubble()         │
+   panel.js renderBubble()                    │
      → renderBubbleChart(container, spec.dataSnapshot, spec.config.category, …)
                                               ▼
                                    ┌──────────────────────┐
@@ -202,7 +202,7 @@ into the options bag, and calls `renderBubbleChart`. On failure it shows distinc
 
 ### 6.2 Panel view
 
-`renderChartFromSpec.renderBubble()` maps `spec.config` into the same options (validating
+The panel registry's `renderBubble()` maps `spec.config` into the same options (validating
 `measureMode`) and renders against `spec.dataSnapshot` with empty `filterCallbacks` (no
 click-to-filter in panels).
 
@@ -331,7 +331,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   (no DOM).
 - [bubbleControls.test.js](../../../tests/modules/chartControls/bubbleControls.test.js) covers the
   progressive nesting controls and the measure/value cross-constraint.
-- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 
 ---

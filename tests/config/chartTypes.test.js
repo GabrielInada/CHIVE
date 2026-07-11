@@ -4,10 +4,12 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { CHART_CATALOG } from '../../src/charts/catalog.js';
+import { SUPPORTED_CONTROL_CHART_TYPES } from '../../src/charts/registries/controls.js';
+import { SUPPORTED_PANEL_CHART_TYPES } from '../../src/charts/registries/panel.js';
+import { SUPPORTED_WORKSPACE_CHART_TYPES } from '../../src/charts/registries/workspace.js';
 import { createDefaultChartConfig } from '../../src/config/chartDefaults.js';
 import { CHART_TYPE_KEYS } from '../../src/config/chartTypes.js';
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../src/config/elementIds.js';
-import { SUPPORTED_PANEL_CHART_TYPES } from '../../src/modules/panelSubsystem/renderChartFromSpec.js';
 
 const EXPECTED_CHART_TYPE_KEYS = [
 	'bar',
@@ -57,8 +59,10 @@ describe('chart-type metadata', () => {
 		}
 	});
 
-	it('keeps panel renderer support aligned without constraining dispatch order', () => {
-		expect(sorted(SUPPORTED_PANEL_CHART_TYPES)).toEqual(sorted(CHART_TYPE_KEYS));
+	it('keeps all integration surfaces complete and canonically ordered', () => {
+		expect(SUPPORTED_CONTROL_CHART_TYPES).toEqual(CHART_TYPE_KEYS);
+		expect(SUPPORTED_WORKSPACE_CHART_TYPES).toEqual(CHART_TYPE_KEYS);
+		expect(SUPPORTED_PANEL_CHART_TYPES).toEqual(CHART_TYPE_KEYS);
 	});
 
 	it('keeps the manual ChartTypeKey JSDoc union aligned', () => {

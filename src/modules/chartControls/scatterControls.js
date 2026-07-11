@@ -4,8 +4,7 @@
  * Builds the right-sidebar control group for the scatter plot and wires its
  * listeners. The implementation lives in the `scatterControls/` folder, split
  * by responsibility; this file is the single public entry point and keeps the
- * export surface stable for the chart-controls registry in
- * `chartControlsManager.js`.
+ * export surface stable for `charts/registries/controls.js`.
  *
  *   - builder.js   `createScatterPlotControls` (the Data/Display/Analytics/Styling sections)
  *   - listeners.js `setupScatterPlotControlListeners` (control wiring + cross-constraints)

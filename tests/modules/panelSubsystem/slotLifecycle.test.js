@@ -4,7 +4,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const dispatch = vi.hoisted(() => ({
 	renderChartFromSpec: vi.fn(() => ({ ok: true })),
-	SUPPORTED_PANEL_CHART_TYPES: ['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap'],
 }));
 
 vi.mock('../../../src/modules/panelSubsystem/renderChartFromSpec.js', () => dispatch);

@@ -6,8 +6,8 @@
  * option-dense: surface fill mode, subdivision depth, isolines, threshold
  * line, multi-color gradient ramps. The implementation lives in the
  * `tinControls/` folder, split by responsibility; this file is the single
- * public entry point and keeps the export surface stable for the
- * chart-controls registry in `chartControlsManager.js`.
+ * public entry point and keeps the export surface stable for
+ * `charts/registries/controls.js`.
  *
  *   - builder.js    `createTinControls` (the Data/Display/Surface/Overlays sections)
  *   - listeners.js  `setupTinControlListeners` (control wiring + cross-constraints)

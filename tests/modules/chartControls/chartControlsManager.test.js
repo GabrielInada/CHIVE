@@ -141,6 +141,7 @@ import {
 	computeActivationDefaults,
 	handleChartTypeSelect,
 } from '../../../src/modules/chartControls/chartControlsManager.js';
+import { getChartControlAdapter } from '../../../src/charts/registries/controls.js';
 
 function setupSidebarDOM() {
 	document.body.innerHTML = `
@@ -161,6 +162,60 @@ function configWithActive(activeType) {
 		scatter3d: { enabled: activeType === 'scatter3d' },
 	};
 }
+
+describe('controls registry', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
+	it('returns null for unknown and inherited keys', () => {
+		expect(getChartControlAdapter('histogram')).toBeNull();
+		expect(getChartControlAdapter('__proto__')).toBeNull();
+	});
+
+	it.each([
+		['bar', 'createBarChartControls', 'setupBarChartControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
+		['line', 'createLineChartControls', 'setupLineChartControlListeners', ['numeric', 'dates', 'all'], ['numeric', 'dates', 'all']],
+		['scatter', 'createScatterPlotControls', 'setupScatterPlotControlListeners', ['numeric', 'all'], ['numeric', 'all']],
+		['scatter3d', 'createScatter3dControls', 'setupScatter3dControlListeners', ['numeric', 'all'], ['numeric', 'all']],
+		['pie', 'createPieChartControls', 'setupPieChartControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
+		['bubble', 'createBubbleChartControls', 'setupBubbleChartControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
+		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners', ['all', 'numeric', 'categorical'], ['all', 'numeric']],
+		['treemap', 'createTreeMapControls', 'setupTreeMapControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
+		['tin', 'createTinControls', 'setupTinControlListeners', ['numeric', 'all'], ['numeric', 'all']],
+	])('preserves the %s controls adapter signatures', (type, buildMock, listenerMock, buildKeys, listenerKeys) => {
+		const dataset = { chartConfig: {} };
+		const callback = vi.fn();
+		const values = {
+			base: ['category'],
+			numeric: ['value'],
+			categorical: ['category'],
+			dates: ['date'],
+			all: ['category', 'value', 'date'],
+		};
+		const context = {
+			baseCategoricalOrAll: values.base,
+			numeric: values.numeric,
+			categorical: values.categorical,
+			dates: values.dates,
+			allColumns: values.all,
+		};
+		const adapter = getChartControlAdapter(type);
+
+		adapter.build(dataset, context);
+		adapter.attachListeners(dataset, context, callback);
+
+		expect(mocks[buildMock]).toHaveBeenCalledWith(
+			dataset,
+			...buildKeys.map(key => values[key]),
+		);
+		expect(mocks[listenerMock]).toHaveBeenCalledWith(
+			dataset,
+			...listenerKeys.map(key => values[key]),
+			callback,
+		);
+	});
+});
 
 describe('renderChartControlsSidebar', () => {
 	beforeEach(() => {

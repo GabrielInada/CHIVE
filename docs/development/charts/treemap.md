@@ -19,7 +19,7 @@ Key files:
 - Config constants: [charts.js](../../../src/config/charts.js) (`TREEMAP_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `treemap` block)
 - Section adapter (dataset workspace): [treemapChartSection.js](../../../src/components/datasetWorkspace/chartRenders/treemapChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
 
 ---
 
@@ -87,7 +87,7 @@ Two draw paths, both ending at `renderTreeMap`.
                                               │
    "Add to panel" → structuredClone snapshot │
         │                                     │
-   renderChartFromSpec.renderTreemap()        │
+   panel.js renderTreemap()                   │
      → renderTreeMap(container, spec.dataSnapshot, spec.config.category, …)
                                               ▼
                                    ┌──────────────────────┐
@@ -171,7 +171,7 @@ into the options bag, and calls `renderTreeMap`. On failure it shows
 
 ### 6.2 Panel view
 
-`renderChartFromSpec.renderTreemap()` maps `spec.config` into the same options and renders
+The panel registry's `renderTreemap()` maps `spec.config` into the same options and renders
 against `spec.dataSnapshot` with empty `filterCallbacks` (no click-to-filter in panels).
 
 ---
@@ -271,7 +271,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   control building and the measure/value and color-mode logic.
 - [treemapChartSection.test.js](../../../tests/components/datasetWorkspace/chartRenders/treemapChartSection.test.js)
   covers the section adapter, including the empty-state message selection.
-- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 
 ---

@@ -59,12 +59,13 @@ The renderers share a small set of building blocks, documented once and referenc
 doc rather than repeated:
 
 - **Result envelope**: `ok()` / `fail(reason)` from [result.js](../../../src/utils/result.js).
-- **Render dispatch**: dispatch goes through
+- **Render dispatch**: panel snapshots enter through
   [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js),
-  which routes each spec to the matching chart entry function under
-  [src/modules/visualizations/](../../../src/modules/visualizations) or, for per-chart
-  packages, the package's panel adapter under [src/charts/](../../../src/charts)
-  (bar and scatter3d today).
+  which validates the request and resolves its implementation through the
+  [panel registry](../../../src/charts/registries/panel.js). The registry maps
+  legacy charts to [src/modules/visualizations/](../../../src/modules/visualizations)
+  and packaged charts to their `panelAdapter.js` under
+  [src/charts/](../../../src/charts) (bar and scatter3d today).
 - **Section adapters**: legacy charts keep one `*ChartSection.js` under
   [chartRenders/](../../../src/components/datasetWorkspace/chartRenders); per-chart packages
   bring their own `workspaceSection.js`. These map config to the renderer

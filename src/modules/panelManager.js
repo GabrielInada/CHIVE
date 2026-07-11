@@ -49,7 +49,7 @@ import {
 	fillLayoutSelect,
 } from './panelSubsystem/panelRenderer.js';
 import { exportPanelLayoutSvg as exportSvg } from './panelSubsystem/panelExporter.js';
-import { SUPPORTED_PANEL_CHART_TYPES } from './panelSubsystem/renderChartFromSpec.js';
+import { SUPPORTED_PANEL_CHART_TYPES } from '../charts/registries/panel.js';
 
 // Callback for feedback UI (will be set by main.js)
 let feedbackCallback = null;

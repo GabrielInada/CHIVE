@@ -19,7 +19,7 @@ Key files:
 - Config constants: [charts.js](../../../src/config/charts.js) (`LINE_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `line` block)
 - Section adapter (dataset workspace): [lineChartSection.js](../../../src/components/datasetWorkspace/chartRenders/lineChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
 
 ---
 
@@ -109,7 +109,7 @@ Two draw paths, both ending at `renderLineChart`.
                                               │
    "Add to panel" → structuredClone snapshot │
         │                                     │
-   renderChartFromSpec.renderLine()           │
+   panel.js renderLine()                      │
      → renderLineChart(container, spec.dataSnapshot, x, y, …, axisTypes from columns)
                                               ▼
                                    ┌──────────────────────┐
@@ -202,7 +202,7 @@ anything else to `chive-chart-empty-line`.
 
 ### 6.2 Panel view
 
-`renderChartFromSpec.renderLine()` builds the same options from `spec.config`, derives
+The panel registry's `renderLine()` builds the same options from `spec.config`, derives
 `axisTypes` from the snapshot's `columnsSnapshot`, and renders against `spec.dataSnapshot`. (The
 line chart has no click-to-filter tooltips, so the empty filter-callbacks bag is moot here.)
 
@@ -319,7 +319,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   renderer: axis-kind handling, aggregation, the missing-value modes, and curve selection.
 - [lineControls.test.js](../../../tests/modules/chartControls/lineControls.test.js) covers control
   building and the X/Y validation and ghost-color enable logic.
-- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 
 ---

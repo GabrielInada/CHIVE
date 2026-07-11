@@ -35,7 +35,7 @@ Key files:
 - Config constants: [charts.js](../../../src/config/charts.js) (`SCATTER_PLOT`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `scatter` block)
 - Section adapter (dataset workspace): [scatterChartSection.js](../../../src/components/datasetWorkspace/chartRenders/scatterChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
 
 ---
 
@@ -186,7 +186,7 @@ Two draw paths, both ending at `renderScatterPlot`.
         ▼                                     │
    chartSnapshot { config, dataSnapshot, columnsSnapshot, … }
         │                                     │
-   renderChartFromSpec.renderScatter()        │
+   panel.js renderScatter()                   │
      → renderScatterPlot(container, spec.dataSnapshot, x, y, …, axisTypes from columns)
                                               ▼
                                    ┌──────────────────────┐
@@ -326,7 +326,7 @@ is consistent), and calls `renderScatterPlot`. On failure it shows
 
 ### 6.2 Panel view
 
-`renderChartFromSpec.renderScatter()` builds the same options bag from `spec.config`, derives
+The panel registry's `renderScatter()` builds the same options bag from `spec.config`, derives
 `axisTypes` from the snapshot's `columnsSnapshot`, and calls the identical renderer against
 `spec.dataSnapshot` with empty `filterCallbacks` (no click-to-filter in panels).
 
@@ -518,7 +518,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 - [scatterControls.test.js](../../../tests/modules/chartControls/scatterControls.test.js) covers
   the control building and the axis/scale and color-mode cross-constraints.
 - [scatterChartSection.test.js](../../../tests/components/datasetWorkspace/chartRenders/scatterChartSection.test.js)
-  and [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+  and [panel.test.js](../../../tests/charts/registries/panel.test.js)
   cover the results and panel paths.
 
 ---

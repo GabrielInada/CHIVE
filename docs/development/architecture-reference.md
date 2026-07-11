@@ -381,10 +381,11 @@ The lifecycle is:
    Canvas/WebGL charts are omitted from the SVG export and counted; a chart
    panel with no exportable SVG charts returns `no-exportable-charts`.
 
-`renderChartFromSpec` supports the chart types exported by
-`SUPPORTED_PANEL_CHART_TYPES`: `bar`, `scatter`, `network`, `pie`, `bubble`,
-`treemap`, `line`, `tin`, and `scatter3d`. Renderers mount either SVG or canvas
-output depending on the chart type.
+`renderChartFromSpec` resolves implementations through the panel-only registry
+in `src/charts/registries/panel.js`. Its `SUPPORTED_PANEL_CHART_TYPES` export is
+in canonical order: `bar`, `line`, `scatter`, `scatter3d`, `pie`, `bubble`,
+`network`, `treemap`, and `tin`. Renderers mount either SVG or canvas output
+depending on the chart type.
 
 ## Adding A State Feature
 
@@ -408,10 +409,10 @@ output depending on the chart type.
 4. Emit a panel event only when a subscriber must react.
 5. Keep renderer callbacks injected from `panelManager`; renderers should not
    import write facades directly.
-6. If adding a chart type to panel rendering, add it to the `RENDERERS` map in
-   `renderChartFromSpec.js`; `SUPPORTED_PANEL_CHART_TYPES` is derived from that
-   map. If the type changes export behavior, update `panelExporter.js` and the
-   relevant tests.
+6. If adding a chart type to panel rendering, add its adapter to
+   `src/charts/registries/panel.js`; `SUPPORTED_PANEL_CHART_TYPES` is derived
+   from that registry in canonical chart order. If the type changes export
+   behavior, update `panelExporter.js` and the relevant tests.
 7. Update this reference and any relevant tests.
 
 ## Debugging State Events

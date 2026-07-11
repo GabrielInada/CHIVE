@@ -8,8 +8,8 @@
  *
  * Each chart type owns its chart-specific controls, either in a per-chart
  * package (`charts/bar/`, `charts/scatter3d/`) or in a legacy controls module
- * (`pieControls.js`, ...). This module wires them together via
- * {@link CHART_CONTROL_REGISTRY} and renders the sidebar shell.
+ * (`pieControls.js`, ...). The controls surface is wired by
+ * `charts/registries/controls.js`; this manager renders the sidebar shell.
  *
  * Sidebar scroll-position preservation deserves a note: re-rendering
  * replaces the entire params DOM, so on every render we capture an
@@ -19,6 +19,7 @@
  *
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
+ * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
  */
 
 import { t } from '../../services/i18nService.js';
@@ -30,20 +31,8 @@ import {
 } from '../../utils/columnHelpers.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { setActiveChartType } from '../state/appState.js';
-import { createBarChartControls } from '../../charts/bar/controls/builder.js';
-import { setupBarChartControlListeners } from '../../charts/bar/controls/listeners.js';
-import { computeDefaults as computeBarDefaults } from '../../charts/bar/controls/defaults.js';
-import { createBubbleChartControls, setupBubbleChartControlListeners, computeDefaults as computeBubbleDefaults } from './bubbleControls.js';
-import { createLineChartControls, setupLineChartControlListeners, computeDefaults as computeLineDefaults } from './lineControls.js';
-import { createNetworkGraphControls, setupNetworkGraphControlListeners, computeDefaults as computeNetworkDefaults } from './networkControls.js';
-import { createScatterPlotControls, setupScatterPlotControlListeners, computeDefaults as computeScatterDefaults } from './scatterControls.js';
-import { createPieChartControls, setupPieChartControlListeners, computeDefaults as computePieDefaults } from './pieControls.js';
-import { createTreeMapControls, setupTreeMapControlListeners, computeDefaults as computeTreemapDefaults } from './treemapControls.js';
-import { createTinControls, setupTinControlListeners, computeDefaults as computeTinDefaults } from './tinControls.js';
-import { createScatter3dControls } from '../../charts/scatter3d/controls/builder.js';
-import { setupScatter3dControlListeners } from '../../charts/scatter3d/controls/listeners.js';
-import { computeDefaults as computeScatter3dDefaults } from '../../charts/scatter3d/controls/defaults.js';
 import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
+import { getChartControlAdapter } from '../../charts/registries/controls.js';
 import { renderChartParamsDOM } from '../../components/datasetWorkspace/chartParamsView.js';
 import { openChartTypePickerDialog } from '../../components/datasetWorkspace/chartTypePickerDialog.js';
 
@@ -224,7 +213,7 @@ function restoreSidebarScrollPosition(container, anchor) {
  *
  * @private
  * @param {Dataset} dataset
- * @returns {{ numeric: string[], categorical: string[], dates: string[], allColumns: string[], baseCategoricalOrAll: string[] }} `baseCategoricalOrAll` falls back to all columns when no categoricals exist.
+ * @returns {ChartControlContext} `baseCategoricalOrAll` falls back to all columns when no categoricals exist.
  */
 function getColumnContext(dataset) {
 	const visibleColumns = filterVisibleColumns(dataset);
@@ -235,67 +224,6 @@ function getColumnContext(dataset) {
 	const baseCategoricalOrAll = categorical.length > 0 ? categorical : allColumns;
 	return { numeric, categorical, dates, allColumns, baseCategoricalOrAll };
 }
-
-/**
- * Per-chart wiring table. Adapts the unified `(dataset, ctx, cb?)`
- * signature used by the orchestrator to each per-chart file's factory
- * signature. The per-chart files own the chart-specific logic; this
- * table is pure wiring.
- *
- * Entries:
- * - `build(ds, ctx)`              → constructs DOM control elements.
- * - `attachListeners(ds, ctx, cb)`→ wires listeners after the DOM is mounted.
- * - `computeDefaults(ds, ctx)`    → returns initial config for first activation.
- *
- * @private
- */
-const CHART_CONTROL_REGISTRY = {
-	bar: {
-		build: (ds, ctx) => createBarChartControls(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns),
-		attachListeners: (ds, ctx, cb) => setupBarChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns, cb),
-		computeDefaults: computeBarDefaults,
-	},
-	scatter: {
-		build: (ds, ctx) => createScatterPlotControls(ds, ctx.numeric, ctx.allColumns),
-		attachListeners: (ds, ctx, cb) => setupScatterPlotControlListeners(ds, ctx.numeric, ctx.allColumns, cb),
-		computeDefaults: computeScatterDefaults,
-	},
-	pie: {
-		build: (ds, ctx) => createPieChartControls(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns),
-		attachListeners: (ds, ctx, cb) => setupPieChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns, cb),
-		computeDefaults: computePieDefaults,
-	},
-	bubble: {
-		build: (ds, ctx) => createBubbleChartControls(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns),
-		attachListeners: (ds, ctx, cb) => setupBubbleChartControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns, cb),
-		computeDefaults: computeBubbleDefaults,
-	},
-	network: {
-		build: (ds, ctx) => createNetworkGraphControls(ds, ctx.allColumns, ctx.numeric, ctx.categorical),
-		attachListeners: (ds, ctx, cb) => setupNetworkGraphControlListeners(ds, ctx.allColumns, ctx.numeric, cb),
-		computeDefaults: computeNetworkDefaults,
-	},
-	treemap: {
-		build: (ds, ctx) => createTreeMapControls(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns),
-		attachListeners: (ds, ctx, cb) => setupTreeMapControlListeners(ds, ctx.baseCategoricalOrAll, ctx.numeric, ctx.allColumns, cb),
-		computeDefaults: computeTreemapDefaults,
-	},
-	line: {
-		build: (ds, ctx) => createLineChartControls(ds, ctx.numeric, ctx.dates, ctx.allColumns),
-		attachListeners: (ds, ctx, cb) => setupLineChartControlListeners(ds, ctx.numeric, ctx.dates, ctx.allColumns, cb),
-		computeDefaults: computeLineDefaults,
-	},
-	tin: {
-		build: (ds, ctx) => createTinControls(ds, ctx.numeric, ctx.allColumns),
-		attachListeners: (ds, ctx, cb) => setupTinControlListeners(ds, ctx.numeric, ctx.allColumns, cb),
-		computeDefaults: computeTinDefaults,
-	},
-	scatter3d: {
-		build: (ds, ctx) => createScatter3dControls(ds, ctx.numeric, ctx.allColumns),
-		attachListeners: (ds, ctx, cb) => setupScatter3dControlListeners(ds, ctx.numeric, ctx.allColumns, cb),
-		computeDefaults: computeScatter3dDefaults,
-	},
-};
 
 /**
  * Resolve first-time activation defaults for `chartType`. The active
@@ -311,7 +239,7 @@ const CHART_CONTROL_REGISTRY = {
  * @returns {Object} Partial chart-type config; empty when the type is unknown.
  */
 function computeActivationDefaults(chartType, dataset, { numeric, categorical, allColumns, dates = [] }) {
-	const entry = CHART_CONTROL_REGISTRY[chartType];
+	const entry = getChartControlAdapter(chartType);
 	if (!entry) return {};
 	const baseCategoricalOrAll = categorical.length > 0 ? categorical : allColumns;
 	return entry.computeDefaults(dataset, { numeric, categorical, allColumns, dates, baseCategoricalOrAll });
@@ -319,14 +247,14 @@ function computeActivationDefaults(chartType, dataset, { numeric, categorical, a
 
 /** @private */
 function buildControlsForChart(chartType, dataset) {
-	const entry = CHART_CONTROL_REGISTRY[chartType];
+	const entry = getChartControlAdapter(chartType);
 	if (!entry) return [];
 	return entry.build(dataset, getColumnContext(dataset));
 }
 
 /** @private */
 function setupListenersForChart(chartType, dataset) {
-	const entry = CHART_CONTROL_REGISTRY[chartType];
+	const entry = getChartControlAdapter(chartType);
 	if (!entry) return;
 	entry.attachListeners(dataset, getColumnContext(dataset), onChartConfigChangeCallback);
 }
@@ -346,7 +274,7 @@ function handleChartTypeSelect(chartType, dataset) {
 		onChartConfigChangeCallback?.();
 		return;
 	}
-	const entry = CHART_CONTROL_REGISTRY[chartType];
+	const entry = getChartControlAdapter(chartType);
 	const defaults = entry ? entry.computeDefaults(dataset, getColumnContext(dataset)) : {};
 	setActiveChartType(chartType, { ...defaults, expanded: true });
 	onChartConfigChangeCallback?.();

@@ -133,9 +133,10 @@
 
 /**
  * Column-name buckets passed into per-chart `build`/`attachListeners`/
- * `computeDefaults` by the chartControls registry. Derived from the active
+ * `computeDefaults` by the controls registry. Derived from the active
  * dataset's visible columns by `getColumnContext()` in
- * `chartControls/chartControlsManager.js`.
+ * `chartControls/chartControlsManager.js`; implementation lookup lives in
+ * `charts/registries/controls.js`.
  *
  * `baseCategoricalOrAll` is the fallback list when no categorical columns
  * exist (the chart-picker still needs to offer *something*).

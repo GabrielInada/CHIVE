@@ -4,8 +4,7 @@
  * Builds the right-sidebar control group for the line chart and wires its
  * listeners. The implementation lives in the `lineControls/` folder, split by
  * responsibility; this file is the single public entry point and keeps the
- * export surface stable for the chart-controls registry in
- * `chartControlsManager.js`.
+ * export surface stable for `charts/registries/controls.js`.
  *
  *   - builder.js   `createLineChartControls` (the Data/Styling/Display sections)
  *   - listeners.js `setupLineChartControlListeners` (control wiring + X/Y validation)

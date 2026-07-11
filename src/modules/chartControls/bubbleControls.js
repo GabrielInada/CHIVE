@@ -4,7 +4,7 @@
  * Builds the right-sidebar control group for the bubble chart and wires its
  * listeners. The implementation lives in the `bubbleControls/` folder, split by
  * responsibility; this file is the single public entry point and keeps the export
- * surface stable for the chart-controls registry in `chartControlsManager.js`.
+ * surface stable for `charts/registries/controls.js`.
  *
  *   - builder.js   `createBubbleChartControls` (the Data/Display/Styling sections, incl. progressive nesting)
  *   - listeners.js `setupBubbleChartControlListeners` (control wiring + nesting + measure/value-column cross-constraints)

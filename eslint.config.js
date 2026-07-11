@@ -308,6 +308,58 @@ export default [
 		},
 	},
 
+	// (B3c) Each chart integration registry owns exactly one surface. Keep the
+	// three import graphs separate so adding a chart renderer cannot pull control
+	// writers into workspace or panel rendering.
+	{
+		files: ['src/charts/registries/controls.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: [
+					...BARE_IMPORT_BANS,
+					{ name: './workspace.js', message: 'The controls registry cannot import the workspace registry.' },
+					{ name: './panel.js', message: 'The controls registry cannot import the panel registry.' },
+				],
+				patterns: [{
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/panelSubsystem/**', '**/visualizations/**'],
+					message: 'The controls registry imports only chart controls implementations and leaf config/types.',
+				}],
+			}],
+		},
+	},
+	{
+		files: ['src/charts/registries/workspace.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: [
+					...BARE_IMPORT_BANS,
+					{ name: './controls.js', message: 'The workspace registry cannot import the controls registry.' },
+					{ name: './panel.js', message: 'The workspace registry cannot import the panel registry.' },
+				],
+				patterns: [{
+					group: ['**/features/**', '**/services/**', '**/state/**', '**/chartControls/**', '**/panelSubsystem/**', '**/visualizations/**'],
+					message: 'The workspace registry imports only chart workspace sections and leaf config/types.',
+				}],
+			}],
+		},
+	},
+	{
+		files: ['src/charts/registries/panel.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: [
+					...BARE_IMPORT_BANS,
+					{ name: './controls.js', message: 'The panel registry cannot import the controls registry.' },
+					{ name: './workspace.js', message: 'The panel registry cannot import the workspace registry.' },
+				],
+				patterns: [{
+					group: ['**/components/**', '**/features/**', '**/state/**', '**/chartControls/**', '**/panelSubsystem/**'],
+					message: 'The panel registry imports only chart panel adapters, legacy visualization renderers, i18n, and leaf config/types.',
+				}],
+			}],
+		},
+	},
+
 	// (B4) Per-chart package integration files: sections/adapters receive
 	// props and callbacks, never state; controls write through the shared
 	// chartControls helpers, which remain the config-write adapter. No

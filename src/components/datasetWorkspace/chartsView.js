@@ -16,15 +16,7 @@ import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
 import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
-import { renderBarChartSection } from '../../charts/bar/workspaceSection.js';
-import { renderLineChartSection } from './chartRenders/lineChartSection.js';
-import { renderScatterChartSection } from './chartRenders/scatterChartSection.js';
-import { renderPieChartSection } from './chartRenders/pieChartSection.js';
-import { renderBubbleChartSection } from './chartRenders/bubbleChartSection.js';
-import { renderNetworkChartSection } from './chartRenders/networkChartSection.js';
-import { renderTreemapChartSection } from './chartRenders/treemapChartSection.js';
-import { renderTinChartSection } from './chartRenders/tinChartSection.js';
-import { renderScatter3dChartSection } from '../../charts/scatter3d/workspaceSection.js';
+import { renderWorkspaceChart } from '../../charts/registries/workspace.js';
 
 /**
  * Render the active chart into its container. Single-chart-at-a-time: if
@@ -183,13 +175,12 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	chartsGrid.style.display = 'grid';
 	emptyState.style.display = 'none';
 
-	renderBarChartSection({ config: chartConfig.bar, rows: filteredRows, filterCallbacks });
-	renderLineChartSection({ config: chartConfig.line, rows: filteredRows, columnTypeByName, filterCallbacks });
-	renderScatterChartSection({ config: chartConfig.scatter, rows: filteredRows, columnTypeByName, filterCallbacks });
-	renderPieChartSection({ config: chartConfig.pie, rows: filteredRows, filterCallbacks });
-	renderBubbleChartSection({ config: chartConfig.bubble, rows: filteredRows, filterCallbacks });
-	renderNetworkChartSection({ config: chartConfig.network, rows: filteredRows, filterCallbacks });
-	renderTreemapChartSection({ config: chartConfig.treemap, rows: filteredRows, filterCallbacks });
-	renderTinChartSection({ config: chartConfig.tin, rows: filteredRows });
-	renderScatter3dChartSection({ config: chartConfig.scatter3d, rows: filteredRows });
+	for (const type of CHART_TYPE_KEYS) {
+		renderWorkspaceChart(type, {
+			config: chartConfig[type],
+			rows: filteredRows,
+			columnTypeByName,
+			filterCallbacks,
+		});
+	}
 }

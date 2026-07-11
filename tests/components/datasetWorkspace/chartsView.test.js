@@ -60,6 +60,7 @@ vi.mock('../../../src/charts/scatter3d/workspaceSection.js', () => ({
 }));
 
 import { renderCharts } from '../../../src/components/datasetWorkspace/chartsView.js';
+import { renderWorkspaceChart } from '../../../src/charts/registries/workspace.js';
 import { CHART_BLOCKS, CHART_CONTAINERS, VIEW_IDS, BADGE_IDS } from '../../../src/config/elementIds.js';
 import { CHART_TYPE_KEYS } from '../../../src/config/chartTypes.js';
 
@@ -173,6 +174,52 @@ describe('renderCharts orchestration', () => {
 			const otherCall = mocks[SECTION_MOCKS[other]].mock.calls[0][0];
 			expect(otherCall.config.enabled).toBe(false);
 		}
+	});
+
+	it('dispatches workspace sections in canonical registry order', () => {
+		setupDom();
+		const config = makeConfig();
+		config.bar.enabled = true;
+
+		renderCharts(config, [], [], []);
+
+		const invocationOrder = CHART_TYPE_KEYS.map(type => (
+			mocks[SECTION_MOCKS[type]].mock.invocationCallOrder[0]
+		));
+		expect(invocationOrder).toEqual([...invocationOrder].sort((a, b) => a - b));
+	});
+
+	it('returns false for unknown and inherited workspace keys', () => {
+		const context = {
+			config: {},
+			rows: [],
+			columnTypeByName: {},
+			filterCallbacks: {},
+		};
+		expect(renderWorkspaceChart('histogram', context)).toBe(false);
+		expect(renderWorkspaceChart('__proto__', context)).toBe(false);
+	});
+
+	it.each(CHART_TYPE_KEYS)('normalizes the %s workspace adapter arguments', type => {
+		const context = {
+			config: { enabled: true },
+			rows: [{ value: 1 }],
+			columnTypeByName: { value: 'number' },
+			filterCallbacks: { onAddToGlobalFilter: vi.fn() },
+		};
+		const expected = {
+			config: context.config,
+			rows: context.rows,
+		};
+		if (type === 'line' || type === 'scatter') {
+			expected.columnTypeByName = context.columnTypeByName;
+		}
+		if (!['tin', 'scatter3d'].includes(type)) {
+			expected.filterCallbacks = context.filterCallbacks;
+		}
+
+		expect(renderWorkspaceChart(type, context)).toBe(true);
+		expect(mocks[SECTION_MOCKS[type]]).toHaveBeenCalledWith(expected);
 	});
 
 	it('coerces multi-enabled config to the first chart in canonical order', () => {

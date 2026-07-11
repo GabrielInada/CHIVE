@@ -28,7 +28,8 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 	getLocale: vi.fn(() => 'en'),
 }));
 
-import { renderChartFromSpec, SUPPORTED_PANEL_CHART_TYPES } from '../../../src/modules/panelSubsystem/renderChartFromSpec.js';
+import { getPanelChartRenderer, SUPPORTED_PANEL_CHART_TYPES } from '../../../src/charts/registries/panel.js';
+import { renderChartFromSpec } from '../../../src/modules/panelSubsystem/renderChartFromSpec.js';
 
 const baseRows = [{ a: 1 }, { a: 2 }];
 const baseColumns = [
@@ -47,7 +48,7 @@ function makeSpec(type, configOverrides = {}) {
 	};
 }
 
-describe('renderChartFromSpec', () => {
+describe('panel chart registry and render bridge', () => {
 	let container;
 
 	beforeEach(() => {
@@ -57,7 +58,12 @@ describe('renderChartFromSpec', () => {
 	});
 
 	it('exposes the supported renderer types', () => {
-		expect(SUPPORTED_PANEL_CHART_TYPES).toEqual(['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin', 'scatter3d']);
+		expect(SUPPORTED_PANEL_CHART_TYPES).toEqual(['bar', 'line', 'scatter', 'scatter3d', 'pie', 'bubble', 'network', 'treemap', 'tin']);
+	});
+
+	it('returns null from the registry for unknown and inherited keys', () => {
+		expect(getPanelChartRenderer('sankey')).toBeNull();
+		expect(getPanelChartRenderer('__proto__')).toBeNull();
 	});
 
 	it('dispatches scatter3d to the package panel adapter with the whole spec', () => {

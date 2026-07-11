@@ -199,9 +199,10 @@ deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in the same 
 ## 5. The control sidebar
 
 [controls/](../../../src/charts/bar/controls) owns the right-sidebar control
-group and its config writes. The chart-controls manager registry
-([chartControlsManager.js](../../../src/modules/chartControls/chartControlsManager.js))
-imports three explicit package modules:
+group and its config writes. The
+[controls registry](../../../src/charts/registries/controls.js) imports three
+explicit package modules; `chartControlsManager.js` consumes the normalized
+registry entry:
 
 - `createBarChartControls(dataset, categoryOptions, numericOptions, allColumns)` builds the DOM.
 - `setupBarChartControlListeners(dataset, baseBar, numericOptions, …, onConfigChanged)` wires events.
@@ -255,10 +256,11 @@ renderer never reads the DOM controls; it only reads config the listeners have w
 
 ### 6.1 Dataset workspace
 
-[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides which chart blocks to
-show and calls `renderBarChartSection({ config, rows, filterCallbacks })`
-([workspaceSection.js](../../../src/charts/bar/workspaceSection.js)). That
-adapter:
+[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides
+which chart is active and passes the shared render context to the
+[workspace registry](../../../src/charts/registries/workspace.js). Its `bar`
+entry calls `renderBarChartSection({ config, rows, filterCallbacks })` from
+[workspaceSection.js](../../../src/charts/bar/workspaceSection.js). That adapter:
 
 1. Resolves the block (`CHART_BLOCKS.bar`) and container (`CHART_CONTAINERS.bar`) elements.
 2. Hides the block and clears the container if the chart is disabled.
@@ -273,7 +275,8 @@ adapter:
 ### 6.2 Panel view
 
 [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
-dispatches bar snapshots to
+validates the request, then the
+[panel registry](../../../src/charts/registries/panel.js) dispatches bar snapshots to
 [panelAdapter.js](../../../src/charts/bar/panelAdapter.js). The adapter passes
 `spec.config` and `spec.dataSnapshot` through the same presentation flow and renderer.
 The one difference is that panel charts pass a frozen empty
@@ -453,7 +456,7 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
   cover control construction and config writes.
 - [panelAdapter.test.js](../../../tests/charts/bar/panelAdapter.test.js) covers
   snapshot-to-renderer mapping and localized aggregate labels.
-- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 - [chartsView.test.js](../../../tests/components/datasetWorkspace/chartsView.test.js) covers view-level
   orchestration of which blocks render.
