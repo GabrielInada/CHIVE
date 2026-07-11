@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregateTreemapData } from '../../../../src/modules/visualizations/treemapChart/data.js';
+import { aggregateTreemapData } from '../../../src/charts/treemap/data.js';
 
 const countArgs = { measureMode: 'count', valueColumn: null, topN: 0 };
 

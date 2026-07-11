@@ -22,7 +22,7 @@ import { renderScatterChartSection } from '../../components/datasetWorkspace/cha
 import { renderPieChartSection } from '../pie/workspaceSection.js';
 import { renderBubbleChartSection } from '../../components/datasetWorkspace/chartRenders/bubbleChartSection.js';
 import { renderNetworkChartSection } from '../../components/datasetWorkspace/chartRenders/networkChartSection.js';
-import { renderTreemapChartSection } from '../../components/datasetWorkspace/chartRenders/treemapChartSection.js';
+import { renderTreemapChartSection } from '../treemap/workspaceSection.js';
 import { renderTinChartSection } from '../../components/datasetWorkspace/chartRenders/tinChartSection.js';
 
 /** @type {Readonly<Object<ChartTypeKey, (context: WorkspaceChartContext) => void>>} */

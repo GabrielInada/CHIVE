@@ -6,11 +6,11 @@
  * sort with string tiebreaker, and Top-N trim as the renderer did inline. The
  * returned `total` is summed AFTER the Top-N trim, so percentages are relative
  * to the rendered cells, not the original rows. Pure: no DOM, no d3. Used by
- * `treemapChart.js`.
+ * `renderers/svg.js`.
  */
 
-import { isNullish } from '../../../utils/formatters.js';
-import { compareStrings } from '../../../utils/chartFilters.js';
+import { isNullish } from '../../utils/formatters.js';
+import { compareStrings } from '../../utils/chartFilters.js';
 
 /**
  * Aggregate rows for the treemap.

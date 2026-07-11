@@ -14,12 +14,17 @@ see [Architecture reference](../architecture-reference.md).
 
 Key files:
 
-- Renderer: [treemapChart.js](../../../src/modules/visualizations/treemapChart.js)
-- Sidebar controls: [treemapControls.js](../../../src/modules/chartControls/treemapControls.js)
+- SVG renderer: [svg.js](../../../src/charts/treemap/renderers/svg.js)
+- Data and option helpers: [data.js](../../../src/charts/treemap/data.js) and
+  [options.js](../../../src/charts/treemap/options.js)
+- Sidebar controls: [builder.js](../../../src/charts/treemap/controls/builder.js),
+  [listeners.js](../../../src/charts/treemap/controls/listeners.js), and
+  [defaults.js](../../../src/charts/treemap/controls/defaults.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`TREEMAP_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `treemap` block)
-- Section adapter (dataset workspace): [treemapChartSection.js](../../../src/components/datasetWorkspace/chartRenders/treemapChartSection.js)
-- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
+- Shared presentation flow: [presentation.js](../../../src/charts/treemap/presentation.js)
+- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/treemap/workspaceSection.js)
+- Panel adapter: [panelAdapter.js](../../../src/charts/treemap/panelAdapter.js)
 
 ---
 
@@ -72,27 +77,32 @@ D3's `hierarchy`, but the tree is just root plus one row of leaves.
 
 ## 3. The big picture (data flow)
 
-Two draw paths, both ending at `renderTreeMap`.
+Two integration paths share the same presentation mapping and end at `renderTreeMap`.
 
 ```
-                 ┌─────────────────────────────────────────────────┐
-                 │  Active dataset.chartConfig.treemap (live state) │
-                 └─────────────────────────────────────────────────┘
-                        │                          │
-       sidebar edits    │                          │  render
- (treemapControls.js) ──┘                          ▼
-        write config                  chartsView.renderCharts()
-                                      → renderTreemapChartSection()        [dataset workspace]
-                                        → renderTreeMap(container, rows, category, opts)
-                                              │
-   "Add to panel" → structuredClone snapshot │
-        │                                     │
-   panel.js renderTreemap()                   │
-     → renderTreeMap(container, spec.dataSnapshot, spec.config.category, …)
-                                              ▼
-                                   ┌──────────────────────┐
-                                   │   <svg> in container  │
-                                   └──────────────────────┘
+                 ┌──────────────────────────────────────────────────┐
+                 │ Active dataset.chartConfig.treemap (live state) │
+                 └──────────────────────────────────────────────────┘
+                         │                         │
+       sidebar edits     │                         │ render
+ (controls/listeners.js) ┘                         ▼
+        write config                 workspace registry
+                                     → renderTreemapChartSection()
+                                       → renderTreemapInto()
+                                         → renderTreeMap()
+                         │
+   "Add to panel" → structuredClone snapshot
+                         │
+                         ▼
+                    panel registry
+                    → renderTreemapPanelChart()
+                      → renderTreemapInto()
+                        → renderTreeMap()
+                              │
+                              ▼
+                    ┌──────────────────────┐
+                    │  <svg> in container │
+                    └──────────────────────┘
 ```
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG. Rows are
@@ -136,9 +146,9 @@ are defined in the renderer (`COLOR_PALETTE`: Bold, Pastel, Colorblind-Safe).
 
 ## 5. The control sidebar
 
-[treemapControls.js](../../../src/modules/chartControls/treemapControls.js) builds four sections
-via the standard `createTreeMapControls` / `setupTreeMapControlListeners` / `computeDefaults`
-exports.
+The package's [controls directory](../../../src/charts/treemap/controls/) exposes the standard
+`createTreeMapControls`, `setupTreeMapControlListeners`, and `computeDefaults` roles through
+separate modules.
 
 ### 5.1 The four sections
 
@@ -150,12 +160,12 @@ exports.
 ### 5.2 Enable/disable and wiring
 
 Everything is disabled when `!config.enabled`; the value-column select is disabled in `count`
-mode; the uniform color input is disabled unless `colorMode === 'uniform'`. This module wires
-most listeners by hand (per-element `addEventListener`) rather than through the shared select
-helpers (same effect, more explicit), with one exception: the color input goes through
-`setupColorInputListener` so the chart live-updates while the picker is open, like every other
-chart. Switching to count clears `valueColumn`; the color presets set `colorScheme` and the
-uniform `color` to the palette's first swatch. `computeDefaults` picks the category column.
+mode; the uniform color input is disabled unless `colorMode === 'uniform'`. Standard select,
+text, slider, checkbox, color, and preset controls use the shared chart-control listener
+adapters. Measure and value-column changes retain small custom handlers because they enforce a
+cross-field constraint: switching to count clears `valueColumn`, while sum mode preserves only
+a valid numeric selection. The color presets set the uniform `color` to the palette's first
+swatch. `computeDefaults` picks the category column.
 
 ---
 
@@ -164,15 +174,17 @@ uniform `color` to the palette's first swatch. `computeDefaults` picks the categ
 ### 6.1 Dataset workspace
 
 `renderTreemapChartSection({ config, rows, filterCallbacks })`
-([treemapChartSection.js](../../../src/components/datasetWorkspace/chartRenders/treemapChartSection.js))
+([workspaceSection.js](../../../src/charts/treemap/workspaceSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
-into the options bag, and calls `renderTreeMap`. On failure it shows
+through [presentation.js](../../../src/charts/treemap/presentation.js), and calls
+`renderTreeMap`. On failure it shows
 `chive-chart-empty-treemap-numeric` for `no-value-column`, else `chive-chart-empty-treemap`.
 
 ### 6.2 Panel view
 
-The panel registry's `renderTreemap()` maps `spec.config` into the same options and renders
-against `spec.dataSnapshot` with empty `filterCallbacks` (no click-to-filter in panels).
+[panelAdapter.js](../../../src/charts/treemap/panelAdapter.js) passes `spec.config` and
+`spec.dataSnapshot` through the same presentation flow with empty `filterCallbacks` (no
+click-to-filter in panels). The panel registry only dispatches to that adapter.
 
 ---
 
@@ -224,10 +236,12 @@ magnitude, so there is no gradient or rank distribution here.
 
 ## 9. Performance notes
 
-The treemap emits one `<g>`/`<rect>` (plus up to two label `<text>`s) per visible tile, and
-Top-N bounds the tile count, so it is light regardless of dataset size; the only row-scaled
-work is the single aggregation pass. Color and padding edits flow through the shared throttled
-live-preview path (TIN doc [section 10](tin.md)).
+The treemap emits one `<g>`/`<rect>` (plus up to two label `<text>`s) per visible tile. The
+default Top-N bounds the tile count at 20; selecting 0 includes every category, so high-cardinality
+data can produce substantially more layout and DOM work. Row-scaled work is one aggregation
+pass, followed by tiling and DOM work proportional to the visible tile count. Only the color
+input uses the shared throttled live-preview path; padding and the other controls commit on
+change (TIN doc [section 10](tin.md)).
 
 ---
 
@@ -267,10 +281,16 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 13. Tests
 
-- [treemapControls.test.js](../../../tests/modules/chartControls/treemapControls.test.js) covers
+- [controls.test.js](../../../tests/charts/treemap/controls.test.js) covers
   control building and the measure/value and color-mode logic.
-- [treemapChartSection.test.js](../../../tests/components/datasetWorkspace/chartRenders/treemapChartSection.test.js)
+- [workspaceSection.test.js](../../../tests/charts/treemap/workspaceSection.test.js)
   covers the section adapter, including the empty-state message selection.
+- [panelAdapter.test.js](../../../tests/charts/treemap/panelAdapter.test.js) covers the frozen
+  snapshot mapping and failure passthrough.
+- [svg.test.js](../../../tests/charts/treemap/renderers/svg.test.js),
+  [data.test.js](../../../tests/charts/treemap/data.test.js), and
+  [options.test.js](../../../tests/charts/treemap/options.test.js) cover renderer behavior and
+  its pure helpers.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 

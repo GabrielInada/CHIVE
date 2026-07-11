@@ -45,11 +45,9 @@ import {
 import { createPieChartControls } from '../pie/controls/builder.js';
 import { setupPieChartControlListeners } from '../pie/controls/listeners.js';
 import { computeDefaults as computePieDefaults } from '../pie/controls/defaults.js';
-import {
-	createTreeMapControls,
-	setupTreeMapControlListeners,
-	computeDefaults as computeTreemapDefaults,
-} from '../../modules/chartControls/treemapControls.js';
+import { createTreeMapControls } from '../treemap/controls/builder.js';
+import { setupTreeMapControlListeners } from '../treemap/controls/listeners.js';
+import { computeDefaults as computeTreemapDefaults } from '../treemap/controls/defaults.js';
 import {
 	createTinControls,
 	setupTinControlListeners,

@@ -9,10 +9,15 @@
 
 import { CHART_COLORS, TREEMAP_CHART } from '../../../config/charts.js';
 import { t } from '../../../services/i18nService.js';
-import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl } from '../shared.js';
-import { createColorPresetControl } from '../shared.js';
-import { groupControls } from '../controlGrouping.js';
-import { createSelectControl } from '../shared.js';
+import {
+	createCheckboxControl,
+	createColorInputControl,
+	createColorPresetControl,
+	createSelectControl,
+	createSliderControl,
+	createTextControl,
+} from '../../../modules/chartControls/shared.js';
+import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
 
 /**
  * Build the treemap control sections (Data, Display, Styling, Advanced).

@@ -20,11 +20,9 @@ vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
 	triggerLiveRender: vi.fn(),
 }));
 
-import {
-	createTreeMapControls,
-	setupTreeMapControlListeners,
-	computeDefaults,
-} from '../../../src/modules/chartControls/treemapControls.js';
+import { createTreeMapControls } from '../../../src/charts/treemap/controls/builder.js';
+import { setupTreeMapControlListeners } from '../../../src/charts/treemap/controls/listeners.js';
+import { computeDefaults } from '../../../src/charts/treemap/controls/defaults.js';
 
 function createDataset(overrides = {}) {
 	return {
@@ -92,14 +90,16 @@ function extractStructure(controls) {
 	});
 }
 
-describe('treemapControls public surface', () => {
-	it('exposes exactly the three documented treemap-control exports (no internal leaks)', async () => {
-		const mod = await import('../../../src/modules/chartControls/treemapControls.js');
-		expect(Object.keys(mod).sort()).toEqual([
-			'computeDefaults',
-			'createTreeMapControls',
-			'setupTreeMapControlListeners',
+describe('treemap controls module boundaries', () => {
+	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
+		const [builder, listeners, defaults] = await Promise.all([
+			import('../../../src/charts/treemap/controls/builder.js'),
+			import('../../../src/charts/treemap/controls/listeners.js'),
+			import('../../../src/charts/treemap/controls/defaults.js'),
 		]);
+		expect(Object.keys(builder)).toEqual(['createTreeMapControls']);
+		expect(Object.keys(listeners)).toEqual(['setupTreeMapControlListeners']);
+		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
 	});
 });
 

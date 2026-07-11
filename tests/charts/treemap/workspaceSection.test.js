@@ -8,17 +8,17 @@ const mocks = vi.hoisted(() => ({
 	getLocale: vi.fn(() => 'en'),
 }));
 
-vi.mock('../../../../src/modules/visualizations/treemapChart.js', () => ({
+vi.mock('../../../src/charts/treemap/renderers/svg.js', () => ({
 	renderTreeMap: mocks.renderTreeMap,
 }));
 
-vi.mock('../../../../src/services/i18nService.js', () => ({
+vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 	getLocale: mocks.getLocale,
 }));
 
-import { renderTreemapChartSection } from '../../../../src/components/datasetWorkspace/chartRenders/treemapChartSection.js';
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/config/elementIds.js';
+import { renderTreemapChartSection } from '../../../src/charts/treemap/workspaceSection.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/config/elementIds.js';
 
 function setupDom() {
 	document.body.innerHTML = '';

@@ -3,12 +3,12 @@
  *
  * Turns the raw render options bag into a validated config object with every
  * default and bound applied exactly once. Mirrors the renderer's historical
- * semantics verbatim. Pure: no DOM, no d3. Used by `treemapChart.js`.
+ * semantics verbatim. Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { CHART_COLORS, TREEMAP_CHART } from '../../../config/charts.js';
-import { clamp } from '../../../utils/formatters.js';
-import { isValidHexColor } from '../../../utils/colorUtils.js';
+import { CHART_COLORS, TREEMAP_CHART } from '../../config/charts.js';
+import { clamp } from '../../utils/formatters.js';
+import { isValidHexColor } from '../../utils/colorUtils.js';
 
 /**
  * Normalize the treemap render options.

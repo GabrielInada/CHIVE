@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderTreeMap } from '../../../src/modules/visualizations/treemapChart.js';
-import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
+import { renderTreeMap } from '../../../../src/charts/treemap/renderers/svg.js';
+import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 
 const ROWS = [
 	{ region: 'North', sales: 30 },

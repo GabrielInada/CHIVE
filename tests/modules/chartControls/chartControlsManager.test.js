@@ -96,9 +96,10 @@ vi.mock('../../../src/charts/pie/controls/listeners.js', () => ({
 	setupPieChartControlListeners: mocks.setupPieChartControlListeners,
 }));
 
-vi.mock('../../../src/modules/chartControls/treemapControls.js', async (importOriginal) => ({
-	...await importOriginal(),
+vi.mock('../../../src/charts/treemap/controls/builder.js', () => ({
 	createTreeMapControls: mocks.createTreeMapControls,
+}));
+vi.mock('../../../src/charts/treemap/controls/listeners.js', () => ({
 	setupTreeMapControlListeners: mocks.setupTreeMapControlListeners,
 }));
 

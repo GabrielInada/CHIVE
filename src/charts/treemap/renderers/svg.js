@@ -7,9 +7,11 @@
  *
  * Internal D3 helpers (treemap layout, label truncation, palette lookup)
  * are intentionally undocumented per the Tier 5 plan.
+ *
+ * @typedef {import('../../../types.js').Result} Result
  */
 
-import { hierarchy, select, treemap, treemapSquarify } from '../../../vendor/d3/d3.js';
+import { hierarchy, select, treemap, treemapSquarify } from '../../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -19,13 +21,13 @@ import {
 	moveChartTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
-} from '../../charts/shared/tooltip/tooltip.js';
-import { CHART_DIMENSIONS } from '../../config/charts.js';
-import { formatNumber, clamp } from '../../utils/formatters.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
-import { appendChartTitle } from '../../charts/shared/svg/scaffold.js';
-import { normalizeTreemapOptions } from './treemapChart/options.js';
-import { aggregateTreemapData } from './treemapChart/data.js';
+} from '../../shared/tooltip/tooltip.js';
+import { CHART_DIMENSIONS } from '../../../config/charts.js';
+import { formatNumber, clamp } from '../../../utils/formatters.js';
+import { toCategoryToken } from '../../../utils/chartFilters.js';
+import { appendChartTitle } from '../../shared/svg/scaffold.js';
+import { normalizeTreemapOptions } from '../options.js';
+import { aggregateTreemapData } from '../data.js';
 
 const COLOR_PALETTE = {
 	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
@@ -44,9 +46,8 @@ function truncate(text, maxLen) {
 }
 
 /**
- * Render a treemap into `container`. Unlike the other renderers, this one
- * returns nothing (`void`), failure modes are handled by early returns
- * that leave the container empty.
+ * Render a treemap into `container`. This renderer returns a plain Result
+ * object rather than using the shared `ok()`/`fail()` factories.
  *
  * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
  * `topN`, `padding`, `showLabels`/`showValues`, `colorMode` ('scheme' |
@@ -57,7 +58,7 @@ function truncate(text, maxLen) {
  * @param {Array<Object<string, *>>} rows - Source rows.
  * @param {string} categoryColumn - Categorical column name (required).
  * @param {Object} [options={}] - Render options bag.
- * @returns {void}
+ * @returns {Result}
  */
 export function renderTreeMap(container, rows, categoryColumn, options = {}) {
 	if (!container || !categoryColumn) return { ok: false };

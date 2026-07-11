@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 /**
- * SVG-equivalence guard for the treemapChart data-model extraction.
+ * SVG-equivalence guard for the treemap package migration.
  *
  * Captured against the pre-extraction renderer, this pins the SVG markup plus
  * the returned result object for a representative option matrix. The extraction
@@ -12,8 +12,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { renderTreeMap } from '../../../../src/modules/visualizations/treemapChart.js';
-import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
+import { renderTreeMap } from '../../../src/charts/treemap/renderers/svg.js';
+import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
 
 const ROWS = [
 	{ region: 'A', sales: 10 },

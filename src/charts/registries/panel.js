@@ -21,12 +21,12 @@ import { t, getLocale } from '../../services/i18nService.js';
 import { renderBarPanelChart } from '../bar/panelAdapter.js';
 import { renderPiePanelChart } from '../pie/panelAdapter.js';
 import { renderScatter3dPanelChart } from '../scatter3d/panelAdapter.js';
+import { renderTreemapPanelChart } from '../treemap/panelAdapter.js';
 import { renderBubbleChart } from '../../modules/visualizations/bubbleChart.js';
 import { renderLineChart } from '../../modules/visualizations/lineChart.js';
 import { renderNetworkGraph } from '../../modules/visualizations/networkGraph.js';
 import { renderScatterPlot } from '../../modules/visualizations/scatterPlot.js';
 import { renderTinChart } from '../../modules/visualizations/tinChart.js';
-import { renderTreeMap } from '../../modules/visualizations/treemapChart.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 
@@ -176,32 +176,6 @@ function renderBubble(container, spec) {
 }
 
 /** @type {PanelChartRenderer} */
-function renderTreemap(container, spec) {
-	const config = spec.config || {};
-	return renderTreeMap(container, spec.dataSnapshot, config.category, {
-		...baseOptions(config),
-		measureMode: config.measureMode,
-		valueColumn: config.valueColumn,
-		topN: config.topN,
-		padding: config.padding,
-		showLabels: config.showLabels,
-		showValues: config.showValues,
-		color: config.color,
-		colorMode: config.colorMode,
-		colorScheme: config.colorScheme,
-		labels: {
-			category: t('chive-chart-control-treemap-category'),
-			count: t('chive-tooltip-count'),
-			sum: t('chive-tooltip-sum'),
-			percentage: t('chive-tooltip-percentage'),
-			focusOnThis: t('chive-tooltip-show-only-this'),
-			addToFilter: t('chive-tooltip-add-to-filter'),
-		},
-		filterCallbacks: EMPTY_FILTER_CALLBACKS,
-	});
-}
-
-/** @type {PanelChartRenderer} */
 function renderLine(container, spec) {
 	const config = spec.config || {};
 	const columnTypeByName = buildColumnTypeIndex(spec.columnsSnapshot);
@@ -282,7 +256,7 @@ const PANEL_RENDERERS = Object.freeze({
 	pie: renderPiePanelChart,
 	bubble: renderBubble,
 	network: renderNetwork,
-	treemap: renderTreemap,
+	treemap: renderTreemapPanelChart,
 	tin: renderTin,
 });
 
