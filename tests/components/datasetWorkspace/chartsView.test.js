@@ -61,8 +61,8 @@ vi.mock('../../../src/charts/scatter3d/workspaceSection.js', () => ({
 
 import { renderCharts } from '../../../src/components/datasetWorkspace/chartsView.js';
 import { CHART_BLOCKS, CHART_CONTAINERS, VIEW_IDS, BADGE_IDS } from '../../../src/config/elementIds.js';
+import { CHART_TYPE_KEYS } from '../../../src/config/chartTypes.js';
 
-const CHART_TYPES = ['bar', 'scatter', 'scatter3d', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin'];
 const SECTION_MOCKS = {
 	bar: 'renderBarChartSection',
 	line: 'renderLineChartSection',
@@ -86,7 +86,7 @@ function setupDom() {
 	document.body.append(grid, emptyState, badge);
 	const blocks = {};
 	const containers = {};
-	for (const type of CHART_TYPES) {
+	for (const type of CHART_TYPE_KEYS) {
 		const block = document.createElement('div');
 		block.id = CHART_BLOCKS[type];
 		const container = document.createElement('div');
@@ -131,7 +131,7 @@ describe('renderCharts orchestration', () => {
 
 		expect(grid.style.display).toBe('grid');
 		expect(emptyState.style.display).toBe('none');
-		for (const type of CHART_TYPES) {
+		for (const type of CHART_TYPE_KEYS) {
 			expect(blocks[type].style.display).toBe('block');
 			expect(containers[type].children.length).toBe(0);
 		}
@@ -148,7 +148,7 @@ describe('renderCharts orchestration', () => {
 		expect(grid.style.display).toBe('none');
 		expect(emptyState.style.display).toBe('flex');
 		expect(emptyState.textContent).toBe('chive-chart-empty-none');
-		for (const type of CHART_TYPES) {
+		for (const type of CHART_TYPE_KEYS) {
 			expect(blocks[type].style.display).toBe('none');
 			expect(containers[type].children.length).toBe(0);
 		}
@@ -157,7 +157,7 @@ describe('renderCharts orchestration', () => {
 		}
 	});
 
-	it.each(CHART_TYPES)('dispatches to %s section helper when only %s is enabled', (type) => {
+	it.each(CHART_TYPE_KEYS)('dispatches to %s section helper when only %s is enabled', (type) => {
 		setupDom();
 		const config = makeConfig();
 		config[type].enabled = true;
@@ -168,14 +168,14 @@ describe('renderCharts orchestration', () => {
 		expect(mocks[mockKey]).toHaveBeenCalledTimes(1);
 		const call = mocks[mockKey].mock.calls[0][0];
 		expect(call.config.enabled).toBe(true);
-		for (const other of CHART_TYPES) {
+		for (const other of CHART_TYPE_KEYS) {
 			if (other === type) continue;
 			const otherCall = mocks[SECTION_MOCKS[other]].mock.calls[0][0];
 			expect(otherCall.config.enabled).toBe(false);
 		}
 	});
 
-	it('coerces multi-enabled config to the first chart in CHART_TYPE_ORDER', () => {
+	it('coerces multi-enabled config to the first chart in canonical order', () => {
 		setupDom();
 		const config = makeConfig();
 		config.bar.enabled = true;

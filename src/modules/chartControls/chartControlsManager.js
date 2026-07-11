@@ -43,7 +43,7 @@ import { createTinControls, setupTinControlListeners, computeDefaults as compute
 import { createScatter3dControls } from '../../charts/scatter3d/controls/builder.js';
 import { setupScatter3dControlListeners } from '../../charts/scatter3d/controls/listeners.js';
 import { computeDefaults as computeScatter3dDefaults } from '../../charts/scatter3d/controls/defaults.js';
-import { CHART_TYPES } from './chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
 import { renderChartParamsDOM } from '../../components/datasetWorkspace/chartParamsView.js';
 import { openChartTypePickerDialog } from '../../components/datasetWorkspace/chartTypePickerDialog.js';
 
@@ -421,7 +421,7 @@ export function renderChartControlsSidebar(dataset) {
 	}
 
 	const config = mergeChartConfigWithDefaults(dataset.chartConfig);
-	const activeChartType = CHART_TYPES.find(type => config[type].enabled) || null;
+	const activeChartType = CHART_TYPE_KEYS.find(type => config[type].enabled) || null;
 
 	const controls = activeChartType ? buildControlsForChart(activeChartType, dataset) : [];
 

@@ -1,18 +1,7 @@
 /**
  * Configuration for chart rendering and visualization options.
+ * Chart identities and visual order live in `chartTypes.js`.
  */
-
-export const CHART_TYPES = {
-  BAR: 'bar',
-  SCATTER: 'scatter',
-  SCATTER3D: 'scatter3d',
-  NETWORK: 'network',
-  PIE: 'pie',
-  TREEMAP: 'treemap',
-  BUBBLE: 'bubble',
-  LINE: 'line',
-  TIN: 'tin',
-};
 
 export const CHART_COLORS = {
   bar: '#d4622a',

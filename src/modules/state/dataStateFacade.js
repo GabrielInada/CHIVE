@@ -1,5 +1,6 @@
 import { STATE_EVENTS } from './stateEvents.js';
 import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
+import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
 import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
 
 /**
@@ -16,8 +17,6 @@ import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
  * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
-
-const CHART_TYPES = ['bar', 'scatter', 'scatter3d', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
 
 let datasetIdCounter = 0;
 
@@ -243,12 +242,12 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	function setActiveChartType(chartType, activatedOverrides = null) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
-		if (chartType !== null && !CHART_TYPES.includes(chartType)) return;
+		if (chartType !== null && !CHART_TYPE_KEYS.includes(chartType)) return;
 
 		const columnNames = getDatasetColumnNames(dataset);
 		const current = canonicalizeChartConfig(dataset.chartConfig, columnNames);
 		const next = { ...current };
-		CHART_TYPES.forEach(type => {
+		CHART_TYPE_KEYS.forEach(type => {
 			const previous = isPlainObject(current[type]) ? current[type] : {};
 			next[type] = { ...previous, enabled: type === chartType };
 		});

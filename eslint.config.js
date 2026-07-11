@@ -291,6 +291,23 @@ export default [
 		},
 	},
 
+	// (B3b) The chart catalog is presentation metadata, not an integration
+	// registry. Keep it and its static preview markup independent of feature
+	// modules, workspace components, and services so importing chart metadata
+	// cannot pull state or side-effecting code into a consumer.
+	{
+		files: ['src/charts/catalog.js', 'src/charts/previews.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'Chart presentation metadata imports only static chart metadata, config, utils, or vendor modules.',
+				}],
+			}],
+		},
+	},
+
 	// (B4) Per-chart package integration files: sections/adapters receive
 	// props and callbacks, never state; controls write through the shared
 	// chartControls helpers, which remain the config-write adapter. No

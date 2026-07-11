@@ -3,8 +3,8 @@
  * template-literal string of SVG markup, sized to fit the picker dialog's
  * 84×38 preview slot.
  *
- * Aggregated in `chart-types.js`'s `PREVIEW_SVGS` map, consumers should
- * reach for that rather than importing individual constants.
+ * Aggregated by `catalog.js`; UI consumers should use the catalog rather
+ * than importing individual constants.
  *
  * Markup is rendered via `innerHTML`; values originate in this file
  * (no user input ever flows into these strings).

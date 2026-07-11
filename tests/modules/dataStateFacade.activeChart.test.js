@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createDataStateFacade } from '../../src/modules/state/dataStateFacade.js';
-
-const CHART_TYPES = ['bar', 'scatter', 'scatter3d', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
+import { CHART_TYPE_KEYS } from '../../src/config/chartTypes.js';
 
 function makeFacade(initialConfig = null) {
 	const emitStateChange = vi.fn();
@@ -32,7 +31,7 @@ describe('dataStateFacade.setActiveChartType', () => {
 		const { facade, dataset } = makeFacade();
 		facade.setActiveChartType('bar');
 		expect(dataset.chartConfig.bar.enabled).toBe(true);
-		CHART_TYPES.filter(t => t !== 'bar').forEach(type => {
+		CHART_TYPE_KEYS.filter(t => t !== 'bar').forEach(type => {
 			expect(dataset.chartConfig[type].enabled).toBe(false);
 		});
 	});
@@ -43,7 +42,7 @@ describe('dataStateFacade.setActiveChartType', () => {
 		facade.setActiveChartType('scatter');
 		expect(dataset.chartConfig.bar.enabled).toBe(false);
 		expect(dataset.chartConfig.scatter.enabled).toBe(true);
-		CHART_TYPES.filter(t => t !== 'scatter').forEach(type => {
+		CHART_TYPE_KEYS.filter(t => t !== 'scatter').forEach(type => {
 			expect(dataset.chartConfig[type].enabled).toBe(false);
 		});
 	});
@@ -52,7 +51,7 @@ describe('dataStateFacade.setActiveChartType', () => {
 		const { facade, dataset } = makeFacade();
 		facade.setActiveChartType('scatter3d');
 		expect(dataset.chartConfig.scatter3d.enabled).toBe(true);
-		CHART_TYPES.filter(t => t !== 'scatter3d').forEach(type => {
+		CHART_TYPE_KEYS.filter(t => t !== 'scatter3d').forEach(type => {
 			expect(dataset.chartConfig[type].enabled).toBe(false);
 		});
 	});
@@ -61,7 +60,7 @@ describe('dataStateFacade.setActiveChartType', () => {
 		const { facade, dataset } = makeFacade();
 		facade.setActiveChartType('pie');
 		facade.setActiveChartType(null);
-		CHART_TYPES.forEach(type => {
+		CHART_TYPE_KEYS.forEach(type => {
 			expect(dataset.chartConfig[type].enabled).toBe(false);
 		});
 	});
@@ -127,8 +126,8 @@ describe('dataStateFacade.setActiveChartType', () => {
 	it('canonicalizes the config: fills every default block including line and tin', () => {
 		const { facade, dataset } = makeFacade();
 		facade.setActiveChartType('bar');
-		// All eight blocks exist and are default-filled after canonicalization.
-		CHART_TYPES.forEach(type => {
+		// Every supported block exists and is default-filled after canonicalization.
+		CHART_TYPE_KEYS.forEach(type => {
 			expect(dataset.chartConfig[type]).toBeDefined();
 		});
 		expect(dataset.chartConfig.bar.sort).toBeDefined();

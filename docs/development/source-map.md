@@ -19,7 +19,7 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 |---|---|
 | `src/main.js` | Orchestrator: boot, service wiring, broad refresh scheduling, and the `window.chiveDebug` handle. |
 | `src/types.js` | Shared JSDoc typedefs (`AppState`, `Dataset`, `ChartConfig`, ...). Always imported directly, never through barrels. |
-| `src/config/` | Pure leaf layer: chart defaults, element IDs, limits, locale, and format constants. No imports from modules, components, or services. |
+| `src/config/` | Pure leaf layer: canonical chart identities, chart defaults, element IDs, limits, locale, and format constants. No imports from modules, components, or services. |
 | `src/utils/` | Pure leaf layer: DOM-free helpers (result pattern, color utilities, filters, formatters). Same import rule as `config/`. One deliberate DOM exception: `chartContainerLifecycle.js`, the dispose-aware chart-container clear shared by components, the panel subsystem, and chart packages. |
 | `src/components/` | Leaf renderers for the dataset workspace: `components/datasetWorkspace/` holds the top view `datasetWorkspaceView.js` plus the preview, stats, columns, dialogs, and legacy per-chart `chartRenders/` sections. |
 | `src/modules/state/` | State core: `appState.js`, the data/panel/ui facades, `stateEvents.js`, and `stateDebug.js`. The only write path for application state. |
@@ -28,7 +28,7 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/modules/feedbackUI.js`, `dialogFocus.js` | Cross-feature UI helpers: user feedback surface and dialog focus management. |
 | `src/modules/panelSubsystem/` | Panel rendering, export, resize, slot lifecycle, and the panel's internal mutation helpers. |
 | `src/modules/visualizations/` | Legacy D3/SVG chart renderers, some with subpackages (`scatterPlot/`, `lineChart/`, ...). Read-only with respect to application state and migrated one chart at a time. |
-| `src/charts/` | Per-chart packages (`charts/bar/` for SVG and `charts/scatter3d/` for Three.js/WebGL) plus shared chart-only SVG and tooltip infrastructure under `charts/shared/`. A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
+| `src/charts/` | Chart presentation metadata (`catalog.js` and `previews.js`), per-chart packages (`charts/bar/` for SVG and `charts/scatter3d/` for Three.js/WebGL), and shared chart-only SVG and tooltip infrastructure under `charts/shared/`. A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
 | `src/services/` | Side-effecting services: `dataService/`, `persistenceService/` with the `persistence/` backends, `i18nService.js`, `presetService.js`, and `dataIngestService.js`. |
 | `src/data/` | Bundled preset datasets (`presets/`) and `presetCatalog.js`. |
 | `src/workers/` | Background workers: `persistWorker.js` for persistence and `dataIngestWorker.js` for data ingest. |
@@ -49,7 +49,8 @@ with real work:
 | Renderer | Chart/SVG/WebGL rendering from explicit inputs | `charts/bar/renderers/svg.js` |
 | Service | Side effects, persistence, ingest, i18n, reusable domain operations | `services/persistenceService.js` |
 | Facade | State or service boundary | `modules/state/dataStateFacade.js` |
-| Registry | Supported-type maps and implementation lookup | `modules/chartControls/chartTypes.js` |
+| Catalog | Identity-keyed descriptive or presentation metadata | `charts/catalog.js` |
+| Registry | Supported-type implementation lookup for one integration surface | `modules/panelSubsystem/renderChartFromSpec.js` |
 | Adapter | Bridge between a generic system and a chart/domain implementation | `charts/bar/panelAdapter.js` |
 
 Manager is legacy naming, still valid for existing files: `fileManager.js`,
@@ -77,13 +78,14 @@ For a new chart type, update the full chart surface in one pass:
   points in `chartControls/chartControlsManager.js`,
   `components/datasetWorkspace/chartsView.js`, and
   `panelSubsystem/renderChartFromSpec.js`.
-- Register the type metadata and defaults in `chartControls/chartTypes.js` and
+- Register the chart identity and visual precedence in
+  `config/chartTypes.js`, its preview/category metadata in
+  `charts/catalog.js` and `charts/previews.js`, and its default config block in
   `config/chartDefaults.js`.
-- The type also registers in `types.js` (`ChartTypeKey`), the type list in
-  `modules/state/dataStateFacade.js` (it gates `setActiveChartType`),
-  `config/charts.js`, `config/elementIds.js`, `chartControls/previews.js`,
-  `eventHandlers/chartSnapshotMetadata.js`, and the static chart block in
-  `index.html`.
+- The type also registers in `types.js` (`ChartTypeKey`),
+  `config/elementIds.js`, `eventHandlers/chartSnapshotMetadata.js`, and the
+  static chart block in `index.html`. Add chart constants to `config/charts.js`
+  when the implementation needs them.
 - Add i18n strings, tests, [Chart and data reference](../user/chart-reference.md)
   coverage, and a chart deep dive.
 

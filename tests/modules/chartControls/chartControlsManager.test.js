@@ -120,7 +120,7 @@ vi.mock('../../../src/charts/scatter3d/controls/listeners.js', () => ({
 	setupScatter3dControlListeners: mocks.setupScatter3dControlListeners,
 }));
 
-vi.mock('../../../src/modules/chartControls/previews.js', () => ({
+vi.mock('../../../src/charts/previews.js', () => ({
 	PREVIEW_BAR_SVG: '<svg id="prev-bar" />',
 	PREVIEW_BUBBLE_SVG: '<svg id="prev-bubble" />',
 	PREVIEW_NETWORK_SVG: '<svg id="prev-network" />',

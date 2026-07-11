@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../../src/modules/chartControls/previews.js', () => ({
+vi.mock('../../../src/charts/previews.js', () => ({
 	PREVIEW_BAR_SVG: '<svg data-prev="bar" />',
 	PREVIEW_SCATTER_SVG: '<svg data-prev="scatter" />',
 	PREVIEW_SCATTER3D_SVG: '<svg data-prev="scatter3d" />',
@@ -15,7 +15,7 @@ vi.mock('../../../src/modules/chartControls/previews.js', () => ({
 }));
 
 import { openChartTypePickerDialog } from '../../../src/components/datasetWorkspace/chartTypePickerDialog.js';
-import { CHART_TYPES } from '../../../src/modules/chartControls/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../../src/config/chartTypes.js';
 
 const translate = key => `t:${key}`;
 
@@ -36,10 +36,10 @@ describe('openChartTypePickerDialog', () => {
 		document.body.innerHTML = '';
 	});
 
-	it('renders one card per CHART_TYPES entry in order', () => {
+	it('renders one card per canonical chart type in order', () => {
 		openChartTypePickerDialog({ activeChartType: null, translate });
 		const types = getCards().map(card => card.dataset.chartType);
-		expect(types).toEqual(CHART_TYPES);
+		expect(types).toEqual(CHART_TYPE_KEYS);
 	});
 
 	it('marks the active chart card with .selected', () => {

@@ -17,7 +17,7 @@
 /**
  * Canonical chart-type identifiers used throughout state and config.
  *
- * @typedef {'bar' | 'scatter' | 'scatter3d' | 'pie' | 'bubble' | 'network' | 'treemap' | 'line' | 'tin'} ChartTypeKey
+ * @typedef {'bar' | 'line' | 'scatter' | 'scatter3d' | 'pie' | 'bubble' | 'network' | 'treemap' | 'tin'} ChartTypeKey
  */
 
 /**

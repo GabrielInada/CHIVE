@@ -12,6 +12,7 @@
 
 import { t } from '../../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
+import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
 import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
@@ -145,7 +146,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		return;
 	}
 
-	if (!chartConfig.bar.enabled && !chartConfig.scatter.enabled && !chartConfig.scatter3d.enabled && !chartConfig.network.enabled && !chartConfig.pie.enabled && !chartConfig.bubble.enabled && !chartConfig.treemap.enabled && !chartConfig.line.enabled && !chartConfig.tin.enabled) {
+	if (!CHART_TYPE_KEYS.some(type => chartConfig[type].enabled)) {
 		chartsGrid.style.display = 'none';
 		emptyState.style.display = 'flex';
 		emptyState.textContent = t('chive-chart-empty-none');
@@ -172,9 +173,8 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 
 	// Single-chart-at-a-time: only the first enabled type renders. Legacy
 	// configs with multiple enabled flags converge to one on the next toggle.
-	const CHART_TYPE_ORDER = ['bar', 'line', 'scatter', 'scatter3d', 'pie', 'bubble', 'network', 'treemap', 'tin'];
-	const activeChartType = CHART_TYPE_ORDER.find(type => chartConfig[type].enabled) || null;
-	CHART_TYPE_ORDER.forEach(type => {
+	const activeChartType = CHART_TYPE_KEYS.find(type => chartConfig[type].enabled) || null;
+	CHART_TYPE_KEYS.forEach(type => {
 		if (type !== activeChartType) {
 			chartConfig[type] = { ...chartConfig[type], enabled: false };
 		}
