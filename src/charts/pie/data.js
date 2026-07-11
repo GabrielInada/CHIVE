@@ -6,11 +6,11 @@
  * handling (`truncate` drops the tail; `other` folds it into a single
  * caller-labelled "Other" sector) as the renderer did inline. The returned
  * `total` is summed AFTER Top-N handling, so percentages are relative to the
- * rendered sectors. Pure: no DOM, no d3. Used by `pieChart.js`.
+ * rendered sectors. Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { isNullish } from '../../../utils/formatters.js';
-import { compareStrings } from '../../../utils/chartFilters.js';
+import { isNullish } from '../../utils/formatters.js';
+import { compareStrings } from '../../utils/chartFilters.js';
 
 /**
  * Aggregate rows for the pie chart.

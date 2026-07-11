@@ -16,9 +16,9 @@
 
 import { CHART_COLORS, PIE_CHART } from '../../../config/charts.js';
 import { t } from '../../../services/i18nService.js';
-import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl } from '../shared.js';
-import { createColorPresetControl, createColorPickerGridControl } from '../shared.js';
-import { groupControls } from '../controlGrouping.js';
+import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl } from '../../../modules/chartControls/shared.js';
+import { createColorPresetControl, createColorPickerGridControl } from '../../../modules/chartControls/shared.js';
+import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
 import { getPieSectorValues } from './sectorValues.js';
 
 /**
@@ -278,7 +278,7 @@ function buildDisplayControls(dataset, config) {
  * @private
  * @param {Dataset} dataset
  * @param {Object} config - The pie config block.
- * @param {string[]} sectorValues - Category tokens in rendered-pie order.
+ * @param {string[]} sectorValues - Source category tokens in aggregate order.
  * @returns {HTMLElement[]}
  */
 function buildStylingControls(dataset, config, sectorValues) {
@@ -341,7 +341,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
  *
  * @private
  * @param {Dataset} dataset
- * @param {string[]} sectorValues - Category tokens in the order they appear in the rendered pie.
+ * @param {string[]} sectorValues - Source category tokens in aggregate order.
  * @returns {HTMLElement}
  */
 function updatePieColorPickerGrid(dataset, sectorValues) {

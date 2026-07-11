@@ -19,11 +19,11 @@
 import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { renderBarPanelChart } from '../bar/panelAdapter.js';
+import { renderPiePanelChart } from '../pie/panelAdapter.js';
 import { renderScatter3dPanelChart } from '../scatter3d/panelAdapter.js';
 import { renderBubbleChart } from '../../modules/visualizations/bubbleChart.js';
 import { renderLineChart } from '../../modules/visualizations/lineChart.js';
 import { renderNetworkGraph } from '../../modules/visualizations/networkGraph.js';
-import { renderPieChart } from '../../modules/visualizations/pieChart.js';
 import { renderScatterPlot } from '../../modules/visualizations/scatterPlot.js';
 import { renderTinChart } from '../../modules/visualizations/tinChart.js';
 import { renderTreeMap } from '../../modules/visualizations/treemapChart.js';
@@ -143,37 +143,6 @@ function renderNetwork(container, spec) {
 		},
 		sourceColumn: config.source,
 		targetColumn: config.target,
-		filterCallbacks: EMPTY_FILTER_CALLBACKS,
-	});
-}
-
-/** @type {PanelChartRenderer} */
-function renderPie(container, spec) {
-	const config = spec.config || {};
-	return renderPieChart(container, spec.dataSnapshot, config.category, {
-		...baseOptions(config),
-		measureMode: config.measureMode,
-		valueColumn: config.valueColumn,
-		innerRadius: config.innerRadius,
-		outerRadius: config.outerRadius,
-		padAngle: config.padAngle,
-		zoomScale: config.zoomScale,
-		topN: config.topN,
-		topNMode: config.topNMode,
-		color: config.color,
-		showCategoryLabel: config.showCategoryLabel,
-		showValueLabel: config.showValueLabel,
-		showLegend: config.showLegend,
-		labelPosition: config.labelPosition,
-		customSliceColors: config.customSliceColors,
-		labels: {
-			category: t('chive-chart-control-pie-category'),
-			count: t('chive-tooltip-count'),
-			percentage: t('chive-tooltip-percentage'),
-			other: t('chive-chart-pie-other'),
-			focusOnThis: t('chive-tooltip-show-only-this'),
-			addToFilter: t('chive-tooltip-add-to-filter'),
-		},
 		filterCallbacks: EMPTY_FILTER_CALLBACKS,
 	});
 }
@@ -310,7 +279,7 @@ const PANEL_RENDERERS = Object.freeze({
 	line: renderLine,
 	scatter: renderScatter,
 	scatter3d: renderScatter3dPanelChart,
-	pie: renderPie,
+	pie: renderPiePanelChart,
 	bubble: renderBubble,
 	network: renderNetwork,
 	treemap: renderTreemap,

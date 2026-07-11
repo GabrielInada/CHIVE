@@ -7,7 +7,7 @@ const renderers = vi.hoisted(() => ({
 	renderBubbleChart: vi.fn(() => ({ ok: true })),
 	renderLineChart: vi.fn(() => ({ ok: true })),
 	renderNetworkGraph: vi.fn(() => ({ ok: true })),
-	renderPieChart: vi.fn(() => ({ ok: true })),
+	renderPiePanelChart: vi.fn(() => ({ ok: true })),
 	renderScatterPlot: vi.fn(() => ({ ok: true })),
 	renderTreeMap: vi.fn(() => ({ ok: true })),
 	renderTinChart: vi.fn(() => ({ ok: true })),
@@ -18,7 +18,7 @@ vi.mock('../../../src/charts/bar/panelAdapter.js', () => ({ renderBarPanelChart:
 vi.mock('../../../src/modules/visualizations/bubbleChart.js', () => ({ renderBubbleChart: renderers.renderBubbleChart }));
 vi.mock('../../../src/modules/visualizations/lineChart.js', () => ({ renderLineChart: renderers.renderLineChart }));
 vi.mock('../../../src/modules/visualizations/networkGraph.js', () => ({ renderNetworkGraph: renderers.renderNetworkGraph }));
-vi.mock('../../../src/modules/visualizations/pieChart.js', () => ({ renderPieChart: renderers.renderPieChart }));
+vi.mock('../../../src/charts/pie/panelAdapter.js', () => ({ renderPiePanelChart: renderers.renderPiePanelChart }));
 vi.mock('../../../src/modules/visualizations/scatterPlot.js', () => ({ renderScatterPlot: renderers.renderScatterPlot }));
 vi.mock('../../../src/modules/visualizations/tinChart.js', () => ({ renderTinChart: renderers.renderTinChart }));
 vi.mock('../../../src/modules/visualizations/treemapChart.js', () => ({ renderTreeMap: renderers.renderTreeMap }));
@@ -128,13 +128,11 @@ describe('panel chart registry and render bridge', () => {
 		expect(opts.targetColumn).toBe('tgt');
 	});
 
-	it('dispatches pie with category as the third positional arg', () => {
-		renderChartFromSpec(container, makeSpec('pie', { category: 'a', measureMode: 'sum', valueColumn: 'a' }));
-		expect(renderers.renderPieChart).toHaveBeenCalledTimes(1);
-		const [, , category, opts] = renderers.renderPieChart.mock.calls[0];
-		expect(category).toBe('a');
-		expect(opts.measureMode).toBe('sum');
-		expect(opts.valueColumn).toBe('a');
+	it('dispatches pie to the package panel adapter with the whole spec', () => {
+		const spec = makeSpec('pie', { category: 'a', measureMode: 'sum', valueColumn: 'a' });
+		renderChartFromSpec(container, spec);
+		expect(renderers.renderPiePanelChart).toHaveBeenCalledTimes(1);
+		expect(renderers.renderPiePanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
 	it('dispatches bubble with category and falls back to count for invalid measureMode', () => {
@@ -211,7 +209,7 @@ describe('panel chart registry and render bridge', () => {
 		expect(renderers.renderBarPanelChart).toHaveBeenCalled();
 		expect(renderers.renderScatterPlot).toHaveBeenCalled();
 		expect(renderers.renderNetworkGraph).toHaveBeenCalled();
-		expect(renderers.renderPieChart).toHaveBeenCalled();
+		expect(renderers.renderPiePanelChart).toHaveBeenCalled();
 		expect(renderers.renderBubbleChart).toHaveBeenCalled();
 		expect(renderers.renderTreeMap).toHaveBeenCalled();
 		expect(renderers.renderLineChart).toHaveBeenCalled();

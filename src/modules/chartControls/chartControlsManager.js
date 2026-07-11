@@ -8,7 +8,7 @@
  *
  * Each chart type owns its chart-specific controls, either in a per-chart
  * package (`charts/bar/`, `charts/scatter3d/`) or in a legacy controls module
- * (`pieControls.js`, ...). The controls surface is wired by
+ * (legacy controls modules and `charts/<type>/controls/`). The controls surface is wired by
  * `charts/registries/controls.js`; this manager renders the sidebar shell.
  *
  * Sidebar scroll-position preservation deserves a note: re-rendering

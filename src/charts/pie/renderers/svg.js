@@ -9,10 +9,10 @@
  * Internal D3 helpers (arc/pie generators, label placement, zoom integration)
  * are intentionally undocumented per the Tier 5 plan.
  *
- * @typedef {import('../../types.js').Result} Result
+ * @typedef {import('../../../types.js').Result} Result
  */
 
-import { arc, pie, select, zoom, zoomIdentity } from '../../../vendor/d3/d3.js';
+import { arc, pie, select, zoom, zoomIdentity } from '../../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -22,20 +22,15 @@ import {
 	moveChartTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
-} from '../../charts/shared/tooltip/tooltip.js';
-import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
-import { formatNumber, clamp } from '../../utils/formatters.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
-import { buildSliceColor as _buildSliceColor } from '../../utils/colorUtils.js';
-import { ok, fail } from '../../utils/result.js';
-import { appendChartTitle } from '../../charts/shared/svg/scaffold.js';
-import { normalizePieOptions } from './pieChart/options.js';
-import { aggregatePieData } from './pieChart/data.js';
-
-/** @private */
-function buildSliceColor(baseHex, index) {
-	return _buildSliceColor(baseHex, index, CHART_COLORS.pie);
-}
+} from '../../shared/tooltip/tooltip.js';
+import { CHART_DIMENSIONS, PIE_CHART } from '../../../config/charts.js';
+import { formatNumber, clamp } from '../../../utils/formatters.js';
+import { toCategoryToken } from '../../../utils/chartFilters.js';
+import { ok, fail } from '../../../utils/result.js';
+import { appendChartTitle } from '../../shared/svg/scaffold.js';
+import { normalizePieOptions } from '../options.js';
+import { aggregatePieData } from '../data.js';
+import { buildSliceColor } from '../color.js';
 
 /**
  * Render a pie chart into `container`. Returns `ok()` on success, or
@@ -46,7 +41,7 @@ function buildSliceColor(baseHex, index) {
  * `topN`, `topNMode` ('other' | 'truncate'), `innerRadius`/`outerRadius`,
  * `padAngle`, `zoomScale`, `showCategoryLabel`/`showValueLabel`/
  * `showLegend`, `labelPosition` ('inside' | 'outside'), `color`,
- * `customSliceColors` (per-token overrides), `colorScheme`, `customTitle`,
+ * `customSliceColors` (per-token overrides), `customTitle`,
  * `chartHeight`, `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.

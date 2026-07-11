@@ -215,4 +215,24 @@ describe('scatterPlot mixed axis behavior', () => {
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('circle')).toHaveLength(3);
 	});
+
+	it('toggles axis labels independently', () => {
+		const scatterContainer = document.getElementById('scatter');
+		const scatterData = [
+			{ x: 1, y: 2 },
+			{ x: 3, y: 4 },
+			{ x: 5, y: 6 },
+		];
+
+		renderScatterPlot(scatterContainer, scatterData, 'x', 'y', {
+			showXAxisLabel: false,
+			showYAxisLabel: true,
+			axisLabels: {
+				x: 'Scatter Axis X Custom',
+				y: 'Scatter Axis Y Custom',
+			},
+		});
+		expect(scatterContainer.textContent).not.toContain('Scatter Axis X Custom');
+		expect(scatterContainer.textContent).toContain('Scatter Axis Y Custom');
+	});
 });

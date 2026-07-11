@@ -42,11 +42,9 @@ import {
 	setupScatterPlotControlListeners,
 	computeDefaults as computeScatterDefaults,
 } from '../../modules/chartControls/scatterControls.js';
-import {
-	createPieChartControls,
-	setupPieChartControlListeners,
-	computeDefaults as computePieDefaults,
-} from '../../modules/chartControls/pieControls.js';
+import { createPieChartControls } from '../pie/controls/builder.js';
+import { setupPieChartControlListeners } from '../pie/controls/listeners.js';
+import { computeDefaults as computePieDefaults } from '../pie/controls/defaults.js';
 import {
 	createTreeMapControls,
 	setupTreeMapControlListeners,

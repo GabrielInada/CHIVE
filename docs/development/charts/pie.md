@@ -15,13 +15,18 @@ see [Architecture reference](../architecture-reference.md).
 
 Key files:
 
-- Renderer: [pieChart.js](../../../src/modules/visualizations/pieChart.js)
-- Sidebar controls: [pieControls.js](../../../src/modules/chartControls/pieControls.js)
+- Renderer: [renderers/svg.js](../../../src/charts/pie/renderers/svg.js)
+- Sidebar controls: [builder.js](../../../src/charts/pie/controls/builder.js),
+  [listeners.js](../../../src/charts/pie/controls/listeners.js), and
+  [defaults.js](../../../src/charts/pie/controls/defaults.js)
+- Data and options: [data.js](../../../src/charts/pie/data.js) and
+  [options.js](../../../src/charts/pie/options.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`PIE_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `pie` block)
-- Section adapter (dataset workspace): [pieChartSection.js](../../../src/components/datasetWorkspace/chartRenders/pieChartSection.js)
-- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
-- Color math: [colorUtils.js](../../../src/utils/colorUtils.js) (`buildSliceColor`)
+- Shared presentation mapping: [presentation.js](../../../src/charts/pie/presentation.js)
+- Section adapter (dataset workspace): [workspaceSection.js](../../../src/charts/pie/workspaceSection.js)
+- Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/pie/panelAdapter.js)
+- Color math: [color.js](../../../src/charts/pie/color.js) (`buildSliceColor`)
 
 ---
 
@@ -95,7 +100,7 @@ get a polyline connector from the wedge to the text so they do not overlap the a
 
 ## 3. The big picture (data flow)
 
-Two draw paths, both ending at `renderPieChart`.
+Two draw paths converge in `renderPieInto` and end at `renderPieChart`.
 
 ```
                  ┌─────────────────────────────────────────────┐
@@ -103,15 +108,17 @@ Two draw paths, both ending at `renderPieChart`.
                  └─────────────────────────────────────────────┘
                         │                          │
        sidebar edits    │                          │  render
-   (pieControls.js) ────┘                          ▼
-        write config                  chartsView.renderCharts()
+ (controls/listeners.js) ──────────────────────────┘
+        write config                  workspace registry
                                       → renderPieChartSection()        [dataset workspace]
-                                        → renderPieChart(container, rows, category, opts)
+                                        → renderPieInto(...)
+                                          → renderPieChart(container, rows, category, opts)
                                               │
    "Add to panel" → structuredClone snapshot │
         │                                     │
-   panel.js renderPie()                       │
-     → renderPieChart(container, spec.dataSnapshot, spec.config.category, …)
+   panel registry → renderPiePanelChart()     │
+     → renderPieInto(...)
+       → renderPieChart(container, spec.dataSnapshot, spec.config.category, …)
                                               ▼
                                    ┌──────────────────────┐
                                    │   <svg> in container  │
@@ -164,9 +171,11 @@ already global-filtered; the renderer aggregates on top of them. Panel snapshots
 
 ## 5. The control sidebar
 
-[pieControls.js](../../../src/modules/chartControls/pieControls.js) builds three sections via the
-standard `createPieChartControls` / `setupPieChartControlListeners` / `computeDefaults`
-exports.
+The controls package separates
+[`createPieChartControls`](../../../src/charts/pie/controls/builder.js),
+[`setupPieChartControlListeners`](../../../src/charts/pie/controls/listeners.js), and
+[`computeDefaults`](../../../src/charts/pie/controls/defaults.js) by role. The controls
+registry imports those three entry points directly.
 
 ### 5.1 The three sections
 
@@ -183,8 +192,9 @@ exports.
 - Everything is disabled when `!config.enabled`.
 - The value-column select is disabled in `count` mode.
 - The palette presets and per-slice grid render only when the category column yields at least
-  one sector (`getPieSectorValues` returns the category order, descending by aggregate with a
-  stable tiebreaker, the same order the rendered pie uses).
+  one sector (`getPieSectorValues` returns all source categories, descending by aggregate with
+  a stable tiebreaker). Top-N is not applied to this color list, so hidden categories retain
+  their overrides; the synthetic `Other` sector uses its fixed color.
 
 ### 5.3 Listener wiring and cross-constraints
 
@@ -207,22 +217,26 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
 ### 6.1 Dataset workspace
 
 `renderPieChartSection({ config, rows, filterCallbacks })`
-([pieChartSection.js](../../../src/components/datasetWorkspace/chartRenders/pieChartSection.js)) resolves
+([workspaceSection.js](../../../src/charts/pie/workspaceSection.js)) resolves
 the block/container, hides+clears when disabled, sets the min-height, maps config into the
-options bag (with localized labels including the `Other` label), and calls `renderPieChart`.
+shared presentation flow (with localized labels including the `Other` label), and calls the
+renderer.
 On failure it shows `chive-chart-empty-pie-sum` for `sum-no-numeric`, else
 `chive-chart-empty-pie`.
 
 ### 6.2 Panel view
 
-The panel registry's `renderPie()` maps `spec.config` into the same options and renders against
-`spec.dataSnapshot` with empty `filterCallbacks` (no click-to-filter in panels).
+The panel registry dispatches to
+[`renderPiePanelChart`](../../../src/charts/pie/panelAdapter.js), which sends
+`spec.config` and `spec.dataSnapshot` through the same presentation flow with empty
+`filterCallbacks` (no click-to-filter in panels).
 
 ---
 
 ## 7. Inside `renderPieChart`
 
-`renderPieChart(container, rows, categoryColumn, options = {})` returns a `Result`.
+[`renderPieChart`](../../../src/charts/pie/renderers/svg.js)
+`(container, rows, categoryColumn, options = {})` returns a `Result`.
 
 ### 7.1 Guard, options, aggregation
 
@@ -269,7 +283,7 @@ angular share. An optional legend lists the first 8 entries with color swatches.
 ## 8. The color system
 
 - **Base + shade**: `buildSliceColor(base, index)` from
-  [colorUtils.js](../../../src/utils/colorUtils.js) darkens the base color 8% per step (capped at
+  [color.js](../../../src/charts/pie/color.js) darkens the base color 8% per step (capped at
   8 steps), giving a monochrome family from one color.
 - **Per-slice overrides**: `customSliceColors[categoryToken]` wins over the shade for that
   category, set via the color grid or a palette preset.
@@ -282,18 +296,19 @@ angular share. An optional legend lists the first 8 entries with color swatches.
 ## 9. Performance notes
 
 The pie emits one `<path>` per visible slice plus labels and a small legend, and Top-N bounds
-the slice count, so it is light regardless of dataset size; the only row-scaled work is the
-single aggregation pass. Color and radius edits flow through the shared throttled live-preview
-path (TIN doc [section 10](tin.md)).
+the slice count, so it is light regardless of dataset size; the row-scaled work is the
+aggregation pass used by rendering and the category pass used when rebuilding color controls.
+Base and per-slice color inputs use the shared throttled live-preview path.
 
 ---
 
 ## 10. Live preview and interaction
 
-Base color, per-slice colors, radii, pad angle, zoom, and title use the shared live-preview
-path (non-emitting facade on `input`, commit on `change`). The per-slice color grid has its
-own handler that writes a single sector's override live and re-renders without rebuilding the
-sidebar, so dragging one swatch does not disturb the others.
+Base color and per-slice colors use the shared live-preview path: the non-emitting facade on
+`input`, then an emitting commit on `change`. The per-slice color grid writes one sector's
+override live and re-renders without rebuilding the sidebar, so dragging one swatch does not
+disturb the others. Radius, pad-angle, and zoom sliders update their displayed value during
+`input` and commit on `change`; the title also commits on `change`.
 
 Zoom/pan and the click-to-filter pinned tooltips are the pie's interaction layer on top of
 that.
@@ -331,10 +346,17 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 13. Tests
 
-- [pieAndAxisLabels.test.js](../../../tests/modules/visualizations/pieAndAxisLabels.test.js)
-  covers the renderer (slices, labels, top-N behavior).
-- [pieControls.test.js](../../../tests/modules/chartControls/pieControls.test.js) covers control
-  building, the radius cross-constraint, and the per-slice color logic.
+- [renderEquivalence.test.js](../../../tests/charts/pie/renderEquivalence.test.js) pins the
+  renderer's SVG and result output across representative options.
+- [renderers/svg.test.js](../../../tests/charts/pie/renderers/svg.test.js) covers slices, labels,
+  Top-N behavior, zoom, and pinned-tooltip filter states.
+- [color.test.js](../../../tests/charts/pie/color.test.js) covers the base-color shade
+  sequence and its fallback.
+- [controls.test.js](../../../tests/charts/pie/controls.test.js) covers control building, the
+  radius cross-constraint, and the per-slice color logic.
+- [workspaceSection.test.js](../../../tests/charts/pie/workspaceSection.test.js) and
+  [panelAdapter.test.js](../../../tests/charts/pie/panelAdapter.test.js) cover both integration
+  surfaces and their shared renderer contract.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 
@@ -351,8 +373,8 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ```
 <svg>
+  <text>                    (optional title)
   <g> viewport (zoom/pan target)
-    <text>                  (optional title)
     <g transform=center>
       <path> × N            (one per wedge, white stroke)
       <text>/<tspan>        (inside labels) OR <polyline> + <text> (outside labels)

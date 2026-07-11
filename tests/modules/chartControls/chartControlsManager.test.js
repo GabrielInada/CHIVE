@@ -89,9 +89,10 @@ vi.mock('../../../src/modules/chartControls/scatterControls.js', async (importOr
 	setupScatterPlotControlListeners: mocks.setupScatterPlotControlListeners,
 }));
 
-vi.mock('../../../src/modules/chartControls/pieControls.js', async (importOriginal) => ({
-	...await importOriginal(),
+vi.mock('../../../src/charts/pie/controls/builder.js', () => ({
 	createPieChartControls: mocks.createPieChartControls,
+}));
+vi.mock('../../../src/charts/pie/controls/listeners.js', () => ({
 	setupPieChartControlListeners: mocks.setupPieChartControlListeners,
 }));
 

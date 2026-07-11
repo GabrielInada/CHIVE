@@ -8,17 +8,17 @@ const mocks = vi.hoisted(() => ({
 	getLocale: vi.fn(() => 'en'),
 }));
 
-vi.mock('../../../../src/modules/visualizations/pieChart.js', () => ({
+vi.mock('../../../src/charts/pie/renderers/svg.js', () => ({
 	renderPieChart: mocks.renderPieChart,
 }));
 
-vi.mock('../../../../src/services/i18nService.js', () => ({
+vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 	getLocale: mocks.getLocale,
 }));
 
-import { renderPieChartSection } from '../../../../src/components/datasetWorkspace/chartRenders/pieChartSection.js';
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/config/elementIds.js';
+import { renderPieChartSection } from '../../../src/charts/pie/workspaceSection.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/config/elementIds.js';
 
 function setupDom() {
 	document.body.innerHTML = '';

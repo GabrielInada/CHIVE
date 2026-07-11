@@ -46,6 +46,33 @@ export function commitChartConfigPatch(dataset, chartKey, partialUpdate, onConfi
 }
 
 /**
+ * Merge a chart-specific config patch through the non-emitting state facade,
+ * then repaint the chart without rebuilding its controls. The patch may be a
+ * plain object or a function of the current chart config, which supports
+ * nested updates without exposing state writes to per-chart packages.
+ *
+ * @param {ChartTypeKey} chartKey
+ * @param {Object | ((currentConfig: Object) => Object)} partialUpdate
+ * @returns {void}
+ */
+export function previewChartConfigPatch(chartKey, partialUpdate) {
+	normalizeActiveDatasetConfig(prev => {
+		const currentConfig = prev[chartKey] || {};
+		const patch = typeof partialUpdate === 'function'
+			? partialUpdate(currentConfig)
+			: partialUpdate;
+		return {
+			...prev,
+			[chartKey]: {
+				...currentConfig,
+				...patch,
+			},
+		};
+	});
+	triggerLiveRender();
+}
+
+/**
  * Wire `change` listeners on a batch of `<select>` elements. Each entry's
  * `transform` (when present) maps the raw `value` to the stored config
  * value (e.g. parseInt, lookup table).
@@ -137,11 +164,7 @@ export function setupColorInputListener(elementId, configKey, defaultColor, data
 	if (!el) return;
 	el.addEventListener('input', () => {
 		const next = normalizeHexColor(el.value, defaultColor);
-		normalizeActiveDatasetConfig(prev => ({
-			...prev,
-			[chartKey]: { ...prev[chartKey], [configKey]: next },
-		}));
-		triggerLiveRender();
+		previewChartConfigPatch(chartKey, { [configKey]: next });
 	});
 	el.addEventListener('change', () => {
 		makeUpdater(dataset, chartKey, onConfigChanged)({

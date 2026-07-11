@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 /**
- * SVG-equivalence guard for the pieChart data-model extraction.
+ * SVG-equivalence guard for the pie package migration.
  *
  * Captured against the pre-extraction renderer, this pins the SVG markup plus
  * the returned result object for a representative option matrix. The extraction
@@ -11,8 +11,8 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { renderPieChart } from '../../../../src/modules/visualizations/pieChart.js';
-import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
+import { renderPieChart } from '../../../src/charts/pie/renderers/svg.js';
+import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
 
 const ROWS = [
 	{ region: 'A', sales: 30 },

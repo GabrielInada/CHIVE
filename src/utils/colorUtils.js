@@ -113,26 +113,6 @@ export function parseHexColor(color) {
 }
 
 /**
- * Produce a sequential variation of `baseHex` by darkening 8% per index
- * step, capped at 8 steps. Used by pie/treemap to vary slice colors when
- * the user picks a single base color rather than a palette.
- *
- * @param {string} baseHex - Primary hex; falls back to `fallbackHex` if invalid.
- * @param {number} index - Position in the sequence (0 = base shade).
- * @param {string} fallbackHex
- * @returns {string} Hex color. Returns `baseHex` unchanged when neither input parses.
- */
-export function buildSliceColor(baseHex, index, fallbackHex) {
-	const rgb = parseHexColor(baseHex) || parseHexColor(fallbackHex);
-	if (!rgb) return baseHex;
-	const factor = 1 - (Math.min(index, 8) * 0.08);
-	const r = rgb.r * factor;
-	const g = rgb.g * factor;
-	const b = rgb.b * factor;
-	return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-}
-
-/**
  * Build a `Map<item, rank>` keyed by ascending numeric value, with stable
  * ties broken by original index. Items whose accessor returns a non-finite
  * value are skipped (they will not appear in the map). Used by ranked

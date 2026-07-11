@@ -19,7 +19,7 @@ import { renderBarChartSection } from '../bar/workspaceSection.js';
 import { renderScatter3dChartSection } from '../scatter3d/workspaceSection.js';
 import { renderLineChartSection } from '../../components/datasetWorkspace/chartRenders/lineChartSection.js';
 import { renderScatterChartSection } from '../../components/datasetWorkspace/chartRenders/scatterChartSection.js';
-import { renderPieChartSection } from '../../components/datasetWorkspace/chartRenders/pieChartSection.js';
+import { renderPieChartSection } from '../pie/workspaceSection.js';
 import { renderBubbleChartSection } from '../../components/datasetWorkspace/chartRenders/bubbleChartSection.js';
 import { renderNetworkChartSection } from '../../components/datasetWorkspace/chartRenders/networkChartSection.js';
 import { renderTreemapChartSection } from '../../components/datasetWorkspace/chartRenders/treemapChartSection.js';

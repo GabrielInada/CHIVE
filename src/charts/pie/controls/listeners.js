@@ -11,16 +11,16 @@
  */
 
 import { CHART_COLORS, PIE_CHART } from '../../../config/charts.js';
-import { COLOR_PRESETS, normalizeHexColor } from '../shared.js';
-import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../../state/appState.js';
-import { triggerLiveRender } from '../livePreview.js';
+import { COLOR_PRESETS, normalizeHexColor } from '../../../modules/chartControls/shared.js';
 import {
+	commitChartConfigPatch,
+	previewChartConfigPatch,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
 	setupSliderListeners,
-} from '../controlListenerHelpers.js';
+} from '../../../modules/chartControls/controlListenerHelpers.js';
 import { getPieSectorValues } from './sectorValues.js';
 
 /**
@@ -63,14 +63,10 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const nextValueColumn = measureMode === 'sum'
 				? (numeric.includes(currentValueColumn) ? currentValueColumn : (numeric[0] || null))
 				: currentValueColumn;
-			updateActiveDatasetConfig({
-				pie: {
-					...dataset.chartConfig.pie,
-					measureMode,
-					valueColumn: nextValueColumn,
-				},
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'pie', {
+				measureMode,
+				valueColumn: nextValueColumn,
+			}, onConfigChanged);
 		});
 	}
 
@@ -91,10 +87,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				innerSlider.value = String(innerRadius);
 				syncSliderOutput(innerSlider);
 			}
-			updateActiveDatasetConfig({
-				pie: { ...dataset.chartConfig.pie, innerRadius },
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'pie', { innerRadius }, onConfigChanged);
 		});
 	}
 
@@ -108,10 +101,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				innerSlider.value = String(innerRadius);
 				syncSliderOutput(innerSlider);
 			}
-			updateActiveDatasetConfig({
-				pie: { ...dataset.chartConfig.pie, outerRadius, innerRadius },
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'pie', { outerRadius, innerRadius }, onConfigChanged);
 		});
 	}
 
@@ -129,10 +119,9 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				pieZoomSlider.value = String(PIE_CHART.defaultZoomScale);
 				syncSliderOutput(pieZoomSlider);
 			}
-			updateActiveDatasetConfig({
-				pie: { ...dataset.chartConfig.pie, zoomScale: PIE_CHART.defaultZoomScale },
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'pie', {
+				zoomScale: PIE_CHART.defaultZoomScale,
+			}, onConfigChanged);
 		});
 	}
 
@@ -158,14 +147,10 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				nextSliceColors[sector] = presetColors[index % presetColors.length];
 			});
 
-			updateActiveDatasetConfig({
-				pie: {
-					...dataset.chartConfig.pie,
-					colorScheme: presetName,
-					customSliceColors: nextSliceColors,
-				},
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'pie', {
+				colorScheme: presetName,
+				customSliceColors: nextSliceColors,
+			}, onConfigChanged);
 		});
 	});
 
@@ -178,17 +163,12 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const sector = input.dataset.colorItem;
 			if (!sector) return;
 			const next = normalizeHexColor(input.value, CHART_COLORS.pie);
-			normalizeActiveDatasetConfig(prev => ({
-				...prev,
-				pie: {
-					...prev.pie,
-					customSliceColors: {
-						...(prev.pie?.customSliceColors || {}),
-						[sector]: next,
-					},
+			previewChartConfigPatch('pie', current => ({
+				customSliceColors: {
+					...(current.customSliceColors || {}),
+					[sector]: next,
 				},
 			}));
-			triggerLiveRender();
 		});
 		input.addEventListener('change', () => {
 			const sector = input.dataset.colorItem;
@@ -197,13 +177,9 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
 			nextSliceColors[sector] = normalizeHexColor(input.value, CHART_COLORS.pie);
 
-			updateActiveDatasetConfig({
-				pie: {
-					...dataset.chartConfig.pie,
-					customSliceColors: nextSliceColors,
-				},
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'pie', {
+				customSliceColors: nextSliceColors,
+			}, onConfigChanged);
 		});
 	});
 }

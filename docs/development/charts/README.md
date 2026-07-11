@@ -72,7 +72,8 @@ doc rather than repeated:
   options bag and surface localized empty states via `showChartMessage` from
   [chartContainerLifecycle.js](../../../src/utils/chartContainerLifecycle.js).
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
-  `buildRankMap`, `buildSliceColor`, `isValidHexColor`).
+  `buildRankMap`, `isValidHexColor`); pie's `buildSliceColor` lives in its package
+  ([color.js](../../../src/charts/pie/color.js)).
 - **SVG scaffold**: [scaffold.js](../../../src/charts/shared/svg/scaffold.js) owns the
   shared title, SVG/group setup, axes, and axis-label builders used by SVG charts.
 - **Tooltips and click-to-filter**: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js).

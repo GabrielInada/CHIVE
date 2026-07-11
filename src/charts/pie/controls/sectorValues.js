@@ -1,10 +1,11 @@
 /**
  * Pie sector ordering (package-private).
  *
- * Computes the category-token order that appears in the rendered pie. Shared by
- * the builder (per-slice color grid order) and the listeners (palette-preset to
- * per-slice color mapping), so it lives in its own module rather than being
- * owned by either consumer. Pure: reads rows + config, touches no DOM.
+ * Computes the full aggregated category-token order used by the color controls.
+ * Shared by the builder (per-slice color grid order) and the listeners
+ * (palette-preset to per-slice color mapping), so it lives in its own module
+ * rather than being owned by either consumer. Pure: reads rows + config,
+ * touches no DOM.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
@@ -13,12 +14,14 @@ import { isNullish } from '../../../utils/formatters.js';
 import { compareStrings } from '../../../utils/chartFilters.js';
 
 /**
- * Compute the category-token order that will appear in the rendered pie
- * (descending by aggregate, with a string tiebreaker so order is stable).
- * Used to drive the per-slice color picker grid and the palette-preset
- * mapping. Missing values bucket under `'N/A'`.
+ * Compute every source category in descending aggregate order, with a string
+ * tiebreaker so order is stable. Used to drive the per-slice color picker grid
+ * and palette-preset mapping. Top-N is intentionally not applied: controls
+ * retain colors for source categories that may be hidden by the current Top-N,
+ * while the synthetic Other sector always uses its fixed color. Missing values
+ * bucket under `'N/A'`.
  *
- * @internal Package-private to `pieControls/`; never re-exported by the facade.
+ * @internal Package-private to `controls/`; imported only by the builder and listeners.
  * @param {Dataset} dataset
  * @param {Object} config - The pie config block.
  * @returns {string[]}

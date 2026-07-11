@@ -3,15 +3,15 @@
  *
  * Turns the raw render options bag into a validated config object with every
  * layout-independent default and bound applied exactly once. The radius clamps
- * (inner/outer) depend on the rendered geometry and stay in `pieChart.js`; the
+ * (inner/outer) depend on the rendered geometry and stay in `renderers/svg.js`; the
  * raw inner/outer values are passed through here. Mirrors the renderer's
  * historical semantics verbatim, including the raw (unvalidated)
- * `customSliceColors` pass-through. Pure: no DOM, no d3. Used by `pieChart.js`.
+ * `customSliceColors` pass-through. Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../../config/charts.js';
-import { clamp } from '../../../utils/formatters.js';
-import { isValidHexColor } from '../../../utils/colorUtils.js';
+import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
+import { clamp } from '../../utils/formatters.js';
+import { isValidHexColor } from '../../utils/colorUtils.js';
 
 /**
  * Normalize the pie render options.

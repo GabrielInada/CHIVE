@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregatePieData } from '../../../../src/modules/visualizations/pieChart/data.js';
+import { aggregatePieData } from '../../../src/charts/pie/data.js';
 
 const countArgs = { measureMode: 'count', valueColumn: null, topN: 0, topNMode: 'other', otherLabel: 'Other' };
 

@@ -21,20 +21,20 @@ vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
 	triggerLiveRender: vi.fn(),
 }));
 
-import {
-	createPieChartControls,
-	setupPieChartControlListeners,
-	computeDefaults,
-} from '../../../src/modules/chartControls/pieControls.js';
+import { createPieChartControls } from '../../../src/charts/pie/controls/builder.js';
+import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
+import { computeDefaults } from '../../../src/charts/pie/controls/defaults.js';
 
-describe('pieControls public surface', () => {
-	it('exposes exactly the three documented pie-control exports (no internal leaks)', async () => {
-		const mod = await import('../../../src/modules/chartControls/pieControls.js');
-		expect(Object.keys(mod).sort()).toEqual([
-			'computeDefaults',
-			'createPieChartControls',
-			'setupPieChartControlListeners',
+describe('pie controls module boundaries', () => {
+	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
+		const [builder, listeners, defaults] = await Promise.all([
+			import('../../../src/charts/pie/controls/builder.js'),
+			import('../../../src/charts/pie/controls/listeners.js'),
+			import('../../../src/charts/pie/controls/defaults.js'),
 		]);
+		expect(Object.keys(builder)).toEqual(['createPieChartControls']);
+		expect(Object.keys(listeners)).toEqual(['setupPieChartControlListeners']);
+		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
 	});
 });
 
@@ -100,7 +100,7 @@ describe('pieControls UI structure', () => {
 	});
 
 	// Locks the per-section grouping and control ordering across the split into
-	// the pieControls/ folder. The behavioral tests assert individual ids/states;
+	// the package's controls/ folder. The behavioral tests assert individual ids/states;
 	// this pins the whole structure (section id, expansion, ordered control keys)
 	// so a future move cannot silently reorder or regroup controls.
 	it('matches the section and control-order structure snapshot', () => {
