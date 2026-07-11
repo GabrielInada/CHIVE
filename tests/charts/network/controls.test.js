@@ -20,11 +20,9 @@ vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
 	triggerLiveRender: vi.fn(),
 }));
 
-import {
-	createNetworkGraphControls,
-	setupNetworkGraphControlListeners,
-	computeDefaults,
-} from '../../../src/modules/chartControls/networkControls.js';
+import { createNetworkGraphControls } from '../../../src/charts/network/controls/builder.js';
+import { setupNetworkGraphControlListeners } from '../../../src/charts/network/controls/listeners.js';
+import { computeDefaults } from '../../../src/charts/network/controls/defaults.js';
 
 function createDataset(overrides = {}) {
 	return {
@@ -83,14 +81,16 @@ function extractStructure(controls) {
 	});
 }
 
-describe('networkControls public surface', () => {
-	it('exposes exactly the three documented network-control exports (no internal leaks)', async () => {
-		const mod = await import('../../../src/modules/chartControls/networkControls.js');
-		expect(Object.keys(mod).sort()).toEqual([
-			'computeDefaults',
-			'createNetworkGraphControls',
-			'setupNetworkGraphControlListeners',
+describe('network controls module boundaries', () => {
+	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
+		const [builder, listeners, defaults] = await Promise.all([
+			import('../../../src/charts/network/controls/builder.js'),
+			import('../../../src/charts/network/controls/listeners.js'),
+			import('../../../src/charts/network/controls/defaults.js'),
 		]);
+		expect(Object.keys(builder)).toEqual(['createNetworkGraphControls']);
+		expect(Object.keys(listeners)).toEqual(['setupNetworkGraphControlListeners']);
+		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
 	});
 });
 

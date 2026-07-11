@@ -12,7 +12,7 @@
  * Internal D3 helpers (force setup, drag handlers, zoom integration) are
  * intentionally undocumented per the Tier 5 plan.
  *
- * @typedef {import('../../types.js').Result} Result
+ * @typedef {import('../../../types.js').Result} Result
  */
 
 import {
@@ -24,7 +24,7 @@ import {
 	drag,
 	zoom,
 	zoomIdentity,
-} from '../../../vendor/d3/d3.js';
+} from '../../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -35,14 +35,14 @@ import {
 	repositionPinnedTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
-} from '../../charts/shared/tooltip/tooltip.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
-import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
-import { formatNumber, isNullish } from '../../utils/formatters.js';
-import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
-import { fail } from '../../utils/result.js';
-import { appendChartTitle } from '../../charts/shared/svg/scaffold.js';
-import { buildNetworkData } from './networkGraph/data.js';
+} from '../../shared/tooltip/tooltip.js';
+import { toCategoryToken } from '../../../utils/chartFilters.js';
+import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../../config/charts.js';
+import { formatNumber, isNullish } from '../../../utils/formatters.js';
+import { interpolateColor, isValidHexColor } from '../../../utils/colorUtils.js';
+import { fail } from '../../../utils/result.js';
+import { appendChartTitle } from '../../shared/svg/scaffold.js';
+import { buildNetworkData } from '../data.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 let gradientRenderCounter = 0;

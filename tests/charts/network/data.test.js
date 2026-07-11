@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildNetworkData } from '../../../../src/modules/visualizations/networkGraph/data.js';
+import { buildNetworkData } from '../../../src/charts/network/data.js';
 
 describe('buildNetworkData', () => {
 	it('derives a deduplicated node set from the union of source/target', () => {

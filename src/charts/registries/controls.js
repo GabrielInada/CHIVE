@@ -28,11 +28,9 @@ import { computeDefaults as computeBubbleDefaults } from '../bubble/controls/def
 import { createLineChartControls } from '../line/controls/builder.js';
 import { setupLineChartControlListeners } from '../line/controls/listeners.js';
 import { computeDefaults as computeLineDefaults } from '../line/controls/defaults.js';
-import {
-	createNetworkGraphControls,
-	setupNetworkGraphControlListeners,
-	computeDefaults as computeNetworkDefaults,
-} from '../../modules/chartControls/networkControls.js';
+import { createNetworkGraphControls } from '../network/controls/builder.js';
+import { setupNetworkGraphControlListeners } from '../network/controls/listeners.js';
+import { computeDefaults as computeNetworkDefaults } from '../network/controls/defaults.js';
 import { createScatterPlotControls } from '../scatter/controls/builder.js';
 import { setupScatterPlotControlListeners } from '../scatter/controls/listeners.js';
 import { computeDefaults as computeScatterDefaults } from '../scatter/controls/defaults.js';

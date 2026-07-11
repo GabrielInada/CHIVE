@@ -5,8 +5,8 @@
  * `(container, snapshot) => Result` contract here. This registry owns panel
  * rendering only; it does not import controls, workspace components, or state.
  *
- * Panel snapshots are frozen. Legacy adapters therefore pass an empty filter
- * callback bag so panel tooltips cannot mutate the live dataset.
+ * Panel snapshots are frozen. TIN, the one remaining legacy adapter, accepts
+ * no filter callbacks, so panel tooltips cannot mutate the live dataset.
  *
  * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
  * @typedef {import('../../types.js').Result} Result
@@ -19,65 +19,20 @@ import { t, getLocale } from '../../services/i18nService.js';
 import { renderBarPanelChart } from '../bar/panelAdapter.js';
 import { renderBubblePanelChart } from '../bubble/panelAdapter.js';
 import { renderLinePanelChart } from '../line/panelAdapter.js';
+import { renderNetworkPanelChart } from '../network/panelAdapter.js';
 import { renderPiePanelChart } from '../pie/panelAdapter.js';
 import { renderScatterPanelChart } from '../scatter/panelAdapter.js';
 import { renderScatter3dPanelChart } from '../scatter3d/panelAdapter.js';
 import { renderTreemapPanelChart } from '../treemap/panelAdapter.js';
-import { renderNetworkGraph } from '../../modules/visualizations/networkGraph.js';
 import { renderTinChart } from '../../modules/visualizations/tinChart.js';
-
-const EMPTY_FILTER_CALLBACKS = Object.freeze({});
-
-/**
- * Build options shared by legacy panel renderers. `filterCallbacks` remains
- * explicit per adapter because TIN does not accept it.
- *
- * @param {Object} config
- * @returns {{ customTitle: *, chartHeight: *, locale: string }}
- */
-function baseOptions(config) {
-	return {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
-		locale: getLocale(),
-	};
-}
-
-/** @type {PanelChartRenderer} */
-function renderNetwork(container, spec) {
-	const config = spec.config || {};
-	return renderNetworkGraph(container, spec.dataSnapshot, config.source, config.target, {
-		...baseOptions(config),
-		weightColumn: config.weight,
-		groupColumn: config.group,
-		nodeRadius: config.nodeRadius,
-		linkDistance: config.linkDistance,
-		chargeStrength: config.chargeStrength,
-		linkOpacity: config.linkOpacity,
-		showNodeLabels: config.showNodeLabels,
-		sourceNodeColor: config.sourceNodeColor,
-		targetNodeColor: config.targetNodeColor,
-		edgeColorMode: config.edgeColorMode,
-		zoomScale: config.zoomScale,
-		alphaDecay: config.alphaDecay,
-		showLegend: config.showLegend,
-		labels: {
-			node: t('chive-chart-control-network-source'),
-			linkWeight: t('chive-chart-control-network-weight'),
-			source: config.source || t('chive-chart-control-network-source'),
-			target: config.target || t('chive-chart-control-network-target'),
-		},
-		sourceColumn: config.source,
-		targetColumn: config.target,
-		filterCallbacks: EMPTY_FILTER_CALLBACKS,
-	});
-}
 
 /** @type {PanelChartRenderer} */
 function renderTin(container, spec) {
 	const config = spec.config || {};
 	return renderTinChart(container, spec.dataSnapshot, config.x, config.y, config.z, {
-		...baseOptions(config),
+		customTitle: config.customTitle,
+		chartHeight: config.chartHeight,
+		locale: getLocale(),
 		fillMode: config.fillMode,
 		subdivisionDepth: config.subdivisionDepth,
 		colorRamp: config.colorRamp,
@@ -125,7 +80,7 @@ const PANEL_RENDERERS = Object.freeze({
 	scatter3d: renderScatter3dPanelChart,
 	pie: renderPiePanelChart,
 	bubble: renderBubblePanelChart,
-	network: renderNetwork,
+	network: renderNetworkPanelChart,
 	treemap: renderTreemapPanelChart,
 	tin: renderTin,
 });

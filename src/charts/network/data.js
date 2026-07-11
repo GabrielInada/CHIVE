@@ -6,10 +6,10 @@
  * by id; a node's group is taken from the first row that names it and upgraded
  * from the `default` placeholder if a later row supplies a real group. Links are
  * NOT deduplicated: every row with a valid source and target pushes one link.
- * Pure: no DOM, no d3. Used by `networkGraph.js`.
+ * Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { isNullish } from '../../../utils/formatters.js';
+import { isNullish } from '../../utils/formatters.js';
 
 /** @private */
 function sanitizeNodeValue(value) {

@@ -3,21 +3,23 @@
  *
  * Wires every network-graph control, including the Reset Zoom button (resets
  * both slider DOM and config) and the color-preset to source/target mapping.
+ * Config writes go through the shared chart-control listener helpers, so the
+ * package never touches state facades directly.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
-import { updateActiveDatasetConfig } from '../../state/appState.js';
 import { NETWORK_GRAPH } from '../../../config/charts.js';
-import { COLOR_PRESETS } from '../shared.js';
+import { COLOR_PRESETS } from '../../../modules/chartControls/shared.js';
 import {
+	commitChartConfigPatch,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
 	setupSliderListeners,
 	setupColorPresetListeners,
-} from '../controlListenerHelpers.js';
+} from '../../../modules/chartControls/controlListenerHelpers.js';
 
 /**
  * Wire listeners for every network-graph control. Includes the Reset Zoom
@@ -62,13 +64,9 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 				const output = networkZoomSlider.parentElement?.querySelector('output');
 				if (output) output.textContent = networkZoomSlider.value;
 			}
-			updateActiveDatasetConfig({
-				network: {
-					...dataset.chartConfig.network,
-					zoomScale: NETWORK_GRAPH.defaultZoomScale,
-				},
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'network', {
+				zoomScale: NETWORK_GRAPH.defaultZoomScale,
+			}, onConfigChanged);
 		});
 	}
 

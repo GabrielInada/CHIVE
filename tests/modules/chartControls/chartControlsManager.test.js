@@ -78,9 +78,10 @@ vi.mock('../../../src/charts/bubble/controls/listeners.js', () => ({
 	setupBubbleChartControlListeners: mocks.setupBubbleChartControlListeners,
 }));
 
-vi.mock('../../../src/modules/chartControls/networkControls.js', async (importOriginal) => ({
-	...await importOriginal(),
+vi.mock('../../../src/charts/network/controls/builder.js', () => ({
 	createNetworkGraphControls: mocks.createNetworkGraphControls,
+}));
+vi.mock('../../../src/charts/network/controls/listeners.js', () => ({
 	setupNetworkGraphControlListeners: mocks.setupNetworkGraphControlListeners,
 }));
 

@@ -8,17 +8,17 @@ const mocks = vi.hoisted(() => ({
 	getLocale: vi.fn(() => 'en'),
 }));
 
-vi.mock('../../../../src/modules/visualizations/networkGraph.js', () => ({
+vi.mock('../../../src/charts/network/renderers/svg.js', () => ({
 	renderNetworkGraph: mocks.renderNetworkGraph,
 }));
 
-vi.mock('../../../../src/services/i18nService.js', () => ({
+vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 	getLocale: mocks.getLocale,
 }));
 
-import { renderNetworkChartSection } from '../../../../src/components/datasetWorkspace/chartRenders/networkChartSection.js';
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/config/elementIds.js';
+import { renderNetworkChartSection } from '../../../src/charts/network/workspaceSection.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/config/elementIds.js';
 
 function setupDom() {
 	document.body.innerHTML = '';

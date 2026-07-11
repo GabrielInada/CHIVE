@@ -6,7 +6,7 @@ const renderers = vi.hoisted(() => ({
 	renderBarPanelChart: vi.fn(() => ({ ok: true })),
 	renderBubblePanelChart: vi.fn(() => ({ ok: true })),
 	renderLinePanelChart: vi.fn(() => ({ ok: true })),
-	renderNetworkGraph: vi.fn(() => ({ ok: true })),
+	renderNetworkPanelChart: vi.fn(() => ({ ok: true })),
 	renderPiePanelChart: vi.fn(() => ({ ok: true })),
 	renderScatterPanelChart: vi.fn(() => ({ ok: true })),
 	renderTreemapPanelChart: vi.fn(() => ({ ok: true })),
@@ -17,7 +17,7 @@ const renderers = vi.hoisted(() => ({
 vi.mock('../../../src/charts/bar/panelAdapter.js', () => ({ renderBarPanelChart: renderers.renderBarPanelChart }));
 vi.mock('../../../src/charts/bubble/panelAdapter.js', () => ({ renderBubblePanelChart: renderers.renderBubblePanelChart }));
 vi.mock('../../../src/charts/line/panelAdapter.js', () => ({ renderLinePanelChart: renderers.renderLinePanelChart }));
-vi.mock('../../../src/modules/visualizations/networkGraph.js', () => ({ renderNetworkGraph: renderers.renderNetworkGraph }));
+vi.mock('../../../src/charts/network/panelAdapter.js', () => ({ renderNetworkPanelChart: renderers.renderNetworkPanelChart }));
 vi.mock('../../../src/charts/pie/panelAdapter.js', () => ({ renderPiePanelChart: renderers.renderPiePanelChart }));
 vi.mock('../../../src/charts/scatter/panelAdapter.js', () => ({ renderScatterPanelChart: renderers.renderScatterPanelChart }));
 vi.mock('../../../src/modules/visualizations/tinChart.js', () => ({ renderTinChart: renderers.renderTinChart }));
@@ -98,15 +98,11 @@ describe('panel chart registry and render bridge', () => {
 		expect(renderers.renderScatterPanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
-	it('dispatches network with source, target as positional args', () => {
-		renderChartFromSpec(container, makeSpec('network', { source: 'src', target: 'tgt', weight: 'w' }));
-		expect(renderers.renderNetworkGraph).toHaveBeenCalledTimes(1);
-		const [, , source, target, opts] = renderers.renderNetworkGraph.mock.calls[0];
-		expect(source).toBe('src');
-		expect(target).toBe('tgt');
-		expect(opts.weightColumn).toBe('w');
-		expect(opts.sourceColumn).toBe('src');
-		expect(opts.targetColumn).toBe('tgt');
+	it('dispatches network to the package panel adapter with the whole spec', () => {
+		const spec = makeSpec('network', { source: 'src', target: 'tgt', weight: 'w' });
+		renderChartFromSpec(container, spec);
+		expect(renderers.renderNetworkPanelChart).toHaveBeenCalledTimes(1);
+		expect(renderers.renderNetworkPanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
 	it('dispatches pie to the package panel adapter with the whole spec', () => {
@@ -151,11 +147,8 @@ describe('panel chart registry and render bridge', () => {
 	});
 
 	it('uses localized fallback labels when chart columns are missing', () => {
-		renderChartFromSpec(container, makeSpec('network', { source: '', target: '' }));
 		renderChartFromSpec(container, makeSpec('tin', { x: '', y: '', z: '' }));
 
-		expect(renderers.renderNetworkGraph.mock.calls[0][4].labels.source).toBe('chive-chart-control-network-source');
-		expect(renderers.renderNetworkGraph.mock.calls[0][4].labels.target).toBe('chive-chart-control-network-target');
 		expect(renderers.renderTinChart.mock.calls[0][5].axisLabels).toEqual({
 			x: 'chive-chart-control-tin-x',
 			y: 'chive-chart-control-tin-y',
@@ -172,7 +165,7 @@ describe('panel chart registry and render bridge', () => {
 
 		expect(renderers.renderBarPanelChart).toHaveBeenCalled();
 		expect(renderers.renderScatterPanelChart).toHaveBeenCalled();
-		expect(renderers.renderNetworkGraph).toHaveBeenCalled();
+		expect(renderers.renderNetworkPanelChart).toHaveBeenCalled();
 		expect(renderers.renderPiePanelChart).toHaveBeenCalled();
 		expect(renderers.renderBubblePanelChart).toHaveBeenCalled();
 		expect(renderers.renderTreemapPanelChart).toHaveBeenCalled();
@@ -188,9 +181,9 @@ describe('panel chart registry and render bridge', () => {
 		expect(result).toEqual({ ok: false, reason: 'renderer-failed' });
 	});
 
-	it('passes shared baseOptions (customTitle, chartHeight, locale) through to legacy renderers', () => {
-		renderChartFromSpec(container, makeSpec('network', { source: 'a', target: 'b', customTitle: 'My chart', chartHeight: 480 }));
-		const [, , , , opts] = renderers.renderNetworkGraph.mock.calls[0];
+	it('passes customTitle, chartHeight, and locale through to the legacy tin renderer', () => {
+		renderChartFromSpec(container, makeSpec('tin', { x: 'a', y: 'b', z: 'a', customTitle: 'My chart', chartHeight: 480 }));
+		const opts = renderers.renderTinChart.mock.calls[0][5];
 		expect(opts.customTitle).toBe('My chart');
 		expect(opts.chartHeight).toBe(480);
 		expect(opts.locale).toBe('en');

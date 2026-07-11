@@ -9,8 +9,8 @@
 
 import { t } from '../../../services/i18nService.js';
 import { NETWORK_GRAPH } from '../../../config/charts.js';
-import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createColorPresetControl, createSelectControl } from '../shared.js';
-import { groupControls } from '../controlGrouping.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createColorPresetControl, createSelectControl } from '../../../modules/chartControls/shared.js';
+import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
 
 /**
  * Build the network-graph control sections (Data, Display, Styling, Advanced).

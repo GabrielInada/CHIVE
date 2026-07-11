@@ -21,7 +21,7 @@ import { renderLineChartSection } from '../line/workspaceSection.js';
 import { renderScatterChartSection } from '../scatter/workspaceSection.js';
 import { renderPieChartSection } from '../pie/workspaceSection.js';
 import { renderBubbleChartSection } from '../bubble/workspaceSection.js';
-import { renderNetworkChartSection } from '../../components/datasetWorkspace/chartRenders/networkChartSection.js';
+import { renderNetworkChartSection } from '../network/workspaceSection.js';
 import { renderTreemapChartSection } from '../treemap/workspaceSection.js';
 import { renderTinChartSection } from '../../components/datasetWorkspace/chartRenders/tinChartSection.js';
 
