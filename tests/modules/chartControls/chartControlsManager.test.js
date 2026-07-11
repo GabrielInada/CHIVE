@@ -84,9 +84,10 @@ vi.mock('../../../src/modules/chartControls/networkControls.js', async (importOr
 	setupNetworkGraphControlListeners: mocks.setupNetworkGraphControlListeners,
 }));
 
-vi.mock('../../../src/modules/chartControls/scatterControls.js', async (importOriginal) => ({
-	...await importOriginal(),
+vi.mock('../../../src/charts/scatter/controls/builder.js', () => ({
 	createScatterPlotControls: mocks.createScatterPlotControls,
+}));
+vi.mock('../../../src/charts/scatter/controls/listeners.js', () => ({
 	setupScatterPlotControlListeners: mocks.setupScatterPlotControlListeners,
 }));
 

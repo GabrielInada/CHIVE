@@ -8,17 +8,17 @@ const mocks = vi.hoisted(() => ({
 	getLocale: vi.fn(() => 'en'),
 }));
 
-vi.mock('../../../../src/modules/visualizations/scatterPlot.js', () => ({
+vi.mock('../../../src/charts/scatter/renderers/svg.js', () => ({
 	renderScatterPlot: mocks.renderScatterPlot,
 }));
 
-vi.mock('../../../../src/services/i18nService.js', () => ({
+vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 	getLocale: mocks.getLocale,
 }));
 
-import { renderScatterChartSection } from '../../../../src/components/datasetWorkspace/chartRenders/scatterChartSection.js';
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/config/elementIds.js';
+import { renderScatterChartSection } from '../../../src/charts/scatter/workspaceSection.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/config/elementIds.js';
 
 function setupDom() {
 	document.body.innerHTML = '';

@@ -6,7 +6,7 @@
  * bookkeeping (`pinnedIndex`) and circle event wiring stay in the renderer;
  * these closures are stateless with respect to it. DOM is built with
  * `textContent`/`appendChild` and the shared tooltip builders, never with
- * string markup. Used by `scatterPlot.js`.
+ * string markup. Used by `renderers/svg.js`.
  */
 
 import {
@@ -16,9 +16,9 @@ import {
 	createTooltipLine,
 	showChartTooltip,
 	showPinnedChartTooltip,
-} from '../../../charts/shared/tooltip/tooltip.js';
-import { toCategoryToken } from '../../../utils/chartFilters.js';
-import { formatNumber, isNullish } from '../../../utils/formatters.js';
+} from '../shared/tooltip/tooltip.js';
+import { toCategoryToken } from '../../utils/chartFilters.js';
+import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { AXIS_TYPE_VALUES } from './axisHelpers.js';
 
 /**

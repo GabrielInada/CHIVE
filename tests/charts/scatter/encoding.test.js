@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
 	getScatterPalette,
 	resolveScatterColorScheme,
-} from '../../../../src/modules/visualizations/scatterPlot/palettes.js';
+} from '../../../src/charts/scatter/palettes.js';
 import {
 	buildColorAccessor,
 	buildRadiusAccessor,
-} from '../../../../src/modules/visualizations/scatterPlot/encoding.js';
+} from '../../../src/charts/scatter/encoding.js';
 
 function point(raw, index) {
 	return { raw, index, isAggregate: false };

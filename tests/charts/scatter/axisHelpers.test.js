@@ -13,7 +13,7 @@ import {
 	aggregateCategoricalPairs,
 	pickMostFrequentCategory,
 	normalizeDomain,
-} from '../../../../src/modules/visualizations/scatterPlot/axisHelpers.js';
+} from '../../../src/charts/scatter/axisHelpers.js';
 
 describe('isNumericLikeAxisType', () => {
 	it('accepts "numeric" and "number" (case-insensitive)', () => {

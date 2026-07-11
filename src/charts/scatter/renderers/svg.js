@@ -6,37 +6,37 @@
  * OLS regression line + confidence band. The pipeline is split across peer
  * modules and wired together here: option normalization, point preparation,
  * scale + position accessors, size/color encoding, tooltip/filter
- * interactions, and the regression overlay. Scatter internals live under
- * `visualizations/scatterPlot/`; shared SVG/axis scaffolding lives in
+ * interactions, and the regression overlay. Scatter internals live in the
+ * package root one level up; shared SVG/axis scaffolding lives in
  * {@link chartScaffold}.
  *
- * @typedef {import('../../types.js').Result} Result
+ * @typedef {import('../../../types.js').Result} Result
  */
 
-import { axisBottom, axisLeft } from '../../../vendor/d3/d3.js';
-import { hideChartTooltip, moveChartTooltip } from '../../charts/shared/tooltip/tooltip.js';
-import { CHART_DIMENSIONS } from '../../config/charts.js';
-import { ok, fail } from '../../utils/result.js';
+import { axisBottom, axisLeft } from '../../../../vendor/d3/d3.js';
+import { hideChartTooltip, moveChartTooltip } from '../../shared/tooltip/tooltip.js';
+import { CHART_DIMENSIONS } from '../../../config/charts.js';
+import { ok, fail } from '../../../utils/result.js';
 import {
 	AXIS_TYPE_VALUES,
 	truncateCategoryTick,
 	computeAdaptiveMargins,
-} from './scatterPlot/axisHelpers.js';
+} from '../axisHelpers.js';
 import {
 	appendAxisLabels,
 	appendBottomAxis,
 	appendLeftAxis,
 	setupChartSvg,
-} from '../../charts/shared/svg/scaffold.js';
+} from '../../shared/svg/scaffold.js';
 import {
 	renderRegressionAnnotation,
 	renderRegressionLayer,
-} from './scatterPlot/regressionLayer.js';
-import { normalizeScatterOptions } from './scatterPlot/options.js';
-import { buildColorAccessor, buildRadiusAccessor } from './scatterPlot/encoding.js';
-import { buildScatterPoints } from './scatterPlot/data.js';
-import { buildScatterScales } from './scatterPlot/scales.js';
-import { createScatterInteractions } from './scatterPlot/interactions.js';
+} from '../regressionLayer.js';
+import { normalizeScatterOptions } from '../options.js';
+import { buildColorAccessor, buildRadiusAccessor } from '../encoding.js';
+import { buildScatterPoints } from '../data.js';
+import { buildScatterScales } from '../scales.js';
+import { createScatterInteractions } from '../interactions.js';
 
 /**
  * Render a scatter plot into `container`. Returns `ok()` on success, or

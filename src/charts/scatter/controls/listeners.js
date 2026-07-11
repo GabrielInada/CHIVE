@@ -5,22 +5,25 @@
  * axis selects carry custom listeners that lock the corresponding scale to
  * `'linear'` when the user picks a non-numeric column; colorMode and the
  * regression mode also have cross-dependency logic that updates sibling fields.
+ * All config writes go through the shared chart-control adapters
+ * (`commitChartConfigPatch`, `previewChartConfigPatch`), so the package never
+ * imports application state.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
 import { CHART_COLORS } from '../../../config/charts.js';
-import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../../state/appState.js';
-import { normalizeHexColor, COLOR_PRESETS } from '../shared.js';
+import { normalizeHexColor, COLOR_PRESETS } from '../../../modules/chartControls/shared.js';
 import {
+	commitChartConfigPatch,
+	previewChartConfigPatch,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
 	setupSliderListener,
 	setupColorPresetListeners,
-} from '../controlListenerHelpers.js';
-import { triggerLiveRender } from '../livePreview.js';
+} from '../../../modules/chartControls/controlListenerHelpers.js';
 
 /**
  * Wire listeners for every scatter-plot control. The X/Y axis selects have
@@ -42,14 +45,10 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 		select.addEventListener('change', () => {
 			const selected = allOptions.includes(select.value) ? select.value : null;
 			const currentScale = dataset.chartConfig.scatter?.[scaleKey] === 'log' ? 'log' : 'linear';
-			updateActiveDatasetConfig({
-				scatter: {
-					...dataset.chartConfig.scatter,
-					[axisKey]: selected,
-					[scaleKey]: numeric.includes(selected) ? currentScale : 'linear',
-				},
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'scatter', {
+				[axisKey]: selected,
+				[scaleKey]: numeric.includes(selected) ? currentScale : 'linear',
+			}, onConfigChanged);
 		});
 	};
 
@@ -98,18 +97,14 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 			const currentField = dataset.chartConfig.scatter.colorField;
 			const currentRegression = dataset.chartConfig.scatter.regression || {};
 			const nextRegressionMode = value === 'category' ? currentRegression.mode : 'overall';
-			updateActiveDatasetConfig({
-				scatter: {
-					...dataset.chartConfig.scatter,
-					colorMode: value === 'uniform' ? 'uniform' : value,
-					colorField: value === 'uniform'
-						? null
-						: (availableFields.includes(currentField) ? currentField : (availableFields[0] || null)),
-					colorFieldType: value === 'category' ? 'category' : (value === 'numeric' ? 'numeric' : null),
-					regression: { ...currentRegression, mode: nextRegressionMode || 'overall' },
-				},
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'scatter', {
+				colorMode: value === 'uniform' ? 'uniform' : value,
+				colorField: value === 'uniform'
+					? null
+					: (availableFields.includes(currentField) ? currentField : (availableFields[0] || null)),
+				colorFieldType: value === 'category' ? 'category' : (value === 'numeric' ? 'numeric' : null),
+				regression: { ...currentRegression, mode: nextRegressionMode || 'overall' },
+			}, onConfigChanged);
 		});
 	}
 
@@ -117,30 +112,20 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 	const inputScatterColor = document.getElementById('viz-input-scatter-color');
 	if (inputScatterColor) {
 		inputScatterColor.addEventListener('input', () => {
-			const next = normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter);
-			normalizeActiveDatasetConfig(prev => ({
-				...prev,
-				scatter: {
-					...prev.scatter,
-					colorMode: 'uniform',
-					colorField: null,
-					colorFieldType: null,
-					color: next,
-				},
-			}));
-			triggerLiveRender();
+			previewChartConfigPatch('scatter', {
+				colorMode: 'uniform',
+				colorField: null,
+				colorFieldType: null,
+				color: normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter),
+			});
 		});
 		inputScatterColor.addEventListener('change', () => {
-			updateActiveDatasetConfig({
-				scatter: {
-					...dataset.chartConfig.scatter,
-					colorMode: 'uniform',
-					colorField: null,
-					colorFieldType: null,
-					color: normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter),
-				},
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'scatter', {
+				colorMode: 'uniform',
+				colorField: null,
+				colorFieldType: null,
+				color: normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter),
+			}, onConfigChanged);
 		});
 	}
 
@@ -167,15 +152,10 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 	setupSliderListener('viz-slider-scatter-size-max', 'sizeMax', dataset, 'scatter', onConfigChanged);
 
 	const updateRegression = patch => {
-		const currentScatter = dataset.chartConfig.scatter || {};
-		const currentRegression = currentScatter.regression || {};
-		updateActiveDatasetConfig({
-			scatter: {
-				...currentScatter,
-				regression: { ...currentRegression, ...patch },
-			},
-		});
-		onConfigChanged?.();
+		const currentRegression = dataset.chartConfig.scatter?.regression || {};
+		commitChartConfigPatch(dataset, 'scatter', {
+			regression: { ...currentRegression, ...patch },
+		}, onConfigChanged);
 	};
 
 	const attachRegressionCheckbox = (id, key) => {
@@ -196,8 +176,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 		regressionModeSelect.addEventListener('change', () => {
 			const value = regressionModeSelect.value === 'perCategory' ? 'perCategory' : 'overall';
 			const currentScatter = dataset.chartConfig.scatter || {};
-			const nextScatter = {
-				...currentScatter,
+			const patch = {
 				regression: { ...(currentScatter.regression || {}), mode: value },
 			};
 			if (value === 'perCategory') {
@@ -205,14 +184,13 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 				if (needsField) {
 					const firstCategorical = categorical[0] || null;
 					if (firstCategorical) {
-						nextScatter.colorMode = 'category';
-						nextScatter.colorField = firstCategorical;
-						nextScatter.colorFieldType = 'category';
+						patch.colorMode = 'category';
+						patch.colorField = firstCategorical;
+						patch.colorFieldType = 'category';
 					}
 				}
 			}
-			updateActiveDatasetConfig({ scatter: nextScatter });
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'scatter', patch, onConfigChanged);
 		});
 	}
 }

@@ -23,11 +23,9 @@ vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
 	triggerLiveRender: mocks.triggerLiveRender,
 }));
 
-import {
-	computeDefaults,
-	createScatterPlotControls,
-	setupScatterPlotControlListeners,
-} from '../../../src/modules/chartControls/scatterControls.js';
+import { createScatterPlotControls } from '../../../src/charts/scatter/controls/builder.js';
+import { setupScatterPlotControlListeners } from '../../../src/charts/scatter/controls/listeners.js';
+import { computeDefaults } from '../../../src/charts/scatter/controls/defaults.js';
 
 function createDataset(scatterOverrides = {}) {
 	return {
@@ -78,14 +76,16 @@ function lastConfig() {
 	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].scatter;
 }
 
-describe('scatterControls public surface', () => {
-	it('exposes exactly the three documented scatter-control exports (no internal leaks)', async () => {
-		const mod = await import('../../../src/modules/chartControls/scatterControls.js');
-		expect(Object.keys(mod).sort()).toEqual([
-			'computeDefaults',
-			'createScatterPlotControls',
-			'setupScatterPlotControlListeners',
+describe('scatter controls module boundaries', () => {
+	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
+		const [builder, listeners, defaults] = await Promise.all([
+			import('../../../src/charts/scatter/controls/builder.js'),
+			import('../../../src/charts/scatter/controls/listeners.js'),
+			import('../../../src/charts/scatter/controls/defaults.js'),
 		]);
+		expect(Object.keys(builder)).toEqual(['createScatterPlotControls']);
+		expect(Object.keys(listeners)).toEqual(['setupScatterPlotControlListeners']);
+		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
 	});
 });
 

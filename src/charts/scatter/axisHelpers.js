@@ -2,11 +2,11 @@
  * Scatter-plot axis helpers.
  *
  * Pure utilities for axis-type inference, categorical jitter, adaptive
- * margin calculation, and category aggregation. Used by `scatterPlot.js`
+ * margin calculation, and category aggregation. Used by `renderers/svg.js`
  * (rendering) and the regression module; also covered by unit tests.
  */
 
-import { compareStrings, normalizeCategoryValue } from '../../../utils/chartFilters.js';
+import { compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
 
 /**
  * Two-value enumeration of scatter-plot axis types: `'numeric'` or

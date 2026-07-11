@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildScatterScales } from '../../../../src/modules/visualizations/scatterPlot/scales.js';
+import { buildScatterScales } from '../../../src/charts/scatter/scales.js';
 
 function numericPoints() {
 	return [

@@ -3,11 +3,11 @@
  *
  * Turns the raw render options bag into a validated config object with every
  * default and bound applied exactly once. Pure: no DOM, no d3. Used by
- * `scatterPlot.js`.
+ * `renderers/svg.js`.
  */
 
-import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../../config/charts.js';
-import { isValidHexColor } from '../../../utils/colorUtils.js';
+import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
+import { isValidHexColor } from '../../utils/colorUtils.js';
 import { resolveScatterColorScheme } from './palettes.js';
 
 /**

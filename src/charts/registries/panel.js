@@ -11,8 +11,6 @@
  * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
  * @typedef {import('../../types.js').Result} Result
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
- * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
- * @typedef {import('../../types.js').ColumnType} ColumnType
  * @typedef {(container: HTMLElement, spec: ChartSnapshot) => Result} PanelChartRenderer
  */
 
@@ -22,28 +20,13 @@ import { renderBarPanelChart } from '../bar/panelAdapter.js';
 import { renderBubblePanelChart } from '../bubble/panelAdapter.js';
 import { renderLinePanelChart } from '../line/panelAdapter.js';
 import { renderPiePanelChart } from '../pie/panelAdapter.js';
+import { renderScatterPanelChart } from '../scatter/panelAdapter.js';
 import { renderScatter3dPanelChart } from '../scatter3d/panelAdapter.js';
 import { renderTreemapPanelChart } from '../treemap/panelAdapter.js';
 import { renderNetworkGraph } from '../../modules/visualizations/networkGraph.js';
-import { renderScatterPlot } from '../../modules/visualizations/scatterPlot.js';
 import { renderTinChart } from '../../modules/visualizations/tinChart.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
-
-/**
- * Build a column-type lookup from a panel snapshot.
- *
- * @param {ColumnSpec[] | null | undefined} columnsSnapshot
- * @returns {Object<string, ColumnType>}
- */
-function buildColumnTypeIndex(columnsSnapshot) {
-	if (!Array.isArray(columnsSnapshot)) return {};
-	const index = {};
-	for (const column of columnsSnapshot) {
-		if (column?.name) index[column.name] = column.type;
-	}
-	return index;
-}
 
 /**
  * Build options shared by legacy panel renderers. `filterCallbacks` remains
@@ -58,56 +41,6 @@ function baseOptions(config) {
 		chartHeight: config.chartHeight,
 		locale: getLocale(),
 	};
-}
-
-/** @type {PanelChartRenderer} */
-function renderScatter(container, spec) {
-	const config = spec.config || {};
-	const columnTypeByName = buildColumnTypeIndex(spec.columnsSnapshot);
-	return renderScatterPlot(container, spec.dataSnapshot, config.x, config.y, {
-		...baseOptions(config),
-		xScale: config.xScale,
-		yScale: config.yScale,
-		radius: config.radius,
-		opacity: config.opacity,
-		sizeMode: config.sizeMode,
-		sizeField: config.sizeField,
-		sizeMin: config.sizeMin,
-		sizeMax: config.sizeMax,
-		color: config.color,
-		colorMode: config.colorMode,
-		colorField: config.colorField,
-		gradientMinColor: config.gradientMinColor,
-		gradientMaxColor: config.gradientMaxColor,
-		gradientDistribution: config.gradientDistribution,
-		colorScheme: config.colorScheme,
-		categoricalPairMode: config.categoricalPairMode,
-		showXAxisLabel: config.showXAxisLabel,
-		showYAxisLabel: config.showYAxisLabel,
-		regression: config.regression,
-		axisLabels: {
-			x: config.x || t('chive-chart-control-scatter-x'),
-			y: config.y || t('chive-chart-control-scatter-y'),
-		},
-		axisTypes: {
-			x: columnTypeByName[config.x],
-			y: columnTypeByName[config.y],
-		},
-		labels: {
-			xAxis: t('chive-chart-control-scatter-x'),
-			yAxis: t('chive-chart-control-scatter-y'),
-			index: t('chive-tooltip-row'),
-			count: t('chive-tooltip-count'),
-			regressionSlope: t('chive-chart-tooltip-regression-slope'),
-			regressionIntercept: t('chive-chart-tooltip-regression-intercept'),
-			regressionR2: t('chive-chart-tooltip-regression-r2'),
-			regressionN: t('chive-chart-tooltip-regression-n'),
-			regressionGroup: t('chive-chart-tooltip-regression-group'),
-		},
-		xColumn: config.x,
-		yColumn: config.y,
-		filterCallbacks: EMPTY_FILTER_CALLBACKS,
-	});
 }
 
 /** @type {PanelChartRenderer} */
@@ -188,7 +121,7 @@ function renderTin(container, spec) {
 const PANEL_RENDERERS = Object.freeze({
 	bar: renderBarPanelChart,
 	line: renderLinePanelChart,
-	scatter: renderScatter,
+	scatter: renderScatterPanelChart,
 	scatter3d: renderScatter3dPanelChart,
 	pie: renderPiePanelChart,
 	bubble: renderBubblePanelChart,

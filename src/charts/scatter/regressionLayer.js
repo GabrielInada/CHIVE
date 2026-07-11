@@ -4,25 +4,25 @@
  * Draws the optional OLS regression overlay (confidence band, dashed fit
  * line, hover tooltip) and the corner equation/R² annotation. The
  * regression math lives in {@link regression}; this module only
- * turns fit results into SVG. Used by `scatterPlot.js`.
+ * turns fit results into SVG. Used by `renderers/svg.js`.
  *
  * Internal helpers are intentionally undocumented per the Tier 5 plan.
  */
 
-import { area as d3area, line as d3line } from '../../../../vendor/d3/d3.js';
+import { area as d3area, line as d3line } from '../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
-} from '../../../charts/shared/tooltip/tooltip.js';
+} from '../shared/tooltip/tooltip.js';
 import {
 	computeRegression,
 	formatRegressionEquation,
 	formatR2,
 } from './regression.js';
 import { AXIS_TYPE_VALUES } from './axisHelpers.js';
-import { isValidHexColor } from '../../../utils/colorUtils.js';
+import { isValidHexColor } from '../../utils/colorUtils.js';
 
 let scatterClipIdCounter = 0;
 

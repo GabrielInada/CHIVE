@@ -33,11 +33,9 @@ import {
 	setupNetworkGraphControlListeners,
 	computeDefaults as computeNetworkDefaults,
 } from '../../modules/chartControls/networkControls.js';
-import {
-	createScatterPlotControls,
-	setupScatterPlotControlListeners,
-	computeDefaults as computeScatterDefaults,
-} from '../../modules/chartControls/scatterControls.js';
+import { createScatterPlotControls } from '../scatter/controls/builder.js';
+import { setupScatterPlotControlListeners } from '../scatter/controls/listeners.js';
+import { computeDefaults as computeScatterDefaults } from '../scatter/controls/defaults.js';
 import { createPieChartControls } from '../pie/controls/builder.js';
 import { setupPieChartControlListeners } from '../pie/controls/listeners.js';
 import { computeDefaults as computePieDefaults } from '../pie/controls/defaults.js';

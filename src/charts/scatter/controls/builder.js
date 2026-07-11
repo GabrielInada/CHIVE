@@ -16,9 +16,9 @@
 
 import { CHART_COLORS } from '../../../config/charts.js';
 import { t } from '../../../services/i18nService.js';
-import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createSelectControl } from '../shared.js';
-import { COLOR_PRESETS, createColorPresetControl } from '../shared.js';
-import { groupControls } from '../controlGrouping.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createSelectControl } from '../../../modules/chartControls/shared.js';
+import { COLOR_PRESETS, createColorPresetControl } from '../../../modules/chartControls/shared.js';
+import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
 
 /**
  * Build the scatter-plot control sections (Data, Display, Analytics, Styling).

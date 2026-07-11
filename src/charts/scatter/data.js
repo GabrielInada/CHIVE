@@ -4,10 +4,10 @@
  * Maps source rows into point records, infers each axis type, derives the
  * effective scale types, drops non-finite (and, on log axes, non-positive)
  * points, and optionally aggregates repeated categorical pairs. Pure: no DOM,
- * no d3. Used by `scatterPlot.js`.
+ * no d3. Used by `renderers/svg.js`.
  */
 
-import { normalizeCategoryValue } from '../../../utils/chartFilters.js';
+import { normalizeCategoryValue } from '../../utils/chartFilters.js';
 import {
 	AXIS_TYPE_VALUES,
 	inferAxisType,

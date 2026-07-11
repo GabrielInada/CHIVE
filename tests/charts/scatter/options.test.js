@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeScatterOptions } from '../../../../src/modules/visualizations/scatterPlot/options.js';
+import { normalizeScatterOptions } from '../../../src/charts/scatter/options.js';
 
 describe('normalizeScatterOptions', () => {
 	it('applies defaults when options are empty', () => {

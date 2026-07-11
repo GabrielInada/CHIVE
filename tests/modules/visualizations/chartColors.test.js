@@ -2,7 +2,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderBarChart } from '../../../src/charts/bar/renderers/svg.js';
-import { renderScatterPlot } from '../../../src/modules/visualizations/scatterPlot.js';
+import { renderScatterPlot } from '../../../src/charts/scatter/renderers/svg.js';
 import { CHART_COLORS } from '../../../src/config/charts.js';
 
 describe('visualization color options', () => {

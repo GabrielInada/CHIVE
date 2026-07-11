@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { renderScatterPlot } from '../../../src/modules/visualizations/scatterPlot.js';
-import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
+import { renderScatterPlot } from '../../../../src/charts/scatter/renderers/svg.js';
+import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 
 describe('scatterPlot mixed axis behavior', () => {
 	beforeEach(() => {

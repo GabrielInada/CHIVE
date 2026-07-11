@@ -4,10 +4,10 @@
  * Builds the x/y position scales (continuous for numeric axes, point scales
  * for categorical) and the `getPointX`/`getPointY` accessors that fold in
  * deterministic categorical jitter. Returns plain values and functions; no
- * DOM. Used by `scatterPlot.js`.
+ * DOM. Used by `renderers/svg.js`.
  */
 
-import { extent, scaleLinear, scaleLog, scalePoint } from '../../../../vendor/d3/d3.js';
+import { extent, scaleLinear, scaleLog, scalePoint } from '../../../vendor/d3/d3.js';
 import {
 	AXIS_TYPE_VALUES,
 	buildCategoryDomain,

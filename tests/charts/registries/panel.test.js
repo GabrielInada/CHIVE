@@ -8,7 +8,7 @@ const renderers = vi.hoisted(() => ({
 	renderLinePanelChart: vi.fn(() => ({ ok: true })),
 	renderNetworkGraph: vi.fn(() => ({ ok: true })),
 	renderPiePanelChart: vi.fn(() => ({ ok: true })),
-	renderScatterPlot: vi.fn(() => ({ ok: true })),
+	renderScatterPanelChart: vi.fn(() => ({ ok: true })),
 	renderTreemapPanelChart: vi.fn(() => ({ ok: true })),
 	renderTinChart: vi.fn(() => ({ ok: true })),
 	renderScatter3dPanelChart: vi.fn(() => ({ ok: true })),
@@ -19,7 +19,7 @@ vi.mock('../../../src/charts/bubble/panelAdapter.js', () => ({ renderBubblePanel
 vi.mock('../../../src/charts/line/panelAdapter.js', () => ({ renderLinePanelChart: renderers.renderLinePanelChart }));
 vi.mock('../../../src/modules/visualizations/networkGraph.js', () => ({ renderNetworkGraph: renderers.renderNetworkGraph }));
 vi.mock('../../../src/charts/pie/panelAdapter.js', () => ({ renderPiePanelChart: renderers.renderPiePanelChart }));
-vi.mock('../../../src/modules/visualizations/scatterPlot.js', () => ({ renderScatterPlot: renderers.renderScatterPlot }));
+vi.mock('../../../src/charts/scatter/panelAdapter.js', () => ({ renderScatterPanelChart: renderers.renderScatterPanelChart }));
 vi.mock('../../../src/modules/visualizations/tinChart.js', () => ({ renderTinChart: renderers.renderTinChart }));
 vi.mock('../../../src/charts/treemap/panelAdapter.js', () => ({ renderTreemapPanelChart: renderers.renderTreemapPanelChart }));
 vi.mock('../../../src/charts/scatter3d/panelAdapter.js', () => ({ renderScatter3dPanelChart: renderers.renderScatter3dPanelChart }));
@@ -91,25 +91,11 @@ describe('panel chart registry and render bridge', () => {
 		expect(renderers.renderBarPanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
-	it('dispatches scatter with x, y as positional args and resolves axisTypes from columnsSnapshot', () => {
-		renderChartFromSpec(container, makeSpec('scatter', { x: 'a', y: 'b' }));
-		expect(renderers.renderScatterPlot).toHaveBeenCalledTimes(1);
-		const [, rows, x, y, opts] = renderers.renderScatterPlot.mock.calls[0];
-		expect(rows).toBe(baseRows);
-		expect(x).toBe('a');
-		expect(y).toBe('b');
-		expect(opts.axisTypes).toEqual({ x: 'number', y: 'text' });
-		expect(opts.xColumn).toBe('a');
-		expect(opts.yColumn).toBe('b');
-	});
-
-	it('builds axis type indexes from valid columns only', () => {
-		renderChartFromSpec(container, {
-			...makeSpec('scatter', { x: 'a', y: 'missing' }),
-			columnsSnapshot: [null, { type: 'number' }, { name: 'a', type: 'number' }],
-		});
-
-		expect(renderers.renderScatterPlot.mock.calls[0][4].axisTypes).toEqual({ x: 'number', y: undefined });
+	it('dispatches scatter to the package panel adapter with the whole spec', () => {
+		const spec = makeSpec('scatter', { x: 'a', y: 'b' });
+		renderChartFromSpec(container, spec);
+		expect(renderers.renderScatterPanelChart).toHaveBeenCalledTimes(1);
+		expect(renderers.renderScatterPanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
 	it('dispatches network with source, target as positional args', () => {
@@ -165,14 +151,9 @@ describe('panel chart registry and render bridge', () => {
 	});
 
 	it('uses localized fallback labels when chart columns are missing', () => {
-		renderChartFromSpec(container, makeSpec('scatter', { x: '', y: '' }));
 		renderChartFromSpec(container, makeSpec('network', { source: '', target: '' }));
 		renderChartFromSpec(container, makeSpec('tin', { x: '', y: '', z: '' }));
 
-		expect(renderers.renderScatterPlot.mock.calls[0][4].axisLabels).toEqual({
-			x: 'chive-chart-control-scatter-x',
-			y: 'chive-chart-control-scatter-y',
-		});
 		expect(renderers.renderNetworkGraph.mock.calls[0][4].labels.source).toBe('chive-chart-control-network-source');
 		expect(renderers.renderNetworkGraph.mock.calls[0][4].labels.target).toBe('chive-chart-control-network-target');
 		expect(renderers.renderTinChart.mock.calls[0][5].axisLabels).toEqual({
@@ -190,7 +171,7 @@ describe('panel chart registry and render bridge', () => {
 		}
 
 		expect(renderers.renderBarPanelChart).toHaveBeenCalled();
-		expect(renderers.renderScatterPlot).toHaveBeenCalled();
+		expect(renderers.renderScatterPanelChart).toHaveBeenCalled();
 		expect(renderers.renderNetworkGraph).toHaveBeenCalled();
 		expect(renderers.renderPiePanelChart).toHaveBeenCalled();
 		expect(renderers.renderBubblePanelChart).toHaveBeenCalled();
@@ -208,8 +189,8 @@ describe('panel chart registry and render bridge', () => {
 	});
 
 	it('passes shared baseOptions (customTitle, chartHeight, locale) through to legacy renderers', () => {
-		renderChartFromSpec(container, makeSpec('scatter', { x: 'a', y: 'b', customTitle: 'My chart', chartHeight: 480 }));
-		const [, , , , opts] = renderers.renderScatterPlot.mock.calls[0];
+		renderChartFromSpec(container, makeSpec('network', { source: 'a', target: 'b', customTitle: 'My chart', chartHeight: 480 }));
+		const [, , , , opts] = renderers.renderNetworkGraph.mock.calls[0];
 		expect(opts.customTitle).toBe('My chart');
 		expect(opts.chartHeight).toBe(480);
 		expect(opts.locale).toBe('en');

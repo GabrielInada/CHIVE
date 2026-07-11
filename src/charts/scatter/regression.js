@@ -2,7 +2,7 @@
  * Scatter-plot regression math.
  *
  * Pure utilities for OLS linear regression with 95% confidence-band
- * sampling. Hooks into `scatterPlot.js`'s analytics section.
+ * sampling. Hooks into the analytics section of `renderers/svg.js`.
  *
  * Log scales are honored by fitting the regression in `log(x)`/`log(y)`
  * space and exponentiating the sample line/band on output.

@@ -65,8 +65,8 @@ doc rather than repeated:
   [panel registry](../../../src/charts/registries/panel.js). The registry maps
   legacy charts to [src/modules/visualizations/](../../../src/modules/visualizations)
   and packaged charts to their `panelAdapter.js` under
-  [src/charts/](../../../src/charts) (bar, pie, treemap, bubble, line, and
-  scatter3d today).
+  [src/charts/](../../../src/charts) (bar, pie, treemap, bubble, line, scatter,
+  and scatter3d today).
 - **Section adapters**: legacy charts keep one `*ChartSection.js` under
   [chartRenders/](../../../src/components/datasetWorkspace/chartRenders); per-chart packages
   bring their own `workspaceSection.js`. These map config to the renderer

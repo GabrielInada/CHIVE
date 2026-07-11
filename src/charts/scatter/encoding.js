@@ -3,13 +3,13 @@
  *
  * Owns the qualitative category palettes (single source of truth, frozen so
  * callers cannot mutate them) and builds the point-size and point-color
- * accessors used by `scatterPlot.js`. Pure: no DOM, returns plain functions
+ * accessors used by `renderers/svg.js`. Pure: no DOM, returns plain functions
  * and lookup maps.
  */
 
-import { scaleSqrt } from '../../../../vendor/d3/d3.js';
-import { interpolateColor, buildRankMap } from '../../../utils/colorUtils.js';
-import { normalizeCategoryValue } from '../../../utils/chartFilters.js';
+import { scaleSqrt } from '../../../vendor/d3/d3.js';
+import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
+import { normalizeCategoryValue } from '../../utils/chartFilters.js';
 import { pickMostFrequentCategory } from './axisHelpers.js';
 import { getScatterPalette } from './palettes.js';
 

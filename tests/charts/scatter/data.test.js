@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildScatterPoints } from '../../../../src/modules/visualizations/scatterPlot/data.js';
+import { buildScatterPoints } from '../../../src/charts/scatter/data.js';
 
 const baseArgs = {
 	xColumn: 'x',
