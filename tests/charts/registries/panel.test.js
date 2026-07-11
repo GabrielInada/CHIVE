@@ -5,7 +5,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const renderers = vi.hoisted(() => ({
 	renderBarPanelChart: vi.fn(() => ({ ok: true })),
 	renderBubblePanelChart: vi.fn(() => ({ ok: true })),
-	renderLineChart: vi.fn(() => ({ ok: true })),
+	renderLinePanelChart: vi.fn(() => ({ ok: true })),
 	renderNetworkGraph: vi.fn(() => ({ ok: true })),
 	renderPiePanelChart: vi.fn(() => ({ ok: true })),
 	renderScatterPlot: vi.fn(() => ({ ok: true })),
@@ -16,7 +16,7 @@ const renderers = vi.hoisted(() => ({
 
 vi.mock('../../../src/charts/bar/panelAdapter.js', () => ({ renderBarPanelChart: renderers.renderBarPanelChart }));
 vi.mock('../../../src/charts/bubble/panelAdapter.js', () => ({ renderBubblePanelChart: renderers.renderBubblePanelChart }));
-vi.mock('../../../src/modules/visualizations/lineChart.js', () => ({ renderLineChart: renderers.renderLineChart }));
+vi.mock('../../../src/charts/line/panelAdapter.js', () => ({ renderLinePanelChart: renderers.renderLinePanelChart }));
 vi.mock('../../../src/modules/visualizations/networkGraph.js', () => ({ renderNetworkGraph: renderers.renderNetworkGraph }));
 vi.mock('../../../src/charts/pie/panelAdapter.js', () => ({ renderPiePanelChart: renderers.renderPiePanelChart }));
 vi.mock('../../../src/modules/visualizations/scatterPlot.js', () => ({ renderScatterPlot: renderers.renderScatterPlot }));
@@ -108,13 +108,8 @@ describe('panel chart registry and render bridge', () => {
 			...makeSpec('scatter', { x: 'a', y: 'missing' }),
 			columnsSnapshot: [null, { type: 'number' }, { name: 'a', type: 'number' }],
 		});
-		renderChartFromSpec(container, {
-			...makeSpec('line', { x: 'a', y: 'b' }),
-			columnsSnapshot: null,
-		});
 
 		expect(renderers.renderScatterPlot.mock.calls[0][4].axisTypes).toEqual({ x: 'number', y: undefined });
-		expect(renderers.renderLineChart.mock.calls[0][4].axisTypes).toEqual({ x: undefined, y: undefined });
 	});
 
 	it('dispatches network with source, target as positional args', () => {
@@ -149,16 +144,11 @@ describe('panel chart registry and render bridge', () => {
 		expect(renderers.renderTreemapPanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
-	it('dispatches line with x, y as positional args and resolves axisTypes from columnsSnapshot', () => {
-		renderChartFromSpec(container, makeSpec('line', { x: 'a', y: 'a', curve: 'monotone', missingMode: 'gap' }));
-		expect(renderers.renderLineChart).toHaveBeenCalledTimes(1);
-		const [, rows, x, y, opts] = renderers.renderLineChart.mock.calls[0];
-		expect(rows).toBe(baseRows);
-		expect(x).toBe('a');
-		expect(y).toBe('a');
-		expect(opts.axisTypes).toEqual({ x: 'number', y: 'number' });
-		expect(opts.curve).toBe('monotone');
-		expect(opts.missingMode).toBe('gap');
+	it('dispatches line to the package panel adapter with the whole spec', () => {
+		const spec = makeSpec('line', { x: 'a', y: 'a', curve: 'monotone', missingMode: 'gap' });
+		renderChartFromSpec(container, spec);
+		expect(renderers.renderLinePanelChart).toHaveBeenCalledTimes(1);
+		expect(renderers.renderLinePanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
 	it('dispatches tin with x, y, z as positional args and without filterCallbacks', () => {
@@ -177,7 +167,6 @@ describe('panel chart registry and render bridge', () => {
 	it('uses localized fallback labels when chart columns are missing', () => {
 		renderChartFromSpec(container, makeSpec('scatter', { x: '', y: '' }));
 		renderChartFromSpec(container, makeSpec('network', { source: '', target: '' }));
-		renderChartFromSpec(container, makeSpec('line', { x: '', y: '' }));
 		renderChartFromSpec(container, makeSpec('tin', { x: '', y: '', z: '' }));
 
 		expect(renderers.renderScatterPlot.mock.calls[0][4].axisLabels).toEqual({
@@ -186,10 +175,6 @@ describe('panel chart registry and render bridge', () => {
 		});
 		expect(renderers.renderNetworkGraph.mock.calls[0][4].labels.source).toBe('chive-chart-control-network-source');
 		expect(renderers.renderNetworkGraph.mock.calls[0][4].labels.target).toBe('chive-chart-control-network-target');
-		expect(renderers.renderLineChart.mock.calls[0][4].axisLabels).toEqual({
-			x: 'chive-chart-control-line-x',
-			y: 'chive-chart-control-line-y',
-		});
 		expect(renderers.renderTinChart.mock.calls[0][5].axisLabels).toEqual({
 			x: 'chive-chart-control-tin-x',
 			y: 'chive-chart-control-tin-y',
@@ -210,12 +195,12 @@ describe('panel chart registry and render bridge', () => {
 		expect(renderers.renderPiePanelChart).toHaveBeenCalled();
 		expect(renderers.renderBubblePanelChart).toHaveBeenCalled();
 		expect(renderers.renderTreemapPanelChart).toHaveBeenCalled();
-		expect(renderers.renderLineChart).toHaveBeenCalled();
+		expect(renderers.renderLinePanelChart).toHaveBeenCalled();
 		expect(renderers.renderTinChart).toHaveBeenCalled();
 	});
 
 	it('returns renderer failure results unchanged', () => {
-		renderers.renderLineChart.mockReturnValueOnce({ ok: false, reason: 'renderer-failed' });
+		renderers.renderLinePanelChart.mockReturnValueOnce({ ok: false, reason: 'renderer-failed' });
 
 		const result = renderChartFromSpec(container, makeSpec('line', { x: 'a', y: 'a' }));
 

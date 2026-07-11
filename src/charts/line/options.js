@@ -4,11 +4,11 @@
  * Turns the raw render options bag into a validated config object with every
  * default and bound applied exactly once. Mirrors the renderer's historical
  * semantics verbatim. The x-axis kind (data-derived) and the d3 curve lookup
- * stay in `lineChart.js`. Pure: no DOM, no d3. Used by `lineChart.js`.
+ * stay in `renderers/svg.js`. Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { CHART_COLORS, CHART_DIMENSIONS, LINE_CHART } from '../../../config/charts.js';
-import { isValidHexColor } from '../../../utils/colorUtils.js';
+import { CHART_COLORS, CHART_DIMENSIONS, LINE_CHART } from '../../config/charts.js';
+import { isValidHexColor } from '../../utils/colorUtils.js';
 
 /** @private */
 function normalizeHex(value, fallback) {

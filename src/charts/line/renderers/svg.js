@@ -10,7 +10,7 @@
  * Internal D3 helpers (scale construction, curve resolution, tooltip
  * tracking) are intentionally undocumented per the Tier 5 plan.
  *
- * @typedef {import('../../types.js').Result} Result
+ * @typedef {import('../../../types.js').Result} Result
  */
 
 import {
@@ -27,22 +27,22 @@ import {
 	max as d3Max,
 	min as d3Min,
 	scaleLinear,
-} from '../../../vendor/d3/d3.js';
+} from '../../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
-} from '../../charts/shared/tooltip/tooltip.js';
-import { CHART_DIMENSIONS, LINE_CHART } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
-import { ok, fail } from '../../utils/result.js';
+} from '../../shared/tooltip/tooltip.js';
+import { CHART_DIMENSIONS, LINE_CHART } from '../../../config/charts.js';
+import { formatNumber } from '../../../utils/formatters.js';
+import { ok, fail } from '../../../utils/result.js';
 import {
 	appendAxisLabels,
 	appendBottomAxis,
 	appendLeftAxis,
 	setupChartSvg,
-} from '../../charts/shared/svg/scaffold.js';
+} from '../../shared/svg/scaffold.js';
 import {
 	AXIS_KIND,
 	resolveXAxisKind,
@@ -50,9 +50,9 @@ import {
 	aggregatePoints,
 	sortByX,
 	formatXValue,
-} from './lineChart/data.js';
-import { buildXScale } from './lineChart/scales.js';
-import { normalizeLineOptions } from './lineChart/options.js';
+} from '../data.js';
+import { buildXScale } from '../scales.js';
+import { normalizeLineOptions } from '../options.js';
 
 const CURVE_BY_KEY = {
 	linear: curveLinear,

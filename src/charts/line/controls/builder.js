@@ -16,8 +16,8 @@ import {
 	createSelectControl,
 	createSliderControl,
 	createTextControl,
-} from '../shared.js';
-import { groupControls } from '../controlGrouping.js';
+} from '../../../modules/chartControls/shared.js';
+import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
 
 /** @private */
 function buildCurveOptions() {

@@ -8,14 +8,14 @@
  */
 
 import { CHART_COLORS, LINE_CHART } from '../../../config/charts.js';
-import { updateActiveDatasetConfig } from '../../state/appState.js';
 import {
+	commitChartConfigPatch,
 	setupCheckboxListeners,
 	setupColorInputListener,
 	setupSelectListeners,
 	setupSliderListener,
 	setupTextInputListener,
-} from '../controlListenerHelpers.js';
+} from '../../../modules/chartControls/controlListenerHelpers.js';
 
 /**
  * Wire listeners for every line-chart control element. The X-axis accepts
@@ -35,10 +35,7 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	if (xSelect) {
 		xSelect.addEventListener('change', () => {
 			const selected = allOptions.includes(xSelect.value) ? xSelect.value : null;
-			updateActiveDatasetConfig({
-				line: { ...dataset.chartConfig.line, x: selected },
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'line', { x: selected }, onConfigChanged);
 		});
 	}
 
@@ -46,10 +43,7 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	if (ySelect) {
 		ySelect.addEventListener('change', () => {
 			const selected = numericOptions.includes(ySelect.value) ? ySelect.value : null;
-			updateActiveDatasetConfig({
-				line: { ...dataset.chartConfig.line, y: selected },
-			});
-			onConfigChanged?.();
+			commitChartConfigPatch(dataset, 'line', { y: selected }, onConfigChanged);
 		});
 	}
 

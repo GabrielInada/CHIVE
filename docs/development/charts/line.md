@@ -14,12 +14,18 @@ see [Architecture reference](../architecture-reference.md).
 
 Key files:
 
-- Renderer: [lineChart.js](../../../src/modules/visualizations/lineChart.js)
-- Sidebar controls: [lineControls.js](../../../src/modules/chartControls/lineControls.js)
+- SVG renderer: [svg.js](../../../src/charts/line/renderers/svg.js)
+- Point building and aggregation: [data.js](../../../src/charts/line/data.js)
+- Option normalization: [options.js](../../../src/charts/line/options.js)
+- X-scale construction: [scales.js](../../../src/charts/line/scales.js)
+- Sidebar controls: [builder.js](../../../src/charts/line/controls/builder.js),
+  [listeners.js](../../../src/charts/line/controls/listeners.js), and
+  [defaults.js](../../../src/charts/line/controls/defaults.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`LINE_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `line` block)
-- Section adapter (dataset workspace): [lineChartSection.js](../../../src/components/datasetWorkspace/chartRenders/lineChartSection.js)
-- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
+- Shared presentation flow: [presentation.js](../../../src/charts/line/presentation.js)
+- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/line/workspaceSection.js)
+- Panel adapter: [panelAdapter.js](../../../src/charts/line/panelAdapter.js)
 
 ---
 
@@ -94,27 +100,32 @@ decision, so it is explicit:
 
 ## 3. The big picture (data flow)
 
-Two draw paths, both ending at `renderLineChart`.
+Two integration paths share the same presentation mapping and end at `renderLineChart`.
 
 ```
                  ┌──────────────────────────────────────────────┐
                  │  Active dataset.chartConfig.line (live state) │
                  └──────────────────────────────────────────────┘
-                        │                          │
-       sidebar edits    │                          │  render
-   (lineControls.js) ───┘                          ▼
-        write config                  chartsView.renderCharts()
-                                      → renderLineChartSection()        [dataset workspace]
-                                        → renderLineChart(container, rows, x, y, opts)
-                                              │
-   "Add to panel" → structuredClone snapshot │
-        │                                     │
-   panel.js renderLine()                      │
-     → renderLineChart(container, spec.dataSnapshot, x, y, …, axisTypes from columns)
-                                              ▼
-                                   ┌──────────────────────┐
-                                   │   <svg> in container  │
-                                   └──────────────────────┘
+                         │                         │
+       sidebar edits     │                         │ render
+ (controls/listeners.js) ┘                         ▼
+        write config                 workspace registry
+                                     → renderLineChartSection()
+                                       → renderLineInto()
+                                         → renderLineChart()
+                         │
+   "Add to panel" → structuredClone snapshot
+                         │
+                         ▼
+                    panel registry
+                    → renderLinePanelChart()
+                      → renderLineInto()
+                        → renderLineChart()
+                              │
+                              ▼
+                    ┌──────────────────────┐
+                    │  <svg> in container  │
+                    └──────────────────────┘
 ```
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG. Rows are
@@ -163,9 +174,11 @@ default ghost color.
 
 ## 5. The control sidebar
 
-[lineControls.js](../../../src/modules/chartControls/lineControls.js) builds three sections via the
+The controls package ([builder.js](../../../src/charts/line/controls/builder.js),
+[listeners.js](../../../src/charts/line/controls/listeners.js),
+[defaults.js](../../../src/charts/line/controls/defaults.js)) builds three sections via the
 standard `createLineChartControls` / `setupLineChartControlListeners` / `computeDefaults`
-exports.
+adapters.
 
 ### 5.1 The three sections
 
@@ -193,17 +206,19 @@ present.
 ### 6.1 Dataset workspace
 
 `renderLineChartSection({ config, rows, columnTypeByName, filterCallbacks })`
-([lineChartSection.js](../../../src/components/datasetWorkspace/chartRenders/lineChartSection.js)) resolves
-the block/container, hides+clears when disabled, sets the min-height, maps config into the
-options bag (forwarding `axisTypes.x` from `columnTypeByName` so the renderer picks the right
-X scale), and calls `renderLineChart`. On failure it maps the reason to a message:
+([workspaceSection.js](../../../src/charts/line/workspaceSection.js)) resolves
+the block/container, hides+clears when disabled, sets the min-height, maps config
+through [presentation.js](../../../src/charts/line/presentation.js) (forwarding
+`axisTypes.x` from `columnTypeByName` so the renderer picks the right X scale), and calls
+`renderLineChart`. On failure it maps the reason to a message:
 `no-numeric` to `chive-chart-empty-line-numeric`, `no-x-values` to `chive-chart-empty-line-x`,
 anything else to `chive-chart-empty-line`.
 
 ### 6.2 Panel view
 
-The panel registry's `renderLine()` builds the same options from `spec.config`, derives
-`axisTypes` from the snapshot's `columnsSnapshot`, and renders against `spec.dataSnapshot`. (The
+[panelAdapter.js](../../../src/charts/line/panelAdapter.js) passes `spec.config` and
+`spec.dataSnapshot` through the same presentation flow, deriving `axisTypes` from the
+snapshot's `columnsSnapshot`. The panel registry only dispatches to that adapter. (The
 line chart has no click-to-filter tooltips, so the empty filter-callbacks bag is moot here.)
 
 ---
@@ -315,10 +330,20 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 13. Tests
 
-- [lineChart.test.js](../../../tests/modules/visualizations/lineChart.test.js) covers the
+- [svg.test.js](../../../tests/charts/line/renderers/svg.test.js) covers the
   renderer: axis-kind handling, aggregation, the missing-value modes, and curve selection.
-- [lineControls.test.js](../../../tests/modules/chartControls/lineControls.test.js) covers control
+- [data.test.js](../../../tests/charts/line/data.test.js),
+  [options.test.js](../../../tests/charts/line/options.test.js), and
+  [scales.test.js](../../../tests/charts/line/scales.test.js) cover the pure point
+  building, option normalization, and X-scale construction (no DOM).
+- [renderEquivalence.test.js](../../../tests/charts/line/renderEquivalence.test.js) pins
+  the rendered SVG markup across an option matrix so structural moves stay byte-identical.
+- [controls.test.js](../../../tests/charts/line/controls.test.js) covers control
   building and the X/Y validation and ghost-color enable logic.
+- [workspaceSection.test.js](../../../tests/charts/line/workspaceSection.test.js) covers
+  workspace visibility, axis-type forwarding, and empty-state mapping.
+- [panelAdapter.test.js](../../../tests/charts/line/panelAdapter.test.js) covers frozen
+  snapshot mapping, axis-type derivation, and failure passthrough.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 

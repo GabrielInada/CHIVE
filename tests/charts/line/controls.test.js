@@ -20,11 +20,9 @@ vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
 	triggerLiveRender: vi.fn(),
 }));
 
-import {
-	computeDefaults,
-	createLineChartControls,
-	setupLineChartControlListeners,
-} from '../../../src/modules/chartControls/lineControls.js';
+import { createLineChartControls } from '../../../src/charts/line/controls/builder.js';
+import { setupLineChartControlListeners } from '../../../src/charts/line/controls/listeners.js';
+import { computeDefaults } from '../../../src/charts/line/controls/defaults.js';
 
 function createDataset(overrides = {}) {
 	return {
@@ -94,14 +92,16 @@ function extractStructure(controls) {
 	});
 }
 
-describe('lineControls public surface', () => {
-	it('exposes exactly the three documented line-control exports (no internal leaks)', async () => {
-		const mod = await import('../../../src/modules/chartControls/lineControls.js');
-		expect(Object.keys(mod).sort()).toEqual([
-			'computeDefaults',
-			'createLineChartControls',
-			'setupLineChartControlListeners',
+describe('line controls module boundaries', () => {
+	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
+		const [builder, listeners, defaults] = await Promise.all([
+			import('../../../src/charts/line/controls/builder.js'),
+			import('../../../src/charts/line/controls/listeners.js'),
+			import('../../../src/charts/line/controls/defaults.js'),
 		]);
+		expect(Object.keys(builder)).toEqual(['createLineChartControls']);
+		expect(Object.keys(listeners)).toEqual(['setupLineChartControlListeners']);
+		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
 	});
 });
 

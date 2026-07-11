@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildXScale } from '../../../../src/modules/visualizations/lineChart/scales.js';
-import { AXIS_KIND } from '../../../../src/modules/visualizations/lineChart/data.js';
+import { buildXScale } from '../../../src/charts/line/scales.js';
+import { AXIS_KIND } from '../../../src/charts/line/data.js';
 
 describe('buildXScale', () => {
 	it('builds a numeric scale from the data extent', () => {

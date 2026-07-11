@@ -34,7 +34,7 @@ vi.mock('../../../src/utils/globalFilter.js', () => ({
 vi.mock('../../../src/charts/bar/workspaceSection.js', () => ({
 	renderBarChartSection: mocks.renderBarChartSection,
 }));
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/lineChartSection.js', () => ({
+vi.mock('../../../src/charts/line/workspaceSection.js', () => ({
 	renderLineChartSection: mocks.renderLineChartSection,
 }));
 vi.mock('../../../src/components/datasetWorkspace/chartRenders/scatterChartSection.js', () => ({

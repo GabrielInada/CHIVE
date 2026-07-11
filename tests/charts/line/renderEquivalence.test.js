@@ -1,20 +1,21 @@
 // @vitest-environment jsdom
 
 /**
- * SVG-equivalence guard for the lineChart data-model extraction.
+ * SVG-equivalence guard for the line-chart data-model extraction and
+ * package migration.
  *
  * Captured against the pre-extraction renderer, this pins the SVG markup plus
  * the returned result object for a representative option matrix spanning the
  * three x-kinds (numeric / categorical / date), the missing-value modes, and
- * the aggregate modes. The extraction is a pure code move, so every snapshot
- * below must stay byte-identical afterwards. Conditions are stabilized for
+ * the aggregate modes. Extraction and package moves are pure code moves, so
+ * every snapshot below must stay byte-identical afterwards. Conditions are stabilized for
  * determinism: explicit locale, a pinned `clientWidth`, fixed `chartHeight`,
  * fixed rows, and fixed ISO date strings for the date x-kind.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { renderLineChart } from '../../../../src/modules/visualizations/lineChart.js';
-import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
+import { renderLineChart } from '../../../src/charts/line/renderers/svg.js';
+import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
 
 const ROWS_NUM = [
 	{ x: 1, y: 10 },

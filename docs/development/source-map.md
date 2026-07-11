@@ -24,11 +24,11 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/components/` | Leaf renderers for the dataset workspace: `components/datasetWorkspace/` holds the top view `datasetWorkspaceView.js` plus the preview, stats, columns, dialogs, and the remaining legacy per-chart `chartRenders/` sections. |
 | `src/modules/state/` | State core: `appState.js`, the data/panel/ui facades, `stateEvents.js`, and `stateDebug.js`. The only write path for application state. |
 | `src/modules/eventHandlers/` | DOM intent translation: workflow modules that turn user events into facade calls, wired by `modules/eventHandlers.js`. |
-| `src/modules/fileManager.js`, `panelManager.js`, `uiManager.js`, `chartControls/` | Feature managers: each owns a domain end to end (DOM intent, facade writes, bus subscriptions, render triggering). `chartControls/` also holds shared control infrastructure and the remaining legacy controls packages (`scatterControls/`, `lineControls/`, ...). |
+| `src/modules/fileManager.js`, `panelManager.js`, `uiManager.js`, `chartControls/` | Feature managers: each owns a domain end to end (DOM intent, facade writes, bus subscriptions, render triggering). `chartControls/` also holds shared control infrastructure and the remaining legacy controls packages (`scatterControls/`, `networkControls/`, ...). |
 | `src/modules/feedbackUI.js`, `dialogFocus.js` | Cross-feature UI helpers: user feedback surface and dialog focus management. |
 | `src/modules/panelSubsystem/` | Panel rendering, export, resize, slot lifecycle, and the panel's internal mutation helpers. |
-| `src/modules/visualizations/` | Remaining legacy D3/SVG chart renderers, some with subpackages (`scatterPlot/`, `lineChart/`, ...). Read-only with respect to application state and migrated one chart at a time. |
-| `src/charts/` | Chart presentation metadata (`catalog.js` and `previews.js`), independent controls/workspace/panel lookup under `registries/`, D3/SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, and `charts/bubble/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/`. A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
+| `src/modules/visualizations/` | Remaining legacy D3/SVG chart renderers, some with subpackages (`scatterPlot/`, `tinChart/`, ...). Read-only with respect to application state and migrated one chart at a time. |
+| `src/charts/` | Chart presentation metadata (`catalog.js` and `previews.js`), independent controls/workspace/panel lookup under `registries/`, D3/SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, and `charts/line/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/`. A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
 | `src/services/` | Side-effecting services: `dataService/`, `persistenceService/` with the `persistence/` backends, `i18nService.js`, `presetService.js`, and `dataIngestService.js`. |
 | `src/data/` | Bundled preset datasets (`presets/`) and `presetCatalog.js`. |
 | `src/workers/` | Background workers: `persistWorker.js` for persistence and `dataIngestWorker.js` for data ingest. |
@@ -113,7 +113,7 @@ The rules, in place of a speculative target tree:
   options, math/scales, renderers, controls, workspace section, and panel
   adapter live together. `charts/scatter3d/` established the Three.js path and
   `charts/bar/` established the shared SVG path. `charts/pie/`,
-  `charts/treemap/`, and `charts/bubble/` are the first three completed
+  `charts/treemap/`, `charts/bubble/`, and `charts/line/` are the completed
   migrations from the legacy SVG directories; remaining charts migrate one at
   a time when they are already being changed.
 - Chart integration stays split by surface. `charts/registries/controls.js`,

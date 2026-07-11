@@ -25,11 +25,9 @@ import { computeDefaults as computeScatter3dDefaults } from '../scatter3d/contro
 import { createBubbleChartControls } from '../bubble/controls/builder.js';
 import { setupBubbleChartControlListeners } from '../bubble/controls/listeners.js';
 import { computeDefaults as computeBubbleDefaults } from '../bubble/controls/defaults.js';
-import {
-	createLineChartControls,
-	setupLineChartControlListeners,
-	computeDefaults as computeLineDefaults,
-} from '../../modules/chartControls/lineControls.js';
+import { createLineChartControls } from '../line/controls/builder.js';
+import { setupLineChartControlListeners } from '../line/controls/listeners.js';
+import { computeDefaults as computeLineDefaults } from '../line/controls/defaults.js';
 import {
 	createNetworkGraphControls,
 	setupNetworkGraphControlListeners,

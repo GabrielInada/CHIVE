@@ -4,10 +4,10 @@
  * Builds the d3 x scale for the resolved x-axis kind: a UTC time scale for
  * dates, a linear scale for numbers (with a +/-1 pad when the domain is a
  * single point), and a padded point scale for categories. No DOM. Used by
- * `lineChart.js`.
+ * `renderers/svg.js`.
  */
 
-import { extent, scaleLinear, scalePoint, scaleUtc } from '../../../../vendor/d3/d3.js';
+import { extent, scaleLinear, scalePoint, scaleUtc } from '../../../vendor/d3/d3.js';
 import { AXIS_KIND } from './data.js';
 
 /**

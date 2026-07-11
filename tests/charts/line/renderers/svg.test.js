@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { renderLineChart } from '../../../src/modules/visualizations/lineChart.js';
-import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
+import { renderLineChart } from '../../../../src/charts/line/renderers/svg.js';
+import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 
 describe('renderLineChart', () => {
 	beforeEach(() => {

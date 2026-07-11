@@ -5,11 +5,12 @@
  * categorical), optionally aggregates repeated x values (none / count / sum /
  * mean), and sorts by x. Also formats an x value for tooltips/labels. Pure: no
  * DOM, no d3. The d3 x-scale construction lives in `scales.js`; the
- * missing-mode path drawing stays in `lineChart.js`. Used by `lineChart.js`.
+ * missing-mode path drawing stays in `renderers/svg.js`. Used by
+ * `renderers/svg.js`.
  */
 
-import { formatDate, formatNumber, isNullish } from '../../../utils/formatters.js';
-import { compareStrings } from '../../../utils/chartFilters.js';
+import { formatDate, formatNumber, isNullish } from '../../utils/formatters.js';
+import { compareStrings } from '../../utils/chartFilters.js';
 
 export const AXIS_KIND = { date: 'date', numeric: 'numeric', categorical: 'categorical' };
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeLineOptions } from '../../../../src/modules/visualizations/lineChart/options.js';
-import { CHART_COLORS, CHART_DIMENSIONS, LINE_CHART } from '../../../../src/config/charts.js';
+import { normalizeLineOptions } from '../../../src/charts/line/options.js';
+import { CHART_COLORS, CHART_DIMENSIONS, LINE_CHART } from '../../../src/config/charts.js';
 
 describe('normalizeLineOptions', () => {
 	it('applies defaults for an empty options bag', () => {

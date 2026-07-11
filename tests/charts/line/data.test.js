@@ -6,7 +6,7 @@ import {
 	aggregatePoints,
 	sortByX,
 	formatXValue,
-} from '../../../../src/modules/visualizations/lineChart/data.js';
+} from '../../../src/charts/line/data.js';
 
 describe('resolveXAxisKind', () => {
 	it('maps configured axis-type strings to the three kinds', () => {

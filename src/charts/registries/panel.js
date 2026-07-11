@@ -20,10 +20,10 @@ import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { renderBarPanelChart } from '../bar/panelAdapter.js';
 import { renderBubblePanelChart } from '../bubble/panelAdapter.js';
+import { renderLinePanelChart } from '../line/panelAdapter.js';
 import { renderPiePanelChart } from '../pie/panelAdapter.js';
 import { renderScatter3dPanelChart } from '../scatter3d/panelAdapter.js';
 import { renderTreemapPanelChart } from '../treemap/panelAdapter.js';
-import { renderLineChart } from '../../modules/visualizations/lineChart.js';
 import { renderNetworkGraph } from '../../modules/visualizations/networkGraph.js';
 import { renderScatterPlot } from '../../modules/visualizations/scatterPlot.js';
 import { renderTinChart } from '../../modules/visualizations/tinChart.js';
@@ -141,34 +141,6 @@ function renderNetwork(container, spec) {
 }
 
 /** @type {PanelChartRenderer} */
-function renderLine(container, spec) {
-	const config = spec.config || {};
-	const columnTypeByName = buildColumnTypeIndex(spec.columnsSnapshot);
-	return renderLineChart(container, spec.dataSnapshot, config.x, config.y, {
-		...baseOptions(config),
-		curve: config.curve,
-		missingMode: config.missingMode,
-		strokeWidth: config.strokeWidth,
-		color: config.color,
-		ghostStrokeColor: config.ghostStrokeColor,
-		showPoints: config.showPoints,
-		sortX: config.sortX,
-		aggregateMode: config.aggregateMode,
-		showXAxisLabel: config.showXAxisLabel,
-		showYAxisLabel: config.showYAxisLabel,
-		axisLabels: {
-			x: config.x || t('chive-chart-control-line-x'),
-			y: config.y || t('chive-chart-control-line-y'),
-		},
-		axisTypes: {
-			x: columnTypeByName[config.x],
-			y: columnTypeByName[config.y],
-		},
-		filterCallbacks: EMPTY_FILTER_CALLBACKS,
-	});
-}
-
-/** @type {PanelChartRenderer} */
 function renderTin(container, spec) {
 	const config = spec.config || {};
 	return renderTinChart(container, spec.dataSnapshot, config.x, config.y, config.z, {
@@ -215,7 +187,7 @@ function renderTin(container, spec) {
 /** @type {Readonly<Object<ChartTypeKey, PanelChartRenderer>>} */
 const PANEL_RENDERERS = Object.freeze({
 	bar: renderBarPanelChart,
-	line: renderLine,
+	line: renderLinePanelChart,
 	scatter: renderScatter,
 	scatter3d: renderScatter3dPanelChart,
 	pie: renderPiePanelChart,
