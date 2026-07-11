@@ -248,15 +248,17 @@ export default [
 	},
 
 	// (B3) Per-chart package leaf files (src/charts/<name>/): data, options,
-	// scales, and math stay pure D3 math, interaction.js stays pure
+	// color, scales, and math stay pure D3 math, interaction.js stays pure
 	// camera/input mechanics, and renderers draw from explicit inputs only.
-	// None of them may reach modules/, components/, or services/ (config,
-	// utils, and vendor modules only). Localized strings arrive through
-	// options.labels; state never enters a renderer.
+	// None of them may reach modules/, components/, or services/ (package-local
+	// and charts/shared modules, config, utils, and vendor modules only).
+	// Localized strings arrive through options.labels; state never enters a
+	// renderer.
 	{
 		files: [
 			'src/charts/*/data.js',
 			'src/charts/*/options.js',
+			'src/charts/*/color.js',
 			'src/charts/*/scales.js',
 			'src/charts/*/math.js',
 			'src/charts/*/interaction.js',
@@ -267,7 +269,23 @@ export default [
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
 					group: ['**/modules/**', '**/components/**', '**/services/**'],
-					message: 'Chart package leaf files import only config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
+					message: 'Chart package leaf files import only package-local or charts/shared modules, config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
+				}],
+			}],
+		},
+	},
+
+	// (B3a) Shared chart rendering infrastructure is reusable leaf code. It
+	// may import vendor, config, utils, or other charts/shared modules, but it
+	// never reaches application state, components, feature modules, or services.
+	{
+		files: ['src/charts/shared/**/*.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'Shared chart infrastructure is a leaf layer. Import only charts/shared, config, utils, or vendor modules.',
 				}],
 			}],
 		},

@@ -3,9 +3,9 @@
  *
  * The single path through which panel slots render. `panelRenderer.js`
  * delegates here via {@link renderChartFromSpec} when mounting a slot;
- * this module then dispatches to the chart's renderer, an SVG
- * `render*Chart` function in `modules/visualizations/` or a per-chart
- * package adapter under `charts/` (scatter3d renders to a WebGL canvas).
+ * this module then dispatches to the chart's renderer, either a legacy SVG
+ * `render*Chart` function in `modules/visualizations/` or a per-chart package
+ * adapter under `charts/` (bar and scatter3d).
  * Panel snapshots come into this module as
  * `{ type, config, dataSnapshot, columnsSnapshot, metadata }`, see
  * {@link ChartSnapshot} for the full shape.
@@ -22,7 +22,7 @@
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
-import { renderBarChart } from '../visualizations/barChart.js';
+import { renderBarPanelChart } from '../../charts/bar/panelAdapter.js';
 import { renderBubbleChart } from '../visualizations/bubbleChart.js';
 import { renderLineChart } from '../visualizations/lineChart.js';
 import { renderNetworkGraph } from '../visualizations/networkGraph.js';
@@ -79,47 +79,6 @@ function baseOptions(config) {
  */
 function normalizeMeasureMode(config) {
 	return ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
-}
-
-/** @private */
-function renderBar(container, spec) {
-	const config = spec.config || {};
-	const measureMode = normalizeMeasureMode(config);
-	const yAxisLabel = measureMode === 'mean'
-		? t('chive-tooltip-mean')
-		: measureMode === 'sum'
-			? t('chive-tooltip-sum')
-			: t('chive-tooltip-count');
-
-	return renderBarChart(container, spec.dataSnapshot, config.category, {
-		...baseOptions(config),
-		sort: config.sort,
-		topN: config.topN,
-		color: config.color,
-		colorMode: config.colorMode,
-		gradientMinColor: config.gradientMinColor,
-		gradientMaxColor: config.gradientMaxColor,
-		gradientDistribution: config.gradientDistribution,
-		manualThresholdPct: config.manualThresholdPct,
-		measureMode,
-		valueColumn: config.valueColumn,
-		showXAxisLabel: config.showXAxisLabel,
-		showYAxisLabel: config.showYAxisLabel,
-		axisLabels: {
-			x: config.category || t('chive-chart-control-bar-category'),
-			y: yAxisLabel,
-		},
-		labels: {
-			category: t('chive-chart-control-bar-category'),
-			count: t('chive-tooltip-count'),
-			sum: t('chive-tooltip-sum'),
-			mean: t('chive-tooltip-mean'),
-			percentage: t('chive-tooltip-percentage'),
-			focusOnThis: t('chive-tooltip-show-only-this'),
-			addToFilter: t('chive-tooltip-add-to-filter'),
-		},
-		filterCallbacks: EMPTY_FILTER_CALLBACKS,
-	});
 }
 
 /** @private */
@@ -360,7 +319,7 @@ function renderTin(container, spec) {
 }
 
 const RENDERERS = {
-	bar: renderBar,
+	bar: renderBarPanelChart,
 	scatter: renderScatter,
 	network: renderNetwork,
 	pie: renderPie,

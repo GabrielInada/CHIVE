@@ -15,7 +15,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderTinChart } from '../../../../src/modules/visualizations/tinChart.js';
-import { hideChartTooltip } from '../../../../src/modules/visualizations/tooltip.js';
+import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 
 const ROWS = [
 	{ x: 0, y: 0, z: 1 },

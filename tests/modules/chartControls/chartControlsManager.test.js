@@ -64,9 +64,10 @@ vi.mock('../../../src/modules/state/appState.js', () => ({
 	setActiveChartType: mocks.setActiveChartType,
 }));
 
-vi.mock('../../../src/modules/chartControls/barControls.js', async (importOriginal) => ({
-	...await importOriginal(),
+vi.mock('../../../src/charts/bar/controls/builder.js', () => ({
 	createBarChartControls: mocks.createBarChartControls,
+}));
+vi.mock('../../../src/charts/bar/controls/listeners.js', () => ({
 	setupBarChartControlListeners: mocks.setupBarChartControlListeners,
 }));
 

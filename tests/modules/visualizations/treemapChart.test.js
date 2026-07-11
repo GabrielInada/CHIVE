@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderTreeMap } from '../../../src/modules/visualizations/treemapChart.js';
-import { hideChartTooltip } from '../../../src/modules/visualizations/tooltip.js';
+import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
 
 const ROWS = [
 	{ region: 'North', sales: 30 },

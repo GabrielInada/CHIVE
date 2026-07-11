@@ -15,7 +15,7 @@ import {
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
-} from '../tooltip.js';
+} from '../../../charts/shared/tooltip/tooltip.js';
 import {
 	computeRegression,
 	formatRegressionEquation,

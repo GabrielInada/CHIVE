@@ -1,5 +1,5 @@
 /**
- * TIN-chart section adapter. See `barChartSection.js` for the pattern.
+ * TIN-chart section adapter. See `charts/bar/workspaceSection.js` for the package pattern.
  * TIN does not currently expose filter actions, so no `filterCallbacks`
  * parameter.
  */

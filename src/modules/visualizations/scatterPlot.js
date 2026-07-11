@@ -14,7 +14,7 @@
  */
 
 import { axisBottom, axisLeft } from '../../../vendor/d3/d3.js';
-import { hideChartTooltip, moveChartTooltip } from './tooltip.js';
+import { hideChartTooltip, moveChartTooltip } from '../../charts/shared/tooltip/tooltip.js';
 import { CHART_DIMENSIONS } from '../../config/charts.js';
 import { ok, fail } from '../../utils/result.js';
 import {
@@ -27,7 +27,7 @@ import {
 	appendBottomAxis,
 	appendLeftAxis,
 	setupChartSvg,
-} from './chartScaffold.js';
+} from '../../charts/shared/svg/scaffold.js';
 import {
 	renderRegressionAnnotation,
 	renderRegressionLayer,

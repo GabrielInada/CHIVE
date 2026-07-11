@@ -2,7 +2,7 @@
  * CHIVE chart-control element factories.
  *
  * DOM-only helpers that build the per-control widgets used by every
- * chartControls module (`barControls.js`, `pieControls.js`, …). Each
+ * chart controls package (`charts/bar/controls/`, `pieControls.js`, ...). Each
  * factory returns a `<div>` containing a label plus the input element;
  * listeners are wired separately via `controlListenerHelpers.js`.
  *

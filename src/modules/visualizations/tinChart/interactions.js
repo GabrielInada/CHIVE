@@ -7,7 +7,7 @@
  * the returned function to each hit group. Used by `tinChart.js`.
  */
 
-import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../tooltip.js';
+import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../../../charts/shared/tooltip/tooltip.js';
 import { formatNumber } from '../../../utils/formatters.js';
 
 /**

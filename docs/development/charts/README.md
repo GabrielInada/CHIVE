@@ -64,15 +64,17 @@ doc rather than repeated:
   which routes each spec to the matching chart entry function under
   [src/modules/visualizations/](../../../src/modules/visualizations) or, for per-chart
   packages, the package's panel adapter under [src/charts/](../../../src/charts)
-  (scatter3d today).
-- **Section adapters**: one `*ChartSection.js` per chart under
-  [chartRenders/](../../../src/components/datasetWorkspace/chartRenders) (per-chart packages
-  bring their own `workspaceSection.js` instead), which map config to the renderer
+  (bar and scatter3d today).
+- **Section adapters**: legacy charts keep one `*ChartSection.js` under
+  [chartRenders/](../../../src/components/datasetWorkspace/chartRenders); per-chart packages
+  bring their own `workspaceSection.js`. These map config to the renderer
   options bag and surface localized empty states via `showChartMessage` from
   [chartContainerLifecycle.js](../../../src/utils/chartContainerLifecycle.js).
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
   `buildRankMap`, `buildSliceColor`, `isValidHexColor`).
-- **Tooltips and click-to-filter**: [tooltip.js](../../../src/modules/visualizations/tooltip.js).
+- **SVG scaffold**: [scaffold.js](../../../src/charts/shared/svg/scaffold.js) owns the
+  shared title, SVG/group setup, axes, and axis-label builders used by SVG charts.
+- **Tooltips and click-to-filter**: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js).
   The categorical filter-action subsystem is documented in detail in the bar chart's
   [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter, and network.
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's

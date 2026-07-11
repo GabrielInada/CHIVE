@@ -33,7 +33,7 @@ import {
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
-} from './tooltip.js';
+} from '../../charts/shared/tooltip/tooltip.js';
 import { CHART_DIMENSIONS, LINE_CHART } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
 import { ok, fail } from '../../utils/result.js';
@@ -42,7 +42,7 @@ import {
 	appendBottomAxis,
 	appendLeftAxis,
 	setupChartSvg,
-} from './chartScaffold.js';
+} from '../../charts/shared/svg/scaffold.js';
 import {
 	AXIS_KIND,
 	resolveXAxisKind,

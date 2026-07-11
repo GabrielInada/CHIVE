@@ -1,5 +1,5 @@
 /**
- * Pie-chart section adapter. See `barChartSection.js` for the pattern.
+ * Pie-chart section adapter. See `charts/bar/workspaceSection.js` for the package pattern.
  */
 
 import { t, getLocale } from '../../../services/i18nService.js';

@@ -21,12 +21,12 @@ import {
 	moveChartTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
-} from './tooltip.js';
+} from '../../charts/shared/tooltip/tooltip.js';
 import { BUBBLE_CHART, CHART_COLOR_PALETTES, CHART_DIMENSIONS } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { toCategoryToken } from '../../utils/chartFilters.js';
 import { ok, fail } from '../../utils/result.js';
-import { setupChartSvg } from './chartScaffold.js';
+import { setupChartSvg } from '../../charts/shared/svg/scaffold.js';
 import {
 	resolveNestingColumns,
 	aggregateBubbles,

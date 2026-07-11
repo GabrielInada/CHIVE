@@ -27,13 +27,13 @@ import { CHART_DIMENSIONS, TIN_CHART } from '../../config/charts.js';
 import { formatNumber } from '../../utils/formatters.js';
 import { interpolateColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
-import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from './tooltip.js';
+import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../../charts/shared/tooltip/tooltip.js';
 import {
 	appendAxisLabels,
 	appendBottomAxis,
 	appendLeftAxis,
 	setupChartSvg,
-} from './chartScaffold.js';
+} from '../../charts/shared/svg/scaffold.js';
 import { normalizeTinOptions } from './tinChart/options.js';
 import { createTinColorScale } from './tinChart/colorScale.js';
 import {

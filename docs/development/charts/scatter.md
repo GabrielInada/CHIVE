@@ -348,7 +348,7 @@ is wired together here. The mapping:
 | Tooltips + pinned filter actions (7.7) | `scatterPlot/interactions.js` | `createScatterInteractions` |
 
 The SVG/axis scaffolding (container reset, sized svg, title, translated group, bottom/left
-axes, axis labels) comes from the shared [chartScaffold.js](../../../src/modules/visualizations/chartScaffold.js).
+axes, axis labels) comes from the shared [scaffold.js](../../../src/charts/shared/svg/scaffold.js).
 The orchestrator owns only the layout math, the circle draw and its event wiring (the
 `pinnedIndex` state), and the order in which the phases run. That order is load-bearing: the
 regression **layer** is drawn before the circles (so it sits behind them) and the regression

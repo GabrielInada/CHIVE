@@ -2,7 +2,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderNetworkGraph } from '../../../src/modules/visualizations/networkGraph.js';
-import { hideChartTooltip } from '../../../src/modules/visualizations/tooltip.js';
+import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
 
 function stubScreenCTM(container) {
 	const identity = {
@@ -165,7 +165,7 @@ describe('network graph visualization', () => {
 		directDatum.x = (Number(directDatum.x) || 0) + 250;
 		directDatum.y = (Number(directDatum.y) || 0) + 250;
 
-		const { repositionPinnedTooltip } = await import('../../../src/modules/visualizations/tooltip.js');
+		const { repositionPinnedTooltip } = await import('../../../src/charts/shared/tooltip/tooltip.js');
 		repositionPinnedTooltip();
 
 		expect(tooltip.style.left).not.toBe(initialLeft);

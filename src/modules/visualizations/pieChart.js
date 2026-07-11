@@ -22,13 +22,13 @@ import {
 	moveChartTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
-} from './tooltip.js';
+} from '../../charts/shared/tooltip/tooltip.js';
 import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
 import { formatNumber, clamp } from '../../utils/formatters.js';
 import { toCategoryToken } from '../../utils/chartFilters.js';
 import { buildSliceColor as _buildSliceColor } from '../../utils/colorUtils.js';
 import { ok, fail } from '../../utils/result.js';
-import { appendChartTitle } from './chartScaffold.js';
+import { appendChartTitle } from '../../charts/shared/svg/scaffold.js';
 import { normalizePieOptions } from './pieChart/options.js';
 import { aggregatePieData } from './pieChart/data.js';
 

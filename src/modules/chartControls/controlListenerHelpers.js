@@ -21,15 +21,28 @@ import { triggerLiveRender } from './livePreview.js';
  * @private
  */
 function makeUpdater(dataset, chartKey, onConfigChanged) {
-	return (partialUpdate) => {
-		updateActiveDatasetConfig({
-			[chartKey]: {
-				...dataset.chartConfig[chartKey],
-				...partialUpdate,
-			},
-		});
-		onConfigChanged?.();
-	};
+	return partialUpdate => commitChartConfigPatch(dataset, chartKey, partialUpdate, onConfigChanged);
+}
+
+/**
+ * Merge a chart-specific config patch through the emitting state facade.
+ * Per-chart packages use this adapter for custom listeners that cannot be
+ * expressed through the standard select, checkbox, or input helpers.
+ *
+ * @param {Dataset} dataset
+ * @param {ChartTypeKey} chartKey
+ * @param {Object} partialUpdate
+ * @param {(() => void) | null | undefined} onConfigChanged
+ * @returns {void}
+ */
+export function commitChartConfigPatch(dataset, chartKey, partialUpdate, onConfigChanged) {
+	updateActiveDatasetConfig({
+		[chartKey]: {
+			...dataset.chartConfig[chartKey],
+			...partialUpdate,
+		},
+	});
+	onConfigChanged?.();
 }
 
 /**

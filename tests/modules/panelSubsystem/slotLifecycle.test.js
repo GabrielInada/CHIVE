@@ -13,7 +13,7 @@ const tooltipMock = vi.hoisted(() => ({
 	hideChartTooltip: vi.fn(),
 }));
 
-vi.mock('../../../src/modules/visualizations/tooltip.js', () => tooltipMock);
+vi.mock('../../../src/charts/shared/tooltip/tooltip.js', () => tooltipMock);
 
 import { mountSlot, teardownSlot, teardownAllSlots } from '../../../src/modules/panelSubsystem/slotLifecycle.js';
 import { CHART_DISPOSE_HOOK } from '../../../src/utils/chartContainerLifecycle.js';

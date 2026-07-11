@@ -12,7 +12,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderPieChart } from '../../../../src/modules/visualizations/pieChart.js';
-import { hideChartTooltip } from '../../../../src/modules/visualizations/tooltip.js';
+import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 
 const ROWS = [
 	{ region: 'A', sales: 30 },

@@ -14,7 +14,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderLineChart } from '../../../../src/modules/visualizations/lineChart.js';
-import { hideChartTooltip } from '../../../../src/modules/visualizations/tooltip.js';
+import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 
 const ROWS_NUM = [
 	{ x: 1, y: 10 },

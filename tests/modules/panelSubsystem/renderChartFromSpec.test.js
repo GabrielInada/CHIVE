@@ -3,7 +3,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 const renderers = vi.hoisted(() => ({
-	renderBarChart: vi.fn(() => ({ ok: true })),
+	renderBarPanelChart: vi.fn(() => ({ ok: true })),
 	renderBubbleChart: vi.fn(() => ({ ok: true })),
 	renderLineChart: vi.fn(() => ({ ok: true })),
 	renderNetworkGraph: vi.fn(() => ({ ok: true })),
@@ -14,7 +14,7 @@ const renderers = vi.hoisted(() => ({
 	renderScatter3dPanelChart: vi.fn(() => ({ ok: true })),
 }));
 
-vi.mock('../../../src/modules/visualizations/barChart.js', () => ({ renderBarChart: renderers.renderBarChart }));
+vi.mock('../../../src/charts/bar/panelAdapter.js', () => ({ renderBarPanelChart: renderers.renderBarPanelChart }));
 vi.mock('../../../src/modules/visualizations/bubbleChart.js', () => ({ renderBubbleChart: renderers.renderBubbleChart }));
 vi.mock('../../../src/modules/visualizations/lineChart.js', () => ({ renderLineChart: renderers.renderLineChart }));
 vi.mock('../../../src/modules/visualizations/networkGraph.js', () => ({ renderNetworkGraph: renderers.renderNetworkGraph }));
@@ -78,23 +78,11 @@ describe('renderChartFromSpec', () => {
 		expect(result.reason).toBe('unknown-type');
 	});
 
-	it('dispatches bar with category as the third positional arg and a count fallback measure', () => {
-		renderChartFromSpec(container, makeSpec('bar', { category: 'a' }));
-		expect(renderers.renderBarChart).toHaveBeenCalledTimes(1);
-		const [el, rows, category, opts] = renderers.renderBarChart.mock.calls[0];
-		expect(el).toBe(container);
-		expect(rows).toBe(baseRows);
-		expect(category).toBe('a');
-		expect(opts.measureMode).toBe('count');
-		expect(opts.filterCallbacks).toEqual({});
-	});
-
-	it('labels bar aggregates for sum and mean measures', () => {
-		renderChartFromSpec(container, makeSpec('bar', { category: 'a', measureMode: 'sum' }));
-		renderChartFromSpec(container, makeSpec('bar', { category: 'a', measureMode: 'mean' }));
-
-		expect(renderers.renderBarChart.mock.calls[0][3].axisLabels.y).toBe('chive-tooltip-sum');
-		expect(renderers.renderBarChart.mock.calls[1][3].axisLabels.y).toBe('chive-tooltip-mean');
+	it('dispatches bar to the package panel adapter with the whole spec', () => {
+		const spec = makeSpec('bar', { category: 'a' });
+		renderChartFromSpec(container, spec);
+		expect(renderers.renderBarPanelChart).toHaveBeenCalledTimes(1);
+		expect(renderers.renderBarPanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
 	it('dispatches scatter with x, y as positional args and resolves axisTypes from columnsSnapshot', () => {
@@ -185,13 +173,11 @@ describe('renderChartFromSpec', () => {
 	});
 
 	it('uses localized fallback labels when chart columns are missing', () => {
-		renderChartFromSpec(container, makeSpec('bar', { category: '' }));
 		renderChartFromSpec(container, makeSpec('scatter', { x: '', y: '' }));
 		renderChartFromSpec(container, makeSpec('network', { source: '', target: '' }));
 		renderChartFromSpec(container, makeSpec('line', { x: '', y: '' }));
 		renderChartFromSpec(container, makeSpec('tin', { x: '', y: '', z: '' }));
 
-		expect(renderers.renderBarChart.mock.calls[0][3].axisLabels.x).toBe('chive-chart-control-bar-category');
 		expect(renderers.renderScatterPlot.mock.calls[0][4].axisLabels).toEqual({
 			x: 'chive-chart-control-scatter-x',
 			y: 'chive-chart-control-scatter-y',
@@ -216,7 +202,7 @@ describe('renderChartFromSpec', () => {
 			expect(renderChartFromSpec(container, spec).ok).toBe(true);
 		}
 
-		expect(renderers.renderBarChart).toHaveBeenCalled();
+		expect(renderers.renderBarPanelChart).toHaveBeenCalled();
 		expect(renderers.renderScatterPlot).toHaveBeenCalled();
 		expect(renderers.renderNetworkGraph).toHaveBeenCalled();
 		expect(renderers.renderPieChart).toHaveBeenCalled();
@@ -234,9 +220,9 @@ describe('renderChartFromSpec', () => {
 		expect(result).toEqual({ ok: false, reason: 'renderer-failed' });
 	});
 
-	it('passes shared baseOptions (customTitle, chartHeight, locale) through to renderers', () => {
-		renderChartFromSpec(container, makeSpec('bar', { category: 'a', customTitle: 'My chart', chartHeight: 480 }));
-		const [, , , opts] = renderers.renderBarChart.mock.calls[0];
+	it('passes shared baseOptions (customTitle, chartHeight, locale) through to legacy renderers', () => {
+		renderChartFromSpec(container, makeSpec('scatter', { x: 'a', y: 'b', customTitle: 'My chart', chartHeight: 480 }));
+		const [, , , , opts] = renderers.renderScatterPlot.mock.calls[0];
 		expect(opts.customTitle).toBe('My chart');
 		expect(opts.chartHeight).toBe(480);
 		expect(opts.locale).toBe('en');

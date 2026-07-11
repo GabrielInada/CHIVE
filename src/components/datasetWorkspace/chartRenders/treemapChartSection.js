@@ -1,5 +1,5 @@
 /**
- * Treemap section adapter. See `barChartSection.js` for the pattern.
+ * Treemap section adapter. See `charts/bar/workspaceSection.js` for the package pattern.
  */
 
 import { t, getLocale } from '../../../services/i18nService.js';

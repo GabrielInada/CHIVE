@@ -6,10 +6,10 @@
  *   - Params pane (bottom), controls for the currently active chart.
  *   - Centralized activation defaults (column selection on chart switch).
  *
- * Each chart type has its own controls module (`barControls.js`,
- * `pieControls.js`, …) that owns the chart-specific logic. This module
- * wires them together via {@link CHART_CONTROL_REGISTRY} and renders
- * the sidebar shell.
+ * Each chart type owns its chart-specific controls, either in a per-chart
+ * package (`charts/bar/`, `charts/scatter3d/`) or in a legacy controls module
+ * (`pieControls.js`, ...). This module wires them together via
+ * {@link CHART_CONTROL_REGISTRY} and renders the sidebar shell.
  *
  * Sidebar scroll-position preservation deserves a note: re-rendering
  * replaces the entire params DOM, so on every render we capture an
@@ -30,7 +30,9 @@ import {
 } from '../../utils/columnHelpers.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { setActiveChartType } from '../state/appState.js';
-import { createBarChartControls, setupBarChartControlListeners, computeDefaults as computeBarDefaults } from './barControls.js';
+import { createBarChartControls } from '../../charts/bar/controls/builder.js';
+import { setupBarChartControlListeners } from '../../charts/bar/controls/listeners.js';
+import { computeDefaults as computeBarDefaults } from '../../charts/bar/controls/defaults.js';
 import { createBubbleChartControls, setupBubbleChartControlListeners, computeDefaults as computeBubbleDefaults } from './bubbleControls.js';
 import { createLineChartControls, setupLineChartControlListeners, computeDefaults as computeLineDefaults } from './lineControls.js';
 import { createNetworkGraphControls, setupNetworkGraphControlListeners, computeDefaults as computeNetworkDefaults } from './networkControls.js';

@@ -14,7 +14,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderNetworkGraph } from '../../../../src/modules/visualizations/networkGraph.js';
-import { hideChartTooltip } from '../../../../src/modules/visualizations/tooltip.js';
+import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 
 const ROWS = [
 	{ src: 'A', dst: 'B', w: 5, grp: 'X' },

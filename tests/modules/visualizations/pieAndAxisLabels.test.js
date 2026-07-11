@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import { renderBarChart } from '../../../src/modules/visualizations/barChart.js';
+import { renderBarChart } from '../../../src/charts/bar/renderers/svg.js';
 import { renderPieChart } from '../../../src/modules/visualizations/pieChart.js';
 import { renderScatterPlot } from '../../../src/modules/visualizations/scatterPlot.js';
 

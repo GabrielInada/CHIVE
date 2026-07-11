@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderTinChart } from '../../../src/modules/visualizations/tinChart.js';
-import { hideChartTooltip } from '../../../src/modules/visualizations/tooltip.js';
+import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
 import { interpolateColor } from '../../../src/utils/colorUtils.js';
 import { TIN_CHART } from '../../../src/config/charts.js';
 

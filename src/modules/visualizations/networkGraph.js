@@ -35,13 +35,13 @@ import {
 	repositionPinnedTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
-} from './tooltip.js';
+} from '../../charts/shared/tooltip/tooltip.js';
 import { toCategoryToken } from '../../utils/chartFilters.js';
 import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../config/charts.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { interpolateColor, isValidHexColor } from '../../utils/colorUtils.js';
 import { fail } from '../../utils/result.js';
-import { appendChartTitle } from './chartScaffold.js';
+import { appendChartTitle } from '../../charts/shared/svg/scaffold.js';
 import { buildNetworkData } from './networkGraph/data.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';

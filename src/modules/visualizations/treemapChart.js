@@ -19,11 +19,11 @@ import {
 	moveChartTooltip,
 	showChartTooltip,
 	showPinnedChartTooltip,
-} from './tooltip.js';
+} from '../../charts/shared/tooltip/tooltip.js';
 import { CHART_DIMENSIONS } from '../../config/charts.js';
 import { formatNumber, clamp } from '../../utils/formatters.js';
 import { toCategoryToken } from '../../utils/chartFilters.js';
-import { appendChartTitle } from './chartScaffold.js';
+import { appendChartTitle } from '../../charts/shared/svg/scaffold.js';
 import { normalizeTreemapOptions } from './treemapChart/options.js';
 import { aggregateTreemapData } from './treemapChart/data.js';
 

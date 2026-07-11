@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderScatterPlot } from '../../../src/modules/visualizations/scatterPlot.js';
-import { hideChartTooltip } from '../../../src/modules/visualizations/tooltip.js';
+import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
 
 describe('scatterPlot mixed axis behavior', () => {
 	beforeEach(() => {

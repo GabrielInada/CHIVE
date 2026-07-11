@@ -2,9 +2,9 @@
  * Charts-tab controller.
  *
  * Decides which chart section to render (single-chart-at-a-time), applies
- * the global filter to rows, and dispatches to per-chart `chartRenders/*`
- * modules. When the active tab is not `'charts'` (or no chart type is
- * enabled), clears every container and shows the empty state.
+ * the global filter to rows, and dispatches to per-chart workspace sections.
+ * When the active tab is not `'charts'` (or no chart type is enabled), clears
+ * every container and shows the empty state.
  *
  * @typedef {import('../../types.js').ChartConfig} ChartConfig
  * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
@@ -15,7 +15,7 @@ import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
 import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
 import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../config/elementIds.js';
-import { renderBarChartSection } from './chartRenders/barChartSection.js';
+import { renderBarChartSection } from '../../charts/bar/workspaceSection.js';
 import { renderLineChartSection } from './chartRenders/lineChartSection.js';
 import { renderScatterChartSection } from './chartRenders/scatterChartSection.js';
 import { renderPieChartSection } from './chartRenders/pieChartSection.js';
