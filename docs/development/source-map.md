@@ -17,7 +17,8 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 
 | Path | Role |
 |---|---|
-| `src/main.js` | Orchestrator: boot, service wiring, broad refresh scheduling, and the `window.chiveDebug` handle. |
+| `src/main.js` | Browser entrypoint: waits for DOM readiness, starts the application, and installs the debug surface. |
+| `src/app/` | Application orchestration: `applicationInitializer.js` owns initialization order and the top-level error boundary; `renderCoordinator.js` owns full/region scheduling, render composition, and render-affecting state subscriptions; `debugApi.js` constructs `window.chiveDebug`. |
 | `src/types.js` | Shared JSDoc typedefs (`AppState`, `Dataset`, `ChartConfig`, ...). Always imported directly, never through barrels. |
 | `src/config/` | Pure leaf layer: canonical chart identities, chart defaults, element IDs, limits, locale, and format constants. No imports from modules, components, or services. |
 | `src/utils/` | Pure leaf layer: DOM-free helpers (result pattern, color utilities, filters, formatters). Same import rule as `config/`. One deliberate DOM exception: `chartContainerLifecycle.js`, the dispose-aware chart-container clear shared by components, the panel feature, and chart packages. |
@@ -44,7 +45,8 @@ with real work:
 
 | Name | Use For | Example |
 |---|---|---|
-| Orchestrator | App boot, broad scheduling, global wiring | `main.js` fills this role |
+| Initializer | One-time application initialization and global setup order | `app/applicationInitializer.js` |
+| Coordinator | Ordered work spanning several render regions | `app/renderCoordinator.js` |
 | Controller | Feature/domain flow ownership: DOM intent, facade writes, service calls, render coordination | `features/panel/panelController.js` |
 | View | DOM building/rendering from inputs and callbacks | `components/datasetWorkspace/tablePreviewView.js` |
 | Renderer | Chart/SVG/WebGL rendering from explicit inputs | `charts/bar/renderers/svg.js` |
@@ -68,7 +70,7 @@ math helpers.
 | A new chart type | A per-chart package under `src/charts/{name}/` | Use `charts/bar/` as the SVG template or `charts/scatter3d/` as the Three.js/WebGL template, then follow the chart-type checklist below. |
 | A new state field | The relevant domain in `src/modules/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
 | A new DOM event handler | The matching workflow file under `src/modules/eventHandlers/` (or an existing feature controller/manager) | Translate the event into a facade call. Never mutate state directly. Register a global `document`/`window` listener once behind a module-level guard so a repeated `setup*` call cannot stack duplicates. |
-| A new dataset-workspace view / tab | `src/components/datasetWorkspace/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
+| A new dataset-workspace view / tab | `src/components/datasetWorkspace/` + a `renderXxx` function composed by `app/renderCoordinator.js` | Read state via getters; pass callbacks for user actions. |
 | A new panel view or interaction | The matching `src/features/panel/` subdirectory | Keep flow ownership in `panelController.js`, durable state in its facade, and pure rules under `domain/panel/`. |
 | A pure helper | `src/utils/` | No DOM access (single deliberate exception: `chartContainerLifecycle.js`). No state imports. |
 | A pure domain rule | `src/domain/{owner}/` | Product rules owned by one feature domain (e.g. the panel layout templates). Same leaf constraints as `utils/`, plus no chart imports. |
@@ -116,6 +118,9 @@ The rules, in place of a speculative target tree:
   Its controller, views, layout interactions, slot lifecycle, and SVG export
   live together under `features/panel/`; state ownership and pure domain rules
   stay in their respective layers.
+- The browser entrypoint is intentionally thin. Initialization order lives in
+  `app/applicationInitializer.js`, render scheduler state stays together in
+  `app/renderCoordinator.js`, and debug API assembly lives in `app/debugApi.js`.
 - Per-chart packages are the chart direction: a chart's data prep,
   options, math/scales, renderers, controls, workspace section, and panel
   adapter live together. `charts/scatter3d/` established the Three.js path and

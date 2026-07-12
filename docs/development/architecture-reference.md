@@ -168,11 +168,11 @@ subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
 
 | Event | Value | Emitted By | Payload | Typed Production Subscribers |
 |---|---|---|---|---|
-| `STATE_EVENTS.ACTIVE_DATASET` | `activeDataset` | `setActiveDataset` | selected index | `main.js` |
-| `STATE_EVENTS.DATASET_ADDED` | `datasetAdded` | `addDataset` | `{ index, dataset }` | `main.js` |
-| `STATE_EVENTS.DATASET_REMOVED` | `datasetRemoved` | `removeDataset` | removed index | `main.js` |
-| `STATE_EVENTS.CONFIG_UPDATED` | `configUpdated` | `updateActiveDatasetConfig`, `setActiveChartType` | updates object or `{ activeChartType }` | `main.js` |
-| `STATE_EVENTS.COLUMNS_UPDATED` | `columnsUpdated` | `updateActiveDatasetColumns` | column-name array | `main.js` |
+| `STATE_EVENTS.ACTIVE_DATASET` | `activeDataset` | `setActiveDataset` | selected index | `renderCoordinator.js` |
+| `STATE_EVENTS.DATASET_ADDED` | `datasetAdded` | `addDataset` | `{ index, dataset }` | `renderCoordinator.js` |
+| `STATE_EVENTS.DATASET_REMOVED` | `datasetRemoved` | `removeDataset` | removed index | `renderCoordinator.js` |
+| `STATE_EVENTS.CONFIG_UPDATED` | `configUpdated` | `updateActiveDatasetConfig`, `setActiveChartType` | updates object or `{ activeChartType }` | `renderCoordinator.js` |
+| `STATE_EVENTS.COLUMNS_UPDATED` | `columnsUpdated` | `updateActiveDatasetColumns` | column-name array | `renderCoordinator.js` |
 | `STATE_EVENTS.CHART_ADDED` | `chartAdded` | `addChartSnapshot` | `{ id, snapshot }` | `panelController.js` |
 | `STATE_EVENTS.CHART_REMOVED` | `chartRemoved` | `removeChartSnapshot` | normalized chart id | `panelController.js` |
 | `STATE_EVENTS.PANEL_CLEARED` | `panelCleared` | `clearPanel` | none | `panelController.js` |
@@ -185,14 +185,15 @@ subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
 | `STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED` | `panelBlockTemplateChanged` | `setPanelBlockTemplate` | `{ blockId, templateId }` | `panelController.js` |
 | `STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED` | `panelBlockSlotAssigned` | `assignChartToPanelBlockSlot` | `{ blockId, slotId, chartId }` | `panelController.js` |
 | `STATE_EVENTS.SIDEBAR_MODE_CHANGED` | `sidebarModeChanged` | `setSidebarMode` | sidebar mode | none |
-| `STATE_EVENTS.PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `setPreviewRows` | row count | `main.js` |
-| `STATE_EVENTS.STATE_HYDRATED` | `stateHydrated` | `replaceAllState` | none | `main.js` |
+| `STATE_EVENTS.PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `setPreviewRows` | row count | `renderCoordinator.js` |
+| `STATE_EVENTS.STATE_HYDRATED` | `stateHydrated` | `replaceAllState` | none | `renderCoordinator.js` |
 | `STATE_EVENTS.WILDCARD` | `*` | not emitted directly | wildcard callbacks receive `{ type, data }` after typed emits | `persistenceService.js` |
 
 ## Subscriber Map
 
-[`src/main.js`](../../src/main.js) schedules a full `refreshView()` through
-`scheduleFullRefresh` for `ACTIVE_DATASET`, `DATASET_ADDED`, `DATASET_REMOVED`, and
+[`src/app/renderCoordinator.js`](../../src/app/renderCoordinator.js) schedules a
+full `refreshView()` through `scheduleFullRefresh` for `ACTIVE_DATASET`,
+`DATASET_ADDED`, `DATASET_REMOVED`, and
 `STATE_HYDRATED` (a microtask-coalesced wrapper, so a synchronous burst such as
 add-then-select paints once). The narrowed events repaint only their regions
 through `scheduleRegion`: `COLUMNS_UPDATED` the workspace and chart-controls
@@ -219,7 +220,7 @@ Chart add/remove/slot events re-render the panel sidebar and canvas. Layout
 events re-render the canvas and refresh the layout selector. `PANEL_CLEARED`
 re-renders the sidebar, canvas, and layout selector (clear also resets
 blocks/layout). The panel handlers render synchronously (they are not routed
-through the orchestrator's coalescer).
+through the render coordinator's coalescer).
 
 [`src/services/persistenceService.js`](../../src/services/persistenceService.js)
 subscribes to `WILDCARD` after hydration and tracks semantic project dirtiness
@@ -229,10 +230,10 @@ payloads that are exactly `{ activeTab }`. UI preferences are written
 immediately to `localStorage`; project content is written by the debounced
 `saveNow()` or the best-effort page-lifecycle close net.
 
-Dataset add/remove/select now render through the bus (the data facade emits
-`DATASET_ADDED`/`DATASET_REMOVED`/`ACTIVE_DATASET`, which `main.js` subscribes
-to). Boot and manual `chiveDebug` calls do a synchronous full render through
-`runFullRefreshNow`; everything else is scheduled (locale and the full-refresh bus
+Dataset add/remove/select render through the bus (the data facade emits
+`DATASET_ADDED`/`DATASET_REMOVED`/`ACTIVE_DATASET`, which the render coordinator
+subscribes to). Boot and manual `chiveDebug` calls do a synchronous full render
+through `runFullRefreshNow`; everything else is scheduled (locale and the full-refresh bus
 events through `scheduleFullRefresh`, preview-row changes through a workspace region
 flush). `refreshView()` is never called bare. Live-preview rendering while controls
 are adjusted stays its own narrow path (charts only).

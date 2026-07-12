@@ -6,11 +6,12 @@
  * language changes go to `i18nService.setLocale` (the dialog stays open and
  * retranslates in place) and TIN rendering changes go to
  * `settingsService.setTinColorRendering` (whose change event drives the app
- * repaint from `main.js`). The dialog component owns the modal DOM; the
- * services own storage.
+ * repaint from `app/renderCoordinator.js`). The dialog component owns the
+ * modal DOM; the services own storage.
  *
- * Initialized from `main.js` right after i18n, before the app-only early
- * return, so settings work on both `index.html` and `about.html`. Listener
+ * Initialized from `app/applicationInitializer.js` right after i18n, before
+ * the app-only early return, so settings work on both `index.html` and
+ * `about.html`. Listener
  * setup is idempotent and pages without the header button are tolerated.
  */
 

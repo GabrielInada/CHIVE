@@ -79,6 +79,12 @@ When a new renderer-safe read is added, update `APP_STATE_READS` in
 `eslint.config.js`; reads meant for persistence, debug, or internal use are
 not added there (`getPersistenceSnapshot` is the precedent).
 
+**The browser entrypoint boundary is enforced by lint.** `src/main.js` imports
+only from `src/app/`. Put initialization order in
+`app/applicationInitializer.js`, render scheduling in
+`app/renderCoordinator.js`, and debug-surface construction in
+`app/debugApi.js`; do not wire features or services back into the entrypoint.
+
 **Mutation of facade getter returns is blocked across all of `src/`.** A
 `no-restricted-syntax` rule in `eslint.config.js` catches inline assignments and
 in-place mutating method calls against the mutable-ref getters:
@@ -164,9 +170,9 @@ npm test
 
 ## Debugging
 
-`window.chiveDebug` exposes state getters (`getState`, `getActiveDataset`,
-`getLoadedDatasets`), facade mutators (`updateDatasetColumns`,
-`updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`,
+`app/debugApi.js` constructs `window.chiveDebug`, which exposes state getters
+(`getState`, `getActiveDataset`, `getLoadedDatasets`), facade mutators
+(`updateDatasetColumns`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`,
 `showError`), and state-log helpers (`enableStateLog`, `disableStateLog`,
 `getStateLog`, `clearStateLog`).
 

@@ -841,7 +841,8 @@ renderer-specific design.
 
 ### 9.4 The live-preview panel skip
 
-Separately, `livePreviewRender` in [main.js](../../../src/main.js) used to also call
+Separately, `livePreviewRender` in
+[renderCoordinator.js](../../../src/app/renderCoordinator.js) used to also call
 `renderCanvasPanel()` on every tick, re-rendering all panel blocks even when hidden —
 doubling the work if a TIN chart was in the panel. That call was removed: panel
 blocks paint from frozen `structuredClone` snapshots (section 6.2), so a live config
@@ -870,7 +871,7 @@ Two events are wired on each color input (`setupColorInputListener` in
   sidebar refreshes.
 
 `triggerLiveRender` ([livePreview.js](../../../src/modules/chartControls/livePreview.js))
-invokes a registered callback. `main.js` registers
+invokes a registered callback. `app/applicationInitializer.js` registers
 `throttle(livePreviewRender, 120)` (leading + trailing, so the first and final
 values always paint). `livePreviewRender` re-renders only the chart visualizations
 (`renderCharts`), not the controls and not the panel. The chart-height drag handle

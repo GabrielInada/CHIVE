@@ -33,7 +33,8 @@ let confirmFn = message => window.confirm(message);
  *
  * Dataset-list renders are not wired here: every add/remove/select routes
  * through the data facade and emits `DATASET_ADDED` / `DATASET_REMOVED` /
- * `ACTIVE_DATASET`, which `main.js` subscribes to. There is no change callback.
+ * `ACTIVE_DATASET`, which `app/renderCoordinator.js` subscribes to. There is no
+ * change callback.
  *
  * @param {{ confirmCallback?: ((message: string) => boolean) | null }} [options] - `confirmCallback` defaults to `window.confirm`. Tolerates `null`/omitted.
  */
@@ -48,7 +49,7 @@ export function initFileManager(options = {}) {
  * continues so a single bad file does not block the rest of the batch.
  *
  * Each successful file calls `addDataset`, which emits `DATASET_ADDED`; the
- * `main.js` subscription re-renders the dataset view (coalesced per microtask),
+ * render-coordinator subscription re-renders the dataset view (coalesced per microtask),
  * so a batch renders progressively, one paint per added file.
  *
  * @param {FileList | File[] | null | undefined} files

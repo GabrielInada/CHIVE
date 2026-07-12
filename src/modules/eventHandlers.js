@@ -35,7 +35,7 @@ import { setupDatasetListeners } from './eventHandlers/datasetActions.js';
  *   - `setupGlobalKeyboardListeners` (eventHandlers/keyboardShortcuts)
  *   - `setupDatasetListeners` (eventHandlers/datasetActions)
  *
- * Called once during app startup from `main.js`.
+ * Called once during app startup from `app/applicationInitializer.js`.
  */
 export function initializeAllEventHandlers() {
 	setupFileInputListeners();

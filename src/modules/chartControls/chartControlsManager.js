@@ -303,9 +303,9 @@ function openPickerForDataset(activeChartType, dataset) {
 }
 
 /**
- * Re-render the params pane of the sidebar for the given dataset. Called
- * by `main.js` after every state change that could affect sidebar
- * contents.
+ * Re-render the params pane of the sidebar for the given dataset. Called by
+ * `app/renderCoordinator.js` after every state change that could affect
+ * sidebar contents.
  *
  * Renders:
  *   - Empty state if no dataset or no visible columns.

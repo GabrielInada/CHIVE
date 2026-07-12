@@ -53,7 +53,7 @@ flowchart TB
     FAC["State facades<br/>data · panel · ui"]
     STATE[("appState<br/>module-private")]
     BUS["State event bus<br/>STATE_EVENTS"]
-    SUB["Subscribers<br/>orchestrator · panel · services"]
+    SUB["Subscribers<br/>render coordinator · panel · services"]
     VIEW["Renderers<br/>components · chart packages · panel views"]
     SERVICES["Side-effecting services<br/>persistence · i18n · ingest worker host"]
 
@@ -87,7 +87,7 @@ and
 |---|---|---|
 | Feature controllers/managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (`eventHandlers`, `fileManager`, `panelController`, `chartControls`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
 | State Management Core | `appState`, facades, event registry, event bus. | The only normal path for application state mutation. |
-| Orchestrator | Boot and broad UI refresh in `main.js`. | Wires services/modules, subscribes to broad data/config events, and schedules full-view renders. |
+| Application orchestration | Browser startup in `main.js`, initialization order in `app/applicationInitializer.js`, and broad/narrow rendering in `app/renderCoordinator.js`. | Keep the entrypoint thin, order side effects in the initializer, and keep all scheduler state in the render coordinator. |
 | Visualization Layer | Components, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
 | Services And Utilities | Persistence, i18n, ingest worker host, config, pure helpers. | Services may cross side-effect boundaries; config/utils should stay leaf helpers. |
 
@@ -130,13 +130,14 @@ Example: a user toggles a column-visibility checkbox.
 
 1. A renderer's DOM handler invokes `aoAlterarSelecaoColuna`, the callback
    propagated through `renderDataInterface`.
-2. In this flow, that callback is `main.js`'s `updateDatasetColumns`, which
+2. In this flow, that callback is `app/renderCoordinator.js`'s
+   `updateDatasetColumns`, which
    calls `updateActiveDatasetColumns(columns)`.
 3. The data facade writes `dataset.selectedColumns`.
 4. The facade emits `STATE_EVENTS.COLUMNS_UPDATED`.
-5. `main.js`'s `COLUMNS_UPDATED` subscription schedules the workspace and
-   chart-controls regions via `scheduleRegion` (coalesced to one flush per
-   microtask, so a synchronous burst of events paints once). Broad events
+5. The render coordinator's `COLUMNS_UPDATED` subscription schedules the
+   workspace and chart-controls regions via `scheduleRegion` (coalesced to one
+   flush per microtask, so a synchronous burst of events paints once). Broad events
    (dataset add/remove/select, hydration, locale) schedule a full refresh via
    `scheduleFullRefresh` instead.
 6. The region flush reads state via cheap getters and delegates rendering to
@@ -144,12 +145,12 @@ Example: a user toggles a column-visibility checkbox.
 
 Panel changes follow the same ownership pattern but usually have a narrower
 subscriber. For example, block layout events are handled by `panelController`,
-which redraws the panel canvas instead of routing through the broad
-`refreshView()` path.
+which redraws the panel canvas instead of routing through the render
+coordinator's broad `refreshView()` path.
 
-Dataset, committed-config, and panel renders are now uniformly bus-driven. Boot
-and manual `chiveDebug` calls do a synchronous full render through
-`runFullRefreshNow`; locale and the full-refresh bus events schedule one through
+Dataset, committed-config, and panel renders are now uniformly bus-driven.
+The application initializer and manual `chiveDebug` calls do a synchronous full
+render through `runFullRefreshNow`; locale and the full-refresh bus events schedule one through
 `scheduleFullRefresh`, and preview-row changes repaint only the workspace region.
 Live color/height preview stays its own charts-only path. `refreshView()` is never
 called bare. The invariant is not "every render comes from the bus"; the invariant

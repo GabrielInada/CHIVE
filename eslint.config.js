@@ -201,6 +201,36 @@ export default [
 		},
 	},
 
+	// (A2) Keep the browser entrypoint structural only. Application wiring,
+	// scheduling, and debug construction belong to the explicit app modules.
+	{
+		files: ['src/main.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: [
+						'./charts/**',
+						'./components/**',
+						'./config/**',
+						'./data/**',
+						'./domain/**',
+						'./features/**',
+						'./i18n/**',
+						'./modules/**',
+						'./services/**',
+						'./styles/**',
+						'./types.js',
+						'./utils/**',
+						'./workers/**',
+						'../vendor/**',
+					],
+					message: 'src/main.js imports only from src/app/; keep application wiring out of the browser entrypoint.',
+				}],
+			}],
+		},
+	},
+
 	// (B) Renderers must be stateless: only read-only facade imports. Placed
 	// AFTER (A) because it redeclares `no-restricted-imports`; it repeats the
 	// bare-import bans alongside the facade-read restriction.

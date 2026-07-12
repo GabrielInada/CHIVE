@@ -51,7 +51,7 @@ import {
 import { exportPanelLayoutSvg as exportSvg } from './export/svgExporter.js';
 import { SUPPORTED_PANEL_CHART_TYPES } from '../../charts/registries/panel.js';
 
-// Callback for feedback UI (will be set by main.js)
+// Callback for feedback UI (set by app/applicationInitializer.js)
 let feedbackCallback = null;
 
 // Guard: prevents duplicate listener registration if initPanelController is called more than once

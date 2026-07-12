@@ -238,8 +238,9 @@ export function updateActiveDatasetColumns(columnNames) {
  * (persistence restore, `addDataset`, and the emitting config writes) via
  * `canonicalizeChartConfig`; this escape hatch exists for the intentional
  * non-emitting live-preview writes (color picker, chart-height drag). Emitting
- * here would re-enter `refreshView` via the CONFIG_UPDATED subscription and
- * loop; use {@link updateActiveDatasetConfig} when an emit is wanted.
+ * here would re-enter the render coordinator's `refreshView` via the
+ * CONFIG_UPDATED subscription and loop; use
+ * {@link updateActiveDatasetConfig} when an emit is wanted.
  *
  * @param {(config: Object) => Object} normalizer
  */
