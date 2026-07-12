@@ -309,7 +309,7 @@ export function updatePanelBlockBorderState(appState, blockId, options, ensureDe
  * @param {string} blockId
  * @param {*} templateId - Coerced via `normalizeTemplateId`.
  * @param {() => void} ensureDefaultPanelBlock
- * @param {(id: *) => PanelTemplateId} normalizeTemplateId - Closure-bound from `appState.js`.
+ * @param {(id: *) => PanelTemplateId} normalizeTemplateId - From `domain/panel/layoutTemplates.js`.
  * @param {(templateId: PanelTemplateId) => string[]} getTemplateSlots - Returns the slot ids allowed by a template.
  * @param {(templateId: PanelTemplateId) => PanelBlockProportions} createDefaultProportions
  * @returns {{ ok: true, templateId: PanelTemplateId } | { ok: false }}

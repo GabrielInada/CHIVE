@@ -1,18 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { clampPercent, normalizeHexColor, computeDynamicMinHeight } from '../../../src/modules/panelSubsystem/resizeMath.js';
+import { normalizeHexColor, computeDynamicMinHeight } from '../../../src/modules/panelSubsystem/resizeMath.js';
 
 describe('resizeMath helpers', () => {
-	it('clamps percentages to range', () => {
-		expect(clampPercent(10)).toBe(20);
-		expect(clampPercent(90)).toBe(80);
-		expect(clampPercent(50)).toBe(50);
-	});
-
-	it('uses min fallback for non-finite values', () => {
-		expect(clampPercent('abc')).toBe(20);
-		expect(clampPercent(undefined, 5, 10)).toBe(5);
-	});
-
 	it('normalizes valid and invalid hex colors', () => {
 		expect(normalizeHexColor('#a1B2c3')).toBe('#a1B2c3');
 		expect(normalizeHexColor('red')).toBe('#5d645d');

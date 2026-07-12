@@ -222,10 +222,9 @@ export default [
 	// (B2) panelSubsystem presentation files: same renderer-statelessness rule
 	// as (B). Explicit file list because naming is not consistent across the
 	// subsystem (no `*Renderer.js` prefix to glob on). `panelStateMutations.js`
-	// and `blockStateHelpers.js` are intentionally absent, they back the panel
-	// facade and need write access. `panelManager.js` lives at
-	// `src/modules/panelManager.js` (outside this directory) and is naturally
-	// exempt.
+	// is intentionally absent, it backs the panel facade and needs write
+	// access. `panelManager.js` lives at `src/modules/panelManager.js`
+	// (outside this directory) and is naturally exempt.
 	{
 		files: [
 			'src/modules/panelSubsystem/panelRenderer.js',
@@ -234,7 +233,6 @@ export default [
 			'src/modules/panelSubsystem/renderChartFromSpec.js',
 			'src/modules/panelSubsystem/slotLifecycle.js',
 			'src/modules/panelSubsystem/panelExporter.js',
-			'src/modules/panelSubsystem/layoutConfig.js',
 			'src/modules/panelSubsystem/resizeMath.js',
 		],
 		rules: {
@@ -418,6 +416,24 @@ export default [
 				patterns: [{
 					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
 					message: 'config/ is a pure leaf layer, no imports from modules/, components/, features/, or services/.',
+				}],
+			}],
+		},
+	},
+
+	// (D2) domain/ holds pure product rules (panel layout templates, block
+	// model). It is a leaf layer like utils/ and config/, and additionally
+	// never imports chart presentation code: domain rules must stay usable
+	// from state validation, rendering, and export without dragging DOM or
+	// side effects along.
+	{
+		files: ['src/domain/**/*.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
+					message: 'domain/ is a pure leaf layer. Import only domain, config, utils, or vendor modules.',
 				}],
 			}],
 		},

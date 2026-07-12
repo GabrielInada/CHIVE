@@ -5,9 +5,9 @@
  * listeners pre-wired. The caller passes click/change handlers in via the
  * options bag; this module owns the markup only.
  *
- * Note: there is also a `createPanelBlock` in `blockStateHelpers.js`,
- * that builds the state-shape object that lives in `appState`. This file
- * is DOM-only.
+ * Note: the state-shape block object that lives in `appState` is built
+ * by `createPanelBlockModel` in `domain/panel/panelBlockModel.js`. This
+ * file is DOM-only.
  */
 
 /**

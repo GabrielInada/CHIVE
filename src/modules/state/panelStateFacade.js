@@ -14,11 +14,11 @@ import {
 	validatePanelSlotsState,
 } from '../panelSubsystem/panelStateMutations.js';
 import {
-	clampPercentage,
 	createDefaultProportions,
 	getTemplateSlots,
 	normalizeTemplateId,
-} from '../panelSubsystem/blockStateHelpers.js';
+} from '../../domain/panel/layoutTemplates.js';
+import { clampPercentage } from '../../domain/panel/panelBlockModel.js';
 import { STATE_EVENTS } from './stateEvents.js';
 
 /**

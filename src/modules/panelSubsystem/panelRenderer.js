@@ -17,7 +17,7 @@ import { t } from '../../services/i18nService.js';
 import {
 	PANEL_LAYOUTS,
 	getTemplateForBlock,
-} from './layoutConfig.js';
+} from '../../domain/panel/layoutTemplates.js';
 import { normalizeHexColor } from './resizeMath.js';
 import {
 	createAddBlockControls,

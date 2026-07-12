@@ -1,29 +1,14 @@
 /**
  * CHIVE panel resize math.
  *
- * Stateless math helpers used by {@link panelResize} to clamp proportions
- * and compute layout-aware minimum heights. Also re-exports a hex-color
+ * Stateless math helpers used by {@link panelResize} to compute
+ * layout-aware minimum heights, using the shared percentage clamp from
+ * `domain/panel/panelBlockModel.js`. Also re-exports a hex-color
  * normalizer used by both the renderer and the exporter.
  */
 
 import { normalizeHexColor as normalizeHex } from '../../utils/colorUtils.js';
-
-/**
- * Clamp `value` to `[min, max]` and coerce non-finite inputs to `min`.
- * Duplicate of {@link clampPercentage} in `blockStateHelpers.js`,
- * intentionally kept separate so panel-resize math has no dependency
- * back on the state-helpers module.
- *
- * @param {*} value
- * @param {number} [min=20]
- * @param {number} [max=80]
- * @returns {number}
- */
-export function clampPercent(value, min = 20, max = 80) {
-	const n = Number(value);
-	if (!Number.isFinite(n)) return min;
-	return Math.max(min, Math.min(max, n));
-}
+import { clampPercentage } from '../../domain/panel/panelBlockModel.js';
 
 /**
  * Normalize a possibly-invalid hex color to a known-good value. Thin
@@ -62,11 +47,11 @@ export function computeDynamicMinHeight(templateId, proportions) {
 	let dynamicMinHeight = BASE_MIN_HEIGHT;
 
 	if (templateId === 'template-1x2') {
-		const split = clampPercent(proportions?.split ?? 50, 20, 80) / 100;
+		const split = clampPercentage(proportions?.split ?? 50, 20, 80) / 100;
 		const smallestRow = Math.min(split, 1 - split);
 		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
 	} else if (templateId === 'template-hero2') {
-		const splitRight = clampPercent(proportions?.splitRight ?? 50, 20, 80) / 100;
+		const splitRight = clampPercentage(proportions?.splitRight ?? 50, 20, 80) / 100;
 		const smallestRow = Math.min(splitRight, 1 - splitRight);
 		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
 	}

@@ -21,13 +21,14 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/types.js` | Shared JSDoc typedefs (`AppState`, `Dataset`, `ChartConfig`, ...). Always imported directly, never through barrels. |
 | `src/config/` | Pure leaf layer: canonical chart identities, chart defaults, element IDs, limits, locale, and format constants. No imports from modules, components, or services. |
 | `src/utils/` | Pure leaf layer: DOM-free helpers (result pattern, color utilities, filters, formatters). Same import rule as `config/`. One deliberate DOM exception: `chartContainerLifecycle.js`, the dispose-aware chart-container clear shared by components, the panel subsystem, and chart packages. |
+| `src/domain/` | Pure product rules with one owner per subdirectory. `domain/panel/` holds the layout-template registry (`layoutTemplates.js`) and the panel-block model with the shared percentage clamp (`panelBlockModel.js`). Leaf layer like `config/` and `utils/`: no imports from modules, components, services, or charts. |
 | `src/components/` | Leaf renderers: `components/datasetWorkspace/` holds the top view `datasetWorkspaceView.js` plus the preview, stats, columns, and dialogs; `components/settingsDialog.js` is the callback-driven global settings modal opened from the shared header. |
 | `src/modules/state/` | State core: `appState.js`, the data/panel/ui facades, `stateEvents.js`, and `stateDebug.js`. The only write path for application state. |
 | `src/modules/eventHandlers/` | DOM intent translation: workflow modules that turn user events into facade calls, wired by `modules/eventHandlers.js`. |
 | `src/modules/fileManager.js`, `panelManager.js`, `uiManager.js`, `chartControls/` | Feature managers: each owns a domain end to end (DOM intent, facade writes, bus subscriptions, render triggering). `chartControls/` holds the sidebar manager and the state-write adapters chart controls use (listener helpers, live preview, height resize); the pure control DOM factories live under `charts/shared/controls/`. |
 | `src/modules/settingsController.js` | Settings flow owner: header settings button, one dialog at a time, and the wiring from dialog callbacks to the i18n and settings services. |
 | `src/modules/feedbackUI.js`, `dialogFocus.js` | Cross-feature UI helpers: user feedback surface and dialog focus management. |
-| `src/modules/panelSubsystem/` | Panel rendering, export, resize, slot lifecycle, and the panel's internal mutation helpers. |
+| `src/modules/panelSubsystem/` | Panel rendering, export, resize, slot lifecycle, and the panel's internal mutation helpers. The pure layout templates and block model these consume live under `domain/panel/`. |
 | `src/charts/` | Chart presentation metadata (`catalog.js` and `previews.js`), independent controls/workspace/panel lookup under `registries/`, D3/SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`, `charts/network/`, and `charts/tin/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/` (SVG scaffold, tooltip, control factories and grouping). A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
 | `src/services/` | Side-effecting services: `dataService/`, `persistenceService/` with the `persistence/` backends, `i18nService.js`, `settingsService.js` (owner of the `chive.settings` localStorage key), `presetService.js`, and `dataIngestService.js`. |
 | `src/data/` | Bundled preset datasets (`presets/`) and `presetCatalog.js`. |
@@ -69,6 +70,7 @@ math helpers.
 | A new DOM event handler | The matching workflow file under `src/modules/eventHandlers/` (or an existing feature manager) | Translate the event into a facade call. Never mutate state directly. Register a global `document`/`window` listener once behind a module-level guard so a repeated `setup*` call cannot stack duplicates. |
 | A new view / tab | `src/components/` + a `renderXxx` function called from `refreshView` in `main.js` | Read state via getters; pass callbacks for user actions. |
 | A pure helper | `src/utils/` | No DOM access (single deliberate exception: `chartContainerLifecycle.js`). No state imports. |
+| A pure domain rule | `src/domain/{owner}/` | Product rules owned by one feature domain (e.g. the panel layout templates). Same leaf constraints as `utils/`, plus no chart imports. |
 | A new derived selector | The facade that owns the underlying domain | Keep getters thin; do not compute heavy aggregates inside them. |
 
 For a new chart type, update the full chart surface in one pass:

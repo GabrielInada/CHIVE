@@ -8,10 +8,8 @@
  * @typedef {import('../../types.js').PanelBlock} PanelBlock
  */
 
-import {
-	clampPercent,
-	computeDynamicMinHeight,
-} from './resizeMath.js';
+import { clampPercentage } from '../../domain/panel/panelBlockModel.js';
+import { computeDynamicMinHeight } from './resizeMath.js';
 import { getPanelBlocks } from '../state/appState.js';
 import { t } from '../../services/i18nService.js';
 
@@ -76,7 +74,7 @@ export function renderGuidedResizeHandles(gridDiv, block, onUpdateBlockProportio
 	} else if (block.templateId === 'template-1x2') {
 		handles.push({ key: 'split', axis: 'y', position: block.proportions.split ?? 50, railStart: 0, railEnd: 100 });
 	} else if (block.templateId === 'template-hero2') {
-		const splitMain = clampPercent(block.proportions.splitMain ?? 60, 20, 80);
+		const splitMain = clampPercentage(block.proportions.splitMain ?? 60, 20, 80);
 		handles.push({ key: 'splitMain', axis: 'x', position: splitMain });
 		handles.push({
 			key: 'splitRight',
@@ -115,9 +113,9 @@ export function renderGuidedResizeHandles(gridDiv, block, onUpdateBlockProportio
 		handle.dataset.panelResizeHandle = `${block.id}:${handleConfig.key}`;
 		handle.setAttribute('aria-label', t('chive-panel-resize-handle'));
 		if (handleConfig.axis === 'x') {
-			handle.style.left = `${clampPercent(handleConfig.position, 20, 80)}%`;
+			handle.style.left = `${clampPercentage(handleConfig.position, 20, 80)}%`;
 		} else {
-			handle.style.top = `${clampPercent(handleConfig.position, 20, 80)}%`;
+			handle.style.top = `${clampPercentage(handleConfig.position, 20, 80)}%`;
 			handle.style.left = `${railCenter}%`;
 		}
 
@@ -154,28 +152,28 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv, onUpdateBlockP
 
 		if (templateId === 'template-2col' && key === 'split') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
-			onUpdateBlockProportions(blockId, { split: clampPercent(next, 20, 80) });
+			onUpdateBlockProportions(blockId, { split: clampPercentage(next, 20, 80) });
 		} else if (templateId === 'template-1x2' && key === 'split') {
 			const next = ((event.clientY - rect.top) / rect.height) * 100;
-			onUpdateBlockProportions(blockId, { split: clampPercent(next, 20, 80) });
+			onUpdateBlockProportions(blockId, { split: clampPercentage(next, 20, 80) });
 		} else if (templateId === 'template-hero2' && key === 'splitMain') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
-			onUpdateBlockProportions(blockId, { splitMain: clampPercent(next, 20, 80) });
+			onUpdateBlockProportions(blockId, { splitMain: clampPercentage(next, 20, 80) });
 		} else if (templateId === 'template-hero2' && key === 'splitRight') {
 			const next = ((event.clientY - rect.top) / rect.height) * 100;
-			onUpdateBlockProportions(blockId, { splitRight: clampPercent(next, 20, 80) });
+			onUpdateBlockProportions(blockId, { splitRight: clampPercentage(next, 20, 80) });
 		} else if (templateId === 'template-3col' && key === 'a') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
-			const a = clampPercent(next, 20, 60);
+			const a = clampPercentage(next, 20, 60);
 			const remaining = 100 - a;
-			let b = clampPercent(currentBlock.proportions.b ?? 33, 20, 60);
+			let b = clampPercentage(currentBlock.proportions.b ?? 33, 20, 60);
 			if (b > remaining - 20) b = remaining - 20;
 			const c = 100 - a - b;
 			onUpdateBlockProportions(blockId, { a, b, c });
 		} else if (templateId === 'template-3col' && key === 'ab') {
 			const next = ((event.clientX - rect.left) / rect.width) * 100;
-			const a = clampPercent(currentBlock.proportions.a ?? 33, 20, 60);
-			const ab = clampPercent(next, a + 20, 80);
+			const a = clampPercentage(currentBlock.proportions.a ?? 33, 20, 60);
+			const ab = clampPercentage(next, a + 20, 80);
 			const b = ab - a;
 			const c = 100 - ab;
 			onUpdateBlockProportions(blockId, { a, b, c });

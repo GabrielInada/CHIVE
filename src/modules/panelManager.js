@@ -23,7 +23,7 @@ import { getNumericColumnNames } from '../utils/columnHelpers.js';
 import {
 	PANEL_LAYOUTS,
 	getLayoutConfig as getPanelLayoutConfig,
-} from './panelSubsystem/layoutConfig.js';
+} from '../domain/panel/layoutTemplates.js';
 import {
 	getPanelBlocks,
 	getActiveDataset,
@@ -248,7 +248,7 @@ export function getChartById(chartId) {
 }
 
 /**
- * Look up a layout descriptor from `panel/layoutConfig.js`.
+ * Look up a layout descriptor from `domain/panel/layoutTemplates.js`.
  *
  * @param {PanelTemplateId} layoutId
  * @returns {Object} Layout configuration (template definition, slot list, defaults).

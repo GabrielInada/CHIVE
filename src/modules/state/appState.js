@@ -1,5 +1,5 @@
 import { emitStateChange, onStateChange, STATE_EVENTS } from './stateEvents.js';
-import { createPanelBlock as buildPanelBlock } from '../panelSubsystem/blockStateHelpers.js';
+import { createPanelBlockModel } from '../../domain/panel/panelBlockModel.js';
 import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
 import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
 import { createDataStateFacade } from './dataStateFacade.js';
@@ -15,12 +15,11 @@ export { onStateChange, STATE_EVENTS };
  * through `get*` functions; all writes go through the three domain facades
  * (data, ui, panel) whose methods are re-exported as the convenience API.
  *
- * Note on the two `createPanelBlock` symbols in this file:
- *   - The import from `../panelSubsystem/blockStateHelpers.js` is aliased to
- *     `buildPanelBlock`, a pure constructor that takes an explicit id.
- *   - The local `createPanelBlock` below is a closure that calls
- *     `buildPanelBlock` AND increments `appState.panel.nextBlockId`. This
- *     is the one passed into the panel facade. Do not conflate the two.
+ * Note on block construction: `createPanelBlockModel` (imported from
+ * `domain/panel/panelBlockModel.js`) is the pure constructor that takes
+ * an explicit id. The local `createPanelBlock` below is a closure that
+ * calls it AND increments `appState.panel.nextBlockId`. That closure is
+ * the one passed into the panel facade. Do not conflate the two.
  *
  * @typedef {import('../../types.js').AppState} AppState
  * @typedef {import('../../types.js').Dataset} Dataset
@@ -60,15 +59,15 @@ const PANEL_BLOCK_MAX_HEIGHT = 760;
 
 /**
  * Build a new panel block AND advance the monotonic id counter. The id is
- * stamped into the block via `buildPanelBlock` (the pure helper); the
- * counter increment is the side effect that lives here.
+ * stamped into the block via `createPanelBlockModel` (the pure
+ * constructor); the counter increment is the side effect that lives here.
  *
  * @private
  * @param {PanelTemplateId} [templateId='template-2col']
  * @returns {PanelBlock}
  */
 function createPanelBlock(templateId = 'template-2col') {
-	const block = buildPanelBlock(appState.panel.nextBlockId, templateId);
+	const block = createPanelBlockModel(appState.panel.nextBlockId, templateId);
 	appState.panel.nextBlockId += 1;
 	return block;
 }
