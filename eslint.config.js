@@ -219,12 +219,11 @@ export default [
 		},
 	},
 
-	// (B2) panelSubsystem presentation files: same renderer-statelessness rule
-	// as (B). Explicit file list because naming is not consistent across the
-	// subsystem (no `*Renderer.js` prefix to glob on). `panelStateMutations.js`
-	// is intentionally absent, it backs the panel facade and needs write
-	// access. `panelManager.js` lives at `src/modules/panelManager.js`
-	// (outside this directory) and is naturally exempt.
+	// (B2) panelSubsystem presentation and lifecycle files: same renderer-
+	// statelessness rule as (B). Explicit file list because naming is not
+	// consistent across the subsystem (no `*Renderer.js` prefix to glob on).
+	// State mutation internals live with their facade under `modules/state/`.
+	// `panelManager.js` lives outside this directory and is naturally exempt.
 	{
 		files: [
 			'src/modules/panelSubsystem/panelRenderer.js',
@@ -242,6 +241,22 @@ export default [
 					group: ['**/state/appState.js'],
 					allowImportNames: APP_STATE_READS,
 					message: STATELESS_RENDERER_MESSAGE,
+				}],
+			}],
+		},
+	},
+
+	// (B2b) Panel state mutation internals belong to the state core. Keep this
+	// layer independent of presentation, feature, chart, and service code; the
+	// public write surface remains `panelStateFacade.js`.
+	{
+		files: ['src/modules/state/panel/**/*.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/charts/**', '**/panelSubsystem/**'],
+					message: 'Panel state internals import only state, domain, config, utils, types, or vendor modules.',
 				}],
 			}],
 		},

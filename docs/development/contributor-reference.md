@@ -53,8 +53,8 @@ JSDoc rules:
 - **Facade-only-write invariant:** facade module banners reference
   `@see docs/development/architecture.md`. Exact state/facade/event details
   live in [Architecture reference](architecture-reference.md). Mutation helpers
-  under `src/modules/panelSubsystem/*` and similar are `@internal` and must not
-  be imported from outside the module that backs them.
+  under `src/modules/state/panel/` are `@internal` and must not be imported from
+  outside `panelStateFacade.js`.
 - **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only;
   editors can use it for hover/intellisense without type validation.
 - **No HTML site generation:** no typedoc or jsdoc CLI. Hover and source reading
@@ -122,6 +122,9 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   static server.
 - **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not
   import `modules/`, `components/`, `features/`, or `services/`.
+- **Panel state internals.** `src/modules/state/panel/` may import only state,
+  domain, config, utils, shared types, or vendored modules. Presentation,
+  feature, chart, service, and legacy panel-subsystem imports are lint errors.
 - **General hygiene, as warnings.** `no-unused-vars`, `prefer-const`, `no-var`,
   `eqeqeq`, and `curly` run as warnings, not errors. Architecture, deployment,
   and correctness rules are errors; general style is surfaced without gating

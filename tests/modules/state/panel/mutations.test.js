@@ -14,7 +14,7 @@ import {
 	updatePanelBlockBorderState,
 	setPanelBlockTemplateState,
 	assignChartToPanelBlockSlotState,
-} from '../../../src/modules/panelSubsystem/panelStateMutations.js';
+} from '../../../../src/modules/state/panel/mutations.js';
 
 function makeBlock(id, templateId = 'template-2col') {
 	return { id, templateId, slots: {}, proportions: { split: 50 }, heightPx: null, borderEnabled: false, borderColor: '#5d645d' };

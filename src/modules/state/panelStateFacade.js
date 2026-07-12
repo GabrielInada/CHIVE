@@ -12,7 +12,7 @@ import {
 	updatePanelBlockHeightState,
 	updatePanelBlockProportionsState,
 	validatePanelSlotsState,
-} from '../panelSubsystem/panelStateMutations.js';
+} from './panel/mutations.js';
 import {
 	createDefaultProportions,
 	getTemplateSlots,
@@ -25,7 +25,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  * CHIVE panel-domain facade.
  *
  * Owns every write into `appState.panel`. The mutation helpers in
- * `../panelSubsystem/panelStateMutations.js` are `@internal` and must not be
+ * `./panel/mutations.js` are `@internal` and must not be
  * imported from outside this module; they assume the caller is the facade and
  * skip event emission.
  *

@@ -3,7 +3,7 @@
  *
  * Pure construction and normalization for the panel-block state shape:
  * the object that lives in `appState.panel.blocks[]`. The state-mutation
- * surface lives in `modules/panelSubsystem/panelStateMutations.js` behind
+ * surface lives in `modules/state/panel/mutations.js` behind
  * the panel facade; the block DOM builders live in
  * `modules/panelSubsystem/domBuilders.js`.
  *

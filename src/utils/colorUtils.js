@@ -1,7 +1,7 @@
 /**
- * CHIVE color utilities. Used by visualization modules, chart controls,
- * and {@link panelStateMutations} (which uses {@link isValidHexColor} to
- * guard border-color writes).
+ * CHIVE color utilities. Used by chart packages, chart controls, and the
+ * panel state mutation internals (which use {@link isValidHexColor} to guard
+ * border-color writes).
  *
  * @typedef {{ r: number, g: number, b: number }} RgbColor
  */
