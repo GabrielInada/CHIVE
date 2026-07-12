@@ -1,29 +1,29 @@
 /**
- * CHIVE Panel Manager.
+ * CHIVE panel controller.
  *
  * Orchestrator module that coordinates panel composition:
  *   - Adding/removing chart snapshots
  *   - Managing block slots and layouts
- *   - Delegating rendering to `panel/panelRenderer.js`
- *   - Delegating resize to `panel/panelResize.js`
- *   - Delegating export to `panel/panelExporter.js`
+ *   - Delegating rendering to `views/panelView.js`
+ *   - Delegating resize to `layout/resize.js`
+ *   - Delegating export to `export/svgExporter.js`
  *
  * Security note: uses `textContent` for all user-provided names to prevent XSS.
  *
- * @typedef {import('../types.js').ChartSnapshot} ChartSnapshot
- * @typedef {import('../types.js').Result} Result
- * @typedef {import('../types.js').PanelTemplateId} PanelTemplateId
+ * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
+ * @typedef {import('../../types.js').Result} Result
+ * @typedef {import('../../types.js').PanelTemplateId} PanelTemplateId
  */
 
-import { t } from '../services/i18nService.js';
-import { ok, fail } from '../utils/result.js';
-import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
-import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
-import { getNumericColumnNames } from '../utils/columnHelpers.js';
+import { t } from '../../services/i18nService.js';
+import { ok, fail } from '../../utils/result.js';
+import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
+import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
+import { getNumericColumnNames } from '../../utils/columnHelpers.js';
 import {
 	PANEL_LAYOUTS,
 	getLayoutConfig as getPanelLayoutConfig,
-} from '../domain/panel/layoutTemplates.js';
+} from '../../domain/panel/layoutTemplates.js';
 import {
 	getPanelBlocks,
 	getActiveDataset,
@@ -42,39 +42,39 @@ import {
 	clearPanel,
 	onStateChange,
 	STATE_EVENTS,
-} from './state/appState.js';
+} from '../../modules/state/appState.js';
 import {
 	renderSidebarPanel as renderSidebar,
 	renderCanvasPanel as renderCanvas,
 	fillLayoutSelect,
-} from './panelSubsystem/panelRenderer.js';
-import { exportPanelLayoutSvg as exportSvg } from './panelSubsystem/panelExporter.js';
-import { SUPPORTED_PANEL_CHART_TYPES } from '../charts/registries/panel.js';
+} from './views/panelView.js';
+import { exportPanelLayoutSvg as exportSvg } from './export/svgExporter.js';
+import { SUPPORTED_PANEL_CHART_TYPES } from '../../charts/registries/panel.js';
 
 // Callback for feedback UI (will be set by main.js)
 let feedbackCallback = null;
 
-// Guard: prevents duplicate listener registration if initPanelManager is called more than once
-let panelManagerInitialized = false;
+// Guard: prevents duplicate listener registration if initPanelController is called more than once
+let panelControllerInitialized = false;
 
-// Unsubscribe functions returned by onStateChange in initPanelManager. Kept so
-// _resetPanelManagerForTesting can detach listeners between tests; without
+// Unsubscribe functions returned by onStateChange in initPanelController. Kept so
+// _resetPanelControllerForTesting can detach listeners between tests; without
 // this, repeated init/reset cycles append fresh subscribers to the same bus.
 let panelSubscriptions = [];
 
 /**
- * Initialize the panel manager. Wires panel-related state-event listeners
+ * Initialize the panel controller. Wires panel-related state-event listeners
  * exactly once; subsequent calls update only the feedback callback.
  *
  * @param {((message: string, durationMs?: number) => void) | null} [feedbackFn] - Callback for user feedback, `feedbackUI.showFeedback` in production (message plus optional toast duration). When `null`, panel actions fall back to silent operation.
  */
-export function initPanelManager(feedbackFn = null) {
+export function initPanelController(feedbackFn = null) {
 	// Always update the feedback callback, callers may legitimately
 	// pass a different function without intending to re-register listeners.
 	feedbackCallback = feedbackFn;
 
-	if (panelManagerInitialized) return;
-	panelManagerInitialized = true;
+	if (panelControllerInitialized) return;
+	panelControllerInitialized = true;
 
 	// Re-render when state changes
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_ADDED, handleChartStateChange));
@@ -95,10 +95,10 @@ export function initPanelManager(feedbackFn = null) {
  * Do not call this in production code.
  * @internal
  */
-export function _resetPanelManagerForTesting() {
+export function _resetPanelControllerForTesting() {
 	panelSubscriptions.forEach(unsubscribe => unsubscribe());
 	panelSubscriptions = [];
-	panelManagerInitialized = false;
+	panelControllerInitialized = false;
 }
 
 /**
@@ -132,13 +132,13 @@ function handlePanelCleared() {
 }
 
 // =============================================================================
-// FACADE-WRITE CALLBACKS (injected into panelSubsystem renderers)
+// FACADE-WRITE CALLBACKS (injected into panel feature views)
 // =============================================================================
 // These thin handlers are the only place that calls the panel write facades on
-// behalf of user actions surfaced by panelRenderer.js and panelResize.js. The
+// behalf of user actions surfaced by panelView.js and layout/resize.js. The
 // renderers receive them via the callback bag passed to renderCanvasPanel();
 // they never import write facades directly. Re-renders happen via the bus
-// subscriptions in initPanelManager(), not via direct calls from the
+// subscriptions in initPanelController(), not via direct calls from the
 // renderer's handlers.
 
 function handleAddBlock(templateId) {
@@ -259,7 +259,7 @@ export function getLayoutConfig(layoutId) {
 
 /**
  * Render the panel sidebar (list of saved chart snapshots). The actual
- * rendering lives in `panel/panelRenderer.js`; this entry passes the
+ * rendering lives in `views/panelView.js`; this entry passes the
  * `removeChartFromPanel` callback so sidebar items can be deleted.
  */
 export function renderSidebarPanel() {
@@ -268,7 +268,7 @@ export function renderSidebarPanel() {
 
 /**
  * Render the panel canvas (layout templates with mounted chart slots).
- * Re-rendering is driven by the bus subscriptions in initPanelManager(),
+ * Re-rendering is driven by the bus subscriptions in initPanelController(),
  * not by recursive calls from the renderer: every facade write the renderer
  * triggers via the callback bag below fans out to the matching
  * STATE_EVENTS.* subscription, which calls back into this function.
@@ -306,7 +306,7 @@ export function changeLayout(layoutId) {
 
 /**
  * Export the rendered panel as an SVG file. Delegates to
- * `panel/panelExporter.js`; all user feedback happens here, the exporter
+ * `export/svgExporter.js`; all user feedback happens here, the exporter
  * only returns Results.
  *
  * @returns {Result} `ok({ omittedChartCount })` on success; `{ ok: false, reason }` where reason is `'canvas-not-found'`, `'empty-canvas'`, `'no-exportable-charts'`, or `'export-error'`.

@@ -2,12 +2,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /**
- * Real-bus rendering test for panelManager.
+ * Real-bus rendering test for panelController.
  *
- * Unlike panelManager.facade.test.js / panelManager.edges.test.js (which mock
+ * Unlike panelController.facade.test.js / panelController.edges.test.js (which mock
  * appState at module scope), this file uses the REAL appState + state bus and
  * mocks ONLY the panel renderers. That is the only way to prove the production
- * path: a facade write emits a typed event, the manager's subscription fires,
+ * path: a facade write emits a typed event, the controller's subscription fires,
  * and the renderers run exactly once.
  */
 const renderMocks = vi.hoisted(() => ({
@@ -15,7 +15,7 @@ const renderMocks = vi.hoisted(() => ({
 	renderCanvasPanel: vi.fn(),
 	fillLayoutSelect: vi.fn(),
 }));
-vi.mock('../../../src/modules/panelSubsystem/panelRenderer.js', () => renderMocks);
+vi.mock('../../../src/features/panel/views/panelView.js', () => renderMocks);
 
 import {
 	addChartSnapshot,
@@ -24,9 +24,9 @@ import {
 	replaceAllState,
 } from '../../../src/modules/state/appState.js';
 import {
-	initPanelManager,
-	_resetPanelManagerForTesting,
-} from '../../../src/modules/panelManager.js';
+	initPanelController,
+	_resetPanelControllerForTesting,
+} from '../../../src/features/panel/panelController.js';
 
 function resetPanelState() {
 	// replaceAllState only touches the slices it is given; pass an explicit panel
@@ -34,18 +34,18 @@ function resetPanelState() {
 	replaceAllState({ panel: { charts: [], slots: {}, blocks: [], layout: 'template-2col' } });
 }
 
-describe('panelManager real-bus rendering', () => {
+describe('panelController real-bus rendering', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// Reset state BEFORE wiring subscriptions so the reset's emit has no listener.
 		resetPanelState();
-		initPanelManager();
+		initPanelController();
 	});
 
 	afterEach(() => {
 		// Detach in afterEach so a failed assertion still cleans up and cannot leak
 		// subscriptions into the next case.
-		_resetPanelManagerForTesting();
+		_resetPanelControllerForTesting();
 	});
 
 	it('renders sidebar + canvas once when a chart is added via the facade', () => {

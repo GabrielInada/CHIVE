@@ -38,12 +38,12 @@ const mocks = vi.hoisted(() => ({
     clearPanel: vi.fn(),
     onStateChange: vi.fn(),
   },
-  panelRenderer: {
+  panelView: {
     renderSidebarPanel: vi.fn(),
     renderCanvasPanel: vi.fn(),
     fillLayoutSelect: vi.fn(),
   },
-  panelExporter: {
+  svgExporter: {
     exportPanelLayoutSvg: vi.fn(),
   },
   i18n: {
@@ -52,8 +52,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/modules/state/appState.js', () => mocks.appState);
-vi.mock('../../../src/modules/panelSubsystem/panelRenderer.js', () => mocks.panelRenderer);
-vi.mock('../../../src/modules/panelSubsystem/panelExporter.js', () => mocks.panelExporter);
+vi.mock('../../../src/features/panel/views/panelView.js', () => mocks.panelView);
+vi.mock('../../../src/features/panel/export/svgExporter.js', () => mocks.svgExporter);
 vi.mock('../../../src/services/i18nService.js', () => mocks.i18n);
 vi.mock('../../../src/config/chartDefaults.js', () => ({
   mergeChartConfigWithDefaults: vi.fn((type, config) => config || {}),
@@ -66,8 +66,8 @@ vi.mock('../../../src/utils/columnHelpers.js', () => ({
   getNumericColumnNames: vi.fn(() => ['value']),
 }));
 
-describe('panelManager facade branches', () => {
-  let panelManager;
+describe('panelController facade branches', () => {
+  let panelController;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -86,24 +86,24 @@ describe('panelManager facade branches', () => {
     mocks.appState.validatePanelSlots.mockReturnValue({ valid: true });
     mocks.appState.onStateChange.mockReturnValue(vi.fn());
     mocks.appState.getChartSnapshot.mockReturnValue({ id: 'chart-1' });
-    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValue({ ok: true });
+    mocks.svgExporter.exportPanelLayoutSvg.mockReturnValue({ ok: true });
 
-    panelManager = await import('../../../src/modules/panelManager.js');
+    panelController = await import('../../../src/features/panel/panelController.js');
   });
 
   it('registers listeners once and uses the latest feedback callback', () => {
     const firstFeedback = vi.fn();
     const latestFeedback = vi.fn();
 
-    panelManager.initPanelManager(firstFeedback);
-    panelManager.initPanelManager(latestFeedback);
+    panelController.initPanelController(firstFeedback);
+    panelController.initPanelController(latestFeedback);
 
     expect(mocks.appState.onStateChange).toHaveBeenCalledTimes(11);
     const registeredEvents = mocks.appState.onStateChange.mock.calls.map(([event]) => event);
     expect(registeredEvents).toContain('panel-cleared');
 
-    panelManager.renderCanvasPanel();
-    const callbacks = mocks.panelRenderer.renderCanvasPanel.mock.calls.at(-1)[0];
+    panelController.renderCanvasPanel();
+    const callbacks = mocks.panelView.renderCanvasPanel.mock.calls.at(-1)[0];
 
     mocks.appState.addPanelBlock.mockReturnValueOnce(null);
     callbacks.onAddBlock('template-single');
@@ -113,8 +113,8 @@ describe('panelManager facade branches', () => {
   });
 
   it('passes canvas callbacks through to panel state operations', () => {
-    panelManager.renderCanvasPanel();
-    const callbacks = mocks.panelRenderer.renderCanvasPanel.mock.calls.at(-1)[0];
+    panelController.renderCanvasPanel();
+    const callbacks = mocks.panelView.renderCanvasPanel.mock.calls.at(-1)[0];
 
     callbacks.onMoveBlock('block-1', 2);
     callbacks.onRemoveBlock('block-1');
@@ -134,15 +134,15 @@ describe('panelManager facade branches', () => {
   });
 
   it('guards layout changes for invalid templates and missing blocks', () => {
-    panelManager.changeLayout('not-a-template');
+    panelController.changeLayout('not-a-template');
     expect(mocks.appState.setPanelBlockTemplate).not.toHaveBeenCalled();
 
     mocks.appState.getPanelBlocks.mockReturnValueOnce([]);
-    panelManager.changeLayout('template-2col');
+    panelController.changeLayout('template-2col');
     expect(mocks.appState.setPanelBlockTemplate).not.toHaveBeenCalled();
 
     mocks.appState.getPanelBlocks.mockReturnValueOnce([{ id: 'block-1' }]);
-    panelManager.changeLayout('template-2col');
+    panelController.changeLayout('template-2col');
     expect(mocks.appState.setPanelBlockTemplate).toHaveBeenCalledWith('block-1', 'template-2col');
   });
 
@@ -156,8 +156,8 @@ describe('panelManager facade branches', () => {
       <button id="btn-export-panel"></button>
     `;
 
-    panelManager.initPanelManager(feedback);
-    panelManager.setupPanelEventListeners();
+    panelController.initPanelController(feedback);
+    panelController.setupPanelEventListeners();
 
     const select = document.getElementById('select-panel-layout');
     select.value = 'template-2col';
@@ -165,17 +165,17 @@ describe('panelManager facade branches', () => {
     expect(mocks.appState.setPanelBlockTemplate).toHaveBeenCalledWith('block-1', 'template-2col');
 
     const exportButton = document.getElementById('btn-export-panel');
-    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'canvas-not-found' });
+    mocks.svgExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'canvas-not-found' });
     exportButton.click();
-    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'empty-canvas' });
+    mocks.svgExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'empty-canvas' });
     exportButton.click();
-    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'download-failed' });
+    mocks.svgExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'download-failed' });
     exportButton.click();
-    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'no-exportable-charts' });
+    mocks.svgExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: false, reason: 'no-exportable-charts' });
     exportButton.click();
-    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: true, omittedChartCount: 0 });
+    mocks.svgExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: true, omittedChartCount: 0 });
     exportButton.click();
-    mocks.panelExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: true, omittedChartCount: 2 });
+    mocks.svgExporter.exportPanelLayoutSvg.mockReturnValueOnce({ ok: true, omittedChartCount: 2 });
     exportButton.click();
 
     expect(feedback).toHaveBeenCalledWith('Panel canvas not found');
@@ -189,31 +189,31 @@ describe('panelManager facade branches', () => {
 
   it('tolerates missing controls and exposes sidebar, clear, lookup, and export helpers', () => {
     const feedback = vi.fn();
-    panelManager.initPanelManager(feedback);
+    panelController.initPanelController(feedback);
 
-    expect(() => panelManager.setupPanelEventListeners()).not.toThrow();
+    expect(() => panelController.setupPanelEventListeners()).not.toThrow();
 
-    panelManager.initializeLayoutSelector();
-    expect(mocks.panelRenderer.fillLayoutSelect).toHaveBeenCalled();
+    panelController.initializeLayoutSelector();
+    expect(mocks.panelView.fillLayoutSelect).toHaveBeenCalled();
 
-    panelManager.renderSidebarPanel();
-    const removeChart = mocks.panelRenderer.renderSidebarPanel.mock.calls.at(-1)[0];
+    panelController.renderSidebarPanel();
+    const removeChart = mocks.panelView.renderSidebarPanel.mock.calls.at(-1)[0];
     removeChart('chart-1');
     expect(mocks.appState.removeChartSnapshot).toHaveBeenCalledWith('chart-1');
 
-    expect(panelManager.getChartById('chart-1')).toEqual({ id: 'chart-1' });
+    expect(panelController.getChartById('chart-1')).toEqual({ id: 'chart-1' });
 
     // clearPanelData delegates to the facade; the re-render is driven by the
     // PANEL_CLEARED subscription (the bus is mocked here, so it does not fan out),
     // not by a direct render call.
-    mocks.panelRenderer.renderSidebarPanel.mockClear();
-    mocks.panelRenderer.renderCanvasPanel.mockClear();
-    panelManager.clearPanelData();
+    mocks.panelView.renderSidebarPanel.mockClear();
+    mocks.panelView.renderCanvasPanel.mockClear();
+    panelController.clearPanelData();
     expect(mocks.appState.clearPanel).toHaveBeenCalled();
-    expect(mocks.panelRenderer.renderSidebarPanel).not.toHaveBeenCalled();
-    expect(mocks.panelRenderer.renderCanvasPanel).not.toHaveBeenCalled();
+    expect(mocks.panelView.renderSidebarPanel).not.toHaveBeenCalled();
+    expect(mocks.panelView.renderCanvasPanel).not.toHaveBeenCalled();
 
-    expect(panelManager.exportPanelLayoutSvg()).toEqual({ ok: true });
-    expect(mocks.panelExporter.exportPanelLayoutSvg).toHaveBeenCalled();
+    expect(panelController.exportPanelLayoutSvg()).toEqual({ ok: true });
+    expect(mocks.svgExporter.exportPanelLayoutSvg).toHaveBeenCalled();
   });
 });

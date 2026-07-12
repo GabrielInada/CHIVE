@@ -4,14 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const downloadMock = vi.hoisted(() => vi.fn(() => ({ ok: true })));
 
-vi.mock('../../../src/utils/svgExport.js', () => ({
+vi.mock('../../../../src/utils/svgExport.js', () => ({
 	downloadSvgMarkup: (...args) => downloadMock(...args),
 	ensureSvgAttributes: (svg) => {
 		if (!svg.getAttribute('xmlns')) svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
 	},
 }));
 
-import { exportPanelLayoutSvg } from '../../../src/modules/panelSubsystem/panelExporter.js';
+import { exportPanelLayoutSvg } from '../../../../src/features/panel/export/svgExporter.js';
 
 function rect(left, top, width, height) {
 	return {

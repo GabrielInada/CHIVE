@@ -209,7 +209,7 @@ controls of the per-chart packages under `src/charts/`.
   collapse into one bucket, labeled `N/A` in grouping and `(missing)` in the filter dialog.
 - **Panel snapshots.** Adding a chart to the dashboard panel snapshots the current
   global-filtered rows and visible columns alongside the chart type and config
-  (`panelManager.addChartToPanel`). Later edits to the dataset or filters do not retro-change
+  (`panelController.addChartToPanel`). Later edits to the dataset or filters do not retro-change
   a chart already placed on the panel until it is re-added.
 
 ## Common empty states

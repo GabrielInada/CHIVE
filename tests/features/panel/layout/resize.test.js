@@ -7,11 +7,11 @@ const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
 }));
 
-vi.mock('../../../src/modules/state/appState.js', () => ({
+vi.mock('../../../../src/modules/state/appState.js', () => ({
 	getPanelBlocks: mocks.getPanelBlocks,
 }));
 
-vi.mock('../../../src/services/i18nService.js', () => ({
+vi.mock('../../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
@@ -19,7 +19,7 @@ import {
 	applyBlockProportions,
 	renderGuidedResizeHandles,
 	startBlockHeightResizeDrag,
-} from '../../../src/modules/panelSubsystem/panelResize.js';
+} from '../../../../src/features/panel/layout/resize.js';
 
 function makeGrid({ width = 200, height = 100 } = {}) {
 	const grid = document.createElement('div');
@@ -45,7 +45,7 @@ function drag(handle, move) {
 	window.dispatchEvent(new MouseEvent('mouseup'));
 }
 
-describe('panelResize', () => {
+describe('panel layout resize', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '';
 		vi.clearAllMocks();

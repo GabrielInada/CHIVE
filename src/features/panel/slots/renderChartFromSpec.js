@@ -5,12 +5,12 @@
  * implementation lookup and adapter wiring live in the panel-only registry;
  * this bridge owns argument validation and the public result envelope.
  *
- * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
- * @typedef {import('../../types.js').Result} Result
+ * @typedef {import('../../../types.js').ChartSnapshot} ChartSnapshot
+ * @typedef {import('../../../types.js').Result} Result
  */
 
-import { getPanelChartRenderer } from '../../charts/registries/panel.js';
-import { fail } from '../../utils/result.js';
+import { getPanelChartRenderer } from '../../../charts/registries/panel.js';
+import { fail } from '../../../utils/result.js';
 
 /**
  * Render a chart snapshot into `container` by dispatching on `spec.type`.

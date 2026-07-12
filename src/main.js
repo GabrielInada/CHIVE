@@ -8,7 +8,7 @@
  *   2. Hydrate persisted state from IndexedDB BEFORE wiring subscribers,
  *      so restoration does not trigger a redundant save and the first
  *      render sees the restored state.
- *   3. Initialize fileManager / chartControls / panelManager.
+ *   3. Initialize fileManager / chartControls / panelController.
  *   4. Wire global DOM listeners via `eventHandlers`.
  *   5. Subscribe each render-affecting state event to its scheduler
  *      (`scheduleFullRefresh` for full repaints, `scheduleRegion` for narrowed
@@ -61,11 +61,11 @@ clearStateLog,
 } from './modules/state/stateEvents.js';
 import { getStateSummary } from './modules/state/stateDebug.js';
 import {
-initPanelManager,
+initPanelController,
 initializeLayoutSelector,
 renderSidebarPanel,
 renderCanvasPanel,
-} from './modules/panelManager.js';
+} from './features/panel/panelController.js';
 import {
 initFileManager,
 getLoadedDatasets,
@@ -126,7 +126,7 @@ initFileManager();
 // stutters on heavy charts (TIN triangulation).
 // Leading+trailing throttle keeps the first and final values painted.
 initChartControls(null, throttle(livePreviewRender, 120));
-initPanelManager(showFeedback);
+initPanelController(showFeedback);
 
 // 4. Setup event handlers (must be after modules initialized)
 initializeAllEventHandlers();
@@ -392,7 +392,7 @@ onStateChange(STATE_EVENTS.PREVIEW_ROWS_CHANGED, () => scheduleRegion(RENDER_REG
  *
  * The canvas panel is deliberately not re-rendered here: panel blocks
  * paint from frozen snapshots captured at add time (structuredClone in
- * panelManager), so a live config edit can never change them. The picker's
+ * panelController), so a live config edit can never change them. The picker's
  * `change` (commit) event fires CONFIG_UPDATED, but that no longer repaints the
  * panel either (only an `activeTab` switch to the panel tab does); the panel keeps
  * showing its frozen snapshot.

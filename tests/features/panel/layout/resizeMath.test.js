@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalizeHexColor, computeDynamicMinHeight } from '../../../src/modules/panelSubsystem/resizeMath.js';
+import { normalizeHexColor, computeDynamicMinHeight } from '../../../../src/features/panel/layout/resizeMath.js';
 
 describe('resizeMath helpers', () => {
 	it('normalizes valid and invalid hex colors', () => {

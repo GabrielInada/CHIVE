@@ -1,14 +1,14 @@
 /**
  * CHIVE panel resize math.
  *
- * Stateless math helpers used by {@link panelResize} to compute
+ * Stateless math helpers used by {@link resize} to compute
  * layout-aware minimum heights, using the shared percentage clamp from
  * `domain/panel/panelBlockModel.js`. Also re-exports a hex-color
  * normalizer used by both the renderer and the exporter.
  */
 
-import { normalizeHexColor as normalizeHex } from '../../utils/colorUtils.js';
-import { clampPercentage } from '../../domain/panel/panelBlockModel.js';
+import { normalizeHexColor as normalizeHex } from '../../../utils/colorUtils.js';
+import { clampPercentage } from '../../../domain/panel/panelBlockModel.js';
 
 /**
  * Normalize a possibly-invalid hex color to a known-good value. Thin

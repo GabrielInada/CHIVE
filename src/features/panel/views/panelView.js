@@ -4,21 +4,21 @@
  * Renders both panel surfaces, the sidebar list of saved chart snapshots
  * and the canvas grid of layout blocks. Both surfaces are rendered from
  * scratch on every call; teardown/re-mount lifecycles for slot charts
- * (SVG or WebGL canvas) go through `slotLifecycle.js` so chart resources
+ * (SVG or WebGL canvas) go through `slots/lifecycle.js` so chart resources
  * (network simulations, canvas dispose hooks, ResizeObservers, RAF
  * handles) get cleaned up before each re-render.
  *
- * Caller wiring lives in `panelManager.js`. The exports here are pure
- * rendering, they do not subscribe to state changes; the manager
+ * Caller wiring lives in `panelController.js`. The exports here are pure
+ * rendering, they do not subscribe to state changes; the controller
  * decides when to call them.
  */
 
-import { t } from '../../services/i18nService.js';
+import { t } from '../../../services/i18nService.js';
 import {
 	PANEL_LAYOUTS,
 	getTemplateForBlock,
-} from '../../domain/panel/layoutTemplates.js';
-import { normalizeHexColor } from './resizeMath.js';
+} from '../../../domain/panel/layoutTemplates.js';
+import { normalizeHexColor } from '../layout/resizeMath.js';
 import {
 	createAddBlockControls,
 	createBlockBorderControls,
@@ -30,9 +30,9 @@ import {
 	getPanelCharts,
 	getPanelBlocks,
 	getChartSnapshot,
-} from '../state/appState.js';
-import { applyBlockProportions, renderGuidedResizeHandles, startBlockHeightResizeDrag } from './panelResize.js';
-import { mountSlot, teardownAllSlots } from './slotLifecycle.js';
+} from '../../../modules/state/appState.js';
+import { applyBlockProportions, renderGuidedResizeHandles, startBlockHeightResizeDrag } from '../layout/resize.js';
+import { mountSlot, teardownAllSlots } from '../slots/lifecycle.js';
 
 /**
  * Render the sidebar list of saved chart snapshots into
@@ -41,7 +41,7 @@ import { mountSlot, teardownAllSlots } from './slotLifecycle.js';
  *
  * No-op when the container element is missing.
  *
- * @param {(chartId: number | string) => void} removeChartFromPanel - Callback for the per-item remove button; usually `panelManager.removeChartFromPanel`.
+ * @param {(chartId: number | string) => void} removeChartFromPanel - Callback for the per-item remove button; usually `panelController.removeChartFromPanel`.
  */
 export function renderSidebarPanel(removeChartFromPanel) {
 	const lista = document.getElementById('panel-chart-list');
@@ -132,7 +132,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
  *
  * The renderer never imports panel write facades; every user action that
  * mutates panel state is surfaced through the callback bag below.
- * panelManager.js owns the callbacks and re-renders via STATE_EVENTS
+ * panelController.js owns the callbacks and re-renders via STATE_EVENTS
  * subscriptions, not via direct calls from these handlers.
  *
  * No-op when the canvas element is missing.

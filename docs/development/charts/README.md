@@ -60,7 +60,7 @@ doc rather than repeated:
 
 - **Result envelope**: `ok()` / `fail(reason)` from [result.js](../../../src/utils/result.js).
 - **Render dispatch**: panel snapshots enter through
-  [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js),
+  [renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js),
   which validates the request and resolves its implementation through the
   [panel registry](../../../src/charts/registries/panel.js). Every chart resolves
   to its package-owned `panelAdapter.js` under [src/charts/](../../../src/charts).

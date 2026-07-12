@@ -5,13 +5,13 @@
  * drag handler attaches `mousemove`/`mouseup` to `window` (not the grid)
  * so the drag tracks the cursor even outside the grid bounds.
  *
- * @typedef {import('../../types.js').PanelBlock} PanelBlock
+ * @typedef {import('../../../types.js').PanelBlock} PanelBlock
  */
 
-import { clampPercentage } from '../../domain/panel/panelBlockModel.js';
+import { clampPercentage } from '../../../domain/panel/panelBlockModel.js';
 import { computeDynamicMinHeight } from './resizeMath.js';
-import { getPanelBlocks } from '../state/appState.js';
-import { t } from '../../services/i18nService.js';
+import { getPanelBlocks } from '../../../modules/state/appState.js';
+import { t } from '../../../services/i18nService.js';
 
 /**
  * Apply a block's proportions to its grid element as CSS custom
@@ -63,7 +63,7 @@ function applyDynamicBlockHeight(gridDiv, block) {
  *
  * @param {HTMLElement} gridDiv
  * @param {PanelBlock} block
- * @param {(blockId: string, partialProportions: Object) => void} onUpdateBlockProportions - Write callback supplied by panelManager; the drag handler calls it on every mousemove.
+ * @param {(blockId: string, partialProportions: Object) => void} onUpdateBlockProportions - Write callback supplied by panelController; the drag handler calls it on every mousemove.
  */
 export function renderGuidedResizeHandles(gridDiv, block, onUpdateBlockProportions) {
 	if (!gridDiv || !block?.proportions) return;
@@ -133,7 +133,7 @@ export function renderGuidedResizeHandles(gridDiv, block, onUpdateBlockProportio
  * `window` so the drag survives the cursor leaving the grid. The
  * `mousemove` handler maps cursor position to a new proportion and
  * surfaces it via the injected `onUpdateBlockProportions` callback;
- * panelManager owns the facade write. Re-render happens through the
+ * panelController owns the facade write. Re-render happens through the
  * STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED subscription.
  *
  * @private
@@ -194,7 +194,7 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv, onUpdateBlockP
  * Begin a block-height drag (the bottom resize handle). Like the guided
  * proportion drag, attaches listeners to `window` so the drag tracks
  * outside the grid. Each `mousemove` surfaces the new height via the
- * injected `onUpdateBlockHeight` callback; panelManager owns the facade
+ * injected `onUpdateBlockHeight` callback; panelController owns the facade
  * write (which clamps). Re-render happens through the
  * STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED subscription.
  *

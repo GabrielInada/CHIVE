@@ -66,13 +66,13 @@ The architecture invariants in [CONTRIBUTING.md](../../CONTRIBUTING.md) are
 enforced partly by lint and partly by review.
 
 **The write-facade boundary is enforced by lint.** ESLint (`npm run lint`)
-restricts renderer and DOM-builder files (`src/components/`,
-`src/modules/visualizations/`, and an explicit list of presentation files under
-`src/modules/panelSubsystem/`; see [`eslint.config.js`](../../eslint.config.js))
+restricts renderer and DOM-builder files (`src/components/` and the panel
+feature presentation paths under `src/features/panel/`; see
+[`eslint.config.js`](../../eslint.config.js))
 to read-only imports from `modules/state/appState.js`: the `get*` functions,
 `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing
 any write function from those directories is an error. If you need a write from
-a renderer or DOM builder, route it through a feature manager (`panelManager.js`,
+a renderer or DOM builder, route it through a feature controller (`panelController.js`,
 a chart-controls listener, or an `eventHandlers/` workflow module), all outside the
 linted scope.
 When a new renderer-safe read is added, update `APP_STATE_READS` in

@@ -5,7 +5,7 @@
  * the object that lives in `appState.panel.blocks[]`. The state-mutation
  * surface lives in `modules/state/panel/mutations.js` behind
  * the panel facade; the block DOM builders live in
- * `modules/panelSubsystem/domBuilders.js`.
+ * `features/panel/views/domBuilders.js`.
  *
  * @typedef {import('../../types.js').PanelBlock} PanelBlock
  * @typedef {import('../../types.js').PanelTemplateId} PanelTemplateId
@@ -39,7 +39,7 @@ export function createPanelBlockModel(nextBlockId, templateId = 'template-2col')
  * Clamp a percentage value to `[min, max]` and coerce non-finite inputs
  * to `min`. The one shared clamp for panel proportions: state validation
  * (`panelStateFacade.js`) and resize math (`resizeMath.js`,
- * `panelResize.js`) both use it.
+ * `features/panel/layout/resize.js`) both use it.
  *
  * @param {*} value
  * @param {number} [min=20]

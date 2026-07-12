@@ -2,8 +2,7 @@ import js from '@eslint/js';
 import chiveRules from './eslint-rules/index.js';
 
 const STATELESS_RENDERER_MESSAGE =
-	'Renderers and DOM builders (src/components/, ' +
-	'modules/visualizations/, panelSubsystem presentation files) do not ' +
+	'Renderers and DOM builders (src/components/ and panel feature presentation files) do not ' +
 	'call write facades (docs/development/architecture.md Layers section). Only read-only facade members ' +
 	'are importable here. Route writes through feature controllers, ' +
 	'chart-control listeners, or event-handler modules.';
@@ -206,7 +205,7 @@ export default [
 	// AFTER (A) because it redeclares `no-restricted-imports`; it repeats the
 	// bare-import bans alongside the facade-read restriction.
 	{
-		files: ['src/components/**/*.js', 'src/modules/visualizations/**/*.js'],
+		files: ['src/components/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
@@ -219,20 +218,16 @@ export default [
 		},
 	},
 
-	// (B2) panelSubsystem presentation and lifecycle files: same renderer-
-	// statelessness rule as (B). Explicit file list because naming is not
-	// consistent across the subsystem (no `*Renderer.js` prefix to glob on).
-	// State mutation internals live with their facade under `modules/state/`.
-	// `panelManager.js` lives outside this directory and is naturally exempt.
+	// (B2) Panel feature views, layout interactions, slot lifecycle, and export:
+	// same renderer-statelessness rule as (B). The feature controller is
+	// intentionally outside this list because it owns facade writes and event
+	// subscriptions. State mutation internals remain under `modules/state/`.
 	{
 		files: [
-			'src/modules/panelSubsystem/panelRenderer.js',
-			'src/modules/panelSubsystem/panelResize.js',
-			'src/modules/panelSubsystem/domBuilders.js',
-			'src/modules/panelSubsystem/renderChartFromSpec.js',
-			'src/modules/panelSubsystem/slotLifecycle.js',
-			'src/modules/panelSubsystem/panelExporter.js',
-			'src/modules/panelSubsystem/resizeMath.js',
+			'src/features/panel/views/**/*.js',
+			'src/features/panel/layout/**/*.js',
+			'src/features/panel/slots/**/*.js',
+			'src/features/panel/export/**/*.js',
 		],
 		rules: {
 			'no-restricted-imports': ['error', {
@@ -255,7 +250,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/components/**', '**/features/**', '**/services/**', '**/charts/**', '**/panelSubsystem/**'],
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
 					message: 'Panel state internals import only state, domain, config, utils, types, or vendor modules.',
 				}],
 			}],
@@ -343,7 +338,7 @@ export default [
 					{ name: './panel.js', message: 'The controls registry cannot import the panel registry.' },
 				],
 				patterns: [{
-					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/panelSubsystem/**', '**/visualizations/**'],
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**'],
 					message: 'The controls registry imports only chart controls implementations and leaf config/types.',
 				}],
 			}],
@@ -359,7 +354,7 @@ export default [
 					{ name: './panel.js', message: 'The workspace registry cannot import the panel registry.' },
 				],
 				patterns: [{
-					group: ['**/features/**', '**/services/**', '**/state/**', '**/chartControls/**', '**/panelSubsystem/**', '**/visualizations/**'],
+					group: ['**/features/**', '**/services/**', '**/state/**', '**/chartControls/**'],
 					message: 'The workspace registry imports only chart workspace sections and leaf config/types.',
 				}],
 			}],
@@ -375,7 +370,7 @@ export default [
 					{ name: './workspace.js', message: 'The panel registry cannot import the workspace registry.' },
 				],
 				patterns: [{
-					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/chartControls/**', '**/panelSubsystem/**', '**/visualizations/**'],
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/chartControls/**'],
 					message: 'The panel registry imports only chart panel adapters and leaf config/types.',
 				}],
 			}],
@@ -398,7 +393,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/state/appState.js', '**/modules/state/**', '**/modules/panelSubsystem/**', '**/components/**'],
+					group: ['**/state/appState.js', '**/modules/state/**', '**/features/**', '**/components/**'],
 					message: 'Chart package integration files do not import state, panel internals, or workspace components. Receive props/callbacks; controls write only through the shared chartControls helpers.',
 				}],
 			}],

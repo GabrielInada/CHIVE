@@ -24,7 +24,7 @@ vi.mock('../../../src/charts/tin/panelAdapter.js', () => ({ renderTinPanelChart:
 vi.mock('../../../src/charts/treemap/panelAdapter.js', () => ({ renderTreemapPanelChart: renderers.renderTreemapPanelChart }));
 vi.mock('../../../src/charts/scatter3d/panelAdapter.js', () => ({ renderScatter3dPanelChart: renderers.renderScatter3dPanelChart }));
 import { getPanelChartRenderer, SUPPORTED_PANEL_CHART_TYPES } from '../../../src/charts/registries/panel.js';
-import { renderChartFromSpec } from '../../../src/modules/panelSubsystem/renderChartFromSpec.js';
+import { renderChartFromSpec } from '../../../src/features/panel/slots/renderChartFromSpec.js';
 
 const baseRows = [{ a: 1 }, { a: 2 }];
 const baseColumns = [

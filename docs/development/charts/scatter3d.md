@@ -94,7 +94,7 @@ post-render extras that need the ok payload: the accurate aria-label
 
 ### 6.2 Panel
 
-[renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+[renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
 validates the request, then the
 [panel registry](../../../src/charts/registries/panel.js) routes `scatter3d`
 specs to the package's
@@ -211,7 +211,7 @@ mocked with fakes: sizing calls, a11y wiring, dispose hook contract,
 partial-build disposal, render-on-demand), `workspaceSection.test.js` /
 `panelAdapter.test.js` (label pass-through, fail-key mapping, sampling
 notice), and `controls.test.js`. Panel export omission is covered in
-`tests/modules/panelSubsystem/panelExporter.test.js`.
+`tests/features/panel/export/svgExporter.test.js`.
 
 ## 14. Quick reference
 

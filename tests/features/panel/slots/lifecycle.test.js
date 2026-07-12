@@ -6,16 +6,16 @@ const dispatch = vi.hoisted(() => ({
 	renderChartFromSpec: vi.fn(() => ({ ok: true })),
 }));
 
-vi.mock('../../../src/modules/panelSubsystem/renderChartFromSpec.js', () => dispatch);
+vi.mock('../../../../src/features/panel/slots/renderChartFromSpec.js', () => dispatch);
 
 const tooltipMock = vi.hoisted(() => ({
 	hideChartTooltip: vi.fn(),
 }));
 
-vi.mock('../../../src/charts/shared/tooltip/tooltip.js', () => tooltipMock);
+vi.mock('../../../../src/charts/shared/tooltip/tooltip.js', () => tooltipMock);
 
-import { mountSlot, teardownSlot, teardownAllSlots } from '../../../src/modules/panelSubsystem/slotLifecycle.js';
-import { CHART_DISPOSE_HOOK } from '../../../src/utils/chartContainerLifecycle.js';
+import { mountSlot, teardownSlot, teardownAllSlots } from '../../../../src/features/panel/slots/lifecycle.js';
+import { CHART_DISPOSE_HOOK } from '../../../../src/utils/chartContainerLifecycle.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 
@@ -32,7 +32,7 @@ class FakeResizeObserver {
 }
 FakeResizeObserver.instances = [];
 
-describe('slotLifecycle', () => {
+describe('panel slot lifecycle', () => {
 	let originalRO;
 	let originalRAF;
 	let originalCAF;

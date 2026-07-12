@@ -173,17 +173,17 @@ subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
 | `STATE_EVENTS.DATASET_REMOVED` | `datasetRemoved` | `removeDataset` | removed index | `main.js` |
 | `STATE_EVENTS.CONFIG_UPDATED` | `configUpdated` | `updateActiveDatasetConfig`, `setActiveChartType` | updates object or `{ activeChartType }` | `main.js` |
 | `STATE_EVENTS.COLUMNS_UPDATED` | `columnsUpdated` | `updateActiveDatasetColumns` | column-name array | `main.js` |
-| `STATE_EVENTS.CHART_ADDED` | `chartAdded` | `addChartSnapshot` | `{ id, snapshot }` | `panelManager.js` |
-| `STATE_EVENTS.CHART_REMOVED` | `chartRemoved` | `removeChartSnapshot` | normalized chart id | `panelManager.js` |
-| `STATE_EVENTS.PANEL_CLEARED` | `panelCleared` | `clearPanel` | none | `panelManager.js` |
-| `STATE_EVENTS.PANEL_BLOCK_ADDED` | `panelBlockAdded` | `addPanelBlock` | new block | `panelManager.js` |
-| `STATE_EVENTS.PANEL_BLOCK_REMOVED` | `panelBlockRemoved` | `removePanelBlock` | block id | `panelManager.js` |
-| `STATE_EVENTS.PANEL_BLOCK_MOVED` | `panelBlockMoved` | `movePanelBlock` | `{ blockId, targetIndex }` | `panelManager.js` |
-| `STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED` | `panelBlockProportionsUpdated` | `updatePanelBlockProportions` | `{ blockId, proportions }` | `panelManager.js` |
-| `STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED` | `panelBlockHeightUpdated` | `updatePanelBlockHeight` | `{ blockId, heightPx }` | `panelManager.js` |
-| `STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED` | `panelBlockBorderUpdated` | `updatePanelBlockBorder` | `{ blockId, enabled, color }` | `panelManager.js` |
-| `STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED` | `panelBlockTemplateChanged` | `setPanelBlockTemplate` | `{ blockId, templateId }` | `panelManager.js` |
-| `STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED` | `panelBlockSlotAssigned` | `assignChartToPanelBlockSlot` | `{ blockId, slotId, chartId }` | `panelManager.js` |
+| `STATE_EVENTS.CHART_ADDED` | `chartAdded` | `addChartSnapshot` | `{ id, snapshot }` | `panelController.js` |
+| `STATE_EVENTS.CHART_REMOVED` | `chartRemoved` | `removeChartSnapshot` | normalized chart id | `panelController.js` |
+| `STATE_EVENTS.PANEL_CLEARED` | `panelCleared` | `clearPanel` | none | `panelController.js` |
+| `STATE_EVENTS.PANEL_BLOCK_ADDED` | `panelBlockAdded` | `addPanelBlock` | new block | `panelController.js` |
+| `STATE_EVENTS.PANEL_BLOCK_REMOVED` | `panelBlockRemoved` | `removePanelBlock` | block id | `panelController.js` |
+| `STATE_EVENTS.PANEL_BLOCK_MOVED` | `panelBlockMoved` | `movePanelBlock` | `{ blockId, targetIndex }` | `panelController.js` |
+| `STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED` | `panelBlockProportionsUpdated` | `updatePanelBlockProportions` | `{ blockId, proportions }` | `panelController.js` |
+| `STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED` | `panelBlockHeightUpdated` | `updatePanelBlockHeight` | `{ blockId, heightPx }` | `panelController.js` |
+| `STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED` | `panelBlockBorderUpdated` | `updatePanelBlockBorder` | `{ blockId, enabled, color }` | `panelController.js` |
+| `STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED` | `panelBlockTemplateChanged` | `setPanelBlockTemplate` | `{ blockId, templateId }` | `panelController.js` |
+| `STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED` | `panelBlockSlotAssigned` | `assignChartToPanelBlockSlot` | `{ blockId, slotId, chartId }` | `panelController.js` |
 | `STATE_EVENTS.SIDEBAR_MODE_CHANGED` | `sidebarModeChanged` | `setSidebarMode` | sidebar mode | none |
 | `STATE_EVENTS.PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `setPreviewRows` | row count | `main.js` |
 | `STATE_EVENTS.STATE_HYDRATED` | `stateHydrated` | `replaceAllState` | none | `main.js` |
@@ -201,7 +201,7 @@ to the panel tab; `PREVIEW_ROWS_CHANGED` the workspace region. Boot and the
 `chiveDebug` handle render synchronously through `runFullRefreshNow`; nothing calls
 `refreshView()` bare.
 
-[`src/modules/panelManager.js`](../../src/modules/panelManager.js) subscribes to:
+[`src/features/panel/panelController.js`](../../src/features/panel/panelController.js) subscribes to:
 
 - `CHART_ADDED`
 - `CHART_REMOVED`
@@ -365,20 +365,20 @@ columnsSnapshot, metadata, metaSummary, createdAt }`.
 
 The lifecycle is:
 
-1. `panelManager.addChartToPanel` reads the active dataset, applies the global
+1. `panelController.addChartToPanel` reads the active dataset, applies the global
    filter, captures data/config/metadata, and calls `addChartSnapshot`.
 2. The panel facade stores the snapshot in `panel.charts` and emits
    `CHART_ADDED`.
-3. `panelManager` re-renders the sidebar/canvas.
-4. `panelRenderer` mounts each assigned slot.
-5. `slotLifecycle.mountSlot` tears down any old mount, calls
+3. `panelController` re-renders the sidebar/canvas.
+4. `views/panelView.js` mounts each assigned slot.
+5. `slots/lifecycle.js`'s `mountSlot` tears down any old mount, calls
    `renderChartFromSpec`, and attaches a `ResizeObserver` for responsive
    re-rendering.
-6. `slotLifecycle.teardownSlot` disconnects the observer, cancels a pending
+6. Its `teardownSlot` disconnects the observer, cancels a pending
    animation frame, stops any network-graph force simulation, hides the shared
    tooltip, and clears the container through `clearChartContainer`, including
    canvas/WebGL dispose hooks.
-7. `panelExporter` clones live SVG nodes from the rendered DOM when exporting.
+7. `export/svgExporter.js` clones live SVG nodes from the rendered DOM when exporting.
    Canvas/WebGL charts are omitted from the SVG export and counted; a chart
    panel with no exportable SVG charts returns `no-exportable-charts`.
 
@@ -408,12 +408,12 @@ depending on the chart type.
    owned by one of those shapes.
 3. Route writes through `panelStateFacade.js`.
 4. Emit a panel event only when a subscriber must react.
-5. Keep renderer callbacks injected from `panelManager`; renderers should not
+5. Keep renderer callbacks injected from `panelController`; renderers should not
    import write facades directly.
 6. If adding a chart type to panel rendering, add its adapter to
    `src/charts/registries/panel.js`; `SUPPORTED_PANEL_CHART_TYPES` is derived
    from that registry in canonical chart order. If the type changes export
-   behavior, update `panelExporter.js` and the relevant tests.
+   behavior, update `src/features/panel/export/svgExporter.js` and the relevant tests.
 7. Update this reference and any relevant tests.
 
 ## Debugging State Events

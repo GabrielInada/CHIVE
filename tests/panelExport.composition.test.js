@@ -19,7 +19,7 @@ vi.mock('../src/utils/svgExport.js', () => ({
   },
 }));
 
-const { renderCanvasPanel, exportPanelLayoutSvg } = await import('../src/modules/panelManager.js');
+const { renderCanvasPanel, exportPanelLayoutSvg } = await import('../src/features/panel/panelController.js');
 
 function setupDom() {
   document.body.innerHTML = `

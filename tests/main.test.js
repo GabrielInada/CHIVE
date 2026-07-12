@@ -38,7 +38,7 @@ const mocks = vi.hoisted(() => ({
 	updateActiveDatasetColumns: vi.fn(),
 	updateActiveDatasetConfig: vi.fn(),
 	replaceAllState: vi.fn(),
-	initPanelManager: vi.fn(),
+	initPanelController: vi.fn(),
 	initializeLayoutSelector: vi.fn(),
 	renderSidebarPanel: vi.fn(),
 	renderCanvasPanel: vi.fn(),
@@ -117,8 +117,8 @@ vi.mock('../src/modules/state/appState.js', () => ({
 	replaceAllState: mocks.replaceAllState,
 }));
 
-vi.mock('../src/modules/panelManager.js', () => ({
-	initPanelManager: mocks.initPanelManager,
+vi.mock('../src/features/panel/panelController.js', () => ({
+	initPanelController: mocks.initPanelController,
 	initializeLayoutSelector: mocks.initializeLayoutSelector,
 	renderSidebarPanel: mocks.renderSidebarPanel,
 	renderCanvasPanel: mocks.renderCanvasPanel,
@@ -249,7 +249,7 @@ describe('main.js bootstrap', () => {
 		});
 		expect(mocks.initFileManager).toHaveBeenCalledWith();
 		expect(mocks.initChartControls).toHaveBeenCalledWith(null, expect.any(Function));
-		expect(mocks.initPanelManager).toHaveBeenCalledWith(mocks.showFeedback);
+		expect(mocks.initPanelController).toHaveBeenCalledWith(mocks.showFeedback);
 		expect(mocks.initializeAllEventHandlers).toHaveBeenCalledTimes(1);
 		expect(mocks.onStateChange).toHaveBeenCalledTimes(7);
 		expect(mocks.enablePersistenceAutoSave).toHaveBeenCalledWith(

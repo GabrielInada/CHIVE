@@ -13,8 +13,8 @@
  */
 
 import { renderChartFromSpec } from './renderChartFromSpec.js';
-import { hideChartTooltip } from '../../charts/shared/tooltip/tooltip.js';
-import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
+import { hideChartTooltip } from '../../../charts/shared/tooltip/tooltip.js';
+import { clearChartContainer } from '../../../utils/chartContainerLifecycle.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 const slotState = new WeakMap();

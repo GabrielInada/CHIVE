@@ -129,7 +129,7 @@ into a dashboard). Both end at the same renderer, `renderBarChart`.
                                           → renderBarChart(...)
                                               │
    "Add to panel"                            │
-   (eventHandlers → panelManager)            │
+   (eventHandlers → panelController)         │
    structuredClone of config + rows          │
         │                                     │
         ▼                                     │
@@ -274,7 +274,7 @@ entry calls `renderBarChartSection({ config, rows, filterCallbacks })` from
 
 ### 6.2 Panel view
 
-[renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
+[renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
 validates the request, then the
 [panel registry](../../../src/charts/registries/panel.js) dispatches bar snapshots to
 [panelAdapter.js](../../../src/charts/bar/panelAdapter.js). The adapter passes

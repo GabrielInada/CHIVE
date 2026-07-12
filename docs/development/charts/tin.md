@@ -296,7 +296,7 @@ and end at `renderTinChart`.
                                          → renderTinChart()
                                               │
    "Add to panel"                            │
-   (eventHandlers → panelManager)            │
+   (eventHandlers → panelController)         │
    structuredClone of config + rows          │
         │                                     │
         ▼                                     │
@@ -470,7 +470,7 @@ That adapter:
 ### 6.2 Panel view
 
 When a chart is added to the panel, `addChartToPanel`
-([panelManager.js](../../../src/modules/panelManager.js)) captures a snapshot:
+([panelController.js](../../../src/features/panel/panelController.js)) captures a snapshot:
 `config`, `dataSnapshot`, and `columnsSnapshot` are each `structuredClone`d at
 capture time, so the snapshot is **frozen** and decoupled from later edits to the
 active dataset. [panelAdapter.js](../../../src/charts/tin/panelAdapter.js) passes
@@ -963,7 +963,7 @@ Additional package tests cover [options](../../../tests/charts/tin/options.test.
 [controls](../../../tests/charts/tin/controls.test.js),
 [workspace integration](../../../tests/charts/tin/workspaceSection.test.js), and
 [panel integration](../../../tests/charts/tin/panelAdapter.test.js).
-[panelManager.edges.test.js](../../../tests/modules/panelSubsystem/panelManager.edges.test.js)
+[panelController.edges.test.js](../../../tests/features/panel/panelController.edges.test.js)
 has a snapshot-isolation regression test guarding that a panel snapshot's config is
 captured by value (so the live-preview panel skip is safe).
 

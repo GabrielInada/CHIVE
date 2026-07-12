@@ -49,12 +49,12 @@ For the longer tradeoff analysis, see
 ```mermaid
 flowchart TB
     U(["User"])
-    CTRL["Feature managers<br/>eventHandlers · fileManager · panelManager · chartControls · uiManager"]
+    CTRL["Feature controllers/managers<br/>eventHandlers · fileManager · panelController · chartControls · uiManager"]
     FAC["State facades<br/>data · panel · ui"]
     STATE[("appState<br/>module-private")]
     BUS["State event bus<br/>STATE_EVENTS"]
     SUB["Subscribers<br/>orchestrator · panel · services"]
-    VIEW["Renderers<br/>components · visualizations · panelSubsystem"]
+    VIEW["Renderers<br/>components · chart packages · panel views"]
     SERVICES["Side-effecting services<br/>persistence · i18n · ingest worker host"]
 
     U -- DOM input --> CTRL
@@ -70,10 +70,10 @@ flowchart TB
 
 The diagram is an abstraction, not a literal call graph. It shows ownership
 boundaries: state writes enter through facades, state changes leave through the
-bus, and renderers read state rather than owning it. The "feature managers" are
+bus, and renderers read state rather than owning it. The feature controllers and managers are
 not a thin controller layer. Each one typically owns its domain end to end:
 translating user intent into facade writes, subscribing to the resulting events,
-and triggering its own renders (`panelManager` does all three for the panel).
+and triggering its own renders (`panelController` does all three for the panel).
 The horizontal split below is about *roles*, not separate modules.
 
 For exact subscribers and payloads, see
@@ -85,19 +85,19 @@ and
 
 | Layer | Owns | Rule Of Thumb |
 |---|---|---|
-| Feature managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (`eventHandlers`, `fileManager`, `panelManager`, `chartControls`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
+| Feature controllers/managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (`eventHandlers`, `fileManager`, `panelController`, `chartControls`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
 | State Management Core | `appState`, facades, event registry, event bus. | The only normal path for application state mutation. |
 | Orchestrator | Boot and broad UI refresh in `main.js`. | Wires services/modules, subscribes to broad data/config events, and schedules full-view renders. |
 | Visualization Layer | Components, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
 | Services And Utilities | Persistence, i18n, ingest worker host, config, pure helpers. | Services may cross side-effect boundaries; config/utils should stay leaf helpers. |
 
-The important distinction is ownership, not file layout. A feature manager may
+The important distinction is ownership, not file layout. A feature controller or manager may
 write facades, subscribe to the bus, and trigger renders for its own domain; what
-it must not do is reach into another domain's state. `panelManager` is a clear
-case (manager + subscriber + render-trigger); `chartControls` and `uiManager`
+it must not do is reach into another domain's state. `panelController` is a clear
+case (controller + subscriber + render-trigger); `chartControls` and `uiManager`
 build UI *and* write facades, so they are managers, not leaf renderers. The leaf
 renderers (components, chart packages under `src/charts/*`, and
-`panelSubsystem` views) stay strictly
+`features/panel/views/`) stay strictly
 read-only with respect to application state: they receive callbacks from a
 manager and read via getters, but never import write facades. A service may
 perform I/O, but state changes still route through the state core boundary.
@@ -143,7 +143,7 @@ Example: a user toggles a column-visibility checkbox.
    the workspace and chart-controls renderers.
 
 Panel changes follow the same ownership pattern but usually have a narrower
-subscriber. For example, block layout events are handled by `panelManager`,
+subscriber. For example, block layout events are handled by `panelController`,
 which redraws the panel canvas instead of routing through the broad
 `refreshView()` path.
 

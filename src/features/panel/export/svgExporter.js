@@ -9,15 +9,15 @@
  * canvas charts is a later tranche. The output is positioned in absolute
  * coordinates relative to the canvas.
  *
- * Pure with respect to user feedback: returns Results only. panelManager
+ * Pure with respect to user feedback: returns Results only. panelController
  * owns every user-facing message.
  *
- * @typedef {import('../../types.js').Result} Result
+ * @typedef {import('../../../types.js').Result} Result
  */
 
-import { downloadSvgMarkup, ensureSvgAttributes } from '../../utils/svgExport.js';
-import { normalizeHexColor } from './resizeMath.js';
-import { ok, fail } from '../../utils/result.js';
+import { downloadSvgMarkup, ensureSvgAttributes } from '../../../utils/svgExport.js';
+import { normalizeHexColor } from '../layout/resizeMath.js';
+import { ok, fail } from '../../../utils/result.js';
 
 /**
  * Export the live panel canvas as a single SVG file. Clones each slot's

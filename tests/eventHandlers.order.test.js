@@ -24,7 +24,7 @@ vi.mock('../src/modules/uiManager.js', () => ({
   setupSidebarToggleListener: mocks.setupSidebarToggleListener,
 }));
 
-vi.mock('../src/modules/panelManager.js', () => ({
+vi.mock('../src/features/panel/panelController.js', () => ({
   setupPanelEventListeners: mocks.setupPanelEventListeners,
 }));
 

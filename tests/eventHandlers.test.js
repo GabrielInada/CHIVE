@@ -65,7 +65,7 @@ vi.mock('../src/services/persistenceService.js', () => ({
   getProjectImportErrorMessageKey: mocks.getProjectImportErrorMessageKey,
 }));
 
-vi.mock('../src/modules/panelManager.js', () => ({
+vi.mock('../src/features/panel/panelController.js', () => ({
   addChartToPanel: mocks.addChartToPanel,
   setupPanelEventListeners: mocks.setupPanelEventListeners,
 }));

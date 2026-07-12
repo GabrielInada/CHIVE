@@ -71,14 +71,14 @@ vi.mock('../../../src/utils/globalFilter.js', () => mocks.globalFilter);
 vi.mock('../../../src/utils/columnHelpers.js', () => mocks.columnHelpers);
 vi.mock('../../../src/services/i18nService.js', () => mocks.i18n);
 
-import { initPanelManager, addChartToPanel, removeChartFromPanel, getLayoutConfig, _resetPanelManagerForTesting } from '../../../src/modules/panelManager.js';
+import { initPanelController, addChartToPanel, removeChartFromPanel, getLayoutConfig, _resetPanelControllerForTesting } from '../../../src/features/panel/panelController.js';
 
 /**
- * panelManager branch coverage focusing on error paths and rendering conditions.
+ * panelController branch coverage focusing on error paths and rendering conditions.
  */
-describe('panelManager (branch coverage)', () => {
+describe('panelController (branch coverage)', () => {
 	beforeEach(() => {
-		_resetPanelManagerForTesting();
+		_resetPanelControllerForTesting();
 
 		// WHY: renderCanvasPanel calls window.matchMedia; jsdom doesn't implement it.
 		if (!window.matchMedia) {
@@ -111,9 +111,9 @@ describe('panelManager (branch coverage)', () => {
 		mocks.i18n.t.mockClear();
 	});
 
-	describe('initPanelManager()', () => {
+	describe('initPanelController()', () => {
 		it('registers listeners for chart events', () => {
-			initPanelManager();
+			initPanelController();
 
 			const calls = mocks.appState.onStateChange.mock.calls;
 			const events = calls.map(([e]) => e);
@@ -124,7 +124,7 @@ describe('panelManager (branch coverage)', () => {
 		});
 
 		it('registers listeners for layout events', () => {
-			initPanelManager();
+			initPanelController();
 
 			const calls = mocks.appState.onStateChange.mock.calls;
 			const events = calls.map(([e]) => e);
@@ -136,17 +136,17 @@ describe('panelManager (branch coverage)', () => {
 
 		it('accepts optional feedback callback', () => {
 			const cb = vi.fn();
-			expect(() => initPanelManager(cb)).not.toThrow();
+			expect(() => initPanelController(cb)).not.toThrow();
 		});
 
 		it('handles no feedback callback', () => {
-			expect(() => initPanelManager()).not.toThrow();
+			expect(() => initPanelController()).not.toThrow();
 		});
 	});
 
 	describe('addChartToPanel() success path', () => {
 		it('builds spec from active dataset and adds to panel on success', () => {
-			initPanelManager();
+			initPanelController();
 
 			const result = addChartToPanel('container-id', 'My Chart', { type: 'bar', summary: 'cat: a' });
 
@@ -161,7 +161,7 @@ describe('panelManager (branch coverage)', () => {
 		});
 
 		it('passes chart name to snapshot preserving content', () => {
-			initPanelManager();
+			initPanelController();
 
 			addChartToPanel('container', 'My Bar Chart', { type: 'bar' });
 
@@ -173,9 +173,9 @@ describe('panelManager (branch coverage)', () => {
 		// Guards the invariant livePreviewRender relies on: panel snapshots are
 		// captured by value, so a live color-picker edit of the active config can
 		// never mutate an already-added panel chart. (See structuredClone in
-		// panelManager.addChartToPanel.)
+		// panelController.addChartToPanel.)
 		it('snapshots config by value so later active-config edits do not mutate it', () => {
-			initPanelManager();
+			initPanelController();
 			const liveConfig = { bar: { category: 'a', enabled: true, color: '#111111' } };
 			mocks.appState.getActiveDataset.mockReturnValue({
 				name: 'fixture.csv',
@@ -197,7 +197,7 @@ describe('panelManager (branch coverage)', () => {
 
 	describe('addChartToPanel() error paths', () => {
 		it('returns unknown-type when metadata.type is missing', () => {
-			initPanelManager();
+			initPanelController();
 
 			const result = addChartToPanel('container', 'Chart', null);
 
@@ -206,7 +206,7 @@ describe('panelManager (branch coverage)', () => {
 		});
 
 		it('returns unknown-type when metadata.type is not a supported renderer', () => {
-			initPanelManager();
+			initPanelController();
 
 			const result = addChartToPanel('container', 'Chart', { type: 'sankey' });
 
@@ -215,7 +215,7 @@ describe('panelManager (branch coverage)', () => {
 		});
 
 		it('returns no-dataset when there is no active dataset', () => {
-			initPanelManager();
+			initPanelController();
 			mocks.appState.getActiveDataset.mockReturnValueOnce(null);
 
 			const result = addChartToPanel('container', 'Chart', { type: 'bar' });
@@ -225,7 +225,7 @@ describe('panelManager (branch coverage)', () => {
 		});
 
 		it('catches unexpected exceptions and returns add-error', () => {
-			initPanelManager();
+			initPanelController();
 			mocks.chartDefaults.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
 				throw new Error('boom');
 			});
@@ -238,7 +238,7 @@ describe('panelManager (branch coverage)', () => {
 
 		it('calls feedback callback on add-error if provided', () => {
 			const feedbackCb = vi.fn();
-			initPanelManager(feedbackCb);
+			initPanelController(feedbackCb);
 			mocks.chartDefaults.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
 				throw new Error('boom');
 			});
@@ -249,7 +249,7 @@ describe('panelManager (branch coverage)', () => {
 		});
 
 		it('does not throw on unhandled error', () => {
-			initPanelManager();
+			initPanelController();
 			mocks.chartDefaults.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
 				throw new Error('Unexpected');
 			});
@@ -260,7 +260,7 @@ describe('panelManager (branch coverage)', () => {
 
 	describe('removeChartFromPanel()', () => {
 		it('removes chart from panel', () => {
-			initPanelManager();
+			initPanelController();
 
 			removeChartFromPanel('chart-123');
 
@@ -268,7 +268,7 @@ describe('panelManager (branch coverage)', () => {
 		});
 
 		it('handles non-existent chart without error', () => {
-			initPanelManager();
+			initPanelController();
 
 			expect(() => removeChartFromPanel('undefined')).not.toThrow();
 		});
@@ -308,27 +308,27 @@ describe('panelManager (branch coverage)', () => {
 
 	describe('DOM element handling', () => {
 		it('handles missing panel-chart-list', () => {
-			initPanelManager();
+			initPanelController();
 			document.getElementById('panel-chart-list')?.remove();
-			expect(() => initPanelManager()).not.toThrow();
+			expect(() => initPanelController()).not.toThrow();
 		});
 
 		it('handles missing panel-layout-canvas', () => {
-			initPanelManager();
+			initPanelController();
 			document.getElementById('panel-layout-canvas')?.remove();
-			expect(() => initPanelManager()).not.toThrow();
+			expect(() => initPanelController()).not.toThrow();
 		});
 
 		it('handles missing select-panel-layout', () => {
-			initPanelManager();
+			initPanelController();
 			document.getElementById('select-panel-layout')?.remove();
-			expect(() => initPanelManager()).not.toThrow();
+			expect(() => initPanelController()).not.toThrow();
 		});
 	});
 
 	describe('Rendering triggers', () => {
 		it('re-renders on chart add (listener callback)', () => {
-			initPanelManager();
+			initPanelController();
 
 			// Get the listener for chartAdded
 			const chartAddedListener = mocks.appState.onStateChange.mock.calls.find(
@@ -341,7 +341,7 @@ describe('panelManager (branch coverage)', () => {
 		});
 
 		it('triggers cleanup on panel block removal', () => {
-			initPanelManager();
+			initPanelController();
 
 			const blockRemovedListener = mocks.appState.onStateChange.mock.calls.find(
 				([event]) => event === 'panelBlockRemoved'
@@ -353,7 +353,7 @@ describe('panelManager (branch coverage)', () => {
 
 	describe('State event handling', () => {
 		it('validates slots after template change', () => {
-			initPanelManager();
+			initPanelController();
 
 			const templateChangeListener = mocks.appState.onStateChange.mock.calls.find(
 				([event]) => event === 'panelBlockTemplateChanged'
