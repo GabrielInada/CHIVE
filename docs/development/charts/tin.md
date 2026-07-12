@@ -27,6 +27,8 @@ tests:
   and [interaction.js](../../../src/charts/tin/interaction.js)
 - Sidebar controls: [controls](../../../src/charts/tin/controls/)
 - Config constants: [charts.js](../../../src/config/charts.js)
+- Browser-local rendering setting: [settingsService.js](../../../src/services/settingsService.js)
+  and [settings.js](../../../src/config/settings.js)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
 - Bundled preset catalog: [presetCatalog.js](../../../src/data/presetCatalog.js)
 - Renderer tests: [svg.test.js](../../../tests/charts/tin/renderers/svg.test.js)
@@ -105,9 +107,10 @@ Digital elevation models (DEMs) come in two classic families:
 
 The TIN model is useful in surveying and GIS because:
 
-- The model uses each sample `zᵢ` as a vertex height. In CHIVE's rendered fill, the
-  displayed color is still mean-z sampled and 128-bucket quantized (sections 7.7 and
-  8.2), so the color layer should not be described as exact at every source point.
+- The model uses each sample `zᵢ` as a vertex height. CHIVE samples each rendered
+  leaf's color from its mean z. Optimized mode quantizes that color into 128 buckets;
+  Full ramp preserves the exact emitted ramp color (sections 7.7 and 8.2). Neither
+  mode should be described as preserving a source-point color at every pixel.
 - It **adapts to the data**: dense triangles where samples are dense (rugged or
   well-surveyed areas), large triangles where samples are sparse (flat or
   under-sampled areas). Detail follows the data instead of a fixed cell size.
@@ -367,9 +370,9 @@ fields fall back to default).
 - `CHART_DIMENSIONS.tin` = `{ width: 700, height: 460, margins: { top:16, right:16, bottom:44, left:56 } }`.
 - `CHART_HEIGHT_LIMITS.tin` = `{ min: 220, max: 900 }` (the height-drag handle clamps to this, and the renderer clamps to the same range so the drag box and SVG agree).
 - `TIN_COLOR_RAMPS` (frozen): `custom, viridis, plasma, magma, inferno, turbo, terrain, grays`.
-- `TIN_CHART` object: all the depth/isoline/threshold bounds, plus the two
-  rendering caps added for performance: `rampBuckets: 128` and
-  `maxSurfaceLeaves: 262144` (see section 9).
+- `TIN_CHART` object: all the depth/isoline/threshold bounds, the Optimized-mode
+  `rampBuckets: 128`, and the shared `maxSurfaceLeaves: 262144` geometry budget
+  (see section 9).
 
 ---
 
@@ -537,9 +540,9 @@ convention).
   `gradientMaxColor` via `interpolateColor` from
   [colorUtils.js](../../../src/utils/colorUtils.js).
 
-`sampleRamp` is used by the surface fill, the legend strip, and (indirectly) every
-bucket color. The legend samples the continuous ramp, while the surface fill uses
-bucket-center colors after quantization.
+`sampleRamp` is used by the legend strip and both surface-fill modes. Full ramp calls
+it through `colorAt(z)` for each leaf's exact normalized z position. Optimized samples
+the center of the leaf's color bucket.
 
 ### 7.6 z → ramp position (`tForZ`) and distribution modes
 
@@ -560,13 +563,15 @@ classification step of section 2.7, in code. Two modes:
 > interpolated leaf mean-z values that are not original data points) with shared tie
 > ranks.
 
-### 7.7 Color quantization (`bucketAt`)
+### 7.7 Exact color lookup and optional quantization (`colorAt`, `bucketAt`)
 
-This is the core of the performance design. Instead of computing a unique color per
-triangle, the renderer quantizes `tForZ(z)` into one of `bucketCount`
+The color scale exposes two z-to-color grouping paths. `colorAt(z)` clamps
+`tForZ(z)` and samples the ramp at that exact normalized position. `bucketAt(z)`
+quantizes the same position into one of `bucketCount`
 (= `TIN_CHART.rampBuckets` = 128) buckets:
 
 ```js
+const colorAt = z => sampleRamp(Math.max(0, Math.min(1, tForZ(z))));
 const bucketCount = TIN_CHART.rampBuckets;
 const bucketAt = z => Math.min(
     bucketCount - 1,
@@ -574,9 +579,13 @@ const bucketAt = z => Math.min(
 );
 ```
 
-Every triangle whose mean-z lands in the same bucket gets the **same** color (the
-bucket's center color), which lets them all be merged into one SVG element. See
-section 8 for the visual tradeoff and section 9 for why this matters.
+The browser-local setting under **Settings > Performance** chooses which function
+drives surface grouping. Optimized groups every leaf whose mean z lands in the same
+bucket and fills the group with the bucket-center color. Full ramp groups leaves only
+when `colorAt(meanZ)` returns the same final CSS color string. Both paths merge each
+group into one compound SVG path; Full ramp removes bucket quantization without
+returning to one SVG polygon per leaf. See section 8 for the tradeoff and section 9
+for the performance design.
 
 ### 7.8 Screen-space triangulation
 
@@ -601,8 +610,8 @@ resolveSurfaceDepth({ requestedDepth, fillMode, zMin, zMax, triangleCount })
 Policy, in order:
 
 1. **Flat mode or constant-z → 0.** In flat mode there is no subdivision; for a
-   constant-z surface every leaf would share one bucket anyway, so subdivision adds
-   nothing (and would otherwise pile every leaf into one giant path).
+   constant-z surface every leaf would share one final color in either rendering
+   mode, so subdivision adds nothing.
 2. Otherwise clamp the requested depth to `[minSubdivisionDepth, maxSubdivisionDepth]`
    (0–4) via `clampDepth`.
 3. **Leaf budget:** while `triangleCount * 4 ** depth > TIN_CHART.maxSurfaceLeaves`,
@@ -612,45 +621,47 @@ Policy, in order:
    to triangulate, subdivide, overlay, and export. The fallback is a coarser surface
    fill, not input rejection.
 
-### 7.10 Subdivision and bucketed path emission (`appendSubdividedFragments`)
+### 7.10 Subdivision and grouped path emission (`appendSubdividedFragments`)
 
 For each base Delaunay triangle, `appendSubdividedFragments` recursively splits it into
 `4 ** depth` leaf sub-triangles by edge midpoints (the 1-to-4 midpoint subdivision of
 section 2.5; recall this only refines color sampling of a planar facet, it does not
 change the geometry). At a leaf, it computes the mean-z of the three vertices (the
-model height at the leaf centroid, section 2.4) and appends a path fragment
-**directly into the bucket's fragment list**:
+model height at the leaf centroid, section 2.4) and passes the z value and path
+fragment to a mode-specific sink:
 
 ```js
 const fragment = `M${fmtCoord(a.x)},${fmtCoord(a.y)}L…L…Z`;
-bucketFragments[bucketAt(meanZ)].push(fragment);
+pushLeaf(meanZ, fragment);
 ```
 
-`bucketFragments` is a fixed-size array of 128 string arrays. There is no
-intermediate object per leaf — fragments go straight into their bucket. `fmtCoord`
-rounds each coordinate to 2 decimals (`String(Math.round(n*100)/100)`), which keeps
-the path payload small (screen pixels don't need 17-digit float precision).
+There is no intermediate object per leaf. `fmtCoord` rounds each coordinate to 2
+decimals (`String(Math.round(n*100)/100)`), which keeps the path payload small
+(screen pixels do not need 17-digit float precision). The two sinks are:
 
-After the loop, the renderer emits **one `<path>` per non-empty bucket**, iterating
-buckets in index order (inherently deterministic, no sorting needed):
+- **Optimized:** a fixed-size array of 128 fragment arrays indexed by `bucketAt(meanZ)`.
+- **Full ramp:** a `Map<string, string[]>` indexed by `colorAt(meanZ)`, where the key
+  is the exact final CSS color emitted by the ramp.
+
+After traversal, the renderer emits one `<path>` per non-empty group. Optimized
+iterates buckets in numeric order; Full ramp iterates exact colors in first-leaf
+encounter order through the `Map`. Both orders are deterministic for the same input:
 
 ```js
-const constantZ = zMin === zMax;
-for (let bucket = 0; bucket < bucketCount; bucket++) {
-    const fragments = bucketFragments[bucket];
-    if (fragments.length === 0) continue;
+for (const [color, fragments] of colorFragments) {
     trianglesGroup.append('path')
         .attr('d', fragments.join(''))
-        .attr('fill', sampleRamp(constantZ ? 0 : (bucket + 0.5) / bucketCount))
+        .attr('fill', color)
         .attr('stroke', 'none');
 }
 ```
 
-So a render that would have produced ~63,000 `<polygon>` elements (≈500 points at
-depth 3) now produces **at most 128 `<path>` elements**. Constant-z surfaces are
-special-cased to paint at `sampleRamp(0)` (the ramp's low color), matching the
-tested low-color behavior after bucketing. The triangles group keeps its
-`.tin-triangles` class.
+In Optimized mode, a render that would have produced ~63,000 `<polygon>` elements
+(≈500 points at depth 3) produces at most 128 fill paths. Full ramp emits one path
+per distinct final CSS color present in the leaves, so its path count is data- and
+ramp-dependent and can exceed 128. Constant-z surfaces paint at `sampleRamp(0)` and
+produce one path in either mode. The triangles group keeps its `.tin-triangles`
+class.
 
 ### 7.11 Convex hull
 
@@ -726,8 +737,9 @@ up-right of the point.
 - Axis title text is drawn when `showXAxisLabel` / `showYAxisLabel`.
 - The **legend** is a horizontal gradient strip below the chart: 12 `<rect>` stops,
   each filled by `sampleRamp(i/12)`, with the `zMin` and `zMax` values labeled at
-  the ends. The legend samples the continuous ramp, so it represents the configured
-  ramp rather than the exact set of bucket colors used by the surface fill.
+  the ends. The legend always represents the configured continuous ramp. It does
+  not change between Optimized and Full ramp and is not a list of the surface's
+  emitted color groups.
 
 ### 7.18 Return value
 
@@ -749,20 +761,25 @@ inferno, turbo, grays`); `terrain` is synthesized in-house via `interpolateRgbBa
 through a hand-picked elevation gradient (the hypsometric tint of section 2.7).
 `custom` is a simple two-color linear gradient between the user's min and max colors.
 
-### 8.2 Quantization tradeoff
+### 8.2 Browser-local rendering-mode tradeoff
 
-The fill is quantized into 128 buckets (section 7.7). The color a triangle gets is
-its bucket's **center** color: `sampleRamp((bucket + 0.5) / 128)`. This means a
-triangle's fill can deviate from its "exact" ramp color by at most half a bucket —
-1/256 of the ramp domain before color-space interpolation effects. This is a
-deliberate fidelity/performance tradeoff. Banding is most likely to be visible on
-smooth, low-noise gradients (for example, a black→white custom ramp on a gently
-varying surface). Raising `rampBuckets` is the implementation knob if future tested
-datasets need finer color resolution.
+The setting under **Settings > Performance** selects one of two fill-color policies:
 
-Flat fill mode is quantized the same way (it gains element-merging too: ~990
-triangles → ≤128 paths). Constant-z surfaces paint at the ramp's low color; this
-behavior is covered by renderer tests.
+- **Optimized** quantizes the ramp into 128 buckets (section 7.7). A leaf receives
+  its bucket's center color: `sampleRamp((bucket + 0.5) / 128)`. The normalized
+  position can differ from its exact ramp sample by at most half a bucket, or 1/256
+  of the ramp domain before color-space interpolation effects. This reduces the fill
+  to at most 128 paths, but banding can be more visible on smooth, low-noise ramps.
+- **Full ramp** uses `colorAt(meanZ)` without bucket-center substitution. Leaves are
+  still merged when their final CSS color strings are exactly equal, so this is
+  lossless relative to CHIVE's per-leaf ramp output without restoring one polygon
+  per leaf. It can create more paths and render or export more slowly.
+
+The choice is browser-local, not project or dataset config. Workspace and panel
+rendering use the current browser's mode, while panel data/config snapshots remain
+frozen. Both modes use the same adaptive depth budget. Flat fill uses the selected
+grouping policy, and constant-z surfaces paint at the ramp's low color in either
+mode. These behaviors are covered by renderer and presentation tests.
 
 ### 8.3 Color math reference
 
@@ -789,34 +806,38 @@ The cost is dominated by per-element DOM overhead (allocation, style resolution,
 hit-testing, display-list bookkeeping, GC churn), not pixel rasterization. So the fix
 is to slash element count.
 
-### 9.2 The bucketed-path fix
+### 9.2 Grouped-path rendering
 
-Quantize the ramp into 128 buckets, group leaves by bucket, and emit one `<path>`
-per bucket (all of a bucket's triangles as subpaths in one `d` string). DOM drops
-from ~63,000 polygons to ≤128 paths — roughly 500×. Because the fills were already
-flat per-leaf approximations of a planar facet (not a true gradient, section 2.5),
-quantization is expected to be a small visual tradeoff compared with the DOM savings.
+The default Optimized mode quantizes the ramp into 128 buckets, groups leaves by
+bucket, and emits one compound `<path>` per bucket. A representative depth-3 render
+with ~63,000 leaves therefore drops from ~63,000 polygons to at most 128 fill paths.
+The Full ramp alternative uses the same compound-path technique but groups only
+equal final CSS colors. It preserves exact per-leaf ramp output at the cost of a
+higher, ramp-dependent path count.
 
 Supporting choices:
 
-- **Bucket during subdivision**, not after. `appendSubdividedFragments` pushes path fragments
-  straight into per-bucket arrays, avoiding ~63k/253k short-lived leaf objects per
-  render (GC churn during a drag).
-- **Fixed-size bucket array** indexed `0..127`, iterated in order — deterministic
-  output, no Map overhead, no sorting.
+- **Group during subdivision**, not after. `appendSubdividedFragments` passes each
+  fragment directly to the selected sink, avoiding tens or hundreds of thousands of
+  short-lived leaf objects per render.
+- **Mode-specific storage.** Optimized uses a fixed array indexed `0..127`; Full ramp
+  uses a `Map` keyed by exact CSS color. Numeric bucket order and first-color encounter
+  order keep output deterministic without sorting.
 - **2dp coordinates** (`fmtCoord`) keep each `d` string compact.
 - **Leaf budget** (`maxSurfaceLeaves`, section 7.9) bounds total work for huge
   datasets.
 
 ### 9.3 What it does and doesn't fix
 
-This fixes the **fill** node count, which dominated. The Delaunay triangulation and
-subdivision CPU still run each render (the smaller half of the cost). It is a
-color-picker/render performance fix, **not** a full client-side DoS guard. CHIVE has
-upload-level caps (`FILE_SIZE_LIMIT_BYTES = 15 MB`, `ROW_LIMIT = 200000`), but within
-those caps Delaunay construction, points/edges/z-label overlays, isoline segment
-counts, and panel-export payload size can still be large. Broader input-size policy is
-cross-cutting across chart types and is outside this renderer-specific change.
+Grouping removes one-element-per-leaf DOM output, with the strongest fixed bound in
+Optimized mode. Full ramp can produce more fill paths because it deliberately keeps
+exact colors. The Delaunay triangulation and subdivision CPU still run each render.
+This is a fill/render performance control, **not** a full client-side DoS guard. CHIVE
+has upload-level caps (`FILE_SIZE_LIMIT_BYTES = 15 MB`, `ROW_LIMIT = 200000`), but
+within those caps Delaunay construction, fill grouping, points/edges/z-label overlays,
+isoline segment counts, and panel-export payload size can still be large. Broader
+input-size policy is cross-cutting across chart types and is outside this
+renderer-specific design.
 
 ### 9.4 The live-preview panel skip
 
@@ -864,12 +885,13 @@ render options, date, and measurement method.
 
 ## 11. SVG export
 
-The renderer emits pure SVG (no `<canvas>`, no embedded raster), which is what makes
-direct SVG export possible. The bucketed-path change keeps this property and makes
-exports dramatically smaller (≤128 paths instead of tens of thousands of polygons),
-and the 2dp coordinate formatting shrinks them further. A future `<canvas>` surface
-layer under an SVG overlay would be a possible direction for datasets that remain too
-large for SVG, but that is not implemented here.
+The renderer emits pure SVG (no `<canvas>`, no embedded raster), which makes direct
+SVG export possible. Optimized exports use at most 128 fill paths; Full ramp exports
+use one fill path per distinct exact CSS color and can be larger. Both remain much
+more compact than one polygon per leaf when colors repeat, and 2dp coordinate
+formatting shrinks them further. A future `<canvas>` surface layer under an SVG
+overlay would be a possible direction for datasets that remain too large for SVG,
+but that is not implemented here.
 
 ---
 
@@ -913,14 +935,16 @@ large for SVG, but that is not implemented here.
 ## 13. Tests
 
 [svg.test.js](../../../tests/charts/tin/renderers/svg.test.js) covers the
-renderer. Notable cases after the bucketed-path change:
+renderer. Notable fill-path cases:
 
 - Subpath count (`M` count across `.tin-triangles path`) equals
-  `triangles * 4 ** depth` at depths 0 and 2; no stray `<polygon>` elements; path
-  count ≤ `rampBuckets`; `result.polygons` matches the analytic count.
+  `triangles * 4 ** depth` at depths 0 and 2; no stray `<polygon>` elements;
+  `result.polygons` matches the analytic count.
 - Flat mode: one subpath per base triangle.
-- Merge guard: a denser dataset with a black→white ramp yields distinct per-bucket
-  fills and far fewer paths than leaves.
+- Optimized mode merges leaves into at most one path per bucket.
+- Full ramp uses `colorAt(meanZ)` rather than bucket-center colors, merges equal
+  final CSS colors, and preserves the same triangle/leaf counts and adaptive depth
+  clamp as Optimized.
 - Rank vs value distribution produce different fill sets on skewed z.
 - Constant-z: one path, low color, depth forced to 0.
 - Leaf budget clamps depth on a large grid.
@@ -928,6 +952,10 @@ renderer. Notable cases after the bucketed-path change:
 - [math.test.js](../../../tests/charts/tin/math.test.js) covers `resolveSurfaceDepth`
   clamping, flat/constant-z behavior, budget step-down, subdivision, isolines, and
   unique-edge collection without a DOM.
+- [color.test.js](../../../tests/charts/tin/color.test.js) covers exact `colorAt`
+  lookup and bucket quantization separately.
+- [presentation.test.js](../../../tests/charts/tin/presentation.test.js) verifies that
+  workspace and panel rendering re-read and forward the browser-local mode.
 
 Additional package tests cover [options](../../../tests/charts/tin/options.test.js),
 [color scales](../../../tests/charts/tin/color.test.js),
@@ -954,7 +982,7 @@ captured by value (so the live-preview panel skip is safe).
 <svg>
   <text>                         (optional title)
   <g transform=margins>
-    <g class="tin-triangles">    (≤128 <path>, one per color bucket)
+    <g class="tin-triangles">    (one compound <path> per emitted color group)
     <path>                       (optional hull)
     <g class="tin-isolines">     (visible + .tin-isoline-hit line pairs, optional labels)
     <g class="tin-threshold-contour">  (optional)
@@ -967,8 +995,8 @@ captured by value (so the live-preview panel skip is safe).
 ```
 
 **Tuning knobs** ([charts.js](../../../src/config/charts.js) `TIN_CHART`):
-`rampBuckets` (color resolution vs path count), `maxSurfaceLeaves` (geometry budget),
-`maxSubdivisionDepth`, `maxIsolineLevels`.
+`rampBuckets` (Optimized color resolution vs path count), `maxSurfaceLeaves`
+(shared geometry budget), `maxSubdivisionDepth`, `maxIsolineLevels`.
 
 **Theory → implementation map:**
 

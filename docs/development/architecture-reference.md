@@ -329,7 +329,7 @@ once by `legacyIndexedDbReader.js` when no SQLite project exists and
 `localStorage.chive.migrated` is absent. `clearPersistedState()` deletes the new
 SQLite DB, best-effort deletes `chive-state`, removes `chive.ui`, and sets the
 migration tombstone without touching `chive-locale` or `chive.settings` (the
-device-level settings key owned by `settingsService.js`).
+browser-local settings key owned by `settingsService.js`).
 
 ## Mutation Rules
 

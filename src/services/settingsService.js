@@ -2,10 +2,10 @@
  * CHIVE browser-local settings service.
  *
  * Sole owner of the `chive.settings` localStorage key. Settings here are
- * device-level rendering/UX preferences: they never enter projects, imports,
- * exports, or panel snapshots, and they survive project clearing (which
- * removes `chive.ui` but not this key). Locale stays with `i18nService.js`
- * under its own `chive-locale` key.
+ * browser-local rendering/UX preferences: they never enter projects, imports,
+ * exports, or panel snapshots. The project-persistence clear operation removes
+ * `chive.ui` but not this key. Locale stays with `i18nService.js` under its own
+ * `chive-locale` key.
  *
  * Reads normalize missing, malformed, non-object, or unknown values to the
  * defaults. Writes are best-effort: when localStorage is unavailable the

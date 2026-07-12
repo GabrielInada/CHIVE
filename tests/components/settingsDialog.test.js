@@ -8,8 +8,10 @@ vi.mock('../../src/services/i18nService.js', () => ({
 
 import { openSettingsDialog } from '../../src/components/settingsDialog.js';
 
+const openHandles = [];
+
 function openDialog(overrides = {}) {
-	return openSettingsDialog({
+	const handle = openSettingsDialog({
 		locale: 'pt-BR',
 		tinColorRendering: 'optimized',
 		onLocaleChange: vi.fn(),
@@ -17,6 +19,8 @@ function openDialog(overrides = {}) {
 		onClose: vi.fn(),
 		...overrides,
 	});
+	openHandles.push(handle);
+	return handle;
 }
 
 describe('settingsDialog', () => {
@@ -25,7 +29,7 @@ describe('settingsDialog', () => {
 	});
 
 	afterEach(() => {
-		document.querySelector('.settings-overlay')?.remove();
+		openHandles.splice(0).forEach(handle => handle.close());
 		document.body.innerHTML = '';
 	});
 

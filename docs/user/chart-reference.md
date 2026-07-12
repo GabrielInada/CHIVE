@@ -189,6 +189,10 @@ Required columns and behavior below are taken from the renderers in
 - **Optional settings:** fill mode (smooth / flat), subdivision depth, color ramp presets
   (viridis, plasma, magma, inferno, turbo, grays, terrain, custom), gradient colors and
   distribution, isolines, threshold line, edges, points, hull, and Z labels.
+- **Browser rendering mode:** **Settings > Performance** selects Optimized (at most
+  128 surface color groups) or Full ramp (exact computed ramp colors with potentially
+  more SVG paths). This preference is not part of the dataset or project. Both modes
+  retain the adaptive surface-detail limit.
 - **Aggregation behavior:** none. Every qualifying row is a vertex. Triangulation needs at
   least three points with finite X, Y, and Z.
 - **Good sample dataset:** Terrain Surface (`x`, `y`, `z`), a bundled synthetic sample

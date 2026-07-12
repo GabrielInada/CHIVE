@@ -49,7 +49,7 @@ CHIVE uses browser storage so auto-saved work can survive refreshes:
 |---|---|---|
 | IndexedDB | `chive-sqlite` | A single SQLite database byte image at store `db`, key `project`. Contains datasets, selected active dataset id, dashboard panel charts, layout blocks, slots, and panel counters. |
 | `localStorage` | `chive.ui` | Small UI preferences such as sidebar mode and preview row count. |
-| `localStorage` | `chive.settings` | Device-level settings such as the TIN color-rendering mode. Not part of projects, imports, or exports. |
+| `localStorage` | `chive.settings` | Browser-local settings such as the TIN color-rendering mode. Not part of projects, imports, or exports. |
 | `localStorage` | `chive-locale` | Selected interface language. |
 | `localStorage` | `chive.migrated` | One-time migration tombstone that prevents old raw IndexedDB data from being re-imported after a clear. |
 
@@ -92,14 +92,15 @@ Use the browser's site-data controls for the CHIVE origin you use:
 4. Reload CHIVE.
 
 Clearing browser site data removes persisted datasets, panel state, UI
-preferences, device-level settings, and the saved language choice for that
+preferences, browser-local settings, and the saved language choice for that
 origin. Different deployments and local development URLs have separate browser
 storage because the browser keys storage by origin.
 
-CHIVE's in-app clear path removes the SQLite project, the old `chive-state`
-database, and `chive.ui`, then sets the `chive.migrated` tombstone. It does not
-remove `chive-locale` or `chive.settings`: language and device-level settings
-survive clearing the current project.
+The persistence service's `clearPersistedState()` operation removes the SQLite
+project, the old `chive-state` database, and `chive.ui`, then sets the
+`chive.migrated` tombstone. It does not remove `chive-locale` or
+`chive.settings`. The current UI does not expose this operation as a project-menu
+command.
 
 ## External Network Dependencies
 

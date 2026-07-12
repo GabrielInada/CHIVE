@@ -110,18 +110,6 @@ describe('settingsService', () => {
 		window.removeEventListener(CHANGE_EVENT, listener);
 	});
 
-	it('survives project clearing while chive.ui is removed', async () => {
-		localStorage.setItem('chive.ui', JSON.stringify({ sidebar: 'collapsed' }));
-		localStorage.setItem(STORAGE_KEY, JSON.stringify({ tinColorRendering: 'full-ramp' }));
-
-		// The in-app clear path removes chive.ui but never chive.settings.
-		localStorage.removeItem('chive.ui');
-
-		const service = await freshService();
-		expect(localStorage.getItem('chive.ui')).toBeNull();
-		expect(service.getTinColorRendering()).toBe('full-ramp');
-	});
-
 	it('returns a copy from getSettings, so callers cannot mutate the cache', async () => {
 		const service = await freshService();
 		const settings = service.getSettings();

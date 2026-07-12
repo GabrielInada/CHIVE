@@ -36,7 +36,8 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
-  z-index: 120;
+  /* Above the fixed header and chart tooltip; feedback messages stay topmost. */
+  z-index: 11000;
   display: flex;
   align-items: center;
   justify-content: center;
