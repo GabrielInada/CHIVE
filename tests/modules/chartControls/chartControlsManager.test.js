@@ -113,9 +113,10 @@ vi.mock('../../../src/charts/line/controls/listeners.js', () => ({
 	setupLineChartControlListeners: mocks.setupLineChartControlListeners,
 }));
 
-vi.mock('../../../src/modules/chartControls/tinControls.js', async (importOriginal) => ({
-	...await importOriginal(),
+vi.mock('../../../src/charts/tin/controls/builder.js', () => ({
 	createTinControls: mocks.createTinControls,
+}));
+vi.mock('../../../src/charts/tin/controls/listeners.js', () => ({
 	setupTinControlListeners: mocks.setupTinControlListeners,
 }));
 

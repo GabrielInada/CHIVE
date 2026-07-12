@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 
 import { afterEach, describe, expect, it } from 'vitest';
-import { createIsolineHoverHandlers } from '../../../../src/modules/visualizations/tinChart/interactions.js';
-import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
+import { createIsolineHoverHandlers } from '../../../src/charts/tin/interaction.js';
+import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
 
 const AXIS_LABELS = { x: 'X', y: 'Y', z: 'Elev' };
 

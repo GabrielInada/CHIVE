@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { renderTinChart } from '../../../src/modules/visualizations/tinChart.js';
-import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
-import { interpolateColor } from '../../../src/utils/colorUtils.js';
-import { TIN_CHART } from '../../../src/config/charts.js';
+import { renderTinChart } from '../../../../src/charts/tin/renderers/svg.js';
+import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
+import { interpolateColor } from '../../../../src/utils/colorUtils.js';
+import { TIN_CHART } from '../../../../src/config/charts.js';
 
 const VALID_ROWS = [
 	{ x: 0, y: 0, z: 1 },
@@ -582,12 +582,10 @@ describe('renderTinChart', () => {
 	});
 });
 
-describe('tinChart public export surface', () => {
-	// Locks the facade after the split into the tinChart/ folder: the module must
-	// expose exactly the renderer and the re-exported depth resolver, nothing else.
-	it('exports exactly renderTinChart and resolveSurfaceDepth', async () => {
-		const mod = await import('../../../src/modules/visualizations/tinChart.js');
-		expect(Object.keys(mod).sort()).toEqual(['renderTinChart', 'resolveSurfaceDepth']);
+describe('TIN renderer module boundary', () => {
+	it('exports only the SVG renderer', async () => {
+		const mod = await import('../../../../src/charts/tin/renderers/svg.js');
+		expect(Object.keys(mod)).toEqual(['renderTinChart']);
 	});
 });
 

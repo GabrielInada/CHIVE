@@ -5,10 +5,10 @@
  * midpoints, recursive fill subdivision, iso-level segment extraction, unique
  * Delaunay edge collection, and the effective subdivision-depth resolver.
  * `appendSubdividedFragments` is the one impure helper here: it pushes into the
- * caller's `bucketFragments` arrays. Used by `tinChart.js`.
+ * caller's `bucketFragments` arrays. Used by `renderers/svg.js`.
  */
 
-import { TIN_CHART } from '../../../config/charts.js';
+import { TIN_CHART } from '../../config/charts.js';
 
 /** Midpoint of two TIN vertices in `{ x, y, z }` space. */
 export function midpoint(a, b) {

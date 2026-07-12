@@ -22,18 +22,20 @@ vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
 
 import {
 	createTinControls,
-	setupTinControlListeners,
-	computeDefaults,
-} from '../../../src/modules/chartControls/tinControls.js';
+} from '../../../src/charts/tin/controls/builder.js';
+import { setupTinControlListeners } from '../../../src/charts/tin/controls/listeners.js';
+import { computeDefaults } from '../../../src/charts/tin/controls/defaults.js';
 
-describe('tinControls public surface', () => {
-	it('exposes exactly the three documented tin-control exports (no internal leaks)', async () => {
-		const mod = await import('../../../src/modules/chartControls/tinControls.js');
-		expect(Object.keys(mod).sort()).toEqual([
-			'computeDefaults',
-			'createTinControls',
-			'setupTinControlListeners',
+describe('TIN controls module boundaries', () => {
+	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
+		const [builder, listeners, defaults] = await Promise.all([
+			import('../../../src/charts/tin/controls/builder.js'),
+			import('../../../src/charts/tin/controls/listeners.js'),
+			import('../../../src/charts/tin/controls/defaults.js'),
 		]);
+		expect(Object.keys(builder)).toEqual(['createTinControls']);
+		expect(Object.keys(listeners)).toEqual(['setupTinControlListeners']);
+		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
 	});
 });
 

@@ -62,15 +62,11 @@ doc rather than repeated:
 - **Render dispatch**: panel snapshots enter through
   [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js),
   which validates the request and resolves its implementation through the
-  [panel registry](../../../src/charts/registries/panel.js). The registry maps
-  legacy charts to [src/modules/visualizations/](../../../src/modules/visualizations)
-  and packaged charts to their `panelAdapter.js` under
-  [src/charts/](../../../src/charts) (bar, pie, treemap, bubble, line, scatter,
-  network, and scatter3d today).
-- **Section adapters**: legacy charts keep one `*ChartSection.js` under
-  [chartRenders/](../../../src/components/datasetWorkspace/chartRenders); per-chart packages
-  bring their own `workspaceSection.js`. These map config to the renderer
-  options bag and surface localized empty states via `showChartMessage` from
+  [panel registry](../../../src/charts/registries/panel.js). Every chart resolves
+  to its package-owned `panelAdapter.js` under [src/charts/](../../../src/charts).
+- **Section adapters**: every per-chart package owns a `workspaceSection.js`.
+  These map config to the renderer options bag and surface localized empty
+  states via `showChartMessage` from
   [chartContainerLifecycle.js](../../../src/utils/chartContainerLifecycle.js).
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
   `buildRankMap`, `isValidHexColor`); pie's `buildSliceColor` lives in its package

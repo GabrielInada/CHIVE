@@ -40,11 +40,9 @@ import { computeDefaults as computePieDefaults } from '../pie/controls/defaults.
 import { createTreeMapControls } from '../treemap/controls/builder.js';
 import { setupTreeMapControlListeners } from '../treemap/controls/listeners.js';
 import { computeDefaults as computeTreemapDefaults } from '../treemap/controls/defaults.js';
-import {
-	createTinControls,
-	setupTinControlListeners,
-	computeDefaults as computeTinDefaults,
-} from '../../modules/chartControls/tinControls.js';
+import { createTinControls } from '../tin/controls/builder.js';
+import { setupTinControlListeners } from '../tin/controls/listeners.js';
+import { computeDefaults as computeTinDefaults } from '../tin/controls/defaults.js';
 
 /** @type {Readonly<Object<ChartTypeKey, Readonly<ChartControlAdapter>>>} */
 const CONTROL_ADAPTERS = Object.freeze({

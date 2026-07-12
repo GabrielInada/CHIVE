@@ -4,11 +4,11 @@
  * Builds the pointer handlers that show a Z-value tooltip when the cursor is
  * over a `.tin-isoline-hit` line (the fattened transparent hit target behind
  * each visible isoline or threshold segment). Stateless; the renderer attaches
- * the returned function to each hit group. Used by `tinChart.js`.
+ * the returned function to each hit group. Used by `renderers/svg.js`.
  */
 
-import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../../../charts/shared/tooltip/tooltip.js';
-import { formatNumber } from '../../../utils/formatters.js';
+import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../shared/tooltip/tooltip.js';
+import { formatNumber } from '../../utils/formatters.js';
 
 /**
  * Create the isoline/threshold hover attach function for a TIN render.

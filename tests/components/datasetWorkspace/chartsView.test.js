@@ -52,7 +52,7 @@ vi.mock('../../../src/charts/network/workspaceSection.js', () => ({
 vi.mock('../../../src/charts/treemap/workspaceSection.js', () => ({
 	renderTreemapChartSection: mocks.renderTreemapChartSection,
 }));
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js', () => ({
+vi.mock('../../../src/charts/tin/workspaceSection.js', () => ({
 	renderTinChartSection: mocks.renderTinChartSection,
 }));
 vi.mock('../../../src/charts/scatter3d/workspaceSection.js', () => ({

@@ -23,8 +23,8 @@ import {
 	createSliderControl,
 	createTextControl,
 	createColorPresetControl,
-} from '../shared.js';
-import { groupControls } from '../controlGrouping.js';
+} from '../../../modules/chartControls/shared.js';
+import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
 
 const NONE_VALUE = '';
 

@@ -21,12 +21,15 @@ piecewise-linear height-field model over the triangulated input points.
 The CHIVE-specific behavior in this document is derived from these source files and
 tests:
 
-- Renderer: [tinChart.js](../../../src/modules/visualizations/tinChart.js)
-- Sidebar controls: [tinControls.js](../../../src/modules/chartControls/tinControls.js)
+- SVG renderer: [svg.js](../../../src/charts/tin/renderers/svg.js)
+- Renderer helpers: [options.js](../../../src/charts/tin/options.js),
+  [color.js](../../../src/charts/tin/color.js), [math.js](../../../src/charts/tin/math.js),
+  and [interaction.js](../../../src/charts/tin/interaction.js)
+- Sidebar controls: [controls](../../../src/charts/tin/controls/)
 - Config constants: [charts.js](../../../src/config/charts.js)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
 - Bundled preset catalog: [presetCatalog.js](../../../src/data/presetCatalog.js)
-- Renderer tests: [tinChart.test.js](../../../tests/modules/visualizations/tinChart.test.js)
+- Renderer tests: [svg.test.js](../../../tests/charts/tin/renderers/svg.test.js)
 
 Use "guarantee" narrowly when maintaining this file: a statement should be backed by
 source/tests, by the mathematical model under stated assumptions, or by documented
@@ -55,13 +58,15 @@ numeric data, but it does not add GIS metadata or terrain-domain validation.
 
 Key files:
 
-- Renderer: [tinChart.js](../../../src/modules/visualizations/tinChart.js)
-- Sidebar controls: [tinControls.js](../../../src/modules/chartControls/tinControls.js)
+- SVG renderer: [svg.js](../../../src/charts/tin/renderers/svg.js)
+- Options, color, geometry, and interaction helpers: [TIN package](../../../src/charts/tin/)
+- Sidebar controls: [controls](../../../src/charts/tin/controls/)
 - Config constants: [charts.js](../../../src/config/charts.js)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
 - Color math: [colorUtils.js](../../../src/utils/colorUtils.js)
-- Section adapter (dataset workspace): [tinChartSection.js](../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js)
-- Panel adapter (saved snapshots): [panel registry](../../../src/charts/registries/panel.js)
+- Shared presentation flow: [presentation.js](../../../src/charts/tin/presentation.js)
+- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/tin/workspaceSection.js)
+- Panel adapter: [panelAdapter.js](../../../src/charts/tin/panelAdapter.js)
 
 ---
 
@@ -272,8 +277,8 @@ reference.
 
 There are two ways a TIN chart gets drawn: the **live dataset workspace** (the main
 chart area, driven by the active dataset's config) and the **panel** (saved chart
-snapshots assembled into a dashboard). Both end at the same renderer,
-`renderTinChart`.
+snapshots assembled into a dashboard). Both share the package presentation mapping
+and end at `renderTinChart`.
 
 ```
                  ┌─────────────────────────────────────────────┐
@@ -281,10 +286,11 @@ snapshots assembled into a dashboard). Both end at the same renderer,
                  └─────────────────────────────────────────────┘
                         │                          │
        sidebar edits    │                          │  render
-   (tinControls.js) ────┘                          ▼
-        write config                  chartsView.renderCharts()
-                                      → renderTinChartSection()      [dataset workspace]
-                                        → renderTinChart(container, rows, x,y,z, opts)
+ (controls/listeners.js) ┘                      ▼
+        write config                 workspace registry
+                                     → renderTinChartSection()
+                                       → renderTinInto()
+                                         → renderTinChart()
                                               │
    "Add to panel"                            │
    (eventHandlers → panelManager)            │
@@ -294,8 +300,9 @@ snapshots assembled into a dashboard). Both end at the same renderer,
    chartSnapshot { config, dataSnapshot, … }  │
         │                                     │
    renderCanvasPanel() → mountSlot()          │
-   → panel.js renderTin()                     │
-     → renderTinChart(container, spec.dataSnapshot, …, spec.config)
+   → panel registry                           │
+     → renderTinPanelChart()                  │
+       → renderTinInto() → renderTinChart()
                                               ▼
                                    ┌──────────────────────┐
                                    │   <svg> in container  │
@@ -368,9 +375,9 @@ fields fall back to default).
 
 ## 5. The control sidebar
 
-[tinControls.js](../../../src/modules/chartControls/tinControls.js) builds the
-right-sidebar control group and wires every input to a config write. It exposes
-three functions, registered in the
+The package's [controls directory](../../../src/charts/tin/controls/) builds the
+right-sidebar control group and wires every input to a config write. Its three
+role modules are registered in the
 [controls registry](../../../src/charts/registries/controls.js) under the
 `tin` entry and consumed by `chartControlsManager.js`:
 
@@ -442,7 +449,7 @@ controls; it only reads config that the listeners have written.
 which chart is active and delegates through the
 [workspace registry](../../../src/charts/registries/workspace.js). Its `tin`
 entry calls `renderTinChartSection({ config: chartConfig.tin, rows })` from
-[tinChartSection.js](../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js).
+[workspaceSection.js](../../../src/charts/tin/workspaceSection.js).
 That adapter:
 
 1. Resolves the block (`chart-block-tin`) and container (`chart-tin-container`)
@@ -450,8 +457,9 @@ That adapter:
    `CHART_BLOCKS.tin` / `CHART_CONTAINERS.tin`).
 2. Hides the block and clears the container if the chart is disabled.
 3. Sets the container `min-height` to the configured `chartHeight`.
-4. Maps every `config.*` key into the renderer's `options` bag (including
-   localized axis labels via `t(...)` and the current locale via `getLocale()`).
+4. Delegates to [presentation.js](../../../src/charts/tin/presentation.js), which maps
+   every `config.*` key into the renderer's options bag, including localized axis
+   labels and the current locale.
 5. Calls `renderTinChart(container, rows, config.x, config.y, config.z, options)`.
 6. On failure, shows a localized empty-state message (`insufficient-points` gets a
    specific message; anything else a generic one).
@@ -462,10 +470,10 @@ When a chart is added to the panel, `addChartToPanel`
 ([panelManager.js](../../../src/modules/panelManager.js)) captures a snapshot:
 `config`, `dataSnapshot`, and `columnsSnapshot` are each `structuredClone`d at
 capture time, so the snapshot is **frozen** and decoupled from later edits to the
-active dataset. The `tin` adapter in the
-[panel registry](../../../src/charts/registries/panel.js) maps `spec.config` to
-the same options bag after `renderChartFromSpec` validates the request, then calls the identical
-`renderTinChart` against `spec.dataSnapshot`. This frozen-snapshot property is what
+active dataset. [panelAdapter.js](../../../src/charts/tin/panelAdapter.js) passes
+`spec.config` and `spec.dataSnapshot` through the same presentation flow after
+`renderChartFromSpec` validates the request. The panel registry only dispatches to
+that adapter. This frozen-snapshot property is what
 lets the live preview skip re-rendering the panel (section 9.4 / 10).
 
 ---
@@ -583,7 +591,8 @@ claim that raw-coordinate triangulation would be equivalent.
 ### 7.9 Effective depth (`resolveSurfaceDepth`)
 
 Before subdividing, the renderer resolves the actual depth to use. This is an
-exported pure helper so it can be unit-tested without a DOM:
+pure helper exported by [math.js](../../../src/charts/tin/math.js) so it can be
+unit-tested without a DOM:
 
 ```js
 resolveSurfaceDepth({ requestedDepth, fillMode, zMin, zMax, triangleCount })
@@ -603,9 +612,9 @@ Policy, in order:
    to triangulate, subdivide, overlay, and export. The fallback is a coarser surface
    fill, not input rejection.
 
-### 7.10 Subdivision and bucketed path emission (`emitSubdivided`)
+### 7.10 Subdivision and bucketed path emission (`appendSubdividedFragments`)
 
-For each base Delaunay triangle, `emitSubdivided` recursively splits it into
+For each base Delaunay triangle, `appendSubdividedFragments` recursively splits it into
 `4 ** depth` leaf sub-triangles by edge midpoints (the 1-to-4 midpoint subdivision of
 section 2.5; recall this only refines color sampling of a planar facet, it does not
 change the geometry). At a leaf, it computes the mean-z of the three vertices (the
@@ -790,7 +799,7 @@ quantization is expected to be a small visual tradeoff compared with the DOM sav
 
 Supporting choices:
 
-- **Bucket during subdivision**, not after. `emitSubdivided` pushes path fragments
+- **Bucket during subdivision**, not after. `appendSubdividedFragments` pushes path fragments
   straight into per-bucket arrays, avoiding ~63k/253k short-lived leaf objects per
   render (GC churn during a drag).
 - **Fixed-size bucket array** indexed `0..127`, iterated in order — deterministic
@@ -903,7 +912,7 @@ large for SVG, but that is not implemented here.
 
 ## 13. Tests
 
-[tinChart.test.js](../../../tests/modules/visualizations/tinChart.test.js) covers the
+[svg.test.js](../../../tests/charts/tin/renderers/svg.test.js) covers the
 renderer. Notable cases after the bucketed-path change:
 
 - Subpath count (`M` count across `.tin-triangles path`) equals
@@ -916,11 +925,16 @@ renderer. Notable cases after the bucketed-path change:
 - Constant-z: one path, low color, depth forced to 0.
 - Leaf budget clamps depth on a large grid.
 - Coordinate precision: no `d` attribute carries 3+ decimals.
-- `resolveSurfaceDepth` unit tests (clamping, flat, constant-z, budget step-down,
-  base-triangulation-over-budget floor) — pure, no DOM.
+- [math.test.js](../../../tests/charts/tin/math.test.js) covers `resolveSurfaceDepth`
+  clamping, flat/constant-z behavior, budget step-down, subdivision, isolines, and
+  unique-edge collection without a DOM.
 
-Plus the existing isoline/threshold/hit-line/tooltip/legend coverage, untouched by
-the change.
+Additional package tests cover [options](../../../tests/charts/tin/options.test.js),
+[color scales](../../../tests/charts/tin/color.test.js),
+[interactions](../../../tests/charts/tin/interaction.test.js),
+[controls](../../../tests/charts/tin/controls.test.js),
+[workspace integration](../../../tests/charts/tin/workspaceSection.test.js), and
+[panel integration](../../../tests/charts/tin/panelAdapter.test.js).
 [panelManager.edges.test.js](../../../tests/modules/panelSubsystem/panelManager.edges.test.js)
 has a snapshot-isolation regression test guarding that a panel snapshot's config is
 captured by value (so the live-preview panel skip is safe).
@@ -964,7 +978,7 @@ captured by value (so the live-preview panel skip is safe).
 | TIN vs grid (2.2) | the whole renderer's model |
 | Delaunay triangulation (2.3) | `Delaunay.from` (7.8), hull (7.11) |
 | Barycentric / mean-z (2.4) | leaf mean-z coloring (7.10) |
-| Midpoint subdivision (2.5) | `emitSubdivided`, `resolveSurfaceDepth` (7.9–7.10) |
+| Midpoint subdivision (2.5) | `appendSubdividedFragments`, `resolveSurfaceDepth` (7.9–7.10) |
 | Level sets / marching triangles (2.6) | `computeIsolineSegments` (7.12) |
 | Hypsometric tint, classification (2.7) | `sampleRamp` / `tForZ` (7.5–7.6), ramps (8.1) |
 | Index/feature contour (2.8) | threshold contour (7.13) |

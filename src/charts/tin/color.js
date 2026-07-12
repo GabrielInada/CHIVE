@@ -5,7 +5,7 @@
  * a continuous `sampleRamp(t)`, a `tForZ(z)` that maps a Z value to its 0..1
  * ramp position (by value or by rank), and a `bucketAt(z)` that quantizes Z
  * into one of `bucketCount` color buckets. Building all three from a single
- * call keeps them from drifting apart. Used by `tinChart.js`.
+ * call keeps them from drifting apart. Used by `renderers/svg.js`.
  */
 
 import {
@@ -16,9 +16,9 @@ import {
 	interpolateRgbBasis,
 	interpolateTurbo,
 	interpolateViridis,
-} from '../../../../vendor/d3/d3.js';
-import { TIN_CHART } from '../../../config/charts.js';
-import { interpolateColor } from '../../../utils/colorUtils.js';
+} from '../../../vendor/d3/d3.js';
+import { TIN_CHART } from '../../config/charts.js';
+import { interpolateColor } from '../../utils/colorUtils.js';
 
 // d3 ships sequential interpolators for the common scientific ramps. Terrain
 // isn't built in, so we synthesize one with interpolateRgbBasis through a

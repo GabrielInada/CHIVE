@@ -360,8 +360,8 @@ export default [
 					{ name: './workspace.js', message: 'The panel registry cannot import the workspace registry.' },
 				],
 				patterns: [{
-					group: ['**/components/**', '**/features/**', '**/state/**', '**/chartControls/**', '**/panelSubsystem/**'],
-					message: 'The panel registry imports only chart panel adapters, legacy visualization renderers, i18n, and leaf config/types.',
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/chartControls/**', '**/panelSubsystem/**', '**/visualizations/**'],
+					message: 'The panel registry imports only chart panel adapters and leaf config/types.',
 				}],
 			}],
 		},

@@ -8,17 +8,17 @@ const mocks = vi.hoisted(() => ({
 	getLocale: vi.fn(() => 'en'),
 }));
 
-vi.mock('../../../../src/modules/visualizations/tinChart.js', () => ({
+vi.mock('../../../src/charts/tin/renderers/svg.js', () => ({
 	renderTinChart: mocks.renderTinChart,
 }));
 
-vi.mock('../../../../src/services/i18nService.js', () => ({
+vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 	getLocale: mocks.getLocale,
 }));
 
-import { renderTinChartSection } from '../../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js';
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/config/elementIds.js';
+import { renderTinChartSection } from '../../../src/charts/tin/workspaceSection.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/config/elementIds.js';
 
 function setupDom({ withContainer = true, withBlock = true } = {}) {
 	document.body.innerHTML = '';

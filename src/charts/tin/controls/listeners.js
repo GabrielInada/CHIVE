@@ -9,7 +9,7 @@
  */
 
 import { CHART_COLORS, TIN_CHART, TIN_COLOR_RAMPS } from '../../../config/charts.js';
-import { COLOR_PRESETS } from '../shared.js';
+import { COLOR_PRESETS } from '../../../modules/chartControls/shared.js';
 import {
 	setupSelectListeners,
 	setupCheckboxListeners,
@@ -18,7 +18,7 @@ import {
 	setupNumberInputListener,
 	setupSliderListener,
 	setupColorPresetListeners,
-} from '../controlListenerHelpers.js';
+} from '../../../modules/chartControls/controlListenerHelpers.js';
 
 /**
  * Wire listeners for every TIN-chart control. X/Y/Z selects clamp to

@@ -1,8 +1,8 @@
 /**
  * Dataset-workspace chart integration registry.
  *
- * Entries normalize package and legacy workspace sections to one context
- * shape. This registry owns workspace rendering only; it does not import
+ * Entries normalize per-chart workspace sections to one context shape. This
+ * registry owns workspace rendering only; it does not import
  * controls, panel adapters, state, or services.
  *
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
@@ -23,7 +23,7 @@ import { renderPieChartSection } from '../pie/workspaceSection.js';
 import { renderBubbleChartSection } from '../bubble/workspaceSection.js';
 import { renderNetworkChartSection } from '../network/workspaceSection.js';
 import { renderTreemapChartSection } from '../treemap/workspaceSection.js';
-import { renderTinChartSection } from '../../components/datasetWorkspace/chartRenders/tinChartSection.js';
+import { renderTinChartSection } from '../tin/workspaceSection.js';
 
 /** @type {Readonly<Object<ChartTypeKey, (context: WorkspaceChartContext) => void>>} */
 const WORKSPACE_RENDERERS = Object.freeze({

@@ -67,7 +67,7 @@ clamps, rotate/zoom speeds, keyboard steps).
 ## 5. The control sidebar
 
 [controls/](../../../src/charts/scatter3d/controls) mirrors
-`chartControls/tinControls/`: `builder.js` (Data: X/Y/Z numeric selects;
+`charts/tin/controls/`: `builder.js` (Data: X/Y/Z numeric selects;
 Display: title, point size, opacity; Styling: color), `listeners.js` (via
 the shared `controlListenerHelpers.js`, which remains the config-write
 adapter; selects clamp to the numeric column list), and `defaults.js`

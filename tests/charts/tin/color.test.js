@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createTinColorScale } from '../../../../src/modules/visualizations/tinChart/colorScale.js';
-import { TIN_CHART } from '../../../../src/config/charts.js';
+import { createTinColorScale } from '../../../src/charts/tin/color.js';
+import { TIN_CHART } from '../../../src/config/charts.js';
 
 const VALUE_BW = {
 	colorRamp: 'custom',

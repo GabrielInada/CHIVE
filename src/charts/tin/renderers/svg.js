@@ -5,7 +5,7 @@
  * configurable subdivision, color ramps (Viridis/Inferno/Plasma/etc.),
  * isolines, hull outline, and an optional threshold line. The most
  * option-dense of the chart renderers. The pipeline is split across peer
- * modules under `visualizations/tinChart/` and wired together here: option
+ * modules under `charts/tin/` and wired together here: option
  * normalization, color-scale construction, subdivision/iso geometry, and the
  * isoline hover interaction. Shared SVG/axis scaffolding lives in
  * {@link chartScaffold}.
@@ -19,34 +19,30 @@
  * bucket; flat fill mode is quantized the same way, and a constant-Z surface
  * paints at the ramp's low color.
  *
- * @typedef {import('../../types.js').Result} Result
+ * @typedef {import('../../../types.js').Result} Result
  */
 
-import { Delaunay, axisBottom, axisLeft, extent, scaleLinear } from '../../../vendor/d3/d3.js';
-import { CHART_DIMENSIONS, TIN_CHART } from '../../config/charts.js';
-import { formatNumber } from '../../utils/formatters.js';
-import { interpolateColor } from '../../utils/colorUtils.js';
-import { ok, fail } from '../../utils/result.js';
-import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../../charts/shared/tooltip/tooltip.js';
+import { Delaunay, axisBottom, axisLeft, extent, scaleLinear } from '../../../../vendor/d3/d3.js';
+import { CHART_DIMENSIONS, TIN_CHART } from '../../../config/charts.js';
+import { formatNumber } from '../../../utils/formatters.js';
+import { interpolateColor } from '../../../utils/colorUtils.js';
+import { ok, fail } from '../../../utils/result.js';
+import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../../shared/tooltip/tooltip.js';
 import {
 	appendAxisLabels,
 	appendBottomAxis,
 	appendLeftAxis,
 	setupChartSvg,
-} from '../../charts/shared/svg/scaffold.js';
-import { normalizeTinOptions } from './tinChart/options.js';
-import { createTinColorScale } from './tinChart/colorScale.js';
+} from '../../shared/svg/scaffold.js';
+import { normalizeTinOptions } from '../options.js';
+import { createTinColorScale } from '../color.js';
 import {
 	appendSubdividedFragments,
 	collectUniqueEdges,
 	computeIsolineSegments,
 	resolveSurfaceDepth,
-} from './tinChart/geometry.js';
-import { createIsolineHoverHandlers } from './tinChart/interactions.js';
-
-// Re-exported for unit tests and any external caller; `import` + local `export`
-// (not a bare re-export) so the renderer's own call below resolves the binding.
-export { resolveSurfaceDepth };
+} from '../math.js';
+import { createIsolineHoverHandlers } from '../interaction.js';
 
 /**
  * Render a TIN surface chart into `container`. Returns `ok()` on success,

@@ -10,7 +10,7 @@ const renderers = vi.hoisted(() => ({
 	renderPiePanelChart: vi.fn(() => ({ ok: true })),
 	renderScatterPanelChart: vi.fn(() => ({ ok: true })),
 	renderTreemapPanelChart: vi.fn(() => ({ ok: true })),
-	renderTinChart: vi.fn(() => ({ ok: true })),
+	renderTinPanelChart: vi.fn(() => ({ ok: true })),
 	renderScatter3dPanelChart: vi.fn(() => ({ ok: true })),
 }));
 
@@ -20,14 +20,9 @@ vi.mock('../../../src/charts/line/panelAdapter.js', () => ({ renderLinePanelChar
 vi.mock('../../../src/charts/network/panelAdapter.js', () => ({ renderNetworkPanelChart: renderers.renderNetworkPanelChart }));
 vi.mock('../../../src/charts/pie/panelAdapter.js', () => ({ renderPiePanelChart: renderers.renderPiePanelChart }));
 vi.mock('../../../src/charts/scatter/panelAdapter.js', () => ({ renderScatterPanelChart: renderers.renderScatterPanelChart }));
-vi.mock('../../../src/modules/visualizations/tinChart.js', () => ({ renderTinChart: renderers.renderTinChart }));
+vi.mock('../../../src/charts/tin/panelAdapter.js', () => ({ renderTinPanelChart: renderers.renderTinPanelChart }));
 vi.mock('../../../src/charts/treemap/panelAdapter.js', () => ({ renderTreemapPanelChart: renderers.renderTreemapPanelChart }));
 vi.mock('../../../src/charts/scatter3d/panelAdapter.js', () => ({ renderScatter3dPanelChart: renderers.renderScatter3dPanelChart }));
-vi.mock('../../../src/services/i18nService.js', () => ({
-	t: vi.fn((key) => key),
-	getLocale: vi.fn(() => 'en'),
-}));
-
 import { getPanelChartRenderer, SUPPORTED_PANEL_CHART_TYPES } from '../../../src/charts/registries/panel.js';
 import { renderChartFromSpec } from '../../../src/modules/panelSubsystem/renderChartFromSpec.js';
 
@@ -133,27 +128,11 @@ describe('panel chart registry and render bridge', () => {
 		expect(renderers.renderLinePanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
-	it('dispatches tin with x, y, z as positional args and without filterCallbacks', () => {
-		renderChartFromSpec(container, makeSpec('tin', { x: 'a', y: 'b', z: 'a' }));
-		expect(renderers.renderTinChart).toHaveBeenCalledTimes(1);
-		const [, rows, x, y, z, opts] = renderers.renderTinChart.mock.calls[0];
-		expect(rows).toBe(baseRows);
-		expect(x).toBe('a');
-		expect(y).toBe('b');
-		expect(z).toBe('a');
-		// TIN is the lone renderer that does not receive filterCallbacks; the
-		// shared baseOptions must not introduce it.
-		expect('filterCallbacks' in opts).toBe(false);
-	});
-
-	it('uses localized fallback labels when chart columns are missing', () => {
-		renderChartFromSpec(container, makeSpec('tin', { x: '', y: '', z: '' }));
-
-		expect(renderers.renderTinChart.mock.calls[0][5].axisLabels).toEqual({
-			x: 'chive-chart-control-tin-x',
-			y: 'chive-chart-control-tin-y',
-			z: 'chive-chart-control-tin-z',
-		});
+	it('dispatches tin to the package panel adapter with the whole spec', () => {
+		const spec = makeSpec('tin', { x: 'a', y: 'b', z: 'a' });
+		renderChartFromSpec(container, spec);
+		expect(renderers.renderTinPanelChart).toHaveBeenCalledTimes(1);
+		expect(renderers.renderTinPanelChart).toHaveBeenCalledWith(container, spec);
 	});
 
 	it('accepts chart specs without config objects', () => {
@@ -170,7 +149,7 @@ describe('panel chart registry and render bridge', () => {
 		expect(renderers.renderBubblePanelChart).toHaveBeenCalled();
 		expect(renderers.renderTreemapPanelChart).toHaveBeenCalled();
 		expect(renderers.renderLinePanelChart).toHaveBeenCalled();
-		expect(renderers.renderTinChart).toHaveBeenCalled();
+		expect(renderers.renderTinPanelChart).toHaveBeenCalled();
 	});
 
 	it('returns renderer failure results unchanged', () => {
@@ -181,11 +160,4 @@ describe('panel chart registry and render bridge', () => {
 		expect(result).toEqual({ ok: false, reason: 'renderer-failed' });
 	});
 
-	it('passes customTitle, chartHeight, and locale through to the legacy tin renderer', () => {
-		renderChartFromSpec(container, makeSpec('tin', { x: 'a', y: 'b', z: 'a', customTitle: 'My chart', chartHeight: 480 }));
-		const opts = renderers.renderTinChart.mock.calls[0][5];
-		expect(opts.customTitle).toBe('My chart');
-		expect(opts.chartHeight).toBe(480);
-		expect(opts.locale).toBe('en');
-	});
 });

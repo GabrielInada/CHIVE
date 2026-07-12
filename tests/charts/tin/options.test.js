@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeTinOptions } from '../../../../src/modules/visualizations/tinChart/options.js';
+import { normalizeTinOptions } from '../../../src/charts/tin/options.js';
 
 describe('normalizeTinOptions defaults', () => {
 	it('returns the full validated config for an empty options bag', () => {

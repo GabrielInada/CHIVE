@@ -4,11 +4,11 @@
  * Turns the raw render options bag into a validated config object with every
  * default, bound, and enum collapse applied exactly once. Pure: no DOM, no d3.
  * Owns the ramp-enum normalization (`resolveColorRamp`, config-only) so the
- * d3-loading color module never has to. Used by `tinChart.js`.
+ * d3-loading color module never has to. Used by `renderers/svg.js`.
  */
 
-import { CHART_COLORS, CHART_DIMENSIONS, TIN_CHART, TIN_COLOR_RAMPS } from '../../../config/charts.js';
-import { isValidHexColor } from '../../../utils/colorUtils.js';
+import { CHART_COLORS, CHART_DIMENSIONS, TIN_CHART, TIN_COLOR_RAMPS } from '../../config/charts.js';
+import { isValidHexColor } from '../../utils/colorUtils.js';
 
 function normalizeColor(value, fallback) {
 	const v = String(value || '').trim();
