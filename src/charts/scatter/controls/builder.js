@@ -16,9 +16,9 @@
 
 import { CHART_COLORS } from '../../../config/charts.js';
 import { t } from '../../../services/i18nService.js';
-import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createSelectControl } from '../../../modules/chartControls/shared.js';
-import { COLOR_PRESETS, createColorPresetControl } from '../../../modules/chartControls/shared.js';
-import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createSelectControl } from '../../shared/controls/factories.js';
+import { COLOR_PRESETS, createColorPresetControl } from '../../shared/controls/factories.js';
+import { groupControls } from '../../shared/controls/grouping.js';
 
 /**
  * Build the scatter-plot control sections (Data, Display, Analytics, Styling).
@@ -370,7 +370,8 @@ function buildColorControls(config, numericOptions, categoryOptions, disabled) {
 		'viz-scatter-color-preset',
 		t('chive-chart-color-palette'),
 		config.colorScheme || 'Bold',
-		disabled
+		disabled,
+		t
 	));
 
 	return controls;

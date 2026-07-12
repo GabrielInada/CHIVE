@@ -23,8 +23,8 @@ import {
 	createSliderControl,
 	createTextControl,
 	createColorPresetControl,
-} from '../../../modules/chartControls/shared.js';
-import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
+} from '../../shared/controls/factories.js';
+import { groupControls } from '../../shared/controls/grouping.js';
 
 const NONE_VALUE = '';
 
@@ -178,6 +178,7 @@ function buildSurfaceControls(config, disabled) {
 			t('chive-chart-color-palette'),
 			config.colorScheme || 'Colorblind-Safe',
 			disabled || !isCustomRamp,
+			t,
 		),
 	];
 }

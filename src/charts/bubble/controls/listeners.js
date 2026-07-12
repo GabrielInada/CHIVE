@@ -12,7 +12,7 @@
 
 import { BUBBLE_CHART } from '../../../config/charts.js';
 import { normalizeColumnNameList, filterVisibleColumns } from '../../../utils/columnHelpers.js';
-import { COLOR_PRESETS } from '../../../modules/chartControls/shared.js';
+import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	commitChartConfigPatch,
 	setupSelectListeners,

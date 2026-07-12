@@ -1,8 +1,9 @@
 /**
  * CHIVE chart-control listener helpers.
  *
- * Wires DOM elements built by `shared.js` (selects, checkboxes, sliders,
- * color inputs) to writes against the active dataset's `chartConfig`.
+ * Wires DOM elements built by the shared control factories
+ * (`charts/shared/controls/factories.js`) to writes against the active
+ * dataset's `chartConfig`.
  * Every helper takes the dataset reference, the chart-type key, and an
  * optional `onConfigChanged` callback that fires after the state write.
  *
@@ -11,7 +12,7 @@
  */
 
 import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../state/appState.js';
-import { normalizeHexColor } from './shared.js';
+import { normalizeHexColor } from '../../utils/colorUtils.js';
 import { triggerLiveRender } from './livePreview.js';
 
 /**

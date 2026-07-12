@@ -9,7 +9,7 @@
  */
 
 import { CHART_COLORS, TIN_CHART, TIN_COLOR_RAMPS } from '../../../config/charts.js';
-import { COLOR_PRESETS } from '../../../modules/chartControls/shared.js';
+import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,
 	setupCheckboxListeners,

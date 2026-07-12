@@ -16,8 +16,8 @@ import {
 	createSelectControl,
 	createSliderControl,
 	createTextControl,
-} from '../../../modules/chartControls/shared.js';
-import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
+} from '../../shared/controls/factories.js';
+import { groupControls } from '../../shared/controls/grouping.js';
 
 /**
  * Build the treemap control sections (Data, Display, Styling, Advanced).
@@ -147,7 +147,8 @@ export function createTreeMapControls(dataset, categoryOptions, numericOptions =
 		'viz-treemap-color-preset',
 		t('chive-chart-color-palette'),
 		config.colorScheme || 'Bold',
-		isDisabled
+		isDisabled,
+		t
 	));
 
 	return groupControls([

@@ -9,8 +9,8 @@
 
 import { t } from '../../../services/i18nService.js';
 import { NETWORK_GRAPH } from '../../../config/charts.js';
-import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createColorPresetControl, createSelectControl } from '../../../modules/chartControls/shared.js';
-import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createColorPresetControl, createSelectControl } from '../../shared/controls/factories.js';
+import { groupControls } from '../../shared/controls/grouping.js';
 
 /**
  * Build the network-graph control sections (Data, Display, Styling, Advanced).
@@ -181,7 +181,8 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 		'viz-network-color-preset',
 		t('chive-chart-color-palette'),
 		config.colorScheme || 'Bold',
-		disabled
+		disabled,
+		t
 	));
 
 	// ====== ADVANCED SECTION (Force simulation physics) ======

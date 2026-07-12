@@ -12,7 +12,7 @@
  */
 
 import { CHART_COLORS, TREEMAP_CHART } from '../../../config/charts.js';
-import { COLOR_PRESETS } from '../../../modules/chartControls/shared.js';
+import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	commitChartConfigPatch,
 	setupCheckboxListeners,

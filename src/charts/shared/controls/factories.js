@@ -4,13 +4,16 @@
  * DOM-only helpers that build the per-control widgets used by every
  * chart controls package (`charts/bar/controls/`, `charts/pie/controls/`, ...). Each
  * factory returns a `<div>` containing a label plus the input element;
- * listeners are wired separately via `controlListenerHelpers.js`.
+ * listeners are wired separately via the shared chart-control listener
+ * helpers in `modules/chartControls/controlListenerHelpers.js`.
  *
- * Also re-exports a handful of color utilities so per-chart files only
- * need to import from one place.
+ * Shared leaf infrastructure: localized strings arrive as arguments
+ * (label text, the palette `translate` callback), never via service
+ * imports. Also re-exports a handful of color utilities so per-chart
+ * files only need to import from one place.
  */
 
-import { normalizeHexColor } from '../../utils/colorUtils.js';
+import { normalizeHexColor } from '../../../utils/colorUtils.js';
 
 /**
  * Build a labeled checkbox control.
@@ -227,18 +230,17 @@ export function createColorInputControl(id, labelText, value, fallback, disabled
 }
 
 // Color Presets for palette quick-apply.
-import { CHART_COLOR_PALETTES } from '../../config/charts.js';
-import { t } from '../../services/i18nService.js';
+import { CHART_COLOR_PALETTES } from '../../../config/charts.js';
 
 /**
- * Pre-built color palettes, exposed by the chartControls layer so per-
+ * Pre-built color palettes, exposed by the shared controls layer so per-
  * chart files do not need to import directly from `config/charts.js`.
  *
  * @type {Object<string, string[]>}
  */
 export const COLOR_PRESETS = CHART_COLOR_PALETTES;
 
-export { hexToRgb, rgbToHex, interpolateColor, normalizeHexColor } from '../../utils/colorUtils.js';
+export { hexToRgb, rgbToHex, interpolateColor, normalizeHexColor } from '../../../utils/colorUtils.js';
 
 const PALETTE_LABEL_KEYS = {
 	Tableau10: 'chive-chart-palette-tableau10',
@@ -248,10 +250,10 @@ const PALETTE_LABEL_KEYS = {
 };
 
 /** @private */
-function localizedPaletteName(paletteId) {
+function localizedPaletteName(paletteId, translate) {
 	const key = PALETTE_LABEL_KEYS[paletteId];
 	if (!key) return paletteId;
-	const localized = t(key);
+	const localized = translate(key);
 	return localized && localized !== key ? localized : paletteId;
 }
 
@@ -260,14 +262,21 @@ function localizedPaletteName(paletteId) {
  * `data-color-preset-control={id}` so the listener helper
  * `setupColorPresetListeners` can wire them in batch.
  *
+ * Palette names and the help line resolve through the caller-supplied
+ * `translate` callback, which keeps this factory free of service imports.
+ * Builders pass the app's `t`; when omitted, raw palette ids and message
+ * keys render.
+ *
  * @param {string} id
  * @param {string} labelText
  * @param {string} presetName - Currently-active preset; gets a highlighted border.
  * @param {boolean} [disabled=false]
+ * @param {((key: string) => string) | undefined} translate - i18n lookup for palette names and help text.
  * @param {((name: string, colors: string[]) => void) | undefined} onSelect - Per-button click handler.
  * @returns {HTMLElement}
  */
-export function createColorPresetControl(id, labelText, presetName, disabled = false, onSelect) {
+export function createColorPresetControl(id, labelText, presetName, disabled = false, translate, onSelect) {
+	const resolve = typeof translate === 'function' ? translate : (key) => key;
 	const div = document.createElement('div');
 	div.className = 'chart-controle';
 
@@ -286,8 +295,8 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
 		btn.type = 'button';
 		btn.dataset.colorPresetControl = id;
 		btn.dataset.presetName = name;
-		btn.textContent = localizedPaletteName(name);
-		btn.title = localizedPaletteName(name);
+		btn.textContent = localizedPaletteName(name, resolve);
+		btn.title = localizedPaletteName(name, resolve);
 		btn.className = 'chart-preset-btn';
 		btn.disabled = disabled;
 		btn.style.padding = '4px 8px';
@@ -308,7 +317,7 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
 
 	const helpText = document.createElement('p');
 	helpText.className = 'chart-control-help';
-	helpText.textContent = t('chive-chart-color-palette-help');
+	helpText.textContent = resolve('chive-chart-color-palette-help');
 	helpText.style.fontSize = '11px';
 	helpText.style.color = 'var(--muted)';
 	helpText.style.marginTop = '6px';

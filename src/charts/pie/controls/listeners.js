@@ -11,7 +11,7 @@
  */
 
 import { CHART_COLORS, PIE_CHART } from '../../../config/charts.js';
-import { COLOR_PRESETS, normalizeHexColor } from '../../../modules/chartControls/shared.js';
+import { COLOR_PRESETS, normalizeHexColor } from '../../shared/controls/factories.js';
 import {
 	commitChartConfigPatch,
 	previewChartConfigPatch,

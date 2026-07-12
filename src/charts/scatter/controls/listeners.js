@@ -13,7 +13,7 @@
  */
 
 import { CHART_COLORS } from '../../../config/charts.js';
-import { normalizeHexColor, COLOR_PRESETS } from '../../../modules/chartControls/shared.js';
+import { normalizeHexColor, COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	commitChartConfigPatch,
 	previewChartConfigPatch,

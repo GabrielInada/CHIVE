@@ -2,12 +2,13 @@
  * CHIVE chart-control grouping utility.
  *
  * Wraps related controls in a collapsible section. Used by per-chart
- * control modules (`charts/bar/controls/builder.js`, legacy controls, etc.) to group "Data", "Display",
- * "Styling", etc. and keep the sidebar scannable.
+ * control builders (`charts/bar/controls/builder.js`, ...) to group "Data",
+ * "Display", "Styling", etc. and keep the sidebar scannable.
  *
  * Section expansion state is preserved across sidebar re-renders by
  * {@link captureControlSectionExpansionState} and
- * {@link applyControlSectionExpansionState} in `chartControls/chartControlsManager.js`.
+ * {@link applyControlSectionExpansionState} in
+ * `modules/chartControls/chartControlsManager.js`.
  */
 
 import { createSvgIcon } from './svgIcons.js';

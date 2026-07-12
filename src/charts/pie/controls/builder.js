@@ -16,9 +16,9 @@
 
 import { CHART_COLORS, PIE_CHART } from '../../../config/charts.js';
 import { t } from '../../../services/i18nService.js';
-import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl } from '../../../modules/chartControls/shared.js';
-import { createColorPresetControl, createColorPickerGridControl } from '../../../modules/chartControls/shared.js';
-import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
+import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl } from '../../shared/controls/factories.js';
+import { createColorPresetControl, createColorPickerGridControl } from '../../shared/controls/factories.js';
+import { groupControls } from '../../shared/controls/grouping.js';
 import { getPieSectorValues } from './sectorValues.js';
 
 /**
@@ -298,7 +298,8 @@ function buildStylingControls(dataset, config, sectorValues) {
 			'viz-pie-color-preset',
 			t('chive-chart-color-palette'),
 			config.colorScheme || 'Bold',
-			!dataset.chartConfig.pie.enabled
+			!dataset.chartConfig.pie.enabled,
+			t
 		));
 	}
 

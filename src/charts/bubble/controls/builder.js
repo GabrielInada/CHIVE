@@ -23,8 +23,8 @@ import {
 	createSliderControl,
 	createSelectControl,
 	createColorPresetControl,
-} from '../../../modules/chartControls/shared.js';
-import { groupControls } from '../../../modules/chartControls/controlGrouping.js';
+} from '../../shared/controls/factories.js';
+import { groupControls } from '../../shared/controls/grouping.js';
 import { resolveNestingColumnsFromConfig, computeNestingControlCount } from './nestingColumns.js';
 
 /**
@@ -225,7 +225,8 @@ function buildStylingControls(config, disabled) {
 		'viz-bubble-color-preset',
 		t('chive-chart-color-palette'),
 		config.colorScheme || 'Tableau10',
-		disabled
+		disabled,
+		t
 	));
 
 	return stylingControls;

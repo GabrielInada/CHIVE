@@ -14,7 +14,7 @@ import {
 	interpolateColor,
 	createColorPresetControl,
 	createColorPickerGridControl,
-} from '../../../src/modules/chartControls/shared.js';
+} from '../../../../src/charts/shared/controls/factories.js';
 
 describe('normalizeHexColor', () => {
 	it('returns valid hex color unchanged', () => {
@@ -212,7 +212,7 @@ describe('createColorPresetControl', () => {
 
 	it('calls onSelect callback when button clicked', () => {
 		const onSelect = vi.fn();
-		const el = createColorPresetControl('preset-cb', 'Palette', 'Bold', false, onSelect);
+		const el = createColorPresetControl('preset-cb', 'Palette', 'Bold', false, undefined, onSelect);
 		const firstBtn = el.querySelector('button');
 		firstBtn.click();
 		expect(onSelect).toHaveBeenCalledTimes(1);
@@ -221,9 +221,28 @@ describe('createColorPresetControl', () => {
 
 	it('does not call onSelect when disabled', () => {
 		const onSelect = vi.fn();
-		const el = createColorPresetControl('preset-dis', 'Palette', 'Bold', true, onSelect);
+		const el = createColorPresetControl('preset-dis', 'Palette', 'Bold', true, undefined, onSelect);
 		el.querySelector('button').click();
 		expect(onSelect).not.toHaveBeenCalled();
+	});
+
+	it('localizes palette names and help text through the translate callback', () => {
+		const translations = {
+			'chive-chart-palette-tableau10': 'Standard',
+			'chive-chart-color-palette-help': 'Palette help line',
+		};
+		const translate = key => translations[key] || key;
+		const el = createColorPresetControl('preset-i18n', 'Palette', 'Bold', false, translate);
+		const tableauBtn = el.querySelector('button[data-preset-name="Tableau10"]');
+		expect(tableauBtn.textContent).toBe('Standard');
+		expect(tableauBtn.title).toBe('Standard');
+		expect(el.querySelector('.chart-control-help').textContent).toBe('Palette help line');
+	});
+
+	it('falls back to raw palette ids when translate is omitted or unresolved', () => {
+		const el = createColorPresetControl('preset-fallback', 'Palette', 'Bold');
+		const tableauBtn = el.querySelector('button[data-preset-name="Tableau10"]');
+		expect(tableauBtn.textContent).toBe('Tableau10');
 	});
 });
 

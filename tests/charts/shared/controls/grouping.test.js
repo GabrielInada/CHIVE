@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { describe, it, expect } from 'vitest';
-import { createControlSection, groupControls, flattenGroupedControls } from '../../../src/modules/chartControls/controlGrouping.js';
+import { createControlSection, groupControls, flattenGroupedControls } from '../../../../src/charts/shared/controls/grouping.js';
 
 function makeDummyControl(text = 'ctrl') {
 	const el = document.createElement('div');

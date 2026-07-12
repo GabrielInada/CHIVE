@@ -39,8 +39,8 @@ the renderer internals, the controls, and the tests), see the per-chart
 
 ## Chart selection matrix
 
-Required columns and behavior below are taken from the renderers in
-`src/modules/visualizations/` and the controls in `src/modules/chartControls/`.
+Required columns and behavior below are taken from the renderers and
+controls of the per-chart packages under `src/charts/`.
 
 | Chart | Required | Optional | Best for | Sample dataset |
 |---|---|---|---|---|
@@ -286,6 +286,6 @@ least three rows to triangulate a surface.
 
 When you add or change a chart type, update this file: its required and optional columns,
 its aggregation modes, and any new empty-state message. The data contracts here are derived
-from `src/modules/visualizations/`, `src/modules/chartControls/`, and the `chive-chart-empty-*`
+from the per-chart packages under `src/charts/` and the `chive-chart-empty-*`
 keys in `src/i18n/en.json`; keep those and this document in agreement. For the full per-chart
 mechanics, update the matching [chart deep dive](../development/charts/README.md) in the same pass.
