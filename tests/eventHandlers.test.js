@@ -65,7 +65,7 @@ vi.mock('../src/services/persistenceService.js', () => ({
   getProjectImportErrorMessageKey: mocks.getProjectImportErrorMessageKey,
 }));
 
-vi.mock('../src/modules/panelManager.js', () => ({
+vi.mock('../src/features/panel/panelController.js', () => ({
   addChartToPanel: mocks.addChartToPanel,
   setupPanelEventListeners: mocks.setupPanelEventListeners,
 }));
@@ -110,12 +110,6 @@ function setupDom() {
     <button id="btn-edit-columns" type="button"></button>
     <button id="btn-go-to-panel" type="button"></button>
     <button id="btn-back-to-viz" type="button"></button>
-
-    <select id="select-lang">
-      <option value="pt-BR">Português</option>
-      <option value="en">English</option>
-    </select>
-    <button id="lang-display" type="button"></button>
 
     <input id="file-input" type="file" />
     <div class="project-menu">

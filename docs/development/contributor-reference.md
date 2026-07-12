@@ -53,8 +53,8 @@ JSDoc rules:
 - **Facade-only-write invariant:** facade module banners reference
   `@see docs/development/architecture.md`. Exact state/facade/event details
   live in [Architecture reference](architecture-reference.md). Mutation helpers
-  under `src/modules/panelSubsystem/*` and similar are `@internal` and must not
-  be imported from outside the module that backs them.
+  under `src/modules/state/panel/` are `@internal` and must not be imported from
+  outside `panelStateFacade.js`.
 - **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only;
   editors can use it for hover/intellisense without type validation.
 - **No HTML site generation:** no typedoc or jsdoc CLI. Hover and source reading
@@ -66,18 +66,24 @@ The architecture invariants in [CONTRIBUTING.md](../../CONTRIBUTING.md) are
 enforced partly by lint and partly by review.
 
 **The write-facade boundary is enforced by lint.** ESLint (`npm run lint`)
-restricts renderer and DOM-builder files (`src/components/`,
-`src/modules/visualizations/`, and an explicit list of presentation files under
-`src/modules/panelSubsystem/`; see [`eslint.config.js`](../../eslint.config.js))
+restricts renderer and DOM-builder files (`src/components/` and the panel
+feature presentation paths under `src/features/panel/`; see
+[`eslint.config.js`](../../eslint.config.js))
 to read-only imports from `modules/state/appState.js`: the `get*` functions,
 `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing
 any write function from those directories is an error. If you need a write from
-a renderer or DOM builder, route it through a feature manager (`panelManager.js`,
+a renderer or DOM builder, route it through a feature controller (`panelController.js`,
 a chart-controls listener, or an `eventHandlers/` workflow module), all outside the
 linted scope.
 When a new renderer-safe read is added, update `APP_STATE_READS` in
 `eslint.config.js`; reads meant for persistence, debug, or internal use are
 not added there (`getPersistenceSnapshot` is the precedent).
+
+**The browser entrypoint boundary is enforced by lint.** `src/main.js` imports
+only from `src/app/`. Put initialization order in
+`app/applicationInitializer.js`, render scheduling in
+`app/renderCoordinator.js`, and debug-surface construction in
+`app/debugApi.js`; do not wire features or services back into the entrypoint.
 
 **Mutation of facade getter returns is blocked across all of `src/`.** A
 `no-restricted-syntax` rule in `eslint.config.js` catches inline assignments and
@@ -122,6 +128,9 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   static server.
 - **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not
   import `modules/`, `components/`, `features/`, or `services/`.
+- **Panel state internals.** `src/modules/state/panel/` may import only state,
+  domain, config, utils, shared types, or vendored modules. Presentation,
+  feature, chart, service, and legacy panel-subsystem imports are lint errors.
 - **General hygiene, as warnings.** `no-unused-vars`, `prefer-const`, `no-var`,
   `eqeqeq`, and `curly` run as warnings, not errors. Architecture, deployment,
   and correctness rules are errors; general style is surfaced without gating
@@ -161,9 +170,9 @@ npm test
 
 ## Debugging
 
-`window.chiveDebug` exposes state getters (`getState`, `getActiveDataset`,
-`getLoadedDatasets`), facade mutators (`updateDatasetColumns`,
-`updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`,
+`app/debugApi.js` constructs `window.chiveDebug`, which exposes state getters
+(`getState`, `getActiveDataset`, `getLoadedDatasets`), facade mutators
+(`updateDatasetColumns`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`,
 `showError`), and state-log helpers (`enableStateLog`, `disableStateLog`,
 `getStateLog`, `clearStateLog`).
 

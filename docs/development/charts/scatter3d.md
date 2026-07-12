@@ -67,19 +67,22 @@ clamps, rotate/zoom speeds, keyboard steps).
 ## 5. The control sidebar
 
 [controls/](../../../src/charts/scatter3d/controls) mirrors
-`chartControls/tinControls/`: `builder.js` (Data: X/Y/Z numeric selects;
+`charts/tin/controls/`: `builder.js` (Data: X/Y/Z numeric selects;
 Display: title, point size, opacity; Styling: color), `listeners.js` (via
 the shared `controlListenerHelpers.js`, which remains the config-write
 adapter; selects clamp to the numeric column list), and `defaults.js`
 (first three distinct numeric columns via the tin `pickPreferred`
 semantics, preserving still-valid user picks). The registry entry lives in
-[chartControlsManager.js](../../../src/modules/chartControls/chartControlsManager.js).
+[charts/registries/controls.js](../../../src/charts/registries/controls.js),
+which `chartControlsManager.js` consumes.
 
 ## 6. The render entry chain
 
 ### 6.1 Dataset workspace
 
-`chartsView.js` dispatches to the package's
+`chartsView.js` passes the shared context to the
+[workspace registry](../../../src/charts/registries/workspace.js), whose
+`scatter3d` entry dispatches to the package's
 [workspaceSection.js](../../../src/charts/scatter3d/workspaceSection.js),
 which owns the static block's visibility and delegates to
 [presentation.js](../../../src/charts/scatter3d/presentation.js): build the
@@ -91,8 +94,10 @@ post-render extras that need the ok payload: the accurate aria-label
 
 ### 6.2 Panel
 
-[renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
-routes `scatter3d` specs to the package's
+[renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
+validates the request, then the
+[panel registry](../../../src/charts/registries/panel.js) routes `scatter3d`
+specs to the package's
 [panelAdapter.js](../../../src/charts/scatter3d/panelAdapter.js), which maps
 the frozen snapshot onto the same presentation flow. Panel slot containers
 have no DOM id; the renderer generates a unique `aria-describedby` id in
@@ -144,8 +149,9 @@ above the canvas (`.chart-canvas-title`).
 ## 8. The color / scale system
 
 One uniform point color (config `color`) with `opacity` on a transparent
-`PointsMaterial`; `sizeAttenuation` keeps nearer points larger. Column
-encodings (color/size by column) are deliberately out of scope for the
+`PointsMaterial`; `sizeAttenuation` keeps nearer points larger. Controls provide
+hex colors, and imported/manual config should still provide a valid Three.js
+color string. Column encodings (color/size by column) are deliberately out of scope for the
 pilot. The positional scales are plain `scaleLinear` per axis onto
 `[-1, 1]`; zero-span (constant) columns are padded so positions stay
 finite.
@@ -173,7 +179,7 @@ page scroll, and the canvas has `touch-action: none` so touch drags do not
 fight scrolling. Touch pinch-zoom is a documented pilot gap; hover
 tooltips (raycaster hit-testing) are deferred.
 
-## 11. SVG and export
+## 11. Export behavior
 
 There is none yet, deliberately. The chart block ships without a download
 button, and the panel exporter counts canvas slots in `omittedChartCount`
@@ -205,7 +211,7 @@ mocked with fakes: sizing calls, a11y wiring, dispose hook contract,
 partial-build disposal, render-on-demand), `workspaceSection.test.js` /
 `panelAdapter.test.js` (label pass-through, fail-key mapping, sampling
 notice), and `controls.test.js`. Panel export omission is covered in
-`tests/modules/panelSubsystem/panelExporter.test.js`.
+`tests/features/panel/export/svgExporter.test.js`.
 
 ## 14. Quick reference
 

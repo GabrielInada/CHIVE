@@ -4,7 +4,6 @@ import {
 	rgbToHex,
 	interpolateColor,
 	parseHexColor,
-	buildSliceColor,
 	buildRankMap,
 } from '../../src/utils/colorUtils.js';
 
@@ -30,13 +29,6 @@ describe('colorUtils basics', () => {
 		expect(parseHexColor('#abcdef')).toEqual({ r: 0xab, g: 0xcd, b: 0xef });
 		expect(parseHexColor('not-a-color')).toBeNull();
 		expect(parseHexColor('#abc')).toBeNull();
-	});
-
-	it('darkens slice color by index', () => {
-		const base = '#888888';
-		const c0 = buildSliceColor(base, 0, base);
-		const c1 = buildSliceColor(base, 1, base);
-		expect(c0).not.toBe(c1);
 	});
 });
 

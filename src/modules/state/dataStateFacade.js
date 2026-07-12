@@ -1,5 +1,6 @@
 import { STATE_EVENTS } from './stateEvents.js';
 import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
+import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
 import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
 
 /**
@@ -16,8 +17,6 @@ import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
  * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
  */
-
-const CHART_TYPES = ['bar', 'scatter', 'scatter3d', 'pie', 'bubble', 'network', 'treemap', 'line', 'tin'];
 
 let datasetIdCounter = 0;
 
@@ -211,8 +210,8 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 * canonicalized at the state boundaries (persistence restore, `addDataset`, and
 	 * the emitting config writes) via `canonicalizeChartConfig`; this escape hatch
 	 * exists for the intentional non-emitting live-preview writes (color picker,
-	 * chart-height drag). Emitting here would re-enter `refreshView` via the
-	 * CONFIG_UPDATED subscription and loop indefinitely.
+	 * chart-height drag). Emitting here would re-enter the render coordinator's
+	 * `refreshView` via the CONFIG_UPDATED subscription and loop indefinitely.
 	 *
 	 * **Do not** add an emit to this function. If you need an emit, use
 	 * {@link updateActiveDatasetConfig} instead.
@@ -243,12 +242,12 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	function setActiveChartType(chartType, activatedOverrides = null) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
-		if (chartType !== null && !CHART_TYPES.includes(chartType)) return;
+		if (chartType !== null && !CHART_TYPE_KEYS.includes(chartType)) return;
 
 		const columnNames = getDatasetColumnNames(dataset);
 		const current = canonicalizeChartConfig(dataset.chartConfig, columnNames);
 		const next = { ...current };
-		CHART_TYPES.forEach(type => {
+		CHART_TYPE_KEYS.forEach(type => {
 			const previous = isPlainObject(current[type]) ? current[type] : {};
 			next[type] = { ...previous, enabled: type === chartType };
 		});

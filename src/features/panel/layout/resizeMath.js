@@ -1,0 +1,60 @@
+/**
+ * CHIVE panel resize math.
+ *
+ * Stateless math helpers used by {@link resize} to compute
+ * layout-aware minimum heights, using the shared percentage clamp from
+ * `domain/panel/panelBlockModel.js`. Also re-exports a hex-color
+ * normalizer used by both the renderer and the exporter.
+ */
+
+import { normalizeHexColor as normalizeHex } from '../../../utils/colorUtils.js';
+import { clampPercentage } from '../../../domain/panel/panelBlockModel.js';
+
+/**
+ * Normalize a possibly-invalid hex color to a known-good value. Thin
+ * wrapper over the shared `colorUtils` normalizer that bakes in the
+ * panel's default slot-border gray as the fallback.
+ *
+ * @param {*} color
+ * @param {string} [fallback='#5d645d']
+ * @returns {string}
+ */
+export function normalizeHexColor(color, fallback = '#5d645d') {
+	return normalizeHex(color, fallback);
+}
+
+/**
+ * Compute a layout-aware minimum height in pixels. For templates with a
+ * horizontal split (`template-1x2`, `template-hero2`), a small split percentage
+ * makes one row tiny, this function derives the height that keeps the
+ * smaller row at least `SLOT_MIN_HEIGHT` tall. Result is clamped to
+ * `[220, 620]`.
+ *
+ * The dynamic ceiling exists because rendering can hit the upper bound
+ * during automated resizing and we don't want auto-resize to push blocks
+ * arbitrarily large.
+ *
+ * @param {string} templateId
+ * @param {{ split?: number, splitRight?: number, splitMain?: number, a?: number, b?: number, c?: number }} [proportions]
+ * @returns {number} Pixel height.
+ */
+export function computeDynamicMinHeight(templateId, proportions) {
+	const BASE_MIN_HEIGHT = 220;
+	const MAX_MIN_HEIGHT = 620;
+	const SLOT_MIN_HEIGHT = 96;
+	const ROW_GAP = 10;
+
+	let dynamicMinHeight = BASE_MIN_HEIGHT;
+
+	if (templateId === 'template-1x2') {
+		const split = clampPercentage(proportions?.split ?? 50, 20, 80) / 100;
+		const smallestRow = Math.min(split, 1 - split);
+		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
+	} else if (templateId === 'template-hero2') {
+		const splitRight = clampPercentage(proportions?.splitRight ?? 50, 20, 80) / 100;
+		const smallestRow = Math.min(splitRight, 1 - splitRight);
+		dynamicMinHeight = ROW_GAP + SLOT_MIN_HEIGHT / Math.max(smallestRow, 0.01);
+	}
+
+	return Math.max(BASE_MIN_HEIGHT, Math.min(dynamicMinHeight, MAX_MIN_HEIGHT));
+}

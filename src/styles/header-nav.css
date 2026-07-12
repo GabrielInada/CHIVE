@@ -1,5 +1,5 @@
 /* @feature: foundation (chrome)
-   Header bar, logo, language switcher, and top navigation.
+   Header bar, logo, settings entry, and top navigation.
    Extracted from style.css so the about page can load it without the full app bundle. */
 
 /* Header Navigation */

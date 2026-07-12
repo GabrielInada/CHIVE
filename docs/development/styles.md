@@ -40,9 +40,10 @@ Foundation is split into two sub-bundles so the about page can load only what it
 | File | Purpose |
 |------|---------|
 | `variables.css` | Global design tokens (colors, fonts, spacing, shadows) |
-| `layout.css` | Header, logo, language switcher, body padding, plus main-app workspace/sidebar (inert when those elements aren't present) |
+| `layout.css` | Header, logo, body padding, plus main-app workspace/sidebar (inert when those elements aren't present) |
 | `responsive.css` | Header @ 900px, plus main-app responsive rules (inert when those elements aren't present) |
 | `header-nav.css` | Top navigation pills and header layout, with 768px/480px reflow rules |
+| `settings.css` | Header settings button and the global settings dialog (both pages share the header settings entry) |
 
 **Bundle via**: `chrome.css` → `base.css` → `style.css` (for `index.html`) or directly via `<link>` (for `about.html`)
 
@@ -139,7 +140,8 @@ style.css (app)
 │   │   ├── variables.css
 │   │   ├── layout.css
 │   │   ├── responsive.css
-│   │   └── header-nav.css
+│   │   ├── header-nav.css
+│   │   └── settings.css
 │   ├── animations.css
 │   └── collapsed.css
 ├── controls.css (controls layer)
@@ -164,7 +166,8 @@ chrome.css (foundation layer)
 ├── variables.css
 ├── layout.css
 ├── responsive.css
-└── header-nav.css
+├── header-nav.css
+└── settings.css
 
 about.css (no layer; page-specific, wins over chrome on ties)
 ```
@@ -307,7 +310,7 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 
 ### Design Rationale
 
-- **Scoped breakpoints over one global breakpoint**: The main app collapses at 900px, but the about page is more text-heavy and benefits from collapsing earlier (1024px). Header chrome (nav, logo, language switcher) reflows at its own thresholds because it's not feature-scoped.
+- **Scoped breakpoints over one global breakpoint**: The main app collapses at 900px, but the about page is more text-heavy and benefits from collapsing earlier (1024px). Header chrome (nav, logo, settings button) reflows at its own thresholds because it's not feature-scoped.
 - **Mobile-first semantics**: Uses `max-width` (desktop-first) but focuses UX on smaller screens first
 - **Sidebar optimization**: Collapsed state becomes default visual treatment on tablets to maximize chart/table space
 - **Touch-friendly spacing**: 900px breakpoint gives enough room for mouse interactions; below that prioritizes vertical real estate
@@ -319,7 +322,7 @@ Pick the home that matches the scope of the rule:
 1. **Main-app layout** (workspace, sidebar, content area) → `responsive.css` under the existing `@media (max-width: 900px)` block
 2. **Feature-internal** (e.g., panel slot rearrangement, dataset workspace table) → the feature's own file (`panel.css`, `results.css`) at the breakpoint already in use there
 3. **About page** → `about.css` (1024px or 640px blocks)
-4. **Header chrome** (nav, logo, language switcher) → `header-nav.css` (768px or 480px blocks)
+4. **Header chrome** (nav, logo, settings button) → `header-nav.css` (768px or 480px blocks); dialog-internal settings rules stay in `settings.css`
 5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.active`) over new breakpoints when the difference is interaction-driven, not viewport-driven
 6. Test on: Desktop (1440px+), Tablet (768px to 900px), Mobile (375px to 480px)
 

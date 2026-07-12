@@ -48,7 +48,7 @@ one you can navigate any of them:
 8. The color / scale system
 9. Performance notes
 10. Live preview and interaction
-11. SVG and export
+11. Export behavior
 12. Invariants and edge cases
 13. Tests
 14. Quick reference (element IDs, DOM structure, tuning knobs)
@@ -59,22 +59,28 @@ The renderers share a small set of building blocks, documented once and referenc
 doc rather than repeated:
 
 - **Result envelope**: `ok()` / `fail(reason)` from [result.js](../../../src/utils/result.js).
-- **Render dispatch**: dispatch goes through
-  [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js),
-  which routes each spec to the matching chart entry function under
-  [src/modules/visualizations/](../../../src/modules/visualizations) or, for per-chart
-  packages, the package's panel adapter under [src/charts/](../../../src/charts)
-  (scatter3d today).
-- **Section adapters**: one `*ChartSection.js` per chart under
-  [chartRenders/](../../../src/components/datasetWorkspace/chartRenders) (per-chart packages
-  bring their own `workspaceSection.js` instead), which map config to the renderer
-  options bag and surface localized empty states via `showChartMessage` from
+- **Render dispatch**: panel snapshots enter through
+  [renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js),
+  which validates the request and resolves its implementation through the
+  [panel registry](../../../src/charts/registries/panel.js). Every chart resolves
+  to its package-owned `panelAdapter.js` under [src/charts/](../../../src/charts).
+- **Section adapters**: every per-chart package owns a `workspaceSection.js`.
+  These map config to the renderer options bag and surface localized empty
+  states via `showChartMessage` from
   [chartContainerLifecycle.js](../../../src/utils/chartContainerLifecycle.js).
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
-  `buildRankMap`, `buildSliceColor`, `isValidHexColor`).
-- **Tooltips and click-to-filter**: [tooltip.js](../../../src/modules/visualizations/tooltip.js).
+  `buildRankMap`, `isValidHexColor`); pie's `buildSliceColor` lives in its package
+  ([color.js](../../../src/charts/pie/color.js)).
+- **SVG scaffold**: [scaffold.js](../../../src/charts/shared/svg/scaffold.js) owns the
+  shared title, SVG/group setup, axes, and axis-label builders used by SVG charts.
+- **Tooltips and click-to-filter**: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js).
   The categorical filter-action subsystem is documented in detail in the bar chart's
   [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter, and network.
+- **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
+  builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets) and
+  [grouping.js](../../../src/charts/shared/controls/grouping.js) wraps them in collapsible
+  sections. Both are DOM-only; the config writes are wired by the listener helpers in
+  [controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js).
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's
   [section 10](tin.md) and shared by every chart's color inputs.
 - **Frozen panel snapshots**: see [Architecture reference](../architecture-reference.md).

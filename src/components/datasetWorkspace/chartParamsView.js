@@ -4,7 +4,7 @@
  * built by the `chartControls` registry.
  */
 
-import { PREVIEW_SVGS } from '../../modules/chartControls/chartTypes.js';
+import { CHART_CATALOG } from '../../charts/catalog.js';
 
 /**
  * Build the chart-type trigger button: a preview SVG, the chart title (or
@@ -20,9 +20,10 @@ function buildTriggerButton({ activeChartType, chartTitle, translate, onClick })
 
 	const preview = document.createElement('span');
 	preview.className = 'viz-chart-picker-trigger-preview';
-	if (activeChartType && PREVIEW_SVGS[activeChartType]) {
-		// innerHTML: static SVG markup from PREVIEW_SVGS; not user input.
-		preview.innerHTML = PREVIEW_SVGS[activeChartType];
+	const catalogEntry = activeChartType ? CHART_CATALOG[activeChartType] : null;
+	if (catalogEntry) {
+		// innerHTML: static SVG markup from CHART_CATALOG; not user input.
+		preview.innerHTML = catalogEntry.previewSvg;
 	}
 	trigger.appendChild(preview);
 

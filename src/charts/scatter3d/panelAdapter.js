@@ -1,6 +1,6 @@
 /**
  * 3D-scatter panel adapter. Maps a frozen `ChartSnapshot` onto the
- * package's presentation flow for `panelSubsystem/renderChartFromSpec.js`.
+ * package's presentation flow for `charts/registries/panel.js`.
  * Snapshot data and config are read-only inputs; the adapter owns no
  * state and receives the slot container from the panel.
  *

@@ -549,6 +549,16 @@
 	"chive-global-filter-no-rules": "Placeholder shown in the rules container when no rule has been added yet.",
 	"chive-global-filter-cancel": "Secondary action: discard unsaved edits from this modal session.",
 	"chive-global-filter-empty": "Placeholder shown inside a rule body when no filter column is selected yet.",
+	"chive-settings-open": "Tooltip and accessible label for the settings (gear) button in the shared page header.",
+	"chive-settings-title": "Heading of the global settings dialog.",
+	"chive-settings-close": "Accessible label and tooltip for the settings dialog close button.",
+	"chive-settings-section-general": "Settings dialog section heading for general preferences such as the interface language.",
+	"chive-settings-section-performance": "Settings dialog section heading for performance-related rendering preferences.",
+	"chive-settings-language": "Label for the interface-language selector inside the settings dialog.",
+	"chive-settings-tin-rendering": "Label for the TIN surface color-rendering mode control in the settings dialog.",
+	"chive-settings-tin-optimized": "Segmented-control option for the default TIN color output that merges similar colors for speed.",
+	"chive-settings-tin-full-ramp": "Segmented-control option for the TIN color output that keeps every computed ramp color.",
+	"chive-settings-tin-hint": "Hint below the TIN color-rendering control explaining the difference between the two modes.",
 	"chive-about-page-title": "Browser tab title for the About page.",
 	"chive-footer-copyright": "Footer copyright notice. Keep the year and project name intact."
 }

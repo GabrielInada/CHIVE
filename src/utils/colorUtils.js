@@ -1,7 +1,7 @@
 /**
- * CHIVE color utilities. Used by visualization modules, chart controls,
- * and {@link panelStateMutations} (which uses {@link isValidHexColor} to
- * guard border-color writes).
+ * CHIVE color utilities. Used by chart packages, chart controls, and the
+ * panel state mutation internals (which use {@link isValidHexColor} to guard
+ * border-color writes).
  *
  * @typedef {{ r: number, g: number, b: number }} RgbColor
  */
@@ -110,26 +110,6 @@ export function parseHexColor(color) {
 		g: parseInt(normalized.slice(3, 5), 16),
 		b: parseInt(normalized.slice(5, 7), 16),
 	};
-}
-
-/**
- * Produce a sequential variation of `baseHex` by darkening 8% per index
- * step, capped at 8 steps. Used by pie/treemap to vary slice colors when
- * the user picks a single base color rather than a palette.
- *
- * @param {string} baseHex - Primary hex; falls back to `fallbackHex` if invalid.
- * @param {number} index - Position in the sequence (0 = base shade).
- * @param {string} fallbackHex
- * @returns {string} Hex color. Returns `baseHex` unchanged when neither input parses.
- */
-export function buildSliceColor(baseHex, index, fallbackHex) {
-	const rgb = parseHexColor(baseHex) || parseHexColor(fallbackHex);
-	if (!rgb) return baseHex;
-	const factor = 1 - (Math.min(index, 8) * 0.08);
-	const r = rgb.r * factor;
-	const g = rgb.g * factor;
-	const b = rgb.b * factor;
-	return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
 /**

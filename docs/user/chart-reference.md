@@ -39,8 +39,8 @@ the renderer internals, the controls, and the tests), see the per-chart
 
 ## Chart selection matrix
 
-Required columns and behavior below are taken from the renderers in
-`src/modules/visualizations/` and the controls in `src/modules/chartControls/`.
+Required columns and behavior below are taken from the renderers and
+controls of the per-chart packages under `src/charts/`.
 
 | Chart | Required | Optional | Best for | Sample dataset |
 |---|---|---|---|---|
@@ -64,7 +64,8 @@ Required columns and behavior below are taken from the renderers in
 - **Optional settings:** sort order, top N, color mode (uniform / gradient), X and Y axis
   label toggles.
 - **Aggregation behavior:** `count` counts rows per category. `sum` and `mean` require a
-  numeric value column and aggregate that column per category.
+  numeric value column and aggregate that column per category. Signed values are allowed,
+  but bar sum/mean mode is clearest for measures that compare from a zero baseline.
 - **Good sample dataset:** Iris (category `Species`), Amazonian Trees (`family` with
   `abundance` or `biomass_kg`).
 - **Common empty states:** no category selected; `sum`/`mean` selected without a numeric
@@ -94,7 +95,8 @@ Required columns and behavior below are taken from the renderers in
 - **Optional settings:** inner radius (pie vs donut), outer radius, pad angle, top N with an
   "other" or truncate mode, category/value labels, legend, per-slice color overrides.
 - **Aggregation behavior:** `count` sizes slices by row count; `sum` sizes them by a numeric
-  value column.
+  value column. Use non-negative values for meaningful part-to-whole pies; zero or negative
+  category sums are not filtered before the D3 pie layout.
 - **Good sample dataset:** Iris (`Species`).
 - **Common empty states:** no categorical column; `sum` mode without a numeric value column.
 
@@ -108,8 +110,8 @@ Required columns and behavior below are taken from the renderers in
   (all / hover / auto), nesting mode (flat / grouped), nesting columns for progressive
   hierarchy, color scheme.
 - **Aggregation behavior:** `count` sizes bubbles by row count; `sum`/`mean` size them by a
-  numeric value column. In grouped nesting mode the nesting columns define the hierarchy and
-  drill-down.
+  numeric value column. Use non-negative values when bubble area should encode magnitude. In
+  grouped nesting mode the nesting columns define the hierarchy and drill-down.
 - **Good sample dataset:** Amazon Multi-level Nesting (`ecoregion → forestType → family →
   genus` with `abundance`), Amazonian Trees for a flat view.
 - **Common empty states:** no category; `sum`/`mean` without a numeric value column; grouped
@@ -187,6 +189,10 @@ Required columns and behavior below are taken from the renderers in
 - **Optional settings:** fill mode (smooth / flat), subdivision depth, color ramp presets
   (viridis, plasma, magma, inferno, turbo, grays, terrain, custom), gradient colors and
   distribution, isolines, threshold line, edges, points, hull, and Z labels.
+- **Browser rendering mode:** **Settings > Performance** selects Optimized (at most
+  128 surface color groups) or Full ramp (exact computed ramp colors with potentially
+  more SVG paths). This preference is not part of the dataset or project. Both modes
+  retain the adaptive surface-detail limit.
 - **Aggregation behavior:** none. Every qualifying row is a vertex. Triangulation needs at
   least three points with finite X, Y, and Z.
 - **Good sample dataset:** Terrain Surface (`x`, `y`, `z`), a bundled synthetic sample
@@ -203,7 +209,7 @@ Required columns and behavior below are taken from the renderers in
   collapse into one bucket, labeled `N/A` in grouping and `(missing)` in the filter dialog.
 - **Panel snapshots.** Adding a chart to the dashboard panel snapshots the current
   global-filtered rows and visible columns alongside the chart type and config
-  (`panelManager.addChartToPanel`). Later edits to the dataset or filters do not retro-change
+  (`panelController.addChartToPanel`). Later edits to the dataset or filters do not retro-change
   a chart already placed on the panel until it is re-added.
 
 ## Common empty states
@@ -280,6 +286,6 @@ least three rows to triangulate a surface.
 
 When you add or change a chart type, update this file: its required and optional columns,
 its aggregation modes, and any new empty-state message. The data contracts here are derived
-from `src/modules/visualizations/`, `src/modules/chartControls/`, and the `chive-chart-empty-*`
+from the per-chart packages under `src/charts/` and the `chive-chart-empty-*`
 keys in `src/i18n/en.json`; keep those and this document in agreement. For the full per-chart
 mechanics, update the matching [chart deep dive](../development/charts/README.md) in the same pass.

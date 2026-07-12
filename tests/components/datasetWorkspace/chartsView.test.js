@@ -31,28 +31,28 @@ vi.mock('../../../src/utils/globalFilter.js', () => ({
 	applyGlobalFilterRules: mocks.applyGlobalFilterRules,
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/barChartSection.js', () => ({
+vi.mock('../../../src/charts/bar/workspaceSection.js', () => ({
 	renderBarChartSection: mocks.renderBarChartSection,
 }));
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/lineChartSection.js', () => ({
+vi.mock('../../../src/charts/line/workspaceSection.js', () => ({
 	renderLineChartSection: mocks.renderLineChartSection,
 }));
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/scatterChartSection.js', () => ({
+vi.mock('../../../src/charts/scatter/workspaceSection.js', () => ({
 	renderScatterChartSection: mocks.renderScatterChartSection,
 }));
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/pieChartSection.js', () => ({
+vi.mock('../../../src/charts/pie/workspaceSection.js', () => ({
 	renderPieChartSection: mocks.renderPieChartSection,
 }));
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/bubbleChartSection.js', () => ({
+vi.mock('../../../src/charts/bubble/workspaceSection.js', () => ({
 	renderBubbleChartSection: mocks.renderBubbleChartSection,
 }));
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/networkChartSection.js', () => ({
+vi.mock('../../../src/charts/network/workspaceSection.js', () => ({
 	renderNetworkChartSection: mocks.renderNetworkChartSection,
 }));
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/treemapChartSection.js', () => ({
+vi.mock('../../../src/charts/treemap/workspaceSection.js', () => ({
 	renderTreemapChartSection: mocks.renderTreemapChartSection,
 }));
-vi.mock('../../../src/components/datasetWorkspace/chartRenders/tinChartSection.js', () => ({
+vi.mock('../../../src/charts/tin/workspaceSection.js', () => ({
 	renderTinChartSection: mocks.renderTinChartSection,
 }));
 vi.mock('../../../src/charts/scatter3d/workspaceSection.js', () => ({
@@ -60,9 +60,10 @@ vi.mock('../../../src/charts/scatter3d/workspaceSection.js', () => ({
 }));
 
 import { renderCharts } from '../../../src/components/datasetWorkspace/chartsView.js';
+import { renderWorkspaceChart } from '../../../src/charts/registries/workspace.js';
 import { CHART_BLOCKS, CHART_CONTAINERS, VIEW_IDS, BADGE_IDS } from '../../../src/config/elementIds.js';
+import { CHART_TYPE_KEYS } from '../../../src/config/chartTypes.js';
 
-const CHART_TYPES = ['bar', 'scatter', 'scatter3d', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin'];
 const SECTION_MOCKS = {
 	bar: 'renderBarChartSection',
 	line: 'renderLineChartSection',
@@ -86,7 +87,7 @@ function setupDom() {
 	document.body.append(grid, emptyState, badge);
 	const blocks = {};
 	const containers = {};
-	for (const type of CHART_TYPES) {
+	for (const type of CHART_TYPE_KEYS) {
 		const block = document.createElement('div');
 		block.id = CHART_BLOCKS[type];
 		const container = document.createElement('div');
@@ -131,7 +132,7 @@ describe('renderCharts orchestration', () => {
 
 		expect(grid.style.display).toBe('grid');
 		expect(emptyState.style.display).toBe('none');
-		for (const type of CHART_TYPES) {
+		for (const type of CHART_TYPE_KEYS) {
 			expect(blocks[type].style.display).toBe('block');
 			expect(containers[type].children.length).toBe(0);
 		}
@@ -148,7 +149,7 @@ describe('renderCharts orchestration', () => {
 		expect(grid.style.display).toBe('none');
 		expect(emptyState.style.display).toBe('flex');
 		expect(emptyState.textContent).toBe('chive-chart-empty-none');
-		for (const type of CHART_TYPES) {
+		for (const type of CHART_TYPE_KEYS) {
 			expect(blocks[type].style.display).toBe('none');
 			expect(containers[type].children.length).toBe(0);
 		}
@@ -157,7 +158,7 @@ describe('renderCharts orchestration', () => {
 		}
 	});
 
-	it.each(CHART_TYPES)('dispatches to %s section helper when only %s is enabled', (type) => {
+	it.each(CHART_TYPE_KEYS)('dispatches to %s section helper when only %s is enabled', (type) => {
 		setupDom();
 		const config = makeConfig();
 		config[type].enabled = true;
@@ -168,14 +169,60 @@ describe('renderCharts orchestration', () => {
 		expect(mocks[mockKey]).toHaveBeenCalledTimes(1);
 		const call = mocks[mockKey].mock.calls[0][0];
 		expect(call.config.enabled).toBe(true);
-		for (const other of CHART_TYPES) {
+		for (const other of CHART_TYPE_KEYS) {
 			if (other === type) continue;
 			const otherCall = mocks[SECTION_MOCKS[other]].mock.calls[0][0];
 			expect(otherCall.config.enabled).toBe(false);
 		}
 	});
 
-	it('coerces multi-enabled config to the first chart in CHART_TYPE_ORDER', () => {
+	it('dispatches workspace sections in canonical registry order', () => {
+		setupDom();
+		const config = makeConfig();
+		config.bar.enabled = true;
+
+		renderCharts(config, [], [], []);
+
+		const invocationOrder = CHART_TYPE_KEYS.map(type => (
+			mocks[SECTION_MOCKS[type]].mock.invocationCallOrder[0]
+		));
+		expect(invocationOrder).toEqual([...invocationOrder].sort((a, b) => a - b));
+	});
+
+	it('returns false for unknown and inherited workspace keys', () => {
+		const context = {
+			config: {},
+			rows: [],
+			columnTypeByName: {},
+			filterCallbacks: {},
+		};
+		expect(renderWorkspaceChart('histogram', context)).toBe(false);
+		expect(renderWorkspaceChart('__proto__', context)).toBe(false);
+	});
+
+	it.each(CHART_TYPE_KEYS)('normalizes the %s workspace adapter arguments', type => {
+		const context = {
+			config: { enabled: true },
+			rows: [{ value: 1 }],
+			columnTypeByName: { value: 'number' },
+			filterCallbacks: { onAddToGlobalFilter: vi.fn() },
+		};
+		const expected = {
+			config: context.config,
+			rows: context.rows,
+		};
+		if (type === 'line' || type === 'scatter') {
+			expected.columnTypeByName = context.columnTypeByName;
+		}
+		if (!['tin', 'scatter3d'].includes(type)) {
+			expected.filterCallbacks = context.filterCallbacks;
+		}
+
+		expect(renderWorkspaceChart(type, context)).toBe(true);
+		expect(mocks[SECTION_MOCKS[type]]).toHaveBeenCalledWith(expected);
+	});
+
+	it('coerces multi-enabled config to the first chart in canonical order', () => {
 		setupDom();
 		const config = makeConfig();
 		config.bar.enabled = true;

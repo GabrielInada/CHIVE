@@ -10,11 +10,11 @@
  *   - `eventHandlers/keyboardShortcuts.js` (Ctrl/Cmd+O)
  *   - `eventHandlers/datasetActions.js` (delegated select/remove)
  *
- * File/tab/panel setup stays owned by fileManager, uiManager, and panelManager;
+ * File/tab/panel setup stays owned by fileManager, uiManager, and panelController;
  * this module just wires them in boot order alongside the workflow setups.
  */
 
-import { setupPanelEventListeners } from './panelManager.js';
+import { setupPanelEventListeners } from '../features/panel/panelController.js';
 import { setupFileInputListeners } from './fileManager.js';
 import { setupTabListeners, setupSidebarToggleListener } from './uiManager.js';
 import { setupProjectTransferListeners } from './eventHandlers/projectTransfer.js';
@@ -29,13 +29,13 @@ import { setupDatasetListeners } from './eventHandlers/datasetActions.js';
  *   - `setupTabListeners` (uiManager)
  *   - `setupSidebarToggleListener` (uiManager)
  *   - `setupSidebarNavigationButtons` (eventHandlers/sidebarNavigation)
- *   - `setupPanelEventListeners` (panelManager)
+ *   - `setupPanelEventListeners` (panelController)
  *   - `setupProjectTransferListeners` (eventHandlers/projectTransfer)
  *   - `setupChartActionListeners` (eventHandlers/chartActions)
  *   - `setupGlobalKeyboardListeners` (eventHandlers/keyboardShortcuts)
  *   - `setupDatasetListeners` (eventHandlers/datasetActions)
  *
- * Called once during app startup from `main.js`.
+ * Called once during app startup from `app/applicationInitializer.js`.
  */
 export function initializeAllEventHandlers() {
 	setupFileInputListeners();

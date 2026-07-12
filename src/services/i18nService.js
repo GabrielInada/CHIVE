@@ -16,11 +16,6 @@ import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_STORAGE_KEY } from '../config
 const LOCALES = SUPPORTED_LOCALES;
 const LOCALE_KEY = LOCALE_STORAGE_KEY;
 
-const LOCALE_LABELS = {
-	'pt-BR': 'Português',
-	'en': 'English',
-};
-
 const banana = new Banana(DEFAULT_LOCALE);
 banana.load(ptBR, 'pt-BR');
 banana.load(en, 'en');
@@ -83,53 +78,21 @@ export function setLocale(locale) {
 
 /**
  * Boot-time initialization. Reads the persisted locale (falling back to
- * `'pt-BR'`), syncs `<html lang>`, populates the language selector,
- * translates every static `[data-i18n]` node, wires the selector's
- * `change` listener, and reveals `document.body` (which is hidden until
- * translation completes to avoid a flash of untranslated keys).
+ * the default), syncs `<html lang>`, translates every static `[data-i18n]`
+ * node, and reveals `document.body` (which is hidden until translation
+ * completes to avoid a flash of untranslated keys). The language control
+ * itself lives in the settings dialog and calls {@link setLocale}; this
+ * service owns no header widgets.
  *
  * Call exactly once on startup.
  */
 export function initializeI18n() {
 	const savedLocale = localStorage.getItem(LOCALE_KEY);
-	const locale = LOCALES.includes(savedLocale) ? savedLocale : 'pt-BR';
+	const locale = LOCALES.includes(savedLocale) ? savedLocale : DEFAULT_LOCALE;
 	banana.setLocale(locale);
 	document.documentElement.lang = locale;
-
-	const selectLang = document.getElementById('select-lang');
-	if (selectLang) selectLang.value = locale;
-
-	// Update language display button
-	const langDisplay = document.getElementById('lang-display');
-	if (langDisplay) {
-		const option = selectLang?.querySelector(`option[value="${locale}"]`);
-		langDisplay.textContent = LOCALE_LABELS[locale] || option?.textContent?.trim() || locale;
-	}
-
 	translateStaticPage();
-	setupLanguageSelector();
 	document.body.style.visibility = 'visible';
-}
-
-/**
- * @private
- */
-function setupLanguageSelector() {
-	const selectLang = document.getElementById('select-lang');
-	const langDisplay = document.getElementById('lang-display');
-	if (!selectLang) return;
-
-	const getLabel = (loc) => LOCALE_LABELS[loc] || loc;
-
-	selectLang.addEventListener('change', event => {
-		setLocale(event.target.value);
-	});
-
-	window.addEventListener('chive-locale-changed', () => {
-		const loc = getLocale();
-		selectLang.value = loc;
-		if (langDisplay) langDisplay.textContent = getLabel(loc);
-	});
 }
 
 /**

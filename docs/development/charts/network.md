@@ -15,14 +15,18 @@ see [Architecture reference](../architecture-reference.md).
 The network graph is the one renderer that runs a **live physics simulation** rather than
 drawing a single static frame, which makes it the only chart that is not purely stateless.
 
-Key files:
+Key files (the `src/charts/network/` package):
 
-- Renderer: [networkGraph.js](../../../src/modules/visualizations/networkGraph.js)
-- Sidebar controls: [networkControls.js](../../../src/modules/chartControls/networkControls.js)
+- Renderer: [renderers/svg.js](../../../src/charts/network/renderers/svg.js)
+- Graph model derivation: [data.js](../../../src/charts/network/data.js)
+- Shared presentation flow: [presentation.js](../../../src/charts/network/presentation.js)
+- Workspace section adapter: [workspaceSection.js](../../../src/charts/network/workspaceSection.js)
+- Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/network/panelAdapter.js)
+- Sidebar controls: [controls/builder.js](../../../src/charts/network/controls/builder.js),
+  [controls/listeners.js](../../../src/charts/network/controls/listeners.js),
+  [controls/defaults.js](../../../src/charts/network/controls/defaults.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`NETWORK_GRAPH`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `network` block)
-- Section adapter (dataset workspace): [networkChartSection.js](../../../src/components/datasetWorkspace/chartRenders/networkChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
 
 ---
 
@@ -86,7 +90,8 @@ toward a smoother arrangement. When the user drags a node, the simulation is bri
 
 ## 3. The big picture (data flow)
 
-Two draw paths, both ending at `renderNetworkGraph`.
+Two draw paths, both mapping config through the package's `renderNetworkInto` and ending at
+`renderNetworkGraph`.
 
 ```
                  ┌─────────────────────────────────────────────────┐
@@ -94,15 +99,17 @@ Two draw paths, both ending at `renderNetworkGraph`.
                  └─────────────────────────────────────────────────┘
                         │                          │
        sidebar edits    │                          │  render
- (networkControls.js) ──┘                          ▼
+ (network/controls/) ───┘                          ▼
         write config                  chartsView.renderCharts()
                                       → renderNetworkChartSection()        [dataset workspace]
-                                        → renderNetworkGraph(container, rows, source, target, opts)
+                                        → renderNetworkInto(container, rows, config, filterCallbacks)
                                               │
    "Add to panel" → structuredClone snapshot │
         │                                     │
-   renderChartFromSpec.renderNetwork()        │
-     → renderNetworkGraph(container, spec.dataSnapshot, source, target, …)
+   renderNetworkPanelChart(container, spec)   │
+     → renderNetworkInto(container, spec.dataSnapshot, spec.config)
+                                              │
+                        both → renderNetworkGraph(container, rows, source, target, opts)
                                               ▼
                               ┌──────────────────────────────────┐
                               │  <svg> + running force simulation  │
@@ -158,9 +165,9 @@ alpha-decay clamp (`minAlphaDecay: 0.01`, `maxAlphaDecay: 0.2`).
 
 ## 5. The control sidebar
 
-[networkControls.js](../../../src/modules/chartControls/networkControls.js) builds four sections
-via the standard `createNetworkGraphControls` / `setupNetworkGraphControlListeners` /
-`computeDefaults` exports.
+The controls trio under [controls/](../../../src/charts/network/controls) builds four sections
+via the standard `createNetworkGraphControls` (builder.js) /
+`setupNetworkGraphControlListeners` (listeners.js) / `computeDefaults` (defaults.js) exports.
 
 ### 5.1 The four sections
 
@@ -175,9 +182,10 @@ via the standard `createNetworkGraphControls` / `setupNetworkGraphControlListene
 
 Everything is disabled when `!config.enabled`. The selects, checkboxes, sliders, color inputs,
 title, and presets use the shared helpers. Two custom pieces: the Reset Zoom button resets the
-zoom slider DOM and `zoomScale`; the color-preset buttons map `sourceNodeColor` to palette
-index 0 and `targetNodeColor` to index 1. `computeDefaults` picks the first two visible columns
-as source and target.
+zoom slider DOM and commits `zoomScale` back to its default through the shared
+`commitChartConfigPatch` adapter (the package never writes state directly); the color-preset
+buttons map `sourceNodeColor` to palette index 0 and `targetNodeColor` to index 1.
+`computeDefaults` picks the first two visible columns as source and target.
 
 Because the force defaults (charge, distance, alpha decay) live in the Advanced section,
 casual users get a sensible layout without touching physics, while power users can tune it.
@@ -189,17 +197,19 @@ casual users get a sensible layout without touching physics, while power users c
 ### 6.1 Dataset workspace
 
 `renderNetworkChartSection({ config, rows, filterCallbacks })`
-([networkChartSection.js](../../../src/components/datasetWorkspace/chartRenders/networkChartSection.js))
-resolves the block/container, hides+clears when disabled, sets the min-height, maps config
-into the options bag (note `weight`/`group` map to `weightColumn`/`groupColumn`, and the
-source/target column names are also passed as `sourceColumn`/`targetColumn` for the filter
-tooltips), and calls `renderNetworkGraph`. Any failure shows the single
-`chive-chart-empty-network` message.
+([workspaceSection.js](../../../src/charts/network/workspaceSection.js))
+resolves the block/container, hides+clears when disabled, sets the min-height, and delegates
+to `renderNetworkInto` in [presentation.js](../../../src/charts/network/presentation.js),
+which maps config into the options bag (note `weight`/`group` map to
+`weightColumn`/`groupColumn`, and the source/target column names are also passed as
+`sourceColumn`/`targetColumn` for the filter tooltips) and calls `renderNetworkGraph`. Any
+failure shows the single `chive-chart-empty-network` message.
 
 ### 6.2 Panel view
 
-`renderChartFromSpec.renderNetwork()` builds the same options from `spec.config` and renders
-against `spec.dataSnapshot` with empty `filterCallbacks` (no click-to-filter in panels).
+`renderNetworkPanelChart` ([panelAdapter.js](../../../src/charts/network/panelAdapter.js))
+routes `spec.config` and `spec.dataSnapshot` through the same `renderNetworkInto` flow,
+omitting `filterCallbacks` (no click-to-filter in panels).
 
 ---
 
@@ -235,8 +245,8 @@ blend, section 2.4). Optional node-id `<text>` labels and a source/target legend
 
 On every simulation tick the renderer updates edge endpoints, node centers, label positions,
 and (in gradient mode) each edge gradient's coordinates, and repositions any pinned tooltip.
-This is the animation: the graph visibly relaxes from its initial random positions into the
-settled layout as alpha decays.
+This is the animation: the graph visibly relaxes from D3's deterministic initial placement
+into the settled layout as alpha decays.
 
 ### 7.5 Interaction: drag, zoom, hover, filter
 
@@ -289,9 +299,10 @@ own interaction layer on top of that.
 
 Pure SVG: a `<defs>` of per-edge `<linearGradient>`s, a `<g>` of edge `<line>`s, a `<g>` of
 node `<circle>`s (drag-enabled), optional `<text>` labels, and a legend, all under a zoomable
-viewport `<g>`. The panel exporter clones the live `<svg>` at its current settled state; there
-is no separate export path. A panel snapshot captures the data and config, so a re-rendered
-panel network re-runs its own simulation from that snapshot.
+viewport `<g>`. The panel exporter clones the live `<svg>` in its current rendered state; it
+does not wait for the simulation to settle and has no separate export path. A panel snapshot
+captures the data and config, so a re-rendered panel network re-runs its own simulation from
+that snapshot.
 
 ---
 
@@ -314,12 +325,20 @@ the Portuguese equivalent is in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 13. Tests
 
-- [networkGraph.test.js](../../../tests/modules/visualizations/networkGraph.test.js) covers the
-  renderer: node derivation from edges, weight handling, color roles, and the result counts.
-- [networkControls.test.js](../../../tests/modules/chartControls/networkControls.test.js) covers
-  control building and the reset-zoom and preset listeners.
-- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
-  covers the panel dispatch path.
+All under [tests/charts/network/](../../../tests/charts/network):
+
+- [renderers/svg.test.js](../../../tests/charts/network/renderers/svg.test.js) covers the
+  renderer: node derivation from edges, weight handling, color roles, tooltip pinning, filter
+  actions, and the result counts.
+- [data.test.js](../../../tests/charts/network/data.test.js) covers `buildNetworkData`, and
+  [renderEquivalence.test.js](../../../tests/charts/network/renderEquivalence.test.js) pins
+  the stable rendered structure across option combinations.
+- [controls.test.js](../../../tests/charts/network/controls.test.js) covers control building,
+  the reset-zoom and preset listeners, and the module boundaries.
+- [workspaceSection.test.js](../../../tests/charts/network/workspaceSection.test.js) and
+  [panelAdapter.test.js](../../../tests/charts/network/panelAdapter.test.js) cover the two
+  surface adapters; [panel.test.js](../../../tests/charts/registries/panel.test.js) covers
+  the panel dispatch path.
 
 ---
 

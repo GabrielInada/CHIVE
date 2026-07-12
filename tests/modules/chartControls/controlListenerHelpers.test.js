@@ -13,6 +13,7 @@ vi.mock('../../../src/modules/state/appState.js', () => ({
 }));
 
 import {
+	previewChartConfigPatch,
 	setupCheckboxListeners,
 	setupColorInputListener,
 	setupColorPresetListeners,
@@ -92,6 +93,34 @@ describe('controlListenerHelpers setupColorInputListener', () => {
 		const normalizer = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
 		const result = normalizer({ bar: { color: '#000000' } });
 		expect(result.bar.color).toBe('#abcdef');
+	});
+
+	it('supports functional nested live-preview patches for chart packages', () => {
+		const liveRender = vi.fn();
+		setLiveRenderCallback(liveRender);
+
+		previewChartConfigPatch('pie', current => ({
+			customSliceColors: {
+				...current.customSliceColors,
+				North: '#ff0000',
+			},
+		}));
+
+		const normalizer = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
+		const result = normalizer({
+			pie: {
+				enabled: true,
+				customSliceColors: { South: '#00ff00' },
+			},
+		});
+		expect(result.pie).toEqual({
+			enabled: true,
+			customSliceColors: {
+				South: '#00ff00',
+				North: '#ff0000',
+			},
+		});
+		expect(liveRender).toHaveBeenCalledTimes(1);
 	});
 });
 

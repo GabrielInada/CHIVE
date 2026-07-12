@@ -2,8 +2,7 @@ import js from '@eslint/js';
 import chiveRules from './eslint-rules/index.js';
 
 const STATELESS_RENDERER_MESSAGE =
-	'Renderers and DOM builders (src/components/, ' +
-	'modules/visualizations/, panelSubsystem presentation files) do not ' +
+	'Renderers and DOM builders (src/components/ and panel feature presentation files) do not ' +
 	'call write facades (docs/development/architecture.md Layers section). Only read-only facade members ' +
 	'are importable here. Route writes through feature controllers, ' +
 	'chart-control listeners, or event-handler modules.';
@@ -161,6 +160,8 @@ const TEST_GLOBALS = {
 	// Canvas-chart interaction tests dispatch wheel/pointer events.
 	WheelEvent: 'readonly',
 	PointerEvent: 'readonly',
+	// Settings-service tests stub Storage.prototype to simulate blocked storage.
+	Storage: 'readonly',
 };
 
 export default [
@@ -200,11 +201,41 @@ export default [
 		},
 	},
 
+	// (A2) Keep the browser entrypoint structural only. Application wiring,
+	// scheduling, and debug construction belong to the explicit app modules.
+	{
+		files: ['src/main.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: [
+						'./charts/**',
+						'./components/**',
+						'./config/**',
+						'./data/**',
+						'./domain/**',
+						'./features/**',
+						'./i18n/**',
+						'./modules/**',
+						'./services/**',
+						'./styles/**',
+						'./types.js',
+						'./utils/**',
+						'./workers/**',
+						'../vendor/**',
+					],
+					message: 'src/main.js imports only from src/app/; keep application wiring out of the browser entrypoint.',
+				}],
+			}],
+		},
+	},
+
 	// (B) Renderers must be stateless: only read-only facade imports. Placed
 	// AFTER (A) because it redeclares `no-restricted-imports`; it repeats the
 	// bare-import bans alongside the facade-read restriction.
 	{
-		files: ['src/components/**/*.js', 'src/modules/visualizations/**/*.js'],
+		files: ['src/components/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
@@ -217,23 +248,16 @@ export default [
 		},
 	},
 
-	// (B2) panelSubsystem presentation files: same renderer-statelessness rule
-	// as (B). Explicit file list because naming is not consistent across the
-	// subsystem (no `*Renderer.js` prefix to glob on). `panelStateMutations.js`
-	// and `blockStateHelpers.js` are intentionally absent, they back the panel
-	// facade and need write access. `panelManager.js` lives at
-	// `src/modules/panelManager.js` (outside this directory) and is naturally
-	// exempt.
+	// (B2) Panel feature views, layout interactions, slot lifecycle, and export:
+	// same renderer-statelessness rule as (B). The feature controller is
+	// intentionally outside this list because it owns facade writes and event
+	// subscriptions. State mutation internals remain under `modules/state/`.
 	{
 		files: [
-			'src/modules/panelSubsystem/panelRenderer.js',
-			'src/modules/panelSubsystem/panelResize.js',
-			'src/modules/panelSubsystem/domBuilders.js',
-			'src/modules/panelSubsystem/renderChartFromSpec.js',
-			'src/modules/panelSubsystem/slotLifecycle.js',
-			'src/modules/panelSubsystem/panelExporter.js',
-			'src/modules/panelSubsystem/layoutConfig.js',
-			'src/modules/panelSubsystem/resizeMath.js',
+			'src/features/panel/views/**/*.js',
+			'src/features/panel/layout/**/*.js',
+			'src/features/panel/slots/**/*.js',
+			'src/features/panel/export/**/*.js',
 		],
 		rules: {
 			'no-restricted-imports': ['error', {
@@ -247,19 +271,44 @@ export default [
 		},
 	},
 
+	// (B2b) Panel state mutation internals belong to the state core. Keep this
+	// layer independent of presentation, feature, chart, and service code; the
+	// public write surface remains `panelStateFacade.js`.
+	{
+		files: ['src/modules/state/panel/**/*.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
+					message: 'Panel state internals import only state, domain, config, utils, types, or vendor modules.',
+				}],
+			}],
+		},
+	},
+
 	// (B3) Per-chart package leaf files (src/charts/<name>/): data, options,
-	// scales, and math stay pure D3 math, interaction.js stays pure
-	// camera/input mechanics, and renderers draw from explicit inputs only.
-	// None of them may reach modules/, components/, or services/ (config,
-	// utils, and vendor modules only). Localized strings arrive through
-	// options.labels; state never enters a renderer.
+	// color, scales, math, axis helpers, encoding, palettes, and regression
+	// stay pure D3 math, interaction modules stay pure input/tooltip
+	// mechanics, and renderers draw from explicit inputs only.
+	// None of them may reach modules/, components/, or services/ (package-local
+	// and charts/shared modules, config, utils, and vendor modules only).
+	// Localized strings arrive through options.labels; state never enters a
+	// renderer.
 	{
 		files: [
 			'src/charts/*/data.js',
 			'src/charts/*/options.js',
+			'src/charts/*/color.js',
 			'src/charts/*/scales.js',
 			'src/charts/*/math.js',
+			'src/charts/*/axisHelpers.js',
+			'src/charts/*/encoding.js',
+			'src/charts/*/palettes.js',
+			'src/charts/*/regression.js',
+			'src/charts/*/regressionLayer.js',
 			'src/charts/*/interaction.js',
+			'src/charts/*/interactions.js',
 			'src/charts/*/renderers/**/*.js',
 		],
 		rules: {
@@ -267,7 +316,92 @@ export default [
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
 					group: ['**/modules/**', '**/components/**', '**/services/**'],
-					message: 'Chart package leaf files import only config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
+					message: 'Chart package leaf files import only package-local or charts/shared modules, config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
+				}],
+			}],
+		},
+	},
+
+	// (B3a) Shared chart rendering infrastructure is reusable leaf code. It
+	// may import vendor, config, utils, or other charts/shared modules, but it
+	// never reaches application state, components, feature modules, or services.
+	{
+		files: ['src/charts/shared/**/*.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'Shared chart infrastructure is a leaf layer. Import only charts/shared, config, utils, or vendor modules.',
+				}],
+			}],
+		},
+	},
+
+	// (B3b) The chart catalog is presentation metadata, not an integration
+	// registry. Keep it and its static preview markup independent of feature
+	// modules, workspace components, and services so importing chart metadata
+	// cannot pull state or side-effecting code into a consumer.
+	{
+		files: ['src/charts/catalog.js', 'src/charts/previews.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'Chart presentation metadata imports only static chart metadata, config, utils, or vendor modules.',
+				}],
+			}],
+		},
+	},
+
+	// (B3c) Each chart integration registry owns exactly one surface. Keep the
+	// three import graphs separate so adding a chart renderer cannot pull control
+	// writers into workspace or panel rendering.
+	{
+		files: ['src/charts/registries/controls.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: [
+					...BARE_IMPORT_BANS,
+					{ name: './workspace.js', message: 'The controls registry cannot import the workspace registry.' },
+					{ name: './panel.js', message: 'The controls registry cannot import the panel registry.' },
+				],
+				patterns: [{
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**'],
+					message: 'The controls registry imports only chart controls implementations and leaf config/types.',
+				}],
+			}],
+		},
+	},
+	{
+		files: ['src/charts/registries/workspace.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: [
+					...BARE_IMPORT_BANS,
+					{ name: './controls.js', message: 'The workspace registry cannot import the controls registry.' },
+					{ name: './panel.js', message: 'The workspace registry cannot import the panel registry.' },
+				],
+				patterns: [{
+					group: ['**/features/**', '**/services/**', '**/state/**', '**/chartControls/**'],
+					message: 'The workspace registry imports only chart workspace sections and leaf config/types.',
+				}],
+			}],
+		},
+	},
+	{
+		files: ['src/charts/registries/panel.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: [
+					...BARE_IMPORT_BANS,
+					{ name: './controls.js', message: 'The panel registry cannot import the controls registry.' },
+					{ name: './workspace.js', message: 'The panel registry cannot import the workspace registry.' },
+				],
+				patterns: [{
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/chartControls/**'],
+					message: 'The panel registry imports only chart panel adapters and leaf config/types.',
 				}],
 			}],
 		},
@@ -289,7 +423,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/state/appState.js', '**/modules/state/**', '**/modules/panelSubsystem/**', '**/components/**'],
+					group: ['**/state/appState.js', '**/modules/state/**', '**/features/**', '**/components/**'],
 					message: 'Chart package integration files do not import state, panel internals, or workspace components. Receive props/callbacks; controls write only through the shared chartControls helpers.',
 				}],
 			}],
@@ -322,6 +456,24 @@ export default [
 				patterns: [{
 					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
 					message: 'config/ is a pure leaf layer, no imports from modules/, components/, features/, or services/.',
+				}],
+			}],
+		},
+	},
+
+	// (D2) domain/ holds pure product rules (panel layout templates, block
+	// model). It is a leaf layer like utils/ and config/, and additionally
+	// never imports chart presentation code: domain rules must stay usable
+	// from state validation, rendering, and export without dragging DOM or
+	// side effects along.
+	{
+		files: ['src/domain/**/*.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
+					message: 'domain/ is a pure leaf layer. Import only domain, config, utils, or vendor modules.',
 				}],
 			}],
 		},

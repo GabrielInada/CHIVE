@@ -7,8 +7,8 @@ developer docs.
 | Field | Value |
 |---|---|
 | Audience | People using CHIVE in the browser. |
-| Source of truth | User workflow, supported file flows, charting path, panel workflow, and practical limitations. |
-| Update when | Upload, charting, filtering, panel, import/export, or visible privacy behavior changes. |
+| Source of truth | User workflow, supported file flows, browser settings, charting path, panel workflow, and practical limitations. |
+| Update when | Upload, settings, charting, filtering, panel, import/export, or visible privacy behavior changes. |
 
 ## Load Data
 
@@ -58,6 +58,24 @@ charts.
 
 For exact column requirements and chart-specific empty states, see
 [Chart and data reference](chart-reference.md).
+
+## Browser Settings
+
+Use the settings button in the header to change preferences that apply to the
+current browser and deployment URL.
+
+- **General** contains the interface language.
+- **Performance** contains the TIN color-rendering mode. **Optimized** is the
+  default and limits the surface to 128 color groups. **Full ramp** preserves
+  each computed ramp color but can create more SVG paths and render or export
+  more slowly. Both modes keep the adaptive surface-detail limit.
+
+Changes apply immediately. The TIN preference survives reloads and remains
+separate from saved project data, but clearing this site's browser data removes
+it. It is not included in project imports, exports, or panel snapshots. See the
+[TIN chart deep dive](../development/charts/tin.md#82-browser-local-rendering-mode-tradeoff)
+for the implementation tradeoff and [Privacy and security](privacy-security.md)
+for storage details.
 
 ## Build A Dashboard Panel
 

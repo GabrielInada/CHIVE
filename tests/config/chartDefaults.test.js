@@ -1,17 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalizeChartConfig, createDefaultChartConfig, mergeChartConfigWithDefaults } from '../../src/config/chartDefaults.js';
+import { CHART_TYPE_KEYS } from '../../src/config/chartTypes.js';
 
 describe('chartDefaults', () => {
 	describe('createDefaultChartConfig', () => {
 		it('returns config with all chart type sections', () => {
 			const config = createDefaultChartConfig();
 			expect(config).toHaveProperty('activeTab', 'preview');
-			expect(config).toHaveProperty('bar');
-			expect(config).toHaveProperty('scatter');
-			expect(config).toHaveProperty('network');
-			expect(config).toHaveProperty('pie');
-			expect(config).toHaveProperty('bubble');
-			expect(config).toHaveProperty('line');
+			for (const type of CHART_TYPE_KEYS) {
+				expect(config).toHaveProperty(type);
+			}
 		});
 
 		it('initializes line chart with curve/missingMode defaults and disabled', () => {
@@ -25,11 +23,9 @@ describe('chartDefaults', () => {
 
 		it('initializes all chart types as disabled', () => {
 			const config = createDefaultChartConfig();
-			expect(config.bar.enabled).toBe(false);
-			expect(config.scatter.enabled).toBe(false);
-			expect(config.network.enabled).toBe(false);
-			expect(config.pie.enabled).toBe(false);
-			expect(config.bubble.enabled).toBe(false);
+			for (const type of CHART_TYPE_KEYS) {
+				expect(config[type].enabled).toBe(false);
+			}
 		});
 
 		it('includes an empty multi-rule globalFilter at config root', () => {
@@ -42,7 +38,7 @@ describe('chartDefaults', () => {
 
 		it('does not duplicate filter shape per chart type', () => {
 			const config = createDefaultChartConfig();
-			for (const type of ['bar', 'scatter', 'network', 'pie', 'bubble', 'treemap']) {
+			for (const type of CHART_TYPE_KEYS) {
 				expect(config[type].filter).toBeUndefined();
 			}
 		});
@@ -229,7 +225,7 @@ describe('chartDefaults', () => {
 			const result = canonicalizeChartConfig({ bar: { enabled: true } }, ['a']);
 			expect(result.bar.enabled).toBe(true);
 			expect(result.bar.sort).toBeDefined();
-			for (const type of ['scatter', 'scatter3d', 'network', 'pie', 'bubble', 'treemap', 'line', 'tin']) {
+			for (const type of CHART_TYPE_KEYS) {
 				expect(result[type]).toBeDefined();
 			}
 		});

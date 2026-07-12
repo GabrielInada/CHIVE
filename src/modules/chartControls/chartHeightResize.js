@@ -3,7 +3,7 @@
  *
  * Replaces the per-chart height slider: a bottom-center handle on each
  * static chart block resizes the chart by dragging, mirroring the panel
- * block height drag (`panelSubsystem/panelResize.js`). Lives in the
+ * block height drag (`features/panel/layout/resize.js`). Lives in the
  * chartControls layer because the drag writes chart config; renderers
  * (`components/`) must stay stateless.
  *
@@ -93,7 +93,7 @@ function commitChartHeight(chartKey, heightPx) {
 }
 
 /**
- * Begin a height drag. Mirrors `panelResize.startBlockHeightResizeDrag`
+ * Begin a height drag. Mirrors `resize.startBlockHeightResizeDrag`
  * but with Pointer Events (touch and pen included). Listeners attach to
  * `window` so the drag tracks the cursor outside the block and survives
  * the live render rebuilding the chart mid-drag.

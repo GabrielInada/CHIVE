@@ -29,13 +29,18 @@ click-to-filter interactions shared with the other categorical charts.
 
 Key files:
 
-- Renderer: [barChart.js](../../../src/modules/visualizations/barChart.js)
-- Sidebar controls: [barControls.js](../../../src/modules/chartControls/barControls.js)
+- Package root: [src/charts/bar/](../../../src/charts/bar)
+- Renderer: [renderers/svg.js](../../../src/charts/bar/renderers/svg.js)
+- Data, options, and color logic: [data.js](../../../src/charts/bar/data.js),
+  [options.js](../../../src/charts/bar/options.js), and
+  [color.js](../../../src/charts/bar/color.js)
+- Sidebar controls: [controls/](../../../src/charts/bar/controls)
 - Config constants: [charts.js](../../../src/config/charts.js) (`BAR_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bar` block)
-- Section adapter (dataset workspace): [barChartSection.js](../../../src/components/datasetWorkspace/chartRenders/barChartSection.js)
-- Panel adapter (saved snapshots): [renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)
-- Shared tooltip + filter actions: [tooltip.js](../../../src/modules/visualizations/tooltip.js)
+- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bar/workspaceSection.js)
+- Shared presentation mapping: [presentation.js](../../../src/charts/bar/presentation.js)
+- Panel adapter: [panelAdapter.js](../../../src/charts/bar/panelAdapter.js)
+- Shared tooltip + filter actions: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js)
 
 ---
 
@@ -117,20 +122,23 @@ into a dashboard). Both end at the same renderer, `renderBarChart`.
                  └─────────────────────────────────────────────┘
                         │                          │
        sidebar edits    │                          │  render
-   (barControls.js) ────┘                          ▼
+   (bar/controls/*) ────┘                          ▼
         write config                  chartsView.renderCharts()
-                                      → renderBarChartSection()        [dataset workspace]
-                                        → renderBarChart(container, rows, category, opts)
+                                      → bar/workspaceSection.js       [dataset workspace]
+                                        → bar/presentation.js
+                                          → renderBarChart(...)
                                               │
    "Add to panel"                            │
-   (eventHandlers → panelManager)            │
+   (eventHandlers → panelController)         │
    structuredClone of config + rows          │
         │                                     │
         ▼                                     │
    chartSnapshot { config, dataSnapshot, … }  │
         │                                     │
-   renderChartFromSpec.renderBar()            │
-     → renderBarChart(container, spec.dataSnapshot, spec.config.category, …)
+   renderChartFromSpec()                       │
+     → bar/panelAdapter.js                     │
+       → bar/presentation.js                   │
+         → renderBarChart(...)                 │
                                               ▼
                                    ┌──────────────────────┐
                                    │   <svg> in container  │
@@ -190,10 +198,11 @@ deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in the same 
 
 ## 5. The control sidebar
 
-[barControls.js](../../../src/modules/chartControls/barControls.js) builds the right-sidebar
-control group and wires every input to a config write. It exposes three functions,
-registered in the chart-controls manager registry
-([chartControlsManager.js](../../../src/modules/chartControls/chartControlsManager.js)):
+[controls/](../../../src/charts/bar/controls) owns the right-sidebar control
+group and its config writes. The
+[controls registry](../../../src/charts/registries/controls.js) imports three
+explicit package modules; `chartControlsManager.js` consumes the normalized
+registry entry:
 
 - `createBarChartControls(dataset, categoryOptions, numericOptions, allColumns)` builds the DOM.
 - `setupBarChartControlListeners(dataset, baseBar, numericOptions, …, onConfigChanged)` wires events.
@@ -225,11 +234,11 @@ nothing:
 
 ### 5.3 Listener wiring
 
-`setupBarChartControlListeners` uses the shared helpers in
+`setupBarChartControlListeners` uses the shared adapters in
 [controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js)
 (`setupSelectListeners`, `setupCheckboxListeners`, `setupTextInputListener`,
-`setupSliderListener`, `setupColorInputListener`, `setupColorPresetListeners`). Two controls
-have custom listeners instead of the generic select helper:
+`setupSliderListener`, `setupColorInputListener`, `setupColorPresetListeners`, and
+`commitChartConfigPatch`). Two controls have custom listeners instead of the generic select helper:
 
 - **Measure mode**: switching to `count` also clears `valueColumn` to `null`; switching to
   sum/mean keeps the current value column only if it is still a numeric option.
@@ -247,28 +256,30 @@ renderer never reads the DOM controls; it only reads config the listeners have w
 
 ### 6.1 Dataset workspace
 
-[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides which chart blocks to
-show and calls `renderBarChartSection({ config, rows, filterCallbacks })`
-([barChartSection.js](../../../src/components/datasetWorkspace/chartRenders/barChartSection.js)). That
-adapter:
+[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides
+which chart is active and passes the shared render context to the
+[workspace registry](../../../src/charts/registries/workspace.js). Its `bar`
+entry calls `renderBarChartSection({ config, rows, filterCallbacks })` from
+[workspaceSection.js](../../../src/charts/bar/workspaceSection.js). That adapter:
 
 1. Resolves the block (`CHART_BLOCKS.bar`) and container (`CHART_CONTAINERS.bar`) elements.
 2. Hides the block and clears the container if the chart is disabled.
 3. Sets the container `min-height` to the configured `chartHeight`.
-4. Maps every `config.*` key into the renderer's `options` bag, including localized axis
-   labels and the `labels` bag (category / count / sum / mean / percentage and the
-   filter-action strings) via `t(...)`, and the current locale via `getLocale()`.
-5. Calls `renderBarChart(container, rows, config.category, options)`.
+4. Delegates option and localized-label mapping to
+   [presentation.js](../../../src/charts/bar/presentation.js).
+5. Calls `renderBarChart(container, rows, config.category, options)` through that shared flow.
 6. On failure, shows a localized empty state: `no-numeric` / `no-value-column` map to
    `chive-chart-empty-bar-numeric`, anything else to `chive-chart-empty-bar`
    (via `showChartMessage`).
 
 ### 6.2 Panel view
 
-`renderChartFromSpec.renderBar()`
-([renderChartFromSpec.js](../../../src/modules/panelSubsystem/renderChartFromSpec.js)) maps
-`spec.config` into the same options bag and calls the identical `renderBarChart` against
-`spec.dataSnapshot`. The one difference: panel charts pass a frozen empty
+[renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
+validates the request, then the
+[panel registry](../../../src/charts/registries/panel.js) dispatches bar snapshots to
+[panelAdapter.js](../../../src/charts/bar/panelAdapter.js). The adapter passes
+`spec.config` and `spec.dataSnapshot` through the same presentation flow and renderer.
+The one difference is that panel charts pass a frozen empty
 `filterCallbacks`, so panel tooltips do **not** offer click-to-filter actions (those would
 mutate the live dataset, but a snapshot is frozen).
 
@@ -295,7 +306,9 @@ on success or `fail(reason)` when it cannot draw. The pipeline in order:
 - **sum / mean mode**: requires `valueColumn` and that the rows actually carry that column,
   else `fail('no-value-column')`. Each row's value is `Number(...)`; non-finite values are
   skipped. A second `Map` tracks the per-category count so mean can divide. If, after this,
-  no category accumulated anything, `fail('no-numeric')`.
+  no category accumulated anything, `fail('no-numeric')`. Negative category totals are not
+  specially handled; bar sum/mean mode is clearest for measures that compare from a zero
+  baseline.
 
 ### 7.3 Sort, Top-N, and the empty guard
 
@@ -330,7 +343,7 @@ from `getBarColor`:
 ### 7.6 Interaction: hover and click-to-filter
 
 This is the shared categorical-tooltip subsystem from
-[tooltip.js](../../../src/modules/visualizations/tooltip.js), used by bar, pie, treemap, and
+[tooltip.js](../../../src/charts/shared/tooltip/tooltip.js), used by bar, pie, treemap, and
 bubble:
 
 - **Hover** shows a tooltip with the category, the measure value, and (except in mean mode)
@@ -417,6 +430,8 @@ screen shows are what gets serialized.
   sum or mean mode.").
 - **Missing/empty categories** collapse into a single `N/A` bar, never many empty bars.
 - **Equal measures** keep a deterministic order via the `compareStrings` tiebreaker.
+- **Negative sum/mean aggregates** are allowed by aggregation, but the renderer keeps a
+  zero-based bar scale; use signed measures with care.
 - **Invalid colors** fall back through `isValidHexColor` to the chart's default color.
 - **Stateless renders**: the container is fully wiped each call, so any caller can re-render
   at any time safely.
@@ -431,14 +446,17 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
 
 ## 13. Tests
 
-- [chartColors.test.js](../../../tests/modules/visualizations/chartColors.test.js) exercises
-  `renderBarChart`'s color options (uniform vs gradient output).
-- [barChartSection.test.js](../../../tests/components/datasetWorkspace/chartRenders/barChartSection.test.js)
-  covers the section adapter: enable/disable, empty-state message selection.
-- [barControls.test.js](../../../tests/modules/chartControls/barControls.test.js) (and the
-  legacy [tests/modules/barControls.test.js](../../../tests/modules/barControls.test.js)) cover
-  control building and the measure-mode / value-column listener logic.
-- [renderChartFromSpec.test.js](../../../tests/modules/panelSubsystem/renderChartFromSpec.test.js)
+- [tests/charts/bar/](../../../tests/charts/bar) mirrors the package. Data,
+  options, color, SVG rendering, and render-equivalence tests cover the leaf
+  implementation.
+- [workspaceSection.test.js](../../../tests/charts/bar/workspaceSection.test.js)
+  covers workspace visibility and empty-state selection.
+- [controls.test.js](../../../tests/charts/bar/controls.test.js) and
+  [controls.measureMode.test.js](../../../tests/charts/bar/controls.measureMode.test.js)
+  cover control construction and config writes.
+- [panelAdapter.test.js](../../../tests/charts/bar/panelAdapter.test.js) covers
+  snapshot-to-renderer mapping and localized aggregate labels.
+- [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 - [chartsView.test.js](../../../tests/components/datasetWorkspace/chartsView.test.js) covers view-level
   orchestration of which blocks render.

@@ -1,8 +1,9 @@
 /**
  * CHIVE chart-control listener helpers.
  *
- * Wires DOM elements built by `shared.js` (selects, checkboxes, sliders,
- * color inputs) to writes against the active dataset's `chartConfig`.
+ * Wires DOM elements built by the shared control factories
+ * (`charts/shared/controls/factories.js`) to writes against the active
+ * dataset's `chartConfig`.
  * Every helper takes the dataset reference, the chart-type key, and an
  * optional `onConfigChanged` callback that fires after the state write.
  *
@@ -11,7 +12,7 @@
  */
 
 import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../state/appState.js';
-import { normalizeHexColor } from './shared.js';
+import { normalizeHexColor } from '../../utils/colorUtils.js';
 import { triggerLiveRender } from './livePreview.js';
 
 /**
@@ -21,15 +22,55 @@ import { triggerLiveRender } from './livePreview.js';
  * @private
  */
 function makeUpdater(dataset, chartKey, onConfigChanged) {
-	return (partialUpdate) => {
-		updateActiveDatasetConfig({
+	return partialUpdate => commitChartConfigPatch(dataset, chartKey, partialUpdate, onConfigChanged);
+}
+
+/**
+ * Merge a chart-specific config patch through the emitting state facade.
+ * Per-chart packages use this adapter for custom listeners that cannot be
+ * expressed through the standard select, checkbox, or input helpers.
+ *
+ * @param {Dataset} dataset
+ * @param {ChartTypeKey} chartKey
+ * @param {Object} partialUpdate
+ * @param {(() => void) | null | undefined} onConfigChanged
+ * @returns {void}
+ */
+export function commitChartConfigPatch(dataset, chartKey, partialUpdate, onConfigChanged) {
+	updateActiveDatasetConfig({
+		[chartKey]: {
+			...dataset.chartConfig[chartKey],
+			...partialUpdate,
+		},
+	});
+	onConfigChanged?.();
+}
+
+/**
+ * Merge a chart-specific config patch through the non-emitting state facade,
+ * then repaint the chart without rebuilding its controls. The patch may be a
+ * plain object or a function of the current chart config, which supports
+ * nested updates without exposing state writes to per-chart packages.
+ *
+ * @param {ChartTypeKey} chartKey
+ * @param {Object | ((currentConfig: Object) => Object)} partialUpdate
+ * @returns {void}
+ */
+export function previewChartConfigPatch(chartKey, partialUpdate) {
+	normalizeActiveDatasetConfig(prev => {
+		const currentConfig = prev[chartKey] || {};
+		const patch = typeof partialUpdate === 'function'
+			? partialUpdate(currentConfig)
+			: partialUpdate;
+		return {
+			...prev,
 			[chartKey]: {
-				...dataset.chartConfig[chartKey],
-				...partialUpdate,
+				...currentConfig,
+				...patch,
 			},
-		});
-		onConfigChanged?.();
-	};
+		};
+	});
+	triggerLiveRender();
 }
 
 /**
@@ -124,11 +165,7 @@ export function setupColorInputListener(elementId, configKey, defaultColor, data
 	if (!el) return;
 	el.addEventListener('input', () => {
 		const next = normalizeHexColor(el.value, defaultColor);
-		normalizeActiveDatasetConfig(prev => ({
-			...prev,
-			[chartKey]: { ...prev[chartKey], [configKey]: next },
-		}));
-		triggerLiveRender();
+		previewChartConfigPatch(chartKey, { [configKey]: next });
 	});
 	el.addEventListener('change', () => {
 		makeUpdater(dataset, chartKey, onConfigChanged)({

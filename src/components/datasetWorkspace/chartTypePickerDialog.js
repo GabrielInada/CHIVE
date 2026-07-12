@@ -4,7 +4,8 @@
  * `{ chartType: null }` for the explicit "Clear" action.
  */
 
-import { CHART_TYPES, PREVIEW_SVGS, CATEGORY_KEYS } from '../../modules/chartControls/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
+import { CHART_CATALOG } from '../../charts/catalog.js';
 import { installDialogFocus } from '../../modules/dialogFocus.js';
 
 /**
@@ -14,6 +15,7 @@ import { installDialogFocus } from '../../modules/dialogFocus.js';
  * @private
  */
 function buildChartCard(type, translate, isActive) {
+	const catalogEntry = CHART_CATALOG[type];
 	const card = document.createElement('button');
 	card.type = 'button';
 	card.className = `preset-card chart-picker-card${isActive ? ' selected' : ''}`;
@@ -21,8 +23,8 @@ function buildChartCard(type, translate, isActive) {
 
 	const preview = document.createElement('span');
 	preview.className = 'chart-picker-card-preview';
-	// innerHTML: static SVG markup from PREVIEW_SVGS; not user input.
-	preview.innerHTML = PREVIEW_SVGS[type];
+	// innerHTML: static SVG markup from CHART_CATALOG; not user input.
+	preview.innerHTML = catalogEntry.previewSvg;
 	card.appendChild(preview);
 
 	const name = document.createElement('div');
@@ -32,7 +34,7 @@ function buildChartCard(type, translate, isActive) {
 
 	const tag = document.createElement('div');
 	tag.className = 'chart-picker-card-category';
-	tag.textContent = translate(CATEGORY_KEYS[type]);
+	tag.textContent = translate(catalogEntry.categoryKey);
 	card.appendChild(tag);
 
 	const desc = document.createElement('div');
@@ -110,7 +112,7 @@ export function openChartTypePickerDialog({ activeChartType = null, translate })
 			closeDialog(null);
 		};
 
-		CHART_TYPES.forEach(type => {
+		CHART_TYPE_KEYS.forEach(type => {
 			const card = buildChartCard(type, translate, type === activeChartType);
 			card.addEventListener('click', () => closeDialog({ chartType: type }));
 			grid.appendChild(card);

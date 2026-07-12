@@ -12,21 +12,22 @@ import {
 	updatePanelBlockHeightState,
 	updatePanelBlockProportionsState,
 	validatePanelSlotsState,
-} from '../panelSubsystem/panelStateMutations.js';
+} from './panel/mutations.js';
 import {
-	clampPercentage,
 	createDefaultProportions,
 	getTemplateSlots,
 	normalizeTemplateId,
-} from '../panelSubsystem/blockStateHelpers.js';
+} from '../../domain/panel/layoutTemplates.js';
+import { clampPercentage } from '../../domain/panel/panelBlockModel.js';
 import { STATE_EVENTS } from './stateEvents.js';
 
 /**
  * CHIVE panel-domain facade.
  *
- * Owns every write into `appState.panel`. The mutation helpers under
- * `./panel/` are `@internal` and must not be imported from outside this
- * module, they assume the caller is the facade and skip emission.
+ * Owns every write into `appState.panel`. The mutation helpers in
+ * `./panel/mutations.js` are `@internal` and must not be
+ * imported from outside this module; they assume the caller is the facade and
+ * skip event emission.
  *
  * @typedef {import('../../types.js').AppState} AppState
  * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot

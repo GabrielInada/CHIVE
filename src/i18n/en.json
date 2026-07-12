@@ -552,6 +552,17 @@
 	"chive-global-filter-cancel": "Cancel",
 	"chive-global-filter-empty": "Select a column to filter by.",
 
+	"chive-settings-open": "Settings",
+	"chive-settings-title": "Settings",
+	"chive-settings-close": "Close settings",
+	"chive-settings-section-general": "General",
+	"chive-settings-section-performance": "Performance",
+	"chive-settings-language": "Interface language",
+	"chive-settings-tin-rendering": "TIN color rendering",
+	"chive-settings-tin-optimized": "Optimized",
+	"chive-settings-tin-full-ramp": "Full ramp",
+	"chive-settings-tin-hint": "Optimized merges similar surface colors into fewer shapes for faster rendering. Full ramp keeps every computed ramp color and can render more slowly.",
+
 	"chive-about-page-title": "About: CHIVE",
 	"chive-footer-copyright": "© 2026 CHIVE. All rights reserved."
 }
