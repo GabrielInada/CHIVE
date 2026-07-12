@@ -35,8 +35,6 @@ describe('i18nService branching coverage', () => {
 	beforeEach(() => {
 		document.body.innerHTML = `
 			<html>
-				<select id="select-lang"><option value="pt-BR">PT</option><option value="en">EN</option></select>
-				<div id="lang-display">Português</div>
 				<button data-i18n="btn-test" data-i18n-title="title-test" aria-label="old"></button>
 				<div data-i18n-html="html-test"></div>
 			</html>
@@ -62,20 +60,10 @@ describe('i18nService branching coverage', () => {
 			expect(mocks.mockBanana.setLocale).toHaveBeenCalledWith('pt-BR');
 		});
 
-		it('handles missing select-lang element', () => {
-			document.getElementById('select-lang')?.remove();
-			expect(() => initializeI18n()).not.toThrow();
-		});
-
-		it('handles missing lang-display element', () => {
-			document.getElementById('lang-display')?.remove();
-			expect(() => initializeI18n()).not.toThrow();
-		});
-
-		it('sets correct language label for each locale', () => {
-			mocks.mockBanana.locale = 'pt-BR';
+		it('reveals the document body after translation', () => {
+			document.body.style.visibility = 'hidden';
 			initializeI18n();
-			expect(document.getElementById('lang-display').textContent).toBe('Português');
+			expect(document.body.style.visibility).toBe('visible');
 		});
 	});
 

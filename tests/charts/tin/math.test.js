@@ -69,28 +69,29 @@ describe('appendSubdividedFragments', () => {
 		{ x: 6, y: 12, z: 6 },
 	];
 
-	it('emits one M..Z fragment at depth 0, filed into the bucketAt index', () => {
-		const buckets = [[], [], []];
-		appendSubdividedFragments(tri, 0, () => 2, buckets);
-		expect(buckets[0]).toHaveLength(0);
-		expect(buckets[1]).toHaveLength(0);
-		expect(buckets[2]).toHaveLength(1);
-		expect(buckets[2][0]).toMatch(/^M.*Z$/);
+	it('emits one M..Z fragment with the leaf mean Z at depth 0', () => {
+		const leaves = [];
+		appendSubdividedFragments(tri, 0, (meanZ, fragment) => leaves.push({ meanZ, fragment }));
+		expect(leaves).toHaveLength(1);
+		expect(leaves[0].fragment).toMatch(/^M.*Z$/);
+		expect(leaves[0].meanZ).toBeCloseTo(2, 10);
 	});
 
 	it('emits 4**depth leaf fragments', () => {
-		const buckets = [[]];
-		appendSubdividedFragments(tri, 3, () => 0, buckets);
-		expect(buckets[0]).toHaveLength(4 ** 3);
+		const fragments = [];
+		appendSubdividedFragments(tri, 3, (_meanZ, fragment) => fragments.push(fragment));
+		expect(fragments).toHaveLength(4 ** 3);
 	});
 
-	it('files leaves into buckets by their mean Z', () => {
-		const buckets = [[], []];
-		// bucketAt sends low-Z leaves to 0 and high-Z leaves to 1.
-		appendSubdividedFragments(tri, 2, meanZ => (meanZ > 3 ? 1 : 0), buckets);
-		expect(buckets[0].length + buckets[1].length).toBe(4 ** 2);
-		expect(buckets[0].length).toBeGreaterThan(0);
-		expect(buckets[1].length).toBeGreaterThan(0);
+	it('reports each leaf mean Z so a sink can group by bucket or by color', () => {
+		// A bucket-style sink: low-Z leaves to group 0, high-Z leaves to group 1.
+		const groups = [[], []];
+		appendSubdividedFragments(tri, 2, (meanZ, fragment) => {
+			groups[meanZ > 3 ? 1 : 0].push(fragment);
+		});
+		expect(groups[0].length + groups[1].length).toBe(4 ** 2);
+		expect(groups[0].length).toBeGreaterThan(0);
+		expect(groups[1].length).toBeGreaterThan(0);
 	});
 });
 

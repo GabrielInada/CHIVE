@@ -7,6 +7,7 @@ describe('normalizeTinOptions defaults', () => {
 		// likeliest regression after the split, so assert the whole object.
 		expect(normalizeTinOptions({}, 'X', 'Y', 'Z')).toStrictEqual({
 			fillMode: 'smooth',
+			colorRenderingMode: 'optimized',
 			gradientMin: '#5d8aa8',
 			gradientMax: '#ffffff',
 			gradientDistribution: 'value',
@@ -60,6 +61,8 @@ describe('normalizeTinOptions enum collapse', () => {
 	it.each([
 		['fillMode', 'flat', 'flat'],
 		['fillMode', 'weird', 'smooth'],
+		['colorRenderingMode', 'full-ramp', 'full-ramp'],
+		['colorRenderingMode', 'weird', 'optimized'],
 		['isolineMode', 'step', 'step'],
 		['isolineMode', 'weird', 'count'],
 		['gradientDistribution', 'rank', 'rank'],

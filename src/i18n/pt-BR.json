@@ -552,6 +552,17 @@
 	"chive-global-filter-cancel": "Cancelar",
 	"chive-global-filter-empty": "Selecione uma coluna para filtrar.",
 
+	"chive-settings-open": "Configurações",
+	"chive-settings-title": "Configurações",
+	"chive-settings-close": "Fechar configurações",
+	"chive-settings-section-general": "Geral",
+	"chive-settings-section-performance": "Desempenho",
+	"chive-settings-language": "Idioma da interface",
+	"chive-settings-tin-rendering": "Renderização de cores do TIN",
+	"chive-settings-tin-optimized": "Otimizada",
+	"chive-settings-tin-full-ramp": "Rampa completa",
+	"chive-settings-tin-hint": "Otimizada mescla cores de superfície semelhantes em menos formas para renderizar mais rápido. Rampa completa mantém todas as cores calculadas da rampa e pode renderizar mais devagar.",
+
 	"chive-about-page-title": "Sobre: CHIVE",
 	"chive-footer-copyright": "© 2026 CHIVE. Todos os direitos reservados."
 }

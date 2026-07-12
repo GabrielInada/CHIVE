@@ -4,8 +4,8 @@
  * Pure helpers (no DOM, no d3) for the triangulated surface: triangle
  * midpoints, recursive fill subdivision, iso-level segment extraction, unique
  * Delaunay edge collection, and the effective subdivision-depth resolver.
- * `appendSubdividedFragments` is the one impure helper here: it pushes into the
- * caller's `bucketFragments` arrays. Used by `renderers/svg.js`.
+ * `appendSubdividedFragments` is the one impure helper here: it feeds each
+ * leaf to the caller's sink callback. Used by `renderers/svg.js`.
  */
 
 import { TIN_CHART } from '../../config/charts.js';
@@ -53,34 +53,35 @@ export function resolveSurfaceDepth({ requestedDepth, fillMode, zMin, zMax, tria
 	return depth;
 }
 
-// Recursively subdivides a triangle into 4^depth sub-triangles and files each
-// leaf into a color bucket by its mean-Z. Leaves go straight into the per-bucket
-// path-fragment lists rather than an intermediate object per leaf, so a single
-// render can produce hundreds of thousands of facets without the matching GC
-// churn; the caller merges each bucket's fragments into one <path>.
+// Recursively subdivides a triangle into 4^depth sub-triangles and hands each
+// leaf's mean-Z plus path fragment to a caller-provided sink. Leaves go
+// straight into the sink rather than an intermediate object per leaf, so a
+// single render can produce hundreds of thousands of facets without the
+// matching GC churn. The renderer supplies a mode-specific sink: the optimized
+// mode files fragments into per-bucket lists, the full-ramp mode groups them
+// by exact ramp color; either way each group merges into one <path>.
 /**
  * @param {Array} triangle - `[a, b, c]` vertices in `{ x, y, z }` screen space.
  * @param {number} depth - Remaining subdivision levels.
- * @param {(meanZ: number) => number} bucketAt - Maps a mean-Z to a bucket index.
- * @param {Array<Array<string>>} bucketFragments - In/out: per-bucket path-fragment
- *   lists, mutated in place (leaves are pushed onto `bucketFragments[bucketAt(...)]`).
+ * @param {(meanZ: number, fragment: string) => void} pushLeaf - Leaf sink;
+ *   receives each leaf's mean-Z and its `M...L...L...Z` path fragment.
  */
-export function appendSubdividedFragments(triangle, depth, bucketAt, bucketFragments) {
+export function appendSubdividedFragments(triangle, depth, pushLeaf) {
 	if (depth <= 0) {
 		const [a, b, c] = triangle;
 		const meanZ = (a.z + b.z + c.z) / 3;
 		const fragment = `M${fmtCoord(a.x)},${fmtCoord(a.y)}L${fmtCoord(b.x)},${fmtCoord(b.y)}L${fmtCoord(c.x)},${fmtCoord(c.y)}Z`;
-		bucketFragments[bucketAt(meanZ)].push(fragment);
+		pushLeaf(meanZ, fragment);
 		return;
 	}
 	const [a, b, c] = triangle;
 	const ab = midpoint(a, b);
 	const bc = midpoint(b, c);
 	const ca = midpoint(c, a);
-	appendSubdividedFragments([a, ab, ca], depth - 1, bucketAt, bucketFragments);
-	appendSubdividedFragments([b, bc, ab], depth - 1, bucketAt, bucketFragments);
-	appendSubdividedFragments([c, ca, bc], depth - 1, bucketAt, bucketFragments);
-	appendSubdividedFragments([ab, bc, ca], depth - 1, bucketAt, bucketFragments);
+	appendSubdividedFragments([a, ab, ca], depth - 1, pushLeaf);
+	appendSubdividedFragments([b, bc, ab], depth - 1, pushLeaf);
+	appendSubdividedFragments([c, ca, bc], depth - 1, pushLeaf);
+	appendSubdividedFragments([ab, bc, ca], depth - 1, pushLeaf);
 }
 
 // Computes the iso-segment crossings for a single Z level across an array of

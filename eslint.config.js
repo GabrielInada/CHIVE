@@ -161,6 +161,8 @@ const TEST_GLOBALS = {
 	// Canvas-chart interaction tests dispatch wheel/pointer events.
 	WheelEvent: 'readonly',
 	PointerEvent: 'readonly',
+	// Settings-service tests stub Storage.prototype to simulate blocked storage.
+	Storage: 'readonly',
 };
 
 export default [

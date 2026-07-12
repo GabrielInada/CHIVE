@@ -35,6 +35,7 @@ function resolveColorRamp(rampName) {
  */
 export function normalizeTinOptions(options, xColumn, yColumn, zColumn) {
 	const fillMode = options.fillMode === 'flat' ? 'flat' : 'smooth';
+	const colorRenderingMode = options.colorRenderingMode === 'full-ramp' ? 'full-ramp' : 'optimized';
 	const gradientMin = normalizeColor(options.gradientMinColor, CHART_COLORS.tin);
 	const gradientMax = normalizeColor(options.gradientMaxColor, '#ffffff');
 	const gradientDistribution = options.gradientDistribution === 'rank' ? 'rank' : 'value';
@@ -97,6 +98,7 @@ export function normalizeTinOptions(options, xColumn, yColumn, zColumn) {
 
 	return {
 		fillMode,
+		colorRenderingMode,
 		gradientMin,
 		gradientMax,
 		gradientDistribution,

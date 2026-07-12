@@ -112,8 +112,7 @@ export const BADGE_IDS = {
 	numColumns: 'badge-num-columns',
 };
 
-// Language elements
-export const LANG_IDS = {
-	select: 'select-lang',
-	display: 'lang-display',
+// Settings elements
+export const SETTINGS_IDS = {
+	button: 'btn-settings',
 };

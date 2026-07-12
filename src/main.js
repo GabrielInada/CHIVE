@@ -3,7 +3,8 @@
  *, Main Application Orchestrator.
  *
  * Boot sequence (see {@link initializeApplication}):
- *   1. Initialize i18n (await, must precede any translated render).
+ *   1. Initialize i18n (await, must precede any translated render), then the
+ *      settings controller (header button works on every page, incl. About).
  *   2. Hydrate persisted state from IndexedDB BEFORE wiring subscribers,
  *      so restoration does not trigger a redundant save and the first
  *      render sees the restored state.
@@ -14,7 +15,7 @@
  *      events); see `setupStateSubscriptions` for the canonical mapping.
  *   6. Enable debounced auto-save.
  *   7. Initial render.
- *   8. Re-render on locale changes.
+ *   8. Re-render on locale and browser-local rendering-setting changes.
  *   9. Surface internal module errors via feedback toast.
  *
  * @typedef {import('./types.js').AppState} AppState
@@ -74,6 +75,8 @@ handleJoinDatasetRequest,
 handlePresetDatasetRequest,
 } from './modules/fileManager.js';
 import { initializeAllEventHandlers } from './modules/eventHandlers.js';
+import { initSettingsController } from './modules/settingsController.js';
+import { SETTINGS_CHANGE_EVENT } from './config/settings.js';
 import {
 showFeedback,
 showFeedbackMessage,
@@ -98,6 +101,10 @@ import { switchTab } from './modules/uiManager.js';
 async function initializeApplication() {
 // 1. Initialize i18n system
 await initializeI18n();
+
+// Global settings (language + rendering preferences) live in the shared
+// header, so the controller wires up before the app-only early return below.
+initSettingsController();
 
 // Only run app logic on pages that have the main app UI
 if (!document.getElementById('file-info')) return;
@@ -139,9 +146,15 @@ enablePersistenceAutoSave(getPersistenceSnapshot, {
 // 7. Initial view render
 runFullRefreshNow();
 
-// 8. Re-render dynamic content on locale changes
+// 8. Re-render dynamic content on locale changes and on browser-local
+//    rendering-setting changes. A TIN color-rendering switch repaints the
+//    active workspace, controls, and panel; panel snapshots stay frozen, only
+//    the local rendering policy changes.
 window.addEventListener('chive-locale-changed', () => {
 scheduleFullRefresh();
+});
+window.addEventListener(SETTINGS_CHANGE_EVENT, event => {
+	if (event?.detail?.key === 'tinColorRendering') scheduleFullRefresh();
 });
 
 // 9. Surface internal module errors in UI feedback

@@ -27,3 +27,13 @@ version here and in the headers.
 
 `vendor/fonts/fonts.css` is the runtime font entrypoint. Keep it limited to the
 font files CHIVE actually uses so browsers do not download unnecessary faces.
+
+## Inlined Icon Assets
+
+The settings (gear) icon in the shared page header of `index.html` and
+`about.html` is the "settings" icon from [Lucide](https://lucide.dev), inlined
+as SVG markup so it can inherit the header text color via `currentColor` and
+load with no external requests. Lucide is licensed under the ISC License
+(https://github.com/lucide-icons/lucide/blob/main/LICENSE). Follow the same
+offline model for any new icon: inline it or check it into `src/icons/`, and
+record its source and license here.

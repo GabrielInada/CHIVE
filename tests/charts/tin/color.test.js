@@ -55,6 +55,34 @@ describe('createTinColorScale tForZ', () => {
 	});
 });
 
+describe('createTinColorScale colorAt', () => {
+	it('samples the exact ramp color for a Z value with no quantization', () => {
+		const { colorAt, sampleRamp, tForZ } = createTinColorScale(VALUE_BW);
+		expect(colorAt(0)).toBe('#000000');
+		expect(colorAt(5)).toBe('#808080');
+		expect(colorAt(10)).toBe('#FFFFFF');
+		// Definitionally sampleRamp(tForZ(z)); pin an off-grid value too.
+		expect(colorAt(3.7)).toBe(sampleRamp(tForZ(3.7)));
+	});
+
+	it('clamps out-of-range Z to the ramp ends', () => {
+		const { colorAt } = createTinColorScale(VALUE_BW);
+		expect(colorAt(-100)).toBe('#000000');
+		expect(colorAt(999)).toBe('#FFFFFF');
+	});
+
+	it('differs from the bucket-center color where the bucket grid rounds away', () => {
+		// t = 0.4 -> exact gray 102 (#666666); bucket 51's center t = 51.5/128
+		// rounds to 103 (#676767). Guards against colorAt secretly bucketing.
+		const { colorAt, sampleRamp, bucketAt, bucketCount } = createTinColorScale(VALUE_BW);
+		const exact = colorAt(4);
+		const bucketCenter = sampleRamp((bucketAt(4) + 0.5) / bucketCount);
+		expect(exact).toBe('#666666');
+		expect(bucketCenter).toBe('#676767');
+		expect(exact).not.toBe(bucketCenter);
+	});
+});
+
 describe('createTinColorScale bucketAt / bucketCount', () => {
 	it('exposes the configured bucket count', () => {
 		expect(createTinColorScale(VALUE_BW).bucketCount).toBe(TIN_CHART.rampBuckets);

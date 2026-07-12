@@ -49,6 +49,7 @@ const mocks = vi.hoisted(() => ({
 	handleJoinDatasetRequest: vi.fn(),
 	handlePresetDatasetRequest: vi.fn(),
 	initializeAllEventHandlers: vi.fn(),
+	initSettingsController: vi.fn(),
 	showFeedback: vi.fn(),
 	showFeedbackMessage: vi.fn(),
 	showError: vi.fn(),
@@ -136,6 +137,10 @@ vi.mock('../src/modules/eventHandlers.js', () => ({
 	initializeAllEventHandlers: mocks.initializeAllEventHandlers,
 }));
 
+vi.mock('../src/modules/settingsController.js', () => ({
+	initSettingsController: mocks.initSettingsController,
+}));
+
 vi.mock('../src/modules/feedbackUI.js', () => ({
 	showFeedback: mocks.showFeedback,
 	showFeedbackMessage: mocks.showFeedbackMessage,
@@ -217,10 +222,11 @@ describe('main.js bootstrap', () => {
 		});
 	});
 
-	it('initializes i18n only and skips app wiring on non-app pages', async () => {
+	it('initializes i18n and the settings controller, skipping app wiring on non-app pages', async () => {
 		await importMain();
 
 		expect(mocks.initializeI18n).toHaveBeenCalledTimes(1);
+		expect(mocks.initSettingsController).toHaveBeenCalledTimes(1);
 		expect(mocks.hydrateState).not.toHaveBeenCalled();
 		expect(mocks.initFileManager).not.toHaveBeenCalled();
 		expect(mocks.initializeAllEventHandlers).not.toHaveBeenCalled();
@@ -269,6 +275,15 @@ describe('main.js bootstrap', () => {
 		windowListeners.get('chive-locale-changed')();
 		await Promise.resolve();
 		expect(mocks.renderEmptyState).toHaveBeenCalledTimes(2);
+
+		// A TIN color-rendering settings change also schedules a full refresh;
+		// other settings keys do not.
+		windowListeners.get('chive-settings-changed')({ detail: { key: 'tinColorRendering', value: 'full-ramp' } });
+		await Promise.resolve();
+		expect(mocks.renderEmptyState).toHaveBeenCalledTimes(3);
+		windowListeners.get('chive-settings-changed')({ detail: { key: 'something-else', value: 'x' } });
+		await Promise.resolve();
+		expect(mocks.renderEmptyState).toHaveBeenCalledTimes(3);
 
 		windowListeners.get('chive-internal-error')({ detail: { message: 'boom' } });
 		windowListeners.get('chive-internal-error')({});

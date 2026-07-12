@@ -2,11 +2,13 @@
  * Shared TIN presentation flow.
  *
  * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. Localized axis labels stay here so the renderer remains
- * stateless and i18n-free.
+ * renderer contract. Localized axis labels and the browser-local color
+ * rendering preference stay here so the renderer remains stateless: it
+ * receives `colorRenderingMode` explicitly instead of reading settings.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { getTinColorRendering } from '../../services/settingsService.js';
 import { renderTinChart } from './renderers/svg.js';
 
 /**
@@ -22,6 +24,7 @@ export function renderTinInto(container, rows, config = {}) {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
 		fillMode: config.fillMode,
+		colorRenderingMode: getTinColorRendering(),
 		subdivisionDepth: config.subdivisionDepth,
 		colorRamp: config.colorRamp,
 		gradientMinColor: config.gradientMinColor,

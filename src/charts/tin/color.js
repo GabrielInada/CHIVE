@@ -3,9 +3,11 @@
  *
  * Turns a resolved ramp name plus the Z distribution into one cohesive scale:
  * a continuous `sampleRamp(t)`, a `tForZ(z)` that maps a Z value to its 0..1
- * ramp position (by value or by rank), and a `bucketAt(z)` that quantizes Z
- * into one of `bucketCount` color buckets. Building all three from a single
- * call keeps them from drifting apart. Used by `renderers/svg.js`.
+ * ramp position (by value or by rank), a `colorAt(z)` that samples the exact
+ * ramp color for a Z value (the full-ramp rendering mode), and a `bucketAt(z)`
+ * that quantizes Z into one of `bucketCount` color buckets (the optimized
+ * mode). Building them from a single call keeps them from drifting apart.
+ * Used by `renderers/svg.js`.
  */
 
 import {
@@ -56,7 +58,8 @@ const D3_RAMP_BY_NAME = Object.freeze({
  * @param {number} args.zMin
  * @param {number} args.zMax
  * @returns {{ sampleRamp: (t: number) => string, tForZ: (z: number) => number,
- *   bucketAt: (z: number) => number, bucketCount: number }}
+ *   colorAt: (z: number) => string, bucketAt: (z: number) => number,
+ *   bucketCount: number }}
  */
 export function createTinColorScale({
 	colorRamp,
@@ -92,11 +95,15 @@ export function createTinColorScale({
 		tForZ = z => (z - zMin) / zDelta;
 	}
 
+	// Exact ramp color for a Z value. sampleRamp clamps t internally, so this
+	// is sampleRamp(clamp(tForZ(z), 0, 1)) with no quantization.
+	const colorAt = z => sampleRamp(tForZ(z));
+
 	const bucketCount = TIN_CHART.rampBuckets;
 	const bucketAt = z => Math.min(
 		bucketCount - 1,
 		Math.floor(Math.max(0, Math.min(1, tForZ(z))) * bucketCount),
 	);
 
-	return { sampleRamp, tForZ, bucketAt, bucketCount };
+	return { sampleRamp, tForZ, colorAt, bucketAt, bucketCount };
 }

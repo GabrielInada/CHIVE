@@ -10,14 +10,24 @@
  * isoline hover interaction. Shared SVG/axis scaffolding lives in
  * {@link chartScaffold}.
  *
- * The surface fill is quantized: each subdivided leaf triangle is filed into one
- * of `TIN_CHART.rampBuckets` color buckets by its mean-Z, and every leaf in a
- * bucket is merged into a single <path>. That caps the fill DOM (and SVG export)
- * at one node per bucket instead of one per leaf, so a render that would emit tens
- * of thousands of polygons stays cheap enough to repaint live while a color picker
- * drags. The trade-off is fills deviating from the exact ramp by at most half a
- * bucket; flat fill mode is quantized the same way, and a constant-Z surface
- * paints at the ramp's low color.
+ * The surface fill groups leaves into compound paths by color, with two
+ * browser-local rendering modes (`colorRenderingMode`):
+ *
+ * - `optimized` (default): each subdivided leaf triangle is filed into one of
+ *   `TIN_CHART.rampBuckets` color buckets by its mean-Z, and every leaf in a
+ *   bucket is merged into a single <path>. That caps the fill DOM (and SVG
+ *   export) at one node per bucket instead of one per leaf, so a render that
+ *   would emit tens of thousands of polygons stays cheap enough to repaint
+ *   live while a color picker drags. The trade-off is fills deviating from the
+ *   exact ramp by at most half a bucket.
+ * - `full-ramp`: each leaf keeps its exact `colorAt(meanZ)` ramp color, and
+ *   leaves whose final CSS color strings are exactly equal share one compound
+ *   <path>. Lossless with respect to the per-leaf color; can emit more paths
+ *   than the bucketed mode.
+ *
+ * Both modes share the same triangulation, subdivision traversal, and adaptive
+ * depth budget. Flat fill mode is grouped the same way, and a constant-Z
+ * surface paints at the ramp's low color in either mode.
  *
  * @typedef {import('../../../types.js').Result} Result
  */
@@ -49,7 +59,8 @@ import { createIsolineHoverHandlers } from '../interaction.js';
  * or `fail()` when required arguments are missing or no triangulation can
  * be built from the data.
  *
- * Common option keys: `fillMode` ('smooth' | 'flat'), `subdivisionDepth`,
+ * Common option keys: `fillMode` ('smooth' | 'flat'), `colorRenderingMode`
+ * ('optimized' | 'full-ramp'), `subdivisionDepth`,
  * `gradientMinColor`/`gradientMaxColor`, `gradientDistribution` ('value' |
  * 'rank'), `colorRamp` (one of `TIN_COLOR_RAMPS`), `showEdges`/`edgeColor`,
  * `showPoints`/`pointRadius`, `showZLabels`, `showHull`/`hullColor`,
@@ -120,7 +131,7 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 		.nice()
 		.range([innerHeight, 0]);
 
-	const { sampleRamp, bucketAt, bucketCount } = createTinColorScale({
+	const { sampleRamp, colorAt, bucketAt, bucketCount } = createTinColorScale({
 		colorRamp: cfg.colorRamp,
 		gradientMin: cfg.gradientMin,
 		gradientMax: cfg.gradientMax,
@@ -151,7 +162,24 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 		zMax,
 		triangleCount,
 	});
-	const bucketFragments = Array.from({ length: bucketCount }, () => []);
+	// Mode-specific leaf sinks over one shared traversal. Optimized files each
+	// leaf into a fixed bucket array; full-ramp groups leaves by their exact
+	// colorAt(meanZ) CSS color, in first-leaf encounter order (Map insertion
+	// order), so the output stays deterministic in both modes.
+	const fullRamp = cfg.colorRenderingMode === 'full-ramp';
+	const bucketFragments = fullRamp ? null : Array.from({ length: bucketCount }, () => []);
+	/** @type {Map<string, string[]> | null} */
+	const colorFragments = fullRamp ? new Map() : null;
+	const pushLeaf = fullRamp
+		? (meanZ, fragment) => {
+			const color = colorAt(meanZ);
+			const fragments = colorFragments.get(color);
+			if (fragments) fragments.push(fragment);
+			else colorFragments.set(color, [fragment]);
+		}
+		: (meanZ, fragment) => {
+			bucketFragments[bucketAt(meanZ)].push(fragment);
+		};
 	for (let i = 0; i < tris.length; i += 3) {
 		const a = screenPoints[tris[i]];
 		const b = screenPoints[tris[i + 1]];
@@ -161,20 +189,32 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 			{ x: b.sx, y: b.sy, z: b.z },
 			{ x: c.sx, y: c.sy, z: c.z },
 		];
-		appendSubdividedFragments(triangle, effectiveSubdivisionDepth, bucketAt, bucketFragments);
+		appendSubdividedFragments(triangle, effectiveSubdivisionDepth, pushLeaf);
 	}
 
-	// One <path> per non-empty bucket instead of one <polygon> per leaf. A
-	// constant-Z surface (single bucket, depth 0) paints at the ramp's low color
-	// to match the pre-bucketing output; otherwise each bucket uses its center.
-	const constantZ = zMin === zMax;
-	for (let bucket = 0; bucket < bucketCount; bucket++) {
-		const fragments = bucketFragments[bucket];
-		if (fragments.length === 0) continue;
-		trianglesGroup.append('path')
-			.attr('d', fragments.join(''))
-			.attr('fill', sampleRamp(constantZ ? 0 : (bucket + 0.5) / bucketCount))
-			.attr('stroke', 'none');
+	// One <path> per non-empty color group instead of one <polygon> per leaf.
+	if (fullRamp) {
+		// Constant-Z needs no special case here: tForZ collapses to 0, so every
+		// leaf's colorAt is already the ramp's low color and one path comes out.
+		for (const [color, fragments] of colorFragments) {
+			trianglesGroup.append('path')
+				.attr('d', fragments.join(''))
+				.attr('fill', color)
+				.attr('stroke', 'none');
+		}
+	} else {
+		// A constant-Z surface (single bucket, depth 0) paints at the ramp's low
+		// color to match the pre-bucketing output; otherwise each bucket uses its
+		// center.
+		const constantZ = zMin === zMax;
+		for (let bucket = 0; bucket < bucketCount; bucket++) {
+			const fragments = bucketFragments[bucket];
+			if (fragments.length === 0) continue;
+			trianglesGroup.append('path')
+				.attr('d', fragments.join(''))
+				.attr('fill', sampleRamp(constantZ ? 0 : (bucket + 0.5) / bucketCount))
+				.attr('stroke', 'none');
+		}
 	}
 
 	if (cfg.showHull) {

@@ -21,14 +21,15 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/types.js` | Shared JSDoc typedefs (`AppState`, `Dataset`, `ChartConfig`, ...). Always imported directly, never through barrels. |
 | `src/config/` | Pure leaf layer: canonical chart identities, chart defaults, element IDs, limits, locale, and format constants. No imports from modules, components, or services. |
 | `src/utils/` | Pure leaf layer: DOM-free helpers (result pattern, color utilities, filters, formatters). Same import rule as `config/`. One deliberate DOM exception: `chartContainerLifecycle.js`, the dispose-aware chart-container clear shared by components, the panel subsystem, and chart packages. |
-| `src/components/` | Leaf renderers for the dataset workspace: `components/datasetWorkspace/` holds the top view `datasetWorkspaceView.js` plus the preview, stats, columns, and dialogs. |
+| `src/components/` | Leaf renderers: `components/datasetWorkspace/` holds the top view `datasetWorkspaceView.js` plus the preview, stats, columns, and dialogs; `components/settingsDialog.js` is the callback-driven global settings modal opened from the shared header. |
 | `src/modules/state/` | State core: `appState.js`, the data/panel/ui facades, `stateEvents.js`, and `stateDebug.js`. The only write path for application state. |
 | `src/modules/eventHandlers/` | DOM intent translation: workflow modules that turn user events into facade calls, wired by `modules/eventHandlers.js`. |
 | `src/modules/fileManager.js`, `panelManager.js`, `uiManager.js`, `chartControls/` | Feature managers: each owns a domain end to end (DOM intent, facade writes, bus subscriptions, render triggering). `chartControls/` holds the shared control infrastructure used by chart packages. |
+| `src/modules/settingsController.js` | Settings flow owner: header settings button, one dialog at a time, and the wiring from dialog callbacks to the i18n and settings services. |
 | `src/modules/feedbackUI.js`, `dialogFocus.js` | Cross-feature UI helpers: user feedback surface and dialog focus management. |
 | `src/modules/panelSubsystem/` | Panel rendering, export, resize, slot lifecycle, and the panel's internal mutation helpers. |
 | `src/charts/` | Chart presentation metadata (`catalog.js` and `previews.js`), independent controls/workspace/panel lookup under `registries/`, D3/SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`, `charts/network/`, and `charts/tin/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/`. A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
-| `src/services/` | Side-effecting services: `dataService/`, `persistenceService/` with the `persistence/` backends, `i18nService.js`, `presetService.js`, and `dataIngestService.js`. |
+| `src/services/` | Side-effecting services: `dataService/`, `persistenceService/` with the `persistence/` backends, `i18nService.js`, `settingsService.js` (owner of the `chive.settings` localStorage key), `presetService.js`, and `dataIngestService.js`. |
 | `src/data/` | Bundled preset datasets (`presets/`) and `presetCatalog.js`. |
 | `src/workers/` | Background workers: `persistWorker.js` for persistence and `dataIngestWorker.js` for data ingest. |
 | `src/styles/` | CSS layer files. Source of truth: [Stylesheet organization](styles.md). |
