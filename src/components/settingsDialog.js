@@ -13,7 +13,7 @@
  * on the language control.
  */
 
-import { installDialogFocus } from '../modules/dialogFocus.js';
+import { installDialogFocus } from '../app/dialogFocus.js';
 import { t } from '../services/i18nService.js';
 import { SUPPORTED_LOCALES, LOCALE_LABELS } from '../config/locale.js';
 import { TIN_COLOR_RENDERING_MODES } from '../config/settings.js';

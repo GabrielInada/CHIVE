@@ -65,7 +65,7 @@ const mocks = vi.hoisted(() => ({
 	},
 }));
 
-vi.mock('../../../src/modules/state/appState.js', () => mocks.appState);
+vi.mock('../../../src/state/appState.js', () => mocks.appState);
 vi.mock('../../../src/config/chartDefaults.js', () => mocks.chartDefaults);
 vi.mock('../../../src/utils/globalFilter.js', () => mocks.globalFilter);
 vi.mock('../../../src/utils/columnHelpers.js', () => mocks.columnHelpers);

@@ -4,25 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
-	...(await importOriginal()),
-	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
-}));
-
-vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
-	triggerLiveRender: vi.fn(),
-}));
-
 import { createNetworkGraphControls } from '../../../src/charts/network/controls/builder.js';
 import { setupNetworkGraphControlListeners } from '../../../src/charts/network/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/network/controls/defaults.js';
+
+/**
+ * Writer test double. The listeners' contract is that they hand the right
+ * patch to the writer; merging it into state, firing onConfigChanged, and
+ * live-rendering are the adapter's contract and are covered by
+ * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
+ */
+function createWriter() {
+	return { commit: vi.fn(), preview: vi.fn() };
+}
 
 function createDataset(overrides = {}) {
 	return {
@@ -167,38 +167,15 @@ describe('networkControls listeners', () => {
 		const controls = createNetworkGraphControls(dataset, ['from', 'to', 'weight'], ['weight'], []);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupNetworkGraphControlListeners(dataset, ['from', 'to', 'weight'], ['weight'], onConfigChanged);
+		const writer = createWriter();
+		setupNetworkGraphControlListeners(dataset, ['from', 'to', 'weight'], ['weight'], writer);
 
 		const target = document.getElementById('viz-select-network-target');
 		target.value = 'weight';
 		target.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			network: expect.objectContaining({ target: 'weight' }),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
-	});
-
-	it('resolves the callback from the 3-arg overload (callback in slot 3)', () => {
-		// The 4-arg form (dataset, allOptions, numericOptions, callback) is
-		// covered by the source/target test above; this pins the legacy
-		// callback-in-slot-3 overload so the split keeps it working.
-		const dataset = createDataset();
-		const controls = createNetworkGraphControls(dataset, ['from', 'to'], [], []);
-		appendControls(controls);
-
-		const onConfigChanged = vi.fn();
-		setupNetworkGraphControlListeners(dataset, ['from', 'to'], onConfigChanged);
-
-		const source = document.getElementById('viz-select-network-source');
-		source.value = 'to';
-		source.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			network: expect.objectContaining({ source: 'to' }),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ target: 'weight' }));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('coerces an unknown edgeColorMode to gradient via the transform', () => {
@@ -206,15 +183,14 @@ describe('networkControls listeners', () => {
 		const controls = createNetworkGraphControls(dataset, ['from', 'to'], [], []);
 		appendControls(controls);
 
-		setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], vi.fn());
+		const writer = createWriter();
+		setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], writer);
 
 		const select = document.getElementById('viz-select-network-edge-color-mode');
 		select.value = 'uniform';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			network: expect.objectContaining({ edgeColorMode: 'uniform' }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ edgeColorMode: 'uniform' }));
 	});
 
 	it('reset-zoom button restores defaultZoomScale via the facade', () => {
@@ -222,14 +198,15 @@ describe('networkControls listeners', () => {
 		const controls = createNetworkGraphControls(dataset, ['from', 'to'], [], []);
 		appendControls(controls);
 
-		setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], vi.fn());
+		const writer = createWriter();
+		setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], writer);
 
 		document.getElementById('viz-btn-network-reset-zoom').click();
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
-		expect(call.network.zoomScale).toBeTypeOf('number');
-		expect(call.network.zoomScale).not.toBe(2);
+		expect(writer.commit).toHaveBeenCalledTimes(1);
+		const call = writer.commit.mock.calls[0][0];
+		expect(call.zoomScale).toBeTypeOf('number');
+		expect(call.zoomScale).not.toBe(2);
 	});
 
 	it('color preset button maps the palette to source and target node colors', () => {
@@ -237,18 +214,19 @@ describe('networkControls listeners', () => {
 		const controls = createNetworkGraphControls(dataset, ['from', 'to'], [], []);
 		appendControls(controls);
 
-		setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], vi.fn());
+		const writer = createWriter();
+		setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], writer);
 
 		const bold = document.querySelector('button[data-color-preset-control="viz-network-color-preset"][data-preset-name="Bold"]');
 		expect(bold).not.toBeNull();
 		bold.click();
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
-		expect(call.network.colorScheme).toBe('Bold');
-		expect(call.network.sourceNodeColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-		expect(call.network.targetNodeColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-		expect(call.network.sourceNodeColor).not.toBe(call.network.targetNodeColor);
+		expect(writer.commit).toHaveBeenCalledTimes(1);
+		const call = writer.commit.mock.calls[0][0];
+		expect(call.colorScheme).toBe('Bold');
+		expect(call.sourceNodeColor).toMatch(/^#[0-9a-fA-F]{6}$/);
+		expect(call.targetNodeColor).toMatch(/^#[0-9a-fA-F]{6}$/);
+		expect(call.sourceNodeColor).not.toBe(call.targetNodeColor);
 	});
 });
 

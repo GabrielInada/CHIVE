@@ -11,7 +11,7 @@ directory instead of external JavaScript CDNs.
 | IBM Plex Serif | See font metadata | `vendor/fonts/ibm-plex-serif/` | `vendor/fonts/ibm-plex-serif/OFL.txt` |
 | IBM Plex Sans | See font metadata | `vendor/fonts/ibm-plex-sans/` | `vendor/fonts/ibm-plex-sans/OFL.txt` |
 | JetBrains Mono | See font metadata | `vendor/fonts/jetbrains-mono/` | `vendor/fonts/jetbrains-mono/OFL.txt` |
-| SQLite-WASM | See `vendor/sqlite/` | `vendor/sqlite/` | See upstream files in that directory |
+| SQLite-WASM | 3.53.0-build1 | `vendor/sqlite/` (`sqlite3.js`, `sqlite3.wasm`, worker and OPFS companion files) | Upstream package metadata: Apache-2.0; generated files also retain SQLite/Emscripten notices in their headers |
 
 The D3 and banana-i18n files are ESM bundles generated from the npm packages
 locked in `package-lock.json`. If either package version changes, regenerate
@@ -24,6 +24,11 @@ package locked in `package-lock.json` (`node_modules/three/build/`).
 via a relative path, so both files must move together. On a version bump,
 re-copy both files, keep the provenance header lines, and update the
 version here and in the headers.
+
+The SQLite-WASM files are copied from the `@sqlite.org/sqlite-wasm` package
+locked in `package-lock.json`. On an update, copy the runtime, worker, WASM, and
+OPFS companion files as one compatible set, retain their upstream header
+notices, and update the version recorded here.
 
 `vendor/fonts/fonts.css` is the runtime font entrypoint. Keep it limited to the
 font files CHIVE actually uses so browsers do not download unnecessary faces.

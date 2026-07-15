@@ -11,17 +11,17 @@ import {
 	hydrateState,
 	enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey,
-} from '../services/persistenceService.js';
-import { getPersistenceSnapshot, replaceAllState } from '../modules/state/appState.js';
+} from '../services/persistence.js';
+import { getPersistenceSnapshot, replaceAllState } from '../state/appState.js';
 import { rehydratePanelChartSpecs } from '../utils/panelHydration.js';
 import { throttle } from '../utils/throttle.js';
-import { initChartControls } from '../modules/chartControls/chartControlsManager.js';
+import { initChartControls } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
 import { initPanelController } from '../features/panel/panelController.js';
-import { initFileManager } from '../modules/fileManager.js';
-import { initializeAllEventHandlers } from '../modules/eventHandlers.js';
-import { initSettingsController } from '../modules/settingsController.js';
+import { initDatasetController } from '../features/datasetWorkspace/datasetController.js';
+import { initializeDomBindings } from './domBindings.js';
+import { initSettingsController } from './settingsController.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
-import { showFeedback, showError } from '../modules/feedbackUI.js';
+import { showFeedback, showError } from './feedbackUI.js';
 import {
 	livePreviewRender,
 	runFullRefreshNow,
@@ -48,14 +48,14 @@ export async function initializeApplication() {
 		});
 	}
 
-	initFileManager();
+	initDatasetController();
 	// Live color and height previews are rate-limited because heavy charts can
 	// otherwise re-render on every pointer event. Leading and trailing throttle
 	// behavior preserves the first and final preview values.
 	initChartControls(null, throttle(livePreviewRender, 120));
 	initPanelController(showFeedback);
 
-	initializeAllEventHandlers();
+	initializeDomBindings();
 	setupStateSubscriptions();
 
 	enablePersistenceAutoSave(getPersistenceSnapshot, {

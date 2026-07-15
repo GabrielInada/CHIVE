@@ -283,33 +283,39 @@ chart area, driven by the active dataset's config) and the **panel** (saved char
 snapshots assembled into a dashboard). Both share the package presentation mapping
 and end at `renderTinChart`.
 
-```
-                 ┌─────────────────────────────────────────────┐
-                 │  Active dataset.chartConfig.tin (live state) │
-                 └─────────────────────────────────────────────┘
-                        │                          │
-       sidebar edits    │                          │  render
- (controls/listeners.js) ┘                      ▼
-        write config                 workspace registry
-                                     → renderTinChartSection()
-                                       → renderTinInto()
-                                         → renderTinChart()
-                                              │
-   "Add to panel"                            │
-   (eventHandlers → panelController)         │
-   structuredClone of config + rows          │
-        │                                     │
-        ▼                                     │
-   chartSnapshot { config, dataSnapshot, … }  │
-        │                                     │
-   renderCanvasPanel() → mountSlot()          │
-   → panel registry                           │
-     → renderTinPanelChart()                  │
-       → renderTinInto() → renderTinChart()
-                                              ▼
-                                   ┌──────────────────────┐
-                                   │   <svg> in container  │
-                                   └──────────────────────┘
+```mermaid
+flowchart TB
+    subgraph LIVE["Live dataset workspace"]
+        CONTROLS["tin/controls"] --> WRITER["ChartConfigWriter"]
+        WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
+        DFACADE --> DSTATE[("dataset.chartConfig.tin")]
+        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DSTATE -. read through getters .-> COORD
+        WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
+        PREVIEW --> DSTATE
+        COORD --> CHARTSVIEW["chartsView.renderCharts"]
+        PREVIEW -. chart render only .-> CHARTSVIEW
+        CHARTSVIEW --> WREG["workspace registry"]
+        WREG --> WSECTION["renderTinChartSection"]
+    end
+
+    subgraph SAVED["Panel snapshot"]
+        ACTION["chartActions: Add to panel"] --> PCAPTURE["panelController.addChartToPanel"]
+        PCAPTURE -- filtered rows + cloned config/columns --> PFACADE["Panel Facade<br/>snapshot + block/slot mutations"]
+        PFACADE --> PSTATE[("panel snapshots<br/>blocks + slot assignments")]
+        PFACADE -- panel events --> PSUB["panelController subscriptions"]
+        PSUB --> PVIEW["panelView"]
+        PSTATE -. read through getters .-> PVIEW
+        PVIEW -. callback via panelController .-> PFACADE
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        MOUNT --> PREG["panel registry"]
+        PREG --> ADAPTER["renderTinPanelChart"]
+    end
+
+    WSECTION --> PRESENT["renderTinInto"]
+    ADAPTER --> PRESENT
+    PRESENT --> RENDERER["renderTinChart"]
+    RENDERER --> OUTPUT["SVG in container"]
 ```
 
 The renderer is **stateless and pure-ish**: every call wipes the container
@@ -382,7 +388,7 @@ The package's [controls directory](../../../src/charts/tin/controls/) builds the
 right-sidebar control group and wires every input to a config write. Its three
 role modules are registered in the
 [controls registry](../../../src/charts/registries/controls.js) under the
-`tin` entry and consumed by `chartControlsManager.js`:
+`tin` entry and consumed by `chartControlsController.js`:
 
 - `createTinControls(dataset, numericOptions, allColumns)` builds the DOM.
 - `setupTinControlListeners(dataset, numericOptions, allColumns, onConfigChanged)` wires events.
@@ -423,7 +429,7 @@ that does nothing. The pattern is a boolean passed as the `disabled` argument:
 ### 5.3 Listener wiring and value clamping
 
 `setupTinControlListeners` uses the shared helpers in
-[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js):
+[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js):
 
 - **Selects** (`setupSelectListeners`): x/y/z transform to `null` if the chosen
   value is no longer a numeric column; `gradientDistribution`, `fillMode`,
@@ -448,7 +454,7 @@ controls; it only reads config that the listeners have written.
 
 ### 6.1 Dataset workspace
 
-[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides
+[chartsView.js](../../../src/features/datasetWorkspace/views/chartsView.js) decides
 which chart is active and delegates through the
 [workspace registry](../../../src/charts/registries/workspace.js). Its `tin`
 entry calls `renderTinChartSection({ config: chartConfig.tin, rows })` from
@@ -860,7 +866,7 @@ The live preview is what makes a color drag feel responsive without rebuilding t
 whole sidebar (which would steal focus from the open picker).
 
 Two events are wired on each color input (`setupColorInputListener` in
-[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js)):
+[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js)):
 
 - **`input`** (fires continuously while the picker is open): writes the new color
   through `normalizeActiveDatasetConfig` — a **non-emitting** facade that updates
@@ -870,7 +876,7 @@ Two events are wired on each color input (`setupColorInputListener` in
   updater so `CONFIG_UPDATED` fires, auto-save marks the project dirty, and the
   sidebar refreshes.
 
-`triggerLiveRender` ([livePreview.js](../../../src/modules/chartControls/livePreview.js))
+`triggerLiveRender` ([livePreviewBridge.js](../../../src/features/datasetWorkspace/chartControls/livePreviewBridge.js))
 invokes a registered callback. `app/applicationInitializer.js` registers
 `throttle(livePreviewRender, 120)` (leading + trailing, so the first and final
 values always paint). `livePreviewRender` re-renders only the chart visualizations

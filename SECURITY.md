@@ -1,7 +1,8 @@
 # Security Policy
 
-CHIVE is a browser-only static application. For the current data-handling and
-runtime trust model, see [Privacy And Security](docs/user/privacy-security.md).
+CHIVE is a browser-only static application with no required remote or
+server-side application backend. For the current data-handling and runtime
+trust model, see [Privacy And Security](docs/user/privacy-security.md).
 
 ## Reporting A Vulnerability
 

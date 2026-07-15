@@ -8,9 +8,10 @@
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
+ * @typedef {import('../../types.js').ChartConfigWriter} ChartConfigWriter
  * @typedef {{
  *   build: (dataset: Dataset, context: ChartControlContext) => HTMLElement[],
- *   attachListeners: (dataset: Dataset, context: ChartControlContext, onConfigChanged: (() => void) | null) => void,
+ *   attachListeners: (dataset: Dataset, context: ChartControlContext, writer: ChartConfigWriter) => void,
  *   computeDefaults: (dataset: Dataset, context: ChartControlContext) => Object
  * }} ChartControlAdapter
  */
@@ -53,12 +54,12 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.numeric,
 			context.allColumns,
 		),
-		attachListeners: (dataset, context, callback) => setupBarChartControlListeners(
+		attachListeners: (dataset, context, writer) => setupBarChartControlListeners(
 			dataset,
 			context.baseCategoricalOrAll,
 			context.numeric,
 			context.allColumns,
-			callback,
+			writer,
 		),
 		computeDefaults: computeBarDefaults,
 	}),
@@ -69,12 +70,12 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.dates,
 			context.allColumns,
 		),
-		attachListeners: (dataset, context, callback) => setupLineChartControlListeners(
+		attachListeners: (dataset, context, writer) => setupLineChartControlListeners(
 			dataset,
 			context.numeric,
 			context.dates,
 			context.allColumns,
-			callback,
+			writer,
 		),
 		computeDefaults: computeLineDefaults,
 	}),
@@ -84,11 +85,11 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.numeric,
 			context.allColumns,
 		),
-		attachListeners: (dataset, context, callback) => setupScatterPlotControlListeners(
+		attachListeners: (dataset, context, writer) => setupScatterPlotControlListeners(
 			dataset,
 			context.numeric,
 			context.allColumns,
-			callback,
+			writer,
 		),
 		computeDefaults: computeScatterDefaults,
 	}),
@@ -98,11 +99,11 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.numeric,
 			context.allColumns,
 		),
-		attachListeners: (dataset, context, callback) => setupScatter3dControlListeners(
+		attachListeners: (dataset, context, writer) => setupScatter3dControlListeners(
 			dataset,
 			context.numeric,
 			context.allColumns,
-			callback,
+			writer,
 		),
 		computeDefaults: computeScatter3dDefaults,
 	}),
@@ -113,12 +114,12 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.numeric,
 			context.allColumns,
 		),
-		attachListeners: (dataset, context, callback) => setupPieChartControlListeners(
+		attachListeners: (dataset, context, writer) => setupPieChartControlListeners(
 			dataset,
 			context.baseCategoricalOrAll,
 			context.numeric,
 			context.allColumns,
-			callback,
+			writer,
 		),
 		computeDefaults: computePieDefaults,
 	}),
@@ -129,12 +130,12 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.numeric,
 			context.allColumns,
 		),
-		attachListeners: (dataset, context, callback) => setupBubbleChartControlListeners(
+		attachListeners: (dataset, context, writer) => setupBubbleChartControlListeners(
 			dataset,
 			context.baseCategoricalOrAll,
 			context.numeric,
 			context.allColumns,
-			callback,
+			writer,
 		),
 		computeDefaults: computeBubbleDefaults,
 	}),
@@ -145,11 +146,11 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.numeric,
 			context.categorical,
 		),
-		attachListeners: (dataset, context, callback) => setupNetworkGraphControlListeners(
+		attachListeners: (dataset, context, writer) => setupNetworkGraphControlListeners(
 			dataset,
 			context.allColumns,
 			context.numeric,
-			callback,
+			writer,
 		),
 		computeDefaults: computeNetworkDefaults,
 	}),
@@ -160,12 +161,12 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.numeric,
 			context.allColumns,
 		),
-		attachListeners: (dataset, context, callback) => setupTreeMapControlListeners(
+		attachListeners: (dataset, context, writer) => setupTreeMapControlListeners(
 			dataset,
 			context.baseCategoricalOrAll,
 			context.numeric,
 			context.allColumns,
-			callback,
+			writer,
 		),
 		computeDefaults: computeTreemapDefaults,
 	}),
@@ -175,11 +176,11 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.numeric,
 			context.allColumns,
 		),
-		attachListeners: (dataset, context, callback) => setupTinControlListeners(
+		attachListeners: (dataset, context, writer) => setupTinControlListeners(
 			dataset,
 			context.numeric,
 			context.allColumns,
-			callback,
+			writer,
 		),
 		computeDefaults: computeTinDefaults,
 	}),

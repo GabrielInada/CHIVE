@@ -93,27 +93,39 @@ toward a smoother arrangement. When the user drags a node, the simulation is bri
 Two draw paths, both mapping config through the package's `renderNetworkInto` and ending at
 `renderNetworkGraph`.
 
-```
-                 ┌─────────────────────────────────────────────────┐
-                 │  Active dataset.chartConfig.network (live state) │
-                 └─────────────────────────────────────────────────┘
-                        │                          │
-       sidebar edits    │                          │  render
- (network/controls/) ───┘                          ▼
-        write config                  chartsView.renderCharts()
-                                      → renderNetworkChartSection()        [dataset workspace]
-                                        → renderNetworkInto(container, rows, config, filterCallbacks)
-                                              │
-   "Add to panel" → structuredClone snapshot │
-        │                                     │
-   renderNetworkPanelChart(container, spec)   │
-     → renderNetworkInto(container, spec.dataSnapshot, spec.config)
-                                              │
-                        both → renderNetworkGraph(container, rows, source, target, opts)
-                                              ▼
-                              ┌──────────────────────────────────┐
-                              │  <svg> + running force simulation  │
-                              └──────────────────────────────────┘
+```mermaid
+flowchart TB
+    subgraph LIVE["Live dataset workspace"]
+        CONTROLS["network/controls"] --> WRITER["ChartConfigWriter"]
+        WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
+        DFACADE --> DSTATE[("dataset.chartConfig.network")]
+        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DSTATE -. read through getters .-> COORD
+        WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
+        PREVIEW --> DSTATE
+        COORD --> CHARTSVIEW["chartsView.renderCharts"]
+        PREVIEW -. chart render only .-> CHARTSVIEW
+        CHARTSVIEW --> WREG["workspace registry"]
+        WREG --> WSECTION["renderNetworkChartSection"]
+    end
+
+    subgraph SAVED["Panel snapshot"]
+        ACTION["chartActions: Add to panel"] --> PCAPTURE["panelController.addChartToPanel"]
+        PCAPTURE -- filtered rows + cloned config/columns --> PFACADE["Panel Facade<br/>snapshot + block/slot mutations"]
+        PFACADE --> PSTATE[("panel snapshots<br/>blocks + slot assignments")]
+        PFACADE -- panel events --> PSUB["panelController subscriptions"]
+        PSUB --> PVIEW["panelView"]
+        PSTATE -. read through getters .-> PVIEW
+        PVIEW -. callback via panelController .-> PFACADE
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        MOUNT --> PREG["panel registry"]
+        PREG --> ADAPTER["renderNetworkPanelChart"]
+    end
+
+    WSECTION --> PRESENT["renderNetworkInto"]
+    ADAPTER --> PRESENT
+    PRESENT --> RENDERER["renderNetworkGraph"]
+    RENDERER --> OUTPUT["SVG + force simulation"]
 ```
 
 Unlike the other charts, the render does not end at a static SVG: it starts a simulation that

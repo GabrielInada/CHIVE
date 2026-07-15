@@ -44,7 +44,7 @@ export function isCategoricalLikeAxisType(axisType) {
 /**
  * Decide the axis type. An explicit `configuredAxisType` wins; otherwise
  * uses an 80% numeric-conversion threshold (matches the column-type
- * detection heuristic in `dataService.js`).
+ * detection heuristic in `domain/datasets/typeDetection.js`).
  *
  * @param {Array<*>} axisValues
  * @param {string} [configuredAxisType] - Optional override; trusted when present.

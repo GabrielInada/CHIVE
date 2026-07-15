@@ -10,11 +10,11 @@
 
 import {
 	renderEmptyState,
-	renderDataInterface,
+	renderDatasetWorkspace,
 	renderFileList,
-} from '../components/datasetWorkspace/datasetWorkspaceView.js';
-import { renderCharts } from '../components/datasetWorkspace/chartsView.js';
-import { renderChartControlsSidebar } from '../modules/chartControls/chartControlsManager.js';
+} from '../features/datasetWorkspace/workspaceView.js';
+import { renderCharts } from '../features/datasetWorkspace/views/chartsView.js';
+import { renderChartControlsSidebar } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
 import { getNumericColumns } from '../utils/columnHelpers.js';
 import {
 	getActiveDataset,
@@ -25,7 +25,7 @@ import {
 	setPreviewRows,
 	updateActiveDatasetColumns,
 	updateActiveDatasetConfig,
-} from '../modules/state/appState.js';
+} from '../state/appState.js';
 import {
 	initializeLayoutSelector,
 	renderSidebarPanel,
@@ -37,8 +37,8 @@ import {
 	removeDatasetByIndex,
 	handleJoinDatasetRequest,
 	handlePresetDatasetRequest,
-} from '../modules/fileManager.js';
-import { switchTab } from '../modules/uiManager.js';
+} from '../features/datasetWorkspace/datasetController.js';
+import { switchTab } from './uiManager.js';
 
 // State events repaint through two coalescing entries that share one
 // `fullQueued` guard, so "full wins": scheduleFullRefresh() repaints everything
@@ -219,7 +219,7 @@ function renderEmptyWorkspace() {
  */
 function renderActiveDatasetWorkspace(dataset, previewRows) {
 	if (!dataset) return;
-	renderDataInterface(
+	renderDatasetWorkspace(
 		dataset.rows,
 		dataset.columns,
 		dataset.name,

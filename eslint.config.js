@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import chiveRules from './eslint-rules/index.js';
 
 const STATELESS_RENDERER_MESSAGE =
-	'Renderers and DOM builders (src/components/ and panel feature presentation files) do not ' +
+	'Renderers and DOM builders (src/components/, the dataset workspace, and panel feature presentation files) do not ' +
 	'call write facades (docs/development/architecture.md Layers section). Only read-only facade members ' +
 	'are importable here. Route writes through feature controllers, ' +
 	'chart-control listeners, or event-handler modules.';
@@ -217,8 +217,8 @@ export default [
 						'./domain/**',
 						'./features/**',
 						'./i18n/**',
-						'./modules/**',
 						'./services/**',
+						'./state/**',
 						'./styles/**',
 						'./types.js',
 						'./utils/**',
@@ -226,6 +226,36 @@ export default [
 						'../vendor/**',
 					],
 					message: 'src/main.js imports only from src/app/; keep application wiring out of the browser entrypoint.',
+				}],
+			}],
+		},
+	},
+
+	// (A3) The persistence package is package-private: reach it through the
+	// public `services/persistence.js` module, never its internals (lifecycle,
+	// snapshot, autosave, backends, sqlite). Scoped to the layers that
+	// legitimately consume services; utils/, config/, domain/, and the chart
+	// packages already ban `services/**` wholesale in their own blocks below.
+	// Deliberately placed before those narrower blocks: per the (A) note, a
+	// later block matching the same file wins outright, so this must not sit
+	// after them or it would drop their restrictions.
+	// `workers/persistWorker.js` is the one legitimate internals importer, it
+	// hosts the blob backend off the main thread, which is the point of the
+	// worker.
+	{
+		files: [
+			'src/app/**/*.js',
+			'src/state/**/*.js',
+			'src/features/**/*.js',
+			'src/workers/**/*.js',
+		],
+		ignores: ['src/workers/persistWorker.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/services/persistence/**'],
+					message: 'Import persistence through services/persistence.js; the package internals are private.',
 				}],
 			}],
 		},
@@ -251,7 +281,7 @@ export default [
 	// (B2) Panel feature views, layout interactions, slot lifecycle, and export:
 	// same renderer-statelessness rule as (B). The feature controller is
 	// intentionally outside this list because it owns facade writes and event
-	// subscriptions. State mutation internals remain under `modules/state/`.
+	// subscriptions. State mutation internals remain under `state/`.
 	{
 		files: [
 			'src/features/panel/views/**/*.js',
@@ -275,7 +305,7 @@ export default [
 	// layer independent of presentation, feature, chart, and service code; the
 	// public write surface remains `panelStateFacade.js`.
 	{
-		files: ['src/modules/state/panel/**/*.js'],
+		files: ['src/state/panel/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
@@ -287,14 +317,38 @@ export default [
 		},
 	},
 
+	// (B2c) Dataset workspace feature views and dialogs: same renderer-
+	// statelessness rule as (B). The feature controller (datasetController.js)
+	// and its bindings/ stay outside this list: the controller owns facade
+	// writes and dataset workflow setup, and bindings translate DOM intent into
+	// controller calls. statsView reads getActiveDataset, which is in the
+	// read-only surface (APP_STATE_READS) allowed below.
+	{
+		files: [
+			'src/features/datasetWorkspace/workspaceView.js',
+			'src/features/datasetWorkspace/views/**/*.js',
+			'src/features/datasetWorkspace/dialogs/**/*.js',
+		],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/state/appState.js'],
+					allowImportNames: APP_STATE_READS,
+					message: STATELESS_RENDERER_MESSAGE,
+				}],
+			}],
+		},
+	},
+
 	// (B3) Per-chart package leaf files (src/charts/<name>/): data, options,
 	// color, scales, math, axis helpers, encoding, palettes, and regression
 	// stay pure D3 math, interaction modules stay pure input/tooltip
 	// mechanics, and renderers draw from explicit inputs only.
-	// None of them may reach modules/, components/, or services/ (package-local
-	// and charts/shared modules, config, utils, and vendor modules only).
-	// Localized strings arrive through options.labels; state never enters a
-	// renderer.
+	// None of them may reach app/, state/, features/, components/, or services/
+	// (package-local and charts/shared modules, config, utils, and vendor
+	// modules only). Localized strings arrive through options.labels; state
+	// never enters a renderer.
 	{
 		files: [
 			'src/charts/*/data.js',
@@ -315,7 +369,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/services/**'],
+					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**'],
 					message: 'Chart package leaf files import only package-local or charts/shared modules, config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
 				}],
 			}],
@@ -325,14 +379,17 @@ export default [
 	// (B3a) Shared chart rendering infrastructure is reusable leaf code. It
 	// may import vendor, config, utils, or other charts/shared modules, but it
 	// never reaches application state, components, feature modules, or services.
+	// listenerBindings.js is the reason state/ is banned by name: it wires
+	// controls to config writes, but only through an injected writer, so the
+	// write adapter itself stays in the dataset-workspace feature.
 	{
 		files: ['src/charts/shared/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
-					message: 'Shared chart infrastructure is a leaf layer. Import only charts/shared, config, utils, or vendor modules.',
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'Shared chart infrastructure is a leaf layer. Import only charts/shared, config, utils, or vendor modules. Chart-config writes arrive through an injected ChartConfigWriter, never a state import.',
 				}],
 			}],
 		},
@@ -348,7 +405,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
 					message: 'Chart presentation metadata imports only static chart metadata, config, utils, or vendor modules.',
 				}],
 			}],
@@ -408,10 +465,14 @@ export default [
 	},
 
 	// (B4) Per-chart package integration files: sections/adapters receive
-	// props and callbacks, never state; controls write through the shared
-	// chartControls helpers, which remain the config-write adapter. No
-	// panel internals and no workspace components (the container lifecycle
+	// props and callbacks, never state; controls write through an injected
+	// ChartConfigWriter, whose adapter lives in the dataset-workspace feature.
+	// No panel internals and no workspace components (the container lifecycle
 	// and chart-message helpers live in utils for exactly this reason).
+	// services/ is deliberately NOT banned here: builders, sections, and
+	// presentation legitimately import i18nService for their labels. That is the
+	// line between (B3) leaf files, which take strings via options.labels, and
+	// these integration files. Listeners are stricter still, see (B4a).
 	{
 		files: [
 			'src/charts/*/workspaceSection.js',
@@ -423,14 +484,34 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/state/appState.js', '**/modules/state/**', '**/features/**', '**/components/**'],
-					message: 'Chart package integration files do not import state, panel internals, or workspace components. Receive props/callbacks; controls write only through the shared chartControls helpers.',
+					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**'],
+					message: 'Chart package integration files do not import app modules, state, panel internals, or workspace components. Receive props/callbacks; controls write only through the injected ChartConfigWriter.',
 				}],
 			}],
 		},
 	},
 
-	// (C) utils/ is a pure leaf layer — no imports from modules/, components/,
+	// (B4a) Control listeners are the strictest chart-package files: after the
+	// writer injection they need no services at all, so i18n is banned here even
+	// though (B4) allows it for builders and presentation. Placed AFTER (B4)
+	// deliberately: per the (A) note, this config REPLACES (B4)'s for these files
+	// rather than merging, so it must restate BARE_IMPORT_BANS and the full
+	// pattern group. Omitting `paths` would silently hand listeners back the
+	// right to use bare `d3`/`three` specifiers and break raw-static hosting.
+	{
+		files: ['src/charts/*/controls/listeners.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**'],
+					message: 'Chart control listeners are pure input mechanics: they read the DOM and write through the injected ChartConfigWriter. Import only package-local modules, charts/shared bindings, config, utils, and vendor modules. Labels belong to the builder.',
+				}],
+			}],
+		},
+	},
+
+	// (C) utils/ is a pure leaf layer — no imports from app/, state/, components/,
 	// features/, or services/. (Formerly allowed services/ because formatters.js
 	// imported i18n; that edge was removed when formatters became pure, closing
 	// the boundary fully.)
@@ -440,8 +521,8 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
-					message: 'utils/ is a pure leaf layer — no imports from modules/, components/, features/, or services/.',
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'utils/ is a pure leaf layer — no imports from app/, state/, components/, features/, or services/.',
 				}],
 			}],
 		},
@@ -454,8 +535,8 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
-					message: 'config/ is a pure leaf layer, no imports from modules/, components/, features/, or services/.',
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'config/ is a pure leaf layer, no imports from app/, state/, components/, features/, or services/.',
 				}],
 			}],
 		},
@@ -472,7 +553,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
 					message: 'domain/ is a pure leaf layer. Import only domain, config, utils, or vendor modules.',
 				}],
 			}],
@@ -482,11 +563,12 @@ export default [
 	// (E) Aliased facade-getter mutation guard. Catches
 	// `const d = getActiveDataset(); d.x = y`, the blind spot the inline
 	// no-restricted-syntax selectors above can't reach. Scope-aware + import-
-	// gated (see the rule banner). Facade internals under state/ legitimately
-	// use the aliased-write pattern, so they are exempt.
+	// gated (see the rule banner; its FACADE_SOURCE_RE is path-shaped and must
+	// track this scope). Facade internals under state/ legitimately use the
+	// aliased-write pattern, so they are exempt.
 	{
 		files: ['src/**/*.js'],
-		ignores: ['src/modules/state/**'],
+		ignores: ['src/state/**'],
 		plugins: { chive: chiveRules },
 		rules: {
 			'chive/no-facade-getter-mutation': 'error',

@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
 }));
 
-vi.mock('../../../../src/modules/state/appState.js', () => ({
+vi.mock('../../../../src/state/appState.js', () => ({
 	getPanelBlocks: mocks.getPanelBlocks,
 }));
 

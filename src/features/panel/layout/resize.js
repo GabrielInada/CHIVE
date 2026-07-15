@@ -10,7 +10,7 @@
 
 import { clampPercentage } from '../../../domain/panel/panelBlockModel.js';
 import { computeDynamicMinHeight } from './resizeMath.js';
-import { getPanelBlocks } from '../../../modules/state/appState.js';
+import { getPanelBlocks } from '../../../state/appState.js';
 import { t } from '../../../services/i18nService.js';
 
 /**

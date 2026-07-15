@@ -4,25 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
-	...(await importOriginal()),
-	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
-}));
-
-vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
-	triggerLiveRender: vi.fn(),
-}));
-
 import { createLineChartControls } from '../../../src/charts/line/controls/builder.js';
 import { setupLineChartControlListeners } from '../../../src/charts/line/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/line/controls/defaults.js';
+
+/**
+ * Writer test double. The listeners' contract is that they hand the right
+ * patch to the writer; merging it into state, firing onConfigChanged, and
+ * live-rendering are the adapter's contract and are covered by
+ * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
+ */
+function createWriter() {
+	return { commit: vi.fn(), preview: vi.fn() };
+}
 
 function createDataset(overrides = {}) {
 	return {
@@ -65,8 +65,8 @@ function selectValue(id, value) {
 	select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function lastConfig() {
-	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].line;
+function lastConfig(writer) {
+	return writer.commit.mock.calls.at(-1)[0];
 }
 
 function extractStructure(controls) {
@@ -186,17 +186,15 @@ describe('lineControls listeners', () => {
 		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], onConfigChanged);
+		const writer = createWriter();
+		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
 
 		const select = document.getElementById('viz-select-line-curve');
 		select.value = 'monotone';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			line: expect.objectContaining({ curve: 'monotone' }),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ curve: 'monotone' }));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('coerces an unknown missingMode to the default value', () => {
@@ -204,15 +202,14 @@ describe('lineControls listeners', () => {
 		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
 		appendControls(controls);
 
-		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], vi.fn());
+		const writer = createWriter();
+		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
 
 		const select = document.getElementById('viz-select-line-missing');
 		select.value = 'gap';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			line: expect.objectContaining({ missingMode: 'gap' }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ missingMode: 'gap' }));
 	});
 
 	it('rejects Y values that are not numeric columns', () => {
@@ -220,15 +217,14 @@ describe('lineControls listeners', () => {
 		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
 		appendControls(controls);
 
-		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], vi.fn());
+		const writer = createWriter();
+		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
 
 		const ySelect = document.getElementById('viz-select-line-y');
 		ySelect.value = '';
 		ySelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			line: expect.objectContaining({ y: null }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ y: null }));
 	});
 
 	it('updates X/Y selections for valid values and coerces invalid X to null', () => {
@@ -236,18 +232,18 @@ describe('lineControls listeners', () => {
 		const controls = createLineChartControls(dataset, ['visits', 'signups'], ['month'], ['month', 'visits', 'signups']);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupLineChartControlListeners(dataset, ['visits', 'signups'], ['month'], ['month', 'visits', 'signups'], onConfigChanged);
+		const writer = createWriter();
+		setupLineChartControlListeners(dataset, ['visits', 'signups'], ['month'], ['month', 'visits', 'signups'], writer);
 
 		selectValue('viz-select-line-x', 'signups');
-		expect(lastConfig().x).toBe('signups');
+		expect(lastConfig(writer).x).toBe('signups');
 
 		selectValue('viz-select-line-y', 'signups');
-		expect(lastConfig().y).toBe('signups');
+		expect(lastConfig(writer).y).toBe('signups');
 
 		selectValue('viz-select-line-x', 'missing');
-		expect(lastConfig().x).toBeNull();
-		expect(onConfigChanged).toHaveBeenCalledTimes(3);
+		expect(lastConfig(writer).x).toBeNull();
+		expect(writer.commit).toHaveBeenCalledTimes(3);
 	});
 
 	it('coerces invalid curve, missing, and aggregate options to defaults', () => {
@@ -255,23 +251,25 @@ describe('lineControls listeners', () => {
 		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
 		appendControls(controls);
 
-		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], vi.fn());
+		const writer = createWriter();
+		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
 
 		selectValue('viz-select-line-curve', 'made-up');
-		expect(lastConfig().curve).toBe('linear');
+		expect(lastConfig(writer).curve).toBe('linear');
 
 		selectValue('viz-select-line-missing', 'made-up');
-		expect(lastConfig().missingMode).toBe('connect');
+		expect(lastConfig(writer).missingMode).toBe('connect');
 
 		selectValue('viz-select-line-aggregate', 'made-up');
-		expect(lastConfig().aggregateMode).toBe('none');
+		expect(lastConfig(writer).aggregateMode).toBe('none');
 	});
 
 	it('skips listener setup when controls are absent', () => {
 		const dataset = createDataset();
+		const writer = createWriter();
 
-		expect(() => setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'])).not.toThrow();
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		expect(() => setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer)).not.toThrow();
+		expect(writer.commit).not.toHaveBeenCalled();
 	});
 
 	it('toggles sortX through the checkbox', () => {
@@ -279,15 +277,14 @@ describe('lineControls listeners', () => {
 		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
 		appendControls(controls);
 
-		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], vi.fn());
+		const writer = createWriter();
+		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
 
 		const checkbox = document.getElementById('viz-toggle-line-sort-x');
 		checkbox.checked = false;
 		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			line: expect.objectContaining({ sortX: false }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ sortX: false }));
 	});
 });
 

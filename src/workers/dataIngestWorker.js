@@ -5,11 +5,11 @@
  * thread so a 200k-row upload no longer freezes the tab. Posts progress
  * messages between stages so the host can drive a corner-toast progress bar.
  *
- * Pure logic comes from `services/dataService.js` (no DOM deps). The
+ * Pure logic comes from `domain/datasets/` (no DOM deps). The
  * row-normalization loop is duplicated here as {@link chunkedNormalize} so
  * it can yield progress between batches; the canonical sync `processData`
- * in `dataService.js` stays untouched (still used by the join builder +
- * tests).
+ * in `domain/datasets/processData.js` stays untouched (still used by the join
+ * builder + tests).
  *
  * Message protocol, see `services/dataIngestService.js` for the host side
  * and the {@link IngestWorkerRequest} / {@link IngestWorkerResponse}
@@ -21,15 +21,9 @@
  * @typedef {import('../types.js').IngestWorkerDoneResult} IngestWorkerDoneResult
  */
 
-import {
-	parseCsv,
-	parseJson,
-	detectDecimalSeparator,
-	detectType,
-	normalizeNumericString,
-	calculateStatistics,
-	calculateCategoricalStatistics,
-} from '../services/dataService.js';
+import { parseCsv, parseJson } from '../domain/datasets/parse.js';
+import { detectDecimalSeparator, detectType, normalizeNumericString } from '../domain/datasets/typeDetection.js';
+import { calculateStatistics, calculateCategoricalStatistics } from '../domain/datasets/statistics.js';
 import { DECIMAL_DETECTION, COLUMN_TYPES } from '../config/types.js';
 
 const NORMALIZE_CHUNK_SIZE = 20000;

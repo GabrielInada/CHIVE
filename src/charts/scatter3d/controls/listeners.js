@@ -7,6 +7,7 @@
  * size and opacity sliders, and the point color.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
 import { CHART_COLORS } from '../../../config/charts.js';
@@ -15,7 +16,7 @@ import {
 	setupTextInputListener,
 	setupColorInputListener,
 	setupSliderListener,
-} from '../../../modules/chartControls/controlListenerHelpers.js';
+} from '../../shared/controls/listenerBindings.js';
 
 /**
  * Wire listeners for every 3D-scatter control. X/Y/Z selects clamp to
@@ -24,10 +25,10 @@ import {
  * @param {Dataset} dataset
  * @param {string[]} numericOptions
  * @param {string[]} allColumns - Currently unused.
- * @param {() => void} [onConfigChanged]
+ * @param {ChartConfigWriter} writer
  * @returns {void}
  */
-export function setupScatter3dControlListeners(dataset, numericOptions, allColumns, onConfigChanged) {
+export function setupScatter3dControlListeners(dataset, numericOptions, allColumns, writer) {
 	void allColumns;
 
 	setupSelectListeners([
@@ -46,10 +47,10 @@ export function setupScatter3dControlListeners(dataset, numericOptions, allColum
 			key: 'z',
 			transform: v => (numericOptions.includes(v) ? v : null),
 		},
-	], dataset, 'scatter3d', onConfigChanged);
+	], writer);
 
-	setupTextInputListener('viz-input-scatter3d-title', 'customTitle', dataset, 'scatter3d', onConfigChanged);
-	setupSliderListener('viz-slider-scatter3d-point-size', 'pointSize', dataset, 'scatter3d', onConfigChanged);
-	setupSliderListener('viz-slider-scatter3d-opacity', 'opacity', dataset, 'scatter3d', onConfigChanged);
-	setupColorInputListener('viz-input-scatter3d-color', 'color', CHART_COLORS.scatter3d, dataset, 'scatter3d', onConfigChanged);
+	setupTextInputListener('viz-input-scatter3d-title', 'customTitle', writer);
+	setupSliderListener('viz-slider-scatter3d-point-size', 'pointSize', writer);
+	setupSliderListener('viz-slider-scatter3d-opacity', 'opacity', writer);
+	setupColorInputListener('viz-input-scatter3d-color', 'color', CHART_COLORS.scatter3d, writer);
 }

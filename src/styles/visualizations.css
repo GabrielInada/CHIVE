@@ -1,5 +1,5 @@
-/* @feature: panel > visualizations
-   D3-specific styles for bar charts, scatter plots, axes, legends */
+/* @feature: datasetWorkspace
+   Chart-controls sidebar and chart-picker presentation */
 
 #sidebar-panel-viz {
   min-height: 0;

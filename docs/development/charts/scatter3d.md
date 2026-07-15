@@ -39,16 +39,51 @@ rotate, `+`/`-` zoom, `Home` resets.
 
 ## 3. The big picture (data flow)
 
-```text
-chartConfig.scatter3d (state)
-  └─ workspaceSection.js ({config, rows})     panelAdapter.js (frozen spec)
-       └──────────────┬─────────────────────────────┘
-                 presentation.js  (localized labels, fail keys, notice)
-                      └─ renderers/three.js
-                           ├─ data.js      rows -> points + extents + counts
-                           ├─ scales.js    extents -> [-1,1] scales (D3)
-                           ├─ options.js   config -> clamped visual options
-                           └─ interaction.js  pointer/wheel/keyboard orbit
+```mermaid
+flowchart TB
+    subgraph LIVE["Live dataset workspace"]
+        CONTROLS["scatter3d/controls"] --> WRITER["ChartConfigWriter"]
+        WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
+        DFACADE --> DSTATE[("dataset.chartConfig.scatter3d")]
+        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DSTATE -. read through getters .-> COORD
+        WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
+        PREVIEW --> DSTATE
+        COORD --> CHARTSVIEW["chartsView.renderCharts"]
+        PREVIEW -. chart render only .-> CHARTSVIEW
+        CHARTSVIEW --> WREG["workspace registry"]
+        WREG --> WSECTION["renderScatter3dChartSection"]
+    end
+
+    subgraph SAVED["Panel snapshot"]
+        ACTION["chartActions: Add to panel"] --> PCAPTURE["panelController.addChartToPanel"]
+        PCAPTURE -- filtered rows + cloned config/columns --> PFACADE["Panel Facade<br/>snapshot + block/slot mutations"]
+        PFACADE --> PSTATE[("panel snapshots<br/>blocks + slot assignments")]
+        PFACADE -- panel events --> PSUB["panelController subscriptions"]
+        PSUB --> PVIEW["panelView"]
+        PSTATE -. read through getters .-> PVIEW
+        PVIEW -. callback via panelController .-> PFACADE
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        MOUNT --> PREG["panel registry"]
+        PREG --> ADAPTER["renderScatter3dPanelChart"]
+    end
+
+    WSECTION --> PRESENT["renderScatter3dInto<br/>labels + failure mapping + notice"]
+    ADAPTER --> PRESENT
+    PRESENT --> RENDERER["renderScatter3dChart"]
+
+    subgraph INTERNALS["Three renderer internals"]
+        DATA["data.js<br/>points + extents + sampling counts"]
+        SCALES["scales.js<br/>D3 scales to unit cube"]
+        OPTIONS["options.js<br/>clamped visual options"]
+        INTERACTION["interaction.js<br/>pointer + wheel + keyboard orbit"]
+    end
+
+    RENDERER -. uses .-> DATA
+    RENDERER -. uses .-> SCALES
+    RENDERER -. uses .-> OPTIONS
+    RENDERER -. uses .-> INTERACTION
+    RENDERER --> OUTPUT["WebGL canvas in container"]
 ```
 
 ## 4. The data model
@@ -69,12 +104,12 @@ clamps, rotate/zoom speeds, keyboard steps).
 [controls/](../../../src/charts/scatter3d/controls) mirrors
 `charts/tin/controls/`: `builder.js` (Data: X/Y/Z numeric selects;
 Display: title, point size, opacity; Styling: color), `listeners.js` (via
-the shared `controlListenerHelpers.js`, which remains the config-write
+the shared `listenerBindings.js`, which remains the config-write
 adapter; selects clamp to the numeric column list), and `defaults.js`
 (first three distinct numeric columns via the tin `pickPreferred`
 semantics, preserving still-valid user picks). The registry entry lives in
 [charts/registries/controls.js](../../../src/charts/registries/controls.js),
-which `chartControlsManager.js` consumes.
+which `chartControlsController.js` consumes.
 
 ## 6. The render entry chain
 

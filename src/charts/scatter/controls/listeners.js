@@ -10,20 +10,19 @@
  * imports application state.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
 import { CHART_COLORS } from '../../../config/charts.js';
 import { normalizeHexColor, COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
-	commitChartConfigPatch,
-	previewChartConfigPatch,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
 	setupSliderListener,
 	setupColorPresetListeners,
-} from '../../../modules/chartControls/controlListenerHelpers.js';
+} from '../../shared/controls/listenerBindings.js';
 
 /**
  * Wire listeners for every scatter-plot control. The X/Y axis selects have
@@ -33,10 +32,10 @@ import {
  * @param {Dataset} dataset
  * @param {string[]} numeric
  * @param {string[]} allOptions
- * @param {() => void} [onConfigChanged]
+ * @param {ChartConfigWriter} writer
  * @returns {void}
  */
-export function setupScatterPlotControlListeners(dataset, numeric, allOptions, onConfigChanged) {
+export function setupScatterPlotControlListeners(dataset, numeric, allOptions, writer) {
 	const categorical = allOptions.filter(option => !numeric.includes(option));
 
 	const attachAxisListener = (selectId, axisKey, scaleKey) => {
@@ -45,10 +44,10 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 		select.addEventListener('change', () => {
 			const selected = allOptions.includes(select.value) ? select.value : null;
 			const currentScale = dataset.chartConfig.scatter?.[scaleKey] === 'log' ? 'log' : 'linear';
-			commitChartConfigPatch(dataset, 'scatter', {
+			writer.commit({
 				[axisKey]: selected,
 				[scaleKey]: numeric.includes(selected) ? currentScale : 'linear',
-			}, onConfigChanged);
+			});
 		});
 	};
 
@@ -86,7 +85,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 		},
 		{ id: 'viz-select-scatter-color-field', key: 'colorField', transform: v => v || null },
 		{ id: 'viz-select-scatter-color-scheme', key: 'colorScheme' },
-	], dataset, 'scatter', onConfigChanged);
+	], writer);
 
 	// colorMode needs custom logic (updates colorField/colorFieldType)
 	const colorModeSelect = document.getElementById('viz-select-scatter-color-mode');
@@ -97,14 +96,14 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 			const currentField = dataset.chartConfig.scatter.colorField;
 			const currentRegression = dataset.chartConfig.scatter.regression || {};
 			const nextRegressionMode = value === 'category' ? currentRegression.mode : 'overall';
-			commitChartConfigPatch(dataset, 'scatter', {
+			writer.commit({
 				colorMode: value === 'uniform' ? 'uniform' : value,
 				colorField: value === 'uniform'
 					? null
 					: (availableFields.includes(currentField) ? currentField : (availableFields[0] || null)),
 				colorFieldType: value === 'category' ? 'category' : (value === 'numeric' ? 'numeric' : null),
 				regression: { ...currentRegression, mode: nextRegressionMode || 'overall' },
-			}, onConfigChanged);
+			});
 		});
 	}
 
@@ -112,7 +111,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 	const inputScatterColor = document.getElementById('viz-input-scatter-color');
 	if (inputScatterColor) {
 		inputScatterColor.addEventListener('input', () => {
-			previewChartConfigPatch('scatter', {
+			writer.preview({
 				colorMode: 'uniform',
 				colorField: null,
 				colorFieldType: null,
@@ -120,42 +119,42 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 			});
 		});
 		inputScatterColor.addEventListener('change', () => {
-			commitChartConfigPatch(dataset, 'scatter', {
+			writer.commit({
 				colorMode: 'uniform',
 				colorField: null,
 				colorFieldType: null,
 				color: normalizeHexColor(inputScatterColor.value, CHART_COLORS.scatter),
-			}, onConfigChanged);
+			});
 		});
 	}
 
-	setupColorInputListener('viz-input-scatter-gradient-min', 'gradientMinColor', CHART_COLORS.scatter, dataset, 'scatter', onConfigChanged);
-	setupColorInputListener('viz-input-scatter-gradient-max', 'gradientMaxColor', '#ffffff', dataset, 'scatter', onConfigChanged);
+	setupColorInputListener('viz-input-scatter-gradient-min', 'gradientMinColor', CHART_COLORS.scatter, writer);
+	setupColorInputListener('viz-input-scatter-gradient-max', 'gradientMaxColor', '#ffffff', writer);
 	setupSelectListeners([
 		{ id: 'viz-select-scatter-gradient-distribution', key: 'gradientDistribution', transform: v =>
 			['value', 'rank'].includes(v) ? v : 'value' },
-	], dataset, 'scatter', onConfigChanged);
+	], writer);
 
 	setupColorPresetListeners('viz-scatter-color-preset', {
 		color: 0, gradientMinColor: 0, gradientMaxColor: -1,
 	}, {
 		color: CHART_COLORS.scatter, gradientMinColor: CHART_COLORS.scatter, gradientMaxColor: '#ffffff',
-	}, dataset, 'scatter', onConfigChanged, COLOR_PRESETS);
+	}, writer, COLOR_PRESETS);
 
 	setupCheckboxListeners([
 		{ id: 'viz-toggle-scatter-x-label', key: 'showXAxisLabel' },
 		{ id: 'viz-toggle-scatter-y-label', key: 'showYAxisLabel' },
-	], dataset, 'scatter', onConfigChanged);
+	], writer);
 
-	setupTextInputListener('viz-input-scatter-title', 'customTitle', dataset, 'scatter', onConfigChanged);
-	setupSliderListener('viz-slider-scatter-size-min', 'sizeMin', dataset, 'scatter', onConfigChanged);
-	setupSliderListener('viz-slider-scatter-size-max', 'sizeMax', dataset, 'scatter', onConfigChanged);
+	setupTextInputListener('viz-input-scatter-title', 'customTitle', writer);
+	setupSliderListener('viz-slider-scatter-size-min', 'sizeMin', writer);
+	setupSliderListener('viz-slider-scatter-size-max', 'sizeMax', writer);
 
 	const updateRegression = patch => {
 		const currentRegression = dataset.chartConfig.scatter?.regression || {};
-		commitChartConfigPatch(dataset, 'scatter', {
+		writer.commit({
 			regression: { ...currentRegression, ...patch },
-		}, onConfigChanged);
+		});
 	};
 
 	const attachRegressionCheckbox = (id, key) => {
@@ -190,7 +189,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, o
 					}
 				}
 			}
-			commitChartConfigPatch(dataset, 'scatter', patch, onConfigChanged);
+			writer.commit(patch);
 		});
 	}
 }

@@ -4,26 +4,26 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
-	...(await importOriginal()),
-	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
-}));
-
-vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
-	triggerLiveRender: vi.fn(),
-}));
-
 import { createScatter3dControls } from '../../../src/charts/scatter3d/controls/builder.js';
 import { setupScatter3dControlListeners } from '../../../src/charts/scatter3d/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/scatter3d/controls/defaults.js';
 import { SCATTER3D_CHART } from '../../../src/config/charts.js';
+
+/**
+ * Writer test double. The listeners' contract is that they hand the right
+ * patch to the writer; merging it into state, firing onConfigChanged, and
+ * live-rendering are the adapter's contract and are covered by
+ * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
+ */
+function createWriter() {
+	return { commit: vi.fn(), preview: vi.fn() };
+}
 
 function createDataset(overrides = {}) {
 	return {
@@ -58,8 +58,8 @@ function changeSelect(id, value) {
 	select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function lastScatter3dConfig() {
-	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].scatter3d;
+function lastScatter3dConfig(writer) {
+	return writer.commit.mock.calls.at(-1)[0];
 }
 
 describe('scatter3d controls builder', () => {
@@ -103,36 +103,38 @@ describe('scatter3d control listeners', () => {
 
 	function mountAndWire(dataset, numericOptions = ['width', 'height', 'depth']) {
 		appendControls(createScatter3dControls(dataset, numericOptions));
-		setupScatter3dControlListeners(dataset, numericOptions, [], vi.fn());
+		const writer = createWriter();
+		setupScatter3dControlListeners(dataset, numericOptions, [], writer);
+		return writer;
 	}
 
 	it('writes axis picks through the config-write adapter, clamped to numeric options', () => {
-		mountAndWire(createDataset());
+		const writer = mountAndWire(createDataset());
 
 		changeSelect('viz-select-scatter3d-x', 'depth');
-		expect(lastScatter3dConfig()).toMatchObject({ x: 'depth' });
+		expect(lastScatter3dConfig(writer)).toMatchObject({ x: 'depth' });
 
 		changeSelect('viz-select-scatter3d-y', 'not-a-column');
-		expect(lastScatter3dConfig()).toMatchObject({ y: null });
+		expect(lastScatter3dConfig(writer)).toMatchObject({ y: null });
 	});
 
 	it('writes point size, opacity, title, and color', () => {
-		mountAndWire(createDataset());
+		const writer = mountAndWire(createDataset());
 
 		const size = document.getElementById('viz-slider-scatter3d-point-size');
 		size.value = '0.05';
 		size.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastScatter3dConfig()).toMatchObject({ pointSize: 0.05 });
+		expect(lastScatter3dConfig(writer)).toMatchObject({ pointSize: 0.05 });
 
 		const opacity = document.getElementById('viz-slider-scatter3d-opacity');
 		opacity.value = '0.35';
 		opacity.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastScatter3dConfig()).toMatchObject({ opacity: 0.35 });
+		expect(lastScatter3dConfig(writer)).toMatchObject({ opacity: 0.35 });
 
 		const title = document.getElementById('viz-input-scatter3d-title');
 		title.value = 'Cloud';
 		title.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastScatter3dConfig()).toMatchObject({ customTitle: 'Cloud' });
+		expect(lastScatter3dConfig(writer)).toMatchObject({ customTitle: 'Cloud' });
 	});
 });
 

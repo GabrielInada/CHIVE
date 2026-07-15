@@ -21,12 +21,12 @@ What you expected to happen instead.
 3. Upload '...'
 4. See error
 
-If the bug is data-dependent, attach a minimal CSV/JSON that reproduces it (or describe its shape).
+If the bug is data-dependent, attach a minimal CSV-like or JSON file that reproduces it (or describe its shape).
 
 ## Environment
 
-- **Browser & version:** (e.g. Chrome 131, Firefox 133, Safari 18)
-- **OS:** (e.g. Windows 11, macOS 15, Ubuntu 24.04)
+- **Browser & version:** (include the exact browser name and version)
+- **OS:** (include the exact operating system and version)
 - **CHIVE version / commit:** (branch name or SHA if running from source)
 
 ## Console output

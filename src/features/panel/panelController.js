@@ -42,7 +42,7 @@ import {
 	clearPanel,
 	onStateChange,
 	STATE_EVENTS,
-} from '../../modules/state/appState.js';
+} from '../../state/appState.js';
 import {
 	renderSidebarPanel as renderSidebar,
 	renderCanvasPanel as renderCanvas,

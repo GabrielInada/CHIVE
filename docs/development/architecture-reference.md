@@ -44,7 +44,7 @@ service/facade boundaries.
 ## State Schema
 
 The private state object is declared in
-[`src/modules/state/appState.js`](../../src/modules/state/appState.js):
+[`src/state/appState.js`](../../src/state/appState.js):
 
 ```js
 const appState = {
@@ -100,7 +100,7 @@ must not be mutated by callers.
 | `validatePanelSlots()` | panel | `panel.slots`, `block.slots` | No | Drops slot assignments pointing at missing chart snapshots. |
 
 `onStateChange` and `STATE_EVENTS` are re-exported from
-[`stateEvents.js`](../../src/modules/state/stateEvents.js) through
+[`stateEvents.js`](../../src/state/stateEvents.js) through
 `appState.js`.
 
 ### Live-Reference Read Policy
@@ -164,7 +164,7 @@ policy.
 
 Every typed event also reaches wildcard subscribers and dispatches a
 `chive-state-changed` `CustomEvent` on `window`. The production wildcard
-subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
+subscriber is `persistence.js`; it ignores `STATE_HYDRATED`.
 
 | Event | Value | Emitted By | Payload | Typed Production Subscribers |
 |---|---|---|---|---|
@@ -187,7 +187,7 @@ subscriber is `persistenceService.js`; it ignores `STATE_HYDRATED`.
 | `STATE_EVENTS.SIDEBAR_MODE_CHANGED` | `sidebarModeChanged` | `setSidebarMode` | sidebar mode | none |
 | `STATE_EVENTS.PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `setPreviewRows` | row count | `renderCoordinator.js` |
 | `STATE_EVENTS.STATE_HYDRATED` | `stateHydrated` | `replaceAllState` | none | `renderCoordinator.js` |
-| `STATE_EVENTS.WILDCARD` | `*` | not emitted directly | wildcard callbacks receive `{ type, data }` after typed emits | `persistenceService.js` |
+| `STATE_EVENTS.WILDCARD` | `*` | not emitted directly | wildcard callbacks receive `{ type, data }` after typed emits | `persistence.js` |
 
 ## Subscriber Map
 
@@ -222,7 +222,7 @@ re-renders the sidebar, canvas, and layout selector (clear also resets
 blocks/layout). The panel handlers render synchronously (they are not routed
 through the render coordinator's coalescer).
 
-[`src/services/persistenceService.js`](../../src/services/persistenceService.js)
+[`src/services/persistence.js`](../../src/services/persistence.js)
 subscribes to `WILDCARD` after hydration and tracks semantic project dirtiness
 to schedule the debounced auto-save. It ignores `STATE_HYDRATED`, UI preference
 events (`SIDEBAR_MODE_CHANGED`, `PREVIEW_ROWS_CHANGED`), and `CONFIG_UPDATED`
@@ -241,15 +241,17 @@ are adjusted stays its own narrow path (charts only).
 ## Persistence
 
 Project persistence is implemented in
-[`src/services/persistenceService/`](../../src/services/persistenceService/)
+[`src/services/persistence/`](../../src/services/persistence/)
 behind the stable public facade
-[`src/services/persistenceService.js`](../../src/services/persistenceService.js),
-with storage backends in
-[`src/services/persistence/`](../../src/services/persistence/).
+[`src/services/persistence.js`](../../src/services/persistence.js), which is
+the only supported import path into the package. Storage backends live in
+[`src/services/persistence/backends/`](../../src/services/persistence/backends/)
+and the SQLite schema and snapshot SQL in
+[`src/services/persistence/sqlite/core.js`](../../src/services/persistence/sqlite/core.js).
 
 All SQLite work runs **off the main thread** in a long-lived Web Worker. The
 default backend is `workerBackend`
-([`src/services/persistence/workerBackend.js`](../../src/services/persistence/workerBackend.js)),
+([`src/services/persistence/backends/workerBackend.js`](../../src/services/persistence/backends/workerBackend.js)),
 which delegates `hydrate`/`persist`/`clear` to
 [`src/workers/persistWorker.js`](../../src/workers/persistWorker.js); the worker
 constructs a `createBlobBackend()` so fingerprinting, schema, the whole-DB
@@ -267,9 +269,9 @@ The runtime path is:
    reads IndexedDB database `chive-sqlite`, store `db`, key `project`.
 3. The stored value is a single SQLite database byte image (`Uint8Array`),
    deserialized into sqlite-wasm in memory.
-4. `sqliteCore.readSnapshot()` reads project tables and reattaches chart
+4. `sqlite/core.js`'s `readSnapshot()` reads project tables and reattaches chart
    snapshot payloads.
-5. `persistenceService` validates datasets, applies the optional panel
+5. `persistence.js` validates datasets, applies the optional panel
    transform, reads `chive.ui`, and calls `replaceAllState()`.
 
 Saves are automatic. `enablePersistenceAutoSave(getPersistenceSnapshot)`

@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 // Per-file environment is set with `// @vitest-environment jsdom` in tests
 // that need the DOM. Keeping the global default at `node` preserves existing
 // behavior; the setup file installs fake-indexeddb on globalThis so tests
-// that exercise persistenceService get a working IndexedDB without each test
+// that exercise persistence get a working IndexedDB without each test
 // having to register one.
 export default defineConfig({
 	test: {
@@ -13,11 +13,11 @@ export default defineConfig({
 			// libraries (d3, sqlite, banana-i18n) are large and barely
 			// exercised, so including them buries the real numbers.
 			include: ['src/**/*.js'],
-			// index.js files are pure re-export barrels; types.js is JSDoc
-			// typedefs only; i18n holds JSON message catalogs. None contain
-			// testable runtime logic. main.js (the boot orchestrator) is left
-			// in deliberately so its real, untested code stays visible.
-			exclude: ['src/**/index.js', 'src/types.js', 'src/i18n/**'],
+			// types.js is JSDoc typedefs only; i18n holds JSON message
+			// catalogs. Neither contains testable runtime logic. main.js (the
+			// boot orchestrator) is left in deliberately so its real, untested
+			// code stays visible.
+			exclude: ['src/types.js', 'src/i18n/**'],
 		},
 	},
 });

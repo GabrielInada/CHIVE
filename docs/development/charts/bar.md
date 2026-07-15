@@ -116,33 +116,39 @@ There are two ways a bar chart gets drawn: the **live dataset workspace** (the m
 driven by the active dataset's config) and the **panel** (saved chart snapshots assembled
 into a dashboard). Both end at the same renderer, `renderBarChart`.
 
-```
-                 ┌─────────────────────────────────────────────┐
-                 │  Active dataset.chartConfig.bar (live state) │
-                 └─────────────────────────────────────────────┘
-                        │                          │
-       sidebar edits    │                          │  render
-   (bar/controls/*) ────┘                          ▼
-        write config                  chartsView.renderCharts()
-                                      → bar/workspaceSection.js       [dataset workspace]
-                                        → bar/presentation.js
-                                          → renderBarChart(...)
-                                              │
-   "Add to panel"                            │
-   (eventHandlers → panelController)         │
-   structuredClone of config + rows          │
-        │                                     │
-        ▼                                     │
-   chartSnapshot { config, dataSnapshot, … }  │
-        │                                     │
-   renderChartFromSpec()                       │
-     → bar/panelAdapter.js                     │
-       → bar/presentation.js                   │
-         → renderBarChart(...)                 │
-                                              ▼
-                                   ┌──────────────────────┐
-                                   │   <svg> in container  │
-                                   └──────────────────────┘
+```mermaid
+flowchart TB
+    subgraph LIVE["Live dataset workspace"]
+        CONTROLS["bar/controls"] --> WRITER["ChartConfigWriter"]
+        WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
+        DFACADE --> DSTATE[("dataset.chartConfig.bar")]
+        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DSTATE -. read through getters .-> COORD
+        WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
+        PREVIEW --> DSTATE
+        COORD --> CHARTSVIEW["chartsView.renderCharts"]
+        PREVIEW -. chart render only .-> CHARTSVIEW
+        CHARTSVIEW --> WREG["workspace registry"]
+        WREG --> WSECTION["renderBarChartSection"]
+    end
+
+    subgraph SAVED["Panel snapshot"]
+        ACTION["chartActions: Add to panel"] --> PCAPTURE["panelController.addChartToPanel"]
+        PCAPTURE -- filtered rows + cloned config/columns --> PFACADE["Panel Facade<br/>snapshot + block/slot mutations"]
+        PFACADE --> PSTATE[("panel snapshots<br/>blocks + slot assignments")]
+        PFACADE -- panel events --> PSUB["panelController subscriptions"]
+        PSUB --> PVIEW["panelView"]
+        PSTATE -. read through getters .-> PVIEW
+        PVIEW -. callback via panelController .-> PFACADE
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        MOUNT --> PREG["panel registry"]
+        PREG --> ADAPTER["renderBarPanelChart"]
+    end
+
+    WSECTION --> PRESENT["renderBarInto"]
+    ADAPTER --> PRESENT
+    PRESENT --> RENDERER["renderBarChart"]
+    RENDERER --> OUTPUT["SVG in container"]
 ```
 
 The renderer is **stateless**: every call wipes the container
@@ -201,7 +207,7 @@ deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in the same 
 [controls/](../../../src/charts/bar/controls) owns the right-sidebar control
 group and its config writes. The
 [controls registry](../../../src/charts/registries/controls.js) imports three
-explicit package modules; `chartControlsManager.js` consumes the normalized
+explicit package modules; `chartControlsController.js` consumes the normalized
 registry entry:
 
 - `createBarChartControls(dataset, categoryOptions, numericOptions, allColumns)` builds the DOM.
@@ -235,7 +241,7 @@ nothing:
 ### 5.3 Listener wiring
 
 `setupBarChartControlListeners` uses the shared adapters in
-[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js)
+[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js)
 (`setupSelectListeners`, `setupCheckboxListeners`, `setupTextInputListener`,
 `setupSliderListener`, `setupColorInputListener`, `setupColorPresetListeners`, and
 `commitChartConfigPatch`). Two controls have custom listeners instead of the generic select helper:
@@ -256,7 +262,7 @@ renderer never reads the DOM controls; it only reads config the listeners have w
 
 ### 6.1 Dataset workspace
 
-[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides
+[chartsView.js](../../../src/features/datasetWorkspace/views/chartsView.js) decides
 which chart is active and passes the shared render context to the
 [workspace registry](../../../src/charts/registries/workspace.js). Its `bar`
 entry calls `renderBarChartSection({ config, rows, filterCallbacks })` from
@@ -458,7 +464,7 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
   snapshot-to-renderer mapping and localized aggregate labels.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
-- [chartsView.test.js](../../../tests/components/datasetWorkspace/chartsView.test.js) covers view-level
+- [chartsView.test.js](../../../tests/features/datasetWorkspace/views/chartsView.test.js) covers view-level
   orchestration of which blocks render.
 
 ---

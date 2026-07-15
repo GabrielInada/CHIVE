@@ -15,8 +15,8 @@ const mocks = vi.hoisted(() => ({
 	throttle: vi.fn(),
 	initChartControls: vi.fn(),
 	initPanelController: vi.fn(),
-	initFileManager: vi.fn(),
-	initializeAllEventHandlers: vi.fn(),
+	initDatasetController: vi.fn(),
+	initializeDomBindings: vi.fn(),
 	initSettingsController: vi.fn(),
 	showFeedback: vi.fn(),
 	showError: vi.fn(),
@@ -32,14 +32,14 @@ vi.mock('../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../src/services/persistenceService.js', () => ({
+vi.mock('../../src/services/persistence.js', () => ({
 	isPersistenceAvailable: mocks.isPersistenceAvailable,
 	hydrateState: mocks.hydrateState,
 	enablePersistenceAutoSave: mocks.enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey: mocks.getPersistenceErrorMessageKey,
 }));
 
-vi.mock('../../src/modules/state/appState.js', () => ({
+vi.mock('../../src/state/appState.js', () => ({
 	getPersistenceSnapshot: mocks.getPersistenceSnapshot,
 	replaceAllState: mocks.replaceAllState,
 }));
@@ -52,7 +52,7 @@ vi.mock('../../src/utils/throttle.js', () => ({
 	throttle: mocks.throttle,
 }));
 
-vi.mock('../../src/modules/chartControls/chartControlsManager.js', () => ({
+vi.mock('../../src/features/datasetWorkspace/chartControls/chartControlsController.js', () => ({
 	initChartControls: mocks.initChartControls,
 }));
 
@@ -60,15 +60,15 @@ vi.mock('../../src/features/panel/panelController.js', () => ({
 	initPanelController: mocks.initPanelController,
 }));
 
-vi.mock('../../src/modules/fileManager.js', () => ({
-	initFileManager: mocks.initFileManager,
+vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
+	initDatasetController: mocks.initDatasetController,
 }));
 
-vi.mock('../../src/modules/eventHandlers.js', () => ({
-	initializeAllEventHandlers: mocks.initializeAllEventHandlers,
+vi.mock('../../src/app/domBindings.js', () => ({
+	initializeDomBindings: mocks.initializeDomBindings,
 }));
 
-vi.mock('../../src/modules/settingsController.js', () => ({
+vi.mock('../../src/app/settingsController.js', () => ({
 	initSettingsController: mocks.initSettingsController,
 }));
 
@@ -76,7 +76,7 @@ vi.mock('../../src/config/settings.js', () => ({
 	SETTINGS_CHANGE_EVENT: 'chive-settings-changed',
 }));
 
-vi.mock('../../src/modules/feedbackUI.js', () => ({
+vi.mock('../../src/app/feedbackUI.js', () => ({
 	showFeedback: mocks.showFeedback,
 	showError: mocks.showError,
 }));
@@ -121,7 +121,7 @@ describe('application initializer', () => {
 		expect(mocks.initializeI18n).toHaveBeenCalledTimes(1);
 		expect(mocks.initSettingsController).toHaveBeenCalledTimes(1);
 		expect(mocks.hydrateState).not.toHaveBeenCalled();
-		expect(mocks.initFileManager).not.toHaveBeenCalled();
+		expect(mocks.initDatasetController).not.toHaveBeenCalled();
 		expect(mocks.setupStateSubscriptions).not.toHaveBeenCalled();
 	});
 
@@ -142,7 +142,7 @@ describe('application initializer', () => {
 		expect(mocks.initChartControls).toHaveBeenCalledWith(null, mocks.throttledPreview);
 		expect(mocks.throttle).toHaveBeenCalledWith(mocks.livePreviewRender, 120);
 		expect(mocks.initPanelController).toHaveBeenCalledWith(mocks.showFeedback);
-		expect(mocks.initializeAllEventHandlers).toHaveBeenCalledTimes(1);
+		expect(mocks.initializeDomBindings).toHaveBeenCalledTimes(1);
 		expect(mocks.setupStateSubscriptions).toHaveBeenCalledTimes(1);
 		expect(mocks.enablePersistenceAutoSave).toHaveBeenCalledWith(
 			mocks.getPersistenceSnapshot,
@@ -151,7 +151,7 @@ describe('application initializer', () => {
 		expect(mocks.runFullRefreshNow).toHaveBeenCalledTimes(1);
 
 		expect(mocks.hydrateState.mock.invocationCallOrder[0])
-			.toBeLessThan(mocks.initFileManager.mock.invocationCallOrder[0]);
+			.toBeLessThan(mocks.initDatasetController.mock.invocationCallOrder[0]);
 		expect(mocks.setupStateSubscriptions.mock.invocationCallOrder[0])
 			.toBeLessThan(mocks.enablePersistenceAutoSave.mock.invocationCallOrder[0]);
 		expect(mocks.enablePersistenceAutoSave.mock.invocationCallOrder[0])
@@ -179,7 +179,7 @@ describe('application initializer', () => {
 		await initializeApplication();
 
 		expect(mocks.hydrateState).not.toHaveBeenCalled();
-		expect(mocks.initFileManager).toHaveBeenCalledTimes(1);
+		expect(mocks.initDatasetController).toHaveBeenCalledTimes(1);
 		expect(mocks.runFullRefreshNow).toHaveBeenCalledTimes(1);
 	});
 
@@ -218,6 +218,6 @@ describe('application initializer', () => {
 		expect(document.body.style.visibility).toBe('visible');
 		expect(consoleError).toHaveBeenCalledWith('CHIVE initialization failed:', error);
 		expect(mocks.showError).toHaveBeenCalledWith('An internal application error occurred.');
-		expect(mocks.initFileManager).not.toHaveBeenCalled();
+		expect(mocks.initDatasetController).not.toHaveBeenCalled();
 	});
 });

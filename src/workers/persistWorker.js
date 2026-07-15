@@ -17,15 +17,15 @@
  *      `backend.persist` succeeds, keeping the worker cache aligned with the
  *      host's `sentPayloads` (which also updates only after the ok ack).
  *
- * Message protocol, see `services/persistence/workerBackend.js` for the host
- * side and the {@link PersistWorkerRequest} / {@link PersistWorkerResponse}
+ * Message protocol, see `services/persistence/backends/workerBackend.js` for the
+ * host side and the {@link PersistWorkerRequest} / {@link PersistWorkerResponse}
  * typedefs in `src/types.js`.
  *
  * @typedef {import('../types.js').PersistWorkerRequest} PersistWorkerRequest
  * @typedef {import('../types.js').PersistWorkerResponse} PersistWorkerResponse
  */
 
-import { createBlobBackend } from '../services/persistence/blobBackend.js';
+import { createBlobBackend } from '../services/persistence/backends/blobBackend.js';
 
 /**
  * Replace a Map's contents with another Map's entries, in place.

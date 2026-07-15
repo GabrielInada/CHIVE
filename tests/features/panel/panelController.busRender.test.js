@@ -22,7 +22,7 @@ import {
 	removeChartSnapshot,
 	clearPanel,
 	replaceAllState,
-} from '../../../src/modules/state/appState.js';
+} from '../../../src/state/appState.js';
 import {
 	initPanelController,
 	_resetPanelControllerForTesting,

@@ -170,30 +170,39 @@ intersection as its peers, hiding overlap. Two strategies resolve this:
 
 Two integration paths share the same presentation mapping and end at `renderScatterPlot`.
 
-```
-                 ┌─────────────────────────────────────────────────┐
-                 │  Active dataset.chartConfig.scatter (live state) │
-                 └─────────────────────────────────────────────────┘
-                         │                         │
-       sidebar edits     │                         │ render
- (controls/listeners.js) ┘                         ▼
-        write config                 workspace registry
-                                     → renderScatterChartSection()
-                                       → renderScatterInto()
-                                         → renderScatterPlot()
-                         │
-   "Add to panel" → structuredClone snapshot
-                         │
-                         ▼
-                    panel registry
-                    → renderScatterPanelChart()
-                      → renderScatterInto()
-                        → renderScatterPlot()
-                              │
-                              ▼
-                    ┌──────────────────────┐
-                    │  <svg> in container  │
-                    └──────────────────────┘
+```mermaid
+flowchart TB
+    subgraph LIVE["Live dataset workspace"]
+        CONTROLS["scatter/controls"] --> WRITER["ChartConfigWriter"]
+        WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
+        DFACADE --> DSTATE[("dataset.chartConfig.scatter")]
+        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DSTATE -. read through getters .-> COORD
+        WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
+        PREVIEW --> DSTATE
+        COORD --> CHARTSVIEW["chartsView.renderCharts"]
+        PREVIEW -. chart render only .-> CHARTSVIEW
+        CHARTSVIEW --> WREG["workspace registry"]
+        WREG --> WSECTION["renderScatterChartSection"]
+    end
+
+    subgraph SAVED["Panel snapshot"]
+        ACTION["chartActions: Add to panel"] --> PCAPTURE["panelController.addChartToPanel"]
+        PCAPTURE -- filtered rows + cloned config/columns --> PFACADE["Panel Facade<br/>snapshot + block/slot mutations"]
+        PFACADE --> PSTATE[("panel snapshots<br/>blocks + slot assignments")]
+        PFACADE -- panel events --> PSUB["panelController subscriptions"]
+        PSUB --> PVIEW["panelView"]
+        PSTATE -. read through getters .-> PVIEW
+        PVIEW -. callback via panelController .-> PFACADE
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        MOUNT --> PREG["panel registry"]
+        PREG --> ADAPTER["renderScatterPanelChart"]
+    end
+
+    WSECTION --> PRESENT["renderScatterInto"]
+    ADAPTER --> PRESENT
+    PRESENT --> RENDERER["renderScatterPlot"]
+    RENDERER --> OUTPUT["SVG in container"]
 ```
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG. The rows
@@ -296,7 +305,7 @@ the regression section. It exposes the standard three adapters
 ### 5.3 Listener wiring and cross-constraints
 
 Most controls use the shared helpers in
-[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js). The
+[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js). The
 interesting custom listeners encode the cross-constraints:
 
 - **Axis selects**: picking a non-numeric column for an axis forces that axis's scale back to
@@ -519,11 +528,10 @@ Package tests live under [tests/charts/scatter/](../../../tests/charts/scatter):
   (size/color accessors and the frozen palettes).
 - [renderers/svg.test.js](../../../tests/charts/scatter/renderers/svg.test.js)
   is the behavior guard for the orchestrator, interactions, regression overlay (incl. DOM
-  stacking order and clip-id uniqueness), log scale, and aggregation.
-- [renderers/svgAxes.test.js](../../../tests/charts/scatter/renderers/svgAxes.test.js)
-  covers axis rendering behavior.
-- [chartColors.test.js](../../../tests/modules/visualizations/chartColors.test.js) exercises the
+  stacking order and clip-id uniqueness), log scale, aggregation, and the
   renderer's color options.
+- [renderers/svg.axes.test.js](../../../tests/charts/scatter/renderers/svg.axes.test.js)
+  covers axis rendering behavior.
 - [controls.test.js](../../../tests/charts/scatter/controls.test.js) covers
   the control building and the axis/scale and color-mode cross-constraints.
 - [workspaceSection.test.js](../../../tests/charts/scatter/workspaceSection.test.js),

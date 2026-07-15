@@ -19,23 +19,23 @@ const mocks = vi.hoisted(() => ({
 	switchTab: vi.fn(),
 }));
 
-vi.mock('../../src/modules/state/appState.js', () => ({
+vi.mock('../../src/state/appState.js', () => ({
 	getState: mocks.getState,
 	getActiveDataset: mocks.getActiveDataset,
 }));
 
-vi.mock('../../src/modules/state/stateEvents.js', () => ({
+vi.mock('../../src/state/stateEvents.js', () => ({
 	enableStateLog: mocks.enableStateLog,
 	disableStateLog: mocks.disableStateLog,
 	getStateLog: mocks.getStateLog,
 	clearStateLog: mocks.clearStateLog,
 }));
 
-vi.mock('../../src/modules/state/stateDebug.js', () => ({
+vi.mock('../../src/state/stateDebug.js', () => ({
 	getStateSummary: mocks.getStateSummary,
 }));
 
-vi.mock('../../src/modules/fileManager.js', () => ({
+vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 	getLoadedDatasets: mocks.getLoadedDatasets,
 }));
 
@@ -45,12 +45,12 @@ vi.mock('../../src/app/renderCoordinator.js', () => ({
 	updateDatasetConfig: mocks.updateDatasetConfig,
 }));
 
-vi.mock('../../src/modules/feedbackUI.js', () => ({
+vi.mock('../../src/app/feedbackUI.js', () => ({
 	showFeedbackMessage: mocks.showFeedbackMessage,
 	showErrorMessage: mocks.showErrorMessage,
 }));
 
-vi.mock('../../src/modules/uiManager.js', () => ({
+vi.mock('../../src/app/uiManager.js', () => ({
 	switchTab: mocks.switchTab,
 }));
 

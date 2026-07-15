@@ -7,7 +7,7 @@
  *
  * `flush()` is the reason this exists instead of an inline `setTimeout`:
  * some callers need to run pending work immediately during lifecycle
- * transitions. Used by `persistenceService` and the chartControls writers.
+ * transitions. Used by `services/persistence.js` and the chartControls writers.
  *
  * @template {(...args: *) => *} F
  * @param {F} fn
