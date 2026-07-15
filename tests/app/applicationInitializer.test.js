@@ -39,7 +39,7 @@ vi.mock('../../src/services/persistence.js', () => ({
 	getPersistenceErrorMessageKey: mocks.getPersistenceErrorMessageKey,
 }));
 
-vi.mock('../../src/modules/state/appState.js', () => ({
+vi.mock('../../src/state/appState.js', () => ({
 	getPersistenceSnapshot: mocks.getPersistenceSnapshot,
 	replaceAllState: mocks.replaceAllState,
 }));

@@ -5,7 +5,7 @@
  * dirty (triggering an auto-save) or is a UI-only change handled separately.
  */
 
-import { STATE_EVENTS } from '../../modules/state/stateEvents.js';
+import { STATE_EVENTS } from '../../state/stateEvents.js';
 import { isPlainObject } from './snapshot.js';
 
 /**

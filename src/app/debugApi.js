@@ -5,14 +5,14 @@
  * dependencies directly instead of reaching through `window.chiveDebug`.
  */
 
-import { getState, getActiveDataset } from '../modules/state/appState.js';
+import { getState, getActiveDataset } from '../state/appState.js';
 import {
 	enableStateLog,
 	disableStateLog,
 	getStateLog,
 	clearStateLog,
-} from '../modules/state/stateEvents.js';
-import { getStateSummary } from '../modules/state/stateDebug.js';
+} from '../state/stateEvents.js';
+import { getStateSummary } from '../state/stateDebug.js';
 import { getLoadedDatasets } from '../features/datasetWorkspace/datasetController.js';
 import {
 	runFullRefreshNow,

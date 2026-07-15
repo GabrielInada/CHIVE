@@ -12,7 +12,7 @@
  *     `.dataset.*` / `.push(` would wrongly flag the many DOM
  *     `el.dataset.x = y` writes across the codebase.
  *   - Import-gated: the getter must be a named import from
- *     modules/state/appState.js. Otherwise a DI-injected param named like a
+ *     state/appState.js. Otherwise a DI-injected param named like a
  *     getter (e.g. panelStateMutations.js) would be misread as a facade getter.
  *
  * Keep TRACKED_GETTERS in sync with FACADE_MUTABLE_GETTERS in eslint.config.js.
@@ -29,7 +29,10 @@ const TRACKED_GETTERS = new Set([
 ]);
 
 // A getter only counts as a facade getter when imported from the state core.
-const FACADE_SOURCE_RE = /(?:^|\/)modules\/state\/appState\.js$/;
+// This pattern is path-shaped, so it must be updated whenever the state core
+// moves: a stale pattern matches nothing and silently disables the rule while
+// this rule's own tests keep passing against the old fixture paths.
+const FACADE_SOURCE_RE = /(?:^|\/)state\/appState\.js$/;
 
 const MUTATING_METHODS = new Set([
 	'push', 'pop', 'shift', 'unshift', 'splice',

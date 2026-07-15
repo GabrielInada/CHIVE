@@ -44,7 +44,7 @@ service/facade boundaries.
 ## State Schema
 
 The private state object is declared in
-[`src/modules/state/appState.js`](../../src/modules/state/appState.js):
+[`src/state/appState.js`](../../src/state/appState.js):
 
 ```js
 const appState = {
@@ -100,7 +100,7 @@ must not be mutated by callers.
 | `validatePanelSlots()` | panel | `panel.slots`, `block.slots` | No | Drops slot assignments pointing at missing chart snapshots. |
 
 `onStateChange` and `STATE_EVENTS` are re-exported from
-[`stateEvents.js`](../../src/modules/state/stateEvents.js) through
+[`stateEvents.js`](../../src/state/stateEvents.js) through
 `appState.js`.
 
 ### Live-Reference Read Policy

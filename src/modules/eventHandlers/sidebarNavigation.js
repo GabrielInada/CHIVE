@@ -6,7 +6,7 @@
  * and switches the visible tab.
  */
 
-import { updateActiveDatasetConfig } from '../state/appState.js';
+import { updateActiveDatasetConfig } from '../../state/appState.js';
 import { switchTab } from '../uiManager.js';
 
 /**

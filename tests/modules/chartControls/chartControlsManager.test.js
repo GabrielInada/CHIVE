@@ -58,7 +58,7 @@ vi.mock('../../../src/config/chartDefaults.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 
-vi.mock('../../../src/modules/state/appState.js', () => ({
+vi.mock('../../../src/state/appState.js', () => ({
 	onStateChange: mocks.onStateChange,
 	STATE_EVENTS: {},
 	setActiveChartType: mocks.setActiveChartType,

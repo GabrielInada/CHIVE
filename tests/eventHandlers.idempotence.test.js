@@ -56,7 +56,7 @@ vi.mock('../src/modules/uiManager.js', () => ({
   setupSidebarToggleListener: vi.fn(),
   switchTab: vi.fn(),
 }));
-vi.mock('../src/modules/state/appState.js', () => ({
+vi.mock('../src/state/appState.js', () => ({
   getActiveDataset: mocks.getActiveDataset,
   getPersistenceSnapshot: mocks.getPersistenceSnapshot,
   replaceAllState: mocks.replaceAllState,

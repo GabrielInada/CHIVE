@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createUiStateFacade } from '../../src/modules/state/uiStateFacade.js';
+import { createUiStateFacade } from '../../src/state/uiStateFacade.js';
 
 describe('uiStateFacade', () => {
 	it('changes sidebar mode and emits event', () => {

@@ -11,7 +11,7 @@ const ruleTester = new RuleTester({
 	languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
 });
 
-const FROM_APPSTATE = "import { getActiveDataset, getAllDatasets, getPanelBlocks, getState } from '../modules/state/appState.js';";
+const FROM_APPSTATE = "import { getActiveDataset, getAllDatasets, getPanelBlocks, getState } from '../state/appState.js';";
 
 ruleTester.run('no-facade-getter-mutation', rule, {
 	valid: [
@@ -43,7 +43,7 @@ ruleTester.run('no-facade-getter-mutation', rule, {
 		`${FROM_APPSTATE}\nconst blocks = getPanelBlocks();\nrender(blocks);\nconst first = blocks[0];`,
 
 		// The live-ref persistence snapshot getter, read-only.
-		`import { getPersistenceSnapshot } from '../modules/state/appState.js';\nconst s = getPersistenceSnapshot();\nconst n = s.ui.previewRows;`,
+		`import { getPersistenceSnapshot } from '../state/appState.js';\nconst s = getPersistenceSnapshot();\nconst n = s.ui.previewRows;`,
 	],
 
 	invalid: [
@@ -93,12 +93,12 @@ ruleTester.run('no-facade-getter-mutation', rule, {
 		},
 		// `as`-renamed import is still tracked by its local name.
 		{
-			code: `import { getState as gs } from '../modules/state/appState.js';\nconst s = gs();\ns.ui = {};`,
+			code: `import { getState as gs } from '../state/appState.js';\nconst s = gs();\ns.ui = {};`,
 			errors: [{ messageId: 'facadeMutation' }],
 		},
 		// The live-ref persistence snapshot getter, mutated through an alias.
 		{
-			code: `import { getPersistenceSnapshot } from '../modules/state/appState.js';\nconst s = getPersistenceSnapshot();\ns.data.datasets.push({});`,
+			code: `import { getPersistenceSnapshot } from '../state/appState.js';\nconst s = getPersistenceSnapshot();\ns.data.datasets.push({});`,
 			errors: [{ messageId: 'facadeMutation' }],
 		},
 	],

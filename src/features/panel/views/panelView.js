@@ -30,7 +30,7 @@ import {
 	getPanelCharts,
 	getPanelBlocks,
 	getChartSnapshot,
-} from '../../../modules/state/appState.js';
+} from '../../../state/appState.js';
 import { applyBlockProportions, renderGuidedResizeHandles, startBlockHeightResizeDrag } from '../layout/resize.js';
 import { mountSlot, teardownAllSlots } from '../slots/lifecycle.js';
 

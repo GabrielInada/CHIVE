@@ -30,7 +30,7 @@ import {
 	getDateColumnNames,
 } from '../../utils/columnHelpers.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
-import { setActiveChartType } from '../state/appState.js';
+import { setActiveChartType } from '../../state/appState.js';
 import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
 import { getChartControlAdapter } from '../../charts/registries/controls.js';
 import { renderChartParamsDOM } from '../../features/datasetWorkspace/views/chartParamsView.js';

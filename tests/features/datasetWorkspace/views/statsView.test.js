@@ -15,7 +15,7 @@ vi.mock('../../../../src/domain/datasets/statistics.js', () => ({
 	calculateCategoricalStatistics: mocks.calculateCategoricalStatistics,
 }));
 
-vi.mock('../../../../src/modules/state/appState.js', () => ({
+vi.mock('../../../../src/state/appState.js', () => ({
 	getActiveDataset: mocks.getActiveDataset,
 }));
 

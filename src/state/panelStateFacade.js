@@ -17,8 +17,8 @@ import {
 	createDefaultProportions,
 	getTemplateSlots,
 	normalizeTemplateId,
-} from '../../domain/panel/layoutTemplates.js';
-import { clampPercentage } from '../../domain/panel/panelBlockModel.js';
+} from '../domain/panel/layoutTemplates.js';
+import { clampPercentage } from '../domain/panel/panelBlockModel.js';
 import { STATE_EVENTS } from './stateEvents.js';
 
 /**
@@ -29,11 +29,11 @@ import { STATE_EVENTS } from './stateEvents.js';
  * imported from outside this module; they assume the caller is the facade and
  * skip event emission.
  *
- * @typedef {import('../../types.js').AppState} AppState
- * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
- * @typedef {import('../../types.js').PanelBlock} PanelBlock
- * @typedef {import('../../types.js').PanelTemplateId} PanelTemplateId
- * @typedef {import('../../types.js').PanelBlockProportions} PanelBlockProportions
+ * @typedef {import('../types.js').AppState} AppState
+ * @typedef {import('../types.js').ChartSnapshot} ChartSnapshot
+ * @typedef {import('../types.js').PanelBlock} PanelBlock
+ * @typedef {import('../types.js').PanelTemplateId} PanelTemplateId
+ * @typedef {import('../types.js').PanelBlockProportions} PanelBlockProportions
  *
  * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
@@ -47,7 +47,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  *
  * @param {Object} deps
  * @param {AppState} deps.appState
- * @param {(eventType: import('../../types.js').StateEventType, data?: *) => void} deps.emitStateChange
+ * @param {(eventType: import('../types.js').StateEventType, data?: *) => void} deps.emitStateChange
  * @param {(templateId?: PanelTemplateId) => PanelBlock} deps.createPanelBlock - Closure-bound block builder that increments `panel.nextBlockId`.
  * @param {() => void} deps.ensureDefaultPanelBlock - Inserts a default `template-2col` block when `panel.blocks` is empty. Called from every method that reads or writes blocks; this is why several "getter" methods have a side effect.
  * @param {(name: string) => string} deps.sanitizeChartName

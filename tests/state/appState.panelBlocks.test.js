@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import * as appState from '../src/modules/state/appState.js';
+import * as appState from '../../src/state/appState.js';
 
 function resetAppStateForTest() {
   appState.replaceAllState({
@@ -11,7 +11,7 @@ function resetAppStateForTest() {
   });
 }
 
-describe('panel blocks state model (phase 1)', () => {
+describe('panel blocks state model', () => {
   beforeEach(() => {
     resetAppStateForTest();
   });

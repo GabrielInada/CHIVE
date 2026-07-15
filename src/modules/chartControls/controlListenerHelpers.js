@@ -11,7 +11,7 @@
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  */
 
-import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../state/appState.js';
+import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../../state/appState.js';
 import { normalizeHexColor } from '../../utils/colorUtils.js';
 import { triggerLiveRender } from './livePreview.js';
 

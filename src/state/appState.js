@@ -1,7 +1,7 @@
 import { emitStateChange, onStateChange, STATE_EVENTS } from './stateEvents.js';
-import { createPanelBlockModel } from '../../domain/panel/panelBlockModel.js';
-import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
-import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
+import { createPanelBlockModel } from '../domain/panel/panelBlockModel.js';
+import { canonicalizeChartConfig } from '../config/chartDefaults.js';
+import { getDatasetColumnNames } from '../utils/columnHelpers.js';
 import { createDataStateFacade } from './dataStateFacade.js';
 import { createUiStateFacade } from './uiStateFacade.js';
 import { createPanelStateFacade } from './panelStateFacade.js';
@@ -21,14 +21,14 @@ export { onStateChange, STATE_EVENTS };
  * calls it AND increments `appState.panel.nextBlockId`. That closure is
  * the one passed into the panel facade. Do not conflate the two.
  *
- * @typedef {import('../../types.js').AppState} AppState
- * @typedef {import('../../types.js').Dataset} Dataset
- * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
- * @typedef {import('../../types.js').PanelBlock} PanelBlock
- * @typedef {import('../../types.js').PanelTemplateId} PanelTemplateId
- * @typedef {import('../../types.js').PanelBlockProportions} PanelBlockProportions
- * @typedef {import('../../types.js').SidebarMode} SidebarMode
- * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
+ * @typedef {import('../types.js').AppState} AppState
+ * @typedef {import('../types.js').Dataset} Dataset
+ * @typedef {import('../types.js').ChartSnapshot} ChartSnapshot
+ * @typedef {import('../types.js').PanelBlock} PanelBlock
+ * @typedef {import('../types.js').PanelTemplateId} PanelTemplateId
+ * @typedef {import('../types.js').PanelBlockProportions} PanelBlockProportions
+ * @typedef {import('../types.js').SidebarMode} SidebarMode
+ * @typedef {import('../types.js').ChartTypeKey} ChartTypeKey
  *
  * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"

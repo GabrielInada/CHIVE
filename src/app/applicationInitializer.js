@@ -12,7 +12,7 @@ import {
 	enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey,
 } from '../services/persistence.js';
-import { getPersistenceSnapshot, replaceAllState } from '../modules/state/appState.js';
+import { getPersistenceSnapshot, replaceAllState } from '../state/appState.js';
 import { rehydratePanelChartSpecs } from '../utils/panelHydration.js';
 import { throttle } from '../utils/throttle.js';
 import { initChartControls } from '../modules/chartControls/chartControlsManager.js';

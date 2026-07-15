@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import * as appState from '../../../src/modules/state/appState.js';
+import * as appState from '../../../src/state/appState.js';
 
 const baixarSvgMarkupMock = vi.fn((svgMarkup, fileNameBase) => {
   return {

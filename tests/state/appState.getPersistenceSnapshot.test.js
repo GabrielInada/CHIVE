@@ -12,7 +12,7 @@ import {
 	setActiveChartType,
 	updateActiveDatasetColumns,
 	updateActiveDatasetConfig,
-} from '../../src/modules/state/appState.js';
+} from '../../src/state/appState.js';
 
 function resetAppStateForTest() {
 	replaceAllState({
@@ -59,7 +59,7 @@ describe('getPersistenceSnapshot', () => {
 	});
 });
 
-describe('payload immutability invariant (Stage 2 dedup dependency)', () => {
+describe('payload immutability invariant (persistence dedup dependency)', () => {
 	beforeEach(() => {
 		resetAppStateForTest();
 	});

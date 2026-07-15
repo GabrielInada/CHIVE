@@ -7,7 +7,7 @@
  */
 
 import { t } from '../../services/i18nService.js';
-import { getActiveDataset } from '../state/appState.js';
+import { getActiveDataset } from '../../state/appState.js';
 import { CHART_CONTAINERS } from '../../config/elementIds.js';
 
 const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(

@@ -1,7 +1,7 @@
 import { STATE_EVENTS } from './stateEvents.js';
-import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
-import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
-import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
+import { canonicalizeChartConfig } from '../config/chartDefaults.js';
+import { CHART_TYPE_KEYS } from '../config/chartTypes.js';
+import { getDatasetColumnNames } from '../utils/columnHelpers.js';
 
 /**
  * CHIVE data-domain facade.
@@ -11,8 +11,8 @@ import { getDatasetColumnNames } from '../../utils/columnHelpers.js';
  * from outside this module. Direct mutation of dataset fields or of the
  * datasets array is forbidden; ESLint enforces it for the renderer layer.
  *
- * @typedef {import('../../types.js').Dataset} Dataset
- * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
+ * @typedef {import('../types.js').Dataset} Dataset
+ * @typedef {import('../types.js').ChartTypeKey} ChartTypeKey
  *
  * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
@@ -51,8 +51,8 @@ function generateDatasetId() {
  * sanctioned way to mutate the data domain.
  *
  * @param {Object} deps
- * @param {import('../../types.js').AppState} deps.appState - Private mutable state object owned by `appState.js`.
- * @param {(eventType: import('../../types.js').StateEventType, data?: *) => void} deps.emitStateChange
+ * @param {import('../types.js').AppState} deps.appState - Private mutable state object owned by `appState.js`.
+ * @param {(eventType: import('../types.js').StateEventType, data?: *) => void} deps.emitStateChange
  * @returns {{
  *   getActiveDataset: () => (Dataset | null),
  *   getActiveDatasetIndex: () => number,

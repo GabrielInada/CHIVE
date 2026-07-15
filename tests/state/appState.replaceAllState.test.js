@@ -11,7 +11,7 @@ import {
 	onStateChange,
 	replaceAllState,
 	STATE_EVENTS,
-} from '../../src/modules/state/appState.js';
+} from '../../src/state/appState.js';
 
 function makeDataset(overrides = {}) {
 	return {

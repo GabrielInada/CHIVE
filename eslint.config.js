@@ -219,6 +219,7 @@ export default [
 						'./i18n/**',
 						'./modules/**',
 						'./services/**',
+						'./state/**',
 						'./styles/**',
 						'./types.js',
 						'./utils/**',
@@ -246,6 +247,7 @@ export default [
 		files: [
 			'src/app/**/*.js',
 			'src/modules/**/*.js',
+			'src/state/**/*.js',
 			'src/features/**/*.js',
 			'src/workers/**/*.js',
 		],
@@ -281,7 +283,7 @@ export default [
 	// (B2) Panel feature views, layout interactions, slot lifecycle, and export:
 	// same renderer-statelessness rule as (B). The feature controller is
 	// intentionally outside this list because it owns facade writes and event
-	// subscriptions. State mutation internals remain under `modules/state/`.
+	// subscriptions. State mutation internals remain under `state/`.
 	{
 		files: [
 			'src/features/panel/views/**/*.js',
@@ -305,7 +307,7 @@ export default [
 	// layer independent of presentation, feature, chart, and service code; the
 	// public write surface remains `panelStateFacade.js`.
 	{
-		files: ['src/modules/state/panel/**/*.js'],
+		files: ['src/state/panel/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
@@ -477,7 +479,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/state/appState.js', '**/modules/state/**', '**/features/**', '**/components/**'],
+					group: ['**/state/**', '**/features/**', '**/components/**'],
 					message: 'Chart package integration files do not import state, panel internals, or workspace components. Receive props/callbacks; controls write only through the shared chartControls helpers.',
 				}],
 			}],
@@ -536,11 +538,12 @@ export default [
 	// (E) Aliased facade-getter mutation guard. Catches
 	// `const d = getActiveDataset(); d.x = y`, the blind spot the inline
 	// no-restricted-syntax selectors above can't reach. Scope-aware + import-
-	// gated (see the rule banner). Facade internals under state/ legitimately
-	// use the aliased-write pattern, so they are exempt.
+	// gated (see the rule banner; its FACADE_SOURCE_RE is path-shaped and must
+	// track this scope). Facade internals under state/ legitimately use the
+	// aliased-write pattern, so they are exempt.
 	{
 		files: ['src/**/*.js'],
-		ignores: ['src/modules/state/**'],
+		ignores: ['src/state/**'],
 		plugins: { chive: chiveRules },
 		rules: {
 			'chive/no-facade-getter-mutation': 'error',

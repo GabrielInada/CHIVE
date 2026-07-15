@@ -16,7 +16,7 @@ import {
 	onStateChange,
 	replaceAllState,
 	getState,
-} from '../src/modules/state/appState.js';
+} from '../../src/state/appState.js';
 
 function resetAppStateForTest() {
 	replaceAllState({
@@ -265,7 +265,7 @@ describe('appState (edge cases - branch coverage)', () => {
 
 	describe('getState', () => {
 		it('getState returns deep clone of state', async () => {
-			const { getState } = await import('../src/modules/state/appState.js');
+			const { getState } = await import('../../src/state/appState.js');
 			addDataset({ rows: [{ x: 1 }], columns: ['x'] });
 			const state = getState();
 			expect(state.data.datasets.length).toBe(1);
@@ -276,7 +276,7 @@ describe('appState (edge cases - branch coverage)', () => {
 
 	describe('sanitizeChartName', () => {
 		it('trims and truncates chart name', async () => {
-			const { sanitizeChartName } = await import('../src/modules/state/appState.js');
+			const { sanitizeChartName } = await import('../../src/state/appState.js');
 			expect(sanitizeChartName('  Test  ')).toBe('Test');
 			expect(sanitizeChartName('a'.repeat(200)).length).toBe(100);
 		});

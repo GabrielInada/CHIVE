@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDataStateFacade } from '../../src/modules/state/dataStateFacade.js';
+import { createDataStateFacade } from '../../src/state/dataStateFacade.js';
 
 describe('dataStateFacade', () => {
 	it('adds first dataset and auto-selects it', () => {

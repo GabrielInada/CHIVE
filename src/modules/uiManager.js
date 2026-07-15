@@ -11,7 +11,7 @@
  */
 
 import { t } from '../services/i18nService.js';
-import { setSidebarMode } from './state/appState.js';
+import { setSidebarMode } from '../state/appState.js';
 
 /**
  * Read the currently-active tab from the DOM (whichever `[data-tab]`

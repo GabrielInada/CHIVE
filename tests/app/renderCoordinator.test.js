@@ -54,7 +54,7 @@ vi.mock('../../src/utils/columnHelpers.js', () => ({
 	getNumericColumns: mocks.getNumericColumns,
 }));
 
-vi.mock('../../src/modules/state/appState.js', () => ({
+vi.mock('../../src/state/appState.js', () => ({
 	getActiveDataset: mocks.getActiveDataset,
 	getActiveDatasetIndex: mocks.getActiveDatasetIndex,
 	getPreviewRows: mocks.getPreviewRows,

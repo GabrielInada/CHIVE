@@ -25,7 +25,7 @@ import {
 	setPreviewRows,
 	updateActiveDatasetColumns,
 	updateActiveDatasetConfig,
-} from '../modules/state/appState.js';
+} from '../state/appState.js';
 import {
 	initializeLayoutSelector,
 	renderSidebarPanel,

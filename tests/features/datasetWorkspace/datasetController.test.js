@@ -50,7 +50,7 @@ vi.mock('../../../src/services/presetService.js', () => ({
   loadPresetSource: mocks.loadPresetSource,
 }));
 
-vi.mock('../../../src/modules/state/appState.js', () => ({
+vi.mock('../../../src/state/appState.js', () => ({
   addDataset: mocks.addDataset,
   removeDataset: mocks.removeDataset,
   setActiveDataset: mocks.setActiveDataset,

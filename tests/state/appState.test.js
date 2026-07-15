@@ -8,7 +8,7 @@ import {
   getPanelBlocks,
   removeChartSnapshot,
   replaceAllState,
-} from '../src/modules/state/appState.js';
+} from '../../src/state/appState.js';
 
 function resetAppStateForTest() {
   replaceAllState({

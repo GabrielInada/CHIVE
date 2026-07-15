@@ -8,7 +8,7 @@ import {
 	disableStateLog,
 	getStateLog,
 	clearStateLog,
-} from '../../src/modules/state/stateEvents.js';
+} from '../../src/state/stateEvents.js';
 
 describe('stateEvents', () => {
 	it('registers listener and calls it on emit', () => {

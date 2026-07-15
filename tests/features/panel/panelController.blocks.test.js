@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it } from 'vitest';
-import * as appState from '../../../src/modules/state/appState.js';
+import * as appState from '../../../src/state/appState.js';
 import {
   renderCanvasPanel,
   initPanelController,

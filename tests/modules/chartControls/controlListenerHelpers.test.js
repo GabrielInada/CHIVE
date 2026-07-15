@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 	normalizeActiveDatasetConfig: vi.fn(),
 }));
 
-vi.mock('../../../src/modules/state/appState.js', () => ({
+vi.mock('../../../src/state/appState.js', () => ({
 	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));

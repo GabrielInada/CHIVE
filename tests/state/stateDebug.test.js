@@ -4,11 +4,11 @@ const mocks = vi.hoisted(() => ({
 	getState: vi.fn(),
 }));
 
-vi.mock('../../../src/modules/state/appState.js', () => ({
+vi.mock('../../src/state/appState.js', () => ({
 	getState: mocks.getState,
 }));
 
-import { getStateSummary } from '../../../src/modules/state/stateDebug.js';
+import { getStateSummary } from '../../src/state/stateDebug.js';
 
 describe('stateDebug getStateSummary', () => {
 	it('returns counts/indices/layout/mode without dataset names', () => {

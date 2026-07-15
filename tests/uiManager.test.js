@@ -10,7 +10,7 @@ vi.mock('../src/services/i18nService.js', () => ({
   t: key => `tr:${key}`,
 }));
 
-vi.mock('../src/modules/state/appState.js', () => ({
+vi.mock('../src/state/appState.js', () => ({
   setSidebarMode: mocks.setSidebarMode,
 }));
 

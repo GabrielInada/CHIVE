@@ -249,7 +249,7 @@
 
 /**
  * Canonical event-name string emitted by the state bus. Values match
- * `STATE_EVENTS` in `src/modules/state/stateEvents.js`. The wildcard `'*'` is
+ * `STATE_EVENTS` in `src/state/stateEvents.js`. The wildcard `'*'` is
  * reserved for sink-style subscribers (`services/persistence.js`).
  *
  * @typedef {(

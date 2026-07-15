@@ -11,7 +11,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/appState.js', async (importOriginal) => ({
+vi.mock('../../../src/state/appState.js', async (importOriginal) => ({
 	...(await importOriginal()),
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));

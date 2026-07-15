@@ -12,7 +12,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/modules/state/appState.js', () => ({
+vi.mock('../../../src/state/appState.js', () => ({
 	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));

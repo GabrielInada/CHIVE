@@ -46,14 +46,14 @@ JSDoc rules:
   must say `"Live reference, do not mutate."` in the `@returns` description.
   Cloned returns say `"Deep clone."` Mutating a getter return bypasses the
   facade and breaks reactivity. See
-  [`appState.js`](../../src/modules/state/appState.js) for examples.
+  [`appState.js`](../../src/state/appState.js) for examples.
 - **Events:** use `@fires STATE_EVENTS.FOO`, with the constant name rather than
   the string literal. Functions that conditionally emit must say so in the
   description.
 - **Facade-only-write invariant:** facade module banners reference
   `@see docs/development/architecture.md`. Exact state/facade/event details
   live in [Architecture reference](architecture-reference.md). Mutation helpers
-  under `src/modules/state/panel/` are `@internal` and must not be imported from
+  under `src/state/panel/` are `@internal` and must not be imported from
   outside `panelStateFacade.js`.
 - **`@ts-check` is not enabled**, by choice. JSDoc here is documentation only;
   editors can use it for hover/intellisense without type validation.
@@ -69,7 +69,7 @@ enforced partly by lint and partly by review.
 restricts renderer and DOM-builder files (`src/components/` and the panel
 feature presentation paths under `src/features/panel/`; see
 [`eslint.config.js`](../../eslint.config.js))
-to read-only imports from `modules/state/appState.js`: the `get*` functions,
+to read-only imports from `state/appState.js`: the `get*` functions,
 `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing
 any write function from those directories is an error. If you need a write from
 a renderer or DOM builder, route it through a feature controller (`panelController.js`,
@@ -96,7 +96,7 @@ it exactly like the other live getters. The aliased form
 `chive/no-facade-getter-mutation` rule
 ([`eslint-rules/no-facade-getter-mutation.js`](../../eslint-rules/no-facade-getter-mutation.js)).
 It is scope-aware and import-gated, and it exempts the facade internals under
-`src/modules/state/` that legitimately use the aliased-write pattern. One gap
+`src/state/` that legitimately use the aliased-write pattern. One gap
 remains by design: sub-property aliasing
 (`const c = getActiveDataset().chartConfig; c.X = y`) is caught by neither rule.
 Do not write it; route writes through a facade method. When a new mutable-ref
@@ -128,7 +128,7 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   static server.
 - **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not
   import `modules/`, `components/`, `features/`, or `services/`.
-- **Panel state internals.** `src/modules/state/panel/` may import only state,
+- **Panel state internals.** `src/state/panel/` may import only state,
   domain, config, utils, shared types, or vendored modules. Presentation,
   feature, chart, service, and legacy panel-subsystem imports are lint errors.
 - **General hygiene, as warnings.** `no-unused-vars`, `prefer-const`, `no-var`,

@@ -11,7 +11,7 @@
  * @typedef {import('../../types.js').UnsubscribeFn} UnsubscribeFn
  */
 
-import { onStateChange, STATE_EVENTS } from '../../modules/state/stateEvents.js';
+import { onStateChange, STATE_EVENTS } from '../../state/stateEvents.js';
 import { debounce } from '../../utils/debounce.js';
 import { persistState } from './lifecycle.js';
 import { errorFrom } from './errors.js';

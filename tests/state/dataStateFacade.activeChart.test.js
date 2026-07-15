@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { createDataStateFacade } from '../../src/modules/state/dataStateFacade.js';
+import { createDataStateFacade } from '../../src/state/dataStateFacade.js';
 import { CHART_TYPE_KEYS } from '../../src/config/chartTypes.js';
 
 function makeFacade(initialConfig = null) {

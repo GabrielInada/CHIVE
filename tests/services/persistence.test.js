@@ -17,7 +17,7 @@ import {
 	isProjectDirtyEvent,
 } from '../../src/services/persistence.js';
 import { createBlobBackend } from '../../src/services/persistence/backends/blobBackend.js';
-import { emitStateChange, STATE_EVENTS } from '../../src/modules/state/stateEvents.js';
+import { emitStateChange, STATE_EVENTS } from '../../src/state/stateEvents.js';
 
 let sqlite3Ready;
 let backendCounter = 0;

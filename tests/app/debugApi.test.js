@@ -19,19 +19,19 @@ const mocks = vi.hoisted(() => ({
 	switchTab: vi.fn(),
 }));
 
-vi.mock('../../src/modules/state/appState.js', () => ({
+vi.mock('../../src/state/appState.js', () => ({
 	getState: mocks.getState,
 	getActiveDataset: mocks.getActiveDataset,
 }));
 
-vi.mock('../../src/modules/state/stateEvents.js', () => ({
+vi.mock('../../src/state/stateEvents.js', () => ({
 	enableStateLog: mocks.enableStateLog,
 	disableStateLog: mocks.disableStateLog,
 	getStateLog: mocks.getStateLog,
 	clearStateLog: mocks.clearStateLog,
 }));
 
-vi.mock('../../src/modules/state/stateDebug.js', () => ({
+vi.mock('../../src/state/stateDebug.js', () => ({
 	getStateSummary: mocks.getStateSummary,
 }));
 

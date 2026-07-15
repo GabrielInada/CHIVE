@@ -6,7 +6,7 @@ import { STATE_EVENTS } from './stateEvents.js';
  * Owns the reads and writes for `appState.ui`. Re-exported through `appState.js`,
  * call those wrappers, not these methods, from outside this module.
  *
- * @typedef {import('../../types.js').SidebarMode} SidebarMode
+ * @typedef {import('../types.js').SidebarMode} SidebarMode
  *
  * @see docs/development/architecture.md
  * @see CONTRIBUTING.md "Architecture invariants, do not break"
@@ -16,8 +16,8 @@ import { STATE_EVENTS } from './stateEvents.js';
  * Build the UI-domain facade.
  *
  * @param {Object} deps
- * @param {import('../../types.js').AppState} deps.appState
- * @param {(eventType: import('../../types.js').StateEventType, data?: *) => void} deps.emitStateChange
+ * @param {import('../types.js').AppState} deps.appState
+ * @param {(eventType: import('../types.js').StateEventType, data?: *) => void} deps.emitStateChange
  * @returns {{
  *   setSidebarMode: (mode: SidebarMode) => void,
  *   setPreviewRows: (rows: number) => void,

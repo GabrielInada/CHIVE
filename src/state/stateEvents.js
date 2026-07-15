@@ -1,9 +1,9 @@
 /**
  * CHIVE state bus, canonical event registry, subscriber API, and emit pipeline.
  *
- * @typedef {import('../../types.js').StateEventType} StateEventType
- * @typedef {import('../../types.js').StateChangeListener} StateChangeListener
- * @typedef {import('../../types.js').UnsubscribeFn} UnsubscribeFn
+ * @typedef {import('../types.js').StateEventType} StateEventType
+ * @typedef {import('../types.js').StateChangeListener} StateChangeListener
+ * @typedef {import('../types.js').UnsubscribeFn} UnsubscribeFn
  *
  * @see docs/development/architecture.md
  */

@@ -13,16 +13,16 @@
  * compose its closure-bound helpers (e.g. `createPanelBlock`,
  * `ensureDefaultPanelBlock`) without exposing them as separate exports.
  *
- * @typedef {import('../../../types.js').AppState} AppState
- * @typedef {import('../../../types.js').AppStatePanel} AppStatePanel
- * @typedef {import('../../../types.js').ChartSnapshot} ChartSnapshot
- * @typedef {import('../../../types.js').PanelBlock} PanelBlock
- * @typedef {import('../../../types.js').PanelTemplateId} PanelTemplateId
- * @typedef {import('../../../types.js').PanelBlockBorderOptions} PanelBlockBorderOptions
- * @typedef {import('../../../types.js').PanelBlockProportions} PanelBlockProportions
+ * @typedef {import('../../types.js').AppState} AppState
+ * @typedef {import('../../types.js').AppStatePanel} AppStatePanel
+ * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
+ * @typedef {import('../../types.js').PanelBlock} PanelBlock
+ * @typedef {import('../../types.js').PanelTemplateId} PanelTemplateId
+ * @typedef {import('../../types.js').PanelBlockBorderOptions} PanelBlockBorderOptions
+ * @typedef {import('../../types.js').PanelBlockProportions} PanelBlockProportions
  */
 
-import { isValidHexColor } from '../../../utils/colorUtils.js';
+import { isValidHexColor } from '../../utils/colorUtils.js';
 
 /**
  * Coerce a chart id to a finite number. Used at every boundary that

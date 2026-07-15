@@ -4,7 +4,7 @@
  * Console-facing diagnostics exposed via `window.chiveDebug`. Not a stable
  * API; production code must not depend on these.
  *
- * @typedef {import('../../types.js').SidebarMode} SidebarMode
+ * @typedef {import('../types.js').SidebarMode} SidebarMode
  */
 
 import { getState } from './appState.js';
