@@ -283,33 +283,39 @@ chart area, driven by the active dataset's config) and the **panel** (saved char
 snapshots assembled into a dashboard). Both share the package presentation mapping
 and end at `renderTinChart`.
 
-```
-                 ┌─────────────────────────────────────────────┐
-                 │  Active dataset.chartConfig.tin (live state) │
-                 └─────────────────────────────────────────────┘
-                        │                          │
-       sidebar edits    │                          │  render
- (controls/listeners.js) ┘                      ▼
-        write config                 workspace registry
-                                     → renderTinChartSection()
-                                       → renderTinInto()
-                                         → renderTinChart()
-                                              │
-   "Add to panel"                            │
-   (eventHandlers → panelController)         │
-   structuredClone of config + rows          │
-        │                                     │
-        ▼                                     │
-   chartSnapshot { config, dataSnapshot, … }  │
-        │                                     │
-   renderCanvasPanel() → mountSlot()          │
-   → panel registry                           │
-     → renderTinPanelChart()                  │
-       → renderTinInto() → renderTinChart()
-                                              ▼
-                                   ┌──────────────────────┐
-                                   │   <svg> in container  │
-                                   └──────────────────────┘
+```mermaid
+flowchart TB
+    subgraph LIVE["Live dataset workspace"]
+        CONTROLS["tin/controls"] --> WRITER["ChartConfigWriter"]
+        WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
+        DFACADE --> DSTATE[("dataset.chartConfig.tin")]
+        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DSTATE -. read through getters .-> COORD
+        WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
+        PREVIEW --> DSTATE
+        COORD --> CHARTSVIEW["chartsView.renderCharts"]
+        PREVIEW -. chart render only .-> CHARTSVIEW
+        CHARTSVIEW --> WREG["workspace registry"]
+        WREG --> WSECTION["renderTinChartSection"]
+    end
+
+    subgraph SAVED["Panel snapshot"]
+        ACTION["chartActions: Add to panel"] --> PCAPTURE["panelController.addChartToPanel"]
+        PCAPTURE -- filtered rows + cloned config/columns --> PFACADE["Panel Facade<br/>snapshot + block/slot mutations"]
+        PFACADE --> PSTATE[("panel snapshots<br/>blocks + slot assignments")]
+        PFACADE -- panel events --> PSUB["panelController subscriptions"]
+        PSUB --> PVIEW["panelView"]
+        PSTATE -. read through getters .-> PVIEW
+        PVIEW -. callback via panelController .-> PFACADE
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        MOUNT --> PREG["panel registry"]
+        PREG --> ADAPTER["renderTinPanelChart"]
+    end
+
+    WSECTION --> PRESENT["renderTinInto"]
+    ADAPTER --> PRESENT
+    PRESENT --> RENDERER["renderTinChart"]
+    RENDERER --> OUTPUT["SVG in container"]
 ```
 
 The renderer is **stateless and pure-ish**: every call wipes the container

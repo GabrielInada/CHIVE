@@ -6,14 +6,14 @@ from this repository.
 | Field | Value |
 |---|---|
 | Audience | Users and deployers evaluating data handling and trust boundaries. |
-| Source of truth | Browser storage keys, import/export payloads, backend/network claims, Docker trust implications, and security reporting. |
+| Source of truth | Browser storage keys, import/export payloads, remote-service and network claims, Docker trust implications, and security reporting. |
 | Update when | Storage keys, persistence schema, import/export payloads, runtime network behavior, Docker security headers, or deployment trust boundaries change. |
 
 ## Short Summary
 
 CHIVE is a browser-only static web application. The default deployments do not
-use a CHIVE application backend, and uploaded datasets are parsed, stored, and
-visualized in the browser.
+use a remote or server-side CHIVE application backend, and uploaded datasets
+are parsed, stored, and visualized in the browser.
 
 That does not mean the whole page is isolated from the network. To load CHIVE,
 the browser must trust the static host that serves the app. Runtime JavaScript
@@ -38,8 +38,8 @@ file APIs and processes the content locally in the page:
   browser. Canvas-based charts have no SVG output yet and are omitted
   from the export (the app says so when it happens).
 
-CHIVE does not upload your dataset to a CHIVE backend in the default
-deployments.
+CHIVE does not upload your dataset to a remote or server-side CHIVE application
+backend in the default deployments.
 
 ## Browser Storage
 
@@ -107,13 +107,13 @@ command.
 In the default static runtime, CHIVE does not load external origins during page
 startup.
 
-D3, banana-i18n, SQLite-WASM, and fonts are served as same-origin vendored files
-from `vendor/`.
+D3, Three.js, banana-i18n, SQLite-WASM, and fonts are served as same-origin
+vendored files from `vendor/`.
 
 The documented stable endpoint is `https://apps.roberto.eti.br/chive/`.
 The documented preview endpoint is `https://gabrielinada.github.io/CHIVE/`.
 Deployment availability is operational, but neither endpoint requires CHIVE to
-send uploaded datasets to a CHIVE application backend.
+send uploaded datasets to a remote or server-side application service.
 
 Bundled preset datasets are files served with CHIVE. If you click external
 source links shown for a preset, your browser navigates to that external site
@@ -123,11 +123,11 @@ separately.
 
 The optional Docker image serves every runtime asset from a single origin and
 adds conservative security headers plus an enforcing local-only Content
-Security Policy. The policy keeps a documented `'unsafe-eval'` exception because
-D3's CSV parser requires it, so Docker hosting is not a fully hardened,
-eval-free profile. It does not change the trust model below, and these
-properties apply to the Docker image only, not to the default non-Docker
-deployments.
+Security Policy. The policy keeps documented `'unsafe-eval'` and
+`'wasm-unsafe-eval'` exceptions for D3 CSV parsing and SQLite-WASM compilation,
+so Docker hosting is not a fully hardened, eval-free profile. It does not
+change the trust model below, and these properties apply to the Docker image
+only, not to the default non-Docker deployments.
 
 For operational Docker steps, see [Docker deployment](../deployment/docker.md).
 
@@ -143,8 +143,8 @@ Using CHIVE means trusting these parts of your local environment and runtime:
 
 If any trusted JavaScript origin is compromised or replaced by an operator, it
 could read data after you load it into the page. This is why CHIVE's accurate
-privacy claim is "CHIVE does not upload your dataset to a CHIVE backend", not
-"your data can never leave your machine."
+privacy claim is "CHIVE does not upload your dataset to a remote or server-side
+CHIVE application backend", not "your data can never leave your machine."
 
 ## Current Limitations
 

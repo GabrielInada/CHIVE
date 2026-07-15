@@ -102,30 +102,39 @@ decision, so it is explicit:
 
 Two integration paths share the same presentation mapping and end at `renderLineChart`.
 
-```
-                 ┌──────────────────────────────────────────────┐
-                 │  Active dataset.chartConfig.line (live state) │
-                 └──────────────────────────────────────────────┘
-                         │                         │
-       sidebar edits     │                         │ render
- (controls/listeners.js) ┘                         ▼
-        write config                 workspace registry
-                                     → renderLineChartSection()
-                                       → renderLineInto()
-                                         → renderLineChart()
-                         │
-   "Add to panel" → structuredClone snapshot
-                         │
-                         ▼
-                    panel registry
-                    → renderLinePanelChart()
-                      → renderLineInto()
-                        → renderLineChart()
-                              │
-                              ▼
-                    ┌──────────────────────┐
-                    │  <svg> in container  │
-                    └──────────────────────┘
+```mermaid
+flowchart TB
+    subgraph LIVE["Live dataset workspace"]
+        CONTROLS["line/controls"] --> WRITER["ChartConfigWriter"]
+        WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
+        DFACADE --> DSTATE[("dataset.chartConfig.line")]
+        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DSTATE -. read through getters .-> COORD
+        WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
+        PREVIEW --> DSTATE
+        COORD --> CHARTSVIEW["chartsView.renderCharts"]
+        PREVIEW -. chart render only .-> CHARTSVIEW
+        CHARTSVIEW --> WREG["workspace registry"]
+        WREG --> WSECTION["renderLineChartSection"]
+    end
+
+    subgraph SAVED["Panel snapshot"]
+        ACTION["chartActions: Add to panel"] --> PCAPTURE["panelController.addChartToPanel"]
+        PCAPTURE -- filtered rows + cloned config/columns --> PFACADE["Panel Facade<br/>snapshot + block/slot mutations"]
+        PFACADE --> PSTATE[("panel snapshots<br/>blocks + slot assignments")]
+        PFACADE -- panel events --> PSUB["panelController subscriptions"]
+        PSUB --> PVIEW["panelView"]
+        PSTATE -. read through getters .-> PVIEW
+        PVIEW -. callback via panelController .-> PFACADE
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        MOUNT --> PREG["panel registry"]
+        PREG --> ADAPTER["renderLinePanelChart"]
+    end
+
+    WSECTION --> PRESENT["renderLineInto"]
+    ADAPTER --> PRESENT
+    PRESENT --> RENDERER["renderLineChart"]
+    RENDERER --> OUTPUT["SVG in container"]
 ```
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG. Rows are

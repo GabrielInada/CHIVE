@@ -49,6 +49,7 @@ npm run lint:fix     # Apply safe automatic lint fixes; architecture errors usua
 npm run lint:css     # Run Stylelint CSS correctness checks
 npm run lint:css:fix # Apply safe Stylelint fixes
 npm test             # Run all tests once (vitest run)
+npm run test:coverage # Run tests and generate a coverage report
 npm run test:watch   # Tests in watch mode
 ```
 
@@ -86,7 +87,7 @@ Before opening a PR, check that:
 - **DOM IDs:** Use constants from `src/config/elementIds.js` instead of hardcoded strings
 - **Color utilities:** Use shared functions from `src/utils/colorUtils.js`; never duplicate hex/rgb conversion logic
 - **Chart control listeners:** Use helpers from `src/charts/shared/controls/listenerBindings.js` for common patterns (select, checkbox, slider, etc.); only write inline listeners when cross-dependency logic is needed. Chart packages never import state: they receive a `ChartConfigWriter` and call `writer.commit(patch)`, or `writer.preview(patch)` for continuous input like a color picker drag
-- **Join and preset dataset UIs:** Keep orchestration in modules/components and reuse existing event-driven patterns
+- **Dataset upload, join, and preset flows:** Keep orchestration in `src/features/datasetWorkspace/datasetController.js`; views and dialogs remain callback-driven and do not write durable state directly
 - **No TypeScript:** plain JS with ES modules. ESLint exists, but its config is intentionally narrow and architecture-focused.
 
 ## Translations and presets
@@ -117,7 +118,7 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 - Event names live in `STATE_EVENTS`. Never use string literals in `src/`. (Tests intentionally keep literals to exercise the wire format; leave them alone.)
 - Subscribers must not synchronously emit a state event from inside their callback (re-entrancy loop). Defer with `queueMicrotask` if you need a follow-up mutation.
 - Make chart config valid at the state boundaries, not during render. `canonicalizeChartConfig` runs at persistence restore, `addDataset`, the emitting config writes (`updateActiveDatasetConfig`, `setActiveChartType`), and defensively in `replaceAllState`; render never repairs config. Reserve `normalizeActiveDatasetConfig` (writes without emitting) for the intentional non-emitting live-preview writes (color picker, chart-height drag).
-- Renderers and DOM builders do not call write facades. They read durable state via getters and derive DOM from it; user input is surfaced through callbacks injected by a feature controller or manager (e.g. `panelController`, `eventHandlers`, a chart-controls listener). Module-local transient UI state (search query, dialog draft, focus anchor) is allowed; durable application state goes through a facade.
+- Renderers and DOM builders do not call write facades. They read durable state via getters and derive DOM from it; user input is surfaced through callbacks injected by a feature controller or workflow owner (e.g. `panelController`, an `app/bindings/` workflow module, or a chart-controls listener). Module-local transient UI state (search query, dialog draft, focus anchor) is allowed; durable application state goes through a facade.
 - `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`services/persistence.js`) that genuinely need every emission. Do not subscribe to it from feature controllers/managers, renderers, or `app/renderCoordinator.js`; use a typed subscription.
 
 Lint guard details and the known aliasing gap are documented in

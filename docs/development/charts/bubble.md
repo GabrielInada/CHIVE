@@ -92,30 +92,36 @@ a subtree visually coherent as you drill into it. In flat mode each category is 
 
 Two integration paths share the same presentation mapping and end at `renderBubbleChart`.
 
-```
-                 ┌────────────────────────────────────────────────┐
-                 │ Active dataset.chartConfig.bubble (live state) │
-                 └────────────────────────────────────────────────┘
-                         │                         │
-       sidebar edits     │                         │ render
- (controls/listeners.js) ┘                         ▼
-        write config                 workspace registry
-                                     → renderBubbleChartSection()
-                                       → renderBubbleInto()
-                                         → renderBubbleChart()
-                         │
-   "Add to panel" → structuredClone snapshot
-                         │
-                         ▼
-                    panel registry
-                    → renderBubblePanelChart()
-                      → renderBubbleInto()
-                        → renderBubbleChart()
-                              │
-                              ▼
-                    ┌──────────────────────┐
-                    │  <svg> in container │
-                    └──────────────────────┘
+```mermaid
+flowchart TB
+    subgraph LIVE["Live dataset workspace"]
+        CONTROLS["bubble/controls"] --> WRITER["ChartConfigWriter"]
+        WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
+        DFACADE --> DSTATE[("dataset.chartConfig.bubble")]
+        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DSTATE -. read through getters .-> COORD
+        COORD --> CHARTSVIEW["chartsView.renderCharts"]
+        CHARTSVIEW --> WREG["workspace registry"]
+        WREG --> WSECTION["renderBubbleChartSection"]
+    end
+
+    subgraph SAVED["Panel snapshot"]
+        ACTION["chartActions: Add to panel"] --> PCAPTURE["panelController.addChartToPanel"]
+        PCAPTURE -- filtered rows + cloned config/columns --> PFACADE["Panel Facade<br/>snapshot + block/slot mutations"]
+        PFACADE --> PSTATE[("panel snapshots<br/>blocks + slot assignments")]
+        PFACADE -- panel events --> PSUB["panelController subscriptions"]
+        PSUB --> PVIEW["panelView"]
+        PSTATE -. read through getters .-> PVIEW
+        PVIEW -. callback via panelController .-> PFACADE
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        MOUNT --> PREG["panel registry"]
+        PREG --> ADAPTER["renderBubblePanelChart"]
+    end
+
+    WSECTION --> PRESENT["renderBubbleInto"]
+    ADAPTER --> PRESENT
+    PRESENT --> RENDERER["renderBubbleChart"]
+    RENDERER --> OUTPUT["SVG in container"]
 ```
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG (and resets

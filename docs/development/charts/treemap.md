@@ -79,30 +79,39 @@ D3's `hierarchy`, but the tree is just root plus one row of leaves.
 
 Two integration paths share the same presentation mapping and end at `renderTreeMap`.
 
-```
-                 ┌──────────────────────────────────────────────────┐
-                 │ Active dataset.chartConfig.treemap (live state) │
-                 └──────────────────────────────────────────────────┘
-                         │                         │
-       sidebar edits     │                         │ render
- (controls/listeners.js) ┘                         ▼
-        write config                 workspace registry
-                                     → renderTreemapChartSection()
-                                       → renderTreemapInto()
-                                         → renderTreeMap()
-                         │
-   "Add to panel" → structuredClone snapshot
-                         │
-                         ▼
-                    panel registry
-                    → renderTreemapPanelChart()
-                      → renderTreemapInto()
-                        → renderTreeMap()
-                              │
-                              ▼
-                    ┌──────────────────────┐
-                    │  <svg> in container │
-                    └──────────────────────┘
+```mermaid
+flowchart TB
+    subgraph LIVE["Live dataset workspace"]
+        CONTROLS["treemap/controls"] --> WRITER["ChartConfigWriter"]
+        WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
+        DFACADE --> DSTATE[("dataset.chartConfig.treemap")]
+        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DSTATE -. read through getters .-> COORD
+        WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
+        PREVIEW --> DSTATE
+        COORD --> CHARTSVIEW["chartsView.renderCharts"]
+        PREVIEW -. chart render only .-> CHARTSVIEW
+        CHARTSVIEW --> WREG["workspace registry"]
+        WREG --> WSECTION["renderTreemapChartSection"]
+    end
+
+    subgraph SAVED["Panel snapshot"]
+        ACTION["chartActions: Add to panel"] --> PCAPTURE["panelController.addChartToPanel"]
+        PCAPTURE -- filtered rows + cloned config/columns --> PFACADE["Panel Facade<br/>snapshot + block/slot mutations"]
+        PFACADE --> PSTATE[("panel snapshots<br/>blocks + slot assignments")]
+        PFACADE -- panel events --> PSUB["panelController subscriptions"]
+        PSUB --> PVIEW["panelView"]
+        PSTATE -. read through getters .-> PVIEW
+        PVIEW -. callback via panelController .-> PFACADE
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        MOUNT --> PREG["panel registry"]
+        PREG --> ADAPTER["renderTreemapPanelChart"]
+    end
+
+    WSECTION --> PRESENT["renderTreemapInto"]
+    ADAPTER --> PRESENT
+    PRESENT --> RENDERER["renderTreeMap"]
+    RENDERER --> OUTPUT["SVG in container"]
 ```
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG. Rows are

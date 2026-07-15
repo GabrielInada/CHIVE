@@ -11,8 +11,8 @@ CHIVE is designed to run from a static web server.
 The app runtime uses:
 
 1. Native browser ES modules through `<script type="module">`.
-2. Vendored JavaScript runtime dependencies loaded from `vendor/d3/` and
-   `vendor/banana-i18n/`.
+2. Vendored JavaScript runtime dependencies loaded from `vendor/d3/`,
+   `vendor/three/`, and `vendor/banana-i18n/`.
 3. A vendored SQLite-WASM runtime loaded from `vendor/sqlite/` (`sqlite3.js`,
    `sqlite3.wasm`, and companion files referenced by the loader).
 4. Vendored fonts loaded from `vendor/fonts/`.
@@ -25,8 +25,8 @@ The app runtime uses:
    - `about.html`
    - `src/`
    - `vendor/`
-3. Serve vendored `.js` files with a JavaScript MIME type, font files with a
-   font MIME type when possible, and `vendor/sqlite/sqlite3.wasm` as
+3. Serve vendored `.js` and `.mjs` files with a JavaScript MIME type, font files
+   with a font MIME type when possible, and `vendor/sqlite/sqlite3.wasm` as
    `application/wasm` when possible. Browsers can fall back to non-streaming
    WASM compilation, but the correct MIME avoids a slower path.
 
@@ -45,7 +45,8 @@ The default CHIVE runtime does not require external JavaScript or font CDNs.
 2. Check that the browser console has no module, CORS, or CSP errors.
 3. Load a bundled sample dataset or upload a small CSV/JSON file.
 4. Verify the table preview renders.
-5. Create at least one chart.
+5. Create at least one SVG chart and, when WebGL is available, a 3D scatter
+   chart.
 6. Make a change, wait a couple of seconds for the auto-save, reload, and
    confirm the dataset restores.
 
@@ -65,7 +66,8 @@ Checklist:
 1. App shell loads successfully.
 2. Browser console has no red errors.
 3. File upload or sample dataset loading works.
-4. At least one chart renders.
+4. At least one SVG chart renders and, when WebGL is available, the 3D scatter
+   renders on its canvas.
 
 For the browser storage and trust model, see
 [Privacy and security](../user/privacy-security.md).

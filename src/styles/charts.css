@@ -1,5 +1,5 @@
-/* @feature: panel
-   Chart control styling, D3 visualization containers, SVG base styles */
+/* @feature: datasetWorkspace + charts
+   Chart controls, output containers, and shared SVG/WebGL surface styles */
 
 .charts-controles {
   display: grid;

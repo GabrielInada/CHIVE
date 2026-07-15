@@ -20,9 +20,12 @@ Start from either a bundled sample dataset or a local file.
 - Upload CSV-like text files (`.csv`, `.tsv`, `.dsv`, `.txt`) or JSON files
   from your machine. CSV-like files use delimiter detection for comma,
   semicolon, tab, and pipe separators. JSON files must be a top-level array of
-  row objects or an object containing one array-valued property.
+  row objects or an object with at least one array-valued property; when more
+  than one exists, CHIVE uses the first one in object-key order.
 - CHIVE parses uploaded files in the browser. Data ingest uses a Web Worker so
   larger files do not block the main UI thread.
+- Files larger than 15 MB require confirmation before processing. Ingest keeps
+  at most the first 200,000 rows from a file.
 
 After a dataset loads, CHIVE shows the table preview, detected columns, and
 column controls. Hide columns you do not want available to charts.
@@ -101,8 +104,8 @@ CHIVE auto-saves browser work and can also transfer project files manually.
 - Full project export downloads a `.chive.sqlite3` file containing datasets,
   chart snapshots, and panel layout.
 - Work-only export downloads the same project format without dataset rows or
-  saved chart row payloads. Use it for layout/work transfer when row data should
-  not be included.
+  saved chart row payloads. It is a row-free metadata and layout snapshot for
+  external inspection or archival; CHIVE does not currently import it.
 - Project import restores a full project file and replaces the current datasets
   and panel after confirmation.
 
@@ -129,9 +132,9 @@ For exact storage keys, payload contents, and trust boundaries, see
 
 ## Privacy Basics
 
-CHIVE has no application backend in the default static deployments. Uploaded
-datasets are parsed, visualized, auto-saved, imported, and exported in the
-browser.
+CHIVE's default static deployments do not use a remote or server-side
+application backend. Uploaded datasets are parsed, visualized, auto-saved,
+imported, and exported in the browser.
 
 The browser still must trust the static host serving CHIVE, the vendored runtime
 JavaScript and fonts, the browser itself, installed extensions, and local device

@@ -27,7 +27,9 @@ audit, and compatible with charts that render imperatively.
 
 The architecture follows from CHIVE's constraints:
 
-- CHIVE runs in the browser with no application backend.
+- CHIVE runs in the browser with no required remote or server-side application
+  backend. Persistence-package "backends" are local implementation adapters,
+  not remote services.
 - Uploaded datasets stay in browser memory and browser storage.
 - D3 owns the chart math everywhere (scales, extents, layout) and renders
   most charts to SVG/DOM directly. Three.js renders the 3D scatter to a
@@ -49,28 +51,80 @@ For the longer tradeoff analysis, see
 ```mermaid
 flowchart TB
     U(["User"])
-    CTRL["Feature controllers/managers<br/>eventHandlers · datasetController · panelController · chartControls · uiManager"]
-    FAC["State facades<br/>data · panel · ui"]
-    STATE[("appState<br/>module-private")]
-    BUS["State event bus<br/>STATE_EVENTS"]
-    SUB["Subscribers<br/>render coordinator · panel · services"]
-    VIEW["Renderers<br/>components · chart packages · panel views"]
-    SERVICES["Side-effecting services<br/>persistence · i18n · ingest worker host"]
+
+    subgraph APP["Application and feature ownership"]
+        BOOT["main.js + applicationInitializer"]
+        CTRL["App bindings + dataset controller<br/>chart controls + UI manager"]
+        PANEL["panelController<br/>intent + writes + subscriptions"]
+        COORD["renderCoordinator<br/>full + region scheduling"]
+        VIEWS["Dataset workspace views<br/>panel views + slot lifecycle"]
+        REG["Surface-specific chart registries<br/>controls · workspace · panel"]
+        CHARTS["Per-chart packages<br/>D3/SVG · D3 math + Three/WebGL"]
+    end
+
+    subgraph CORE["State core"]
+        FAC["Data · panel · UI facades"]
+        STATE[("appState<br/>module-private")]
+        BUS["STATE_EVENTS<br/>in-process event bus"]
+    end
+
+    subgraph LEAVES["Pure leaves"]
+        DOMAIN["domain/datasets<br/>domain/panel"]
+        HELPERS["config + pure utils"]
+    end
+
+    subgraph BROWSER["Browser-side services"]
+        SERVICES["i18n · presets · settings"]
+        INGEST["dataIngestService"]
+        INGESTW["dataIngestWorker"]
+        PERSIST["persistence public facade"]
+        PERSISTW["persistWorker<br/>or blobBackend fallback"]
+        DB[("IndexedDB<br/>SQLite byte image")]
+        PREFS[("localStorage<br/>UI prefs · settings · locale")]
+    end
 
     U -- DOM input --> CTRL
-    CTRL -- facade call --> FAC
+    U -- panel interactions --> PANEL
+    BOOT -- initializes --> CTRL
+    BOOT -- initializes --> PANEL
+    BOOT -- installs subscriptions --> COORD
+    BOOT -- initializes locale + settings --> SERVICES
+    BOOT -- hydrates before subscriptions --> PERSIST
+    CTRL -- ordinary state writes --> FAC
+    PANEL -- ordinary state writes --> FAC
     FAC -- mutate --> STATE
     FAC -- emit --> BUS
-    BUS -- notify --> SUB
-    SUB -- render --> VIEW
-    VIEW -. read via getters .-> STATE
-    SERVICES -. hydrate / persist / async results .-> FAC
-    BUS -. wildcard sinks .-> SERVICES
+    BUS -- broad + regional events --> COORD
+    BUS -- panel events --> PANEL
+    BUS -- wildcard dirty tracking --> PERSIST
+    COORD -- compose renders --> VIEWS
+    PANEL -- render panel surfaces --> VIEWS
+    CTRL -- resolve chart controls --> REG
+    VIEWS -- dispatch chart type --> REG
+    REG --> CHARTS
+    COORD -. read through getters .-> STATE
+    PANEL -. read through getters .-> STATE
+    VIEWS -. read through getters where needed .-> STATE
+    CTRL -- preset + locale requests --> SERVICES
+    CTRL -- ingest requests/results --> INGEST
+    INGEST --> INGESTW
+    INGESTW -. pure ingest rules .-> DOMAIN
+    PERSIST -- hydration exception<br/>replaceAllState --> STATE
+    PERSIST --> PERSISTW
+    PERSISTW --> DB
+    PERSIST --> PREFS
+    SERVICES --> PREFS
+    CTRL -. domain operations .-> DOMAIN
+    CHARTS -. defaults + helpers .-> HELPERS
 ```
 
 The diagram is an abstraction, not a literal call graph. It shows ownership
-boundaries: state writes enter through facades, state changes leave through the
-bus, and renderers read state rather than owning it. The feature controllers and managers are
+boundaries: ordinary state writes enter through facades, state changes leave
+through the bus, and renderers read state rather than owning it. Hydration is
+the documented exception: the persistence lifecycle calls `replaceAllState`
+once and the state core emits `STATE_HYDRATED` after replacement. Browser-side
+"backend" names in the persistence package are local storage implementations,
+not a remote application server. The feature controllers and managers are
 not a thin controller layer. Each one typically owns its domain end to end:
 translating user intent into facade writes, subscribing to the resulting events,
 and triggering its own renders (`panelController` does all three for the panel).
@@ -85,7 +139,7 @@ and
 
 | Layer | Owns | Rule Of Thumb |
 |---|---|---|
-| Feature controllers/managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (`eventHandlers`, `datasetController`, `panelController`, `chartControls`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
+| Feature controllers/managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (app/feature bindings, `datasetController`, `panelController`, `chartControlsController`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
 | State Management Core | `appState`, facades, event registry, event bus. | The only normal path for application state mutation. |
 | Application orchestration | Browser startup in `main.js`, initialization order in `app/applicationInitializer.js`, and broad/narrow rendering in `app/renderCoordinator.js`. | Keep the entrypoint thin, order side effects in the initializer, and keep all scheduler state in the render coordinator. |
 | Visualization Layer | Components, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
@@ -94,7 +148,7 @@ and
 The important distinction is ownership, not file layout. A feature controller or manager may
 write facades, subscribe to the bus, and trigger renders for its own domain; what
 it must not do is reach into another domain's state. `panelController` is a clear
-case (controller + subscriber + render-trigger); `chartControls` and `uiManager`
+case (controller + subscriber + render-trigger); `chartControlsController` and `uiManager`
 build UI *and* write facades, so they are managers, not leaf renderers. The leaf
 renderers (components, chart packages under `src/charts/*`, and
 `features/panel/views/`) stay strictly

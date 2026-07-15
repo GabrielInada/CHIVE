@@ -116,33 +116,39 @@ There are two ways a bar chart gets drawn: the **live dataset workspace** (the m
 driven by the active dataset's config) and the **panel** (saved chart snapshots assembled
 into a dashboard). Both end at the same renderer, `renderBarChart`.
 
-```
-                 ┌─────────────────────────────────────────────┐
-                 │  Active dataset.chartConfig.bar (live state) │
-                 └─────────────────────────────────────────────┘
-                        │                          │
-       sidebar edits    │                          │  render
-   (bar/controls/*) ────┘                          ▼
-        write config                  chartsView.renderCharts()
-                                      → bar/workspaceSection.js       [dataset workspace]
-                                        → bar/presentation.js
-                                          → renderBarChart(...)
-                                              │
-   "Add to panel"                            │
-   (eventHandlers → panelController)         │
-   structuredClone of config + rows          │
-        │                                     │
-        ▼                                     │
-   chartSnapshot { config, dataSnapshot, … }  │
-        │                                     │
-   renderChartFromSpec()                       │
-     → bar/panelAdapter.js                     │
-       → bar/presentation.js                   │
-         → renderBarChart(...)                 │
-                                              ▼
-                                   ┌──────────────────────┐
-                                   │   <svg> in container  │
-                                   └──────────────────────┘
+```mermaid
+flowchart TB
+    subgraph LIVE["Live dataset workspace"]
+        CONTROLS["bar/controls"] --> WRITER["ChartConfigWriter"]
+        WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
+        DFACADE --> DSTATE[("dataset.chartConfig.bar")]
+        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DSTATE -. read through getters .-> COORD
+        WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
+        PREVIEW --> DSTATE
+        COORD --> CHARTSVIEW["chartsView.renderCharts"]
+        PREVIEW -. chart render only .-> CHARTSVIEW
+        CHARTSVIEW --> WREG["workspace registry"]
+        WREG --> WSECTION["renderBarChartSection"]
+    end
+
+    subgraph SAVED["Panel snapshot"]
+        ACTION["chartActions: Add to panel"] --> PCAPTURE["panelController.addChartToPanel"]
+        PCAPTURE -- filtered rows + cloned config/columns --> PFACADE["Panel Facade<br/>snapshot + block/slot mutations"]
+        PFACADE --> PSTATE[("panel snapshots<br/>blocks + slot assignments")]
+        PFACADE -- panel events --> PSUB["panelController subscriptions"]
+        PSUB --> PVIEW["panelView"]
+        PSTATE -. read through getters .-> PVIEW
+        PVIEW -. callback via panelController .-> PFACADE
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        MOUNT --> PREG["panel registry"]
+        PREG --> ADAPTER["renderBarPanelChart"]
+    end
+
+    WSECTION --> PRESENT["renderBarInto"]
+    ADAPTER --> PRESENT
+    PRESENT --> RENDERER["renderBarChart"]
+    RENDERER --> OUTPUT["SVG in container"]
 ```
 
 The renderer is **stateless**: every call wipes the container

@@ -21,9 +21,9 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/app/` | Application orchestration: `applicationInitializer.js` owns initialization order and the top-level error boundary; `renderCoordinator.js` owns full/region scheduling, render composition, and render-affecting state subscriptions; `debugApi.js` constructs `window.chiveDebug`; `domBindings.js` composes every DOM listener in boot order. `uiManager.js` owns the app shell (tabs, sidebar mode, sidebar collapse), `settingsController.js` the settings flow, and `feedbackUI.js` / `dialogFocus.js` are cross-feature UI helpers no single feature owns. |
 | `src/app/bindings/` | App-level DOM intent translation: workflow modules that turn user events into facade calls, wired by `app/domBindings.js`. These are app-level rather than feature-owned because project transfer owns the whole project, sidebar navigation spans both features, the keyboard shortcut is global, and the chart actions are delegated off static `index.html` markup. Feature-owned bindings live with their feature (see `features/datasetWorkspace/bindings/`). |
 | `src/types.js` | Shared JSDoc typedefs (`AppState`, `Dataset`, `ChartConfig`, ...). Always imported directly, never through barrels. |
-| `src/config/` | Pure leaf layer: canonical chart identities, chart defaults, element IDs, limits, locale, and format constants. No imports from modules, components, or services. |
-| `src/utils/` | Pure leaf layer: DOM-free helpers (result pattern, color utilities, filters, formatters). Same import rule as `config/`. One deliberate DOM exception: `chartContainerLifecycle.js`, the dispose-aware chart-container clear shared by components, the panel feature, and chart packages. |
-| `src/domain/` | Pure product rules with one owner per subdirectory. `domain/panel/` holds the layout-template registry (`layoutTemplates.js`) and the panel-block model with the shared percentage clamp (`panelBlockModel.js`). `domain/datasets/` holds the dataset algorithms: parsing and delimiter detection (`parse.js`), type and decimal detection (`typeDetection.js`), row normalization (`processData.js`), per-column statistics (`statistics.js`), and joins (`join.js`). Leaf layer like `config/` and `utils/`: no imports from modules, components, services, or charts. |
+| `src/config/` | Pure leaf layer: canonical chart identities, chart defaults, element IDs, limits, locale, and format constants. It may not import app, state, components, features, or services. |
+| `src/utils/` | Pure leaf layer: DOM-free helpers (result pattern, color utilities, filters, formatters). It has the same import boundary as `config/`. One deliberate DOM exception is `chartContainerLifecycle.js`, the dispose-aware chart-container clear shared by components, the panel feature, and chart packages. |
+| `src/domain/` | Pure product rules with one owner per subdirectory. `domain/panel/` holds the layout-template registry (`layoutTemplates.js`) and the panel-block model with the shared percentage clamp (`panelBlockModel.js`). `domain/datasets/` holds the dataset algorithms: parsing and delimiter detection (`parse.js`), type and decimal detection (`typeDetection.js`), row normalization (`processData.js`), per-column statistics (`statistics.js`), and joins (`join.js`). It has the same leaf boundary as `config/` and `utils/` and additionally may not import chart presentation code. |
 | `src/components/` | Leaf renderers: `components/settingsDialog.js` is the callback-driven global settings modal opened from the shared header. The dataset workspace views and dialogs now live in `features/datasetWorkspace/`. |
 | `src/state/` | State core: `appState.js`, the data/panel/ui facades, `stateEvents.js`, and `stateDebug.js`. Panel facade-only mutation primitives live under `state/panel/`. The only write path for application state. |
 | `src/features/datasetWorkspace/chartControls/` | The charts tab's controls sidebar: `chartControlsController.js` owns it end to end (DOM intent, facade writes, render triggering), `chartConfigAdapter.js` builds the `ChartConfigWriter` each chart package writes through, `livePreviewBridge.js` holds the replaceable live-render callback, and `chartHeightResize.js` owns the drag handles. The pure control DOM factories and the writer-driven listener bindings live under `charts/shared/controls/`. |
@@ -89,7 +89,7 @@ For a new chart type, update the full chart surface in one pass:
   `charts/catalog.js` and `charts/previews.js`, and its default config block in
   `config/chartDefaults.js`.
 - The type also registers in `types.js` (`ChartTypeKey`),
-  `config/elementIds.js`, `eventHandlers/chartSnapshotMetadata.js`, and the
+  `config/elementIds.js`, `app/bindings/chartSnapshotMetadata.js`, and the
   static chart block in `index.html`. Add chart constants to `config/charts.js`
   when the implementation needs them.
 - Add i18n strings, tests, [Chart and data reference](../user/chart-reference.md)
@@ -108,9 +108,8 @@ Non-JS additions have their own homes:
 
 ## Direction
 
-The tree is moving toward a hybrid feature/domain structure in small,
-behavior-preserving steps. Structure follows ownership, not file history.
-The rules, in place of a speculative target tree:
+The current hybrid feature/domain structure is established. Structure follows
+ownership rather than file history, according to these rules:
 
 - The dataset workspace replaces the "results" naming, and its controller,
   views, dialogs, and delegated bindings now live together under

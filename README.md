@@ -1,8 +1,6 @@
 # CHIVE: Connected Hierarchical Interactive Visualization Engine
 
-CHIVE is a client-side browser tool for exploring CSV/JSON data, building interactive D3 visualizations, and composing charts into dashboard panels. It runs as static files, with no CHIVE backend required.
-
-![CHIVE workspace preview](docs/assets/readme-preview.png)
+CHIVE is a client-side browser tool for exploring CSV/JSON data, building interactive D3 and Three.js visualizations, and composing charts into dashboard panels. It runs as static files and does not require a remote or server-side CHIVE application backend.
 
 ## Documented Deployments
 
@@ -24,7 +22,7 @@ set, MIME guidance, smoke tests, and self-hosting notes, see
 - Use bundled sample datasets for quick experiments.
 - Preview rows, inspect detected columns, and select which columns stay visible.
 - Review numeric and categorical summaries.
-- Build bar, scatter, pie/donut, bubble, network, treemap, line, and TIN charts.
+- Build bar, scatter, 3D scatter, pie/donut, bubble, network, treemap, line, and TIN charts.
 - Apply global filters to focus the active dataset.
 - Join datasets through the browser UI.
 - Save chart snapshots into dashboard panel layouts.
@@ -79,10 +77,10 @@ hosting requirements, MIME types, smoke tests, and optional Docker hosting, see:
 
 ## Data And Privacy
 
-CHIVE has no application backend in the default deployments. Uploaded datasets
-are parsed and visualized in the browser, and browser storage is used for
-auto-save. For exact storage keys, import/export payloads, runtime network
-behavior, and trust boundaries, see
+CHIVE's default deployments do not use a remote or server-side application
+backend. Uploaded datasets are parsed and visualized in the browser, and
+browser storage is used for auto-save. For exact storage keys, import/export
+payloads, runtime network behavior, and trust boundaries, see
 [Privacy and security](docs/user/privacy-security.md).
 
 ## Documentation
