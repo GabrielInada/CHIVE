@@ -4,7 +4,7 @@
  * built by the `chartControls` registry.
  */
 
-import { CHART_CATALOG } from '../../charts/catalog.js';
+import { CHART_CATALOG } from '../../../charts/catalog.js';
 
 /**
  * Build the chart-type trigger button: a preview SVG, the chart title (or

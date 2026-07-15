@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   setupDatasetListeners: vi.fn(),
 }));
 
-vi.mock('../src/modules/fileManager.js', () => ({
+vi.mock('../src/features/datasetWorkspace/datasetController.js', () => ({
   setupFileInputListeners: mocks.setupFileInputListeners,
 }));
 
@@ -44,7 +44,7 @@ vi.mock('../src/modules/eventHandlers/keyboardShortcuts.js', () => ({
   setupGlobalKeyboardListeners: mocks.setupGlobalKeyboardListeners,
 }));
 
-vi.mock('../src/modules/eventHandlers/datasetActions.js', () => ({
+vi.mock('../src/features/datasetWorkspace/bindings/datasetActions.js', () => ({
   setupDatasetListeners: mocks.setupDatasetListeners,
 }));
 

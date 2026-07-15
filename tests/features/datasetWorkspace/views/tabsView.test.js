@@ -2,7 +2,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../../src/services/i18nService.js', () => ({
+vi.mock('../../../../src/services/i18nService.js', () => ({
 	t: (key, ...args) => {
 		if (key === 'chive-global-filter-trigger-active') {
 			// args: [ruleCount, filtered, total]
@@ -44,7 +44,7 @@ describe('tabsView', () => {
 	});
 
 	it('updates active tab and panel classes', async () => {
-		const { updateTabs } = await import('../../../src/components/datasetWorkspace/tabsView.js');
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
 		updateTabs('charts', vi.fn());
 
@@ -57,7 +57,7 @@ describe('tabsView', () => {
 	});
 
 	it('registers listeners once and always uses latest callback', async () => {
-		const { updateTabs } = await import('../../../src/components/datasetWorkspace/tabsView.js');
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 		const firstCallback = vi.fn();
 		const latestCallback = vi.fn();
 
@@ -73,7 +73,7 @@ describe('tabsView', () => {
 	});
 
 	it('does nothing on click when callback is missing', async () => {
-		const { updateTabs } = await import('../../../src/components/datasetWorkspace/tabsView.js');
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
 		updateTabs('preview');
 
@@ -85,7 +85,7 @@ describe('tabsView', () => {
 	});
 
 	it('shows global filter trigger on preview and hides it on panel', async () => {
-		const { updateTabs } = await import('../../../src/components/datasetWorkspace/tabsView.js');
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
 		updateTabs('preview', vi.fn(), null, {
 			triggerState: { hasDataset: true, globalFilter: { column: null }, filteredCount: 0, totalCount: 0 },
@@ -102,7 +102,7 @@ describe('tabsView', () => {
 	});
 
 	it('shows disabled trigger on charts tab with no dataset', async () => {
-		const { updateTabs } = await import('../../../src/components/datasetWorkspace/tabsView.js');
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
 		updateTabs('charts', vi.fn(), null, {
 			triggerState: { hasDataset: false, globalFilter: null, filteredCount: 0, totalCount: 0 },
@@ -114,7 +114,7 @@ describe('tabsView', () => {
 	});
 
 	it('renders active indicator with rule count and X/Y when rules exist', async () => {
-		const { updateTabs } = await import('../../../src/components/datasetWorkspace/tabsView.js');
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
 		updateTabs('charts', vi.fn(), null, {
 			triggerState: {
@@ -142,7 +142,7 @@ describe('tabsView', () => {
 	});
 
 	it('hides badge when no rules are active on charts tab', async () => {
-		const { updateTabs } = await import('../../../src/components/datasetWorkspace/tabsView.js');
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
 		updateTabs('charts', vi.fn(), null, {
 			triggerState: {
@@ -159,7 +159,7 @@ describe('tabsView', () => {
 	});
 
 	it('renders neutral label when there are no rules', async () => {
-		const { updateTabs } = await import('../../../src/components/datasetWorkspace/tabsView.js');
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
 		updateTabs('charts', vi.fn(), null, {
 			triggerState: {
@@ -175,7 +175,7 @@ describe('tabsView', () => {
 	});
 
 	it('opens filter dialog only when trigger is enabled', async () => {
-		const { updateTabs } = await import('../../../src/components/datasetWorkspace/tabsView.js');
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 		const onOpen = vi.fn();
 
 		updateTabs('charts', vi.fn(), null, {

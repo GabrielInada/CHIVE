@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import chiveRules from './eslint-rules/index.js';
 
 const STATELESS_RENDERER_MESSAGE =
-	'Renderers and DOM builders (src/components/ and panel feature presentation files) do not ' +
+	'Renderers and DOM builders (src/components/, the dataset workspace, and panel feature presentation files) do not ' +
 	'call write facades (docs/development/architecture.md Layers section). Only read-only facade members ' +
 	'are importable here. Route writes through feature controllers, ' +
 	'chart-control listeners, or event-handler modules.';
@@ -282,6 +282,30 @@ export default [
 				patterns: [{
 					group: ['**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
 					message: 'Panel state internals import only state, domain, config, utils, types, or vendor modules.',
+				}],
+			}],
+		},
+	},
+
+	// (B2c) Dataset workspace feature views and dialogs: same renderer-
+	// statelessness rule as (B). The feature controller (datasetController.js)
+	// and its bindings/ stay outside this list: the controller owns facade
+	// writes and dataset workflow setup, and bindings translate DOM intent into
+	// controller calls. statsView reads getActiveDataset, which is in the
+	// read-only surface (APP_STATE_READS) allowed below.
+	{
+		files: [
+			'src/features/datasetWorkspace/workspaceView.js',
+			'src/features/datasetWorkspace/views/**/*.js',
+			'src/features/datasetWorkspace/dialogs/**/*.js',
+		],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/state/appState.js'],
+					allowImportNames: APP_STATE_READS,
+					message: STATELESS_RENDERER_MESSAGE,
 				}],
 			}],
 		},

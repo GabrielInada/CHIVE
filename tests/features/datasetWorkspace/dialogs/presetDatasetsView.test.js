@@ -11,12 +11,12 @@ const focusMocks = vi.hoisted(() => ({
 	})),
 }));
 
-vi.mock('../../../src/modules/dialogFocus.js', () => ({
+vi.mock('../../../../src/modules/dialogFocus.js', () => ({
 	installDialogFocus: focusMocks.installDialogFocus,
 }));
 
-import { PRESET_CATALOG } from '../../../src/data/presetCatalog.js';
-import { openPresetDatasetsDialog } from '../../../src/components/datasetWorkspace/presetDatasetsView.js';
+import { PRESET_CATALOG } from '../../../../src/data/presetCatalog.js';
+import { openPresetDatasetsDialog } from '../../../../src/features/datasetWorkspace/dialogs/presetDatasetsView.js';
 
 const translate = (key, ...args) => (args.length ? `${key}:${args.join(',')}` : key);
 

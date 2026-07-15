@@ -46,7 +46,7 @@ vi.mock('../src/modules/feedbackUI.js', () => ({
   showFeedback: mocks.showFeedback,
   showProgress: mocks.showProgress,
 }));
-vi.mock('../src/modules/fileManager.js', () => ({
+vi.mock('../src/features/datasetWorkspace/datasetController.js', () => ({
   setupFileInputListeners: vi.fn(),
   selectDataset: mocks.selectDataset,
   removeDatasetByIndex: mocks.removeDatasetByIndex,
@@ -126,7 +126,7 @@ describe('eventHandlers global-listener idempotence', () => {
 
   it('setupDatasetListeners registers its click listener only once', async () => {
     const addSpy = spyNoopAddEventListener();
-    const { setupDatasetListeners } = await import('../src/modules/eventHandlers/datasetActions.js');
+    const { setupDatasetListeners } = await import('../src/features/datasetWorkspace/bindings/datasetActions.js');
 
     setupDatasetListeners();
     setupDatasetListeners();
@@ -166,7 +166,7 @@ describe('eventHandlers global-listener idempotence', () => {
     // the real proof. See the plan's Tests section.
     spyTrackedAddEventListener();
     document.body.innerHTML = '<button data-dataset-select="2" type="button"></button>';
-    const { setupDatasetListeners } = await import('../src/modules/eventHandlers/datasetActions.js');
+    const { setupDatasetListeners } = await import('../src/features/datasetWorkspace/bindings/datasetActions.js');
 
     setupDatasetListeners();
     setupDatasetListeners();

@@ -18,51 +18,51 @@ const mocks = vi.hoisted(() => ({
 	renderScatter3dChartSection: vi.fn(),
 }));
 
-vi.mock('../../../src/services/i18nService.js', () => ({
+vi.mock('../../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/config/chartDefaults.js', () => ({
+vi.mock('../../../../src/config/chartDefaults.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 
-vi.mock('../../../src/utils/globalFilter.js', () => ({
+vi.mock('../../../../src/utils/globalFilter.js', () => ({
 	resolveGlobalFilterForColumns: mocks.resolveGlobalFilterForColumns,
 	applyGlobalFilterRules: mocks.applyGlobalFilterRules,
 }));
 
-vi.mock('../../../src/charts/bar/workspaceSection.js', () => ({
+vi.mock('../../../../src/charts/bar/workspaceSection.js', () => ({
 	renderBarChartSection: mocks.renderBarChartSection,
 }));
-vi.mock('../../../src/charts/line/workspaceSection.js', () => ({
+vi.mock('../../../../src/charts/line/workspaceSection.js', () => ({
 	renderLineChartSection: mocks.renderLineChartSection,
 }));
-vi.mock('../../../src/charts/scatter/workspaceSection.js', () => ({
+vi.mock('../../../../src/charts/scatter/workspaceSection.js', () => ({
 	renderScatterChartSection: mocks.renderScatterChartSection,
 }));
-vi.mock('../../../src/charts/pie/workspaceSection.js', () => ({
+vi.mock('../../../../src/charts/pie/workspaceSection.js', () => ({
 	renderPieChartSection: mocks.renderPieChartSection,
 }));
-vi.mock('../../../src/charts/bubble/workspaceSection.js', () => ({
+vi.mock('../../../../src/charts/bubble/workspaceSection.js', () => ({
 	renderBubbleChartSection: mocks.renderBubbleChartSection,
 }));
-vi.mock('../../../src/charts/network/workspaceSection.js', () => ({
+vi.mock('../../../../src/charts/network/workspaceSection.js', () => ({
 	renderNetworkChartSection: mocks.renderNetworkChartSection,
 }));
-vi.mock('../../../src/charts/treemap/workspaceSection.js', () => ({
+vi.mock('../../../../src/charts/treemap/workspaceSection.js', () => ({
 	renderTreemapChartSection: mocks.renderTreemapChartSection,
 }));
-vi.mock('../../../src/charts/tin/workspaceSection.js', () => ({
+vi.mock('../../../../src/charts/tin/workspaceSection.js', () => ({
 	renderTinChartSection: mocks.renderTinChartSection,
 }));
-vi.mock('../../../src/charts/scatter3d/workspaceSection.js', () => ({
+vi.mock('../../../../src/charts/scatter3d/workspaceSection.js', () => ({
 	renderScatter3dChartSection: mocks.renderScatter3dChartSection,
 }));
 
-import { renderCharts } from '../../../src/components/datasetWorkspace/chartsView.js';
-import { renderWorkspaceChart } from '../../../src/charts/registries/workspace.js';
-import { CHART_BLOCKS, CHART_CONTAINERS, VIEW_IDS, BADGE_IDS } from '../../../src/config/elementIds.js';
-import { CHART_TYPE_KEYS } from '../../../src/config/chartTypes.js';
+import { renderCharts } from '../../../../src/features/datasetWorkspace/views/chartsView.js';
+import { renderWorkspaceChart } from '../../../../src/charts/registries/workspace.js';
+import { CHART_BLOCKS, CHART_CONTAINERS, VIEW_IDS, BADGE_IDS } from '../../../../src/config/elementIds.js';
+import { CHART_TYPE_KEYS } from '../../../../src/config/chartTypes.js';
 
 const SECTION_MOCKS = {
 	bar: 'renderBarChartSection',

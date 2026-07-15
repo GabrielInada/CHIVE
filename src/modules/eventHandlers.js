@@ -8,24 +8,25 @@
  *   - `eventHandlers/sidebarNavigation.js` (sidebar step buttons)
  *   - `eventHandlers/chartActions.js` (download SVG + add-to-panel)
  *   - `eventHandlers/keyboardShortcuts.js` (Ctrl/Cmd+O)
- *   - `eventHandlers/datasetActions.js` (delegated select/remove)
+ *   - `features/datasetWorkspace/bindings/datasetActions.js` (delegated select/remove)
  *
- * File/tab/panel setup stays owned by fileManager, uiManager, and panelController;
- * this module just wires them in boot order alongside the workflow setups.
+ * File/tab/panel setup stays owned by the dataset controller, uiManager, and
+ * panelController; this module just wires them in boot order alongside the
+ * workflow setups.
  */
 
 import { setupPanelEventListeners } from '../features/panel/panelController.js';
-import { setupFileInputListeners } from './fileManager.js';
+import { setupFileInputListeners } from '../features/datasetWorkspace/datasetController.js';
 import { setupTabListeners, setupSidebarToggleListener } from './uiManager.js';
 import { setupProjectTransferListeners } from './eventHandlers/projectTransfer.js';
 import { setupSidebarNavigationButtons } from './eventHandlers/sidebarNavigation.js';
 import { setupChartActionListeners } from './eventHandlers/chartActions.js';
 import { setupGlobalKeyboardListeners } from './eventHandlers/keyboardShortcuts.js';
-import { setupDatasetListeners } from './eventHandlers/datasetActions.js';
+import { setupDatasetListeners } from '../features/datasetWorkspace/bindings/datasetActions.js';
 
 /**
  * Wire all DOM listeners by calling each setup function in boot order:
- *   - `setupFileInputListeners` (fileManager)
+ *   - `setupFileInputListeners` (datasetController)
  *   - `setupTabListeners` (uiManager)
  *   - `setupSidebarToggleListener` (uiManager)
  *   - `setupSidebarNavigationButtons` (eventHandlers/sidebarNavigation)
@@ -33,7 +34,7 @@ import { setupDatasetListeners } from './eventHandlers/datasetActions.js';
  *   - `setupProjectTransferListeners` (eventHandlers/projectTransfer)
  *   - `setupChartActionListeners` (eventHandlers/chartActions)
  *   - `setupGlobalKeyboardListeners` (eventHandlers/keyboardShortcuts)
- *   - `setupDatasetListeners` (eventHandlers/datasetActions)
+ *   - `setupDatasetListeners` (datasetWorkspace/bindings/datasetActions)
  *
  * Called once during app startup from `app/applicationInitializer.js`.
  */

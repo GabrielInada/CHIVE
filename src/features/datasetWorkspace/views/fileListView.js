@@ -4,36 +4,36 @@
  * ("Show more / show less") above or below the list.
  *
  * @param {Object} args
- * @param {HTMLElement} args.lista
+ * @param {HTMLElement} args.list
  * @param {Array<{ name: string, rows: Array<*>, columns: Array<*>, sizeLabel: string }>} args.datasets
- * @param {number} args.indiceAtivo - Active dataset index; `-1` if none.
- * @param {(key: string, ...args: *) => string} args.traduzir
+ * @param {number} args.activeIndex - Active dataset index; `-1` if none.
+ * @param {(key: string, ...args: *) => string} args.translate
  * @param {() => string} args.getLocale
- * @param {(index: number) => void} args.aoSelecionar
- * @param {(index: number) => void} args.aoRemover
- * @param {string} [args.filtro=''] - Name substring filter; case-insensitive.
- * @param {number} [args.limiteVisivel=15] - Cap on rendered items.
+ * @param {(index: number) => void} args.onSelect
+ * @param {(index: number) => void} args.onRemove
+ * @param {string} [args.filter=''] - Name substring filter; case-insensitive.
+ * @param {number} [args.visibleLimit=15] - Cap on rendered items.
  * @returns {{ total: number, filtered: number, rendered: number, hasMore: boolean }}
  */
 export function renderFileListDOM({
-	lista: list,
+	list,
 	datasets,
-	indiceAtivo: activeIndex,
-	traduzir: translate,
+	activeIndex,
+	translate,
 	getLocale,
-	aoSelecionar: onSelect,
-	aoRemover: onRemove,
-	filtro = '',
-	limiteVisivel = 15,
+	onSelect,
+	onRemove,
+	filter = '',
+	visibleLimit = 15,
 }) {
 	list.replaceChildren();
 
-	const normalizedFilter = String(filtro || '').trim().toLowerCase();
+	const normalizedFilter = String(filter || '').trim().toLowerCase();
 	const indexedDatasets = datasets.map((dataset, index) => ({ dataset, index }));
 	const filteredDatasets = normalizedFilter
 		? indexedDatasets.filter(({ dataset }) => String(dataset.name || '').toLowerCase().includes(normalizedFilter))
 		: indexedDatasets;
-	const safeLimit = Number.isFinite(limiteVisivel) && limiteVisivel > 0 ? Math.floor(limiteVisivel) : 15;
+	const safeLimit = Number.isFinite(visibleLimit) && visibleLimit > 0 ? Math.floor(visibleLimit) : 15;
 	const visibleDatasets = filteredDatasets.slice(0, safeLimit);
 
 	visibleDatasets.forEach(({ dataset, index }) => {

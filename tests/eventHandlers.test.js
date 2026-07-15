@@ -76,7 +76,7 @@ vi.mock('../src/modules/feedbackUI.js', () => ({
   showProgress: mocks.showProgress,
 }));
 
-vi.mock('../src/modules/fileManager.js', () => ({
+vi.mock('../src/features/datasetWorkspace/datasetController.js', () => ({
   setupFileInputListeners: mocks.setupFileInputListeners,
   selectDataset: mocks.selectDataset,
   removeDatasetByIndex: mocks.removeDatasetByIndex,

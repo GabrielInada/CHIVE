@@ -139,7 +139,7 @@ vi.mock('../../../src/charts/previews.js', () => ({
 	PREVIEW_SCATTER3D_SVG: '<svg id="prev-scatter3d" />',
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/chartTypePickerDialog.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/dialogs/chartTypePickerDialog.js', () => ({
 	openChartTypePickerDialog: mocks.openChartTypePickerDialog,
 }));
 

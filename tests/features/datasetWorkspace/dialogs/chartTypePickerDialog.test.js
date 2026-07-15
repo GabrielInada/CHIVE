@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../../src/charts/previews.js', () => ({
+vi.mock('../../../../src/charts/previews.js', () => ({
 	PREVIEW_BAR_SVG: '<svg data-prev="bar" />',
 	PREVIEW_SCATTER_SVG: '<svg data-prev="scatter" />',
 	PREVIEW_SCATTER3D_SVG: '<svg data-prev="scatter3d" />',
@@ -14,8 +14,8 @@ vi.mock('../../../src/charts/previews.js', () => ({
 	PREVIEW_TIN_SVG: '<svg data-prev="tin" />',
 }));
 
-import { openChartTypePickerDialog } from '../../../src/components/datasetWorkspace/chartTypePickerDialog.js';
-import { CHART_TYPE_KEYS } from '../../../src/config/chartTypes.js';
+import { openChartTypePickerDialog } from '../../../../src/features/datasetWorkspace/dialogs/chartTypePickerDialog.js';
+import { CHART_TYPE_KEYS } from '../../../../src/config/chartTypes.js';
 
 const translate = key => `t:${key}`;
 

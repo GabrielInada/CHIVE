@@ -1,33 +1,34 @@
 /**
- * CHIVE File Manager.
+ * CHIVE dataset controller.
  *
- * Handles file upload and dataset management:
+ * Dataset workspace feature controller. Handles file upload and dataset
+ * management:
  *   - File selection (input or drag-and-drop) and parsing via the worker
  *   - Dataset add/remove/select
  *   - File-format and size validation
  *   - Row-limit handling
  *   - Dataset joins (`createJoinedDataset`)
  *
- * @typedef {import('../types.js').Dataset} Dataset
- * @typedef {import('../types.js').JoinDatasetResult} JoinDatasetResult
- * @typedef {import('../types.js').JoinType} JoinType
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').JoinDatasetResult} JoinDatasetResult
+ * @typedef {import('../../types.js').JoinType} JoinType
  */
 
-import { t } from '../services/i18nService.js';
-import { processData, formatFileSize, joinDatasets } from '../services/dataService.js';
-import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../services/dataIngestService.js';
-import { loadPresetSource } from '../services/presetService.js';
-import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from './state/appState.js';
-import { showError, showFeedback, clearErrors, showProgress } from './feedbackUI.js';
-import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../config/limits.js';
-import { DELIMITED_EXTENSIONS } from '../config/formats.js';
-import { createDefaultChartConfig } from '../config/chartDefaults.js';
+import { t } from '../../services/i18nService.js';
+import { processData, formatFileSize, joinDatasets } from '../../services/dataService.js';
+import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../../services/dataIngestService.js';
+import { loadPresetSource } from '../../services/presetService.js';
+import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from '../../modules/state/appState.js';
+import { showError, showFeedback, clearErrors, showProgress } from '../../modules/feedbackUI.js';
+import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../../config/limits.js';
+import { DELIMITED_EXTENSIONS } from '../../config/formats.js';
+import { createDefaultChartConfig } from '../../config/chartDefaults.js';
 
 // Confirmation function for user prompts, injectable for testing, defaults to window.confirm
 let confirmFn = message => window.confirm(message);
 
 /**
- * Initialize the file manager. Wires the confirmation function used for the
+ * Initialize the dataset controller. Wires the confirmation function used for the
  * over-limit file-size prompt (injectable for testing; production callers can
  * omit it).
  *
@@ -38,7 +39,7 @@ let confirmFn = message => window.confirm(message);
  *
  * @param {{ confirmCallback?: ((message: string) => boolean) | null }} [options] - `confirmCallback` defaults to `window.confirm`. Tolerates `null`/omitted.
  */
-export function initFileManager(options = {}) {
+export function initDatasetController(options = {}) {
 	const { confirmCallback = null } = options ?? {};
 	confirmFn = confirmCallback || (message => window.confirm(message));
 }
@@ -90,10 +91,10 @@ async function processFileForDataset(file) {
 
 	// Check file size
 	if (file.size > FILE_SIZE_LIMIT_BYTES) {
-		const confirmarArquivoGrande = confirmFn(
+		const confirmedLargeFile = confirmFn(
 			`${t('chive-warn-file-size', [file.name, formatFileSize(FILE_SIZE_LIMIT_BYTES)])} \n${t('chive-warn-file-size-proceed')}`
 		);
-		if (!confirmarArquivoGrande) {
+		if (!confirmedLargeFile) {
 			throw new Error(t('chive-error-cancelled'));
 		}
 	}
@@ -139,7 +140,7 @@ async function processFileForDataset(file) {
 		sizeLabel: formatFileSize(file.size),
 		rows,
 		columns,
-		selectedColumns: columns.map(coluna => coluna.name),
+		selectedColumns: columns.map(column => column.name),
 		chartConfig: createDefaultChartConfig(),
 		// Stats computed in the worker, statsView reads these instead of recomputing
 		// on every DATASET_ADDED event. See `services/dataIngestService.js`.
@@ -159,10 +160,10 @@ async function processFileForDataset(file) {
  */
 function readFile(file) {
 	return new Promise((resolve, reject) => {
-		const leitor = new FileReader();
-		leitor.onload = event => resolve(event.target.result);
-		leitor.onerror = () => reject(new Error(t('chive-error-read', [file.name])));
-		leitor.readAsText(file);
+		const reader = new FileReader();
+		reader.onload = event => resolve(event.target.result);
+		reader.onerror = () => reject(new Error(t('chive-error-read', [file.name])));
+		reader.readAsText(file);
 	});
 }
 
@@ -337,11 +338,11 @@ export function createJoinedDataset(spec = {}) {
  * Surfaces an error toast if either expected DOM element is missing.
  */
 export function setupFileInputListeners() {
-	const inputArquivo = document.getElementById('file-input');
-	const zonaUpload = document.getElementById('upload-zone');
+	const fileInput = document.getElementById('file-input');
+	const uploadZone = document.getElementById('upload-zone');
 
-	if (inputArquivo) {
-		inputArquivo.addEventListener('change', async event => {
+	if (fileInput) {
+		fileInput.addEventListener('change', async event => {
 			const target = event.target;
 			if (!(target instanceof HTMLInputElement)) return;
 
@@ -356,35 +357,35 @@ export function setupFileInputListeners() {
 		showError(t('chive-error-upload-input-missing'));
 	}
 
-	if (zonaUpload) {
+	if (uploadZone) {
 		// Click to open file picker
-		zonaUpload.addEventListener('click', () => {
-			inputArquivo?.click();
+		uploadZone.addEventListener('click', () => {
+			fileInput?.click();
 		});
 
 		// Keyboard support (Enter/Space)
-		zonaUpload.addEventListener('keydown', event => {
+		uploadZone.addEventListener('keydown', event => {
 			if (event.key === 'Enter' || event.key === ' ') {
 				event.preventDefault();
-				inputArquivo?.click();
+				fileInput?.click();
 			}
 		});
 
 		// Drag and drop
-		zonaUpload.addEventListener('dragover', event => {
+		uploadZone.addEventListener('dragover', event => {
 			event.preventDefault();
 			event.stopPropagation();
-			zonaUpload.classList.add('hover');
+			uploadZone.classList.add('hover');
 		});
 
-		zonaUpload.addEventListener('dragleave', () => {
-			zonaUpload.classList.remove('hover');
+		uploadZone.addEventListener('dragleave', () => {
+			uploadZone.classList.remove('hover');
 		});
 
-		zonaUpload.addEventListener('drop', event => {
+		uploadZone.addEventListener('drop', event => {
 			event.preventDefault();
 			event.stopPropagation();
-			zonaUpload.classList.remove('hover');
+			uploadZone.classList.remove('hover');
 			handleFileUpload(event.dataTransfer.files);
 		});
 	} else {

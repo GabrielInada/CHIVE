@@ -8,13 +8,13 @@ const mocks = vi.hoisted(() => ({
 	getLocale: vi.fn(() => 'en-US'),
 }));
 
-vi.mock('../../../src/services/i18nService.js', () => ({
+vi.mock('../../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 	translateType: mocks.translateType,
 	getLocale: mocks.getLocale,
 }));
 
-import { renderTablePreview } from '../../../src/components/datasetWorkspace/tablePreviewView.js';
+import { renderTablePreview } from '../../../../src/features/datasetWorkspace/views/tablePreviewView.js';
 
 describe('renderTablePreview', () => {
 	beforeEach(() => {

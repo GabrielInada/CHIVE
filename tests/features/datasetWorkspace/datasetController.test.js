@@ -21,41 +21,41 @@ const mocks = vi.hoisted(() => ({
   showProgress: vi.fn(),
 }));
 
-vi.mock('../src/services/i18nService.js', () => ({
+vi.mock('../../../src/services/i18nService.js', () => ({
   t: mocks.t,
 }));
 
-vi.mock('../src/services/dataService.js', () => ({
+vi.mock('../../../src/services/dataService.js', () => ({
   processData: mocks.processData,
   joinDatasets: mocks.joinDatasets,
   formatFileSize: mocks.formatFileSize,
 }));
 
-vi.mock('../src/services/dataIngestService.js', () => ({
+vi.mock('../../../src/services/dataIngestService.js', () => ({
   ingestFile: mocks.ingestFile,
   progressLabelForStage: mocks.progressLabelForStage,
   ingestErrorMessage: mocks.ingestErrorMessage,
 }));
 
-vi.mock('../src/services/presetService.js', () => ({
+vi.mock('../../../src/services/presetService.js', () => ({
   loadPresetSource: mocks.loadPresetSource,
 }));
 
-vi.mock('../src/modules/state/appState.js', () => ({
+vi.mock('../../../src/modules/state/appState.js', () => ({
   addDataset: mocks.addDataset,
   removeDataset: mocks.removeDataset,
   setActiveDataset: mocks.setActiveDataset,
   getAllDatasets: mocks.getAllDatasets,
 }));
 
-vi.mock('../src/modules/feedbackUI.js', () => ({
+vi.mock('../../../src/modules/feedbackUI.js', () => ({
   showError: mocks.showError,
   showFeedback: mocks.showFeedback,
   clearErrors: mocks.clearErrors,
   showProgress: mocks.showProgress,
 }));
 
-vi.mock('../src/config/limits.js', () => ({
+vi.mock('../../../src/config/limits.js', () => ({
   FILE_SIZE_LIMIT_BYTES: 10,
   ROW_LIMIT: 2,
 }));
@@ -63,14 +63,14 @@ vi.mock('../src/config/limits.js', () => ({
 import {
   getLoadedDatasets,
   handleFileUpload,
-  initFileManager,
+  initDatasetController,
   createJoinedDataset,
   handleJoinDatasetRequest,
   handlePresetDatasetRequest,
   removeDatasetByIndex,
   selectDataset,
   setupFileInputListeners,
-} from '../src/modules/fileManager.js';
+} from '../../../src/features/datasetWorkspace/datasetController.js';
 
 class FileReaderMock {
   readAsText(file) {
@@ -102,7 +102,7 @@ describe('fileManager', () => {
     vi.clearAllMocks();
     global.FileReader = FileReaderMock;
     window.confirm = vi.fn(() => true);
-    initFileManager();
+    initDatasetController();
 
     mocks.loadPresetSource.mockResolvedValue({
       ok: true,
@@ -433,7 +433,7 @@ describe('fileManager', () => {
 
   it('uses injected confirmFn instead of window.confirm', async () => {
     const confirmMock = vi.fn(() => false);
-    initFileManager({ confirmCallback: confirmMock });
+    initDatasetController({ confirmCallback: confirmMock });
 
     await handleFileUpload([csvFile({ size: 30 })]);
 

@@ -33,8 +33,8 @@ import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { setActiveChartType } from '../state/appState.js';
 import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
 import { getChartControlAdapter } from '../../charts/registries/controls.js';
-import { renderChartParamsDOM } from '../../components/datasetWorkspace/chartParamsView.js';
-import { openChartTypePickerDialog } from '../../components/datasetWorkspace/chartTypePickerDialog.js';
+import { renderChartParamsDOM } from '../../features/datasetWorkspace/views/chartParamsView.js';
+import { openChartTypePickerDialog } from '../../features/datasetWorkspace/dialogs/chartTypePickerDialog.js';
 
 import { setLiveRenderCallback } from './livePreview.js';
 import { ensureChartHeightResizeHandles } from './chartHeightResize.js';

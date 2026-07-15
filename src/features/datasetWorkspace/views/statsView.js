@@ -5,10 +5,10 @@
  * datasets or filtered slices.
  */
 
-import { calculateStatistics, calculateCategoricalStatistics } from '../../services/dataService.js';
-import { getActiveDataset } from '../../modules/state/appState.js';
-import { t, getLocale } from '../../services/i18nService.js';
-import { formatNumber } from '../../utils/formatters.js';
+import { calculateStatistics, calculateCategoricalStatistics } from '../../../services/dataService.js';
+import { getActiveDataset } from '../../../modules/state/appState.js';
+import { t, getLocale } from '../../../services/i18nService.js';
+import { formatNumber } from '../../../utils/formatters.js';
 
 /**
  * Reuse worker-computed numeric stats when the rows we're rendering are
@@ -88,22 +88,22 @@ export function renderStats(rows, visibleColumns) {
 		const locale = getLocale();
 
 		stats.forEach(stat => {
-			const coluna = document.createElement('div');
-			coluna.className = 'stat-col';
+			const column = document.createElement('div');
+			column.className = 'stat-col';
 
 			const name = document.createElement('div');
 			name.className = 'stat-col-name';
 			name.title = stat.name;
 			name.textContent = stat.name;
 
-			coluna.appendChild(name);
-			coluna.appendChild(createStatLine(t('chive-stat-valid'), stat.n.toLocaleString(locale)));
-			coluna.appendChild(createStatLine(t('chive-stat-min'), formatNumber(stat.min, locale)));
-			coluna.appendChild(createStatLine(t('chive-stat-max'), formatNumber(stat.max, locale)));
-			coluna.appendChild(createStatLine(t('chive-stat-mean'), formatNumber(stat.mean, locale)));
-			coluna.appendChild(createStatLine(t('chive-stat-median'), formatNumber(stat.median, locale)));
+			column.appendChild(name);
+			column.appendChild(createStatLine(t('chive-stat-valid'), stat.n.toLocaleString(locale)));
+			column.appendChild(createStatLine(t('chive-stat-min'), formatNumber(stat.min, locale)));
+			column.appendChild(createStatLine(t('chive-stat-max'), formatNumber(stat.max, locale)));
+			column.appendChild(createStatLine(t('chive-stat-mean'), formatNumber(stat.mean, locale)));
+			column.appendChild(createStatLine(t('chive-stat-median'), formatNumber(stat.median, locale)));
 
-			containerStats.appendChild(coluna);
+			containerStats.appendChild(column);
 		});
 		return;
 	}
@@ -144,18 +144,18 @@ export function renderCategoricalStats(rows, visibleColumns) {
 	const locale = getLocale();
 
 	stats.forEach(stat => {
-		const coluna = document.createElement('div');
-		coluna.className = 'stat-col';
+		const column = document.createElement('div');
+		column.className = 'stat-col';
 
 		const name = document.createElement('div');
 		name.className = 'stat-col-name';
 		name.title = stat.name;
 		name.textContent = stat.name;
-		coluna.appendChild(name);
+		column.appendChild(name);
 
 		if (stat.empty) {
-			coluna.appendChild(createStatLine(t('chive-cat-stat-non-empty'), '0'));
-			coluna.appendChild(createStatLine(
+			column.appendChild(createStatLine(t('chive-cat-stat-non-empty'), '0'));
+			column.appendChild(createStatLine(
 				t('chive-cat-stat-missing'),
 				`${stat.missing.toLocaleString(locale)} (${formatPct(stat.missingPct)})`,
 			));
@@ -164,17 +164,17 @@ export function renderCategoricalStats(rows, visibleColumns) {
 			const span = document.createElement('span');
 			span.textContent = t('chive-cat-stat-empty');
 			empty.appendChild(span);
-			coluna.appendChild(empty);
-			container.appendChild(coluna);
+			column.appendChild(empty);
+			container.appendChild(column);
 			return;
 		}
 
-		coluna.appendChild(createStatLine(t('chive-cat-stat-non-empty'), stat.n.toLocaleString(locale)));
-		coluna.appendChild(createStatLine(
+		column.appendChild(createStatLine(t('chive-cat-stat-non-empty'), stat.n.toLocaleString(locale)));
+		column.appendChild(createStatLine(
 			t('chive-cat-stat-missing'),
 			`${stat.missing.toLocaleString(locale)} (${formatPct(stat.missingPct)})`,
 		));
-		coluna.appendChild(createStatLine(
+		column.appendChild(createStatLine(
 			t('chive-cat-stat-unique'),
 			`${stat.unique.toLocaleString(locale)} (${formatPct(stat.uniquenessRate)})`,
 		));
@@ -183,9 +183,9 @@ export function renderCategoricalStats(rows, visibleColumns) {
 			`${truncateText(stat.mode)} · ${stat.modeCount.toLocaleString(locale)} (${formatPct(stat.modePct)})`,
 		);
 		modeLine.title = String(stat.mode ?? '');
-		coluna.appendChild(modeLine);
-		coluna.appendChild(createStatLine(t('chive-cat-stat-top5-pct'), formatPct(stat.top5Pct)));
+		column.appendChild(modeLine);
+		column.appendChild(createStatLine(t('chive-cat-stat-top5-pct'), formatPct(stat.top5Pct)));
 
-		container.appendChild(coluna);
+		container.appendChild(column);
 	});
 }

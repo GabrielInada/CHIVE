@@ -10,21 +10,21 @@ const mocks = vi.hoisted(() => ({
 	getLocale: vi.fn(() => 'en-US'),
 }));
 
-vi.mock('../../../src/services/dataService.js', () => ({
+vi.mock('../../../../src/services/dataService.js', () => ({
 	calculateStatistics: mocks.calculateStatistics,
 	calculateCategoricalStatistics: mocks.calculateCategoricalStatistics,
 }));
 
-vi.mock('../../../src/modules/state/appState.js', () => ({
+vi.mock('../../../../src/modules/state/appState.js', () => ({
 	getActiveDataset: mocks.getActiveDataset,
 }));
 
-vi.mock('../../../src/services/i18nService.js', () => ({
+vi.mock('../../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 	getLocale: mocks.getLocale,
 }));
 
-import { renderCategoricalStats, renderStats } from '../../../src/components/datasetWorkspace/statsView.js';
+import { renderCategoricalStats, renderStats } from '../../../../src/features/datasetWorkspace/views/statsView.js';
 
 const rows = [
 	{ region: 'North', value: 10 },

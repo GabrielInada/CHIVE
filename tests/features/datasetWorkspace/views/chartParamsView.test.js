@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { renderChartParamsDOM } from '../../../src/components/datasetWorkspace/chartParamsView.js';
+import { renderChartParamsDOM } from '../../../../src/features/datasetWorkspace/views/chartParamsView.js';
 
 describe('renderChartParamsDOM', () => {
 	it('renders an active chart without optional description or click callback', () => {

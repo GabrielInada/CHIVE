@@ -7,8 +7,8 @@
  * accumulating duplicate listeners across re-renders.
  */
 
-import { t } from '../../services/i18nService.js';
-import { countGlobalFilterRules, isGlobalFilterActive } from '../../utils/globalFilter.js';
+import { t } from '../../../services/i18nService.js';
+import { countGlobalFilterRules, isGlobalFilterActive } from '../../../utils/globalFilter.js';
 
 let listenersRegistered = false;
 let currentOnChartConfigChange = null;

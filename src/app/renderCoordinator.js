@@ -10,10 +10,10 @@
 
 import {
 	renderEmptyState,
-	renderDataInterface,
+	renderDatasetWorkspace,
 	renderFileList,
-} from '../components/datasetWorkspace/datasetWorkspaceView.js';
-import { renderCharts } from '../components/datasetWorkspace/chartsView.js';
+} from '../features/datasetWorkspace/workspaceView.js';
+import { renderCharts } from '../features/datasetWorkspace/views/chartsView.js';
 import { renderChartControlsSidebar } from '../modules/chartControls/chartControlsManager.js';
 import { getNumericColumns } from '../utils/columnHelpers.js';
 import {
@@ -37,7 +37,7 @@ import {
 	removeDatasetByIndex,
 	handleJoinDatasetRequest,
 	handlePresetDatasetRequest,
-} from '../modules/fileManager.js';
+} from '../features/datasetWorkspace/datasetController.js';
 import { switchTab } from '../modules/uiManager.js';
 
 // State events repaint through two coalescing entries that share one
@@ -219,7 +219,7 @@ function renderEmptyWorkspace() {
  */
 function renderActiveDatasetWorkspace(dataset, previewRows) {
 	if (!dataset) return;
-	renderDataInterface(
+	renderDatasetWorkspace(
 		dataset.rows,
 		dataset.columns,
 		dataset.name,

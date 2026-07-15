@@ -30,7 +30,7 @@ vi.mock('../../../src/config/chartDefaults.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/chartsView.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/views/chartsView.js', () => ({
 	renderCharts: mocks.renderCharts,
 }));
 
@@ -38,40 +38,40 @@ vi.mock('../../../src/utils/columnHelpers.js', () => ({
 	getNumericColumns: mocks.getNumericColumns,
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/tabsView.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/views/tabsView.js', () => ({
 	updateTabs: mocks.updateTabs,
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/tablePreviewView.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/views/tablePreviewView.js', () => ({
 	renderTablePreview: mocks.renderTablePreview,
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/statsView.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/views/statsView.js', () => ({
 	renderStats: mocks.renderStats,
 	renderCategoricalStats: mocks.renderCategoricalStats,
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/fileListView.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/views/fileListView.js', () => ({
 	renderFileListDOM: mocks.renderFileListDOM,
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/columnControlsView.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/views/columnControlsView.js', () => ({
 	renderColumnControlsDOM: mocks.renderColumnControlsDOM,
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/joinBuilderView.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/dialogs/joinBuilderView.js', () => ({
 	openJoinBuilderDialog: mocks.openJoinBuilderDialog,
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/presetDatasetsView.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/dialogs/presetDatasetsView.js', () => ({
 	openPresetDatasetsDialog: mocks.openPresetDatasetsDialog,
 }));
 
-vi.mock('../../../src/components/datasetWorkspace/globalFilterDialog.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/dialogs/globalFilterDialog.js', () => ({
 	openGlobalFilterDialog: mocks.openGlobalFilterDialog,
 }));
 
-import { renderDataInterface, renderEmptyState, renderFileList } from '../../../src/components/datasetWorkspace/datasetWorkspaceView.js';
+import { renderDatasetWorkspace, renderEmptyState, renderFileList } from '../../../src/features/datasetWorkspace/workspaceView.js';
 import { CHART_CONTAINERS } from '../../../src/config/elementIds.js';
 
 function setupDom() {
@@ -132,7 +132,7 @@ function setupEmptyStateDom() {
 	`;
 }
 
-describe('renderDataInterface global filter behavior', () => {
+describe('renderDatasetWorkspace global filter behavior', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mocks.mergeChartConfigWithDefaults.mockImplementation(config => config);
@@ -149,7 +149,7 @@ describe('renderDataInterface global filter behavior', () => {
 			},
 		};
 
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, config, vi.fn());
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, config, vi.fn());
 
 		const filtered = [{ region: 'A', value: 1 }];
 		expect(mocks.renderTablePreview).toHaveBeenCalledWith(filtered, columns, 10);
@@ -177,7 +177,7 @@ describe('renderDataInterface global filter behavior', () => {
 		select.appendChild(new Option('25', '25'));
 		select.appendChild(new Option('0', '0'));
 
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, onPreviewRowsChange, null, null, {
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, onPreviewRowsChange, null, null, {
 			activeTab: 'preview',
 			globalFilter: { rules: [] },
 		}, vi.fn());
@@ -202,7 +202,7 @@ describe('renderDataInterface global filter behavior', () => {
 			},
 		};
 
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, config, onChartConfigChange);
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, config, onChartConfigChange);
 
 		const callbacks = mocks.renderCharts.mock.calls[0][4];
 		callbacks.onAddToGlobalFilter('region', 'v:C');
@@ -233,7 +233,7 @@ describe('renderDataInterface global filter behavior', () => {
 		const nextFilter = { combine: 'AND', rules: [{ column: 'region', mode: 'categorical', include: ['v:A'] }] };
 		mocks.openGlobalFilterDialog.mockResolvedValueOnce({ action: 'apply', filter: nextFilter });
 
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
 			activeTab: 'preview',
 			globalFilter: { rules: [] },
 		}, onChartConfigChange);
@@ -268,7 +268,7 @@ describe('renderDataInterface global filter behavior', () => {
 		const rows = [{ region: 'A', value: 1 }, { region: 'B', value: 2 }];
 		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
 
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
 			activeTab: 'preview',
 			globalFilter,
 		}, onChartConfigChange);
@@ -290,23 +290,23 @@ describe('renderDataInterface global filter behavior', () => {
 			{ name: 'score', type: 'number' },
 		];
 
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, ['value', 'score'], null, {
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, ['value', 'score'], null, {
 			activeTab: 'preview',
 			globalFilter: { rules: [] },
 		}, vi.fn());
-		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].filtroAtivo).toBe('numeric');
+		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].activeFilter).toBe('numeric');
 
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, ['region', 'category'], null, {
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, ['region', 'category'], null, {
 			activeTab: 'preview',
 			globalFilter: { rules: [] },
 		}, vi.fn());
-		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].filtroAtivo).toBe('text');
+		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].activeFilter).toBe('text');
 
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, ['region', 'value'], null, {
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, ['region', 'value'], null, {
 			activeTab: 'preview',
 			globalFilter: { rules: [] },
 		}, vi.fn());
-		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].filtroAtivo).toBeNull();
+		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].activeFilter).toBeNull();
 	});
 
 	it('handles missing preview selector, invalid preview row defaults, and no change callback', () => {
@@ -314,7 +314,7 @@ describe('renderDataInterface global filter behavior', () => {
 		const rows = [{ region: 'A', value: 1 }];
 		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
 
-		expect(() => renderDataInterface(rows, columns, 'data.csv', '2 KB', -5, null, null, null, {
+		expect(() => renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', -5, null, null, null, {
 			activeTab: 'preview',
 			globalFilter: { rules: [] },
 		}, vi.fn())).not.toThrow();
@@ -327,7 +327,7 @@ describe('renderDataInterface global filter behavior', () => {
 		const rows = [{ region: 'A', value: 1 }];
 		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
 
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
 			activeTab: 'charts',
 			globalFilter: { rules: [] },
 		}, onChartConfigChange);
@@ -349,7 +349,7 @@ describe('renderDataInterface global filter behavior', () => {
 		const cleared = { combine: 'AND', rules: [] };
 
 		mocks.openGlobalFilterDialog.mockResolvedValueOnce({ action: 'clear', filter: cleared });
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
 			activeTab: 'preview',
 			globalFilter: { rules: [] },
 		}, onChartConfigChange);
@@ -357,14 +357,14 @@ describe('renderDataInterface global filter behavior', () => {
 		expect(onChartConfigChange).toHaveBeenCalledWith({ globalFilter: cleared });
 
 		mocks.openGlobalFilterDialog.mockResolvedValueOnce(null);
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
 			activeTab: 'preview',
 			globalFilter: { rules: [] },
 		}, onChartConfigChange);
 		await mocks.updateTabs.mock.calls.at(-1)[3].onGlobalFilterOpen();
 		expect(onChartConfigChange).toHaveBeenCalledTimes(1);
 
-		renderDataInterface(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
 			activeTab: 'preview',
 			globalFilter: { rules: [] },
 		}, null);
@@ -376,14 +376,14 @@ describe('renderDataInterface global filter behavior', () => {
 describe('renderFileList orchestration', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mocks.renderFileListDOM.mockImplementation(({ lista, datasets, filtro, limiteVisivel }) => {
-			lista.replaceChildren();
-			const count = filtro ? 1 : datasets.length;
+		mocks.renderFileListDOM.mockImplementation(({ list, datasets, filter, visibleLimit }) => {
+			list.replaceChildren();
+			const count = filter ? 1 : datasets.length;
 			return {
 				total: datasets.length,
 				filtered: count,
-				rendered: Math.min(count, limiteVisivel),
-				hasMore: count > limiteVisivel,
+				rendered: Math.min(count, visibleLimit),
+				hasMore: count > visibleLimit,
 			};
 		});
 		mocks.openJoinBuilderDialog.mockResolvedValue({ leftIndex: 0, rightIndex: 1 });
@@ -411,14 +411,14 @@ describe('renderFileList orchestration', () => {
 		expect(document.getElementById('files-pagination').textContent).toContain('chive-files-show-more');
 
 		document.querySelector('.files-pagination-btn').click();
-		expect(mocks.renderFileListDOM.mock.calls.at(-1)[0].limiteVisivel).toBe(30);
+		expect(mocks.renderFileListDOM.mock.calls.at(-1)[0].visibleLimit).toBe(30);
 
 		const search = document.getElementById('files-filter-input');
 		search.value = 'iris';
 		search.dispatchEvent(new Event('input'));
 		expect(mocks.renderFileListDOM.mock.calls.at(-1)[0]).toEqual(expect.objectContaining({
-			filtro: 'iris',
-			limiteVisivel: 15,
+			filter: 'iris',
+			visibleLimit: 15,
 		}));
 
 		document.getElementById('btn-join-files').click();
@@ -476,7 +476,7 @@ describe('renderFileList orchestration', () => {
 
 		expect(document.getElementById('files-pagination').textContent).toContain('chive-files-show-less');
 		document.querySelector('.files-pagination-btn').click();
-		expect(mocks.renderFileListDOM.mock.calls.at(-1)[0].limiteVisivel).toBe(15);
+		expect(mocks.renderFileListDOM.mock.calls.at(-1)[0].visibleLimit).toBe(15);
 	});
 
 	it('ignores canceled join and preset dialogs and tolerates absent optional callbacks', async () => {

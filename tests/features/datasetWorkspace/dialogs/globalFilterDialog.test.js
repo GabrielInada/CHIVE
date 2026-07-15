@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { openGlobalFilterDialog } from '../../../src/components/datasetWorkspace/globalFilterDialog.js';
+import { openGlobalFilterDialog } from '../../../../src/features/datasetWorkspace/dialogs/globalFilterDialog.js';
 
 const translate = (key, ...args) => {
 	if (args.length === 0) return key;

@@ -13,7 +13,7 @@ import {
 	clearStateLog,
 } from '../modules/state/stateEvents.js';
 import { getStateSummary } from '../modules/state/stateDebug.js';
-import { getLoadedDatasets } from '../modules/fileManager.js';
+import { getLoadedDatasets } from '../features/datasetWorkspace/datasetController.js';
 import {
 	runFullRefreshNow,
 	updateDatasetColumns,

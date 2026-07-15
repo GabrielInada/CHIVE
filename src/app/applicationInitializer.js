@@ -17,7 +17,7 @@ import { rehydratePanelChartSpecs } from '../utils/panelHydration.js';
 import { throttle } from '../utils/throttle.js';
 import { initChartControls } from '../modules/chartControls/chartControlsManager.js';
 import { initPanelController } from '../features/panel/panelController.js';
-import { initFileManager } from '../modules/fileManager.js';
+import { initDatasetController } from '../features/datasetWorkspace/datasetController.js';
 import { initializeAllEventHandlers } from '../modules/eventHandlers.js';
 import { initSettingsController } from '../modules/settingsController.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
@@ -48,7 +48,7 @@ export async function initializeApplication() {
 		});
 	}
 
-	initFileManager();
+	initDatasetController();
 	// Live color and height previews are rate-limited because heavy charts can
 	// otherwise re-render on every pointer event. Leading and trailing throttle
 	// behavior preserves the first and final preview values.

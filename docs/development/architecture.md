@@ -128,8 +128,8 @@ Contributor-facing enforcement details live in
 
 Example: a user toggles a column-visibility checkbox.
 
-1. A renderer's DOM handler invokes `aoAlterarSelecaoColuna`, the callback
-   propagated through `renderDataInterface`.
+1. A renderer's DOM handler invokes `onColumnSelectionChange`, the callback
+   propagated through `renderDatasetWorkspace`.
 2. In this flow, that callback is `app/renderCoordinator.js`'s
    `updateDatasetColumns`, which
    calls `updateActiveDatasetColumns(columns)`.

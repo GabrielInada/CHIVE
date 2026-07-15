@@ -4,9 +4,9 @@
  * `{ chartType: null }` for the explicit "Clear" action.
  */
 
-import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
-import { CHART_CATALOG } from '../../charts/catalog.js';
-import { installDialogFocus } from '../../modules/dialogFocus.js';
+import { CHART_TYPE_KEYS } from '../../../config/chartTypes.js';
+import { CHART_CATALOG } from '../../../charts/catalog.js';
+import { installDialogFocus } from '../../../modules/dialogFocus.js';
 
 /**
  * Build one chart-type card: preview SVG, name, category tag,

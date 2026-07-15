@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
 	throttle: vi.fn(),
 	initChartControls: vi.fn(),
 	initPanelController: vi.fn(),
-	initFileManager: vi.fn(),
+	initDatasetController: vi.fn(),
 	initializeAllEventHandlers: vi.fn(),
 	initSettingsController: vi.fn(),
 	showFeedback: vi.fn(),
@@ -60,8 +60,8 @@ vi.mock('../../src/features/panel/panelController.js', () => ({
 	initPanelController: mocks.initPanelController,
 }));
 
-vi.mock('../../src/modules/fileManager.js', () => ({
-	initFileManager: mocks.initFileManager,
+vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
+	initDatasetController: mocks.initDatasetController,
 }));
 
 vi.mock('../../src/modules/eventHandlers.js', () => ({
@@ -121,7 +121,7 @@ describe('application initializer', () => {
 		expect(mocks.initializeI18n).toHaveBeenCalledTimes(1);
 		expect(mocks.initSettingsController).toHaveBeenCalledTimes(1);
 		expect(mocks.hydrateState).not.toHaveBeenCalled();
-		expect(mocks.initFileManager).not.toHaveBeenCalled();
+		expect(mocks.initDatasetController).not.toHaveBeenCalled();
 		expect(mocks.setupStateSubscriptions).not.toHaveBeenCalled();
 	});
 
@@ -151,7 +151,7 @@ describe('application initializer', () => {
 		expect(mocks.runFullRefreshNow).toHaveBeenCalledTimes(1);
 
 		expect(mocks.hydrateState.mock.invocationCallOrder[0])
-			.toBeLessThan(mocks.initFileManager.mock.invocationCallOrder[0]);
+			.toBeLessThan(mocks.initDatasetController.mock.invocationCallOrder[0]);
 		expect(mocks.setupStateSubscriptions.mock.invocationCallOrder[0])
 			.toBeLessThan(mocks.enablePersistenceAutoSave.mock.invocationCallOrder[0]);
 		expect(mocks.enablePersistenceAutoSave.mock.invocationCallOrder[0])
@@ -179,7 +179,7 @@ describe('application initializer', () => {
 		await initializeApplication();
 
 		expect(mocks.hydrateState).not.toHaveBeenCalled();
-		expect(mocks.initFileManager).toHaveBeenCalledTimes(1);
+		expect(mocks.initDatasetController).toHaveBeenCalledTimes(1);
 		expect(mocks.runFullRefreshNow).toHaveBeenCalledTimes(1);
 	});
 
@@ -218,6 +218,6 @@ describe('application initializer', () => {
 		expect(document.body.style.visibility).toBe('visible');
 		expect(consoleError).toHaveBeenCalledWith('CHIVE initialization failed:', error);
 		expect(mocks.showError).toHaveBeenCalledWith('An internal application error occurred.');
-		expect(mocks.initFileManager).not.toHaveBeenCalled();
+		expect(mocks.initDatasetController).not.toHaveBeenCalled();
 	});
 });

@@ -3,8 +3,8 @@
  * cells (numeric/text), and a footer row showing per-column type tags.
  */
 
-import { t, translateType, getLocale } from '../../services/i18nService.js';
-import { formatNumber, isEmptyValue } from '../../utils/formatters.js';
+import { t, translateType, getLocale } from '../../../services/i18nService.js';
+import { formatNumber, isEmptyValue } from '../../../utils/formatters.js';
 
 /**
  * Render the preview table into `#table-container`. Caps rows at `limit`.

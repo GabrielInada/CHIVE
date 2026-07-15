@@ -18,15 +18,15 @@ import { CHART_CONTAINERS } from '../../config/elementIds.js';
 import { getNumericColumns } from '../../utils/columnHelpers.js';
 import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
 
-import { renderCharts } from './chartsView.js';
-import { updateTabs } from './tabsView.js';
-import { renderTablePreview } from './tablePreviewView.js';
-import { renderStats, renderCategoricalStats } from './statsView.js';
-import { renderFileListDOM } from './fileListView.js';
-import { renderColumnControlsDOM } from './columnControlsView.js';
-import { openJoinBuilderDialog } from './joinBuilderView.js';
-import { openPresetDatasetsDialog } from './presetDatasetsView.js';
-import { openGlobalFilterDialog } from './globalFilterDialog.js';
+import { renderCharts } from './views/chartsView.js';
+import { updateTabs } from './views/tabsView.js';
+import { renderTablePreview } from './views/tablePreviewView.js';
+import { renderStats, renderCategoricalStats } from './views/statsView.js';
+import { renderFileListDOM } from './views/fileListView.js';
+import { renderColumnControlsDOM } from './views/columnControlsView.js';
+import { openJoinBuilderDialog } from './dialogs/joinBuilderView.js';
+import { openPresetDatasetsDialog } from './dialogs/presetDatasetsView.js';
+import { openGlobalFilterDialog } from './dialogs/globalFilterDialog.js';
 import {
   applyGlobalFilterRules,
   createSingleCategoryGlobalFilter,
@@ -165,15 +165,15 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
 
   const renderList = () => {
     const renderResult = renderFileListDOM({
-      lista: list,
+      list,
       datasets,
-      indiceAtivo: activeIndex,
-      traduzir: t,
+      activeIndex,
+      translate: t,
       getLocale,
-      aoSelecionar: onSelect,
-      aoRemover: onRemove,
-      filtro: fileListQuery,
-      limiteVisivel: fileListVisibleCount,
+      onSelect,
+      onRemove,
+      filter: fileListQuery,
+      visibleLimit: fileListVisibleCount,
     });
 
     filterStatus.textContent = t('chive-files-filter-status', renderResult.filtered, renderResult.total);
@@ -302,15 +302,15 @@ export function renderEmptyState() {
   const uploadZone = document.getElementById('upload-zone');
   if (uploadZone) uploadZone.classList.remove('loaded');
   
-  const uploadIcone = document.querySelector('.upload-icon');
-  if (uploadIcone) uploadIcone.textContent = '⬆';
+  const uploadIcon = document.querySelector('.upload-icon');
+  if (uploadIcon) uploadIcon.textContent = '⬆';
   
-  const uploadTextoMain = document.querySelector('.upload-text-main');
-  if (uploadTextoMain) uploadTextoMain.textContent = t('chive-upload-main');
+  const uploadTextMain = document.querySelector('.upload-text-main');
+  if (uploadTextMain) uploadTextMain.textContent = t('chive-upload-main');
   
-  const uploadTextoSub = document.querySelector('.upload-text-sub');
+  const uploadTextSub = document.querySelector('.upload-text-sub');
   // innerHTML: translation contains <br>/<strong>; source is i18n JSON, not user input.
-  if (uploadTextoSub) uploadTextoSub.innerHTML = t('chive-upload-sub');
+  if (uploadTextSub) uploadTextSub.innerHTML = t('chive-upload-sub');
 }
 
 /**
@@ -334,7 +334,7 @@ export function renderEmptyState() {
  * @param {(partial: Partial<ChartConfig>) => void} [onChartConfigChange]
  * @returns {void}
  */
-export function renderDataInterface(
+export function renderDatasetWorkspace(
   rows,
   columns,
   fileName,
@@ -373,17 +373,17 @@ export function renderDataInterface(
   const columnsList = document.getElementById('column-list-content');
 
   renderColumnControlsDOM({
-    acoesContainer: actionsContainer,
-    listaColunas: columnsList,
-    columns: columns,
-    nomesSelecionados: selectedNames,
-    filtroAtivo: activeFilter,
-    nomesColunas: columnNames,
-    nomesNumericas: numericNames,
-    nomesTexto: textNames,
-    traduzir: t,
+    actionsContainer,
+    columnsList,
+    columns,
+    selectedNames,
+    activeFilter,
+    columnNames,
+    numericNames,
+    textNames,
+    translate: t,
     translateType,
-    aoAlterarSelecaoColuna: onColumnSelectionChange,
+    onColumnSelectionChange,
   });
 
   const allColumnNames = columns.map(column => column.name);

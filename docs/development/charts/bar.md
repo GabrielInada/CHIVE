@@ -256,7 +256,7 @@ renderer never reads the DOM controls; it only reads config the listeners have w
 
 ### 6.1 Dataset workspace
 
-[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides
+[chartsView.js](../../../src/features/datasetWorkspace/views/chartsView.js) decides
 which chart is active and passes the shared render context to the
 [workspace registry](../../../src/charts/registries/workspace.js). Its `bar`
 entry calls `renderBarChartSection({ config, rows, filterCallbacks })` from
@@ -458,7 +458,7 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
   snapshot-to-renderer mapping and localized aggregate labels.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
-- [chartsView.test.js](../../../tests/components/datasetWorkspace/chartsView.test.js) covers view-level
+- [chartsView.test.js](../../../tests/features/datasetWorkspace/views/chartsView.test.js) covers view-level
   orchestration of which blocks render.
 
 ---

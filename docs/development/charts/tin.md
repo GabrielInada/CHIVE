@@ -448,7 +448,7 @@ controls; it only reads config that the listeners have written.
 
 ### 6.1 Dataset workspace
 
-[chartsView.js](../../../src/components/datasetWorkspace/chartsView.js) decides
+[chartsView.js](../../../src/features/datasetWorkspace/views/chartsView.js) decides
 which chart is active and delegates through the
 [workspace registry](../../../src/charts/registries/workspace.js). Its `tin`
 entry calls `renderTinChartSection({ config: chartConfig.tin, rows })` from

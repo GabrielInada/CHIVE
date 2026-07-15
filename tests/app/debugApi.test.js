@@ -35,7 +35,7 @@ vi.mock('../../src/modules/state/stateDebug.js', () => ({
 	getStateSummary: mocks.getStateSummary,
 }));
 
-vi.mock('../../src/modules/fileManager.js', () => ({
+vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 	getLoadedDatasets: mocks.getLoadedDatasets,
 }));
 

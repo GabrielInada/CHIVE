@@ -8,7 +8,7 @@
  * {@link openJoinBuilderDialog}.
  */
 
-import { installDialogFocus } from '../../modules/dialogFocus.js';
+import { installDialogFocus } from '../../../modules/dialogFocus.js';
 
 /** @private */
 function createOption(value, label, selected = false) {
@@ -61,7 +61,7 @@ function getCheckedValues(container, selector) {
 		.map(input => input.value);
 }
 
-import { isNullish } from '../../utils/formatters.js';
+import { isNullish } from '../../../utils/formatters.js';
 
 /** @private */
 function normalizeJoinKey(value) {
