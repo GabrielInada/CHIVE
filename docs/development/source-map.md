@@ -58,12 +58,11 @@ with real work:
 | Registry | Supported-type implementation lookup for one integration surface | `charts/registries/workspace.js` |
 | Adapter | Bridge between a generic system and a chart/domain implementation | `charts/bar/panelAdapter.js` |
 
-Manager is legacy naming, still valid for existing files: `fileManager.js`,
-`uiManager.js`, and `chartControlsManager.js` keep their
-names until their domains are reworked for real. Controller is the name for
-new feature or domain flow owners. Do not rename a Manager for aesthetics
-alone; do not use Controller for pure renderers, services, registries, or
-math helpers.
+Manager is legacy naming, still valid for existing files: `uiManager.js` and
+`chartControlsManager.js` keep their names until their domains are reworked
+for real. Controller is the name for new feature or domain flow owners. Do
+not rename a Manager for aesthetics alone; do not use Controller for pure
+renderers, services, registries, or math helpers.
 
 ## Where Do I Put New Code?
 

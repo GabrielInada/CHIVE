@@ -106,7 +106,7 @@ function csvFile({
   };
 }
 
-describe('fileManager', () => {
+describe('datasetController', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.FileReader = FileReaderMock;
@@ -191,7 +191,7 @@ describe('fileManager', () => {
     expect(progress.fail).toHaveBeenCalledWith('chive-progress-failed:mapped-detail');
   });
 
-  it('forwards ROW_LIMIT to the worker; truncation is handled there, not in fileManager', async () => {
+  it('forwards ROW_LIMIT to the worker; truncation is handled there, not in datasetController', async () => {
     mocks.ingestFile.mockResolvedValueOnce({
       ok: true,
       value: {

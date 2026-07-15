@@ -287,7 +287,7 @@
  * @typedef {{ ok: true, [key: string]: * } | { ok: false, reason?: string }} Result
  */
 
-// ─── Ingest pipeline (worker → service → fileManager) ───────────────────
+// ─── Ingest pipeline (worker → service → datasetController) ─────────────
 
 /**
  * Resolved payload from the data-ingest worker. Lives at `result.value`
@@ -561,10 +561,10 @@
  * @property {(handler: () => void) => void} onCancel
  */
 
-// ─── Join workflow (fileManager.createJoinedDataset) ────────────────────
+// ─── Join workflow (datasetController.createJoinedDataset) ──────────────
 
 /**
- * Result returned by `fileManager.createJoinedDataset`. Uses `message`
+ * Result returned by `datasetController.createJoinedDataset`. Uses `message`
  * rather than `reason` (the generic `Result` shape's failure field), so
  * callers route failures into `showError` directly. On success the new
  * dataset's index in `appState.data.datasets` and the generated name

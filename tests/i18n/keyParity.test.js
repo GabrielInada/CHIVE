@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import en from '../src/i18n/en.json';
-import ptBR from '../src/i18n/pt-BR.json';
-import qqq from '../src/i18n/qqq.json';
+import en from '../../src/i18n/en.json';
+import ptBR from '../../src/i18n/pt-BR.json';
+import qqq from '../../src/i18n/qqq.json';
 
 const catalogs = [
 	{ name: 'en', messages: en },

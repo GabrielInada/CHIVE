@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderBarChart } from '../../../../src/charts/bar/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
+import { CHART_COLORS } from '../../../../src/config/charts.js';
 
 function textValues(container) {
 	return Array.from(container.querySelectorAll('text')).map(node => node.textContent);
@@ -63,6 +64,36 @@ describe('renderBarChart behavior', () => {
 
 	afterEach(() => {
 		hideChartTooltip();
+	});
+
+	it('applies a custom uniform color to rendered bars', () => {
+		const container = document.getElementById('bar');
+		const rows = [
+			{ categoria: 'A' },
+			{ categoria: 'B' },
+			{ categoria: 'A' },
+		];
+
+		const result = renderBarChart(container, rows, 'categoria', {
+			color: '#112233',
+		});
+
+		expect(result.ok).toBe(true);
+		const rect = container.querySelector('rect');
+		expect(rect).not.toBeNull();
+		expect(rect.getAttribute('fill')).toBe('#112233');
+	});
+
+	it('falls back to the default bar color on an invalid color', () => {
+		const container = document.getElementById('bar');
+		const rows = [{ categoria: 'A' }];
+
+		renderBarChart(container, rows, 'categoria', {
+			color: 'invalid-color',
+		});
+
+		const rect = container.querySelector('rect');
+		expect(rect.getAttribute('fill')).toBe(CHART_COLORS.bar);
 	});
 
 	it('supports bar chart sum and mean measure modes with numeric value column', () => {

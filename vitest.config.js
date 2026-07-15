@@ -13,11 +13,11 @@ export default defineConfig({
 			// libraries (d3, sqlite, banana-i18n) are large and barely
 			// exercised, so including them buries the real numbers.
 			include: ['src/**/*.js'],
-			// index.js files are pure re-export barrels; types.js is JSDoc
-			// typedefs only; i18n holds JSON message catalogs. None contain
-			// testable runtime logic. main.js (the boot orchestrator) is left
-			// in deliberately so its real, untested code stays visible.
-			exclude: ['src/**/index.js', 'src/types.js', 'src/i18n/**'],
+			// types.js is JSDoc typedefs only; i18n holds JSON message
+			// catalogs. Neither contains testable runtime logic. main.js (the
+			// boot orchestrator) is left in deliberately so its real, untested
+			// code stays visible.
+			exclude: ['src/types.js', 'src/i18n/**'],
 		},
 	},
 });

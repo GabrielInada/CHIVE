@@ -519,11 +519,10 @@ Package tests live under [tests/charts/scatter/](../../../tests/charts/scatter):
   (size/color accessors and the frozen palettes).
 - [renderers/svg.test.js](../../../tests/charts/scatter/renderers/svg.test.js)
   is the behavior guard for the orchestrator, interactions, regression overlay (incl. DOM
-  stacking order and clip-id uniqueness), log scale, and aggregation.
-- [renderers/svgAxes.test.js](../../../tests/charts/scatter/renderers/svgAxes.test.js)
-  covers axis rendering behavior.
-- [chartColors.test.js](../../../tests/modules/visualizations/chartColors.test.js) exercises the
+  stacking order and clip-id uniqueness), log scale, aggregation, and the
   renderer's color options.
+- [renderers/svg.axes.test.js](../../../tests/charts/scatter/renderers/svg.axes.test.js)
+  covers axis rendering behavior.
 - [controls.test.js](../../../tests/charts/scatter/controls.test.js) covers
   the control building and the axis/scale and color-mode cross-constraints.
 - [workspaceSection.test.js](../../../tests/charts/scatter/workspaceSection.test.js),

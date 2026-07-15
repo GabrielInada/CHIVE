@@ -56,26 +56,26 @@ Foundation is split into two sub-bundles so the about page can load only what it
 
 **Bundle via**: `base.css` → `style.css`
 
-### Controls (`@feature: foundation + file-manager + results + panel`)
+### Controls (`@feature: foundation + datasetWorkspace + panel`)
 Generic reusable controls and sidebar card patterns.
 
 | File | Owner | Purpose |
 |------|-------|---------|
 | `buttons.css` | foundation | Button styles and variants (primary, secondary, danger) |
-| `upload.css` | file-manager | Upload drop zone and file upload interactions |
-| `columns.css` | results | Column selection controls and filter actions |
+| `upload.css` | datasetWorkspace | Upload drop zone and file upload interactions |
+| `columns.css` | datasetWorkspace | Column selection controls and filter actions |
 | `visualizations.css` † | panel | Visualization card controls and preview UI |
 
 † Owned by the Panel feature but bundled through the `controls` layer so chart controls cascade below visual output. See Panel/Visualization below.
 
 **Bundle via**: `controls.css` → `style.css`
 
-### Dataset Workspace/Data View (`@feature: results`)
+### Dataset Workspace/Data View (`@feature: datasetWorkspace`)
 Dataset presentation, column management, and data summaries.
 
 | File | Purpose |
 |------|---------|
-| `results.css` | Dataset workspace container, empty state, file list styling |
+| `datasetWorkspace.css` | Dataset workspace container, empty state, file list styling |
 | `table.css` | Table preview (thead, tbody, tfoot, borders, highlights) |
 | `columns.css` | Column control buttons, selection UI, filter toggles |
 
@@ -91,8 +91,6 @@ Canvas layout, chart placement, and block management.
 | `visualizations.css` † | `controls.css` | D3-specific: bar charts, scatter plots, axes, legends |
 
 † Listed here because the Panel feature owns it, but it is imported via `controls.css` (not `visual-output.css`) so its rules cascade in the `controls` layer.
-
-**Sub-feature**: `panel > visualizations`, visualization-specific styling
 
 **Bundle via**: `visual-output.css` → `style.css` (except `visualizations.css`, see above)
 
@@ -146,12 +144,12 @@ style.css (app)
 │   └── collapsed.css
 ├── controls.css (controls layer)
 │   ├── buttons.css (foundation)
-│   ├── upload.css (file-manager)
-│   ├── columns.css (results)
+│   ├── upload.css (datasetWorkspace)
+│   ├── columns.css (datasetWorkspace)
 │   └── visualizations.css (panel)
 ├── data-view.css (data-view layer)
-│   ├── table.css (results)
-│   └── results.css (results)
+│   ├── table.css (datasetWorkspace)
+│   └── datasetWorkspace.css (datasetWorkspace)
 ├── visual-output.css (visual-output layer)
 │   ├── charts.css (panel)
 │   └── panel.css (panel)
@@ -290,7 +288,7 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 | **1024px** | About page | [about.css:265](../../src/styles/about.css#L265) | About-page grid collapses from 2-column to 1-column; hero padding shrinks |
 | **900px** | Main app layout | [responsive.css:5](../../src/styles/responsive.css#L5), [panel.css:479](../../src/styles/panel.css#L479) | Workspace stacks; header switches to column; sidebar narrows; panel block adjustments |
 | **768px** | Header chrome | [header-nav.css:47](../../src/styles/header-nav.css#L47) | Header nav gap/margins shrink; header wraps |
-| **640px** | About page + dataset workspace | [about.css:290](../../src/styles/about.css#L290), [results.css:356](../../src/styles/results.css#L356) | About hero compresses; team grid becomes 1-column; results-area tweaks |
+| **640px** | About page + dataset workspace | [about.css:290](../../src/styles/about.css#L290), [datasetWorkspace.css:356](../../src/styles/datasetWorkspace.css#L356) | About hero compresses; team grid becomes 1-column; results-area tweaks |
 | **480px** | Header chrome | [header-nav.css:58](../../src/styles/header-nav.css#L58) | Header nav reflows to full-width row below logo |
 
 ### Main-app breakpoint: 900px
@@ -320,7 +318,7 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 Pick the home that matches the scope of the rule:
 
 1. **Main-app layout** (workspace, sidebar, content area) → `responsive.css` under the existing `@media (max-width: 900px)` block
-2. **Feature-internal** (e.g., panel slot rearrangement, dataset workspace table) → the feature's own file (`panel.css`, `results.css`) at the breakpoint already in use there
+2. **Feature-internal** (e.g., panel slot rearrangement, dataset workspace table) → the feature's own file (`panel.css`, `datasetWorkspace.css`) at the breakpoint already in use there
 3. **About page** → `about.css` (1024px or 640px blocks)
 4. **Header chrome** (nav, logo, settings button) → `header-nav.css` (768px or 480px blocks); dialog-internal settings rules stay in `settings.css`
 5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.active`) over new breakpoints when the difference is interaction-driven, not viewport-driven

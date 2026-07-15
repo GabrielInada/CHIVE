@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import * as appState from '../src/modules/state/appState.js';
+import * as appState from '../../../src/modules/state/appState.js';
 
 const baixarSvgMarkupMock = vi.fn((svgMarkup, fileNameBase) => {
   return {
@@ -11,7 +11,7 @@ const baixarSvgMarkupMock = vi.fn((svgMarkup, fileNameBase) => {
   };
 });
 
-vi.mock('../src/utils/svgExport.js', () => ({
+vi.mock('../../../src/utils/svgExport.js', () => ({
   captureSvgMarkupFromContainer: vi.fn(() => ({ ok: false, reason: 'not-used' })),
   downloadSvgMarkup: (...args) => baixarSvgMarkupMock(...args),
   ensureSvgAttributes: (svg) => {
@@ -19,7 +19,7 @@ vi.mock('../src/utils/svgExport.js', () => ({
   },
 }));
 
-const { renderCanvasPanel, exportPanelLayoutSvg } = await import('../src/features/panel/panelController.js');
+const { renderCanvasPanel, exportPanelLayoutSvg } = await import('../../../src/features/panel/panelController.js');
 
 function setupDom() {
   document.body.innerHTML = `
@@ -71,7 +71,7 @@ function resetAppStateForTest() {
   });
 }
 
-describe('panel export composition (phase 2)', () => {
+describe('panelController export composition', () => {
   beforeEach(() => {
     resetAppStateForTest();
     setupDom();

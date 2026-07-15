@@ -49,7 +49,7 @@ For the longer tradeoff analysis, see
 ```mermaid
 flowchart TB
     U(["User"])
-    CTRL["Feature controllers/managers<br/>eventHandlers · fileManager · panelController · chartControls · uiManager"]
+    CTRL["Feature controllers/managers<br/>eventHandlers · datasetController · panelController · chartControls · uiManager"]
     FAC["State facades<br/>data · panel · ui"]
     STATE[("appState<br/>module-private")]
     BUS["State event bus<br/>STATE_EVENTS"]
@@ -85,7 +85,7 @@ and
 
 | Layer | Owns | Rule Of Thumb |
 |---|---|---|
-| Feature controllers/managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (`eventHandlers`, `fileManager`, `panelController`, `chartControls`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
+| Feature controllers/managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (`eventHandlers`, `datasetController`, `panelController`, `chartControls`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
 | State Management Core | `appState`, facades, event registry, event bus. | The only normal path for application state mutation. |
 | Application orchestration | Browser startup in `main.js`, initialization order in `app/applicationInitializer.js`, and broad/narrow rendering in `app/renderCoordinator.js`. | Keep the entrypoint thin, order side effects in the initializer, and keep all scheduler state in the render coordinator. |
 | Visualization Layer | Components, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
