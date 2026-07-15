@@ -32,7 +32,7 @@ vi.mock('../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../src/services/persistenceService.js', () => ({
+vi.mock('../../src/services/persistence.js', () => ({
 	isPersistenceAvailable: mocks.isPersistenceAvailable,
 	hydrateState: mocks.hydrateState,
 	enablePersistenceAutoSave: mocks.enablePersistenceAutoSave,

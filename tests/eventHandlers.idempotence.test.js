@@ -31,7 +31,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../src/services/i18nService.js', () => ({ t: mocks.t }));
 vi.mock('../src/utils/svgExport.js', () => ({ downloadSvgFromContainer: mocks.downloadSvgFromContainer }));
 vi.mock('../src/utils/downloadBytes.js', () => ({ downloadBytes: mocks.downloadBytes }));
-vi.mock('../src/services/persistenceService.js', () => ({
+vi.mock('../src/services/persistence.js', () => ({
   PROJECT_FILE_MIME: 'application/vnd.chive.project+sqlite3',
   exportProject: mocks.exportProject,
   importProjectBytes: mocks.importProjectBytes,

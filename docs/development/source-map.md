@@ -22,7 +22,7 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/types.js` | Shared JSDoc typedefs (`AppState`, `Dataset`, `ChartConfig`, ...). Always imported directly, never through barrels. |
 | `src/config/` | Pure leaf layer: canonical chart identities, chart defaults, element IDs, limits, locale, and format constants. No imports from modules, components, or services. |
 | `src/utils/` | Pure leaf layer: DOM-free helpers (result pattern, color utilities, filters, formatters). Same import rule as `config/`. One deliberate DOM exception: `chartContainerLifecycle.js`, the dispose-aware chart-container clear shared by components, the panel feature, and chart packages. |
-| `src/domain/` | Pure product rules with one owner per subdirectory. `domain/panel/` holds the layout-template registry (`layoutTemplates.js`) and the panel-block model with the shared percentage clamp (`panelBlockModel.js`). Leaf layer like `config/` and `utils/`: no imports from modules, components, services, or charts. |
+| `src/domain/` | Pure product rules with one owner per subdirectory. `domain/panel/` holds the layout-template registry (`layoutTemplates.js`) and the panel-block model with the shared percentage clamp (`panelBlockModel.js`). `domain/datasets/` holds the dataset algorithms: parsing and delimiter detection (`parse.js`), type and decimal detection (`typeDetection.js`), row normalization (`processData.js`), per-column statistics (`statistics.js`), and joins (`join.js`). Leaf layer like `config/` and `utils/`: no imports from modules, components, services, or charts. |
 | `src/components/` | Leaf renderers: `components/settingsDialog.js` is the callback-driven global settings modal opened from the shared header. The dataset workspace views and dialogs now live in `features/datasetWorkspace/`. |
 | `src/modules/state/` | State core: `appState.js`, the data/panel/ui facades, `stateEvents.js`, and `stateDebug.js`. Panel facade-only mutation primitives live under `state/panel/`. The only write path for application state. |
 | `src/modules/eventHandlers/` | DOM intent translation: workflow modules that turn user events into facade calls, wired by `modules/eventHandlers.js`. |
@@ -32,7 +32,8 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/features/datasetWorkspace/` | Dataset workspace feature package: `datasetController.js` owns file upload, dataset add/remove/select, joins, and preset loading (facade writes); `workspaceView.js` composes the right-hand pane; `views/` and `dialogs/` are the callback-driven, state-read-only renderers; `bindings/` holds the delegated dataset-row listeners. Durable state remains under `modules/state/`. |
 | `src/features/panel/` | Panel feature package: `panelController.js` owns user intent, facade writes, bus subscriptions, and render coordination; `views/`, `layout/`, `slots/`, and `export/` own presentation mechanics. Durable state remains under `modules/state/`; pure layout templates and the block model remain under `domain/panel/`. |
 | `src/charts/` | Chart presentation metadata (`catalog.js` and `previews.js`), independent controls/workspace/panel lookup under `registries/`, D3/SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`, `charts/network/`, and `charts/tin/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/` (SVG scaffold, tooltip, control factories and grouping). A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
-| `src/services/` | Side-effecting services: `dataService/`, `persistenceService/` with the `persistence/` backends, `i18nService.js`, `settingsService.js` (owner of the `chive.settings` localStorage key), `presetService.js`, and `dataIngestService.js`. |
+| `src/services/` | Side-effecting services, each crossing a browser boundary: `persistence.js` (the only public persistence import path) with the `persistence/` package behind it, `i18nService.js`, `settingsService.js` (owner of the `chive.settings` localStorage key), `presetService.js`, and `dataIngestService.js`. The pure dataset algorithms are not here; they live in `domain/datasets/`. |
+| `src/services/persistence/` | Persistence internals, private to the package and reachable only through `services/persistence.js`: lifecycle and backend selection (`lifecycle.js`), snapshot normalization (`snapshot.js`), autosave, dirty tracking, errors, project file naming, and UI prefs. `backends/` holds the storage backends (`workerBackend.js` hosts the worker, `blobBackend.js` does the SQLite work, `legacyIndexedDbReader.js` reads the pre-SQLite format once); `sqlite/core.js` holds the schema and snapshot SQL. `workers/persistWorker.js` is the one permitted internals importer. |
 | `src/data/` | Bundled preset datasets (`presets/`) and `presetCatalog.js`. |
 | `src/workers/` | Background workers: `persistWorker.js` for persistence and `dataIngestWorker.js` for data ingest. |
 | `src/styles/` | CSS layer files. Source of truth: [Stylesheet organization](styles.md). |
@@ -51,7 +52,7 @@ with real work:
 | Controller | Feature/domain flow ownership: DOM intent, facade writes, service calls, render coordination | `features/panel/panelController.js` |
 | View | DOM building/rendering from inputs and callbacks | `features/datasetWorkspace/views/tablePreviewView.js` |
 | Renderer | Chart/SVG/WebGL rendering from explicit inputs | `charts/bar/renderers/svg.js` |
-| Service | Side effects, persistence, ingest, i18n, reusable domain operations | `services/persistenceService.js` |
+| Service | Side effects: persistence, ingest, i18n, preset fetching | `services/persistence.js` |
 | Facade | State or service boundary | `modules/state/dataStateFacade.js` |
 | Catalog | Identity-keyed descriptive or presentation metadata | `charts/catalog.js` |
 | Registry | Supported-type implementation lookup for one integration surface | `charts/registries/workspace.js` |
@@ -74,7 +75,9 @@ math helpers.
 | A new dataset-workspace view / tab | `src/features/datasetWorkspace/views/` (or `dialogs/`) + a `renderXxx` function composed by `app/renderCoordinator.js` | Read state via getters; pass callbacks for user actions. |
 | A new panel view or interaction | The matching `src/features/panel/` subdirectory | Keep flow ownership in `panelController.js`, durable state in its facade, and pure rules under `domain/panel/`. |
 | A pure helper | `src/utils/` | No DOM access (single deliberate exception: `chartContainerLifecycle.js`). No state imports. |
-| A pure domain rule | `src/domain/{owner}/` | Product rules owned by one feature domain (e.g. the panel layout templates). Same leaf constraints as `utils/`, plus no chart imports. |
+| A pure domain rule | `src/domain/{owner}/` | Product rules owned by one feature domain (e.g. the panel layout templates, the dataset algorithms). Same leaf constraints as `utils/`, plus no chart imports. |
+| A new dataset algorithm (parse, type, stats, join) | `src/domain/datasets/` | Pure and I/O-free, so it belongs in the domain leaf, not `services/`. Import it directly; there is no barrel. |
+| A change to how projects are stored | `src/services/persistence/` | Reach the package only through `services/persistence.js`; lint enforces this. Do not change persisted shapes or snapshot identity as part of a structural move. |
 | A new derived selector | The facade that owns the underlying domain | Keep getters thin; do not compute heavy aggregates inside them. |
 
 For a new chart type, update the full chart surface in one pass:
@@ -124,6 +127,16 @@ The rules, in place of a speculative target tree:
 - The browser entrypoint is intentionally thin. Initialization order lives in
   `app/applicationInitializer.js`, render scheduler state stays together in
   `app/renderCoordinator.js`, and debug API assembly lives in `app/debugApi.js`.
+- `services/` means "crosses a browser side-effect boundary", not "reusable
+  logic". Persistence, ingest worker hosting, preset fetching, and i18n
+  qualify. The dataset algorithms did not, so parsing, type detection, row
+  processing, statistics, and joins live in `domain/datasets/`, where the
+  domain leaf lint rule keeps them I/O-free and DOM-free.
+- Persistence is one package with one public door. `services/persistence.js`
+  is the only import path into it; lifecycle, snapshot, autosave, backends,
+  and the SQLite core are private behind it, and a lint boundary enforces
+  that. `workers/persistWorker.js` is the single exception, since hosting the
+  blob backend off the main thread is the point of the worker.
 - Per-chart packages are the chart direction: a chart's data prep,
   options, math/scales, renderers, controls, workspace section, and panel
   adapter live together. `charts/scatter3d/` established the Three.js path and

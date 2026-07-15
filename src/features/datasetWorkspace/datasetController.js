@@ -15,7 +15,9 @@
  */
 
 import { t } from '../../services/i18nService.js';
-import { processData, formatFileSize, joinDatasets } from '../../services/dataService.js';
+import { processData } from '../../domain/datasets/processData.js';
+import { joinDatasets } from '../../domain/datasets/join.js';
+import { formatFileSize } from '../../utils/formatters.js';
 import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../../services/dataIngestService.js';
 import { loadPresetSource } from '../../services/presetService.js';
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from '../../modules/state/appState.js';

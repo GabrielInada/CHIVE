@@ -231,6 +231,36 @@ export default [
 		},
 	},
 
+	// (A3) The persistence package is package-private: reach it through the
+	// public `services/persistence.js` module, never its internals (lifecycle,
+	// snapshot, autosave, backends, sqlite). Scoped to the layers that
+	// legitimately consume services; utils/, config/, domain/, and the chart
+	// packages already ban `services/**` wholesale in their own blocks below.
+	// Deliberately placed before those narrower blocks: per the (A) note, a
+	// later block matching the same file wins outright, so this must not sit
+	// after them or it would drop their restrictions.
+	// `workers/persistWorker.js` is the one legitimate internals importer, it
+	// hosts the blob backend off the main thread, which is the point of the
+	// worker.
+	{
+		files: [
+			'src/app/**/*.js',
+			'src/modules/**/*.js',
+			'src/features/**/*.js',
+			'src/workers/**/*.js',
+		],
+		ignores: ['src/workers/persistWorker.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/services/persistence/**'],
+					message: 'Import persistence through services/persistence.js; the package internals are private.',
+				}],
+			}],
+		},
+	},
+
 	// (B) Renderers must be stateless: only read-only facade imports. Placed
 	// AFTER (A) because it redeclares `no-restricted-imports`; it repeats the
 	// bare-import bans alongside the facade-read restriction.

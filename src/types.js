@@ -250,7 +250,7 @@
 /**
  * Canonical event-name string emitted by the state bus. Values match
  * `STATE_EVENTS` in `src/modules/state/stateEvents.js`. The wildcard `'*'` is
- * reserved for sink-style subscribers (`persistenceService`).
+ * reserved for sink-style subscribers (`services/persistence.js`).
  *
  * @typedef {(
  *   'activeDataset' | 'datasetAdded' | 'datasetRemoved' | 'configUpdated' | 'columnsUpdated'
@@ -392,8 +392,8 @@
  * `hydrate` and `clear` are bare. The snapshot mirrors {@link AppState} except
  * dataset rows and chart snapshots may be dedup-flagged on `persist` (see
  * {@link PersistWorkerDataset} / {@link PersistWorkerChart}).
- * The host side lives in `services/persistence/workerBackend.js`; the worker
- * side lives in `workers/persistWorker.js`.
+ * The host side lives in `services/persistence/backends/workerBackend.js`; the
+ * worker side lives in `workers/persistWorker.js`.
  *
  * @typedef {Object} PersistWorkerRequest
  * @property {number} id - Correlation id; mirrored on every response.
@@ -409,7 +409,7 @@
  * flagged cached but missing from the worker cache (host/worker desync); the
  * host clears its cache and retries once with full payloads. The `error`
  * envelope preserves `name` so `QuotaExceededError` still classifies on the
- * host (see `isQuotaError` in `persistenceService.js`).
+ * host (see `isQuotaError` in `services/persistence/errors.js`).
  *
  * @typedef {(
  *   { id: number, ok: true, result: Object | Uint8Array | null }
@@ -418,7 +418,7 @@
  * )} PersistWorkerResponse
  */
 
-// ─── Join (dataService.joinDatasets) ────────────────────────────────────
+// ─── Join (domain/datasets/join.js) ─────────────────────────────────────
 
 /**
  * @typedef {'inner' | 'left' | 'right' | 'full'} JoinType
@@ -458,7 +458,7 @@
  * )} JoinResult
  */
 
-// ─── Stats (dataService.calculate*) ─────────────────────────────────────
+// ─── Stats (domain/datasets/statistics.js) ──────────────────────────────
 
 /**
  * Output of `calculateStatistics` for one numeric column.

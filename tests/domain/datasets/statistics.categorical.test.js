@@ -1,7 +1,5 @@
-// @vitest-environment jsdom
-
 import { describe, expect, it } from 'vitest';
-import { calculateCategoricalStatistics } from '../../src/services/dataService.js';
+import { calculateCategoricalStatistics } from '../../../src/domain/datasets/statistics.js';
 
 describe('calculateCategoricalStatistics', () => {
 	it('returns no entries when no categorical columns are visible', () => {

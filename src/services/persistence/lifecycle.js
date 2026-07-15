@@ -10,13 +10,13 @@
  * @typedef {import('../../types.js').AppState} AppState
  */
 
-import { workerBackend } from '../persistence/workerBackend.js';
+import { workerBackend } from './backends/workerBackend.js';
 import {
 	deleteLegacyState,
 	hasLegacyMigrationMarker,
 	readLegacyState,
 	setLegacyMigrationMarker,
-} from '../persistence/legacyIndexedDbReader.js';
+} from './backends/legacyIndexedDbReader.js';
 import {
 	createEmptyPanelSnapshot,
 	hasHydratableState,

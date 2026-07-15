@@ -2,12 +2,12 @@
 
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
-import { createBlobBackend } from '../../../src/services/persistence/blobBackend.js';
-import { createPersistHandler } from '../../../src/workers/persistWorker.js';
+import { createBlobBackend } from '../../../../src/services/persistence/backends/blobBackend.js';
+import { createPersistHandler } from '../../../../src/workers/persistWorker.js';
 import {
 	__setPersistWorkerFactoryForTesting,
 	createWorkerBackend,
-} from '../../../src/services/persistence/workerBackend.js';
+} from '../../../../src/services/persistence/backends/workerBackend.js';
 
 let sqlite3Ready;
 let counter = 0;

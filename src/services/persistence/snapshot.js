@@ -5,7 +5,7 @@
  * untrustworthy dataset/chart records, resolves the active index, and runs the
  * caller-supplied `transformPanel`. Not side-effect-free: it invokes that
  * callback and emits `console.warn` when it discards malformed records.
- * Internal to the persistenceService facade.
+ * Internal to the services/persistence.js facade.
  */
 
 import { normalizeColumnNameList } from '../../utils/columnHelpers.js';

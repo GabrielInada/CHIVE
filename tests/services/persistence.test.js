@@ -15,8 +15,8 @@ import {
 	getProjectImportErrorMessageKey,
 	isActiveTabOnlyPatch,
 	isProjectDirtyEvent,
-} from '../../src/services/persistenceService.js';
-import { createBlobBackend } from '../../src/services/persistence/blobBackend.js';
+} from '../../src/services/persistence.js';
+import { createBlobBackend } from '../../src/services/persistence/backends/blobBackend.js';
 import { emitStateChange, STATE_EVENTS } from '../../src/modules/state/stateEvents.js';
 
 let sqlite3Ready;
@@ -143,7 +143,7 @@ async function flushMicrotasks(count = 3) {
 	}
 }
 
-describe('persistenceService', () => {
+describe('persistence', () => {
 	let activeController = null;
 
 	beforeEach(async () => {
@@ -161,7 +161,7 @@ describe('persistenceService', () => {
 	});
 
 	it('exposes exactly the 14 documented exports (no internal leaks through the facade)', async () => {
-		const mod = await import('../../src/services/persistenceService.js');
+		const mod = await import('../../src/services/persistence.js');
 		expect(Object.keys(mod).sort()).toEqual([
 			'PROJECT_FILE_EXTENSION', 'PROJECT_FILE_MIME', 'clearPersistedState',
 			'configurePersistenceBackend', 'enablePersistenceAutoSave', 'exportProject',

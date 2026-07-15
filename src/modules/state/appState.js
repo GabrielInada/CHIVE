@@ -453,7 +453,7 @@ export function getPreviewRows() {
 
 /**
  * Atomically replace the entire state. Bypasses the facades, used by
- * `persistenceService` for hydration on boot.
+ * `services/persistence.js` for hydration on boot.
  *
  * Missing fields fall back to the current default shape so a partial
  * payload (e.g. an older persisted schema) cannot leave the app in a

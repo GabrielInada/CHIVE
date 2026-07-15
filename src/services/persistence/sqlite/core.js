@@ -4,7 +4,7 @@
  * This module intentionally knows nothing about IndexedDB, WASM loading, or UI
  * state events. Callers provide an initialized sqlite-wasm `db` handle.
  *
- * @typedef {import('../../types.js').AppState} AppState
+ * @typedef {import('../../../types.js').AppState} AppState
  */
 
 export const SQLITE_SCHEMA_VERSION = '1';

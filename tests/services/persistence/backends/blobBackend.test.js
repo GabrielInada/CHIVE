@@ -6,7 +6,7 @@ import {
 	createBlobBackend,
 	SQLITE_IDB_PROJECT_KEY,
 	SQLITE_IDB_STORE,
-} from '../../../src/services/persistence/blobBackend.js';
+} from '../../../../src/services/persistence/backends/blobBackend.js';
 
 let sqlite3Ready;
 let dbCounter = 0;

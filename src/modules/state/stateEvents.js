@@ -103,7 +103,7 @@ function reportListenerError(errorType, eventType, err) {
 /**
  * Subscribe to a state event. Pass `STATE_EVENTS.WILDCARD` (`'*'`) to receive
  * every emission, reserved for sink-style consumers (e.g.
- * `persistenceService`); do not use from controllers or renderers.
+ * `services/persistence.js`); do not use from controllers or renderers.
  *
  * @param {StateEventType} eventType - Event name. Always use `STATE_EVENTS.*` constants, not string literals.
  * @param {StateChangeListener} callback - Receives the payload for typed events, or `{ type, data }` for wildcard.

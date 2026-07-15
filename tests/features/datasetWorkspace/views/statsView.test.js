@@ -10,7 +10,7 @@ const mocks = vi.hoisted(() => ({
 	getLocale: vi.fn(() => 'en-US'),
 }));
 
-vi.mock('../../../../src/services/dataService.js', () => ({
+vi.mock('../../../../src/domain/datasets/statistics.js', () => ({
 	calculateStatistics: mocks.calculateStatistics,
 	calculateCategoricalStatistics: mocks.calculateCategoricalStatistics,
 }));

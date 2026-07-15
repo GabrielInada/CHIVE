@@ -12,7 +12,7 @@ import {
 	exportProject,
 	getProjectImportErrorMessageKey,
 	importProjectBytes,
-} from '../../services/persistenceService.js';
+} from '../../services/persistence.js';
 import { downloadBytes } from '../../utils/downloadBytes.js';
 import { rehydratePanelChartSpecs } from '../../utils/panelHydration.js';
 import { getPersistenceSnapshot, replaceAllState } from '../state/appState.js';

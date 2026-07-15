@@ -3,7 +3,7 @@
  *
  * The single owner of the `chive.ui` localStorage key: every read, write, and
  * clear of UI prefs goes through here so the key and its quirks stay in one
- * place. Internal to the persistenceService facade.
+ * place. Internal to the services/persistence.js facade.
  */
 
 const UI_LOCAL_STORAGE_KEY = 'chive.ui';

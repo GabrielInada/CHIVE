@@ -20,9 +20,9 @@
  * (sync spawn/post throw, async onerror, post-success crash, or timeout) so the
  * latest edit is always written somewhere, never silently lost.
  *
- * @typedef {import('../../types.js').AppState} AppState
- * @typedef {import('../../types.js').PersistWorkerRequest} PersistWorkerRequest
- * @typedef {import('../../types.js').PersistWorkerResponse} PersistWorkerResponse
+ * @typedef {import('../../../types.js').AppState} AppState
+ * @typedef {import('../../../types.js').PersistWorkerRequest} PersistWorkerRequest
+ * @typedef {import('../../../types.js').PersistWorkerResponse} PersistWorkerResponse
  */
 
 const DEFAULT_TIMEOUT_MS = 120000;
@@ -44,7 +44,7 @@ export function __setPersistWorkerFactoryForTesting(factory) {
 function defaultWorkerFactory() {
 	if (testWorkerFactory) return testWorkerFactory();
 	return new Worker(
-		new URL('../../workers/persistWorker.js', import.meta.url),
+		new URL('../../../workers/persistWorker.js', import.meta.url),
 		{ type: 'module' },
 	);
 }

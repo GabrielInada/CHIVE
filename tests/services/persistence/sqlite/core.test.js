@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
-import { applySchema, assertMeta, readSnapshot, writeSnapshot } from '../../../src/services/persistence/sqliteCore.js';
+import { applySchema, assertMeta, readSnapshot, writeSnapshot } from '../../../../src/services/persistence/sqlite/core.js';
 
 let sqlite3;
 

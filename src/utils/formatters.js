@@ -53,6 +53,21 @@ export function escapeHtml(text) {
 }
 
 /**
+ * Format a byte count as a human-readable label. Three tiers:
+ *   - `< 1 KB`  → `"<N> B"`
+ *   - `< 1 MB`  → `"<N.N> KB"` (1 decimal)
+ *   - otherwise → `"<N.N> MB"` (1 decimal)
+ *
+ * @param {number} sizeBytes
+ * @returns {string}
+ */
+export function formatFileSize(sizeBytes) {
+	if (sizeBytes < 1024) return `${sizeBytes} B`;
+	if (sizeBytes < 1024 * 1024) return `${(sizeBytes / 1024).toFixed(1)} KB`;
+	return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/**
  * Format a number with locale awareness and smart precision
  * @param {number} value - Number to format
  * @param {string} locale - Active app locale (e.g. 'en-US'). Required by convention — callers pass it explicitly so this stays pure (no global-state read).

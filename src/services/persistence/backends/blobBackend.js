@@ -4,14 +4,14 @@
  * In production this runs WORKER-SIDE: `workers/persistWorker.js` constructs a
  * `createBlobBackend()` so all SQLite work (fingerprint + schema + export + IDB
  * write) happens off the main thread. The main-thread `workerBackend` also
- * dynamic-imports this module as a fallback when no worker is available. The
+ * dynamic-imports this sibling module as a fallback when no worker is available. The
  * logic is environment-agnostic (IndexedDB + `crypto.subtle` exist in workers),
  * so it is reused verbatim in both places.
  */
 
-import sqlite3InitModule from '../../../vendor/sqlite/sqlite3.js';
-import { computeDatasetFingerprint } from '../../utils/datasetFingerprint.js';
-import { applySchema, assertMeta, readSnapshot, writeSnapshot } from './sqliteCore.js';
+import sqlite3InitModule from '../../../../vendor/sqlite/sqlite3.js';
+import { computeDatasetFingerprint } from '../../../utils/datasetFingerprint.js';
+import { applySchema, assertMeta, readSnapshot, writeSnapshot } from '../sqlite/core.js';
 
 export const SQLITE_IDB_NAME = 'chive-sqlite';
 export const SQLITE_IDB_STORE = 'db';

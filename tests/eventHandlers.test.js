@@ -58,7 +58,7 @@ vi.mock('../src/utils/downloadBytes.js', () => ({
   downloadBytes: mocks.downloadBytes,
 }));
 
-vi.mock('../src/services/persistenceService.js', () => ({
+vi.mock('../src/services/persistence.js', () => ({
   PROJECT_FILE_MIME: 'application/vnd.chive.project+sqlite3',
   exportProject: mocks.exportProject,
   importProjectBytes: mocks.importProjectBytes,

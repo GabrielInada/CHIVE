@@ -118,7 +118,7 @@ Hard rules. Breaking any of them silently degrades reactivity, and the failure m
 - Subscribers must not synchronously emit a state event from inside their callback (re-entrancy loop). Defer with `queueMicrotask` if you need a follow-up mutation.
 - Make chart config valid at the state boundaries, not during render. `canonicalizeChartConfig` runs at persistence restore, `addDataset`, the emitting config writes (`updateActiveDatasetConfig`, `setActiveChartType`), and defensively in `replaceAllState`; render never repairs config. Reserve `normalizeActiveDatasetConfig` (writes without emitting) for the intentional non-emitting live-preview writes (color picker, chart-height drag).
 - Renderers and DOM builders do not call write facades. They read durable state via getters and derive DOM from it; user input is surfaced through callbacks injected by a feature controller or manager (e.g. `panelController`, `eventHandlers`, a chart-controls listener). Module-local transient UI state (search query, dialog draft, focus anchor) is allowed; durable application state goes through a facade.
-- `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`persistenceService.js`) that genuinely need every emission. Do not subscribe to it from feature controllers/managers, renderers, or `app/renderCoordinator.js`; use a typed subscription.
+- `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`services/persistence.js`) that genuinely need every emission. Do not subscribe to it from feature controllers/managers, renderers, or `app/renderCoordinator.js`; use a typed subscription.
 
 Lint guard details and the known aliasing gap are documented in
 [Contributor reference](docs/development/contributor-reference.md#architecture-guard-details).

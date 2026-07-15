@@ -25,9 +25,18 @@ vi.mock('../../../src/services/i18nService.js', () => ({
   t: mocks.t,
 }));
 
-vi.mock('../../../src/services/dataService.js', () => ({
+vi.mock('../../../src/domain/datasets/processData.js', () => ({
   processData: mocks.processData,
+}));
+
+vi.mock('../../../src/domain/datasets/join.js', () => ({
   joinDatasets: mocks.joinDatasets,
+}));
+
+// Spread the real module: formatters.js also exports isNullish, which the
+// domain/datasets modules import. A bare factory would blank it.
+vi.mock('../../../src/utils/formatters.js', async importOriginal => ({
+  ...(await importOriginal()),
   formatFileSize: mocks.formatFileSize,
 }));
 
