@@ -21,7 +21,7 @@ import { formatFileSize } from '../../utils/formatters.js';
 import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../../services/dataIngestService.js';
 import { loadPresetSource } from '../../services/presetService.js';
 import { addDataset, removeDataset, setActiveDataset, getAllDatasets } from '../../state/appState.js';
-import { showError, showFeedback, clearErrors, showProgress } from '../../modules/feedbackUI.js';
+import { showError, showFeedback, clearErrors, showProgress } from '../../app/feedbackUI.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../../config/limits.js';
 import { DELIMITED_EXTENSIONS } from '../../config/formats.js';
 import { createDefaultChartConfig } from '../../config/chartDefaults.js';

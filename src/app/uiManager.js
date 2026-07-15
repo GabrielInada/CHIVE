@@ -163,7 +163,7 @@ export function toggleSidebarCollapsed() {
 /**
  * Wire click handlers on every `[data-tab]` element so clicking a tab
  * delegates to {@link switchTab}. Called once during app boot from
- * `eventHandlers.initializeAllEventHandlers`.
+ * `app/domBindings.js`.
  */
 export function setupTabListeners() {
 	const tabs = document.querySelectorAll('[data-tab]');

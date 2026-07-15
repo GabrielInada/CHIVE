@@ -15,7 +15,7 @@ import { getChartSnapshotTitle, buildChartSnapshotMetadata } from './chartSnapsh
 let chartActionListenersReady = false;
 
 /**
- * Internal workflow setup, called by `eventHandlers.js`.
+ * Internal workflow setup, called by `app/domBindings.js`.
  * Delegated listener for chart action buttons (download-svg, add-panel). Safe to
  * call more than once: the delegated listener registers only on the first call.
  */

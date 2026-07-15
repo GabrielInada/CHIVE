@@ -38,7 +38,7 @@ import {
 	handleJoinDatasetRequest,
 	handlePresetDatasetRequest,
 } from '../features/datasetWorkspace/datasetController.js';
-import { switchTab } from '../modules/uiManager.js';
+import { switchTab } from './uiManager.js';
 
 // State events repaint through two coalescing entries that share one
 // `fullQueued` guard, so "full wins": scheduleFullRefresh() repaints everything

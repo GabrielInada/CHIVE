@@ -28,41 +28,41 @@ const mocks = vi.hoisted(() => ({
   downloadBytes: vi.fn(),
 }));
 
-vi.mock('../src/services/i18nService.js', () => ({ t: mocks.t }));
-vi.mock('../src/utils/svgExport.js', () => ({ downloadSvgFromContainer: mocks.downloadSvgFromContainer }));
-vi.mock('../src/utils/downloadBytes.js', () => ({ downloadBytes: mocks.downloadBytes }));
-vi.mock('../src/services/persistence.js', () => ({
+vi.mock('../../../src/services/i18nService.js', () => ({ t: mocks.t }));
+vi.mock('../../../src/utils/svgExport.js', () => ({ downloadSvgFromContainer: mocks.downloadSvgFromContainer }));
+vi.mock('../../../src/utils/downloadBytes.js', () => ({ downloadBytes: mocks.downloadBytes }));
+vi.mock('../../../src/services/persistence.js', () => ({
   PROJECT_FILE_MIME: 'application/vnd.chive.project+sqlite3',
   exportProject: mocks.exportProject,
   importProjectBytes: mocks.importProjectBytes,
   getProjectImportErrorMessageKey: mocks.getProjectImportErrorMessageKey,
 }));
-vi.mock('../src/features/panel/panelController.js', () => ({
+vi.mock('../../../src/features/panel/panelController.js', () => ({
   addChartToPanel: mocks.addChartToPanel,
   setupPanelEventListeners: vi.fn(),
 }));
-vi.mock('../src/modules/feedbackUI.js', () => ({
+vi.mock('../../../src/app/feedbackUI.js', () => ({
   showError: mocks.showError,
   showFeedback: mocks.showFeedback,
   showProgress: mocks.showProgress,
 }));
-vi.mock('../src/features/datasetWorkspace/datasetController.js', () => ({
+vi.mock('../../../src/features/datasetWorkspace/datasetController.js', () => ({
   setupFileInputListeners: vi.fn(),
   selectDataset: mocks.selectDataset,
   removeDatasetByIndex: mocks.removeDatasetByIndex,
 }));
-vi.mock('../src/modules/uiManager.js', () => ({
+vi.mock('../../../src/app/uiManager.js', () => ({
   setupTabListeners: vi.fn(),
   setupSidebarToggleListener: vi.fn(),
   switchTab: vi.fn(),
 }));
-vi.mock('../src/state/appState.js', () => ({
+vi.mock('../../../src/state/appState.js', () => ({
   getActiveDataset: mocks.getActiveDataset,
   getPersistenceSnapshot: mocks.getPersistenceSnapshot,
   replaceAllState: mocks.replaceAllState,
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
-vi.mock('../src/modules/dialogFocus.js', () => ({ isAnyDialogOpen: mocks.isAnyDialogOpen }));
+vi.mock('../../../src/app/dialogFocus.js', () => ({ isAnyDialogOpen: mocks.isAnyDialogOpen }));
 
 const PROJECT_MENU_HTML = `
   <div class="project-menu">
@@ -115,7 +115,7 @@ afterEach(() => {
 describe('eventHandlers global-listener idempotence', () => {
   it('setupGlobalKeyboardListeners registers its keydown listener only once', async () => {
     const addSpy = spyNoopAddEventListener();
-    const { setupGlobalKeyboardListeners } = await import('../src/modules/eventHandlers/keyboardShortcuts.js');
+    const { setupGlobalKeyboardListeners } = await import('../../../src/app/bindings/keyboardShortcuts.js');
 
     setupGlobalKeyboardListeners();
     setupGlobalKeyboardListeners();
@@ -126,7 +126,7 @@ describe('eventHandlers global-listener idempotence', () => {
 
   it('setupDatasetListeners registers its click listener only once', async () => {
     const addSpy = spyNoopAddEventListener();
-    const { setupDatasetListeners } = await import('../src/features/datasetWorkspace/bindings/datasetActions.js');
+    const { setupDatasetListeners } = await import('../../../src/features/datasetWorkspace/bindings/datasetActions.js');
 
     setupDatasetListeners();
     setupDatasetListeners();
@@ -137,7 +137,7 @@ describe('eventHandlers global-listener idempotence', () => {
 
   it('setupChartActionListeners registers its click listener only once', async () => {
     const addSpy = spyNoopAddEventListener();
-    const { setupChartActionListeners } = await import('../src/modules/eventHandlers/chartActions.js');
+    const { setupChartActionListeners } = await import('../../../src/app/bindings/chartActions.js');
 
     setupChartActionListeners();
     setupChartActionListeners();
@@ -148,7 +148,7 @@ describe('eventHandlers global-listener idempotence', () => {
 
   it('setupProjectTransferListeners registers its document dismiss listeners only once', async () => {
     const addSpy = spyNoopAddEventListener();
-    const { setupProjectTransferListeners } = await import('../src/modules/eventHandlers/projectTransfer.js');
+    const { setupProjectTransferListeners } = await import('../../../src/app/bindings/projectTransfer.js');
 
     setupProjectTransferListeners();
     setupProjectTransferListeners();
@@ -166,7 +166,7 @@ describe('eventHandlers global-listener idempotence', () => {
     // the real proof. See the plan's Tests section.
     spyTrackedAddEventListener();
     document.body.innerHTML = '<button data-dataset-select="2" type="button"></button>';
-    const { setupDatasetListeners } = await import('../src/features/datasetWorkspace/bindings/datasetActions.js');
+    const { setupDatasetListeners } = await import('../../../src/features/datasetWorkspace/bindings/datasetActions.js');
 
     setupDatasetListeners();
     setupDatasetListeners();
@@ -183,7 +183,7 @@ describe('eventHandlers global-listener idempotence', () => {
     // look the panel up fresh, not hold the element present at setup time.
     spyTrackedAddEventListener();
     document.body.innerHTML = PROJECT_MENU_HTML;
-    const { setupProjectTransferListeners } = await import('../src/modules/eventHandlers/projectTransfer.js');
+    const { setupProjectTransferListeners } = await import('../../../src/app/bindings/projectTransfer.js');
     setupProjectTransferListeners();
 
     // Rebuild the menu (new panel B) and open it directly; do not re-run setup.
@@ -200,7 +200,7 @@ describe('eventHandlers global-listener idempotence', () => {
   it('treats a document-target click as outside the project menu', async () => {
     spyTrackedAddEventListener();
     document.body.innerHTML = PROJECT_MENU_HTML;
-    const { setupProjectTransferListeners } = await import('../src/modules/eventHandlers/projectTransfer.js');
+    const { setupProjectTransferListeners } = await import('../../../src/app/bindings/projectTransfer.js');
     setupProjectTransferListeners();
 
     const panel = document.getElementById('project-menu-panel');
@@ -216,7 +216,7 @@ describe('eventHandlers global-listener idempotence', () => {
     // after inserting the menu, or an implementation that only registers inside that
     // guard would pass falsely.
     spyTrackedAddEventListener();
-    const { setupProjectTransferListeners } = await import('../src/modules/eventHandlers/projectTransfer.js');
+    const { setupProjectTransferListeners } = await import('../../../src/app/bindings/projectTransfer.js');
     setupProjectTransferListeners();
 
     document.body.innerHTML = PROJECT_MENU_HTML;

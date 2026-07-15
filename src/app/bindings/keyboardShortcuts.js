@@ -10,7 +10,7 @@ import { isAnyDialogOpen } from '../dialogFocus.js';
 let keyboardListenersReady = false;
 
 /**
- * Internal workflow setup, called by `eventHandlers.js`.
+ * Internal workflow setup, called by `app/domBindings.js`.
  * Wires the global keyboard shortcuts. Safe to call more than once: the global
  * listener registers only on the first call.
  */

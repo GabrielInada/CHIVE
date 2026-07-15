@@ -10,7 +10,7 @@ import { updateActiveDatasetConfig } from '../../state/appState.js';
 import { switchTab } from '../uiManager.js';
 
 /**
- * Internal workflow setup, called by `eventHandlers.js`.
+ * Internal workflow setup, called by `app/domBindings.js`.
  * Wires the sidebar navigation buttons.
  */
 export function setupSidebarNavigationButtons() {

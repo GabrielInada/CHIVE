@@ -45,12 +45,12 @@ vi.mock('../../src/app/renderCoordinator.js', () => ({
 	updateDatasetConfig: mocks.updateDatasetConfig,
 }));
 
-vi.mock('../../src/modules/feedbackUI.js', () => ({
+vi.mock('../../src/app/feedbackUI.js', () => ({
 	showFeedbackMessage: mocks.showFeedbackMessage,
 	showErrorMessage: mocks.showErrorMessage,
 }));
 
-vi.mock('../../src/modules/uiManager.js', () => ({
+vi.mock('../../src/app/uiManager.js', () => ({
 	switchTab: mocks.switchTab,
 }));
 

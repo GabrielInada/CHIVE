@@ -18,10 +18,10 @@ import { throttle } from '../utils/throttle.js';
 import { initChartControls } from '../modules/chartControls/chartControlsManager.js';
 import { initPanelController } from '../features/panel/panelController.js';
 import { initDatasetController } from '../features/datasetWorkspace/datasetController.js';
-import { initializeAllEventHandlers } from '../modules/eventHandlers.js';
-import { initSettingsController } from '../modules/settingsController.js';
+import { initializeDomBindings } from './domBindings.js';
+import { initSettingsController } from './settingsController.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
-import { showFeedback, showError } from '../modules/feedbackUI.js';
+import { showFeedback, showError } from './feedbackUI.js';
 import {
 	livePreviewRender,
 	runFullRefreshNow,
@@ -55,7 +55,7 @@ export async function initializeApplication() {
 	initChartControls(null, throttle(livePreviewRender, 120));
 	initPanelController(showFeedback);
 
-	initializeAllEventHandlers();
+	initializeDomBindings();
 	setupStateSubscriptions();
 
 	enablePersistenceAutoSave(getPersistenceSnapshot, {

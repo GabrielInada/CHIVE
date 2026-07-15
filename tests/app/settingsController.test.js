@@ -27,7 +27,7 @@ vi.mock('../../src/components/settingsDialog.js', () => ({
 /** Fresh module per test: the controller tracks the open dialog in module state. */
 async function initFreshController() {
 	vi.resetModules();
-	const { initSettingsController } = await import('../../src/modules/settingsController.js');
+	const { initSettingsController } = await import('../../src/app/settingsController.js');
 	initSettingsController();
 	return initSettingsController;
 }

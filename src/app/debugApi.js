@@ -19,8 +19,8 @@ import {
 	updateDatasetColumns,
 	updateDatasetConfig,
 } from './renderCoordinator.js';
-import { showFeedbackMessage, showErrorMessage } from '../modules/feedbackUI.js';
-import { switchTab } from '../modules/uiManager.js';
+import { showFeedbackMessage, showErrorMessage } from './feedbackUI.js';
+import { switchTab } from './uiManager.js';
 
 /**
  * @returns {Object}

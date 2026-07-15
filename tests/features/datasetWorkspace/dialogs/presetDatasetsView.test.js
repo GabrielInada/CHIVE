@@ -11,7 +11,7 @@ const focusMocks = vi.hoisted(() => ({
 	})),
 }));
 
-vi.mock('../../../../src/modules/dialogFocus.js', () => ({
+vi.mock('../../../../src/app/dialogFocus.js', () => ({
 	installDialogFocus: focusMocks.installDialogFocus,
 }));
 

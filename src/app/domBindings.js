@@ -1,14 +1,19 @@
 /**
- * CHIVE Event Handlers orchestrator.
+ * CHIVE DOM bindings orchestrator.
  *
  * The single composition point for application event listeners. It owns no
  * listener logic itself; each workflow lives in its own module under
- * `eventHandlers/`:
- *   - `eventHandlers/projectTransfer.js` (project export/import)
- *   - `eventHandlers/sidebarNavigation.js` (sidebar step buttons)
- *   - `eventHandlers/chartActions.js` (download SVG + add-to-panel)
- *   - `eventHandlers/keyboardShortcuts.js` (Ctrl/Cmd+O)
+ * `bindings/`:
+ *   - `bindings/projectTransfer.js` (project export/import)
+ *   - `bindings/sidebarNavigation.js` (sidebar step buttons)
+ *   - `bindings/chartActions.js` (download SVG + add-to-panel)
+ *   - `bindings/keyboardShortcuts.js` (Ctrl/Cmd+O)
  *   - `features/datasetWorkspace/bindings/datasetActions.js` (delegated select/remove)
+ *
+ * These four are app-level rather than feature-owned: project transfer owns the
+ * whole project, sidebar navigation spans both features, the keyboard shortcut is
+ * a global listener, and the chart actions are delegated off static `index.html`
+ * markup. Dataset actions stay with the feature that renders their rows.
  *
  * File/tab/panel setup stays owned by the dataset controller, uiManager, and
  * panelController; this module just wires them in boot order alongside the
@@ -18,10 +23,10 @@
 import { setupPanelEventListeners } from '../features/panel/panelController.js';
 import { setupFileInputListeners } from '../features/datasetWorkspace/datasetController.js';
 import { setupTabListeners, setupSidebarToggleListener } from './uiManager.js';
-import { setupProjectTransferListeners } from './eventHandlers/projectTransfer.js';
-import { setupSidebarNavigationButtons } from './eventHandlers/sidebarNavigation.js';
-import { setupChartActionListeners } from './eventHandlers/chartActions.js';
-import { setupGlobalKeyboardListeners } from './eventHandlers/keyboardShortcuts.js';
+import { setupProjectTransferListeners } from './bindings/projectTransfer.js';
+import { setupSidebarNavigationButtons } from './bindings/sidebarNavigation.js';
+import { setupChartActionListeners } from './bindings/chartActions.js';
+import { setupGlobalKeyboardListeners } from './bindings/keyboardShortcuts.js';
 import { setupDatasetListeners } from '../features/datasetWorkspace/bindings/datasetActions.js';
 
 /**
@@ -29,16 +34,16 @@ import { setupDatasetListeners } from '../features/datasetWorkspace/bindings/dat
  *   - `setupFileInputListeners` (datasetController)
  *   - `setupTabListeners` (uiManager)
  *   - `setupSidebarToggleListener` (uiManager)
- *   - `setupSidebarNavigationButtons` (eventHandlers/sidebarNavigation)
+ *   - `setupSidebarNavigationButtons` (bindings/sidebarNavigation)
  *   - `setupPanelEventListeners` (panelController)
- *   - `setupProjectTransferListeners` (eventHandlers/projectTransfer)
- *   - `setupChartActionListeners` (eventHandlers/chartActions)
- *   - `setupGlobalKeyboardListeners` (eventHandlers/keyboardShortcuts)
+ *   - `setupProjectTransferListeners` (bindings/projectTransfer)
+ *   - `setupChartActionListeners` (bindings/chartActions)
+ *   - `setupGlobalKeyboardListeners` (bindings/keyboardShortcuts)
  *   - `setupDatasetListeners` (datasetWorkspace/bindings/datasetActions)
  *
  * Called once during app startup from `app/applicationInitializer.js`.
  */
-export function initializeAllEventHandlers() {
+export function initializeDomBindings() {
 	setupFileInputListeners();
 	setupTabListeners();
 	setupSidebarToggleListener();

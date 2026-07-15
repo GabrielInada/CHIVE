@@ -46,63 +46,63 @@ const mocks = vi.hoisted(() => ({
   isAnyDialogOpen: vi.fn(() => false),
 }));
 
-vi.mock('../src/services/i18nService.js', () => ({
+vi.mock('../../src/services/i18nService.js', () => ({
   t: mocks.t,
 }));
 
-vi.mock('../src/utils/svgExport.js', () => ({
+vi.mock('../../src/utils/svgExport.js', () => ({
   downloadSvgFromContainer: mocks.downloadSvgFromContainer,
 }));
 
-vi.mock('../src/utils/downloadBytes.js', () => ({
+vi.mock('../../src/utils/downloadBytes.js', () => ({
   downloadBytes: mocks.downloadBytes,
 }));
 
-vi.mock('../src/services/persistence.js', () => ({
+vi.mock('../../src/services/persistence.js', () => ({
   PROJECT_FILE_MIME: 'application/vnd.chive.project+sqlite3',
   exportProject: mocks.exportProject,
   importProjectBytes: mocks.importProjectBytes,
   getProjectImportErrorMessageKey: mocks.getProjectImportErrorMessageKey,
 }));
 
-vi.mock('../src/features/panel/panelController.js', () => ({
+vi.mock('../../src/features/panel/panelController.js', () => ({
   addChartToPanel: mocks.addChartToPanel,
   setupPanelEventListeners: mocks.setupPanelEventListeners,
 }));
 
-vi.mock('../src/modules/feedbackUI.js', () => ({
+vi.mock('../../src/app/feedbackUI.js', () => ({
   showError: mocks.showError,
   showFeedback: mocks.showFeedback,
   showProgress: mocks.showProgress,
 }));
 
-vi.mock('../src/features/datasetWorkspace/datasetController.js', () => ({
+vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
   setupFileInputListeners: mocks.setupFileInputListeners,
   selectDataset: mocks.selectDataset,
   removeDatasetByIndex: mocks.removeDatasetByIndex,
 }));
 
-vi.mock('../src/modules/uiManager.js', () => ({
+vi.mock('../../src/app/uiManager.js', () => ({
   setupTabListeners: mocks.setupTabListeners,
   setupSidebarToggleListener: mocks.setupSidebarToggleListener,
   switchTab: mocks.switchTab,
 }));
 
-vi.mock('../src/state/appState.js', () => ({
+vi.mock('../../src/state/appState.js', () => ({
   getActiveDataset: mocks.getActiveDataset,
   getPersistenceSnapshot: mocks.getPersistenceSnapshot,
   replaceAllState: mocks.replaceAllState,
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
-vi.mock('../src/modules/dialogFocus.js', () => ({
+vi.mock('../../src/app/dialogFocus.js', () => ({
   isAnyDialogOpen: mocks.isAnyDialogOpen,
 }));
 
 import {
-  initializeAllEventHandlers,
-} from '../src/modules/eventHandlers.js';
-import { CHART_CONTAINERS } from '../src/config/elementIds.js';
+  initializeDomBindings,
+} from '../../src/app/domBindings.js';
+import { CHART_CONTAINERS } from '../../src/config/elementIds.js';
 
 function setupDom() {
   document.body.innerHTML = `
@@ -245,7 +245,7 @@ describe('eventHandlers', () => {
   });
 
   it('initializes handlers and covers main interaction flows', () => {
-    initializeAllEventHandlers();
+    initializeDomBindings();
 
     expect(mocks.setupFileInputListeners).toHaveBeenCalledTimes(1);
     expect(mocks.setupTabListeners).toHaveBeenCalledTimes(1);
@@ -294,7 +294,7 @@ describe('eventHandlers', () => {
 
   it('Ctrl/Cmd+O opens the file picker and prevents default when no dialog is open', () => {
     mocks.isAnyDialogOpen.mockReturnValue(false);
-    initializeAllEventHandlers();
+    initializeDomBindings();
     const clickSpy = vi.spyOn(document.getElementById('file-input'), 'click');
 
     const event = new KeyboardEvent('keydown', { key: 'o', ctrlKey: true, bubbles: true, cancelable: true });
@@ -306,7 +306,7 @@ describe('eventHandlers', () => {
 
   it('Ctrl/Cmd+O does not open the file picker behind an open modal dialog', () => {
     mocks.isAnyDialogOpen.mockReturnValue(true);
-    initializeAllEventHandlers();
+    initializeDomBindings();
     const clickSpy = vi.spyOn(document.getElementById('file-input'), 'click');
 
     const event = new KeyboardEvent('keydown', { key: 'o', metaKey: true, bubbles: true, cancelable: true });
@@ -319,7 +319,7 @@ describe('eventHandlers', () => {
 
   it('skips global shortcuts when the event was already defaultPrevented', () => {
     mocks.isAnyDialogOpen.mockReturnValue(false);
-    initializeAllEventHandlers();
+    initializeDomBindings();
     const clickSpy = vi.spyOn(document.getElementById('file-input'), 'click');
 
     const event = new KeyboardEvent('keydown', { key: 'o', ctrlKey: true, bubbles: true, cancelable: true });
@@ -330,7 +330,7 @@ describe('eventHandlers', () => {
   });
 
   it('handles project export and import controls', async () => {
-    initializeAllEventHandlers();
+    initializeDomBindings();
 
     const menuButton = document.getElementById('btn-project-menu');
     const menuPanel = document.getElementById('project-menu-panel');
@@ -378,7 +378,7 @@ describe('eventHandlers', () => {
   });
 
   it('closes the project menu on outside click and Escape, while ignoring inside clicks', () => {
-    initializeAllEventHandlers();
+    initializeDomBindings();
 
     const menuButton = document.getElementById('btn-project-menu');
     const menuPanel = document.getElementById('project-menu-panel');
@@ -407,7 +407,7 @@ describe('eventHandlers', () => {
       <button id="btn-project-import" type="button"></button>
     `);
 
-    initializeAllEventHandlers();
+    initializeDomBindings();
 
     expect(() => document.getElementById('btn-project-export').click()).not.toThrow();
     await flushPromises();
@@ -416,7 +416,7 @@ describe('eventHandlers', () => {
   });
 
   it('covers project export failure, download failure, thrown export, and busy reentry', async () => {
-    initializeAllEventHandlers();
+    initializeDomBindings();
     const exportButton = document.getElementById('btn-project-export');
 
     mocks.exportProject.mockResolvedValueOnce({ ok: false });
@@ -456,7 +456,7 @@ describe('eventHandlers', () => {
   });
 
   it('covers project import no-file, cancel, failed import, and thrown file reads', async () => {
-    initializeAllEventHandlers();
+    initializeDomBindings();
     const importInput = document.getElementById('project-import-input');
 
     setInputFiles(importInput, []);
@@ -486,7 +486,7 @@ describe('eventHandlers', () => {
   });
 
   it('delegates the tab write to the facade and always switches tabs', () => {
-    initializeAllEventHandlers();
+    initializeDomBindings();
 
     // Navigation no longer reads the active dataset; the no-dataset guard lives
     // in the facade (updateActiveDatasetConfig no-ops without an active
@@ -503,7 +503,7 @@ describe('eventHandlers', () => {
   });
 
   it('covers chart download success, default filename, ignored action, and missing targets', () => {
-    initializeAllEventHandlers();
+    initializeDomBindings();
 
     const downloadButton = appendChartAction({ type: 'bar', action: 'download-svg' });
     downloadButton.click();
@@ -515,7 +515,7 @@ describe('eventHandlers', () => {
     expect(mocks.addChartToPanel).not.toHaveBeenCalledWith(CHART_CONTAINERS.bar, expect.anything(), expect.anything());
 
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    expect(() => initializeAllEventHandlers()).not.toThrow();
+    expect(() => initializeDomBindings()).not.toThrow();
   });
 
   it.each([
@@ -533,7 +533,7 @@ describe('eventHandlers', () => {
     ['tin', {}, { x: 'x', y: 'y', z: 'elevation' }],
     ['scatter3d', {}, { x: 'width', y: 'height', z: 'depth' }],
   ])('builds add-panel snapshot metadata for %s charts', (type, overrides, expected) => {
-    initializeAllEventHandlers();
+    initializeDomBindings();
     mocks.getActiveDataset.mockReturnValue({
       chartConfig: fullChartConfig(overrides),
     });
@@ -549,7 +549,7 @@ describe('eventHandlers', () => {
   });
 
   it('uses custom chart titles, generic fallback titles, and empty metadata for unresolved chart types', () => {
-    initializeAllEventHandlers();
+    initializeDomBindings();
     mocks.getActiveDataset.mockReturnValue({
       chartConfig: fullChartConfig({ bar: { customTitle: 'Custom Bar' } }),
     });

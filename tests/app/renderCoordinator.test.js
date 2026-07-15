@@ -79,7 +79,7 @@ vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 	handlePresetDatasetRequest: mocks.handlePresetDatasetRequest,
 }));
 
-vi.mock('../../src/modules/uiManager.js', () => ({
+vi.mock('../../src/app/uiManager.js', () => ({
 	switchTab: mocks.switchTab,
 }));
 

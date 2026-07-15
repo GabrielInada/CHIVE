@@ -8,7 +8,7 @@
  * {@link openJoinBuilderDialog}.
  */
 
-import { installDialogFocus } from '../../../modules/dialogFocus.js';
+import { installDialogFocus } from '../../../app/dialogFocus.js';
 
 /** @private */
 function createOption(value, label, selected = false) {

@@ -6,11 +6,11 @@ const mocks = vi.hoisted(() => ({
   setSidebarMode: vi.fn(),
 }));
 
-vi.mock('../src/services/i18nService.js', () => ({
+vi.mock('../../src/services/i18nService.js', () => ({
   t: key => `tr:${key}`,
 }));
 
-vi.mock('../src/state/appState.js', () => ({
+vi.mock('../../src/state/appState.js', () => ({
   setSidebarMode: mocks.setSidebarMode,
 }));
 
@@ -22,7 +22,7 @@ import {
   switchTab,
   toggleSidebarCollapsed,
   updateSidebarUI,
-} from '../src/modules/uiManager.js';
+} from '../../src/app/uiManager.js';
 
 function setupDom() {
   document.body.innerHTML = `

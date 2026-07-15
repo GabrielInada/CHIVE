@@ -23,7 +23,7 @@ let projectTransferBusy = false;
 let menuDismissListenersReady = false;
 
 /**
- * Internal workflow setup, called by `eventHandlers.js`.
+ * Internal workflow setup, called by `app/domBindings.js`.
  * Wires the project menu toggle and the export/import buttons. Global menu-dismiss
  * listeners are registered once; element-scoped controls are wired for the current
  * DOM on every call.

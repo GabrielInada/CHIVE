@@ -15,40 +15,40 @@ const mocks = vi.hoisted(() => ({
   setupDatasetListeners: vi.fn(),
 }));
 
-vi.mock('../src/features/datasetWorkspace/datasetController.js', () => ({
+vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
   setupFileInputListeners: mocks.setupFileInputListeners,
 }));
 
-vi.mock('../src/modules/uiManager.js', () => ({
+vi.mock('../../src/app/uiManager.js', () => ({
   setupTabListeners: mocks.setupTabListeners,
   setupSidebarToggleListener: mocks.setupSidebarToggleListener,
 }));
 
-vi.mock('../src/features/panel/panelController.js', () => ({
+vi.mock('../../src/features/panel/panelController.js', () => ({
   setupPanelEventListeners: mocks.setupPanelEventListeners,
 }));
 
-vi.mock('../src/modules/eventHandlers/sidebarNavigation.js', () => ({
+vi.mock('../../src/app/bindings/sidebarNavigation.js', () => ({
   setupSidebarNavigationButtons: mocks.setupSidebarNavigationButtons,
 }));
 
-vi.mock('../src/modules/eventHandlers/projectTransfer.js', () => ({
+vi.mock('../../src/app/bindings/projectTransfer.js', () => ({
   setupProjectTransferListeners: mocks.setupProjectTransferListeners,
 }));
 
-vi.mock('../src/modules/eventHandlers/chartActions.js', () => ({
+vi.mock('../../src/app/bindings/chartActions.js', () => ({
   setupChartActionListeners: mocks.setupChartActionListeners,
 }));
 
-vi.mock('../src/modules/eventHandlers/keyboardShortcuts.js', () => ({
+vi.mock('../../src/app/bindings/keyboardShortcuts.js', () => ({
   setupGlobalKeyboardListeners: mocks.setupGlobalKeyboardListeners,
 }));
 
-vi.mock('../src/features/datasetWorkspace/bindings/datasetActions.js', () => ({
+vi.mock('../../src/features/datasetWorkspace/bindings/datasetActions.js', () => ({
   setupDatasetListeners: mocks.setupDatasetListeners,
 }));
 
-import { initializeAllEventHandlers } from '../src/modules/eventHandlers.js';
+import { initializeDomBindings } from '../../src/app/domBindings.js';
 
 describe('eventHandlers orchestration order', () => {
   // Setups in their documented boot order.
@@ -65,7 +65,7 @@ describe('eventHandlers orchestration order', () => {
   ];
 
   it('calls every setup exactly once, in boot order', () => {
-    initializeAllEventHandlers();
+    initializeDomBindings();
 
     // Each setup ran exactly once (catches a duplicated call that ordering alone
     // would miss).

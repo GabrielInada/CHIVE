@@ -57,7 +57,7 @@ vi.mock('../../../src/state/appState.js', () => ({
   getAllDatasets: mocks.getAllDatasets,
 }));
 
-vi.mock('../../../src/modules/feedbackUI.js', () => ({
+vi.mock('../../../src/app/feedbackUI.js', () => ({
   showError: mocks.showError,
   showFeedback: mocks.showFeedback,
   clearErrors: mocks.clearErrors,

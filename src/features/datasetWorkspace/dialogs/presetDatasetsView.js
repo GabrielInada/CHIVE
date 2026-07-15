@@ -6,7 +6,7 @@
  */
 
 import { PRESET_CATALOG } from '../../../data/presetCatalog.js';
-import { installDialogFocus } from '../../../modules/dialogFocus.js';
+import { installDialogFocus } from '../../../app/dialogFocus.js';
 
 /**
  * Build one preset card: name, description, row/column counts, optional

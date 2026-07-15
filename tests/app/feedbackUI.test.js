@@ -8,7 +8,7 @@ import {
   showLoading,
   hideLoading,
   clearAllFeedback,
-} from '../src/modules/feedbackUI.js';
+} from '../../src/app/feedbackUI.js';
 
 describe('feedbackUI', () => {
   beforeEach(() => {
@@ -70,14 +70,14 @@ describe('feedbackUI', () => {
   });
 
   it('showFeedbackMessage alias works', async () => {
-    const { showFeedbackMessage } = await import('../src/modules/feedbackUI.js');
+    const { showFeedbackMessage } = await import('../../src/app/feedbackUI.js');
     showFeedbackMessage('alias test', 100);
     const toast = document.getElementById('toast-feedback');
     expect(toast.textContent).toBe('alias test');
   });
 
   it('showErrorMessage alias works', async () => {
-    const { showErrorMessage } = await import('../src/modules/feedbackUI.js');
+    const { showErrorMessage } = await import('../../src/app/feedbackUI.js');
     const errorsContainer = document.createElement('div');
     errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
@@ -87,7 +87,7 @@ describe('feedbackUI', () => {
   });
 
   it('hideErrorMessage alias clears errors', async () => {
-    const { hideErrorMessage } = await import('../src/modules/feedbackUI.js');
+    const { hideErrorMessage } = await import('../../src/app/feedbackUI.js');
     const errorsContainer = document.createElement('div');
     errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);

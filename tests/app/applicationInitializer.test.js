@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
 	initChartControls: vi.fn(),
 	initPanelController: vi.fn(),
 	initDatasetController: vi.fn(),
-	initializeAllEventHandlers: vi.fn(),
+	initializeDomBindings: vi.fn(),
 	initSettingsController: vi.fn(),
 	showFeedback: vi.fn(),
 	showError: vi.fn(),
@@ -64,11 +64,11 @@ vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 	initDatasetController: mocks.initDatasetController,
 }));
 
-vi.mock('../../src/modules/eventHandlers.js', () => ({
-	initializeAllEventHandlers: mocks.initializeAllEventHandlers,
+vi.mock('../../src/app/domBindings.js', () => ({
+	initializeDomBindings: mocks.initializeDomBindings,
 }));
 
-vi.mock('../../src/modules/settingsController.js', () => ({
+vi.mock('../../src/app/settingsController.js', () => ({
 	initSettingsController: mocks.initSettingsController,
 }));
 
@@ -76,7 +76,7 @@ vi.mock('../../src/config/settings.js', () => ({
 	SETTINGS_CHANGE_EVENT: 'chive-settings-changed',
 }));
 
-vi.mock('../../src/modules/feedbackUI.js', () => ({
+vi.mock('../../src/app/feedbackUI.js', () => ({
 	showFeedback: mocks.showFeedback,
 	showError: mocks.showError,
 }));
@@ -142,7 +142,7 @@ describe('application initializer', () => {
 		expect(mocks.initChartControls).toHaveBeenCalledWith(null, mocks.throttledPreview);
 		expect(mocks.throttle).toHaveBeenCalledWith(mocks.livePreviewRender, 120);
 		expect(mocks.initPanelController).toHaveBeenCalledWith(mocks.showFeedback);
-		expect(mocks.initializeAllEventHandlers).toHaveBeenCalledTimes(1);
+		expect(mocks.initializeDomBindings).toHaveBeenCalledTimes(1);
 		expect(mocks.setupStateSubscriptions).toHaveBeenCalledTimes(1);
 		expect(mocks.enablePersistenceAutoSave).toHaveBeenCalledWith(
 			mocks.getPersistenceSnapshot,
