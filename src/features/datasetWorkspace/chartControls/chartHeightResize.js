@@ -12,15 +12,15 @@
  * the emitting commit happens once on release so CONFIG_UPDATED, the
  * sidebar refresh, and auto-save fire with the final height.
  *
- * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
+ * @typedef {import('../../../types.js').ChartTypeKey} ChartTypeKey
  */
 
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../config/elementIds.js';
-import { CHART_HEIGHT_LIMITS } from '../../config/charts.js';
-import { getActiveDataset, normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../../state/appState.js';
-import { triggerLiveRender } from './livePreview.js';
-import { t } from '../../services/i18nService.js';
-import { clamp } from '../../utils/formatters.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../config/elementIds.js';
+import { CHART_HEIGHT_LIMITS } from '../../../config/charts.js';
+import { getActiveDataset, normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../../../state/appState.js';
+import { triggerLiveRender } from './livePreviewBridge.js';
+import { t } from '../../../services/i18nService.js';
+import { clamp } from '../../../utils/formatters.js';
 
 const KEYBOARD_STEP_PX = 10;
 

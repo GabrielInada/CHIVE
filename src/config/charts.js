@@ -90,9 +90,9 @@ export const CHART_DIMENSIONS = {
 
 /**
  * Per-type bounds for `chartConfig[type].chartHeight`. Each pair must match
- * the renderer's internal clamp in `src/modules/visualizations/`; the height
- * drag handle clamps against these so the dragged box and the rendered SVG
- * agree at the range edges.
+ * the clamp inside that chart package's renderer (`charts/<type>/renderers/`);
+ * the height drag handle clamps against these so the dragged box and the
+ * rendered SVG agree at the range edges.
  */
 export const CHART_HEIGHT_LIMITS = {
   bar: { min: 220, max: 720 },

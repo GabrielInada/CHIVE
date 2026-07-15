@@ -80,7 +80,7 @@ doc rather than repeated:
   builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets) and
   [grouping.js](../../../src/charts/shared/controls/grouping.js) wraps them in collapsible
   sections. Both are DOM-only; the config writes are wired by the listener helpers in
-  [controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js).
+  [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's
   [section 10](tin.md) and shared by every chart's color inputs.
 - **Frozen panel snapshots**: see [Architecture reference](../architecture-reference.md).

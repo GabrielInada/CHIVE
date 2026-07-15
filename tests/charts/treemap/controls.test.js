@@ -4,25 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/state/appState.js', async (importOriginal) => ({
-	...(await importOriginal()),
-	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
-}));
-
-vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
-	triggerLiveRender: vi.fn(),
-}));
-
 import { createTreeMapControls } from '../../../src/charts/treemap/controls/builder.js';
 import { setupTreeMapControlListeners } from '../../../src/charts/treemap/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/treemap/controls/defaults.js';
+
+/**
+ * Writer test double. The listeners' contract is that they hand the right
+ * patch to the writer; merging it into state, firing onConfigChanged, and
+ * live-rendering are the adapter's contract and are covered by
+ * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
+ */
+function createWriter() {
+	return { commit: vi.fn(), preview: vi.fn() };
+}
 
 function createDataset(overrides = {}) {
 	return {
@@ -63,8 +63,8 @@ function selectValue(id, value) {
 	select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function lastConfig() {
-	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].treemap;
+function lastConfig(writer) {
+	return writer.commit.mock.calls.at(-1)[0];
 }
 
 function extractStructure(controls) {
@@ -199,17 +199,15 @@ describe('treemapControls listeners', () => {
 		const controls = createTreeMapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], onConfigChanged);
+		const writer = createWriter();
+		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], writer);
 
 		const measure = document.getElementById('viz-select-treemap-measure');
 		measure.value = 'count';
 		measure.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			treemap: expect.objectContaining({ measureMode: 'count', valueColumn: null }),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('resolves the callback from the 4-arg overload (callback in slot 4)', () => {
@@ -221,17 +219,15 @@ describe('treemapControls listeners', () => {
 		const controls = createTreeMapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupTreeMapControlListeners(dataset, ['region'], ['sales'], onConfigChanged);
+		const writer = createWriter();
+		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], writer);
 
 		const topN = document.getElementById('viz-select-treemap-topn');
 		topN.value = '20';
 		topN.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			treemap: expect.objectContaining({ topN: 20 }),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ topN: 20 }));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('keeps a valid valueColumn when measure switches to sum', () => {
@@ -239,15 +235,14 @@ describe('treemapControls listeners', () => {
 		const controls = createTreeMapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
 
-		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], vi.fn());
+		const writer = createWriter();
+		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], writer);
 
 		const measure = document.getElementById('viz-select-treemap-measure');
 		measure.value = 'sum';
 		measure.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			treemap: expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }));
 	});
 
 	it('commits topN change with a coerced number value', () => {
@@ -255,15 +250,14 @@ describe('treemapControls listeners', () => {
 		const controls = createTreeMapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
 
-		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], vi.fn());
+		const writer = createWriter();
+		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], writer);
 
 		const select = document.getElementById('viz-select-treemap-topn');
 		select.value = '20';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			treemap: expect.objectContaining({ topN: 20 }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ topN: 20 }));
 	});
 
 	it('color preset button commits both colorScheme and the first palette color', () => {
@@ -271,23 +265,25 @@ describe('treemapControls listeners', () => {
 		const controls = createTreeMapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
 
-		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], vi.fn());
+		const writer = createWriter();
+		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], writer);
 
 		const bold = document.querySelector('button[data-color-preset-control="viz-treemap-color-preset"][data-preset-name="Bold"]');
 		expect(bold).not.toBeNull();
 		bold.click();
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
-		expect(call.treemap.colorScheme).toBe('Bold');
-		expect(call.treemap.color).toMatch(/^#[0-9a-fA-F]{6}$/);
+		expect(writer.commit).toHaveBeenCalledTimes(1);
+		const call = writer.commit.mock.calls[0][0];
+		expect(call.colorScheme).toBe('Bold');
+		expect(call.color).toMatch(/^#[0-9a-fA-F]{6}$/);
 	});
 
 	it('skips listener setup when controls are absent', () => {
 		const dataset = createDataset();
 
-		expect(() => setupTreeMapControlListeners(dataset, ['region'], ['sales'], vi.fn())).not.toThrow();
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		const writer = createWriter();
+		expect(() => setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], writer)).not.toThrow();
+		expect(writer.commit).not.toHaveBeenCalled();
 	});
 
 	it('commits category, value, title, padding, and toggle changes', () => {
@@ -295,38 +291,38 @@ describe('treemapControls listeners', () => {
 		const controls = createTreeMapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], onConfigChanged);
+		const writer = createWriter();
+		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], writer);
 
 		selectValue('viz-select-treemap-category', '');
-		expect(lastConfig().category).toBeNull();
+		expect(lastConfig(writer).category).toBeNull();
 
 		selectValue('viz-select-treemap-value-column', 'old');
-		expect(lastConfig().valueColumn).toBeNull();
+		expect(lastConfig(writer).valueColumn).toBeNull();
 
 		const title = document.getElementById('viz-input-treemap-title');
 		title.value = '  Custom treemap  ';
 		title.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().customTitle).toBe('Custom treemap');
+		expect(lastConfig(writer).customTitle).toBe('Custom treemap');
 
 		const padding = document.getElementById('viz-slider-treemap-padding');
 		padding.value = '5';
 		padding.dispatchEvent(new Event('input', { bubbles: true }));
 		expect(padding.parentElement.querySelector('output').textContent).toBe('5');
 		padding.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().padding).toBe(5);
+		expect(lastConfig(writer).padding).toBe(5);
 
 		const labels = document.getElementById('viz-toggle-treemap-labels');
 		labels.checked = false;
 		labels.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().showLabels).toBe(false);
+		expect(lastConfig(writer).showLabels).toBe(false);
 
 		const values = document.getElementById('viz-toggle-treemap-values');
 		values.checked = true;
 		values.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().showValues).toBe(true);
+		expect(lastConfig(writer).showValues).toBe(true);
 
-		expect(onConfigChanged).toHaveBeenCalledTimes(6);
+		expect(writer.commit).toHaveBeenCalledTimes(6);
 	});
 
 	it('coerces measure and color-mode selections through fallback branches', () => {
@@ -334,20 +330,21 @@ describe('treemapControls listeners', () => {
 		const controls = createTreeMapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
 
-		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], vi.fn());
+		const writer = createWriter();
+		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], writer);
 
 		selectValue('viz-select-treemap-measure', 'invalid');
-		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
 
 		dataset.chartConfig.treemap.valueColumn = 'old';
 		selectValue('viz-select-treemap-measure', 'sum');
-		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: null }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: null }));
 
 		selectValue('viz-select-treemap-color-mode', 'uniform');
-		expect(lastConfig().colorMode).toBe('uniform');
+		expect(lastConfig(writer).colorMode).toBe('uniform');
 
 		selectValue('viz-select-treemap-color-mode', 'unexpected');
-		expect(lastConfig().colorMode).toBe('scheme');
+		expect(lastConfig(writer).colorMode).toBe('scheme');
 	});
 
 	it('ignores unknown color presets', () => {
@@ -359,10 +356,11 @@ describe('treemapControls listeners', () => {
 		missing.dataset.presetName = 'Missing';
 		document.body.appendChild(missing);
 
-		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], vi.fn());
+		const writer = createWriter();
+		setupTreeMapControlListeners(dataset, ['region'], ['sales'], [], writer);
 		missing.click();
 
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		expect(writer.commit).not.toHaveBeenCalled();
 	});
 });
 

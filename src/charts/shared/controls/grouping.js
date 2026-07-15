@@ -8,7 +8,7 @@
  * Section expansion state is preserved across sidebar re-renders by
  * {@link captureControlSectionExpansionState} and
  * {@link applyControlSectionExpansionState} in
- * `modules/chartControls/chartControlsManager.js`.
+ * `features/datasetWorkspace/chartControls/chartControlsController.js`.
  */
 
 import { createSvgIcon } from './svgIcons.js';

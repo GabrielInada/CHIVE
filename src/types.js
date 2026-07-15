@@ -135,8 +135,8 @@
  * Column-name buckets passed into per-chart `build`/`attachListeners`/
  * `computeDefaults` by the controls registry. Derived from the active
  * dataset's visible columns by `getColumnContext()` in
- * `chartControls/chartControlsManager.js`; implementation lookup lives in
- * `charts/registries/controls.js`.
+ * `features/datasetWorkspace/chartControls/chartControlsController.js`;
+ * implementation lookup lives in `charts/registries/controls.js`.
  *
  * `baseCategoricalOrAll` is the fallback list when no categorical columns
  * exist (the chart-picker still needs to offer *something*).
@@ -147,6 +147,26 @@
  * @property {string[]} dates - Date (`'date'`) column names.
  * @property {string[]} allColumns - All currently visible column names.
  * @property {string[]} baseCategoricalOrAll - `categorical` when non-empty, else `allColumns`.
+ */
+
+/**
+ * The write surface a chart package's control listeners use to change their
+ * own config block. Built per chart type by `createChartConfigWriter` in
+ * `features/datasetWorkspace/chartControls/chartConfigAdapter.js` and passed in
+ * by the controls registry, so chart packages never import state themselves.
+ *
+ * The two methods are not interchangeable:
+ *
+ *   - `commit` writes through the emitting facade, so `CONFIG_UPDATED` fires,
+ *     auto-save marks the project dirty, and the controls sidebar refreshes.
+ *   - `preview` writes through the non-emitting facade and repaints only the
+ *     chart. Use it for continuous input (a color picker's `input` event):
+ *     emitting there would rebuild the sidebar mid-drag and steal focus from
+ *     the picker.
+ *
+ * @typedef {Object} ChartConfigWriter
+ * @property {(patch: Object) => void} commit - Merge a patch and emit. Does not live-render.
+ * @property {(patch: Object | ((currentConfig: Object) => Object)) => void} preview - Merge a patch without emitting, then live-render. Accepts a function of the current config for nested updates.
  */
 
 // ─── Panel domain ───────────────────────────────────────────────────────

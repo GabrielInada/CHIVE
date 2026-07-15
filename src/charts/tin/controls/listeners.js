@@ -6,6 +6,7 @@
  * palette-preset mapping onto the custom gradient endpoints.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
 import { CHART_COLORS, TIN_CHART, TIN_COLOR_RAMPS } from '../../../config/charts.js';
@@ -18,7 +19,7 @@ import {
 	setupNumberInputListener,
 	setupSliderListener,
 	setupColorPresetListeners,
-} from '../../../modules/chartControls/controlListenerHelpers.js';
+} from '../../shared/controls/listenerBindings.js';
 
 /**
  * Wire listeners for every TIN-chart control. X/Y/Z selects clamp to
@@ -27,10 +28,10 @@ import {
  * @param {Dataset} dataset
  * @param {string[]} numericOptions
  * @param {string[]} allColumns - Currently unused.
- * @param {() => void} [onConfigChanged]
+ * @param {ChartConfigWriter} writer
  * @returns {void}
  */
-export function setupTinControlListeners(dataset, numericOptions, allColumns, onConfigChanged) {
+export function setupTinControlListeners(dataset, numericOptions, allColumns, writer) {
 	void allColumns;
 
 	setupSelectListeners([
@@ -69,7 +70,7 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 			key: 'colorRamp',
 			transform: v => (TIN_COLOR_RAMPS.includes(v) ? v : TIN_CHART.defaultColorRamp),
 		},
-	], dataset, 'tin', onConfigChanged);
+	], writer);
 
 	setupCheckboxListeners([
 		{ id: 'viz-toggle-tin-x-label', key: 'showXAxisLabel' },
@@ -82,35 +83,31 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, on
 		{ id: 'viz-toggle-tin-isoline-labels', key: 'showIsolineLabels' },
 		{ id: 'viz-toggle-tin-color-isolines-by-z', key: 'colorIsolinesByZ' },
 		{ id: 'viz-toggle-tin-threshold', key: 'showThreshold' },
-	], dataset, 'tin', onConfigChanged);
+	], writer);
 
-	setupTextInputListener('viz-input-tin-title', 'customTitle', dataset, 'tin', onConfigChanged);
-	setupSliderListener('viz-slider-tin-subdivision', 'subdivisionDepth', dataset, 'tin', onConfigChanged);
-	setupSliderListener('viz-slider-tin-point-radius', 'pointRadius', dataset, 'tin', onConfigChanged);
-	setupSliderListener('viz-slider-tin-isoline-count', 'isolineCount', dataset, 'tin', onConfigChanged);
-	setupSliderListener('viz-slider-tin-isoline-width', 'isolineWidth', dataset, 'tin', onConfigChanged);
-	setupSliderListener('viz-slider-tin-isoline-label-size', 'isolineLabelSize', dataset, 'tin', onConfigChanged);
-	setupSliderListener('viz-slider-tin-threshold-width', 'thresholdWidth', dataset, 'tin', onConfigChanged);
-	setupNumberInputListener('viz-input-tin-threshold-value', 'thresholdValue', TIN_CHART.defaultThresholdValue, dataset, 'tin', onConfigChanged);
-	setupNumberInputListener('viz-input-tin-isoline-step', 'isolineStep', TIN_CHART.defaultIsolineStep, dataset, 'tin', onConfigChanged);
+	setupTextInputListener('viz-input-tin-title', 'customTitle', writer);
+	setupSliderListener('viz-slider-tin-subdivision', 'subdivisionDepth', writer);
+	setupSliderListener('viz-slider-tin-point-radius', 'pointRadius', writer);
+	setupSliderListener('viz-slider-tin-isoline-count', 'isolineCount', writer);
+	setupSliderListener('viz-slider-tin-isoline-width', 'isolineWidth', writer);
+	setupSliderListener('viz-slider-tin-isoline-label-size', 'isolineLabelSize', writer);
+	setupSliderListener('viz-slider-tin-threshold-width', 'thresholdWidth', writer);
+	setupNumberInputListener('viz-input-tin-threshold-value', 'thresholdValue', TIN_CHART.defaultThresholdValue, writer);
+	setupNumberInputListener('viz-input-tin-isoline-step', 'isolineStep', TIN_CHART.defaultIsolineStep, writer);
 
-	setupColorInputListener('viz-input-tin-gradient-min', 'gradientMinColor', CHART_COLORS.tin, dataset, 'tin', onConfigChanged);
-	setupColorInputListener('viz-input-tin-gradient-max', 'gradientMaxColor', '#ffffff', dataset, 'tin', onConfigChanged);
-	setupColorInputListener('viz-input-tin-edge-color', 'edgeColor', TIN_CHART.defaultEdgeColor, dataset, 'tin', onConfigChanged);
-	setupColorInputListener('viz-input-tin-hull-color', 'hullColor', TIN_CHART.defaultHullColor, dataset, 'tin', onConfigChanged);
-	setupColorInputListener('viz-input-tin-isoline-color', 'isolineColor', TIN_CHART.defaultIsolineColor, dataset, 'tin', onConfigChanged);
-	setupColorInputListener('viz-input-tin-isoline-label-color', 'isolineLabelColor', TIN_CHART.defaultIsolineLabelColor, dataset, 'tin', onConfigChanged);
-	setupColorInputListener('viz-input-tin-isoline-min-color', 'isolineMinColor', TIN_CHART.defaultIsolineMinColor, dataset, 'tin', onConfigChanged);
-	setupColorInputListener('viz-input-tin-isoline-max-color', 'isolineMaxColor', TIN_CHART.defaultIsolineMaxColor, dataset, 'tin', onConfigChanged);
-	setupColorInputListener('viz-input-tin-threshold-color', 'thresholdColor', TIN_CHART.defaultThresholdColor, dataset, 'tin', onConfigChanged);
+	setupColorInputListener('viz-input-tin-gradient-min', 'gradientMinColor', CHART_COLORS.tin, writer);
+	setupColorInputListener('viz-input-tin-gradient-max', 'gradientMaxColor', '#ffffff', writer);
+	setupColorInputListener('viz-input-tin-edge-color', 'edgeColor', TIN_CHART.defaultEdgeColor, writer);
+	setupColorInputListener('viz-input-tin-hull-color', 'hullColor', TIN_CHART.defaultHullColor, writer);
+	setupColorInputListener('viz-input-tin-isoline-color', 'isolineColor', TIN_CHART.defaultIsolineColor, writer);
+	setupColorInputListener('viz-input-tin-isoline-label-color', 'isolineLabelColor', TIN_CHART.defaultIsolineLabelColor, writer);
+	setupColorInputListener('viz-input-tin-isoline-min-color', 'isolineMinColor', TIN_CHART.defaultIsolineMinColor, writer);
+	setupColorInputListener('viz-input-tin-isoline-max-color', 'isolineMaxColor', TIN_CHART.defaultIsolineMaxColor, writer);
+	setupColorInputListener('viz-input-tin-threshold-color', 'thresholdColor', TIN_CHART.defaultThresholdColor, writer);
 
 	setupColorPresetListeners(
 		'viz-tin-color-preset',
 		{ gradientMinColor: 0, gradientMaxColor: -1 },
-		{ gradientMinColor: CHART_COLORS.tin, gradientMaxColor: '#ffffff' },
-		dataset,
-		'tin',
-		onConfigChanged,
-		COLOR_PRESETS,
+		{ gradientMinColor: CHART_COLORS.tin, gradientMaxColor: '#ffffff' }, writer, COLOR_PRESETS,
 	);
 }

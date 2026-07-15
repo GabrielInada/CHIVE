@@ -4,25 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/state/appState.js', async (importOriginal) => ({
-	...(await importOriginal()),
-	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
-}));
-
-vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
-	triggerLiveRender: vi.fn(),
-}));
-
 import { createBarChartControls } from '../../../src/charts/bar/controls/builder.js';
 import { setupBarChartControlListeners } from '../../../src/charts/bar/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/bar/controls/defaults.js';
+
+/**
+ * Writer test double. The listeners' contract is that they hand the right
+ * patch to the writer; merging it into state, firing onConfigChanged, and
+ * live-rendering are the adapter's contract and are covered by
+ * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
+ */
+function createWriter() {
+	return { commit: vi.fn(), preview: vi.fn() };
+}
 
 function createDataset(overrides = {}) {
 	return {
@@ -210,17 +210,15 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], onConfigChanged);
+		const writer = createWriter();
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
 
 		const measureSelect = document.getElementById('viz-select-bar-measure');
 		measureSelect.value = 'sum';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bar: expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('nulls valueColumn when measureMode switches to count', () => {
@@ -228,15 +226,14 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], vi.fn());
+		const writer = createWriter();
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
 
 		const measureSelect = document.getElementById('viz-select-bar-measure');
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bar: expect.objectContaining({ measureMode: 'count', valueColumn: null }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
 	});
 
 	it('coerces an unknown color mode to uniform', () => {
@@ -244,7 +241,8 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], vi.fn());
+		const writer = createWriter();
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
 
 		const select = document.getElementById('viz-select-bar-color-mode');
 		// jsdom select rejects values not in the option set, so add a sentinel option first.
@@ -254,9 +252,7 @@ describe('barControls listeners', () => {
 		select.value = 'gibberish';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bar: expect.objectContaining({ colorMode: 'uniform' }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ colorMode: 'uniform' }));
 	});
 
 	it('rejects value-column values not in numericOptions', () => {
@@ -264,15 +260,14 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], vi.fn());
+		const writer = createWriter();
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
 
 		const valueColumnSelect = document.getElementById('viz-select-bar-value-column');
 		valueColumnSelect.value = '';
 		valueColumnSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bar: expect.objectContaining({ valueColumn: null }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ valueColumn: null }));
 	});
 
 	it('transforms Top N from string to number', () => {
@@ -280,16 +275,17 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], vi.fn());
+		const writer = createWriter();
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
 
 		const topnSelect = document.getElementById('viz-select-bar-topn');
 		topnSelect.value = '20';
 		topnSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
-		expect(call.bar.topN).toBe(20);
-		expect(typeof call.bar.topN).toBe('number');
+		expect(writer.commit).toHaveBeenCalledTimes(1);
+		const call = writer.commit.mock.calls[0][0];
+		expect(call.topN).toBe(20);
+		expect(typeof call.topN).toBe('number');
 	});
 
 	it('toggles the X-axis label checkbox through the facade', () => {
@@ -297,15 +293,14 @@ describe('barControls listeners', () => {
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], vi.fn());
+		const writer = createWriter();
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
 
 		const checkbox = document.getElementById('viz-toggle-bar-x-label');
 		checkbox.checked = false;
 		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bar: expect.objectContaining({ showXAxisLabel: false }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ showXAxisLabel: false }));
 	});
 });
 

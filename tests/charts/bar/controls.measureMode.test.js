@@ -4,20 +4,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/state/appState.js', async (importOriginal) => ({
-	...(await importOriginal()),
-	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
-}));
-
 import { createBarChartControls } from '../../../src/charts/bar/controls/builder.js';
 import { setupBarChartControlListeners } from '../../../src/charts/bar/controls/listeners.js';
+
+/**
+ * Writer test double. The listeners' contract is that they hand the right
+ * patch to the writer; merging it into state, firing onConfigChanged, and
+ * live-rendering are the adapter's contract and are covered by
+ * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
+ */
+function createWriter() {
+	return { commit: vi.fn(), preview: vi.fn() };
+}
 
 function createDataset(measureMode = 'count', valueColumn = null) {
 	return {
@@ -71,41 +75,35 @@ describe('barControls measure mode', () => {
 		const controls = createBarChartControls(dataset, ['categoria'], ['valor']);
 		controls.forEach(control => document.body.appendChild(control));
 
-		const onConfigChanged = vi.fn();
-		setupBarChartControlListeners(dataset, ['categoria'], ['valor'], onConfigChanged);
+		const writer = createWriter();
+		setupBarChartControlListeners(dataset, ['categoria'], ['valor'], [], writer);
 
 		const measureSelect = document.getElementById('viz-select-bar-measure');
 		const valueSelect = document.getElementById('viz-select-bar-value-column');
 
 		measureSelect.value = 'sum';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bar: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				measureMode: 'sum',
 				valueColumn: null,
-			}),
-		});
+			}));
 
 		dataset.chartConfig.bar.measureMode = 'sum';
 		dataset.chartConfig.bar.valueColumn = null;
 		valueSelect.value = 'valor';
 		valueSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bar: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				valueColumn: 'valor',
-			}),
-		});
+			}));
 
 		dataset.chartConfig.bar.valueColumn = 'valor';
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bar: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				measureMode: 'count',
 				valueColumn: null,
-			}),
-		});
+			}));
 
-		expect(onConfigChanged).toHaveBeenCalledTimes(3);
+		expect(writer.commit).toHaveBeenCalledTimes(3);
 	});
 });

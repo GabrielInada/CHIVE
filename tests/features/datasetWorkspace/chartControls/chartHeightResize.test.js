@@ -14,22 +14,22 @@ const mocks = vi.hoisted(() => {
 	};
 });
 
-vi.mock('../../../src/services/i18nService.js', () => ({
+vi.mock('../../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/state/appState.js', async (importOriginal) => ({
+vi.mock('../../../../src/state/appState.js', async (importOriginal) => ({
 	...(await importOriginal()),
 	getActiveDataset: mocks.getActiveDataset,
 	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
-vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
+vi.mock('../../../../src/features/datasetWorkspace/chartControls/livePreviewBridge.js', () => ({
 	triggerLiveRender: mocks.triggerLiveRender,
 }));
 
-import { ensureChartHeightResizeHandles } from '../../../src/modules/chartControls/chartHeightResize.js';
+import { ensureChartHeightResizeHandles } from '../../../../src/features/datasetWorkspace/chartControls/chartHeightResize.js';
 
 function getHandle() {
 	return document.getElementById('chart-block-bar').querySelector('.chart-height-resize-handle');

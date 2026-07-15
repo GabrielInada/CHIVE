@@ -69,12 +69,12 @@ clamps, rotate/zoom speeds, keyboard steps).
 [controls/](../../../src/charts/scatter3d/controls) mirrors
 `charts/tin/controls/`: `builder.js` (Data: X/Y/Z numeric selects;
 Display: title, point size, opacity; Styling: color), `listeners.js` (via
-the shared `controlListenerHelpers.js`, which remains the config-write
+the shared `listenerBindings.js`, which remains the config-write
 adapter; selects clamp to the numeric column list), and `defaults.js`
 (first three distinct numeric columns via the tin `pickPreferred`
 semantics, preserving still-valid user picks). The registry entry lives in
 [charts/registries/controls.js](../../../src/charts/registries/controls.js),
-which `chartControlsManager.js` consumes.
+which `chartControlsController.js` consumes.
 
 ## 6. The render entry chain
 

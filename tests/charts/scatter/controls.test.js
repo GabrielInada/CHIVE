@@ -4,28 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	normalizeActiveDatasetConfig: vi.fn(),
-	updateActiveDatasetConfig: vi.fn(),
-	triggerLiveRender: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/state/appState.js', async (importOriginal) => ({
-	...(await importOriginal()),
-	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
-	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
-}));
-
-vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
-	triggerLiveRender: mocks.triggerLiveRender,
-}));
-
 import { createScatterPlotControls } from '../../../src/charts/scatter/controls/builder.js';
 import { setupScatterPlotControlListeners } from '../../../src/charts/scatter/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/scatter/controls/defaults.js';
+
+/**
+ * Writer test double. The listeners' contract is that they hand the right
+ * patch to the writer; merging it into state, firing onConfigChanged, and
+ * live-rendering are the adapter's contract and are covered by
+ * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
+ */
+function createWriter() {
+	return { commit: vi.fn(), preview: vi.fn() };
+}
 
 function createDataset(scatterOverrides = {}) {
 	return {
@@ -72,8 +69,8 @@ function selectValue(id, value) {
 	select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function lastConfig() {
-	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].scatter;
+function lastConfig(writer) {
+	return writer.commit.mock.calls.at(-1)[0];
 }
 
 describe('scatter controls module boundaries', () => {
@@ -227,20 +224,18 @@ describe('scatterControls axis listeners', () => {
 		const controls = createScatterPlotControls(dataset, ['value'], ['category', 'value']);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'], onConfigChanged);
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'], writer);
 
 		const xSelect = document.getElementById('viz-select-x');
 		xSelect.value = 'category';
 		xSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			scatter: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				x: 'category',
 				xScale: 'linear',
-			}),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+			}));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('prevents selecting log scale for a categorical axis', () => {
@@ -248,19 +243,17 @@ describe('scatterControls axis listeners', () => {
 		const controls = createScatterPlotControls(dataset, ['value'], ['category', 'value']);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'], onConfigChanged);
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'], writer);
 
 		const xScale = document.getElementById('viz-select-scatter-xscale');
 		xScale.value = 'log';
 		xScale.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			scatter: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				xScale: 'linear',
-			}),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+			}));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('stores categorical pairing mode updates', () => {
@@ -268,26 +261,25 @@ describe('scatterControls axis listeners', () => {
 		const controls = createScatterPlotControls(dataset, ['value'], ['category', 'group', 'value']);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'group', 'value'], onConfigChanged);
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'group', 'value'], writer);
 
 		const pairMode = document.getElementById('viz-select-scatter-categorical-mode');
 		pairMode.value = 'aggregate';
 		pairMode.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			scatter: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				categoricalPairMode: 'aggregate',
-			}),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+			}));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('safely skips listener setup when controls are absent', () => {
 		const dataset = createDataset();
+		const writer = createWriter();
 
-		expect(() => setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'])).not.toThrow();
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		expect(() => setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'], writer)).not.toThrow();
+		expect(writer.commit).not.toHaveBeenCalled();
 	});
 
 	it('stores valid numeric axis selections and falls back invalid axes to null', () => {
@@ -295,13 +287,14 @@ describe('scatterControls axis listeners', () => {
 		const controls = createScatterPlotControls(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue']);
 		appendControls(controls);
 
-		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue'], vi.fn());
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue'], writer);
 
 		selectValue('viz-select-y', 'value');
-		expect(lastConfig()).toEqual(expect.objectContaining({ y: 'value', yScale: 'linear' }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ y: 'value', yScale: 'linear' }));
 
 		selectValue('viz-select-x', 'missing');
-		expect(lastConfig()).toEqual(expect.objectContaining({ x: null, xScale: 'linear' }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ x: null, xScale: 'linear' }));
 	});
 
 	it('coerces simple select values through their validation transforms', () => {
@@ -309,28 +302,29 @@ describe('scatterControls axis listeners', () => {
 		const controls = createScatterPlotControls(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue']);
 		appendControls(controls);
 
-		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue'], vi.fn());
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue'], writer);
 
 		selectValue('viz-select-scatter-xscale', 'log');
-		expect(lastConfig().xScale).toBe('log');
+		expect(lastConfig(writer).xScale).toBe('log');
 
 		selectValue('viz-select-scatter-yscale', 'log');
-		expect(lastConfig().yScale).toBe('log');
+		expect(lastConfig(writer).yScale).toBe('log');
 
 		selectValue('viz-select-scatter-size-mode', 'unexpected');
-		expect(lastConfig().sizeMode).toBe('uniform');
+		expect(lastConfig(writer).sizeMode).toBe('uniform');
 
 		selectValue('viz-select-scatter-size-field', 'otherValue');
-		expect(lastConfig().sizeField).toBe('otherValue');
+		expect(lastConfig(writer).sizeField).toBe('otherValue');
 
 		selectValue('viz-select-scatter-size-field', 'category');
-		expect(lastConfig().sizeField).toBeNull();
+		expect(lastConfig(writer).sizeField).toBeNull();
 
 		selectValue('viz-select-scatter-categorical-mode', 'invalid');
-		expect(lastConfig().categoricalPairMode).toBe('jitter');
+		expect(lastConfig(writer).categoricalPairMode).toBe('jitter');
 
 		selectValue('viz-select-scatter-color-field', '');
-		expect(lastConfig().colorField).toBeNull();
+		expect(lastConfig(writer).colorField).toBeNull();
 	});
 
 	it('updates color mode dependencies for uniform, numeric, and category selections', () => {
@@ -342,11 +336,11 @@ describe('scatterControls axis listeners', () => {
 		const controls = createScatterPlotControls(dataset, ['value', 'otherValue'], ['category', 'group', 'value', 'otherValue']);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'group', 'value', 'otherValue'], onConfigChanged);
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'group', 'value', 'otherValue'], writer);
 
 		selectValue('viz-select-scatter-color-mode', 'category');
-		expect(lastConfig()).toEqual(expect.objectContaining({
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({
 			colorMode: 'category',
 			colorField: 'category',
 			colorFieldType: 'category',
@@ -355,7 +349,7 @@ describe('scatterControls axis listeners', () => {
 
 		dataset.chartConfig.scatter.colorField = 'otherValue';
 		selectValue('viz-select-scatter-color-mode', 'numeric');
-		expect(lastConfig()).toEqual(expect.objectContaining({
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({
 			colorMode: 'numeric',
 			colorField: 'otherValue',
 			colorFieldType: 'numeric',
@@ -363,29 +357,31 @@ describe('scatterControls axis listeners', () => {
 		}));
 
 		selectValue('viz-select-scatter-color-mode', 'uniform');
-		expect(lastConfig()).toEqual(expect.objectContaining({
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({
 			colorMode: 'uniform',
 			colorField: null,
 			colorFieldType: null,
 		}));
-		expect(onConfigChanged).toHaveBeenCalledTimes(3);
+		expect(writer.commit).toHaveBeenCalledTimes(3);
 	});
 
-	it('routes color input previews and committed values through the state facades', () => {
+	it('routes color input previews and committed values through the writer', () => {
 		const dataset = createDataset({ colorMode: 'numeric', colorField: 'value' });
 		const controls = createScatterPlotControls(dataset, ['value'], ['category', 'value']);
 		appendControls(controls);
 
-		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'], vi.fn());
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'], writer);
 
 		const colorInput = document.getElementById('viz-input-scatter-color');
 		colorInput.value = '#abcdef';
 		colorInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-		expect(mocks.normalizeActiveDatasetConfig).toHaveBeenCalledTimes(1);
-		expect(mocks.triggerLiveRender).toHaveBeenCalledTimes(1);
-		const normalized = mocks.normalizeActiveDatasetConfig.mock.calls[0][0]({ scatter: { colorField: 'value' } });
-		expect(normalized.scatter).toEqual(expect.objectContaining({
+		// Preview on input, never commit: emitting mid-drag would rebuild the
+		// sidebar and steal focus from the open picker.
+		expect(writer.commit).not.toHaveBeenCalled();
+		expect(writer.preview).toHaveBeenCalledTimes(1);
+		expect(writer.preview.mock.calls[0][0]).toEqual(expect.objectContaining({
 			colorMode: 'uniform',
 			colorField: null,
 			colorFieldType: null,
@@ -394,7 +390,7 @@ describe('scatterControls axis listeners', () => {
 
 		colorInput.value = '#123456';
 		colorInput.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig()).toEqual(expect.objectContaining({
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({
 			colorMode: 'uniform',
 			colorField: null,
 			color: '#123456',
@@ -406,16 +402,17 @@ describe('scatterControls axis listeners', () => {
 		const controls = createScatterPlotControls(dataset, ['value'], ['category', 'value']);
 		appendControls(controls);
 
-		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'], vi.fn());
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'], writer);
 
 		selectValue('viz-select-scatter-gradient-distribution', 'rank');
-		expect(lastConfig().gradientDistribution).toBe('rank');
+		expect(lastConfig(writer).gradientDistribution).toBe('rank');
 
 		selectValue('viz-select-scatter-gradient-distribution', 'unknown');
-		expect(lastConfig().gradientDistribution).toBe('value');
+		expect(lastConfig(writer).gradientDistribution).toBe('value');
 
 		document.querySelector('button[data-color-preset-control="viz-scatter-color-preset"][data-preset-name="Pastel"]').click();
-		expect(lastConfig()).toEqual(expect.objectContaining({
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({
 			colorScheme: 'Pastel',
 			color: expect.stringMatching(/^#[0-9a-f]{6}$/i),
 			gradientMinColor: expect.stringMatching(/^#[0-9a-f]{6}$/i),
@@ -425,17 +422,17 @@ describe('scatterControls axis listeners', () => {
 		const xLabel = document.getElementById('viz-toggle-scatter-x-label');
 		xLabel.checked = false;
 		xLabel.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().showXAxisLabel).toBe(false);
+		expect(lastConfig(writer).showXAxisLabel).toBe(false);
 
 		const title = document.getElementById('viz-input-scatter-title');
 		title.value = '  Custom scatter  ';
 		title.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().customTitle).toBe('Custom scatter');
+		expect(lastConfig(writer).customTitle).toBe('Custom scatter');
 
 		const min = document.getElementById('viz-slider-scatter-size-min');
 		min.value = '7';
 		min.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().sizeMin).toBe(7);
+		expect(lastConfig(writer).sizeMin).toBe(7);
 	});
 
 	it('updates regression toggles and per-category mode dependencies', () => {
@@ -443,15 +440,16 @@ describe('scatterControls axis listeners', () => {
 		const controls = createScatterPlotControls(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue']);
 		appendControls(controls);
 
-		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue'], vi.fn());
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue'], writer);
 
 		const enabled = document.getElementById('viz-toggle-scatter-regression-enabled');
 		enabled.checked = true;
 		enabled.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().regression.enabled).toBe(true);
+		expect(lastConfig(writer).regression.enabled).toBe(true);
 
 		selectValue('viz-select-scatter-regression-mode', 'perCategory');
-		expect(lastConfig()).toEqual(expect.objectContaining({
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({
 			colorMode: 'category',
 			colorField: 'category',
 			colorFieldType: 'category',
@@ -459,7 +457,7 @@ describe('scatterControls axis listeners', () => {
 		}));
 
 		selectValue('viz-select-scatter-regression-mode', 'invalid');
-		expect(lastConfig().regression.mode).toBe('overall');
+		expect(lastConfig(writer).regression.mode).toBe('overall');
 	});
 
 	it('keeps per-category regression from replacing an existing category field', () => {
@@ -473,26 +471,29 @@ describe('scatterControls axis listeners', () => {
 		const controls = createScatterPlotControls(dataset, ['value', 'otherValue'], ['category', 'group', 'value', 'otherValue']);
 		appendControls(controls);
 
-		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'group', 'value', 'otherValue'], vi.fn());
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'group', 'value', 'otherValue'], writer);
 
 		selectValue('viz-select-scatter-regression-mode', 'perCategory');
-		expect(lastConfig()).toEqual(expect.objectContaining({
-			colorMode: 'category',
-			colorField: 'group',
+		// The patch touches regression only. Because it names neither colorMode
+		// nor colorField, the adapter's merge cannot clobber the existing
+		// category color field, which is what this guards.
+		expect(lastConfig(writer)).toEqual({
 			regression: expect.objectContaining({ mode: 'perCategory' }),
-		}));
+		});
 	});
 
 	it('uses empty scatter objects when regression listeners run without existing config', () => {
 		const dataset = { chartConfig: { scatter: null } };
 		document.body.innerHTML = '<input id="viz-toggle-scatter-regression-ci" type="checkbox">';
 
-		setupScatterPlotControlListeners(dataset, [], [], vi.fn());
+		const writer = createWriter();
+		setupScatterPlotControlListeners(dataset, [], [], writer);
 		const checkbox = document.getElementById('viz-toggle-scatter-regression-ci');
 		checkbox.checked = false;
 		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(lastConfig()).toEqual({ regression: { showCI: false } });
+		expect(lastConfig(writer)).toEqual({ regression: { showCI: false } });
 	});
 });
 

@@ -5,7 +5,7 @@
  * chart controls package (`charts/bar/controls/`, `charts/pie/controls/`, ...). Each
  * factory returns a `<div>` containing a label plus the input element;
  * listeners are wired separately via the shared chart-control listener
- * helpers in `modules/chartControls/controlListenerHelpers.js`.
+ * bindings in `charts/shared/controls/listenerBindings.js`.
  *
  * Shared leaf infrastructure: localized strings arrive as arguments
  * (label text, the palette `translate` callback), never via service
@@ -115,7 +115,7 @@ export function createNumberInputControl(id, labelText, value, { min, max, step,
 /**
  * Build a labeled range slider with a live-value `<output>` element.
  * The output mirrors the slider value; sync wiring happens in
- * `controlListenerHelpers.js#setupSliderListener`.
+ * `listenerBindings.js#setupSliderListener`.
  *
  * @param {string} id
  * @param {string} labelText

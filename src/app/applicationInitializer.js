@@ -15,7 +15,7 @@ import {
 import { getPersistenceSnapshot, replaceAllState } from '../state/appState.js';
 import { rehydratePanelChartSpecs } from '../utils/panelHydration.js';
 import { throttle } from '../utils/throttle.js';
-import { initChartControls } from '../modules/chartControls/chartControlsManager.js';
+import { initChartControls } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
 import { initPanelController } from '../features/panel/panelController.js';
 import { initDatasetController } from '../features/datasetWorkspace/datasetController.js';
 import { initializeDomBindings } from './domBindings.js';

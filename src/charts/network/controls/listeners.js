@@ -7,35 +7,31 @@
  * package never touches state facades directly.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
 import { NETWORK_GRAPH } from '../../../config/charts.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
-	commitChartConfigPatch,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
 	setupSliderListeners,
 	setupColorPresetListeners,
-} from '../../../modules/chartControls/controlListenerHelpers.js';
+} from '../../shared/controls/listenerBindings.js';
 
 /**
  * Wire listeners for every network-graph control. Includes the Reset Zoom
- * button (resets both slider DOM and config). `numericOptionsOrCallback`
- * is overloaded: callers may pass the callback in arg 3 or arg 4.
+ * button (resets both slider DOM and config).
  *
  * @param {Dataset} dataset
  * @param {string[]} allOptions
- * @param {string[] | (() => void)} [numericOptionsOrCallback]
- * @param {() => void} [onConfigChangedMaybe]
+ * @param {string[]} numericOptions - Numeric column names.
+ * @param {ChartConfigWriter} writer
  * @returns {void}
  */
-export function setupNetworkGraphControlListeners(dataset, allOptions, numericOptionsOrCallback = [], onConfigChangedMaybe) {
-	const onConfigChanged = typeof numericOptionsOrCallback === 'function'
-		? numericOptionsOrCallback
-		: onConfigChangedMaybe;
+export function setupNetworkGraphControlListeners(dataset, allOptions, numericOptions, writer) {
 
 	setupSelectListeners([
 		{ id: 'viz-select-network-source', key: 'source' },
@@ -43,7 +39,7 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 		{ id: 'viz-select-network-weight', key: 'weight', transform: v => v || null },
 		{ id: 'viz-select-network-group', key: 'group', transform: v => v || null },
 		{ id: 'viz-select-network-edge-color-mode', key: 'edgeColorMode', transform: v => v === 'uniform' ? 'uniform' : 'gradient' },
-	], dataset, 'network', onConfigChanged);
+	], writer);
 
 	setupSliderListeners([
 		{ id: 'viz-slider-network-node-radius', key: 'nodeRadius' },
@@ -52,7 +48,7 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 		{ id: 'viz-slider-network-link-opacity', key: 'linkOpacity' },
 		{ id: 'viz-slider-network-zoom', key: 'zoomScale' },
 		{ id: 'viz-slider-network-alpha-decay', key: 'alphaDecay' },
-	], dataset, 'network', onConfigChanged);
+	], writer);
 
 	// Reset zoom button (custom: resets slider DOM + config)
 	const networkZoomSlider = document.getElementById('viz-slider-network-zoom');
@@ -64,25 +60,25 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 				const output = networkZoomSlider.parentElement?.querySelector('output');
 				if (output) output.textContent = networkZoomSlider.value;
 			}
-			commitChartConfigPatch(dataset, 'network', {
+			writer.commit({
 				zoomScale: NETWORK_GRAPH.defaultZoomScale,
-			}, onConfigChanged);
+			});
 		});
 	}
 
 	setupCheckboxListeners([
 		{ id: 'viz-toggle-network-node-labels', key: 'showNodeLabels' },
 		{ id: 'viz-toggle-network-show-legend', key: 'showLegend' },
-	], dataset, 'network', onConfigChanged);
+	], writer);
 
-	setupColorInputListener('viz-input-network-source-color', 'sourceNodeColor', '#e3743d', dataset, 'network', onConfigChanged);
-	setupColorInputListener('viz-input-network-target-color', 'targetNodeColor', '#6b94c9', dataset, 'network', onConfigChanged);
+	setupColorInputListener('viz-input-network-source-color', 'sourceNodeColor', '#e3743d', writer);
+	setupColorInputListener('viz-input-network-target-color', 'targetNodeColor', '#6b94c9', writer);
 
 	setupColorPresetListeners('viz-network-color-preset', {
 		sourceNodeColor: 0, targetNodeColor: 1,
 	}, {
 		sourceNodeColor: '#e3743d', targetNodeColor: '#6b94c9',
-	}, dataset, 'network', onConfigChanged, COLOR_PRESETS);
+	}, writer, COLOR_PRESETS);
 
-	setupTextInputListener('viz-input-network-title', 'customTitle', dataset, 'network', onConfigChanged);
+	setupTextInputListener('viz-input-network-title', 'customTitle', writer);
 }

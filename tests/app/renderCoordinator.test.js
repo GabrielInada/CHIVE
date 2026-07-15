@@ -46,7 +46,7 @@ vi.mock('../../src/features/datasetWorkspace/views/chartsView.js', () => ({
 	renderCharts: mocks.renderCharts,
 }));
 
-vi.mock('../../src/modules/chartControls/chartControlsManager.js', () => ({
+vi.mock('../../src/features/datasetWorkspace/chartControls/chartControlsController.js', () => ({
 	renderChartControlsSidebar: mocks.renderChartControlsSidebar,
 }));
 

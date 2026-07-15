@@ -9,38 +9,32 @@
  * validation.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
 import { CHART_COLORS, TREEMAP_CHART } from '../../../config/charts.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
-	commitChartConfigPatch,
 	setupCheckboxListeners,
 	setupColorInputListener,
 	setupColorPresetListeners,
 	setupSelectListeners,
 	setupSliderListener,
 	setupTextInputListener,
-} from '../../../modules/chartControls/controlListenerHelpers.js';
+} from '../../shared/controls/listenerBindings.js';
 
 /**
  * Wire listeners for every treemap control. Handles the `measureMode` ↔
  * `valueColumn` cross-constraint and color-preset → primary-color mapping.
  *
- * The `allColumnsOrCallback` parameter is overloaded for backward
- * compatibility (callback in arg 4 or arg 5).
- *
  * @param {Dataset} dataset
  * @param {string[]} baseCat - Categorical (or fallback "all") column names; kept for parity.
  * @param {string[]} numericOptions
- * @param {string[] | (() => void)} [allColumnsOrCallback]
- * @param {() => void} [onConfigChangedMaybe]
+ * @param {string[]} allColumns - Visible column names.
+ * @param {ChartConfigWriter} writer
  * @returns {void}
  */
-export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, allColumnsOrCallback = [], onConfigChangedMaybe) {
-	const onConfigChanged = typeof allColumnsOrCallback === 'function'
-		? allColumnsOrCallback
-		: onConfigChangedMaybe;
+export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, allColumns, writer) {
 
 	setupSelectListeners([
 		{ id: 'viz-select-treemap-category', key: 'category', transform: value => value || null },
@@ -50,7 +44,7 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 			key: 'colorMode',
 			transform: value => ['scheme', 'uniform'].includes(value) ? value : 'scheme',
 		},
-	], dataset, 'treemap', onConfigChanged);
+	], writer);
 
 	const selectMeasure = document.getElementById('viz-select-treemap-measure');
 	if (selectMeasure) {
@@ -59,10 +53,10 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 			const currentValueColumn = numericOptions.includes(dataset.chartConfig.treemap?.valueColumn)
 				? dataset.chartConfig.treemap?.valueColumn
 				: null;
-			commitChartConfigPatch(dataset, 'treemap', {
+			writer.commit({
 				measureMode: nextMode,
 				valueColumn: nextMode === 'count' ? null : currentValueColumn,
-			}, onConfigChanged);
+			});
 		});
 	}
 
@@ -70,26 +64,22 @@ export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, a
 	if (selectValueColumn) {
 		selectValueColumn.addEventListener('change', () => {
 			const nextValue = numericOptions.includes(selectValueColumn.value) ? selectValueColumn.value : null;
-			commitChartConfigPatch(dataset, 'treemap', {
+			writer.commit({
 				valueColumn: nextValue,
-			}, onConfigChanged);
+			});
 		});
 	}
 
-	setupTextInputListener('viz-input-treemap-title', 'customTitle', dataset, 'treemap', onConfigChanged);
-	setupSliderListener('viz-slider-treemap-padding', 'padding', dataset, 'treemap', onConfigChanged);
+	setupTextInputListener('viz-input-treemap-title', 'customTitle', writer);
+	setupSliderListener('viz-slider-treemap-padding', 'padding', writer);
 	setupCheckboxListeners([
 		{ id: 'viz-toggle-treemap-labels', key: 'showLabels' },
 		{ id: 'viz-toggle-treemap-values', key: 'showValues' },
-	], dataset, 'treemap', onConfigChanged);
-	setupColorInputListener('viz-input-treemap-color', 'color', CHART_COLORS.treemap, dataset, 'treemap', onConfigChanged);
+	], writer);
+	setupColorInputListener('viz-input-treemap-color', 'color', CHART_COLORS.treemap, writer);
 	setupColorPresetListeners(
 		'viz-treemap-color-preset',
 		{ color: 0 },
-		{ color: CHART_COLORS.treemap },
-		dataset,
-		'treemap',
-		onConfigChanged,
-		COLOR_PRESETS,
+		{ color: CHART_COLORS.treemap }, writer, COLOR_PRESETS,
 	);
 }

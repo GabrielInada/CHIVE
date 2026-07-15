@@ -8,19 +8,18 @@
  * through the emitting facade).
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
 import { CHART_COLORS, PIE_CHART } from '../../../config/charts.js';
 import { COLOR_PRESETS, normalizeHexColor } from '../../shared/controls/factories.js';
 import {
-	commitChartConfigPatch,
-	previewChartConfigPatch,
 	setupSelectListeners,
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
 	setupSliderListeners,
-} from '../../../modules/chartControls/controlListenerHelpers.js';
+} from '../../shared/controls/listenerBindings.js';
 import { getPieSectorValues } from './sectorValues.js';
 
 /**
@@ -30,20 +29,14 @@ import { getPieSectorValues } from './sectorValues.js';
  * mapping, and per-slice color picker grid (live `input` writes via the
  * non-emitting facade, `change` commits through the emitting facade).
  *
- * The `allColumnsOrCallback` parameter is overloaded for backward
- * compatibility (callback in arg 4 or arg 5).
- *
  * @param {Dataset} dataset
  * @param {string[]} basePie - Categorical (or fallback "all") column names; kept for parity.
  * @param {string[]} numeric - Numeric column names; used to validate the value-column select.
- * @param {string[] | (() => void)} [allColumnsOrCallback]
- * @param {() => void} [onConfigChangedMaybe]
+ * @param {string[]} allColumns - Visible column names.
+ * @param {ChartConfigWriter} writer
  * @returns {void}
  */
-export function setupPieChartControlListeners(dataset, basePie, numeric, allColumnsOrCallback = [], onConfigChangedMaybe) {
-	const onConfigChanged = typeof allColumnsOrCallback === 'function'
-		? allColumnsOrCallback
-		: onConfigChangedMaybe;
+export function setupPieChartControlListeners(dataset, basePie, numeric, allColumns, writer) {
 	const sectorValues = getPieSectorValues(dataset, dataset.chartConfig.pie);
 
 	setupSelectListeners([
@@ -52,7 +45,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 		{ id: 'viz-select-pie-label-position', key: 'labelPosition', transform: v => v === 'outside' ? 'outside' : 'inside' },
 		{ id: 'viz-select-pie-topn', key: 'topN', transform: v => Number(v) },
 		{ id: 'viz-select-pie-topn-mode', key: 'topNMode', transform: v => v === 'truncate' ? 'truncate' : 'other' },
-	], dataset, 'pie', onConfigChanged);
+	], writer);
 
 	// Measure select (custom: updates valueColumn dependency)
 	const measureSelect = document.getElementById('viz-select-pie-measure');
@@ -63,10 +56,10 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const nextValueColumn = measureMode === 'sum'
 				? (numeric.includes(currentValueColumn) ? currentValueColumn : (numeric[0] || null))
 				: currentValueColumn;
-			commitChartConfigPatch(dataset, 'pie', {
+			writer.commit({
 				measureMode,
 				valueColumn: nextValueColumn,
-			}, onConfigChanged);
+			});
 		});
 	}
 
@@ -87,7 +80,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				innerSlider.value = String(innerRadius);
 				syncSliderOutput(innerSlider);
 			}
-			commitChartConfigPatch(dataset, 'pie', { innerRadius }, onConfigChanged);
+			writer.commit({ innerRadius });
 		});
 	}
 
@@ -101,14 +94,14 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				innerSlider.value = String(innerRadius);
 				syncSliderOutput(innerSlider);
 			}
-			commitChartConfigPatch(dataset, 'pie', { outerRadius, innerRadius }, onConfigChanged);
+			writer.commit({ outerRadius, innerRadius });
 		});
 	}
 
 	setupSliderListeners([
 		{ id: 'viz-slider-pie-pad-angle', key: 'padAngle' },
 		{ id: 'viz-slider-pie-zoom', key: 'zoomScale' },
-	], dataset, 'pie', onConfigChanged);
+	], writer);
 
 	// Reset zoom button (custom: resets slider DOM + config)
 	const pieZoomSlider = document.getElementById('viz-slider-pie-zoom');
@@ -119,9 +112,9 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				pieZoomSlider.value = String(PIE_CHART.defaultZoomScale);
 				syncSliderOutput(pieZoomSlider);
 			}
-			commitChartConfigPatch(dataset, 'pie', {
+			writer.commit({
 				zoomScale: PIE_CHART.defaultZoomScale,
-			}, onConfigChanged);
+			});
 		});
 	}
 
@@ -129,10 +122,10 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 		{ id: 'viz-toggle-pie-category-label', key: 'showCategoryLabel' },
 		{ id: 'viz-toggle-pie-value-label', key: 'showValueLabel' },
 		{ id: 'viz-toggle-pie-legend', key: 'showLegend' },
-	], dataset, 'pie', onConfigChanged);
+	], writer);
 
-	setupColorInputListener('viz-input-pie-color', 'color', CHART_COLORS.pie, dataset, 'pie', onConfigChanged);
-	setupTextInputListener('viz-input-pie-title', 'customTitle', dataset, 'pie', onConfigChanged);
+	setupColorInputListener('viz-input-pie-color', 'color', CHART_COLORS.pie, writer);
+	setupTextInputListener('viz-input-pie-title', 'customTitle', writer);
 
 	// Pie color presets (custom: maps palette to per-slice colors)
 	const presetButtons = document.querySelectorAll('button[data-color-preset-control="viz-pie-color-preset"]');
@@ -147,10 +140,10 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 				nextSliceColors[sector] = presetColors[index % presetColors.length];
 			});
 
-			commitChartConfigPatch(dataset, 'pie', {
+			writer.commit({
 				colorScheme: presetName,
 				customSliceColors: nextSliceColors,
-			}, onConfigChanged);
+			});
 		});
 	});
 
@@ -163,7 +156,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const sector = input.dataset.colorItem;
 			if (!sector) return;
 			const next = normalizeHexColor(input.value, CHART_COLORS.pie);
-			previewChartConfigPatch('pie', current => ({
+			writer.preview(current => ({
 				customSliceColors: {
 					...(current.customSliceColors || {}),
 					[sector]: next,
@@ -177,9 +170,9 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
 			nextSliceColors[sector] = normalizeHexColor(input.value, CHART_COLORS.pie);
 
-			commitChartConfigPatch(dataset, 'pie', {
+			writer.commit({
 				customSliceColors: nextSliceColors,
-			}, onConfigChanged);
+			});
 		});
 	});
 }

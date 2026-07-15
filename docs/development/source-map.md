@@ -26,7 +26,7 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/domain/` | Pure product rules with one owner per subdirectory. `domain/panel/` holds the layout-template registry (`layoutTemplates.js`) and the panel-block model with the shared percentage clamp (`panelBlockModel.js`). `domain/datasets/` holds the dataset algorithms: parsing and delimiter detection (`parse.js`), type and decimal detection (`typeDetection.js`), row normalization (`processData.js`), per-column statistics (`statistics.js`), and joins (`join.js`). Leaf layer like `config/` and `utils/`: no imports from modules, components, services, or charts. |
 | `src/components/` | Leaf renderers: `components/settingsDialog.js` is the callback-driven global settings modal opened from the shared header. The dataset workspace views and dialogs now live in `features/datasetWorkspace/`. |
 | `src/state/` | State core: `appState.js`, the data/panel/ui facades, `stateEvents.js`, and `stateDebug.js`. Panel facade-only mutation primitives live under `state/panel/`. The only write path for application state. |
-| `src/modules/chartControls/` | Legacy-named feature manager, the last resident of `modules/`: owns the chart-controls sidebar end to end (DOM intent, facade writes, render triggering) plus the state-write adapters chart controls use (listener helpers, live preview, height resize). The pure control DOM factories live under `charts/shared/controls/`. |
+| `src/features/datasetWorkspace/chartControls/` | The charts tab's controls sidebar: `chartControlsController.js` owns it end to end (DOM intent, facade writes, render triggering), `chartConfigAdapter.js` builds the `ChartConfigWriter` each chart package writes through, `livePreviewBridge.js` holds the replaceable live-render callback, and `chartHeightResize.js` owns the drag handles. The pure control DOM factories and the writer-driven listener bindings live under `charts/shared/controls/`. |
 | `src/features/datasetWorkspace/` | Dataset workspace feature package: `datasetController.js` owns file upload, dataset add/remove/select, joins, and preset loading (facade writes); `workspaceView.js` composes the right-hand pane; `views/` and `dialogs/` are the callback-driven, state-read-only renderers; `bindings/` holds the delegated dataset-row listeners. Durable state remains under `state/`. |
 | `src/features/panel/` | Panel feature package: `panelController.js` owns user intent, facade writes, bus subscriptions, and render coordination; `views/`, `layout/`, `slots/`, and `export/` own presentation mechanics. Durable state remains under `state/`; pure layout templates and the block model remain under `domain/panel/`. |
 | `src/charts/` | Chart presentation metadata (`catalog.js` and `previews.js`), independent controls/workspace/panel lookup under `registries/`, D3/SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`, `charts/network/`, and `charts/tin/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/` (SVG scaffold, tooltip, control factories and grouping). A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
@@ -56,11 +56,12 @@ with real work:
 | Registry | Supported-type implementation lookup for one integration surface | `charts/registries/workspace.js` |
 | Adapter | Bridge between a generic system and a chart/domain implementation | `charts/bar/panelAdapter.js` |
 
-Manager is legacy naming, still valid for existing files: `uiManager.js` and
-`chartControlsManager.js` keep their names until their domains are reworked
-for real. Controller is the name for new feature or domain flow owners. Do
-not rename a Manager for aesthetics alone; do not use Controller for pure
-renderers, services, registries, or math helpers.
+Manager is legacy naming, still valid for `uiManager.js`, which keeps its name
+until its domain is reworked for real. Controller is the name for new feature or
+domain flow owners, and for a Manager whose responsibilities genuinely change:
+`chartControlsManager.js` became `chartControlsController.js` when its write path
+was inverted, not for looks. Do not rename a Manager for aesthetics alone; do not
+use Controller for pure renderers, services, registries, or math helpers.
 
 ## Where Do I Put New Code?
 

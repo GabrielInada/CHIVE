@@ -4,26 +4,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetConfig: vi.fn(),
-	normalizeActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../src/state/appState.js', () => ({
-	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
-	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
-}));
-
-vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
-	triggerLiveRender: vi.fn(),
-}));
-
 import { createPieChartControls } from '../../../src/charts/pie/controls/builder.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/pie/controls/defaults.js';
+
+/**
+ * Writer test double. The listeners' contract is that they hand the right
+ * patch to the writer; merging it into state, firing onConfigChanged, and
+ * live-rendering are the adapter's contract and are covered by
+ * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
+ */
+function createWriter() {
+	return { commit: vi.fn(), preview: vi.fn() };
+}
 
 describe('pie controls module boundaries', () => {
 	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
@@ -89,8 +88,8 @@ function selectValue(id, value) {
 	select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function lastConfig() {
-	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].pie;
+function lastConfig(writer) {
+	return writer.commit.mock.calls.at(-1)[0];
 }
 
 describe('pieControls UI structure', () => {
@@ -220,17 +219,15 @@ describe('pieControls listeners', () => {
 		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], onConfigChanged);
+		const writer = createWriter();
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], writer);
 
 		const measureSelect = document.getElementById('viz-select-pie-measure');
 		measureSelect.value = 'sum';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			pie: expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('applies a color preset palette to the per-slice color map', () => {
@@ -238,33 +235,36 @@ describe('pieControls listeners', () => {
 		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
+		const writer = createWriter();
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], writer);
 
 		const boldButton = document.querySelector('button[data-color-preset-control="viz-pie-color-preset"][data-preset-name="Bold"]');
 		expect(boldButton).not.toBeNull();
 		boldButton.click();
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
-		expect(call.pie.colorScheme).toBe('Bold');
+		expect(writer.commit).toHaveBeenCalledTimes(1);
+		const call = writer.commit.mock.calls[0][0];
+		expect(call.colorScheme).toBe('Bold');
 		// One mapped color per distinct sector
-		expect(Object.keys(call.pie.customSliceColors).sort()).toEqual(['East', 'North', 'South']);
+		expect(Object.keys(call.customSliceColors).sort()).toEqual(['East', 'North', 'South']);
 	});
 
 	// Regression guard for the P0 fix and the wider color-helper fix:
 	// per-slice color writes must NEVER mutate dataset.chartConfig directly.
-	// On `input`, the write goes through the non-emitting facade
-	// (normalizeActiveDatasetConfig), no CONFIG_UPDATED emit, no sidebar
-	// rebuild, but state stays consistent. On `change`, the emitting facade
-	// commits the final value. If anyone re-introduces a bypass listener
-	// (direct assignment to dataset.chartConfig.pie.customSliceColors), the
-	// `normalizeActiveDatasetConfig` mock won't be called and this test fails.
-	it('routes input writes through the non-emitting facade and commits via the emitting facade on change', () => {
+	// On `input` the write goes through writer.preview (the non-emitting path:
+	// no CONFIG_UPDATED, no sidebar rebuild, so the open picker keeps focus);
+	// on `change` writer.commit takes the final value. If anyone re-introduces a
+	// bypass listener (direct assignment to
+	// dataset.chartConfig.pie.customSliceColors), neither writer method is
+	// called and this test fails. That preview/commit split is enforced in
+	// chartConfigAdapter.test.js, which owns which facade each one reaches.
+	it('routes input writes through preview and commits the final value on change', () => {
 		const dataset = createDataset();
 		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
+		const writer = createWriter();
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], writer);
 
 		const sliceInput = document.querySelector('input[data-color-grid-control="viz-pie-color-grid"][data-color-item="North"]');
 		expect(sliceInput).not.toBeNull();
@@ -272,27 +272,30 @@ describe('pieControls listeners', () => {
 		sliceInput.value = '#ff0000';
 		sliceInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-		// No emitting facade call on input.
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		// No commit on input: emitting there would rebuild the sidebar mid-drag.
+		expect(writer.commit).not.toHaveBeenCalled();
 
-		// Non-emitting facade write happened; the normalizer sets customSliceColors[North].
-		expect(mocks.normalizeActiveDatasetConfig).toHaveBeenCalledTimes(1);
-		const normalizer = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
-		const result = normalizer({ pie: { customSliceColors: {} } });
-		expect(result.pie.customSliceColors.North).toBe('#ff0000');
+		// Preview got a patch function; applying it sets customSliceColors[North]
+		// without dropping the sibling slice colors already in the config.
+		expect(writer.preview).toHaveBeenCalledTimes(1);
+		const patchFn = writer.preview.mock.calls[0][0];
+		const patch = patchFn({ customSliceColors: { South: '#00ff00' } });
+		expect(patch.customSliceColors.North).toBe('#ff0000');
+		expect(patch.customSliceColors.South).toBe('#00ff00');
 
 		sliceInput.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
-		expect(call.pie.customSliceColors.North).toBe('#ff0000');
+		expect(writer.commit).toHaveBeenCalledTimes(1);
+		const call = writer.commit.mock.calls[0][0];
+		expect(call.customSliceColors.North).toBe('#ff0000');
 	});
 
 	it('handles missing DOM controls as no-ops', () => {
 		const dataset = createDataset();
 
-		expect(() => setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], vi.fn())).not.toThrow();
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		const writer = createWriter();
+		expect(() => setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], [], writer)).not.toThrow();
+		expect(writer.commit).not.toHaveBeenCalled();
 	});
 
 	it('coerces select values and supports the legacy callback argument position', () => {
@@ -300,25 +303,25 @@ describe('pieControls listeners', () => {
 		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales'], ['region', 'team', 'sales']);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], onConfigChanged);
+		const writer = createWriter();
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], [], writer);
 
 		selectValue('viz-select-pie-category', 'team');
-		expect(lastConfig().category).toBe('team');
+		expect(lastConfig(writer).category).toBe('team');
 
 		selectValue('viz-select-pie-value-column', '');
-		expect(lastConfig().valueColumn).toBeNull();
+		expect(lastConfig(writer).valueColumn).toBeNull();
 
 		selectValue('viz-select-pie-label-position', 'sideways');
-		expect(lastConfig().labelPosition).toBe('inside');
+		expect(lastConfig(writer).labelPosition).toBe('inside');
 
 		selectValue('viz-select-pie-topn', '20');
-		expect(lastConfig().topN).toBe(20);
+		expect(lastConfig(writer).topN).toBe(20);
 
 		selectValue('viz-select-pie-topn-mode', 'unknown');
-		expect(lastConfig().topNMode).toBe('other');
+		expect(lastConfig(writer).topNMode).toBe('other');
 
-		expect(onConfigChanged).toHaveBeenCalledTimes(5);
+		expect(writer.commit).toHaveBeenCalledTimes(5);
 	});
 
 	it('keeps or clears the value column when measure mode changes', () => {
@@ -326,25 +329,26 @@ describe('pieControls listeners', () => {
 		const controls = createPieChartControls(dataset, ['region'], ['sales', 'profit'], ['region', 'sales', 'profit']);
 		appendControls(controls);
 
-		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales', 'profit'], ['region', 'sales', 'profit'], vi.fn());
+		const writer = createWriter();
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales', 'profit'], ['region', 'sales', 'profit'], writer);
 
 		selectValue('viz-select-pie-measure', 'count');
-		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'count', valueColumn: 'sales' }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'count', valueColumn: 'sales' }));
 
 		dataset.chartConfig.pie.valueColumn = 'profit';
 		selectValue('viz-select-pie-measure', 'sum');
-		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: 'profit' }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: 'profit' }));
 
 		dataset.chartConfig.pie.valueColumn = 'old';
 		selectValue('viz-select-pie-measure', 'sum');
-		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }));
 
 		document.body.innerHTML = '';
 		const noNumericDataset = createDataset({ measureMode: 'count', valueColumn: 'old' });
 		appendControls(createPieChartControls(noNumericDataset, ['region'], [], ['region']));
-		setupPieChartControlListeners(noNumericDataset, noNumericDataset.chartConfig.pie, [], ['region'], vi.fn());
+		setupPieChartControlListeners(noNumericDataset, noNumericDataset.chartConfig.pie, [], ['region'], writer);
 		selectValue('viz-select-pie-measure', 'sum');
-		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: null }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: null }));
 	});
 
 	it('clamps inner and outer radius changes and updates visible slider output', () => {
@@ -352,7 +356,8 @@ describe('pieControls listeners', () => {
 		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
+		const writer = createWriter();
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], writer);
 
 		const inner = document.getElementById('viz-slider-pie-inner-radius');
 		const outer = document.getElementById('viz-slider-pie-outer-radius');
@@ -362,14 +367,14 @@ describe('pieControls listeners', () => {
 		inner.dispatchEvent(new Event('input', { bubbles: true }));
 		expect(inner.parentElement.querySelector('output').textContent).toBe('60');
 		inner.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().innerRadius).toBe(37);
+		expect(lastConfig(writer).innerRadius).toBe(37);
 		expect(inner.value).toBe('37');
 		expect(inner.parentElement.querySelector('output').textContent).toBe('37');
 
 		inner.value = '40';
 		outer.value = '30';
 		outer.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig()).toEqual(expect.objectContaining({ outerRadius: 30, innerRadius: 22 }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ outerRadius: 30, innerRadius: 22 }));
 		expect(inner.value).toBe('22');
 	});
 
@@ -378,19 +383,20 @@ describe('pieControls listeners', () => {
 		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
 
-		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
+		const writer = createWriter();
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], writer);
 
 		const zoom = document.getElementById('viz-slider-pie-zoom');
 		zoom.value = '3';
 		document.getElementById('viz-btn-pie-reset-zoom').click();
-		expect(lastConfig().zoomScale).toBe(1);
+		expect(lastConfig(writer).zoomScale).toBe(1);
 		expect(zoom.value).toBe('1');
 		expect(zoom.parentElement.querySelector('output').textContent).toBe('1');
 
 		document.body.innerHTML = '<button id="viz-btn-pie-reset-zoom" type="button"></button>';
-		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], writer);
 		document.getElementById('viz-btn-pie-reset-zoom').click();
-		expect(lastConfig().zoomScale).toBe(1);
+		expect(lastConfig(writer).zoomScale).toBe(1);
 	});
 
 	it('ignores unknown presets and color-grid events with no sector token', () => {
@@ -402,18 +408,19 @@ describe('pieControls listeners', () => {
 		unknownPreset.dataset.presetName = 'Missing';
 		document.body.appendChild(unknownPreset);
 
-		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], vi.fn());
+		const writer = createWriter();
+		setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], writer);
 
 		unknownPreset.click();
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		expect(writer.commit).not.toHaveBeenCalled();
 
 		const sliceInput = document.querySelector('input[data-color-grid-control="viz-pie-color-grid"]');
 		delete sliceInput.dataset.colorItem;
 		sliceInput.dispatchEvent(new Event('input', { bubbles: true }));
 		sliceInput.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.normalizeActiveDatasetConfig).not.toHaveBeenCalled();
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		expect(writer.preview).not.toHaveBeenCalled();
+		expect(writer.commit).not.toHaveBeenCalled();
 	});
 });
 

@@ -8,18 +8,18 @@
  * `nestingColumns.js` alongside the builder.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
 import { BUBBLE_CHART } from '../../../config/charts.js';
-import { normalizeColumnNameList, filterVisibleColumns } from '../../../utils/columnHelpers.js';
+import { normalizeColumnNameList } from '../../../utils/columnHelpers.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
-	commitChartConfigPatch,
 	setupSelectListeners,
 	setupSliderListener,
 	setupTextInputListener,
 	setupColorPresetListeners,
-} from '../../../modules/chartControls/controlListenerHelpers.js';
+} from '../../shared/controls/listenerBindings.js';
 import { resolveNestingColumnsFromConfig, computeNestingControlCount } from './nestingColumns.js';
 
 /**
@@ -27,38 +27,28 @@ import { resolveNestingColumnsFromConfig, computeNestingControlCount } from './n
  * nesting selects (level N+1 appears only after level N is filled) and the
  * `measureMode` <-> `valueColumn` cross-constraint.
  *
- * The `allColumnsOrCallback` parameter is overloaded for backward
- * compatibility: callers may pass the callback in the 4th or 5th slot.
- *
  * @param {Dataset} dataset
  * @param {string[]} baseBubble - Categorical (or fallback "all") column names; kept for parity.
  * @param {string[]} numericOptions - Numeric column names; used to validate the value-column select.
- * @param {string[] | (() => void)} [allColumnsOrCallback]
- * @param {() => void} [onConfigChangedMaybe]
+ * @param {string[]} allColumns - Visible column names; an empty array means allow-nothing.
+ * @param {ChartConfigWriter} writer
  * @returns {void}
  */
-export function setupBubbleChartControlListeners(dataset, baseBubble, numericOptions, allColumnsOrCallback = [], onConfigChangedMaybe) {
-	const onConfigChanged = typeof allColumnsOrCallback === 'function'
-		? allColumnsOrCallback
-		: onConfigChangedMaybe;
+export function setupBubbleChartControlListeners(dataset, baseBubble, numericOptions, allColumns, writer) {
 
 	setupSelectListeners([
 		{ id: 'viz-select-bubble-category', key: 'category' },
 		{ id: 'viz-select-bubble-nesting-mode', key: 'nestingMode', transform: v => (BUBBLE_CHART.nestingModes.includes(v) ? v : BUBBLE_CHART.defaultNestingMode) },
 		{ id: 'viz-select-bubble-topn', key: 'topN', transform: v => Number(v) },
 		{ id: 'viz-select-bubble-label-mode', key: 'labelMode', transform: v => (['all', 'hover', 'auto'].includes(v) ? v : 'auto') },
-	], dataset, 'bubble', onConfigChanged);
+	], writer);
 
-	// Allowlist of eligible (visible, non-category) columns. The 5-arg path passes
-	// the visible columns explicitly (an empty array means allow-nothing); the
-	// legacy callback-only overload carries no columns, so reconstruct the same set
-	// from the dataset so the write sink allowlist-filters on both signatures.
+	// Allowlist of eligible (visible, non-category) columns, so the write sink
+	// cannot store a column the user cannot see. An empty array means
+	// allow-nothing.
 	const category = dataset.chartConfig.bubble.category;
-	const allowedColumns = Array.isArray(allColumnsOrCallback)
-		? allColumnsOrCallback
-		: (Array.isArray(dataset.columns) ? filterVisibleColumns(dataset).map(column => column.name) : []);
 	const allowed = new Set(
-		normalizeColumnNameList(allowedColumns, { max: Infinity }).filter(name => name !== category),
+		normalizeColumnNameList(allColumns, { max: Infinity }).filter(name => name !== category),
 	);
 
 	// Progressive nesting level listeners. The wiring count comes from the same
@@ -79,10 +69,10 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 			// Normalize at the write sink so even a forged option cannot persist an
 			// out-of-allowlist or over-cap entry.
 			const normalized = normalizeColumnNameList(updated, { allowed, max: BUBBLE_CHART.maxNestingDepth });
-			commitChartConfigPatch(dataset, 'bubble', {
+			writer.commit({
 				nestingColumns: normalized,
 				groupColumn: normalized[0] || null,
-			}, onConfigChanged);
+			});
 		});
 	}
 
@@ -95,23 +85,23 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 			const currentValueColumn = numericOptions.includes(dataset.chartConfig.bubble?.valueColumn)
 				? dataset.chartConfig.bubble?.valueColumn
 				: null;
-			commitChartConfigPatch(dataset, 'bubble', {
+			writer.commit({
 				measureMode: nextMode,
 				valueColumn: nextMode === 'count' ? null : (currentValueColumn || numericOptions[0] || null),
-			}, onConfigChanged);
+			});
 		});
 	}
 
 	const valueSelect = document.getElementById('viz-select-bubble-value-column');
 	if (valueSelect) {
 		valueSelect.addEventListener('change', () => {
-			commitChartConfigPatch(dataset, 'bubble', {
+			writer.commit({
 				valueColumn: numericOptions.includes(valueSelect.value) ? valueSelect.value : null,
-			}, onConfigChanged);
+			});
 		});
 	}
 
-	setupSliderListener('viz-slider-bubble-padding', 'padding', dataset, 'bubble', onConfigChanged);
-	setupTextInputListener('viz-input-bubble-title', 'customTitle', dataset, 'bubble', onConfigChanged);
-	setupColorPresetListeners('viz-bubble-color-preset', {}, {}, dataset, 'bubble', onConfigChanged, COLOR_PRESETS);
+	setupSliderListener('viz-slider-bubble-padding', 'padding', writer);
+	setupTextInputListener('viz-input-bubble-title', 'customTitle', writer);
+	setupColorPresetListeners('viz-bubble-color-preset', {}, {}, writer, COLOR_PRESETS);
 }

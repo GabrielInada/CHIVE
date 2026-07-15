@@ -201,7 +201,7 @@ deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in the same 
 [controls/](../../../src/charts/bar/controls) owns the right-sidebar control
 group and its config writes. The
 [controls registry](../../../src/charts/registries/controls.js) imports three
-explicit package modules; `chartControlsManager.js` consumes the normalized
+explicit package modules; `chartControlsController.js` consumes the normalized
 registry entry:
 
 - `createBarChartControls(dataset, categoryOptions, numericOptions, allColumns)` builds the DOM.
@@ -235,7 +235,7 @@ nothing:
 ### 5.3 Listener wiring
 
 `setupBarChartControlListeners` uses the shared adapters in
-[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js)
+[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js)
 (`setupSelectListeners`, `setupCheckboxListeners`, `setupTextInputListener`,
 `setupSliderListener`, `setupColorInputListener`, `setupColorPresetListeners`, and
 `commitChartConfigPatch`). Two controls have custom listeners instead of the generic select helper:

@@ -217,7 +217,6 @@ export default [
 						'./domain/**',
 						'./features/**',
 						'./i18n/**',
-						'./modules/**',
 						'./services/**',
 						'./state/**',
 						'./styles/**',
@@ -246,7 +245,6 @@ export default [
 	{
 		files: [
 			'src/app/**/*.js',
-			'src/modules/**/*.js',
 			'src/state/**/*.js',
 			'src/features/**/*.js',
 			'src/workers/**/*.js',
@@ -347,10 +345,10 @@ export default [
 	// color, scales, math, axis helpers, encoding, palettes, and regression
 	// stay pure D3 math, interaction modules stay pure input/tooltip
 	// mechanics, and renderers draw from explicit inputs only.
-	// None of them may reach modules/, components/, or services/ (package-local
-	// and charts/shared modules, config, utils, and vendor modules only).
-	// Localized strings arrive through options.labels; state never enters a
-	// renderer.
+	// None of them may reach app/, state/, features/, components/, or services/
+	// (package-local and charts/shared modules, config, utils, and vendor
+	// modules only). Localized strings arrive through options.labels; state
+	// never enters a renderer.
 	{
 		files: [
 			'src/charts/*/data.js',
@@ -371,7 +369,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/services/**'],
+					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**'],
 					message: 'Chart package leaf files import only package-local or charts/shared modules, config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
 				}],
 			}],
@@ -381,14 +379,17 @@ export default [
 	// (B3a) Shared chart rendering infrastructure is reusable leaf code. It
 	// may import vendor, config, utils, or other charts/shared modules, but it
 	// never reaches application state, components, feature modules, or services.
+	// listenerBindings.js is the reason state/ is banned by name: it wires
+	// controls to config writes, but only through an injected writer, so the
+	// write adapter itself stays in the dataset-workspace feature.
 	{
 		files: ['src/charts/shared/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
-					message: 'Shared chart infrastructure is a leaf layer. Import only charts/shared, config, utils, or vendor modules.',
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'Shared chart infrastructure is a leaf layer. Import only charts/shared, config, utils, or vendor modules. Chart-config writes arrive through an injected ChartConfigWriter, never a state import.',
 				}],
 			}],
 		},
@@ -404,7 +405,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
 					message: 'Chart presentation metadata imports only static chart metadata, config, utils, or vendor modules.',
 				}],
 			}],
@@ -464,10 +465,14 @@ export default [
 	},
 
 	// (B4) Per-chart package integration files: sections/adapters receive
-	// props and callbacks, never state; controls write through the shared
-	// chartControls helpers, which remain the config-write adapter. No
-	// panel internals and no workspace components (the container lifecycle
+	// props and callbacks, never state; controls write through an injected
+	// ChartConfigWriter, whose adapter lives in the dataset-workspace feature.
+	// No panel internals and no workspace components (the container lifecycle
 	// and chart-message helpers live in utils for exactly this reason).
+	// services/ is deliberately NOT banned here: builders, sections, and
+	// presentation legitimately import i18nService for their labels. That is the
+	// line between (B3) leaf files, which take strings via options.labels, and
+	// these integration files. Listeners are stricter still, see (B4a).
 	{
 		files: [
 			'src/charts/*/workspaceSection.js',
@@ -479,14 +484,34 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/state/**', '**/features/**', '**/components/**'],
-					message: 'Chart package integration files do not import state, panel internals, or workspace components. Receive props/callbacks; controls write only through the shared chartControls helpers.',
+					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**'],
+					message: 'Chart package integration files do not import app modules, state, panel internals, or workspace components. Receive props/callbacks; controls write only through the injected ChartConfigWriter.',
 				}],
 			}],
 		},
 	},
 
-	// (C) utils/ is a pure leaf layer — no imports from modules/, components/,
+	// (B4a) Control listeners are the strictest chart-package files: after the
+	// writer injection they need no services at all, so i18n is banned here even
+	// though (B4) allows it for builders and presentation. Placed AFTER (B4)
+	// deliberately: per the (A) note, this config REPLACES (B4)'s for these files
+	// rather than merging, so it must restate BARE_IMPORT_BANS and the full
+	// pattern group. Omitting `paths` would silently hand listeners back the
+	// right to use bare `d3`/`three` specifiers and break raw-static hosting.
+	{
+		files: ['src/charts/*/controls/listeners.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [{
+					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**'],
+					message: 'Chart control listeners are pure input mechanics: they read the DOM and write through the injected ChartConfigWriter. Import only package-local modules, charts/shared bindings, config, utils, and vendor modules. Labels belong to the builder.',
+				}],
+			}],
+		},
+	},
+
+	// (C) utils/ is a pure leaf layer — no imports from app/, state/, components/,
 	// features/, or services/. (Formerly allowed services/ because formatters.js
 	// imported i18n; that edge was removed when formatters became pure, closing
 	// the boundary fully.)
@@ -496,8 +521,8 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
-					message: 'utils/ is a pure leaf layer — no imports from modules/, components/, features/, or services/.',
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'utils/ is a pure leaf layer — no imports from app/, state/, components/, features/, or services/.',
 				}],
 			}],
 		},
@@ -510,8 +535,8 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**'],
-					message: 'config/ is a pure leaf layer, no imports from modules/, components/, features/, or services/.',
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
+					message: 'config/ is a pure leaf layer, no imports from app/, state/, components/, features/, or services/.',
 				}],
 			}],
 		},
@@ -528,7 +553,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
-					group: ['**/modules/**', '**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
 					message: 'domain/ is a pure leaf layer. Import only domain, config, utils, or vendor modules.',
 				}],
 			}],

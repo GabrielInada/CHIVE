@@ -296,7 +296,7 @@ the regression section. It exposes the standard three adapters
 ### 5.3 Listener wiring and cross-constraints
 
 Most controls use the shared helpers in
-[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js). The
+[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js). The
 interesting custom listeners encode the cross-constraints:
 
 - **Axis selects**: picking a non-numeric column for an axis forces that axis's scale back to

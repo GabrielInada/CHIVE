@@ -85,7 +85,7 @@ Before opening a PR, check that:
 - **Result pattern:** Functions returning success/failure use `ok(data)` / `fail(reason)` from `src/utils/result.js`
 - **DOM IDs:** Use constants from `src/config/elementIds.js` instead of hardcoded strings
 - **Color utilities:** Use shared functions from `src/utils/colorUtils.js`; never duplicate hex/rgb conversion logic
-- **Chart control listeners:** Use helpers from `src/modules/chartControls/controlListenerHelpers.js` for common patterns (select, checkbox, slider, etc.); only write inline listeners when cross-dependency logic is needed
+- **Chart control listeners:** Use helpers from `src/charts/shared/controls/listenerBindings.js` for common patterns (select, checkbox, slider, etc.); only write inline listeners when cross-dependency logic is needed. Chart packages never import state: they receive a `ChartConfigWriter` and call `writer.commit(patch)`, or `writer.preview(patch)` for continuous input like a color picker drag
 - **Join and preset dataset UIs:** Keep orchestration in modules/components and reuse existing event-driven patterns
 - **No TypeScript:** plain JS with ES modules. ESLint exists, but its config is intentionally narrow and architecture-focused.
 

@@ -4,20 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
-}));
-
-vi.mock('../../../src/state/appState.js', async (importOriginal) => ({
-	...(await importOriginal()),
-	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
-}));
-
-vi.mock('../../../src/modules/chartControls/livePreview.js', () => ({
-	triggerLiveRender: vi.fn(),
 }));
 
 import {
@@ -25,6 +15,16 @@ import {
 } from '../../../src/charts/tin/controls/builder.js';
 import { setupTinControlListeners } from '../../../src/charts/tin/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/tin/controls/defaults.js';
+
+/**
+ * Writer test double. The listeners' contract is that they hand the right
+ * patch to the writer; merging it into state, firing onConfigChanged, and
+ * live-rendering are the adapter's contract and are covered by
+ * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
+ */
+function createWriter() {
+	return { commit: vi.fn(), preview: vi.fn() };
+}
 
 describe('TIN controls module boundaries', () => {
 	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
@@ -101,8 +101,8 @@ function changeSelect(id, value) {
 	select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function lastTinConfig() {
-	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].tin;
+function lastTinConfig(writer) {
+	return writer.commit.mock.calls.at(-1)[0];
 }
 
 describe('tinControls UI structure', () => {
@@ -234,17 +234,15 @@ describe('tinControls listeners', () => {
 		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], []);
 		appendControls(controls);
 
-		const onConfigChanged = vi.fn();
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], onConfigChanged);
+		const writer = createWriter();
+		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
 
 		const select = document.getElementById('viz-select-tin-fill-mode');
 		select.value = 'flat';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			tin: expect.objectContaining({ fillMode: 'flat' }),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ fillMode: 'flat' }));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('rejects a non-numeric x column by transforming the value to null', () => {
@@ -252,15 +250,14 @@ describe('tinControls listeners', () => {
 		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], []);
 		appendControls(controls);
 
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], vi.fn());
+		const writer = createWriter();
+		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
 
 		const select = document.getElementById('viz-select-tin-x');
 		select.value = '';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			tin: expect.objectContaining({ x: null }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ x: null }));
 	});
 
 	it('commits a recognized colorRamp preset through the facade', () => {
@@ -268,15 +265,14 @@ describe('tinControls listeners', () => {
 		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], []);
 		appendControls(controls);
 
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], vi.fn());
+		const writer = createWriter();
+		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
 
 		const select = document.getElementById('viz-select-tin-color-ramp');
 		select.value = 'viridis';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			tin: expect.objectContaining({ colorRamp: 'viridis' }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ colorRamp: 'viridis' }));
 	});
 
 	it('color preset button maps the palette extremes to gradient min and max', () => {
@@ -284,18 +280,19 @@ describe('tinControls listeners', () => {
 		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], []);
 		appendControls(controls);
 
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], vi.fn());
+		const writer = createWriter();
+		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
 
 		const bold = document.querySelector('button[data-color-preset-control="viz-tin-color-preset"][data-preset-name="Bold"]');
 		expect(bold).not.toBeNull();
 		bold.click();
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledTimes(1);
-		const call = mocks.updateActiveDatasetConfig.mock.calls[0][0];
-		expect(call.tin.colorScheme).toBe('Bold');
-		expect(call.tin.gradientMinColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-		expect(call.tin.gradientMaxColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-		expect(call.tin.gradientMinColor).not.toBe(call.tin.gradientMaxColor);
+		expect(writer.commit).toHaveBeenCalledTimes(1);
+		const call = writer.commit.mock.calls[0][0];
+		expect(call.colorScheme).toBe('Bold');
+		expect(call.gradientMinColor).toMatch(/^#[0-9a-fA-F]{6}$/);
+		expect(call.gradientMaxColor).toMatch(/^#[0-9a-fA-F]{6}$/);
+		expect(call.gradientMinColor).not.toBe(call.gradientMaxColor);
 	});
 
 	it('toggling showIsolines commits the boolean through the facade', () => {
@@ -303,45 +300,46 @@ describe('tinControls listeners', () => {
 		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], []);
 		appendControls(controls);
 
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], vi.fn());
+		const writer = createWriter();
+		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
 
 		const toggle = document.getElementById('viz-toggle-tin-isolines');
 		toggle.checked = true;
 		toggle.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			tin: expect.objectContaining({ showIsolines: true }),
-		});
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ showIsolines: true }));
 	});
 
 	it('coerces invalid select listener values to safe defaults', () => {
 		const dataset = createDataset();
 		appendControls(createTinControls(dataset, ['lon', 'lat', 'elev'], []));
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], vi.fn());
+		const writer = createWriter();
+		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
 
 		changeSelect('viz-select-tin-y', 'not-numeric');
-		expect(lastTinConfig().y).toBeNull();
+		expect(lastTinConfig(writer).y).toBeNull();
 
 		changeSelect('viz-select-tin-z', 'elev');
-		expect(lastTinConfig().z).toBe('elev');
+		expect(lastTinConfig(writer).z).toBe('elev');
 
 		changeSelect('viz-select-tin-gradient-distribution', 'bogus');
-		expect(lastTinConfig().gradientDistribution).toBe('value');
+		expect(lastTinConfig(writer).gradientDistribution).toBe('value');
 
 		changeSelect('viz-select-tin-fill-mode', 'bogus');
-		expect(lastTinConfig().fillMode).toBe('smooth');
+		expect(lastTinConfig(writer).fillMode).toBe('smooth');
 
 		changeSelect('viz-select-tin-isoline-mode', 'bogus');
-		expect(lastTinConfig().isolineMode).toBe('count');
+		expect(lastTinConfig(writer).isolineMode).toBe('count');
 
 		changeSelect('viz-select-tin-color-ramp', 'bogus');
-		expect(lastTinConfig().colorRamp).toBe('custom');
+		expect(lastTinConfig(writer).colorRamp).toBe('custom');
 	});
 
 	it('still wires listeners when controls are absent', () => {
 		const dataset = createDataset();
-		expect(() => setupTinControlListeners(dataset, ['lon'], [], vi.fn())).not.toThrow();
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		const writer = createWriter();
+		expect(() => setupTinControlListeners(dataset, ['lon'], [], writer)).not.toThrow();
+		expect(writer.commit).not.toHaveBeenCalled();
 	});
 });
 

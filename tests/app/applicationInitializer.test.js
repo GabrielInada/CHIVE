@@ -52,7 +52,7 @@ vi.mock('../../src/utils/throttle.js', () => ({
 	throttle: mocks.throttle,
 }));
 
-vi.mock('../../src/modules/chartControls/chartControlsManager.js', () => ({
+vi.mock('../../src/features/datasetWorkspace/chartControls/chartControlsController.js', () => ({
 	initChartControls: mocks.initChartControls,
 }));
 

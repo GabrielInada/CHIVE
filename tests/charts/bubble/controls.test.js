@@ -4,16 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	updateActiveDatasetConfig: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
-}));
-
-vi.mock('../../../src/state/appState.js', async (importOriginal) => ({
-	...(await importOriginal()),
-	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
 import {
@@ -22,6 +16,16 @@ import {
 import { setupBubbleChartControlListeners } from '../../../src/charts/bubble/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/bubble/controls/defaults.js';
 import { BUBBLE_CHART } from '../../../src/config/charts.js';
+
+/**
+ * Writer test double. The listeners' contract is that they hand the right
+ * patch to the writer; merging it into state, firing onConfigChanged, and
+ * live-rendering are the adapter's contract and are covered by
+ * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
+ */
+function createWriter() {
+	return { commit: vi.fn(), preview: vi.fn() };
+}
 
 function createDataset(measureMode = 'count', valueColumn = null, nestingMode = 'flat', nestingColumns = []) {
 	return {
@@ -71,8 +75,8 @@ function selectValue(id, value) {
 	select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function lastConfig() {
-	return mocks.updateActiveDatasetConfig.mock.calls.at(-1)[0].bubble;
+function lastConfig(writer) {
+	return writer.commit.mock.calls.at(-1)[0];
 }
 
 describe('bubble controls module boundaries', () => {
@@ -190,59 +194,54 @@ describe('bubbleControls measure mode', () => {
 		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']);
 		controls.forEach(control => document.body.appendChild(control));
 
-		const onConfigChanged = vi.fn();
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], onConfigChanged);
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], writer);
 
 		const measureSelect = document.getElementById('viz-select-bubble-measure');
 		const valueSelect = document.getElementById('viz-select-bubble-value-column');
 
 		measureSelect.value = 'sum';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bubble: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				measureMode: 'sum',
 				valueColumn: 'valor',
-			}),
-		});
+			}));
 
 		dataset.chartConfig.bubble.measureMode = 'sum';
 		dataset.chartConfig.bubble.valueColumn = 'valor';
 		valueSelect.value = 'valor';
 		valueSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bubble: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				valueColumn: 'valor',
-			}),
-		});
+			}));
 
 		dataset.chartConfig.bubble.valueColumn = 'valor';
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bubble: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				measureMode: 'count',
 				valueColumn: null,
-			}),
-		});
+			}));
 
-		expect(onConfigChanged).toHaveBeenCalledTimes(3);
+		expect(writer.commit).toHaveBeenCalledTimes(3);
 	});
 
 	it('coerces invalid measure and value-column selections', () => {
 		const dataset = createDataset('sum', 'old');
 		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']));
 
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], vi.fn());
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], writer);
 
 		selectValue('viz-select-bubble-measure', 'bogus');
-		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
 
 		dataset.chartConfig.bubble.valueColumn = 'old';
 		selectValue('viz-select-bubble-measure', 'mean');
-		expect(lastConfig()).toEqual(expect.objectContaining({ measureMode: 'mean', valueColumn: 'valor' }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'mean', valueColumn: 'valor' }));
 
 		selectValue('viz-select-bubble-value-column', 'missing');
-		expect(lastConfig().valueColumn).toBeNull();
+		expect(lastConfig(writer).valueColumn).toBeNull();
 	});
 });
 
@@ -266,60 +265,60 @@ describe('bubbleControls nesting mode', () => {
 		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']);
 		controls.forEach(control => document.body.appendChild(control));
 
-		const onConfigChanged = vi.fn();
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], onConfigChanged);
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], writer);
 
 		const nestingSelect = document.getElementById('viz-select-bubble-nesting-mode');
 		nestingSelect.value = 'grouped';
 		nestingSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bubble: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				nestingMode: 'grouped',
-			}),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+			}));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('coerces generic select, title, slider, and palette listeners', () => {
 		const dataset = createDataset('count', null, 'flat');
 		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']));
 
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], vi.fn());
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], writer);
 
 		selectValue('viz-select-bubble-category', 'grupo');
-		expect(lastConfig().category).toBe('grupo');
+		expect(lastConfig(writer).category).toBe('grupo');
 
 		selectValue('viz-select-bubble-nesting-mode', 'unknown');
-		expect(lastConfig().nestingMode).toBe('flat');
+		expect(lastConfig(writer).nestingMode).toBe('flat');
 
 		selectValue('viz-select-bubble-topn', '20');
-		expect(lastConfig().topN).toBe(20);
+		expect(lastConfig(writer).topN).toBe(20);
 
 		selectValue('viz-select-bubble-label-mode', 'bad');
-		expect(lastConfig().labelMode).toBe('auto');
+		expect(lastConfig(writer).labelMode).toBe('auto');
 
 		const title = document.getElementById('viz-input-bubble-title');
 		title.value = '  Bubble panel  ';
 		title.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().customTitle).toBe('Bubble panel');
+		expect(lastConfig(writer).customTitle).toBe('Bubble panel');
 
 		const padding = document.getElementById('viz-slider-bubble-padding');
 		padding.value = '6';
 		padding.dispatchEvent(new Event('input', { bubbles: true }));
 		expect(padding.parentElement.querySelector('output').textContent).toBe('6');
 		padding.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastConfig().padding).toBe(6);
+		expect(lastConfig(writer).padding).toBe(6);
 
 		document.querySelector('button[data-color-preset-control="viz-bubble-color-preset"][data-preset-name="Bold"]').click();
-		expect(lastConfig().colorScheme).toBe('Bold');
+		expect(lastConfig(writer).colorScheme).toBe('Bold');
 	});
 
 	it('safely skips listener setup when controls are absent', () => {
 		const dataset = createDataset();
 
-		expect(() => setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], vi.fn())).not.toThrow();
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		const writer = createWriter();
+		expect(() => setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], [], writer)).not.toThrow();
+		expect(writer.commit).not.toHaveBeenCalled();
 	});
 });
 
@@ -386,37 +385,36 @@ describe('bubbleControls progressive nesting selectors', () => {
 		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado']);
 		controls.forEach(control => document.body.appendChild(control));
 
-		const onConfigChanged = vi.fn();
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado'], onConfigChanged);
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado'], writer);
 
 		// Clear level 0 → should truncate all
 		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
 		level0.value = '';
 		level0.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({
-			bubble: expect.objectContaining({
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				nestingColumns: [],
 				groupColumn: null,
-			}),
-		});
-		expect(onConfigChanged).toHaveBeenCalledTimes(1);
+			}));
+		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('sets a nesting level and truncates deeper levels from that point', () => {
 		const dataset = createDataset('count', null, 'grouped', ['grupo', 'regiao']);
 		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado']));
 
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado'], vi.fn());
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao', 'estado'], writer);
 
 		selectValue('viz-select-bubble-nesting-level-1', 'estado');
-		expect(lastConfig()).toEqual(expect.objectContaining({
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({
 			nestingColumns: ['grupo', 'estado'],
 			groupColumn: 'grupo',
 		}));
 
 		selectValue('viz-select-bubble-nesting-level-1', '');
-		expect(lastConfig()).toEqual(expect.objectContaining({
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({
 			nestingColumns: ['grupo'],
 			groupColumn: 'grupo',
 		}));
@@ -535,10 +533,11 @@ describe('bubbleControls nesting depth bound', () => {
 		rogue.value = 'c0';
 		document.body.appendChild(rogue);
 
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], wideColumns, vi.fn());
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], wideColumns, writer);
 		rogue.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		expect(writer.commit).not.toHaveBeenCalled();
 	});
 
 	it('does not wire a second nesting level in flat mode', () => {
@@ -553,10 +552,11 @@ describe('bubbleControls nesting depth bound', () => {
 		rogue.value = 'grupo';
 		document.body.appendChild(rogue);
 
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao'], vi.fn());
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo', 'regiao'], writer);
 		rogue.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
+		expect(writer.commit).not.toHaveBeenCalled();
 	});
 
 	it('does not resurrect a hidden out-of-allowlist entry on a level change', () => {
@@ -564,10 +564,11 @@ describe('bubbleControls nesting depth bound', () => {
 		const dataset = createDataset('count', null, 'grouped', ['invalid', 'grupo']);
 		dataset.chartConfig.bubble.groupColumn = 'invalid';
 		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], allColumns, vi.fn());
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], allColumns, writer);
 
 		selectValue('viz-select-bubble-nesting-level-1', 'regiao');
-		expect(lastConfig().nestingColumns).toEqual(['grupo', 'regiao']); // 'invalid' never resurfaces
+		expect(lastConfig(writer).nestingColumns).toEqual(['grupo', 'regiao']); // 'invalid' never resurfaces
 	});
 
 	it('does not resurrect a hidden category entry on a level change', () => {
@@ -575,17 +576,19 @@ describe('bubbleControls nesting depth bound', () => {
 		const dataset = createDataset('count', null, 'grouped', ['categoria', 'grupo']);
 		dataset.chartConfig.bubble.groupColumn = 'categoria';
 		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], allColumns, vi.fn());
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], allColumns, writer);
 
 		selectValue('viz-select-bubble-nesting-level-1', 'regiao');
-		expect(lastConfig().nestingColumns).toEqual(['grupo', 'regiao']); // 'categoria' never resurfaces
+		expect(lastConfig(writer).nestingColumns).toEqual(['grupo', 'regiao']); // 'categoria' never resurfaces
 	});
 
 	it('rejects a forged out-of-allowlist option at the write sink', () => {
 		const allColumns = ['categoria', 'grupo', 'regiao'];
 		const dataset = createDataset('count', null, 'grouped', ['grupo']);
 		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], allColumns, vi.fn());
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], allColumns, writer);
 
 		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
 		const forged = document.createElement('option');
@@ -594,40 +597,21 @@ describe('bubbleControls nesting depth bound', () => {
 		level0.value = 'forged_xyz';
 		level0.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(lastConfig().nestingColumns).not.toContain('forged_xyz');
-		expect(lastConfig().nestingColumns).toEqual([]);
+		expect(lastConfig(writer).nestingColumns).not.toContain('forged_xyz');
+		expect(lastConfig(writer).nestingColumns).toEqual([]);
 	});
 
 	it('allowlist-filters on the explicit empty-array (allow-nothing) signature', () => {
 		const allColumns = ['categoria', 'grupo', 'regiao'];
 		const dataset = createDataset('count', null, 'grouped', ['grupo']);
 		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], [], vi.fn());
+		const writer = createWriter();
+		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], [], writer);
 
 		selectValue('viz-select-bubble-nesting-level-0', 'grupo');
-		expect(lastConfig().nestingColumns).toEqual([]); // empty allowlist allows nothing
+		expect(lastConfig(writer).nestingColumns).toEqual([]); // empty allowlist allows nothing
 	});
 
-	it('allowlist-filters on the callback-only overload using the dataset visible columns', () => {
-		const allColumns = ['categoria', 'grupo', 'regiao'];
-		const dataset = createDataset('count', null, 'grouped', ['grupo']);
-		dataset.columns = [
-			{ name: 'categoria', type: 'text' },
-			{ name: 'grupo', type: 'text' },
-			{ name: 'regiao', type: 'text' },
-		];
-		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], allColumns));
-		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], vi.fn());
-
-		const level0 = document.getElementById('viz-select-bubble-nesting-level-0');
-		const forged = document.createElement('option');
-		forged.value = 'forged_xyz';
-		level0.appendChild(forged);
-		level0.value = 'forged_xyz';
-		level0.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(lastConfig().nestingColumns).not.toContain('forged_xyz');
-	});
 });
 
 describe('bubbleControls computeDefaults', () => {

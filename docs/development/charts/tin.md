@@ -382,7 +382,7 @@ The package's [controls directory](../../../src/charts/tin/controls/) builds the
 right-sidebar control group and wires every input to a config write. Its three
 role modules are registered in the
 [controls registry](../../../src/charts/registries/controls.js) under the
-`tin` entry and consumed by `chartControlsManager.js`:
+`tin` entry and consumed by `chartControlsController.js`:
 
 - `createTinControls(dataset, numericOptions, allColumns)` builds the DOM.
 - `setupTinControlListeners(dataset, numericOptions, allColumns, onConfigChanged)` wires events.
@@ -423,7 +423,7 @@ that does nothing. The pattern is a boolean passed as the `disabled` argument:
 ### 5.3 Listener wiring and value clamping
 
 `setupTinControlListeners` uses the shared helpers in
-[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js):
+[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js):
 
 - **Selects** (`setupSelectListeners`): x/y/z transform to `null` if the chosen
   value is no longer a numeric column; `gradientDistribution`, `fillMode`,
@@ -860,7 +860,7 @@ The live preview is what makes a color drag feel responsive without rebuilding t
 whole sidebar (which would steal focus from the open picker).
 
 Two events are wired on each color input (`setupColorInputListener` in
-[controlListenerHelpers.js](../../../src/modules/chartControls/controlListenerHelpers.js)):
+[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js)):
 
 - **`input`** (fires continuously while the picker is open): writes the new color
   through `normalizeActiveDatasetConfig` — a **non-emitting** facade that updates
@@ -870,7 +870,7 @@ Two events are wired on each color input (`setupColorInputListener` in
   updater so `CONFIG_UPDATED` fires, auto-save marks the project dirty, and the
   sidebar refreshes.
 
-`triggerLiveRender` ([livePreview.js](../../../src/modules/chartControls/livePreview.js))
+`triggerLiveRender` ([livePreviewBridge.js](../../../src/features/datasetWorkspace/chartControls/livePreviewBridge.js))
 invokes a registered callback. `app/applicationInitializer.js` registers
 `throttle(livePreviewRender, 120)` (leading + trailing, so the first and final
 values always paint). `livePreviewRender` re-renders only the chart visualizations

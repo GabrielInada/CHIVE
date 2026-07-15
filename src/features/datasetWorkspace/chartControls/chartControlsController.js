@@ -17,27 +17,28 @@
  * and restore the scroll position after the render so the user does not
  * lose their place when the active chart's config changes.
  *
- * @typedef {import('../../types.js').Dataset} Dataset
- * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
- * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
+ * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').ChartTypeKey} ChartTypeKey
+ * @typedef {import('../../../types.js').ChartControlContext} ChartControlContext
  */
 
-import { t } from '../../services/i18nService.js';
+import { t } from '../../../services/i18nService.js';
 import {
 	filterVisibleColumns,
 	getNumericColumnNames,
 	getCategoricalColumnNames,
 	getDateColumnNames,
-} from '../../utils/columnHelpers.js';
-import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
-import { setActiveChartType } from '../../state/appState.js';
-import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
-import { getChartControlAdapter } from '../../charts/registries/controls.js';
-import { renderChartParamsDOM } from '../../features/datasetWorkspace/views/chartParamsView.js';
-import { openChartTypePickerDialog } from '../../features/datasetWorkspace/dialogs/chartTypePickerDialog.js';
+} from '../../../utils/columnHelpers.js';
+import { mergeChartConfigWithDefaults } from '../../../config/chartDefaults.js';
+import { setActiveChartType } from '../../../state/appState.js';
+import { CHART_TYPE_KEYS } from '../../../config/chartTypes.js';
+import { getChartControlAdapter } from '../../../charts/registries/controls.js';
+import { renderChartParamsDOM } from '../views/chartParamsView.js';
+import { openChartTypePickerDialog } from '../dialogs/chartTypePickerDialog.js';
 
-import { setLiveRenderCallback } from './livePreview.js';
+import { setLiveRenderCallback, triggerLiveRender } from './livePreviewBridge.js';
 import { ensureChartHeightResizeHandles } from './chartHeightResize.js';
+import { createChartConfigWriter } from './chartConfigAdapter.js';
 
 let onChartConfigChangeCallback = null;
 const trackedSidebarContainers = new WeakSet();
@@ -256,7 +257,16 @@ function buildControlsForChart(chartType, dataset) {
 function setupListenersForChart(chartType, dataset) {
 	const entry = getChartControlAdapter(chartType);
 	if (!entry) return;
-	entry.attachListeners(dataset, getColumnContext(dataset), onChartConfigChangeCallback);
+	// The chart package writes through this adapter instead of importing state.
+	// requestLiveRender is the bridge's trigger, not the raw callback, so the
+	// registered live-render callback stays replaceable and disable-able.
+	const writer = createChartConfigWriter({
+		dataset,
+		chartKey: chartType,
+		onConfigChanged: onChartConfigChangeCallback,
+		requestLiveRender: triggerLiveRender,
+	});
+	entry.attachListeners(dataset, getColumnContext(dataset), writer);
 }
 
 /**
