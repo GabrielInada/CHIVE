@@ -33,7 +33,7 @@ const ABOUT_ALLOWLIST = new Set([
 	'src/services/settingsService.js',
 	'src/config/locale.js',
 	'src/config/settings.js',
-	'src/config/elementIds.js',
+	'src/features/settings/domIds.js',
 	'src/i18n/en.json',
 	'src/i18n/pt-BR.json',
 	'vendor/banana-i18n/banana-i18n.js',

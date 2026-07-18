@@ -9,7 +9,7 @@ import { SUPPORTED_PANEL_CHART_TYPES } from '../../src/charts/registries/panel.j
 import { SUPPORTED_WORKSPACE_CHART_TYPES } from '../../src/charts/registries/workspace.js';
 import { createDefaultChartConfig } from '../../src/config/chartDefaults.js';
 import { CHART_TYPE_KEYS } from '../../src/config/chartTypes.js';
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../src/config/elementIds.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../src/charts/workspaceDomIds.js';
 
 const EXPECTED_CHART_TYPE_KEYS = [
 	'bar',

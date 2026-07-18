@@ -359,7 +359,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-bubble-container`, block `chart-block-bubble`. Control IDs are `viz-…-bubble-…`
 (e.g. `viz-select-bubble-category`, `viz-select-bubble-nesting-mode`,
 `viz-select-bubble-nesting-level-0`, `viz-slider-bubble-padding`).

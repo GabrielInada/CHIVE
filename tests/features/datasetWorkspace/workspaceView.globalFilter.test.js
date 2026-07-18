@@ -72,7 +72,7 @@ vi.mock('../../../src/features/datasetWorkspace/dialogs/globalFilterDialog.js', 
 }));
 
 import { renderDatasetWorkspace, renderEmptyState, renderFileList } from '../../../src/features/datasetWorkspace/workspaceView.js';
-import { CHART_CONTAINERS } from '../../../src/config/elementIds.js';
+import { CHART_CONTAINERS } from '../../../src/charts/workspaceDomIds.js';
 
 function setupDom() {
 	document.body.innerHTML = `

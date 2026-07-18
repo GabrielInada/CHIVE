@@ -5,7 +5,7 @@
  * localized fail/notice handling to the package's presentation flow.
  */
 
-import { CHART_CONTAINERS, CHART_BLOCKS } from '../../config/elementIds.js';
+import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
 import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
 import { renderScatter3dInto } from './presentation.js';
 

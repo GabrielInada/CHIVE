@@ -471,7 +471,7 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-bar-container`, block `chart-block-bar`. Control IDs are `viz-…-bar-…`
 (e.g. `viz-select-bar`, `viz-select-bar-measure`, `viz-input-bar-gradient-min`,
 `viz-slider-bar-threshold`).

@@ -29,7 +29,7 @@ the renderer internals, the controls, and the tests), see the per-chart
 
 - **Rows and columns.** An uploaded CSV/JSON becomes rows of named columns.
 - **Detected types.** Each column is detected as one of `number`, `text`, or `date`
-  (detection rules in `src/config/types.js`). Type detection drives which charts and modes
+  (detection rules in `src/config/columnTypeDetection.js`). Type detection drives which charts and modes
   a column can satisfy: numeric aggregation and axes need `number`; date axes need `date`.
 - **Visible columns vs. all columns.** Charts only consider columns marked visible in the
   column controls. Hiding a column removes it from the chart's available choices.

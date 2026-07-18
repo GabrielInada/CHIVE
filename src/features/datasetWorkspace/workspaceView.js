@@ -14,7 +14,8 @@
 
 import { t, getLocale, translateType } from '../../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
-import { CHART_CONTAINERS } from '../../config/elementIds.js';
+import { PREVIEW_DEFAULT_ROWS, PREVIEW_MIN_ROWS } from '../../config/limits.js';
+import { CHART_CONTAINERS } from '../../charts/workspaceDomIds.js';
 import { getNumericColumns } from '../../utils/columnHelpers.js';
 import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
 
@@ -24,6 +25,7 @@ import { renderTablePreview } from './views/tablePreviewView.js';
 import { renderStats, renderCategoricalStats } from './views/statsView.js';
 import { renderFileListDOM } from './views/fileListView.js';
 import { renderColumnControlsDOM } from './views/columnControlsView.js';
+import { VIEW_IDS, FILE_IDS, BADGE_IDS } from './domIds.js';
 import { openJoinBuilderDialog } from './dialogs/joinBuilderView.js';
 import { openPresetDatasetsDialog } from './dialogs/presetDatasetsView.js';
 import { openGlobalFilterDialog } from './dialogs/globalFilterDialog.js';
@@ -81,9 +83,9 @@ export function hideErrorMessage() {
  * @returns {void}
  */
 export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCreateJoin, onLoadPreset) {
-  const fileInfo = document.getElementById('file-info');
-  const summary = document.getElementById('file-summary-text');
-  const list = document.getElementById('file-list-content');
+  const fileInfo = document.getElementById(VIEW_IDS.fileInfo);
+  const summary = document.getElementById(FILE_IDS.fileSummary);
+  const list = document.getElementById(FILE_IDS.fileListContent);
 
   fileInfo.style.display = 'block';
   const stickyHeaderId = 'files-top-fixed';
@@ -259,25 +261,25 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
  */
 export function renderEmptyState() {
   const els = {
-    'file-info': document.getElementById('file-info'),
-    'columns-panel': document.getElementById('columns-panel'),
-    'empty-state': document.getElementById('empty-state'),
-    'data-state': document.getElementById('data-state'),
-    'result-tabs': document.getElementById('result-tabs'),
-    'table-container': document.getElementById('table-container'),
-    'container-stats': document.getElementById('container-stats'),
-    'container-cat-stats': document.getElementById('container-cat-stats'),
-    'card-cat-stats': document.getElementById('card-cat-stats'),
-    'badge-charts': document.getElementById('badge-charts'),
-    'btn-advance': document.getElementById('btn-advance'),
+    fileInfo: document.getElementById(VIEW_IDS.fileInfo),
+    columnPanel: document.getElementById(VIEW_IDS.columnPanel),
+    emptyState: document.getElementById(VIEW_IDS.emptyState),
+    dataState: document.getElementById(VIEW_IDS.dataState),
+    resultTabs: document.getElementById(VIEW_IDS.resultTabs),
+    tableContainer: document.getElementById(VIEW_IDS.tableContainer),
+    statsContainer: document.getElementById(VIEW_IDS.statsContainer),
+    categoricalStatsContainer: document.getElementById('container-cat-stats'),
+    categoricalStatsCard: document.getElementById('card-cat-stats'),
+    chartsBadge: document.getElementById(BADGE_IDS.charts),
+    advanceButton: document.getElementById('btn-advance'),
   };
 
   // Only update elements that exist (not null)
-  if (els['file-info']) els['file-info'].style.display = 'block';
-  if (els['columns-panel']) els['columns-panel'].style.display = 'none';
-  if (els['empty-state']) els['empty-state'].style.display = 'flex';
-  if (els['data-state']) els['data-state'].style.display = 'none';
-  if (els['result-tabs']) els['result-tabs'].style.display = 'flex';
+  if (els.fileInfo) els.fileInfo.style.display = 'block';
+  if (els.columnPanel) els.columnPanel.style.display = 'none';
+  if (els.emptyState) els.emptyState.style.display = 'flex';
+  if (els.dataState) els.dataState.style.display = 'none';
+  if (els.resultTabs) els.resultTabs.style.display = 'flex';
   updateTabs('preview', null, null, {
     triggerState: {
       hasDataset: false,
@@ -286,20 +288,20 @@ export function renderEmptyState() {
       totalCount: 0,
     },
   });
-  if (els['table-container']) els['table-container'].replaceChildren();
-  if (els['container-stats']) els['container-stats'].replaceChildren();
-  if (els['container-cat-stats']) els['container-cat-stats'].replaceChildren();
-  if (els['card-cat-stats']) els['card-cat-stats'].style.display = 'none';
+  if (els.tableContainer) els.tableContainer.replaceChildren();
+  if (els.statsContainer) els.statsContainer.replaceChildren();
+  if (els.categoricalStatsContainer) els.categoricalStatsContainer.replaceChildren();
+  if (els.categoricalStatsCard) els.categoricalStatsCard.style.display = 'none';
   for (const containerId of Object.values(CHART_CONTAINERS)) {
     clearChartContainer(document.getElementById(containerId));
   }
-  if (els['badge-charts']) els['badge-charts'].textContent = '0';
-  if (els['btn-advance']) els['btn-advance'].disabled = true;
+  if (els.chartsBadge) els.chartsBadge.textContent = '0';
+  if (els.advanceButton) els.advanceButton.disabled = true;
 
   const devNotice = document.getElementById('dev-warning');
   if (devNotice) devNotice.style.display = 'none';
 
-  const uploadZone = document.getElementById('upload-zone');
+  const uploadZone = document.getElementById(FILE_IDS.uploadZone);
   if (uploadZone) uploadZone.classList.remove('loaded');
   
   const uploadIcon = document.querySelector('.upload-icon');
@@ -326,7 +328,7 @@ export function renderEmptyState() {
  * @param {ColumnSpec[]} columns
  * @param {string} fileName
  * @param {string} fileSize
- * @param {number} [previewRows=10] - Number of rows to show in the table preview.
+ * @param {number} [previewRows=PREVIEW_DEFAULT_ROWS] - Number of rows to show in the table preview.
  * @param {(rows: number) => void} [onPreviewRowsChange]
  * @param {string[] | null} [selectedColumns] - Visible columns; defaults to all when null.
  * @param {(names: string[]) => void} [onColumnSelectionChange]
@@ -339,17 +341,17 @@ export function renderDatasetWorkspace(
   columns,
   fileName,
   fileSize,
-  previewRows = 10,
+  previewRows = PREVIEW_DEFAULT_ROWS,
   onPreviewRowsChange = null,
   selectedColumns = null,
   onColumnSelectionChange = null,
   chartConfig = null,
   onChartConfigChange = null
 ) {
-  document.getElementById('columns-panel').style.display = 'block';
-  document.getElementById('result-tabs').style.display = 'flex';
-  document.getElementById('empty-state').style.display = 'none';
-  document.getElementById('data-state').style.display = 'flex';
+  document.getElementById(VIEW_IDS.columnPanel).style.display = 'block';
+  document.getElementById(VIEW_IDS.resultTabs).style.display = 'flex';
+  document.getElementById(VIEW_IDS.emptyState).style.display = 'none';
+  document.getElementById(VIEW_IDS.dataState).style.display = 'flex';
 
   const columnNames = columns.map(column => column.name);
   const selectedNames = new Set(Array.isArray(selectedColumns) ? selectedColumns : columnNames);
@@ -460,18 +462,20 @@ export function renderDatasetWorkspace(
     },
   });
 
-  const rowLimit = Number(previewRows) > 0 ? Number(previewRows) : 10;
+  const rowLimit = Number(previewRows) > 0
+    ? Number(previewRows)
+    : PREVIEW_DEFAULT_ROWS;
   const rowSelector = document.getElementById('select-preview-rows');
   if (rowSelector) {
     rowSelector.value = String(rowLimit);
     rowSelector.onchange = event => {
       if (!onPreviewRowsChange) return;
       const nextRows = Number(event.target.value);
-      if (!Number.isFinite(nextRows) || nextRows < 1) return;
+      if (!Number.isFinite(nextRows) || nextRows < PREVIEW_MIN_ROWS) return;
       onPreviewRowsChange(nextRows);
     };
   }
-  document.getElementById('badge-rows').textContent = t(
+  document.getElementById(BADGE_IDS.rows).textContent = t(
     'chive-badge-preview',
     filteredRows.length.toLocaleString(getLocale()),
     Math.min(rowLimit, filteredRows.length),
@@ -495,10 +499,10 @@ export function renderDatasetWorkspace(
   document.getElementById('btn-advance').disabled = false;
   const devNotice = document.getElementById('dev-warning');
   if (devNotice) devNotice.style.display = 'block';
-  document.getElementById('upload-zone').classList.add('loaded');
+  document.getElementById(FILE_IDS.uploadZone).classList.add('loaded');
   document.querySelector('.upload-icon').textContent = '✓';
   document.querySelector('.upload-text-main').textContent = t('chive-upload-loaded-main');
   document.querySelector('.upload-text-sub').textContent = t('chive-upload-loaded-sub');
-  document.getElementById('file-summary-text').title =
+  document.getElementById(FILE_IDS.fileSummary).title =
     `${fileName} · ${rows.length.toLocaleString(getLocale())} rows · ${columns.length} columns · ${fileSize}`;
 }

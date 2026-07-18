@@ -5,6 +5,7 @@
 
 import { t, translateType, getLocale } from '../../../services/i18nService.js';
 import { formatNumber, isEmptyValue } from '../../../utils/formatters.js';
+import { VIEW_IDS } from '../domIds.js';
 
 /**
  * Render the preview table into `#table-container`. Caps rows at `limit`.
@@ -17,7 +18,7 @@ import { formatNumber, isEmptyValue } from '../../../utils/formatters.js';
  * @returns {void}
  */
 export function renderTablePreview(rows, visibleColumns, limit) {
-	const tableContainer = document.getElementById('table-container');
+	const tableContainer = document.getElementById(VIEW_IDS.tableContainer);
 	if (visibleColumns.length === 0) {
 		tableContainer.replaceChildren();
 		const empty = document.createElement('div');

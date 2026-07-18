@@ -360,7 +360,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-line-container`, block `chart-block-line`. Control IDs are `viz-…-line-…`
 (e.g. `viz-select-line-x`, `viz-select-line-curve`, `viz-select-line-missing`,
 `viz-toggle-line-sort-x`).

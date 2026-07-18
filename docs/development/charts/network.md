@@ -356,7 +356,7 @@ All under [tests/charts/network/](../../../tests/charts/network):
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-network-container`, block `chart-block-network`. Control IDs are `viz-…-network-…`
 (e.g. `viz-select-network-source`, `viz-slider-network-charge`,
 `viz-slider-network-alpha-decay`, `viz-select-network-edge-color-mode`).

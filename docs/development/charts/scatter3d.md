@@ -251,7 +251,7 @@ notice), and `controls.test.js`. Panel export omission is covered in
 ## 14. Quick reference
 
 - Block/container ids: `chart-block-scatter3d`, `chart-scatter3d-container`
-  (in `config/elementIds.js`; static DOM in `index.html`).
+  (in `charts/workspaceDomIds.js`; static DOM in `index.html`).
 - Control ids: `viz-select-scatter3d-{x,y,z}`,
   `viz-slider-scatter3d-{point-size,opacity}`, `viz-input-scatter3d-title`,
   `viz-input-scatter3d-color`.

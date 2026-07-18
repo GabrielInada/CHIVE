@@ -9,6 +9,7 @@ import { calculateStatistics, calculateCategoricalStatistics } from '../../../do
 import { getActiveDataset } from '../../../state/appState.js';
 import { t, getLocale } from '../../../services/i18nService.js';
 import { formatNumber } from '../../../utils/formatters.js';
+import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
 
 /**
  * Reuse worker-computed numeric stats when the rows we're rendering are
@@ -78,12 +79,12 @@ function truncateText(text, maxLength = 18) {
  */
 export function renderStats(rows, visibleColumns) {
 	const stats = getNumericStats(rows, visibleColumns);
-	const cardStats = document.getElementById('card-stats');
+	const cardStats = document.getElementById(VIEW_IDS.statsCard);
 
 	if (stats.length > 0) {
 		cardStats.style.display = 'block';
-		document.getElementById('badge-num-columns').textContent = t('chive-stats-badge', stats.length);
-		const containerStats = document.getElementById('container-stats');
+		document.getElementById(BADGE_IDS.numColumns).textContent = t('chive-stats-badge', stats.length);
+		const containerStats = document.getElementById(VIEW_IDS.statsContainer);
 		containerStats.replaceChildren();
 		const locale = getLocale();
 
@@ -109,7 +110,7 @@ export function renderStats(rows, visibleColumns) {
 	}
 
 	cardStats.style.display = 'none';
-	document.getElementById('container-stats').replaceChildren();
+	document.getElementById(VIEW_IDS.statsContainer).replaceChildren();
 }
 
 /**

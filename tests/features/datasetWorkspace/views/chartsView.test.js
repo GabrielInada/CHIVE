@@ -61,7 +61,8 @@ vi.mock('../../../../src/charts/scatter3d/workspaceSection.js', () => ({
 
 import { renderCharts } from '../../../../src/features/datasetWorkspace/views/chartsView.js';
 import { renderWorkspaceChart } from '../../../../src/charts/registries/workspace.js';
-import { CHART_BLOCKS, CHART_CONTAINERS, VIEW_IDS, BADGE_IDS } from '../../../../src/config/elementIds.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/charts/workspaceDomIds.js';
+import { VIEW_IDS, BADGE_IDS } from '../../../../src/features/datasetWorkspace/domIds.js';
 import { CHART_TYPE_KEYS } from '../../../../src/config/chartTypes.js';
 
 const SECTION_MOCKS = {

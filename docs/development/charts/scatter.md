@@ -543,7 +543,7 @@ Package tests live under [tests/charts/scatter/](../../../tests/charts/scatter):
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-scatter-container`, block `chart-block-scatter`. Control IDs are `viz-…` or
 `viz-…-scatter-…` (e.g. `viz-select-x`, `viz-select-y`, `viz-select-scatter-xscale`,
 `viz-select-scatter-color-mode`, `viz-toggle-scatter-regression-enabled`).

@@ -18,6 +18,7 @@
 import { downloadSvgMarkup, ensureSvgAttributes } from '../../../utils/svgExport.js';
 import { normalizeHexColor } from '../layout/resizeMath.js';
 import { ok, fail } from '../../../utils/result.js';
+import { PANEL_DOM_IDS } from '../domIds.js';
 
 /**
  * Export the live panel canvas as a single SVG file. Clones each slot's
@@ -33,7 +34,7 @@ import { ok, fail } from '../../../utils/result.js';
  *   or `'export-error'`.
  */
 export function exportPanelLayoutSvg() {
-	const canvas = document.getElementById('panel-layout-canvas');
+	const canvas = document.getElementById(PANEL_DOM_IDS.canvas);
 	if (!canvas) {
 		return fail('canvas-not-found');
 	}
