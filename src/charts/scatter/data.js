@@ -7,7 +7,7 @@
  * no d3. Used by `renderers/svg.js`.
  */
 
-import { normalizeCategoryValue } from '../../utils/chartFilters.js';
+import { normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
 import {
 	AXIS_TYPE_VALUES,
 	inferAxisType,

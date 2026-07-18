@@ -50,7 +50,7 @@ vi.mock('../../src/features/datasetWorkspace/chartControls/chartControlsControll
 	renderChartControlsSidebar: mocks.renderChartControlsSidebar,
 }));
 
-vi.mock('../../src/utils/columnHelpers.js', () => ({
+vi.mock('../../src/domain/datasets/columns.js', () => ({
 	getNumericColumns: mocks.getNumericColumns,
 }));
 

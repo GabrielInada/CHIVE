@@ -10,7 +10,7 @@
  */
 
 import sqlite3InitModule from '../../../../vendor/sqlite/sqlite3.js';
-import { computeDatasetFingerprint } from '../../../utils/datasetFingerprint.js';
+import { computeDatasetFingerprint } from '../../../domain/datasets/fingerprint.js';
 import { applySchema, assertMeta, readSnapshot, writeSnapshot } from '../sqlite/core.js';
 
 export const SQLITE_IDB_NAME = 'chive-sqlite';

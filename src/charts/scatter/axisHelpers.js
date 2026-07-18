@@ -6,7 +6,7 @@
  * (rendering) and the regression module; also covered by unit tests.
  */
 
-import { compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
+import { compareStrings, normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
 
 /**
  * Two-value enumeration of scatter-plot axis types: `'numeric'` or

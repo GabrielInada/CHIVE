@@ -58,11 +58,11 @@ vi.mock('../../../src/services/i18nService.js', () => mocks.i18n);
 vi.mock('../../../src/config/chartDefaults.js', () => ({
   mergeChartConfigWithDefaults: vi.fn((type, config) => config || {}),
 }));
-vi.mock('../../../src/utils/globalFilter.js', () => ({
+vi.mock('../../../src/domain/filters/globalFilter.js', () => ({
   applyGlobalFilterRules: vi.fn((rows) => rows),
   resolveGlobalFilterForColumns: vi.fn(() => ({ rules: [] })),
 }));
-vi.mock('../../../src/utils/columnHelpers.js', () => ({
+vi.mock('../../../src/domain/datasets/columns.js', () => ({
   getNumericColumnNames: vi.fn(() => ['value']),
 }));
 

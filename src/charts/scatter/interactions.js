@@ -17,7 +17,7 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from '../shared/tooltip/tooltip.js';
-import { toCategoryToken } from '../../utils/chartFilters.js';
+import { toCategoryToken } from '../../domain/filters/chartFilter.js';
 import { formatNumber, isNullish } from '../../utils/formatters.js';
 import { AXIS_TYPE_VALUES } from './axisHelpers.js';
 

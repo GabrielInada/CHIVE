@@ -6,10 +6,10 @@
  * multi-rule pipeline; the building blocks here are deliberately scoped to
  * one rule at a time.
  *
- * @typedef {import('../types.js').GlobalFilterRule} GlobalFilterRule
+ * @typedef {import('../../types.js').GlobalFilterRule} GlobalFilterRule
  */
 
-import { isEmptyValue, isNullish } from './formatters.js';
+import { isEmptyValue, isNullish } from '../../utils/formatters.js';
 
 /**
  * Sentinel token used to represent missing values (null/undefined/empty

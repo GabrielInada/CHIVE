@@ -1,9 +1,10 @@
 /**
  * CHIVE column-classification helpers. Pure functions over `columns`
- * arrays. Used by chart controls, services, and components.
+ * arrays. Used by state facades, render coordination, dataset and panel
+ * features, the bubble chart, and persistence snapshots.
  *
- * @typedef {import('../types.js').Dataset} Dataset
- * @typedef {import('../types.js').ColumnSpec} ColumnSpec
+ * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
  */
 
 /**

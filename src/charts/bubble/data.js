@@ -6,8 +6,8 @@
  * `renderers/svg.js` and covered by unit tests.
  */
 
-import { compareStrings, normalizeCategoryValue } from '../../utils/chartFilters.js';
-import { normalizeColumnNameList } from '../../utils/columnHelpers.js';
+import { compareStrings, normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
+import { normalizeColumnNameList } from '../../domain/datasets/columns.js';
 import { BUBBLE_CHART } from '../../config/charts.js';
 
 /**

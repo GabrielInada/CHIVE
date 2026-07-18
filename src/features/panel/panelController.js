@@ -18,8 +18,8 @@
 import { t } from '../../services/i18nService.js';
 import { ok, fail } from '../../utils/result.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
-import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
-import { getNumericColumnNames } from '../../utils/columnHelpers.js';
+import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../domain/filters/globalFilter.js';
+import { getNumericColumnNames } from '../../domain/datasets/columns.js';
 import {
 	PANEL_LAYOUTS,
 	getLayoutConfig as getPanelLayoutConfig,

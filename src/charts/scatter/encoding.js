@@ -9,7 +9,7 @@
 
 import { scaleSqrt } from '../../../vendor/d3/d3.js';
 import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
-import { normalizeCategoryValue } from '../../utils/chartFilters.js';
+import { normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
 import { pickMostFrequentCategory } from './axisHelpers.js';
 import { getScatterPalette } from './palettes.js';
 

@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { downloadBytes, sanitizeDownloadFileName } from '../../src/utils/downloadBytes.js';
+import { downloadBytes, sanitizeDownloadFileName } from '../../../src/services/downloads/bytes.js';
 
-describe('downloadBytes utils', () => {
+describe('downloads/bytes', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '';
 	});

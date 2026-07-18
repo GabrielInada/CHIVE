@@ -15,7 +15,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
-import { downloadSvgMarkup, ensureSvgAttributes } from '../../../utils/svgExport.js';
+import { downloadSvgMarkup, ensureSvgAttributes } from '../../../services/downloads/svg.js';
 import { normalizeHexColor } from '../layout/resizeMath.js';
 import { ok, fail } from '../../../utils/result.js';
 import { PANEL_DOM_IDS } from '../domIds.js';

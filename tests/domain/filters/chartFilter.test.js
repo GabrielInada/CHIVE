@@ -7,9 +7,9 @@ import {
   isMissingCategoryValue,
   normalizeFilterConfig,
   toCategoryToken,
-} from '../../src/utils/chartFilters.js';
+} from '../../../src/domain/filters/chartFilter.js';
 
-describe('chartFilters', () => {
+describe('chartFilter', () => {
   it('collects categorical options with missing values', () => {
     const rows = [
       { gender: 'M' },

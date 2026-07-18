@@ -11,9 +11,9 @@ import {
   getDateColumnNames,
   getDatasetColumnNames,
   normalizeColumnNameList,
-} from '../../src/utils/columnHelpers.js';
+} from '../../../src/domain/datasets/columns.js';
 
-describe('columnHelpers', () => {
+describe('columns', () => {
   const columns = [
     { name: 'a', type: 'number' },
     { name: 'b', type: 'text' },

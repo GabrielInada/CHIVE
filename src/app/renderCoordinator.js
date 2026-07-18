@@ -15,7 +15,7 @@ import {
 } from '../features/datasetWorkspace/workspaceView.js';
 import { renderCharts } from '../features/datasetWorkspace/views/chartsView.js';
 import { renderChartControlsSidebar } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
-import { getNumericColumns } from '../utils/columnHelpers.js';
+import { getNumericColumns } from '../domain/datasets/columns.js';
 import {
 	getActiveDataset,
 	getActiveDatasetIndex,

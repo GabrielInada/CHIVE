@@ -172,7 +172,7 @@ order:
 8. On success the composite disposer (listeners, geometry, materials,
    textures, `renderer.dispose()`, `forceContextLoss()`) is stashed under
    `CHART_DISPOSE_HOOK` from
-   [chartContainerLifecycle.js](../../../src/utils/chartContainerLifecycle.js).
+   [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).
    Only that helper ever runs or deletes the hook; the renderer only
    assigns it. The ok payload carries
    `{ renderedCount, validCount, totalCount, truncated }`.

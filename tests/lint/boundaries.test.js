@@ -28,23 +28,24 @@ const abs = relPath => path.join(repoRoot, relPath);
 
 const eslint = new ESLint({ cwd: repoRoot });
 
-async function lintImport(virtualFile, code) {
+async function lintProbe(virtualFile, code) {
 	const [result] = await eslint.lintText(code, { filePath: abs(virtualFile) });
 	return result;
 }
 
-const restrictedImportMessages = result =>
-	result.messages.filter(message => message.ruleId === 'no-restricted-imports');
+const messagesForRule = (result, ruleId) =>
+	result.messages.filter(message => message.ruleId === ruleId);
 
 const strictUiMessages = result =>
-	result.messages.filter(message => message.ruleId === 'chive/ui-strict-leaf');
+	messagesForRule(result, 'chive/ui-strict-leaf');
 
 const restrictionMessages = result =>
 	result.messages.filter(message =>
 		message.ruleId === 'no-restricted-imports' ||
-		message.ruleId === 'chive/ui-strict-leaf');
+		message.ruleId === 'chive/ui-strict-leaf' ||
+		message.ruleId === 'no-restricted-globals');
 
-// [virtual file, import statement, boundary the probe proves]
+// [virtual file, source text, boundary the probe proves, expected rule id]
 const FORBIDDEN_IMPORTS = [
 	['src/services/probe.js', "import 'lodash';", 'base src block bans unlisted bare specifiers'],
 	['src/app/probe.js', "import '../services/persistence/lifecycle.js';", 'A3 bans persistence internals from app'],
@@ -69,8 +70,22 @@ const FORBIDDEN_IMPORTS = [
 	['src/ui/feedback.js', "import 'node:fs';", 'ui block restated the non-relative specifier ban'],
 	['src/entries/about.js', "import '../ui/dialogFocus.js';", 'entries cannot import ui/'],
 	['src/utils/probe.js', "import '../ui/feedback.js';", 'utils bans ui/'],
+	['src/utils/probe.js', "import '../domain/filters/globalFilter.js';", 'utils bans domain/'],
+	['src/utils/probe.js', "import '../charts/shared/containerLifecycle.js';", 'utils bans charts/'],
+	[
+		'src/utils/probe.js',
+		'export function probe() { return document.title; }',
+		'utils is DOM-free',
+		'no-restricted-globals',
+	],
 	['src/config/probe.js', "import '../ui/feedback.js';", 'config bans ui/'],
 	['src/domain/panel/probe.js', "import '../../ui/feedback.js';", 'domain bans ui/'],
+	[
+		'src/domain/panel/probe.js',
+		'export function probe() { return document.title; }',
+		'domain is DOM-free',
+		'no-restricted-globals',
+	],
 	['src/state/panel/probe.js', "import '../../ui/feedback.js';", 'panel state internals ban ui/'],
 	['src/charts/bar/data.js', "import '../../ui/feedback.js';", 'chart leaves ban ui/'],
 	['src/charts/shared/probe.js', "import '../../ui/feedback.js';", 'charts/shared bans ui/'],
@@ -103,20 +118,30 @@ const ALLOWED_IMPORTS = [
 	['src/ui/feedback.js', "import '../utils/result.js';", 'ui may import utils'],
 	['src/ui/feedback.js', "import '../types.js';", 'ui may import shared types'],
 	['src/ui/feedback.js', "import '../../vendor/d3/d3.js';", 'ui may import vendored modules'],
+	['src/config/chartDefaults.js', "import '../domain/filters/globalFilter.js';", 'config may use domain product rules'],
+	['src/charts/bar/data.js', "import '../../domain/filters/chartFilter.js';", 'chart leaves may use domain filter rules'],
+	['src/charts/bubble/controls/listeners.js', "import '../../../domain/datasets/columns.js';", 'control listeners may use domain dataset rules'],
+	['src/features/panel/slots/lifecycle.js', "import '../../../charts/shared/containerLifecycle.js';", 'features may use shared chart infrastructure'],
+	['src/app/bindings/projectTransfer.js', "import '../../services/downloads/bytes.js';", 'app may use browser-effecting services'],
 ];
 
 describe('lint layer boundaries', () => {
-	it.each(FORBIDDEN_IMPORTS)('%s cannot use %s (%s)', async (virtualFile, code, _proves) => {
-		const result = await lintImport(virtualFile, code);
+	it.each(FORBIDDEN_IMPORTS)('%s cannot use %s (%s)', async (
+		virtualFile,
+		code,
+		_proves,
+		expectedRuleId = 'no-restricted-imports',
+	) => {
+		const result = await lintProbe(virtualFile, code);
 		expect(result.errorCount, `expected a lint error for ${code} in ${virtualFile}`).toBeGreaterThanOrEqual(1);
 		expect(
-			restrictedImportMessages(result).length,
-			`expected no-restricted-imports to fire for ${code} in ${virtualFile}`,
+			messagesForRule(result, expectedRuleId).length,
+			`expected ${expectedRuleId} to fire for ${code} in ${virtualFile}`,
 		).toBeGreaterThanOrEqual(1);
 	});
 
 	it.each(STRICT_UI_FORBIDDEN_IMPORTS)('%s cannot use %s (%s)', async (virtualFile, code, _proves) => {
-		const result = await lintImport(virtualFile, code);
+		const result = await lintProbe(virtualFile, code);
 		expect(result.errorCount, `expected a lint error for ${code} in ${virtualFile}`).toBeGreaterThanOrEqual(1);
 		expect(
 			strictUiMessages(result).length,
@@ -125,7 +150,7 @@ describe('lint layer boundaries', () => {
 	});
 
 	it.each(ALLOWED_IMPORTS)('%s may use %s (%s)', async (virtualFile, code, _proves) => {
-		const result = await lintImport(virtualFile, code);
+		const result = await lintProbe(virtualFile, code);
 		expect(
 			restrictionMessages(result),
 			`expected no import restriction for ${code} in ${virtualFile}`,

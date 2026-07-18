@@ -6,7 +6,7 @@
  */
 
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
-import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
+import { clearChartContainer } from '../shared/containerLifecycle.js';
 import { renderScatter3dInto } from './presentation.js';
 
 /**

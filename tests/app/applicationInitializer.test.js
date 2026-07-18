@@ -44,7 +44,7 @@ vi.mock('../../src/state/appState.js', () => ({
 	replaceAllState: mocks.replaceAllState,
 }));
 
-vi.mock('../../src/utils/panelHydration.js', () => ({
+vi.mock('../../src/domain/panel/rehydration.js', () => ({
 	rehydratePanelChartSpecs: mocks.rehydratePanelChartSpecs,
 }));
 

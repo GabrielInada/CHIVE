@@ -6,7 +6,7 @@
 
 import { t } from '../../services/i18nService.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
-import { clearChartContainer, showChartMessage } from '../../utils/chartContainerLifecycle.js';
+import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
 import { renderNetworkInto } from './presentation.js';
 
 /**

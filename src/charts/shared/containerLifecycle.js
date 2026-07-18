@@ -10,9 +10,9 @@
  * set the hook and are unaffected. Only this module reads or deletes the
  * hook property; renderers only assign it.
  *
- * This is a deliberate exception to the utils "DOM-free" rule: the
- * helper must be importable by components, the panel subsystem, and
- * chart packages alike, and utils is the one layer all three may reach.
+ * This lives in charts/shared because chart packages, panel slots, and
+ * workspace views may all import shared chart infrastructure. The dispose
+ * hook is a chart-rendering contract shared by those three surfaces.
  */
 
 export const CHART_DISPOSE_HOOK = '__chiveChartDispose__';

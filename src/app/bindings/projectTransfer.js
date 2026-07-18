@@ -13,8 +13,8 @@ import {
 	getProjectImportErrorMessageKey,
 	importProjectBytes,
 } from '../../services/persistence.js';
-import { downloadBytes } from '../../utils/downloadBytes.js';
-import { rehydratePanelChartSpecs } from '../../utils/panelHydration.js';
+import { downloadBytes } from '../../services/downloads/bytes.js';
+import { rehydratePanelChartSpecs } from '../../domain/panel/rehydration.js';
 import { getPersistenceSnapshot, replaceAllState } from '../../state/appState.js';
 import { showProgress } from '../../ui/feedback.js';
 

@@ -24,7 +24,7 @@ import {
 } from '../../shared/tooltip/tooltip.js';
 import { BUBBLE_CHART, CHART_COLOR_PALETTES, CHART_DIMENSIONS } from '../../../config/charts.js';
 import { formatNumber, isNullish } from '../../../utils/formatters.js';
-import { toCategoryToken } from '../../../utils/chartFilters.js';
+import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { ok, fail } from '../../../utils/result.js';
 import { setupChartSvg } from '../../shared/svg/scaffold.js';
 import {

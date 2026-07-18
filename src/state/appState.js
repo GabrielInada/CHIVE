@@ -2,7 +2,7 @@ import { emitStateChange, onStateChange, STATE_EVENTS } from './stateEvents.js';
 import { createPanelBlockModel } from '../domain/panel/panelBlockModel.js';
 import { canonicalizeChartConfig } from '../config/chartDefaults.js';
 import { PREVIEW_DEFAULT_ROWS, PREVIEW_MIN_ROWS } from '../config/limits.js';
-import { getDatasetColumnNames } from '../utils/columnHelpers.js';
+import { getDatasetColumnNames } from '../domain/datasets/columns.js';
 import { createDataStateFacade } from './dataStateFacade.js';
 import { createUiStateFacade } from './uiStateFacade.js';
 import { createPanelStateFacade } from './panelStateFacade.js';

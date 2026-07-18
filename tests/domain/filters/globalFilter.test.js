@@ -13,9 +13,9 @@ import {
 	removeExcludeTokenFromFilter,
 	removeIncludeTokenFromFilter,
 	resolveGlobalFilterForColumns,
-} from '../../src/utils/globalFilter.js';
+} from '../../../src/domain/filters/globalFilter.js';
 
-describe('globalFilter utils', () => {
+describe('globalFilter', () => {
 	describe('createEmptyGlobalFilter', () => {
 		it('returns an empty rules array and AND combine', () => {
 			const empty = createEmptyGlobalFilter();

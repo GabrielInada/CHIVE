@@ -67,8 +67,8 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../../src/state/appState.js', () => mocks.appState);
 vi.mock('../../../src/config/chartDefaults.js', () => mocks.chartDefaults);
-vi.mock('../../../src/utils/globalFilter.js', () => mocks.globalFilter);
-vi.mock('../../../src/utils/columnHelpers.js', () => mocks.columnHelpers);
+vi.mock('../../../src/domain/filters/globalFilter.js', () => mocks.globalFilter);
+vi.mock('../../../src/domain/datasets/columns.js', () => mocks.columnHelpers);
 vi.mock('../../../src/services/i18nService.js', () => mocks.i18n);
 
 import { initPanelController, addChartToPanel, removeChartFromPanel, getLayoutConfig, _resetPanelControllerForTesting } from '../../../src/features/panel/panelController.js';
