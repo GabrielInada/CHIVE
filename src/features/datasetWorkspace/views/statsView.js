@@ -124,11 +124,11 @@ export function renderStats(rows, visibleColumns) {
  * @returns {void}
  */
 export function renderCategoricalStats(rows, visibleColumns) {
-	const card = document.getElementById('card-cat-stats');
+	const card = document.getElementById(VIEW_IDS.categoricalStatsCard);
 	if (!card) return;
 
 	const stats = getCategoricalStats(rows, visibleColumns);
-	const container = document.getElementById('container-cat-stats');
+	const container = document.getElementById(VIEW_IDS.categoricalStatsContainer);
 	const badge = document.getElementById('badge-cat-columns');
 
 	if (stats.length === 0) {

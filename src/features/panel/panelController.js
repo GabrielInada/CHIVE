@@ -50,6 +50,7 @@ import {
 } from './views/panelView.js';
 import { exportPanelLayoutSvg as exportSvg } from './export/svgExporter.js';
 import { SUPPORTED_PANEL_CHART_TYPES } from '../../charts/registries/panel.js';
+import { PANEL_DOM_IDS } from './domIds.js';
 
 // Callback for feedback UI (set by app/applicationInitializer.js)
 let feedbackCallback = null;
@@ -321,7 +322,7 @@ export function exportPanelLayoutSvg() {
  * each call, so callers should invoke this at most once.
  */
 export function setupPanelEventListeners() {
-	const selectLayout = document.getElementById('select-panel-layout');
+	const selectLayout = document.getElementById(PANEL_DOM_IDS.layoutSelect);
 	const btnExportar = document.getElementById('btn-export-panel');
 
 	if (selectLayout) {

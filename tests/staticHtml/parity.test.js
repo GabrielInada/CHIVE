@@ -15,7 +15,9 @@ import { SETTINGS_IDS } from '../../src/features/settings/domIds.js';
 import {
 	BADGE_IDS,
 	FILE_IDS,
+	TAB_CONTENT_IDS,
 	VIEW_IDS,
+	WORKSPACE_ACTION_IDS,
 } from '../../src/features/datasetWorkspace/domIds.js';
 import { PANEL_DOM_IDS } from '../../src/features/panel/domIds.js';
 import { PROJECT_TRANSFER_IDS } from '../../src/app/bindings/projectTransfer.js';
@@ -75,7 +77,9 @@ describe('static HTML contracts', () => {
 			VIEW_IDS,
 			FILE_IDS,
 			BADGE_IDS,
-			PANEL_DOM_IDS,
+			TAB_CONTENT_IDS,
+			WORKSPACE_ACTION_IDS,
+			{ canvas: PANEL_DOM_IDS.canvas },
 			PROJECT_TRANSFER_IDS,
 		]);
 	});

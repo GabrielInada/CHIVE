@@ -25,7 +25,7 @@ import { renderTablePreview } from './views/tablePreviewView.js';
 import { renderStats, renderCategoricalStats } from './views/statsView.js';
 import { renderFileListDOM } from './views/fileListView.js';
 import { renderColumnControlsDOM } from './views/columnControlsView.js';
-import { VIEW_IDS, FILE_IDS, BADGE_IDS } from './domIds.js';
+import { VIEW_IDS, FILE_IDS, BADGE_IDS, WORKSPACE_ACTION_IDS } from './domIds.js';
 import { openJoinBuilderDialog } from './dialogs/joinBuilderView.js';
 import { openPresetDatasetsDialog } from './dialogs/presetDatasetsView.js';
 import { openGlobalFilterDialog } from './dialogs/globalFilterDialog.js';
@@ -268,10 +268,10 @@ export function renderEmptyState() {
     resultTabs: document.getElementById(VIEW_IDS.resultTabs),
     tableContainer: document.getElementById(VIEW_IDS.tableContainer),
     statsContainer: document.getElementById(VIEW_IDS.statsContainer),
-    categoricalStatsContainer: document.getElementById('container-cat-stats'),
-    categoricalStatsCard: document.getElementById('card-cat-stats'),
+    categoricalStatsContainer: document.getElementById(VIEW_IDS.categoricalStatsContainer),
+    categoricalStatsCard: document.getElementById(VIEW_IDS.categoricalStatsCard),
     chartsBadge: document.getElementById(BADGE_IDS.charts),
-    advanceButton: document.getElementById('btn-advance'),
+    advanceButton: document.getElementById(WORKSPACE_ACTION_IDS.advanceButton),
   };
 
   // Only update elements that exist (not null)
@@ -496,7 +496,7 @@ export function renderDatasetWorkspace(
     isShowOnlyThisRedundant: lookupShowOnlyThisRedundant,
   });
 
-  document.getElementById('btn-advance').disabled = false;
+  document.getElementById(WORKSPACE_ACTION_IDS.advanceButton).disabled = false;
   const devNotice = document.getElementById('dev-warning');
   if (devNotice) devNotice.style.display = 'block';
   document.getElementById(FILE_IDS.uploadZone).classList.add('loaded');

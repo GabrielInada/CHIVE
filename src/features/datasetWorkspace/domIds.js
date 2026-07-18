@@ -10,9 +10,11 @@ export const VIEW_IDS = {
 	resultTabs: 'result-tabs',
 	tableContainer: 'table-container',
 	statsContainer: 'container-stats',
+	categoricalStatsContainer: 'container-cat-stats',
 	chartsGrid: 'charts-grid',
 	chartsEmptyState: 'charts-empty-state',
 	statsCard: 'card-stats',
+	categoricalStatsCard: 'card-cat-stats',
 };
 
 export const FILE_IDS = {
@@ -26,4 +28,14 @@ export const BADGE_IDS = {
 	charts: 'badge-charts',
 	rows: 'badge-rows',
 	numColumns: 'badge-num-columns',
+};
+
+export const TAB_CONTENT_IDS = {
+	preview: 'tab-content-preview',
+	charts: 'tab-content-charts',
+	panel: 'tab-content-dashboard',
+};
+
+export const WORKSPACE_ACTION_IDS = {
+	advanceButton: 'btn-advance',
 };

@@ -4,4 +4,5 @@
 
 export const PANEL_DOM_IDS = {
 	canvas: 'panel-layout-canvas',
+	layoutSelect: 'select-panel-layout',
 };

@@ -322,7 +322,7 @@ function attachBlockResizeListener(blockEl, block, gridDiv, callbacks) {
  * No-op when the select element is missing.
  */
 export function fillLayoutSelect() {
-	const select = document.getElementById('select-panel-layout');
+	const select = document.getElementById(PANEL_DOM_IDS.layoutSelect);
 	if (!select) return;
 	const blocks = getPanelBlocks();
 	const currentLayout = blocks[0]?.templateId || 'template-2col';
