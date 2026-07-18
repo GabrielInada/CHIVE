@@ -95,6 +95,15 @@ const BARE_IMPORT_BANS = [
 	},
 ];
 
+// Catch-all raw-static guard: any non-relative specifier (npm package,
+// node: builtin, URL) only resolves under a bundler. The named entries
+// above keep their specific vendor-path messages; this closes the gap
+// for everything else. Grep confirms src/ has zero bare specifiers today.
+const NON_RELATIVE_SPECIFIER_BAN = {
+	regex: '^[^./]',
+	message: 'Only relative specifiers work when src/ is served raw with no build step. Vendor the dependency under vendor/ and import it by relative path.',
+};
+
 // One-way dependency direction between the composition layers and everything
 // below them: entries compose app, app composes features/ui/state/services,
 // features use ui/state/services, and ui/ is a strict leaf. The constants are
@@ -199,9 +208,9 @@ export default [
 	// ALL of src/. NOTE: flat config REPLACES (does not merge) a rule's options
 	// across matching config objects, the last match wins entirely. The blocks
 	// below redeclare `no-restricted-imports` for their file subset, so each one
-	// must repeat BARE_IMPORT_BANS or it would silently drop the bare-import
-	// guard for those files. Likewise, all `no-restricted-syntax` selectors for
-	// src/ must live here in one array.
+	// must repeat BARE_IMPORT_BANS and NON_RELATIVE_SPECIFIER_BAN or it would
+	// silently drop the raw-static import guard for those files. Likewise, all
+	// `no-restricted-syntax` selectors for src/ must live here in one array.
 	{
 		files: ['src/**/*.js'],
 		languageOptions: {
@@ -210,7 +219,10 @@ export default [
 			globals: BROWSER_GLOBALS,
 		},
 		rules: {
-			'no-restricted-imports': ['error', { paths: BARE_IMPORT_BANS }],
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [NON_RELATIVE_SPECIFIER_BAN],
+			}],
 			'no-restricted-syntax': ['error',
 				...FACADE_MUTATION_SELECTORS,
 				...VITE_ONLY_SYNTAX_SELECTORS,
@@ -240,7 +252,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: [
 						'./**',
 						'../charts/**',
@@ -287,7 +299,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [PERSISTENCE_INTERNALS_BAN],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, PERSISTENCE_INTERNALS_BAN],
 			}],
 		},
 	},
@@ -302,7 +314,11 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [PERSISTENCE_INTERNALS_BAN, COMPOSITION_LAYER_BAN],
+				patterns: [
+					NON_RELATIVE_SPECIFIER_BAN,
+					PERSISTENCE_INTERNALS_BAN,
+					COMPOSITION_LAYER_BAN,
+				],
 			}],
 		},
 	},
@@ -317,6 +333,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [
+					NON_RELATIVE_SPECIFIER_BAN,
 					COMPOSITION_LAYER_BAN,
 					PERSISTENCE_INTERNALS_BAN,
 					{
@@ -345,6 +362,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [
+					NON_RELATIVE_SPECIFIER_BAN,
 					PERSISTENCE_INTERNALS_BAN,
 					COMPOSITION_LAYER_BAN,
 					{
@@ -365,7 +383,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/components/**', '**/features/**', '**/services/**', '**/charts/**', '**/ui/**'],
 					message: 'Panel state internals import only state, domain, config, utils, types, or vendor modules.',
 				}],
@@ -390,6 +408,7 @@ export default [
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [
+					NON_RELATIVE_SPECIFIER_BAN,
 					PERSISTENCE_INTERNALS_BAN,
 					COMPOSITION_LAYER_BAN,
 					{
@@ -429,7 +448,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**', '**/ui/**'],
 					message: 'Chart package leaf files import only package-local or charts/shared modules, config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
 				}],
@@ -448,7 +467,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**'],
 					message: 'Shared chart infrastructure is a leaf layer. Import only charts/shared, config, utils, or vendor modules. Chart-config writes arrive through an injected ChartConfigWriter, never a state import.',
 				}],
@@ -465,7 +484,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**'],
 					message: 'Chart presentation metadata imports only static chart metadata, config, utils, or vendor modules.',
 				}],
@@ -485,7 +504,7 @@ export default [
 					{ name: './workspace.js', message: 'The controls registry cannot import the workspace registry.' },
 					{ name: './panel.js', message: 'The controls registry cannot import the panel registry.' },
 				],
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/ui/**'],
 					message: 'The controls registry imports only chart controls implementations and leaf config/types.',
 				}],
@@ -501,7 +520,7 @@ export default [
 					{ name: './controls.js', message: 'The workspace registry cannot import the controls registry.' },
 					{ name: './panel.js', message: 'The workspace registry cannot import the panel registry.' },
 				],
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/features/**', '**/services/**', '**/state/**', '**/chartControls/**', '**/ui/**'],
 					message: 'The workspace registry imports only chart workspace sections and leaf config/types.',
 				}],
@@ -517,7 +536,7 @@ export default [
 					{ name: './controls.js', message: 'The panel registry cannot import the controls registry.' },
 					{ name: './workspace.js', message: 'The panel registry cannot import the workspace registry.' },
 				],
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/chartControls/**', '**/ui/**'],
 					message: 'The panel registry imports only chart panel adapters and leaf config/types.',
 				}],
@@ -544,7 +563,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/ui/**'],
 					message: 'Chart package integration files do not import app modules, state, panel internals, ui/ mechanics, or workspace components. Receive props/callbacks; controls write only through the injected ChartConfigWriter.',
 				}],
@@ -564,7 +583,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**', '**/ui/**'],
 					message: 'Chart control listeners are pure input mechanics: they read the DOM and write through the injected ChartConfigWriter. Import only package-local modules, charts/shared bindings, config, utils, and vendor modules. Labels belong to the builder.',
 				}],
@@ -575,14 +594,27 @@ export default [
 	// (C0) ui/ owns ownerless browser UI mechanics (feedback toasts, dialog
 	// focus). It is a strict leaf apart from DOM access: no imports from any
 	// owned layer, so a feature or app module can always depend on it without
-	// dragging state, services, or another feature along.
+	// dragging state, services, or another feature along. UI_LAYER_BAN keeps
+	// per-layer messages, while chive/ui-strict-leaf resolves targets as the
+	// completeness backstop.
 	{
 		files: ['src/ui/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [UI_LAYER_BAN],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, UI_LAYER_BAN],
 			}],
+		},
+	},
+
+	// (C0a) Resolver-aware strict-leaf backstop for ui/. This rule is
+	// path-shaped like FACADE_SOURCE_RE. If src/ui moves, update its allowed
+	// roots and the boundary probes that catch a silent mismatch.
+	{
+		files: ['src/ui/**/*.js'],
+		plugins: { chive: chiveRules },
+		rules: {
+			'chive/ui-strict-leaf': 'error',
 		},
 	},
 
@@ -595,7 +627,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**'],
 					message: 'utils/ is a pure leaf layer — no imports from app/, state/, components/, features/, services/, or ui/.',
 				}],
@@ -609,7 +641,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**'],
 					message: 'config/ is a pure leaf layer, no imports from app/, state/, components/, features/, services/, or ui/.',
 				}],
@@ -627,7 +659,7 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/charts/**', '**/ui/**'],
 					message: 'domain/ is a pure leaf layer. Import only domain, config, utils, or vendor modules.',
 				}],

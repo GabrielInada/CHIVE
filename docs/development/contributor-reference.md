@@ -136,6 +136,10 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   strict leaf that imports only `config/`, `utils/`, `types.js`, or vendored
   modules. `tests/lint/boundaries.test.js` proves each boundary still fires,
   guarding against flat-config blocks silently dropping a pattern group.
+  Reverse edges from general `state/`, `services/`, `workers/`, and `data/`
+  modules into `ui/` are not yet lint-banned; no such edge exists today, and
+  enforcing them requires careful flat-config restatements around
+  `persistWorker.js`, so it is deferred to a later tranche.
 - **Panel state internals.** `src/state/panel/` may import only state,
   domain, config, utils, shared types, or vendored modules. Presentation,
   feature, chart, service, and legacy panel-subsystem imports are lint errors.

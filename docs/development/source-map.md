@@ -130,7 +130,11 @@ ownership rather than file history, according to these rules:
   services. Neither `features/` nor `ui/` may import `entries/` or `app/`, and
   `ui/` (ownerless browser UI mechanics) imports only `config/`, `utils/`,
   `types.js`, or vendor modules. Lint enforces these boundaries and
-  `tests/lint/boundaries.test.js` keeps them enforced.
+  `tests/lint/boundaries.test.js` keeps them enforced. Reverse edges from
+  general `state/`, `services/`, `workers/`, and `data/` modules into `ui/`
+  are not yet lint-banned; no such edge exists today, and enforcing them
+  requires careful flat-config restatements around `persistWorker.js`, so it
+  is deferred to a later tranche.
 - The browser entrypoints (`entries/app.js`, `entries/about.js`) are
   intentionally thin. Initialization order lives in
   `app/applicationInitializer.js`, render scheduler state stays together in

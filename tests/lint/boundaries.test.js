@@ -9,9 +9,10 @@ import { ESLint } from 'eslint';
  * Flat config REPLACES `no-restricted-imports` outright for every matching
  * config object, so a later block that forgets to restate a pattern group
  * silently drops that boundary for its file subset, and `npm run lint` stays
- * green. Each probe below lints a virtual file (via lintText with a filePath
- * inside the layer under test) against the real config, proving the boundary
- * still fires in the exact block that owns that file.
+ * green. The probes below lint virtual files (via lintText with a filePath
+ * inside the layer under test) against the real config. Every src block that
+ * declares no-restricted-imports has at least one probe, without claiming to
+ * exercise every member of every pattern group.
  *
  * Probes use side-effect imports so no-unused-vars noise cannot appear. The
  * two APP_STATE_READS probes necessarily use a named import (the restriction
@@ -35,8 +36,20 @@ async function lintImport(virtualFile, code) {
 const restrictedImportMessages = result =>
 	result.messages.filter(message => message.ruleId === 'no-restricted-imports');
 
+const strictUiMessages = result =>
+	result.messages.filter(message => message.ruleId === 'chive/ui-strict-leaf');
+
+const restrictionMessages = result =>
+	result.messages.filter(message =>
+		message.ruleId === 'no-restricted-imports' ||
+		message.ruleId === 'chive/ui-strict-leaf');
+
 // [virtual file, import statement, boundary the probe proves]
 const FORBIDDEN_IMPORTS = [
+	['src/services/probe.js', "import 'lodash';", 'base src block bans unlisted bare specifiers'],
+	['src/app/probe.js', "import '../services/persistence/lifecycle.js';", 'A3 bans persistence internals from app'],
+	['src/state/probe.js', "import '../services/persistence/lifecycle.js';", 'A3 bans persistence internals from state'],
+	['src/workers/ingestWorker.js', "import '../services/persistence/lifecycle.js';", 'A3 bans persistence internals from workers'],
 	['src/features/datasetWorkspace/datasetController.js', "import '../../app/feedbackUI.js';", 'features block bans app/'],
 	['src/features/datasetWorkspace/datasetController.js', "import '../../entries/app.js';", 'features block bans entries/'],
 	['src/features/datasetWorkspace/datasetController.js', "import '../../services/persistence/lifecycle.js';", 'features block bans persistence internals'],
@@ -53,6 +66,7 @@ const FORBIDDEN_IMPORTS = [
 	['src/ui/feedback.js', "import '../entries/app.js';", 'ui block bans entries/'],
 	['src/ui/feedback.js', "import '../state/appState.js';", 'ui block bans state/'],
 	['src/ui/feedback.js', "import '../services/persistence/lifecycle.js';", 'ui block bans services/ including internals'],
+	['src/ui/feedback.js', "import 'node:fs';", 'ui block restated the non-relative specifier ban'],
 	['src/entries/about.js', "import '../ui/dialogFocus.js';", 'entries cannot import ui/'],
 	['src/utils/probe.js', "import '../ui/feedback.js';", 'utils bans ui/'],
 	['src/config/probe.js', "import '../ui/feedback.js';", 'config bans ui/'],
@@ -71,11 +85,24 @@ const FORBIDDEN_IMPORTS = [
 	['src/features/settings/settingsDialog.js', "import 'd3';", 'B2d restated BARE_IMPORT_BANS'],
 ];
 
+// These paths are outside every named UI_LAYER_BAN directory. Only the
+// resolver-aware custom rule can reject them.
+const STRICT_UI_FORBIDDEN_IMPORTS = [
+	['src/ui/feedback.js', "import '../../tests/setup/indexeddb.js';", 'ui cannot import test harness code'],
+	['src/ui/feedback.js', "import '../futureLayer/example.js';", 'ui cannot import an unknown future sibling layer'],
+];
+
 // [virtual file, import statement, direction the probe proves is allowed]
 const ALLOWED_IMPORTS = [
+	['src/workers/persistWorker.js', "import '../services/persistence/lifecycle.js';", 'persist worker keeps its A3 exception'],
 	['src/features/settings/settingsDialog.js', "import '../../ui/dialogFocus.js';", 'settings dialog may use ui/dialogFocus'],
 	['src/features/datasetWorkspace/datasetController.js', "import '../../ui/feedback.js';", 'features may use ui/feedback'],
 	['src/app/sharedPageInitializer.js', "import '../features/settings/settingsController.js';", 'app may compose features'],
+	['src/ui/feedback.js', "import './dialogFocus.js';", 'ui may import another ui module'],
+	['src/ui/feedback.js', "import '../config/elementIds.js';", 'ui may import config'],
+	['src/ui/feedback.js', "import '../utils/result.js';", 'ui may import utils'],
+	['src/ui/feedback.js', "import '../types.js';", 'ui may import shared types'],
+	['src/ui/feedback.js', "import '../../vendor/d3/d3.js';", 'ui may import vendored modules'],
 ];
 
 describe('lint layer boundaries', () => {
@@ -88,10 +115,19 @@ describe('lint layer boundaries', () => {
 		).toBeGreaterThanOrEqual(1);
 	});
 
+	it.each(STRICT_UI_FORBIDDEN_IMPORTS)('%s cannot use %s (%s)', async (virtualFile, code, _proves) => {
+		const result = await lintImport(virtualFile, code);
+		expect(result.errorCount, `expected a lint error for ${code} in ${virtualFile}`).toBeGreaterThanOrEqual(1);
+		expect(
+			strictUiMessages(result).length,
+			`expected chive/ui-strict-leaf to fire for ${code} in ${virtualFile}`,
+		).toBeGreaterThanOrEqual(1);
+	});
+
 	it.each(ALLOWED_IMPORTS)('%s may use %s (%s)', async (virtualFile, code, _proves) => {
 		const result = await lintImport(virtualFile, code);
 		expect(
-			restrictedImportMessages(result),
+			restrictionMessages(result),
 			`expected no import restriction for ${code} in ${virtualFile}`,
 		).toEqual([]);
 	});
