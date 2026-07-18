@@ -66,7 +66,7 @@ let panelSubscriptions = [];
  * Initialize the panel controller. Wires panel-related state-event listeners
  * exactly once; subsequent calls update only the feedback callback.
  *
- * @param {((message: string, durationMs?: number) => void) | null} [feedbackFn] - Callback for user feedback, `feedbackUI.showFeedback` in production (message plus optional toast duration). When `null`, panel actions fall back to silent operation.
+ * @param {((message: string, durationMs?: number) => void) | null} [feedbackFn] - Callback for user feedback, `ui/feedback.showFeedback` in production (message plus optional toast duration). When `null`, panel actions fall back to silent operation.
  */
 export function initPanelController(feedbackFn = null) {
 	// Always update the feedback callback, callers may legitimately

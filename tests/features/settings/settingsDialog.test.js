@@ -2,11 +2,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../src/services/i18nService.js', () => ({
+vi.mock('../../../src/services/i18nService.js', () => ({
 	t: key => `t:${key}`,
 }));
 
-import { openSettingsDialog } from '../../src/components/settingsDialog.js';
+import { openSettingsDialog } from '../../../src/features/settings/settingsDialog.js';
 
 const openHandles = [];
 

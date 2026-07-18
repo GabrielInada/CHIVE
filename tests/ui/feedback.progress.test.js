@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { showProgress } from '../../src/app/feedbackUI.js';
+import { showProgress } from '../../src/ui/feedback.js';
 
 describe('showProgress', () => {
 	beforeEach(() => {

@@ -68,7 +68,7 @@ vi.mock('../../src/app/domBindings.js', () => ({
 	initializeDomBindings: mocks.initializeDomBindings,
 }));
 
-vi.mock('../../src/app/settingsController.js', () => ({
+vi.mock('../../src/features/settings/settingsController.js', () => ({
 	initSettingsController: mocks.initSettingsController,
 }));
 
@@ -76,7 +76,7 @@ vi.mock('../../src/config/settings.js', () => ({
 	SETTINGS_CHANGE_EVENT: 'chive-settings-changed',
 }));
 
-vi.mock('../../src/app/feedbackUI.js', () => ({
+vi.mock('../../src/ui/feedback.js', () => ({
 	showFeedback: mocks.showFeedback,
 	showError: mocks.showError,
 }));

@@ -70,7 +70,7 @@ vi.mock('../../src/features/panel/panelController.js', () => ({
   setupPanelEventListeners: mocks.setupPanelEventListeners,
 }));
 
-vi.mock('../../src/app/feedbackUI.js', () => ({
+vi.mock('../../src/ui/feedback.js', () => ({
   showError: mocks.showError,
   showFeedback: mocks.showFeedback,
   showProgress: mocks.showProgress,
@@ -95,7 +95,7 @@ vi.mock('../../src/state/appState.js', () => ({
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
-vi.mock('../../src/app/dialogFocus.js', () => ({
+vi.mock('../../src/ui/dialogFocus.js', () => ({
   isAnyDialogOpen: mocks.isAnyDialogOpen,
 }));
 

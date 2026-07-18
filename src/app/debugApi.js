@@ -19,7 +19,7 @@ import {
 	updateDatasetColumns,
 	updateDatasetConfig,
 } from './renderCoordinator.js';
-import { showFeedbackMessage, showErrorMessage } from './feedbackUI.js';
+import { showFeedbackMessage, showErrorMessage } from '../ui/feedback.js';
 import { switchTab } from './uiManager.js';
 
 /**

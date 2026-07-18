@@ -10,24 +10,24 @@ const mocks = vi.hoisted(() => ({
 	openSettingsDialog: vi.fn(),
 }));
 
-vi.mock('../../src/services/i18nService.js', () => ({
+vi.mock('../../../src/services/i18nService.js', () => ({
 	getLocale: mocks.getLocale,
 	setLocale: mocks.setLocale,
 }));
 
-vi.mock('../../src/services/settingsService.js', () => ({
+vi.mock('../../../src/services/settingsService.js', () => ({
 	getTinColorRendering: mocks.getTinColorRendering,
 	setTinColorRendering: mocks.setTinColorRendering,
 }));
 
-vi.mock('../../src/components/settingsDialog.js', () => ({
+vi.mock('../../../src/features/settings/settingsDialog.js', () => ({
 	openSettingsDialog: mocks.openSettingsDialog,
 }));
 
 /** Fresh module per test: the controller tracks the open dialog in module state. */
 async function initFreshController() {
 	vi.resetModules();
-	const { initSettingsController } = await import('../../src/app/settingsController.js');
+	const { initSettingsController } = await import('../../../src/features/settings/settingsController.js');
 	initSettingsController();
 	return initSettingsController;
 }

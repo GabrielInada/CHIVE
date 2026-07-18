@@ -13,10 +13,10 @@
  * on the language control.
  */
 
-import { installDialogFocus } from '../app/dialogFocus.js';
-import { t } from '../services/i18nService.js';
-import { SUPPORTED_LOCALES, LOCALE_LABELS } from '../config/locale.js';
-import { TIN_COLOR_RENDERING_MODES } from '../config/settings.js';
+import { installDialogFocus } from '../../ui/dialogFocus.js';
+import { t } from '../../services/i18nService.js';
+import { SUPPORTED_LOCALES, LOCALE_LABELS } from '../../config/locale.js';
+import { TIN_COLOR_RENDERING_MODES } from '../../config/settings.js';
 
 const TIN_MODE_LABEL_KEYS = {
 	'optimized': 'chive-settings-tin-optimized',
