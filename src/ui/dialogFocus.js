@@ -6,10 +6,11 @@
  * One module-level capture keydown listener always traps Tab within the
  * top-most open dialog, so nested/rapid-open dialogs never fight over focus.
  *
- * Lives in `app/` because no single feature owns it: the dataset workspace
- * dialogs, `components/settingsDialog.js`, and `app/bindings/keyboardShortcuts.js`
- * (which consumes {@link isAnyDialogOpen}) all depend on it. Not in `utils/`
- * because it holds module state and touches the DOM.
+ * Lives in `ui/` because it is an ownerless browser UI mechanic shared across
+ * layers: the dataset workspace dialogs, `features/settings/settingsDialog.js`,
+ * and `app/bindings/keyboardShortcuts.js` (which consumes
+ * {@link isAnyDialogOpen}) all depend on it. Not in `utils/` because it holds
+ * module state and touches the DOM.
  */
 
 const FOCUSABLE_SELECTOR = 'a[href], button, input, select, textarea, [tabindex]';

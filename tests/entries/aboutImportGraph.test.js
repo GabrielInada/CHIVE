@@ -26,9 +26,9 @@ const relToRepo = absPath => toPosix(path.relative(repoRoot, absPath));
 const ABOUT_ALLOWLIST = new Set([
 	'src/entries/about.js',
 	'src/app/sharedPageInitializer.js',
-	'src/app/settingsController.js',
-	'src/app/dialogFocus.js',
-	'src/components/settingsDialog.js',
+	'src/features/settings/settingsController.js',
+	'src/features/settings/settingsDialog.js',
+	'src/ui/dialogFocus.js',
 	'src/services/i18nService.js',
 	'src/services/settingsService.js',
 	'src/config/locale.js',
@@ -43,6 +43,7 @@ const ABOUT_ALLOWLIST = new Set([
 // other entry + the heavy vendor libs).
 const FORBIDDEN_ON_ABOUT = [
 	'src/app/applicationInitializer.js',
+	'src/ui/feedback.js',
 	'src/app/debugApi.js',
 	'src/app/renderCoordinator.js',
 	'src/entries/app.js',
@@ -52,11 +53,13 @@ const FORBIDDEN_ON_ABOUT = [
 ];
 
 // Directory prefixes that carry the heavy graph; a defence-in-depth check
-// alongside the exact allowlist.
+// alongside the exact allowlist. The settings feature package is expected on
+// About, so features/ is banned per heavy package rather than wholesale.
 const FORBIDDEN_PREFIXES = [
 	'src/charts/',
 	'src/state/',
-	'src/features/',
+	'src/features/datasetWorkspace/',
+	'src/features/panel/',
 	'src/services/persistence',
 	'src/domain/',
 	'src/workers/',

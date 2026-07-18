@@ -66,8 +66,9 @@ The architecture invariants in [CONTRIBUTING.md](../../CONTRIBUTING.md) are
 enforced partly by lint and partly by review.
 
 **The write-facade boundary is enforced by lint.** ESLint (`npm run lint`)
-restricts renderer and DOM-builder files (`src/components/` and the panel
-feature presentation paths under `src/features/panel/`; see
+restricts renderer and DOM-builder files (the dataset workspace views and
+dialogs, the panel feature presentation paths under `src/features/panel/`, and
+the settings dialog; see
 [`eslint.config.js`](../../eslint.config.js))
 to read-only imports from `state/appState.js`: the `get*` functions,
 `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing
@@ -127,8 +128,18 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   into `vendor/` with license files committed, then smoke-tested with a plain
   static server.
 - **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not
-  import `app/`, `state/`, `components/`, `features/`, or `services/`.
+  import `app/`, `state/`, `features/`, `services/`, or `ui/`.
   `domain/` has the same boundary and additionally may not import `charts/`.
+- **One-way dependency direction.** `entries/` and `app/` are the composition
+  layers: `features/` and `ui/` may not import either of them. `ui/` (ownerless
+  browser UI mechanics such as feedback toasts and the dialog focus trap) is a
+  strict leaf that imports only `config/`, `utils/`, `types.js`, or vendored
+  modules. `tests/lint/boundaries.test.js` proves each boundary still fires,
+  guarding against flat-config blocks silently dropping a pattern group.
+  Reverse edges from general `state/`, `services/`, `workers/`, and `data/`
+  modules into `ui/` are not yet lint-banned; no such edge exists today, and
+  enforcing them requires careful flat-config restatements around
+  `persistWorker.js`, so it is deferred to a later tranche.
 - **Panel state internals.** `src/state/panel/` may import only state,
   domain, config, utils, shared types, or vendored modules. Presentation,
   feature, chart, service, and legacy panel-subsystem imports are lint errors.

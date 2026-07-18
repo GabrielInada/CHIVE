@@ -15,10 +15,10 @@
  * tolerated.
  */
 
-import { getLocale, setLocale } from '../services/i18nService.js';
-import { getTinColorRendering, setTinColorRendering } from '../services/settingsService.js';
-import { openSettingsDialog } from '../components/settingsDialog.js';
-import { SETTINGS_IDS } from '../config/elementIds.js';
+import { getLocale, setLocale } from '../../services/i18nService.js';
+import { getTinColorRendering, setTinColorRendering } from '../../services/settingsService.js';
+import { openSettingsDialog } from './settingsDialog.js';
+import { SETTINGS_IDS } from '../../config/elementIds.js';
 
 let dialogOpen = false;
 

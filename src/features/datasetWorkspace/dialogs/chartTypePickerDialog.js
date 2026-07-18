@@ -6,7 +6,7 @@
 
 import { CHART_TYPE_KEYS } from '../../../config/chartTypes.js';
 import { CHART_CATALOG } from '../../../charts/catalog.js';
-import { installDialogFocus } from '../../../app/dialogFocus.js';
+import { installDialogFocus } from '../../../ui/dialogFocus.js';
 
 /**
  * Build one chart-type card: preview SVG, name, category tag,

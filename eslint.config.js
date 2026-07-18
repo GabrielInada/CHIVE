@@ -2,7 +2,7 @@ import js from '@eslint/js';
 import chiveRules from './eslint-rules/index.js';
 
 const STATELESS_RENDERER_MESSAGE =
-	'Renderers and DOM builders (src/components/, the dataset workspace, and panel feature presentation files) do not ' +
+	'Renderers and DOM builders (dataset workspace and panel feature views/dialogs, and the settings dialog) do not ' +
 	'call write facades (docs/development/architecture.md Layers section). Only read-only facade members ' +
 	'are importable here. Route writes through feature controllers, ' +
 	'chart-control listeners, or event-handler modules.';
@@ -95,6 +95,43 @@ const BARE_IMPORT_BANS = [
 	},
 ];
 
+// Catch-all raw-static guard: any non-relative specifier (npm package,
+// node: builtin, URL) only resolves under a bundler. The named entries
+// above keep their specific vendor-path messages; this closes the gap
+// for everything else. Grep confirms src/ has zero bare specifiers today.
+const NON_RELATIVE_SPECIFIER_BAN = {
+	regex: '^[^./]',
+	message: 'Only relative specifiers work when src/ is served raw with no build step. Vendor the dependency under vendor/ and import it by relative path.',
+};
+
+// One-way dependency direction between the composition layers and everything
+// below them: entries compose app, app composes features/ui/state/services,
+// features use ui/state/services, and ui/ is a strict leaf. The constants are
+// shared because flat config REPLACES `no-restricted-imports` per file subset
+// (see the (A) note), so several blocks must restate the same groups.
+const COMPOSITION_LAYER_BAN = {
+	group: ['**/entries/**', '**/app/**'],
+	message: 'entries/ and app/ are composition layers and may not be imported by features/ or ui/.',
+};
+
+const PERSISTENCE_INTERNALS_BAN = {
+	group: ['**/services/persistence/**'],
+	message: 'Import persistence through services/persistence.js; the package internals are private.',
+};
+
+// `**/components/**` below is a legacy defensive ban: the directory is gone,
+// the inert glob just keeps a resurrected src/components/ file from being
+// imported by layers that never consumed it. Inert ban globs are harmless;
+// only `files:` globs suffer silent-pass.
+const UI_LAYER_BAN = {
+	group: [
+		'**/entries/**', '**/app/**', '**/charts/**', '**/components/**', '**/data/**',
+		'**/domain/**', '**/features/**', '**/i18n/**', '**/icons/**', '**/services/**',
+		'**/state/**', '**/styles/**', '**/workers/**',
+	],
+	message: 'ui/ contains ownerless browser UI mechanics. Import only ui/, config/, utils/, types.js, or vendored modules.',
+};
+
 const VITE_ONLY_SYNTAX_SELECTORS = [
 	{
 		selector: ':matches(ImportDeclaration, ImportExpression, ExportNamedDeclaration, ExportAllDeclaration)[source.value=/^https:\\/\\/esm\\.sh\\//]',
@@ -171,9 +208,9 @@ export default [
 	// ALL of src/. NOTE: flat config REPLACES (does not merge) a rule's options
 	// across matching config objects, the last match wins entirely. The blocks
 	// below redeclare `no-restricted-imports` for their file subset, so each one
-	// must repeat BARE_IMPORT_BANS or it would silently drop the bare-import
-	// guard for those files. Likewise, all `no-restricted-syntax` selectors for
-	// src/ must live here in one array.
+	// must repeat BARE_IMPORT_BANS and NON_RELATIVE_SPECIFIER_BAN or it would
+	// silently drop the raw-static import guard for those files. Likewise, all
+	// `no-restricted-syntax` selectors for src/ must live here in one array.
 	{
 		files: ['src/**/*.js'],
 		languageOptions: {
@@ -182,7 +219,10 @@ export default [
 			globals: BROWSER_GLOBALS,
 		},
 		rules: {
-			'no-restricted-imports': ['error', { paths: BARE_IMPORT_BANS }],
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [NON_RELATIVE_SPECIFIER_BAN],
+			}],
 			'no-restricted-syntax': ['error',
 				...FACADE_MUTATION_SELECTORS,
 				...VITE_ONLY_SYNTAX_SELECTORS,
@@ -212,10 +252,11 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: [
 						'./**',
 						'../charts/**',
+						// Legacy defensive ban (src/components/ is gone; see UI_LAYER_BAN note).
 						'../components/**',
 						'../config/**',
 						'../data/**',
@@ -226,6 +267,7 @@ export default [
 						'../state/**',
 						'../styles/**',
 						'../types.js',
+						'../ui/**',
 						'../utils/**',
 						'../workers/**',
 						'../../vendor/**',
@@ -251,42 +293,64 @@ export default [
 		files: [
 			'src/app/**/*.js',
 			'src/state/**/*.js',
-			'src/features/**/*.js',
 			'src/workers/**/*.js',
 		],
 		ignores: ['src/workers/persistWorker.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/services/persistence/**'],
-					message: 'Import persistence through services/persistence.js; the package internals are private.',
-				}],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, PERSISTENCE_INTERNALS_BAN],
 			}],
 		},
 	},
 
-	// (B) Renderers must be stateless: only read-only facade imports. Placed
-	// AFTER (A) because it redeclares `no-restricted-imports`; it repeats the
-	// bare-import bans alongside the facade-read restriction.
+	// (A4) Features sit below the composition layers: they may not import
+	// entries/ or app/ (the audit's Priority 1 inversion), and like (A3) they
+	// reach persistence only through its public module. Narrower feature blocks
+	// below (B2, B2c, B2d) REPLACE this one for their files, so each restates
+	// both bans.
 	{
-		files: ['src/components/**/*.js'],
+		files: ['src/features/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/state/appState.js'],
-					allowImportNames: APP_STATE_READS,
-					message: STATELESS_RENDERER_MESSAGE,
-				}],
+				patterns: [
+					NON_RELATIVE_SPECIFIER_BAN,
+					PERSISTENCE_INTERNALS_BAN,
+					COMPOSITION_LAYER_BAN,
+				],
+			}],
+		},
+	},
+
+	// (B2d) The settings dialog is stricter than the other feature dialogs: it
+	// is callback-driven (values and change handlers arrive from the settings
+	// controller), so ALL of state/ is banned rather than allowing the
+	// read-only appState surface.
+	{
+		files: ['src/features/settings/settingsDialog.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [
+					NON_RELATIVE_SPECIFIER_BAN,
+					COMPOSITION_LAYER_BAN,
+					PERSISTENCE_INTERNALS_BAN,
+					{
+						group: ['**/state/**'],
+						message: 'The settings dialog is callback-driven: values and change handlers arrive from the controller. It imports no application state.',
+					},
+				],
 			}],
 		},
 	},
 
 	// (B2) Panel feature views, layout interactions, slot lifecycle, and export:
-	// same renderer-statelessness rule as (B). The feature controller is
-	// intentionally outside this list because it owns facade writes and event
-	// subscriptions. State mutation internals remain under `state/`.
+	// renderer statelessness (read-only facade imports only). The feature
+	// controller is intentionally outside this list because it owns facade
+	// writes and event subscriptions. State mutation internals remain under
+	// `state/`. This block REPLACES (A4) for these files, so it restates the
+	// persistence and composition bans.
 	{
 		files: [
 			'src/features/panel/views/**/*.js',
@@ -297,11 +361,16 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/state/appState.js'],
-					allowImportNames: APP_STATE_READS,
-					message: STATELESS_RENDERER_MESSAGE,
-				}],
+				patterns: [
+					NON_RELATIVE_SPECIFIER_BAN,
+					PERSISTENCE_INTERNALS_BAN,
+					COMPOSITION_LAYER_BAN,
+					{
+						group: ['**/state/appState.js'],
+						allowImportNames: APP_STATE_READS,
+						message: STATELESS_RENDERER_MESSAGE,
+					},
+				],
 			}],
 		},
 	},
@@ -314,8 +383,8 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/charts/**', '**/ui/**'],
 					message: 'Panel state internals import only state, domain, config, utils, types, or vendor modules.',
 				}],
 			}],
@@ -323,11 +392,12 @@ export default [
 	},
 
 	// (B2c) Dataset workspace feature views and dialogs: same renderer-
-	// statelessness rule as (B). The feature controller (datasetController.js)
+	// statelessness rule as (B2). The feature controller (datasetController.js)
 	// and its bindings/ stay outside this list: the controller owns facade
 	// writes and dataset workflow setup, and bindings translate DOM intent into
 	// controller calls. statsView reads getActiveDataset, which is in the
-	// read-only surface (APP_STATE_READS) allowed below.
+	// read-only surface (APP_STATE_READS) allowed below. This block REPLACES
+	// (A4) for these files, so it restates the persistence and composition bans.
 	{
 		files: [
 			'src/features/datasetWorkspace/workspaceView.js',
@@ -337,11 +407,16 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/state/appState.js'],
-					allowImportNames: APP_STATE_READS,
-					message: STATELESS_RENDERER_MESSAGE,
-				}],
+				patterns: [
+					NON_RELATIVE_SPECIFIER_BAN,
+					PERSISTENCE_INTERNALS_BAN,
+					COMPOSITION_LAYER_BAN,
+					{
+						group: ['**/state/appState.js'],
+						allowImportNames: APP_STATE_READS,
+						message: STATELESS_RENDERER_MESSAGE,
+					},
+				],
 			}],
 		},
 	},
@@ -350,9 +425,9 @@ export default [
 	// color, scales, math, axis helpers, encoding, palettes, and regression
 	// stay pure D3 math, interaction modules stay pure input/tooltip
 	// mechanics, and renderers draw from explicit inputs only.
-	// None of them may reach app/, state/, features/, components/, or services/
-	// (package-local and charts/shared modules, config, utils, and vendor
-	// modules only). Localized strings arrive through options.labels; state
+	// None of them may reach app/, state/, features/, components/, ui/, or
+	// services/ (package-local and charts/shared modules, config, utils, and
+	// vendor modules only). Localized strings arrive through options.labels; state
 	// never enters a renderer.
 	{
 		files: [
@@ -373,8 +448,8 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**'],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**', '**/ui/**'],
 					message: 'Chart package leaf files import only package-local or charts/shared modules, config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
 				}],
 			}],
@@ -392,8 +467,8 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**'],
 					message: 'Shared chart infrastructure is a leaf layer. Import only charts/shared, config, utils, or vendor modules. Chart-config writes arrive through an injected ChartConfigWriter, never a state import.',
 				}],
 			}],
@@ -409,8 +484,8 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**'],
 					message: 'Chart presentation metadata imports only static chart metadata, config, utils, or vendor modules.',
 				}],
 			}],
@@ -429,8 +504,8 @@ export default [
 					{ name: './workspace.js', message: 'The controls registry cannot import the workspace registry.' },
 					{ name: './panel.js', message: 'The controls registry cannot import the panel registry.' },
 				],
-				patterns: [{
-					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**'],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/ui/**'],
 					message: 'The controls registry imports only chart controls implementations and leaf config/types.',
 				}],
 			}],
@@ -445,8 +520,8 @@ export default [
 					{ name: './controls.js', message: 'The workspace registry cannot import the controls registry.' },
 					{ name: './panel.js', message: 'The workspace registry cannot import the panel registry.' },
 				],
-				patterns: [{
-					group: ['**/features/**', '**/services/**', '**/state/**', '**/chartControls/**'],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/features/**', '**/services/**', '**/state/**', '**/chartControls/**', '**/ui/**'],
 					message: 'The workspace registry imports only chart workspace sections and leaf config/types.',
 				}],
 			}],
@@ -461,8 +536,8 @@ export default [
 					{ name: './controls.js', message: 'The panel registry cannot import the controls registry.' },
 					{ name: './workspace.js', message: 'The panel registry cannot import the workspace registry.' },
 				],
-				patterns: [{
-					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/chartControls/**'],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/chartControls/**', '**/ui/**'],
 					message: 'The panel registry imports only chart panel adapters and leaf config/types.',
 				}],
 			}],
@@ -488,9 +563,9 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**'],
-					message: 'Chart package integration files do not import app modules, state, panel internals, or workspace components. Receive props/callbacks; controls write only through the injected ChartConfigWriter.',
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/ui/**'],
+					message: 'Chart package integration files do not import app modules, state, panel internals, ui/ mechanics, or workspace components. Receive props/callbacks; controls write only through the injected ChartConfigWriter.',
 				}],
 			}],
 		},
@@ -508,16 +583,43 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**'],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**', '**/ui/**'],
 					message: 'Chart control listeners are pure input mechanics: they read the DOM and write through the injected ChartConfigWriter. Import only package-local modules, charts/shared bindings, config, utils, and vendor modules. Labels belong to the builder.',
 				}],
 			}],
 		},
 	},
 
+	// (C0) ui/ owns ownerless browser UI mechanics (feedback toasts, dialog
+	// focus). It is a strict leaf apart from DOM access: no imports from any
+	// owned layer, so a feature or app module can always depend on it without
+	// dragging state, services, or another feature along. UI_LAYER_BAN keeps
+	// per-layer messages, while chive/ui-strict-leaf resolves targets as the
+	// completeness backstop.
+	{
+		files: ['src/ui/**/*.js'],
+		rules: {
+			'no-restricted-imports': ['error', {
+				paths: BARE_IMPORT_BANS,
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, UI_LAYER_BAN],
+			}],
+		},
+	},
+
+	// (C0a) Resolver-aware strict-leaf backstop for ui/. This rule is
+	// path-shaped like FACADE_SOURCE_RE. If src/ui moves, update its allowed
+	// roots and the boundary probes that catch a silent mismatch.
+	{
+		files: ['src/ui/**/*.js'],
+		plugins: { chive: chiveRules },
+		rules: {
+			'chive/ui-strict-leaf': 'error',
+		},
+	},
+
 	// (C) utils/ is a pure leaf layer — no imports from app/, state/, components/,
-	// features/, or services/. (Formerly allowed services/ because formatters.js
+	// features/, services/, or ui/. (Formerly allowed services/ because formatters.js
 	// imported i18n; that edge was removed when formatters became pure, closing
 	// the boundary fully.)
 	{
@@ -525,9 +627,9 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
-					message: 'utils/ is a pure leaf layer — no imports from app/, state/, components/, features/, or services/.',
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**'],
+					message: 'utils/ is a pure leaf layer — no imports from app/, state/, components/, features/, services/, or ui/.',
 				}],
 			}],
 		},
@@ -539,9 +641,9 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**'],
-					message: 'config/ is a pure leaf layer, no imports from app/, state/, components/, features/, or services/.',
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**'],
+					message: 'config/ is a pure leaf layer, no imports from app/, state/, components/, features/, services/, or ui/.',
 				}],
 			}],
 		},
@@ -557,8 +659,8 @@ export default [
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
-				patterns: [{
-					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/charts/**'],
+				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/charts/**', '**/ui/**'],
 					message: 'domain/ is a pure leaf layer. Import only domain, config, utils, or vendor modules.',
 				}],
 			}],

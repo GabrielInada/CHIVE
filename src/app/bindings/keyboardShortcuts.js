@@ -5,7 +5,7 @@
  * or a modal dialog is open.
  */
 
-import { isAnyDialogOpen } from '../dialogFocus.js';
+import { isAnyDialogOpen } from '../../ui/dialogFocus.js';
 
 let keyboardListenersReady = false;
 

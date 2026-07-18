@@ -9,7 +9,7 @@ vi.mock('../../src/services/i18nService.js', () => ({
 	initializeI18n: mocks.initializeI18n,
 }));
 
-vi.mock('../../src/app/settingsController.js', () => ({
+vi.mock('../../src/features/settings/settingsController.js', () => ({
 	initSettingsController: mocks.initSettingsController,
 }));
 

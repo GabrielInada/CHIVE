@@ -45,7 +45,7 @@ vi.mock('../../src/app/renderCoordinator.js', () => ({
 	updateDatasetConfig: mocks.updateDatasetConfig,
 }));
 
-vi.mock('../../src/app/feedbackUI.js', () => ({
+vi.mock('../../src/ui/feedback.js', () => ({
 	showFeedbackMessage: mocks.showFeedbackMessage,
 	showErrorMessage: mocks.showErrorMessage,
 }));

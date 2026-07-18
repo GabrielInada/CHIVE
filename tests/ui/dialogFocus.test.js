@@ -11,7 +11,7 @@ describe('dialogFocus', () => {
 		document.body.style.overflow = '';
 		// Re-import to reset the module-level dialog stack between tests.
 		vi.resetModules();
-		const mod = await import('../../src/app/dialogFocus.js');
+		const mod = await import('../../src/ui/dialogFocus.js');
 		installDialogFocus = mod.installDialogFocus;
 		isAnyDialogOpen = mod.isAnyDialogOpen;
 	});

@@ -8,9 +8,9 @@ import {
   showLoading,
   hideLoading,
   clearAllFeedback,
-} from '../../src/app/feedbackUI.js';
+} from '../../src/ui/feedback.js';
 
-describe('feedbackUI', () => {
+describe('ui/feedback', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     document.body.innerHTML = '';
@@ -70,14 +70,14 @@ describe('feedbackUI', () => {
   });
 
   it('showFeedbackMessage alias works', async () => {
-    const { showFeedbackMessage } = await import('../../src/app/feedbackUI.js');
+    const { showFeedbackMessage } = await import('../../src/ui/feedback.js');
     showFeedbackMessage('alias test', 100);
     const toast = document.getElementById('toast-feedback');
     expect(toast.textContent).toBe('alias test');
   });
 
   it('showErrorMessage alias works', async () => {
-    const { showErrorMessage } = await import('../../src/app/feedbackUI.js');
+    const { showErrorMessage } = await import('../../src/ui/feedback.js');
     const errorsContainer = document.createElement('div');
     errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
@@ -87,7 +87,7 @@ describe('feedbackUI', () => {
   });
 
   it('hideErrorMessage alias clears errors', async () => {
-    const { hideErrorMessage } = await import('../../src/app/feedbackUI.js');
+    const { hideErrorMessage } = await import('../../src/ui/feedback.js');
     const errorsContainer = document.createElement('div');
     errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);

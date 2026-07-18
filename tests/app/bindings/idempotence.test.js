@@ -41,7 +41,7 @@ vi.mock('../../../src/features/panel/panelController.js', () => ({
   addChartToPanel: mocks.addChartToPanel,
   setupPanelEventListeners: vi.fn(),
 }));
-vi.mock('../../../src/app/feedbackUI.js', () => ({
+vi.mock('../../../src/ui/feedback.js', () => ({
   showError: mocks.showError,
   showFeedback: mocks.showFeedback,
   showProgress: mocks.showProgress,
@@ -62,7 +62,7 @@ vi.mock('../../../src/state/appState.js', () => ({
   replaceAllState: mocks.replaceAllState,
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
-vi.mock('../../../src/app/dialogFocus.js', () => ({ isAnyDialogOpen: mocks.isAnyDialogOpen }));
+vi.mock('../../../src/ui/dialogFocus.js', () => ({ isAnyDialogOpen: mocks.isAnyDialogOpen }));
 
 const PROJECT_MENU_HTML = `
   <div class="project-menu">

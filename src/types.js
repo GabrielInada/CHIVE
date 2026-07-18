@@ -557,10 +557,10 @@
  * @property {string[]} [dropColumns] - Columns the loader strips after parse.
  */
 
-// ─── UI feedback (feedbackUI.showProgress) ──────────────────────────────
+// ─── UI feedback (ui/feedback.showProgress) ─────────────────────────────
 
 /**
- * Imperative handle returned by `feedbackUI.showProgress` for driving a
+ * Imperative handle returned by `ui/feedback.showProgress` for driving a
  * non-modal progress toast. The toast has three terminal states:
  *   - **In flight**: `update()` reports percent/label progress.
  *   - **Succeeded**: `succeed()` flips the toast to its success style and

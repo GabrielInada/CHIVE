@@ -10,7 +10,7 @@
  */
 
 import { initializeI18n } from '../services/i18nService.js';
-import { initSettingsController } from './settingsController.js';
+import { initSettingsController } from '../features/settings/settingsController.js';
 
 /**
  * Load i18n, then wire the header settings button. Settings wiring waits for

@@ -21,7 +21,7 @@ import { initDatasetController } from '../features/datasetWorkspace/datasetContr
 import { initializeDomBindings } from './domBindings.js';
 import { initializeSharedPage } from './sharedPageInitializer.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
-import { showFeedback, showError } from './feedbackUI.js';
+import { showFeedback, showError } from '../ui/feedback.js';
 import {
 	livePreviewRender,
 	runFullRefreshNow,
