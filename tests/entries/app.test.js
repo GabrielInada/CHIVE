@@ -7,11 +7,11 @@ const mocks = vi.hoisted(() => ({
 	installDebugApi: vi.fn(),
 }));
 
-vi.mock('../src/app/applicationInitializer.js', () => ({
+vi.mock('../../src/app/applicationInitializer.js', () => ({
 	startApplication: mocks.startApplication,
 }));
 
-vi.mock('../src/app/debugApi.js', () => ({
+vi.mock('../../src/app/debugApi.js', () => ({
 	installDebugApi: mocks.installDebugApi,
 }));
 
@@ -21,11 +21,11 @@ beforeEach(() => {
 	vi.clearAllMocks();
 });
 
-describe('main browser entrypoint', () => {
+describe('application page entry', () => {
 	it('starts immediately when the DOM is ready, then installs the debug API', async () => {
 		Object.defineProperty(document, 'readyState', { configurable: true, value: 'complete' });
 
-		await import('../src/main.js');
+		await import('../../src/entries/app.js');
 
 		expect(mocks.startApplication).toHaveBeenCalledTimes(1);
 		expect(mocks.installDebugApi).toHaveBeenCalledTimes(1);
@@ -33,14 +33,14 @@ describe('main browser entrypoint', () => {
 			.toBeLessThan(mocks.installDebugApi.mock.invocationCallOrder[0]);
 	});
 
-	it('waits for DOMContentLoaded when the document is still loading', async () => {
+	it('waits for DOMContentLoaded when loading, but installs the debug API immediately', async () => {
 		Object.defineProperty(document, 'readyState', { configurable: true, value: 'loading' });
 		let readyCallback;
 		vi.spyOn(document, 'addEventListener').mockImplementation((type, callback) => {
 			if (type === 'DOMContentLoaded') readyCallback = callback;
 		});
 
-		await import('../src/main.js');
+		await import('../../src/entries/app.js');
 
 		expect(mocks.startApplication).not.toHaveBeenCalled();
 		expect(mocks.installDebugApi).toHaveBeenCalledTimes(1);

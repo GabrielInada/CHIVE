@@ -113,6 +113,9 @@ beforeEach(() => {
 });
 
 describe('application initializer', () => {
+	// initializeApplication delegates shared setup to the real sharedPageInitializer
+	// (deliberately not mocked here), which calls the mocked initializeI18n and
+	// initSettingsController below. This stays an integration check of that path.
 	it('initializes shared i18n and settings but skips app wiring on non-app pages', async () => {
 		const { initializeApplication } = await importInitializer();
 

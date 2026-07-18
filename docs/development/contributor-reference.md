@@ -79,8 +79,8 @@ When a new renderer-safe read is added, update `APP_STATE_READS` in
 `eslint.config.js`; reads meant for persistence, debug, or internal use are
 not added there (`getPersistenceSnapshot` is the precedent).
 
-**The browser entrypoint boundary is enforced by lint.** `src/main.js` imports
-only from `src/app/`. Put initialization order in
+**The browser entrypoint boundary is enforced by lint.** `src/entries/*.js`
+import only from `src/app/` (and not from each other). Put initialization order in
 `app/applicationInitializer.js`, render scheduling in
 `app/renderCoordinator.js`, and debug-surface construction in
 `app/debugApi.js`; do not wire features or services back into the entrypoint.

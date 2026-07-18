@@ -53,7 +53,7 @@ flowchart TB
     U(["User"])
 
     subgraph APP["Application and feature ownership"]
-        BOOT["main.js + applicationInitializer"]
+        BOOT["entries/app.js + applicationInitializer"]
         CTRL["App bindings + dataset controller<br/>chart controls + UI manager"]
         PANEL["panelController<br/>intent + writes + subscriptions"]
         COORD["renderCoordinator<br/>full + region scheduling"]
@@ -141,7 +141,7 @@ and
 |---|---|---|
 | Feature controllers/managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (app/feature bindings, `datasetController`, `panelController`, `chartControlsController`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
 | State Management Core | `appState`, facades, event registry, event bus. | The only normal path for application state mutation. |
-| Application orchestration | Browser startup in `main.js`, initialization order in `app/applicationInitializer.js`, and broad/narrow rendering in `app/renderCoordinator.js`. | Keep the entrypoint thin, order side effects in the initializer, and keep all scheduler state in the render coordinator. |
+| Application orchestration | Browser startup in `entries/app.js` (and `entries/about.js` for the About page, which loads only shared i18n/settings and installs no debug surface), initialization order in `app/applicationInitializer.js`, and broad/narrow rendering in `app/renderCoordinator.js`. | Keep the entrypoints thin, order side effects in the initializer, and keep all scheduler state in the render coordinator. |
 | Visualization Layer | Components, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
 | Services And Utilities | Persistence, i18n, ingest worker host, config, pure helpers. | Services may cross side-effect boundaries; config/utils should stay leaf helpers. |
 
