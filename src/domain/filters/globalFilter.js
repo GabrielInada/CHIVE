@@ -9,15 +9,15 @@
  * on the fly via {@link normalizeGlobalFilter}, direct callers should
  * always run input through normalize before reading.
  *
- * @typedef {import('../types.js').GlobalFilter} GlobalFilter
- * @typedef {import('../types.js').GlobalFilterRule} GlobalFilterRule
+ * @typedef {import('../../types.js').GlobalFilter} GlobalFilter
+ * @typedef {import('../../types.js').GlobalFilterRule} GlobalFilterRule
  */
 
 import {
 	applyChartFilterRows,
 	createDefaultFilterConfig,
 	normalizeFilterConfig,
-} from './chartFilters.js';
+} from './chartFilter.js';
 
 /**
  * Create a fresh, empty global filter.
@@ -400,6 +400,6 @@ export function createDefaultGlobalFilter() {
 
 /**
  * Re-export to keep downstream callers that pull a single-rule default
- * working without reaching into `chartFilters.js` directly.
+ * working without reaching into `chartFilter.js` directly.
  */
 export { createDefaultFilterConfig };

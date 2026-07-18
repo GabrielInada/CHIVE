@@ -16,8 +16,8 @@ import { t, getLocale, translateType } from '../../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 import { PREVIEW_DEFAULT_ROWS, PREVIEW_MIN_ROWS } from '../../config/limits.js';
 import { CHART_CONTAINERS } from '../../charts/workspaceDomIds.js';
-import { getNumericColumns } from '../../utils/columnHelpers.js';
-import { clearChartContainer } from '../../utils/chartContainerLifecycle.js';
+import { getNumericColumns } from '../../domain/datasets/columns.js';
+import { clearChartContainer } from '../../charts/shared/containerLifecycle.js';
 
 import { renderCharts } from './views/chartsView.js';
 import { updateTabs } from './views/tabsView.js';
@@ -39,7 +39,7 @@ import {
   removeExcludeTokenFromFilter,
   removeIncludeTokenFromFilter,
   resolveGlobalFilterForColumns,
-} from '../../utils/globalFilter.js';
+} from '../../domain/filters/globalFilter.js';
 
 const FILE_LIST_PAGE_SIZE = 15;
 let fileListQuery = '';

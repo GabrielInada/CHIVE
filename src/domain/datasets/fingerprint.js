@@ -30,7 +30,7 @@ function normalizeCellValue(value) {
 /**
  * Build the canonical text input for dataset fingerprints.
  *
- * @param {import('../types.js').Dataset | Object} dataset
+ * @param {import('../../types.js').Dataset | Object} dataset
  * @returns {string}
  */
 export function canonicalizeDataset(dataset) {
@@ -67,7 +67,7 @@ async function sha256Hex(text, subtleCrypto) {
 /**
  * Compute a tagged deterministic fingerprint for a dataset.
  *
- * @param {import('../types.js').Dataset | Object} dataset
+ * @param {import('../../types.js').Dataset | Object} dataset
  * @param {{ subtleCrypto?: SubtleCrypto | null }} [options]
  * @returns {Promise<{ fingerprint: string, algorithm: string }>}
  */

@@ -10,7 +10,7 @@
  */
 
 import { formatDate, formatNumber, isNullish } from '../../utils/formatters.js';
-import { compareStrings } from '../../utils/chartFilters.js';
+import { compareStrings } from '../../domain/filters/chartFilter.js';
 
 export const AXIS_KIND = { date: 'date', numeric: 'numeric', categorical: 'categorical' };
 

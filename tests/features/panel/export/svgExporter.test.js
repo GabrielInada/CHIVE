@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const downloadMock = vi.hoisted(() => vi.fn(() => ({ ok: true })));
 
-vi.mock('../../../../src/utils/svgExport.js', () => ({
+vi.mock('../../../../src/services/downloads/svg.js', () => ({
 	downloadSvgMarkup: (...args) => downloadMock(...args),
 	ensureSvgAttributes: (svg) => {
 		if (!svg.getAttribute('xmlns')) svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');

@@ -90,7 +90,7 @@ const three = vi.hoisted(() => {
 vi.mock('../../../../vendor/three/three.module.js', () => three.module);
 
 import { renderScatter3dChart } from '../../../../src/charts/scatter3d/renderers/three.js';
-import { CHART_DISPOSE_HOOK } from '../../../../src/utils/chartContainerLifecycle.js';
+import { CHART_DISPOSE_HOOK } from '../../../../src/charts/shared/containerLifecycle.js';
 
 const rows = [
 	{ a: 1, b: 2, c: 3 },

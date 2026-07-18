@@ -34,7 +34,7 @@ vi.mock('../../../src/features/datasetWorkspace/views/chartsView.js', () => ({
 	renderCharts: mocks.renderCharts,
 }));
 
-vi.mock('../../../src/utils/columnHelpers.js', () => ({
+vi.mock('../../../src/domain/datasets/columns.js', () => ({
 	getNumericColumns: mocks.getNumericColumns,
 }));
 

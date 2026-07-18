@@ -69,12 +69,12 @@ flowchart TB
     end
 
     subgraph LEAVES["Pure leaves"]
-        DOMAIN["domain/datasets<br/>domain/panel"]
+        DOMAIN["domain/datasets<br/>domain/filters<br/>domain/panel"]
         HELPERS["config + pure utils"]
     end
 
     subgraph BROWSER["Browser-side services"]
-        SERVICES["i18n · presets · settings"]
+        SERVICES["i18n · presets · settings · downloads"]
         INGEST["dataIngestService"]
         INGESTW["dataIngestWorker"]
         PERSIST["persistence public facade"]
@@ -144,7 +144,7 @@ and
 | Application orchestration | Browser startup in `entries/app.js` (and `entries/about.js` for the About page, which loads only shared i18n/settings and installs no debug surface), initialization order in `app/applicationInitializer.js`, and broad/narrow rendering in `app/renderCoordinator.js`. | Keep the entrypoints thin, order side effects in the initializer, and keep all scheduler state in the render coordinator. |
 | Visualization Layer | Feature views and dialogs, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
 | Reusable UI mechanics | Ownerless browser UI behavior under `src/ui/` (feedback toasts, dialog focus trap). | A strict leaf with DOM access: import only config, utils, types, or vendor modules; never state, services, or features. |
-| Services And Utilities | Persistence, i18n, ingest worker host, config, pure helpers. | Services may cross side-effect boundaries; config/utils should stay leaf helpers. |
+| Services, domain, and utilities | Persistence, i18n, ingest worker host, browser downloads, pure product rules, config, and ownership-neutral helpers. | Browser effects belong in services, pure product rules in `domain/{owner}/`, and generic DOM-free helpers in `utils/`. |
 
 The important distinction is ownership, not file layout. A feature controller or manager may
 write facades, subscribe to the bus, and trigger renders for its own domain; what

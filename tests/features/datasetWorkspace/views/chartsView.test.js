@@ -26,7 +26,7 @@ vi.mock('../../../../src/config/chartDefaults.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 
-vi.mock('../../../../src/utils/globalFilter.js', () => ({
+vi.mock('../../../../src/domain/filters/globalFilter.js', () => ({
 	resolveGlobalFilterForColumns: mocks.resolveGlobalFilterForColumns,
 	applyGlobalFilterRules: mocks.applyGlobalFilterRules,
 }));

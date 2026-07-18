@@ -1,10 +1,10 @@
 /**
  * Browser download helper for binary artifacts.
  *
- * @typedef {import('../types.js').Result} Result
+ * @typedef {import('../../types.js').Result} Result
  */
 
-import { ok, fail } from './result.js';
+import { ok, fail } from '../../utils/result.js';
 
 export function sanitizeDownloadFileName(value, fallback = 'download') {
 	const safeFallback = String(fallback || 'download');

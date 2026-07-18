@@ -36,7 +36,7 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { toCategoryToken } from '../../../utils/chartFilters.js';
+import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../../config/charts.js';
 import { formatNumber, isNullish } from '../../../utils/formatters.js';
 import { interpolateColor, isValidHexColor } from '../../../utils/colorUtils.js';

@@ -128,8 +128,10 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   into `vendor/` with license files committed, then smoke-tested with a plain
   static server.
 - **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not
-  import `app/`, `state/`, `features/`, `services/`, or `ui/`.
-  `domain/` has the same boundary and additionally may not import `charts/`.
+  import `app/`, `state/`, `features/`, `services/`, or `ui/`. Ownership-neutral
+  `utils/` additionally may not import `domain/` or `charts/`. `domain/` has the
+  higher-layer boundary and may not import `charts/`. Both `utils/` and
+  `domain/` reject direct `document` and `window` access.
 - **One-way dependency direction.** `entries/` and `app/` are the composition
   layers: `features/` and `ui/` may not import either of them. `ui/` (ownerless
   browser UI mechanics such as feedback toasts and the dialog focus trap) is a

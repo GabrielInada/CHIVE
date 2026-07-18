@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { rehydratePanelChartSpecs } from '../../src/utils/panelHydration.js';
+import { rehydratePanelChartSpecs } from '../../../src/domain/panel/rehydration.js';
 
 describe('rehydratePanelChartSpecs', () => {
 	it('returns null/undefined panels untouched', () => {

@@ -1,4 +1,4 @@
-import { mergeChartConfigWithDefaults } from '../config/chartDefaults.js';
+import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
 
 /**
  * Re-merge each persisted chart spec against the current chart defaults so

@@ -13,7 +13,7 @@ import {
 	getPersistenceErrorMessageKey,
 } from '../services/persistence.js';
 import { getPersistenceSnapshot, replaceAllState } from '../state/appState.js';
-import { rehydratePanelChartSpecs } from '../utils/panelHydration.js';
+import { rehydratePanelChartSpecs } from '../domain/panel/rehydration.js';
 import { throttle } from '../utils/throttle.js';
 import { initChartControls } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
 import { initPanelController } from '../features/panel/panelController.js';

@@ -28,7 +28,7 @@ import {
 	getNumericColumnNames,
 	getCategoricalColumnNames,
 	getDateColumnNames,
-} from '../../../utils/columnHelpers.js';
+} from '../../../domain/datasets/columns.js';
 import { mergeChartConfigWithDefaults } from '../../../config/chartDefaults.js';
 import { setActiveChartType } from '../../../state/appState.js';
 import { CHART_TYPE_KEYS } from '../../../config/chartTypes.js';

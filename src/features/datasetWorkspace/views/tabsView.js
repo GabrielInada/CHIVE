@@ -8,7 +8,7 @@
  */
 
 import { t } from '../../../services/i18nService.js';
-import { countGlobalFilterRules, isGlobalFilterActive } from '../../../utils/globalFilter.js';
+import { countGlobalFilterRules, isGlobalFilterActive } from '../../../domain/filters/globalFilter.js';
 import { TAB_CONTENT_IDS } from '../domIds.js';
 
 let listenersRegistered = false;

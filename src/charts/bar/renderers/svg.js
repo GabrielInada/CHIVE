@@ -23,7 +23,7 @@ import {
 } from '../../shared/tooltip/tooltip.js';
 import { BAR_CHART, CHART_DIMENSIONS } from '../../../config/charts.js';
 import { formatNumber } from '../../../utils/formatters.js';
-import { toCategoryToken } from '../../../utils/chartFilters.js';
+import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { ok, fail } from '../../../utils/result.js';
 import {
 	appendAxisLabels,

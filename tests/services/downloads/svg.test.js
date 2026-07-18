@@ -5,9 +5,9 @@ import {
   captureSvgMarkupFromContainer,
   downloadSvgMarkup,
   downloadSvgFromContainer,
-} from '../../src/utils/svgExport.js';
+} from '../../../src/services/downloads/svg.js';
 
-describe('svgExport utils', () => {
+describe('downloads/svg', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
   });

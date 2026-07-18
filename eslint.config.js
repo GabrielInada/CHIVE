@@ -426,8 +426,8 @@ export default [
 	// stay pure D3 math, interaction modules stay pure input/tooltip
 	// mechanics, and renderers draw from explicit inputs only.
 	// None of them may reach app/, state/, features/, components/, ui/, or
-	// services/ (package-local and charts/shared modules, config, utils, and
-	// vendor modules only). Localized strings arrive through options.labels; state
+	// services/ (package-local and charts/shared modules, config, domain, utils,
+	// and vendor modules only). Localized strings arrive through options.labels; state
 	// never enters a renderer.
 	{
 		files: [
@@ -450,7 +450,7 @@ export default [
 				paths: BARE_IMPORT_BANS,
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**', '**/ui/**'],
-					message: 'Chart package leaf files import only package-local or charts/shared modules, config, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
+					message: 'Chart package leaf files import only package-local or charts/shared modules, config, domain, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
 				}],
 			}],
 		},
@@ -547,8 +547,9 @@ export default [
 	// (B4) Per-chart package integration files: sections/adapters receive
 	// props and callbacks, never state; controls write through an injected
 	// ChartConfigWriter, whose adapter lives in the dataset-workspace feature.
-	// No panel internals and no workspace components (the container lifecycle
-	// and chart-message helpers live in utils for exactly this reason).
+	// No panel internals and no workspace components. The container lifecycle
+	// lives in charts/shared/containerLifecycle.js so each rendering surface can
+	// share the chart-owned dispose contract.
 	// services/ is deliberately NOT banned here: builders, sections, and
 	// presentation legitimately import i18nService for their labels. That is the
 	// line between (B3) leaf files, which take strings via options.labels, and
@@ -585,7 +586,7 @@ export default [
 				paths: BARE_IMPORT_BANS,
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**', '**/ui/**'],
-					message: 'Chart control listeners are pure input mechanics: they read the DOM and write through the injected ChartConfigWriter. Import only package-local modules, charts/shared bindings, config, utils, and vendor modules. Labels belong to the builder.',
+					message: 'Chart control listeners are pure input mechanics: they read the DOM and write through the injected ChartConfigWriter. Import only package-local modules, charts/shared bindings, config, domain, utils, and vendor modules. Labels belong to the builder.',
 				}],
 			}],
 		},
@@ -618,20 +619,28 @@ export default [
 		},
 	},
 
-	// (C) utils/ is a pure leaf layer — no imports from app/, state/, components/,
-	// features/, services/, or ui/. (Formerly allowed services/ because formatters.js
-	// imported i18n; that edge was removed when formatters became pure, closing
-	// the boundary fully.)
+	// (C) utils/ contains only pure, DOM-free, ownership-neutral helpers.
+	// It cannot import product domain or chart code, or any effectful higher layer.
 	{
 		files: ['src/utils/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
-					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**'],
-					message: 'utils/ is a pure leaf layer — no imports from app/, state/, components/, features/, services/, or ui/.',
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**', '**/charts/**', '**/domain/**'],
+					message: 'utils/ is a pure, ownership-neutral leaf. It cannot import app, state, components, features, services, ui, charts, or domain modules.',
 				}],
 			}],
+			'no-restricted-globals': ['error',
+				{
+					name: 'document',
+					message: 'utils/ and domain/ are DOM-free by contract. Effectful code belongs in services/, ui/, or charts/shared/.',
+				},
+				{
+					name: 'window',
+					message: 'utils/ and domain/ are DOM-free by contract. Effectful code belongs in services/, ui/, or charts/shared/.',
+				},
+			],
 		},
 	},
 
@@ -664,6 +673,16 @@ export default [
 					message: 'domain/ is a pure leaf layer. Import only domain, config, utils, or vendor modules.',
 				}],
 			}],
+			'no-restricted-globals': ['error',
+				{
+					name: 'document',
+					message: 'utils/ and domain/ are DOM-free by contract. Effectful code belongs in services/, ui/, or charts/shared/.',
+				},
+				{
+					name: 'window',
+					message: 'utils/ and domain/ are DOM-free by contract. Effectful code belongs in services/, ui/, or charts/shared/.',
+				},
+			],
 		},
 	},
 

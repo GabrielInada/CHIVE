@@ -3,7 +3,7 @@ import {
 	canonicalizeDataset,
 	computeDatasetFingerprint,
 	DATASET_FINGERPRINT_ALGORITHMS,
-} from '../../src/utils/datasetFingerprint.js';
+} from '../../../src/domain/datasets/fingerprint.js';
 
 const dataset = {
 	columns: [
@@ -16,7 +16,7 @@ const dataset = {
 	],
 };
 
-describe('datasetFingerprint', () => {
+describe('fingerprint', () => {
 	it('canonicalizes by stored column order and row values by column name', () => {
 		const reorderedKeys = {
 			columns: dataset.columns,

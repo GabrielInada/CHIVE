@@ -15,7 +15,7 @@ const tooltipMock = vi.hoisted(() => ({
 vi.mock('../../../../src/charts/shared/tooltip/tooltip.js', () => tooltipMock);
 
 import { mountSlot, teardownSlot, teardownAllSlots } from '../../../../src/features/panel/slots/lifecycle.js';
-import { CHART_DISPOSE_HOOK } from '../../../../src/utils/chartContainerLifecycle.js';
+import { CHART_DISPOSE_HOOK } from '../../../../src/charts/shared/containerLifecycle.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
 

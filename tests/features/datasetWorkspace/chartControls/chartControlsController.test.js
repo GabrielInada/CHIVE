@@ -47,7 +47,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../../src/utils/columnHelpers.js', () => ({
+vi.mock('../../../../src/domain/datasets/columns.js', () => ({
 	filterVisibleColumns: mocks.filterVisibleColumns,
 	getNumericColumnNames: mocks.getNumericColumnNames,
 	getCategoricalColumnNames: mocks.getCategoricalColumnNames,

@@ -19,8 +19,8 @@ import {
 	FILTER_CATEGORY_LIMIT,
 	createDefaultFilterConfig,
 	getCategoricalFilterOptions,
-} from '../../../utils/chartFilters.js';
-import { createEmptyGlobalFilter, normalizeGlobalFilter } from '../../../utils/globalFilter.js';
+} from '../../../domain/filters/chartFilter.js';
+import { createEmptyGlobalFilter, normalizeGlobalFilter } from '../../../domain/filters/globalFilter.js';
 import { installDialogFocus } from '../../../ui/dialogFocus.js';
 
 let nextRuleUid = 1;

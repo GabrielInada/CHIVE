@@ -1,7 +1,7 @@
 import { STATE_EVENTS } from './stateEvents.js';
 import { canonicalizeChartConfig } from '../config/chartDefaults.js';
 import { CHART_TYPE_KEYS } from '../config/chartTypes.js';
-import { getDatasetColumnNames } from '../utils/columnHelpers.js';
+import { getDatasetColumnNames } from '../domain/datasets/columns.js';
 
 /**
  * CHIVE data-domain facade.

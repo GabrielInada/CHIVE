@@ -67,7 +67,7 @@ doc rather than repeated:
 - **Section adapters**: every per-chart package owns a `workspaceSection.js`.
   These map config to the renderer options bag and surface localized empty
   states via `showChartMessage` from
-  [chartContainerLifecycle.js](../../../src/utils/chartContainerLifecycle.js).
+  [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
   `buildRankMap`, `isValidHexColor`); pie's `buildSliceColor` lives in its package
   ([color.js](../../../src/charts/pie/color.js)).

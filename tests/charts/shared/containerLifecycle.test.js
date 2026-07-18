@@ -5,9 +5,9 @@ import {
 	CHART_DISPOSE_HOOK,
 	clearChartContainer,
 	showChartMessage,
-} from '../../src/utils/chartContainerLifecycle.js';
+} from '../../../src/charts/shared/containerLifecycle.js';
 
-describe('chartContainerLifecycle', () => {
+describe('containerLifecycle', () => {
 	let warnSpy;
 
 	beforeEach(() => {

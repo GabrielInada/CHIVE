@@ -50,11 +50,11 @@ vi.mock('../../src/services/i18nService.js', () => ({
   t: mocks.t,
 }));
 
-vi.mock('../../src/utils/svgExport.js', () => ({
+vi.mock('../../src/services/downloads/svg.js', () => ({
   downloadSvgFromContainer: mocks.downloadSvgFromContainer,
 }));
 
-vi.mock('../../src/utils/downloadBytes.js', () => ({
+vi.mock('../../src/services/downloads/bytes.js', () => ({
   downloadBytes: mocks.downloadBytes,
 }));
 

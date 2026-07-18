@@ -15,7 +15,7 @@
  */
 
 import { BAR_CHART, BUBBLE_CHART, CHART_COLORS, LINE_CHART, NETWORK_GRAPH, PIE_CHART, SCATTER_PLOT, SCATTER3D_CHART, TIN_CHART, TREEMAP_CHART } from './charts.js';
-import { normalizeGlobalFilter, createEmptyGlobalFilter, resolveGlobalFilterForColumns } from '../utils/globalFilter.js';
+import { normalizeGlobalFilter, createEmptyGlobalFilter, resolveGlobalFilterForColumns } from '../domain/filters/globalFilter.js';
 
 /**
  * Build a fresh {@link ChartConfig}. Every new dataset starts with this

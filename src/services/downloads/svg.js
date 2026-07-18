@@ -3,10 +3,10 @@
  * export to extract an `<svg>` from the DOM and trigger a file download
  * via a transient `<a>` element.
  *
- * @typedef {import('../types.js').Result} Result
+ * @typedef {import('../../types.js').Result} Result
  */
 
-import { ok, fail } from './result.js';
+import { ok, fail } from '../../utils/result.js';
 
 /**
  * Slugify a user-supplied filename for safe download use: lowercase,
