@@ -307,7 +307,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-treemap-container`, block `chart-block-treemap`. Control IDs are `viz-…-treemap-…`
 (e.g. `viz-select-treemap-category`, `viz-select-treemap-measure`,
 `viz-slider-treemap-padding`, `viz-select-treemap-color-mode`).

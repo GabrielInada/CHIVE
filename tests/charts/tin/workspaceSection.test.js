@@ -18,7 +18,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 }));
 
 import { renderTinChartSection } from '../../../src/charts/tin/workspaceSection.js';
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/config/elementIds.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/charts/workspaceDomIds.js';
 
 function setupDom({ withContainer = true, withBlock = true } = {}) {
 	document.body.innerHTML = '';

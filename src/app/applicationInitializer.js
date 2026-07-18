@@ -18,6 +18,7 @@ import { throttle } from '../utils/throttle.js';
 import { initChartControls } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
 import { initPanelController } from '../features/panel/panelController.js';
 import { initDatasetController } from '../features/datasetWorkspace/datasetController.js';
+import { VIEW_IDS } from '../features/datasetWorkspace/domIds.js';
 import { initializeDomBindings } from './domBindings.js';
 import { initializeSharedPage } from './sharedPageInitializer.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
@@ -39,7 +40,7 @@ import {
 export async function initializeApplication() {
 	await initializeSharedPage();
 
-	if (!document.getElementById('file-info')) return;
+	if (!document.getElementById(VIEW_IDS.fileInfo)) return;
 
 	if (isPersistenceAvailable()) {
 		await hydrateState({

@@ -18,7 +18,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 }));
 
 import { renderNetworkChartSection } from '../../../src/charts/network/workspaceSection.js';
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/config/elementIds.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/charts/workspaceDomIds.js';
 
 function setupDom() {
 	document.body.innerHTML = '';

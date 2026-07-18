@@ -1,4 +1,4 @@
-import { DECIMAL_DETECTION } from '../../config/types.js';
+import { DECIMAL_DETECTION } from '../../config/columnTypeDetection.js';
 import { detectDecimalSeparator, detectType, normalizeNumericString } from './typeDetection.js';
 
 /**

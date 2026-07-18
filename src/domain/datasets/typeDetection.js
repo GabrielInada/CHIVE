@@ -1,4 +1,9 @@
-import { TYPE_DETECTION, COLUMN_TYPES, TYPE_DEFAULTS, DECIMAL_DETECTION } from '../../config/types.js';
+import {
+	TYPE_DETECTION,
+	COLUMN_TYPES,
+	TYPE_DEFAULTS,
+	DECIMAL_DETECTION,
+} from '../../config/columnTypeDetection.js';
 
 /**
  * CHIVE type- and decimal-detection helpers.

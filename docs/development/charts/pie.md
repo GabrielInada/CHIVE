@@ -376,7 +376,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-pie-container`, block `chart-block-pie`. Control IDs are `viz-…-pie-…`
 (e.g. `viz-select-pie-category`, `viz-slider-pie-inner-radius`,
 `viz-select-pie-topn-mode`, `viz-pie-color-grid`).

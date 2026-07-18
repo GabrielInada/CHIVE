@@ -33,6 +33,7 @@ import {
 } from '../../../state/appState.js';
 import { applyBlockProportions, renderGuidedResizeHandles, startBlockHeightResizeDrag } from '../layout/resize.js';
 import { mountSlot, teardownAllSlots } from '../slots/lifecycle.js';
+import { PANEL_DOM_IDS } from '../domIds.js';
 
 /**
  * Render the sidebar list of saved chart snapshots into
@@ -148,7 +149,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
  * @param {(blockId: string, heightPx: number) => void} callbacks.onUpdateBlockHeight
  */
 export function renderCanvasPanel(callbacks) {
-	const canvas = document.getElementById('panel-layout-canvas');
+	const canvas = document.getElementById(PANEL_DOM_IDS.canvas);
 	if (!canvas) return;
 	const blocks = getPanelBlocks();
 	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
@@ -321,7 +322,7 @@ function attachBlockResizeListener(blockEl, block, gridDiv, callbacks) {
  * No-op when the select element is missing.
  */
 export function fillLayoutSelect() {
-	const select = document.getElementById('select-panel-layout');
+	const select = document.getElementById(PANEL_DOM_IDS.layoutSelect);
 	if (!select) return;
 	const blocks = getPanelBlocks();
 	const currentLayout = blocks[0]?.templateId || 'template-2col';

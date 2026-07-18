@@ -15,7 +15,7 @@
  * @typedef {import('../../../types.js').ChartTypeKey} ChartTypeKey
  */
 
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../config/elementIds.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../charts/workspaceDomIds.js';
 import { CHART_HEIGHT_LIMITS } from '../../../config/charts.js';
 import { getActiveDataset, normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../../../state/appState.js';
 import { triggerLiveRender } from './livePreviewBridge.js';

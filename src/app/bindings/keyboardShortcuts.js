@@ -6,6 +6,7 @@
  */
 
 import { isAnyDialogOpen } from '../../ui/dialogFocus.js';
+import { FILE_IDS } from '../../features/datasetWorkspace/domIds.js';
 
 let keyboardListenersReady = false;
 
@@ -30,6 +31,6 @@ function onGlobalKeydown(event) {
 		event.preventDefault();
 		// Never open the picker behind an open modal dialog.
 		if (isAnyDialogOpen()) return;
-		document.getElementById('file-input')?.click();
+		document.getElementById(FILE_IDS.fileInput)?.click();
 	}
 }

@@ -102,7 +102,7 @@ vi.mock('../../src/ui/dialogFocus.js', () => ({
 import {
   initializeDomBindings,
 } from '../../src/app/domBindings.js';
-import { CHART_CONTAINERS } from '../../src/config/elementIds.js';
+import { CHART_CONTAINERS } from '../../src/charts/workspaceDomIds.js';
 
 function setupDom() {
   document.body.innerHTML = `

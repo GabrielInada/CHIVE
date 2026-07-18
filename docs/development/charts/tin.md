@@ -462,7 +462,7 @@ entry calls `renderTinChartSection({ config: chartConfig.tin, rows })` from
 That adapter:
 
 1. Resolves the block (`chart-block-tin`) and container (`chart-tin-container`)
-   elements (IDs in [elementIds.js](../../../src/config/elementIds.js), as
+   elements (IDs in [workspaceDomIds.js](../../../src/charts/workspaceDomIds.js), as
    `CHART_BLOCKS.tin` / `CHART_CONTAINERS.tin`).
 2. Hides the block and clears the container if the chart is disabled.
 3. Sets the container `min-height` to the configured `chartHeight`.
@@ -978,7 +978,7 @@ captured by value (so the live-preview panel skip is safe).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-tin-container`, block `chart-block-tin`. Control IDs are `viz-…-tin-…`
 (e.g. `viz-select-tin-x`, `viz-slider-tin-subdivision`,
 `viz-input-tin-gradient-min`).

@@ -18,7 +18,7 @@
 import { getLocale, setLocale } from '../../services/i18nService.js';
 import { getTinColorRendering, setTinColorRendering } from '../../services/settingsService.js';
 import { openSettingsDialog } from './settingsDialog.js';
-import { SETTINGS_IDS } from '../../config/elementIds.js';
+import { SETTINGS_IDS } from './domIds.js';
 
 let dialogOpen = false;
 

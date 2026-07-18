@@ -140,6 +140,12 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   modules into `ui/` are not yet lint-banned; no such edge exists today, and
   enforcing them requires careful flat-config restatements around
   `persistWorker.js`, so it is deferred to a later tranche.
+- **DOM ID ownership.** Centralize an ID only when multiple modules consume it
+  or it forms a contract with static HTML. Put that contract in the owner's
+  `domIds.js` (`charts/workspaceDomIds.js` for chart workspace blocks). A
+  single-module HTML contract may stay as an exported constant in that owner
+  module; other single-use selectors stay literal-local. Cover static markup in
+  `tests/staticHtml/parity.test.js`.
 - **Panel state internals.** `src/state/panel/` may import only state,
   domain, config, utils, shared types, or vendored modules. Presentation,
   feature, chart, service, and legacy panel-subsystem imports are lint errors.

@@ -25,6 +25,7 @@ import { showError, showFeedback, clearErrors, showProgress } from '../../ui/fee
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../../config/limits.js';
 import { DELIMITED_EXTENSIONS } from '../../config/formats.js';
 import { createDefaultChartConfig } from '../../config/chartDefaults.js';
+import { FILE_IDS } from './domIds.js';
 
 // Confirmation function for user prompts, injectable for testing, defaults to window.confirm
 let confirmFn = message => window.confirm(message);
@@ -340,8 +341,8 @@ export function createJoinedDataset(spec = {}) {
  * Surfaces an error toast if either expected DOM element is missing.
  */
 export function setupFileInputListeners() {
-	const fileInput = document.getElementById('file-input');
-	const uploadZone = document.getElementById('upload-zone');
+	const fileInput = document.getElementById(FILE_IDS.fileInput);
+	const uploadZone = document.getElementById(FILE_IDS.uploadZone);
 
 	if (fileInput) {
 		fileInput.addEventListener('change', async event => {

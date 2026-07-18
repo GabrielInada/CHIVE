@@ -99,7 +99,7 @@ const ALLOWED_IMPORTS = [
 	['src/features/datasetWorkspace/datasetController.js', "import '../../ui/feedback.js';", 'features may use ui/feedback'],
 	['src/app/sharedPageInitializer.js', "import '../features/settings/settingsController.js';", 'app may compose features'],
 	['src/ui/feedback.js', "import './dialogFocus.js';", 'ui may import another ui module'],
-	['src/ui/feedback.js', "import '../config/elementIds.js';", 'ui may import config'],
+	['src/ui/feedback.js', "import '../config/settings.js';", 'ui may import config'],
 	['src/ui/feedback.js', "import '../utils/result.js';", 'ui may import utils'],
 	['src/ui/feedback.js', "import '../types.js';", 'ui may import shared types'],
 	['src/ui/feedback.js', "import '../../vendor/d3/d3.js';", 'ui may import vendored modules'],
