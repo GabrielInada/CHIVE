@@ -201,31 +201,36 @@ export default [
 		},
 	},
 
-	// (A2) Keep the browser entrypoint structural only. Application wiring,
+	// (A2) Keep the browser entrypoints structural only. Application wiring,
 	// scheduling, and debug construction belong to the explicit app modules.
+	// Entries live in src/entries/, one level below src/, so sibling layers are
+	// reached with ../ and vendor with ../../. `./**` bans one entry from
+	// importing another; `../app/**` is the single allowed sibling (absent from
+	// the group below).
 	{
-		files: ['src/main.js'],
+		files: ['src/entries/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [{
 					group: [
-						'./charts/**',
-						'./components/**',
-						'./config/**',
-						'./data/**',
-						'./domain/**',
-						'./features/**',
-						'./i18n/**',
-						'./services/**',
-						'./state/**',
-						'./styles/**',
-						'./types.js',
-						'./utils/**',
-						'./workers/**',
-						'../vendor/**',
+						'./**',
+						'../charts/**',
+						'../components/**',
+						'../config/**',
+						'../data/**',
+						'../domain/**',
+						'../features/**',
+						'../i18n/**',
+						'../services/**',
+						'../state/**',
+						'../styles/**',
+						'../types.js',
+						'../utils/**',
+						'../workers/**',
+						'../../vendor/**',
 					],
-					message: 'src/main.js imports only from src/app/; keep application wiring out of the browser entrypoint.',
+					message: 'src/entries/*.js import only from src/app/; keep application wiring out of the browser entrypoints.',
 				}],
 			}],
 		},

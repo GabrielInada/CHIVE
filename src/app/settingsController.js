@@ -9,10 +9,10 @@
  * repaint from `app/renderCoordinator.js`). The dialog component owns the
  * modal DOM; the services own storage.
  *
- * Initialized from `app/applicationInitializer.js` right after i18n, before
- * the app-only early return, so settings work on both `index.html` and
- * `about.html`. Listener
- * setup is idempotent and pages without the header button are tolerated.
+ * Initialized via `app/sharedPageInitializer.js` right after i18n, which runs
+ * on both `index.html` and `about.html`, so settings work on every page.
+ * Listener setup is idempotent and pages without the header button are
+ * tolerated.
  */
 
 import { getLocale, setLocale } from '../services/i18nService.js';

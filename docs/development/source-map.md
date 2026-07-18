@@ -17,8 +17,8 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 
 | Path | Role |
 |---|---|
-| `src/main.js` | Browser entrypoint: waits for DOM readiness, starts the application, and installs the debug surface. |
-| `src/app/` | Application orchestration: `applicationInitializer.js` owns initialization order and the top-level error boundary; `renderCoordinator.js` owns full/region scheduling, render composition, and render-affecting state subscriptions; `debugApi.js` constructs `window.chiveDebug`; `domBindings.js` composes every DOM listener in boot order. `uiManager.js` owns the app shell (tabs, sidebar mode, sidebar collapse), `settingsController.js` the settings flow, and `feedbackUI.js` / `dialogFocus.js` are cross-feature UI helpers no single feature owns. |
+| `src/entries/` | Per-page browser entrypoints: `entries/app.js` (index.html) waits for DOM readiness, starts the application, and installs the debug surface; `entries/about.js` (about.html) runs only shared-page init and installs no debug surface. Both import solely from `src/app/`. |
+| `src/app/` | Application orchestration: `applicationInitializer.js` owns initialization order and the top-level error boundary; `sharedPageInitializer.js` runs the i18n and settings setup shared by every page; `renderCoordinator.js` owns full/region scheduling, render composition, and render-affecting state subscriptions; `debugApi.js` constructs `window.chiveDebug`; `domBindings.js` composes every DOM listener in boot order. `uiManager.js` owns the app shell (tabs, sidebar mode, sidebar collapse), `settingsController.js` the settings flow, and `feedbackUI.js` / `dialogFocus.js` are cross-feature UI helpers no single feature owns. |
 | `src/app/bindings/` | App-level DOM intent translation: workflow modules that turn user events into facade calls, wired by `app/domBindings.js`. These are app-level rather than feature-owned because project transfer owns the whole project, sidebar navigation spans both features, the keyboard shortcut is global, and the chart actions are delegated off static `index.html` markup. Feature-owned bindings live with their feature (see `features/datasetWorkspace/bindings/`). |
 | `src/types.js` | Shared JSDoc typedefs (`AppState`, `Dataset`, `ChartConfig`, ...). Always imported directly, never through barrels. |
 | `src/config/` | Pure leaf layer: canonical chart identities, chart defaults, element IDs, limits, locale, and format constants. It may not import app, state, components, features, or services. |
@@ -121,7 +121,8 @@ ownership rather than file history, according to these rules:
   workspace keeps its controller, views, dialogs, and bindings together under
   `features/datasetWorkspace/`. State ownership and pure domain rules stay in
   their respective layers.
-- The browser entrypoint is intentionally thin. Initialization order lives in
+- The browser entrypoints (`entries/app.js`, `entries/about.js`) are
+  intentionally thin. Initialization order lives in
   `app/applicationInitializer.js`, render scheduler state stays together in
   `app/renderCoordinator.js`, and debug API assembly lives in `app/debugApi.js`.
 - `services/` means "crosses a browser side-effect boundary", not "reusable
