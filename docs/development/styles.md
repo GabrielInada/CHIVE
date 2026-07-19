@@ -11,14 +11,14 @@ This document describes the organizational structure of stylesheets and their al
 ## Architecture
 
 All stylesheets are imported through a bundler pattern with cascade layers:
-- **Main entry**: `style.css` (declares layer order and imports feature bundles); used by `index.html`
+- **Main entry**: `app.css` (declares layer order and imports feature bundles); used by `index.html`
 - **Feature bundles**: `base.css`, `data-view.css`, `visual-output.css`, `controls.css`, `feedback.css`
-- **Shared chrome bundle**: `chrome.css`, the foundation subset both `index.html` and `about.html` need (variables, layout, responsive, header-nav). It is loaded directly by `about.html` and transitively included in `style.css` via `base.css`.
+- **Shared chrome bundle**: `chrome.css`, the foundation subset both `index.html` and `about.html` need (variables, layout, responsive, header-nav). It is loaded directly by `about.html` and transitively included in `app.css` via `base.css`.
 - **Individual styles**: Feature-specific CSS files
 
 ### Cascade Layer Order
 
-`style.css` defines this precedence from lowest to highest:
+`app.css` defines this precedence from lowest to highest:
 
 1. `foundation`
 2. `controls`
@@ -45,7 +45,7 @@ Foundation is split into two sub-bundles so the about page can load only what it
 | `header-nav.css` | Top navigation pills and header layout, with 768px/480px reflow rules |
 | `settings.css` | Header settings button and the global settings dialog (both pages share the header settings entry) |
 
-**Bundle via**: `chrome.css` → `base.css` → `style.css` (for `index.html`) or directly via `<link>` (for `about.html`)
+**Bundle via**: `chrome.css` → `base.css` → `app.css` (for `index.html`) or directly via `<link>` (for `about.html`)
 
 **App-only foundation** (only needed by the main app):
 
@@ -54,7 +54,7 @@ Foundation is split into two sub-bundles so the about page can load only what it
 | `animations.css` | `.animate` keyframe used by app feature reveals |
 | `collapsed.css` | `body.sidebar-collapsed` state styles for the main-app sidebar |
 
-**Bundle via**: `base.css` → `style.css`
+**Bundle via**: `base.css` → `app.css`
 
 ### Controls (`@feature: foundation + datasetWorkspace`)
 Generic reusable controls and sidebar card patterns.
@@ -64,30 +64,31 @@ Generic reusable controls and sidebar card patterns.
 | `buttons.css` | foundation | Button styles and variants (primary, secondary, danger) |
 | `upload.css` | datasetWorkspace | Upload drop zone and file upload interactions |
 | `columns.css` | datasetWorkspace | Column selection controls and filter actions |
-| `visualizations.css` | datasetWorkspace | Chart-controls sidebar and chart-picker cards/previews |
+| `chart-controls.css` | datasetWorkspace | Chart-controls sidebar shell, parameter messages, control widgets, collapsible sections, and control icons |
+| `chart-picker.css` | datasetWorkspace | Chart-picker trigger, dialog, preview SVGs, and cards |
 
-**Bundle via**: `controls.css` → `style.css`
+**Bundle via**: `controls.css` → `app.css`
 
 ### Dataset Workspace/Data View (`@feature: datasetWorkspace`)
 Dataset presentation, column management, and data summaries.
 
 | File | Purpose |
 |------|---------|
-| `datasetWorkspace.css` | Dataset workspace container, empty state, file list styling |
+| `dataset-workspace.css` | Dataset workspace container, empty state, file list styling |
 | `table.css` | Table preview (thead, tbody, tfoot, borders, highlights) |
 | `columns.css` | Column control buttons, selection UI, filter toggles |
 
-**Bundle via**: `data-view.css` → `style.css`
+**Bundle via**: `data-view.css` → `app.css`
 
-### Chart Output And Panel (`@feature: charts + datasetWorkspace + panel`)
+### Chart Output And Panel (`@feature: charts + panel`)
 Chart surfaces, canvas layout, chart placement, and block management.
 
 | File | Bundled via | Purpose |
 |------|-------------|---------|
-| `charts.css` | `visual-output.css` | Chart controls, output containers (SVG and WebGL canvas), canvas chart title/notice styles, and the `.visually-hidden` accessibility utility |
+| `chart-output.css` | `visual-output.css` | Chart output containers, SVG and WebGL canvas surfaces, titles, notices, resize handles, tooltips, and the `.visually-hidden` accessibility utility |
 | `panel.css` | `visual-output.css` | Panel layout, block styling, slot borders, drag-and-drop behavior, and responsive panel rules |
 
-**Bundle via**: `visual-output.css` → `style.css`
+**Bundle via**: `visual-output.css` → `app.css`
 
 ### Cross-Cutting (`@feature: cross-cutting`)
 Shared UI patterns used across multiple features.
@@ -98,36 +99,36 @@ Shared UI patterns used across multiple features.
 
 `feedback.css` itself is just the bundle file (a single `@import` for `messages.css`), the same shape as `base.css`, `controls.css`, `data-view.css`, and `visual-output.css`.
 
-**Bundle via**: `feedback.css` → `style.css`
+**Bundle via**: `feedback.css` → `app.css`
 
 ### App Orchestration (`@feature: app`)
 Main stylesheet orchestrator.
 
 | File | Purpose |
 |------|---------|
-| `style.css` | Master entry point for `index.html`. Declares cascade layer order and `@import`s every feature bundle. Holds no direct rules. |
+| `app.css` | Master entry point for `index.html`. Declares cascade layer order and `@import`s every feature bundle. Holds no direct rules. |
 
 ### Per-Page Stylesheets
 
-Pages load stylesheets directly via `<link rel="stylesheet">`. `index.html` loads only `style.css`, which transitively pulls in everything. `about.html` loads `chrome.css` + `about.css` and skips the controls, data-view, visual-output, and feedback layers entirely.
+Pages load stylesheets directly via `<link rel="stylesheet">`. `index.html` loads only `app.css`, which transitively pulls in everything. `about.html` loads `chrome.css` + `about.css` and skips the controls, data-view, visual-output, and feedback layers entirely.
 
 | Page | Loads |
 |------|-------|
-| `index.html` | `style.css` and its transitive imports |
+| `index.html` | `app.css` and its transitive imports |
 | `about.html` | `chrome.css` and its transitive imports, plus `about.css` |
 
 | File | Purpose | Loaded by |
 |------|---------|-----------|
-| `about.css` | About page hero, team grid, sidebar card, page-specific footer | `about.html` only (direct `<link>`, not via `style.css`) |
+| `about.css` | About page hero, team grid, sidebar card, page-specific footer | `about.html` only (direct `<link>`, not via `app.css`) |
 
-The cascade-layer system governs only the styles imported through `style.css`. Page-specific stylesheets loaded directly by an HTML page sit outside it and can override the bundled styles freely on that page. `chrome.css` declares its own `foundation` layer, so when about.html loads it alongside about.css, the same precedence (about.css overrides chrome) is preserved.
+The cascade-layer system governs only the styles imported through `app.css`. Page-specific stylesheets loaded directly by an HTML page sit outside it and can override the bundled styles freely on that page. `chrome.css` declares its own `foundation` layer, so when about.html loads it alongside about.css, the same precedence (about.css overrides chrome) is preserved.
 
 ## Import Hierarchy
 
-**index.html** loads `style.css`:
+**index.html** loads `app.css`:
 
 ```
-style.css (app)
+app.css (app)
 ├── base.css (foundation layer)
 │   ├── chrome.css
 │   │   ├── variables.css
@@ -141,12 +142,13 @@ style.css (app)
 │   ├── buttons.css (foundation)
 │   ├── upload.css (datasetWorkspace)
 │   ├── columns.css (datasetWorkspace)
-│   └── visualizations.css (datasetWorkspace)
+│   ├── chart-controls.css (datasetWorkspace)
+│   └── chart-picker.css (datasetWorkspace)
 ├── data-view.css (data-view layer)
 │   ├── table.css (datasetWorkspace)
-│   └── datasetWorkspace.css (datasetWorkspace)
+│   └── dataset-workspace.css (datasetWorkspace)
 ├── visual-output.css (visual-output layer)
-│   ├── charts.css (charts + datasetWorkspace)
+│   ├── chart-output.css (charts)
 │   └── panel.css (panel)
 └── feedback.css (feedback layer)
     └── messages.css (cross-cutting)
@@ -169,14 +171,14 @@ about.css (no layer; page-specific, wins over chrome on ties)
 
 When adding styles for a new feature:
 
-1. **Create** a new CSS file following naming convention: `featureName.css`
+1. **Create** a new CSS file following the kebab-case naming convention: `feature-name.css`
 2. **Add** feature ownership comment at the top:
    ```css
    /* @feature: featureName
       Brief description of what this class/component styles */
    ```
 3. **Organize** related styles into a bundle file (e.g., `my-bundle.css`)
-4. **Import** the bundle in `style.css` in appropriate location
+4. **Import** the bundle in `app.css` in the appropriate location
 5. **Reference** in this document
 
 ## Class Naming Convention
@@ -204,10 +206,8 @@ Use `npm run lint:css:fix` for safe automatic fixes. Vendored CSS, including
 `vendor/fonts/fonts.css`, is intentionally ignored so checked-in third-party
 assets can stay close to upstream.
 
-The current Stylelint policy is conservative: CSS correctness issues fail CI,
-while class-name and custom-property naming conventions are warnings. Treat
-warnings as cleanup signals, but do not refactor unrelated selectors only to
-make a feature change pass.
+CSS correctness, class-name conventions, and custom-property naming all fail
+CI. `npm run lint:css` must finish with zero warnings and zero errors.
 
 ## Common Variables
 
@@ -283,7 +283,7 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 | **1024px** | About page | [about.css](../../src/styles/about.css) | About-page grid collapses from two columns to one; hero padding shrinks |
 | **900px** | Main app layout and panel | [responsive.css](../../src/styles/responsive.css), [panel.css](../../src/styles/panel.css) | Workspace stacks; header switches to a column; collapsed-sidebar presentation adapts; panel layouts become one column |
 | **768px** | Header chrome | [header-nav.css](../../src/styles/header-nav.css) | Header navigation gap and margins shrink; the header wraps |
-| **640px** | About page and dataset workspace | [about.css](../../src/styles/about.css), [datasetWorkspace.css](../../src/styles/datasetWorkspace.css) | About hero compresses; team grid becomes one column; dataset results controls adapt |
+| **640px** | About page and dataset workspace | [about.css](../../src/styles/about.css), [dataset-workspace.css](../../src/styles/dataset-workspace.css) | About hero compresses; team grid becomes one column; dataset results controls adapt |
 | **480px** | Header chrome and settings dialog | [header-nav.css](../../src/styles/header-nav.css), [settings.css](../../src/styles/settings.css) | Header navigation reflows and settings controls fill the available width |
 
 ### Main-app breakpoint: 900px
@@ -313,7 +313,7 @@ Responsive behavior uses `max-width` (desktop-first) media queries. The main-app
 Pick the home that matches the scope of the rule:
 
 1. **Main-app layout** (workspace, sidebar, content area) → `responsive.css` under the existing `@media (max-width: 900px)` block
-2. **Feature-internal** (e.g., panel slot rearrangement, dataset workspace table) → the feature's own file (`panel.css`, `datasetWorkspace.css`) at the breakpoint already in use there
+2. **Feature-internal** (e.g., panel slot rearrangement, dataset workspace table) → the feature's own file (`panel.css`, `dataset-workspace.css`) at the breakpoint already in use there
 3. **About page** → `about.css` (1024px or 640px blocks)
 4. **Header chrome** (nav, logo, settings button) → `header-nav.css` (768px or 480px blocks); dialog-internal settings rules stay in `settings.css`
 5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.active`) over new breakpoints when the difference is interaction-driven, not viewport-driven

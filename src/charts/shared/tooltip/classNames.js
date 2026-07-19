@@ -10,7 +10,7 @@
  * Dynamic modifier suffixes (`--${state}`, `--${variant}`) are not standalone
  * classes and stay inline at their call sites.
  *
- * @see src/styles/charts.css for the matching rules.
+ * @see src/styles/chart-output.css for the matching rules.
  */
 
 /** Base tooltip element class. */

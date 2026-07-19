@@ -30,11 +30,9 @@ export default {
 		'selector-class-pattern': [CLASS_PATTERN, {
 			message:
 				'Expected class selector to use English kebab-case with optional BEM-style __element/--modifier.',
-			severity: 'warning',
 		}],
 		'custom-property-pattern': ['^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$', {
 			message: 'Expected custom property to use lowercase kebab-case.',
-			severity: 'warning',
 		}],
 	},
 };
