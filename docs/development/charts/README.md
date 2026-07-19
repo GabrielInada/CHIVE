@@ -33,6 +33,21 @@ These are the companion to the higher-level docs one directory up:
 | TIN | [tin.md](tin.md) | Continuous surface from scattered points | Delaunay triangulation, interpolation, contours |
 | 3D scatter | [scatter3d.md](scatter3d.md) | Three numeric variables as a rotatable point cloud | WebGL rendering, D3-to-Three scale contract, per-chart package layout, GPU lifecycle |
 
+## Chart symbol grammar
+
+The package directory and persisted chart key use the canonical lowercase chart
+key. Exported symbols use a PascalCase chart stem followed by a role suffix such
+as `Controls`, `ControlListeners`, `PanelChart`, `ChartSection`, `Into`,
+`Options`, or `Interactions`. New symbols should use one plain stem consistently
+within their package.
+
+The current plain stems are `Bar`, `Pie`, `Treemap`, `Bubble`, `Line`, `Tin`,
+`Scatter`, `Network`, and `Scatter3d`. Some existing scatter renderer and control
+exports use the longer legacy `ScatterPlot` stem, while the corresponding
+network exports use `NetworkGraph`. Those established exports remain accepted
+to avoid aesthetic-only churn, but new exports should prefer the plain
+canonical-key stem rather than extending the legacy forms.
+
 ## How each doc is organized
 
 Every doc follows the same skeleton (scaled to the chart's complexity), so once you have read

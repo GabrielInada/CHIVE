@@ -12,7 +12,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 import { createBarChartControls } from '../../../src/charts/bar/controls/builder.js';
 import { setupBarChartControlListeners } from '../../../src/charts/bar/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/bar/controls/defaults.js';
+import { computeDefaults } from '../../../src/charts/bar/controls/activationDefaults.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -61,7 +61,7 @@ describe('bar controls package surface', () => {
 		const [builder, listeners, defaults] = await Promise.all([
 			import('../../../src/charts/bar/controls/builder.js'),
 			import('../../../src/charts/bar/controls/listeners.js'),
-			import('../../../src/charts/bar/controls/defaults.js'),
+			import('../../../src/charts/bar/controls/activationDefaults.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createBarChartControls']);
 		expect(Object.keys(listeners)).toEqual(['setupBarChartControlListeners']);

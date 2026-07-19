@@ -20,7 +20,7 @@ Key files:
 - X-scale construction: [scales.js](../../../src/charts/line/scales.js)
 - Sidebar controls: [builder.js](../../../src/charts/line/controls/builder.js),
   [listeners.js](../../../src/charts/line/controls/listeners.js), and
-  [defaults.js](../../../src/charts/line/controls/defaults.js)
+  [activationDefaults.js](../../../src/charts/line/controls/activationDefaults.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`LINE_CHART`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `line` block)
 - Shared presentation flow: [presentation.js](../../../src/charts/line/presentation.js)
@@ -187,7 +187,7 @@ default ghost color.
 
 The controls package ([builder.js](../../../src/charts/line/controls/builder.js),
 [listeners.js](../../../src/charts/line/controls/listeners.js),
-[defaults.js](../../../src/charts/line/controls/defaults.js)) builds three sections via the
+[activationDefaults.js](../../../src/charts/line/controls/activationDefaults.js)) builds three sections via the
 standard `createLineChartControls` / `setupLineChartControlListeners` / `computeDefaults`
 adapters.
 

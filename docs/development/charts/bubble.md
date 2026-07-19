@@ -18,7 +18,7 @@ Key files:
 - Data and hierarchy helpers: [data.js](../../../src/charts/bubble/data.js)
 - Sidebar controls: [builder.js](../../../src/charts/bubble/controls/builder.js),
   [listeners.js](../../../src/charts/bubble/controls/listeners.js),
-  [defaults.js](../../../src/charts/bubble/controls/defaults.js), and
+  [activationDefaults.js](../../../src/charts/bubble/controls/activationDefaults.js), and
   [nestingColumns.js](../../../src/charts/bubble/controls/nestingColumns.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`BUBBLE_CHART`, `CHART_COLOR_PALETTES`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bubble` block)

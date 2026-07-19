@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
 	getLocale: vi.fn(() => 'en'),
-	renderTreeMap: vi.fn(() => ({ ok: true })),
+	renderTreemap: vi.fn(() => ({ ok: true })),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -14,7 +14,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 }));
 
 vi.mock('../../../src/charts/treemap/renderers/svg.js', () => ({
-	renderTreeMap: mocks.renderTreeMap,
+	renderTreemap: mocks.renderTreemap,
 }));
 
 import { renderTreemapPanelChart } from '../../../src/charts/treemap/panelAdapter.js';
@@ -55,7 +55,7 @@ describe('renderTreemapPanelChart', () => {
 		const result = renderTreemapPanelChart(container, createSpec());
 
 		expect(result).toEqual({ ok: true });
-		expect(mocks.renderTreeMap).toHaveBeenCalledWith(
+		expect(mocks.renderTreemap).toHaveBeenCalledWith(
 			container,
 			rows,
 			'region',
@@ -76,7 +76,7 @@ describe('renderTreemapPanelChart', () => {
 	it('supplies localized labels without enabling panel filters', () => {
 		renderTreemapPanelChart(container, createSpec());
 
-		const options = mocks.renderTreeMap.mock.calls[0][3];
+		const options = mocks.renderTreemap.mock.calls[0][3];
 		expect(options.labels).toEqual({
 			category: 'chive-chart-control-treemap-category',
 			count: 'chive-tooltip-count',
@@ -91,7 +91,7 @@ describe('renderTreemapPanelChart', () => {
 	it('tolerates a snapshot without a config object', () => {
 		renderTreemapPanelChart(container, { type: 'treemap', dataSnapshot: rows });
 
-		expect(mocks.renderTreeMap).toHaveBeenCalledWith(
+		expect(mocks.renderTreemap).toHaveBeenCalledWith(
 			container,
 			rows,
 			undefined,
@@ -100,7 +100,7 @@ describe('renderTreemapPanelChart', () => {
 	});
 
 	it('returns renderer failures unchanged', () => {
-		mocks.renderTreeMap.mockReturnValueOnce({ ok: false, reason: 'no-value-column' });
+		mocks.renderTreemap.mockReturnValueOnce({ ok: false, reason: 'no-value-column' });
 
 		expect(renderTreemapPanelChart(container, createSpec())).toEqual({
 			ok: false,

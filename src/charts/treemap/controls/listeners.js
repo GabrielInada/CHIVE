@@ -34,7 +34,7 @@ import {
  * @param {ChartConfigWriter} writer
  * @returns {void}
  */
-export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, allColumns, writer) {
+export function setupTreemapControlListeners(dataset, baseCat, numericOptions, allColumns, writer) {
 
 	setupSelectListeners([
 		{ id: 'viz-select-treemap-category', key: 'category', transform: value => value || null },

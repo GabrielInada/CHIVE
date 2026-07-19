@@ -18,7 +18,7 @@ Key files:
 - Renderer: [renderers/svg.js](../../../src/charts/pie/renderers/svg.js)
 - Sidebar controls: [builder.js](../../../src/charts/pie/controls/builder.js),
   [listeners.js](../../../src/charts/pie/controls/listeners.js), and
-  [defaults.js](../../../src/charts/pie/controls/defaults.js)
+  [activationDefaults.js](../../../src/charts/pie/controls/activationDefaults.js)
 - Data and options: [data.js](../../../src/charts/pie/data.js) and
   [options.js](../../../src/charts/pie/options.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`PIE_CHART`)
@@ -188,7 +188,7 @@ already global-filtered; the renderer aggregates on top of them. Panel snapshots
 The controls package separates
 [`createPieChartControls`](../../../src/charts/pie/controls/builder.js),
 [`setupPieChartControlListeners`](../../../src/charts/pie/controls/listeners.js), and
-[`computeDefaults`](../../../src/charts/pie/controls/defaults.js) by role. The controls
+[`computeDefaults`](../../../src/charts/pie/controls/activationDefaults.js) by role. The controls
 registry imports those three entry points directly.
 
 ### 5.1 The three sections

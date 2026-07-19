@@ -12,7 +12,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 import { createNetworkGraphControls } from '../../../src/charts/network/controls/builder.js';
 import { setupNetworkGraphControlListeners } from '../../../src/charts/network/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/network/controls/defaults.js';
+import { computeDefaults } from '../../../src/charts/network/controls/activationDefaults.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -86,7 +86,7 @@ describe('network controls module boundaries', () => {
 		const [builder, listeners, defaults] = await Promise.all([
 			import('../../../src/charts/network/controls/builder.js'),
 			import('../../../src/charts/network/controls/listeners.js'),
-			import('../../../src/charts/network/controls/defaults.js'),
+			import('../../../src/charts/network/controls/activationDefaults.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createNetworkGraphControls']);
 		expect(Object.keys(listeners)).toEqual(['setupNetworkGraphControlListeners']);

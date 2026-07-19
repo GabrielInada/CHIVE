@@ -12,7 +12,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 import { createScatter3dControls } from '../../../src/charts/scatter3d/controls/builder.js';
 import { setupScatter3dControlListeners } from '../../../src/charts/scatter3d/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/scatter3d/controls/defaults.js';
+import { computeDefaults } from '../../../src/charts/scatter3d/controls/activationDefaults.js';
 import { SCATTER3D_CHART } from '../../../src/config/charts.js';
 
 /**
@@ -142,7 +142,7 @@ describe('scatter3d activation defaults', () => {
 	it('picks three distinct numeric columns (tin pickPreferred semantics)', () => {
 		const dataset = { chartConfig: { scatter3d: {} } };
 
-		// Mirrors tinControls/defaults.js exactly: the preferred index is
+		// Mirrors tinControls/activationDefaults.js exactly: the preferred index is
 		// applied to the already-filtered list, so with x = 'a' the y pick
 		// is index 1 of ['b','c','d'] = 'c', and z falls back to 'b'.
 		const defaults = computeDefaults(dataset, { numeric: ['a', 'b', 'c', 'd'] });

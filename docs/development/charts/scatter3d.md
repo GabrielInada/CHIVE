@@ -105,7 +105,7 @@ clamps, rotate/zoom speeds, keyboard steps).
 `charts/tin/controls/`: `builder.js` (Data: X/Y/Z numeric selects;
 Display: title, point size, opacity; Styling: color), `listeners.js` (via
 the shared `listenerBindings.js`, which remains the config-write
-adapter; selects clamp to the numeric column list), and `defaults.js`
+adapter; selects clamp to the numeric column list), and `activationDefaults.js`
 (first three distinct numeric columns via the tin `pickPreferred`
 semantics, preserving still-valid user picks). The registry entry lives in
 [charts/registries/controls.js](../../../src/charts/registries/controls.js),

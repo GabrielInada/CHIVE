@@ -442,7 +442,6 @@ export default [
 			'src/charts/*/regression.js',
 			'src/charts/*/regressionLayer.js',
 			'src/charts/*/interaction.js',
-			'src/charts/*/interactions.js',
 			'src/charts/*/renderers/**/*.js',
 		],
 		rules: {

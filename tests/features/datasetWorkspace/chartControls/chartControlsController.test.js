@@ -33,8 +33,8 @@ const mocks = vi.hoisted(() => ({
 	setupScatterPlotControlListeners: vi.fn(),
 	createPieChartControls: vi.fn(() => []),
 	setupPieChartControlListeners: vi.fn(),
-	createTreeMapControls: vi.fn(() => []),
-	setupTreeMapControlListeners: vi.fn(),
+	createTreemapControls: vi.fn(() => []),
+	setupTreemapControlListeners: vi.fn(),
 	createLineChartControls: vi.fn(() => []),
 	setupLineChartControlListeners: vi.fn(),
 	createTinControls: vi.fn(() => []),
@@ -100,10 +100,10 @@ vi.mock('../../../../src/charts/pie/controls/listeners.js', () => ({
 }));
 
 vi.mock('../../../../src/charts/treemap/controls/builder.js', () => ({
-	createTreeMapControls: mocks.createTreeMapControls,
+	createTreemapControls: mocks.createTreemapControls,
 }));
 vi.mock('../../../../src/charts/treemap/controls/listeners.js', () => ({
-	setupTreeMapControlListeners: mocks.setupTreeMapControlListeners,
+	setupTreemapControlListeners: mocks.setupTreemapControlListeners,
 }));
 
 vi.mock('../../../../src/charts/line/controls/builder.js', () => ({
@@ -209,7 +209,7 @@ describe('renderChartControlsSidebar', () => {
 		['pie', 'createPieChartControls', 'setupPieChartControlListeners'],
 		['bubble', 'createBubbleChartControls', 'setupBubbleChartControlListeners'],
 		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners'],
-		['treemap', 'createTreeMapControls', 'setupTreeMapControlListeners'],
+		['treemap', 'createTreemapControls', 'setupTreemapControlListeners'],
 		['line', 'createLineChartControls', 'setupLineChartControlListeners'],
 		['tin', 'createTinControls', 'setupTinControlListeners'],
 		['scatter3d', 'createScatter3dControls', 'setupScatter3dControlListeners'],

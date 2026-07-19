@@ -3,13 +3,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-	renderTreeMap: vi.fn(() => ({ ok: true })),
+	renderTreemap: vi.fn(() => ({ ok: true })),
 	t: vi.fn(key => key),
 	getLocale: vi.fn(() => 'en'),
 }));
 
 vi.mock('../../../src/charts/treemap/renderers/svg.js', () => ({
-	renderTreeMap: mocks.renderTreeMap,
+	renderTreemap: mocks.renderTreemap,
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -54,7 +54,7 @@ const filterCallbacks = { onAddToGlobalFilter: null };
 describe('renderTreemapChartSection', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mocks.renderTreeMap.mockReturnValue({ ok: true });
+		mocks.renderTreemap.mockReturnValue({ ok: true });
 	});
 
 	it('hides block and skips renderer when disabled', () => {
@@ -69,12 +69,12 @@ describe('renderTreemapChartSection', () => {
 
 		expect(block.style.display).toBe('none');
 		expect(container.children.length).toBe(0);
-		expect(mocks.renderTreeMap).not.toHaveBeenCalled();
+		expect(mocks.renderTreemap).not.toHaveBeenCalled();
 	});
 
 	it('maps no-value-column reason to numeric empty-state', () => {
 		const { container } = setupDom();
-		mocks.renderTreeMap.mockReturnValueOnce({ ok: false, reason: 'no-value-column' });
+		mocks.renderTreemap.mockReturnValueOnce({ ok: false, reason: 'no-value-column' });
 
 		renderTreemapChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 
@@ -83,7 +83,7 @@ describe('renderTreemapChartSection', () => {
 
 	it('falls back to generic empty-state for any other failure', () => {
 		const { container } = setupDom();
-		mocks.renderTreeMap.mockReturnValueOnce({ ok: false, reason: 'other' });
+		mocks.renderTreemap.mockReturnValueOnce({ ok: false, reason: 'other' });
 
 		renderTreemapChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 
@@ -101,7 +101,7 @@ describe('renderTreemapChartSection', () => {
 
 		expect(block.style.display).toBe('block');
 		expect(container.style.minHeight).toBe('500px');
-		const [calledContainer, calledRows, category, opts] = mocks.renderTreeMap.mock.calls[0];
+		const [calledContainer, calledRows, category, opts] = mocks.renderTreemap.mock.calls[0];
 		expect(calledContainer).toBe(container);
 		expect(calledRows[0]).toEqual({ region: 'A' });
 		expect(category).toBe('region');

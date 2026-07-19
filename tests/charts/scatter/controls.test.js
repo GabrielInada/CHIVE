@@ -12,7 +12,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 import { createScatterPlotControls } from '../../../src/charts/scatter/controls/builder.js';
 import { setupScatterPlotControlListeners } from '../../../src/charts/scatter/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/scatter/controls/defaults.js';
+import { computeDefaults } from '../../../src/charts/scatter/controls/activationDefaults.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -78,7 +78,7 @@ describe('scatter controls module boundaries', () => {
 		const [builder, listeners, defaults] = await Promise.all([
 			import('../../../src/charts/scatter/controls/builder.js'),
 			import('../../../src/charts/scatter/controls/listeners.js'),
-			import('../../../src/charts/scatter/controls/defaults.js'),
+			import('../../../src/charts/scatter/controls/activationDefaults.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createScatterPlotControls']);
 		expect(Object.keys(listeners)).toEqual(['setupScatterPlotControlListeners']);

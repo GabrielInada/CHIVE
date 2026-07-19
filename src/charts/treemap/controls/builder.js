@@ -28,7 +28,7 @@ import { groupControls } from '../../shared/controls/grouping.js';
  * @param {string[]} [_allColumns=[]] - All visible column names; kept for API parity.
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
-export function createTreeMapControls(dataset, categoryOptions, numericOptions = [], _allColumns = []) {
+export function createTreemapControls(dataset, categoryOptions, numericOptions = [], _allColumns = []) {
 	const config = dataset.chartConfig.treemap;
 	const measureMode = TREEMAP_CHART.measureModes.includes(config.measureMode) ? config.measureMode : 'count';
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;

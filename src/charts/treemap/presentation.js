@@ -7,7 +7,7 @@
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
-import { renderTreeMap } from './renderers/svg.js';
+import { renderTreemap } from './renderers/svg.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 
@@ -26,7 +26,7 @@ export function renderTreemapInto(
 	config = {},
 	filterCallbacks = EMPTY_FILTER_CALLBACKS,
 ) {
-	return renderTreeMap(container, rows, config.category, {
+	return renderTreemap(container, rows, config.category, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
 		measureMode: config.measureMode,
