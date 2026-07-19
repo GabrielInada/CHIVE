@@ -5,7 +5,7 @@ import { createPersistHandler } from '../../src/workers/persistWorker.js';
 
 // The handler's cache / staged-commit / needsResync / chain logic is backend-
 // agnostic, so these unit tests drive it with a spy backend (real SQLite is
-// covered end-to-end in workerBackend.test.js). A spy lets us assert exactly
+// covered end-to-end in the workerBackend.*.test.js concern suites). A spy lets us assert exactly
 // what `full` snapshot the handler reconstructs and simulate persist failures.
 function spyBackend(overrides = {}) {
 	return {

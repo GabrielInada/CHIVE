@@ -110,7 +110,9 @@ For a new chart type, update the full chart surface in one pass:
 
 Non-JS additions have their own homes:
 
-- Tests mirror `src/` under `tests/`.
+- Tests mirror source ownership under `tests/` at the directory or package
+  level. Large owners use dotted concern suites and sibling
+  `*.testSupport.js` modules for shared fixtures.
 - CSS goes through `src/styles/`; see
   [Stylesheet organization](styles.md).
 - UI strings go through `src/i18n/` (all locales together); see the
@@ -186,8 +188,10 @@ ownership rather than file history, according to these rules:
 - Canvas charts have no SVG export yet: the scatter3d block ships without a
   download button and panel exports omit canvas slots (with a feedback
   notice). A raster export path is a later tranche.
-- Tests mirror moves: when a source file moves, its tests move with it under
-  `tests/`; per-chart packages mirror under `tests/charts/<name>/`.
+- Tests mirror moves at the directory or package level: when a source owner
+  moves, its suites move with it under `tests/`; per-chart packages mirror
+  under `tests/charts/<name>/`. Large owners use dotted concern suffixes, and
+  shared fixtures live in sibling `*.testSupport.js` modules.
 - Explicitly avoided: big-bang migrations, broad `index.js` barrels, naming
   every module a Controller, moving CSS into feature folders, and renames
   for aesthetics alone.

@@ -172,7 +172,12 @@ the [Source map](source-map.md#where-do-i-put-new-code).
 - Framework: Vitest with the default Node environment.
 - Files needing DOM opt into jsdom by declaring
   `// @vitest-environment jsdom` at the top.
-- Tests live in `tests/` mirroring `src/` structure.
+- Tests live in `tests/` and mirror source ownership at the directory or
+  package level; not every implementation file needs a one-to-one test file.
+- Split multi-concern suites with a dotted concern suffix such as
+  `<owner>.<concern>.test.js`.
+- Put fixtures shared by sibling suites in `*.testSupport.js` modules. Vitest
+  does not collect that suffix as a test suite.
 - Patterns: `describe`/`it`/`expect`, `beforeEach` for state reset, and
   `vi.mock()` for mocking.
 

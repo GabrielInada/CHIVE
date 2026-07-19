@@ -344,7 +344,11 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 ## 13. Tests
 
 - [svg.test.js](../../../tests/charts/bubble/renderers/svg.test.js) covers the
-  renderer (flat and grouped, packing output, labels).
+  base renderer behavior (flat and grouped, packing output, labels).
+- [svg.nesting.test.js](../../../tests/charts/bubble/renderers/svg.nesting.test.js)
+  covers multi-level grouped nesting.
+- [svg.zoom.test.js](../../../tests/charts/bubble/renderers/svg.zoom.test.js)
+  covers zoom exploration and the multi-level drill-down stack.
 - [data.test.js](../../../tests/charts/bubble/data.test.js)
   covers the pure helpers: aggregation, multi-level tree building, ancestor/descendant walks
   (no DOM).
