@@ -12,7 +12,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { renderTreeMap } from '../../../src/charts/treemap/renderers/svg.js';
+import { renderTreemap } from '../../../src/charts/treemap/renderers/svg.js';
 import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
 
 const ROWS = [
@@ -37,7 +37,7 @@ function makeContainer() {
 
 function render(options, rows = ROWS) {
 	const container = makeContainer();
-	const result = renderTreeMap(container, rows, 'region', { ...BASE, ...options });
+	const result = renderTreemap(container, rows, 'region', { ...BASE, ...options });
 	const svg = container.querySelector('svg');
 	return { html: svg?.outerHTML ?? container.innerHTML, result };
 }

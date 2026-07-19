@@ -36,7 +36,7 @@ import { normalizeScatterOptions } from '../options.js';
 import { buildColorAccessor, buildRadiusAccessor } from '../encoding.js';
 import { buildScatterPoints } from '../data.js';
 import { buildScatterScales } from '../scales.js';
-import { createScatterInteractions } from '../interactions.js';
+import { createScatterInteractions } from '../interaction.js';
 
 /**
  * Render a scatter plot into `container`. Returns `ok()` on success, or

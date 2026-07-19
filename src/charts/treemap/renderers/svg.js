@@ -60,7 +60,7 @@ function truncate(text, maxLen) {
  * @param {Object} [options={}] - Render options bag.
  * @returns {Result}
  */
-export function renderTreeMap(container, rows, categoryColumn, options = {}) {
+export function renderTreemap(container, rows, categoryColumn, options = {}) {
 	if (!container || !categoryColumn) return { ok: false };
 
 	const {

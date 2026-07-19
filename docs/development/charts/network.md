@@ -24,7 +24,7 @@ Key files (the `src/charts/network/` package):
 - Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/network/panelAdapter.js)
 - Sidebar controls: [controls/builder.js](../../../src/charts/network/controls/builder.js),
   [controls/listeners.js](../../../src/charts/network/controls/listeners.js),
-  [controls/defaults.js](../../../src/charts/network/controls/defaults.js)
+  [controls/activationDefaults.js](../../../src/charts/network/controls/activationDefaults.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`NETWORK_GRAPH`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `network` block)
 
@@ -181,7 +181,7 @@ alpha-decay clamp (`minAlphaDecay: 0.01`, `maxAlphaDecay: 0.2`).
 
 The controls trio under [controls/](../../../src/charts/network/controls) builds four sections
 via the standard `createNetworkGraphControls` (builder.js) /
-`setupNetworkGraphControlListeners` (listeners.js) / `computeDefaults` (defaults.js) exports.
+`setupNetworkGraphControlListeners` (listeners.js) / `computeDefaults` (activationDefaults.js) exports.
 
 ### 5.1 The four sections
 

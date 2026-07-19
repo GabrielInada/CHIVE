@@ -26,13 +26,13 @@ Key files (the per-chart package under [src/charts/scatter/](../../../src/charts
 - Scale + position accessors: [scales.js](../../../src/charts/scatter/scales.js)
 - Size/color encoding: [encoding.js](../../../src/charts/scatter/encoding.js)
 - Palettes: [palettes.js](../../../src/charts/scatter/palettes.js)
-- Tooltip + filter interactions: [interactions.js](../../../src/charts/scatter/interactions.js)
+- Tooltip + filter interactions: [interaction.js](../../../src/charts/scatter/interaction.js)
 - Regression render layer (band / line / annotation): [regressionLayer.js](../../../src/charts/scatter/regressionLayer.js)
 - Axis helpers (type inference, jitter, margins, aggregation): [axisHelpers.js](../../../src/charts/scatter/axisHelpers.js)
 - Regression math (OLS + CI band): [regression.js](../../../src/charts/scatter/regression.js)
 - Sidebar controls: [controls/builder.js](../../../src/charts/scatter/controls/builder.js),
   [controls/listeners.js](../../../src/charts/scatter/controls/listeners.js),
-  [controls/defaults.js](../../../src/charts/scatter/controls/defaults.js)
+  [controls/activationDefaults.js](../../../src/charts/scatter/controls/activationDefaults.js)
 - Shared presentation flow: [presentation.js](../../../src/charts/scatter/presentation.js)
 - Config constants: [charts.js](../../../src/config/charts.js) (`SCATTER_PLOT`)
 - Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `scatter` block)
@@ -272,7 +272,7 @@ bottom:44, left:52 } }` (grown adaptively for categorical axes, section 7.4);
 
 The controls package ([builder.js](../../../src/charts/scatter/controls/builder.js),
 [listeners.js](../../../src/charts/scatter/controls/listeners.js),
-[defaults.js](../../../src/charts/scatter/controls/defaults.js)) is the largest control
+[activationDefaults.js](../../../src/charts/scatter/controls/activationDefaults.js)) is the largest control
 surface because of the axis/scale cross-constraints, the size and color field mappings, and
 the regression section. It exposes the standard three adapters
 (`createScatterPlotControls`, `setupScatterPlotControlListeners`, `computeDefaults`).
@@ -361,7 +361,7 @@ is wired together here. The mapping:
 | Scales + jitter accessors (7.4, 7.5 jitter) | `scatter/scales.js` | `buildScatterScales` |
 | Size + color resolvers (7.5) | `scatter/encoding.js` | `buildRadiusAccessor`, `buildColorAccessor` |
 | Regression overlay (7.6) | `scatter/regressionLayer.js` | `renderRegressionLayer`, `renderRegressionAnnotation` |
-| Tooltips + pinned filter actions (7.7) | `scatter/interactions.js` | `createScatterInteractions` |
+| Tooltips + pinned filter actions (7.7) | `scatter/interaction.js` | `createScatterInteractions` |
 
 The SVG/axis scaffolding (container reset, sized svg, title, translated group, bottom/left
 axes, axis labels) comes from the shared [scaffold.js](../../../src/charts/shared/svg/scaffold.js).

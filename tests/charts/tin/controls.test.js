@@ -14,7 +14,7 @@ import {
 	createTinControls,
 } from '../../../src/charts/tin/controls/builder.js';
 import { setupTinControlListeners } from '../../../src/charts/tin/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/tin/controls/defaults.js';
+import { computeDefaults } from '../../../src/charts/tin/controls/activationDefaults.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -31,7 +31,7 @@ describe('TIN controls module boundaries', () => {
 		const [builder, listeners, defaults] = await Promise.all([
 			import('../../../src/charts/tin/controls/builder.js'),
 			import('../../../src/charts/tin/controls/listeners.js'),
-			import('../../../src/charts/tin/controls/defaults.js'),
+			import('../../../src/charts/tin/controls/activationDefaults.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createTinControls']);
 		expect(Object.keys(listeners)).toEqual(['setupTinControlListeners']);
