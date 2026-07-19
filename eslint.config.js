@@ -202,6 +202,13 @@ const TEST_GLOBALS = {
 };
 
 export default [
+	// Global ignores: checked-in third-party runtime code, build artifacts,
+	// and gitignored local notes. node_modules and .git are ignored by
+	// default.
+	{
+		ignores: ['vendor/**', 'dist/**', 'coverage/**', 'internalDocs/**'],
+	},
+
 	js.configs.recommended,
 
 	// (A) src-wide defaults: language options + cross-cutting guards applied to
@@ -714,6 +721,27 @@ export default [
 			ecmaVersion: 'latest',
 			sourceType: 'module',
 			globals: TEST_GLOBALS,
+		},
+		rules: {
+			'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+			'prefer-const': 'warn',
+			'no-var': 'warn',
+			'eqeqeq': 'warn',
+			'curly': ['warn', 'multi-line'],
+			'no-undef': 'error',
+		},
+	},
+
+	// (G) Repo tooling: the lint/test/style configs and the custom ESLint
+	// rule implementations run under Node as ESM. No Node globals are
+	// declared because none are referenced today (the rules import
+	// node:path explicitly); add a global the first time a script needs
+	// it, same policy as BROWSER_GLOBALS.
+	{
+		files: ['*.js', '*.mjs', 'eslint-rules/**/*.js', 'scripts/**/*.{js,mjs}'],
+		languageOptions: {
+			ecmaVersion: 'latest',
+			sourceType: 'module',
 		},
 		rules: {
 			'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],

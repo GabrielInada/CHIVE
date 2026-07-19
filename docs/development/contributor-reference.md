@@ -104,13 +104,14 @@ Do not write it; route writes through a facade method. When a new mutable-ref
 getter is added to `appState.js`, update both `FACADE_MUTABLE_GETTERS` in
 `eslint.config.js` and `TRACKED_GETTERS` in the local rule.
 
-**CI runs lint and tests on every push and PR** through
+**CI runs the full local check on every push and PR** through
 `.github/workflows/lint-and-test.yml`, targeting `main` and `develop`.
 
-CI runs `npm run lint`, `npm run lint:css`, and `npm test`. The CSS lint step is
-owned by [Stylesheet organization](styles.md): it checks `src/styles/**/*.css`,
-ignores vendored CSS, blocks on correctness errors, and keeps selector/custom
-property naming conventions warning-only under the current policy.
+CI runs `npm run check`, which executes JavaScript lint, CSS lint, tests, and
+the production build. The CSS lint step is owned by
+[Stylesheet organization](styles.md): it checks `src/styles/**/*.css`, ignores
+vendored CSS, blocks on correctness errors, and keeps selector/custom property
+naming conventions warning-only under the current policy.
 
 ## ESLint Guards
 
