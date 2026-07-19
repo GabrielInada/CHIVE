@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildScatter3dPoints } from '../../../src/charts/scatter3d/data.js';
-import { SCATTER3D_CHART } from '../../../src/config/charts.js';
+import { SCATTER3D_CHART } from '../../../src/config/charts/definitions/scatter3d.js';
 
 function rowsFrom(triples) {
 	return triples.map(([x, y, z]) => ({ x, y, z }));

@@ -42,7 +42,7 @@ const strictUiMessages = result =>
 const restrictionMessages = result =>
 	result.messages.filter(message =>
 		message.ruleId === 'no-restricted-imports' ||
-		message.ruleId === 'chive/domain-no-chart-presentation' ||
+		message.ruleId === 'chive/no-chart-presentation-imports' ||
 		message.ruleId === 'chive/ui-strict-leaf' ||
 		message.ruleId === 'no-restricted-globals');
 
@@ -80,12 +80,23 @@ const FORBIDDEN_IMPORTS = [
 		'no-restricted-globals',
 	],
 	['src/config/probe.js', "import '../ui/feedback.js';", 'config bans ui/'],
+	[
+		'src/config/charts/definitions/bar.js',
+		"import '../../../state/appState.js';",
+		'config definitions keep the config leaf boundary',
+	],
 	['src/domain/panel/probe.js', "import '../../ui/feedback.js';", 'domain bans ui/'],
 	[
 		'src/domain/charts/chartConfig.js',
 		"import '../../charts/bar/data.js';",
 		'domain/charts bans chart presentation code',
-		'chive/domain-no-chart-presentation',
+		'chive/no-chart-presentation-imports',
+	],
+	[
+		'src/config/charts/definitions/bar.js',
+		"import '../../../charts/bar/renderers/svg.js';",
+		'config/charts bans chart presentation code',
+		'chive/no-chart-presentation-imports',
 	],
 	[
 		'src/domain/panel/probe.js',
@@ -125,8 +136,9 @@ const ALLOWED_IMPORTS = [
 	['src/ui/feedback.js', "import '../utils/result.js';", 'ui may import utils'],
 	['src/ui/feedback.js', "import '../types.js';", 'ui may import shared types'],
 	['src/ui/feedback.js', "import '../../vendor/d3/d3.js';", 'ui may import vendored modules'],
-	['src/config/chartDefaults.js', "import '../domain/filters/globalFilter.js';", 'config may use domain product rules'],
-	['src/domain/charts/chartConfig.js', "import '../../config/chartDefaults.js';", 'domain may use config defaults'],
+	['src/config/charts/defaults.js', "import '../../domain/filters/globalFilter.js';", 'config may use domain product rules'],
+	['src/domain/charts/chartConfig.js', "import '../../config/charts/defaults.js';", 'domain may use config defaults'],
+	['src/state/dataStateFacade.js', "import '../config/charts/definitions.js';", 'state may use chart definitions'],
 	['src/charts/bar/data.js', "import '../../domain/filters/chartFilter.js';", 'chart leaves may use domain filter rules'],
 	['src/charts/bubble/controls/listeners.js', "import '../../../domain/datasets/columns.js';", 'control listeners may use domain dataset rules'],
 	['src/features/panel/slots/lifecycle.js', "import '../../../charts/shared/containerLifecycle.js';", 'features may use shared chart infrastructure'],

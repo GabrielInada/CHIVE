@@ -37,7 +37,8 @@ import {
 	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
 import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
-import { CHART_DIMENSIONS, NETWORK_GRAPH } from '../../../config/charts.js';
+import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { NETWORK_GRAPH } from '../../../config/charts/definitions/network.js';
 import { formatNumber, isNullish } from '../../../utils/formatters.js';
 import { interpolateColor, isValidHexColor } from '../../../utils/colorUtils.js';
 import { fail } from '../../../utils/result.js';

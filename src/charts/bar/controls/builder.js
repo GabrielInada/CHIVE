@@ -11,7 +11,7 @@
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
-import { CHART_COLORS } from '../../../config/charts.js';
+import { CHART_COLORS } from '../../../config/charts/definitions.js';
 import { t } from '../../../services/i18nService.js';
 import {
 	createCheckboxControl,

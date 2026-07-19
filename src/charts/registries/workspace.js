@@ -14,7 +14,7 @@
  * }} WorkspaceChartContext
  */
 
-import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
 import { renderBarChartSection } from '../bar/workspaceSection.js';
 import { renderScatter3dChartSection } from '../scatter3d/workspaceSection.js';
 import { renderLineChartSection } from '../line/workspaceSection.js';

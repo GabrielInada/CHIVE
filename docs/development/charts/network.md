@@ -25,8 +25,8 @@ Key files (the `src/charts/network/` package):
 - Sidebar controls: [controls/builder.js](../../../src/charts/network/controls/builder.js),
   [controls/listeners.js](../../../src/charts/network/controls/listeners.js),
   [controls/activationDefaults.js](../../../src/charts/network/controls/activationDefaults.js)
-- Config constants: [charts.js](../../../src/config/charts.js) (`NETWORK_GRAPH`)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `network` block)
+- Chart definition and constants: [network.js](../../../src/config/charts/definitions/network.js) (`NETWORK_DEFINITION`, `NETWORK_GRAPH`)
+- Per-dataset config defaults: [network.js](../../../src/config/charts/definitions/network.js) (the definition's fresh `network` factory)
 
 ---
 
@@ -143,7 +143,7 @@ contents are still fully replaced each render. Panel snapshots are frozen `struc
 
 `chartConfig.network` is the network slice of each dataset's `chartConfig`, built fresh by
 `createDefaultChartConfig()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js) and merged by
+[defaults.js](../../../src/config/charts/defaults.js) and merged by
 `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js).
 
@@ -169,7 +169,7 @@ contents are still fully replaced each render. Panel snapshots are frozen `struc
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js): `CHART_HEIGHT_LIMITS.network` = `{ min: 220,
+[network.js](../../../src/config/charts/definitions/network.js): the network height limits are `{ min: 220,
 max: 720 }`; `NETWORK_GRAPH` holds the force defaults (`defaultNodeRadius`,
 `defaultLinkDistance: 46`, `defaultChargeStrength: -80`, `defaultLinkOpacity`,
 `defaultAlphaDecay: 0.045`), the zoom bounds (`minZoomScale: 0.3`, `maxZoomScale: 4`), and the
@@ -376,7 +376,7 @@ All under [tests/charts/network/](../../../tests/charts/network):
   <g class="network-legend">      (source/target swatches, optional)
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `NETWORK_GRAPH`):
+**Tuning knobs** ([network.js](../../../src/config/charts/definitions/network.js) `NETWORK_GRAPH`):
 `defaultLinkDistance`, `defaultChargeStrength`, `defaultAlphaDecay`, zoom bounds, alpha-decay
 clamp.
 

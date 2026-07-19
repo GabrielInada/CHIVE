@@ -646,6 +646,7 @@ export default [
 	// (D) config/ is a pure leaf layer, no imports from any higher layer.
 	{
 		files: ['src/config/**/*.js'],
+		plugins: { chive: chiveRules },
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
@@ -654,6 +655,7 @@ export default [
 					message: 'config/ is a pure leaf layer, no imports from app/, state/, components/, features/, services/, or ui/.',
 				}],
 			}],
+			'chive/no-chart-presentation-imports': 'error',
 		},
 	},
 
@@ -675,7 +677,7 @@ export default [
 					message: 'domain/ is a pure leaf layer. Import only domain, config, utils, or vendor modules.',
 				}],
 			}],
-			'chive/domain-no-chart-presentation': 'error',
+			'chive/no-chart-presentation-imports': 'error',
 			'no-restricted-globals': ['error',
 				{
 					name: 'document',

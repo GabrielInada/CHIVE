@@ -6,7 +6,8 @@
  * semantics verbatim. Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { BAR_CHART, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
+import { BAR_CHART } from '../../config/charts/definitions/bar.js';
+import { CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts/definitions.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 
 /**

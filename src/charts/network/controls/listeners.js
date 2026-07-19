@@ -10,7 +10,7 @@
  * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
-import { NETWORK_GRAPH } from '../../../config/charts.js';
+import { NETWORK_GRAPH } from '../../../config/charts/definitions/network.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,

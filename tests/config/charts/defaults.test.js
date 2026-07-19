@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { createDefaultChartConfig } from '../../src/config/chartDefaults.js';
-import { CHART_TYPE_KEYS } from '../../src/config/chartTypes.js';
+import { createDefaultChartConfig } from '../../../src/config/charts/defaults.js';
+import { CHART_TYPE_KEYS } from '../../../src/config/charts/definitions.js';
 
 describe('chartDefaults', () => {
 	describe('createDefaultChartConfig', () => {

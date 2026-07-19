@@ -12,7 +12,8 @@
  * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
-import { CHART_COLORS, TREEMAP_CHART } from '../../../config/charts.js';
+import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { TREEMAP_CHART } from '../../../config/charts/definitions/treemap.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupCheckboxListeners,

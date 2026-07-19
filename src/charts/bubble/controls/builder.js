@@ -15,7 +15,7 @@
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
-import { BUBBLE_CHART } from '../../../config/charts.js';
+import { BUBBLE_CHART } from '../../../config/charts/definitions/bubble.js';
 import { t } from '../../../services/i18nService.js';
 import { normalizeColumnNameList } from '../../../domain/datasets/columns.js';
 import {

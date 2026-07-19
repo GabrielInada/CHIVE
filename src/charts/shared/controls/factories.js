@@ -230,11 +230,11 @@ export function createColorInputControl(id, labelText, value, fallback, disabled
 }
 
 // Color Presets for palette quick-apply.
-import { CHART_COLOR_PALETTES } from '../../../config/charts.js';
+import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 
 /**
- * Pre-built color palettes, exposed by the shared controls layer so per-
- * chart files do not need to import directly from `config/charts.js`.
+ * Pre-built color palettes, exposed by the shared controls layer so per-chart
+ * files do not need to import directly from `config/charts/shared.js`.
  *
  * @type {Object<string, string[]>}
  */

@@ -13,7 +13,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 import { createScatter3dControls } from '../../../src/charts/scatter3d/controls/builder.js';
 import { setupScatter3dControlListeners } from '../../../src/charts/scatter3d/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/scatter3d/controls/activationDefaults.js';
-import { SCATTER3D_CHART } from '../../../src/config/charts.js';
+import { SCATTER3D_CHART } from '../../../src/config/charts/definitions/scatter3d.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right

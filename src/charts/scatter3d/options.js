@@ -6,7 +6,8 @@
  * flows through here so the clamps live in one place.
  */
 
-import { CHART_HEIGHT_LIMITS, SCATTER3D_CHART } from '../../config/charts.js';
+import { CHART_HEIGHT_LIMITS } from '../../config/charts/definitions.js';
+import { SCATTER3D_CHART } from '../../config/charts/definitions/scatter3d.js';
 import { clamp } from '../../utils/formatters.js';
 
 /**

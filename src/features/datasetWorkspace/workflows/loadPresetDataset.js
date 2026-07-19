@@ -11,7 +11,7 @@ import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../../../
 import { loadPresetSource } from '../../../services/presetService.js';
 import { addDataset } from '../../../state/appState.js';
 import { showError, showProgress } from '../../../ui/feedback.js';
-import { createDefaultChartConfig } from '../../../config/chartDefaults.js';
+import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
 
 /**
  * Resolve and load a preset dataset.

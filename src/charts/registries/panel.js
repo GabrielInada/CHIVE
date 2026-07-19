@@ -11,7 +11,7 @@
  * @typedef {(container: HTMLElement, spec: ChartSnapshot) => Result} PanelChartRenderer
  */
 
-import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
 import { renderBarPanelChart } from '../bar/panelAdapter.js';
 import { renderBubblePanelChart } from '../bubble/panelAdapter.js';
 import { renderLinePanelChart } from '../line/panelAdapter.js';

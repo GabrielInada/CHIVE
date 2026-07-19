@@ -1,16 +1,16 @@
 /**
- * @fileoverview Keep pure src/domain modules from importing the chart
- * presentation layer while allowing the domain/charts owner directory.
+ * @fileoverview Keep pure src/domain and src/config modules from importing
+ * the chart presentation layer while allowing their charts owner directories.
  *
- * This rule is path-shaped. If src/domain or src/charts moves, update the
- * resolved roots here and the boundary probe that protects the rule from
- * silently matching the wrong paths.
+ * This rule is path-shaped. If src/domain, src/config, or src/charts moves,
+ * update the resolved roots here and the boundary probes that protect the
+ * rule from silently matching the wrong paths.
  */
 
 import path from 'node:path';
 
 const MESSAGE =
-	'domain/ is a pure leaf layer and may not import chart presentation code from src/charts/.';
+	'domain/ and config/ are pure leaf layers and may not import chart presentation code from src/charts/.';
 
 function normalizeAbsolute(value) {
 	return path.resolve(value).replaceAll('\\', '/');
@@ -25,7 +25,7 @@ export default {
 		type: 'problem',
 		docs: {
 			description:
-				'Prevent src/domain modules from importing the src/charts presentation layer.',
+				'Prevent src/domain and src/config modules from importing the src/charts presentation layer.',
 		},
 		schema: [],
 		messages: {

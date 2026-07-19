@@ -31,7 +31,7 @@ import {
 } from '../../../domain/datasets/columns.js';
 import { mergeChartConfigWithDefaults } from '../../../domain/charts/chartConfig.js';
 import { setActiveChartType } from '../../../state/appState.js';
-import { CHART_TYPE_KEYS } from '../../../config/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../../config/charts/definitions.js';
 import { getChartControlAdapter } from '../../../charts/registries/controls.js';
 import { renderChartParamsDOM } from '../views/chartParamsView.js';
 import { openChartTypePickerDialog } from '../dialogs/chartTypePickerDialog.js';

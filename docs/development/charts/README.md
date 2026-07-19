@@ -48,6 +48,16 @@ network exports use `NetworkGraph`. Those established exports remain accepted
 to avoid aesthetic-only churn, but new exports should prefer the plain
 canonical-key stem rather than extending the legacy forms.
 
+## Chart definitions
+
+Each chart owns its static identity, behavior constants, dimensions, workspace
+IDs, catalog category, and fresh default-config factory in
+`src/config/charts/definitions/<type>.js`. The composition module
+`src/config/charts/definitions.js` supplies canonical display order and derives
+the shared keyed maps without registering renderers or controls. Follow the
+[new-chart checklist in the source map](../source-map.md#where-do-i-put-new-code)
+when adding a type.
+
 ## How each doc is organized
 
 Every doc follows the same skeleton (scaled to the chart's complexity), so once you have read

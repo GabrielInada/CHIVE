@@ -8,7 +8,7 @@
  * leaf to the caller's sink callback. Used by `renderers/svg.js`.
  */
 
-import { TIN_CHART } from '../../config/charts.js';
+import { TIN_CHART } from '../../config/charts/definitions/tin.js';
 
 /** Midpoint of two TIN vertices in `{ x, y, z }` space. */
 export function midpoint(a, b) {

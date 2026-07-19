@@ -34,8 +34,8 @@ Key files (the per-chart package under [src/charts/scatter/](../../../src/charts
   [controls/listeners.js](../../../src/charts/scatter/controls/listeners.js),
   [controls/activationDefaults.js](../../../src/charts/scatter/controls/activationDefaults.js)
 - Shared presentation flow: [presentation.js](../../../src/charts/scatter/presentation.js)
-- Config constants: [charts.js](../../../src/config/charts.js) (`SCATTER_PLOT`)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `scatter` block)
+- Chart definition and constants: [scatter.js](../../../src/config/charts/definitions/scatter.js) (`SCATTER_DEFINITION`, `SCATTER_PLOT`)
+- Per-dataset config defaults: [scatter.js](../../../src/config/charts/definitions/scatter.js) (the definition's fresh `scatter` factory)
 - Section adapter (dataset workspace): [workspaceSection.js](../../../src/charts/scatter/workspaceSection.js)
 - Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/scatter/panelAdapter.js)
 
@@ -219,7 +219,7 @@ consistent (the panel path reads them from the snapshot's `columnsSnapshot`; see
 
 `chartConfig.scatter` is the scatter slice of each dataset's `chartConfig`. The fresh shape
 comes from `createDefaultChartConfig()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js); saved configs are deep-merged onto the
+[defaults.js](../../../src/config/charts/defaults.js); saved configs are deep-merged onto the
 defaults by `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js), which handles the nested
 `regression` block explicitly.
@@ -260,7 +260,7 @@ defaults by `mergeChartConfigWithDefaults()` in
 
 ### 4.4 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js): `CHART_COLORS.scatter` = `#1a472a`;
+[scatter.js](../../../src/config/charts/definitions/scatter.js): the scatter color is `#1a472a`;
 `CHART_DIMENSIONS.scatter` = `{ width: 700, height: 320, margins: { top:12, right:12,
 bottom:44, left:52 } }` (grown adaptively for categorical axes, section 7.4);
 `CHART_HEIGHT_LIMITS.scatter` = `{ min: 220, max: 720 }`; `SCATTER_PLOT` holds the tick count
@@ -563,7 +563,7 @@ Package tests live under [tests/charts/scatter/](../../../tests/charts/scatter):
     <g class="scatter-regression-annotation">  (equation + R², overall mode)
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `SCATTER_PLOT`): `ticks`,
+**Tuning knobs** ([scatter.js](../../../src/config/charts/definitions/scatter.js) `SCATTER_PLOT`): `ticks`,
 `defaultRadius`, `defaultOpacity`, `defaultScale`.
 
 **Foundations → implementation map:**

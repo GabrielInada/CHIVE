@@ -13,7 +13,7 @@
  * never shifts because an outlier was sampled out.
  */
 
-import { SCATTER3D_CHART } from '../../config/charts.js';
+import { SCATTER3D_CHART } from '../../config/charts/definitions/scatter3d.js';
 
 /**
  * Per-axis `[min, max]` extents.

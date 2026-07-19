@@ -11,7 +11,7 @@
  * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
-import { BUBBLE_CHART } from '../../../config/charts.js';
+import { BUBBLE_CHART } from '../../../config/charts/definitions/bubble.js';
 import { normalizeColumnNameList } from '../../../domain/datasets/columns.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {

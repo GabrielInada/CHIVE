@@ -3,12 +3,12 @@
  *
  * Owns deep merge with static defaults, legacy migration, malformed-block
  * hardening, and column-aware stale-filter trimming. This module is pure and
- * DOM-free; the default data itself lives in config/chartDefaults.js.
+ * DOM-free; the default data itself lives in config/charts/definitions/.
  *
  * @typedef {import('../../types.js').ChartConfig} ChartConfig
  */
 
-import { createDefaultChartConfig } from '../../config/chartDefaults.js';
+import { createDefaultChartConfig } from '../../config/charts/defaults.js';
 import { normalizeGlobalFilter, createEmptyGlobalFilter, resolveGlobalFilterForColumns } from '../filters/globalFilter.js';
 
 /**

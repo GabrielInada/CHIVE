@@ -4,7 +4,7 @@
  * `{ chartType: null }` for the explicit "Clear" action.
  */
 
-import { CHART_TYPE_KEYS } from '../../../config/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../../config/charts/definitions.js';
 import { CHART_CATALOG } from '../../../charts/catalog.js';
 import { installDialogFocus } from '../../../ui/dialogFocus.js';
 

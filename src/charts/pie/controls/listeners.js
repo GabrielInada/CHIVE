@@ -11,7 +11,8 @@
  * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
-import { CHART_COLORS, PIE_CHART } from '../../../config/charts.js';
+import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { COLOR_PRESETS, normalizeHexColor } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,

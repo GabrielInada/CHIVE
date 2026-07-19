@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalizeChartConfig, mergeChartConfigWithDefaults } from '../../../src/domain/charts/chartConfig.js';
-import { createDefaultChartConfig } from '../../../src/config/chartDefaults.js';
-import { CHART_TYPE_KEYS } from '../../../src/config/chartTypes.js';
+import { createDefaultChartConfig } from '../../../src/config/charts/defaults.js';
+import { CHART_TYPE_KEYS } from '../../../src/config/charts/definitions.js';
 
 describe('chartConfig', () => {
 	describe('mergeChartConfigWithDefaults', () => {

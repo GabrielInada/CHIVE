@@ -1,27 +1,16 @@
 /**
- * Static workspace DOM contracts keyed by chart type.
+ * Static workspace DOM contracts derived from the per-chart definitions.
  */
 
-export const CHART_CONTAINERS = {
-	bar: 'chart-bar-container',
-	scatter: 'chart-scatter-container',
-	network: 'chart-network-container',
-	pie: 'chart-pie-container',
-	bubble: 'chart-bubble-container',
-	treemap: 'chart-treemap-container',
-	line: 'chart-line-container',
-	tin: 'chart-tin-container',
-	scatter3d: 'chart-scatter3d-container',
-};
+import {
+	CHART_DEFINITIONS,
+	CHART_TYPE_KEYS,
+} from '../config/charts/definitions.js';
 
-export const CHART_BLOCKS = {
-	bar: 'chart-block-bar',
-	scatter: 'chart-block-scatter',
-	network: 'chart-block-network',
-	pie: 'chart-block-pie',
-	bubble: 'chart-block-bubble',
-	treemap: 'chart-block-treemap',
-	line: 'chart-block-line',
-	tin: 'chart-block-tin',
-	scatter3d: 'chart-block-scatter3d',
-};
+export const CHART_CONTAINERS = Object.freeze(Object.fromEntries(
+	CHART_TYPE_KEYS.map(key => [key, CHART_DEFINITIONS[key].workspaceIds.container]),
+));
+
+export const CHART_BLOCKS = Object.freeze(Object.fromEntries(
+	CHART_TYPE_KEYS.map(key => [key, CHART_DEFINITIONS[key].workspaceIds.block]),
+));

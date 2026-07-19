@@ -89,11 +89,11 @@ flowchart TB
 ## 4. The data model
 
 `chartConfig.scatter3d` (defaults in
-[chartDefaults.js](../../../src/config/chartDefaults.js)): `enabled`,
+[scatter3d.js](../../../src/config/charts/definitions/scatter3d.js)): `enabled`,
 `expanded`, `x`, `y`, `z` (numeric column names or `null`), `customTitle`,
 `chartHeight` (460 default), `pointSize`, `opacity`, `color`.
 
-`SCATTER3D_CHART` in [charts.js](../../../src/config/charts.js) holds the
+`SCATTER3D_CHART` in [scatter3d.js](../../../src/config/charts/definitions/scatter3d.js) holds the
 point size/opacity limits, `maxPoints` (50k render budget),
 `maxDevicePixelRatio` (2, caps the WebGL backing-store cost on high-DPR
 screens), and the `camera` constants (fov, initial angles/distance, zoom
@@ -258,5 +258,5 @@ notice), and `controls.test.js`. Panel export omission is covered in
 - CSS: `.chart-canvas-3d` (canvas layout + `touch-action`),
   `.chart-canvas-title`, `.chart-sampling-notice`, `.visually-hidden`
   (all in `charts.css`); `.panel-slot-svg canvas` in `panel.css`.
-- Tuning knobs: `SCATTER3D_CHART` in `config/charts.js` (`maxPoints`,
+- Tuning knobs: `SCATTER3D_CHART` in `config/charts/definitions/scatter3d.js` (`maxPoints`,
   `maxDevicePixelRatio`, camera speeds/clamps, size/opacity limits).

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createDataStateFacade } from '../../src/state/dataStateFacade.js';
-import { CHART_TYPE_KEYS } from '../../src/config/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../src/config/charts/definitions.js';
 
 function makeFacade(initialConfig = null) {
 	const emitStateChange = vi.fn();

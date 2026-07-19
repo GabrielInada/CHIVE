@@ -22,7 +22,7 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { CHART_DIMENSIONS } from '../../../config/charts.js';
+import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
 import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';

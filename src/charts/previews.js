@@ -1,5 +1,5 @@
 /**
- * Hardcoded preview SVG markup for each chart type. Each export is a
+ * Hardcoded preview SVG markup for each chart type. Each value is a
  * template-literal string of SVG markup, sized to fit the picker dialog's
  * 84×38 preview slot.
  *
@@ -10,7 +10,7 @@
  * (no user input ever flows into these strings).
  */
 
-export const PREVIEW_BAR_SVG = `
+const bar = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<rect x="6" y="18" width="10" height="14" rx="2"></rect>
 		<rect x="22" y="10" width="10" height="22" rx="2"></rect>
@@ -20,7 +20,7 @@ export const PREVIEW_BAR_SVG = `
 	</svg>
 `;
 
-export const PREVIEW_SCATTER_SVG = `
+const scatter = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<circle cx="12" cy="28" r="2.6"></circle>
 		<circle cx="22" cy="24" r="2.6"></circle>
@@ -32,7 +32,7 @@ export const PREVIEW_SCATTER_SVG = `
 	</svg>
 `;
 
-export const PREVIEW_SCATTER3D_SVG = `
+const scatter3d = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<polygon points="26,8 62,8 74,16 38,16" fill="none" stroke="#8da3ba" stroke-width="1.2"></polygon>
 		<polygon points="26,8 26,30 38,36 38,16" fill="none" stroke="#8da3ba" stroke-width="1.2"></polygon>
@@ -48,7 +48,7 @@ export const PREVIEW_SCATTER3D_SVG = `
 	</svg>
 `;
 
-export const PREVIEW_NETWORK_SVG = `
+const network = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<line x1="14" y1="10" x2="40" y2="17" stroke="#8da3ba" stroke-width="1.6"></line>
 		<line x1="40" y1="17" x2="67" y2="9" stroke="#8da3ba" stroke-width="1.6"></line>
@@ -62,7 +62,7 @@ export const PREVIEW_NETWORK_SVG = `
 	</svg>
 `;
 
-export const PREVIEW_PIE_SVG = `
+const pie = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<circle class="no-fill" cx="24" cy="19" r="12" stroke-width="8" stroke="#8ea857" stroke-dasharray="30 46"></circle>
 		<circle class="no-fill" cx="24" cy="19" r="12" stroke-width="8" stroke="#d4622a" stroke-dasharray="16 60" stroke-dashoffset="-30"></circle>
@@ -72,7 +72,7 @@ export const PREVIEW_PIE_SVG = `
 	</svg>
 `;
 
-export const PREVIEW_TREEMAP_SVG = `
+const treemap = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<rect x="2" y="2" width="38" height="18" rx="2" fill="#E8634A"></rect>
 		<rect x="42" y="2" width="20" height="18" rx="2" fill="#4ECDC4"></rect>
@@ -83,7 +83,7 @@ export const PREVIEW_TREEMAP_SVG = `
 	</svg>
 `;
 
-export const PREVIEW_BUBBLE_SVG = `
+const bubble = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<circle cx="18" cy="22" r="10" fill="#c9b3d7"></circle>
 		<circle cx="36" cy="14" r="7" fill="#a87bc1"></circle>
@@ -92,7 +92,7 @@ export const PREVIEW_BUBBLE_SVG = `
 	</svg>
 `;
 
-export const PREVIEW_TIN_SVG = `
+const tin = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<polygon points="8,32 26,18 44,30" fill="#9ec1d9"></polygon>
 		<polygon points="26,18 44,30 50,14" fill="#7aa5c2"></polygon>
@@ -111,7 +111,7 @@ export const PREVIEW_TIN_SVG = `
 	</svg>
 `;
 
-export const PREVIEW_LINE_SVG = `
+const line = `
 	<svg viewBox="0 0 84 38" aria-hidden="true">
 		<polyline class="no-fill" points="6,28 18,22 28,24 40,14 52,18 64,8 78,12" stroke="#4e79a7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></polyline>
 		<circle cx="6" cy="28" r="1.6" fill="#4e79a7"></circle>
@@ -123,3 +123,15 @@ export const PREVIEW_LINE_SVG = `
 		<circle cx="78" cy="12" r="1.6" fill="#4e79a7"></circle>
 	</svg>
 `;
+
+export const CHART_PREVIEWS = Object.freeze({
+	bar,
+	line,
+	scatter,
+	scatter3d,
+	pie,
+	bubble,
+	network,
+	treemap,
+	tin,
+});

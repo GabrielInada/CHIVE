@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeBarOptions } from '../../../src/charts/bar/options.js';
-import { BAR_CHART, CHART_COLORS, CHART_DIMENSIONS } from '../../../src/config/charts.js';
+import { BAR_CHART } from '../../../src/config/charts/definitions/bar.js';
+import { CHART_COLORS, CHART_DIMENSIONS } from '../../../src/config/charts/definitions.js';
 
 describe('normalizeBarOptions', () => {
 	it('applies defaults for an empty options bag', () => {

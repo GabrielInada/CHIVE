@@ -128,15 +128,17 @@ vi.mock('../../../../src/charts/scatter3d/controls/listeners.js', () => ({
 }));
 
 vi.mock('../../../../src/charts/previews.js', () => ({
-	PREVIEW_BAR_SVG: '<svg id="prev-bar" />',
-	PREVIEW_BUBBLE_SVG: '<svg id="prev-bubble" />',
-	PREVIEW_NETWORK_SVG: '<svg id="prev-network" />',
-	PREVIEW_PIE_SVG: '<svg id="prev-pie" />',
-	PREVIEW_SCATTER_SVG: '<svg id="prev-scatter" />',
-	PREVIEW_TREEMAP_SVG: '<svg id="prev-treemap" />',
-	PREVIEW_LINE_SVG: '<svg id="prev-line" />',
-	PREVIEW_TIN_SVG: '<svg id="prev-tin" />',
-	PREVIEW_SCATTER3D_SVG: '<svg id="prev-scatter3d" />',
+	CHART_PREVIEWS: {
+		bar: '<svg id="prev-bar" />',
+		line: '<svg id="prev-line" />',
+		scatter: '<svg id="prev-scatter" />',
+		scatter3d: '<svg id="prev-scatter3d" />',
+		pie: '<svg id="prev-pie" />',
+		bubble: '<svg id="prev-bubble" />',
+		network: '<svg id="prev-network" />',
+		treemap: '<svg id="prev-treemap" />',
+		tin: '<svg id="prev-tin" />',
+	},
 }));
 
 vi.mock('../../../../src/features/datasetWorkspace/dialogs/chartTypePickerDialog.js', () => ({

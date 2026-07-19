@@ -20,8 +20,8 @@ Key files:
   [listeners.js](../../../src/charts/bubble/controls/listeners.js),
   [activationDefaults.js](../../../src/charts/bubble/controls/activationDefaults.js), and
   [nestingColumns.js](../../../src/charts/bubble/controls/nestingColumns.js)
-- Config constants: [charts.js](../../../src/config/charts.js) (`BUBBLE_CHART`, `CHART_COLOR_PALETTES`)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bubble` block)
+- Chart definition and constants: [bubble.js](../../../src/config/charts/definitions/bubble.js) (`BUBBLE_DEFINITION`, `BUBBLE_CHART`) and [shared.js](../../../src/config/charts/shared.js) (`CHART_COLOR_PALETTES`)
+- Per-dataset config defaults: [bubble.js](../../../src/config/charts/definitions/bubble.js) (the definition's fresh `bubble` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/bubble/presentation.js)
 - Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bubble/workspaceSection.js)
 - Panel adapter: [panelAdapter.js](../../../src/charts/bubble/panelAdapter.js)
@@ -137,7 +137,7 @@ on top of them. Panel snapshots are frozen `structuredClone`s
 
 `chartConfig.bubble` is the bubble slice of each dataset's `chartConfig`, built fresh by
 `createDefaultChartConfig()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js) and merged by
+[defaults.js](../../../src/config/charts/defaults.js) and merged by
 `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js). The merge has special
 handling for `bubble`: a legacy single `groupColumn` is promoted into a one-element
@@ -162,7 +162,7 @@ handling for `bubble`: a legacy single `groupColumn` is promoted into a one-elem
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js): `CHART_DIMENSIONS.bubble` is square (700x700) with
+[bubble.js](../../../src/config/charts/definitions/bubble.js): the bubble dimensions are square (700x700) with
 small margins; `CHART_HEIGHT_LIMITS.bubble` = `{ min: 400, max: 900 }` (taller floor than
 other charts, since packing needs room); `BUBBLE_CHART` holds the measure/label/nesting option
 lists, `autoLabelMinRadius` (20) and `parentLabelMinRadius` (40) label thresholds, padding
@@ -378,7 +378,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
       <title> <circle> <text>
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `BUBBLE_CHART`): `defaultPadding`,
+**Tuning knobs** ([bubble.js](../../../src/config/charts/definitions/bubble.js) `BUBBLE_CHART`): `defaultPadding`,
 `autoLabelMinRadius`, `parentLabelMinRadius`, `zoomTransitionDuration`, padding boosts.
 
 **Foundations → implementation map:**
