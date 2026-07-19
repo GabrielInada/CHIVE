@@ -148,8 +148,10 @@ already global-filtered; the renderer aggregates on top of them. Panel snapshots
 ### 4.1 Where config lives
 
 `chartConfig.pie` is the pie slice of each dataset's `chartConfig`, built fresh by
-`createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js).
+`createDefaultChartConfig()` in
+[chartDefaults.js](../../../src/config/chartDefaults.js) and merged by
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js).
 
 ### 4.2 The `chartConfig.pie` keys
 

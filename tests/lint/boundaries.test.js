@@ -42,6 +42,7 @@ const strictUiMessages = result =>
 const restrictionMessages = result =>
 	result.messages.filter(message =>
 		message.ruleId === 'no-restricted-imports' ||
+		message.ruleId === 'chive/domain-no-chart-presentation' ||
 		message.ruleId === 'chive/ui-strict-leaf' ||
 		message.ruleId === 'no-restricted-globals');
 
@@ -81,6 +82,12 @@ const FORBIDDEN_IMPORTS = [
 	['src/config/probe.js', "import '../ui/feedback.js';", 'config bans ui/'],
 	['src/domain/panel/probe.js', "import '../../ui/feedback.js';", 'domain bans ui/'],
 	[
+		'src/domain/charts/chartConfig.js',
+		"import '../../charts/bar/data.js';",
+		'domain/charts bans chart presentation code',
+		'chive/domain-no-chart-presentation',
+	],
+	[
 		'src/domain/panel/probe.js',
 		'export function probe() { return document.title; }',
 		'domain is DOM-free',
@@ -119,6 +126,7 @@ const ALLOWED_IMPORTS = [
 	['src/ui/feedback.js', "import '../types.js';", 'ui may import shared types'],
 	['src/ui/feedback.js', "import '../../vendor/d3/d3.js';", 'ui may import vendored modules'],
 	['src/config/chartDefaults.js', "import '../domain/filters/globalFilter.js';", 'config may use domain product rules'],
+	['src/domain/charts/chartConfig.js', "import '../../config/chartDefaults.js';", 'domain may use config defaults'],
 	['src/charts/bar/data.js', "import '../../domain/filters/chartFilter.js';", 'chart leaves may use domain filter rules'],
 	['src/charts/bubble/controls/listeners.js', "import '../../../domain/datasets/columns.js';", 'control listeners may use domain dataset rules'],
 	['src/features/panel/slots/lifecycle.js', "import '../../../charts/shared/containerLifecycle.js';", 'features may use shared chart infrastructure'],
@@ -134,10 +142,13 @@ describe('lint layer boundaries', () => {
 	) => {
 		const result = await lintProbe(virtualFile, code);
 		expect(result.errorCount, `expected a lint error for ${code} in ${virtualFile}`).toBeGreaterThanOrEqual(1);
-		expect(
-			messagesForRule(result, expectedRuleId).length,
-			`expected ${expectedRuleId} to fire for ${code} in ${virtualFile}`,
-		).toBeGreaterThanOrEqual(1);
+		const expectedRuleIds = Array.isArray(expectedRuleId) ? expectedRuleId : [expectedRuleId];
+		for (const ruleId of expectedRuleIds) {
+			expect(
+				messagesForRule(result, ruleId).length,
+				`expected ${ruleId} to fire for ${code} in ${virtualFile}`,
+			).toBeGreaterThanOrEqual(1);
+		}
 	});
 
 	it.each(STRICT_UI_FORBIDDEN_IMPORTS)('%s cannot use %s (%s)', async (virtualFile, code, _proves) => {

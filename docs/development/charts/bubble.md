@@ -136,10 +136,12 @@ on top of them. Panel snapshots are frozen `structuredClone`s
 ### 4.1 Where config lives
 
 `chartConfig.bubble` is the bubble slice of each dataset's `chartConfig`, built fresh by
-`createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js). The merge has special handling for
-`bubble`: a legacy single `groupColumn` is promoted into a one-element `nestingColumns` array
-so pre-multilevel configs keep working.
+`createDefaultChartConfig()` in
+[chartDefaults.js](../../../src/config/chartDefaults.js) and merged by
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js). The merge has special
+handling for `bubble`: a legacy single `groupColumn` is promoted into a one-element
+`nestingColumns` array so pre-multilevel configs keep working.
 
 ### 4.2 The `chartConfig.bubble` keys
 

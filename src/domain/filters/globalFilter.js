@@ -2,8 +2,8 @@
  * CHIVE dataset-wide global filter.
  *
  * Multi-rule filter pipeline applied BEFORE any per-chart filtering. Used
- * across panelController (when building chart snapshots), chartDefaults (when
- * resolving the active filter), and the global filter dialog component.
+ * across panelController (when building chart snapshots), domain chart-config
+ * canonicalization, and the global filter dialog component.
  *
  * Migrates legacy single-rule filters (pre-2.0) into the rules-array shape
  * on the fly via {@link normalizeGlobalFilter}, direct callers should

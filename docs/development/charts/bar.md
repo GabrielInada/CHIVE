@@ -167,8 +167,9 @@ TIN doc's [section 6.2](tin.md) for the snapshot lifecycle.)
 Each dataset owns a `chartConfig` object, and `chartConfig.bar` is the bar chart's slice of
 it. The canonical fresh shape is built by `createDefaultChartConfig()` in
 [chartDefaults.js](../../../src/config/chartDefaults.js); a saved or partial config is
-deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in the same file
-(user-set fields win, missing fields fall back to default).
+deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js) (user-set fields win,
+missing fields fall back to default).
 
 ### 4.2 The `chartConfig.bar` keys
 

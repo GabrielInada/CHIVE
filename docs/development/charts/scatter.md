@@ -220,8 +220,9 @@ consistent (the panel path reads them from the snapshot's `columnsSnapshot`; see
 `chartConfig.scatter` is the scatter slice of each dataset's `chartConfig`. The fresh shape
 comes from `createDefaultChartConfig()` in
 [chartDefaults.js](../../../src/config/chartDefaults.js); saved configs are deep-merged onto the
-defaults by `mergeChartConfigWithDefaults()`, which handles the nested `regression` block
-explicitly.
+defaults by `mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js), which handles the nested
+`regression` block explicitly.
 
 ### 4.2 The `chartConfig.scatter` keys
 

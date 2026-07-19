@@ -343,7 +343,7 @@ browser-local settings key owned by `settingsService.js`).
 - Do not synchronously emit a state event from inside a state subscriber.
 - `STATE_EVENTS.WILDCARD` is reserved for sink-style state-bus consumers.
 - Chart config is canonicalized at the state boundaries via `canonicalizeChartConfig`
-  (`config/chartDefaults.js`): default-filled, legacy-migrated, and trimmed of
+  (`domain/charts/chartConfig.js`): default-filled, legacy-migrated, and trimmed of
   global-filter rules whose column is gone. It runs at persistence restore
   (`normalizeStoredSnapshot`, so both the persisted bytes and hydrated memory are
   canonical), `addDataset`, and the emitting config writes (`updateActiveDatasetConfig`,

@@ -54,7 +54,7 @@ vi.mock('../../../../src/domain/datasets/columns.js', () => ({
 	getDateColumnNames: mocks.getDateColumnNames,
 }));
 
-vi.mock('../../../../src/config/chartDefaults.js', () => ({
+vi.mock('../../../../src/domain/charts/chartConfig.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 

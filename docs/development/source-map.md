@@ -24,7 +24,7 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/types.js` | Shared JSDoc typedefs (`AppState`, `Dataset`, `ChartConfig`, ...). Always imported directly, never through barrels. |
 | `src/config/` | Pure leaf layer: canonical chart identities, chart defaults, column type-detection settings (`columnTypeDetection.js`), limits, locale, settings, and format constants. DOM contracts live with their owners, not in config. It may not import app, state, features, services, or ui. |
 | `src/utils/` | Strictly pure, DOM-free, ownership-neutral leaf helpers: result envelopes, color conversion/interpolation, formatting, debounce, and throttle. It cannot import product-domain, chart, application, state, feature, service, or UI modules; lint also rejects direct `document` and `window` access. |
-| `src/domain/` | Pure product rules with one owner per subdirectory. `domain/panel/` holds layout templates, the panel-block model, and boundary rehydration; `domain/datasets/` holds parsing, type detection, processing, statistics, joins, column classification, and dataset fingerprints; `domain/filters/` owns single-chart filter semantics and the global multi-rule pipeline. It has the same DOM-free contract as `utils/` and additionally may not import chart presentation code. |
+| `src/domain/` | Pure product rules with one owner per subdirectory. `domain/panel/` holds layout templates, the panel-block model, and boundary rehydration; `domain/datasets/` holds parsing, type detection, processing, statistics, joins, column classification, and dataset fingerprints; `domain/filters/` owns single-chart filter semantics and the global multi-rule pipeline; `domain/charts/` owns chart-config merge and canonicalization rules while static default data stays in `config/chartDefaults.js`. It has the same DOM-free contract as `utils/` and additionally may not import chart presentation code. |
 | `src/features/settings/` | Settings feature package: `settingsController.js` owns the header settings button and connects dialog callbacks to the i18n and settings services (initialized on every page via `app/sharedPageInitializer.js`); `settingsDialog.js` is the callback-driven global settings modal; `domIds.js` owns its shared-page static HTML contract. It imports no application state. |
 | `src/state/` | State core: `appState.js`, the data/panel/ui facades, `stateEvents.js`, and `stateDebug.js`. Panel facade-only mutation primitives live under `state/panel/`. The only write path for application state. |
 | `src/features/datasetWorkspace/chartControls/` | The charts tab's controls sidebar: `chartControlsController.js` owns it end to end (DOM intent, facade writes, render triggering), `chartConfigAdapter.js` builds the `ChartConfigWriter` each chart package writes through, `livePreviewBridge.js` holds the replaceable live-render callback, and `chartHeightResize.js` owns the drag handles. The pure control DOM factories and the writer-driven listener bindings live under `charts/shared/controls/`. |
@@ -83,7 +83,7 @@ use Controller for pure renderers, services, registries, or math helpers.
 | An ownerless UI mechanic (toast, focus trap, similar DOM behavior no single feature owns) | `src/ui/` | Strict leaf: DOM access is fine, but import only `config/`, `utils/`, `types.js`, or vendor modules. Never import state, services, features, `app/`, or `entries/`. |
 | A browser download or other one-shot browser effect | The matching service, such as `src/services/downloads/` | Keep effectful Blob, object-URL, DOM-trigger, or browser-I/O code out of `utils/`; keep pure transformations in their domain or in `utils/`. |
 | Settings behavior (a new global preference, dialog section, or settings wiring) | `src/features/settings/` | The controller talks to the owning service; the dialog stays callback-driven and imports no application state. |
-| A pure domain rule | `src/domain/{owner}/` | Product rules owned by one feature domain (e.g. the panel layout templates, the dataset algorithms). Same leaf constraints as `utils/`, plus no chart imports. |
+| A pure domain rule | `src/domain/{owner}/` | Product rules owned by one feature domain (e.g. the panel layout templates, the dataset algorithms). Same leaf constraints as `utils/`, plus no imports from the presentation layer under `src/charts/`. |
 | A new dataset algorithm (parse, type, stats, join) | `src/domain/datasets/` | Pure and I/O-free, so it belongs in the domain leaf, not `services/`. Import it directly; there is no barrel. |
 | A change to how projects are stored | `src/services/persistence/` | Reach the package only through `services/persistence.js`; lint enforces this. Do not change persisted shapes or snapshot identity as part of a structural move. |
 | A new derived selector | The facade that owns the underlying domain | Keep getters thin; do not compute heavy aggregates inside them. |
@@ -97,7 +97,8 @@ For a new chart type, update the full chart surface in one pass:
 - Register the chart identity and visual precedence in
   `config/chartTypes.js`, its preview/category metadata in
   `charts/catalog.js` and `charts/previews.js`, and its default config block in
-  `config/chartDefaults.js`.
+  `config/chartDefaults.js`. Add the corresponding per-chart merge entry to
+  `domain/charts/chartConfig.js`.
 - The type also registers in `types.js` (`ChartTypeKey`),
   `charts/workspaceDomIds.js`, `app/bindings/chartSnapshotMetadata.js`, and the
   static chart block in `index.html`. Add chart constants to `config/charts.js`

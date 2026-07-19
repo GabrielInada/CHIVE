@@ -130,8 +130,10 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
 - **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not
   import `app/`, `state/`, `features/`, `services/`, or `ui/`. Ownership-neutral
   `utils/` additionally may not import `domain/` or `charts/`. `domain/` has the
-  higher-layer boundary and may not import `charts/`. Both `utils/` and
-  `domain/` reject direct `document` and `window` access.
+  higher-layer boundary and may not import the chart presentation layer under
+  `src/charts/`; domain owner directories such as `domain/charts/` may depend
+  on one another. Both `utils/` and `domain/` reject direct `document` and
+  `window` access.
 - **One-way dependency direction.** `entries/` and `app/` are the composition
   layers: `features/` and `ui/` may not import either of them. `ui/` (ownerless
   browser UI mechanics such as feedback toasts and the dialog focus trap) is a

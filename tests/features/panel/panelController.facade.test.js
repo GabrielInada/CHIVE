@@ -55,7 +55,7 @@ vi.mock('../../../src/state/appState.js', () => mocks.appState);
 vi.mock('../../../src/features/panel/views/panelView.js', () => mocks.panelView);
 vi.mock('../../../src/features/panel/export/svgExporter.js', () => mocks.svgExporter);
 vi.mock('../../../src/services/i18nService.js', () => mocks.i18n);
-vi.mock('../../../src/config/chartDefaults.js', () => ({
+vi.mock('../../../src/domain/charts/chartConfig.js', () => ({
   mergeChartConfigWithDefaults: vi.fn((type, config) => config || {}),
 }));
 vi.mock('../../../src/domain/filters/globalFilter.js', () => ({

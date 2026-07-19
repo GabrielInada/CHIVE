@@ -12,7 +12,7 @@
  */
 
 import { t, getLocale, translateType } from '../../services/i18nService.js';
-import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
+import { mergeChartConfigWithDefaults } from '../../domain/charts/chartConfig.js';
 import { PREVIEW_DEFAULT_ROWS, PREVIEW_MIN_ROWS } from '../../config/limits.js';
 import { getNumericColumns } from '../../domain/datasets/columns.js';
 
