@@ -6,7 +6,7 @@
  * enforce module privacy.
  */
 
-import { BUBBLE_CHART } from '../../../config/charts.js';
+import { BUBBLE_CHART } from '../../../config/charts/definitions/bubble.js';
 import { normalizeColumnNameList } from '../../../domain/datasets/columns.js';
 
 /**

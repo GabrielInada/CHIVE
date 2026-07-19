@@ -7,7 +7,7 @@
  * `colorUtils`; no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { CHART_COLORS } from '../../config/charts.js';
+import { CHART_COLORS } from '../../config/charts/definitions.js';
 import { parseHexColor, toHex } from '../../utils/colorUtils.js';
 
 /**

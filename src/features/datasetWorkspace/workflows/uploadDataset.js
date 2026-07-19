@@ -13,7 +13,7 @@ import { addDataset } from '../../../state/appState.js';
 import { showError, clearErrors, showProgress } from '../../../ui/feedback.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../../../config/limits.js';
 import { DELIMITED_EXTENSIONS } from '../../../config/formats.js';
-import { createDefaultChartConfig } from '../../../config/chartDefaults.js';
+import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
 
 /**
  * Process every file from the input or drop event. Failures on

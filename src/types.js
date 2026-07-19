@@ -100,7 +100,8 @@
  * Universal fields present on every per-chart config block. Each chart type
  * extends this with type-specific fields (axis bindings, color scales, …).
  * Those extras are intentionally not enumerated here to keep this typedef
- * stable. See `src/config/chartDefaults.js` for the full per-chart shape.
+ * stable. See `src/config/charts/definitions/<type>.js` for each full
+ * per-chart shape.
  *
  * @typedef {Object} ChartTypeConfig
  * @property {boolean} enabled - Whether this chart type is the active one for the dataset.
@@ -114,8 +115,9 @@
 /**
  * Per-dataset chart configuration. One block per supported chart type plus
  * the active-tab marker and global filter. The per-chart entries are
- * superset-typed as `ChartTypeConfig`. See `src/config/chartDefaults.js` for
- * each chart type's full field set.
+ * superset-typed as `ChartTypeConfig`. See
+ * `src/config/charts/definitions/<type>.js` for each chart type's full field
+ * set.
  *
  * @typedef {Object} ChartConfig
  * @property {string} activeTab - Active tab id (e.g. `'preview'`, `'charts'`, `'panel'`).

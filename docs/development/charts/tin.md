@@ -26,10 +26,10 @@ tests:
   [color.js](../../../src/charts/tin/color.js), [math.js](../../../src/charts/tin/math.js),
   and [interaction.js](../../../src/charts/tin/interaction.js)
 - Sidebar controls: [controls](../../../src/charts/tin/controls/)
-- Config constants: [charts.js](../../../src/config/charts.js)
+- Chart definition and constants: [tin.js](../../../src/config/charts/definitions/tin.js)
 - Browser-local rendering setting: [settingsService.js](../../../src/services/settingsService.js)
   and [settings.js](../../../src/config/settings.js)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
+- Per-dataset config defaults: [tin.js](../../../src/config/charts/definitions/tin.js)
 - Bundled preset catalog: [presetCatalog.js](../../../src/data/presetCatalog.js)
 - Renderer tests: [svg.test.js](../../../tests/charts/tin/renderers/svg.test.js)
 
@@ -63,8 +63,8 @@ Key files:
 - SVG renderer: [svg.js](../../../src/charts/tin/renderers/svg.js)
 - Options, color, geometry, and interaction helpers: [TIN package](../../../src/charts/tin/)
 - Sidebar controls: [controls](../../../src/charts/tin/controls/)
-- Config constants: [charts.js](../../../src/config/charts.js)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
+- Chart definition and constants: [tin.js](../../../src/config/charts/definitions/tin.js)
+- Per-dataset config defaults: [tin.js](../../../src/config/charts/definitions/tin.js)
 - Color math: [colorUtils.js](../../../src/utils/colorUtils.js)
 - Shared presentation flow: [presentation.js](../../../src/charts/tin/presentation.js)
 - Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/tin/workspaceSection.js)
@@ -333,7 +333,7 @@ the central tension the performance design (section 9) addresses.
 
 Each dataset owns a `chartConfig` object, and `chartConfig.tin` is the TIN chart's
 slice of it. The canonical fresh shape is built by `createDefaultChartConfig()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js) (the `tin:` block). A saved or
+[defaults.js](../../../src/config/charts/defaults.js) (which assembles the `tin` definition). A saved or
 partial config is deep-merged onto these defaults by
 `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js) (user-set fields win,
@@ -371,7 +371,7 @@ missing fields fall back to default).
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js) holds the bounds and shared values:
+[tin.js](../../../src/config/charts/definitions/tin.js) holds the bounds and values:
 
 - `CHART_COLORS.tin` = `#5d8aa8` (the default min-gradient/base color).
 - `CHART_DIMENSIONS.tin` = `{ width: 700, height: 460, margins: { top:16, right:16, bottom:44, left:56 } }`.
@@ -1002,7 +1002,7 @@ captured by value (so the live-preview panel skip is safe).
   <g class="tin-legend">         (12-stop gradient strip + min/max labels)
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `TIN_CHART`):
+**Tuning knobs** ([tin.js](../../../src/config/charts/definitions/tin.js) `TIN_CHART`):
 `rampBuckets` (Optimized color resolution vs path count), `maxSurfaceLeaves`
 (shared geometry budget), `maxSubdivisionDepth`, `maxIsolineLevels`.
 

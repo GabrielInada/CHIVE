@@ -13,7 +13,8 @@
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
-import { CHART_COLORS, TIN_CHART, TIN_COLOR_RAMPS } from '../../../config/charts.js';
+import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { TIN_CHART, TIN_COLOR_RAMPS } from '../../../config/charts/definitions/tin.js';
 import { t } from '../../../services/i18nService.js';
 import {
 	createCheckboxControl,

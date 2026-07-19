@@ -15,7 +15,7 @@
 
 import { axisBottom, axisLeft } from '../../../../vendor/d3/d3.js';
 import { hideChartTooltip, moveChartTooltip } from '../../shared/tooltip/tooltip.js';
-import { CHART_DIMENSIONS } from '../../../config/charts.js';
+import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { ok, fail } from '../../../utils/result.js';
 import {
 	AXIS_TYPE_VALUES,

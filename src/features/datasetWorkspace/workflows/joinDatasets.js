@@ -12,7 +12,7 @@ import { t } from '../../../services/i18nService.js';
 import { processData } from '../../../domain/datasets/processData.js';
 import { joinDatasets } from '../../../domain/datasets/join.js';
 import { addDataset, getAllDatasets } from '../../../state/appState.js';
-import { createDefaultChartConfig } from '../../../config/chartDefaults.js';
+import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
 
 /**
  * Build a human-readable name for a joined dataset:

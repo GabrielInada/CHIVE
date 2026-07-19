@@ -10,7 +10,7 @@
  * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
-import { CHART_COLORS } from '../../../config/charts.js';
+import { CHART_COLORS } from '../../../config/charts/definitions.js';
 import {
 	setupSelectListeners,
 	setupTextInputListener,

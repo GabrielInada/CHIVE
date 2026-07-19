@@ -7,7 +7,8 @@
  * stay in `renderers/svg.js`. Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { CHART_COLORS, CHART_DIMENSIONS, LINE_CHART } from '../../config/charts.js';
+import { CHART_COLORS, CHART_DIMENSIONS } from '../../config/charts/definitions.js';
+import { LINE_CHART } from '../../config/charts/definitions/line.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 
 /** @private */

@@ -9,7 +9,8 @@
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
-import { CHART_COLORS, SCATTER3D_CHART } from '../../../config/charts.js';
+import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { SCATTER3D_CHART } from '../../../config/charts/definitions/scatter3d.js';
 import { t } from '../../../services/i18nService.js';
 import {
 	createColorInputControl,

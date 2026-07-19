@@ -3,13 +3,17 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { CHART_CATALOG } from '../../src/charts/catalog.js';
-import { SUPPORTED_CONTROL_CHART_TYPES } from '../../src/charts/registries/controls.js';
-import { SUPPORTED_PANEL_CHART_TYPES } from '../../src/charts/registries/panel.js';
-import { SUPPORTED_WORKSPACE_CHART_TYPES } from '../../src/charts/registries/workspace.js';
-import { createDefaultChartConfig } from '../../src/config/chartDefaults.js';
-import { CHART_TYPE_KEYS } from '../../src/config/chartTypes.js';
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../src/charts/workspaceDomIds.js';
+import { CHART_CATALOG } from '../../../src/charts/catalog.js';
+import { SUPPORTED_CONTROL_CHART_TYPES } from '../../../src/charts/registries/controls.js';
+import { SUPPORTED_PANEL_CHART_TYPES } from '../../../src/charts/registries/panel.js';
+import { SUPPORTED_WORKSPACE_CHART_TYPES } from '../../../src/charts/registries/workspace.js';
+import { createDefaultChartConfig } from '../../../src/config/charts/defaults.js';
+import {
+	CHART_DEFINITIONS,
+	CHART_TYPE_KEYS,
+} from '../../../src/config/charts/definitions.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/charts/workspaceDomIds.js';
+import en from '../../../src/i18n/en.json';
 
 const EXPECTED_CHART_TYPE_KEYS = [
 	'bar',
@@ -32,6 +36,20 @@ describe('chart-type metadata', () => {
 		expect(CHART_TYPE_KEYS).toEqual(EXPECTED_CHART_TYPE_KEYS);
 		expect(new Set(CHART_TYPE_KEYS).size).toBe(CHART_TYPE_KEYS.length);
 		expect(Object.isFrozen(CHART_TYPE_KEYS)).toBe(true);
+		expect(Object.isFrozen(CHART_DEFINITIONS)).toBe(true);
+	});
+
+	it('keeps every definition complete, immutable, and linked to i18n', () => {
+		expect(Object.keys(CHART_DEFINITIONS)).toEqual(CHART_TYPE_KEYS);
+
+		for (const key of CHART_TYPE_KEYS) {
+			const definition = CHART_DEFINITIONS[key];
+			expect(definition.key).toBe(key);
+			expect(Object.isFrozen(definition)).toBe(true);
+			expect(en).toHaveProperty(`chive-chart-toggle-${key}`);
+			expect(en).toHaveProperty(`chive-viz-${key}-desc`);
+			expect(en).toHaveProperty(definition.catalogCategoryKey);
+		}
 	});
 
 	it('keeps default config blocks aligned with supported chart identities', () => {

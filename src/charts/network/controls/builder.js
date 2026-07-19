@@ -8,7 +8,7 @@
  */
 
 import { t } from '../../../services/i18nService.js';
-import { NETWORK_GRAPH } from '../../../config/charts.js';
+import { NETWORK_GRAPH } from '../../../config/charts/definitions/network.js';
 import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createColorPresetControl, createSelectControl } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
 

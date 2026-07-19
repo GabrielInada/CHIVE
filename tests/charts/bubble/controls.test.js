@@ -15,7 +15,7 @@ import {
 } from '../../../src/charts/bubble/controls/builder.js';
 import { setupBubbleChartControlListeners } from '../../../src/charts/bubble/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/bubble/controls/activationDefaults.js';
-import { BUBBLE_CHART } from '../../../src/config/charts.js';
+import { BUBBLE_CHART } from '../../../src/config/charts/definitions/bubble.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right

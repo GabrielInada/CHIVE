@@ -23,7 +23,8 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { CHART_DIMENSIONS, PIE_CHART } from '../../../config/charts.js';
+import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
 import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { ok, fail } from '../../../utils/result.js';

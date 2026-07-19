@@ -63,7 +63,7 @@ import { renderCharts } from '../../../../src/features/datasetWorkspace/views/ch
 import { renderWorkspaceChart } from '../../../../src/charts/registries/workspace.js';
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/charts/workspaceDomIds.js';
 import { VIEW_IDS, BADGE_IDS } from '../../../../src/features/datasetWorkspace/domIds.js';
-import { CHART_TYPE_KEYS } from '../../../../src/config/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../../../src/config/charts/definitions.js';
 
 const SECTION_MOCKS = {
 	bar: 'renderBarChartSection',

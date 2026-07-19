@@ -16,7 +16,7 @@
  * }} ChartControlAdapter
  */
 
-import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
 import { createBarChartControls } from '../bar/controls/builder.js';
 import { setupBarChartControlListeners } from '../bar/controls/listeners.js';
 import { computeDefaults as computeBarDefaults } from '../bar/controls/activationDefaults.js';

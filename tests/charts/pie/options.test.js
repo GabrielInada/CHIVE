@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizePieOptions } from '../../../src/charts/pie/options.js';
-import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../../src/config/charts.js';
+import { CHART_COLORS, CHART_DIMENSIONS } from '../../../src/config/charts/definitions.js';
+import { PIE_CHART } from '../../../src/config/charts/definitions/pie.js';
 
 describe('normalizePieOptions', () => {
 	it('applies defaults for an empty options bag', () => {

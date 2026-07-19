@@ -8,7 +8,7 @@
 
 import { compareStrings, normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
 import { normalizeColumnNameList } from '../../domain/datasets/columns.js';
-import { BUBBLE_CHART } from '../../config/charts.js';
+import { BUBBLE_CHART } from '../../config/charts/definitions/bubble.js';
 
 /**
  * Resolve the effective nesting-column list from a bubble options bag.

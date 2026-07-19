@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderTinChart } from '../../../../src/charts/tin/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 import { interpolateColor } from '../../../../src/utils/colorUtils.js';
-import { TIN_CHART } from '../../../../src/config/charts.js';
+import { TIN_CHART } from '../../../../src/config/charts/definitions/tin.js';
 
 const VALID_ROWS = [
 	{ x: 0, y: 0, z: 1 },

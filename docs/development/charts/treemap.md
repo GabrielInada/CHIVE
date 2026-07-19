@@ -20,8 +20,8 @@ Key files:
 - Sidebar controls: [builder.js](../../../src/charts/treemap/controls/builder.js),
   [listeners.js](../../../src/charts/treemap/controls/listeners.js), and
   [activationDefaults.js](../../../src/charts/treemap/controls/activationDefaults.js)
-- Config constants: [charts.js](../../../src/config/charts.js) (`TREEMAP_CHART`)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `treemap` block)
+- Chart definition and constants: [treemap.js](../../../src/config/charts/definitions/treemap.js) (`TREEMAP_DEFINITION`, `TREEMAP_CHART`)
+- Per-dataset config defaults: [treemap.js](../../../src/config/charts/definitions/treemap.js) (the definition's fresh `treemap` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/treemap/presentation.js)
 - Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/treemap/workspaceSection.js)
 - Panel adapter: [panelAdapter.js](../../../src/charts/treemap/panelAdapter.js)
@@ -126,7 +126,7 @@ already global-filtered; aggregation happens on top of them. Panel snapshots are
 
 `chartConfig.treemap` is the treemap slice of each dataset's `chartConfig`, built fresh by
 `createDefaultChartConfig()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js) and merged by
+[defaults.js](../../../src/config/charts/defaults.js) and merged by
 `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js).
 
@@ -148,7 +148,7 @@ already global-filtered; aggregation happens on top of them. Panel snapshots are
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js): `CHART_COLORS.treemap` = `#5a7d99`;
+[treemap.js](../../../src/config/charts/definitions/treemap.js): the treemap color is `#5a7d99`;
 `CHART_HEIGHT_LIMITS.treemap` = `{ min: 220, max: 720 }`; `TREEMAP_CHART` holds the measure
 modes, `defaultTopN: 20`, and the padding options (`[1, 2, 4]`, default 2). The scheme palettes
 are defined in the renderer (`COLOR_PALETTE`: Bold, Pastel, Colorblind-Safe).
@@ -325,7 +325,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
       <text> <text>         (optional label + value)
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `TREEMAP_CHART`): `defaultTopN`,
+**Tuning knobs** ([treemap.js](../../../src/config/charts/definitions/treemap.js) `TREEMAP_CHART`): `defaultTopN`,
 `paddingOptions`, `measureModes`.
 
 **Foundations → implementation map:**

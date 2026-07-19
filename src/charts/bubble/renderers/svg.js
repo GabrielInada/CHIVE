@@ -22,7 +22,9 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { BUBBLE_CHART, CHART_COLOR_PALETTES, CHART_DIMENSIONS } from '../../../config/charts.js';
+import { BUBBLE_CHART } from '../../../config/charts/definitions/bubble.js';
+import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
+import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { formatNumber, isNullish } from '../../../utils/formatters.js';
 import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { ok, fail } from '../../../utils/result.js';

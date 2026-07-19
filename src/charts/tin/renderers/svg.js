@@ -33,7 +33,8 @@
  */
 
 import { Delaunay, axisBottom, axisLeft, extent, scaleLinear } from '../../../../vendor/d3/d3.js';
-import { CHART_DIMENSIONS, TIN_CHART } from '../../../config/charts.js';
+import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { TIN_CHART } from '../../../config/charts/definitions/tin.js';
 import { formatNumber } from '../../../utils/formatters.js';
 import { interpolateColor } from '../../../utils/colorUtils.js';
 import { ok, fail } from '../../../utils/result.js';

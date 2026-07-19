@@ -7,7 +7,8 @@
  * d3-loading color module never has to. Used by `renderers/svg.js`.
  */
 
-import { CHART_COLORS, CHART_DIMENSIONS, TIN_CHART, TIN_COLOR_RAMPS } from '../../config/charts.js';
+import { CHART_COLORS, CHART_DIMENSIONS } from '../../config/charts/definitions.js';
+import { TIN_CHART, TIN_COLOR_RAMPS } from '../../config/charts/definitions/tin.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 
 function normalizeColor(value, fallback) {

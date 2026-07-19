@@ -21,7 +21,8 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { BAR_CHART, CHART_DIMENSIONS } from '../../../config/charts.js';
+import { BAR_CHART } from '../../../config/charts/definitions/bar.js';
+import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { formatNumber } from '../../../utils/formatters.js';
 import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { ok, fail } from '../../../utils/result.js';
@@ -43,9 +44,10 @@ import { createBarColorAccessor } from '../color.js';
  *   - sum/mean over no parseable numbers → `fail('no-numeric')`
  *   - empty data → `fail()`
  *
- * The full option bag varies; see `BAR_CHART` and `CHART_DIMENSIONS` in
- * `config/charts.js` for the field set and defaults. Frequently used keys
- * include `sort` (count-desc/asc, label-asc/desc), `topN`, `measureMode`
+ * The full option bag varies; see `BAR_CHART` and `BAR_DEFINITION` in
+ * `config/charts/definitions/bar.js` for the field set and defaults.
+ * Frequently used keys include `sort` (count-desc/asc, label-asc/desc),
+ * `topN`, `measureMode`
  * ('count' | 'sum' | 'mean'), `valueColumn`, `colorMode`
  * ('uniform' | 'gradient' | 'gradient-manual'), color stops, axis label
  * toggles, `customTitle`, `chartHeight`, `locale`, and the localized

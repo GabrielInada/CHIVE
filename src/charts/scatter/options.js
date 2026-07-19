@@ -6,7 +6,8 @@
  * `renderers/svg.js`.
  */
 
-import { SCATTER_PLOT, CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts.js';
+import { SCATTER_PLOT } from '../../config/charts/definitions/scatter.js';
+import { CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts/definitions.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 import { resolveScatterColorScheme } from './palettes.js';
 
