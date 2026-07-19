@@ -31,7 +31,9 @@ tests:
   and [settings.js](../../../src/config/settings.js)
 - Per-dataset config defaults: [tin.js](../../../src/config/charts/definitions/tin.js)
 - Bundled preset catalog: [presetCatalog.js](../../../src/data/presetCatalog.js)
-- Renderer tests: [svg.test.js](../../../tests/charts/tin/renderers/svg.test.js)
+- Renderer tests: [base](../../../tests/charts/tin/renderers/svg.test.js),
+  [isolines](../../../tests/charts/tin/renderers/svg.isolines.test.js), and
+  [full-ramp color mode](../../../tests/charts/tin/renderers/svg.fullRamp.test.js)
 
 Use "guarantee" narrowly when maintaining this file: a statement should be backed by
 source/tests, by the mathematical model under stated assumptions, or by documented
@@ -942,8 +944,11 @@ but that is not implemented here.
 
 ## 13. Tests
 
-[svg.test.js](../../../tests/charts/tin/renderers/svg.test.js) covers the
-renderer. Notable fill-path cases:
+Renderer coverage is split across
+[svg.test.js](../../../tests/charts/tin/renderers/svg.test.js),
+[svg.isolines.test.js](../../../tests/charts/tin/renderers/svg.isolines.test.js),
+and [svg.fullRamp.test.js](../../../tests/charts/tin/renderers/svg.fullRamp.test.js).
+Notable fill-path cases:
 
 - Subpath count (`M` count across `.tin-triangles path`) equals
   `triangles * 4 ** depth` at depths 0 and 2; no stray `<polygon>` elements;

@@ -31,7 +31,7 @@ CHIVE is plain JavaScript (browser ES modules, no TypeScript) designed for stati
 2. Fork the repo and clone your fork to your machine.
 3. Install an active Node.js LTS release that satisfies the engine requirements of the locked dependencies, then install the NPM dependencies with `npm install`. If install or local tooling reports an unsupported Node.js version, switch to a newer active LTS release before continuing.
 4. Create a branch from `develop` using the pattern `feat/<short-name>` (see [Branching workflow](#branching-workflow) below).
-5. Make your changes in `src/`, then add or update tests in `tests/` mirroring the file structure.
+5. Make your changes in `src/`, then add or update tests in `tests/` mirroring the directory structure.
 6. Run the focused checks while iterating: `npm run lint`, `npm run lint:css`, and `npm test`. Fix errors; general hygiene warnings should be reviewed, but they do not fail CI.
 7. Before opening the PR, run `npm run check`. It executes the complete local CI contract in one command: JavaScript lint, CSS lint, tests, and the production build.
 8. Run `npm run dev` and smoke-check the affected feature in a browser at <http://localhost:5173>.
@@ -136,7 +136,7 @@ vocabulary.
 
 Run `npm run lint` and `npm test` while iterating, then run `npm run check`
 before opening a PR. Add or update tests in `tests/` when behavior changes,
-mirroring the `src/` structure. For jsdom setup, mocking patterns, and the
+mirroring the `src/` directory structure. For jsdom setup, mocking patterns, and the
 Windows stale-cache workaround, see
 [Contributor reference](docs/development/contributor-reference.md#testing).
 
