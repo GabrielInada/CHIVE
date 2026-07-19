@@ -1,56 +1,28 @@
 /**
- * Global-filter dialog. The largest component file in the project (~450
- * lines). Lets the user compose multiple rules (categorical or numeric)
- * that are AND-combined, with a live preview row count below the rules
- * list.
+ * Global-filter dialog DOM and lifecycle.
+ *
+ * Lets the user compose multiple AND-combined categorical or numeric rules.
+ * Draft identity and transformations are delegated to globalFilterDraft.js.
  *
  * The dialog works on draft copies of the rules; commits return one of
  * three actions:
  *   - `{ action: 'apply', filter }`, Apply was clicked.
  *   - `{ action: 'clear', filter }`, Clear was clicked (filter is empty).
- *   - `null`, Cancel / Escape / backdrop click.
- *
- * Rules get a transient `_uid` field while in the dialog (stripped on
- * commit) so DOM event handlers can identify cards across re-renders
- * without relying on array index.
+ *   - `{ action: 'cancel', filter: null }`, Cancel / Escape / backdrop click.
  */
 
 import {
 	FILTER_CATEGORY_LIMIT,
-	createDefaultFilterConfig,
 	getCategoricalFilterOptions,
 } from '../../../domain/filters/chartFilter.js';
-import { createEmptyGlobalFilter, normalizeGlobalFilter } from '../../../domain/filters/globalFilter.js';
+import { createEmptyGlobalFilter } from '../../../domain/filters/globalFilter.js';
 import { installDialogFocus } from '../../../ui/dialogFocus.js';
-
-let nextRuleUid = 1;
-
-/** @private */
-function cloneRule(rule) {
-	return JSON.parse(JSON.stringify(rule || createDefaultFilterConfig()));
-}
-
-/** @private */
-function createEmptyRuleDraft() {
-	return {
-		_uid: nextRuleUid++,
-		...createDefaultFilterConfig(),
-	};
-}
-
-/** @private */
-function ruleFromExisting(rule) {
-	return {
-		_uid: nextRuleUid++,
-		...cloneRule(rule),
-	};
-}
-
-/** @private */
-function stripUid(rule) {
-	const { _uid, ...rest } = rule;
-	return rest;
-}
+import {
+	applyRuleColumnChange,
+	createEmptyRuleDraft,
+	createInitialDraftRules,
+	finalizeGlobalFilterDraft,
+} from './globalFilterDraft.js';
 
 /** @private */
 function createOption(value, label, selected = false) {
@@ -321,33 +293,11 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
 
 	columnSelect.addEventListener('change', () => {
 		const nextColumn = columnSelect.value || null;
-		if (!nextColumn) {
-			rule.column = null;
-			rule.include = [];
-			rule.exclude = [];
-			rule.search = '';
-			renderRuleBody({ body, rule, rows, numericColumns, translate });
-			return;
-		}
-		rule.column = nextColumn;
-		if (numericColumns.includes(nextColumn)) {
-			rule.mode = 'numeric';
-			rule.operator = 'between';
-			rule.min = '';
-			rule.max = '';
-			rule.value = '';
-			rule.exclude = [];
-		} else {
-			rule.mode = 'categorical';
-			const options = getCategoricalFilterOptions(rows, nextColumn, {
-				search: '',
-				limit: Number.MAX_SAFE_INTEGER,
-				missingLabel: translate('chive-chart-filter-missing'),
-			});
-			rule.include = options.allTokens.slice();
-			rule.exclude = [];
-			rule.search = '';
-		}
+		applyRuleColumnChange(rule, nextColumn, {
+			rows,
+			numericColumns,
+			missingLabel: translate('chive-chart-filter-missing'),
+		});
 		renderRuleBody({ body, rule, rows, numericColumns, translate });
 	});
 
@@ -363,9 +313,7 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
  *     deleted).
  *   - `{ action: 'clear', filter: GlobalFilter }`, Clear was clicked;
  *     `filter` is an empty filter.
- *   - `null`, Cancel / Escape / backdrop click.
- *
- * The dialog renders a live row-count preview as the user edits rules.
+ *   - `{ action: 'cancel', filter: null }`, Cancel / Escape / backdrop click.
  *
  * @param {Object} args
  * @param {Array<Object<string, *>>} args.rows
@@ -373,7 +321,9 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
  * @param {string[]} args.numericColumns
  * @param {Object} args.initialFilter - Existing global filter; normalized on open.
  * @param {(key: string, ...args: *) => string} args.translate
- * @returns {Promise<{ action: 'apply' | 'clear', filter: Object } | null>}
+ * @param {(filter: Object) => void} [args.onApply]
+ * @param {(filter: Object) => void} [args.onClear]
+ * @returns {Promise<{ action: 'apply' | 'clear' | 'cancel', filter: Object | null }>}
  */
 export function openGlobalFilterDialog({
 	rows,
@@ -403,10 +353,10 @@ export function openGlobalFilterDialog({
 		hint.textContent = translate('chive-global-filter-combine-hint');
 		dialog.appendChild(hint);
 
-		// Normalize initial filter into a rules array with safe column references.
-		const initialNormalized = normalizeGlobalFilter(initialFilter, numericColumns);
-		const safeInitialRules = initialNormalized.rules.filter(rule => allColumns.includes(rule.column));
-		const draftRules = safeInitialRules.map(rule => ruleFromExisting(rule));
+		const draftRules = createInitialDraftRules(initialFilter, {
+			numericColumns,
+			allColumns,
+		});
 
 		const rulesContainer = document.createElement('div');
 		rulesContainer.className = 'gf-rules-container';
@@ -465,12 +415,6 @@ export function openGlobalFilterDialog({
 			resolve({ action, filter: filterOut });
 		};
 
-		const finalizeRules = () => {
-			return draftRules
-				.filter(rule => rule.column && allColumns.includes(rule.column))
-				.map(rule => stripUid(rule));
-		};
-
 		const renderRules = () => {
 			rulesContainer.replaceChildren();
 			if (draftRules.length === 0) {
@@ -514,7 +458,7 @@ export function openGlobalFilterDialog({
 		cancelBtn.addEventListener('click', () => closeDialog('cancel', null));
 
 		applyBtn.addEventListener('click', () => {
-			const applied = { rules: finalizeRules(), combine: 'AND' };
+			const applied = finalizeGlobalFilterDraft(draftRules, allColumns);
 			if (typeof onApply === 'function') onApply(applied);
 			closeDialog('apply', applied);
 		});

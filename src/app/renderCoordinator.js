@@ -8,11 +8,9 @@
  * @typedef {import('../types.js').Dataset} Dataset
  */
 
-import {
-	renderEmptyState,
-	renderDatasetWorkspace,
-	renderFileList,
-} from '../features/datasetWorkspace/workspaceView.js';
+import { renderDatasetWorkspace } from '../features/datasetWorkspace/workspaceView.js';
+import { renderFileList } from '../features/datasetWorkspace/views/fileListView.js';
+import { renderEmptyState } from '../features/datasetWorkspace/views/emptyWorkspaceView.js';
 import { renderCharts } from '../features/datasetWorkspace/views/chartsView.js';
 import { renderChartControlsSidebar } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
 import { getNumericColumns } from '../domain/datasets/columns.js';

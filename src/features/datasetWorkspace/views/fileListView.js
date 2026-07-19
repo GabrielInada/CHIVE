@@ -1,106 +1,205 @@
 /**
- * Render the dataset file list with case-insensitive name filtering and a
- * visible-count cap. Returns counts so the caller can render pagination
- * ("Show more / show less") above or below the list.
+ * Dataset file-list orchestration view.
  *
- * @param {Object} args
- * @param {HTMLElement} args.list
- * @param {Array<{ name: string, rows: Array<*>, columns: Array<*>, sizeLabel: string }>} args.datasets
- * @param {number} args.activeIndex - Active dataset index; `-1` if none.
- * @param {(key: string, ...args: *) => string} args.translate
- * @param {() => string} args.getLocale
- * @param {(index: number) => void} args.onSelect
- * @param {(index: number) => void} args.onRemove
- * @param {string} [args.filter=''] - Name substring filter; case-insensitive.
- * @param {number} [args.visibleLimit=15] - Cap on rendered items.
- * @returns {{ total: number, filtered: number, rendered: number, hasMore: boolean }}
+ * Owns search and pagination state, selected-dataset metadata, and the Join
+ * and Preset tool flows. Item rendering stays in fileListItems.js so the flow
+ * and DOM-item renderer retain separate test seams.
+ *
+ * @typedef {import('../../../types.js').Dataset} Dataset
  */
-export function renderFileListDOM({
-	list,
-	datasets,
-	activeIndex,
-	translate,
-	getLocale,
-	onSelect,
-	onRemove,
-	filter = '',
-	visibleLimit = 15,
-}) {
-	list.replaceChildren();
 
-	const normalizedFilter = String(filter || '').trim().toLowerCase();
-	const indexedDatasets = datasets.map((dataset, index) => ({ dataset, index }));
-	const filteredDatasets = normalizedFilter
-		? indexedDatasets.filter(({ dataset }) => String(dataset.name || '').toLowerCase().includes(normalizedFilter))
-		: indexedDatasets;
-	const safeLimit = Number.isFinite(visibleLimit) && visibleLimit > 0 ? Math.floor(visibleLimit) : 15;
-	const visibleDatasets = filteredDatasets.slice(0, safeLimit);
+import { t, getLocale } from '../../../services/i18nService.js';
+import { renderFileListDOM } from './fileListItems.js';
+import { openJoinBuilderDialog } from '../dialogs/joinBuilderView.js';
+import { openPresetDatasetsDialog } from '../dialogs/presetDatasetsView.js';
+import { VIEW_IDS, FILE_IDS } from '../domIds.js';
 
-	visibleDatasets.forEach(({ dataset, index }) => {
-		const item = document.createElement('div');
-		item.className = `file-item ${index === activeIndex ? 'active' : ''}`;
-		item.dataset.idx = String(index);
+const FILE_LIST_PAGE_SIZE = 15;
+let fileListQuery = '';
+let fileListVisibleCount = FILE_LIST_PAGE_SIZE;
 
-		const selectButton = document.createElement('button');
-		selectButton.className = 'file-item-button';
-		selectButton.type = 'button';
-		selectButton.dataset.acao = 'selecionar';
-		selectButton.dataset.idx = String(index);
+/**
+ * Render the dataset file list with search, "show more/less" pagination,
+ * the active-dataset metadata row, and the Join/Preset tool buttons.
+ *
+ * Filter query and visible-count state are module-local, re-rendering
+ * resets visible-count when the query changes, but preserves it across
+ * paginations of the same query.
+ *
+ * @param {Dataset[]} datasets
+ * @param {number} activeIndex - `-1` when no dataset is active.
+ * @param {(index: number) => void} onSelect
+ * @param {(index: number) => void} onRemove
+ * @param {(spec: Object) => void} [onCreateJoin] - Fired with the join-builder dialog's resolved spec.
+ * @param {(presetId: string) => void} [onLoadPreset] - Fired with the chosen preset id.
+ * @returns {void}
+ */
+export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCreateJoin, onLoadPreset) {
+  const fileInfo = document.getElementById(VIEW_IDS.fileInfo);
+  const summary = document.getElementById(FILE_IDS.fileSummary);
+  const list = document.getElementById(FILE_IDS.fileListContent);
 
-		const name = document.createElement('span');
-		name.className = 'file-item-name';
-		name.title = dataset.name;
-		name.textContent = dataset.name;
+  fileInfo.style.display = 'block';
+  const stickyHeaderId = 'files-top-fixed';
+  let stickyHeader = document.getElementById(stickyHeaderId);
+  if (!stickyHeader) {
+    stickyHeader = document.createElement('div');
+    stickyHeader.id = stickyHeaderId;
+    stickyHeader.className = 'files-top-fixed';
+    fileInfo.insertBefore(stickyHeader, summary);
+  }
 
-		const meta = document.createElement('span');
-		meta.className = 'file-item-meta';
-		meta.textContent = translate(
-			'chive-file-meta',
-			dataset.rows.length.toLocaleString(getLocale()),
-			dataset.columns.length,
-			dataset.sizeLabel
-		);
+  if (summary.parentElement !== stickyHeader) {
+    stickyHeader.appendChild(summary);
+  }
 
-		const removeButton = document.createElement('button');
-		removeButton.className = 'file-item-remove';
-		removeButton.type = 'button';
-		removeButton.dataset.acao = 'remover';
-		removeButton.dataset.idx = String(index);
-		removeButton.setAttribute('aria-label', translate('chive-remove-file', dataset.name));
-		removeButton.textContent = '×';
+  summary.textContent = t('chive-files-loaded', datasets.length);
 
-		selectButton.appendChild(name);
-		selectButton.appendChild(meta);
-		item.appendChild(selectButton);
-		item.appendChild(removeButton);
-		list.appendChild(item);
-	});
+  const activeDataset = activeIndex >= 0 && activeIndex < datasets.length ? datasets[activeIndex] : null;
+  const selectedMetaId = 'file-selected-meta';
+  let selectedMeta = document.getElementById(selectedMetaId);
+  if (!selectedMeta) {
+    selectedMeta = document.createElement('div');
+    selectedMeta.id = selectedMetaId;
+    selectedMeta.className = 'files-selected-meta';
+    stickyHeader.appendChild(selectedMeta);
+  } else if (selectedMeta.parentElement !== stickyHeader) {
+    stickyHeader.appendChild(selectedMeta);
+  }
 
-	if (filteredDatasets.length === 0) {
-		const empty = document.createElement('div');
-		empty.className = 'file-list-empty';
-		empty.textContent = translate('chive-files-no-match');
-		list.appendChild(empty);
-	}
+  if (activeDataset) {
+    const metaText = t(
+      'chive-file-meta',
+      activeDataset.rows.length.toLocaleString(getLocale()),
+      activeDataset.columns.length,
+      activeDataset.sizeLabel
+    );
+    selectedMeta.textContent = `${activeDataset.name} · ${metaText}`;
+    selectedMeta.style.display = 'block';
+    selectedMeta.title = selectedMeta.textContent;
+  } else {
+    selectedMeta.textContent = '';
+    selectedMeta.style.display = 'none';
+    selectedMeta.removeAttribute('title');
+  }
 
-	list.onclick = event => {
-		const target = event.target.closest('[data-acao]');
-		if (!target) return;
+  const toolsId = 'files-tools';
+  let tools = document.getElementById(toolsId);
+  if (!tools) {
+    tools = document.createElement('div');
+    tools.id = toolsId;
+    tools.className = 'files-tools';
+    stickyHeader.appendChild(tools);
+  } else if (tools.parentElement !== stickyHeader) {
+    stickyHeader.appendChild(tools);
+  }
 
-		const index = Number(target.dataset.idx);
-		if (Number.isNaN(index)) return;
+  tools.replaceChildren();
+  const searchInput = document.createElement('input');
+  searchInput.type = 'search';
+  searchInput.className = 'files-filter-input';
+  searchInput.id = 'files-filter-input';
+  searchInput.placeholder = t('chive-files-search-placeholder');
+  searchInput.value = fileListQuery;
+  searchInput.setAttribute('aria-label', t('chive-files-search-placeholder'));
+  tools.appendChild(searchInput);
 
-		if (target.dataset.acao === 'remover') {
-			onRemove(index);
-			return;
-		}
-		onSelect(index);
-	};
+  const filterStatus = document.createElement('div');
+  filterStatus.className = 'files-filter-status';
+  tools.appendChild(filterStatus);
 
-	return {
-		total: datasets.length,
-		filtered: filteredDatasets.length,
-		rendered: visibleDatasets.length,
-		hasMore: filteredDatasets.length > visibleDatasets.length,
-	};
+  const paginationId = 'files-pagination';
+  let pagination = document.getElementById(paginationId);
+  if (!pagination) {
+    pagination = document.createElement('div');
+    pagination.id = paginationId;
+    pagination.className = 'files-pagination';
+    list.insertAdjacentElement('afterend', pagination);
+  }
+
+  const renderList = () => {
+    const renderResult = renderFileListDOM({
+      list,
+      datasets,
+      activeIndex,
+      translate: t,
+      getLocale,
+      onSelect,
+      onRemove,
+      filter: fileListQuery,
+      visibleLimit: fileListVisibleCount,
+    });
+
+    filterStatus.textContent = t('chive-files-filter-status', renderResult.filtered, renderResult.total);
+    pagination.replaceChildren();
+
+    if (renderResult.filtered > FILE_LIST_PAGE_SIZE) {
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'btn-secondary files-pagination-btn';
+
+      if (renderResult.hasMore) {
+        toggle.textContent = t('chive-files-show-more', renderResult.filtered - renderResult.rendered);
+        toggle.addEventListener('click', () => {
+          fileListVisibleCount += FILE_LIST_PAGE_SIZE;
+          renderList();
+        });
+      } else {
+        toggle.textContent = t('chive-files-show-less');
+        toggle.addEventListener('click', () => {
+          fileListVisibleCount = FILE_LIST_PAGE_SIZE;
+          renderList();
+        });
+      }
+
+      pagination.appendChild(toggle);
+    }
+  };
+
+  searchInput.addEventListener('input', () => {
+    fileListQuery = searchInput.value;
+    fileListVisibleCount = FILE_LIST_PAGE_SIZE;
+    renderList();
+  });
+
+  fileListVisibleCount = Math.max(FILE_LIST_PAGE_SIZE, fileListVisibleCount);
+  renderList();
+
+  const joinActionsId = 'join-files-actions';
+  let joinActions = document.getElementById(joinActionsId);
+  if (!joinActions) {
+    joinActions = document.createElement('div');
+    joinActions.id = joinActionsId;
+    joinActions.className = 'join-files-actions';
+    list.insertAdjacentElement('afterend', joinActions);
+  }
+
+  joinActions.replaceChildren();
+  const joinButton = document.createElement('button');
+  joinButton.type = 'button';
+  joinButton.className = 'btn-secondary btn-join-files';
+  joinButton.id = 'btn-join-files';
+  joinButton.textContent = t('chive-btn-join-files');
+  joinButton.disabled = datasets.length < 2;
+  joinButton.addEventListener('click', async () => {
+    const spec = await openJoinBuilderDialog({
+      datasets,
+      translate: t,
+    });
+    if (!spec) return;
+    onCreateJoin?.(spec);
+  });
+  joinActions.appendChild(joinButton);
+
+  const presetButton = document.createElement('button');
+  presetButton.type = 'button';
+  presetButton.className = 'btn-secondary btn-preset-datasets';
+  presetButton.id = 'btn-preset-datasets';
+  presetButton.textContent = t('chive-btn-preset-datasets');
+  presetButton.addEventListener('click', async () => {
+    const selected = await openPresetDatasetsDialog({ translate: t });
+    if (!selected) return;
+    onLoadPreset?.(selected);
+  });
+  joinActions.appendChild(presetButton);
 }
