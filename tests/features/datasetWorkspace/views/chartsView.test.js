@@ -22,7 +22,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../../src/config/chartDefaults.js', () => ({
+vi.mock('../../../../src/domain/charts/chartConfig.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 

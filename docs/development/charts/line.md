@@ -150,8 +150,10 @@ path reads it from the snapshot's `columnsSnapshot`; see
 ### 4.1 Where config lives
 
 `chartConfig.line` is the line slice of each dataset's `chartConfig`, built fresh by
-`createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js).
+`createDefaultChartConfig()` in
+[chartDefaults.js](../../../src/config/chartDefaults.js) and merged by
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js).
 
 ### 4.2 The `chartConfig.line` keys
 

@@ -17,7 +17,7 @@
 
 import { t } from '../../services/i18nService.js';
 import { ok, fail } from '../../utils/result.js';
-import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
+import { mergeChartConfigWithDefaults } from '../../domain/charts/chartConfig.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../domain/filters/globalFilter.js';
 import { getNumericColumnNames } from '../../domain/datasets/columns.js';
 import {

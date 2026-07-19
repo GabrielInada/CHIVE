@@ -142,8 +142,10 @@ contents are still fully replaced each render. Panel snapshots are frozen `struc
 ### 4.1 Where config lives
 
 `chartConfig.network` is the network slice of each dataset's `chartConfig`, built fresh by
-`createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js).
+`createDefaultChartConfig()` in
+[chartDefaults.js](../../../src/config/chartDefaults.js) and merged by
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js).
 
 ### 4.2 The `chartConfig.network` keys
 

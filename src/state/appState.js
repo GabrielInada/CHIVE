@@ -1,6 +1,6 @@
 import { emitStateChange, onStateChange, STATE_EVENTS } from './stateEvents.js';
 import { createPanelBlockModel } from '../domain/panel/panelBlockModel.js';
-import { canonicalizeChartConfig } from '../config/chartDefaults.js';
+import { canonicalizeChartConfig } from '../domain/charts/chartConfig.js';
 import { PREVIEW_DEFAULT_ROWS, PREVIEW_MIN_ROWS } from '../config/limits.js';
 import { getDatasetColumnNames } from '../domain/datasets/columns.js';
 import { createDataStateFacade } from './dataStateFacade.js';

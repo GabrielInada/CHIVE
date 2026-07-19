@@ -335,8 +335,9 @@ Each dataset owns a `chartConfig` object, and `chartConfig.tin` is the TIN chart
 slice of it. The canonical fresh shape is built by `createDefaultChartConfig()` in
 [chartDefaults.js](../../../src/config/chartDefaults.js) (the `tin:` block). A saved or
 partial config is deep-merged onto these defaults by
-`mergeChartConfigWithDefaults()` in the same file (user-set fields win, missing
-fields fall back to default).
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js) (user-set fields win,
+missing fields fall back to default).
 
 ### 4.2 The `chartConfig.tin` keys
 

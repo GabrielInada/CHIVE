@@ -23,7 +23,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 	translateType: mocks.translateType,
 }));
 
-vi.mock('../../../src/config/chartDefaults.js', () => ({
+vi.mock('../../../src/domain/charts/chartConfig.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 

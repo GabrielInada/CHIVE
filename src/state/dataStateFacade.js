@@ -1,5 +1,5 @@
 import { STATE_EVENTS } from './stateEvents.js';
-import { canonicalizeChartConfig } from '../config/chartDefaults.js';
+import { canonicalizeChartConfig } from '../domain/charts/chartConfig.js';
 import { CHART_TYPE_KEYS } from '../config/chartTypes.js';
 import { getDatasetColumnNames } from '../domain/datasets/columns.js';
 

@@ -662,17 +662,21 @@ export default [
 	// model). It is a leaf layer like utils/ and config/, and additionally
 	// never imports chart presentation code: domain rules must stay usable
 	// from state validation, rendering, and export without dragging DOM or
-	// side effects along.
+	// side effects along. A resolver-aware local rule distinguishes top-level
+	// src/charts from owner directories such as src/domain/charts; the raw
+	// no-restricted-imports patterns cannot make that distinction reliably.
 	{
 		files: ['src/domain/**/*.js'],
+		plugins: { chive: chiveRules },
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
-					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/charts/**', '**/ui/**'],
+					group: ['**/app/**', '**/state/**', '**/components/**', '**/features/**', '**/services/**', '**/ui/**'],
 					message: 'domain/ is a pure leaf layer. Import only domain, config, utils, or vendor modules.',
 				}],
 			}],
+			'chive/domain-no-chart-presentation': 'error',
 			'no-restricted-globals': ['error',
 				{
 					name: 'document',

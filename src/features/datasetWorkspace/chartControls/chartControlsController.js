@@ -29,7 +29,7 @@ import {
 	getCategoricalColumnNames,
 	getDateColumnNames,
 } from '../../../domain/datasets/columns.js';
-import { mergeChartConfigWithDefaults } from '../../../config/chartDefaults.js';
+import { mergeChartConfigWithDefaults } from '../../../domain/charts/chartConfig.js';
 import { setActiveChartType } from '../../../state/appState.js';
 import { CHART_TYPE_KEYS } from '../../../config/chartTypes.js';
 import { getChartControlAdapter } from '../../../charts/registries/controls.js';

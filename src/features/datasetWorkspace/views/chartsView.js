@@ -11,7 +11,7 @@
  */
 
 import { t } from '../../../services/i18nService.js';
-import { mergeChartConfigWithDefaults } from '../../../config/chartDefaults.js';
+import { mergeChartConfigWithDefaults } from '../../../domain/charts/chartConfig.js';
 import { CHART_TYPE_KEYS } from '../../../config/chartTypes.js';
 import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../../domain/filters/globalFilter.js';
 import { clearChartContainer } from '../../../charts/shared/containerLifecycle.js';
