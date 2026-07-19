@@ -63,6 +63,14 @@ describe('panel layout resize', () => {
 		expect(grid.style.minHeight).toBe('760px');
 
 		applyBlockProportions(grid, {
+			templateId: 'template-hero2',
+			proportions: { splitMain: 60, splitRight: 50 },
+		});
+		expect(grid.style.getPropertyValue('--split-main')).toBe('60%');
+		expect(grid.style.getPropertyValue('--split-right')).toBe('50%');
+		expect(grid.style.getPropertyValue('--splitMain')).toBe('');
+
+		applyBlockProportions(grid, {
 			templateId: 'template-1x2',
 			proportions: { split: 80 },
 			heightPx: Number.NaN,

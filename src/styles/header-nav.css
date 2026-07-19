@@ -1,6 +1,6 @@
 /* @feature: foundation (chrome)
    Header bar, logo, settings entry, and top navigation.
-   Extracted from style.css so the about page can load it without the full app bundle. */
+   Extracted from app.css so the about page can load it without the full app bundle. */
 
 /* Header Navigation */
 .header-nav {
