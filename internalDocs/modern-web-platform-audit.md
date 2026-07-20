@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Approved implementation baseline; decisions recorded below |
+| Status | Implemented; baseline findings retained as a historical audit |
 | Audited | 2026-07-20 |
 | Baseline | Working tree at `9fcc1ad` (branch `develop`, clean) |
 | Scope | Static HTML, all 25 stylesheets, overlays and dialogs, focus and keyboard handling, forms, render scheduling, workers, storage, fonts, serving configuration, and WebGL lifecycle |
@@ -41,6 +41,35 @@ Approved on 2026-07-20 with the following product decisions:
 
 Implementation retains raw-static delivery and adds no runtime dependencies or
 polyfills.
+
+## Implementation Outcome
+
+The approved implementation was completed on 2026-07-20. The findings below
+describe the audited `9fcc1ad` baseline and intentionally remain unchanged as
+the evidence behind the work; they are not claims about the current tree.
+
+Delivered changes include:
+
+- restored persistent, accessible feedback regions and corrected the cascade
+  layer composition;
+- converted and selectively preloaded fonts, flattened stylesheet loading,
+  lazy-loaded locale catalogs and Three.js, and kept raw-static delivery;
+- moved render coalescing to animation frames, chunked large preview-table DOM
+  construction, delegated high-cardinality chart events, and added WebGL
+  context recovery;
+- migrated all application modals to native `<dialog>`, added reusable native
+  confirmation, inline join validation, numeric constraints, manual-activation
+  tabs, unified Pointer Events, and standardized visibility on `hidden`;
+- added quota reporting and an explicit durable-storage request in Settings;
+- enforced the approved scatter and network geometry budgets with session-only
+  full-render approval; and
+- preserved complete over-limit imports after approval, moved joins into the
+  cancellable data worker, and retained worker-computed normalization and
+  statistics.
+
+The separately deferred streaming and columnar architecture remains documented
+in `internalDocs/large-data-mode-proposal.md`. All other deferrals are listed in
+the decision addendum above.
 
 ---
 

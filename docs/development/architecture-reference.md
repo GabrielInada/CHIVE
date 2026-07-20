@@ -194,7 +194,7 @@ subscriber is `persistence.js`; it ignores `STATE_HYDRATED`.
 [`src/app/renderCoordinator.js`](../../src/app/renderCoordinator.js) schedules a
 full `refreshView()` through `scheduleFullRefresh` for `ACTIVE_DATASET`,
 `DATASET_ADDED`, `DATASET_REMOVED`, and
-`STATE_HYDRATED` (a microtask-coalesced wrapper, so a synchronous burst such as
+`STATE_HYDRATED` (an animation-frame-coalesced wrapper, so a synchronous burst such as
 add-then-select paints once). The narrowed events repaint only their regions
 through `scheduleRegion`: `COLUMNS_UPDATED` the workspace and chart-controls
 regions; `CONFIG_UPDATED` the same, plus the panel region when the payload switches

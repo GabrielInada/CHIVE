@@ -4,10 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   t: vi.fn((key, params) => `${key}${params ? `:${params.join('|')}` : ''}`),
+  getLocale: vi.fn(() => 'en'),
   processData: vi.fn(),
-  joinDatasets: vi.fn(),
   formatFileSize: vi.fn(size => `${size}B`),
   ingestFile: vi.fn(),
+  joinDatasetsInWorker: vi.fn(),
   progressLabelForStage: vi.fn(stage => `label:${stage}`),
   ingestErrorMessage: vi.fn(reason => reason || 'parse-generic'),
   loadPresetSource: vi.fn(),
@@ -24,14 +25,11 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock('../../../src/services/i18nService.js', () => ({
   t: mocks.t,
+  getLocale: mocks.getLocale,
 }));
 
 vi.mock('../../../src/domain/datasets/processData.js', () => ({
   processData: mocks.processData,
-}));
-
-vi.mock('../../../src/domain/datasets/join.js', () => ({
-  joinDatasets: mocks.joinDatasets,
 }));
 
 // Spread the real module: formatters.js also exports isNullish, which the
@@ -43,6 +41,7 @@ vi.mock('../../../src/utils/formatters.js', async importOriginal => ({
 
 vi.mock('../../../src/services/dataIngestService.js', () => ({
   ingestFile: mocks.ingestFile,
+  joinDatasetsInWorker: mocks.joinDatasetsInWorker,
   progressLabelForStage: mocks.progressLabelForStage,
   ingestErrorMessage: mocks.ingestErrorMessage,
 }));
@@ -144,10 +143,16 @@ describe('datasetController', () => {
       close: vi.fn(),
       onCancel: vi.fn(),
     }));
-    mocks.joinDatasets.mockReturnValue({
+    mocks.joinDatasetsInWorker.mockResolvedValue({
       ok: true,
-      rows: [{ id: '1' }],
-      outputColumns: ['id'],
+      value: {
+        rows: [{ id: '1' }],
+        columns: [{ name: 'id', type: 'text' }],
+        outputColumns: ['id'],
+        statsNumeric: [],
+        statsCategorical: [],
+        truncatedFrom: null,
+      },
     });
   });
 
@@ -196,7 +201,43 @@ describe('datasetController', () => {
     expect(progress.fail).toHaveBeenCalledWith('chive-progress-failed:mapped-detail');
   });
 
-  it('forwards ROW_LIMIT to the worker; truncation is handled there, not in datasetController', async () => {
+  it('uses the capped pass only as a warning probe, then preserves every approved row', async () => {
+    mocks.ingestFile
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          rows: [{ x: 1 }, { x: 2 }],
+          columns: [{ name: 'x', type: 'number' }],
+          decimalSeparator: '.',
+          statsNumeric: [],
+          statsCategorical: [],
+          truncatedFrom: 3,
+        },
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        value: {
+          rows: [{ x: 1 }, { x: 2 }, { x: 3 }],
+          columns: [{ name: 'x', type: 'number' }],
+          decimalSeparator: '.',
+          statsNumeric: [],
+          statsCategorical: [],
+          truncatedFrom: null,
+        },
+      });
+    await handleFileUpload([csvFile({ content: 'x\\n1\\n2\\n3' })]);
+
+    expect(mocks.ingestFile).toHaveBeenCalledTimes(2);
+    expect(mocks.ingestFile.mock.calls[0][0].options).toEqual(expect.objectContaining({ rowLimit: 2 }));
+    expect(mocks.ingestFile.mock.calls[1][0].options).toEqual({});
+    expect(mocks.openConfirmDialog).toHaveBeenCalledWith(expect.objectContaining({
+      message: 'chive-warn-large-rows:ok.csv|3|2',
+    }));
+    expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+    expect(mocks.addDataset.mock.calls[0][0].rows).toHaveLength(3);
+  });
+
+  it('adds nothing when the user declines the over-limit row warning', async () => {
     mocks.ingestFile.mockResolvedValueOnce({
       ok: true,
       value: {
@@ -208,12 +249,13 @@ describe('datasetController', () => {
         truncatedFrom: 3,
       },
     });
+    mocks.openConfirmDialog.mockResolvedValueOnce(false);
+
     await handleFileUpload([csvFile({ content: 'x\\n1\\n2\\n3' })]);
 
     expect(mocks.ingestFile).toHaveBeenCalledTimes(1);
-    expect(mocks.ingestFile.mock.calls[0][0].options).toEqual(expect.objectContaining({ rowLimit: 2 }));
-    expect(mocks.addDataset).toHaveBeenCalledTimes(1);
-    expect(mocks.addDataset.mock.calls[0][0].rows).toHaveLength(2);
+    expect(mocks.addDataset).not.toHaveBeenCalled();
+    expect(mocks.showError).toHaveBeenCalledWith('chive-error-cancelled');
   });
 
   it('select/remove/get datasets encaminham para appState com tratamento de erro', () => {
@@ -356,7 +398,7 @@ describe('datasetController', () => {
     expect(input.value).toBe('');
   });
 
-  it('creates joined dataset and handles validation errors', () => {
+  it('creates joined dataset in the worker and handles validation errors', async () => {
     mocks.getAllDatasets.mockReturnValue([
       {
         name: 'A.csv',
@@ -370,13 +412,19 @@ describe('datasetController', () => {
       },
     ]);
 
-    mocks.processData.mockReturnValue({
-      rows: [{ id: '1', target: 99 }],
-      columns: [{ name: 'id', type: 'text' }, { name: 'target', type: 'number' }],
+    mocks.joinDatasetsInWorker.mockResolvedValueOnce({
+      ok: true,
+      value: {
+        rows: [{ id: '1', target: 99 }],
+        columns: [{ name: 'id', type: 'text' }, { name: 'target', type: 'number' }],
+        outputColumns: ['id', 'target'],
+        statsNumeric: [],
+        statsCategorical: [],
+      },
     });
     mocks.addDataset.mockReturnValue(2);
 
-    const ok = createJoinedDataset({
+    const ok = await createJoinedDataset({
       leftIndex: 0,
       rightIndex: 1,
       leftKeys: ['id'],
@@ -387,10 +435,10 @@ describe('datasetController', () => {
     });
 
     expect(ok.ok).toBe(true);
-    expect(mocks.joinDatasets).toHaveBeenCalled();
+    expect(mocks.joinDatasetsInWorker).toHaveBeenCalled();
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
 
-    const invalid = createJoinedDataset({
+    const invalid = await createJoinedDataset({
       leftIndex: 0,
       rightIndex: 0,
       leftKeys: ['id'],
@@ -400,14 +448,14 @@ describe('datasetController', () => {
     expect(invalid.message).toBe('chive-join-error-select-different-files');
   });
 
-  it('returns the generic join error when joinDatasets fails, without processing or adding', () => {
+  it('returns the generic join error when the worker join fails without adding', async () => {
     mocks.getAllDatasets.mockReturnValue([
       { name: 'A.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
       { name: 'B.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
     ]);
-    mocks.joinDatasets.mockReturnValueOnce({ ok: false, reason: 'join-keys-mismatch' });
+    mocks.joinDatasetsInWorker.mockResolvedValueOnce({ ok: false, reason: 'join-keys-mismatch' });
 
-    const result = createJoinedDataset({
+    const result = await createJoinedDataset({
       leftIndex: 0,
       rightIndex: 1,
       leftKeys: ['id'],
@@ -418,18 +466,17 @@ describe('datasetController', () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toBe('chive-join-error-generic');
-    expect(mocks.processData).not.toHaveBeenCalled();
     expect(mocks.addDataset).not.toHaveBeenCalled();
   });
 
-  it('returns the generic join error when post-join processing throws (safety net)', () => {
+  it('returns the generic join error when the worker host rejects (safety net)', async () => {
     mocks.getAllDatasets.mockReturnValue([
       { name: 'A.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
       { name: 'B.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
     ]);
-    mocks.processData.mockImplementationOnce(() => { throw new Error('boom'); });
+    mocks.joinDatasetsInWorker.mockRejectedValueOnce(new Error('boom'));
 
-    const result = createJoinedDataset({
+    const result = await createJoinedDataset({
       leftIndex: 0,
       rightIndex: 1,
       leftKeys: ['id'],
@@ -440,6 +487,72 @@ describe('datasetController', () => {
 
     expect(result.ok).toBe(false);
     expect(result.message).toBe('chive-join-error-generic');
+    expect(mocks.addDataset).not.toHaveBeenCalled();
+  });
+
+  it('warns on an over-limit join and never truncates an approved result', async () => {
+    mocks.getAllDatasets.mockReturnValue([
+      { name: 'A.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
+      { name: 'B.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
+    ]);
+    const joinedRows = [{ id: 1 }, { id: 2 }, { id: 3 }];
+    mocks.joinDatasetsInWorker.mockResolvedValueOnce({
+      ok: true,
+      value: {
+        rows: joinedRows,
+        columns: [{ name: 'id', type: 'number' }],
+        outputColumns: ['id'],
+        statsNumeric: [],
+        statsCategorical: [],
+      },
+    });
+    mocks.addDataset.mockReturnValueOnce(2);
+    const confirm = vi.fn(() => true);
+
+    const result = await createJoinedDataset({
+      leftIndex: 0,
+      rightIndex: 1,
+      leftKeys: ['id'],
+      rightKeys: ['id'],
+      leftColumns: ['id'],
+      rightColumns: ['id'],
+    }, { confirm });
+
+    expect(result.ok).toBe(true);
+    expect(confirm).toHaveBeenCalledWith('chive-warn-large-join:3|2');
+    expect(mocks.addDataset.mock.calls[0][0].rows).toBe(joinedRows);
+  });
+
+  it('fails closed when an over-limit joined result has no approval callback', async () => {
+    mocks.getAllDatasets.mockReturnValue([
+      { name: 'A.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
+      { name: 'B.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
+    ]);
+    mocks.joinDatasetsInWorker.mockResolvedValueOnce({
+      ok: true,
+      value: {
+        rows: [{ id: 1 }, { id: 2 }, { id: 3 }],
+        columns: [{ name: 'id', type: 'number' }],
+        outputColumns: ['id'],
+        statsNumeric: [],
+        statsCategorical: [],
+      },
+    });
+
+    const result = await createJoinedDataset({
+      leftIndex: 0,
+      rightIndex: 1,
+      leftKeys: ['id'],
+      rightKeys: ['id'],
+      leftColumns: ['id'],
+      rightColumns: ['id'],
+    });
+
+    expect(result).toEqual({
+      ok: false,
+      reason: 'cancelled',
+      message: 'chive-error-cancelled',
+    });
     expect(mocks.addDataset).not.toHaveBeenCalled();
   });
 
@@ -455,15 +568,14 @@ describe('datasetController', () => {
   });
 
   describe('handleJoinDatasetRequest', () => {
-    it('activates the joined dataset and shows feedback on success', () => {
+    it('activates the joined dataset and shows feedback on success', async () => {
       mocks.getAllDatasets.mockReturnValue([
         { name: 'A.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
         { name: 'B.csv', rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] },
       ]);
-      mocks.processData.mockReturnValue({ rows: [{ id: '1' }], columns: [{ name: 'id', type: 'text' }] });
       mocks.addDataset.mockReturnValue(2);
 
-      handleJoinDatasetRequest({
+      await handleJoinDatasetRequest({
         leftIndex: 0,
         rightIndex: 1,
         leftKeys: ['id'],
@@ -478,10 +590,10 @@ describe('datasetController', () => {
       expect(mocks.showFeedback).toHaveBeenCalled();
     });
 
-    it('surfaces the error and does not activate when the join is invalid', () => {
+    it('surfaces the error and does not activate when the join is invalid', async () => {
       mocks.getAllDatasets.mockReturnValue([{ name: 'only-one.csv' }]);
 
-      handleJoinDatasetRequest({ leftIndex: 0, rightIndex: 1, leftKeys: ['id'], rightKeys: ['id'] });
+      await handleJoinDatasetRequest({ leftIndex: 0, rightIndex: 1, leftKeys: ['id'], rightKeys: ['id'] });
 
       expect(mocks.showError).toHaveBeenCalledWith('chive-join-error-min-files');
       expect(mocks.setActiveDataset).not.toHaveBeenCalled();

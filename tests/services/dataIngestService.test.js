@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	ingestFile,
+	joinDatasetsInWorker,
 	progressLabelForStage,
 	ingestErrorMessage,
 	__setIngestWorkerFactoryForTesting,
@@ -93,6 +94,42 @@ describe('ingestFile', () => {
 		expect(worker.postMessages).toHaveLength(1);
 		expect(worker.postMessages[0].kind).toBe('csv');
 		expect(worker.postMessages[0].options).toEqual({ rowLimit: 100, dropColumns: ['drop_me'] });
+	});
+
+	it('sends complete join inputs through the same worker host', async () => {
+		const join = {
+			leftRows: [{ id: 1 }],
+			rightRows: [{ id: 1 }],
+			leftKeys: ['id'],
+			rightKeys: ['id'],
+		};
+		worker.onPost((data, w) => {
+			queueMicrotask(() => {
+				w.emit({
+					id: data.id,
+					type: 'done',
+					result: {
+						rows: [{ id: 1 }],
+						columns: [{ name: 'id', type: 'number' }],
+						outputColumns: ['id'],
+						decimalSeparator: '.',
+						statsNumeric: [],
+						statsCategorical: [],
+						truncatedFrom: null,
+					},
+				});
+			});
+		});
+
+		const result = await joinDatasetsInWorker(join);
+
+		expect(result.ok).toBe(true);
+		expect(result.value.outputColumns).toEqual(['id']);
+		expect(worker.postMessages[0]).toEqual(expect.objectContaining({
+			kind: 'join',
+			join,
+			options: {},
+		}));
 	});
 
 	it('uses a counter fallback for worker message ids when crypto.randomUUID is unavailable', async () => {
@@ -359,6 +396,7 @@ describe('progressLabelForStage', () => {
 	it('maps each known stage to a non-empty string', () => {
 		const fileName = 'iris.csv';
 		expect(progressLabelForStage('parsing', fileName)).toBeTruthy();
+		expect(progressLabelForStage('joining', fileName)).toBeTruthy();
 		expect(progressLabelForStage('decimal-detection', fileName)).toBeTruthy();
 		expect(progressLabelForStage('type-detection', fileName)).toBeTruthy();
 		expect(progressLabelForStage('normalize', fileName)).toBeTruthy();

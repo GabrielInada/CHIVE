@@ -479,6 +479,7 @@
 
 	"chive-warn-large-file": "O arquivo \"$1\" tem tamanho $2, acima do recomendado ($3). Deseja continuar?",
 	"chive-warn-large-rows": "O arquivo \"$1\" possui $2 linhas, acima do recomendado ($3). Deseja continuar?",
+	"chive-warn-large-join": "Esta junção criaria $1 linhas, acima do limite recomendado ($2). Deseja manter o resultado completo?",
 
 	"chive-error-format": "Formato não suportado em \"$1\". Envie um arquivo CSV, TSV, DSV, TXT ou JSON.",
 	"chive-error-read": "Erro ao ler o arquivo \"$1\".",
@@ -495,11 +496,11 @@
 	"chive-ingest-error-json-unrecognized": "Formato JSON não reconhecido. O arquivo deve ser um vetor de objetos: [{...}, {...}]",
 
 	"chive-progress-parsing": "Lendo $1…",
+	"chive-progress-joining": "Combinando conjuntos de dados…",
 	"chive-progress-detecting-types": "Detectando tipos de coluna…",
 	"chive-progress-normalizing": "Normalizando valores…",
 	"chive-progress-computing-stats": "Calculando estatísticas…",
 	"chive-progress-ready": "$1 pronto",
-	"chive-progress-ready-truncated": "$1 pronto ($2 linhas truncadas para $3)",
 	"chive-progress-failed": "Falha ao carregar: $1",
 
 	"chive-error-internal": "Ocorreu um erro interno na aplicação.",

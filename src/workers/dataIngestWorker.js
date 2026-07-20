@@ -1,15 +1,15 @@
 /**
  * CHIVE Data Ingest Worker.
  *
- * Runs parse + type detection + numeric normalization + stats off the main
- * thread so a 200k-row upload no longer freezes the tab. Posts progress
- * messages between stages so the host can drive a corner-toast progress bar.
+ * Runs parse or dataset join + type detection + numeric normalization + stats
+ * off the main thread. Posts progress messages between stages so the host can
+ * drive a corner-toast progress bar.
  *
  * Pure logic comes from `domain/datasets/` (no DOM deps). The
  * row-normalization loop is duplicated here as {@link chunkedNormalize} so
  * it can yield progress between batches; the canonical sync `processData`
- * in `domain/datasets/processData.js` stays untouched (still used by the join
- * builder + tests).
+ * in `domain/datasets/processData.js` stays available for small inline presets
+ * and pure-domain tests.
  *
  * Message protocol, see `services/dataIngestService.js` for the host side
  * and the {@link IngestWorkerRequest} / {@link IngestWorkerResponse}
@@ -22,6 +22,7 @@
  */
 
 import { parseCsv, parseJson } from '../domain/datasets/parse.js';
+import { joinDatasets } from '../domain/datasets/join.js';
 import { detectDecimalSeparator, detectType, normalizeNumericString } from '../domain/datasets/typeDetection.js';
 import { calculateStatistics, calculateCategoricalStatistics } from '../domain/datasets/statistics.js';
 import { DECIMAL_DETECTION, COLUMN_TYPES } from '../config/columnTypeDetection.js';
@@ -79,17 +80,31 @@ export function chunkedNormalize(rawData, columns, decimalSeparator, onChunk, ch
  * @param {IngestWorkerRequest} payload - Inbound request body.
  * @param {(msg: IngestWorkerResponse) => void} post - Sink for outgoing messages (`self.postMessage` in worker context, a mock in tests).
  */
-export function runIngest({ id, kind, text, options = {} }, post) {
+export function runIngest({ id, kind, text, join, options = {} }, post) {
 	const rowLimit = Number.isFinite(options.rowLimit) ? options.rowLimit : Infinity;
+	let rawData;
+	let outputColumns = null;
 
-	post({ id, type: 'progress', stage: 'parsing', percent: 0 });
-	const parsed = kind === 'json' ? parseJson(text) : parseCsv(text);
-	if (!parsed.ok) {
-		post({ id, type: 'error', reason: parsed.reason });
-		return;
+	if (kind === 'join') {
+		post({ id, type: 'progress', stage: 'joining', percent: 0 });
+		const joined = joinDatasets(join || {});
+		if (!joined.ok) {
+			post({ id, type: 'error', reason: joined.reason || 'join-error' });
+			return;
+		}
+		rawData = joined.rows;
+		outputColumns = joined.outputColumns;
+		post({ id, type: 'progress', stage: 'joining', percent: 30 });
+	} else {
+		post({ id, type: 'progress', stage: 'parsing', percent: 0 });
+		const parsed = kind === 'json' ? parseJson(text) : parseCsv(text);
+		if (!parsed.ok) {
+			post({ id, type: 'error', reason: parsed.reason });
+			return;
+		}
+		rawData = parsed.rows;
+		post({ id, type: 'progress', stage: 'parsing', percent: 30 });
 	}
-	let rawData = parsed.rows;
-	post({ id, type: 'progress', stage: 'parsing', percent: 30 });
 
 	// Drop unwanted columns before any per-column work (preset use case).
 	if (Array.isArray(options.dropColumns) && options.dropColumns.length > 0) {
@@ -110,17 +125,19 @@ export function runIngest({ id, kind, text, options = {} }, post) {
 	}
 
 	if (rawData.length === 0) {
+		const result = {
+			rows: [],
+			columns: [],
+			decimalSeparator: '.',
+			statsNumeric: [],
+			statsCategorical: [],
+			truncatedFrom,
+		};
+		if (outputColumns) result.outputColumns = outputColumns;
 		post({
 			id,
 			type: 'done',
-			result: {
-				rows: [],
-				columns: [],
-				decimalSeparator: '.',
-				statsNumeric: [],
-				statsCategorical: [],
-				truncatedFrom,
-			},
+			result,
 		});
 		return;
 	}
@@ -155,11 +172,9 @@ export function runIngest({ id, kind, text, options = {} }, post) {
 	const statsCategorical = calculateCategoricalStatistics(rows, columns);
 	post({ id, type: 'progress', stage: 'stats', percent: 100 });
 
-	post({
-		id,
-		type: 'done',
-		result: { rows, columns, decimalSeparator, statsNumeric, statsCategorical, truncatedFrom },
-	});
+	const result = { rows, columns, decimalSeparator, statsNumeric, statsCategorical, truncatedFrom };
+	if (outputColumns) result.outputColumns = outputColumns;
+	post({ id, type: 'done', result });
 }
 
 // WHY: guarded by `DedicatedWorkerGlobalScope` so this module can be imported as

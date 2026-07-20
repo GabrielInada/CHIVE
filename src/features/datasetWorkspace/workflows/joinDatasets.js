@@ -8,11 +8,11 @@
  * @typedef {import('../../../types.js').JoinType} JoinType
  */
 
-import { t } from '../../../services/i18nService.js';
-import { processData } from '../../../domain/datasets/processData.js';
-import { joinDatasets } from '../../../domain/datasets/join.js';
+import { t, getLocale } from '../../../services/i18nService.js';
+import { joinDatasetsInWorker } from '../../../services/dataIngestService.js';
 import { addDataset, getAllDatasets } from '../../../state/appState.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
+import { ROW_LIMIT } from '../../../config/limits.js';
 import { joinValidationMessageKey, validateJoinSpec } from '../joinValidation.js';
 
 /**
@@ -48,8 +48,9 @@ function normalizeJoinType(value) {
 
 /**
  * Build a new dataset by joining two existing datasets. Reads the
- * datasets by index from app state, runs `joinDatasets`, normalizes the
- * resulting rows via `processData`, and adds the new dataset.
+ * datasets by index from app state, runs the join and normalization pipeline
+ * in the data worker, and adds the complete new dataset after any over-limit
+ * warning is approved.
  *
  * Failure messages are translated i18n keys (`'chive-join-error-*'`)
  * suitable for piping straight into `showError`.
@@ -62,14 +63,27 @@ function normalizeJoinType(value) {
  * @param {string[]} [spec.leftColumns] - Columns from left to include; defaults to all.
  * @param {string[]} [spec.rightColumns] - Columns from right to include; defaults to all.
  * @param {JoinType} [spec.joinType='inner'] - Unknown values silently fall back to `'inner'`.
- * @returns {JoinDatasetResult} On success: `{ ok: true, index, datasetName }`. On failure: `{ ok: false, message }`.
+ * @param {Object} [dependencies]
+ * @param {(message: string) => boolean | Promise<boolean>} [dependencies.confirm]
+ * @param {AbortSignal} [dependencies.signal]
+ * @param {(progress: import('../../../types.js').IngestProgress) => void} [dependencies.onProgress]
+ * @returns {Promise<JoinDatasetResult>} On success: `{ ok: true, index, datasetName }`. On failure: `{ ok: false, message }`.
  * @fires STATE_EVENTS.DATASET_ADDED - On success.
  */
-export function createJoinedDataset(spec = {}) {
+export async function createJoinedDataset(spec = {}, dependencies = {}) {
+	const {
+		confirm = () => false,
+		signal,
+		onProgress,
+	} = dependencies;
 	const datasets = getAllDatasets();
 	const validation = validateJoinSpec(datasets, spec);
 	if (!validation.ok) {
-		return { ok: false, message: t(joinValidationMessageKey(validation.reason)) };
+		return {
+			ok: false,
+			reason: validation.reason,
+			message: t(joinValidationMessageKey(validation.reason)),
+		};
 	}
 	const {
 		leftDataset,
@@ -81,7 +95,7 @@ export function createJoinedDataset(spec = {}) {
 	} = validation;
 
 	try {
-		const result = joinDatasets({
+		const result = await joinDatasetsInWorker({
 			leftRows: leftDataset.rows,
 			rightRows: rightDataset.rows,
 			leftKeys,
@@ -95,28 +109,64 @@ export function createJoinedDataset(spec = {}) {
 				trim: true,
 				caseSensitive: false,
 			},
+		}, {
+			signal,
+			onProgress,
 		});
 
 		if (!result.ok) {
-			return { ok: false, message: t('chive-join-error-generic') };
+			return {
+				ok: false,
+				reason: result.reason,
+				message: result.reason === 'cancelled'
+					? t('chive-error-cancelled')
+					: t('chive-join-error-generic'),
+			};
 		}
 
-		const processed = processData(result.rows);
-		const fallbackColumns = result.outputColumns.map(columnName => ({ name: columnName, type: 'text' }));
+		const {
+			rows,
+			columns,
+			outputColumns = [],
+			statsNumeric = [],
+			statsCategorical = [],
+		} = result.value;
+
+		if (rows.length > ROW_LIMIT) {
+			const locale = getLocale();
+			const approved = await confirm(t('chive-warn-large-join', [
+				rows.length.toLocaleString(locale),
+				ROW_LIMIT.toLocaleString(locale),
+			]));
+			if (!approved) {
+				return {
+					ok: false,
+					reason: 'cancelled',
+					message: t('chive-error-cancelled'),
+				};
+			}
+		}
+
+		const fallbackColumns = outputColumns.map(columnName => ({ name: columnName, type: 'text' }));
+		const resolvedColumns = columns.length > 0 ? columns : fallbackColumns;
 		const datasetName = buildJoinDatasetName(leftDataset.name, rightDataset.name);
 		const dataset = {
 			name: datasetName,
-			sizeLabel: t('chive-join-generated-size', [result.rows.length]),
-			rows: processed.rows,
-			columns: processed.columns.length > 0 ? processed.columns : fallbackColumns,
-			selectedColumns: (processed.columns.length > 0 ? processed.columns : fallbackColumns).map(column => column.name),
+			sizeLabel: t('chive-join-generated-size', [rows.length]),
+			rows,
+			columns: resolvedColumns,
+			selectedColumns: resolvedColumns.map(column => column.name),
 			chartConfig: createDefaultChartConfig(),
+			precomputedStats: {
+				numeric: statsNumeric,
+				categorical: statsCategorical,
+			},
 		};
 
 		const index = addDataset(dataset);
 
 		return { ok: true, index, datasetName };
 	} catch {
-		return { ok: false, message: t('chive-join-error-generic') };
+		return { ok: false, reason: 'worker-error', message: t('chive-join-error-generic') };
 	}
 }

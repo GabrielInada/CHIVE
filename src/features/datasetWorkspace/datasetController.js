@@ -9,8 +9,9 @@
  */
 
 import { t } from '../../services/i18nService.js';
+import { progressLabelForStage } from '../../services/dataIngestService.js';
 import { removeDataset, setActiveDataset, getAllDatasets } from '../../state/appState.js';
-import { showError, showFeedback } from '../../ui/feedback.js';
+import { showError, showFeedback, showProgress } from '../../ui/feedback.js';
 import { openConfirmDialog } from '../../ui/confirmDialog.js';
 import { FILE_IDS } from './domIds.js';
 import { uploadDatasetFiles } from './workflows/uploadDataset.js';
@@ -153,13 +154,28 @@ export function setupFileInputListeners() {
  *
  * @param {Object} spec - Forwarded to `createJoinedDataset`.
  */
-export function handleJoinDatasetRequest(spec) {
-	const result = createJoinedDataset(spec);
+export async function handleJoinDatasetRequest(spec) {
+	const progress = showProgress(t('chive-progress-joining'));
+	const abortController = new AbortController();
+	progress.onCancel(() => abortController.abort());
+	const result = await createJoinedDataset(spec, {
+		confirm: confirmFn,
+		signal: abortController.signal,
+		onProgress: ({ stage, percent }) => {
+			progress.update(percent, progressLabelForStage(stage, ''));
+		},
+	});
 	if (!result?.ok) {
+		if (result?.reason === 'cancelled') {
+			progress.close();
+		} else {
+			progress.fail(result?.message || t('chive-join-error-generic'));
+		}
 		showError(result?.message || t('chive-join-error-generic'));
 		return;
 	}
 
+	progress.close();
 	selectDataset(result.index);
 	showFeedback(t('chive-join-success', [result.datasetName]));
 }

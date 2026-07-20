@@ -29,6 +29,7 @@ import { t } from './i18nService.js';
  */
 export function progressLabelForStage(stage, fileName) {
 	if (stage === 'parsing') return t('chive-progress-parsing', [fileName]);
+	if (stage === 'joining') return t('chive-progress-joining');
 	if (stage === 'decimal-detection' || stage === 'type-detection') return t('chive-progress-detecting-types');
 	if (stage === 'normalize') return t('chive-progress-normalizing');
 	if (stage === 'stats') return t('chive-progress-computing-stats');
@@ -112,20 +113,22 @@ function isFiniteNumber(value) {
 }
 
 /**
- * Run the ingest pipeline in a worker. On success, the resolved
+ * Run one data-worker request. On success, the resolved
  * {@link Result} carries the parsed payload at `result.value` (an
- * {@link IngestPayload}). On failure, `result.reason` is a stable string
+ * {@link IngestPayload} or joined-data payload). On failure,
+ * `result.reason` is a stable string
  * id (`'cancelled'`, `'worker-spawn-failed'`, `'worker-error'`,
  * `'ingest-error'`, `'ingest-malformed-result'`, …).
  *
  * The worker is terminated and the abort listener is removed before the
  * Promise settles, regardless of outcome.
  *
- * @param {{ kind: 'csv' | 'json', text: string, options?: { rowLimit?: number } }} input
+ * @param {Object} input
  * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal }} [config]
  * @returns {Promise<Result>} `{ ok: true, value: IngestPayload }` on success; `{ ok: false, reason }` otherwise.
+ * @private
  */
-export async function ingestFile(input, config = {}) {
+async function runDataWorker(input, config = {}) {
 	const { onProgress, signal } = config;
 
 	if (signal?.aborted) return fail('cancelled');
@@ -211,6 +214,28 @@ export async function ingestFile(input, config = {}) {
 			signal.addEventListener('abort', onAbort, { once: true });
 		}
 
-		worker.postMessage({ id, kind: input.kind, text: input.text, options: input.options || {} });
+		worker.postMessage({ id, ...input, options: input.options || {} });
 	});
+}
+
+/**
+ * Parse and normalize a CSV/JSON file in the data worker.
+ *
+ * @param {{ kind: 'csv' | 'json', text: string, options?: { rowLimit?: number, dropColumns?: string[] } }} input
+ * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal }} [config]
+ * @returns {Promise<Result>}
+ */
+export function ingestFile(input, config = {}) {
+	return runDataWorker(input, config);
+}
+
+/**
+ * Join two datasets and normalize the complete output in the data worker.
+ *
+ * @param {Object} join
+ * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal }} [config]
+ * @returns {Promise<Result>}
+ */
+export function joinDatasetsInWorker(join, config = {}) {
+	return runDataWorker({ kind: 'join', join }, config);
 }

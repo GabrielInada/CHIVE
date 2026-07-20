@@ -478,6 +478,7 @@
 	"chive-type-date": "Display label for date columns (used in column list tags and table footer). Keep short.",
 	"chive-warn-large-file": "Confirmation warning before parsing a large file. $1 = file name, $2 = current file size (formatted), $3 = recommended max size.",
 	"chive-warn-large-rows": "Confirmation warning after parsing when row count is large. $1 = file name, $2 = parsed row count (formatted), $3 = recommended max row count (formatted).",
+	"chive-warn-large-join": "Confirmation warning before an over-limit joined dataset is added. $1 = complete joined row count, $2 = recommended max row count. No rows are truncated.",
 
 	"chive-error-format": "Error when user uploads an unsupported file type. $1 = file name. Lists all accepted extensions.",
 	"chive-error-read": "Error when the browser fails to read a file. $1 = file name.",
@@ -494,11 +495,11 @@
 	"chive-ingest-error-json-unrecognized": "Parse-error detail: the JSON root is neither an array of objects nor an object with an array-valued key.",
 
 	"chive-progress-parsing": "Progress-toast label while the ingest worker is reading a file. $1 = file or preset name.",
+	"chive-progress-joining": "Progress-toast label while the data worker is joining two datasets.",
 	"chive-progress-detecting-types": "Progress-toast label while the ingest worker is auto-detecting column types and decimal separator.",
 	"chive-progress-normalizing": "Progress-toast label while the ingest worker is converting numeric strings to numbers.",
 	"chive-progress-computing-stats": "Progress-toast label while the ingest worker is computing per-column descriptive statistics.",
 	"chive-progress-ready": "Success message shown briefly in the progress toast after a file finishes loading. $1 = file or preset name.",
-	"chive-progress-ready-truncated": "Success message when row-limit truncation occurred. $1 = file name, $2 = original row count, $3 = truncated-to row count.",
 	"chive-progress-failed": "Failure message shown in the progress toast when the ingest worker errors out. $1 = error reason.",
 
 	"chive-error-internal": "Fallback error message for unexpected internal application failures.",

@@ -75,8 +75,8 @@ flowchart TB
 
     subgraph BROWSER["Browser-side services"]
         SERVICES["i18n · presets · settings · downloads"]
-        INGEST["dataIngestService"]
-        INGESTW["dataIngestWorker"]
+        INGEST["dataIngestService<br/>file + join host"]
+        INGESTW["dataIngestWorker<br/>parse · join · normalize · stats"]
         PERSIST["persistence public facade"]
         PERSISTW["persistWorker<br/>or blobBackend fallback"]
         DB[("IndexedDB<br/>SQLite byte image")]
@@ -106,7 +106,7 @@ flowchart TB
     PANEL -. read through getters .-> STATE
     VIEWS -. read through getters where needed .-> STATE
     CTRL -- preset + locale requests --> SERVICES
-    CTRL -- ingest requests/results --> INGEST
+    CTRL -- file + join requests/results --> INGEST
     INGEST --> INGESTW
     INGESTW -. pure ingest rules .-> DOMAIN
     PERSIST -- hydration exception<br/>replaceAllState --> STATE
@@ -192,7 +192,7 @@ Example: a user toggles a column-visibility checkbox.
 4. The facade emits `STATE_EVENTS.COLUMNS_UPDATED`.
 5. The render coordinator's `COLUMNS_UPDATED` subscription schedules the
    workspace and chart-controls regions via `scheduleRegion` (coalesced to one
-   flush per microtask, so a synchronous burst of events paints once). Broad events
+   flush per animation frame, so a synchronous burst of events paints once). Broad events
    (dataset add/remove/select, hydration, locale) schedule a full refresh via
    `scheduleFullRefresh` instead.
 6. The region flush reads state via cheap getters and delegates rendering to

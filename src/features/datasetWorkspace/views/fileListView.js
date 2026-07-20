@@ -187,7 +187,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
       translate: t,
     });
     if (!spec) return;
-    onCreateJoin?.(spec);
+    await onCreateJoin?.(spec);
   });
   joinActions.appendChild(joinButton);
 
