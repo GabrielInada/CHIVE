@@ -1,3 +1,4 @@
+@layer visual-output {
 /* @feature: charts
    Chart output containers, canvases, tooltips, and resize surface styles */
 
@@ -52,7 +53,7 @@
 
 .chart-action-btn:hover {
   border-color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.06);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .chart-action-btn:focus-visible {
@@ -96,6 +97,30 @@
   margin-top: var(--space-2);
 }
 
+.chart-render-budget-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  color: var(--muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  margin-top: var(--space-3);
+}
+
+.chart-render-budget-notice--blocked {
+  min-height: 240px;
+  align-content: center;
+  flex-direction: column;
+  margin-top: 0;
+  padding: var(--space-6);
+}
+
+.chart-render-budget-action {
+  width: auto;
+}
+
 /* Screen-reader-only text (aria-describedby targets for interactive
    canvases). Kept here while canvas charts are its only consumer. */
 .visually-hidden {
@@ -133,8 +158,8 @@
   opacity: 0.75;
 }
 
-.chart-height-resize-handle:hover,
-.chart-height-resize-handle:focus-visible {
+.chart-block .chart-height-resize-handle:hover,
+.chart-block .chart-height-resize-handle:focus-visible {
   opacity: 1;
   border-color: var(--accent);
 }
@@ -155,11 +180,18 @@
   padding: var(--space-6);
 }
 
+.chart-webgl-status {
+  margin-top: var(--space-3);
+  color: var(--muted);
+  font-size: var(--font-size-ui);
+  text-align: center;
+}
+
 .chart-tooltip {
   position: absolute;
   z-index: 9999;
   max-width: 280px;
-  background: rgba(var(--text-rgb), 0.96);
+  background: color-mix(in srgb, var(--text) 96%, transparent);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-md);
@@ -334,4 +366,5 @@
 .chart-tooltip__action[disabled]:hover,
 .chart-tooltip__action[aria-disabled="true"]:hover {
   background: rgba(200, 255, 77, 0.12);
+}
 }

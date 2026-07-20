@@ -1,3 +1,4 @@
+@layer data-view {
 /* @feature: datasetWorkspace
    Dataset workspace container, empty state display, file list styling */
 
@@ -14,13 +15,13 @@
 }
 
 .empty-icon {
-  font-size: 52px;
+  font-size: 3.25rem;
   opacity: 0.3;
 }
 
 .empty-title {
   font-family: var(--font-display);
-  font-size: 18px;
+  font-size: 1.125rem;
   font-weight: 300;
   color: var(--text);
   opacity: 0.5;
@@ -33,13 +34,13 @@
 }
 
 #data-state {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 28px;
 }
 
 .result-tabs {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
@@ -77,7 +78,7 @@
 
 .result-tab.active {
   border-color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.08);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   color: var(--accent);
 }
 
@@ -98,11 +99,6 @@
   transition: background var(--dur-fast), color var(--dur-fast), box-shadow var(--dur-fast);
 }
 
-.global-filter-trigger:hover:not(:disabled) {
-  background: rgba(var(--accent-rgb), 0.08);
-  box-shadow: 0 2px 6px rgba(var(--accent-rgb), 0.15);
-}
-
 .global-filter-trigger[hidden] {
   display: none;
 }
@@ -110,6 +106,11 @@
 .global-filter-trigger:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.global-filter-trigger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 15%, transparent);
 }
 
 .global-filter-trigger.active,
@@ -169,7 +170,7 @@
 .project-menu-trigger:hover,
 .project-menu-trigger[aria-expanded="true"] {
   border-color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.08);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 
 .project-menu-panel {
@@ -205,7 +206,7 @@
 }
 
 .project-menu-item:hover {
-  background: rgba(var(--accent-rgb), 0.08);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   color: var(--accent);
 }
 
@@ -300,6 +301,7 @@
   flex-direction: column;
   gap: var(--space-4);
   max-height: 60vh;
+  max-height: 60dvh;
   overflow: auto;
 }
 
@@ -388,7 +390,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(var(--accent-rgb), 0.03);
+  background: color-mix(in srgb, var(--accent) 3%, transparent);
 }
 
 .card-header-controls {
@@ -455,6 +457,7 @@
 
 .card-body-preview {
   max-height: min(64vh, 720px);
+  max-height: min(64dvh, 720px);
   overflow: auto;
 }
 
@@ -465,4 +468,5 @@
 #tab-content-charts .result-card {
   display: flex;
   flex-direction: column;
+}
 }

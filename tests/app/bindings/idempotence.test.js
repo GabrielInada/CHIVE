@@ -52,9 +52,7 @@ vi.mock('../../../src/features/datasetWorkspace/datasetController.js', () => ({
   removeDatasetByIndex: mocks.removeDatasetByIndex,
 }));
 vi.mock('../../../src/app/uiManager.js', () => ({
-  setupTabListeners: vi.fn(),
   setupSidebarToggleListener: vi.fn(),
-  switchTab: vi.fn(),
 }));
 vi.mock('../../../src/state/appState.js', () => ({
   getActiveDataset: mocks.getActiveDataset,
@@ -62,7 +60,7 @@ vi.mock('../../../src/state/appState.js', () => ({
   replaceAllState: mocks.replaceAllState,
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
-vi.mock('../../../src/ui/dialogFocus.js', () => ({ isAnyDialogOpen: mocks.isAnyDialogOpen }));
+vi.mock('../../../src/ui/nativeDialog.js', () => ({ isAnyDialogOpen: mocks.isAnyDialogOpen }));
 
 const PROJECT_MENU_HTML = `
   <div class="project-menu">

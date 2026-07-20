@@ -51,10 +51,17 @@ describe('renderScatter3dPanelChart', () => {
 		});
 	});
 
-	it('maps the snapshot onto the renderer contract with localized labels', () => {
-		const result = renderScatter3dPanelChart(container, spec);
+	async function flushLazyRender() {
+		await vi.waitFor(() => {
+			expect(mocks.renderScatter3dChart).toHaveBeenCalled();
+		});
+	}
 
-		expect(result.ok).toBe(true);
+	it('maps the snapshot onto the renderer contract with localized labels', async () => {
+		const result = renderScatter3dPanelChart(container, spec);
+		await flushLazyRender();
+
+		expect(result).toEqual({ ok: true, pending: true });
 		expect(mocks.renderScatter3dChart).toHaveBeenCalledWith(container, spec.dataSnapshot, 'a', 'b', 'c', {
 			customTitle: 'Snapshot',
 			chartHeight: 420,
@@ -63,12 +70,15 @@ describe('renderScatter3dPanelChart', () => {
 			color: '#654321',
 			labels: {
 				controlsInstructions: 'chive-chart-scatter3d-controls-instructions',
+				contextLost: 'chive-chart-scatter3d-context-lost',
+				contextRestored: 'chive-chart-scatter3d-context-restored',
 			},
 		});
 	});
 
-	it('tolerates a spec without config or rows', () => {
+	it('tolerates a spec without config or rows', async () => {
 		const result = renderScatter3dPanelChart(container, { type: 'scatter3d' });
+		await flushLazyRender();
 
 		expect(mocks.renderScatter3dChart).toHaveBeenCalledWith(
 			container,
@@ -81,24 +91,26 @@ describe('renderScatter3dPanelChart', () => {
 		expect(result.ok).toBe(true);
 	});
 
-	it('renders the sampling notice in the slot when the payload is truncated', () => {
+	it('renders the sampling notice in the slot when the payload is truncated', async () => {
 		mocks.renderScatter3dChart.mockImplementation((el) => {
 			el.appendChild(document.createElement('canvas'));
 			return { ok: true, renderedCount: 5, validCount: 50, totalCount: 60, truncated: true };
 		});
 
 		renderScatter3dPanelChart(container, spec);
+		await flushLazyRender();
 
 		const notice = container.querySelector('.chart-sampling-notice');
 		expect(notice.textContent).toBe('chive-chart-scatter3d-sampling-notice:5,50');
 	});
 
-	it('shows the empty-state message in the id-less slot on failure', () => {
+	it('shows the empty-state message in the id-less slot on failure', async () => {
 		mocks.renderScatter3dChart.mockReturnValue({ ok: false, reason: 'webgl-unavailable' });
 
 		const result = renderScatter3dPanelChart(container, spec);
+		await flushLazyRender();
 
-		expect(result.ok).toBe(false);
+		expect(result).toEqual({ ok: true, pending: true });
 		const empty = container.querySelector('.chart-empty');
 		expect(empty.textContent).toBe('chive-chart-empty-scatter3d-webgl-unavailable');
 	});

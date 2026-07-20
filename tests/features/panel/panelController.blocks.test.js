@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import * as appState from '../../../src/state/appState.js';
 import {
   renderCanvasPanel,
+  renderSidebarPanel,
   initPanelController,
   _resetPanelControllerForTesting,
 } from '../../../src/features/panel/panelController.js';
@@ -57,6 +58,25 @@ describe('panelController multi-block canvas', () => {
 
     const blockEls = document.querySelectorAll('.panel-block[data-panel-block-id]');
     expect(blockEls.length).toBe(2);
+  });
+
+  it('re-evaluates drag-and-drop when the desktop media query changes', () => {
+    let onChange;
+    const mediaQuery = {
+      matches: false,
+      media: '(min-width: 901px)',
+      addEventListener: (_type, listener) => { onChange = listener; },
+      removeEventListener: () => {},
+    };
+    window.matchMedia = () => mediaQuery;
+    appState.addChartSnapshot({ name: 'Chart A' });
+
+    renderSidebarPanel();
+    expect(document.querySelector('.panel-item').draggable).toBe(false);
+
+    mediaQuery.matches = true;
+    onChange();
+    expect(document.querySelector('.panel-item').draggable).toBe(true);
   });
 
   it('applies border mode per block from block-local controls', () => {
@@ -145,9 +165,9 @@ describe('panelController multi-block canvas', () => {
     const handle = document.querySelector(`[data-panel-resize-handle="${blockId}:split"]`);
     expect(handle).toBeTruthy();
 
-    handle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: 200, clientY: 50 }));
-    window.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: 280, clientY: 50 }));
-    window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    handle.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 200, clientY: 50 }));
+    window.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 280, clientY: 50 }));
+    window.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
 
     const state = appState.getState();
     const block = state.panel.blocks.find(b => b.id === blockId);
@@ -229,9 +249,9 @@ describe('panelController multi-block canvas', () => {
     const handle = document.querySelector(`[data-panel-block-resize="${blockId}"]`);
     expect(handle).toBeTruthy();
 
-    handle.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientY: 120 }));
-    window.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientY: 420 }));
-    window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    handle.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientY: 120 }));
+    window.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientY: 420 }));
+    window.dispatchEvent(new MouseEvent('pointerup', { bubbles: true }));
 
     const state = appState.getState();
     const block = state.panel.blocks.find(b => b.id === blockId);

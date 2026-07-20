@@ -1,6 +1,6 @@
+@layer visual-output {
 /* @feature: panel
-   Panel layout, block styling, slot borders, drag-drop.
-   Bundled via visual-output.css. */
+   Panel layout, block styling, slot borders, drag-drop. */
 
 .card-body-panel {
   padding: var(--space-6);
@@ -24,6 +24,7 @@
   flex-direction: column;
   gap: var(--space-3);
   max-height: 58vh;
+  max-height: 58dvh;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -124,6 +125,8 @@
   background: #fbfaf6;
   min-height: 480px;
   padding: var(--space-5);
+  container-name: panel-canvas;
+  container-type: inline-size;
 }
 
 #tab-content-dashboard.result-panel {
@@ -138,6 +141,7 @@
 
 #tab-content-dashboard .card-body-panel {
   max-height: calc(100vh - 220px);
+  max-height: calc(100dvh - 220px);
   min-height: 0;
   overflow: auto;
 }
@@ -170,6 +174,7 @@
   border: 1px solid var(--border);
   background: rgba(255, 253, 248, 0.72);
   cursor: ns-resize;
+  touch-action: none;
   opacity: 0.3;
   z-index: 4;
   transition: opacity var(--dur) ease, border-color var(--dur) ease;
@@ -180,8 +185,8 @@
   opacity: 0.75;
 }
 
-.panel-block-size-handle:hover,
-.panel-block-size-handle:focus-visible {
+.panel-block .panel-block-size-handle:hover,
+.panel-block .panel-block-size-handle:focus-visible {
   opacity: 1;
   border-color: var(--accent);
 }
@@ -243,10 +248,6 @@
   min-width: 0;
 }
 
-.legacy-panel-layout {
-  display: none !important;
-}
-
 .panel-borders-toggle {
   display: inline-flex;
   align-items: center;
@@ -302,6 +303,7 @@
   border-radius: var(--radius-pill);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   opacity: 0.16;
+  touch-action: none;
   transition: opacity var(--dur) ease, border-color var(--dur) ease, background var(--dur) ease;
 }
 
@@ -326,8 +328,8 @@
   opacity: 0.48;
 }
 
-.panel-resize-handle:hover,
-.panel-resize-handle:focus-visible,
+.panel-layout .panel-resize-handle:hover,
+.panel-layout .panel-resize-handle:focus-visible,
 .panel-layout.is-resizing .panel-resize-handle:hover {
   opacity: 0.95;
   border-color: var(--accent);
@@ -394,6 +396,10 @@
   overflow: hidden;
 }
 
+.panel-slot.empty {
+  border-style: dashed;
+}
+
 .panel-layout.slot-borders-enabled .panel-slot {
   border-width: 2px;
   border-color: var(--panel-slot-border-color, #5d645d);
@@ -411,13 +417,9 @@
   cursor: grabbing;
 }
 
-.panel-slot.empty {
-  border-style: dashed;
-}
-
 .panel-slot.drag-over {
   border-color: var(--accent);
-  box-shadow: inset 0 0 0 2px rgba(var(--accent-rgb), 0.12);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .panel-slot-placeholder {
@@ -492,6 +494,9 @@
     min-height: 320px;
   }
 
+}
+
+@container panel-canvas (max-width: 640px) {
   .panel-layout,
   .panel-layout.template-2col,
   .panel-layout.template-hero2,
@@ -505,7 +510,5 @@
     grid-row: auto;
   }
 
-  .panel-item {
-    cursor: default;
-  }
+}
 }

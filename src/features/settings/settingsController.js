@@ -17,6 +17,7 @@
 
 import { getLocale, setLocale } from '../../services/i18nService.js';
 import { getTinColorRendering, setTinColorRendering } from '../../services/settingsService.js';
+import { getStorageStatus, requestPersistentStorage } from '../../services/storageService.js';
 import { openSettingsDialog } from './settingsDialog.js';
 import { SETTINGS_IDS } from './domIds.js';
 
@@ -41,6 +42,8 @@ export function initSettingsController() {
 			tinColorRendering: getTinColorRendering(),
 			onLocaleChange: setLocale,
 			onTinColorRenderingChange: setTinColorRendering,
+			onGetStorageStatus: getStorageStatus,
+			onRequestPersistentStorage: requestPersistentStorage,
 			onClose: () => {
 				dialogOpen = false;
 				button.setAttribute('aria-expanded', 'false');

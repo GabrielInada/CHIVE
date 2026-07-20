@@ -58,7 +58,7 @@ export function createControlSection(sectionId, title, controls, expanded = true
 	// Content container
 	const content = document.createElement('div');
 	content.className = 'chart-section-content';
-	content.style.display = expanded ? 'block' : 'none';
+	content.hidden = !expanded;
 
 	// Add all controls to content
 	controls.forEach(control => {
@@ -70,7 +70,7 @@ export function createControlSection(sectionId, title, controls, expanded = true
 		e.preventDefault();
 		const isExpanded = header.getAttribute('aria-expanded') === 'true';
 		header.setAttribute('aria-expanded', !isExpanded);
-		content.style.display = isExpanded ? 'none' : 'block';
+		content.hidden = isExpanded;
 		toggleIcon.textContent = isExpanded ? '▶' : '▼';
 		// Only animate on user-triggered expansion. Re-rendered sections that start
 		// expanded (via applyControlSectionExpansionState after a sidebar rebuild)

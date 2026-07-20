@@ -321,13 +321,15 @@
  * @property {Object<string, Object>} statsNumeric - Per-column numeric stats (n, min, max, mean, median).
  * @property {Object<string, Object>} statsCategorical - Per-column categorical stats (mode, top-N, missingness).
  * @property {number} [truncatedFrom] - Original row count before the worker capped to `rowLimit`. Absent when no truncation occurred.
+ * @property {string[]} [outputColumns] - Stable output order for a joined-data request.
  */
 
 /**
- * One progress tick emitted by the worker. Stages run roughly in this
- * order: `'parsing'` → `'decimal-detection'` → `'type-detection'` →
- * `'normalize'` → `'stats'`. `percent` is the overall pipeline progress
- * (0 to 100), not a per-stage value.
+ * One progress tick emitted by the worker. File stages start with
+ * `'parsing'`; join stages start with `'joining'`; both continue through
+ * `'decimal-detection'` → `'type-detection'` → `'normalize'` → `'stats'`.
+ * `percent` is the overall pipeline progress (0 to 100), not a per-stage
+ * value.
  *
  * @typedef {Object} IngestProgress
  * @property {string} stage
@@ -342,11 +344,12 @@
  * worker side lives in `workers/dataIngestWorker.js`.
  *
  * @typedef {Object} IngestWorkerRequest
- * @property {number} id - Correlation id; mirrored on every response.
- * @property {'csv' | 'json'} kind - Parser to use.
- * @property {string} text - Raw file contents.
+ * @property {string} id - Correlation id; mirrored on every response.
+ * @property {'csv' | 'json' | 'join'} kind - File parser or joined-data operation.
+ * @property {string} [text] - Raw file contents for CSV/JSON requests.
+ * @property {JoinDatasetsOptions} [join] - Complete join input for a join request.
  * @property {Object} [options]
- * @property {number} [options.rowLimit] - Cap rows after parse; surplus rows trigger `truncatedFrom` in the done payload.
+ * @property {number} [options.rowLimit] - Cap this worker response after parse; surplus rows trigger `truncatedFrom`. Uploads use this only for a bounded threshold probe, then rerun uncapped after approval.
  * @property {string[]} [options.dropColumns] - Column names to strip before normalization (preset use case).
  */
 
@@ -362,6 +365,7 @@
  * @property {NumericColumnStats[] | []} statsNumeric - Empty array when no rows.
  * @property {CategoricalColumnStats[] | []} statsCategorical - Empty array when no rows.
  * @property {number | null} truncatedFrom - Original row count when `options.rowLimit` truncated; `null` otherwise.
+ * @property {string[]} [outputColumns] - Join output order; present only for join requests.
  */
 
 /**
@@ -372,9 +376,9 @@
  * onmessage catch-all for unexpected throws); the host prefers `reason`.
  *
  * @typedef {(
- *   { id: number, type: 'progress', stage: string, percent: number }
- *   | { id: number, type: 'done', result: IngestWorkerDoneResult }
- *   | { id: number, type: 'error', reason?: string, message?: string }
+ *   { id: string, type: 'progress', stage: string, percent: number }
+ *   | { id: string, type: 'done', result: IngestWorkerDoneResult }
+ *   | { id: string, type: 'error', reason?: string, message?: string }
  * )} IngestWorkerResponse
  */
 
@@ -594,7 +598,7 @@
  *
  * @typedef {(
  *   { ok: true, index: number, datasetName: string }
- *   | { ok: false, message: string }
+ *   | { ok: false, reason?: string, message: string }
  * )} JoinDatasetResult
  */
 

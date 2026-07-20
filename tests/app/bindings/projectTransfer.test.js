@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
 	getPersistenceSnapshot: vi.fn(() => ({ data: { datasets: [], activeIndex: -1 }, panel: null, ui: {} })),
 	getProjectImportErrorMessageKey: vi.fn(),
 	importProjectBytes: vi.fn(),
+	openConfirmDialog: vi.fn(),
 	progressHandle: {
 		update: vi.fn(),
 		succeed: vi.fn(),
@@ -37,6 +38,10 @@ vi.mock('../../../src/services/persistence.js', () => ({
 
 vi.mock('../../../src/ui/feedback.js', () => ({
 	showProgress: mocks.showProgress,
+}));
+
+vi.mock('../../../src/ui/confirmDialog.js', () => ({
+	openConfirmDialog: mocks.openConfirmDialog,
 }));
 
 vi.mock('../../../src/state/appState.js', () => ({
@@ -91,7 +96,7 @@ describe('eventHandlers', () => {
 		mocks.importProjectBytes.mockResolvedValue({ ok: true });
 		mocks.getProjectImportErrorMessageKey.mockReturnValue('chive-project-import-error');
 		mocks.showProgress.mockReturnValue(mocks.progressHandle);
-		window.confirm = vi.fn(() => true);
+		mocks.openConfirmDialog.mockResolvedValue(true);
 		setupDom();
 	});
 
@@ -135,7 +140,12 @@ describe('eventHandlers', () => {
 		importInput.dispatchEvent(new Event('change', { bubbles: true }));
 		await flushPromises();
 
-		expect(window.confirm).toHaveBeenCalledWith('tr:chive-project-import-confirm');
+		expect(mocks.openConfirmDialog).toHaveBeenCalledWith({
+			title: 'tr:chive-project-import-confirm-title',
+			message: 'tr:chive-project-import-confirm',
+			confirmLabel: 'tr:chive-confirm-continue',
+			cancelLabel: 'tr:chive-confirm-cancel',
+		});
 		expect(mocks.importProjectBytes).toHaveBeenCalledWith(
 			new Uint8Array([9, 8]),
 			expect.objectContaining({ replaceAllState: mocks.replaceAllState }),
@@ -230,13 +240,13 @@ describe('eventHandlers', () => {
 		await flushPromises();
 		expect(mocks.importProjectBytes).not.toHaveBeenCalled();
 
-		window.confirm = vi.fn(() => false);
+		mocks.openConfirmDialog.mockResolvedValueOnce(false);
 		setInputFiles(importInput, [makeProjectFile([1])]);
 		importInput.dispatchEvent(new Event('change', { bubbles: true }));
 		await flushPromises();
 		expect(mocks.importProjectBytes).not.toHaveBeenCalled();
 
-		window.confirm = vi.fn(() => true);
+		mocks.openConfirmDialog.mockResolvedValue(true);
 		mocks.importProjectBytes.mockResolvedValueOnce({ ok: false, error: new Error('bad project') });
 		setInputFiles(importInput, [makeProjectFile([2])]);
 		importInput.dispatchEvent(new Event('change', { bubbles: true }));

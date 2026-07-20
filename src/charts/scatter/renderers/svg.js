@@ -85,10 +85,16 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		configuredAxisTypes,
 		xFilterColumn,
 		yFilterColumn,
+		allowFullRender,
 	} = normalizeScatterOptions(options, xColumn, yColumn);
 
 	const {
 		points,
+		renderedPoints,
+		renderedCount,
+		validCount,
+		totalCount,
+		sampled,
 		axisTypes,
 		effectiveXScaleType,
 		effectiveYScaleType,
@@ -101,6 +107,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		yScaleType,
 		categoricalPairMode,
 		configuredAxisTypes,
+		renderAll: allowFullRender,
 	});
 
 	if (points.length === 0) {
@@ -182,29 +189,45 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		isPinned: () => pinnedIndex !== null,
 	});
 
-	group
+	const pointLayer = group
+		.append('g')
+		.attr('class', 'scatter-points');
+
+	pointLayer
 		.selectAll('circle')
-		.data(points)
+		.data(renderedPoints)
 		.enter()
 		.append('circle')
+		.attr('class', 'scatter-point')
 		.attr('cx', point => getPointX(point))
 		.attr('cy', point => getPointY(point))
 		.attr('r', point => getPointRadius(point))
 		.attr('fill', point => getPointColor(point))
-		.attr('opacity', opacity)
-		.on('mouseenter', (event, point) => {
-			if (pinnedIndex !== null) return;
+		.attr('opacity', opacity);
+
+	const pointFromEvent = event => {
+		const target = event.target;
+		if (!(target instanceof window.SVGElement) || !target.matches('.scatter-point')) return null;
+		return target.__data__ || null;
+	};
+
+	pointLayer
+		.on('mouseover', event => {
+			const point = pointFromEvent(event);
+			if (!point || pinnedIndex !== null) return;
 			showTooltip(event, point);
 		})
 		.on('mousemove', event => {
-			if (pinnedIndex !== null) return;
+			if (!pointFromEvent(event) || pinnedIndex !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
-		.on('mouseleave', () => {
-			if (pinnedIndex !== null) return;
+		.on('mouseout', event => {
+			if (!pointFromEvent(event) || pinnedIndex !== null) return;
 			hideChartTooltip();
 		})
-		.on('click', (event, point) => {
+		.on('click', event => {
+			const point = pointFromEvent(event);
+			if (!point) return;
 			event.stopPropagation();
 			if (pinnedIndex === point.index) {
 				pinnedIndex = null;
@@ -266,5 +289,10 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		});
 	}
 
-	return ok();
+	return ok({
+		renderedCount,
+		validCount,
+		totalCount,
+		sampled,
+	});
 }

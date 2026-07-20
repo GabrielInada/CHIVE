@@ -22,11 +22,11 @@ export function renderTreemapChartSection({ config, rows, filterCallbacks }) {
 	const block = document.getElementById(CHART_BLOCKS.treemap);
 	const container = document.getElementById(CHART_CONTAINERS.treemap);
 	if (!config.enabled) {
-		block.style.display = 'none';
+		block.hidden = true;
 		clearChartContainer(container);
 		return;
 	}
-	block.style.display = 'block';
+	block.hidden = false;
 	container.style.minHeight = `${Number(config.chartHeight || 380)}px`;
 	const result = renderTreemapInto(container, rows, config, filterCallbacks);
 

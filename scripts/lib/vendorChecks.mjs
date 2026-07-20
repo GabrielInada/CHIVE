@@ -4,6 +4,7 @@ import {
 	readdirSync,
 	statSync,
 } from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 
 const README_PACKAGE_NAMES = Object.freeze({
@@ -53,6 +54,17 @@ const FONT_LICENSE_FILES = Object.freeze([
 	'vendor/fonts/ibm-plex-serif/OFL.txt',
 	'vendor/fonts/jetbrains-mono/OFL.txt',
 ]);
+
+const FONT_SHA256 = Object.freeze({
+	'vendor/fonts/ibm-plex-sans/IBMPlexSans-VariableFont_wdth,wght.woff2':
+		'd1d2b58fb0fbe7e79df81e42c6129fc0708178818c454e59c7c19910db47f44e',
+	'vendor/fonts/ibm-plex-serif/IBMPlexSerif-Light.woff2':
+		'c94e00302baeee0e9999e4cb294e9143347453ee4bd881a20b32dc2026c2975c',
+	'vendor/fonts/ibm-plex-serif/IBMPlexSerif-Regular.woff2':
+		'5f70f9d55142cb81af99f36ab3bba8570c86d599065cf6f1d43535e6f21159cc',
+	'vendor/fonts/ibm-plex-serif/IBMPlexSerif-Bold.woff2':
+		'f8e8320b9111e3f9bf789098b0eef8a5366fd12172b461a37dacb5f9a7df124c',
+});
 
 const BYTE_PARITY_FILES = Object.freeze([
 	{
@@ -281,6 +293,12 @@ function checkFontIntegrity(rootDir, findings) {
 			`${cssPath} contains a url() source that is not a single-quoted relative path.`,
 		);
 	}
+	if (/\.ttf\b|format\(\s*['"]truetype['"]\s*\)/i.test(css)) {
+		findings.push(`${cssPath} must reference WOFF2 runtime fonts only.`);
+	}
+	if (urls.some(url => !url.endsWith('.woff2'))) {
+		findings.push(`${cssPath} contains a non-WOFF2 runtime font URL.`);
+	}
 
 	const fontsDirectory = path.join(rootDir, 'vendor/fonts');
 	for (const url of urls) {
@@ -296,6 +314,23 @@ function checkFontIntegrity(rootDir, findings) {
 		}
 		if (!existsSync(target) || !statSync(target).isFile()) {
 			findings.push(`${cssPath} references missing font file ${url}.`);
+		}
+	}
+
+	for (const directory of ['vendor/fonts/ibm-plex-sans', 'vendor/fonts/ibm-plex-serif']) {
+		const ttfFiles = readdirSync(path.join(rootDir, directory))
+			.filter(file => file.toLowerCase().endsWith('.ttf'));
+		if (ttfFiles.length) {
+			findings.push(`${directory} contains obsolete TTF files: ${ttfFiles.join(', ')}.`);
+		}
+	}
+
+	for (const [relativePath, expectedHash] of Object.entries(FONT_SHA256)) {
+		const buffer = readRequiredFile(rootDir, relativePath, findings);
+		if (!buffer) continue;
+		const actualHash = createHash('sha256').update(buffer).digest('hex');
+		if (actualHash !== expectedHash) {
+			findings.push(`${relativePath} SHA-256 mismatch.`);
 		}
 	}
 }

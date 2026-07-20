@@ -27,6 +27,8 @@ Open a [documentation issue](https://github.com/GabrielInada/CHIVE/issues/new?te
 
 CHIVE is plain JavaScript (browser ES modules, no TypeScript) designed for static hosting without a required build step. Vite is the local dev server and optional build/preview tool; Vitest runs the automated test suite. Develop changes in this order:
 
+CHIVE adopts features that are [Baseline Widely available](docs/development/browser-support.md). Baseline Newly available features need a tested feature-detected fallback; do not introduce a polyfill or runtime dependency only to adopt an early feature.
+
 1. Make sure your PR has a bug report, feature proposal, or documentation issue associated with it. If not, open one first.
 2. Fork the repo and clone your fork to your machine.
 3. Install an active Node.js LTS release that satisfies the engine requirements of the locked dependencies, then install the NPM dependencies with `npm install`. If install or local tooling reports an unsupported Node.js version, switch to a newer active LTS release before continuing.

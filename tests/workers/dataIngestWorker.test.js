@@ -90,7 +90,7 @@ describe('runIngest', () => {
 		expect(done.result.truncatedFrom).toBeNull();
 	});
 
-	it('truncates to options.rowLimit and reports the original length via truncatedFrom', () => {
+	it('caps a threshold-probe response and reports the original length', () => {
 		const { post, msgs } = collectMessages();
 		const csv = 'a\n' + Array.from({ length: 100 }, (_, i) => i).join('\n') + '\n';
 		runIngest({ id: 'test', kind: 'csv', text: csv, options: { rowLimit: 10 } }, post);
@@ -116,6 +116,45 @@ describe('runIngest', () => {
 		runIngest({ id: 'test', kind: 'json', text: '[{"a":1},{"a":2}]' }, post);
 		const done = msgs.find(m => m.type === 'done');
 		expect(done.result.rows).toEqual([{ a: 1 }, { a: 2 }]);
+	});
+
+	it('joins and normalizes complete row sets in the worker pipeline', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({
+			id: 'join-test',
+			kind: 'join',
+			join: {
+				leftRows: [
+					{ id: '1', amount: '10' },
+					{ id: '2', amount: '20' },
+				],
+				rightRows: [
+					{ id: '1', target: '99' },
+					{ id: '2', target: '88' },
+				],
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				joinType: 'inner',
+				leftColumns: ['id', 'amount'],
+				rightColumns: ['target'],
+				leftDatasetName: 'left.csv',
+				rightDatasetName: 'right.csv',
+			},
+		}, post);
+
+		expect(msgs[0]).toEqual({
+			id: 'join-test',
+			type: 'progress',
+			stage: 'joining',
+			percent: 0,
+		});
+		const done = msgs.find(message => message.type === 'done');
+		expect(done.result.rows).toEqual([
+			{ id: 1, amount: 10, target: 99 },
+			{ id: 2, amount: 20, target: 88 },
+		]);
+		expect(done.result.outputColumns).toEqual(['id', 'amount', 'target']);
+		expect(done.result.truncatedFrom).toBeNull();
 	});
 
 	it('progress percentages are non-decreasing and reach 100 by the final message', () => {

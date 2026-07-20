@@ -31,18 +31,31 @@ function makeGrid({ width = 200, height = 100 } = {}) {
 	return grid;
 }
 
+function pointerEvent(type, {
+	pointerId = 1,
+	button = 0,
+	isPrimary = true,
+	clientX = 0,
+	clientY = 0,
+} = {}) {
+	const event = new Event(type, { bubbles: true, cancelable: true });
+	Object.defineProperties(event, {
+		pointerId: { value: pointerId },
+		button: { value: button },
+		isPrimary: { value: isPrimary },
+		clientX: { value: clientX },
+		clientY: { value: clientY },
+	});
+	return event;
+}
+
 function drag(handle, move) {
-	handle.dispatchEvent(new MouseEvent('mousedown', {
-		bubbles: true,
-		cancelable: true,
-		clientX: 0,
-		clientY: 0,
-	}));
-	window.dispatchEvent(new MouseEvent('mousemove', {
+	handle.dispatchEvent(pointerEvent('pointerdown'));
+	window.dispatchEvent(pointerEvent('pointermove', {
 		clientX: move.x ?? 0,
 		clientY: move.y ?? 0,
 	}));
-	window.dispatchEvent(new MouseEvent('mouseup'));
+	window.dispatchEvent(pointerEvent('pointerup'));
 }
 
 describe('panel layout resize', () => {
@@ -159,12 +172,29 @@ describe('panel layout resize', () => {
 
 		startBlockHeightResizeDrag('block-1', grid, 100, onUpdate);
 		expect(grid.classList.contains('is-resizing')).toBe(true);
-		window.dispatchEvent(new MouseEvent('mousemove', { clientY: 145 }));
+		window.dispatchEvent(pointerEvent('pointermove', { clientY: 145 }));
 		expect(onUpdate).toHaveBeenCalledWith('block-1', 285);
-		window.dispatchEvent(new MouseEvent('mouseup'));
+		window.dispatchEvent(pointerEvent('pointerup'));
 		expect(grid.classList.contains('is-resizing')).toBe(false);
 
-		window.dispatchEvent(new MouseEvent('mousemove', { clientY: 200 }));
+		window.dispatchEvent(pointerEvent('pointermove', { clientY: 200 }));
+		expect(onUpdate).toHaveBeenCalledTimes(1);
+	});
+
+	it('tracks only the initiating pointer and cancels atomically', () => {
+		const grid = makeGrid({ height: 240 });
+		const onUpdate = vi.fn();
+
+		startBlockHeightResizeDrag('block-1', grid, 100, onUpdate, 7);
+		window.dispatchEvent(pointerEvent('pointermove', { pointerId: 8, clientY: 150 }));
+		expect(onUpdate).not.toHaveBeenCalled();
+
+		window.dispatchEvent(pointerEvent('pointermove', { pointerId: 7, clientY: 150 }));
+		expect(onUpdate).toHaveBeenCalledWith('block-1', 290);
+		window.dispatchEvent(pointerEvent('pointercancel', { pointerId: 7 }));
+		expect(grid.classList.contains('is-resizing')).toBe(false);
+
+		window.dispatchEvent(pointerEvent('pointermove', { pointerId: 7, clientY: 180 }));
 		expect(onUpdate).toHaveBeenCalledTimes(1);
 	});
 
@@ -172,12 +202,12 @@ describe('panel layout resize', () => {
 		const zeroHeight = makeGrid({ height: 0 });
 		const onUpdate = vi.fn();
 		startBlockHeightResizeDrag('block-1', zeroHeight, 100, onUpdate);
-		window.dispatchEvent(new MouseEvent('mousemove', { clientY: 150 }));
+		window.dispatchEvent(pointerEvent('pointermove', { clientY: 150 }));
 		expect(onUpdate).not.toHaveBeenCalled();
 
 		const grid = makeGrid({ height: 120 });
 		startBlockHeightResizeDrag('block-1', grid, Number.NaN, onUpdate);
-		window.dispatchEvent(new MouseEvent('mousemove', { clientY: 150 }));
+		window.dispatchEvent(pointerEvent('pointermove', { clientY: 150 }));
 		expect(onUpdate).not.toHaveBeenCalled();
 	});
 });

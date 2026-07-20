@@ -70,7 +70,7 @@ describe('renderLineChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('none');
+		expect(block.hidden).toBe(true);
 		expect(container.children.length).toBe(0);
 		expect(mocks.renderLineChart).not.toHaveBeenCalled();
 	});

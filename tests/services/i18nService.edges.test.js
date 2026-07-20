@@ -47,68 +47,71 @@ describe('i18nService branching coverage', () => {
 	});
 
 	describe('initializeI18n() branches', () => {
-		it('loads saved locale if valid', () => {
+		it('loads saved locale if valid', async () => {
 			localStorage.setItem('chive-locale', 'en');
 			mocks.mockBanana.locale = 'en';
-			initializeI18n();
+			await initializeI18n();
 			expect(mocks.mockBanana.setLocale).toHaveBeenCalledWith('en');
 		});
 
-		it('defaults to pt-BR on invalid saved locale', () => {
+		it('defaults to pt-BR on invalid saved locale', async () => {
 			localStorage.setItem('chive-locale', 'xx-YY');
-			initializeI18n();
+			await initializeI18n();
 			expect(mocks.mockBanana.setLocale).toHaveBeenCalledWith('pt-BR');
 		});
 
-		it('reveals the document body after translation', () => {
+		it('leaves page-shell visibility to the startup lifecycle', async () => {
 			document.body.style.visibility = 'hidden';
-			initializeI18n();
-			expect(document.body.style.visibility).toBe('visible');
+			await initializeI18n();
+			expect(document.body.style.visibility).toBe('hidden');
 		});
 	});
 
 	describe('setLocale() branches', () => {
-		it('rejects invalid locale without side effects', () => {
-			setLocale('invalid');
+		it('rejects invalid locale without side effects', async () => {
+			await expect(setLocale('invalid')).resolves.toEqual({
+				ok: false,
+				reason: 'unsupported-locale',
+			});
 			expect(mocks.mockBanana.setLocale).not.toHaveBeenCalled();
 			expect(localStorage.getItem('chive-locale')).toBeNull();
 		});
 
-		it('accepts valid locale and emits event', () => {
+		it('accepts valid locale and emits event', async () => {
 			const spy = vi.fn();
 			window.addEventListener('chive-locale-changed', spy);
-			setLocale('en');
+			await setLocale('en');
 			expect(spy).toHaveBeenCalledWith(expect.objectContaining({ detail: { locale: 'en' } }));
 			window.removeEventListener('chive-locale-changed', spy);
 		});
 
-		it('sets document.documentElement.lang attribute', () => {
-			setLocale('en');
+		it('sets document.documentElement.lang attribute', async () => {
+			await setLocale('en');
 			expect(document.documentElement.lang).toBe('en');
 		});
 	});
 
 	describe('Page translation branches', () => {
-		it('handles [data-i18n] attributes', () => {
-			setLocale('en');
+		it('handles [data-i18n] attributes', async () => {
+			await setLocale('en');
 			const btn = document.querySelector('[data-i18n="btn-test"]');
 			expect(btn.textContent).toBe('text:btn-test');
 		});
 
-		it('updates aria-label when present in [data-i18n-title]', () => {
-			setLocale('en');
+		it('updates aria-label when present in [data-i18n-title]', async () => {
+			await setLocale('en');
 			const btn = document.querySelector('[data-i18n-title]');
 			expect(btn.getAttribute('aria-label')).toBe('text:title-test');
 		});
 
-		it('sets title attribute from [data-i18n-title]', () => {
-			setLocale('en');
+		it('sets title attribute from [data-i18n-title]', async () => {
+			await setLocale('en');
 			const btn = document.querySelector('[data-i18n-title]');
 			expect(btn.title).toBe('text:title-test');
 		});
 
-		it('updates document.title', () => {
-			setLocale('en');
+		it('updates document.title', async () => {
+			await setLocale('en');
 			expect(document.title).toBe('text:chive-page-title');
 		});
 	});

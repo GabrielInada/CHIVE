@@ -1,5 +1,0 @@
-/* @feature: foundation
-   Composes the shared chrome plus app-only foundation pieces. */
-@import url('./chrome.css');
-@import url('./animations.css');
-@import url('./collapsed.css');

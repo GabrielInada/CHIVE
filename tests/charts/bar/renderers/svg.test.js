@@ -356,7 +356,7 @@ describe('renderBarChart behavior', () => {
 		expect(document.querySelector('.chart-tooltip__filter-state--excluded')).not.toBeNull();
 		firstBar.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 3, pageY: 3 }));
 		firstBar.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('none');
+		expect(document.querySelector('.chart-tooltip').hidden).toBe(true);
 		container.querySelector('svg').dispatchEvent(new MouseEvent('click', { bubbles: true }));
 	});
 

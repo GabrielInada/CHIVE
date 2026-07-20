@@ -1,19 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const focusMocks = vi.hoisted(() => ({
-	release: vi.fn(),
-	restoreFocus: vi.fn(),
-	installDialogFocus: vi.fn(() => ({
-		release: focusMocks.release,
-		restoreFocus: focusMocks.restoreFocus,
-	})),
-}));
-
-vi.mock('../../../../src/ui/dialogFocus.js', () => ({
-	installDialogFocus: focusMocks.installDialogFocus,
-}));
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import { PRESET_CATALOG } from '../../../../src/data/presetCatalog.js';
 import { openPresetDatasetsDialog } from '../../../../src/features/datasetWorkspace/dialogs/presetDatasetsView.js';
@@ -23,7 +10,6 @@ const translate = (key, ...args) => (args.length ? `${key}:${args.join(',')}` : 
 describe('openPresetDatasetsDialog', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '';
-		vi.clearAllMocks();
 	});
 
 	it('renders catalog cards with metadata and disables load until selection', () => {
@@ -39,6 +25,8 @@ describe('openPresetDatasetsDialog', () => {
 			.toBe(`chive-preset-card-meta:${PRESET_CATALOG[0].rows},${PRESET_CATALOG[0].columns}`);
 		expect(cards[0].querySelector('.preset-card-source-link').href)
 			.toBe(PRESET_CATALOG[0].sourceUrl);
+		const dialog = document.querySelector('dialog[open]');
+		expect(dialog.getAttribute('aria-labelledby')).toBe('preset-dialog-title');
 	});
 
 	it('selects a card and resolves the selected catalog entry on Load', async () => {
@@ -56,8 +44,6 @@ describe('openPresetDatasetsDialog', () => {
 
 		expect(result).toBe(PRESET_CATALOG[1]);
 		expect(document.querySelector('.preset-dialog')).toBeNull();
-		expect(focusMocks.release).toHaveBeenCalled();
-		expect(focusMocks.restoreFocus).toHaveBeenCalled();
 	});
 
 	it('cancels on footer cancel, Escape, and backdrop click', async () => {
@@ -66,11 +52,11 @@ describe('openPresetDatasetsDialog', () => {
 		await expect(pending).resolves.toBeNull();
 
 		pending = openPresetDatasetsDialog({ translate });
-		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+		document.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
 		await expect(pending).resolves.toBeNull();
 
 		pending = openPresetDatasetsDialog({ translate });
-		document.querySelector('.join-overlay').click();
+		document.querySelector('dialog').click();
 		await expect(pending).resolves.toBeNull();
 	});
 });

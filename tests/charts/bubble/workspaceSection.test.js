@@ -67,7 +67,7 @@ describe('renderBubbleChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('none');
+		expect(block.hidden).toBe(true);
 		expect(container.children.length).toBe(0);
 		expect(mocks.renderBubbleChart).not.toHaveBeenCalled();
 	});
@@ -122,7 +122,7 @@ describe('renderBubbleChartSection', () => {
 			rows: [{ x: 1 }],
 			filterCallbacks,
 		});
-		expect(block.style.display).toBe('block');
+		expect(block.hidden).toBe(false);
 		expect(container.style.minHeight).toBe('800px');
 	});
 

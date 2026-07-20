@@ -14,6 +14,7 @@
  */
 
 import { SCATTER3D_CHART } from '../../config/charts/definitions/scatter3d.js';
+import { sampleWithExtrema } from '../shared/pointSampling.js';
 
 /**
  * Per-axis `[min, max]` extents.
@@ -68,7 +69,11 @@ export function buildScatter3dPoints(rows, x, y, z) {
 		return { points: valid, extents, renderedCount: validCount, validCount, totalCount, truncated: false };
 	}
 
-	const points = samplePoints(valid, extents);
+	const points = sampleWithExtrema(valid, SCATTER3D_CHART.maxPoints, [
+		point => point.x,
+		point => point.y,
+		point => point.z,
+	]);
 	return { points, extents, renderedCount: points.length, validCount, totalCount, truncated: true };
 }
 
@@ -92,32 +97,4 @@ function computeExtents(valid) {
 		if (point.z > maxZ) maxZ = point.z;
 	}
 	return { x: [minX, maxX], y: [minY, maxY], z: [minZ, maxZ] };
-}
-
-/**
- * Deterministic sample of at most `maxPoints` entries: the extrema
- * carriers first, then evenly strided picks across the whole valid set.
- * Stride picks that collide with an extremum simply merge, so the result
- * can be a few points under the cap but never over it.
- *
- * @private
- * @param {Array<{ x: number, y: number, z: number, index: number }>} valid
- * @param {Scatter3dExtents} extents
- * @returns {Array<{ x: number, y: number, z: number, index: number }>}
- */
-function samplePoints(valid, extents) {
-	const picked = new Set();
-	for (const axis of ['x', 'y', 'z']) {
-		const [min, max] = extents[axis];
-		picked.add(valid.findIndex(point => point[axis] === min));
-		picked.add(valid.findIndex(point => point[axis] === max));
-	}
-
-	const budget = SCATTER3D_CHART.maxPoints - picked.size;
-	const stride = valid.length / budget;
-	for (let i = 0; i < budget; i++) {
-		picked.add(Math.floor(i * stride));
-	}
-
-	return Array.from(picked).sort((a, b) => a - b).map(position => valid[position]);
 }

@@ -62,10 +62,10 @@ export function renderDatasetWorkspace(
   chartConfig = null,
   onChartConfigChange = null
 ) {
-  document.getElementById(VIEW_IDS.columnPanel).style.display = 'block';
-  document.getElementById(VIEW_IDS.resultTabs).style.display = 'flex';
-  document.getElementById(VIEW_IDS.emptyState).style.display = 'none';
-  document.getElementById(VIEW_IDS.dataState).style.display = 'flex';
+  document.getElementById(VIEW_IDS.columnPanel).hidden = false;
+  document.getElementById(VIEW_IDS.resultTabs).hidden = false;
+  document.getElementById(VIEW_IDS.emptyState).hidden = true;
+  document.getElementById(VIEW_IDS.dataState).hidden = false;
 
   const columnNames = columns.map(column => column.name);
   const selectedNames = new Set(Array.isArray(selectedColumns) ? selectedColumns : columnNames);
@@ -163,8 +163,6 @@ export function renderDatasetWorkspace(
   renderCharts(config, rows, visibleColumns, visibleNumericColumns, globalFilterActions);
 
   document.getElementById(WORKSPACE_ACTION_IDS.advanceButton).disabled = false;
-  const devNotice = document.getElementById('dev-warning');
-  if (devNotice) devNotice.style.display = 'block';
   document.getElementById(FILE_IDS.uploadZone).classList.add('loaded');
   document.querySelector('.upload-icon').textContent = '✓';
   document.querySelector('.upload-text-main').textContent = t('chive-upload-loaded-main');

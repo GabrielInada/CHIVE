@@ -4,14 +4,50 @@
  * Manages user-facing feedback:
  *   - Toast notifications (success, info)
  *   - Error messages
- *   - Loading states
  *   - Cancellable progress toast (see {@link showProgress})
  *
  * @typedef {import('../types.js').ProgressHandle} ProgressHandle
  */
 
-let feedbackTimer = null;
-let errorTimer = null;
+const FEEDBACK_REGION_ID = 'feedback-region';
+const ERRORS_REGION_ID = 'errors-container';
+const feedbackTimers = new Set();
+const errorTimers = new Set();
+
+/**
+ * Static HTML owns these regions. This fallback keeps top-level error handling
+ * useful if a host page is incomplete or a test mounts only part of the shell.
+ *
+ * @param {string} id
+ * @param {'polite' | 'assertive'} politeness
+ * @param {string} className
+ * @returns {HTMLElement}
+ */
+function getLiveRegion(id, politeness, className) {
+	let region = document.getElementById(id);
+	if (region) return region;
+
+	region = document.createElement('div');
+	region.id = id;
+	region.className = className;
+	region.setAttribute('aria-live', politeness);
+	region.setAttribute('aria-atomic', 'false');
+	document.body.appendChild(region);
+	return region;
+}
+
+/**
+ * @param {HTMLElement} notice
+ * @param {number} duration
+ * @param {Set<number>} timerSet
+ */
+function removeAfter(notice, duration, timerSet) {
+	const timer = window.setTimeout(() => {
+		notice.remove();
+		timerSet.delete(timer);
+	}, duration);
+	timerSet.add(timer);
+}
 
 /**
  * Show success/info feedback toast (auto-dismisses)
@@ -19,30 +55,13 @@ let errorTimer = null;
  * @param {number} duration - Duration in ms (default 2200)
  */
 export function showFeedback(message, duration = 2200) {
-	let toast = document.getElementById('toast-feedback');
-	if (!toast) {
-		toast = document.createElement('div');
-		toast.id = 'toast-feedback';
-		toast.className = 'toast-feedback';
-		document.body.appendChild(toast);
-	}
-
-	toast.textContent = message;
-	toast.classList.add('visible');
-
-	if (feedbackTimer) window.clearTimeout(feedbackTimer);
-	feedbackTimer = window.setTimeout(() => {
-		toast.classList.remove('visible');
-	}, duration);
-}
-
-/**
- * @deprecated Use {@link showFeedback} instead. Kept as a backwards-compat alias.
- * @param {string} message
- * @param {number} [duration=2200]
- */
-export function showFeedbackMessage(message, duration = 2200) {
-	showFeedback(message, duration);
+	const region = getLiveRegion(FEEDBACK_REGION_ID, 'polite', 'feedback-region');
+	const notice = document.createElement('div');
+	notice.className = 'toast-feedback';
+	notice.textContent = message;
+	region.appendChild(notice);
+	requestAnimationFrame(() => notice.classList.add('visible'));
+	removeAfter(notice, Math.max(0, duration), feedbackTimers);
 }
 
 /**
@@ -51,15 +70,10 @@ export function showFeedbackMessage(message, duration = 2200) {
  * @param {number} duration - Auto-dismiss duration in ms (0 = no autodismiss)
  */
 export function showError(message, duration = 0) {
-	const errorsContainer = document.getElementById('errors-container');
-	if (!errorsContainer) {
-		showFeedback(message, duration || 2200);
-		return;
-	}
+	const errorsContainer = getLiveRegion(ERRORS_REGION_ID, 'assertive', 'errors-container');
 
 	const errorDiv = document.createElement('div');
 	errorDiv.className = 'error-notice';
-	errorDiv.role = 'alert';
 
 	const content = document.createElement('div');
 	content.textContent = message;
@@ -67,90 +81,42 @@ export function showError(message, duration = 0) {
 	const closeBtn = document.createElement('button');
 	closeBtn.className = 'btn-close-notice';
 	closeBtn.type = 'button';
+	closeBtn.setAttribute('aria-label', errorsContainer.dataset.closeLabel || 'Close');
 	closeBtn.textContent = '×';
 	closeBtn.addEventListener('click', () => {
 		errorDiv.remove();
-		if (errorTimer) window.clearTimeout(errorTimer);
 	});
 
 	errorDiv.appendChild(content);
 	errorDiv.appendChild(closeBtn);
 	errorsContainer.appendChild(errorDiv);
 
-	// Auto-dismiss if duration specified
 	if (duration > 0) {
-		if (errorTimer) window.clearTimeout(errorTimer);
-		errorTimer = window.setTimeout(() => {
-			errorDiv.remove();
-		}, duration);
+		removeAfter(errorDiv, duration, errorTimers);
 	}
-}
-
-/**
- * @deprecated Use {@link showError} instead. Kept as a backwards-compat alias.
- * @param {string} message
- * @param {number} [duration=0]
- */
-export function showErrorMessage(message, duration = 0) {
-	showError(message, duration);
 }
 
 /**
  * Clear all error messages
  */
 export function clearErrors() {
-	const errorsContainer = document.getElementById('errors-container');
+	const errorsContainer = document.getElementById(ERRORS_REGION_ID);
 	if (errorsContainer) {
 		errorsContainer.replaceChildren();
 	}
-	if (errorTimer) window.clearTimeout(errorTimer);
-}
-
-/**
- * @deprecated Use {@link clearErrors} instead. Kept as a backwards-compat alias.
- */
-export function hideErrorMessage() {
-	clearErrors();
-}
-
-/**
- * Show loading state
- * @param {string} message - Loading message
- */
-export function showLoading(message) {
-	const loadingEl = document.getElementById('loading-state');
-	if (loadingEl) {
-		loadingEl.replaceChildren();
-		const spinner = document.createElement('div');
-		spinner.className = 'loading-spinner';
-		const text = document.createElement('p');
-		text.textContent = message;
-		loadingEl.appendChild(spinner);
-		loadingEl.appendChild(text);
-		loadingEl.hidden = false;
-	}
-}
-
-/**
- * Hide loading state
- */
-export function hideLoading() {
-	const loadingEl = document.getElementById('loading-state');
-	if (loadingEl) {
-		loadingEl.hidden = true;
-	}
+	for (const timer of errorTimers) window.clearTimeout(timer);
+	errorTimers.clear();
 }
 
 /**
  * Clear all feedback UI (toasts + errors)
  */
 export function clearAllFeedback() {
-	const toast = document.getElementById('toast-feedback');
-	if (toast) {
-		toast.classList.remove('visible');
-	}
+	const region = document.getElementById(FEEDBACK_REGION_ID);
+	if (region) region.replaceChildren();
+	for (const timer of feedbackTimers) window.clearTimeout(timer);
+	feedbackTimers.clear();
 	clearErrors();
-	hideLoading();
 	if (activeProgressHandle) activeProgressHandle.close();
 }
 

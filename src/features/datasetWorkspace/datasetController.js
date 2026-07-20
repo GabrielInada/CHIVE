@@ -9,31 +9,42 @@
  */
 
 import { t } from '../../services/i18nService.js';
+import { progressLabelForStage } from '../../services/dataIngestService.js';
 import { removeDataset, setActiveDataset, getAllDatasets } from '../../state/appState.js';
-import { showError, showFeedback } from '../../ui/feedback.js';
+import { showError, showFeedback, showProgress } from '../../ui/feedback.js';
+import { openConfirmDialog } from '../../ui/confirmDialog.js';
 import { FILE_IDS } from './domIds.js';
 import { uploadDatasetFiles } from './workflows/uploadDataset.js';
 import { createJoinedDataset } from './workflows/joinDatasets.js';
 import { loadPresetDataset } from './workflows/loadPresetDataset.js';
 
-// Confirmation function for user prompts, injectable for testing, defaults to window.confirm
-let confirmFn = message => window.confirm(message);
+function confirmLargeData(message) {
+	return openConfirmDialog({
+		title: t('chive-large-data-confirm-title'),
+		message,
+		confirmLabel: t('chive-confirm-continue'),
+		cancelLabel: t('chive-confirm-cancel'),
+	});
+}
+
+// Injectable seam retained for workflow tests; production uses a native dialog.
+let confirmFn = confirmLargeData;
 
 /**
  * Initialize the dataset controller. Wires the confirmation function used for the
- * over-limit file-size prompt (injectable for testing; production callers can
- * omit it).
+ * over-limit data prompt (injectable for testing; production callers can omit
+ * it).
  *
  * Dataset-list renders are not wired here: every add/remove/select routes
  * through the data facade and emits `DATASET_ADDED` / `DATASET_REMOVED` /
  * `ACTIVE_DATASET`, which `app/renderCoordinator.js` subscribes to. There is no
  * change callback.
  *
- * @param {{ confirmCallback?: ((message: string) => boolean) | null }} [options] - `confirmCallback` defaults to `window.confirm`. Tolerates `null`/omitted.
+ * @param {{ confirmCallback?: ((message: string) => boolean | Promise<boolean>) | null }} [options]
  */
 export function initDatasetController(options = {}) {
 	const { confirmCallback = null } = options ?? {};
-	confirmFn = confirmCallback || (message => window.confirm(message));
+	confirmFn = confirmCallback || confirmLargeData;
 }
 
 /**
@@ -113,14 +124,6 @@ export function setupFileInputListeners() {
 			fileInput?.click();
 		});
 
-		// Keyboard support (Enter/Space)
-		uploadZone.addEventListener('keydown', event => {
-			if (event.key === 'Enter' || event.key === ' ') {
-				event.preventDefault();
-				fileInput?.click();
-			}
-		});
-
 		// Drag and drop
 		uploadZone.addEventListener('dragover', event => {
 			event.preventDefault();
@@ -151,13 +154,28 @@ export function setupFileInputListeners() {
  *
  * @param {Object} spec - Forwarded to `createJoinedDataset`.
  */
-export function handleJoinDatasetRequest(spec) {
-	const result = createJoinedDataset(spec);
+export async function handleJoinDatasetRequest(spec) {
+	const progress = showProgress(t('chive-progress-joining'));
+	const abortController = new AbortController();
+	progress.onCancel(() => abortController.abort());
+	const result = await createJoinedDataset(spec, {
+		confirm: confirmFn,
+		signal: abortController.signal,
+		onProgress: ({ stage, percent }) => {
+			progress.update(percent, progressLabelForStage(stage, ''));
+		},
+	});
 	if (!result?.ok) {
+		if (result?.reason === 'cancelled') {
+			progress.close();
+		} else {
+			progress.fail(result?.message || t('chive-join-error-generic'));
+		}
 		showError(result?.message || t('chive-join-error-generic'));
 		return;
 	}
 
+	progress.close();
 	selectDataset(result.index);
 	showFeedback(t('chive-join-success', [result.datasetName]));
 }

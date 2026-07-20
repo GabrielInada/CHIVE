@@ -35,6 +35,33 @@ import { applyBlockProportions, renderGuidedResizeHandles, startBlockHeightResiz
 import { mountSlot, teardownAllSlots } from '../slots/lifecycle.js';
 import { PANEL_DOM_IDS } from '../domIds.js';
 
+const DESKTOP_DND_QUERY = '(min-width: 901px)';
+let desktopMediaQuery = null;
+let matchMediaOwner = null;
+let latestSidebarRemove = null;
+let latestCanvasCallbacks = null;
+
+function getDesktopMediaQuery() {
+	if (matchMediaOwner === window.matchMedia && desktopMediaQuery) {
+		return desktopMediaQuery;
+	}
+
+	desktopMediaQuery?.removeEventListener?.('change', handleDesktopModeChange);
+	matchMediaOwner = window.matchMedia;
+	desktopMediaQuery = window.matchMedia(DESKTOP_DND_QUERY);
+	desktopMediaQuery.addEventListener?.('change', handleDesktopModeChange);
+	return desktopMediaQuery;
+}
+
+function handleDesktopModeChange() {
+	if (latestSidebarRemove && document.getElementById('panel-chart-list')) {
+		renderSidebarPanel(latestSidebarRemove);
+	}
+	if (latestCanvasCallbacks && document.getElementById(PANEL_DOM_IDS.canvas)) {
+		renderCanvasPanel(latestCanvasCallbacks);
+	}
+}
+
 /**
  * Render the sidebar list of saved chart snapshots into
  * `#panel-chart-list`. Each item gets a thumbnail (live chart render via
@@ -47,6 +74,7 @@ import { PANEL_DOM_IDS } from '../domIds.js';
 export function renderSidebarPanel(removeChartFromPanel) {
 	const lista = document.getElementById('panel-chart-list');
 	if (!lista) return;
+	latestSidebarRemove = removeChartFromPanel;
 
 	teardownAllSlots(lista);
 
@@ -60,7 +88,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
 		return;
 	}
 
-	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
+	const desktopDnd = getDesktopMediaQuery().matches;
 	lista.replaceChildren();
 
 	charts.forEach(chart => {
@@ -151,8 +179,9 @@ export function renderSidebarPanel(removeChartFromPanel) {
 export function renderCanvasPanel(callbacks) {
 	const canvas = document.getElementById(PANEL_DOM_IDS.canvas);
 	if (!canvas) return;
+	latestCanvasCallbacks = callbacks;
 	const blocks = getPanelBlocks();
-	const desktopDnd = window.matchMedia('(min-width: 901px)').matches;
+	const desktopDnd = getDesktopMediaQuery().matches;
 
 	teardownAllSlots(canvas);
 	canvas.replaceChildren();
@@ -296,7 +325,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks }
 }
 
 /**
- * Append a block-height resize handle and wire its mousedown to
+ * Append a block-height resize handle and wire its primary pointer to
  * {@link startBlockHeightResizeDrag}.
  *
  * @private
@@ -307,9 +336,17 @@ function attachBlockResizeListener(blockEl, block, gridDiv, callbacks) {
 	handle.className = 'panel-block-size-handle';
 	handle.dataset.panelBlockResize = block.id;
 	handle.setAttribute('aria-label', t('chive-panel-resize-block-height'));
-	handle.addEventListener('mousedown', event => {
+	handle.addEventListener('pointerdown', event => {
+		if (event.button !== 0 || event.isPrimary === false) return;
 		event.preventDefault();
-		startBlockHeightResizeDrag(block.id, gridDiv, event.clientY, callbacks.onUpdateBlockHeight);
+		startBlockHeightResizeDrag(
+			block.id,
+			gridDiv,
+			event.clientY,
+			callbacks.onUpdateBlockHeight,
+			event.pointerId,
+			handle,
+		);
 	});
 	blockEl.appendChild(handle);
 }

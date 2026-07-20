@@ -130,7 +130,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		});
 
 		const circle = container.querySelector('circle');
-		circle.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+		circle.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
 		const tooltipText = tooltip.textContent;
@@ -148,7 +148,7 @@ describe('scatterPlot mixed axis behavior', () => {
 		});
 
 		const circle = container.querySelector('circle');
-		circle.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
+		circle.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
 		const tooltipText = document.querySelector('.chart-tooltip').textContent;
 		expect(tooltipText).toContain('Altura');
 		expect(tooltipText).toContain('Peso');

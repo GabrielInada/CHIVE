@@ -1,6 +1,7 @@
+@layer foundation {
 /* @feature: foundation (chrome)
    Header bar, logo, settings entry, and top navigation.
-   Extracted from app.css so the about page can load it without the full app bundle. */
+   Loaded directly by both static pages. */
 
 /* Header Navigation */
 .header-nav {
@@ -62,4 +63,5 @@
         width: 100%;
         margin: var(--space-3) 0 0 0;
     }
+}
 }

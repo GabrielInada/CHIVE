@@ -20,9 +20,9 @@ function mountTabsDom() {
 	document.body.innerHTML = `
 		<div id="result-tabs">
 			<div id="result-tabs-group">
-				<button id="tab-preview"></button>
-				<button id="tab-charts"></button>
-				<button id="tab-panel"></button>
+				<button id="tab-preview" data-tab="preview"></button>
+				<button id="tab-charts" data-tab="charts"></button>
+				<button id="tab-panel" data-tab="panel"></button>
 			</div>
 			<div id="result-tabs-actions">
 				<button id="btn-global-filter" hidden disabled>
@@ -54,6 +54,61 @@ describe('tabsView', () => {
 		expect(document.getElementById('tab-content-preview').classList.contains('active')).toBe(false);
 		expect(document.getElementById('tab-panel').classList.contains('active')).toBe(false);
 		expect(document.getElementById('tab-content-dashboard').classList.contains('active')).toBe(false);
+		expect(document.getElementById('tab-charts').getAttribute('aria-selected')).toBe('true');
+		expect(document.getElementById('tab-charts').tabIndex).toBe(0);
+		expect(document.getElementById('tab-preview').tabIndex).toBe(-1);
+		expect(document.getElementById('tab-content-preview').hidden).toBe(true);
+		expect(document.getElementById('tab-content-charts').hidden).toBe(false);
+	});
+
+	it('uses manual keyboard activation with roving focus', async () => {
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
+		const onChange = vi.fn();
+		updateTabs('preview', onChange);
+
+		const preview = document.getElementById('tab-preview');
+		const charts = document.getElementById('tab-charts');
+		preview.focus();
+		preview.dispatchEvent(new KeyboardEvent('keydown', {
+			key: 'ArrowRight',
+			bubbles: true,
+			cancelable: true,
+		}));
+
+		expect(document.activeElement).toBe(charts);
+		expect(onChange).not.toHaveBeenCalled();
+		expect(preview.getAttribute('aria-selected')).toBe('true');
+
+		charts.dispatchEvent(new KeyboardEvent('keydown', {
+			key: 'Enter',
+			bubbles: true,
+			cancelable: true,
+		}));
+		expect(onChange).toHaveBeenCalledWith({ activeTab: 'charts' });
+	});
+
+	it('supports Home, End, and Space without activating on focus movement', async () => {
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
+		const onChange = vi.fn();
+		updateTabs('charts', onChange);
+
+		const charts = document.getElementById('tab-charts');
+		charts.focus();
+		charts.dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+		expect(document.activeElement).toBe(document.getElementById('tab-panel'));
+		document.getElementById('tab-panel').dispatchEvent(new KeyboardEvent('keydown', {
+			key: 'Home',
+			bubbles: true,
+		}));
+		expect(document.activeElement).toBe(document.getElementById('tab-preview'));
+		expect(onChange).not.toHaveBeenCalled();
+
+		document.getElementById('tab-preview').dispatchEvent(new KeyboardEvent('keydown', {
+			key: ' ',
+			bubbles: true,
+			cancelable: true,
+		}));
+		expect(onChange).toHaveBeenCalledWith({ activeTab: 'preview' });
 	});
 
 	it('registers listeners once and always uses latest callback', async () => {
@@ -203,5 +258,33 @@ describe('tabsView', () => {
 
 		document.getElementById('btn-global-filter').click();
 		expect(onOpen).toHaveBeenCalledTimes(1);
+	});
+
+	it('synchronizes aria-expanded for the lifetime of the filter dialog promise', async () => {
+		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
+		let closeDialog;
+		const onOpen = vi.fn(() => new Promise(resolve => {
+			closeDialog = resolve;
+		}));
+
+		updateTabs('preview', vi.fn(), null, {
+			onGlobalFilterOpen: onOpen,
+			triggerState: {
+				hasDataset: true,
+				globalFilter: { rules: [] },
+				filteredCount: 10,
+				totalCount: 10,
+			},
+		});
+
+		const trigger = document.getElementById('btn-global-filter');
+		trigger.click();
+		expect(trigger.getAttribute('aria-expanded')).toBe('true');
+		trigger.click();
+		expect(onOpen).toHaveBeenCalledTimes(1);
+
+		closeDialog();
+		await Promise.resolve();
+		expect(trigger.getAttribute('aria-expanded')).toBe('false');
 	});
 });

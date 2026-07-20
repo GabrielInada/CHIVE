@@ -34,11 +34,11 @@ export function renderEmptyState() {
   };
 
   // Only update elements that exist (not null)
-  if (els.fileInfo) els.fileInfo.style.display = 'block';
-  if (els.columnPanel) els.columnPanel.style.display = 'none';
-  if (els.emptyState) els.emptyState.style.display = 'flex';
-  if (els.dataState) els.dataState.style.display = 'none';
-  if (els.resultTabs) els.resultTabs.style.display = 'flex';
+  if (els.fileInfo) els.fileInfo.hidden = false;
+  if (els.columnPanel) els.columnPanel.hidden = true;
+  if (els.emptyState) els.emptyState.hidden = false;
+  if (els.dataState) els.dataState.hidden = true;
+  if (els.resultTabs) els.resultTabs.hidden = false;
   updateTabs('preview', null, null, {
     triggerState: {
       hasDataset: false,
@@ -50,15 +50,12 @@ export function renderEmptyState() {
   if (els.tableContainer) els.tableContainer.replaceChildren();
   if (els.statsContainer) els.statsContainer.replaceChildren();
   if (els.categoricalStatsContainer) els.categoricalStatsContainer.replaceChildren();
-  if (els.categoricalStatsCard) els.categoricalStatsCard.style.display = 'none';
+  if (els.categoricalStatsCard) els.categoricalStatsCard.hidden = true;
   for (const containerId of Object.values(CHART_CONTAINERS)) {
     clearChartContainer(document.getElementById(containerId));
   }
   if (els.chartsBadge) els.chartsBadge.textContent = '0';
   if (els.advanceButton) els.advanceButton.disabled = true;
-
-  const devNotice = document.getElementById('dev-warning');
-  if (devNotice) devNotice.style.display = 'none';
 
   const uploadZone = document.getElementById(FILE_IDS.uploadZone);
   if (uploadZone) uploadZone.classList.remove('loaded');

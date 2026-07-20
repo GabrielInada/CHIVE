@@ -2,17 +2,12 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const focusMocks = vi.hoisted(() => ({
-	release: vi.fn(),
-	restoreFocus: vi.fn(),
-	installDialogFocus: vi.fn(() => ({
-		release: focusMocks.release,
-		restoreFocus: focusMocks.restoreFocus,
-	})),
+const mocks = vi.hoisted(() => ({
+	showError: vi.fn(),
 }));
 
-vi.mock('../../../../src/ui/dialogFocus.js', () => ({
-	installDialogFocus: focusMocks.installDialogFocus,
+vi.mock('../../../../src/ui/feedback.js', () => ({
+	showError: mocks.showError,
 }));
 
 import { openJoinBuilderDialog } from '../../../../src/features/datasetWorkspace/dialogs/joinBuilderView.js';
@@ -53,17 +48,16 @@ describe('openJoinBuilderDialog', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '';
 		vi.clearAllMocks();
-		vi.spyOn(window, 'alert').mockImplementation(() => {});
 	});
 
-	it('returns null and alerts when fewer than two datasets are available', async () => {
+	it('returns null and reports an error when fewer than two datasets are available', async () => {
 		const result = await openJoinBuilderDialog({
 			datasets: [datasets[0]],
 			translate,
 		});
 
 		expect(result).toBeNull();
-		expect(window.alert).toHaveBeenCalledWith('chive-join-error-min-files');
+		expect(mocks.showError).toHaveBeenCalledWith('chive-join-error-min-files');
 		expect(document.querySelector('.join-dialog')).toBeNull();
 	});
 
@@ -88,8 +82,6 @@ describe('openJoinBuilderDialog', () => {
 			rightColumns: ['id', 'group'],
 		});
 		expect(document.querySelector('.join-dialog')).toBeNull();
-		expect(focusMocks.release).toHaveBeenCalled();
-		expect(focusMocks.restoreFocus).toHaveBeenCalled();
 	});
 
 	it('updates the estimate as join type and key selections change', () => {
@@ -111,22 +103,24 @@ describe('openJoinBuilderDialog', () => {
 		await expect(pending).resolves.toBeNull();
 
 		pending = openJoinBuilderDialog({ datasets, translate });
-		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+		document.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
 		await expect(pending).resolves.toBeNull();
 
 		pending = openJoinBuilderDialog({ datasets, translate });
-		document.querySelector('.join-overlay').click();
+		document.querySelector('dialog').click();
 		await expect(pending).resolves.toBeNull();
 	});
 
-	it('keeps the dialog open and alerts for invalid join specs', () => {
+	it('keeps the dialog open and renders inline errors for invalid join specs', () => {
 		openJoinBuilderDialog({ datasets, translate });
 
 		const rightSelect = document.querySelector('#join-right-file');
 		rightSelect.value = '0';
 		change(rightSelect);
 		clickCreate();
-		expect(window.alert).toHaveBeenLastCalledWith('chive-join-error-select-different-files');
+		expect(document.querySelector('.join-validation-error').textContent)
+			.toBe('chive-join-error-select-different-files');
+		expect(rightSelect.getAttribute('aria-invalid')).toBe('true');
 		expect(document.querySelector('.join-dialog')).not.toBeNull();
 
 		rightSelect.value = '1';
@@ -135,7 +129,8 @@ describe('openJoinBuilderDialog', () => {
 		leftKey.checked = false;
 		change(leftKey);
 		clickCreate();
-		expect(window.alert).toHaveBeenLastCalledWith('chive-join-error-keys-required');
+		expect(document.querySelector('.join-validation-error').textContent)
+			.toBe('chive-join-error-keys-required');
 
 		leftKey.checked = true;
 		change(leftKey);
@@ -143,7 +138,8 @@ describe('openJoinBuilderDialog', () => {
 		extraLeftKey.checked = true;
 		change(extraLeftKey);
 		clickCreate();
-		expect(window.alert).toHaveBeenLastCalledWith('chive-join-error-key-count-mismatch');
+		expect(document.querySelector('.join-validation-error').textContent)
+			.toBe('chive-join-error-key-count-mismatch');
 
 		extraLeftKey.checked = false;
 		change(extraLeftKey);
@@ -151,6 +147,7 @@ describe('openJoinBuilderDialog', () => {
 			.forEach(input => { input.checked = false; });
 		change(document.querySelector('#join-left-columns input[value="id"]'));
 		clickCreate();
-		expect(window.alert).toHaveBeenLastCalledWith('chive-join-error-columns-required');
+		expect(document.querySelector('.join-validation-error').textContent)
+			.toBe('chive-join-error-columns-required');
 	});
 });

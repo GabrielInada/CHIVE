@@ -21,8 +21,8 @@ import { CHART_TYPE_KEYS } from '../../../../src/config/charts/definitions.js';
 
 const translate = key => `t:${key}`;
 
-function getOverlay() {
-	return document.body.querySelector('.join-overlay');
+function getDialog() {
+	return document.body.querySelector('dialog.app-dialog');
 }
 
 function getCards() {
@@ -56,13 +56,13 @@ describe('openChartTypePickerDialog', () => {
 		expect(document.querySelectorAll('.chart-picker-card.selected').length).toBe(0);
 	});
 
-	it('clicking a card resolves with { chartType } and removes the overlay', async () => {
+	it('clicking a card resolves with { chartType } and removes the dialog', async () => {
 		const promise = openChartTypePickerDialog({ activeChartType: null, translate });
 		const scatterCard = document.querySelector('[data-chart-type="scatter"]');
 		scatterCard.click();
 		const result = await promise;
 		expect(result).toEqual({ chartType: 'scatter' });
-		expect(getOverlay()).toBeNull();
+		expect(getDialog()).toBeNull();
 	});
 
 	it('clicking Clear resolves with { chartType: null }', async () => {
@@ -72,7 +72,7 @@ describe('openChartTypePickerDialog', () => {
 		clearBtn.click();
 		const result = await promise;
 		expect(result).toEqual({ chartType: null });
-		expect(getOverlay()).toBeNull();
+		expect(getDialog()).toBeNull();
 	});
 
 	it('clicking Cancel resolves with null', async () => {
@@ -82,29 +82,28 @@ describe('openChartTypePickerDialog', () => {
 		cancelBtn.click();
 		const result = await promise;
 		expect(result).toBeNull();
-		expect(getOverlay()).toBeNull();
+		expect(getDialog()).toBeNull();
 	});
 
 	it('pressing Escape resolves with null', async () => {
 		const promise = openChartTypePickerDialog({ activeChartType: null, translate });
-		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+		getDialog().dispatchEvent(new Event('cancel', { cancelable: true }));
 		const result = await promise;
 		expect(result).toBeNull();
-		expect(getOverlay()).toBeNull();
+		expect(getDialog()).toBeNull();
 	});
 
 	it('clicking the backdrop resolves with null', async () => {
 		const promise = openChartTypePickerDialog({ activeChartType: null, translate });
-		const overlay = getOverlay();
-		overlay.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		getDialog().click();
 		const result = await promise;
 		expect(result).toBeNull();
 	});
 
 	it('clicking the dialog itself (not the backdrop) does not close', () => {
 		openChartTypePickerDialog({ activeChartType: null, translate });
-		const dialog = document.querySelector('.chart-picker-dialog');
-		dialog.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-		expect(getOverlay()).not.toBeNull();
+		const surface = document.querySelector('.chart-picker-dialog');
+		surface.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		expect(getDialog()).not.toBeNull();
 	});
 });

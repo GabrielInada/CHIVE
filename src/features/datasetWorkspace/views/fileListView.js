@@ -39,7 +39,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   const summary = document.getElementById(FILE_IDS.fileSummary);
   const list = document.getElementById(FILE_IDS.fileListContent);
 
-  fileInfo.style.display = 'block';
+  fileInfo.hidden = false;
   const stickyHeaderId = 'files-top-fixed';
   let stickyHeader = document.getElementById(stickyHeaderId);
   if (!stickyHeader) {
@@ -75,11 +75,11 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
       activeDataset.sizeLabel
     );
     selectedMeta.textContent = `${activeDataset.name} · ${metaText}`;
-    selectedMeta.style.display = 'block';
+    selectedMeta.hidden = false;
     selectedMeta.title = selectedMeta.textContent;
   } else {
     selectedMeta.textContent = '';
-    selectedMeta.style.display = 'none';
+    selectedMeta.hidden = true;
     selectedMeta.removeAttribute('title');
   }
 
@@ -187,7 +187,7 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
       translate: t,
     });
     if (!spec) return;
-    onCreateJoin?.(spec);
+    await onCreateJoin?.(spec);
   });
   joinActions.appendChild(joinButton);
 

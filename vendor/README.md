@@ -35,6 +35,20 @@ notices and update the version recorded here.
 
 `vendor/fonts/fonts.css` is the runtime font entrypoint. Keep it limited to the
 font files CHIVE actually uses so browsers do not download unnecessary faces.
+The IBM Plex faces were converted without subsetting from their checked-in TTF
+sources with FontTools 4.63.0 (`fonttools ttLib.woff2 compress`) and Brotli
+1.2.0. Their SHA-256 checksums are:
+
+| WOFF2 file | SHA-256 |
+|---|---|
+| `ibm-plex-sans/IBMPlexSans-VariableFont_wdth,wght.woff2` | `d1d2b58fb0fbe7e79df81e42c6129fc0708178818c454e59c7c19910db47f44e` |
+| `ibm-plex-serif/IBMPlexSerif-Light.woff2` | `c94e00302baeee0e9999e4cb294e9143347453ee4bd881a20b32dc2026c2975c` |
+| `ibm-plex-serif/IBMPlexSerif-Regular.woff2` | `5f70f9d55142cb81af99f36ab3bba8570c86d599065cf6f1d43535e6f21159cc` |
+| `ibm-plex-serif/IBMPlexSerif-Bold.woff2` | `f8e8320b9111e3f9bf789098b0eef8a5366fd12172b461a37dacb5f9a7df124c` |
+
+IBM Plex Serif Semibold is intentionally omitted because no display-font rule
+uses weight 600. The two page shells preload only the Sans variable face and
+Serif Bold; the remaining faces load on demand through `font-display: swap`.
 
 ## Verification
 

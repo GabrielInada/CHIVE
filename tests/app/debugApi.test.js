@@ -14,9 +14,8 @@ const mocks = vi.hoisted(() => ({
 	runFullRefreshNow: vi.fn(),
 	updateDatasetColumns: vi.fn(),
 	updateDatasetConfig: vi.fn(),
-	showFeedbackMessage: vi.fn(),
-	showErrorMessage: vi.fn(),
-	switchTab: vi.fn(),
+	showFeedback: vi.fn(),
+	showError: vi.fn(),
 }));
 
 vi.mock('../../src/state/appState.js', () => ({
@@ -46,12 +45,8 @@ vi.mock('../../src/app/renderCoordinator.js', () => ({
 }));
 
 vi.mock('../../src/ui/feedback.js', () => ({
-	showFeedbackMessage: mocks.showFeedbackMessage,
-	showErrorMessage: mocks.showErrorMessage,
-}));
-
-vi.mock('../../src/app/uiManager.js', () => ({
-	switchTab: mocks.switchTab,
+	showFeedback: mocks.showFeedback,
+	showError: mocks.showError,
 }));
 
 beforeEach(() => {
@@ -73,15 +68,18 @@ describe('debugApi', () => {
 			getLoadedDatasets: mocks.getLoadedDatasets,
 			updateDatasetColumns: mocks.updateDatasetColumns,
 			updateDatasetConfig: mocks.updateDatasetConfig,
-			switchTab: mocks.switchTab,
+			switchTab: expect.any(Function),
 			refreshView: mocks.runFullRefreshNow,
-			showFeedback: mocks.showFeedbackMessage,
-			showError: mocks.showErrorMessage,
+			showFeedback: mocks.showFeedback,
+			showError: mocks.showError,
 			enableStateLog: mocks.enableStateLog,
 			disableStateLog: mocks.disableStateLog,
 			getStateLog: mocks.getStateLog,
 			clearStateLog: mocks.clearStateLog,
 		});
+
+		api.switchTab('charts');
+		expect(mocks.updateDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
 
 		expect(installDebugApi()).toEqual(api);
 		expect(window.chiveDebug).toEqual(api);
