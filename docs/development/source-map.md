@@ -42,6 +42,7 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/styles/` | CSS layer files. Source of truth: [Stylesheet organization](styles.md). |
 | `src/i18n/` | Locale JSON files. Source of truth: [Translation guide](i18n.md). |
 | `src/icons/` | App icons and static SVG assets. |
+| `scripts/` | Repository tooling run under Node, not part of the browser runtime: vendored-dependency verification and synchronization plus the canonical raw-static runtime manifest. Tests mirror this ownership under `tests/scripts/`. |
 
 ## Naming Vocabulary
 

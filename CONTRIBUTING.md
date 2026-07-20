@@ -49,6 +49,7 @@ npm run lint         # Run ESLint architecture/deployment guards
 npm run lint:fix     # Apply safe automatic lint fixes; architecture errors usually need manual fixes
 npm run lint:css     # Run Stylelint CSS correctness checks
 npm run lint:css:fix # Apply safe Stylelint fixes
+npm run verify:vendor # Check vendored runtime files against package-lock
 npm test             # Run all tests once (vitest run)
 npm run test:coverage # Run tests and generate a coverage report
 npm run test:watch   # Tests in watch mode
