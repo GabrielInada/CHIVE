@@ -1,5 +1,21 @@
+@layer feedback {
 /* @feature: cross-cutting
    Error messages, warning displays, info alerts */
+
+:where([hidden]) {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto;
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+  }
+}
 
 #dev-warning {
   display: none;
@@ -131,7 +147,7 @@
   background: transparent;
   border: none;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1;
   width: 22px;
   height: 22px;
@@ -172,4 +188,5 @@
 
 .toast-progress.failure .toast-progress-fill {
   background: var(--error);
+}
 }

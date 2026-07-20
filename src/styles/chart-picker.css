@@ -1,3 +1,4 @@
+@layer visual-output {
 /* @feature: datasetWorkspace
    Chart-picker trigger, dialog, preview, and card styles */
 
@@ -19,7 +20,7 @@
 }
 
 .viz-chart-picker-trigger:hover {
-    background: rgba(var(--accent-rgb), 0.04);
+    background: color-mix(in srgb, var(--accent) 4%, transparent);
 }
 
 .viz-chart-picker-trigger:focus-visible {
@@ -48,7 +49,7 @@
 }
 
 .viz-chart-picker-trigger-preview .no-fill {
-    fill: none !important;
+    fill: none;
 }
 
 .viz-chart-picker-trigger-label {
@@ -112,7 +113,7 @@
 }
 
 .chart-picker-card-preview .no-fill {
-    fill: none !important;
+    fill: none;
 }
 
 .chart-picker-card-category {
@@ -121,8 +122,9 @@
     text-transform: uppercase;
     color: var(--accent);
     align-self: flex-start;
-    background: rgba(var(--accent-rgb), 0.08);
-    border: 1px solid rgba(var(--accent-rgb), 0.2);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
     border-radius: var(--radius-pill);
     padding: 2px var(--space-2);
+}
 }

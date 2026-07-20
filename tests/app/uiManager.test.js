@@ -46,7 +46,6 @@ describe('uiManager', () => {
   beforeEach(() => {
     mocks.setSidebarMode.mockReset();
     setupDom();
-    document.body.className = '';
   });
 
   it('returns the active tab and falls back to preview', () => {
@@ -84,14 +83,14 @@ describe('uiManager', () => {
     expect(document.getElementById('sidebar-panel-data').classList.contains('inactive')).toBe(true);
   });
 
-  it('toggleSidebarCollapsed toggles class and accessibility attributes', () => {
+  it('uses aria-expanded as the single sidebar collapse state', () => {
     const collapsed = toggleSidebarCollapsed();
     expect(collapsed).toBe(true);
-    expect(document.body.classList.contains('sidebar-collapsed')).toBe(true);
 
     const btn = document.getElementById('btn-toggle-sidebar');
     expect(btn.getAttribute('aria-expanded')).toBe('false');
     expect(btn.getAttribute('aria-label')).toBe('tr:chive-sidebar-expand');
+    expect(document.body.classList.contains('sidebar-collapsed')).toBe(false);
 
     const expanded = toggleSidebarCollapsed();
     expect(expanded).toBe(false);
@@ -107,8 +106,8 @@ describe('uiManager', () => {
     expect(document.getElementById('tab-content-dashboard').hidden).toBe(false);
     expect(mocks.setSidebarMode).toHaveBeenCalledWith('panel');
 
-    const before = document.body.classList.contains('sidebar-collapsed');
+    const before = document.getElementById('btn-toggle-sidebar').getAttribute('aria-expanded');
     document.getElementById('btn-toggle-sidebar').click();
-    expect(document.body.classList.contains('sidebar-collapsed')).toBe(!before);
+    expect(document.getElementById('btn-toggle-sidebar').getAttribute('aria-expanded')).not.toBe(before);
   });
 });

@@ -1,327 +1,184 @@
-# Stylesheet Organization & Feature Ownership
-
-This document describes the organizational structure of stylesheets and their alignment with code features.
+# Stylesheet Organization and Feature Ownership
 
 | Field | Value |
 |---|---|
-| Audience | Contributors changing CSS, layout, responsive behavior, or feature styling. |
-| Source of truth | CSS bundle ownership, cascade layer order, feature file map, naming conventions, and responsive breakpoints. |
-| Update when | CSS files move, cascade layers change, feature ownership changes, or responsive breakpoints are added or removed. |
+| Audience | Contributors changing CSS, layout, responsive behavior, or feature styling |
+| Source of truth | Static page links, explicit cascade layers, and the feature ownership map below |
+| Update when | CSS files, layers, ownership, or responsive breakpoints change |
 
-## Architecture
+## Delivery model
 
-All stylesheets are imported through a bundler pattern with cascade layers:
-- **Main entry**: `app.css` (declares layer order and imports feature bundles); used by `index.html`
-- **Feature bundles**: `base.css`, `data-view.css`, `visual-output.css`, `controls.css`, `feedback.css`
-- **Shared chrome bundle**: `chrome.css`, the foundation subset both `index.html` and `about.html` need (variables, layout, responsive, header-nav). It is loaded directly by `about.html` and transitively included in `app.css` via `base.css`.
-- **Individual styles**: Feature-specific CSS files
+CHIVE serves CSS directly. Runtime stylesheets must not contain `@import`;
+imports create serial request chains on raw static hosting. Each page links its
+required leaf stylesheets in cascade order.
 
-### Cascade Layer Order
+`src/styles/layers.css` contains only the canonical order:
 
-`app.css` defines this precedence from lowest to highest:
+```css
+@layer foundation, controls, data-view, visual-output, feedback;
+```
 
-1. `foundation`
-2. `controls`
-3. `data-view`
-4. `visual-output`
-5. `feedback`
+Every shared leaf file wraps its rules in exactly one of those layers. The
+About page loads `about.css` last and unlayered so its page-specific rules can
+override shared chrome intentionally.
 
-This keeps overrides intentional and avoids accidental specificity fights between bundles.
+Tests in `tests/styles/cascadeLayers.test.js` lock the exact page link order,
+reject runtime CSS imports and nested layer names, and require an explicit layer
+on every shared leaf stylesheet.
 
-## Feature Ownership Map
+## Page link sets
 
-### Foundation (`@feature: foundation`)
-Shared infrastructure used by all features. No single feature owns these.
+`index.html` loads:
 
-Foundation is split into two sub-bundles so the about page can load only what it needs:
+```text
+layers.css
+variables.css
+animations.css
+layout.css
+collapsed.css
+responsive.css
+header-nav.css
+settings.css
+buttons.css
+upload.css
+columns.css
+chart-controls.css
+dataset-workspace.css
+table.css
+chart-output.css
+chart-picker.css
+panel.css
+messages.css
+```
 
-**Shared chrome** (needed by every HTML page):
+`about.html` loads the shared subset:
+
+```text
+layers.css
+variables.css
+layout.css
+responsive.css
+header-nav.css
+settings.css
+messages.css
+about.css
+```
+
+Keep source order meaningful inside a layer. A base component selector should
+normally precede its state and interaction selectors.
+
+## Ownership map
+
+### Foundation
 
 | File | Purpose |
-|------|---------|
-| `variables.css` | Global design tokens (colors, fonts, spacing, shadows) |
-| `layout.css` | Header, logo, body padding, plus main-app workspace/sidebar (inert when those elements aren't present) |
-| `responsive.css` | Header @ 900px, plus main-app responsive rules (inert when those elements aren't present) |
-| `header-nav.css` | Top navigation pills and header layout, with 768px/480px reflow rules |
-| `settings.css` | Header settings button and the global settings dialog (both pages share the header settings entry) |
+|---|---|
+| `variables.css` | Color, typography, spacing, radius, and duration tokens; global box sizing |
+| `animations.css` | Application reveal animation |
+| `layout.css` | Fixed header, workspace grid, sidebar container, and shared structural rules |
+| `collapsed.css` | Sidebar presentation derived from the toggle's `aria-expanded` state |
+| `responsive.css` | Main page's 900px viewport adaptation |
+| `header-nav.css` | Shared top navigation and its 768px/480px reflow |
+| `settings.css` | Shared Settings entry and dialog presentation |
 
-**Bundle via**: `chrome.css` → `base.css` → `app.css` (for `index.html`) or directly via `<link>` (for `about.html`)
-
-**App-only foundation** (only needed by the main app):
-
-| File | Purpose |
-|------|---------|
-| `animations.css` | `.animate` keyframe used by app feature reveals |
-| `collapsed.css` | `body.sidebar-collapsed` state styles for the main-app sidebar |
-
-**Bundle via**: `base.css` → `app.css`
-
-### Controls (`@feature: foundation + datasetWorkspace`)
-Generic reusable controls and sidebar card patterns.
+### Controls
 
 | File | Owner | Purpose |
-|------|-------|---------|
-| `buttons.css` | foundation | Button styles and variants (primary, secondary, danger) |
-| `upload.css` | datasetWorkspace | Upload drop zone and file upload interactions |
-| `columns.css` | datasetWorkspace | Column selection controls and filter actions |
-| `chart-controls.css` | datasetWorkspace | Chart-controls sidebar shell, parameter messages, control widgets, collapsible sections, and control icons |
-| `chart-picker.css` | datasetWorkspace | Chart-picker trigger, dialog, preview SVGs, and cards |
+|---|---|---|
+| `buttons.css` | Shared | Button variants |
+| `upload.css` | Dataset workspace | Upload, file list, join, and preset controls |
+| `columns.css` | Dataset workspace | Column selection and filter controls |
+| `chart-controls.css` | Dataset workspace | Chart-control sections and widgets |
 
-**Bundle via**: `controls.css` → `app.css`
-
-### Dataset Workspace/Data View (`@feature: datasetWorkspace`)
-Dataset presentation, column management, and data summaries.
+### Data view
 
 | File | Purpose |
-|------|---------|
-| `dataset-workspace.css` | Dataset workspace container, empty state, file list styling |
-| `table.css` | Table preview (thead, tbody, tfoot, borders, highlights) |
-| `columns.css` | Column control buttons, selection UI, filter toggles |
+|---|---|
+| `dataset-workspace.css` | Empty/data states, result tabs, global filter, and workspace dialogs |
+| `table.css` | Preview and statistics tables |
 
-**Bundle via**: `data-view.css` → `app.css`
-
-### Chart Output And Panel (`@feature: charts + panel`)
-Chart surfaces, canvas layout, chart placement, and block management.
-
-| File | Bundled via | Purpose |
-|------|-------------|---------|
-| `chart-output.css` | `visual-output.css` | Chart output containers, SVG and WebGL canvas surfaces, titles, notices, resize handles, tooltips, and the `.visually-hidden` accessibility utility |
-| `panel.css` | `visual-output.css` | Panel layout, block styling, slot borders, drag-and-drop behavior, and responsive panel rules |
-
-**Bundle via**: `visual-output.css` → `app.css`
-
-### Cross-Cutting (`@feature: cross-cutting`)
-Shared UI patterns used across multiple features.
+### Visual output
 
 | File | Purpose |
-|------|---------|
-| `messages.css` | Toast notifications, error/warning/info alerts, status displays |
+|---|---|
+| `chart-output.css` | Chart containers, resize handles, notices, and tooltips |
+| `chart-picker.css` | Chart picker trigger, cards, and preview artwork |
+| `panel.css` | Panel blocks, slots, layout resizing, and panel container adaptation |
 
-`feedback.css` itself is just the bundle file (a single `@import` for `messages.css`), the same shape as `base.css`, `controls.css`, `data-view.css`, and `visual-output.css`.
-
-**Bundle via**: `feedback.css` → `app.css`
-
-### App Orchestration (`@feature: app`)
-Main stylesheet orchestrator.
+### Feedback
 
 | File | Purpose |
-|------|---------|
-| `app.css` | Master entry point for `index.html`. Declares cascade layer order and `@import`s every feature bundle. Holds no direct rules. |
+|---|---|
+| `messages.css` | Polite notices, persistent errors, progress, the layered `[hidden]` guard, and reduced-motion overrides |
 
-### Per-Page Stylesheets
+### Page-specific
 
-Pages load stylesheets directly via `<link rel="stylesheet">`. `index.html` loads only `app.css`, which transitively pulls in everything. `about.html` loads `chrome.css` + `about.css` and skips the controls, data-view, visual-output, and feedback layers entirely.
+| File | Loaded by | Purpose |
+|---|---|---|
+| `about.css` | `about.html` | About hero, team grid, sidebar, footer, and page-level reduced-motion override |
 
-| Page | Loads |
-|------|-------|
-| `index.html` | `app.css` and its transitive imports |
-| `about.html` | `chrome.css` and its transitive imports, plus `about.css` |
+## State and responsive rules
 
-| File | Purpose | Loaded by |
-|------|---------|-----------|
-| `about.css` | About page hero, team grid, sidebar card, page-specific footer | `about.html` only (direct `<link>`, not via `app.css`) |
+Prefer semantic state already present in the DOM:
 
-The cascade-layer system governs only the styles imported through `app.css`. Page-specific stylesheets loaded directly by an HTML page sit outside it and can override the bundled styles freely on that page. `chrome.css` declares its own `foundation` layer, so when about.html loads it alongside about.css, the same precedence (about.css overrides chrome) is preserved.
+- `[hidden]` controls visibility.
+- `aria-expanded` controls disclosure and sidebar presentation.
+- `active`, `selected`, `dragging`, and `is-resizing` express component state.
 
-## Import Hierarchy
+Do not mirror an accessible state onto `<body>` solely for CSS.
 
-**index.html** loads `app.css`:
+The sidebar is a named inline-size container. At desktop widths, the workspace
+sets its width to 74px when the toggle has `aria-expanded="false"`; a
+`@container sidebar (max-width: 120px)` rule hides
+`.sidebar-expanded-only`. At 900px and below, the workspace stacks and the
+collapse toggle is hidden.
 
-```
-app.css (app)
-├── base.css (foundation layer)
-│   ├── chrome.css
-│   │   ├── variables.css
-│   │   ├── layout.css
-│   │   ├── responsive.css
-│   │   ├── header-nav.css
-│   │   └── settings.css
-│   ├── animations.css
-│   └── collapsed.css
-├── controls.css (controls layer)
-│   ├── buttons.css (foundation)
-│   ├── upload.css (datasetWorkspace)
-│   ├── columns.css (datasetWorkspace)
-│   ├── chart-controls.css (datasetWorkspace)
-│   └── chart-picker.css (datasetWorkspace)
-├── data-view.css (data-view layer)
-│   ├── table.css (datasetWorkspace)
-│   └── dataset-workspace.css (datasetWorkspace)
-├── visual-output.css (visual-output layer)
-│   ├── chart-output.css (charts)
-│   └── panel.css (panel)
-└── feedback.css (feedback layer)
-    └── messages.css (cross-cutting)
-```
+The panel canvas is a named inline-size container. Panel templates stack at
+640px of canvas width, independent of the browser viewport. JavaScript still
+reads actual container width when sizing SVG or canvas backing stores.
 
-**about.html** loads `chrome.css` + `about.css` directly:
+Viewport-height declarations use a `vh` fallback immediately followed by the
+equivalent `dvh` value.
 
-```
-chrome.css (foundation layer)
-├── variables.css
-├── layout.css
-├── responsive.css
-├── header-nav.css
-└── settings.css
+## Typography and motion
 
-about.css (no layer; page-specific, wins over chrome on ties)
+Font-size tokens and literal CSS font sizes use `rem`. Geometry, spacing,
+border, and chart coordinate values may remain in pixels. Use the duration
+tokens in `variables.css` instead of adding one-off transition durations.
+
+Both pages honor `prefers-reduced-motion: reduce`. Because unlayered page rules
+outrank layered rules, `about.css` repeats the small page-level override.
+
+Colors derived from a design token use `color-mix()` rather than parallel RGB
+channel custom properties:
+
+```css
+background: color-mix(in srgb, var(--accent) 8%, transparent);
 ```
 
-## Adding New Styles
+## Adding styles
 
-When adding styles for a new feature:
+1. Put the rule in the file owned by the feature. Create a new kebab-case leaf
+   only when ownership would otherwise be unclear.
+2. Add an `@feature` comment and wrap the file in the appropriate explicit
+   layer.
+3. Add the direct stylesheet link to each page that needs it, after the other
+   files in that layer.
+4. Update the exact link arrays in `tests/styles/cascadeLayers.test.js`.
+5. Run `npm run lint:css` and the raw-static smoke test.
 
-1. **Create** a new CSS file following the kebab-case naming convention: `feature-name.css`
-2. **Add** feature ownership comment at the top:
-   ```css
-   /* @feature: featureName
-      Brief description of what this class/component styles */
-   ```
-3. **Organize** related styles into a bundle file (e.g., `my-bundle.css`)
-4. **Import** the bundle in `app.css` in the appropriate location
-5. **Reference** in this document
+Class names use English kebab-case with optional BEM
+`__element`/`--modifier` suffixes. IDs are reserved for stable DOM contracts
+consumed by JavaScript or tests.
 
-## Class Naming Convention
-
-Classes follow English kebab-case:
-- Component prefix: `.panel-`, `.table-`, `.chart-`
-- Modifiers: `.active`, `.loaded`, `.empty`, `.selected`, `.dragging`
-- IDs are used sparingly for major containers
-
-Examples:
-- `.panel-block`: Panel block container
-- `.table-preview`: Preview table
-- `.column-actions`: Column action buttons
-- `#empty-state`: Empty state container
-
-## CSS Linting
-
-Stylelint checks project-owned CSS under `src/styles/**/*.css`:
+## CSS linting
 
 ```bash
 npm run lint:css
+npm run lint:css:fix
 ```
 
-Use `npm run lint:css:fix` for safe automatic fixes. Vendored CSS, including
-`vendor/fonts/fonts.css`, is intentionally ignored so checked-in third-party
-assets can stay close to upstream.
-
-CSS correctness, class-name conventions, and custom-property naming all fail
-CI. `npm run lint:css` must finish with zero warnings and zero errors.
-
-## Common Variables
-
-All colors, fonts, and scales are defined in `variables.css`.
-
-**Colors:**
-
-```css
---bg            /* Background */
---surface       /* Surface/card elements */
---border        /* Border color */
---accent        /* Primary brand color */
---accent-2      /* Secondary brand color */
---text          /* Text color */
---muted         /* Muted/secondary text */
---success       /* Success state */
---tag-num       /* Numeric data tag background */
---tag-txt       /* Text data tag background */
---tag-dat       /* Date data tag background */
---tag-txt-fg    /* Text data tag foreground */
---tag-dat-fg    /* Date data tag foreground */
---error         /* Error / alert family: --error, --error-light,
-                   --error-bg, --error-bg-soft, --error-bg-hover,
-                   --error-medium, --error-border-muted */
-```
-
-**RGB channels** (for translucent fills, e.g. `rgba(var(--accent-rgb), 0.08)`):
-
-```css
---accent-rgb    /* 26, 71, 42  (channel form of --accent) */
---success-rgb   /* 45, 106, 79 (channel form of --success) */
---text-rgb      /* 28, 26, 23  (channel form of --text) */
-```
-
-**Fonts:**
-
-```css
---font-display  /* Display font (IBM Plex Serif) */
---font-sans     /* UI/body font (IBM Plex Sans) */
---font-mono     /* Monospace font (JetBrains Mono) */
-```
-
-**Scales** (use these for new rules instead of raw literals; off-scale values stay inline):
-
-```css
-/* spacing (gap, padding, margin) */
---space-1: 4px;  --space-2: 6px;  --space-3: 8px;  --space-4: 10px;
---space-5: 12px; --space-6: 16px; --space-7: 20px; --space-8: 24px;
-
-/* border radius */
---radius-sm: 3px; --radius: 5px; --radius-md: 6px;
---radius-lg: 8px; --radius-xl: 12px; --radius-pill: 999px;
-
-/* font size (body is 14px) */
---font-size-2xs: 9px;  --font-size-xs: 10px; --font-size-sm: 11px;
---font-size-ui: 12px;  --font-size-md: 13px; --font-size-body: 14px;
---font-size-lg: 15px;
-
-/* transition durations */
---dur-fast: 0.15s; --dur: 0.18s; --dur-slow: 0.2s; --dur-slower: 0.24s;
-```
-
-Box-shadows are intentionally **not** tokenized; their values are mostly one-offs and stay inline per component.
-
-## Responsive Breakpoints Strategy
-
-Responsive behavior uses `max-width` (desktop-first) media queries. The main-app layout has one canonical breakpoint at 900px in `responsive.css`, but other scopes have their own:
-
-### Breakpoints in use
-
-| Breakpoint | Scope | File(s) | What changes |
-|------------|-------|---------|--------------|
-| **1024px** | About page | [about.css](../../src/styles/about.css) | About-page grid collapses from two columns to one; hero padding shrinks |
-| **900px** | Main app layout and panel | [responsive.css](../../src/styles/responsive.css), [panel.css](../../src/styles/panel.css) | Workspace stacks; header switches to a column; collapsed-sidebar presentation adapts; panel layouts become one column |
-| **768px** | Header chrome | [header-nav.css](../../src/styles/header-nav.css) | Header navigation gap and margins shrink; the header wraps |
-| **640px** | About page and dataset workspace | [about.css](../../src/styles/about.css), [dataset-workspace.css](../../src/styles/dataset-workspace.css) | About hero compresses; team grid becomes one column; dataset results controls adapt |
-| **480px** | Header chrome and settings dialog | [header-nav.css](../../src/styles/header-nav.css), [settings.css](../../src/styles/settings.css) | Header navigation reflows and settings controls fill the available width |
-
-### Main-app breakpoint: 900px
-
-**When it applies**: Screens 900px wide or less (iPads in portrait, tablets, phones)
-
-**Layout changes**:
-- **Header**: Switches from `flex` row to `column` layout; padding adjusts from `0 32px` to `18px 20px`
-- **Workspace**: Changes from 2-column (`340px sidebar | 1fr main`) to single-column stacked layout
-- **Sidebar**: When the collapsed state is active, it expands to the stacked width, restores relevant text and panels, and hides the upload illustration
-- **Content padding**: Reduces from `28px 32px` to `24px 20px 40px` to maximize usable space
-
-**Component behavior**:
-- When the sidebar is collapsed, relevant labels, panels, and navigation buttons are restored with `display: initial !important` so the stacked layout remains usable
-- Panel templates become a single column and the panel export button expands to the available width
-- Main content area (`results-area`) gets additional bottom padding
-
-### Design Rationale
-
-- **Scoped breakpoints over one global breakpoint**: The main app collapses at 900px, but the about page is more text-heavy and benefits from collapsing earlier (1024px). Header chrome (nav, logo, settings button) reflows at its own thresholds because it's not feature-scoped.
-- **Desktop-first media queries**: Base rules target the full layout and `max-width` queries adapt smaller viewports
-- **Sidebar optimization**: The responsive rules preserve usability when the user-selected collapsed state is active; viewport width does not toggle that state by itself
-- **Touch-friendly spacing**: 900px breakpoint gives enough room for mouse interactions; below that prioritizes vertical real estate
-
-### Adding New Responsive Rules
-
-Pick the home that matches the scope of the rule:
-
-1. **Main-app layout** (workspace, sidebar, content area) → `responsive.css` under the existing `@media (max-width: 900px)` block
-2. **Feature-internal** (e.g., panel slot rearrangement, dataset workspace table) → the feature's own file (`panel.css`, `dataset-workspace.css`) at the breakpoint already in use there
-3. **About page** → `about.css` (1024px or 640px blocks)
-4. **Header chrome** (nav, logo, settings button) → `header-nav.css` (768px or 480px blocks); dialog-internal settings rules stay in `settings.css`
-5. Prefer **state-based selectors** (`.sidebar-collapsed`, `.active`) over new breakpoints when the difference is interaction-driven, not viewport-driven
-6. Test on: Desktop (1440px+), Tablet (768px to 900px), Mobile (375px to 480px)
-
-### Future Breakpoint Candidates
-
-If usability testing reveals gaps:
-- **1200px**: Large desktop optimizations (wider sidebars, three-column workspace)
-- **360px**: Smallest phones (single-width modals, stacked inputs)
-
+Stylelint checks project-owned files under `src/styles/`. Vendored CSS is
+excluded. CSS correctness, descending specificity, class names, and custom
+property names all fail CI; the command must finish with zero warnings and zero
+errors.

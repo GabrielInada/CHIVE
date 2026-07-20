@@ -133,9 +133,9 @@ export function setTabVisibility(tabName, visible) {
 }
 
 /**
- * Toggle the `sidebar-collapsed` class on `<body>` and update the toggle
- * button's `aria-expanded`, label, and visible chevron. No-op (returns
- * `false`) when the toggle button is missing from the DOM.
+ * Toggle the sidebar button's `aria-expanded` state, label, and visible
+ * chevron. CSS derives the presentation from that single accessible state.
+ * No-op (returns `false`) when the toggle button is missing from the DOM.
  *
  * @returns {boolean} The new collapsed state, or `false` when the button is missing.
  */
@@ -143,12 +143,9 @@ export function toggleSidebarCollapsed() {
 	const toggleBtn = document.getElementById('btn-toggle-sidebar');
 	
 	if (toggleBtn) {
-		const isCollapsed = document.body.classList.contains('sidebar-collapsed');
+		const isCollapsed = toggleBtn.getAttribute('aria-expanded') === 'false';
 		const newCollapsedState = !isCollapsed;
-		
-		document.body.classList.toggle('sidebar-collapsed');
 
-		// Update button accessibility and labels
 		toggleBtn.setAttribute('aria-expanded', String(!newCollapsedState));
 		const labelKey = newCollapsedState ? 'chive-sidebar-expand' : 'chive-sidebar-collapse';
 		const label = t(labelKey);

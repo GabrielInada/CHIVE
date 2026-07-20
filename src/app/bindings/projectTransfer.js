@@ -99,7 +99,11 @@ function onDocumentClickCloseMenu(event) {
 
 /** @private */
 function onDocumentKeydownCloseMenu(event) {
-	if (event.key === 'Escape') setProjectMenuOpen(false);
+	if (event.key !== 'Escape') return;
+	const menuPanel = document.getElementById(PROJECT_TRANSFER_IDS.projectMenuPanel);
+	if (!menuPanel || menuPanel.hidden) return;
+	setProjectMenuOpen(false);
+	document.getElementById(PROJECT_TRANSFER_IDS.projectMenuButton)?.focus();
 }
 
 /**

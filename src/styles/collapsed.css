@@ -1,39 +1,26 @@
+@layer foundation {
 /* @feature: foundation
-   Collapsible element behavior and state styles */
+   Sidebar presentation derived from the toggle's accessible state. */
 
-body.sidebar-collapsed .workspace {
-  --sidebar-width: 74px;
+@media (min-width: 901px) {
+  .workspace:has(#btn-toggle-sidebar[aria-expanded='false']) {
+    --sidebar-width: 74px;
+  }
+
+  .workspace:has(#btn-toggle-sidebar[aria-expanded='false']) .panel-left {
+    padding: var(--space-6) var(--space-4);
+    gap: var(--space-5);
+  }
+
+  .workspace:has(#btn-toggle-sidebar[aria-expanded='false']) .panel-top {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
-body.sidebar-collapsed .panel-left {
-  padding: var(--space-6) var(--space-4);
-  gap: var(--space-5);
+@container sidebar (max-width: 120px) {
+  .sidebar-expanded-only {
+    display: none;
+  }
 }
-
-body.sidebar-collapsed .panel-top {
-  width: 100%;
-  justify-content: center;
-}
-
-body.sidebar-collapsed .panel-top-label,
-body.sidebar-collapsed .section-title,
-body.sidebar-collapsed .upload-text-main,
-body.sidebar-collapsed .upload-text-sub,
-body.sidebar-collapsed #file-info,
-body.sidebar-collapsed #columns-panel,
-body.sidebar-collapsed #viz-sidebar-panel,
-body.sidebar-collapsed #dashboard-sidebar-panel,
-body.sidebar-collapsed #error-message,
-body.sidebar-collapsed #dev-warning,
-body.sidebar-collapsed #btn-advance,
-body.sidebar-collapsed #btn-edit-columns,
-body.sidebar-collapsed #btn-go-to-panel,
-body.sidebar-collapsed #btn-back-to-viz {
-  display: none !important;
-}
-
-/* Centraliza e redimensiona a zona de upload no modo colapsado - Lucas */
-body.sidebar-collapsed #upload-zone,
-body.sidebar-collapsed .upload-icon {
-  display: none;
 }

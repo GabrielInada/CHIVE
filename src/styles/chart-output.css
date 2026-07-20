@@ -1,3 +1,4 @@
+@layer visual-output {
 /* @feature: charts
    Chart output containers, canvases, tooltips, and resize surface styles */
 
@@ -52,7 +53,7 @@
 
 .chart-action-btn:hover {
   border-color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.06);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .chart-action-btn:focus-visible {
@@ -133,8 +134,8 @@
   opacity: 0.75;
 }
 
-.chart-height-resize-handle:hover,
-.chart-height-resize-handle:focus-visible {
+.chart-block .chart-height-resize-handle:hover,
+.chart-block .chart-height-resize-handle:focus-visible {
   opacity: 1;
   border-color: var(--accent);
 }
@@ -159,7 +160,7 @@
   position: absolute;
   z-index: 9999;
   max-width: 280px;
-  background: rgba(var(--text-rgb), 0.96);
+  background: color-mix(in srgb, var(--text) 96%, transparent);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: var(--radius-md);
@@ -334,4 +335,5 @@
 .chart-tooltip__action[disabled]:hover,
 .chart-tooltip__action[aria-disabled="true"]:hover {
   background: rgba(200, 255, 77, 0.12);
+}
 }

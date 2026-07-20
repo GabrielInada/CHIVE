@@ -1,7 +1,8 @@
+@layer foundation {
 /* @feature: settings
    Header settings button and the global settings dialog (General and
    Performance sections). Part of the shared chrome: loaded by every HTML
-   page via chrome.css, since the settings entry lives in the shared header
+   page through a direct stylesheet link, since settings live in the shared header
    on both index.html and about.html. */
 
 .header-settings-btn {
@@ -47,6 +48,7 @@
 .settings-dialog {
   width: min(440px, 96vw);
   max-height: 90vh;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   background: var(--surface);
@@ -88,7 +90,7 @@
 .settings-close-btn:hover {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.06);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .settings-dialog-body {
@@ -187,7 +189,7 @@
 }
 
 .settings-segment input:checked + span {
-  background: rgba(var(--accent-rgb), 0.1);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   color: var(--accent);
   font-weight: 600;
 }
@@ -222,4 +224,5 @@
   .settings-select {
     max-width: none;
   }
+}
 }

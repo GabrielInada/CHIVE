@@ -113,14 +113,6 @@ export function setupFileInputListeners() {
 			fileInput?.click();
 		});
 
-		// Keyboard support (Enter/Space)
-		uploadZone.addEventListener('keydown', event => {
-			if (event.key === 'Enter' || event.key === ' ') {
-				event.preventDefault();
-				fileInput?.click();
-			}
-		});
-
 		// Drag and drop
 		uploadZone.addEventListener('dragover', event => {
 			event.preventDefault();

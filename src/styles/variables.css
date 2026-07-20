@@ -1,10 +1,13 @@
+@layer foundation {
 /* @feature: foundation
-   Global design tokens: colors (+ rgb channels and error palette),
+   Global design tokens: colors, error palette,
    typography, and spacing / radius / font-size / transition scales.
    Shadows are intentionally kept inline per-component (mostly one-offs).
    Used by all features */
 
 :root {
+  color-scheme: light;
+
   --bg: #f5f2eb;
   --surface: #fffef9;
   --border: #ddd8cc;
@@ -18,10 +21,6 @@
   --tag-dat: #e8eaf4;
   --tag-txt-fg: #7a5200;
   --tag-dat-fg: #2c3a8c;
-  /* RGB channels for translucent fills: rgba(var(--accent-rgb), 0.08) */
-  --accent-rgb: 26, 71, 42;
-  --success-rgb: 45, 106, 79;
-  --text-rgb: 28, 26, 23;
   /* Error / alert palette */
   --error: #b91c1c;
   --error-light: #fca5a5;
@@ -49,19 +48,20 @@
   --radius-lg: 8px;
   --radius-xl: 12px;
   --radius-pill: 999px;
-  /* Font size scale (body is 14px) */
-  --font-size-2xs: 9px;
-  --font-size-xs: 10px;
-  --font-size-sm: 11px;
-  --font-size-ui: 12px;
-  --font-size-md: 13px;
-  --font-size-body: 14px;
-  --font-size-lg: 15px;
+  /* Font size scale (body is 0.875rem) */
+  --font-size-2xs: 0.5625rem;
+  --font-size-xs: 0.625rem;
+  --font-size-sm: 0.6875rem;
+  --font-size-ui: 0.75rem;
+  --font-size-md: 0.8125rem;
+  --font-size-body: 0.875rem;
+  --font-size-lg: 0.9375rem;
   /* Transition durations */
   --dur-fast: 0.15s;
   --dur: 0.18s;
   --dur-slow: 0.2s;
   --dur-slower: 0.24s;
+  --dur-reveal: 0.3s;
 }
 
 *, *::before, *::after {
@@ -74,9 +74,11 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 0.875rem;
   line-height: 1.5;
   min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
 }

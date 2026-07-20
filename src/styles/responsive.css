@@ -1,3 +1,4 @@
+@layer foundation {
 /* @feature: foundation
    Media queries and responsive breakpoints
    Adaptive layouts for mobile, tablet, desktop */
@@ -16,43 +17,12 @@
     min-height: auto;
   }
 
-  body.sidebar-collapsed .workspace {
-    --sidebar-width: 1fr;
-  }
-
   .panel-left {
     border-right: none;
     border-bottom: 1px solid var(--border);
   }
 
-  body.sidebar-collapsed .panel-left {
-    padding: 18px var(--space-7);
-    gap: var(--space-8);
-  }
-
-  body.sidebar-collapsed .panel-top {
-    justify-content: space-between;
-  }
-
-  body.sidebar-collapsed .panel-top-label,
-  body.sidebar-collapsed .section-title,
-  body.sidebar-collapsed .upload-text-main,
-  body.sidebar-collapsed .upload-text-sub,
-  body.sidebar-collapsed #file-info,
-  body.sidebar-collapsed #columns-panel,
-  body.sidebar-collapsed #viz-sidebar-panel,
-  body.sidebar-collapsed #dashboard-sidebar-panel,
-  body.sidebar-collapsed #error-message,
-  body.sidebar-collapsed #dev-warning,
-  body.sidebar-collapsed #btn-advance,
-  body.sidebar-collapsed #btn-edit-columns,
-  body.sidebar-collapsed #btn-go-to-panel,
-  body.sidebar-collapsed #btn-back-to-viz {
-    display: initial !important;
-  }
-
-  body.sidebar-collapsed #upload-zone,
-  body.sidebar-collapsed .upload-icon {
+  .btn-toggle-sidebar {
     display: none;
   }
 
@@ -63,4 +33,5 @@
   .header-steps {
     flex-wrap: wrap;
   }
+}
 }

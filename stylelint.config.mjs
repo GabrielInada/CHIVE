@@ -10,9 +10,6 @@ export default {
 		'node_modules/**',
 	],
 	rules: {
-		// CHIVE uses explicit cascade layers and feature bundles, so source order
-		// does not always map cleanly to selector specificity.
-		'no-descending-specificity': null,
 		'alpha-value-notation': null,
 		'at-rule-empty-line-before': null,
 		'color-function-alias-notation': null,
@@ -24,6 +21,7 @@ export default {
 		'declaration-property-value-keyword-no-deprecated': null,
 		'keyframes-name-pattern': null,
 		'media-feature-range-notation': null,
+		'number-max-precision': 5,
 		'property-no-vendor-prefix': null,
 		'rule-empty-line-before': null,
 		'value-keyword-case': null,

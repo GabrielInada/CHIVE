@@ -1,8 +1,0 @@
-/* @feature: foundation
-   Generic control styles: inputs, selects, checkboxes, toggle switches
-   Used by all features */
-@import url('./buttons.css');
-@import url('./upload.css');
-@import url('./columns.css');
-@import url('./chart-controls.css');
-@import url('./chart-picker.css');

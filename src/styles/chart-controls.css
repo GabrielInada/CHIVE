@@ -1,3 +1,4 @@
+@layer controls {
 /* @feature: datasetWorkspace (chartControls)
    Chart-controls sidebar, widgets, grouping, and control icon styles */
 
@@ -114,7 +115,7 @@
 
 .chart-control-btn:hover {
     border-color: var(--accent);
-    background: rgba(var(--accent-rgb), 0.05);
+    background: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
 .chart-control-btn:disabled {
@@ -141,7 +142,7 @@
 .chart-control-section {
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
-    background: rgba(var(--accent-rgb), 0.02);
+    background: color-mix(in srgb, var(--accent) 2%, transparent);
     margin-bottom: var(--space-3);
 }
 
@@ -154,7 +155,7 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--space-3);
-    background: linear-gradient(to right, rgba(var(--accent-rgb), 0.05), transparent) var(--surface);
+    background: linear-gradient(to right, color-mix(in srgb, var(--accent) 5%, transparent), transparent) var(--surface);
     border: none;
     border-bottom: 1px solid var(--border);
     border-radius: var(--radius-md) var(--radius-md) 0 0;
@@ -168,7 +169,7 @@
 }
 
 .chart-section-header:hover {
-    background: linear-gradient(to right, rgba(var(--accent-rgb), 0.1), rgba(var(--accent-rgb), 0.02)) var(--surface);
+    background: linear-gradient(to right, color-mix(in srgb, var(--accent) 10%, transparent), color-mix(in srgb, var(--accent) 2%, transparent)) var(--surface);
 }
 
 .chart-section-header[aria-expanded="false"] {
@@ -218,36 +219,36 @@
     background: linear-gradient(to right, rgba(200, 255, 77, 0.1), transparent) var(--surface);
 }
 
-.chart-control-section[data-section="filter"] .chart-section-header:hover {
-    background: linear-gradient(to right, rgba(200, 255, 77, 0.15), rgba(200, 255, 77, 0.05)) var(--surface);
-}
-
 .chart-control-section[data-section="data"] .chart-section-header {
     background: linear-gradient(to right, rgba(100, 150, 255, 0.08), transparent) var(--surface);
-}
-
-.chart-control-section[data-section="data"] .chart-section-header:hover {
-    background: linear-gradient(to right, rgba(100, 150, 255, 0.12), rgba(100, 150, 255, 0.04)) var(--surface);
 }
 
 .chart-control-section[data-section="display"] .chart-section-header {
     background: linear-gradient(to right, rgba(150, 100, 255, 0.08), transparent) var(--surface);
 }
 
-.chart-control-section[data-section="display"] .chart-section-header:hover {
-    background: linear-gradient(to right, rgba(150, 100, 255, 0.12), rgba(150, 100, 255, 0.04)) var(--surface);
-}
-
 .chart-control-section[data-section="styling"] .chart-section-header {
     background: linear-gradient(to right, rgba(255, 150, 100, 0.08), transparent) var(--surface);
 }
 
-.chart-control-section[data-section="styling"] .chart-section-header:hover {
-    background: linear-gradient(to right, rgba(255, 150, 100, 0.12), rgba(255, 150, 100, 0.04)) var(--surface);
-}
-
 .chart-control-section[data-section="advanced"] .chart-section-header {
     background: linear-gradient(to right, rgba(150, 150, 150, 0.06), transparent) var(--surface);
+}
+
+.chart-control-section[data-section="filter"] .chart-section-header:hover {
+    background: linear-gradient(to right, rgba(200, 255, 77, 0.15), rgba(200, 255, 77, 0.05)) var(--surface);
+}
+
+.chart-control-section[data-section="data"] .chart-section-header:hover {
+    background: linear-gradient(to right, rgba(100, 150, 255, 0.12), rgba(100, 150, 255, 0.04)) var(--surface);
+}
+
+.chart-control-section[data-section="display"] .chart-section-header:hover {
+    background: linear-gradient(to right, rgba(150, 100, 255, 0.12), rgba(150, 100, 255, 0.04)) var(--surface);
+}
+
+.chart-control-section[data-section="styling"] .chart-section-header:hover {
+    background: linear-gradient(to right, rgba(255, 150, 100, 0.12), rgba(255, 150, 100, 0.04)) var(--surface);
 }
 
 .chart-control-section[data-section="advanced"] .chart-section-header:hover {
@@ -287,4 +288,5 @@
 
 .svg-icon-advanced {
     color: #999999;
+}
 }

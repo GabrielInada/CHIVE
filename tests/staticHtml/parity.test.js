@@ -84,6 +84,40 @@ describe('static HTML contracts', () => {
 		}
 	});
 
+	it('uses native navigation, upload, and disclosure semantics', () => {
+		expect(indexDocument.querySelector('nav a[aria-current="page"]')?.getAttribute('href')).toBe('./index.html');
+		expect(aboutDocument.querySelector('nav a[aria-current="page"]')?.getAttribute('href')).toBe('./about.html');
+
+		const uploadZone = indexDocument.getElementById(FILE_IDS.uploadZone);
+		expect(uploadZone?.tagName).toBe('BUTTON');
+		expect(uploadZone?.getAttribute('type')).toBe('button');
+		expect(uploadZone?.hasAttribute('role')).toBe(false);
+
+		const projectButton = indexDocument.getElementById(PROJECT_TRANSFER_IDS.projectMenuButton);
+		const projectPanel = indexDocument.getElementById(PROJECT_TRANSFER_IDS.projectMenuPanel);
+		expect(projectButton?.getAttribute('aria-controls')).toBe(PROJECT_TRANSFER_IDS.projectMenuPanel);
+		expect(projectButton?.hasAttribute('aria-haspopup')).toBe(false);
+		expect(projectPanel?.hasAttribute('role')).toBe(false);
+
+		const external = aboutDocument.querySelector('a[target="_blank"]');
+		expect(external?.getAttribute('rel')?.split(/\s+/)).toEqual(expect.arrayContaining(['noopener', 'noreferrer']));
+	});
+
+	it('preloads only the critical WOFF2 faces on both pages', () => {
+		const expected = [
+			'./vendor/fonts/ibm-plex-sans/IBMPlexSans-VariableFont_wdth,wght.woff2',
+			'./vendor/fonts/ibm-plex-serif/IBMPlexSerif-Bold.woff2',
+		];
+
+		for (const document of [indexDocument, aboutDocument]) {
+			const preloads = [...document.querySelectorAll('link[rel="preload"][as="font"]')];
+			expect(preloads.map(link => link.getAttribute('href'))).toEqual(expected);
+			expect(preloads.every(link =>
+				link.getAttribute('type') === 'font/woff2' && link.hasAttribute('crossorigin')
+			)).toBe(true);
+		}
+	});
+
 	it('keeps feature-owned and project-transfer contracts present in the application page', () => {
 		expectIds(indexDocument, [
 			VIEW_IDS,
