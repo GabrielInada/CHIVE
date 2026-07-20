@@ -365,8 +365,8 @@
 }
 
 .panel-layout.template-hero2 {
-  grid-template-columns: minmax(0, var(--splitMain, 60%)) minmax(0, calc(100% - var(--splitMain, 60%)));
-  grid-template-rows: minmax(0, var(--splitRight, 50%)) minmax(0, calc(100% - var(--splitRight, 50%)));
+  grid-template-columns: minmax(0, var(--split-main, 60%)) minmax(0, calc(100% - var(--split-main, 60%)));
+  grid-template-rows: minmax(0, var(--split-right, 50%)) minmax(0, calc(100% - var(--split-right, 50%)));
 }
 
 .panel-layout.template-hero2 [data-panel-slot='slot-1'] {

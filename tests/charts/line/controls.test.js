@@ -12,7 +12,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 import { createLineChartControls } from '../../../src/charts/line/controls/builder.js';
 import { setupLineChartControlListeners } from '../../../src/charts/line/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/line/controls/defaults.js';
+import { computeDefaults } from '../../../src/charts/line/controls/activationDefaults.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -97,7 +97,7 @@ describe('line controls module boundaries', () => {
 		const [builder, listeners, defaults] = await Promise.all([
 			import('../../../src/charts/line/controls/builder.js'),
 			import('../../../src/charts/line/controls/listeners.js'),
-			import('../../../src/charts/line/controls/defaults.js'),
+			import('../../../src/charts/line/controls/activationDefaults.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createLineChartControls']);
 		expect(Object.keys(listeners)).toEqual(['setupLineChartControlListeners']);

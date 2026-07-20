@@ -18,7 +18,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 }));
 
 import { renderPieChartSection } from '../../../src/charts/pie/workspaceSection.js';
-import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/config/elementIds.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/charts/workspaceDomIds.js';
 
 function setupDom() {
 	document.body.innerHTML = '';

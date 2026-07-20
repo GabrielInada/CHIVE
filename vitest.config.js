@@ -14,8 +14,8 @@ export default defineConfig({
 			// exercised, so including them buries the real numbers.
 			include: ['src/**/*.js'],
 			// types.js is JSDoc typedefs only; i18n holds JSON message
-			// catalogs. Neither contains testable runtime logic. main.js (the
-			// boot orchestrator) is left in deliberately so its real, untested
+			// catalogs. Neither contains testable runtime logic. The page entries (entries/app.js,
+			// entries/about.js) are left in deliberately so their real, untested
 			// code stays visible.
 			exclude: ['src/types.js', 'src/i18n/**'],
 		},

@@ -14,7 +14,8 @@
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
-import { CHART_COLORS, PIE_CHART } from '../../../config/charts.js';
+import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { t } from '../../../services/i18nService.js';
 import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl } from '../../shared/controls/factories.js';
 import { createColorPresetControl, createColorPickerGridControl } from '../../shared/controls/factories.js';

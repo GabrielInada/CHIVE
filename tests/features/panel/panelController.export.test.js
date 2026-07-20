@@ -11,7 +11,7 @@ const baixarSvgMarkupMock = vi.fn((svgMarkup, fileNameBase) => {
   };
 });
 
-vi.mock('../../../src/utils/svgExport.js', () => ({
+vi.mock('../../../src/services/downloads/svg.js', () => ({
   captureSvgMarkupFromContainer: vi.fn(() => ({ ok: false, reason: 'not-used' })),
   downloadSvgMarkup: (...args) => baixarSvgMarkupMock(...args),
   ensureSvgAttributes: (svg) => {

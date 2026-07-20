@@ -24,7 +24,7 @@
 import { parseCsv, parseJson } from '../domain/datasets/parse.js';
 import { detectDecimalSeparator, detectType, normalizeNumericString } from '../domain/datasets/typeDetection.js';
 import { calculateStatistics, calculateCategoricalStatistics } from '../domain/datasets/statistics.js';
-import { DECIMAL_DETECTION, COLUMN_TYPES } from '../config/types.js';
+import { DECIMAL_DETECTION, COLUMN_TYPES } from '../config/columnTypeDetection.js';
 
 const NORMALIZE_CHUNK_SIZE = 20000;
 

@@ -5,7 +5,7 @@
  * render-affecting state subscriptions are delegated to renderCoordinator.js.
  */
 
-import { initializeI18n, t } from '../services/i18nService.js';
+import { t } from '../services/i18nService.js';
 import {
 	isPersistenceAvailable,
 	hydrateState,
@@ -13,15 +13,16 @@ import {
 	getPersistenceErrorMessageKey,
 } from '../services/persistence.js';
 import { getPersistenceSnapshot, replaceAllState } from '../state/appState.js';
-import { rehydratePanelChartSpecs } from '../utils/panelHydration.js';
+import { rehydratePanelChartSpecs } from '../domain/panel/rehydration.js';
 import { throttle } from '../utils/throttle.js';
 import { initChartControls } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
 import { initPanelController } from '../features/panel/panelController.js';
 import { initDatasetController } from '../features/datasetWorkspace/datasetController.js';
+import { VIEW_IDS } from '../features/datasetWorkspace/domIds.js';
 import { initializeDomBindings } from './domBindings.js';
-import { initSettingsController } from './settingsController.js';
+import { initializeSharedPage } from './sharedPageInitializer.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
-import { showFeedback, showError } from './feedbackUI.js';
+import { showFeedback, showError } from '../ui/feedback.js';
 import {
 	livePreviewRender,
 	runFullRefreshNow,
@@ -30,16 +31,16 @@ import {
 } from './renderCoordinator.js';
 
 /**
- * Initialize CHIVE in dependency order. Shared i18n/settings setup runs on
- * every page; app-only wiring stops when the main application shell is absent.
+ * Initialize CHIVE in dependency order. Shared i18n and settings setup is
+ * delegated to initializeSharedPage; app-only wiring stops when the main
+ * application shell is absent.
  *
  * @returns {Promise<void>}
  */
 export async function initializeApplication() {
-	await initializeI18n();
-	initSettingsController();
+	await initializeSharedPage();
 
-	if (!document.getElementById('file-info')) return;
+	if (!document.getElementById(VIEW_IDS.fileInfo)) return;
 
 	if (isPersistenceAvailable()) {
 		await hydrateState({
@@ -76,7 +77,7 @@ export async function initializeApplication() {
 
 /**
  * Start initialization behind the top-level error boundary. This is the
- * single-start lifecycle entry used by main.js, not an idempotent utility.
+ * single-start lifecycle entry used by entries/app.js, not an idempotent utility.
  */
 export function startApplication() {
 	initializeApplication().catch(reportInitializationError);

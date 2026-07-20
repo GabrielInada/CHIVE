@@ -8,7 +8,7 @@ import {
 	midpoint,
 	resolveSurfaceDepth,
 } from '../../../src/charts/tin/math.js';
-import { TIN_CHART } from '../../../src/config/charts.js';
+import { TIN_CHART } from '../../../src/config/charts/definitions/tin.js';
 
 describe('midpoint', () => {
 	it('averages each coordinate', () => {

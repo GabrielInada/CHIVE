@@ -35,8 +35,8 @@ Key files:
   [options.js](../../../src/charts/bar/options.js), and
   [color.js](../../../src/charts/bar/color.js)
 - Sidebar controls: [controls/](../../../src/charts/bar/controls)
-- Config constants: [charts.js](../../../src/config/charts.js) (`BAR_CHART`)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bar` block)
+- Chart definition and constants: [bar.js](../../../src/config/charts/definitions/bar.js) (`BAR_DEFINITION`, `BAR_CHART`)
+- Per-dataset config defaults: [bar.js](../../../src/config/charts/definitions/bar.js) (the definition's fresh `bar` factory)
 - Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bar/workspaceSection.js)
 - Shared presentation mapping: [presentation.js](../../../src/charts/bar/presentation.js)
 - Panel adapter: [panelAdapter.js](../../../src/charts/bar/panelAdapter.js)
@@ -166,9 +166,10 @@ TIN doc's [section 6.2](tin.md) for the snapshot lifecycle.)
 
 Each dataset owns a `chartConfig` object, and `chartConfig.bar` is the bar chart's slice of
 it. The canonical fresh shape is built by `createDefaultChartConfig()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js); a saved or partial config is
-deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in the same file
-(user-set fields win, missing fields fall back to default).
+[defaults.js](../../../src/config/charts/defaults.js); a saved or partial config is
+deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js) (user-set fields win,
+missing fields fall back to default).
 
 ### 4.2 The `chartConfig.bar` keys
 
@@ -193,7 +194,7 @@ deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in the same 
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js) holds the bounds and shared values:
+[bar.js](../../../src/config/charts/definitions/bar.js) holds the bounds and values:
 
 - `CHART_COLORS.bar` = `#d4622a` (the default uniform/min-gradient color).
 - `CHART_DIMENSIONS.bar` = `{ width: 700, height: 320, margins: { top:12, right:12, bottom:90, left:52 } }`. The large bottom margin (90) leaves room for rotated category labels.
@@ -471,7 +472,7 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-bar-container`, block `chart-block-bar`. Control IDs are `viz-…-bar-…`
 (e.g. `viz-select-bar`, `viz-select-bar-measure`, `viz-input-bar-gradient-min`,
 `viz-slider-bar-threshold`).
@@ -488,7 +489,7 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
     <text> axis titles    (optional)
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `BAR_CHART`): `padding` (band
+**Tuning knobs** ([bar.js](../../../src/config/charts/definitions/bar.js) `BAR_CHART`): `padding` (band
 gap), `ticks` (y axis), `defaultSort`, `defaultTopN`, `defaultMeasureMode`.
 
 **Foundations → implementation map:**

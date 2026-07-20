@@ -40,7 +40,7 @@ const mocks = vi.hoisted(() => ({
 			PANEL_BLOCK_BORDER_UPDATED: 'panelBlockBorderUpdated',
 		},
 	},
-	chartDefaults: {
+	chartConfig: {
 		mergeChartConfigWithDefaults: vi.fn((cfg) => ({
 			bar: { category: 'a', enabled: true },
 			scatter: {},
@@ -66,9 +66,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/state/appState.js', () => mocks.appState);
-vi.mock('../../../src/config/chartDefaults.js', () => mocks.chartDefaults);
-vi.mock('../../../src/utils/globalFilter.js', () => mocks.globalFilter);
-vi.mock('../../../src/utils/columnHelpers.js', () => mocks.columnHelpers);
+vi.mock('../../../src/domain/charts/chartConfig.js', () => mocks.chartConfig);
+vi.mock('../../../src/domain/filters/globalFilter.js', () => mocks.globalFilter);
+vi.mock('../../../src/domain/datasets/columns.js', () => mocks.columnHelpers);
 vi.mock('../../../src/services/i18nService.js', () => mocks.i18n);
 
 import { initPanelController, addChartToPanel, removeChartFromPanel, getLayoutConfig, _resetPanelControllerForTesting } from '../../../src/features/panel/panelController.js';
@@ -104,7 +104,7 @@ describe('panelController (branch coverage)', () => {
 			selectedColumns: ['a'],
 			chartConfig: {},
 		});
-		mocks.chartDefaults.mergeChartConfigWithDefaults.mockClear();
+		mocks.chartConfig.mergeChartConfigWithDefaults.mockClear();
 		mocks.globalFilter.resolveGlobalFilterForColumns.mockClear();
 		mocks.globalFilter.applyGlobalFilterRules.mockClear();
 		mocks.columnHelpers.getNumericColumnNames.mockClear();
@@ -226,7 +226,7 @@ describe('panelController (branch coverage)', () => {
 
 		it('catches unexpected exceptions and returns add-error', () => {
 			initPanelController();
-			mocks.chartDefaults.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
+			mocks.chartConfig.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
 				throw new Error('boom');
 			});
 
@@ -239,7 +239,7 @@ describe('panelController (branch coverage)', () => {
 		it('calls feedback callback on add-error if provided', () => {
 			const feedbackCb = vi.fn();
 			initPanelController(feedbackCb);
-			mocks.chartDefaults.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
+			mocks.chartConfig.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
 				throw new Error('boom');
 			});
 
@@ -250,7 +250,7 @@ describe('panelController (branch coverage)', () => {
 
 		it('does not throw on unhandled error', () => {
 			initPanelController();
-			mocks.chartDefaults.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
+			mocks.chartConfig.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
 				throw new Error('Unexpected');
 			});
 

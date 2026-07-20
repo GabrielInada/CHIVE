@@ -12,7 +12,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 import { createPieChartControls } from '../../../src/charts/pie/controls/builder.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/pie/controls/defaults.js';
+import { computeDefaults } from '../../../src/charts/pie/controls/activationDefaults.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -29,7 +29,7 @@ describe('pie controls module boundaries', () => {
 		const [builder, listeners, defaults] = await Promise.all([
 			import('../../../src/charts/pie/controls/builder.js'),
 			import('../../../src/charts/pie/controls/listeners.js'),
-			import('../../../src/charts/pie/controls/defaults.js'),
+			import('../../../src/charts/pie/controls/activationDefaults.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createPieChartControls']);
 		expect(Object.keys(listeners)).toEqual(['setupPieChartControlListeners']);

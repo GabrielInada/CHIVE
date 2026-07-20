@@ -8,7 +8,7 @@
  */
 
 import { isNullish } from '../../utils/formatters.js';
-import { compareStrings } from '../../utils/chartFilters.js';
+import { compareStrings } from '../../domain/filters/chartFilter.js';
 
 // WHY: every count-based sort uses `|| compareStrings(a[0], b[0])` as a tiebreaker
 // so categories with equal counts have a deterministic visual order. Without the

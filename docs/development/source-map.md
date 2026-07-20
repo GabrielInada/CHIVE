@@ -17,26 +17,32 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 
 | Path | Role |
 |---|---|
-| `src/main.js` | Browser entrypoint: waits for DOM readiness, starts the application, and installs the debug surface. |
-| `src/app/` | Application orchestration: `applicationInitializer.js` owns initialization order and the top-level error boundary; `renderCoordinator.js` owns full/region scheduling, render composition, and render-affecting state subscriptions; `debugApi.js` constructs `window.chiveDebug`; `domBindings.js` composes every DOM listener in boot order. `uiManager.js` owns the app shell (tabs, sidebar mode, sidebar collapse), `settingsController.js` the settings flow, and `feedbackUI.js` / `dialogFocus.js` are cross-feature UI helpers no single feature owns. |
+| `src/entries/` | Per-page browser entrypoints: `entries/app.js` (index.html) waits for DOM readiness, starts the application, and installs the debug surface; `entries/about.js` (about.html) runs only shared-page init and installs no debug surface. Both import solely from `src/app/`. |
+| `src/app/` | Application orchestration: `applicationInitializer.js` owns initialization order and the top-level error boundary; `sharedPageInitializer.js` runs the i18n and settings setup shared by every page; `renderCoordinator.js` owns full/region scheduling, render composition, and render-affecting state subscriptions; `debugApi.js` constructs `window.chiveDebug`; `domBindings.js` composes every DOM listener in boot order. `uiManager.js` owns the app shell (tabs, sidebar mode, sidebar collapse). |
+| `src/ui/` | Ownerless browser UI mechanics shared across layers: `feedback.js` (toasts, error banner, progress toast) and `dialogFocus.js` (modal focus trap and scroll lock). A strict leaf: it imports only `config/`, `utils/`, `types.js`, or vendored modules, so anything above it can depend on it without dragging state or services along. |
 | `src/app/bindings/` | App-level DOM intent translation: workflow modules that turn user events into facade calls, wired by `app/domBindings.js`. These are app-level rather than feature-owned because project transfer owns the whole project, sidebar navigation spans both features, the keyboard shortcut is global, and the chart actions are delegated off static `index.html` markup. Feature-owned bindings live with their feature (see `features/datasetWorkspace/bindings/`). |
 | `src/types.js` | Shared JSDoc typedefs (`AppState`, `Dataset`, `ChartConfig`, ...). Always imported directly, never through barrels. |
-| `src/config/` | Pure leaf layer: canonical chart identities, chart defaults, element IDs, limits, locale, and format constants. It may not import app, state, components, features, or services. |
-| `src/utils/` | Pure leaf layer: DOM-free helpers (result pattern, color utilities, filters, formatters). It has the same import boundary as `config/`. One deliberate DOM exception is `chartContainerLifecycle.js`, the dispose-aware chart-container clear shared by components, the panel feature, and chart packages. |
-| `src/domain/` | Pure product rules with one owner per subdirectory. `domain/panel/` holds the layout-template registry (`layoutTemplates.js`) and the panel-block model with the shared percentage clamp (`panelBlockModel.js`). `domain/datasets/` holds the dataset algorithms: parsing and delimiter detection (`parse.js`), type and decimal detection (`typeDetection.js`), row normalization (`processData.js`), per-column statistics (`statistics.js`), and joins (`join.js`). It has the same leaf boundary as `config/` and `utils/` and additionally may not import chart presentation code. |
-| `src/components/` | Leaf renderers: `components/settingsDialog.js` is the callback-driven global settings modal opened from the shared header. The dataset workspace views and dialogs now live in `features/datasetWorkspace/`. |
+| `src/config/` | Pure leaf layer: chart definitions, column type-detection settings (`columnTypeDetection.js`), limits, locale, settings, and format constants. DOM contracts live with their owners, not in config. It may not import app, state, features, services, ui, or chart presentation code. |
+| `src/config/charts/` | Static chart identity and default data. `definitions/<type>.js` owns each chart's key, color, dimensions, height limits, workspace IDs, catalog category, behavior constants, and fresh default-config factory; `definitions.js` owns canonical visual order and derives the cross-chart maps; `defaults.js` assembles a fresh per-dataset chart config; `shared.js` holds genuinely cross-chart palettes. |
+| `src/utils/` | Strictly pure, DOM-free, ownership-neutral leaf helpers: result envelopes, color conversion/interpolation, formatting, debounce, and throttle. It cannot import product-domain, chart, application, state, feature, service, or UI modules; lint also rejects direct `document` and `window` access. |
+| `src/domain/` | Pure product rules with one owner per subdirectory. `domain/panel/` holds layout templates, the panel-block model, and boundary rehydration; `domain/datasets/` holds parsing, type detection, processing, statistics, joins, column classification, and dataset fingerprints; `domain/filters/` owns single-chart filter semantics and the global multi-rule pipeline; `domain/charts/` owns chart-config merge and canonicalization rules while static default data stays in `config/charts/definitions/`. It has the same DOM-free contract as `utils/` and additionally may not import chart presentation code. |
+| `src/features/settings/` | Settings feature package: `settingsController.js` owns the header settings button and connects dialog callbacks to the i18n and settings services (initialized on every page via `app/sharedPageInitializer.js`); `settingsDialog.js` is the callback-driven global settings modal; `domIds.js` owns its shared-page static HTML contract. It imports no application state. |
 | `src/state/` | State core: `appState.js`, the data/panel/ui facades, `stateEvents.js`, and `stateDebug.js`. Panel facade-only mutation primitives live under `state/panel/`. The only write path for application state. |
 | `src/features/datasetWorkspace/chartControls/` | The charts tab's controls sidebar: `chartControlsController.js` owns it end to end (DOM intent, facade writes, render triggering), `chartConfigAdapter.js` builds the `ChartConfigWriter` each chart package writes through, `livePreviewBridge.js` holds the replaceable live-render callback, and `chartHeightResize.js` owns the drag handles. The pure control DOM factories and the writer-driven listener bindings live under `charts/shared/controls/`. |
-| `src/features/datasetWorkspace/` | Dataset workspace feature package: `datasetController.js` owns file upload, dataset add/remove/select, joins, and preset loading (facade writes); `workspaceView.js` composes the right-hand pane; `views/` and `dialogs/` are the callback-driven, state-read-only renderers; `bindings/` holds the delegated dataset-row listeners. Durable state remains under `state/`. |
-| `src/features/panel/` | Panel feature package: `panelController.js` owns user intent, facade writes, bus subscriptions, and render coordination; `views/`, `layout/`, `slots/`, and `export/` own presentation mechanics. Durable state remains under `state/`; pure layout templates and the block model remain under `domain/panel/`. |
-| `src/charts/` | Chart presentation metadata (`catalog.js` and `previews.js`), independent controls/workspace/panel lookup under `registries/`, D3/SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`, `charts/network/`, and `charts/tin/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/` (SVG scaffold, tooltip, control factories and grouping). A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
-| `src/services/` | Side-effecting services, each crossing a browser boundary: `persistence.js` (the only public persistence import path) with the `persistence/` package behind it, `i18nService.js`, `settingsService.js` (owner of the `chive.settings` localStorage key), `presetService.js`, and `dataIngestService.js`. The pure dataset algorithms are not here; they live in `domain/datasets/`. |
+| `src/features/datasetWorkspace/` | Dataset workspace feature package: `datasetController.js` owns initialization, the public dataset API, file-input binding, selection/removal, and workflow feedback; `workspaceView.js` is the thin composition surface for the populated right-hand pane; `bindings/` holds delegated dataset-row listeners; `domIds.js` owns shared static HTML contracts. Durable state remains under `state/`. |
+| `src/features/datasetWorkspace/workflows/` | Controller-internal upload, join, and preset workflows. Dependencies such as the injectable confirmation callback and public `selectDataset` operation are threaded in rather than imported back from the controller. |
+| `src/features/datasetWorkspace/views/` | Callback-driven, state-read-only workspace rendering. `fileListView.js` owns file-list search, pagination, and join/preset orchestration over the item-only `fileListItems.js`; `emptyWorkspaceView.js` restores the empty upload surface; the remaining files own tabs, previews, statistics, controls, and chart composition. |
+| `src/features/datasetWorkspace/filters/` | Feature callback wiring around pure filter rules. `globalFilterActions.js` builds the chart-tooltip actions and read lookups consumed by `workspaceView.js`; product filter semantics stay under `domain/filters/`. |
+| `src/features/panel/` | Panel feature package: `panelController.js` owns user intent, facade writes, bus subscriptions, and render coordination; `views/`, `layout/`, `slots/`, and `export/` own presentation mechanics; `domIds.js` owns the static panel-canvas contract and the shared optional layout-selector ID. The selector is not present in current static HTML, so it is not part of HTML parity coverage. Durable state remains under `state/`; pure layout templates and the block model remain under `domain/panel/`. |
+| `src/charts/` | Chart presentation metadata (`catalog.js`, derived from definitions and `previews.js`), static workspace contracts (`workspaceDomIds.js`, derived from definitions), independent controls/workspace/panel lookup under `registries/`, D3/SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`, `charts/network/`, and `charts/tin/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/` (SVG scaffold, tooltip, control factories/grouping, and the container dispose lifecycle). A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
+| `src/services/` | Side-effecting services, each crossing a browser boundary: `persistence.js` (the only public persistence import path) with the `persistence/` package behind it, `i18nService.js`, `settingsService.js` (owner of the `chive.settings` localStorage key), `presetService.js`, `dataIngestService.js`, and `downloads/` for byte and SVG browser-download triggers. The pure dataset algorithms are not here; they live in `domain/datasets/`. |
 | `src/services/persistence/` | Persistence internals, private to the package and reachable only through `services/persistence.js`: lifecycle and backend selection (`lifecycle.js`), snapshot normalization (`snapshot.js`), autosave, dirty tracking, errors, project file naming, and UI prefs. `backends/` holds the storage backends (`workerBackend.js` hosts the worker, `blobBackend.js` does the SQLite work, `legacyIndexedDbReader.js` reads the pre-SQLite format once); `sqlite/core.js` holds the schema and snapshot SQL. `workers/persistWorker.js` is the one permitted internals importer. |
 | `src/data/` | Bundled preset datasets (`presets/`) and `presetCatalog.js`. |
 | `src/workers/` | Background workers: `persistWorker.js` for persistence and `dataIngestWorker.js` for data ingest. |
 | `src/styles/` | CSS layer files. Source of truth: [Stylesheet organization](styles.md). |
 | `src/i18n/` | Locale JSON files. Source of truth: [Translation guide](i18n.md). |
 | `src/icons/` | App icons and static SVG assets. |
+| `scripts/` | Repository tooling run under Node, not part of the browser runtime: vendored-dependency verification and synchronization plus the canonical raw-static runtime manifest. Tests mirror this ownership under `tests/scripts/`. |
 
 ## Naming Vocabulary
 
@@ -70,10 +76,16 @@ use Controller for pure renderers, services, registries, or math helpers.
 | A new chart type | A per-chart package under `src/charts/{name}/` | Use `charts/bar/` as the SVG template or `charts/scatter3d/` as the Three.js/WebGL template, then follow the chart-type checklist below. |
 | A new state field | The relevant domain in `src/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
 | A new DOM event handler | The owning feature's `bindings/` directory, or `src/app/bindings/` when no single feature owns it (or an existing feature controller/manager) | Translate the event into a facade call. Never mutate state directly. Register a global `document`/`window` listener once behind a module-level guard so a repeated `setup*` call cannot stack duplicates. |
+| A shared DOM ID contract | The owning feature's `domIds.js`, or `src/charts/workspaceDomIds.js` for chart workspace blocks | Centralize only IDs used by multiple modules or contracted with static HTML. A single-module HTML contract can stay as an exported constant in that owner module; other single-use selectors stay literal-local. Add static contracts to `tests/staticHtml/parity.test.js`. |
 | A new dataset-workspace view / tab | `src/features/datasetWorkspace/views/` (or `dialogs/`) + a `renderXxx` function composed by `app/renderCoordinator.js` | Read state via getters; pass callbacks for user actions. |
+| A controller-internal dataset upload, join, or preset workflow | `src/features/datasetWorkspace/workflows/` | Keep the controller as the public feature owner. Thread controller-owned callbacks into the workflow instead of importing the controller and creating a cycle. |
+| Dataset-workspace filter callback wiring | `src/features/datasetWorkspace/filters/` | Keep pure filter transformations in `domain/filters/`; keep feature callbacks and chart-tooltip action wiring here. |
 | A new panel view or interaction | The matching `src/features/panel/` subdirectory | Keep flow ownership in `panelController.js`, durable state in its facade, and pure rules under `domain/panel/`. |
-| A pure helper | `src/utils/` | No DOM access (single deliberate exception: `chartContainerLifecycle.js`). No state imports. |
-| A pure domain rule | `src/domain/{owner}/` | Product rules owned by one feature domain (e.g. the panel layout templates, the dataset algorithms). Same leaf constraints as `utils/`, plus no chart imports. |
+| A pure helper | `src/utils/` | No DOM access, product-domain ownership, chart dependency, or state import. Lint enforces the DOM-free and import boundaries. |
+| An ownerless UI mechanic (toast, focus trap, similar DOM behavior no single feature owns) | `src/ui/` | Strict leaf: DOM access is fine, but import only `config/`, `utils/`, `types.js`, or vendor modules. Never import state, services, features, `app/`, or `entries/`. |
+| A browser download or other one-shot browser effect | The matching service, such as `src/services/downloads/` | Keep effectful Blob, object-URL, DOM-trigger, or browser-I/O code out of `utils/`; keep pure transformations in their domain or in `utils/`. |
+| Settings behavior (a new global preference, dialog section, or settings wiring) | `src/features/settings/` | The controller talks to the owning service; the dialog stays callback-driven and imports no application state. |
+| A pure domain rule | `src/domain/{owner}/` | Product rules owned by one feature domain (e.g. the panel layout templates, the dataset algorithms). Same leaf constraints as `utils/`, plus no imports from the presentation layer under `src/charts/`. |
 | A new dataset algorithm (parse, type, stats, join) | `src/domain/datasets/` | Pure and I/O-free, so it belongs in the domain leaf, not `services/`. Import it directly; there is no barrel. |
 | A change to how projects are stored | `src/services/persistence/` | Reach the package only through `services/persistence.js`; lint enforces this. Do not change persisted shapes or snapshot identity as part of a structural move. |
 | A new derived selector | The facade that owns the underlying domain | Keep getters thin; do not compute heavy aggregates inside them. |
@@ -84,20 +96,24 @@ For a new chart type, update the full chart surface in one pass:
   section, presentation flow, and panel adapter, then register those entry
   points in `charts/registries/controls.js`,
   `charts/registries/workspace.js`, and `charts/registries/panel.js`.
-- Register the chart identity and visual precedence in
-  `config/chartTypes.js`, its preview/category metadata in
-  `charts/catalog.js` and `charts/previews.js`, and its default config block in
-  `config/chartDefaults.js`.
-- The type also registers in `types.js` (`ChartTypeKey`),
-  `config/elementIds.js`, `app/bindings/chartSnapshotMetadata.js`, and the
-  static chart block in `index.html`. Add chart constants to `config/charts.js`
-  when the implementation needs them.
-- Add i18n strings, tests, [Chart and data reference](../user/chart-reference.md)
-  coverage, and a chart deep dive.
+- Add `config/charts/definitions/<type>.js`, import it into
+  `config/charts/definitions.js`, and place it in the ordered definition list.
+  Add one keyed SVG string to `charts/previews.js`. The catalog and workspace
+  DOM-ID maps derive from those sources and need no chart-specific edits.
+- Add the corresponding per-chart merge entry to
+  `domain/charts/chartConfig.js`, the key to the `types.js` `ChartTypeKey`
+  union, the snapshot-summary builder to
+  `app/bindings/chartSnapshotMetadata.js`, and the static chart block to
+  `index.html`.
+- Add i18n strings, definition and package tests,
+  [Chart and data reference](../user/chart-reference.md) coverage, and a chart
+  deep dive.
 
 Non-JS additions have their own homes:
 
-- Tests mirror `src/` under `tests/`.
+- Tests mirror source ownership under `tests/` at the directory or package
+  level. Large owners use dotted concern suites and sibling
+  `*.testSupport.js` modules for shared fixtures.
 - CSS goes through `src/styles/`; see
   [Stylesheet organization](styles.md).
 - UI strings go through `src/i18n/` (all locales together); see the
@@ -113,15 +129,29 @@ ownership rather than file history, according to these rules:
 
 - The dataset workspace replaces the "results" naming, and its controller,
   views, dialogs, and delegated bindings now live together under
-  `features/datasetWorkspace/`. DOM element ids, CSS classes, and i18n keys
-  keep the old naming until they are touched with real work.
-- The panel and the dataset workspace are the complete feature packages under
-  `src/features/`. The panel keeps its controller, views, layout interactions,
-  slot lifecycle, and SVG export together under `features/panel/`; the dataset
-  workspace keeps its controller, views, dialogs, and bindings together under
-  `features/datasetWorkspace/`. State ownership and pure domain rules stay in
-  their respective layers.
-- The browser entrypoint is intentionally thin. Initialization order lives in
+  `features/datasetWorkspace/`. Shared or static-HTML DOM contracts live in
+  the owning feature's `domIds.js` and are checked by
+  `tests/staticHtml/parity.test.js`; single-use selectors remain local.
+- The panel, the dataset workspace, and settings are the complete feature
+  packages under `src/features/`. The panel keeps its controller, views, layout
+  interactions, slot lifecycle, and SVG export together under
+  `features/panel/`; the dataset workspace keeps its controller, views,
+  dialogs, controller-internal workflows, filter-action wiring, and bindings
+  together under `features/datasetWorkspace/`; settings keeps its controller
+  and dialog together under `features/settings/`. State ownership and pure
+  domain rules stay in their respective layers.
+- Dependency direction is one-way: `entries/` composes `app/`, `app/` composes
+  features, ui, state, and services, and `features/` uses ui, state, and
+  services. Neither `features/` nor `ui/` may import `entries/` or `app/`, and
+  `ui/` (ownerless browser UI mechanics) imports only `config/`, `utils/`,
+  `types.js`, or vendor modules. Lint enforces these boundaries and
+  `tests/lint/boundaries.test.js` keeps them enforced. Reverse edges from
+  general `state/`, `services/`, `workers/`, and `data/` modules into `ui/`
+  are not yet lint-banned; no such edge exists today, and enforcing them
+  requires careful flat-config restatements around `persistWorker.js`, so it
+  is deferred to a later tranche.
+- The browser entrypoints (`entries/app.js`, `entries/about.js`) are
+  intentionally thin. Initialization order lives in
   `app/applicationInitializer.js`, render scheduler state stays together in
   `app/renderCoordinator.js`, and debug API assembly lives in `app/debugApi.js`.
 - `services/` means "crosses a browser side-effect boundary", not "reusable
@@ -159,8 +189,10 @@ ownership rather than file history, according to these rules:
 - Canvas charts have no SVG export yet: the scatter3d block ships without a
   download button and panel exports omit canvas slots (with a feedback
   notice). A raster export path is a later tranche.
-- Tests mirror moves: when a source file moves, its tests move with it under
-  `tests/`; per-chart packages mirror under `tests/charts/<name>/`.
+- Tests mirror moves at the directory or package level: when a source owner
+  moves, its suites move with it under `tests/`; per-chart packages mirror
+  under `tests/charts/<name>/`. Large owners use dotted concern suffixes, and
+  shared fixtures live in sibling `*.testSupport.js` modules.
 - Explicitly avoided: big-bang migrations, broad `index.js` barrels, naming
   every module a Controller, moving CSS into feature folders, and renames
   for aesthetics alone.

@@ -33,6 +33,41 @@ These are the companion to the higher-level docs one directory up:
 | TIN | [tin.md](tin.md) | Continuous surface from scattered points | Delaunay triangulation, interpolation, contours |
 | 3D scatter | [scatter3d.md](scatter3d.md) | Three numeric variables as a rotatable point cloud | WebGL rendering, D3-to-Three scale contract, per-chart package layout, GPU lifecycle |
 
+## Chart symbol grammar
+
+The package directory and persisted chart key use the canonical lowercase chart
+key. Exported symbols use a PascalCase chart stem followed by a role suffix such
+as `Controls`, `ControlListeners`, `PanelChart`, `ChartSection`, `Into`,
+`Options`, or `Interactions`. New symbols should use one plain stem consistently
+within their package.
+
+The current plain stems are `Bar`, `Pie`, `Treemap`, `Bubble`, `Line`, `Tin`,
+`Scatter`, `Network`, and `Scatter3d`. Some existing scatter renderer and control
+exports use the longer legacy `ScatterPlot` stem, while the corresponding
+network exports use `NetworkGraph`. Those established exports remain accepted
+to avoid aesthetic-only churn, but new exports should prefer the plain
+canonical-key stem rather than extending the legacy forms.
+
+## Chart definitions
+
+Each chart owns its static identity, behavior constants, dimensions, workspace
+IDs, catalog category, and fresh default-config factory in
+`src/config/charts/definitions/<type>.js`. The composition module
+`src/config/charts/definitions.js` supplies canonical display order and derives
+the shared keyed maps without registering renderers or controls. Follow the
+[new-chart checklist in the source map](../source-map.md#where-do-i-put-new-code)
+when adding a type.
+
+The three implementation registries intentionally stay separate from these
+definitions and from one another. Controls need builder, listener, and
+activation-default adapters; the dataset workspace dispatches section
+renderers; and the panel resolves snapshot renderers. Keeping one registry per
+surface prevents each integration path from importing unrelated
+implementations and keeps capability differences local to their surface
+instead of pretending all charts expose one universal contract. Definition
+and registry completeness tests keep the supported type lists aligned without
+coupling their module graphs.
+
 ## How each doc is organized
 
 Every doc follows the same skeleton (scaled to the chart's complexity), so once you have read
@@ -67,7 +102,7 @@ doc rather than repeated:
 - **Section adapters**: every per-chart package owns a `workspaceSection.js`.
   These map config to the renderer options bag and surface localized empty
   states via `showChartMessage` from
-  [chartContainerLifecycle.js](../../../src/utils/chartContainerLifecycle.js).
+  [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
   `buildRankMap`, `isValidHexColor`); pie's `buildSliceColor` lives in its package
   ([color.js](../../../src/charts/pie/color.js)).

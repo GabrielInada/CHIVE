@@ -18,11 +18,11 @@ Key files:
 - Renderer: [renderers/svg.js](../../../src/charts/pie/renderers/svg.js)
 - Sidebar controls: [builder.js](../../../src/charts/pie/controls/builder.js),
   [listeners.js](../../../src/charts/pie/controls/listeners.js), and
-  [defaults.js](../../../src/charts/pie/controls/defaults.js)
+  [activationDefaults.js](../../../src/charts/pie/controls/activationDefaults.js)
 - Data and options: [data.js](../../../src/charts/pie/data.js) and
   [options.js](../../../src/charts/pie/options.js)
-- Config constants: [charts.js](../../../src/config/charts.js) (`PIE_CHART`)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `pie` block)
+- Chart definition and constants: [pie.js](../../../src/config/charts/definitions/pie.js) (`PIE_DEFINITION`, `PIE_CHART`)
+- Per-dataset config defaults: [pie.js](../../../src/config/charts/definitions/pie.js) (the definition's fresh `pie` factory)
 - Shared presentation mapping: [presentation.js](../../../src/charts/pie/presentation.js)
 - Section adapter (dataset workspace): [workspaceSection.js](../../../src/charts/pie/workspaceSection.js)
 - Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/pie/panelAdapter.js)
@@ -148,8 +148,10 @@ already global-filtered; the renderer aggregates on top of them. Panel snapshots
 ### 4.1 Where config lives
 
 `chartConfig.pie` is the pie slice of each dataset's `chartConfig`, built fresh by
-`createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js).
+`createDefaultChartConfig()` in
+[defaults.js](../../../src/config/charts/defaults.js) and merged by
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js).
 
 ### 4.2 The `chartConfig.pie` keys
 
@@ -173,7 +175,7 @@ already global-filtered; the renderer aggregates on top of them. Panel snapshots
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js): `CHART_COLORS.pie` = `#5f7c33`;
+[pie.js](../../../src/config/charts/definitions/pie.js): the pie color is `#5f7c33`;
 `CHART_DIMENSIONS.pie` = 700x360 with 16px margins; `CHART_HEIGHT_LIMITS.pie` =
 `{ min: 220, max: 720 }`; `PIE_CHART` holds the radius bounds (`minOuterRadius: 20`,
 `maxOuterRadius: 140`), pad-angle bounds (0 to 12 degrees), zoom bounds (0.3 to 4),
@@ -186,7 +188,7 @@ already global-filtered; the renderer aggregates on top of them. Panel snapshots
 The controls package separates
 [`createPieChartControls`](../../../src/charts/pie/controls/builder.js),
 [`setupPieChartControlListeners`](../../../src/charts/pie/controls/listeners.js), and
-[`computeDefaults`](../../../src/charts/pie/controls/defaults.js) by role. The controls
+[`computeDefaults`](../../../src/charts/pie/controls/activationDefaults.js) by role. The controls
 registry imports those three entry points directly.
 
 ### 5.1 The three sections
@@ -376,7 +378,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-pie-container`, block `chart-block-pie`. Control IDs are `viz-…-pie-…`
 (e.g. `viz-select-pie-category`, `viz-slider-pie-inner-radius`,
 `viz-select-pie-topn-mode`, `viz-pie-color-grid`).
@@ -393,7 +395,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   <g> legend                (first 8 entries, optional)
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `PIE_CHART`): radius bounds, pad-angle
+**Tuning knobs** ([pie.js](../../../src/config/charts/definitions/pie.js) `PIE_CHART`): radius bounds, pad-angle
 bounds, zoom bounds, `otherSliceColor`, `defaultTopN`/`defaultTopNMode`.
 
 **Foundations → implementation map:**

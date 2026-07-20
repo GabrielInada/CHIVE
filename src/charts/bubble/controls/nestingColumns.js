@@ -6,8 +6,8 @@
  * enforce module privacy.
  */
 
-import { BUBBLE_CHART } from '../../../config/charts.js';
-import { normalizeColumnNameList } from '../../../utils/columnHelpers.js';
+import { BUBBLE_CHART } from '../../../config/charts/definitions/bubble.js';
+import { normalizeColumnNameList } from '../../../domain/datasets/columns.js';
 
 /**
  * Resolve the effective nesting-column list for a bubble config. Normalizes the

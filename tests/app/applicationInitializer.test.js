@@ -44,7 +44,7 @@ vi.mock('../../src/state/appState.js', () => ({
 	replaceAllState: mocks.replaceAllState,
 }));
 
-vi.mock('../../src/utils/panelHydration.js', () => ({
+vi.mock('../../src/domain/panel/rehydration.js', () => ({
 	rehydratePanelChartSpecs: mocks.rehydratePanelChartSpecs,
 }));
 
@@ -68,7 +68,7 @@ vi.mock('../../src/app/domBindings.js', () => ({
 	initializeDomBindings: mocks.initializeDomBindings,
 }));
 
-vi.mock('../../src/app/settingsController.js', () => ({
+vi.mock('../../src/features/settings/settingsController.js', () => ({
 	initSettingsController: mocks.initSettingsController,
 }));
 
@@ -76,7 +76,7 @@ vi.mock('../../src/config/settings.js', () => ({
 	SETTINGS_CHANGE_EVENT: 'chive-settings-changed',
 }));
 
-vi.mock('../../src/app/feedbackUI.js', () => ({
+vi.mock('../../src/ui/feedback.js', () => ({
 	showFeedback: mocks.showFeedback,
 	showError: mocks.showError,
 }));
@@ -113,6 +113,9 @@ beforeEach(() => {
 });
 
 describe('application initializer', () => {
+	// initializeApplication delegates shared setup to the real sharedPageInitializer
+	// (deliberately not mocked here), which calls the mocked initializeI18n and
+	// initSettingsController below. This stays an integration check of that path.
 	it('initializes shared i18n and settings but skips app wiring on non-app pages', async () => {
 		const { initializeApplication } = await importInitializer();
 

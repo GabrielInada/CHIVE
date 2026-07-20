@@ -14,8 +14,8 @@ import {
 	createBubbleChartControls,
 } from '../../../src/charts/bubble/controls/builder.js';
 import { setupBubbleChartControlListeners } from '../../../src/charts/bubble/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/bubble/controls/defaults.js';
-import { BUBBLE_CHART } from '../../../src/config/charts.js';
+import { computeDefaults } from '../../../src/charts/bubble/controls/activationDefaults.js';
+import { BUBBLE_CHART } from '../../../src/config/charts/definitions/bubble.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -84,7 +84,7 @@ describe('bubble controls module boundaries', () => {
 		const [builder, listeners, defaults, nesting] = await Promise.all([
 			import('../../../src/charts/bubble/controls/builder.js'),
 			import('../../../src/charts/bubble/controls/listeners.js'),
-			import('../../../src/charts/bubble/controls/defaults.js'),
+			import('../../../src/charts/bubble/controls/activationDefaults.js'),
 			import('../../../src/charts/bubble/controls/nestingColumns.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createBubbleChartControls']);

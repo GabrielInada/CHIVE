@@ -66,8 +66,9 @@ The architecture invariants in [CONTRIBUTING.md](../../CONTRIBUTING.md) are
 enforced partly by lint and partly by review.
 
 **The write-facade boundary is enforced by lint.** ESLint (`npm run lint`)
-restricts renderer and DOM-builder files (`src/components/` and the panel
-feature presentation paths under `src/features/panel/`; see
+restricts renderer and DOM-builder files (the dataset workspace views and
+dialogs, the panel feature presentation paths under `src/features/panel/`, and
+the settings dialog; see
 [`eslint.config.js`](../../eslint.config.js))
 to read-only imports from `state/appState.js`: the `get*` functions,
 `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing
@@ -79,8 +80,8 @@ When a new renderer-safe read is added, update `APP_STATE_READS` in
 `eslint.config.js`; reads meant for persistence, debug, or internal use are
 not added there (`getPersistenceSnapshot` is the precedent).
 
-**The browser entrypoint boundary is enforced by lint.** `src/main.js` imports
-only from `src/app/`. Put initialization order in
+**The browser entrypoint boundary is enforced by lint.** `src/entries/*.js`
+import only from `src/app/` (and not from each other). Put initialization order in
 `app/applicationInitializer.js`, render scheduling in
 `app/renderCoordinator.js`, and debug-surface construction in
 `app/debugApi.js`; do not wire features or services back into the entrypoint.
@@ -103,13 +104,14 @@ Do not write it; route writes through a facade method. When a new mutable-ref
 getter is added to `appState.js`, update both `FACADE_MUTABLE_GETTERS` in
 `eslint.config.js` and `TRACKED_GETTERS` in the local rule.
 
-**CI runs lint and tests on every push and PR** through
+**CI runs the full local check on every push and PR** through
 `.github/workflows/lint-and-test.yml`, targeting `main` and `develop`.
 
-CI runs `npm run lint`, `npm run lint:css`, and `npm test`. The CSS lint step is
-owned by [Stylesheet organization](styles.md): it checks `src/styles/**/*.css`,
-ignores vendored CSS, blocks on correctness errors, and keeps selector/custom
-property naming conventions warning-only under the current policy.
+CI runs `npm run check`, which executes JavaScript lint, CSS lint, tests, and
+the production build. The CSS lint step is owned by
+[Stylesheet organization](styles.md): it checks `src/styles/**/*.css`, ignores
+vendored CSS, blocks on correctness errors, and keeps selector/custom property
+naming conventions warning-only under the current policy.
 
 ## ESLint Guards
 
@@ -127,8 +129,28 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   into `vendor/` with license files committed, then smoke-tested with a plain
   static server.
 - **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not
-  import `app/`, `state/`, `components/`, `features/`, or `services/`.
-  `domain/` has the same boundary and additionally may not import `charts/`.
+  import `app/`, `state/`, `features/`, `services/`, or `ui/`. Ownership-neutral
+  `utils/` additionally may not import `domain/` or `charts/`. `domain/` has the
+  higher-layer boundary and may not import the chart presentation layer under
+  `src/charts/`; domain owner directories such as `domain/charts/` may depend
+  on one another. Both `utils/` and `domain/` reject direct `document` and
+  `window` access.
+- **One-way dependency direction.** `entries/` and `app/` are the composition
+  layers: `features/` and `ui/` may not import either of them. `ui/` (ownerless
+  browser UI mechanics such as feedback toasts and the dialog focus trap) is a
+  strict leaf that imports only `config/`, `utils/`, `types.js`, or vendored
+  modules. `tests/lint/boundaries.test.js` proves each boundary still fires,
+  guarding against flat-config blocks silently dropping a pattern group.
+  Reverse edges from general `state/`, `services/`, `workers/`, and `data/`
+  modules into `ui/` are not yet lint-banned; no such edge exists today, and
+  enforcing them requires careful flat-config restatements around
+  `persistWorker.js`, so it is deferred to a later tranche.
+- **DOM ID ownership.** Centralize an ID only when multiple modules consume it
+  or it forms a contract with static HTML. Put that contract in the owner's
+  `domIds.js` (`charts/workspaceDomIds.js` for chart workspace blocks). A
+  single-module HTML contract may stay as an exported constant in that owner
+  module; other single-use selectors stay literal-local. Cover static markup in
+  `tests/staticHtml/parity.test.js`.
 - **Panel state internals.** `src/state/panel/` may import only state,
   domain, config, utils, shared types, or vendored modules. Presentation,
   feature, chart, service, and legacy panel-subsystem imports are lint errors.
@@ -150,7 +172,12 @@ the [Source map](source-map.md#where-do-i-put-new-code).
 - Framework: Vitest with the default Node environment.
 - Files needing DOM opt into jsdom by declaring
   `// @vitest-environment jsdom` at the top.
-- Tests live in `tests/` mirroring `src/` structure.
+- Tests live in `tests/` and mirror source ownership at the directory or
+  package level; not every implementation file needs a one-to-one test file.
+- Split multi-concern suites with a dotted concern suffix such as
+  `<owner>.<concern>.test.js`.
+- Put fixtures shared by sibling suites in `*.testSupport.js` modules. Vitest
+  does not collect that suffix as a test suite.
 - Patterns: `describe`/`it`/`expect`, `beforeEach` for state reset, and
   `vi.mock()` for mocking.
 

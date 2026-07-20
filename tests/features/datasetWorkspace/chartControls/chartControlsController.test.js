@@ -33,8 +33,8 @@ const mocks = vi.hoisted(() => ({
 	setupScatterPlotControlListeners: vi.fn(),
 	createPieChartControls: vi.fn(() => []),
 	setupPieChartControlListeners: vi.fn(),
-	createTreeMapControls: vi.fn(() => []),
-	setupTreeMapControlListeners: vi.fn(),
+	createTreemapControls: vi.fn(() => []),
+	setupTreemapControlListeners: vi.fn(),
 	createLineChartControls: vi.fn(() => []),
 	setupLineChartControlListeners: vi.fn(),
 	createTinControls: vi.fn(() => []),
@@ -47,14 +47,14 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../../src/utils/columnHelpers.js', () => ({
+vi.mock('../../../../src/domain/datasets/columns.js', () => ({
 	filterVisibleColumns: mocks.filterVisibleColumns,
 	getNumericColumnNames: mocks.getNumericColumnNames,
 	getCategoricalColumnNames: mocks.getCategoricalColumnNames,
 	getDateColumnNames: mocks.getDateColumnNames,
 }));
 
-vi.mock('../../../../src/config/chartDefaults.js', () => ({
+vi.mock('../../../../src/domain/charts/chartConfig.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 
@@ -100,10 +100,10 @@ vi.mock('../../../../src/charts/pie/controls/listeners.js', () => ({
 }));
 
 vi.mock('../../../../src/charts/treemap/controls/builder.js', () => ({
-	createTreeMapControls: mocks.createTreeMapControls,
+	createTreemapControls: mocks.createTreemapControls,
 }));
 vi.mock('../../../../src/charts/treemap/controls/listeners.js', () => ({
-	setupTreeMapControlListeners: mocks.setupTreeMapControlListeners,
+	setupTreemapControlListeners: mocks.setupTreemapControlListeners,
 }));
 
 vi.mock('../../../../src/charts/line/controls/builder.js', () => ({
@@ -128,15 +128,17 @@ vi.mock('../../../../src/charts/scatter3d/controls/listeners.js', () => ({
 }));
 
 vi.mock('../../../../src/charts/previews.js', () => ({
-	PREVIEW_BAR_SVG: '<svg id="prev-bar" />',
-	PREVIEW_BUBBLE_SVG: '<svg id="prev-bubble" />',
-	PREVIEW_NETWORK_SVG: '<svg id="prev-network" />',
-	PREVIEW_PIE_SVG: '<svg id="prev-pie" />',
-	PREVIEW_SCATTER_SVG: '<svg id="prev-scatter" />',
-	PREVIEW_TREEMAP_SVG: '<svg id="prev-treemap" />',
-	PREVIEW_LINE_SVG: '<svg id="prev-line" />',
-	PREVIEW_TIN_SVG: '<svg id="prev-tin" />',
-	PREVIEW_SCATTER3D_SVG: '<svg id="prev-scatter3d" />',
+	CHART_PREVIEWS: {
+		bar: '<svg id="prev-bar" />',
+		line: '<svg id="prev-line" />',
+		scatter: '<svg id="prev-scatter" />',
+		scatter3d: '<svg id="prev-scatter3d" />',
+		pie: '<svg id="prev-pie" />',
+		bubble: '<svg id="prev-bubble" />',
+		network: '<svg id="prev-network" />',
+		treemap: '<svg id="prev-treemap" />',
+		tin: '<svg id="prev-tin" />',
+	},
 }));
 
 vi.mock('../../../../src/features/datasetWorkspace/dialogs/chartTypePickerDialog.js', () => ({
@@ -209,7 +211,7 @@ describe('renderChartControlsSidebar', () => {
 		['pie', 'createPieChartControls', 'setupPieChartControlListeners'],
 		['bubble', 'createBubbleChartControls', 'setupBubbleChartControlListeners'],
 		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners'],
-		['treemap', 'createTreeMapControls', 'setupTreeMapControlListeners'],
+		['treemap', 'createTreemapControls', 'setupTreemapControlListeners'],
 		['line', 'createLineChartControls', 'setupLineChartControlListeners'],
 		['tin', 'createTinControls', 'setupTinControlListeners'],
 		['scatter3d', 'createScatter3dControls', 'setupScatter3dControlListeners'],

@@ -19,7 +19,7 @@ import {
 	interpolateTurbo,
 	interpolateViridis,
 } from '../../../vendor/d3/d3.js';
-import { TIN_CHART } from '../../config/charts.js';
+import { TIN_CHART } from '../../config/charts/definitions/tin.js';
 import { interpolateColor } from '../../utils/colorUtils.js';
 
 // d3 ships sequential interpolators for the common scientific ramps. Terrain

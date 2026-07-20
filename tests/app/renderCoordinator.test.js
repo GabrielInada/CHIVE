@@ -37,9 +37,15 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../src/features/datasetWorkspace/workspaceView.js', () => ({
-	renderEmptyState: mocks.renderEmptyState,
 	renderDatasetWorkspace: mocks.renderDatasetWorkspace,
+}));
+
+vi.mock('../../src/features/datasetWorkspace/views/fileListView.js', () => ({
 	renderFileList: mocks.renderFileList,
+}));
+
+vi.mock('../../src/features/datasetWorkspace/views/emptyWorkspaceView.js', () => ({
+	renderEmptyState: mocks.renderEmptyState,
 }));
 
 vi.mock('../../src/features/datasetWorkspace/views/chartsView.js', () => ({
@@ -50,7 +56,7 @@ vi.mock('../../src/features/datasetWorkspace/chartControls/chartControlsControll
 	renderChartControlsSidebar: mocks.renderChartControlsSidebar,
 }));
 
-vi.mock('../../src/utils/columnHelpers.js', () => ({
+vi.mock('../../src/domain/datasets/columns.js', () => ({
 	getNumericColumns: mocks.getNumericColumns,
 }));
 

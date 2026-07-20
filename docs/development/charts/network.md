@@ -24,9 +24,9 @@ Key files (the `src/charts/network/` package):
 - Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/network/panelAdapter.js)
 - Sidebar controls: [controls/builder.js](../../../src/charts/network/controls/builder.js),
   [controls/listeners.js](../../../src/charts/network/controls/listeners.js),
-  [controls/defaults.js](../../../src/charts/network/controls/defaults.js)
-- Config constants: [charts.js](../../../src/config/charts.js) (`NETWORK_GRAPH`)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `network` block)
+  [controls/activationDefaults.js](../../../src/charts/network/controls/activationDefaults.js)
+- Chart definition and constants: [network.js](../../../src/config/charts/definitions/network.js) (`NETWORK_DEFINITION`, `NETWORK_GRAPH`)
+- Per-dataset config defaults: [network.js](../../../src/config/charts/definitions/network.js) (the definition's fresh `network` factory)
 
 ---
 
@@ -142,8 +142,10 @@ contents are still fully replaced each render. Panel snapshots are frozen `struc
 ### 4.1 Where config lives
 
 `chartConfig.network` is the network slice of each dataset's `chartConfig`, built fresh by
-`createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js).
+`createDefaultChartConfig()` in
+[defaults.js](../../../src/config/charts/defaults.js) and merged by
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js).
 
 ### 4.2 The `chartConfig.network` keys
 
@@ -167,7 +169,7 @@ contents are still fully replaced each render. Panel snapshots are frozen `struc
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js): `CHART_HEIGHT_LIMITS.network` = `{ min: 220,
+[network.js](../../../src/config/charts/definitions/network.js): the network height limits are `{ min: 220,
 max: 720 }`; `NETWORK_GRAPH` holds the force defaults (`defaultNodeRadius`,
 `defaultLinkDistance: 46`, `defaultChargeStrength: -80`, `defaultLinkOpacity`,
 `defaultAlphaDecay: 0.045`), the zoom bounds (`minZoomScale: 0.3`, `maxZoomScale: 4`), and the
@@ -179,7 +181,7 @@ alpha-decay clamp (`minAlphaDecay: 0.01`, `maxAlphaDecay: 0.2`).
 
 The controls trio under [controls/](../../../src/charts/network/controls) builds four sections
 via the standard `createNetworkGraphControls` (builder.js) /
-`setupNetworkGraphControlListeners` (listeners.js) / `computeDefaults` (defaults.js) exports.
+`setupNetworkGraphControlListeners` (listeners.js) / `computeDefaults` (activationDefaults.js) exports.
 
 ### 5.1 The four sections
 
@@ -356,7 +358,7 @@ All under [tests/charts/network/](../../../tests/charts/network):
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-network-container`, block `chart-block-network`. Control IDs are `viz-…-network-…`
 (e.g. `viz-select-network-source`, `viz-slider-network-charge`,
 `viz-slider-network-alpha-decay`, `viz-select-network-edge-color-mode`).
@@ -374,7 +376,7 @@ All under [tests/charts/network/](../../../tests/charts/network):
   <g class="network-legend">      (source/target swatches, optional)
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `NETWORK_GRAPH`):
+**Tuning knobs** ([network.js](../../../src/config/charts/definitions/network.js) `NETWORK_GRAPH`):
 `defaultLinkDistance`, `defaultChargeStrength`, `defaultAlphaDecay`, zoom bounds, alpha-decay
 clamp.
 

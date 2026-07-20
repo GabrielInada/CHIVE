@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeTreemapOptions } from '../../../src/charts/treemap/options.js';
-import { CHART_COLORS, TREEMAP_CHART } from '../../../src/config/charts.js';
+import { CHART_COLORS } from '../../../src/config/charts/definitions.js';
+import { TREEMAP_CHART } from '../../../src/config/charts/definitions/treemap.js';
 
 describe('normalizeTreemapOptions', () => {
 	it('applies defaults for an empty options bag', () => {

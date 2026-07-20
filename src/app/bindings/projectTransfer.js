@@ -13,11 +13,19 @@ import {
 	getProjectImportErrorMessageKey,
 	importProjectBytes,
 } from '../../services/persistence.js';
-import { downloadBytes } from '../../utils/downloadBytes.js';
-import { rehydratePanelChartSpecs } from '../../utils/panelHydration.js';
+import { downloadBytes } from '../../services/downloads/bytes.js';
+import { rehydratePanelChartSpecs } from '../../domain/panel/rehydration.js';
 import { getPersistenceSnapshot, replaceAllState } from '../../state/appState.js';
-import { showProgress } from '../feedbackUI.js';
-import { FILE_IDS } from '../../config/elementIds.js';
+import { showProgress } from '../../ui/feedback.js';
+
+export const PROJECT_TRANSFER_IDS = {
+	projectImportInput: 'project-import-input',
+	projectMenuButton: 'btn-project-menu',
+	projectMenuPanel: 'project-menu-panel',
+	projectExportButton: 'btn-project-export',
+	projectExportWorkOnlyButton: 'btn-project-export-work-only',
+	projectImportButton: 'btn-project-import',
+};
 
 let projectTransferBusy = false;
 let menuDismissListenersReady = false;
@@ -29,8 +37,8 @@ let menuDismissListenersReady = false;
  * DOM on every call.
  */
 export function setupProjectTransferListeners() {
-	const menuButton = document.getElementById(FILE_IDS.projectMenuButton);
-	const menuPanel = document.getElementById(FILE_IDS.projectMenuPanel);
+	const menuButton = document.getElementById(PROJECT_TRANSFER_IDS.projectMenuButton);
+	const menuPanel = document.getElementById(PROJECT_TRANSFER_IDS.projectMenuPanel);
 
 	if (menuButton && menuPanel) {
 		menuButton.addEventListener('click', event => {
@@ -41,23 +49,23 @@ export function setupProjectTransferListeners() {
 
 	ensureMenuDismissListeners();
 
-	document.getElementById(FILE_IDS.projectExportButton)
+	document.getElementById(PROJECT_TRANSFER_IDS.projectExportButton)
 		?.addEventListener('click', () => {
 			setProjectMenuOpen(false);
 			void handleProjectExport({ workOnly: false });
 		});
-	document.getElementById(FILE_IDS.projectExportWorkOnlyButton)
+	document.getElementById(PROJECT_TRANSFER_IDS.projectExportWorkOnlyButton)
 		?.addEventListener('click', () => {
 			setProjectMenuOpen(false);
 			void handleProjectExport({ workOnly: true });
 		});
-	document.getElementById(FILE_IDS.projectImportButton)
+	document.getElementById(PROJECT_TRANSFER_IDS.projectImportButton)
 		?.addEventListener('click', () => {
 			setProjectMenuOpen(false);
-			document.getElementById(FILE_IDS.projectImportInput)?.click();
+			document.getElementById(PROJECT_TRANSFER_IDS.projectImportInput)?.click();
 		});
 
-	const importInput = document.getElementById(FILE_IDS.projectImportInput);
+	const importInput = document.getElementById(PROJECT_TRANSFER_IDS.projectImportInput);
 	if (importInput) {
 		importInput.addEventListener('change', event => {
 			const file = event.target?.files?.[0] || null;
@@ -83,7 +91,7 @@ function ensureMenuDismissListeners() {
 
 /** @private */
 function onDocumentClickCloseMenu(event) {
-	const menuPanel = document.getElementById(FILE_IDS.projectMenuPanel);
+	const menuPanel = document.getElementById(PROJECT_TRANSFER_IDS.projectMenuPanel);
 	if (!menuPanel || menuPanel.hidden) return;
 	if (typeof event.target?.closest === 'function' && event.target.closest('.project-menu')) return;
 	setProjectMenuOpen(false);
@@ -98,8 +106,8 @@ function onDocumentKeydownCloseMenu(event) {
  * @private
  */
 function setProjectMenuOpen(open) {
-	const menuButton = document.getElementById(FILE_IDS.projectMenuButton);
-	const menuPanel = document.getElementById(FILE_IDS.projectMenuPanel);
+	const menuButton = document.getElementById(PROJECT_TRANSFER_IDS.projectMenuButton);
+	const menuPanel = document.getElementById(PROJECT_TRANSFER_IDS.projectMenuPanel);
 	if (!menuButton || !menuPanel) return;
 	menuPanel.hidden = !open;
 	menuButton.setAttribute('aria-expanded', open ? 'true' : 'false');

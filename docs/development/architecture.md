@@ -53,7 +53,7 @@ flowchart TB
     U(["User"])
 
     subgraph APP["Application and feature ownership"]
-        BOOT["main.js + applicationInitializer"]
+        BOOT["entries/app.js + applicationInitializer"]
         CTRL["App bindings + dataset controller<br/>chart controls + UI manager"]
         PANEL["panelController<br/>intent + writes + subscriptions"]
         COORD["renderCoordinator<br/>full + region scheduling"]
@@ -69,12 +69,12 @@ flowchart TB
     end
 
     subgraph LEAVES["Pure leaves"]
-        DOMAIN["domain/datasets<br/>domain/panel"]
+        DOMAIN["domain/datasets<br/>domain/filters<br/>domain/panel"]
         HELPERS["config + pure utils"]
     end
 
     subgraph BROWSER["Browser-side services"]
-        SERVICES["i18n · presets · settings"]
+        SERVICES["i18n · presets · settings · downloads"]
         INGEST["dataIngestService"]
         INGESTW["dataIngestWorker"]
         PERSIST["persistence public facade"]
@@ -141,16 +141,17 @@ and
 |---|---|---|
 | Feature controllers/managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (app/feature bindings, `datasetController`, `panelController`, `chartControlsController`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
 | State Management Core | `appState`, facades, event registry, event bus. | The only normal path for application state mutation. |
-| Application orchestration | Browser startup in `main.js`, initialization order in `app/applicationInitializer.js`, and broad/narrow rendering in `app/renderCoordinator.js`. | Keep the entrypoint thin, order side effects in the initializer, and keep all scheduler state in the render coordinator. |
-| Visualization Layer | Components, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
-| Services And Utilities | Persistence, i18n, ingest worker host, config, pure helpers. | Services may cross side-effect boundaries; config/utils should stay leaf helpers. |
+| Application orchestration | Browser startup in `entries/app.js` (and `entries/about.js` for the About page, which loads only shared i18n/settings and installs no debug surface), initialization order in `app/applicationInitializer.js`, and broad/narrow rendering in `app/renderCoordinator.js`. | Keep the entrypoints thin, order side effects in the initializer, and keep all scheduler state in the render coordinator. |
+| Visualization Layer | Feature views and dialogs, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
+| Reusable UI mechanics | Ownerless browser UI behavior under `src/ui/` (feedback toasts, dialog focus trap). | A strict leaf with DOM access: import only config, utils, types, or vendor modules; never state, services, or features. |
+| Services, domain, and utilities | Persistence, i18n, ingest worker host, browser downloads, pure product rules, config, and ownership-neutral helpers. | Browser effects belong in services, pure product rules in `domain/{owner}/`, and generic DOM-free helpers in `utils/`. |
 
 The important distinction is ownership, not file layout. A feature controller or manager may
 write facades, subscribe to the bus, and trigger renders for its own domain; what
 it must not do is reach into another domain's state. `panelController` is a clear
 case (controller + subscriber + render-trigger); `chartControlsController` and `uiManager`
 build UI *and* write facades, so they are managers, not leaf renderers. The leaf
-renderers (components, chart packages under `src/charts/*`, and
+renderers (feature views and dialogs, chart packages under `src/charts/*`, and
 `features/panel/views/`) stay strictly
 read-only with respect to application state: they receive callbacks from a
 manager and read via getters, but never import write facades. A service may

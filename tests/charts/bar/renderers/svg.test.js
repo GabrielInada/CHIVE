@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderBarChart } from '../../../../src/charts/bar/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
-import { CHART_COLORS } from '../../../../src/config/charts.js';
+import { CHART_COLORS } from '../../../../src/config/charts/definitions.js';
 
 function textValues(container) {
 	return Array.from(container.querySelectorAll('text')).map(node => node.textContent);

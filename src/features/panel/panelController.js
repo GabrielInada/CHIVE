@@ -17,9 +17,9 @@
 
 import { t } from '../../services/i18nService.js';
 import { ok, fail } from '../../utils/result.js';
-import { mergeChartConfigWithDefaults } from '../../config/chartDefaults.js';
-import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../utils/globalFilter.js';
-import { getNumericColumnNames } from '../../utils/columnHelpers.js';
+import { mergeChartConfigWithDefaults } from '../../domain/charts/chartConfig.js';
+import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../domain/filters/globalFilter.js';
+import { getNumericColumnNames } from '../../domain/datasets/columns.js';
 import {
 	PANEL_LAYOUTS,
 	getLayoutConfig as getPanelLayoutConfig,
@@ -50,6 +50,7 @@ import {
 } from './views/panelView.js';
 import { exportPanelLayoutSvg as exportSvg } from './export/svgExporter.js';
 import { SUPPORTED_PANEL_CHART_TYPES } from '../../charts/registries/panel.js';
+import { PANEL_DOM_IDS } from './domIds.js';
 
 // Callback for feedback UI (set by app/applicationInitializer.js)
 let feedbackCallback = null;
@@ -66,7 +67,7 @@ let panelSubscriptions = [];
  * Initialize the panel controller. Wires panel-related state-event listeners
  * exactly once; subsequent calls update only the feedback callback.
  *
- * @param {((message: string, durationMs?: number) => void) | null} [feedbackFn] - Callback for user feedback, `feedbackUI.showFeedback` in production (message plus optional toast duration). When `null`, panel actions fall back to silent operation.
+ * @param {((message: string, durationMs?: number) => void) | null} [feedbackFn] - Callback for user feedback, `ui/feedback.showFeedback` in production (message plus optional toast duration). When `null`, panel actions fall back to silent operation.
  */
 export function initPanelController(feedbackFn = null) {
 	// Always update the feedback callback, callers may legitimately
@@ -321,7 +322,7 @@ export function exportPanelLayoutSvg() {
  * each call, so callers should invoke this at most once.
  */
 export function setupPanelEventListeners() {
-	const selectLayout = document.getElementById('select-panel-layout');
+	const selectLayout = document.getElementById(PANEL_DOM_IDS.layoutSelect);
 	const btnExportar = document.getElementById('btn-export-panel');
 
 	if (selectLayout) {

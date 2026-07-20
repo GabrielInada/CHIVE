@@ -7,6 +7,7 @@
  */
 
 import { updateActiveDatasetConfig } from '../../state/appState.js';
+import { WORKSPACE_ACTION_IDS } from '../../features/datasetWorkspace/domIds.js';
 import { switchTab } from '../uiManager.js';
 
 /**
@@ -14,7 +15,7 @@ import { switchTab } from '../uiManager.js';
  * Wires the sidebar navigation buttons.
  */
 export function setupSidebarNavigationButtons() {
-	const btnAvancar = document.getElementById('btn-advance');
+	const btnAvancar = document.getElementById(WORKSPACE_ACTION_IDS.advanceButton);
 	const btnEditarColunas = document.getElementById('btn-edit-columns');
 	const btnIrPainel = document.getElementById('btn-go-to-panel');
 	const btnVoltarViz = document.getElementById('btn-back-to-viz');

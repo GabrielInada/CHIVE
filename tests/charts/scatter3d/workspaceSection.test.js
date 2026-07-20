@@ -16,7 +16,7 @@ vi.mock('../../../src/charts/scatter3d/renderers/three.js', () => ({
 }));
 
 import { renderScatter3dChartSection } from '../../../src/charts/scatter3d/workspaceSection.js';
-import { CHART_DISPOSE_HOOK } from '../../../src/utils/chartContainerLifecycle.js';
+import { CHART_DISPOSE_HOOK } from '../../../src/charts/shared/containerLifecycle.js';
 
 function okRender({ truncated = false, renderedCount = 3, validCount = 3, totalCount = 4 } = {}) {
 	return (container) => {

@@ -89,11 +89,11 @@ flowchart TB
 ## 4. The data model
 
 `chartConfig.scatter3d` (defaults in
-[chartDefaults.js](../../../src/config/chartDefaults.js)): `enabled`,
+[scatter3d.js](../../../src/config/charts/definitions/scatter3d.js)): `enabled`,
 `expanded`, `x`, `y`, `z` (numeric column names or `null`), `customTitle`,
 `chartHeight` (460 default), `pointSize`, `opacity`, `color`.
 
-`SCATTER3D_CHART` in [charts.js](../../../src/config/charts.js) holds the
+`SCATTER3D_CHART` in [scatter3d.js](../../../src/config/charts/definitions/scatter3d.js) holds the
 point size/opacity limits, `maxPoints` (50k render budget),
 `maxDevicePixelRatio` (2, caps the WebGL backing-store cost on high-DPR
 screens), and the `camera` constants (fov, initial angles/distance, zoom
@@ -105,7 +105,7 @@ clamps, rotate/zoom speeds, keyboard steps).
 `charts/tin/controls/`: `builder.js` (Data: X/Y/Z numeric selects;
 Display: title, point size, opacity; Styling: color), `listeners.js` (via
 the shared `listenerBindings.js`, which remains the config-write
-adapter; selects clamp to the numeric column list), and `defaults.js`
+adapter; selects clamp to the numeric column list), and `activationDefaults.js`
 (first three distinct numeric columns via the tin `pickPreferred`
 semantics, preserving still-valid user picks). The registry entry lives in
 [charts/registries/controls.js](../../../src/charts/registries/controls.js),
@@ -172,7 +172,7 @@ order:
 8. On success the composite disposer (listeners, geometry, materials,
    textures, `renderer.dispose()`, `forceContextLoss()`) is stashed under
    `CHART_DISPOSE_HOOK` from
-   [chartContainerLifecycle.js](../../../src/utils/chartContainerLifecycle.js).
+   [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).
    Only that helper ever runs or deletes the hook; the renderer only
    assigns it. The ok payload carries
    `{ renderedCount, validCount, totalCount, truncated }`.
@@ -251,12 +251,12 @@ notice), and `controls.test.js`. Panel export omission is covered in
 ## 14. Quick reference
 
 - Block/container ids: `chart-block-scatter3d`, `chart-scatter3d-container`
-  (in `config/elementIds.js`; static DOM in `index.html`).
+  (in `charts/workspaceDomIds.js`; static DOM in `index.html`).
 - Control ids: `viz-select-scatter3d-{x,y,z}`,
   `viz-slider-scatter3d-{point-size,opacity}`, `viz-input-scatter3d-title`,
   `viz-input-scatter3d-color`.
 - CSS: `.chart-canvas-3d` (canvas layout + `touch-action`),
   `.chart-canvas-title`, `.chart-sampling-notice`, `.visually-hidden`
-  (all in `charts.css`); `.panel-slot-svg canvas` in `panel.css`.
-- Tuning knobs: `SCATTER3D_CHART` in `config/charts.js` (`maxPoints`,
+  (all in `chart-output.css`); `.panel-slot-svg canvas` in `panel.css`.
+- Tuning knobs: `SCATTER3D_CHART` in `config/charts/definitions/scatter3d.js` (`maxPoints`,
   `maxDevicePixelRatio`, camera speeds/clamps, size/opacity limits).

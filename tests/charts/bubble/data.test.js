@@ -7,7 +7,7 @@ import {
 	isIntermediate,
 	isDescendantOf,
 } from '../../../src/charts/bubble/data.js';
-import { BUBBLE_CHART } from '../../../src/config/charts.js';
+import { BUBBLE_CHART } from '../../../src/config/charts/definitions/bubble.js';
 
 describe('resolveNestingColumns', () => {
 	it('returns deduplicated string array from opcoes.nestingColumns', () => {

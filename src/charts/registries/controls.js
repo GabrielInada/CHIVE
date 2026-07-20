@@ -16,34 +16,34 @@
  * }} ChartControlAdapter
  */
 
-import { CHART_TYPE_KEYS } from '../../config/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
 import { createBarChartControls } from '../bar/controls/builder.js';
 import { setupBarChartControlListeners } from '../bar/controls/listeners.js';
-import { computeDefaults as computeBarDefaults } from '../bar/controls/defaults.js';
+import { computeDefaults as computeBarDefaults } from '../bar/controls/activationDefaults.js';
 import { createScatter3dControls } from '../scatter3d/controls/builder.js';
 import { setupScatter3dControlListeners } from '../scatter3d/controls/listeners.js';
-import { computeDefaults as computeScatter3dDefaults } from '../scatter3d/controls/defaults.js';
+import { computeDefaults as computeScatter3dDefaults } from '../scatter3d/controls/activationDefaults.js';
 import { createBubbleChartControls } from '../bubble/controls/builder.js';
 import { setupBubbleChartControlListeners } from '../bubble/controls/listeners.js';
-import { computeDefaults as computeBubbleDefaults } from '../bubble/controls/defaults.js';
+import { computeDefaults as computeBubbleDefaults } from '../bubble/controls/activationDefaults.js';
 import { createLineChartControls } from '../line/controls/builder.js';
 import { setupLineChartControlListeners } from '../line/controls/listeners.js';
-import { computeDefaults as computeLineDefaults } from '../line/controls/defaults.js';
+import { computeDefaults as computeLineDefaults } from '../line/controls/activationDefaults.js';
 import { createNetworkGraphControls } from '../network/controls/builder.js';
 import { setupNetworkGraphControlListeners } from '../network/controls/listeners.js';
-import { computeDefaults as computeNetworkDefaults } from '../network/controls/defaults.js';
+import { computeDefaults as computeNetworkDefaults } from '../network/controls/activationDefaults.js';
 import { createScatterPlotControls } from '../scatter/controls/builder.js';
 import { setupScatterPlotControlListeners } from '../scatter/controls/listeners.js';
-import { computeDefaults as computeScatterDefaults } from '../scatter/controls/defaults.js';
+import { computeDefaults as computeScatterDefaults } from '../scatter/controls/activationDefaults.js';
 import { createPieChartControls } from '../pie/controls/builder.js';
 import { setupPieChartControlListeners } from '../pie/controls/listeners.js';
-import { computeDefaults as computePieDefaults } from '../pie/controls/defaults.js';
-import { createTreeMapControls } from '../treemap/controls/builder.js';
-import { setupTreeMapControlListeners } from '../treemap/controls/listeners.js';
-import { computeDefaults as computeTreemapDefaults } from '../treemap/controls/defaults.js';
+import { computeDefaults as computePieDefaults } from '../pie/controls/activationDefaults.js';
+import { createTreemapControls } from '../treemap/controls/builder.js';
+import { setupTreemapControlListeners } from '../treemap/controls/listeners.js';
+import { computeDefaults as computeTreemapDefaults } from '../treemap/controls/activationDefaults.js';
 import { createTinControls } from '../tin/controls/builder.js';
 import { setupTinControlListeners } from '../tin/controls/listeners.js';
-import { computeDefaults as computeTinDefaults } from '../tin/controls/defaults.js';
+import { computeDefaults as computeTinDefaults } from '../tin/controls/activationDefaults.js';
 
 /** @type {Readonly<Object<ChartTypeKey, Readonly<ChartControlAdapter>>>} */
 const CONTROL_ADAPTERS = Object.freeze({
@@ -155,13 +155,13 @@ const CONTROL_ADAPTERS = Object.freeze({
 		computeDefaults: computeNetworkDefaults,
 	}),
 	treemap: Object.freeze({
-		build: (dataset, context) => createTreeMapControls(
+		build: (dataset, context) => createTreemapControls(
 			dataset,
 			context.baseCategoricalOrAll,
 			context.numeric,
 			context.allColumns,
 		),
-		attachListeners: (dataset, context, writer) => setupTreeMapControlListeners(
+		attachListeners: (dataset, context, writer) => setupTreemapControlListeners(
 			dataset,
 			context.baseCategoricalOrAll,
 			context.numeric,

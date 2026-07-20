@@ -24,13 +24,13 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../src/services/i18nService.js', () => ({ t: mocks.t }));
-vi.mock('../../../../src/utils/columnHelpers.js', () => ({
+vi.mock('../../../../src/domain/datasets/columns.js', () => ({
 	filterVisibleColumns: mocks.filterVisibleColumns,
 	getNumericColumnNames: mocks.getNumericColumnNames,
 	getCategoricalColumnNames: mocks.getCategoricalColumnNames,
 	getDateColumnNames: mocks.getDateColumnNames,
 }));
-vi.mock('../../../../src/config/chartDefaults.js', () => ({ mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults }));
+vi.mock('../../../../src/domain/charts/chartConfig.js', () => ({ mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults }));
 vi.mock('../../../../src/state/appState.js', () => ({
 	setActiveChartType: mocks.setActiveChartType,
 	onStateChange: mocks.onStateChange,

@@ -20,8 +20,9 @@
 
 import * as THREE from '../../../../vendor/three/three.module.js';
 import { ok, fail } from '../../../utils/result.js';
-import { clearChartContainer, CHART_DISPOSE_HOOK } from '../../../utils/chartContainerLifecycle.js';
-import { CHART_DIMENSIONS, SCATTER3D_CHART } from '../../../config/charts.js';
+import { clearChartContainer, CHART_DISPOSE_HOOK } from '../../shared/containerLifecycle.js';
+import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { SCATTER3D_CHART } from '../../../config/charts/definitions/scatter3d.js';
 import { buildScatter3dPoints } from '../data.js';
 import { normalizeScatter3dOptions } from '../options.js';
 import { buildScatter3dScales } from '../scales.js';

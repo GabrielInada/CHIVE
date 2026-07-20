@@ -1,7 +1,8 @@
 import { emitStateChange, onStateChange, STATE_EVENTS } from './stateEvents.js';
 import { createPanelBlockModel } from '../domain/panel/panelBlockModel.js';
-import { canonicalizeChartConfig } from '../config/chartDefaults.js';
-import { getDatasetColumnNames } from '../utils/columnHelpers.js';
+import { canonicalizeChartConfig } from '../domain/charts/chartConfig.js';
+import { PREVIEW_DEFAULT_ROWS, PREVIEW_MIN_ROWS } from '../config/limits.js';
+import { getDatasetColumnNames } from '../domain/datasets/columns.js';
 import { createDataStateFacade } from './dataStateFacade.js';
 import { createUiStateFacade } from './uiStateFacade.js';
 import { createPanelStateFacade } from './panelStateFacade.js';
@@ -49,7 +50,7 @@ const appState = {
 	},
 	ui: {
 		sidebarMode: 'data',
-		previewRows: 10,
+		previewRows: PREVIEW_DEFAULT_ROWS,
 	},
 };
 
@@ -510,7 +511,7 @@ export function replaceAllState({ data, panel, ui } = {}) {
 		if (['data', 'viz', 'panel'].includes(ui.sidebarMode)) {
 			appState.ui.sidebarMode = ui.sidebarMode;
 		}
-		if (Number.isInteger(ui.previewRows) && ui.previewRows >= 1) {
+		if (Number.isInteger(ui.previewRows) && ui.previewRows >= PREVIEW_MIN_ROWS) {
 			appState.ui.previewRows = ui.previewRows;
 		}
 	}

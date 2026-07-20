@@ -29,8 +29,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({ t: mocks.t }));
-vi.mock('../../../src/utils/svgExport.js', () => ({ downloadSvgFromContainer: mocks.downloadSvgFromContainer }));
-vi.mock('../../../src/utils/downloadBytes.js', () => ({ downloadBytes: mocks.downloadBytes }));
+vi.mock('../../../src/services/downloads/svg.js', () => ({ downloadSvgFromContainer: mocks.downloadSvgFromContainer }));
+vi.mock('../../../src/services/downloads/bytes.js', () => ({ downloadBytes: mocks.downloadBytes }));
 vi.mock('../../../src/services/persistence.js', () => ({
   PROJECT_FILE_MIME: 'application/vnd.chive.project+sqlite3',
   exportProject: mocks.exportProject,
@@ -41,7 +41,7 @@ vi.mock('../../../src/features/panel/panelController.js', () => ({
   addChartToPanel: mocks.addChartToPanel,
   setupPanelEventListeners: vi.fn(),
 }));
-vi.mock('../../../src/app/feedbackUI.js', () => ({
+vi.mock('../../../src/ui/feedback.js', () => ({
   showError: mocks.showError,
   showFeedback: mocks.showFeedback,
   showProgress: mocks.showProgress,
@@ -62,7 +62,7 @@ vi.mock('../../../src/state/appState.js', () => ({
   replaceAllState: mocks.replaceAllState,
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
-vi.mock('../../../src/app/dialogFocus.js', () => ({ isAnyDialogOpen: mocks.isAnyDialogOpen }));
+vi.mock('../../../src/ui/dialogFocus.js', () => ({ isAnyDialogOpen: mocks.isAnyDialogOpen }));
 
 const PROJECT_MENU_HTML = `
   <div class="project-menu">

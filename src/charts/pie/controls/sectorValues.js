@@ -11,7 +11,7 @@
  */
 
 import { isNullish } from '../../../utils/formatters.js';
-import { compareStrings } from '../../../utils/chartFilters.js';
+import { compareStrings } from '../../../domain/filters/chartFilter.js';
 
 /**
  * Compute every source category in descending aggregate order, with a string

@@ -26,7 +26,9 @@ import { t } from '../../../services/i18nService.js';
 export function applyBlockProportions(gridDiv, block) {
 	if (!block?.proportions) return;
 	Object.entries(block.proportions).forEach(([key, value]) => {
-		gridDiv.style.setProperty(`--${key}`, `${value}%`);
+		// Persisted proportion keys are camelCase; CSS custom properties are kebab-case.
+		const cssKey = key.replace(/[A-Z]/g, character => `-${character.toLowerCase()}`);
+		gridDiv.style.setProperty(`--${cssKey}`, `${value}%`);
 	});
 	applyDynamicBlockHeight(gridDiv, block);
 }

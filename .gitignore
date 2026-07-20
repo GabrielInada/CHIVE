@@ -2,3 +2,7 @@ node_modules/
 dist/
 coverage/
 internalDocs/
+
+# This is sad, but what can i even do?
+CLAUDE.md
+AGENTS.md

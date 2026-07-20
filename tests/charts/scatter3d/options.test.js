@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeScatter3dOptions } from '../../../src/charts/scatter3d/options.js';
-import { CHART_HEIGHT_LIMITS, SCATTER3D_CHART } from '../../../src/config/charts.js';
+import { CHART_HEIGHT_LIMITS } from '../../../src/config/charts/definitions.js';
+import { SCATTER3D_CHART } from '../../../src/config/charts/definitions/scatter3d.js';
 
 describe('normalizeScatter3dOptions', () => {
 	it('returns the defaults for an empty call', () => {

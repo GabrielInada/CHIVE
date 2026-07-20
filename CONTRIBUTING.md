@@ -31,9 +31,9 @@ CHIVE is plain JavaScript (browser ES modules, no TypeScript) designed for stati
 2. Fork the repo and clone your fork to your machine.
 3. Install an active Node.js LTS release that satisfies the engine requirements of the locked dependencies, then install the NPM dependencies with `npm install`. If install or local tooling reports an unsupported Node.js version, switch to a newer active LTS release before continuing.
 4. Create a branch from `develop` using the pattern `feat/<short-name>` (see [Branching workflow](#branching-workflow) below).
-5. Make your changes in `src/`, then add or update tests in `tests/` mirroring the file structure.
-6. Run `npm run lint` and fix any errors. General hygiene warnings should be reviewed, but they do not fail CI.
-7. Run `npm test` and verify all tests pass.
+5. Make your changes in `src/`, then add or update tests in `tests/` mirroring the directory structure.
+6. Run the focused checks while iterating: `npm run lint`, `npm run lint:css`, and `npm test`. Fix errors; general hygiene warnings should be reviewed, but they do not fail CI.
+7. Before opening the PR, run `npm run check`. It executes the complete local CI contract in one command: JavaScript lint, CSS lint, tests, and the production build.
 8. Run `npm run dev` and smoke-check the affected feature in a browser at <http://localhost:5173>.
 9. If your change touches imports, workers, assets, deployment, or runtime dependency loading, run a production-style static smoke test from the project root: `python -m http.server 8080`, then open <http://localhost:8080/>. This catches the raw-static deployment issues described in [ESLint guards](docs/development/contributor-reference.md#eslint-guards).
 10. Open a pull request against the **[`develop`](https://github.com/GabrielInada/CHIVE/tree/develop)** branch.
@@ -44,10 +44,12 @@ Common commands:
 npm run dev          # Start Vite dev server (http://localhost:5173)
 npm run build        # Optional Vite production build -> dist/
 npm run preview      # Preview the optional Vite build
+npm run check        # Full local CI contract: lint, CSS lint, tests, build
 npm run lint         # Run ESLint architecture/deployment guards
 npm run lint:fix     # Apply safe automatic lint fixes; architecture errors usually need manual fixes
 npm run lint:css     # Run Stylelint CSS correctness checks
 npm run lint:css:fix # Apply safe Stylelint fixes
+npm run verify:vendor # Check vendored runtime files against package-lock
 npm test             # Run all tests once (vitest run)
 npm run test:coverage # Run tests and generate a coverage report
 npm run test:watch   # Tests in watch mode
@@ -60,6 +62,7 @@ Before opening a PR, check that:
 - `npm run lint` passes without errors.
 - `npm run lint:css` passes without errors when CSS changed.
 - `npm test` passes.
+- `npm run check` passes the full CI contract in one command.
 - The affected feature was smoke-checked with `npm run dev`.
 - The local static smoke test was run if the change affects raw-static runtime behavior.
 
@@ -84,7 +87,7 @@ Before opening a PR, check that:
 - **Dependency injection:** Event handlers and render functions are passed as callbacks for testability and to avoid circular dependencies
 - **State reads:** when adding or changing a call site that needs only a primitive or small derived value, prefer a focused selector (`getActiveDatasetIndex()`, `getPreviewRows()`) over pulling a whole live object from a getter. See the [live-reference read policy](docs/development/architecture-reference.md#live-reference-read-policy)
 - **Result pattern:** Functions returning success/failure use `ok(data)` / `fail(reason)` from `src/utils/result.js`
-- **DOM IDs:** Use constants from `src/config/elementIds.js` instead of hardcoded strings
+- **DOM IDs:** Centralize IDs only when multiple modules consume them or static HTML defines the contract. Put shared contracts in the owner's `domIds.js` (`src/charts/workspaceDomIds.js` for chart workspace blocks). A single-module HTML contract may stay as an exported constant in its owner module; other single-use selectors stay literal-local. Update `tests/staticHtml/parity.test.js`
 - **Color utilities:** Use shared functions from `src/utils/colorUtils.js`; never duplicate hex/rgb conversion logic
 - **Chart control listeners:** Use helpers from `src/charts/shared/controls/listenerBindings.js` for common patterns (select, checkbox, slider, etc.); only write inline listeners when cross-dependency logic is needed. Chart packages never import state: they receive a `ChartConfigWriter` and call `writer.commit(patch)`, or `writer.preview(patch)` for continuous input like a color picker drag
 - **Dataset upload, join, and preset flows:** Keep orchestration in `src/features/datasetWorkspace/datasetController.js`; views and dialogs remain callback-driven and do not write durable state directly
@@ -132,9 +135,10 @@ vocabulary.
 
 ## Testing
 
-Run `npm run lint` and `npm test` before opening a PR. Add or update tests in
-`tests/` when behavior changes, mirroring the `src/` structure. For jsdom setup,
-mocking patterns, and the Windows stale-cache workaround, see
+Run `npm run lint` and `npm test` while iterating, then run `npm run check`
+before opening a PR. Add or update tests in `tests/` when behavior changes,
+mirroring the `src/` directory structure. For jsdom setup, mocking patterns, and the
+Windows stale-cache workaround, see
 [Contributor reference](docs/development/contributor-reference.md#testing).
 
 ## Debugging

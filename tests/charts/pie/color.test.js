@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { buildSliceColor } from '../../../src/charts/pie/color.js';
-import { CHART_COLORS } from '../../../src/config/charts.js';
+import { CHART_COLORS } from '../../../src/config/charts/definitions.js';
 
 describe('pie buildSliceColor', () => {
 	it('returns the base shade at index 0 and darkens by index', () => {

@@ -10,7 +10,7 @@
  */
 
 import { isNullish } from '../../utils/formatters.js';
-import { compareStrings } from '../../utils/chartFilters.js';
+import { compareStrings } from '../../domain/filters/chartFilter.js';
 
 /**
  * Aggregate rows for the pie chart.

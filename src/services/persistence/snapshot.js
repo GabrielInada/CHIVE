@@ -8,9 +8,9 @@
  * Internal to the services/persistence.js facade.
  */
 
-import { normalizeColumnNameList } from '../../utils/columnHelpers.js';
-import { BUBBLE_CHART } from '../../config/charts.js';
-import { canonicalizeChartConfig } from '../../config/chartDefaults.js';
+import { normalizeColumnNameList } from '../../domain/datasets/columns.js';
+import { BUBBLE_CHART } from '../../config/charts/definitions/bubble.js';
+import { canonicalizeChartConfig } from '../../domain/charts/chartConfig.js';
 
 /**
  * @internal

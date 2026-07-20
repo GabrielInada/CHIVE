@@ -14,7 +14,7 @@
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
-import { CHART_COLORS } from '../../../config/charts.js';
+import { CHART_COLORS } from '../../../config/charts/definitions.js';
 import { t } from '../../../services/i18nService.js';
 import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createSelectControl } from '../../shared/controls/factories.js';
 import { COLOR_PRESETS, createColorPresetControl } from '../../shared/controls/factories.js';

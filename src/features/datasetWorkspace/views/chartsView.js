@@ -11,12 +11,13 @@
  */
 
 import { t } from '../../../services/i18nService.js';
-import { mergeChartConfigWithDefaults } from '../../../config/chartDefaults.js';
-import { CHART_TYPE_KEYS } from '../../../config/chartTypes.js';
-import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../../utils/globalFilter.js';
-import { clearChartContainer } from '../../../utils/chartContainerLifecycle.js';
-import { CHART_CONTAINERS, CHART_BLOCKS, VIEW_IDS, BADGE_IDS } from '../../../config/elementIds.js';
+import { mergeChartConfigWithDefaults } from '../../../domain/charts/chartConfig.js';
+import { CHART_TYPE_KEYS } from '../../../config/charts/definitions.js';
+import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../../domain/filters/globalFilter.js';
+import { clearChartContainer } from '../../../charts/shared/containerLifecycle.js';
+import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../charts/workspaceDomIds.js';
 import { renderWorkspaceChart } from '../../../charts/registries/workspace.js';
+import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
 
 /**
  * Render the active chart into its container. Single-chart-at-a-time: if

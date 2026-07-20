@@ -19,9 +19,9 @@ Key files:
   [options.js](../../../src/charts/treemap/options.js)
 - Sidebar controls: [builder.js](../../../src/charts/treemap/controls/builder.js),
   [listeners.js](../../../src/charts/treemap/controls/listeners.js), and
-  [defaults.js](../../../src/charts/treemap/controls/defaults.js)
-- Config constants: [charts.js](../../../src/config/charts.js) (`TREEMAP_CHART`)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `treemap` block)
+  [activationDefaults.js](../../../src/charts/treemap/controls/activationDefaults.js)
+- Chart definition and constants: [treemap.js](../../../src/config/charts/definitions/treemap.js) (`TREEMAP_DEFINITION`, `TREEMAP_CHART`)
+- Per-dataset config defaults: [treemap.js](../../../src/config/charts/definitions/treemap.js) (the definition's fresh `treemap` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/treemap/presentation.js)
 - Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/treemap/workspaceSection.js)
 - Panel adapter: [panelAdapter.js](../../../src/charts/treemap/panelAdapter.js)
@@ -77,7 +77,7 @@ D3's `hierarchy`, but the tree is just root plus one row of leaves.
 
 ## 3. The big picture (data flow)
 
-Two integration paths share the same presentation mapping and end at `renderTreeMap`.
+Two integration paths share the same presentation mapping and end at `renderTreemap`.
 
 ```mermaid
 flowchart TB
@@ -110,7 +110,7 @@ flowchart TB
 
     WSECTION --> PRESENT["renderTreemapInto"]
     ADAPTER --> PRESENT
-    PRESENT --> RENDERER["renderTreeMap"]
+    PRESENT --> RENDERER["renderTreemap"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
 
@@ -125,8 +125,10 @@ already global-filtered; aggregation happens on top of them. Panel snapshots are
 ### 4.1 Where config lives
 
 `chartConfig.treemap` is the treemap slice of each dataset's `chartConfig`, built fresh by
-`createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js).
+`createDefaultChartConfig()` in
+[defaults.js](../../../src/config/charts/defaults.js) and merged by
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js).
 
 ### 4.2 The `chartConfig.treemap` keys
 
@@ -146,7 +148,7 @@ already global-filtered; aggregation happens on top of them. Panel snapshots are
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js): `CHART_COLORS.treemap` = `#5a7d99`;
+[treemap.js](../../../src/config/charts/definitions/treemap.js): the treemap color is `#5a7d99`;
 `CHART_HEIGHT_LIMITS.treemap` = `{ min: 220, max: 720 }`; `TREEMAP_CHART` holds the measure
 modes, `defaultTopN: 20`, and the padding options (`[1, 2, 4]`, default 2). The scheme palettes
 are defined in the renderer (`COLOR_PALETTE`: Bold, Pastel, Colorblind-Safe).
@@ -156,7 +158,7 @@ are defined in the renderer (`COLOR_PALETTE`: Bold, Pastel, Colorblind-Safe).
 ## 5. The control sidebar
 
 The package's [controls directory](../../../src/charts/treemap/controls/) exposes the standard
-`createTreeMapControls`, `setupTreeMapControlListeners`, and `computeDefaults` roles through
+`createTreemapControls`, `setupTreemapControlListeners`, and `computeDefaults` roles through
 separate modules.
 
 ### 5.1 The four sections
@@ -186,7 +188,7 @@ swatch. `computeDefaults` picks the category column.
 ([workspaceSection.js](../../../src/charts/treemap/workspaceSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
 through [presentation.js](../../../src/charts/treemap/presentation.js), and calls
-`renderTreeMap`. On failure it shows
+`renderTreemap`. On failure it shows
 `chive-chart-empty-treemap-numeric` for `no-value-column`, else `chive-chart-empty-treemap`.
 
 ### 6.2 Panel view
@@ -197,9 +199,9 @@ click-to-filter in panels). The panel registry only dispatches to that adapter.
 
 ---
 
-## 7. Inside `renderTreeMap`
+## 7. Inside `renderTreemap`
 
-`renderTreeMap(container, rows, categoryColumn, options = {})`. Unlike most renderers it does
+`renderTreemap(container, rows, categoryColumn, options = {})`. Unlike most renderers it does
 not use the `ok()`/`fail()` factories; it returns a plain `{ ok }` object (with a `reason` on
 the value-column failure) that the section adapter inspects.
 
@@ -307,7 +309,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-treemap-container`, block `chart-block-treemap`. Control IDs are `viz-…-treemap-…`
 (e.g. `viz-select-treemap-category`, `viz-select-treemap-measure`,
 `viz-slider-treemap-padding`, `viz-select-treemap-color-mode`).
@@ -323,7 +325,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
       <text> <text>         (optional label + value)
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `TREEMAP_CHART`): `defaultTopN`,
+**Tuning knobs** ([treemap.js](../../../src/config/charts/definitions/treemap.js) `TREEMAP_CHART`): `defaultTopN`,
 `paddingOptions`, `measureModes`.
 
 **Foundations → implementation map:**

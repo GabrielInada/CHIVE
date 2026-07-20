@@ -3,19 +3,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../../src/charts/previews.js', () => ({
-	PREVIEW_BAR_SVG: '<svg data-prev="bar" />',
-	PREVIEW_SCATTER_SVG: '<svg data-prev="scatter" />',
-	PREVIEW_SCATTER3D_SVG: '<svg data-prev="scatter3d" />',
-	PREVIEW_PIE_SVG: '<svg data-prev="pie" />',
-	PREVIEW_BUBBLE_SVG: '<svg data-prev="bubble" />',
-	PREVIEW_NETWORK_SVG: '<svg data-prev="network" />',
-	PREVIEW_TREEMAP_SVG: '<svg data-prev="treemap" />',
-	PREVIEW_LINE_SVG: '<svg data-prev="line" />',
-	PREVIEW_TIN_SVG: '<svg data-prev="tin" />',
+	CHART_PREVIEWS: {
+		bar: '<svg data-prev="bar" />',
+		line: '<svg data-prev="line" />',
+		scatter: '<svg data-prev="scatter" />',
+		scatter3d: '<svg data-prev="scatter3d" />',
+		pie: '<svg data-prev="pie" />',
+		bubble: '<svg data-prev="bubble" />',
+		network: '<svg data-prev="network" />',
+		treemap: '<svg data-prev="treemap" />',
+		tin: '<svg data-prev="tin" />',
+	},
 }));
 
 import { openChartTypePickerDialog } from '../../../../src/features/datasetWorkspace/dialogs/chartTypePickerDialog.js';
-import { CHART_TYPE_KEYS } from '../../../../src/config/chartTypes.js';
+import { CHART_TYPE_KEYS } from '../../../../src/config/charts/definitions.js';
 
 const translate = key => `t:${key}`;
 

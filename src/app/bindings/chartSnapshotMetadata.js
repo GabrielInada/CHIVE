@@ -8,7 +8,7 @@
 
 import { t } from '../../services/i18nService.js';
 import { getActiveDataset } from '../../state/appState.js';
-import { CHART_CONTAINERS } from '../../config/elementIds.js';
+import { CHART_CONTAINERS } from '../../charts/workspaceDomIds.js';
 
 const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
 	Object.entries(CHART_CONTAINERS).map(([type, id]) => [id, type])

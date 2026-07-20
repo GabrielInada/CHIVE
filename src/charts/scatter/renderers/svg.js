@@ -15,7 +15,7 @@
 
 import { axisBottom, axisLeft } from '../../../../vendor/d3/d3.js';
 import { hideChartTooltip, moveChartTooltip } from '../../shared/tooltip/tooltip.js';
-import { CHART_DIMENSIONS } from '../../../config/charts.js';
+import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { ok, fail } from '../../../utils/result.js';
 import {
 	AXIS_TYPE_VALUES,
@@ -36,7 +36,7 @@ import { normalizeScatterOptions } from '../options.js';
 import { buildColorAccessor, buildRadiusAccessor } from '../encoding.js';
 import { buildScatterPoints } from '../data.js';
 import { buildScatterScales } from '../scales.js';
-import { createScatterInteractions } from '../interactions.js';
+import { createScatterInteractions } from '../interaction.js';
 
 /**
  * Render a scatter plot into `container`. Returns `ok()` on success, or

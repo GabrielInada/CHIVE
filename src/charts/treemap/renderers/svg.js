@@ -22,9 +22,9 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { CHART_DIMENSIONS } from '../../../config/charts.js';
+import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
-import { toCategoryToken } from '../../../utils/chartFilters.js';
+import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
 import { normalizeTreemapOptions } from '../options.js';
 import { aggregateTreemapData } from '../data.js';
@@ -60,7 +60,7 @@ function truncate(text, maxLen) {
  * @param {Object} [options={}] - Render options bag.
  * @returns {Result}
  */
-export function renderTreeMap(container, rows, categoryColumn, options = {}) {
+export function renderTreemap(container, rows, categoryColumn, options = {}) {
 	if (!container || !categoryColumn) return { ok: false };
 
 	const {

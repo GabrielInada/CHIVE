@@ -12,6 +12,7 @@
 
 import { t } from '../services/i18nService.js';
 import { setSidebarMode } from '../state/appState.js';
+import { TAB_CONTENT_IDS } from '../features/datasetWorkspace/domIds.js';
 
 /**
  * Read the currently-active tab from the DOM (whichever `[data-tab]`
@@ -60,9 +61,9 @@ export function switchTab(tabName) {
 	});
 
 	// Update tab panels
-	const painelPreview = document.getElementById('tab-content-preview');
-	const painelCharts = document.getElementById('tab-content-charts');
-	const painelPanel = document.getElementById('tab-content-dashboard');
+	const painelPreview = document.getElementById(TAB_CONTENT_IDS.preview);
+	const painelCharts = document.getElementById(TAB_CONTENT_IDS.charts);
+	const painelPanel = document.getElementById(TAB_CONTENT_IDS.panel);
 
 	if (painelPreview) painelPreview.hidden = tabName !== 'preview';
 	if (painelCharts) painelCharts.hidden = tabName !== 'charts';
@@ -120,9 +121,9 @@ export function updateSidebarUI(mode) {
  */
 export function setTabVisibility(tabName, visible) {
 	const panelMap = {
-		preview: document.getElementById('tab-content-preview'),
-		charts: document.getElementById('tab-content-charts'),
-		panel: document.getElementById('tab-content-dashboard'),
+		preview: document.getElementById(TAB_CONTENT_IDS.preview),
+		charts: document.getElementById(TAB_CONTENT_IDS.charts),
+		panel: document.getElementById(TAB_CONTENT_IDS.panel),
 	};
 
 	const panel = panelMap[tabName];

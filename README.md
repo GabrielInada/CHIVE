@@ -62,6 +62,7 @@ Run local checks:
 ```powershell
 npm run lint
 npm test
+npm run check
 ```
 
 For the full contributor workflow and command list, see

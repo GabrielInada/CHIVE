@@ -7,9 +7,9 @@
  */
 
 import { t } from '../../services/i18nService.js';
-import { downloadSvgFromContainer } from '../../utils/svgExport.js';
+import { downloadSvgFromContainer } from '../../services/downloads/svg.js';
 import { addChartToPanel } from '../../features/panel/panelController.js';
-import { showError, showFeedback } from '../feedbackUI.js';
+import { showError, showFeedback } from '../../ui/feedback.js';
 import { getChartSnapshotTitle, buildChartSnapshotMetadata } from './chartSnapshotMetadata.js';
 
 let chartActionListenersReady = false;

@@ -6,7 +6,8 @@
  * semantics verbatim. Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { CHART_COLORS, TREEMAP_CHART } from '../../config/charts.js';
+import { CHART_COLORS } from '../../config/charts/definitions.js';
+import { TREEMAP_CHART } from '../../config/charts/definitions/treemap.js';
 import { clamp } from '../../utils/formatters.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 

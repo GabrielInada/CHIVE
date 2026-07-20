@@ -18,10 +18,10 @@ Key files:
 - Data and hierarchy helpers: [data.js](../../../src/charts/bubble/data.js)
 - Sidebar controls: [builder.js](../../../src/charts/bubble/controls/builder.js),
   [listeners.js](../../../src/charts/bubble/controls/listeners.js),
-  [defaults.js](../../../src/charts/bubble/controls/defaults.js), and
+  [activationDefaults.js](../../../src/charts/bubble/controls/activationDefaults.js), and
   [nestingColumns.js](../../../src/charts/bubble/controls/nestingColumns.js)
-- Config constants: [charts.js](../../../src/config/charts.js) (`BUBBLE_CHART`, `CHART_COLOR_PALETTES`)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `bubble` block)
+- Chart definition and constants: [bubble.js](../../../src/config/charts/definitions/bubble.js) (`BUBBLE_DEFINITION`, `BUBBLE_CHART`) and [shared.js](../../../src/config/charts/shared.js) (`CHART_COLOR_PALETTES`)
+- Per-dataset config defaults: [bubble.js](../../../src/config/charts/definitions/bubble.js) (the definition's fresh `bubble` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/bubble/presentation.js)
 - Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bubble/workspaceSection.js)
 - Panel adapter: [panelAdapter.js](../../../src/charts/bubble/panelAdapter.js)
@@ -136,10 +136,12 @@ on top of them. Panel snapshots are frozen `structuredClone`s
 ### 4.1 Where config lives
 
 `chartConfig.bubble` is the bubble slice of each dataset's `chartConfig`, built fresh by
-`createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js). The merge has special handling for
-`bubble`: a legacy single `groupColumn` is promoted into a one-element `nestingColumns` array
-so pre-multilevel configs keep working.
+`createDefaultChartConfig()` in
+[defaults.js](../../../src/config/charts/defaults.js) and merged by
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js). The merge has special
+handling for `bubble`: a legacy single `groupColumn` is promoted into a one-element
+`nestingColumns` array so pre-multilevel configs keep working.
 
 ### 4.2 The `chartConfig.bubble` keys
 
@@ -160,7 +162,7 @@ so pre-multilevel configs keep working.
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js): `CHART_DIMENSIONS.bubble` is square (700x700) with
+[bubble.js](../../../src/config/charts/definitions/bubble.js): the bubble dimensions are square (700x700) with
 small margins; `CHART_HEIGHT_LIMITS.bubble` = `{ min: 400, max: 900 }` (taller floor than
 other charts, since packing needs room); `BUBBLE_CHART` holds the measure/label/nesting option
 lists, `autoLabelMinRadius` (20) and `parentLabelMinRadius` (40) label thresholds, padding
@@ -342,7 +344,11 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 ## 13. Tests
 
 - [svg.test.js](../../../tests/charts/bubble/renderers/svg.test.js) covers the
-  renderer (flat and grouped, packing output, labels).
+  base renderer behavior (flat and grouped, packing output, labels).
+- [svg.nesting.test.js](../../../tests/charts/bubble/renderers/svg.nesting.test.js)
+  covers multi-level grouped nesting.
+- [svg.zoom.test.js](../../../tests/charts/bubble/renderers/svg.zoom.test.js)
+  covers zoom exploration and the multi-level drill-down stack.
 - [data.test.js](../../../tests/charts/bubble/data.test.js)
   covers the pure helpers: aggregation, multi-level tree building, ancestor/descendant walks
   (no DOM).
@@ -359,7 +365,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-bubble-container`, block `chart-block-bubble`. Control IDs are `viz-…-bubble-…`
 (e.g. `viz-select-bubble-category`, `viz-select-bubble-nesting-mode`,
 `viz-select-bubble-nesting-level-0`, `viz-slider-bubble-padding`).
@@ -376,7 +382,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
       <title> <circle> <text>
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `BUBBLE_CHART`): `defaultPadding`,
+**Tuning knobs** ([bubble.js](../../../src/config/charts/definitions/bubble.js) `BUBBLE_CHART`): `defaultPadding`,
 `autoLabelMinRadius`, `parentLabelMinRadius`, `zoomTransitionDuration`, padding boosts.
 
 **Foundations → implementation map:**

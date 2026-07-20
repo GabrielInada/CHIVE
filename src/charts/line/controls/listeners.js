@@ -8,7 +8,8 @@
  * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
-import { CHART_COLORS, LINE_CHART } from '../../../config/charts.js';
+import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { LINE_CHART } from '../../../config/charts/definitions/line.js';
 import {
 	setupCheckboxListeners,
 	setupColorInputListener,

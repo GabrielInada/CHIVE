@@ -6,7 +6,7 @@
  * stateless and i18n-free.
  */
 
-import { BUBBLE_CHART } from '../../config/charts.js';
+import { BUBBLE_CHART } from '../../config/charts/definitions/bubble.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { renderBubbleChart } from './renderers/svg.js';
 

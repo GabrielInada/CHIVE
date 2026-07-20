@@ -22,11 +22,11 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
-vi.mock('../../../../src/config/chartDefaults.js', () => ({
+vi.mock('../../../../src/domain/charts/chartConfig.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 
-vi.mock('../../../../src/utils/globalFilter.js', () => ({
+vi.mock('../../../../src/domain/filters/globalFilter.js', () => ({
 	resolveGlobalFilterForColumns: mocks.resolveGlobalFilterForColumns,
 	applyGlobalFilterRules: mocks.applyGlobalFilterRules,
 }));
@@ -61,8 +61,9 @@ vi.mock('../../../../src/charts/scatter3d/workspaceSection.js', () => ({
 
 import { renderCharts } from '../../../../src/features/datasetWorkspace/views/chartsView.js';
 import { renderWorkspaceChart } from '../../../../src/charts/registries/workspace.js';
-import { CHART_BLOCKS, CHART_CONTAINERS, VIEW_IDS, BADGE_IDS } from '../../../../src/config/elementIds.js';
-import { CHART_TYPE_KEYS } from '../../../../src/config/chartTypes.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/charts/workspaceDomIds.js';
+import { VIEW_IDS, BADGE_IDS } from '../../../../src/features/datasetWorkspace/domIds.js';
+import { CHART_TYPE_KEYS } from '../../../../src/config/charts/definitions.js';
 
 const SECTION_MOCKS = {
 	bar: 'renderBarChartSection',

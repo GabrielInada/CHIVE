@@ -20,9 +20,9 @@ Key files:
 - X-scale construction: [scales.js](../../../src/charts/line/scales.js)
 - Sidebar controls: [builder.js](../../../src/charts/line/controls/builder.js),
   [listeners.js](../../../src/charts/line/controls/listeners.js), and
-  [defaults.js](../../../src/charts/line/controls/defaults.js)
-- Config constants: [charts.js](../../../src/config/charts.js) (`LINE_CHART`)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js) (the `line` block)
+  [activationDefaults.js](../../../src/charts/line/controls/activationDefaults.js)
+- Chart definition and constants: [line.js](../../../src/config/charts/definitions/line.js) (`LINE_DEFINITION`, `LINE_CHART`)
+- Per-dataset config defaults: [line.js](../../../src/config/charts/definitions/line.js) (the definition's fresh `line` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/line/presentation.js)
 - Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/line/workspaceSection.js)
 - Panel adapter: [panelAdapter.js](../../../src/charts/line/panelAdapter.js)
@@ -150,8 +150,10 @@ path reads it from the snapshot's `columnsSnapshot`; see
 ### 4.1 Where config lives
 
 `chartConfig.line` is the line slice of each dataset's `chartConfig`, built fresh by
-`createDefaultChartConfig()` and merged by `mergeChartConfigWithDefaults()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js).
+`createDefaultChartConfig()` in
+[defaults.js](../../../src/config/charts/defaults.js) and merged by
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js).
 
 ### 4.2 The `chartConfig.line` keys
 
@@ -173,7 +175,7 @@ path reads it from the snapshot's `columnsSnapshot`; see
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js): `CHART_COLORS.line` = `#4e79a7`;
+[line.js](../../../src/config/charts/definitions/line.js): the line color is `#4e79a7`;
 `CHART_HEIGHT_LIMITS.line` = `{ min: 220, max: 720 }`; `LINE_CHART` holds the `curveOptions`
 list, `missingModes` (`['connect', 'gap', 'interpolate']`), `aggregateModes`
 (`['none', 'mean', 'sum', 'count']`), the default stroke width, `pointRadius` (3), and the
@@ -185,7 +187,7 @@ default ghost color.
 
 The controls package ([builder.js](../../../src/charts/line/controls/builder.js),
 [listeners.js](../../../src/charts/line/controls/listeners.js),
-[defaults.js](../../../src/charts/line/controls/defaults.js)) builds three sections via the
+[activationDefaults.js](../../../src/charts/line/controls/activationDefaults.js)) builds three sections via the
 standard `createLineChartControls` / `setupLineChartControlListeners` / `computeDefaults`
 adapters.
 
@@ -360,7 +362,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-line-container`, block `chart-block-line`. Control IDs are `viz-…-line-…`
 (e.g. `viz-select-line-x`, `viz-select-line-curve`, `viz-select-line-missing`,
 `viz-toggle-line-sort-x`).
@@ -379,7 +381,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
     <text> axis titles          (optional)
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `LINE_CHART`): `curveOptions`,
+**Tuning knobs** ([line.js](../../../src/config/charts/definitions/line.js) `LINE_CHART`): `curveOptions`,
 `missingModes`, `aggregateModes`, `defaultStrokeWidth`, `pointRadius`.
 
 **Foundations → implementation map:**

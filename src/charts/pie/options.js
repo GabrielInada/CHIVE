@@ -9,7 +9,8 @@
  * `customSliceColors` pass-through. Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { CHART_COLORS, CHART_DIMENSIONS, PIE_CHART } from '../../config/charts.js';
+import { CHART_COLORS, CHART_DIMENSIONS } from '../../config/charts/definitions.js';
+import { PIE_CHART } from '../../config/charts/definitions/pie.js';
 import { clamp } from '../../utils/formatters.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 

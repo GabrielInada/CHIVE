@@ -12,7 +12,8 @@
  * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
-import { CHART_COLORS, TREEMAP_CHART } from '../../../config/charts.js';
+import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { TREEMAP_CHART } from '../../../config/charts/definitions/treemap.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupCheckboxListeners,
@@ -34,7 +35,7 @@ import {
  * @param {ChartConfigWriter} writer
  * @returns {void}
  */
-export function setupTreeMapControlListeners(dataset, baseCat, numericOptions, allColumns, writer) {
+export function setupTreemapControlListeners(dataset, baseCat, numericOptions, allColumns, writer) {
 
 	setupSelectListeners([
 		{ id: 'viz-select-treemap-category', key: 'category', transform: value => value || null },

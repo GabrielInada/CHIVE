@@ -12,7 +12,7 @@
  */
 
 import { t } from '../../services/i18nService.js';
-import { showChartMessage } from '../../utils/chartContainerLifecycle.js';
+import { showChartMessage } from '../shared/containerLifecycle.js';
 import { renderScatter3dChart } from './renderers/three.js';
 
 /**

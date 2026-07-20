@@ -8,7 +8,8 @@
  */
 
 import { t } from '../../../services/i18nService.js';
-import { countGlobalFilterRules, isGlobalFilterActive } from '../../../utils/globalFilter.js';
+import { countGlobalFilterRules, isGlobalFilterActive } from '../../../domain/filters/globalFilter.js';
+import { TAB_CONTENT_IDS } from '../domIds.js';
 
 let listenersRegistered = false;
 let currentOnChartConfigChange = null;
@@ -20,9 +21,9 @@ function getTabElements() {
 		tabPreview: document.getElementById('tab-preview'),
 		tabCharts: document.getElementById('tab-charts'),
 		tabPanel: document.getElementById('tab-panel'),
-		previewPanel: document.getElementById('tab-content-preview'),
-		chartsPanel: document.getElementById('tab-content-charts'),
-		dashboardPanel: document.getElementById('tab-content-dashboard'),
+		previewPanel: document.getElementById(TAB_CONTENT_IDS.preview),
+		chartsPanel: document.getElementById(TAB_CONTENT_IDS.charts),
+		dashboardPanel: document.getElementById(TAB_CONTENT_IDS.panel),
 		globalFilterTrigger: document.getElementById('btn-global-filter'),
 		globalFilterLabel: document.getElementById('global-filter-trigger-label'),
 		globalFilterBadge: document.getElementById('global-filter-trigger-badge'),

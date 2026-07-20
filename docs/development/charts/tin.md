@@ -26,12 +26,14 @@ tests:
   [color.js](../../../src/charts/tin/color.js), [math.js](../../../src/charts/tin/math.js),
   and [interaction.js](../../../src/charts/tin/interaction.js)
 - Sidebar controls: [controls](../../../src/charts/tin/controls/)
-- Config constants: [charts.js](../../../src/config/charts.js)
+- Chart definition and constants: [tin.js](../../../src/config/charts/definitions/tin.js)
 - Browser-local rendering setting: [settingsService.js](../../../src/services/settingsService.js)
   and [settings.js](../../../src/config/settings.js)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
+- Per-dataset config defaults: [tin.js](../../../src/config/charts/definitions/tin.js)
 - Bundled preset catalog: [presetCatalog.js](../../../src/data/presetCatalog.js)
-- Renderer tests: [svg.test.js](../../../tests/charts/tin/renderers/svg.test.js)
+- Renderer tests: [base](../../../tests/charts/tin/renderers/svg.test.js),
+  [isolines](../../../tests/charts/tin/renderers/svg.isolines.test.js), and
+  [full-ramp color mode](../../../tests/charts/tin/renderers/svg.fullRamp.test.js)
 
 Use "guarantee" narrowly when maintaining this file: a statement should be backed by
 source/tests, by the mathematical model under stated assumptions, or by documented
@@ -63,8 +65,8 @@ Key files:
 - SVG renderer: [svg.js](../../../src/charts/tin/renderers/svg.js)
 - Options, color, geometry, and interaction helpers: [TIN package](../../../src/charts/tin/)
 - Sidebar controls: [controls](../../../src/charts/tin/controls/)
-- Config constants: [charts.js](../../../src/config/charts.js)
-- Per-dataset config defaults: [chartDefaults.js](../../../src/config/chartDefaults.js)
+- Chart definition and constants: [tin.js](../../../src/config/charts/definitions/tin.js)
+- Per-dataset config defaults: [tin.js](../../../src/config/charts/definitions/tin.js)
 - Color math: [colorUtils.js](../../../src/utils/colorUtils.js)
 - Shared presentation flow: [presentation.js](../../../src/charts/tin/presentation.js)
 - Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/tin/workspaceSection.js)
@@ -333,10 +335,11 @@ the central tension the performance design (section 9) addresses.
 
 Each dataset owns a `chartConfig` object, and `chartConfig.tin` is the TIN chart's
 slice of it. The canonical fresh shape is built by `createDefaultChartConfig()` in
-[chartDefaults.js](../../../src/config/chartDefaults.js) (the `tin:` block). A saved or
+[defaults.js](../../../src/config/charts/defaults.js) (which assembles the `tin` definition). A saved or
 partial config is deep-merged onto these defaults by
-`mergeChartConfigWithDefaults()` in the same file (user-set fields win, missing
-fields fall back to default).
+`mergeChartConfigWithDefaults()` in
+[chartConfig.js](../../../src/domain/charts/chartConfig.js) (user-set fields win,
+missing fields fall back to default).
 
 ### 4.2 The `chartConfig.tin` keys
 
@@ -370,7 +373,7 @@ fields fall back to default).
 
 ### 4.3 The constants behind the defaults
 
-[charts.js](../../../src/config/charts.js) holds the bounds and shared values:
+[tin.js](../../../src/config/charts/definitions/tin.js) holds the bounds and values:
 
 - `CHART_COLORS.tin` = `#5d8aa8` (the default min-gradient/base color).
 - `CHART_DIMENSIONS.tin` = `{ width: 700, height: 460, margins: { top:16, right:16, bottom:44, left:56 } }`.
@@ -462,7 +465,7 @@ entry calls `renderTinChartSection({ config: chartConfig.tin, rows })` from
 That adapter:
 
 1. Resolves the block (`chart-block-tin`) and container (`chart-tin-container`)
-   elements (IDs in [elementIds.js](../../../src/config/elementIds.js), as
+   elements (IDs in [workspaceDomIds.js](../../../src/charts/workspaceDomIds.js), as
    `CHART_BLOCKS.tin` / `CHART_CONTAINERS.tin`).
 2. Hides the block and clears the container if the chart is disabled.
 3. Sets the container `min-height` to the configured `chartHeight`.
@@ -941,8 +944,11 @@ but that is not implemented here.
 
 ## 13. Tests
 
-[svg.test.js](../../../tests/charts/tin/renderers/svg.test.js) covers the
-renderer. Notable fill-path cases:
+Renderer coverage is split across
+[svg.test.js](../../../tests/charts/tin/renderers/svg.test.js),
+[svg.isolines.test.js](../../../tests/charts/tin/renderers/svg.isolines.test.js),
+and [svg.fullRamp.test.js](../../../tests/charts/tin/renderers/svg.fullRamp.test.js).
+Notable fill-path cases:
 
 - Subpath count (`M` count across `.tin-triangles path`) equals
   `triangles * 4 ** depth` at depths 0 and 2; no stray `<polygon>` elements;
@@ -978,7 +984,7 @@ captured by value (so the live-preview panel skip is safe).
 
 ## 14. Quick reference
 
-**Element IDs** ([elementIds.js](../../../src/config/elementIds.js)): container
+**Element IDs** ([workspaceDomIds.js](../../../src/charts/workspaceDomIds.js)): container
 `chart-tin-container`, block `chart-block-tin`. Control IDs are `viz-…-tin-…`
 (e.g. `viz-select-tin-x`, `viz-slider-tin-subdivision`,
 `viz-input-tin-gradient-min`).
@@ -1001,7 +1007,7 @@ captured by value (so the live-preview panel skip is safe).
   <g class="tin-legend">         (12-stop gradient strip + min/max labels)
 ```
 
-**Tuning knobs** ([charts.js](../../../src/config/charts.js) `TIN_CHART`):
+**Tuning knobs** ([tin.js](../../../src/config/charts/definitions/tin.js) `TIN_CHART`):
 `rampBuckets` (Optimized color resolution vs path count), `maxSurfaceLeaves`
 (shared geometry budget), `maxSubdivisionDepth`, `maxIsolineLevels`.
 

@@ -29,7 +29,7 @@ the renderer internals, the controls, and the tests), see the per-chart
 
 - **Rows and columns.** An uploaded CSV/JSON becomes rows of named columns.
 - **Detected types.** Each column is detected as one of `number`, `text`, or `date`
-  (detection rules in `src/config/types.js`). Type detection drives which charts and modes
+  (detection rules in `src/config/columnTypeDetection.js`). Type detection drives which charts and modes
   a column can satisfy: numeric aggregation and axes need `number`; date axes need `date`.
 - **Visible columns vs. all columns.** Charts only consider columns marked visible in the
   column controls. Hiding a column removes it from the chart's available choices.
@@ -202,8 +202,8 @@ controls of the per-chart packages under `src/charts/`.
 ## Filters and chart data
 
 - **Global filters.** The global filter applies a multi-rule pipeline to the active dataset
-  before any chart reads it (`src/utils/globalFilter.js`, with single-rule primitives in
-  `src/utils/chartFilters.js`). A categorical rule includes or excludes values; a numeric
+  before any chart reads it (`src/domain/filters/globalFilter.js`, with single-rule primitives in
+  `src/domain/filters/chartFilter.js`). A categorical rule includes or excludes values; a numeric
   rule filters by range or comparison. Charts always render the filtered rows.
 - **Missing-value bucket.** Missing values do not fragment a categorical series: they
   collapse into one bucket, labeled `N/A` in grouping and `(missing)` in the filter dialog.
