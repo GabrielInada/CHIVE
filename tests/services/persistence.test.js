@@ -27,13 +27,13 @@ describe('persistence', () => {
 		configurePersistenceBackend(null);
 	});
 
-	it('exposes exactly the 14 documented exports (no internal leaks through the facade)', async () => {
+	it('exposes exactly the 13 documented exports (no internal leaks through the facade)', async () => {
 		const mod = await import('../../src/services/persistence.js');
 		expect(Object.keys(mod).sort()).toEqual([
 			'PROJECT_FILE_EXTENSION', 'PROJECT_FILE_MIME', 'clearPersistedState',
 			'configurePersistenceBackend', 'enablePersistenceAutoSave', 'exportProject',
 			'getPersistenceErrorMessageKey', 'getProjectImportErrorMessageKey', 'hydrateState',
-			'importProjectBytes', 'isActiveTabOnlyPatch', 'isPersistenceAvailable',
+			'importProjectBytes', 'isPersistenceAvailable',
 			'isProjectDirtyEvent', 'persistState',
 		].sort());
 	});

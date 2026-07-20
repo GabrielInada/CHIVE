@@ -33,7 +33,7 @@ const mocks = vi.hoisted(() => ({
 	removeDatasetByIndex: vi.fn(),
 	handleJoinDatasetRequest: vi.fn(),
 	handlePresetDatasetRequest: vi.fn(),
-	switchTab: vi.fn(),
+	syncSidebarToTab: vi.fn(),
 }));
 
 vi.mock('../../src/features/datasetWorkspace/workspaceView.js', () => ({
@@ -86,7 +86,7 @@ vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 }));
 
 vi.mock('../../src/app/uiManager.js', () => ({
-	switchTab: mocks.switchTab,
+	syncSidebarToTab: mocks.syncSidebarToTab,
 }));
 
 const baseDataset = {
@@ -169,7 +169,7 @@ describe('renderCoordinator', () => {
 		expect(mocks.initializeLayoutSelector).not.toHaveBeenCalled();
 		expect(mocks.renderSidebarPanel).toHaveBeenCalledTimes(1);
 		expect(mocks.renderCanvasPanel).toHaveBeenCalledTimes(1);
-		expect(mocks.switchTab).toHaveBeenCalledWith('preview');
+		expect(mocks.syncSidebarToTab).not.toHaveBeenCalled();
 	});
 
 	it('renders the active dataset and bridges workspace and live-preview callbacks', async () => {

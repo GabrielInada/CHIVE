@@ -224,11 +224,11 @@ through the render coordinator's coalescer).
 
 [`src/services/persistence.js`](../../src/services/persistence.js)
 subscribes to `WILDCARD` after hydration and tracks semantic project dirtiness
-to schedule the debounced auto-save. It ignores `STATE_HYDRATED`, UI preference
-events (`SIDEBAR_MODE_CHANGED`, `PREVIEW_ROWS_CHANGED`), and `CONFIG_UPDATED`
-payloads that are exactly `{ activeTab }`. UI preferences are written
-immediately to `localStorage`; project content is written by the debounced
-`saveNow()` or the best-effort page-lifecycle close net.
+to schedule the debounced auto-save. It ignores `STATE_HYDRATED` and UI
+preference events (`SIDEBAR_MODE_CHANGED`, `PREVIEW_ROWS_CHANGED`). UI
+preferences are written immediately to `localStorage`; dataset configuration,
+including `activeTab`, is project content written by the debounced `saveNow()`
+or the best-effort page-lifecycle close net.
 
 Dataset add/remove/select render through the bus (the data facade emits
 `DATASET_ADDED`/`DATASET_REMOVED`/`ACTIVE_DATASET`, which the render coordinator

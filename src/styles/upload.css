@@ -254,26 +254,17 @@
   cursor: pointer;
 }
 
-.join-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.45);
-  z-index: 120;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 18px;
-}
-
 .join-dialog {
   width: min(980px, 96vw);
   max-height: 90vh;
   max-height: 90dvh;
   overflow: auto;
+  box-sizing: border-box;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
   padding: 14px;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 20%);
 }
 
 .join-title {
@@ -354,6 +345,21 @@
   color: var(--text);
   font-size: var(--font-size-ui);
   padding: var(--space-3) var(--space-4);
+}
+
+.join-validation-error {
+  margin-top: var(--space-4);
+  border: 1px solid var(--error);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  background: color-mix(in srgb, var(--error) 8%, transparent);
+  color: var(--error);
+  font-size: var(--font-size-ui);
+}
+
+.join-dialog :where([aria-invalid="true"], :user-invalid) {
+  outline: 2px solid var(--error);
+  outline-offset: 2px;
 }
 
 /* Preset datasets modal */

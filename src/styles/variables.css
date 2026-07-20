@@ -83,6 +83,20 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.app-dialog {
+  max-width: calc(100vw - 2 * var(--space-5));
+  max-height: calc(100dvh - 2 * var(--space-5));
+  border: 0;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  color: inherit;
+}
+
+.app-dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+
 .startup-screen {
   position: fixed;
   inset: 0;

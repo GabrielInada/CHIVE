@@ -16,7 +16,6 @@ const mocks = vi.hoisted(() => ({
 	updateDatasetConfig: vi.fn(),
 	showFeedback: vi.fn(),
 	showError: vi.fn(),
-	switchTab: vi.fn(),
 }));
 
 vi.mock('../../src/state/appState.js', () => ({
@@ -50,10 +49,6 @@ vi.mock('../../src/ui/feedback.js', () => ({
 	showError: mocks.showError,
 }));
 
-vi.mock('../../src/app/uiManager.js', () => ({
-	switchTab: mocks.switchTab,
-}));
-
 beforeEach(() => {
 	vi.restoreAllMocks();
 	vi.resetModules();
@@ -73,7 +68,7 @@ describe('debugApi', () => {
 			getLoadedDatasets: mocks.getLoadedDatasets,
 			updateDatasetColumns: mocks.updateDatasetColumns,
 			updateDatasetConfig: mocks.updateDatasetConfig,
-			switchTab: mocks.switchTab,
+			switchTab: expect.any(Function),
 			refreshView: mocks.runFullRefreshNow,
 			showFeedback: mocks.showFeedback,
 			showError: mocks.showError,
@@ -82,6 +77,9 @@ describe('debugApi', () => {
 			getStateLog: mocks.getStateLog,
 			clearStateLog: mocks.clearStateLog,
 		});
+
+		api.switchTab('charts');
+		expect(mocks.updateDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
 
 		expect(installDebugApi()).toEqual(api);
 		expect(window.chiveDebug).toEqual(api);

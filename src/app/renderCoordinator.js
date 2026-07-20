@@ -36,7 +36,7 @@ import {
 	handleJoinDatasetRequest,
 	handlePresetDatasetRequest,
 } from '../features/datasetWorkspace/datasetController.js';
-import { switchTab } from './uiManager.js';
+import { syncSidebarToTab } from './uiManager.js';
 
 // State events repaint through one animation-frame scheduler. "Full wins":
 // scheduleFullRefresh() subsumes dirty regions in the same frame. The
@@ -162,6 +162,7 @@ function onColumnsUpdated() {
  * @param {{ activeTab?: string } & Object} [patch] - CONFIG_UPDATED payload.
  */
 function onConfigUpdated(patch) {
+	if (patch?.activeTab) syncSidebarToTab(patch.activeTab);
 	scheduleRegion(RENDER_REGIONS.workspace);
 	scheduleRegion(RENDER_REGIONS.controls);
 	if (patch?.activeTab === 'panel') scheduleRegion(RENDER_REGIONS.panel);
@@ -227,6 +228,7 @@ function renderEmptyWorkspace() {
  */
 function renderActiveDatasetWorkspace(dataset, previewRows) {
 	if (!dataset) return;
+	syncSidebarToTab(dataset.chartConfig?.activeTab || 'preview');
 	renderDatasetWorkspace(
 		dataset.rows,
 		dataset.columns,
@@ -275,7 +277,6 @@ function refreshView() {
 	if (datasets.length === 0) {
 		renderEmptyWorkspace();
 		renderPanelWorkspace({ withLayoutSelector: false });
-		switchTab('preview');
 		return;
 	}
 

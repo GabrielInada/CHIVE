@@ -136,10 +136,10 @@
 
         <main class="results-area">
             <div class="result-tabs" id="result-tabs">
-                <div class="result-tabs-group" id="result-tabs-group">
-                    <button type="button" class="result-tab active" id="tab-preview" data-tab="preview" data-i18n="chive-tab-preview">Preview</button>
-                    <button type="button" class="result-tab" id="tab-charts" data-tab="charts" data-i18n="chive-tab-charts">Visualizações</button>
-                    <button type="button" class="result-tab" id="tab-panel" data-tab="panel" data-i18n="chive-tab-panel">Painel</button>
+                <div class="result-tabs-group" id="result-tabs-group" role="tablist" aria-label="Workspace views" data-i18n-title="chive-tabs-label">
+                    <button type="button" class="result-tab active" id="tab-preview" role="tab" aria-selected="true" aria-controls="tab-content-preview" tabindex="0" data-tab="preview" data-i18n="chive-tab-preview">Preview</button>
+                    <button type="button" class="result-tab" id="tab-charts" role="tab" aria-selected="false" aria-controls="tab-content-charts" tabindex="-1" data-tab="charts" data-i18n="chive-tab-charts">Visualizações</button>
+                    <button type="button" class="result-tab" id="tab-panel" role="tab" aria-selected="false" aria-controls="tab-content-dashboard" tabindex="-1" data-tab="panel" data-i18n="chive-tab-panel">Painel</button>
                 </div>
                 <div class="result-tabs-actions" id="result-tabs-actions">
                     <button type="button" class="global-filter-trigger" id="btn-global-filter" aria-haspopup="dialog" aria-expanded="false" data-active="false" disabled hidden>
@@ -168,7 +168,7 @@
             </div>
 
             <div id="data-state">
-                <div id="tab-content-preview" class="result-panel active">
+                <div id="tab-content-preview" class="result-panel active" role="tabpanel" aria-labelledby="tab-preview">
                     <div class="result-card animate">
                         <div class="card-header">
                             <span class="card-title" data-i18n="chive-card-preview">Preview dos dados</span>
@@ -212,7 +212,7 @@
                     </div>
                 </div>
 
-                <div id="tab-content-charts" class="result-panel">
+                <div id="tab-content-charts" class="result-panel" role="tabpanel" aria-labelledby="tab-charts" hidden>
                     <div class="result-card animate">
                         <div class="card-header">
                             <span class="card-title" data-i18n="chive-card-charts">Visualizações</span>
@@ -461,7 +461,7 @@
                     </div>
                 </div>
 
-                <div id="tab-content-dashboard" class="result-panel">
+                <div id="tab-content-dashboard" class="result-panel" role="tabpanel" aria-labelledby="tab-panel" hidden>
                     <div class="result-card animate">
                         <div class="card-header">
                             <span class="card-title" data-i18n="chive-card-panel">Painel</span>

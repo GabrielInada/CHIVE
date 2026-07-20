@@ -6,7 +6,7 @@
  */
 
 import { PRESET_CATALOG } from '../../../data/presetCatalog.js';
-import { installDialogFocus } from '../../../ui/dialogFocus.js';
+import { showNativeModal } from '../../../ui/nativeDialog.js';
 
 /**
  * Build one preset card: name, description, row/column counts, optional
@@ -79,22 +79,23 @@ function buildPresetCard(entry, translate) {
  */
 export function openPresetDatasetsDialog({ translate }) {
 	return new Promise(resolve => {
-		const overlay = document.createElement('div');
-		overlay.className = 'join-overlay';
+		const dialog = document.createElement('dialog');
+		dialog.className = 'app-dialog';
+		dialog.setAttribute('aria-labelledby', 'preset-dialog-title');
 
-		const dialog = document.createElement('div');
-		dialog.className = 'join-dialog preset-dialog';
-		dialog.setAttribute('role', 'dialog');
-		dialog.setAttribute('aria-modal', 'true');
+		const surface = document.createElement('form');
+		surface.method = 'dialog';
+		surface.className = 'join-dialog preset-dialog';
 
 		const title = document.createElement('h3');
 		title.className = 'join-title';
+		title.id = 'preset-dialog-title';
 		title.textContent = translate('chive-preset-dialog-title');
-		dialog.appendChild(title);
+		surface.appendChild(title);
 
 		const grid = document.createElement('div');
 		grid.className = 'preset-cards-grid';
-		dialog.appendChild(grid);
+		surface.appendChild(grid);
 
 		const footer = document.createElement('div');
 		footer.className = 'join-footer';
@@ -111,26 +112,17 @@ export function openPresetDatasetsDialog({ translate }) {
 
 		footer.appendChild(cancelButton);
 		footer.appendChild(loadButton);
-		dialog.appendChild(footer);
-
-		overlay.appendChild(dialog);
-		document.body.appendChild(overlay);
-
-		const focusControl = installDialogFocus(overlay, dialog);
+		surface.appendChild(footer);
+		dialog.appendChild(surface);
 
 		let selectedId = null;
+		let settled = false;
 
 		const closeDialog = result => {
-			document.removeEventListener('keydown', onEscape);
-			focusControl.release();
-			overlay.remove();
-			focusControl.restoreFocus();
+			if (settled) return;
+			settled = true;
+			lifecycle.close();
 			resolve(result);
-		};
-
-		const onEscape = event => {
-			if (event.key !== 'Escape') return;
-			closeDialog(null);
 		};
 
 		PRESET_CATALOG.forEach(entry => {
@@ -151,10 +143,8 @@ export function openPresetDatasetsDialog({ translate }) {
 			closeDialog(selected);
 		});
 
-		overlay.addEventListener('click', event => {
-			if (event.target === overlay) closeDialog(null);
+		const lifecycle = showNativeModal(dialog, {
+			onDismiss: () => closeDialog(null),
 		});
-
-		document.addEventListener('keydown', onEscape);
 	});
 }

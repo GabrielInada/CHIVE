@@ -25,5 +25,5 @@ export {
 	clearPersistedState,
 } from './persistence/lifecycle.js';
 export { getPersistenceErrorMessageKey, getProjectImportErrorMessageKey } from './persistence/errors.js';
-export { isActiveTabOnlyPatch, isProjectDirtyEvent } from './persistence/dirtyTracking.js';
+export { isProjectDirtyEvent } from './persistence/dirtyTracking.js';
 export { enablePersistenceAutoSave } from './persistence/autoSave.js';

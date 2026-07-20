@@ -3,10 +3,18 @@ import { describe, expect, it } from 'vitest';
 import { moduleScriptSrcs, staticClosure } from '../helpers/importGraph.js';
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
-const [entry] = moduleScriptSrcs(repoRoot, 'index.html');
+const moduleEntries = moduleScriptSrcs(repoRoot, 'index.html');
+const entry = moduleEntries[1];
 const { visited, bareSpecs, dynamicReached } = staticClosure(repoRoot, entry);
 
 describe('application startup import graph', () => {
+	it('loads the dependency-free startup guard before the application entry', () => {
+		expect(moduleEntries).toEqual([
+			'src/entries/startupGuard.js',
+			'src/entries/app.js',
+		]);
+	});
+
 	it('uses only relative raw-static specifiers', () => {
 		expect([...bareSpecs]).toEqual([]);
 	});

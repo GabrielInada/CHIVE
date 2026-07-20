@@ -143,14 +143,14 @@ and
 | State Management Core | `appState`, facades, event registry, event bus. | The only normal path for application state mutation. |
 | Application orchestration | Browser startup in `entries/app.js` (and `entries/about.js` for the About page, which loads only shared i18n/settings and installs no debug surface), initialization order in `app/applicationInitializer.js`, and broad/narrow rendering in `app/renderCoordinator.js`. | Keep the entrypoints thin, order side effects in the initializer, and keep all scheduler state in the render coordinator. |
 | Visualization Layer | Feature views and dialogs, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
-| Reusable UI mechanics | Ownerless browser UI behavior under `src/ui/` (feedback toasts, dialog focus trap). | A strict leaf with DOM access: import only config, utils, types, or vendor modules; never state, services, or features. |
+| Reusable UI mechanics | Ownerless browser UI behavior under `src/ui/` (feedback toasts, native-dialog lifecycle, reusable confirmation dialog). | A strict leaf with DOM access: import only config, utils, types, or vendor modules; never state, services, or features. |
 | Services, domain, and utilities | Persistence, i18n, ingest worker host, browser downloads, pure product rules, config, and ownership-neutral helpers. | Browser effects belong in services, pure product rules in `domain/{owner}/`, and generic DOM-free helpers in `utils/`. |
 
 The important distinction is ownership, not file layout. A feature controller or manager may
 write facades, subscribe to the bus, and trigger renders for its own domain; what
 it must not do is reach into another domain's state. `panelController` is a clear
 case (controller + subscriber + render-trigger); `chartControlsController` and `uiManager`
-build UI *and* write facades, so they are managers, not leaf renderers. The leaf
+coordinate owned UI *and* write facades, so they are managers, not leaf renderers. The leaf
 renderers (feature views and dialogs, chart packages under `src/charts/*`, and
 `features/panel/views/`) stay strictly
 read-only with respect to application state: they receive callbacks from a

@@ -13,6 +13,7 @@ import { processData } from '../../../domain/datasets/processData.js';
 import { joinDatasets } from '../../../domain/datasets/join.js';
 import { addDataset, getAllDatasets } from '../../../state/appState.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
+import { joinValidationMessageKey, validateJoinSpec } from '../joinValidation.js';
 
 /**
  * Build a human-readable name for a joined dataset:
@@ -66,42 +67,18 @@ function normalizeJoinType(value) {
  */
 export function createJoinedDataset(spec = {}) {
 	const datasets = getAllDatasets();
-	if (datasets.length < 2) {
-		return { ok: false, message: t('chive-join-error-min-files') };
+	const validation = validateJoinSpec(datasets, spec);
+	if (!validation.ok) {
+		return { ok: false, message: t(joinValidationMessageKey(validation.reason)) };
 	}
-
-	const leftIndex = Number(spec.leftIndex);
-	const rightIndex = Number(spec.rightIndex);
-	if (Number.isNaN(leftIndex) || Number.isNaN(rightIndex) || !datasets[leftIndex] || !datasets[rightIndex]) {
-		return { ok: false, message: t('chive-join-error-invalid-file-selection') };
-	}
-
-	if (leftIndex === rightIndex) {
-		return { ok: false, message: t('chive-join-error-select-different-files') };
-	}
-
-	const leftDataset = datasets[leftIndex];
-	const rightDataset = datasets[rightIndex];
-	const leftKeys = Array.isArray(spec.leftKeys) ? spec.leftKeys.filter(Boolean) : [];
-	const rightKeys = Array.isArray(spec.rightKeys) ? spec.rightKeys.filter(Boolean) : [];
-	if (leftKeys.length === 0 || rightKeys.length === 0) {
-		return { ok: false, message: t('chive-join-error-keys-required') };
-	}
-
-	if (leftKeys.length !== rightKeys.length) {
-		return { ok: false, message: t('chive-join-error-key-count-mismatch') };
-	}
-
-	const leftColumns = Array.isArray(spec.leftColumns)
-		? spec.leftColumns.filter(Boolean)
-		: leftDataset.columns.map(column => column.name);
-	const rightColumns = Array.isArray(spec.rightColumns)
-		? spec.rightColumns.filter(Boolean)
-		: rightDataset.columns.map(column => column.name);
-
-	if ((leftColumns.length + rightColumns.length) === 0) {
-		return { ok: false, message: t('chive-join-error-columns-required') };
-	}
+	const {
+		leftDataset,
+		rightDataset,
+		leftKeys,
+		rightKeys,
+		leftColumns,
+		rightColumns,
+	} = validation;
 
 	try {
 		const result = joinDatasets({

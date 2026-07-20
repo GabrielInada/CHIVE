@@ -7,6 +7,8 @@ const mocks = vi.hoisted(() => ({
 	setLocale: vi.fn(),
 	getTinColorRendering: vi.fn(),
 	setTinColorRendering: vi.fn(),
+	getStorageStatus: vi.fn(),
+	requestPersistentStorage: vi.fn(),
 	openSettingsDialog: vi.fn(),
 }));
 
@@ -18,6 +20,11 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 vi.mock('../../../src/services/settingsService.js', () => ({
 	getTinColorRendering: mocks.getTinColorRendering,
 	setTinColorRendering: mocks.setTinColorRendering,
+}));
+
+vi.mock('../../../src/services/storageService.js', () => ({
+	getStorageStatus: mocks.getStorageStatus,
+	requestPersistentStorage: mocks.requestPersistentStorage,
 }));
 
 vi.mock('../../../src/features/settings/settingsDialog.js', () => ({
@@ -84,9 +91,13 @@ describe('settingsController', () => {
 		const args = mocks.openSettingsDialog.mock.calls[0][0];
 		args.onLocaleChange('en');
 		args.onTinColorRenderingChange('full-ramp');
+		await args.onGetStorageStatus();
+		await args.onRequestPersistentStorage();
 
 		expect(mocks.setLocale).toHaveBeenCalledWith('en');
 		expect(mocks.setTinColorRendering).toHaveBeenCalledWith('full-ramp');
+		expect(mocks.getStorageStatus).toHaveBeenCalledTimes(1);
+		expect(mocks.requestPersistentStorage).toHaveBeenCalledTimes(1);
 	});
 
 	it('does not duplicate listeners on repeated initialization', async () => {

@@ -20,7 +20,10 @@ import {
 	updateDatasetConfig,
 } from './renderCoordinator.js';
 import { showFeedback, showError } from '../ui/feedback.js';
-import { switchTab } from './uiManager.js';
+
+function switchTab(tabName) {
+	updateDatasetConfig({ activeTab: tabName });
+}
 
 /**
  * @returns {Object}

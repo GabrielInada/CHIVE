@@ -16,6 +16,13 @@ function openDialog(overrides = {}) {
 		tinColorRendering: 'optimized',
 		onLocaleChange: vi.fn().mockResolvedValue({ ok: true }),
 		onTinColorRenderingChange: vi.fn(),
+		onGetStorageStatus: vi.fn().mockResolvedValue({
+			ok: true,
+			usage: 1024,
+			quota: 4096,
+			persisted: false,
+		}),
+		onRequestPersistentStorage: vi.fn().mockResolvedValue({ ok: true, granted: true }),
 		onClose: vi.fn(),
 		...overrides,
 	});
@@ -36,10 +43,8 @@ describe('settingsDialog', () => {
 	it('renders the General and Performance sections with localized labels', () => {
 		openDialog();
 
-		const dialog = document.querySelector('.settings-dialog');
+		const dialog = document.querySelector('dialog[open]');
 		expect(dialog).not.toBeNull();
-		expect(dialog.getAttribute('role')).toBe('dialog');
-		expect(dialog.getAttribute('aria-modal')).toBe('true');
 		expect(dialog.getAttribute('aria-labelledby')).toBe('settings-dialog-title');
 
 		const sectionTitles = Array.from(dialog.querySelectorAll('.settings-section-title'))
@@ -47,6 +52,7 @@ describe('settingsDialog', () => {
 		expect(sectionTitles).toEqual([
 			'chive-settings-section-general',
 			'chive-settings-section-performance',
+			'chive-settings-section-storage',
 		]);
 
 		// Labels are translated now and carry data-i18n for in-place retranslation.
@@ -79,7 +85,7 @@ describe('settingsDialog', () => {
 		expect(onLocaleChange).toHaveBeenCalledWith('en');
 		expect(select.disabled).toBe(true);
 		await Promise.resolve();
-		expect(document.querySelector('.settings-overlay')).not.toBeNull();
+		expect(document.querySelector('dialog[open]')).not.toBeNull();
 		expect(select.disabled).toBe(false);
 		expect(select.value).toBe('en');
 		expect(document.activeElement).toBe(select);
@@ -109,6 +115,30 @@ describe('settingsDialog', () => {
 		expect(onTinColorRenderingChange).toHaveBeenCalledWith('full-ramp');
 	});
 
+	it('reads quota on open but requests persistence only from the explicit action', async () => {
+		const onGetStorageStatus = vi.fn()
+			.mockResolvedValueOnce({ ok: true, usage: 1024, quota: 4096, persisted: false })
+			.mockResolvedValueOnce({ ok: true, usage: 1024, quota: 4096, persisted: true });
+		const onRequestPersistentStorage = vi.fn().mockResolvedValue({ ok: true, granted: true });
+		openDialog({ onGetStorageStatus, onRequestPersistentStorage });
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect(onGetStorageStatus).toHaveBeenCalledTimes(1);
+		expect(onRequestPersistentStorage).not.toHaveBeenCalled();
+		const button = document.querySelector('.settings-storage-persist');
+		expect(button.hidden).toBe(false);
+
+		button.click();
+		await Promise.resolve();
+		await Promise.resolve();
+		await Promise.resolve();
+
+		expect(onRequestPersistentStorage).toHaveBeenCalledTimes(1);
+		expect(onGetStorageStatus).toHaveBeenCalledTimes(2);
+		expect(button.hidden).toBe(true);
+	});
+
 	it('closes on the close button and restores focus to the trigger', async () => {
 		const trigger = document.getElementById('trigger');
 		trigger.focus();
@@ -117,7 +147,7 @@ describe('settingsDialog', () => {
 
 		document.querySelector('.settings-close-btn').click();
 
-		expect(document.querySelector('.settings-overlay')).toBeNull();
+		expect(document.querySelector('dialog')).toBeNull();
 		expect(onClose).toHaveBeenCalledTimes(1);
 		expect(document.activeElement).toBe(trigger);
 	});
@@ -126,9 +156,9 @@ describe('settingsDialog', () => {
 		const onClose = vi.fn();
 		openDialog({ onClose });
 
-		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+		document.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
 
-		expect(document.querySelector('.settings-overlay')).toBeNull();
+		expect(document.querySelector('dialog')).toBeNull();
 		expect(onClose).toHaveBeenCalledTimes(1);
 	});
 
@@ -137,11 +167,11 @@ describe('settingsDialog', () => {
 		openDialog({ onClose });
 
 		document.querySelector('.settings-dialog').dispatchEvent(new MouseEvent('click', { bubbles: true }));
-		expect(document.querySelector('.settings-overlay')).not.toBeNull();
+		expect(document.querySelector('dialog[open]')).not.toBeNull();
 
-		const overlay = document.querySelector('.settings-overlay');
-		overlay.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-		expect(document.querySelector('.settings-overlay')).toBeNull();
+		const dialog = document.querySelector('dialog');
+		dialog.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+		expect(document.querySelector('dialog')).toBeNull();
 		expect(onClose).toHaveBeenCalledTimes(1);
 	});
 

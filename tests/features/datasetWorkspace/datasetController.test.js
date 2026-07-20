@@ -19,6 +19,7 @@ const mocks = vi.hoisted(() => ({
   showFeedback: vi.fn(),
   clearErrors: vi.fn(),
   showProgress: vi.fn(),
+  openConfirmDialog: vi.fn(),
 }));
 
 vi.mock('../../../src/services/i18nService.js', () => ({
@@ -62,6 +63,10 @@ vi.mock('../../../src/ui/feedback.js', () => ({
   showFeedback: mocks.showFeedback,
   clearErrors: mocks.clearErrors,
   showProgress: mocks.showProgress,
+}));
+
+vi.mock('../../../src/ui/confirmDialog.js', () => ({
+  openConfirmDialog: mocks.openConfirmDialog,
 }));
 
 vi.mock('../../../src/config/limits.js', () => ({
@@ -110,7 +115,7 @@ describe('datasetController', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.FileReader = FileReaderMock;
-    window.confirm = vi.fn(() => true);
+    mocks.openConfirmDialog.mockResolvedValue(true);
     initDatasetController();
 
     mocks.loadPresetSource.mockResolvedValue({
@@ -175,7 +180,7 @@ describe('datasetController', () => {
     await handleFileUpload([csvFile({ name: 'bad.xyz' })]);
     expect(mocks.showError).toHaveBeenCalledWith(`chive-error-format:bad.xyz`);
 
-    window.confirm = vi.fn(() => false);
+    mocks.openConfirmDialog.mockResolvedValueOnce(false);
     await handleFileUpload([csvFile({ size: 30 })]);
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-cancelled');
   });
@@ -438,13 +443,14 @@ describe('datasetController', () => {
     expect(mocks.addDataset).not.toHaveBeenCalled();
   });
 
-  it('uses injected confirmFn instead of window.confirm', async () => {
+  it('uses an injected confirmation callback instead of the native dialog', async () => {
     const confirmMock = vi.fn(() => false);
     initDatasetController({ confirmCallback: confirmMock });
 
     await handleFileUpload([csvFile({ size: 30 })]);
 
     expect(confirmMock).toHaveBeenCalledTimes(1);
+    expect(mocks.openConfirmDialog).not.toHaveBeenCalled();
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-cancelled');
   });
 

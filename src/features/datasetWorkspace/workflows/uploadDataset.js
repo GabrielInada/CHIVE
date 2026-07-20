@@ -25,7 +25,7 @@ import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
  * so a batch renders progressively, one paint per added file.
  *
  * @param {FileList | File[] | null | undefined} files
- * @param {{ confirm: (message: string) => boolean }} dependencies
+ * @param {{ confirm: (message: string) => boolean | Promise<boolean> }} dependencies
  * @returns {Promise<void>}
  */
 export async function uploadDatasetFiles(files, { confirm }) {
@@ -50,7 +50,7 @@ export async function uploadDatasetFiles(files, { confirm }) {
  *
  * @private
  * @param {File} file
- * @param {{ confirm: (message: string) => boolean }} dependencies
+ * @param {{ confirm: (message: string) => boolean | Promise<boolean> }} dependencies
  */
 async function processFileForDataset(file, { confirm }) {
 	// Validate file format
@@ -64,7 +64,7 @@ async function processFileForDataset(file, { confirm }) {
 
 	// Check file size
 	if (file.size > FILE_SIZE_LIMIT_BYTES) {
-		const confirmedLargeFile = confirm(
+		const confirmedLargeFile = await confirm(
 			`${t('chive-warn-file-size', [file.name, formatFileSize(FILE_SIZE_LIMIT_BYTES)])} \n${t('chive-warn-file-size-proceed')}`
 		);
 		if (!confirmedLargeFile) {

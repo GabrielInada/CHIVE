@@ -1,11 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 
 // Guards the orchestrator's one real job: calling every setup exactly once, in a
-// fixed boot order. All nine setups are mocked, so no real listeners register and
+// fixed boot order. All eight setups are mocked, so no real listeners register and
 // this stays independent of the DOM-integration suite in eventHandlers.test.js.
 const mocks = vi.hoisted(() => ({
   setupFileInputListeners: vi.fn(),
-  setupTabListeners: vi.fn(),
   setupSidebarToggleListener: vi.fn(),
   setupPanelEventListeners: vi.fn(),
   setupSidebarNavigationButtons: vi.fn(),
@@ -20,7 +19,6 @@ vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 }));
 
 vi.mock('../../src/app/uiManager.js', () => ({
-  setupTabListeners: mocks.setupTabListeners,
   setupSidebarToggleListener: mocks.setupSidebarToggleListener,
 }));
 
@@ -54,7 +52,6 @@ describe('eventHandlers orchestration order', () => {
   // Setups in their documented boot order.
   const orderedSetups = [
     mocks.setupFileInputListeners,
-    mocks.setupTabListeners,
     mocks.setupSidebarToggleListener,
     mocks.setupSidebarNavigationButtons,
     mocks.setupPanelEventListeners,

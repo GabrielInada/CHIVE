@@ -24,13 +24,15 @@ const ABOUT_ALLOWLIST = new Set([
 	'src/app/sharedPageInitializer.js',
 	'src/features/settings/settingsController.js',
 	'src/features/settings/settingsDialog.js',
-	'src/ui/dialogFocus.js',
+	'src/ui/nativeDialog.js',
 	'src/services/i18nService.js',
 	'src/services/settingsService.js',
+	'src/services/storageService.js',
 	'src/config/locale.js',
 	'src/config/settings.js',
 	'src/features/settings/domIds.js',
 	'src/utils/result.js',
+	'src/utils/formatters.js',
 	'vendor/banana-i18n/banana-i18n.js',
 ]);
 
@@ -62,8 +64,14 @@ const FORBIDDEN_PREFIXES = [
 
 function htmlEntry(htmlRelPath) {
 	const srcs = moduleScriptSrcs(repoRoot, htmlRelPath);
-	expect(srcs, `${htmlRelPath} must declare exactly one <script type="module">`).toHaveLength(1);
-	return srcs[0];
+	const expectedEntry = htmlRelPath === 'about.html'
+		? 'src/entries/about.js'
+		: 'src/entries/app.js';
+	expect(srcs, `${htmlRelPath} must declare the guard followed by one page entry`).toEqual([
+		'src/entries/startupGuard.js',
+		expectedEntry,
+	]);
+	return srcs[1];
 }
 
 describe('page entry HTML wiring', () => {

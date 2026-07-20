@@ -16,7 +16,7 @@ const ruleTester = new RuleTester({
 
 ruleTester.run('ui-strict-leaf', rule, {
 	valid: [
-		{ filename, code: "import './dialogFocus.js';" },
+		{ filename, code: "import './nativeDialog.js';" },
 		{ filename, code: "import '../config/settings.js';" },
 		{ filename, code: "export * from '../utils/result.js';" },
 		{ filename, code: "import('../types.js');" },

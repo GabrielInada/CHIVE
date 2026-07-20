@@ -1,9 +1,9 @@
 /**
  * CHIVE panel block resize interactions.
  *
- * Mouse-driven proportion and height resizing for panel blocks. Each
- * drag handler attaches `mousemove`/`mouseup` to `window` (not the grid)
- * so the drag tracks the cursor even outside the grid bounds.
+ * Pointer-driven proportion and height resizing for panel blocks. Each drag
+ * tracks one pointer on `window`, so mouse, touch, and pen continue working
+ * outside the grid bounds. AbortSignal-based teardown owns every listener.
  *
  * @typedef {import('../../../types.js').PanelBlock} PanelBlock
  */
@@ -60,12 +60,12 @@ function applyDynamicBlockHeight(gridDiv, block) {
  * x-axis, horizontal splits on the y-axis. `template-hero2`'s right-column
  * y-handle is positioned on a rail that follows the main split.
  *
- * Each handle's `mousedown` starts a drag via {@link startGuidedResizeDrag}.
+ * Each handle's `pointerdown` starts a drag via {@link startGuidedResizeDrag}.
  * No-op when grid or proportions are missing.
  *
  * @param {HTMLElement} gridDiv
  * @param {PanelBlock} block
- * @param {(blockId: string, partialProportions: Object) => void} onUpdateBlockProportions - Write callback supplied by panelController; the drag handler calls it on every mousemove.
+ * @param {(blockId: string, partialProportions: Object) => void} onUpdateBlockProportions - Write callback supplied by panelController; the drag handler calls it on every pointer move.
  */
 export function renderGuidedResizeHandles(gridDiv, block, onUpdateBlockProportions) {
 	if (!gridDiv || !block?.proportions) return;
@@ -121,9 +121,18 @@ export function renderGuidedResizeHandles(gridDiv, block, onUpdateBlockProportio
 			handle.style.left = `${railCenter}%`;
 		}
 
-		handle.addEventListener('mousedown', event => {
+		handle.addEventListener('pointerdown', event => {
+			if (event.button !== 0 || event.isPrimary === false) return;
 			event.preventDefault();
-			startGuidedResizeDrag(block.id, block.templateId, handleConfig.key, gridDiv, onUpdateBlockProportions);
+			startGuidedResizeDrag(
+				block.id,
+				block.templateId,
+				handleConfig.key,
+				gridDiv,
+				onUpdateBlockProportions,
+				event.pointerId,
+				handle,
+			);
 		});
 
 		gridDiv.appendChild(handle);
@@ -131,16 +140,24 @@ export function renderGuidedResizeHandles(gridDiv, block, onUpdateBlockProportio
 }
 
 /**
- * Begin a guided proportion drag. Attaches `mousemove`/`mouseup` to
- * `window` so the drag survives the cursor leaving the grid. The
- * `mousemove` handler maps cursor position to a new proportion and
+ * Begin a guided proportion drag. Tracks one pointer on `window` so the drag
+ * survives the pointer leaving the grid. The move handler maps cursor position
+ * to a new proportion and
  * surfaces it via the injected `onUpdateBlockProportions` callback;
  * panelController owns the facade write. Re-render happens through the
  * STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED subscription.
  *
  * @private
  */
-function startGuidedResizeDrag(blockId, templateId, key, gridDiv, onUpdateBlockProportions) {
+function startGuidedResizeDrag(
+	blockId,
+	templateId,
+	key,
+	gridDiv,
+	onUpdateBlockProportions,
+	pointerId,
+	captureTarget,
+) {
 	const rect = gridDiv.getBoundingClientRect();
 	if (!rect.width || !rect.height) return;
 	gridDiv.classList.add('is-resizing');
@@ -182,20 +199,23 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv, onUpdateBlockP
 		}
 	};
 
-	const onUp = () => {
-		window.removeEventListener('mousemove', onMove);
-		window.removeEventListener('mouseup', onUp);
+	const stopTracking = trackPointer({
+		pointerId,
+		captureTarget,
+		onMove,
+		onFinish: () => {
+			gridDiv.classList.remove('is-resizing');
+		},
+	});
+	if (!stopTracking) {
 		gridDiv.classList.remove('is-resizing');
-	};
-
-	window.addEventListener('mousemove', onMove);
-	window.addEventListener('mouseup', onUp);
+	}
 }
 
 /**
  * Begin a block-height drag (the bottom resize handle). Like the guided
- * proportion drag, attaches listeners to `window` so the drag tracks
- * outside the grid. Each `mousemove` surfaces the new height via the
+ * proportion drag, attaches pointer listeners to `window` so the drag tracks
+ * outside the grid. Each pointer move surfaces the new height via the
  * injected `onUpdateBlockHeight` callback; panelController owns the facade
  * write (which clamps). Re-render happens through the
  * STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED subscription.
@@ -204,8 +224,17 @@ function startGuidedResizeDrag(blockId, templateId, key, gridDiv, onUpdateBlockP
  * @param {HTMLElement} gridDiv
  * @param {number} startClientY - The `event.clientY` at drag start.
  * @param {(blockId: string, heightPx: number) => void} onUpdateBlockHeight
+ * @param {number | null} [pointerId=null]
+ * @param {HTMLElement | null} [captureTarget=null]
  */
-export function startBlockHeightResizeDrag(blockId, gridDiv, startClientY, onUpdateBlockHeight) {
+export function startBlockHeightResizeDrag(
+	blockId,
+	gridDiv,
+	startClientY,
+	onUpdateBlockHeight,
+	pointerId = null,
+	captureTarget = null,
+) {
 	const rect = gridDiv.getBoundingClientRect();
 	if (!rect.height) return;
 
@@ -220,12 +249,57 @@ export function startBlockHeightResizeDrag(blockId, gridDiv, startClientY, onUpd
 		onUpdateBlockHeight(blockId, nextHeight);
 	};
 
-	const onUp = () => {
-		window.removeEventListener('mousemove', onMove);
-		window.removeEventListener('mouseup', onUp);
+	const stopTracking = trackPointer({
+		pointerId,
+		captureTarget,
+		onMove,
+		onFinish: () => {
+			gridDiv.classList.remove('is-resizing');
+		},
+	});
+	if (!stopTracking) {
 		gridDiv.classList.remove('is-resizing');
+	}
+}
+
+/**
+ * Track a single pointer until release/cancellation. The AbortController makes
+ * listener teardown atomic and prevents one drag from leaking handlers into the
+ * next.
+ *
+ * @private
+ */
+function trackPointer({ pointerId, captureTarget, onMove, onFinish }) {
+	const controller = new window.AbortController();
+	const matchesPointer = event => pointerId === null
+		|| pointerId === undefined
+		|| event.pointerId === pointerId;
+	const handleMove = event => {
+		if (matchesPointer(event)) onMove(event);
+	};
+	const finish = event => {
+		if (!matchesPointer(event)) return;
+		controller.abort();
+		if (
+			captureTarget
+			&& Number.isFinite(pointerId)
+			&& captureTarget.hasPointerCapture?.(pointerId)
+		) {
+			captureTarget.releasePointerCapture(pointerId);
+		}
+		onFinish();
 	};
 
-	window.addEventListener('mousemove', onMove);
-	window.addEventListener('mouseup', onUp);
+	try {
+		if (captureTarget && Number.isFinite(pointerId)) {
+			captureTarget.setPointerCapture?.(pointerId);
+		}
+		window.addEventListener('pointermove', handleMove, { signal: controller.signal });
+		window.addEventListener('pointerup', finish, { signal: controller.signal });
+		window.addEventListener('pointercancel', finish, { signal: controller.signal });
+		return true;
+	} catch {
+		controller.abort();
+		return false;
+	}
 }

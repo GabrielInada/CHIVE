@@ -103,6 +103,29 @@ describe('static HTML contracts', () => {
 		expect(external?.getAttribute('rel')?.split(/\s+/)).toEqual(expect.arrayContaining(['noopener', 'noreferrer']));
 	});
 
+	it('keeps the workspace tabs and panels linked with manual-activation semantics', () => {
+		const tabList = indexDocument.querySelector(`#${VIEW_IDS.resultTabs} [role="tablist"]`);
+		const tabNames = ['preview', 'charts', 'panel'];
+
+		expect(tabList?.getAttribute('role')).toBe('tablist');
+		expect(tabList?.getAttribute('aria-label')).toBeTruthy();
+
+		for (const [index, tabName] of tabNames.entries()) {
+			const tab = indexDocument.getElementById(`tab-${tabName}`);
+			const panelId = TAB_CONTENT_IDS[tabName];
+			const panel = indexDocument.getElementById(panelId);
+			const active = index === 0;
+
+			expect(tab?.getAttribute('role')).toBe('tab');
+			expect(tab?.getAttribute('aria-controls')).toBe(panelId);
+			expect(tab?.getAttribute('aria-selected')).toBe(String(active));
+			expect(tab?.getAttribute('tabindex')).toBe(active ? '0' : '-1');
+			expect(panel?.getAttribute('role')).toBe('tabpanel');
+			expect(panel?.getAttribute('aria-labelledby')).toBe(tab?.id);
+			expect(panel?.hidden).toBe(!active);
+		}
+	});
+
 	it('preloads only the critical WOFF2 faces on both pages', () => {
 		const expected = [
 			'./vendor/fonts/ibm-plex-sans/IBMPlexSans-VariableFont_wdth,wght.woff2',
