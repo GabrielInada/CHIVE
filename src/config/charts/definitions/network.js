@@ -5,6 +5,8 @@
 const COLOR = '#3b6a9f';
 
 export const NETWORK_GRAPH = {
+  maxNodes: 1000,
+  maxLinks: 2000,
   defaultNodeRadius: 5,
   defaultLinkDistance: 46,
   defaultChargeStrength: -80,

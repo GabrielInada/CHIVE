@@ -17,6 +17,8 @@ describe('buildScatterPoints', () => {
 		expect(result.axisTypes).toEqual({ x: 'numeric', y: 'numeric' });
 		expect(result.effectiveXScaleType).toBe('linear');
 		expect(result.points).toHaveLength(3);
+		expect(result.renderedPoints).toBe(result.points);
+		expect(result.sampled).toBe(false);
 		expect(result.shouldAggregateCategoricalPairs).toBe(false);
 	});
 
@@ -80,5 +82,42 @@ describe('buildScatterPoints', () => {
 			configuredAxisTypes: { x: 'number', y: 'number' },
 		});
 		expect(result.points).toHaveLength(0);
+		expect(result.renderedPoints).toHaveLength(0);
+		expect(result.validCount).toBe(0);
+	});
+
+	it('samples only geometry while retaining the full analysis point set and extrema', () => {
+		const rows = Array.from({ length: 20 }, (_, index) => ({
+			x: index === 7 ? -100 : index === 13 ? 100 : index,
+			y: 20 - index,
+		}));
+		const result = buildScatterPoints({
+			...baseArgs,
+			rows,
+			maxPoints: 5,
+		});
+
+		expect(result.points).toHaveLength(20);
+		expect(result.renderedPoints).toHaveLength(5);
+		expect(result.renderedCount).toBe(5);
+		expect(result.validCount).toBe(20);
+		expect(result.totalCount).toBe(20);
+		expect(result.sampled).toBe(true);
+		expect(result.renderedPoints.some(point => point.x === -100)).toBe(true);
+		expect(result.renderedPoints.some(point => point.x === 100)).toBe(true);
+	});
+
+	it('bypasses sampling only when the caller has explicit full-render approval', () => {
+		const rows = Array.from({ length: 8 }, (_, index) => ({ x: index, y: index }));
+		const result = buildScatterPoints({
+			...baseArgs,
+			rows,
+			maxPoints: 3,
+			renderAll: true,
+		});
+
+		expect(result.renderedPoints).toBe(result.points);
+		expect(result.renderedCount).toBe(8);
+		expect(result.sampled).toBe(false);
 	});
 });

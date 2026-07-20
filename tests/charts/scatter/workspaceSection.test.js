@@ -176,4 +176,28 @@ describe('renderScatterChartSection', () => {
 		expect(y).toBe('salary');
 		expect(opts.filterCallbacks).toBe(filterCallbacks);
 	});
+
+	it('surfaces sampling and grants a session-only full-render approval from the notice', () => {
+		const { container } = setupDom();
+		mocks.renderScatterPlot
+			.mockReturnValueOnce({ ok: true, sampled: true, renderedCount: 5000, validCount: 9000 })
+			.mockReturnValueOnce({ ok: true, sampled: false, renderedCount: 9000, validCount: 9000 });
+
+		renderScatterChartSection({
+			config: defaultConfig(),
+			rows: [],
+			columnTypeByName: {},
+			filterCallbacks,
+		});
+
+		const notice = container.querySelector('.chart-render-budget-notice');
+		expect(notice?.textContent).toContain('chive-chart-scatter-sampling-notice');
+		expect(mocks.renderScatterPlot.mock.calls[0][4].allowFullRender).toBe(false);
+
+		notice.querySelector('button').click();
+
+		expect(mocks.renderScatterPlot).toHaveBeenCalledTimes(2);
+		expect(mocks.renderScatterPlot.mock.calls[1][4].allowFullRender).toBe(true);
+		expect(container.querySelector('.chart-render-budget-notice')).toBeNull();
+	});
 });

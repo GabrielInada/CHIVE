@@ -97,6 +97,30 @@
   margin-top: var(--space-2);
 }
 
+.chart-render-budget-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  color: var(--muted);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  margin-top: var(--space-3);
+}
+
+.chart-render-budget-notice--blocked {
+  min-height: 240px;
+  align-content: center;
+  flex-direction: column;
+  margin-top: 0;
+  padding: var(--space-6);
+}
+
+.chart-render-budget-action {
+  width: auto;
+}
+
 /* Screen-reader-only text (aria-describedby targets for interactive
    canvases). Kept here while canvas charts are its only consumer. */
 .visually-hidden {

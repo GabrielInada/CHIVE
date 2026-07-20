@@ -19,6 +19,7 @@ describe('normalizeScatterOptions', () => {
 		expect(config.axisLabels).toEqual({ x: 'colX', y: 'colY' });
 		expect(config.xFilterColumn).toBeNull();
 		expect(config.yFilterColumn).toBeNull();
+		expect(config.allowFullRender).toBe(false);
 	});
 
 	it('does not clamp radius or opacity, only falls back when non-finite', () => {
@@ -76,5 +77,10 @@ describe('normalizeScatterOptions', () => {
 		const nonString = normalizeScatterOptions({ xColumn: 5, yColumn: null }, 'posX', 'posY');
 		expect(nonString.xFilterColumn).toBeNull();
 		expect(nonString.yFilterColumn).toBeNull();
+	});
+
+	it('accepts only an explicit boolean full-render approval', () => {
+		expect(normalizeScatterOptions({ allowFullRender: true }, 'x', 'y').allowFullRender).toBe(true);
+		expect(normalizeScatterOptions({ allowFullRender: 'true' }, 'x', 'y').allowFullRender).toBe(false);
 	});
 });

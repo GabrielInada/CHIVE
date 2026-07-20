@@ -56,6 +56,29 @@ describe('renderScatterPlot rendering', () => {
 		expect(circles(container).length).toBe(NUMERIC_ROWS.length);
 	});
 
+	it('bounds point geometry unless this container has explicit full-render approval', () => {
+		const container = document.getElementById('scatter');
+		const rows = Array.from({ length: 5005 }, (_, index) => ({ x: index, y: index * 2 }));
+
+		const sampled = renderScatterPlot(container, rows, 'x', 'y');
+		expect(sampled).toMatchObject({
+			ok: true,
+			renderedCount: 5000,
+			validCount: 5005,
+			sampled: true,
+		});
+		expect(circles(container)).toHaveLength(5000);
+
+		const full = renderScatterPlot(container, rows, 'x', 'y', { allowFullRender: true });
+		expect(full).toMatchObject({
+			ok: true,
+			renderedCount: 5005,
+			validCount: 5005,
+			sampled: false,
+		});
+		expect(circles(container)).toHaveLength(5005);
+	});
+
 	it('applies uniform radius and opacity', () => {
 		const container = document.getElementById('scatter');
 		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', { radius: 7, opacity: 0.5 });
@@ -262,7 +285,7 @@ describe('renderScatterPlot interaction', () => {
 	it('shows a hover tooltip with the point values', () => {
 		const container = document.getElementById('scatter');
 		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y');
-		dispatchMouse(circles(container)[0], 'mouseenter');
+		dispatchMouse(circles(container)[0], 'mouseover');
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
 		expect(tooltip.hidden).toBe(false);
@@ -275,7 +298,7 @@ describe('renderScatterPlot interaction', () => {
 		const container = document.getElementById('scatter');
 		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y');
 		const circle = circles(container)[0];
-		dispatchMouse(circle, 'mouseenter');
+		dispatchMouse(circle, 'mouseover');
 		expect(() => dispatchMouse(circle, 'mousemove')).not.toThrow();
 		expect(document.querySelector('.chart-tooltip').hidden).toBe(false);
 	});
@@ -289,6 +312,15 @@ describe('renderScatterPlot interaction', () => {
 		expect(tooltip.classList.contains('chart-tooltip--fixado')).toBe(true);
 		dispatchMouse(circle, 'click');
 		expect(tooltip.hidden).toBe(true);
+	});
+
+	it('delegates point interaction to one parent listener set', () => {
+		const container = document.getElementById('scatter');
+		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y');
+
+		expect(circles(container).every(circle => circle.__on === undefined)).toBe(true);
+		expect(container.querySelector('.scatter-points').__on.map(listener => listener.type).sort())
+			.toEqual(['click', 'mousemove', 'mouseout', 'mouseover']);
 	});
 
 	it('renders categorical pinned filter actions and state badges', () => {
@@ -420,9 +452,9 @@ describe('renderScatterPlot regression overlay', () => {
 
 		const point = circles(container)[0];
 		dispatchMouse(point, 'click');
-		dispatchMouse(point, 'mouseenter');
+		dispatchMouse(point, 'mouseover');
 		dispatchMouse(point, 'mousemove');
-		dispatchMouse(point, 'mouseleave');
+		dispatchMouse(point, 'mouseout');
 		expect(document.querySelector('.chart-tooltip--fixado')).not.toBeNull();
 	});
 
@@ -528,12 +560,12 @@ describe('renderScatterPlot regression DOM stacking', () => {
 		const group = container.querySelector('svg > g');
 		const kids = Array.from(group.children);
 		const layerIdx = kids.findIndex(node => hasClass(node, 'scatter-regression-layer'));
-		const circleIdx = kids.findIndex(node => node.tagName.toLowerCase() === 'circle');
+		const pointLayerIdx = kids.findIndex(node => hasClass(node, 'scatter-points'));
 		const annotationIdx = kids.findIndex(node => hasClass(node, 'scatter-regression-annotation'));
 
 		expect(layerIdx).toBeGreaterThanOrEqual(0);
-		expect(circleIdx).toBeGreaterThan(layerIdx);
-		expect(annotationIdx).toBeGreaterThan(circleIdx);
+		expect(pointLayerIdx).toBeGreaterThan(layerIdx);
+		expect(annotationIdx).toBeGreaterThan(pointLayerIdx);
 	});
 
 	it('gives each rendered chart a unique regression clip-path id', () => {

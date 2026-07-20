@@ -9,6 +9,11 @@
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import {
+	appendRenderBudgetNotice,
+	approveFullRender,
+	hasFullRenderApproval,
+} from '../shared/renderBudget.js';
 import { renderScatterPlot } from './renderers/svg.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
@@ -30,7 +35,8 @@ export function renderScatterInto(
 	columnTypeByName = {},
 	filterCallbacks = EMPTY_FILTER_CALLBACKS,
 ) {
-	return renderScatterPlot(container, rows, config.x, config.y, {
+	container.querySelector('.chart-render-budget-notice')?.remove();
+	const result = renderScatterPlot(container, rows, config.x, config.y, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
 		xScale: config.xScale,
@@ -75,5 +81,23 @@ export function renderScatterInto(
 		xColumn: config.x,
 		yColumn: config.y,
 		filterCallbacks,
+		allowFullRender: hasFullRenderApproval(container, 'scatter'),
 	});
+
+	if (result.ok && result.sampled) {
+		appendRenderBudgetNotice(container, {
+			message: t(
+				'chive-chart-scatter-sampling-notice',
+				String(result.renderedCount),
+				String(result.validCount),
+			),
+			actionLabel: t('chive-chart-render-full'),
+			onApprove: () => {
+				approveFullRender(container, 'scatter');
+				renderScatterInto(container, rows, config, columnTypeByName, filterCallbacks);
+			},
+		});
+	}
+
+	return result;
 }

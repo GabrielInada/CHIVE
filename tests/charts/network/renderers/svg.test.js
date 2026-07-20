@@ -109,6 +109,34 @@ describe('network graph visualization', () => {
 		expect(result.reason).toBe('insufficient-data');
 	});
 
+	it('refuses geometry above the automatic link budget without explicit approval', () => {
+		const container = document.getElementById('network');
+		const rows = Array.from({ length: 2001 }, () => ({ source: 'A', target: 'B' }));
+
+		const result = renderNetworkGraph(container, rows, 'source', 'target');
+
+		expect(result).toEqual({
+			ok: false,
+			reason: 'render-budget-exceeded',
+			nodesCount: 2,
+			linksCount: 2001,
+		});
+		expect(container.querySelector('svg')).toBeNull();
+	});
+
+	it('attempts complete over-budget geometry after explicit approval', () => {
+		const container = document.getElementById('network');
+		const rows = Array.from({ length: 2001 }, () => ({ source: 'A', target: 'B' }));
+
+		const result = renderNetworkGraph(container, rows, 'source', 'target', {
+			allowFullRender: true,
+		});
+
+		expect(result).toMatchObject({ ok: true, nodesCount: 2, linksCount: 2001 });
+		expect(container.querySelectorAll('.network-link')).toHaveLength(2001);
+		container.__chive_network_simulation__?.stop();
+	});
+
 	it('pins the tooltip when a node is clicked', () => {
 		const container = document.getElementById('network');
 		const rows = [
@@ -145,6 +173,26 @@ describe('network graph visualization', () => {
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip.classList.contains('chart-tooltip--fixado')).toBe(false);
 		expect(tooltip.hidden).toBe(true);
+	});
+
+	it('delegates tooltip and click interactions to the SVG root', () => {
+		const container = document.getElementById('network');
+		renderNetworkGraph(container, [
+			{ source: 'A', target: 'B' },
+			{ source: 'B', target: 'C' },
+		], 'source', 'target');
+
+		const tooltipEventTypes = new Set(['mouseover', 'mousemove', 'mouseout', 'click']);
+		const link = container.querySelector('.network-link');
+		const node = container.querySelector('.network-node');
+		const svg = container.querySelector('svg');
+
+		expect((link.__on || []).some(listener => tooltipEventTypes.has(listener.type))).toBe(false);
+		expect((node.__on || []).some(listener => tooltipEventTypes.has(listener.type))).toBe(false);
+		expect((svg.__on || [])
+			.filter(listener => listener.name === 'chart-interaction')
+			.map(listener => listener.type)
+			.sort()).toEqual(['click', 'mousemove', 'mouseout', 'mouseover']);
 	});
 
 	it('repositions the pinned tooltip when the anchored node moves', async () => {
@@ -293,19 +341,19 @@ describe('network graph visualization', () => {
 		stubScreenCTM(container);
 
 		const link = container.querySelector('line');
-		link.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 1, pageY: 2 }));
+		link.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, pageX: 1, pageY: 2 }));
 		expect(document.querySelector('.chart-tooltip').hidden).toBe(false);
 		link.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, pageX: 3, pageY: 4 }));
-		link.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+		link.dispatchEvent(new MouseEvent('mouseout', { bubbles: true }));
 
 		const node = container.querySelector('circle');
-		node.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 1, pageY: 2 }));
+		node.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, pageX: 1, pageY: 2 }));
 		node.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, pageX: 3, pageY: 4 }));
-		node.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+		node.dispatchEvent(new MouseEvent('mouseout', { bubbles: true }));
 		node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-		node.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 5, pageY: 6 }));
+		node.dispatchEvent(new MouseEvent('mouseover', { bubbles: true, pageX: 5, pageY: 6 }));
 		node.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, pageX: 7, pageY: 8 }));
-		node.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
+		node.dispatchEvent(new MouseEvent('mouseout', { bubbles: true }));
 		node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 		expect(document.querySelector('.chart-tooltip').hidden).toBe(true);
 	});
