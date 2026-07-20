@@ -30,6 +30,10 @@ The app runtime uses:
    `application/wasm` when possible. Browsers can fall back to non-streaming
    WASM compilation, but the correct MIME avoids a slower path.
 
+The minimum-file list is the runtime manifest in
+`scripts/runtime-manifest.mjs`; CI parity-tests this documentation, the
+Dockerfile, and the Pages deployment workflow against that manifest.
+
 The default CHIVE runtime does not require external JavaScript or font CDNs.
 
 ## Deploy Steps

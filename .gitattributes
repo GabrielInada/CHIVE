@@ -1,1 +1,5 @@
 vendor/three/** -whitespace
+
+# These copied upstream files are byte-parity checked against the npm build.
+vendor/three/three.module.js text eol=lf
+vendor/three/three.core.js text eol=lf

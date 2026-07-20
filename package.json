@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:css": "stylelint \"src/styles/**/*.css\"",
-    "lint:css:fix": "stylelint \"src/styles/**/*.css\" --fix"
+    "lint:css:fix": "stylelint \"src/styles/**/*.css\" --fix",
+    "verify:vendor": "node scripts/verify-vendor.mjs"
   },
   "dependencies": {
     "banana-i18n": "^2.4.0",

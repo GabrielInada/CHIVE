@@ -25,13 +25,28 @@ via a relative path, so both files must move together. On a version bump,
 re-copy both files, keep the provenance header lines, and update the
 version here and in the headers.
 
-The SQLite-WASM files are copied from the `@sqlite.org/sqlite-wasm` package
-locked in `package-lock.json`. On an update, copy the runtime, worker, WASM, and
-OPFS companion files as one compatible set, retain their upstream header
-notices, and update the version recorded here.
+The SQLite-WASM JavaScript files are single-file bundles generated from the
+`@sqlite.org/sqlite-wasm` package locked in `package-lock.json`; they are not
+copied as-is from its `dist/` directory, which exposes the API as `index.mjs`
+plus separate companion modules. Only `sqlite3.wasm` is a verbatim npm-package
+copy. Regeneration requires a bundler, and all four runtime, worker, WASM, and
+OPFS files must be replaced as one compatible set. Retain their upstream
+notices and update the version recorded here.
 
 `vendor/fonts/fonts.css` is the runtime font entrypoint. Keep it limited to the
 font files CHIVE actually uses so browsers do not download unnecessary faces.
+
+## Verification
+
+Run `npm run verify:vendor` to compare the checked-in runtime files against
+`package-lock.json`, reproducible files under `node_modules/`, companion-file
+and license requirements, and the font URLs. CI enforces the same checks
+through `tests/scripts/vendor-checks.test.js`.
+
+For Three.js updates, `node scripts/sync-vendor.mjs three` copies both upstream
+ESM files and adds their provenance headers. Other targets print guided
+regeneration steps because their checked-in JavaScript is bundled rather than
+copied directly from npm dist files.
 
 ## Inlined Icon Assets
 

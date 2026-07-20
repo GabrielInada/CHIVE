@@ -732,16 +732,19 @@ export default [
 		},
 	},
 
-	// (G) Repo tooling: the lint/test/style configs and the custom ESLint
-	// rule implementations run under Node as ESM. No Node globals are
-	// declared because none are referenced today (the rules import
-	// node:path explicitly); add a global the first time a script needs
-	// it, same policy as BROWSER_GLOBALS.
+	// (G) Repo tooling: the lint/test/style configs, custom ESLint rules, and
+	// scripts run under Node as ESM. Tooling imports Node APIs explicitly and
+	// declares only the process and console globals used by its CLIs; add a
+	// global the first time a script needs it, same policy as BROWSER_GLOBALS.
 	{
 		files: ['*.js', '*.mjs', 'eslint-rules/**/*.js', 'scripts/**/*.{js,mjs}'],
 		languageOptions: {
 			ecmaVersion: 'latest',
 			sourceType: 'module',
+			globals: {
+				process: 'readonly',
+				console: 'readonly',
+			},
 		},
 		rules: {
 			'no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
