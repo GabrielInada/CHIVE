@@ -58,6 +58,16 @@ the shared keyed maps without registering renderers or controls. Follow the
 [new-chart checklist in the source map](../source-map.md#where-do-i-put-new-code)
 when adding a type.
 
+The three implementation registries intentionally stay separate from these
+definitions and from one another. Controls need builder, listener, and
+activation-default adapters; the dataset workspace dispatches section
+renderers; and the panel resolves snapshot renderers. Keeping one registry per
+surface prevents each integration path from importing unrelated
+implementations and keeps capability differences local to their surface
+instead of pretending all charts expose one universal contract. Definition
+and registry completeness tests keep the supported type lists aligned without
+coupling their module graphs.
+
 ## How each doc is organized
 
 Every doc follows the same skeleton (scaled to the chart's complexity), so once you have read

@@ -17,6 +17,20 @@ The app runtime uses:
    `sqlite3.wasm`, and companion files referenced by the loader).
 4. Vendored fonts loaded from `vendor/fonts/`.
 
+## Why Raw-Static Remains A Constraint
+
+Raw-static hosting is CHIVE's production contract, not just another deployment
+option. GitHub Pages and the Docker/Nginx image copy and serve the checked-in
+HTML, `src/`, and `vendor/` files directly; Vite remains a development server
+and optional bundle check rather than a required production step.
+
+Keeping that contract means browser-runtime imports stay relative, runtime
+dependencies stay vendored, and workers and assets use standard browser URLs.
+It also means import, asset, and runtime-dependency changes need a plain static
+server smoke test. Replacing this path with a mandatory build would be an
+explicit deployment-architecture change affecting hosting, dependency
+provenance, and CI guards, not incidental build-tool cleanup.
+
 ## Requirements
 
 1. Serve files over HTTP/HTTPS. Do not open the app with `file://`.
