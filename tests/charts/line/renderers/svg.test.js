@@ -269,7 +269,7 @@ describe('renderLineChart', () => {
 		expect(document.querySelector('.chart-tooltip')?.textContent).toContain('Day');
 		point.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, pageX: 40, pageY: 50 }));
 		point.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
-		expect(document.querySelector('.chart-tooltip')?.style.display).toBe('none');
+		expect(document.querySelector('.chart-tooltip')?.hidden).toBe(true);
 	});
 
 	it('formats numeric and date tooltip values through the point renderer', () => {

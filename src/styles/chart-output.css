@@ -156,6 +156,13 @@
   padding: var(--space-6);
 }
 
+.chart-webgl-status {
+  margin-top: var(--space-3);
+  color: var(--muted);
+  font-size: var(--font-size-ui);
+  text-align: center;
+}
+
 .chart-tooltip {
   position: absolute;
   z-index: 9999;

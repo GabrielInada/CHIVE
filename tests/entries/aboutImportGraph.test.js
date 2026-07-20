@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { Linter } from 'eslint';
+import { moduleScriptSrcs, staticClosure } from '../helpers/importGraph.js';
 
 /**
  * Static import-graph guard for the page entries.
@@ -19,12 +17,10 @@ import { Linter } from 'eslint';
 
 const repoRoot = fileURLToPath(new URL('../../', import.meta.url));
 
-const toPosix = value => value.split(path.sep).join('/');
-const relToRepo = absPath => toPosix(path.relative(repoRoot, absPath));
-
 // The complete intended static closure reachable from the About entry.
 const ABOUT_ALLOWLIST = new Set([
 	'src/entries/about.js',
+	'src/app/startupScreen.js',
 	'src/app/sharedPageInitializer.js',
 	'src/features/settings/settingsController.js',
 	'src/features/settings/settingsDialog.js',
@@ -34,8 +30,7 @@ const ABOUT_ALLOWLIST = new Set([
 	'src/config/locale.js',
 	'src/config/settings.js',
 	'src/features/settings/domIds.js',
-	'src/i18n/en.json',
-	'src/i18n/pt-BR.json',
+	'src/utils/result.js',
 	'vendor/banana-i18n/banana-i18n.js',
 ]);
 
@@ -65,83 +60,8 @@ const FORBIDDEN_PREFIXES = [
 	'src/workers/',
 ];
 
-function collectSpecifiers(code, label) {
-	const staticSpecs = [];
-	const dynamicSpecs = [];
-	const linter = new Linter();
-	const messages = linter.verify(code, {
-		languageOptions: { ecmaVersion: 'latest', sourceType: 'module' },
-		plugins: {
-			graph: {
-				rules: {
-					collect: {
-						create() {
-							return {
-								ImportDeclaration: node => staticSpecs.push(node.source.value),
-								ExportNamedDeclaration: node => { if (node.source) staticSpecs.push(node.source.value); },
-								ExportAllDeclaration: node => staticSpecs.push(node.source.value),
-								ImportExpression: node => {
-									if (node.source && node.source.type === 'Literal' && typeof node.source.value === 'string') {
-										dynamicSpecs.push(node.source.value);
-									}
-								},
-							};
-						},
-					},
-				},
-			},
-		},
-		rules: { 'graph/collect': 'error' },
-	});
-	const fatal = messages.find(message => message.fatal);
-	if (fatal) throw new Error(`Failed to parse ${label}: ${fatal.message}`);
-	return { staticSpecs, dynamicSpecs };
-}
-
-function resolveSpecifier(fromFileAbs, spec) {
-	if (!spec.startsWith('.')) return { bare: spec };
-	return { relPath: relToRepo(path.resolve(path.dirname(fromFileAbs), spec)) };
-}
-
-// Walk the static startup graph. Recurse only through src/*.js; vendor bundles
-// and JSON catalogs are reachable leaves that are recorded but not parsed.
-function staticClosure(entryRelPath) {
-	const visited = new Set();
-	const bareSpecs = new Set();
-	const dynamicReached = new Set();
-
-	const visit = relPath => {
-		if (visited.has(relPath)) return;
-		visited.add(relPath);
-		if (!(relPath.startsWith('src/') && relPath.endsWith('.js'))) return;
-		const abs = path.join(repoRoot, relPath);
-		const { staticSpecs, dynamicSpecs } = collectSpecifiers(readFileSync(abs, 'utf8'), relPath);
-		for (const spec of staticSpecs) {
-			const resolved = resolveSpecifier(abs, spec);
-			if (resolved.bare) bareSpecs.add(resolved.bare);
-			else visit(resolved.relPath);
-		}
-		for (const spec of dynamicSpecs) {
-			const resolved = resolveSpecifier(abs, spec);
-			if (!resolved.bare) dynamicReached.add(resolved.relPath);
-		}
-	};
-
-	visit(entryRelPath);
-	return { visited, bareSpecs, dynamicReached };
-}
-
-function moduleScriptSrcs(htmlRelPath) {
-	const html = readFileSync(path.join(repoRoot, htmlRelPath), 'utf8');
-	const pattern = /<script\b[^>]*\btype=["']module["'][^>]*\bsrc=["']([^"']+)["'][^>]*>/g;
-	const srcs = [];
-	let match;
-	while ((match = pattern.exec(html)) !== null) srcs.push(toPosix(match[1]).replace(/^\.\//, ''));
-	return srcs;
-}
-
 function htmlEntry(htmlRelPath) {
-	const srcs = moduleScriptSrcs(htmlRelPath);
+	const srcs = moduleScriptSrcs(repoRoot, htmlRelPath);
 	expect(srcs, `${htmlRelPath} must declare exactly one <script type="module">`).toHaveLength(1);
 	return srcs[0];
 }
@@ -158,7 +78,7 @@ describe('page entry HTML wiring', () => {
 
 describe('About page static import graph', () => {
 	const entry = htmlEntry('about.html');
-	const { visited, bareSpecs, dynamicReached } = staticClosure(entry);
+	const { visited, bareSpecs, dynamicReached } = staticClosure(repoRoot, entry);
 
 	it('actually traversed the shared graph', () => {
 		for (const expected of [

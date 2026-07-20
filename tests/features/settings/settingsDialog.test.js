@@ -14,7 +14,7 @@ function openDialog(overrides = {}) {
 	const handle = openSettingsDialog({
 		locale: 'pt-BR',
 		tinColorRendering: 'optimized',
-		onLocaleChange: vi.fn(),
+		onLocaleChange: vi.fn().mockResolvedValue({ ok: true }),
 		onTinColorRenderingChange: vi.fn(),
 		onClose: vi.fn(),
 		...overrides,
@@ -67,8 +67,8 @@ describe('settingsDialog', () => {
 		expect(checked.value).toBe('full-ramp');
 	});
 
-	it('applies a language change immediately and keeps the dialog open with focus preserved', () => {
-		const onLocaleChange = vi.fn();
+	it('disables the selector while applying a language change and keeps focus', async () => {
+		const onLocaleChange = vi.fn().mockResolvedValue({ ok: true });
 		openDialog({ onLocaleChange });
 
 		const select = document.getElementById('settings-language-select');
@@ -77,8 +77,25 @@ describe('settingsDialog', () => {
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
 		expect(onLocaleChange).toHaveBeenCalledWith('en');
+		expect(select.disabled).toBe(true);
+		await Promise.resolve();
 		expect(document.querySelector('.settings-overlay')).not.toBeNull();
+		expect(select.disabled).toBe(false);
+		expect(select.value).toBe('en');
 		expect(document.activeElement).toBe(select);
+	});
+
+	it('reverts the locale selector when the asynchronous change fails', async () => {
+		const onLocaleChange = vi.fn().mockResolvedValue({ ok: false, reason: 'storage-unavailable' });
+		openDialog({ locale: 'pt-BR', onLocaleChange });
+
+		const select = document.getElementById('settings-language-select');
+		select.value = 'en';
+		select.dispatchEvent(new Event('change', { bubbles: true }));
+		await Promise.resolve();
+
+		expect(select.value).toBe('pt-BR');
+		expect(select.disabled).toBe(false);
 	});
 
 	it('applies a TIN mode change immediately through the callback', () => {

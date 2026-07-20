@@ -7,7 +7,7 @@
 
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
 import { clearChartContainer } from '../shared/containerLifecycle.js';
-import { renderScatter3dInto } from './presentation.js';
+import { invalidateScatter3dRender, renderScatter3dInto } from './presentation.js';
 
 /**
  * Render the 3D-scatter section.
@@ -22,6 +22,7 @@ export function renderScatter3dChartSection({ config, rows }) {
 	const container = document.getElementById(CHART_CONTAINERS.scatter3d);
 	if (!config || !config.enabled) {
 		if (block) block.style.display = 'none';
+		invalidateScatter3dRender(container);
 		clearChartContainer(container);
 		return;
 	}

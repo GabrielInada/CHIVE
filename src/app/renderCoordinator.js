@@ -38,9 +38,8 @@ import {
 } from '../features/datasetWorkspace/datasetController.js';
 import { switchTab } from './uiManager.js';
 
-// State events repaint through two coalescing entries that share one
-// `fullQueued` guard, so "full wins": scheduleFullRefresh() repaints everything
-// on the next microtask; scheduleRegion() drains a dirty-region set. The
+// State events repaint through one animation-frame scheduler. "Full wins":
+// scheduleFullRefresh() subsumes dirty regions in the same frame. The
 // synchronous runFullRefreshNow() entry is reserved for boot and debugging.
 
 const RENDER_REGIONS = Object.freeze({
@@ -51,8 +50,9 @@ const RENDER_REGIONS = Object.freeze({
 });
 
 const dirtyRegions = new Set();
-let regionFlushQueued = false;
 let fullQueued = false;
+let frameId = null;
+let fullRenderInProgress = false;
 
 /**
  * Report a render error through the shared internal-error channel.
@@ -74,56 +74,62 @@ function reportRefreshError(err) {
  * @param {(typeof RENDER_REGIONS)[keyof typeof RENDER_REGIONS]} region
  */
 function scheduleRegion(region) {
-	if (fullQueued) return;
+	if (fullQueued || fullRenderInProgress) return;
 	dirtyRegions.add(region);
-	if (regionFlushQueued) return;
-	regionFlushQueued = true;
-	Promise.resolve().then(() => {
-		regionFlushQueued = false;
-		if (fullQueued) {
-			dirtyRegions.clear();
-			return;
-		}
-
-		const regions = new Set(dirtyRegions);
-		dirtyRegions.clear();
-		try {
-			if (regions.has(RENDER_REGIONS.list)) {
-				renderDatasetListView(getLoadedDatasets(), getActiveDatasetIndex());
-			}
-			if (regions.has(RENDER_REGIONS.workspace)) {
-				renderActiveDatasetWorkspace(getActiveDataset(), getPreviewRows());
-			}
-			if (regions.has(RENDER_REGIONS.controls)) {
-				renderChartControlsView(getActiveDataset());
-			}
-			if (regions.has(RENDER_REGIONS.panel)) {
-				renderPanelWorkspace();
-			}
-		} catch (err) {
-			reportRefreshError(err);
-		}
-	});
+	requestRenderFrame();
 }
 
-/**
- * Schedule one coalesced full refresh on the next microtask. The full guard
- * remains set for the render so region work emitted during it is suppressed.
- */
-export function scheduleFullRefresh() {
-	if (fullQueued) return;
-	fullQueued = true;
-	dirtyRegions.clear();
-	Promise.resolve().then(() => {
+function requestRenderFrame() {
+	if (frameId !== null) return;
+	frameId = window.requestAnimationFrame(flushScheduledRender);
+}
+
+function flushScheduledRender() {
+	frameId = null;
+	if (fullQueued) {
+		fullQueued = false;
+		fullRenderInProgress = true;
+		dirtyRegions.clear();
 		try {
 			refreshView();
 		} catch (err) {
 			reportRefreshError(err);
 		} finally {
 			dirtyRegions.clear();
-			fullQueued = false;
+			fullRenderInProgress = false;
 		}
-	});
+		return;
+	}
+
+	const regions = new Set(dirtyRegions);
+	dirtyRegions.clear();
+	try {
+		if (regions.has(RENDER_REGIONS.list)) {
+			renderDatasetListView(getLoadedDatasets(), getActiveDatasetIndex());
+		}
+		if (regions.has(RENDER_REGIONS.workspace)) {
+			renderActiveDatasetWorkspace(getActiveDataset(), getPreviewRows());
+		}
+		if (regions.has(RENDER_REGIONS.controls)) {
+			renderChartControlsView(getActiveDataset());
+		}
+		if (regions.has(RENDER_REGIONS.panel)) {
+			renderPanelWorkspace();
+		}
+	} catch (err) {
+		reportRefreshError(err);
+	}
+}
+
+/**
+ * Schedule one coalesced full refresh on the next animation frame. The full guard
+ * remains set for the render so region work emitted during it is suppressed.
+ */
+export function scheduleFullRefresh() {
+	if (fullQueued || fullRenderInProgress) return;
+	fullQueued = true;
+	dirtyRegions.clear();
+	requestRenderFrame();
 }
 
 /**
@@ -132,14 +138,18 @@ export function scheduleFullRefresh() {
  * calls deliberately surface the throw in the console.
  */
 export function runFullRefreshNow() {
-	const wasFullQueued = fullQueued;
-	fullQueued = true;
+	if (frameId !== null) {
+		window.cancelAnimationFrame(frameId);
+		frameId = null;
+	}
+	fullQueued = false;
 	dirtyRegions.clear();
+	fullRenderInProgress = true;
 	try {
 		refreshView();
 	} finally {
 		dirtyRegions.clear();
-		fullQueued = wasFullQueued;
+		fullRenderInProgress = false;
 	}
 }
 

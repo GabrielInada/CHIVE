@@ -31,6 +31,10 @@ function fireMouseEvent(target, type) {
 	target.dispatchEvent(event);
 }
 
+function waitForTooltipPosition() {
+	return new Promise(resolve => requestAnimationFrame(resolve));
+}
+
 describe('network graph visualization', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '<div id="network"></div>';
@@ -120,7 +124,7 @@ describe('network graph visualization', () => {
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
 		expect(tooltip.classList.contains('chart-tooltip--fixado')).toBe(true);
-		expect(tooltip.style.display).toBe('block');
+		expect(tooltip.hidden).toBe(false);
 	});
 
 	it('unpins and hides the tooltip on background click', () => {
@@ -140,7 +144,7 @@ describe('network graph visualization', () => {
 
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip.classList.contains('chart-tooltip--fixado')).toBe(false);
-		expect(tooltip.style.display).toBe('none');
+		expect(tooltip.hidden).toBe(true);
 	});
 
 	it('repositions the pinned tooltip when the anchored node moves', async () => {
@@ -154,6 +158,7 @@ describe('network graph visualization', () => {
 
 		const firstNode = container.querySelector('circle');
 		fireMouseEvent(firstNode, 'click');
+		await waitForTooltipPosition();
 
 		const tooltip = document.querySelector('.chart-tooltip');
 		const initialLeft = tooltip.style.left;
@@ -167,6 +172,7 @@ describe('network graph visualization', () => {
 
 		const { repositionPinnedTooltip } = await import('../../../../src/charts/shared/tooltip/tooltip.js');
 		repositionPinnedTooltip();
+		await waitForTooltipPosition();
 
 		expect(tooltip.style.left).not.toBe(initialLeft);
 	});
@@ -288,7 +294,7 @@ describe('network graph visualization', () => {
 
 		const link = container.querySelector('line');
 		link.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 1, pageY: 2 }));
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('block');
+		expect(document.querySelector('.chart-tooltip').hidden).toBe(false);
 		link.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, pageX: 3, pageY: 4 }));
 		link.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
 
@@ -301,6 +307,6 @@ describe('network graph visualization', () => {
 		node.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, pageX: 7, pageY: 8 }));
 		node.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
 		node.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('none');
+		expect(document.querySelector('.chart-tooltip').hidden).toBe(true);
 	});
 });

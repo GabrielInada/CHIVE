@@ -6,6 +6,12 @@
 	},
 
 	"chive-page-title": "CHIVE",
+	"chive-startup-loading": "Loading CHIVE…",
+	"chive-startup-restoring": "Restoring your workspace…",
+	"chive-startup-preparing": "Preparing the workspace…",
+	"chive-startup-slow": "CHIVE is taking longer than expected.",
+	"chive-startup-reload": "Reload",
+	"chive-startup-error": "CHIVE could not start.",
 
 	"chive-nav-home": "Home",
 	"chive-nav-about": "About",
@@ -370,6 +376,9 @@
 	"chive-chart-scatter3d-sampling-notice": "Showing $1 of $2 points.",
 	"chive-chart-scatter3d-aria-label": "3D scatter of $1 (X), $2 (Y) and $3 (Z), $4 points. Interactive: rotate and zoom with the keyboard or pointer.",
 	"chive-chart-scatter3d-controls-instructions": "Arrow keys rotate the view, plus and minus zoom, Home resets the camera. Drag with the pointer to rotate, scroll to zoom.",
+	"chive-chart-scatter3d-loading": "Loading the 3D renderer…",
+	"chive-chart-scatter3d-context-lost": "The 3D graphics context was interrupted. Rendering is paused.",
+	"chive-chart-scatter3d-context-restored": "The 3D graphics context was restored.",
 	"chive-chart-empty-none": "No visualization selected.",
 	"chive-chart-disabled": "Visualization disabled in the sidebar.",
 	"chive-chart-no-data": "Not enough data for this chart.",
@@ -487,6 +496,7 @@
 
 	"chive-error-internal": "An internal application error occurred.",
 	"chive-save-failed": "Unable to save this project right now.",
+	"chive-load-failed": "Saved work could not be restored. CHIVE started with an empty workspace.",
 	"chive-save-failed-quota": "Unable to save. Browser storage quota is full.",
 	"chive-chart-color-palette": "Color palette",
 	"chive-chart-color-palette-help": "Colorblind-Safe is recommended for accessibility. Other palettes offer different visual styles.",

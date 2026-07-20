@@ -6,6 +6,12 @@
 	},
 
 	"chive-page-title": "Browser tab title.",
+	"chive-startup-loading": "Initial startup-screen status shown while the active locale catalog loads.",
+	"chive-startup-restoring": "Startup-screen phase shown while persisted project state is restored.",
+	"chive-startup-preparing": "Startup-screen phase shown while controllers and the first render are prepared.",
+	"chive-startup-slow": "Startup-screen status shown after ten seconds, before the recovery action.",
+	"chive-startup-reload": "Button label for reloading after slow or failed startup.",
+	"chive-startup-error": "Fatal startup-screen status shown when initialization cannot complete.",
 
 	"chive-nav-home": "Top navigation link label for returning to the main CHIVE workspace.",
 	"chive-nav-about": "Top navigation link label for opening the About page.",
@@ -347,6 +353,9 @@
 	"chive-chart-scatter3d-sampling-notice": "Notice shown under the 3D scatter when the dataset exceeds the render budget and points were sampled. $1 is the rendered point count, $2 the total valid point count.",
 	"chive-chart-scatter3d-aria-label": "Accessible label for the 3D scatter canvas. $1, $2, $3 are the X, Y, Z column names; $4 is the rendered point count.",
 	"chive-chart-scatter3d-controls-instructions": "Hidden text linked via aria-describedby that explains the keyboard and pointer controls of the 3D scatter canvas.",
+	"chive-chart-scatter3d-loading": "Placeholder shown while the lazy Three.js renderer module loads.",
+	"chive-chart-scatter3d-context-lost": "Live status shown when the WebGL context is lost and interaction rendering pauses.",
+	"chive-chart-scatter3d-context-restored": "Live status shown after the WebGL context is restored and the chart renders again.",
 	"chive-viz-toggle-expand": "Button label to expand a visualization card parameters section.",
 	"chive-viz-toggle-collapse": "Button label to collapse a visualization card parameters section.",
 	"chive-chart-sidebar-empty": "Message shown in visualization-management sidebar when there are no selected columns available.",
@@ -486,6 +495,7 @@
 
 	"chive-error-internal": "Fallback error message for unexpected internal application failures.",
 	"chive-save-failed": "Error toast shown when a project auto-save fails.",
+	"chive-load-failed": "Persistent error shown when saved work cannot be restored and CHIVE continues with an empty workspace.",
 	"chive-save-failed-quota": "Error toast shown when saving fails because browser storage quota is full.",
 	"chive-chart-color-palette": "Label for quick-apply color palette preset buttons (Pastel, Bold, Colorblind-Safe).",
 	"chive-chart-color-palette-help": "Help text below palette buttons explaining that Colorblind-Safe is the accessibility-first default.",

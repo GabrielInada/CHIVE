@@ -51,6 +51,16 @@ let pinnedAnchor = null;
 let pinnedDismissHandler = null;
 let pinnedKeydownHandler = null;
 let pinnedDocClickHandler = null;
+let latestPosition = null;
+let positionFrame = null;
+let measuredSize = { width: 0, height: 0 };
+let measurementDirty = true;
+let resizeListenerInstalled = false;
+
+function onViewportResize() {
+	measurementDirty = true;
+	schedulePositionWrite();
+}
 
 /**
  * Lazily create (or recover) the singleton tooltip element. Re-attaches
@@ -65,9 +75,14 @@ function ensureTooltip() {
 
 	tooltipEl = document.createElement('div');
 	tooltipEl.className = BASE_CLASS;
-	tooltipEl.style.display = 'none';
+	tooltipEl.hidden = true;
 	tooltipEl.tabIndex = -1;
+	measurementDirty = true;
 	document.body.appendChild(tooltipEl);
+	if (!resizeListenerInstalled) {
+		window.addEventListener('resize', onViewportResize);
+		resizeListenerInstalled = true;
+	}
 	return tooltipEl;
 }
 
@@ -96,7 +111,11 @@ export function hideChartTooltip() {
 	if (!tooltipEl) return;
 	clearPinState(tooltipEl);
 	if (tooltipEl.isConnected) {
-		tooltipEl.style.display = 'none';
+		tooltipEl.hidden = true;
+		if (positionFrame !== null) {
+			window.cancelAnimationFrame(positionFrame);
+			positionFrame = null;
+		}
 	} else {
 		// Node was removed by a full-page re-render; drop the ref so the next
 		// ensureTooltip() recreates and re-attaches it.
@@ -121,7 +140,8 @@ export function showChartTooltip(content, x, y) {
 	} else {
 		el.textContent = String(content ?? '');
 	}
-	el.style.display = 'block';
+	measurementDirty = true;
+	el.hidden = false;
 	moveChartTooltip(x, y);
 }
 
@@ -136,14 +156,30 @@ export function showChartTooltip(content, x, y) {
  * @returns {void}
  */
 export function moveChartTooltip(x, y) {
-	const el = ensureTooltip();
-	const rect = el.getBoundingClientRect();
+	ensureTooltip();
+	latestPosition = { x, y };
+	schedulePositionWrite();
+}
+
+function schedulePositionWrite() {
+	if (!latestPosition || !tooltipEl || tooltipEl.hidden || positionFrame !== null) return;
+	positionFrame = window.requestAnimationFrame(writeTooltipPosition);
+}
+
+function writeTooltipPosition() {
+	positionFrame = null;
+	if (!latestPosition || !tooltipEl || tooltipEl.hidden) return;
+	if (measurementDirty) {
+		const rect = tooltipEl.getBoundingClientRect();
+		measuredSize = { width: rect.width || 0, height: rect.height || 0 };
+		measurementDirty = false;
+	}
 	const vw = typeof window !== 'undefined' ? window.innerWidth : 0;
 	const vh = typeof window !== 'undefined' ? window.innerHeight : 0;
 	const scrollX = typeof window !== 'undefined' ? window.scrollX : 0;
 	const scrollY = typeof window !== 'undefined' ? window.scrollY : 0;
-	const w = rect.width || 0;
-	const h = rect.height || 0;
+	const { width: w, height: h } = measuredSize;
+	const { x, y } = latestPosition;
 
 	let left = x + TOOLTIP_OFFSET;
 	let top = y + TOOLTIP_OFFSET;
@@ -162,8 +198,8 @@ export function moveChartTooltip(x, y) {
 		top = scrollY + VIEWPORT_PADDING;
 	}
 
-	el.style.left = `${left}px`;
-	el.style.top = `${top}px`;
+	tooltipEl.style.left = `${left}px`;
+	tooltipEl.style.top = `${top}px`;
 }
 
 /** @private */

@@ -118,6 +118,32 @@ describe('static HTML contracts', () => {
 		}
 	});
 
+	it('ships a visible recoverable startup screen and a hidden inert shell', () => {
+		for (const document of [indexDocument, aboutDocument]) {
+			const startup = document.getElementById('startup-screen');
+			const message = document.getElementById('startup-message');
+			const reload = document.getElementById('startup-reload');
+			const shell = document.getElementById('app-shell');
+
+			expect(startup?.hidden).toBe(false);
+			expect(startup?.getAttribute('role')).toBe('status');
+			expect(message?.dataset.loadingEn).toBe('Loading CHIVE…');
+			expect(message?.dataset.loadingPt).toBe('Carregando o CHIVE…');
+			expect(reload?.hidden).toBe(true);
+			expect(shell?.hidden).toBe(true);
+			expect(shell?.hasAttribute('inert')).toBe(true);
+			expect(document.querySelector('style')?.textContent || '').not.toContain('visibility');
+			expect(document.querySelector('script[src="./src/entries/startupGuard.js"]')?.type).toBe('module');
+		}
+	});
+
+	it('modulepreloads exactly the page entry used by each shell', () => {
+		expect([...indexDocument.querySelectorAll('link[rel="modulepreload"]')]
+			.map(link => link.getAttribute('href'))).toEqual(['./src/entries/app.js']);
+		expect([...aboutDocument.querySelectorAll('link[rel="modulepreload"]')]
+			.map(link => link.getAttribute('href'))).toEqual(['./src/entries/about.js']);
+	});
+
 	it('keeps feature-owned and project-transfer contracts present in the application page', () => {
 		expectIds(indexDocument, [
 			VIEW_IDS,

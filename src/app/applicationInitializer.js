@@ -29,6 +29,11 @@ import {
 	scheduleFullRefresh,
 	setupStateSubscriptions,
 } from './renderCoordinator.js';
+import {
+	failStartupScreen,
+	revealPageShell,
+	updateStartupScreen,
+} from './startupScreen.js';
 
 /**
  * Initialize CHIVE in dependency order. Shared i18n and settings setup is
@@ -40,15 +45,21 @@ import {
 export async function initializeApplication() {
 	await initializeSharedPage();
 
-	if (!document.getElementById(VIEW_IDS.fileInfo)) return;
+	if (!document.getElementById(VIEW_IDS.fileInfo)) {
+		revealPageShell();
+		return;
+	}
 
+	updateStartupScreen(t('chive-startup-restoring'));
 	if (isPersistenceAvailable()) {
 		await hydrateState({
 			replaceAllState,
 			transformPanel: rehydratePanelChartSpecs,
+			onError: reportPersistenceLoadError,
 		});
 	}
 
+	updateStartupScreen(t('chive-startup-preparing'));
 	initDatasetController();
 	// Live color and height previews are rate-limited because heavy charts can
 	// otherwise re-render on every pointer event. Leading and trailing throttle
@@ -64,6 +75,7 @@ export async function initializeApplication() {
 	});
 
 	runFullRefreshNow();
+	revealPageShell();
 
 	window.addEventListener('chive-locale-changed', scheduleFullRefresh);
 	window.addEventListener(SETTINGS_CHANGE_EVENT, event => {
@@ -79,8 +91,14 @@ export async function initializeApplication() {
  * Start initialization behind the top-level error boundary. This is the
  * single-start lifecycle entry used by entries/app.js, not an idempotent utility.
  */
-export function startApplication() {
-	initializeApplication().catch(reportInitializationError);
+export async function startApplication() {
+	try {
+		await initializeApplication();
+		return true;
+	} catch (error) {
+		reportInitializationError(error);
+		return false;
+	}
 }
 
 /**
@@ -88,6 +106,10 @@ export function startApplication() {
  */
 function reportPersistenceSaveError(error) {
 	showError(t(getPersistenceErrorMessageKey(error)));
+}
+
+function reportPersistenceLoadError() {
+	showError(t('chive-load-failed'));
 }
 
 function internalErrorMessage() {
@@ -102,7 +124,8 @@ function internalErrorMessage() {
  * @param {unknown} error
  */
 function reportInitializationError(error) {
-	document.body.style.visibility = 'visible';
 	console.error('CHIVE initialization failed:', error);
-	showError(internalErrorMessage());
+	const message = internalErrorMessage();
+	failStartupScreen(message);
+	showError(message);
 }

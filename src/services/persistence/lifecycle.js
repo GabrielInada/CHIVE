@@ -92,9 +92,10 @@ async function importLegacyStateIfNeeded() {
  * @param {Object} hooks
  * @param {(snapshot: Partial<AppState>) => void} hooks.replaceAllState
  * @param {(panel: Object) => Object} [hooks.transformPanel]
+ * @param {(error: unknown) => void} [hooks.onError]
  * @returns {Promise<void>}
  */
-export async function hydrateState({ replaceAllState, transformPanel } = {}) {
+export async function hydrateState({ replaceAllState, transformPanel, onError } = {}) {
 	if (typeof replaceAllState !== 'function') return;
 
 	let storedSnapshot = null;
@@ -103,6 +104,7 @@ export async function hydrateState({ replaceAllState, transformPanel } = {}) {
 			storedSnapshot = await activeBackend.hydrate();
 		} catch (err) {
 			console.warn('[chive:persist] could not read SQLite persistence:', err);
+			if (typeof onError === 'function') onError(err);
 			return;
 		}
 	}

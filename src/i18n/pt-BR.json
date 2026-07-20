@@ -6,6 +6,12 @@
 	},
 
 	"chive-page-title": "CHIVE",
+	"chive-startup-loading": "Carregando o CHIVE…",
+	"chive-startup-restoring": "Restaurando seu espaço de trabalho…",
+	"chive-startup-preparing": "Preparando o espaço de trabalho…",
+	"chive-startup-slow": "O CHIVE está levando mais tempo que o esperado.",
+	"chive-startup-reload": "Recarregar",
+	"chive-startup-error": "Não foi possível iniciar o CHIVE.",
 
 	"chive-nav-home": "Início",
 	"chive-nav-about": "Sobre",
@@ -370,6 +376,9 @@
 	"chive-chart-scatter3d-sampling-notice": "Exibindo $1 de $2 pontos.",
 	"chive-chart-scatter3d-aria-label": "Dispersão 3D de $1 (X), $2 (Y) e $3 (Z), $4 pontos. Interativa: gire e amplie com o teclado ou o ponteiro.",
 	"chive-chart-scatter3d-controls-instructions": "As setas giram a visualização, mais e menos ajustam o zoom, Home redefine a câmera. Arraste com o ponteiro para girar, role para dar zoom.",
+	"chive-chart-scatter3d-loading": "Carregando o renderizador 3D…",
+	"chive-chart-scatter3d-context-lost": "O contexto gráfico 3D foi interrompido. A renderização está pausada.",
+	"chive-chart-scatter3d-context-restored": "O contexto gráfico 3D foi restaurado.",
 	"chive-chart-empty-none": "Nenhuma visualização selecionada.",
 	"chive-chart-disabled": "Visualização desabilitada no painel lateral.",
 	"chive-chart-no-data": "Sem dados suficientes para este gráfico.",
@@ -487,6 +496,7 @@
 
 	"chive-error-internal": "Ocorreu um erro interno na aplicação.",
 	"chive-save-failed": "Não foi possível salvar este projeto agora.",
+	"chive-load-failed": "Não foi possível restaurar o trabalho salvo. O CHIVE iniciou com um espaço de trabalho vazio.",
 	"chive-save-failed-quota": "Não foi possível salvar. O limite de armazenamento do navegador foi atingido.",
 	"chive-chart-color-palette": "Paleta de cores",
 	"chive-chart-color-palette-help": "Acessível a daltônicos é recomendada para acessibilidade. As outras paletas oferecem estilos visuais diferentes.",

@@ -265,7 +265,7 @@ describe('renderScatterPlot interaction', () => {
 		dispatchMouse(circles(container)[0], 'mouseenter');
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
-		expect(tooltip.style.display).toBe('block');
+		expect(tooltip.hidden).toBe(false);
 		// First point is (1, 2).
 		expect(tooltip.textContent).toContain('1');
 		expect(tooltip.textContent).toContain('2');
@@ -277,7 +277,7 @@ describe('renderScatterPlot interaction', () => {
 		const circle = circles(container)[0];
 		dispatchMouse(circle, 'mouseenter');
 		expect(() => dispatchMouse(circle, 'mousemove')).not.toThrow();
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('block');
+		expect(document.querySelector('.chart-tooltip').hidden).toBe(false);
 	});
 
 	it('pins on click and unpins on a second click', () => {
@@ -288,7 +288,7 @@ describe('renderScatterPlot interaction', () => {
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip.classList.contains('chart-tooltip--fixado')).toBe(true);
 		dispatchMouse(circle, 'click');
-		expect(tooltip.style.display).toBe('none');
+		expect(tooltip.hidden).toBe(true);
 	});
 
 	it('renders categorical pinned filter actions and state badges', () => {
@@ -338,9 +338,9 @@ describe('renderScatterPlot interaction', () => {
 		const container = document.getElementById('scatter');
 		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y');
 		dispatchMouse(circles(container)[0], 'click');
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('block');
+		expect(document.querySelector('.chart-tooltip').hidden).toBe(false);
 		dispatchMouse(container.querySelector('svg'), 'click');
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('none');
+		expect(document.querySelector('.chart-tooltip').hidden).toBe(true);
 	});
 });
 

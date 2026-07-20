@@ -112,6 +112,8 @@ function render(container, options = {}) {
 		labels: {
 			ariaLabel: 'label text',
 			controlsInstructions: 'controls text',
+			contextLost: 'context lost',
+			contextRestored: 'context restored',
 		},
 		...options,
 	});
@@ -221,6 +223,28 @@ describe('renderScatter3dChart', () => {
 		const rendersAfterDispose = renderer.render.mock.calls.length;
 		canvas.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
 		expect(renderer.render.mock.calls.length).toBe(rendersAfterDispose);
+	});
+
+	it('pauses on WebGL context loss and renders once after restoration', () => {
+		const container = makeContainer();
+		render(container);
+		const renderer = three.FakeWebGLRenderer.instances[0];
+		const canvas = container.querySelector('canvas');
+		const status = container.querySelector('.chart-webgl-status');
+		const before = renderer.render.mock.calls.length;
+
+		const lost = new Event('webglcontextlost', { cancelable: true });
+		canvas.dispatchEvent(lost);
+		expect(lost.defaultPrevented).toBe(true);
+		expect(status.hidden).toBe(false);
+		expect(status.textContent).toBe('context lost');
+
+		canvas.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }));
+		expect(renderer.render).toHaveBeenCalledTimes(before);
+
+		canvas.dispatchEvent(new Event('webglcontextrestored'));
+		expect(renderer.render).toHaveBeenCalledTimes(before + 1);
+		expect(status.textContent).toBe('context restored');
 	});
 
 	it('re-render runs the previous dispose hook first (context cap guard)', () => {

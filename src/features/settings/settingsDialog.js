@@ -49,7 +49,7 @@ function createSection(titleKey) {
  * @param {Object} args
  * @param {string} args.locale - Currently active locale code.
  * @param {string} args.tinColorRendering - Current TIN color-rendering mode.
- * @param {(locale: string) => void} args.onLocaleChange - Applied immediately; the dialog stays open.
+ * @param {(locale: string) => Promise<{ ok: boolean }>} args.onLocaleChange - Applied asynchronously; the dialog stays open.
  * @param {(mode: string) => void} args.onTinColorRenderingChange - Applied immediately.
  * @param {() => void} [args.onClose] - Called once after any close path.
  * @returns {{ close: () => void }}
@@ -115,8 +115,24 @@ export function openSettingsDialog({
 		option.selected = code === locale;
 		languageSelect.appendChild(option);
 	});
-	languageSelect.addEventListener('change', () => {
-		onLocaleChange(languageSelect.value);
+	let appliedLocale = locale;
+	languageSelect.addEventListener('change', async () => {
+		const requestedLocale = languageSelect.value;
+		const restoreFocus = document.activeElement === languageSelect;
+		languageSelect.disabled = true;
+		try {
+			const result = await onLocaleChange(requestedLocale);
+			if (result?.ok) {
+				appliedLocale = requestedLocale;
+			} else {
+				languageSelect.value = appliedLocale;
+			}
+		} catch {
+			languageSelect.value = appliedLocale;
+		} finally {
+			languageSelect.disabled = false;
+			if (restoreFocus) languageSelect.focus({ preventScroll: true });
+		}
 	});
 	languageControl.appendChild(languageSelect);
 	generalSection.appendChild(languageControl);

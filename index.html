@@ -9,6 +9,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'" />
     <title>CHIVE</title>
     <link rel="icon" type="image/svg+xml" href="./src/icons/favicon.svg" />
+    <link rel="modulepreload" href="./src/entries/app.js" />
     <link rel="preload" href="./vendor/fonts/ibm-plex-sans/IBMPlexSans-VariableFont_wdth,wght.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="./vendor/fonts/ibm-plex-serif/IBMPlexSerif-Bold.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="./vendor/fonts/fonts.css" />
@@ -30,9 +31,35 @@
     <link rel="stylesheet" href="./src/styles/chart-picker.css" />
     <link rel="stylesheet" href="./src/styles/panel.css" />
     <link rel="stylesheet" href="./src/styles/messages.css" />
-    <style>body { visibility: hidden }</style>
 </head>
 <body>
+    <div id="startup-screen" class="startup-screen" role="status" aria-live="polite" aria-atomic="true">
+        <div class="startup-card">
+            <div class="startup-brand">CHIVE</div>
+            <p
+                id="startup-message"
+                class="startup-message"
+                data-loading-en="Loading CHIVE…"
+                data-loading-pt="Carregando o CHIVE…"
+                data-slow-en="CHIVE is taking longer than expected."
+                data-slow-pt="O CHIVE está levando mais tempo que o esperado."
+                data-error-en="CHIVE could not start."
+                data-error-pt="Não foi possível iniciar o CHIVE."
+            >Carregando o CHIVE…</p>
+            <div class="startup-progress" aria-hidden="true"><span></span></div>
+            <button
+                id="startup-reload"
+                class="btn-secondary startup-reload"
+                type="button"
+                data-label-en="Reload"
+                data-label-pt="Recarregar"
+                hidden
+            >Recarregar</button>
+        </div>
+    </div>
+    <script type="module" src="./src/entries/startupGuard.js"></script>
+
+    <div id="app-shell" hidden inert>
     <header>
         <div class="logo" title="Connected Hierarchical Interactive Visualization Engine">
             CHIVE
@@ -449,6 +476,7 @@
                 </div>
             </div>
         </main>
+    </div>
     </div>
 
     <div id="feedback-region" class="feedback-region" aria-live="polite" aria-atomic="false"></div>
