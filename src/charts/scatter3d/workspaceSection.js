@@ -21,12 +21,12 @@ export function renderScatter3dChartSection({ config, rows }) {
 	const block = document.getElementById(CHART_BLOCKS.scatter3d);
 	const container = document.getElementById(CHART_CONTAINERS.scatter3d);
 	if (!config || !config.enabled) {
-		if (block) block.style.display = 'none';
+		if (block) block.hidden = true;
 		invalidateScatter3dRender(container);
 		clearChartContainer(container);
 		return;
 	}
-	if (block) block.style.display = 'block';
+	if (block) block.hidden = false;
 	if (!container) return;
 	container.style.minHeight = `${Number(config.chartHeight || 460)}px`;
 	renderScatter3dInto(container, rows, config);

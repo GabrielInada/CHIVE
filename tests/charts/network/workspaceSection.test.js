@@ -72,7 +72,7 @@ describe('renderNetworkChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('none');
+		expect(block.hidden).toBe(true);
 		expect(container.children.length).toBe(0);
 		expect(mocks.renderNetworkGraph).not.toHaveBeenCalled();
 	});
@@ -87,7 +87,7 @@ describe('renderNetworkChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('block');
+		expect(block.hidden).toBe(false);
 		expect(container.style.minHeight).toBe('480px');
 		const [calledContainer, calledRows, source, target, opts] = mocks.renderNetworkGraph.mock.calls[0];
 		expect(calledContainer).toBe(container);

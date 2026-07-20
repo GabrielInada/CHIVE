@@ -24,11 +24,11 @@ export function renderLineChartSection({ config, rows, columnTypeByName, filterC
 	const block = document.getElementById(CHART_BLOCKS.line);
 	const container = document.getElementById(CHART_CONTAINERS.line);
 	if (!config.enabled) {
-		block.style.display = 'none';
+		block.hidden = true;
 		clearChartContainer(container);
 		return;
 	}
-	block.style.display = 'block';
+	block.hidden = false;
 	container.style.minHeight = `${Number(config.chartHeight || 320)}px`;
 	const result = renderLineInto(container, rows, config, columnTypeByName, filterCallbacks);
 

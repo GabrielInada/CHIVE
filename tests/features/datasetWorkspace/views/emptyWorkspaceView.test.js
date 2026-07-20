@@ -40,7 +40,6 @@ function setupEmptyStateDom() {
 		<div id="chart-scatter3d-container"><canvas></canvas></div>
 		<span id="badge-charts">7</span>
 		<button id="btn-advance"></button>
-		<div id="dev-warning"></div>
 		<div id="upload-zone" class="loaded"></div>
 		<span class="upload-icon"></span>
 		<p class="upload-text-main"></p>
@@ -57,12 +56,12 @@ describe('renderEmptyState', () => {
 	it('clears active result content and restores empty upload state', () => {
 		renderEmptyState();
 
-		expect(document.getElementById('columns-panel').style.display).toBe('none');
-		expect(document.getElementById('empty-state').style.display).toBe('flex');
-		expect(document.getElementById('data-state').style.display).toBe('none');
+		expect(document.getElementById('columns-panel').hidden).toBe(true);
+		expect(document.getElementById('empty-state').hidden).toBe(false);
+		expect(document.getElementById('data-state').hidden).toBe(true);
 		expect(document.getElementById('table-container').children.length).toBe(0);
 		expect(document.getElementById('container-stats').children.length).toBe(0);
-		expect(document.getElementById('card-cat-stats').style.display).toBe('none');
+		expect(document.getElementById('card-cat-stats').hidden).toBe(true);
 		for (const containerId of Object.values(CHART_CONTAINERS)) {
 			expect(document.getElementById(containerId).children.length).toBe(0);
 		}

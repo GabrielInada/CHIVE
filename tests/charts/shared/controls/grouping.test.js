@@ -14,14 +14,14 @@ describe('createControlSection', () => {
 		const section = createControlSection('sec-1', 'Title', [makeDummyControl()], false);
 		const content = section.querySelector('.chart-section-content');
 		const header = section.querySelector('.chart-section-header');
-		expect(content.style.display).toBe('none');
+		expect(content.hidden).toBe(true);
 		expect(header.getAttribute('aria-expanded')).toBe('false');
 	});
 
 	it('creates expanded section by default', () => {
 		const section = createControlSection('sec-2', 'Title', [makeDummyControl()]);
 		const content = section.querySelector('.chart-section-content');
-		expect(content.style.display).toBe('block');
+		expect(content.hidden).toBe(false);
 	});
 
 	it('toggles section on header click', () => {
@@ -31,11 +31,11 @@ describe('createControlSection', () => {
 		const toggle = section.querySelector('.chart-section-toggle');
 
 		header.click();
-		expect(content.style.display).toBe('none');
+		expect(content.hidden).toBe(true);
 		expect(toggle.textContent).toBe('▶');
 
 		header.click();
-		expect(content.style.display).toBe('block');
+		expect(content.hidden).toBe(false);
 		expect(toggle.textContent).toBe('▼');
 	});
 
@@ -68,7 +68,7 @@ describe('groupControls', () => {
 		]);
 		expect(sections.length).toBe(2);
 		expect(sections[0].dataset.section).toBe('a');
-		expect(sections[1].querySelector('.chart-section-content').style.display).toBe('none');
+		expect(sections[1].querySelector('.chart-section-content').hidden).toBe(true);
 	});
 });
 

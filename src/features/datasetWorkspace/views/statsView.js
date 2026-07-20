@@ -82,7 +82,7 @@ export function renderStats(rows, visibleColumns) {
 	const cardStats = document.getElementById(VIEW_IDS.statsCard);
 
 	if (stats.length > 0) {
-		cardStats.style.display = 'block';
+		cardStats.hidden = false;
 		document.getElementById(BADGE_IDS.numColumns).textContent = t('chive-stats-badge', stats.length);
 		const containerStats = document.getElementById(VIEW_IDS.statsContainer);
 		containerStats.replaceChildren();
@@ -109,7 +109,7 @@ export function renderStats(rows, visibleColumns) {
 		return;
 	}
 
-	cardStats.style.display = 'none';
+	cardStats.hidden = true;
 	document.getElementById(VIEW_IDS.statsContainer).replaceChildren();
 }
 
@@ -132,12 +132,12 @@ export function renderCategoricalStats(rows, visibleColumns) {
 	const badge = document.getElementById('badge-cat-columns');
 
 	if (stats.length === 0) {
-		card.style.display = 'none';
+		card.hidden = true;
 		if (container) container.replaceChildren();
 		return;
 	}
 
-	card.style.display = 'block';
+	card.hidden = false;
 	if (badge) badge.textContent = t('chive-cat-stats-badge', stats.length);
 	if (!container) return;
 	container.replaceChildren();

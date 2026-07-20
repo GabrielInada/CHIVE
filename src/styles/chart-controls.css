@@ -198,6 +198,15 @@
     border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
+.chart-color-preset-buttons,
+.chart-color-picker-item {
+    display: flex;
+}
+
+.chart-color-picker-grid {
+    display: grid;
+}
+
 .chart-section-content--opening {
     animation: slideDown var(--dur-slow) ease forwards;
 }

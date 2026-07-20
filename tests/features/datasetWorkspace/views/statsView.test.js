@@ -72,7 +72,7 @@ describe('statsView', () => {
 		renderStats(rows, visibleColumns);
 
 		expect(mocks.calculateStatistics).not.toHaveBeenCalled();
-		expect(document.getElementById('card-stats').style.display).toBe('block');
+		expect(document.getElementById('card-stats').hidden).toBe(false);
 		expect(document.getElementById('badge-num-columns').textContent).toBe('chive-stats-badge:1');
 		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
 		expect(document.querySelector('.stat-col-name').textContent).toBe('value');
@@ -90,7 +90,7 @@ describe('statsView', () => {
 
 		mocks.calculateStatistics.mockReturnValueOnce([]);
 		renderStats(rows, visibleColumns);
-		expect(document.getElementById('card-stats').style.display).toBe('none');
+		expect(document.getElementById('card-stats').hidden).toBe(true);
 		expect(document.getElementById('container-stats').children.length).toBe(0);
 	});
 
@@ -128,7 +128,7 @@ describe('statsView', () => {
 		]);
 
 		expect(mocks.calculateCategoricalStatistics).not.toHaveBeenCalled();
-		expect(document.getElementById('card-cat-stats').style.display).toBe('block');
+		expect(document.getElementById('card-cat-stats').hidden).toBe(false);
 		expect(document.getElementById('badge-cat-columns').textContent).toBe('chive-cat-stats-badge:2');
 		expect(document.querySelectorAll('#container-cat-stats .stat-col').length).toBe(2);
 		expect(document.querySelector('[title="A very long region name"]')).not.toBeNull();
@@ -164,6 +164,6 @@ describe('statsView', () => {
 		mocks.calculateCategoricalStatistics.mockReturnValueOnce([]);
 
 		expect(() => renderCategoricalStats(rows, visibleColumns)).not.toThrow();
-		expect(document.getElementById('card-cat-stats').style.display).toBe('none');
+		expect(document.getElementById('card-cat-stats').hidden).toBe(true);
 	});
 });

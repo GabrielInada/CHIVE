@@ -100,13 +100,13 @@
                     <input type="file" id="file-input" accept=".csv,.tsv,.dsv,.txt,.json,text/csv,text/tab-separated-values,application/json" multiple />
                 </div>
 
-                <div id="file-info" class="sidebar-expanded-only">
+                <div id="file-info" class="sidebar-expanded-only" hidden>
                     <p class="section-title" data-i18n="chive-section-files">Arquivos carregados</p>
                     <div class="files-summary" id="file-summary-text">Nenhum arquivo</div>
                     <div class="file-list" id="file-list-content"></div>
                 </div>
 
-                <div id="columns-panel" class="sidebar-expanded-only">
+                <div id="columns-panel" class="sidebar-expanded-only" hidden>
                     <p class="section-title" data-i18n="chive-section-columns">Colunas detectadas</p>
                     <div class="column-actions" id="column-actions-bar"></div>
                     <div class="column-list" id="column-list-content"></div>
@@ -135,7 +135,7 @@
         </aside>
 
         <main class="results-area">
-            <div class="result-tabs" id="result-tabs">
+            <div class="result-tabs" id="result-tabs" hidden>
                 <div class="result-tabs-group" id="result-tabs-group" role="tablist" aria-label="Workspace views" data-i18n-title="chive-tabs-label">
                     <button type="button" class="result-tab active" id="tab-preview" role="tab" aria-selected="true" aria-controls="tab-content-preview" tabindex="0" data-tab="preview" data-i18n="chive-tab-preview">Preview</button>
                     <button type="button" class="result-tab" id="tab-charts" role="tab" aria-selected="false" aria-controls="tab-content-charts" tabindex="-1" data-tab="charts" data-i18n="chive-tab-charts">Visualizações</button>
@@ -167,7 +167,7 @@
                 <p class="empty-sub" data-i18n="chive-empty-sub">Carregue um arquivo CSV ou JSON ao lado para ver o preview dos dados aqui.</p>
             </div>
 
-            <div id="data-state">
+            <div id="data-state" hidden>
                 <div id="tab-content-preview" class="result-panel active" role="tabpanel" aria-labelledby="tab-preview">
                     <div class="result-card animate">
                         <div class="card-header">
@@ -191,7 +191,7 @@
                         </div>
                     </div>
 
-                    <div class="result-card animate" id="card-stats" style="display:none">
+                    <div class="result-card animate" id="card-stats" hidden>
                         <div class="card-header">
                             <span class="card-title" data-i18n="chive-card-stats">Estatísticas: colunas numéricas</span>
                             <span class="card-badge" id="badge-num-columns">0</span>
@@ -201,7 +201,7 @@
                         </div>
                     </div>
 
-                    <div class="result-card animate" id="card-cat-stats" style="display:none">
+                    <div class="result-card animate" id="card-cat-stats" hidden>
                         <div class="card-header">
                             <span class="card-title" data-i18n="chive-card-cat-stats">Estatísticas: colunas categóricas</span>
                             <span class="card-badge" id="badge-cat-columns">0</span>
@@ -219,7 +219,7 @@
                             <span class="card-badge" id="badge-charts">0</span>
                         </div>
                         <div class="card-body card-body-charts">
-                            <div id="charts-empty-state" class="chart-empty" style="display:none"></div>
+                            <div id="charts-empty-state" class="chart-empty" hidden></div>
                             <div class="charts-grid" id="charts-grid">
                                 <section class="chart-block" id="chart-block-bar">
                                     <div class="chart-block-top">

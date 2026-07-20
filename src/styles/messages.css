@@ -50,21 +50,6 @@
   }
 }
 
-#dev-warning {
-  display: none;
-  background: #1c1a17;
-  color: #c8ff4d;
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
-  padding: var(--space-4) var(--space-7);
-  border-radius: var(--radius-md);
-  margin-top: var(--space-3);
-}
-
-#dev-warning code {
-  opacity: 0.7;
-}
-
 .feedback-region,
 .errors-container {
   position: fixed;

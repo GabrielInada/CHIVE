@@ -75,7 +75,6 @@
 }
 
 #file-info {
-  display: none;
   max-height: 42vh;
   max-height: 42dvh;
   overflow-y: auto;

@@ -34,13 +34,13 @@
 }
 
 #data-state {
-  display: none;
+  display: flex;
   flex-direction: column;
   gap: 28px;
 }
 
 .result-tabs {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);

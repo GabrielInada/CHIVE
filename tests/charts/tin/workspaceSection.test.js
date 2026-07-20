@@ -95,7 +95,7 @@ describe('renderTinChartSection', () => {
 			rows: [],
 		});
 
-		expect(block.style.display).toBe('none');
+		expect(block.hidden).toBe(true);
 		expect(container.children.length).toBe(0);
 		expect(mocks.renderTinChart).not.toHaveBeenCalled();
 	});
@@ -109,7 +109,7 @@ describe('renderTinChartSection', () => {
 	it('does not throw and does not call renderer when container is missing', () => {
 		const { block } = setupDom({ withContainer: false });
 		renderTinChartSection({ config: defaultConfig(), rows: [] });
-		expect(block.style.display).toBe('block');
+		expect(block.hidden).toBe(false);
 		expect(mocks.renderTinChart).not.toHaveBeenCalled();
 	});
 
@@ -119,7 +119,7 @@ describe('renderTinChartSection', () => {
 
 		renderTinChartSection({ config: defaultConfig({ chartHeight: 500 }), rows });
 
-		expect(block.style.display).toBe('block');
+		expect(block.hidden).toBe(false);
 		expect(container.style.minHeight).toBe('500px');
 		const [calledContainer, calledRows, x, y, z, opts] = mocks.renderTinChart.mock.calls[0];
 		expect(calledContainer).toBe(container);

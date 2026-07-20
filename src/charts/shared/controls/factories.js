@@ -285,7 +285,6 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
 
 	const presetButtons = document.createElement('div');
 	presetButtons.className = 'chart-color-preset-buttons';
-	presetButtons.style.display = 'flex';
 	presetButtons.style.gap = '6px';
 	presetButtons.style.marginTop = '4px';
 	presetButtons.style.flexWrap = 'wrap';
@@ -354,7 +353,6 @@ export function createColorPickerGridControl(id, labelText, items, colorMap, dis
 	const grid = document.createElement('div');
 	grid.id = id;
 	grid.className = 'chart-color-picker-grid';
-	grid.style.display = 'grid';
 	grid.style.gridTemplateColumns = 'repeat(auto-fit, minmax(120px, 1fr))';
 	grid.style.gap = '8px';
 	grid.style.marginTop = '6px';
@@ -362,7 +360,6 @@ export function createColorPickerGridControl(id, labelText, items, colorMap, dis
 	items.forEach((item) => {
 		const itemDiv = document.createElement('div');
 		itemDiv.className = 'chart-color-picker-item';
-		itemDiv.style.display = 'flex';
 		itemDiv.style.alignItems = 'center';
 		itemDiv.style.gap = '6px';
 		itemDiv.style.padding = '4px';

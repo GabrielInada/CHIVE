@@ -99,15 +99,14 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	const filteredRows = applyGlobalFilterRules(rows, safeGlobalFilter, numericColumnNames);
 	const chartsGrid = document.getElementById(VIEW_IDS.chartsGrid);
 	const emptyState = document.getElementById(VIEW_IDS.chartsEmptyState);
-	const blocoBar = document.getElementById(CHART_BLOCKS.bar);
-	const blocoScatter = document.getElementById(CHART_BLOCKS.scatter);
-	const blocoNetwork = document.getElementById(CHART_BLOCKS.network);
-	const blocoPie = document.getElementById(CHART_BLOCKS.pie);
-	const blocoBubble = document.getElementById(CHART_BLOCKS.bubble);
-	const blocoTreemap = document.getElementById(CHART_BLOCKS.treemap);
-	const blocoLine = document.getElementById(CHART_BLOCKS.line);
-	const blocoTin = document.getElementById(CHART_BLOCKS.tin);
-	const blocoScatter3d = document.getElementById(CHART_BLOCKS.scatter3d);
+	const chartBlocks = CHART_TYPE_KEYS
+		.map(type => document.getElementById(CHART_BLOCKS[type]))
+		.filter(Boolean);
+	const clearAllChartContainers = () => {
+		for (const type of CHART_TYPE_KEYS) {
+			clearChartContainer(document.getElementById(CHART_CONTAINERS[type]));
+		}
+	};
 
 	document.getElementById(BADGE_IDS.charts).textContent = t(
 		'chive-charts-badge',
@@ -116,51 +115,23 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	);
 
 	if (chartConfig.activeTab !== 'charts') {
-		chartsGrid.style.display = 'grid';
-		emptyState.style.display = 'none';
-		blocoBar.style.display = 'block';
-		blocoScatter.style.display = 'block';
-		blocoNetwork.style.display = 'block';
-		blocoPie.style.display = 'block';
-		blocoBubble.style.display = 'block';
-		blocoTreemap.style.display = 'block';
-		blocoLine.style.display = 'block';
-		if (blocoTin) blocoTin.style.display = 'block';
-		if (blocoScatter3d) blocoScatter3d.style.display = 'block';
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.bar));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.scatter));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.network));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.pie));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.bubble));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.treemap));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.line));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.tin));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.scatter3d));
+		chartsGrid.hidden = false;
+		emptyState.hidden = true;
+		chartBlocks.forEach(block => {
+			block.hidden = false;
+		});
+		clearAllChartContainers();
 		return;
 	}
 
 	if (!CHART_TYPE_KEYS.some(type => chartConfig[type].enabled)) {
-		chartsGrid.style.display = 'none';
-		emptyState.style.display = 'flex';
+		chartsGrid.hidden = true;
+		emptyState.hidden = false;
 		emptyState.textContent = t('chive-chart-empty-none');
-		blocoBar.style.display = 'none';
-		blocoScatter.style.display = 'none';
-		blocoNetwork.style.display = 'none';
-		blocoPie.style.display = 'none';
-		blocoBubble.style.display = 'none';
-		blocoTreemap.style.display = 'none';
-		blocoLine.style.display = 'none';
-		if (blocoTin) blocoTin.style.display = 'none';
-		if (blocoScatter3d) blocoScatter3d.style.display = 'none';
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.bar));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.scatter));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.network));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.pie));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.bubble));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.treemap));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.line));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.tin));
-		clearChartContainer(document.getElementById(CHART_CONTAINERS.scatter3d));
+		chartBlocks.forEach(block => {
+			block.hidden = true;
+		});
+		clearAllChartContainers();
 		return;
 	}
 
@@ -173,8 +144,8 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		}
 	});
 
-	chartsGrid.style.display = 'grid';
-	emptyState.style.display = 'none';
+	chartsGrid.hidden = false;
+	emptyState.hidden = true;
 
 	for (const type of CHART_TYPE_KEYS) {
 		renderWorkspaceChart(type, {

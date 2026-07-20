@@ -309,7 +309,7 @@ describe('renderChartControlsSidebar', () => {
 			header.appendChild(toggleIcon);
 			const content = document.createElement('div');
 			content.className = 'chart-section-content';
-			content.style.display = 'none';
+			content.hidden = true;
 			section.appendChild(header);
 			section.appendChild(content);
 			return [section];
@@ -321,7 +321,7 @@ describe('renderChartControlsSidebar', () => {
 		const content = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-content');
 		const toggleIcon = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-toggle');
 		header.setAttribute('aria-expanded', 'true');
-		content.style.display = 'block';
+		content.hidden = false;
 		toggleIcon.textContent = '▼';
 
 		renderChartControlsSidebar({ chartConfig: {} });
@@ -330,7 +330,7 @@ describe('renderChartControlsSidebar', () => {
 		const nextContent = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-content');
 		const nextToggle = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-toggle');
 		expect(nextHeader?.getAttribute('aria-expanded')).toBe('true');
-		expect(nextContent?.style.display).toBe('block');
+		expect(nextContent?.hidden).toBe(false);
 		expect(nextToggle?.textContent).toBe('▼');
 	});
 });

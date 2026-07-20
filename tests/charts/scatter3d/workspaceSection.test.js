@@ -70,7 +70,7 @@ describe('renderScatter3dChartSection', () => {
 
 		renderScatter3dChartSection({ config: { enabled: false }, rows: [] });
 
-		expect(block.style.display).toBe('none');
+		expect(block.hidden).toBe(true);
 		expect(container.innerHTML).toBe('');
 		expect(dispose).toHaveBeenCalledTimes(1);
 		expect(mocks.renderScatter3dChart).not.toHaveBeenCalled();
@@ -83,7 +83,7 @@ describe('renderScatter3dChartSection', () => {
 		renderScatter3dChartSection({ config: enabledConfig, rows });
 		await flushLazyRender();
 
-		expect(block.style.display).toBe('block');
+		expect(block.hidden).toBe(false);
 		expect(container.style.minHeight).toBe('500px');
 		expect(mocks.renderScatter3dChart).toHaveBeenCalledWith(container, rows, 'a', 'b', 'c', {
 			customTitle: 'My cloud',

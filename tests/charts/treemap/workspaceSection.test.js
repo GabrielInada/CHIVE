@@ -67,7 +67,7 @@ describe('renderTreemapChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('none');
+		expect(block.hidden).toBe(true);
 		expect(container.children.length).toBe(0);
 		expect(mocks.renderTreemap).not.toHaveBeenCalled();
 	});
@@ -99,7 +99,7 @@ describe('renderTreemapChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('block');
+		expect(block.hidden).toBe(false);
 		expect(container.style.minHeight).toBe('500px');
 		const [calledContainer, calledRows, category, opts] = mocks.renderTreemap.mock.calls[0];
 		expect(calledContainer).toBe(container);

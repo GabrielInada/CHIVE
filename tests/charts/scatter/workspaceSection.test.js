@@ -78,7 +78,7 @@ describe('renderScatterChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('none');
+		expect(block.hidden).toBe(true);
 		expect(container.children.length).toBe(0);
 		expect(mocks.renderScatterPlot).not.toHaveBeenCalled();
 	});
@@ -167,7 +167,7 @@ describe('renderScatterChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('block');
+		expect(block.hidden).toBe(false);
 		expect(container.style.minHeight).toBe('500px');
 		const [calledContainer, calledRows, x, y, opts] = mocks.renderScatterPlot.mock.calls[0];
 		expect(calledContainer).toBe(container);
