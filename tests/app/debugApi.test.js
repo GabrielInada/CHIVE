@@ -14,8 +14,8 @@ const mocks = vi.hoisted(() => ({
 	runFullRefreshNow: vi.fn(),
 	updateDatasetColumns: vi.fn(),
 	updateDatasetConfig: vi.fn(),
-	showFeedbackMessage: vi.fn(),
-	showErrorMessage: vi.fn(),
+	showFeedback: vi.fn(),
+	showError: vi.fn(),
 	switchTab: vi.fn(),
 }));
 
@@ -46,8 +46,8 @@ vi.mock('../../src/app/renderCoordinator.js', () => ({
 }));
 
 vi.mock('../../src/ui/feedback.js', () => ({
-	showFeedbackMessage: mocks.showFeedbackMessage,
-	showErrorMessage: mocks.showErrorMessage,
+	showFeedback: mocks.showFeedback,
+	showError: mocks.showError,
 }));
 
 vi.mock('../../src/app/uiManager.js', () => ({
@@ -75,8 +75,8 @@ describe('debugApi', () => {
 			updateDatasetConfig: mocks.updateDatasetConfig,
 			switchTab: mocks.switchTab,
 			refreshView: mocks.runFullRefreshNow,
-			showFeedback: mocks.showFeedbackMessage,
-			showError: mocks.showErrorMessage,
+			showFeedback: mocks.showFeedback,
+			showError: mocks.showError,
 			enableStateLog: mocks.enableStateLog,
 			disableStateLog: mocks.disableStateLog,
 			getStateLog: mocks.getStateLog,

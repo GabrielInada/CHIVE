@@ -36,6 +36,8 @@ project overview; the sections below point to the deeper guides by reader goal.
   vocabulary, and where new code goes.
 - [Stylesheet organization](development/styles.md): CSS layers, feature
   ownership, naming conventions, and responsive breakpoints.
+- [Browser support policy](development/browser-support.md): Baseline adoption,
+  fallbacks, and raw-static constraints.
 
 ## Add Charts, Datasets, Or Translations
 

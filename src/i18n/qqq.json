@@ -437,6 +437,7 @@
 	"chive-tooltip-state-included": "Badge inside a pinned chart tooltip indicating that the clicked value is currently part of the active global filter.",
 	"chive-tooltip-state-excluded": "Badge inside a pinned chart tooltip indicating that the clicked value is currently excluded by the active global filter.",
 	"chive-tooltip-close": "Aria label for the close button on a pinned chart tooltip.",
+	"chive-feedback-dismiss": "Accessible label for the button that dismisses a persistent error notification.",
 	"chive-tooltip-filter-by-source": "Label preceding the action set in a network graph node tooltip that filters by the source column.",
 	"chive-tooltip-filter-by-target": "Label preceding the action set in a network graph node tooltip that filters by the target column.",
 	"chive-stats-badge": "Badge in the stats card. $1 = number of numeric columns. Uses PLURAL.",

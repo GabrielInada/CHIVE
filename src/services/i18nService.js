@@ -116,4 +116,8 @@ function translateStaticPage() {
 		el.title = text;
 		if (el.hasAttribute('aria-label')) el.setAttribute('aria-label', text);
 	});
+
+	document.querySelectorAll('[data-i18n-close-label]').forEach(el => {
+		el.dataset.closeLabel = t(el.dataset.i18nCloseLabel);
+	});
 }

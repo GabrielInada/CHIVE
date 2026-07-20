@@ -72,6 +72,18 @@ describe('static HTML contracts', () => {
 		expect(aboutDocument.getElementById(SETTINGS_IDS.button)).not.toBeNull();
 	});
 
+	it('provides matching polite and assertive feedback regions on both pages', () => {
+		for (const document of [indexDocument, aboutDocument]) {
+			const feedback = document.getElementById('feedback-region');
+			const errors = document.getElementById('errors-container');
+
+			expect(feedback?.getAttribute('aria-live')).toBe('polite');
+			expect(errors?.getAttribute('aria-live')).toBe('assertive');
+			expect(feedback?.getAttribute('aria-atomic')).toBe('false');
+			expect(errors?.getAttribute('aria-atomic')).toBe('false');
+		}
+	});
+
 	it('keeps feature-owned and project-transfer contracts present in the application page', () => {
 		expectIds(indexDocument, [
 			VIEW_IDS,

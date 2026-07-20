@@ -437,6 +437,7 @@
 	"chive-tooltip-state-included": "No filtro",
 	"chive-tooltip-state-excluded": "Excluído",
 	"chive-tooltip-close": "Fechar",
+	"chive-feedback-dismiss": "Dispensar notificação",
 	"chive-tooltip-filter-by-source": "Filtrar origem",
 	"chive-tooltip-filter-by-target": "Filtrar destino",
 	"chive-stats-badge": "{{PLURAL:$1|$1 coluna numérica|$1 colunas numéricas}}",

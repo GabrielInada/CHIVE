@@ -52,7 +52,6 @@
                     </div>
 
                     <input type="file" id="file-input" accept=".csv,.tsv,.dsv,.txt,.json,text/csv,text/tab-separated-values,application/json" multiple />
-                    <div id="error-message"></div>
                 </div>
 
                 <div id="file-info">
@@ -432,6 +431,9 @@
             </div>
         </main>
     </div>
+
+    <div id="feedback-region" class="feedback-region" aria-live="polite" aria-atomic="false"></div>
+    <div id="errors-container" class="errors-container" aria-live="assertive" aria-atomic="false" data-close-label="Close" data-i18n-close-label="chive-feedback-dismiss"></div>
 
     <script type="module" src="./src/entries/app.js"></script>
 </body>
