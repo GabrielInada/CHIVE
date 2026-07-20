@@ -1,3 +1,4 @@
+@layer foundation {
 /* @feature: foundation
    Grid layout, flexbox utilities, spacing
    Used by all features */
@@ -23,7 +24,7 @@ body {
 
 .logo {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.5px;
   display: flex;
@@ -62,6 +63,7 @@ body {
   grid-template-columns: var(--sidebar-width) 1fr;
   gap: 0;
   min-height: calc(100vh - 52px);
+  min-height: calc(100dvh - 52px);
   transition: grid-template-columns var(--dur-slower) ease;
 }
 
@@ -73,12 +75,15 @@ body {
   top: 52px;
   align-self: start;
   height: calc(100vh - 52px);
+  height: calc(100dvh - 52px);
   min-height: 0;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
   transition: padding var(--dur-slower) ease;
+  container-name: sidebar;
+  container-type: inline-size;
 }
 
 .panel-left:has(#sidebar-panel-data.active) {
@@ -86,6 +91,7 @@ body {
   align-self: stretch;
   height: auto;
   min-height: calc(100vh - 52px);
+  min-height: calc(100dvh - 52px);
   overflow: visible;
 }
 
@@ -131,7 +137,7 @@ body {
 
 .btn-toggle-sidebar:hover {
   border-color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.06);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .section-title {
@@ -146,4 +152,5 @@ body {
 
 .results-area {
   padding: 28px 32px;
+}
 }

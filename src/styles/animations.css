@@ -1,3 +1,4 @@
+@layer foundation {
 /* @feature: foundation
    Transitions, keyframe animations, motion utilities
    Used by all features */
@@ -15,5 +16,6 @@
 }
 
 .animate {
-  animation: appear 0.3s ease both;
+  animation: appear var(--dur-reveal) ease both;
+}
 }

@@ -116,6 +116,18 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 	if (network.nodes.length === 0 || network.links.length === 0) {
 		return fail('insufficient-data');
 	}
+	const exceedsRenderBudget = network.nodes.length > NETWORK_GRAPH.maxNodes
+		|| network.links.length > NETWORK_GRAPH.maxLinks;
+	if (exceedsRenderBudget && options.allowFullRender !== true) {
+		stopPreviousSimulation(container);
+		container.replaceChildren();
+		hideChartTooltip();
+		return {
+			...fail('render-budget-exceeded'),
+			nodesCount: network.nodes.length,
+			linksCount: network.links.length,
+		};
+	}
 	const gradientPrefix = `network-link-gradient-${++gradientRenderCounter}`;
 
 	container.replaceChildren();
@@ -242,6 +254,73 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 			y: screen.y + (typeof window !== 'undefined' ? window.scrollY : 0),
 		};
 	};
+	const showLinkTooltip = (event, linkData) => {
+		const content = document.createElement('div');
+		content.appendChild(createTooltipLine(labels.source, String(linkData.source.id || linkData.source)));
+		content.appendChild(createTooltipLine(labels.target, String(linkData.target.id || linkData.target)));
+		content.appendChild(createTooltipLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale)));
+		showChartTooltip(content, event.pageX, event.pageY);
+	};
+	const togglePinnedNode = (event, nodeData) => {
+		if (pinnedNodeDatum && pinnedNodeDatum.id === nodeData.id) {
+			pinnedNodeDatum = null;
+			hideChartTooltip();
+			return;
+		}
+		pinnedNodeDatum = nodeData;
+		const anchorPoint = nodeScreenPoint(nodeData);
+		const startX = anchorPoint ? anchorPoint.x : event.pageX;
+		const startY = anchorPoint ? anchorPoint.y : event.pageY;
+
+		const content = buildNodeTooltipContent(nodeData);
+		const actionSets = [];
+		let primaryState = null;
+
+		if (sourceColumn && targetColumn && sourceColumn === targetColumn) {
+			const set = buildNodeActionSet(sourceColumn, nodeData.id, sourceColumn);
+			if (set) {
+				actionSets.push(set.node);
+				primaryState = set.state;
+			}
+		} else {
+			if (sourceColumn) {
+				const headingPrefix = filterLabels.filterBySource || 'Filter source';
+				const set = buildNodeActionSet(sourceColumn, nodeData.id, `${headingPrefix} (${sourceColumn})`);
+				if (set) {
+					actionSets.push(set.node);
+					primaryState = primaryState || set.state;
+				}
+			}
+			if (targetColumn) {
+				const headingPrefix = filterLabels.filterByTarget || 'Filter target';
+				const set = buildNodeActionSet(targetColumn, nodeData.id, `${headingPrefix} (${targetColumn})`);
+				if (set) {
+					actionSets.push(set.node);
+					primaryState = primaryState || set.state;
+				}
+			}
+		}
+
+		const stateBadge = actionSets.length === 1 && primaryState
+			? createFilterStateBadge({
+				state: primaryState,
+				includedLabel: filterLabels.stateIncluded,
+				excludedLabel: filterLabels.stateExcluded,
+			})
+			: null;
+
+		showPinnedChartTooltip(content, startX, startY, {
+			headerTitle: String(nodeData.id),
+			closeLabel: filterLabels.close,
+			onDismiss: () => {
+				pinnedNodeDatum = null;
+				hideChartTooltip();
+			},
+			anchor: () => nodeScreenPoint(pinnedNodeDatum),
+			actionSets,
+			stateBadge,
+		});
+	};
 
 	const defs = svg.append('defs');
 	const link = viewport
@@ -251,6 +330,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 		.data(links)
 		.enter()
 		.append('line')
+		.attr('class', 'network-link')
 		.each(function setGradientId(d, index) {
 			d._gradientId = `${gradientPrefix}-${index}`;
 		})
@@ -258,20 +338,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 			if (edgeColorMode === 'uniform') return '#7d7d7d';
 			return `url(#${d._gradientId})`;
 		})
-		.attr('stroke-width', d => Math.max(1, Math.sqrt(Number(d.value) || 1)))
-		.on('mouseenter', (event, linkData) => {
-			const content = document.createElement('div');
-			content.appendChild(createTooltipLine(labels.source, String(linkData.source.id || linkData.source)));
-			content.appendChild(createTooltipLine(labels.target, String(linkData.target.id || linkData.target)));
-			content.appendChild(createTooltipLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale)));
-			showChartTooltip(content, event.pageX, event.pageY);
-		})
-		.on('mousemove', event => {
-			moveChartTooltip(event.pageX, event.pageY);
-		})
-		.on('mouseleave', () => {
-			hideChartTooltip();
-		});
+		.attr('stroke-width', d => Math.max(1, Math.sqrt(Number(d.value) || 1)));
 
 	const node = viewport
 		.append('g')
@@ -281,86 +348,49 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 		.data(nodes)
 		.enter()
 		.append('circle')
+		.attr('class', 'network-node')
 		.attr('r', nodeRadius)
-		.attr('fill', d => getNodeColor(d))
-		.on('mouseenter', (event, nodeData) => {
+		.attr('fill', d => getNodeColor(d));
+
+	const delegatedDatum = (event, selector) => {
+		const target = event.target;
+		if (!(target instanceof window.SVGElement) || !target.matches(selector)) return null;
+		return target.__data__ || null;
+	};
+
+	svg
+		.on('mouseover.chart-interaction', event => {
 			if (pinnedNodeDatum !== null) return;
-			showNodeTooltip(event, nodeData);
-		})
-		.on('mousemove', event => {
-			if (pinnedNodeDatum !== null) return;
-			moveChartTooltip(event.pageX, event.pageY);
-		})
-		.on('mouseleave', () => {
-			if (pinnedNodeDatum !== null) return;
-			hideChartTooltip();
-		})
-		.on('click', (event, nodeData) => {
-			event.stopPropagation();
-			if (pinnedNodeDatum && pinnedNodeDatum.id === nodeData.id) {
-				pinnedNodeDatum = null;
-				hideChartTooltip();
+			const nodeData = delegatedDatum(event, '.network-node');
+			if (nodeData) {
+				showNodeTooltip(event, nodeData);
 				return;
 			}
-			pinnedNodeDatum = nodeData;
-			const anchorPoint = nodeScreenPoint(nodeData);
-			const startX = anchorPoint ? anchorPoint.x : event.pageX;
-			const startY = anchorPoint ? anchorPoint.y : event.pageY;
-
-			const content = buildNodeTooltipContent(nodeData);
-			const actionSets = [];
-			let primaryState = null;
-
-			if (sourceColumn && targetColumn && sourceColumn === targetColumn) {
-				const set = buildNodeActionSet(sourceColumn, nodeData.id, sourceColumn);
-				if (set) {
-					actionSets.push(set.node);
-					primaryState = set.state;
-				}
-			} else {
-				if (sourceColumn) {
-					const headingPrefix = filterLabels.filterBySource || 'Filter source';
-					const set = buildNodeActionSet(sourceColumn, nodeData.id, `${headingPrefix} (${sourceColumn})`);
-					if (set) {
-						actionSets.push(set.node);
-						primaryState = primaryState || set.state;
-					}
-				}
-				if (targetColumn) {
-					const headingPrefix = filterLabels.filterByTarget || 'Filter target';
-					const set = buildNodeActionSet(targetColumn, nodeData.id, `${headingPrefix} (${targetColumn})`);
-					if (set) {
-						actionSets.push(set.node);
-						primaryState = primaryState || set.state;
-					}
-				}
+			const linkData = delegatedDatum(event, '.network-link');
+			if (linkData) showLinkTooltip(event, linkData);
+		})
+		.on('mousemove.chart-interaction', event => {
+			if (pinnedNodeDatum !== null) return;
+			const hasInteractiveTarget = delegatedDatum(event, '.network-node')
+				|| delegatedDatum(event, '.network-link');
+			if (hasInteractiveTarget) moveChartTooltip(event.pageX, event.pageY);
+		})
+		.on('mouseout.chart-interaction', event => {
+			if (pinnedNodeDatum !== null) return;
+			const hasInteractiveTarget = delegatedDatum(event, '.network-node')
+				|| delegatedDatum(event, '.network-link');
+			if (hasInteractiveTarget) hideChartTooltip();
+		})
+		.on('click.chart-interaction', event => {
+			const nodeData = delegatedDatum(event, '.network-node');
+			if (nodeData) {
+				event.stopPropagation();
+				togglePinnedNode(event, nodeData);
+				return;
 			}
-
-			const stateBadge = actionSets.length === 1 && primaryState
-				? createFilterStateBadge({
-					state: primaryState,
-					includedLabel: filterLabels.stateIncluded,
-					excludedLabel: filterLabels.stateExcluded,
-				})
-				: null;
-
-			showPinnedChartTooltip(content, startX, startY, {
-				headerTitle: String(nodeData.id),
-				closeLabel: filterLabels.close,
-				onDismiss: () => {
-					pinnedNodeDatum = null;
-					hideChartTooltip();
-				},
-				anchor: () => nodeScreenPoint(pinnedNodeDatum),
-				actionSets,
-				stateBadge,
-			});
+			pinnedNodeDatum = null;
+			hideChartTooltip();
 		});
-
-	svg.on('click', () => {
-		pinnedNodeDatum = null;
-		hideChartTooltip();
-	});
 
 	node.call(
 		drag()
@@ -384,6 +414,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 		? viewport
 			.append('g')
 			.attr('class', 'network-labels')
+			.attr('pointer-events', 'none')
 			.selectAll('text')
 			.data(nodes)
 			.enter()

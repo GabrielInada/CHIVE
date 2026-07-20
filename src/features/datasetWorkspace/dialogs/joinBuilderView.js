@@ -8,7 +8,10 @@
  * {@link openJoinBuilderDialog}.
  */
 
-import { installDialogFocus } from '../../../ui/dialogFocus.js';
+import { isNullish } from '../../../utils/formatters.js';
+import { showError } from '../../../ui/feedback.js';
+import { showNativeModal } from '../../../ui/nativeDialog.js';
+import { joinValidationMessageKey, validateJoinSpec } from '../joinValidation.js';
 
 /** @private */
 function createOption(value, label, selected = false) {
@@ -60,8 +63,6 @@ function getCheckedValues(container, selector) {
 		.filter(input => input.checked)
 		.map(input => input.value);
 }
-
-import { isNullish } from '../../../utils/formatters.js';
 
 /** @private */
 function normalizeJoinKey(value) {
@@ -168,23 +169,25 @@ function renderDatasetColumnPickers({
  */
 export function openJoinBuilderDialog({ datasets, translate }) {
 	if (!Array.isArray(datasets) || datasets.length < 2) {
-		window.alert(translate('chive-join-error-min-files'));
+		showError(translate('chive-join-error-min-files'));
 		return Promise.resolve(null);
 	}
 
 	return new Promise(resolve => {
-		const overlay = document.createElement('div');
-		overlay.className = 'join-overlay';
+		const dialog = document.createElement('dialog');
+		dialog.className = 'app-dialog';
+		dialog.setAttribute('aria-labelledby', 'join-dialog-title');
 
-		const dialog = document.createElement('div');
-		dialog.className = 'join-dialog';
-		dialog.setAttribute('role', 'dialog');
-		dialog.setAttribute('aria-modal', 'true');
+		const surface = document.createElement('form');
+		surface.method = 'dialog';
+		surface.className = 'join-dialog';
+		surface.noValidate = true;
 
 		const title = document.createElement('h3');
 		title.className = 'join-title';
+		title.id = 'join-dialog-title';
 		title.textContent = translate('chive-join-dialog-title');
-		dialog.appendChild(title);
+		surface.appendChild(title);
 
 		const controls = document.createElement('div');
 		controls.className = 'join-controls';
@@ -237,7 +240,7 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		controls.appendChild(leftGroup);
 		controls.appendChild(rightGroup);
 		controls.appendChild(typeGroup);
-		dialog.appendChild(controls);
+		surface.appendChild(controls);
 
 		const columnsGrid = document.createElement('div');
 		columnsGrid.className = 'join-columns-grid';
@@ -247,11 +250,18 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		rightColumnsContainer.className = 'join-column-panel';
 		columnsGrid.appendChild(leftColumnsContainer);
 		columnsGrid.appendChild(rightColumnsContainer);
-		dialog.appendChild(columnsGrid);
+		surface.appendChild(columnsGrid);
 
 		const estimate = document.createElement('div');
 		estimate.className = 'join-estimate';
-		dialog.appendChild(estimate);
+		surface.appendChild(estimate);
+
+		const validationError = document.createElement('p');
+		validationError.id = 'join-validation-error';
+		validationError.className = 'join-validation-error';
+		validationError.setAttribute('role', 'alert');
+		validationError.hidden = true;
+		surface.appendChild(validationError);
 
 		const footer = document.createElement('div');
 		footer.className = 'join-footer';
@@ -265,27 +275,55 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 		createButton.textContent = translate('chive-join-create');
 		footer.appendChild(cancelButton);
 		footer.appendChild(createButton);
-		dialog.appendChild(footer);
+		surface.appendChild(footer);
+		dialog.appendChild(surface);
 
-		overlay.appendChild(dialog);
-		document.body.appendChild(overlay);
-
-		const focusControl = installDialogFocus(overlay, dialog);
-
-		const onEscape = event => {
-			if (event.key !== 'Escape') return;
-			closeDialog(null);
-		};
-
+		let settled = false;
 		const closeDialog = result => {
-			document.removeEventListener('keydown', onEscape);
-			focusControl.release();
-			overlay.remove();
-			focusControl.restoreFocus();
+			if (settled) return;
+			settled = true;
+			lifecycle.close(result ? 'create' : 'cancel');
 			resolve(result);
 		};
 
+		const clearValidation = () => {
+			validationError.hidden = true;
+			validationError.textContent = '';
+			[rightSelect, leftColumnsContainer, rightColumnsContainer].forEach(element => {
+				element.removeAttribute('aria-invalid');
+				element.removeAttribute('aria-describedby');
+			});
+			rightSelect.setCustomValidity('');
+		};
+
+		const showValidation = reason => {
+			const message = translate(joinValidationMessageKey(reason));
+			validationError.textContent = message;
+			validationError.hidden = false;
+
+			let focusTarget = rightSelect;
+			if (reason === 'keys-required' || reason === 'key-count-mismatch') {
+				leftColumnsContainer.setAttribute('aria-invalid', 'true');
+				rightColumnsContainer.setAttribute('aria-invalid', 'true');
+				leftColumnsContainer.setAttribute('aria-describedby', validationError.id);
+				rightColumnsContainer.setAttribute('aria-describedby', validationError.id);
+				focusTarget = leftColumnsContainer.querySelector('#join-left-keys input') || rightSelect;
+			} else if (reason === 'columns-required') {
+				leftColumnsContainer.setAttribute('aria-invalid', 'true');
+				rightColumnsContainer.setAttribute('aria-invalid', 'true');
+				leftColumnsContainer.setAttribute('aria-describedby', validationError.id);
+				rightColumnsContainer.setAttribute('aria-describedby', validationError.id);
+				focusTarget = leftColumnsContainer.querySelector('#join-left-columns input') || rightSelect;
+			} else {
+				rightSelect.setAttribute('aria-invalid', 'true');
+				rightSelect.setAttribute('aria-describedby', validationError.id);
+				rightSelect.setCustomValidity(message);
+			}
+			focusTarget.focus({ preventScroll: true });
+		};
+
 		const refreshColumnPanels = () => {
+			clearValidation();
 			const leftDataset = datasets[Number(leftSelect.value)];
 			const rightDataset = datasets[Number(rightSelect.value)];
 			const leftDefaultKey = leftDataset?.columns?.[0]?.name || null;
@@ -336,54 +374,51 @@ export function openJoinBuilderDialog({ datasets, translate }) {
 
 		leftSelect.addEventListener('change', refreshColumnPanels);
 		rightSelect.addEventListener('change', refreshColumnPanels);
-		typeSelect.addEventListener('change', refreshEstimate);
-		leftColumnsContainer.addEventListener('change', refreshEstimate);
-		rightColumnsContainer.addEventListener('change', refreshEstimate);
+		typeSelect.addEventListener('change', () => {
+			clearValidation();
+			refreshEstimate();
+		});
+		leftColumnsContainer.addEventListener('change', () => {
+			clearValidation();
+			refreshEstimate();
+		});
+		rightColumnsContainer.addEventListener('change', () => {
+			clearValidation();
+			refreshEstimate();
+		});
 		cancelButton.addEventListener('click', () => closeDialog(null));
 
-		overlay.addEventListener('click', event => {
-			if (event.target === overlay) closeDialog(null);
-		});
-
-		document.addEventListener('keydown', onEscape);
-
 		createButton.addEventListener('click', () => {
-			const leftIndex = Number(leftSelect.value);
-			const rightIndex = Number(rightSelect.value);
-			if (leftIndex === rightIndex) {
-				window.alert(translate('chive-join-error-select-different-files'));
-				return;
-			}
-
-			const leftKeys = getCheckedValues(leftColumnsContainer, '#join-left-keys input[type="checkbox"]');
-			const rightKeys = getCheckedValues(rightColumnsContainer, '#join-right-keys input[type="checkbox"]');
-			if (leftKeys.length === 0 || rightKeys.length === 0) {
-				window.alert(translate('chive-join-error-keys-required'));
-				return;
-			}
-			if (leftKeys.length !== rightKeys.length) {
-				window.alert(translate('chive-join-error-key-count-mismatch'));
-				return;
-			}
-
-			const leftColumns = getCheckedValues(leftColumnsContainer, '#join-left-columns input[type="checkbox"]');
-			const rightColumns = getCheckedValues(rightColumnsContainer, '#join-right-columns input[type="checkbox"]');
-			if ((leftColumns.length + rightColumns.length) === 0) {
-				window.alert(translate('chive-join-error-columns-required'));
+			clearValidation();
+			const spec = {
+				leftIndex: Number(leftSelect.value),
+				rightIndex: Number(rightSelect.value),
+				joinType: typeSelect.value,
+				leftKeys: getCheckedValues(leftColumnsContainer, '#join-left-keys input[type="checkbox"]'),
+				rightKeys: getCheckedValues(rightColumnsContainer, '#join-right-keys input[type="checkbox"]'),
+				leftColumns: getCheckedValues(leftColumnsContainer, '#join-left-columns input[type="checkbox"]'),
+				rightColumns: getCheckedValues(rightColumnsContainer, '#join-right-columns input[type="checkbox"]'),
+			};
+			const validation = validateJoinSpec(datasets, spec);
+			if (!validation.ok) {
+				showValidation(validation.reason);
 				return;
 			}
 
 			closeDialog({
-				leftIndex,
-				rightIndex,
-				joinType: typeSelect.value,
-				leftKeys,
-				rightKeys,
-				leftColumns,
-				rightColumns,
+				leftIndex: validation.leftIndex,
+				rightIndex: validation.rightIndex,
+				joinType: spec.joinType,
+				leftKeys: validation.leftKeys,
+				rightKeys: validation.rightKeys,
+				leftColumns: validation.leftColumns,
+				rightColumns: validation.rightColumns,
 			});
 		});
 
 		refreshColumnPanels();
+		const lifecycle = showNativeModal(dialog, {
+			onDismiss: () => closeDialog(null),
+		});
 	});
 }

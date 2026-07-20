@@ -22,11 +22,11 @@ export function renderBarChartSection({ config, rows, filterCallbacks }) {
 	const block = document.getElementById(CHART_BLOCKS.bar);
 	const container = document.getElementById(CHART_CONTAINERS.bar);
 	if (!config || !config.enabled) {
-		if (block) block.style.display = 'none';
+		if (block) block.hidden = true;
 		clearChartContainer(container);
 		return;
 	}
-	if (block) block.style.display = 'block';
+	if (block) block.hidden = false;
 	if (!container) return;
 	container.style.minHeight = `${Number(config.chartHeight || 320)}px`;
 	const result = renderBarInto(container, rows, config, filterCallbacks);

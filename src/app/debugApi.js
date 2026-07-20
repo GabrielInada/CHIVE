@@ -19,8 +19,11 @@ import {
 	updateDatasetColumns,
 	updateDatasetConfig,
 } from './renderCoordinator.js';
-import { showFeedbackMessage, showErrorMessage } from '../ui/feedback.js';
-import { switchTab } from './uiManager.js';
+import { showFeedback, showError } from '../ui/feedback.js';
+
+function switchTab(tabName) {
+	updateDatasetConfig({ activeTab: tabName });
+}
 
 /**
  * @returns {Object}
@@ -35,8 +38,8 @@ export function createDebugApi() {
 		updateDatasetConfig,
 		switchTab,
 		refreshView: runFullRefreshNow,
-		showFeedback: showFeedbackMessage,
-		showError: showErrorMessage,
+		showFeedback,
+		showError,
 		enableStateLog,
 		disableStateLog,
 		getStateLog,

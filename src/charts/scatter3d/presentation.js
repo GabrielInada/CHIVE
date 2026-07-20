@@ -1,49 +1,89 @@
 /**
- * 3D-scatter shared presentation flow.
+ * Lazy 3D-scatter presentation flow.
  *
- * The workspace section and the panel adapter render the same chart from
- * different inputs (live config + filtered rows vs. a frozen snapshot).
- * This module owns their shared half: building the renderer options with
- * the localized labels, mapping fail reasons onto i18n empty-state keys,
- * and the post-render accessibility label and sampling notice (both need
- * the ok payload's counts, which only exist after the render).
- *
- * May import i18n; the renderer itself stays i18n-free.
+ * Three.js stays outside the application startup graph. Each container owns a
+ * render token so late module completions cannot overwrite newer state.
  */
 
 import { t } from '../../services/i18nService.js';
-import { showChartMessage } from '../shared/containerLifecycle.js';
-import { renderScatter3dChart } from './renderers/three.js';
+import { ok } from '../../utils/result.js';
+import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
+
+const RENDER_TOKEN = '__chiveScatter3dRenderToken__';
+let rendererModulePromise = null;
+
+function loadRendererModule() {
+	if (!rendererModulePromise) {
+		rendererModulePromise = import('./renderers/three.js').catch(error => {
+			rendererModulePromise = null;
+			throw error;
+		});
+	}
+	return rendererModulePromise;
+}
 
 /**
- * Render the 3D scatter into `container` and apply the localized
- * post-render presentation.
+ * Invalidate a pending lazy render before a container is disabled or removed.
  *
+ * @param {HTMLElement | null | undefined} container
+ */
+export function invalidateScatter3dRender(container) {
+	if (container) container[RENDER_TOKEN] = Symbol('scatter3d-render-cancelled');
+}
+
+/**
  * @param {HTMLElement} container
  * @param {Array<Object<string, *>>} rows
- * @param {Object} config - The `chartConfig.scatter3d` block (live or snapshot).
- * @returns {import('../../types.js').Result} The renderer result.
+ * @param {Object} config
+ * @returns {import('../../types.js').Result}
  */
 export function renderScatter3dInto(container, rows, config) {
-	const result = renderScatter3dChart(container, rows, config.x, config.y, config.z, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
-		pointSize: config.pointSize,
-		opacity: config.opacity,
-		color: config.color,
-		labels: {
-			controlsInstructions: t('chive-chart-scatter3d-controls-instructions'),
-		},
-	});
+	clearChartContainer(container);
+	const token = Symbol('scatter3d-render');
+	container[RENDER_TOKEN] = token;
 
+	const pending = document.createElement('div');
+	pending.className = 'chart-empty chart-loading';
+	pending.textContent = t('chive-chart-scatter3d-loading');
+	container.appendChild(pending);
+
+	void loadRendererModule()
+		.then(({ renderScatter3dChart }) => {
+			if (container[RENDER_TOKEN] !== token || !container.isConnected) return;
+			const result = renderScatter3dChart(container, rows, config.x, config.y, config.z, {
+				customTitle: config.customTitle,
+				chartHeight: config.chartHeight,
+				pointSize: config.pointSize,
+				opacity: config.opacity,
+				color: config.color,
+				labels: {
+					controlsInstructions: t('chive-chart-scatter3d-controls-instructions'),
+					contextLost: t('chive-chart-scatter3d-context-lost'),
+					contextRestored: t('chive-chart-scatter3d-context-restored'),
+				},
+			});
+			if (container[RENDER_TOKEN] !== token) return;
+			applyResult(container, config, result);
+		})
+		.catch(() => {
+			if (container[RENDER_TOKEN] !== token || !container.isConnected) return;
+			showChartMessage(container, t('chive-chart-empty-scatter3d'));
+		});
+
+	return ok({ pending: true });
+}
+
+/**
+ * @param {HTMLElement} container
+ * @param {Object} config
+ * @param {import('../../types.js').Result} result
+ */
+function applyResult(container, config, result) {
 	if (!result.ok) {
 		showChartMessage(container, t(emptyStateKey(result.reason)));
-		return result;
+		return;
 	}
 
-	// The aria label wants the RENDERED point count, which only the ok
-	// payload knows (sampling may have reduced it), so it is set here
-	// rather than passed in up front.
 	const canvas = container.querySelector('.chart-canvas-3d');
 	canvas?.setAttribute(
 		'aria-label',
@@ -53,21 +93,15 @@ export function renderScatter3dInto(container, rows, config) {
 	if (result.truncated) {
 		const notice = document.createElement('div');
 		notice.className = 'chart-sampling-notice';
-		notice.textContent = t('chive-chart-scatter3d-sampling-notice', String(result.renderedCount), String(result.validCount));
+		notice.textContent = t(
+			'chive-chart-scatter3d-sampling-notice',
+			String(result.renderedCount),
+			String(result.validCount),
+		);
 		container.appendChild(notice);
 	}
-
-	return result;
 }
 
-/**
- * Map a renderer fail reason onto its i18n empty-state key.
- * `render-error` and bare failures share the generic key.
- *
- * @private
- * @param {string | undefined} reason
- * @returns {string}
- */
 function emptyStateKey(reason) {
 	if (reason === 'no-valid-points') return 'chive-chart-empty-scatter3d-no-valid-points';
 	if (reason === 'webgl-unavailable') return 'chive-chart-empty-scatter3d-webgl-unavailable';

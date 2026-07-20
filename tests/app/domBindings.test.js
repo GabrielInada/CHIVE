@@ -6,9 +6,7 @@ const mocks = vi.hoisted(() => ({
   setupFileInputListeners: vi.fn(),
   selectDataset: vi.fn(),
   removeDatasetByIndex: vi.fn(),
-  setupTabListeners: vi.fn(),
   setupSidebarToggleListener: vi.fn(),
-  switchTab: vi.fn(),
   setupPanelEventListeners: vi.fn(),
   addChartToPanel: vi.fn(),
   downloadSvgFromContainer: vi.fn(),
@@ -83,9 +81,7 @@ vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 }));
 
 vi.mock('../../src/app/uiManager.js', () => ({
-  setupTabListeners: mocks.setupTabListeners,
   setupSidebarToggleListener: mocks.setupSidebarToggleListener,
-  switchTab: mocks.switchTab,
 }));
 
 vi.mock('../../src/state/appState.js', () => ({
@@ -95,7 +91,7 @@ vi.mock('../../src/state/appState.js', () => ({
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
-vi.mock('../../src/ui/dialogFocus.js', () => ({
+vi.mock('../../src/ui/nativeDialog.js', () => ({
   isAnyDialogOpen: mocks.isAnyDialogOpen,
 }));
 
@@ -162,8 +158,6 @@ describe('eventHandlers', () => {
     mocks.showProgress.mockReturnValue(mocks.progressHandle);
     mocks.addChartToPanel.mockReturnValue({ ok: true });
     mocks.getActiveDataset.mockReturnValue({ chartConfig: { activeTab: 'preview' } });
-    window.confirm = vi.fn(() => true);
-
     setupDom();
   });
 
@@ -171,16 +165,14 @@ describe('eventHandlers', () => {
     initializeDomBindings();
 
     expect(mocks.setupFileInputListeners).toHaveBeenCalledTimes(1);
-    expect(mocks.setupTabListeners).toHaveBeenCalledTimes(1);
     expect(mocks.setupSidebarToggleListener).toHaveBeenCalledTimes(1);
     expect(mocks.setupPanelEventListeners).toHaveBeenCalledTimes(1);
 
     document.getElementById('btn-go-to-panel').click();
     expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'panel' });
-    expect(mocks.switchTab).toHaveBeenCalledWith('panel');
 
     document.getElementById('btn-back-to-viz').click();
-    expect(mocks.switchTab).toHaveBeenCalledWith('charts');
+    expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
 
     mocks.downloadSvgFromContainer.mockReturnValueOnce({ ok: false });
     document.querySelector('[data-chart-action="download-svg"]').click();

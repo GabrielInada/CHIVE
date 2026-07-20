@@ -72,7 +72,7 @@ describe('renderPieChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('none');
+		expect(block.hidden).toBe(true);
 		expect(container.children.length).toBe(0);
 		expect(mocks.renderPieChart).not.toHaveBeenCalled();
 	});
@@ -124,7 +124,7 @@ describe('renderPieChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('block');
+		expect(block.hidden).toBe(false);
 		expect(container.style.minHeight).toBe('420px');
 		expect(mocks.renderPieChart).toHaveBeenCalledTimes(1);
 	});

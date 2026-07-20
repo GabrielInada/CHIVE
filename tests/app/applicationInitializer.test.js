@@ -25,6 +25,9 @@ const mocks = vi.hoisted(() => ({
 	runFullRefreshNow: vi.fn(),
 	scheduleFullRefresh: vi.fn(),
 	setupStateSubscriptions: vi.fn(),
+	revealPageShell: vi.fn(),
+	updateStartupScreen: vi.fn(),
+	failStartupScreen: vi.fn(),
 }));
 
 vi.mock('../../src/services/i18nService.js', () => ({
@@ -88,14 +91,14 @@ vi.mock('../../src/app/renderCoordinator.js', () => ({
 	setupStateSubscriptions: mocks.setupStateSubscriptions,
 }));
 
+vi.mock('../../src/app/startupScreen.js', () => ({
+	revealPageShell: mocks.revealPageShell,
+	updateStartupScreen: mocks.updateStartupScreen,
+	failStartupScreen: mocks.failStartupScreen,
+}));
+
 async function importInitializer() {
 	return import('../../src/app/applicationInitializer.js');
-}
-
-async function flushInitialization() {
-	for (let index = 0; index < 8; index += 1) {
-		await Promise.resolve();
-	}
 }
 
 beforeEach(() => {
@@ -103,7 +106,6 @@ beforeEach(() => {
 	vi.resetModules();
 	vi.clearAllMocks();
 	document.body.innerHTML = '';
-	document.body.style.visibility = '';
 	mocks.initializeI18n.mockResolvedValue(undefined);
 	mocks.t.mockImplementation(key => key);
 	mocks.isPersistenceAvailable.mockReturnValue(true);
@@ -123,6 +125,7 @@ describe('application initializer', () => {
 
 		expect(mocks.initializeI18n).toHaveBeenCalledTimes(1);
 		expect(mocks.initSettingsController).toHaveBeenCalledTimes(1);
+		expect(mocks.revealPageShell).toHaveBeenCalledTimes(1);
 		expect(mocks.hydrateState).not.toHaveBeenCalled();
 		expect(mocks.initDatasetController).not.toHaveBeenCalled();
 		expect(mocks.setupStateSubscriptions).not.toHaveBeenCalled();
@@ -141,6 +144,7 @@ describe('application initializer', () => {
 		expect(mocks.hydrateState).toHaveBeenCalledWith({
 			replaceAllState: mocks.replaceAllState,
 			transformPanel: mocks.rehydratePanelChartSpecs,
+			onError: expect.any(Function),
 		});
 		expect(mocks.initChartControls).toHaveBeenCalledWith(null, mocks.throttledPreview);
 		expect(mocks.throttle).toHaveBeenCalledWith(mocks.livePreviewRender, 120);
@@ -152,6 +156,7 @@ describe('application initializer', () => {
 			{ onSaveError: expect.any(Function) },
 		);
 		expect(mocks.runFullRefreshNow).toHaveBeenCalledTimes(1);
+		expect(mocks.revealPageShell).toHaveBeenCalledTimes(1);
 
 		expect(mocks.hydrateState.mock.invocationCallOrder[0])
 			.toBeLessThan(mocks.initDatasetController.mock.invocationCallOrder[0]);
@@ -188,7 +193,6 @@ describe('application initializer', () => {
 
 	it('routes boot render failures through the top-level error boundary', async () => {
 		document.body.innerHTML = '<div id="file-info"></div>';
-		document.body.style.visibility = 'hidden';
 		const error = new Error('boot render boom');
 		mocks.runFullRefreshNow.mockImplementationOnce(() => {
 			throw error;
@@ -196,17 +200,15 @@ describe('application initializer', () => {
 		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 		const { startApplication } = await importInitializer();
 
-		startApplication();
-		await flushInitialization();
+		await expect(startApplication()).resolves.toBe(false);
 
-		expect(document.body.style.visibility).toBe('visible');
+		expect(mocks.failStartupScreen).toHaveBeenCalledWith('chive-error-internal');
 		expect(consoleError).toHaveBeenCalledWith('CHIVE initialization failed:', error);
 		expect(mocks.showError).toHaveBeenCalledWith('chive-error-internal');
 	});
 
 	it('uses a static fallback when initialization and translation both fail', async () => {
 		document.body.innerHTML = '<div id="file-info"></div>';
-		document.body.style.visibility = 'hidden';
 		const error = new Error('init failed');
 		mocks.initializeI18n.mockRejectedValue(error);
 		mocks.t.mockImplementation(() => {
@@ -215,10 +217,9 @@ describe('application initializer', () => {
 		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 		const { startApplication } = await importInitializer();
 
-		startApplication();
-		await flushInitialization();
+		await expect(startApplication()).resolves.toBe(false);
 
-		expect(document.body.style.visibility).toBe('visible');
+		expect(mocks.failStartupScreen).toHaveBeenCalledWith('An internal application error occurred.');
 		expect(consoleError).toHaveBeenCalledWith('CHIVE initialization failed:', error);
 		expect(mocks.showError).toHaveBeenCalledWith('An internal application error occurred.');
 		expect(mocks.initDatasetController).not.toHaveBeenCalled();

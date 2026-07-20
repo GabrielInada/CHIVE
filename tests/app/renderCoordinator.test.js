@@ -33,7 +33,7 @@ const mocks = vi.hoisted(() => ({
 	removeDatasetByIndex: vi.fn(),
 	handleJoinDatasetRequest: vi.fn(),
 	handlePresetDatasetRequest: vi.fn(),
-	switchTab: vi.fn(),
+	syncSidebarToTab: vi.fn(),
 }));
 
 vi.mock('../../src/features/datasetWorkspace/workspaceView.js', () => ({
@@ -86,7 +86,7 @@ vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 }));
 
 vi.mock('../../src/app/uiManager.js', () => ({
-	switchTab: mocks.switchTab,
+	syncSidebarToTab: mocks.syncSidebarToTab,
 }));
 
 const baseDataset = {
@@ -121,6 +121,15 @@ async function importCoordinator() {
 	return import('../../src/app/renderCoordinator.js');
 }
 
+let frames;
+let nextFrameId;
+
+function flushFrame() {
+	const pending = [...frames.values()];
+	frames.clear();
+	pending.forEach(callback => callback(16));
+}
+
 beforeEach(() => {
 	vi.restoreAllMocks();
 	vi.resetModules();
@@ -132,6 +141,14 @@ beforeEach(() => {
 	mocks.getActiveDatasetIndex.mockReturnValue(-1);
 	mocks.getPreviewRows.mockReturnValue(10);
 	mocks.getLoadedDatasets.mockReturnValue([]);
+	frames = new Map();
+	nextFrameId = 1;
+	vi.stubGlobal('requestAnimationFrame', vi.fn(callback => {
+		const id = nextFrameId++;
+		frames.set(id, callback);
+		return id;
+	}));
+	vi.stubGlobal('cancelAnimationFrame', vi.fn(id => frames.delete(id)));
 });
 
 describe('renderCoordinator', () => {
@@ -152,7 +169,7 @@ describe('renderCoordinator', () => {
 		expect(mocks.initializeLayoutSelector).not.toHaveBeenCalled();
 		expect(mocks.renderSidebarPanel).toHaveBeenCalledTimes(1);
 		expect(mocks.renderCanvasPanel).toHaveBeenCalledTimes(1);
-		expect(mocks.switchTab).toHaveBeenCalledWith('preview');
+		expect(mocks.syncSidebarToTab).not.toHaveBeenCalled();
 	});
 
 	it('renders the active dataset and bridges workspace and live-preview callbacks', async () => {
@@ -215,7 +232,7 @@ describe('renderCoordinator', () => {
 		]);
 	});
 
-	it('coalesces synchronous full-refresh events', async () => {
+	it('coalesces synchronous full-refresh events into one animation frame', async () => {
 		const coordinator = await importCoordinator();
 		coordinator.setupStateSubscriptions();
 		const callbacks = stateCallbacks();
@@ -224,7 +241,7 @@ describe('renderCoordinator', () => {
 		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
 		expect(mocks.renderFileList).not.toHaveBeenCalled();
 
-		await Promise.resolve();
+		flushFrame();
 		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
 	});
 
@@ -238,14 +255,14 @@ describe('renderCoordinator', () => {
 			throw new Error('render boom');
 		});
 		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
-		await Promise.resolve();
+		flushFrame();
 		expect(dispatchSpy).toHaveBeenCalledWith(
 			expect.objectContaining({ type: 'chive-internal-error' }),
 		);
 
 		mocks.renderFileList.mockClear();
 		callbacks[mocks.STATE_EVENTS.DATASET_ADDED]();
-		await Promise.resolve();
+		flushFrame();
 		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
 	});
 
@@ -256,7 +273,7 @@ describe('renderCoordinator', () => {
 		const callbacks = stateCallbacks();
 
 		callbacks[mocks.STATE_EVENTS.COLUMNS_UPDATED]();
-		await Promise.resolve();
+		flushFrame();
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
 		expect(mocks.renderFileList).not.toHaveBeenCalled();
@@ -266,7 +283,7 @@ describe('renderCoordinator', () => {
 		mocks.renderChartControlsSidebar.mockClear();
 		mocks.getPreviewRows.mockReturnValue(40);
 		callbacks[mocks.STATE_EVENTS.PREVIEW_ROWS_CHANGED]();
-		await Promise.resolve();
+		flushFrame();
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 		expect(mocks.renderDatasetWorkspace.mock.calls[0][4]).toBe(40);
 		expect(mocks.renderChartControlsSidebar).not.toHaveBeenCalled();
@@ -280,7 +297,7 @@ describe('renderCoordinator', () => {
 		const callbacks = stateCallbacks();
 
 		callbacks[mocks.STATE_EVENTS.CONFIG_UPDATED]({ bar: { enabled: true } });
-		await Promise.resolve();
+		flushFrame();
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
 		expect(mocks.renderCanvasPanel).not.toHaveBeenCalled();
@@ -288,7 +305,7 @@ describe('renderCoordinator', () => {
 		mocks.renderDatasetWorkspace.mockClear();
 		mocks.renderCanvasPanel.mockClear();
 		callbacks[mocks.STATE_EVENTS.CONFIG_UPDATED]({ activeTab: 'panel' });
-		await Promise.resolve();
+		flushFrame();
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 		expect(mocks.renderCanvasPanel).toHaveBeenCalledTimes(1);
 		expect(mocks.renderDatasetWorkspace.mock.invocationCallOrder[0])
@@ -303,7 +320,7 @@ describe('renderCoordinator', () => {
 
 		callbacks[mocks.STATE_EVENTS.COLUMNS_UPDATED]();
 		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
-		await Promise.resolve();
+		flushFrame();
 		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 
@@ -311,7 +328,7 @@ describe('renderCoordinator', () => {
 		mocks.renderDatasetWorkspace.mockClear();
 		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
 		callbacks[mocks.STATE_EVENTS.COLUMNS_UPDATED]();
-		await Promise.resolve();
+		flushFrame();
 		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 	});
@@ -326,8 +343,8 @@ describe('renderCoordinator', () => {
 			callbacks[mocks.STATE_EVENTS.CONFIG_UPDATED]({ globalFilter: { rules: [] } });
 		});
 		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
-		await Promise.resolve();
-		await Promise.resolve();
+		flushFrame();
+		flushFrame();
 
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 	});

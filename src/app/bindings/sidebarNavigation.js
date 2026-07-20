@@ -2,13 +2,12 @@
  * CHIVE sidebar navigation workflow.
  *
  * Wires the sidebar step buttons (advance, edit columns, go to panel, back to
- * viz). Each button both records the target tab in the active dataset's config
- * and switches the visible tab.
+ * viz). Each button records the target tab in the active dataset's config;
+ * the resulting state event drives the tab and sidebar render.
  */
 
 import { updateActiveDatasetConfig } from '../../state/appState.js';
 import { WORKSPACE_ACTION_IDS } from '../../features/datasetWorkspace/domIds.js';
-import { switchTab } from '../uiManager.js';
 
 /**
  * Internal workflow setup, called by `app/domBindings.js`.
@@ -52,5 +51,4 @@ export function setupSidebarNavigationButtons() {
  */
 function navigateToTab(tabName) {
 	updateActiveDatasetConfig({ activeTab: tabName });
-	switchTab(tabName);
 }

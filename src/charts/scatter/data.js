@@ -8,6 +8,8 @@
  */
 
 import { normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
+import { SCATTER_PLOT } from '../../config/charts/definitions/scatter.js';
+import { sampleWithExtrema } from '../shared/pointSampling.js';
 import {
 	AXIS_TYPE_VALUES,
 	inferAxisType,
@@ -28,7 +30,20 @@ import {
  * @param {'linear'|'log'} params.yScaleType - Configured y scale type.
  * @param {'jitter'|'aggregate'} params.categoricalPairMode - Two-categorical-axis strategy.
  * @param {{x?: string, y?: string}} params.configuredAxisTypes - Optional explicit axis types.
- * @returns {{ points: Array<Object<string, *>>, axisTypes: {x: string, y: string}, effectiveXScaleType: string, effectiveYScaleType: string, shouldAggregateCategoricalPairs: boolean }}
+ * @param {boolean} [params.renderAll=false] - Bypass the geometry budget after explicit approval.
+ * @param {number} [params.maxPoints=SCATTER_PLOT.maxPoints] - Injectable budget for deterministic tests.
+ * @returns {{
+ *   points: Array<Object<string, *>>,
+ *   renderedPoints: Array<Object<string, *>>,
+ *   renderedCount: number,
+ *   validCount: number,
+ *   totalCount: number,
+ *   sampled: boolean,
+ *   axisTypes: {x: string, y: string},
+ *   effectiveXScaleType: string,
+ *   effectiveYScaleType: string,
+ *   shouldAggregateCategoricalPairs: boolean,
+ * }}
  */
 export function buildScatterPoints({
 	rows,
@@ -38,7 +53,10 @@ export function buildScatterPoints({
 	yScaleType,
 	categoricalPairMode,
 	configuredAxisTypes,
+	renderAll = false,
+	maxPoints = SCATTER_PLOT.maxPoints,
 }) {
+	const totalCount = Array.isArray(rows) ? rows.length : 0;
 	let points = rows.map((row, index) => ({
 		xRaw: row?.[xColumn],
 		yRaw: row?.[yColumn],
@@ -86,8 +104,22 @@ export function buildScatterPoints({
 		points = aggregateCategoricalPairs(points);
 	}
 
+	const validCount = points.length;
+	const sampled = !renderAll && validCount > maxPoints;
+	const extremaAccessors = [];
+	if (axisTypes.x === AXIS_TYPE_VALUES.numeric) extremaAccessors.push(point => point.x);
+	if (axisTypes.y === AXIS_TYPE_VALUES.numeric) extremaAccessors.push(point => point.y);
+	const renderedPoints = sampled
+		? sampleWithExtrema(points, maxPoints, extremaAccessors)
+		: points;
+
 	return {
 		points,
+		renderedPoints,
+		renderedCount: renderedPoints.length,
+		validCount,
+		totalCount,
+		sampled,
 		axisTypes,
 		effectiveXScaleType,
 		effectiveYScaleType,

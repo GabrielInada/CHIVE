@@ -27,7 +27,7 @@
     right: 48px;
     bottom: -20px;
     font-family: var(--font-display);
-    font-size: 140px;
+    font-size: 8.75rem;
     font-weight: 700;
     color: rgba(255,255,255,0.04);
     line-height: 1;
@@ -37,7 +37,7 @@
 
 .about-hero-title {
     font-family: var(--font-display);
-    font-size: 48px;
+    font-size: 3rem;
     font-weight: 700;
     margin: 0;
     line-height: 1.1;
@@ -48,7 +48,7 @@
     margin-top: var(--space-6);
     max-width: 600px;
     font-family: var(--font-sans);
-    font-size: 16px;
+    font-size: 1rem;
     line-height: 1.8;
     color: rgba(255, 255, 255, 0.85);
     position: relative;
@@ -73,7 +73,7 @@
 
 .about-subtitle {
     font-family: var(--font-display);
-    font-size: 26px;
+    font-size: 1.625rem;
     font-weight: 700;
     color: var(--text);
     margin: 0 0 var(--space-3) 0;
@@ -95,7 +95,7 @@
 
 .about-team h3 {
     font-family: var(--font-display);
-    font-size: 20px;
+    font-size: 1.25rem;
     font-weight: 700;
     color: var(--text);
     margin: 0 0 var(--space-7) 0;
@@ -118,7 +118,7 @@
 }
 
 .team-card:hover {
-    box-shadow: 0 8px 28px rgba(var(--accent-rgb), 0.1);
+    box-shadow: 0 8px 28px color-mix(in srgb, var(--accent) 10%, transparent);
     transform: translateY(-2px);
 }
 
@@ -138,7 +138,7 @@
 
 .team-card h4 {
     font-family: var(--font-display);
-    font-size: 16px;
+    font-size: 1rem;
     font-weight: 700;
     margin: 0 0 var(--space-4) 0;
     color: var(--text);
@@ -150,7 +150,7 @@
     align-items: center;
     padding: 3px var(--space-4);
     border-radius: var(--radius-pill);
-    background: rgba(var(--accent-rgb), 0.08);
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
     color: var(--accent);
     font-family: var(--font-sans);
     font-size: var(--font-size-sm);
@@ -165,7 +165,7 @@
 }
 
 .team-role--researcher {
-    background: rgba(var(--success-rgb), 0.1);
+    background: color-mix(in srgb, var(--success) 10%, transparent);
     color: var(--success);
 }
 
@@ -188,7 +188,7 @@
     border-radius: 16px;
     overflow: hidden;
     height: fit-content;
-    box-shadow: 0 4px 24px rgba(var(--accent-rgb), 0.06);
+    box-shadow: 0 4px 24px color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .sidebar-section {
@@ -278,12 +278,12 @@
     }
 
     .about-hero::after {
-        font-size: 100px;
+        font-size: 6.25rem;
         right: 32px;
     }
 
     .about-hero-title {
-        font-size: 40px;
+        font-size: 2.5rem;
     }
 }
 
@@ -297,7 +297,7 @@
     }
 
     .about-hero-title {
-        font-size: 32px;
+        font-size: 2rem;
     }
 
     .about-wrapper {
@@ -311,5 +311,16 @@
 
     .about-sidebar {
         border-radius: var(--radius-xl);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto;
+        animation-duration: 0.01ms;
+        animation-iteration-count: 1;
+        transition-duration: 0.01ms;
     }
 }

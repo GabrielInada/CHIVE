@@ -22,11 +22,11 @@ export function renderNetworkChartSection({ config, rows, filterCallbacks }) {
 	const block = document.getElementById(CHART_BLOCKS.network);
 	const container = document.getElementById(CHART_CONTAINERS.network);
 	if (!config.enabled) {
-		block.style.display = 'none';
+		block.hidden = true;
 		clearChartContainer(container);
 		return;
 	}
-	block.style.display = 'block';
+	block.hidden = false;
 	container.style.minHeight = `${Number(config.chartHeight || 420)}px`;
 	const result = renderNetworkInto(container, rows, config, filterCallbacks);
 

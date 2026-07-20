@@ -70,7 +70,7 @@ describe('renderBarChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('none');
+		expect(block.hidden).toBe(true);
 		expect(container.children.length).toBe(0);
 		expect(mocks.renderBarChart).not.toHaveBeenCalled();
 	});
@@ -85,7 +85,7 @@ describe('renderBarChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('block');
+		expect(block.hidden).toBe(false);
 		expect(container.style.minHeight).toBe('400px');
 		expect(mocks.renderBarChart).toHaveBeenCalledTimes(1);
 		const [calledContainer, calledRows, calledCategory, calledOpts] = mocks.renderBarChart.mock.calls[0];

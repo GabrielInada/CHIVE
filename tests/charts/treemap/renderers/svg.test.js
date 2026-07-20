@@ -141,7 +141,7 @@ describe('renderTreemap', () => {
 		dispatchMouse(rects(container)[0], 'mouseenter');
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
-		expect(tooltip.style.display).toBe('block');
+		expect(tooltip.hidden).toBe(false);
 		expect(tooltip.textContent).toContain('%');
 	});
 
@@ -173,8 +173,8 @@ describe('renderTreemap', () => {
 		renderTreemap(container, ROWS, 'region', { filterCallbacks: {} });
 		const firstRect = rects(container)[0];
 		dispatchMouse(firstRect, 'click');
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('block');
+		expect(document.querySelector('.chart-tooltip').hidden).toBe(false);
 		dispatchMouse(firstRect, 'click');
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('none');
+		expect(document.querySelector('.chart-tooltip').hidden).toBe(true);
 	});
 });

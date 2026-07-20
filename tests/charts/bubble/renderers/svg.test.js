@@ -298,11 +298,11 @@ describe('bubble chart visualization', () => {
 		const parent = container.querySelector('g.bubble-parent');
 		const circle = parent.querySelector('circle');
 		parent.dispatchEvent(mouse('mouseenter'));
-		expect(document.querySelector('.chart-tooltip')?.style.display).toBe('block');
+		expect(document.querySelector('.chart-tooltip')?.hidden).toBe(false);
 		expect(circle.getAttribute('fill-opacity')).toBe('0.25');
 		parent.dispatchEvent(mouse('mousemove'));
 		parent.dispatchEvent(mouse('mouseleave'));
-		expect(document.querySelector('.chart-tooltip')?.style.display).toBe('none');
+		expect(document.querySelector('.chart-tooltip')?.hidden).toBe(true);
 
 		parent.dispatchEvent(mouse('click'));
 		expect(document.querySelector('.chart-tooltip')?.classList.contains('chart-tooltip--fixado')).toBe(true);
@@ -312,7 +312,7 @@ describe('bubble chart visualization', () => {
 		expect(document.querySelector('.chart-tooltip')?.classList.contains('chart-tooltip--fixado')).toBe(true);
 
 		parent.dispatchEvent(mouse('click'));
-		expect(document.querySelector('.chart-tooltip')?.style.display).toBe('none');
+		expect(document.querySelector('.chart-tooltip')?.hidden).toBe(true);
 	});
 
 	it('shows parent filter actions and state badges for included tokens', () => {
@@ -405,6 +405,6 @@ describe('bubble chart visualization', () => {
 		leaf.dispatchEvent(mouse('mouseleave'));
 		expect(document.querySelector('.chart-tooltip')?.classList.contains('chart-tooltip--fixado')).toBe(true);
 		leaf.dispatchEvent(mouse('click'));
-		expect(document.querySelector('.chart-tooltip')?.style.display).toBe('none');
+		expect(document.querySelector('.chart-tooltip')?.hidden).toBe(true);
 	});
 });

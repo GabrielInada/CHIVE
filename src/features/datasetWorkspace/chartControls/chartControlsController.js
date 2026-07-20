@@ -97,7 +97,7 @@ function applyControlSectionExpansionState(container, state) {
 		const toggleIcon = section.querySelector('.chart-section-toggle');
 		if (!header || !content) return;
 		header.setAttribute('aria-expanded', String(expanded));
-		content.style.display = expanded ? 'block' : 'none';
+		content.hidden = !expanded;
 		if (toggleIcon) {
 			toggleIcon.textContent = expanded ? '▼' : '▶';
 		}

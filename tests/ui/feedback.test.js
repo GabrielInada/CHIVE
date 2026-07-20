@@ -5,8 +5,6 @@ import {
   showFeedback,
   showError,
   clearErrors,
-  showLoading,
-  hideLoading,
   clearAllFeedback,
 } from '../../src/ui/feedback.js';
 
@@ -16,14 +14,15 @@ describe('ui/feedback', () => {
     document.body.innerHTML = '';
   });
 
-  it('creates feedback toast and removes visibility after timeout', () => {
+  it('creates a polite feedback region and removes the notice after timeout', () => {
     showFeedback('ok', 100);
-    const toast = document.getElementById('toast-feedback');
+    const region = document.getElementById('feedback-region');
+    const toast = region.querySelector('.toast-feedback');
+    expect(region.getAttribute('aria-live')).toBe('polite');
     expect(toast).toBeTruthy();
-    expect(toast.classList.contains('visible')).toBe(true);
 
     vi.advanceTimersByTime(120);
-    expect(toast.classList.contains('visible')).toBe(false);
+    expect(region.querySelector('.toast-feedback')).toBeNull();
   });
 
   it('shows error in container when it exists and allows closing', () => {
@@ -42,11 +41,11 @@ describe('ui/feedback', () => {
     expect(errorsContainer.querySelector('.error-notice')).toBeNull();
   });
 
-  it('falls back to toast when error container does not exist', () => {
-    showError('fallback', 100);
-    const toast = document.getElementById('toast-feedback');
-    expect(toast).toBeTruthy();
-    expect(toast.textContent).toBe('fallback');
+  it('defensively creates an assertive error region when it is missing', () => {
+    showError('fallback');
+    const region = document.getElementById('errors-container');
+    expect(region.getAttribute('aria-live')).toBe('assertive');
+    expect(region.querySelector('.error-notice')?.textContent).toContain('fallback');
   });
 
   it('auto-dismiss error when duration is specified', () => {
@@ -61,73 +60,26 @@ describe('ui/feedback', () => {
     expect(errorsContainer.querySelector('.error-notice')).toBeNull();
   });
 
-  it('reuses existing toast element on repeated calls', () => {
+  it('preserves concurrent transient feedback notices', () => {
     showFeedback('first', 500);
     showFeedback('second', 500);
-    const toasts = document.querySelectorAll('#toast-feedback');
-    expect(toasts.length).toBe(1);
-    expect(toasts[0].textContent).toBe('second');
-  });
-
-  it('showFeedbackMessage alias works', async () => {
-    const { showFeedbackMessage } = await import('../../src/ui/feedback.js');
-    showFeedbackMessage('alias test', 100);
-    const toast = document.getElementById('toast-feedback');
-    expect(toast.textContent).toBe('alias test');
-  });
-
-  it('showErrorMessage alias works', async () => {
-    const { showErrorMessage } = await import('../../src/ui/feedback.js');
-    const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'errors-container';
-    document.body.appendChild(errorsContainer);
-
-    showErrorMessage('alias error');
-    expect(errorsContainer.querySelector('.error-notice')).toBeTruthy();
-  });
-
-  it('hideErrorMessage alias clears errors', async () => {
-    const { hideErrorMessage } = await import('../../src/ui/feedback.js');
-    const errorsContainer = document.createElement('div');
-    errorsContainer.id = 'errors-container';
-    document.body.appendChild(errorsContainer);
-
-    showError('x');
-    hideErrorMessage();
-    expect(errorsContainer.innerHTML).toBe('');
-  });
-
-  it('hideLoading does nothing when element missing', () => {
-    expect(() => hideLoading()).not.toThrow();
+    const toasts = document.querySelectorAll('#feedback-region .toast-feedback');
+    expect([...toasts].map(toast => toast.textContent)).toEqual(['first', 'second']);
   });
 
   it('clearErrors does nothing when container missing', () => {
     expect(() => clearErrors()).not.toThrow();
   });
 
-  it('limpa erros e loading em clearAllFeedback', () => {
+  it('clears all polite and assertive notices', () => {
     const errorsContainer = document.createElement('div');
     errorsContainer.id = 'errors-container';
     document.body.appendChild(errorsContainer);
 
-    const loading = document.createElement('div');
-    loading.id = 'loading-state';
-    loading.hidden = true;
-    document.body.appendChild(loading);
-
     showError('x');
-    showLoading('loading...');
-    expect(loading.hidden).toBe(false);
-
-    clearErrors();
-    expect(errorsContainer.innerHTML).toBe('');
-
-    showError('x2');
+    showFeedback('ok');
     clearAllFeedback();
     expect(errorsContainer.innerHTML).toBe('');
-    expect(loading.hidden).toBe(true);
-
-    hideLoading();
-    expect(loading.hidden).toBe(true);
+    expect(document.getElementById('feedback-region').innerHTML).toBe('');
   });
 });

@@ -16,7 +16,7 @@ import {
 	getCategoricalFilterOptions,
 } from '../../../domain/filters/chartFilter.js';
 import { createEmptyGlobalFilter } from '../../../domain/filters/globalFilter.js';
-import { installDialogFocus } from '../../../ui/dialogFocus.js';
+import { showNativeModal } from '../../../ui/nativeDialog.js';
 import {
 	applyRuleColumnChange,
 	createEmptyRuleDraft,
@@ -40,8 +40,24 @@ function createOption(value, label, selected = false) {
  *
  * @private
  */
-function renderNumericRuleBody({ body, rule, translate }) {
+function renderNumericRuleBody({ body, rule, rows, translate }) {
 	body.replaceChildren();
+	let domainMin = null;
+	let domainMax = null;
+	rows.forEach(row => {
+		const rawValue = row?.[rule.column];
+		if (rawValue === null || rawValue === undefined || rawValue === '') return;
+		const value = Number(rawValue);
+		if (!Number.isFinite(value)) return;
+		domainMin = domainMin === null ? value : Math.min(domainMin, value);
+		domainMax = domainMax === null ? value : Math.max(domainMax, value);
+	});
+
+	const configureInput = input => {
+		input.step = 'any';
+		if (domainMin !== null) input.min = String(domainMin);
+		if (domainMax !== null) input.max = String(domainMax);
+	};
 
 	const opWrap = document.createElement('div');
 	opWrap.className = 'gf-control';
@@ -72,6 +88,7 @@ function renderNumericRuleBody({ body, rule, translate }) {
 			const minInput = document.createElement('input');
 			minInput.type = 'number';
 			minInput.className = 'rows-select';
+			configureInput(minInput);
 			minInput.value = String(rule.min ?? '');
 			minInput.addEventListener('input', () => { rule.min = minInput.value; });
 			minWrap.appendChild(minLabel);
@@ -85,6 +102,7 @@ function renderNumericRuleBody({ body, rule, translate }) {
 			const maxInput = document.createElement('input');
 			maxInput.type = 'number';
 			maxInput.className = 'rows-select';
+			configureInput(maxInput);
 			maxInput.value = String(rule.max ?? '');
 			maxInput.addEventListener('input', () => { rule.max = maxInput.value; });
 			maxWrap.appendChild(maxLabel);
@@ -98,6 +116,7 @@ function renderNumericRuleBody({ body, rule, translate }) {
 			const valueInput = document.createElement('input');
 			valueInput.type = 'number';
 			valueInput.className = 'rows-select';
+			configureInput(valueInput);
 			valueInput.value = String(rule.value ?? '');
 			valueInput.addEventListener('input', () => { rule.value = valueInput.value; });
 			valueWrap.appendChild(valueLabel);
@@ -238,7 +257,7 @@ function renderRuleBody({ body, rule, rows, numericColumns, translate }) {
 
 	if (numericColumns.includes(rule.column)) {
 		rule.mode = 'numeric';
-		renderNumericRuleBody({ body, rule, translate });
+		renderNumericRuleBody({ body, rule, rows, translate });
 	} else {
 		rule.mode = 'categorical';
 		renderCategoricalRuleBody({ body, rule, rows, translate });
@@ -335,23 +354,24 @@ export function openGlobalFilterDialog({
 	onClear,
 }) {
 	return new Promise(resolve => {
-		const overlay = document.createElement('div');
-		overlay.className = 'join-overlay gf-overlay';
+		const dialog = document.createElement('dialog');
+		dialog.className = 'app-dialog gf-overlay';
+		dialog.setAttribute('aria-labelledby', 'global-filter-dialog-title');
 
-		const dialog = document.createElement('div');
-		dialog.className = 'join-dialog gf-dialog';
-		dialog.setAttribute('role', 'dialog');
-		dialog.setAttribute('aria-modal', 'true');
+		const surface = document.createElement('form');
+		surface.method = 'dialog';
+		surface.className = 'join-dialog gf-dialog';
 
 		const title = document.createElement('h3');
 		title.className = 'join-title';
+		title.id = 'global-filter-dialog-title';
 		title.textContent = translate('chive-global-filter-dialog-title');
-		dialog.appendChild(title);
+		surface.appendChild(title);
 
 		const hint = document.createElement('p');
 		hint.className = 'gf-hint';
 		hint.textContent = translate('chive-global-filter-combine-hint');
-		dialog.appendChild(hint);
+		surface.appendChild(hint);
 
 		const draftRules = createInitialDraftRules(initialFilter, {
 			numericColumns,
@@ -360,7 +380,7 @@ export function openGlobalFilterDialog({
 
 		const rulesContainer = document.createElement('div');
 		rulesContainer.className = 'gf-rules-container';
-		dialog.appendChild(rulesContainer);
+		surface.appendChild(rulesContainer);
 
 		const emptyState = document.createElement('div');
 		emptyState.className = 'gf-empty';
@@ -381,7 +401,7 @@ export function openGlobalFilterDialog({
 		clearAllBtn.textContent = translate('chive-global-filter-clear-all');
 		topActions.appendChild(clearAllBtn);
 
-		dialog.appendChild(topActions);
+		surface.appendChild(topActions);
 
 		const footer = document.createElement('div');
 		footer.className = 'join-footer gf-footer';
@@ -395,23 +415,14 @@ export function openGlobalFilterDialog({
 		applyBtn.textContent = translate('chive-global-filter-apply');
 		footer.appendChild(cancelBtn);
 		footer.appendChild(applyBtn);
-		dialog.appendChild(footer);
+		surface.appendChild(footer);
+		dialog.appendChild(surface);
 
-		overlay.appendChild(dialog);
-		document.body.appendChild(overlay);
-
-		const focusControl = installDialogFocus(overlay, dialog);
-
-		const onEscape = event => {
-			if (event.key !== 'Escape') return;
-			closeDialog('cancel', null);
-		};
-
+		let settled = false;
 		const closeDialog = (action, filterOut) => {
-			document.removeEventListener('keydown', onEscape);
-			focusControl.release();
-			overlay.remove();
-			focusControl.restoreFocus();
+			if (settled) return;
+			settled = true;
+			lifecycle.close(action);
 			resolve({ action, filter: filterOut });
 		};
 
@@ -463,11 +474,9 @@ export function openGlobalFilterDialog({
 			closeDialog('apply', applied);
 		});
 
-		overlay.addEventListener('click', event => {
-			if (event.target === overlay) closeDialog('cancel', null);
+		const lifecycle = showNativeModal(dialog, {
+			onDismiss: () => closeDialog('cancel', null),
 		});
-
-		document.addEventListener('keydown', onEscape);
 
 		renderRules();
 	});

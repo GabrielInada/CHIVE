@@ -6,7 +6,6 @@ import {
 	configurePersistenceBackend,
 	enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey,
-	isActiveTabOnlyPatch,
 	isProjectDirtyEvent,
 } from '../../src/services/persistence.js';
 import { emitStateChange, STATE_EVENTS } from '../../src/state/stateEvents.js';
@@ -35,10 +34,8 @@ describe('persistence', () => {
 	});
 
 	describe('dirty classification', () => {
-		it('recognizes activeTab-only config patches', () => {
-			expect(isActiveTabOnlyPatch({ activeTab: 'panel' })).toBe(true);
-			expect(isActiveTabOnlyPatch({ activeTab: 'panel', bar: {} })).toBe(false);
-			expect(isProjectDirtyEvent({ type: STATE_EVENTS.CONFIG_UPDATED, data: { activeTab: 'panel' } })).toBe(false);
+		it('treats the active dataset tab as durable project configuration', () => {
+			expect(isProjectDirtyEvent({ type: STATE_EVENTS.CONFIG_UPDATED, data: { activeTab: 'panel' } })).toBe(true);
 			expect(isProjectDirtyEvent({ type: STATE_EVENTS.CONFIG_UPDATED, data: { bar: { category: 'x' } } })).toBe(true);
 			expect(isProjectDirtyEvent({ type: STATE_EVENTS.ACTIVE_DATASET, data: 0 })).toBe(true);
 			expect(isProjectDirtyEvent({ type: STATE_EVENTS.PREVIEW_ROWS_CHANGED, data: 50 })).toBe(false);
@@ -65,7 +62,7 @@ describe('persistence', () => {
 			expect(second).toHaveBeenCalledTimes(1);
 		});
 
-		it('auto-saves project changes after the debounce and ignores activeTab-only changes', async () => {
+		it('auto-saves chart changes and active-tab changes after the debounce', async () => {
 			vi.useFakeTimers();
 			const persist = vi.fn(async () => {});
 			configurePersistenceBackend({
@@ -78,15 +75,15 @@ describe('persistence', () => {
 
 			emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { activeTab: 'charts' });
 			await vi.advanceTimersByTimeAsync(2000);
-			expect(persist).not.toHaveBeenCalled();
+			expect(persist).toHaveBeenCalledTimes(1);
 			expect(activeController.getStatus().dirty).toBe(false);
 
 			emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { bar: { category: 'x' } });
 			expect(activeController.getStatus().dirty).toBe(true);
 			await vi.advanceTimersByTimeAsync(1999);
-			expect(persist).not.toHaveBeenCalled();
-			await vi.advanceTimersByTimeAsync(1);
 			expect(persist).toHaveBeenCalledTimes(1);
+			await vi.advanceTimersByTimeAsync(1);
+			expect(persist).toHaveBeenCalledTimes(2);
 			expect(activeController.getStatus().dirty).toBe(false);
 		});
 

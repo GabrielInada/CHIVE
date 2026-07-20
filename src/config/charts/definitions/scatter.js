@@ -6,6 +6,7 @@ const COLOR = '#1a472a';
 
 export const SCATTER_PLOT = {
   ticks: 8,
+  maxPoints: 5000,
   scaleOptions: ['linear', 'log'],
   defaultScale: 'linear',
   radiusOptions: [2, 3, 4, 6],

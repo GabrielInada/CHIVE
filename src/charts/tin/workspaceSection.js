@@ -21,11 +21,11 @@ export function renderTinChartSection({ config, rows }) {
 	const block = document.getElementById(CHART_BLOCKS.tin);
 	const container = document.getElementById(CHART_CONTAINERS.tin);
 	if (!config || !config.enabled) {
-		if (block) block.style.display = 'none';
+		if (block) block.hidden = true;
 		clearChartContainer(container);
 		return;
 	}
-	if (block) block.style.display = 'block';
+	if (block) block.hidden = false;
 	if (!container) return;
 	container.style.minHeight = `${Number(config.chartHeight || 460)}px`;
 	const result = renderTinInto(container, rows, config);

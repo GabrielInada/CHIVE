@@ -6,7 +6,7 @@ const mocks = vi.hoisted(() => ({
 	isAnyDialogOpen: vi.fn(() => false),
 }));
 
-vi.mock('../../../src/ui/dialogFocus.js', () => ({
+vi.mock('../../../src/ui/nativeDialog.js', () => ({
 	isAnyDialogOpen: mocks.isAnyDialogOpen,
 }));
 

@@ -194,7 +194,7 @@ subscriber is `persistence.js`; it ignores `STATE_HYDRATED`.
 [`src/app/renderCoordinator.js`](../../src/app/renderCoordinator.js) schedules a
 full `refreshView()` through `scheduleFullRefresh` for `ACTIVE_DATASET`,
 `DATASET_ADDED`, `DATASET_REMOVED`, and
-`STATE_HYDRATED` (a microtask-coalesced wrapper, so a synchronous burst such as
+`STATE_HYDRATED` (an animation-frame-coalesced wrapper, so a synchronous burst such as
 add-then-select paints once). The narrowed events repaint only their regions
 through `scheduleRegion`: `COLUMNS_UPDATED` the workspace and chart-controls
 regions; `CONFIG_UPDATED` the same, plus the panel region when the payload switches
@@ -224,11 +224,11 @@ through the render coordinator's coalescer).
 
 [`src/services/persistence.js`](../../src/services/persistence.js)
 subscribes to `WILDCARD` after hydration and tracks semantic project dirtiness
-to schedule the debounced auto-save. It ignores `STATE_HYDRATED`, UI preference
-events (`SIDEBAR_MODE_CHANGED`, `PREVIEW_ROWS_CHANGED`), and `CONFIG_UPDATED`
-payloads that are exactly `{ activeTab }`. UI preferences are written
-immediately to `localStorage`; project content is written by the debounced
-`saveNow()` or the best-effort page-lifecycle close net.
+to schedule the debounced auto-save. It ignores `STATE_HYDRATED` and UI
+preference events (`SIDEBAR_MODE_CHANGED`, `PREVIEW_ROWS_CHANGED`). UI
+preferences are written immediately to `localStorage`; dataset configuration,
+including `activeTab`, is project content written by the debounced `saveNow()`
+or the best-effort page-lifecycle close net.
 
 Dataset add/remove/select render through the bus (the data facade emits
 `DATASET_ADDED`/`DATASET_REMOVED`/`ACTIVE_DATASET`, which the render coordinator

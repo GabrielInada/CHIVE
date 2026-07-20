@@ -1,9 +1,6 @@
+@layer controls {
 /* @feature: datasetWorkspace
    Column control buttons, column selection UI, filter toggles */
-
-#columns-panel {
-  display: none;
-}
 
 .column-list {
   display: flex;
@@ -76,6 +73,7 @@
 .column-action.active {
   border-color: var(--accent);
   color: var(--accent);
-  background: rgba(var(--accent-rgb), 0.08);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
   font-weight: 500;
+}
 }

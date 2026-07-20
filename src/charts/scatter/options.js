@@ -79,6 +79,7 @@ export function normalizeScatterOptions(options, xColumn, yColumn) {
 	};
 	const xFilterColumn = typeof options.xColumn === 'string' ? options.xColumn : null;
 	const yFilterColumn = typeof options.yColumn === 'string' ? options.yColumn : null;
+	const allowFullRender = options.allowFullRender === true;
 
 	return {
 		xScaleType,
@@ -107,5 +108,6 @@ export function normalizeScatterOptions(options, xColumn, yColumn) {
 		configuredAxisTypes,
 		xFilterColumn,
 		yFilterColumn,
+		allowFullRender,
 	};
 }

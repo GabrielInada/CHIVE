@@ -82,11 +82,11 @@ describe('vendor checks', () => {
 
 	it('extracts font URLs without splitting filenames at commas', () => {
 		const css = `
-			src: url('./ibm-plex-sans/IBMPlexSans-VariableFont_wdth,wght.ttf') format('truetype');
+			src: url('./ibm-plex-sans/IBMPlexSans-VariableFont_wdth,wght.woff2') format('woff2');
 			src: url('./jetbrains-mono/JetBrainsMono-Regular.woff2') format('woff2');
 		`;
 		expect(extractFontUrls(css)).toEqual([
-			'./ibm-plex-sans/IBMPlexSans-VariableFont_wdth,wght.ttf',
+			'./ibm-plex-sans/IBMPlexSans-VariableFont_wdth,wght.woff2',
 			'./jetbrains-mono/JetBrainsMono-Regular.woff2',
 		]);
 	});

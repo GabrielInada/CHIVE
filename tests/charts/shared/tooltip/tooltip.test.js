@@ -18,12 +18,22 @@ describe('tooltip', () => {
 	let showPinnedChartTooltip;
 	let buildCategoricalFilterActions;
 	let createFilterStateBadge;
+	let frames;
+	let nextFrameId;
 
 	const originalInnerWidth = window.innerWidth;
 	const originalInnerHeight = window.innerHeight;
 
 	beforeEach(async () => {
 		document.body.innerHTML = '';
+		frames = new Map();
+		nextFrameId = 1;
+		vi.stubGlobal('requestAnimationFrame', vi.fn(callback => {
+			const id = nextFrameId++;
+			frames.set(id, callback);
+			return id;
+		}));
+		vi.stubGlobal('cancelAnimationFrame', vi.fn(id => frames.delete(id)));
 		// Re-import to reset the module-level tooltipEl and pinnedAnchor
 		vi.resetModules();
 		const mod = await import('../../../../src/charts/shared/tooltip/tooltip.js');
@@ -43,6 +53,12 @@ describe('tooltip', () => {
 		buildCategoricalFilterActions = mod.buildCategoricalFilterActions;
 		createFilterStateBadge = mod.createFilterStateBadge;
 	});
+
+	function flushFrame() {
+		const pending = [...frames.values()];
+		frames.clear();
+		pending.forEach(callback => callback(16));
+	}
 
 	afterEach(() => {
 		Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, configurable: true });
@@ -84,11 +100,12 @@ describe('tooltip', () => {
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
 		expect(tooltip.textContent).toBe('Hello');
-		expect(tooltip.style.display).toBe('block');
+		expect(tooltip.hidden).toBe(false);
 	});
 
 	it('positions tooltip with offset', () => {
 		showChartTooltip('Test', 50, 60);
+		flushFrame();
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip.style.left).toBe('62px');
 		expect(tooltip.style.top).toBe('72px');
@@ -98,12 +115,13 @@ describe('tooltip', () => {
 		showChartTooltip('Visible', 0, 0);
 		hideChartTooltip();
 		const tooltip = document.querySelector('.chart-tooltip');
-		expect(tooltip.style.display).toBe('none');
+		expect(tooltip.hidden).toBe(true);
 	});
 
 	it('moves tooltip to new position', () => {
 		showChartTooltip('Move me', 0, 0);
 		moveChartTooltip(200, 300);
+		flushFrame();
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip.style.left).toBe('212px');
 		expect(tooltip.style.top).toBe('312px');
@@ -137,6 +155,7 @@ describe('tooltip', () => {
 		showChartTooltip('overflow-right', 0, 0);
 		stubTooltipRect(200, 60);
 		moveChartTooltip(700, 100);
+		flushFrame();
 		const tooltip = document.querySelector('.chart-tooltip');
 		// expected page-space left: 700 - 200 - 12 = 488
 		expect(parseFloat(tooltip.style.left)).toBeLessThanOrEqual(700 - 200);
@@ -149,6 +168,7 @@ describe('tooltip', () => {
 		showChartTooltip('overflow-bottom', 0, 0);
 		stubTooltipRect(120, 80);
 		moveChartTooltip(100, 560);
+		flushFrame();
 		const tooltip = document.querySelector('.chart-tooltip');
 		// expected page-space top: 560 - 80 - 12 = 468
 		expect(parseFloat(tooltip.style.top)).toBe(468);
@@ -160,6 +180,7 @@ describe('tooltip', () => {
 		showChartTooltip('clamp-left', 0, 0);
 		stubTooltipRect(120, 60);
 		moveChartTooltip(-50, 100);
+		flushFrame();
 		const tooltip = document.querySelector('.chart-tooltip');
 		// VIEWPORT_PADDING = 8
 		expect(tooltip.style.left).toBe('8px');
@@ -171,6 +192,7 @@ describe('tooltip', () => {
 		showChartTooltip('clamp-top', 0, 0);
 		stubTooltipRect(120, 60);
 		moveChartTooltip(100, -50);
+		flushFrame();
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip.style.top).toBe('8px');
 	});
@@ -190,6 +212,7 @@ describe('tooltip', () => {
 		showChartTooltip('anchored', 50, 50);
 		const target = { x: 30, y: 40 };
 		pinTooltip(() => target);
+		flushFrame();
 		const tooltip = document.querySelector('.chart-tooltip');
 		// initial pin call repositions immediately
 		expect(tooltip.style.left).toBe('42px');
@@ -198,6 +221,7 @@ describe('tooltip', () => {
 		target.x = 200;
 		target.y = 300;
 		repositionPinnedTooltip();
+		flushFrame();
 		expect(tooltip.style.left).toBe('212px');
 		expect(tooltip.style.top).toBe('312px');
 	});
@@ -446,7 +470,7 @@ describe('tooltip', () => {
 		// should not throw and should not dismiss
 		document.dispatchEvent(event);
 		const tooltip = document.querySelector('.chart-tooltip');
-		expect(tooltip.style.display).toBe('block');
+		expect(tooltip.hidden).toBe(false);
 	});
 
 	it('mousedown outside the pinned tooltip dismisses it', () => {

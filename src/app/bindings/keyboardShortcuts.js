@@ -5,7 +5,7 @@
  * or a modal dialog is open.
  */
 
-import { isAnyDialogOpen } from '../../ui/dialogFocus.js';
+import { isAnyDialogOpen } from '../../ui/nativeDialog.js';
 import { FILE_IDS } from '../../features/datasetWorkspace/domIds.js';
 
 let keyboardListenersReady = false;
@@ -23,8 +23,7 @@ export function setupGlobalKeyboardListeners() {
 
 /** @private */
 function onGlobalKeydown(event) {
-	// Let a focused control (e.g. an open dialog's Tab trap) suppress global
-	// shortcuts by consuming the event first.
+	// Let a focused control suppress global shortcuts by consuming the event.
 	if (event.defaultPrevented) return;
 	// Ctrl+O or Cmd+O: open file picker
 	if ((event.ctrlKey || event.metaKey) && event.key === 'o') {

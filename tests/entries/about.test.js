@@ -4,17 +4,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	initializeSharedPage: vi.fn(),
+	revealPageShell: vi.fn(),
+	failStartupScreen: vi.fn(),
 }));
 
 vi.mock('../../src/app/sharedPageInitializer.js', () => ({
 	initializeSharedPage: mocks.initializeSharedPage,
 }));
 
+vi.mock('../../src/app/startupScreen.js', () => ({
+	revealPageShell: mocks.revealPageShell,
+	failStartupScreen: mocks.failStartupScreen,
+}));
+
 beforeEach(() => {
 	vi.restoreAllMocks();
 	vi.resetModules();
 	vi.clearAllMocks();
-	document.body.style.visibility = '';
 	mocks.initializeSharedPage.mockResolvedValue(undefined);
 	delete window.chiveDebug;
 });
@@ -30,6 +36,8 @@ describe('about page entry', () => {
 		await import('../../src/entries/about.js');
 
 		expect(mocks.initializeSharedPage).toHaveBeenCalledTimes(1);
+		await flush();
+		expect(mocks.revealPageShell).toHaveBeenCalledTimes(1);
 	});
 
 	it('waits for DOMContentLoaded when the document is still loading', async () => {
@@ -47,17 +55,16 @@ describe('about page entry', () => {
 		expect(mocks.initializeSharedPage).toHaveBeenCalledTimes(1);
 	});
 
-	it('reveals the body and logs when shared initialization rejects', async () => {
+	it('shows startup recovery and logs when shared initialization rejects', async () => {
 		Object.defineProperty(document, 'readyState', { configurable: true, value: 'complete' });
 		const error = new Error('i18n unavailable');
 		mocks.initializeSharedPage.mockRejectedValue(error);
 		const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
-		document.body.style.visibility = 'hidden';
 
 		await import('../../src/entries/about.js');
 		await flush();
 
-		expect(document.body.style.visibility).toBe('visible');
+		expect(mocks.failStartupScreen).toHaveBeenCalledTimes(1);
 		expect(consoleError).toHaveBeenCalledWith('CHIVE About-page initialization failed:', error);
 	});
 

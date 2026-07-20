@@ -72,7 +72,7 @@ describe('renderNetworkChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('none');
+		expect(block.hidden).toBe(true);
 		expect(container.children.length).toBe(0);
 		expect(mocks.renderNetworkGraph).not.toHaveBeenCalled();
 	});
@@ -87,7 +87,7 @@ describe('renderNetworkChartSection', () => {
 			filterCallbacks,
 		});
 
-		expect(block.style.display).toBe('block');
+		expect(block.hidden).toBe(false);
 		expect(container.style.minHeight).toBe('480px');
 		const [calledContainer, calledRows, source, target, opts] = mocks.renderNetworkGraph.mock.calls[0];
 		expect(calledContainer).toBe(container);
@@ -127,5 +127,33 @@ describe('renderNetworkChartSection', () => {
 		expect(container.style.minHeight).toBe('420px');
 		expect(opts.labels.source).toBe('chive-chart-control-network-source');
 		expect(opts.labels.target).toBe('chive-chart-control-network-target');
+	});
+
+	it('refuses over-budget geometry until the user approves this container', () => {
+		const { container } = setupDom();
+		mocks.renderNetworkGraph
+			.mockReturnValueOnce({
+				ok: false,
+				reason: 'render-budget-exceeded',
+				nodesCount: 1200,
+				linksCount: 2400,
+			})
+			.mockReturnValueOnce({ ok: true, nodesCount: 1200, linksCount: 2400 });
+
+		renderNetworkChartSection({
+			config: defaultConfig(),
+			rows: [],
+			filterCallbacks,
+		});
+
+		const notice = container.querySelector('.chart-render-budget-notice');
+		expect(notice?.textContent).toContain('chive-chart-network-budget-notice');
+		expect(mocks.renderNetworkGraph.mock.calls[0][4].allowFullRender).toBe(false);
+
+		notice.querySelector('button').click();
+
+		expect(mocks.renderNetworkGraph).toHaveBeenCalledTimes(2);
+		expect(mocks.renderNetworkGraph.mock.calls[1][4].allowFullRender).toBe(true);
+		expect(container.querySelector('.chart-render-budget-notice')).toBeNull();
 	});
 });

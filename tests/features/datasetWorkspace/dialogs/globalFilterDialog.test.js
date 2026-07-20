@@ -40,6 +40,8 @@ describe('openGlobalFilterDialog (multi-rule)', () => {
 		expect(document.querySelector('.gf-dialog')).not.toBeNull();
 		expect(document.querySelector('.gf-add-rule')).not.toBeNull();
 		expect(document.querySelector('.gf-rule-card')).toBeNull();
+		expect(document.querySelector('dialog[open]').getAttribute('aria-labelledby'))
+			.toBe('global-filter-dialog-title');
 	});
 
 	it('adds a new empty rule card when Add rule is clicked', () => {
@@ -155,7 +157,7 @@ describe('openGlobalFilterDialog (multi-rule)', () => {
 		});
 
 		document.querySelector('.gf-add-rule').click();
-		document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+		document.querySelector('dialog').dispatchEvent(new Event('cancel', { cancelable: true }));
 		const result = await pending;
 		expect(result.action).toBe('cancel');
 	});
@@ -266,6 +268,9 @@ describe('openGlobalFilterDialog (multi-rule)', () => {
 		const inputs = document.querySelectorAll('.gf-numeric-inputs input[type="number"]');
 		expect(inputs[0].value).toBe('10');
 		expect(inputs[1].value).toBe('40');
+		expect(inputs[0].min).toBe('18');
+		expect(inputs[0].max).toBe('50');
+		expect(inputs[0].step).toBe('any');
 
 		const opSelect = document.querySelector('.gf-rule-operator');
 		opSelect.value = 'eq';

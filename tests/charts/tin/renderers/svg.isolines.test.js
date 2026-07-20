@@ -337,7 +337,7 @@ describe('tinChart isoline/threshold hover (integration)', () => {
 		hideChartTooltip();
 	});
 
-	it('shows, moves, and hides the Z tooltip over an isoline hit line', () => {
+	it('shows, moves, and hides the Z tooltip over an isoline hit line', async () => {
 		const container = document.getElementById('tin');
 		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
 			subdivisionDepth: 0,
@@ -350,20 +350,22 @@ describe('tinChart isoline/threshold hover (integration)', () => {
 		expect(hit).not.toBeNull();
 
 		hit.dispatchEvent(new MouseEvent('pointerover', { bubbles: true, clientX: 10, clientY: 20 }));
+		await new Promise(resolve => requestAnimationFrame(resolve));
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
-		expect(tooltip.style.display).toBe('block');
+		expect(tooltip.hidden).toBe(false);
 		// Tooltip line is "z: <value>"; the data-z drives the value.
 		expect(tooltip.textContent).toContain('z');
 		const initialPosition = { left: tooltip.style.left, top: tooltip.style.top };
 
 		hit.dispatchEvent(new MouseEvent('pointermove', { bubbles: true, clientX: 120, clientY: 140 }));
+		await new Promise(resolve => requestAnimationFrame(resolve));
 		const movedTooltip = document.querySelector('.chart-tooltip');
-		expect(movedTooltip.style.display).toBe('block');
+		expect(movedTooltip.hidden).toBe(false);
 		expect({ left: movedTooltip.style.left, top: movedTooltip.style.top }).not.toEqual(initialPosition);
 
 		hit.dispatchEvent(new MouseEvent('pointerout', { bubbles: true }));
-		expect(document.querySelector('.chart-tooltip').style.display).toBe('none');
+		expect(document.querySelector('.chart-tooltip').hidden).toBe(true);
 	});
 
 	it('shows the Z tooltip over a threshold hit line', () => {
@@ -387,7 +389,7 @@ describe('tinChart isoline/threshold hover (integration)', () => {
 		hit.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
-		expect(tooltip.style.display).toBe('block');
+		expect(tooltip.hidden).toBe(false);
 		expect(tooltip.textContent).toContain('5');
 	});
 
@@ -404,6 +406,6 @@ describe('tinChart isoline/threshold hover (integration)', () => {
 		const visible = container.querySelector('.tin-isolines line:not(.tin-isoline-hit)');
 		visible.dispatchEvent(new MouseEvent('pointerover', { bubbles: true }));
 		const tooltip = document.querySelector('.chart-tooltip');
-		expect(tooltip === null || tooltip.style.display === 'none').toBe(true);
+		expect(tooltip === null || tooltip.hidden).toBe(true);
 	});
 });

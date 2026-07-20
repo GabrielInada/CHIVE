@@ -1,42 +1,65 @@
 /**
  * CHIVE i18n service.
  *
- * Thin wrapper around banana-i18n. Loads `pt-BR` and `en` message
- * bundles at import time, exposes `t()` for translations, and provides
- * a `setLocale` that persists the choice, re-translates the static
- * page, and broadcasts a `'chive-locale-changed'` CustomEvent on
- * `window` so dynamic UI can refresh.
+ * Loads only the active catalog during startup. Additional catalogs are
+ * fetched on demand when the user changes language.
  */
 
 import Banana from '../../vendor/banana-i18n/banana-i18n.js';
-import ptBR from '../i18n/pt-BR.json' with { type: 'json' };
-import en from '../i18n/en.json' with { type: 'json' };
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_STORAGE_KEY } from '../config/locale.js';
+import { fail, ok } from '../utils/result.js';
 
-const LOCALES = SUPPORTED_LOCALES;
-const LOCALE_KEY = LOCALE_STORAGE_KEY;
+const catalogLoaders = Object.freeze({
+	'pt-BR': () => import('../i18n/pt-BR.json', { with: { type: 'json' } }),
+	'en': () => import('../i18n/en.json', { with: { type: 'json' } }),
+});
 
+const catalogPromises = new Map();
+const loadedCatalogs = new Set();
 const banana = new Banana(DEFAULT_LOCALE);
-banana.load(ptBR, 'pt-BR');
-banana.load(en, 'en');
+let latestLocaleRequest = 0;
 
 /**
- * Translate a message key. Supports banana-i18n positional substitution
- * (`$1`, `$2`, …) and inline plural markup (`{{PLURAL:$1|one|other}}`).
- *
- * @param {string} key - Message key as declared in `src/i18n/<locale>.json`.
- * @param {...*} params - Positional substitutions for `$1`, `$2`, …
- * @returns {string} The translated string. Falls back to `key` itself when the message is missing.
+ * @param {string} locale
+ * @returns {Promise<Object>}
+ */
+function loadCatalog(locale) {
+	if (!catalogPromises.has(locale)) {
+		const promise = catalogLoaders[locale]()
+			.then(module => module.default)
+			.catch(error => {
+				catalogPromises.delete(locale);
+				throw error;
+			});
+		catalogPromises.set(locale, promise);
+	}
+	return catalogPromises.get(locale);
+}
+
+/**
+ * @param {string} locale
+ * @param {Object} messages
+ */
+function activateCatalog(locale, messages) {
+	if (!loadedCatalogs.has(locale)) {
+		banana.load(messages, locale);
+		loadedCatalogs.add(locale);
+	}
+	banana.setLocale(locale);
+	document.documentElement.lang = locale;
+	translateStaticPage();
+}
+
+/**
+ * @param {string} key
+ * @param {...*} params
+ * @returns {string}
  */
 export function t(key, ...params) {
 	return banana.i18n(key, ...params);
 }
 
 /**
- * Translate a column-type code (`'number'`, `'text'`, `'date'`) into its
- * localized label. Unknown codes pass through unchanged so the function
- * never throws on legacy data.
- *
  * @param {import('../types.js').ColumnType | string} type
  * @returns {string}
  */
@@ -48,57 +71,64 @@ export function translateType(type) {
 }
 
 /**
- * @returns {string} The currently active locale code (e.g. `'pt-BR'` or `'en'`).
+ * @returns {string}
  */
 export function getLocale() {
 	return banana.locale;
 }
 
 /**
- * Switch the active locale and apply it everywhere it shows. Side effects:
- *   1. Banana switches active locale.
- *   2. `<html lang>` is updated.
- *   3. The chosen locale is persisted to localStorage.
- *   4. Every static `[data-i18n]` node in the page is re-translated.
- *   5. A `'chive-locale-changed'` CustomEvent is dispatched on `window` so
- *      dynamic views can refresh their own content.
- *
- * No-op when `locale` is not in `SUPPORTED_LOCALES`.
+ * Load, persist, and activate a locale. A newer request wins if callers race.
  *
  * @param {string} locale
+ * @returns {Promise<import('../types.js').Result>}
  */
-export function setLocale(locale) {
-	if (!LOCALES.includes(locale)) return;
-	banana.setLocale(locale);
-	document.documentElement.lang = locale;
-	localStorage.setItem(LOCALE_KEY, locale);
-	translateStaticPage();
+export async function setLocale(locale) {
+	if (!SUPPORTED_LOCALES.includes(locale)) return fail('unsupported-locale');
+	const requestId = ++latestLocaleRequest;
+
+	let messages;
+	try {
+		messages = await loadCatalog(locale);
+	} catch {
+		return fail('catalog-unavailable');
+	}
+	if (requestId !== latestLocaleRequest) return fail('superseded');
+
+	try {
+		localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+	} catch {
+		return fail('storage-unavailable');
+	}
+	if (requestId !== latestLocaleRequest) return fail('superseded');
+
+	activateCatalog(locale, messages);
 	window.dispatchEvent(new CustomEvent('chive-locale-changed', { detail: { locale } }));
+	return ok({ locale });
 }
 
 /**
- * Boot-time initialization. Reads the persisted locale (falling back to
- * the default), syncs `<html lang>`, translates every static `[data-i18n]`
- * node, and reveals `document.body` (which is hidden until translation
- * completes to avoid a flash of untranslated keys). The language control
- * itself lives in the settings dialog and calls {@link setLocale}; this
- * service owns no header widgets.
+ * Load the saved locale, falling back to pt-BR when storage is inaccessible or
+ * contains an unsupported value.
  *
- * Call exactly once on startup.
+ * @returns {Promise<void>}
  */
-export function initializeI18n() {
-	const savedLocale = localStorage.getItem(LOCALE_KEY);
-	const locale = LOCALES.includes(savedLocale) ? savedLocale : DEFAULT_LOCALE;
-	banana.setLocale(locale);
-	document.documentElement.lang = locale;
-	translateStaticPage();
-	document.body.style.visibility = 'visible';
+export async function initializeI18n() {
+	const requestId = ++latestLocaleRequest;
+	let savedLocale = null;
+	try {
+		savedLocale = localStorage.getItem(LOCALE_STORAGE_KEY);
+	} catch {
+		// The default below keeps private/blocked storage from breaking startup.
+	}
+	const locale = SUPPORTED_LOCALES.includes(savedLocale) ? savedLocale : DEFAULT_LOCALE;
+	const messages = await loadCatalog(locale);
+	if (requestId !== latestLocaleRequest) return;
+	activateCatalog(locale, messages);
 }
 
 /**
- * Update every [data-i18n] element in the page.
- * Elements that also have [data-i18n-html] use innerHTML (safe: strings come
- * from our own translation files, never from user input).
+ * Update static translated content and translated attributes.
  */
 function translateStaticPage() {
 	document.title = t('chive-page-title');
@@ -115,5 +145,9 @@ function translateStaticPage() {
 		const text = t(el.dataset.i18nTitle);
 		el.title = text;
 		if (el.hasAttribute('aria-label')) el.setAttribute('aria-label', text);
+	});
+
+	document.querySelectorAll('[data-i18n-close-label]').forEach(el => {
+		el.dataset.closeLabel = t(el.dataset.i18nCloseLabel);
 	});
 }

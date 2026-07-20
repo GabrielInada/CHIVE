@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
@@ -20,6 +20,10 @@ describe('renderTablePreview', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '<div id="table-container"></div>';
 		vi.clearAllMocks();
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
 	});
 
 	it('renders an empty-column placeholder when no columns are visible', () => {
@@ -58,5 +62,46 @@ describe('renderTablePreview', () => {
 
 		expect(Array.from(table.querySelectorAll('tfoot td')).map(td => td.textContent))
 			.toEqual(['', 'type:text', 'type:number', 'type:text']);
+	});
+
+	it('chunks previews above 2,000 cells and exposes aria-busy until complete', async () => {
+		vi.useFakeTimers();
+		const rows = Array.from({ length: 1000 }, (_, index) => ({
+			a: index,
+			b: index + 1,
+			c: index + 2,
+		}));
+
+		renderTablePreview(rows, [
+			{ name: 'a', type: 'number' },
+			{ name: 'b', type: 'number' },
+			{ name: 'c', type: 'number' },
+		], 1000);
+
+		const container = document.getElementById('table-container');
+		expect(container.getAttribute('aria-busy')).toBe('true');
+		expect(container.querySelectorAll('tbody tr')).toHaveLength(0);
+
+		await vi.runAllTimersAsync();
+		expect(container.querySelectorAll('tbody tr')).toHaveLength(1000);
+		expect(container.hasAttribute('aria-busy')).toBe(false);
+	});
+
+	it('cancels stale chunks when a newer preview replaces the table', async () => {
+		vi.useFakeTimers();
+		const rows = Array.from({ length: 1000 }, (_, index) => ({ value: index }));
+		const columns = [
+			{ name: 'value', type: 'number' },
+			{ name: 'value2', type: 'number' },
+		];
+
+		renderTablePreview(rows, columns, 1000);
+		renderTablePreview([{ value: 7 }], [{ name: 'value', type: 'number' }], 1);
+		await vi.runAllTimersAsync();
+
+		const container = document.getElementById('table-container');
+		expect(container.querySelectorAll('tbody tr')).toHaveLength(1);
+		expect(container.querySelector('tbody td.num').textContent).toBe('7');
+		expect(container.hasAttribute('aria-busy')).toBe(false);
 	});
 });

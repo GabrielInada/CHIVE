@@ -14,12 +14,14 @@
  */
 
 import { initializeSharedPage } from '../app/sharedPageInitializer.js';
+import { failStartupScreen, revealPageShell } from '../app/startupScreen.js';
 
 async function startAboutPage() {
 	try {
 		await initializeSharedPage();
+		revealPageShell();
 	} catch (error) {
-		document.body.style.visibility = 'visible';
+		failStartupScreen();
 		console.error('CHIVE About-page initialization failed:', error);
 	}
 }

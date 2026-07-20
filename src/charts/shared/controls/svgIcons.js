@@ -16,7 +16,6 @@ export function createSvgIcon(iconType, size = 16) {
 	img.width = size;
 	img.height = size;
 	img.className = `svg-icon svg-icon-${iconType}`;
-	img.style.display = 'inline-block';
 	img.style.verticalAlign = 'middle';
 	img.style.marginRight = '6px';
 	img.style.flexShrink = '0';

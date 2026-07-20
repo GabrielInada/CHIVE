@@ -131,10 +131,10 @@ describe('renderCharts orchestration', () => {
 
 		renderCharts(makeConfig({ activeTab: 'preview' }), [], [], []);
 
-		expect(grid.style.display).toBe('grid');
-		expect(emptyState.style.display).toBe('none');
+		expect(grid.hidden).toBe(false);
+		expect(emptyState.hidden).toBe(true);
 		for (const type of CHART_TYPE_KEYS) {
-			expect(blocks[type].style.display).toBe('block');
+			expect(blocks[type].hidden).toBe(false);
 			expect(containers[type].children.length).toBe(0);
 		}
 		for (const key of Object.values(SECTION_MOCKS)) {
@@ -147,11 +147,11 @@ describe('renderCharts orchestration', () => {
 
 		renderCharts(makeConfig(), [], [], []);
 
-		expect(grid.style.display).toBe('none');
-		expect(emptyState.style.display).toBe('flex');
+		expect(grid.hidden).toBe(true);
+		expect(emptyState.hidden).toBe(false);
 		expect(emptyState.textContent).toBe('chive-chart-empty-none');
 		for (const type of CHART_TYPE_KEYS) {
-			expect(blocks[type].style.display).toBe('none');
+			expect(blocks[type].hidden).toBe(true);
 			expect(containers[type].children.length).toBe(0);
 		}
 		for (const key of Object.values(SECTION_MOCKS)) {

@@ -6,7 +6,7 @@
 
 import { CHART_TYPE_KEYS } from '../../../config/charts/definitions.js';
 import { CHART_CATALOG } from '../../../charts/catalog.js';
-import { installDialogFocus } from '../../../ui/dialogFocus.js';
+import { showNativeModal } from '../../../ui/nativeDialog.js';
 
 /**
  * Build one chart-type card: preview SVG, name, category tag,
@@ -60,22 +60,23 @@ function buildChartCard(type, translate, isActive) {
  */
 export function openChartTypePickerDialog({ activeChartType = null, translate }) {
 	return new Promise(resolve => {
-		const overlay = document.createElement('div');
-		overlay.className = 'join-overlay';
+		const dialog = document.createElement('dialog');
+		dialog.className = 'app-dialog';
+		dialog.setAttribute('aria-labelledby', 'chart-picker-dialog-title');
 
-		const dialog = document.createElement('div');
-		dialog.className = 'join-dialog chart-picker-dialog';
-		dialog.setAttribute('role', 'dialog');
-		dialog.setAttribute('aria-modal', 'true');
+		const surface = document.createElement('form');
+		surface.method = 'dialog';
+		surface.className = 'join-dialog chart-picker-dialog';
 
 		const title = document.createElement('h3');
 		title.className = 'join-title';
+		title.id = 'chart-picker-dialog-title';
 		title.textContent = translate('chive-chart-picker-dialog-title');
-		dialog.appendChild(title);
+		surface.appendChild(title);
 
 		const grid = document.createElement('div');
 		grid.className = 'chart-picker-grid';
-		dialog.appendChild(grid);
+		surface.appendChild(grid);
 
 		const footer = document.createElement('div');
 		footer.className = 'join-footer';
@@ -92,24 +93,15 @@ export function openChartTypePickerDialog({ activeChartType = null, translate })
 
 		footer.appendChild(clearButton);
 		footer.appendChild(cancelButton);
-		dialog.appendChild(footer);
+		surface.appendChild(footer);
+		dialog.appendChild(surface);
 
-		overlay.appendChild(dialog);
-		document.body.appendChild(overlay);
-
-		const focusControl = installDialogFocus(overlay, dialog);
-
+		let settled = false;
 		const closeDialog = result => {
-			document.removeEventListener('keydown', onEscape);
-			focusControl.release();
-			overlay.remove();
-			focusControl.restoreFocus();
+			if (settled) return;
+			settled = true;
+			lifecycle.close();
 			resolve(result);
-		};
-
-		const onEscape = event => {
-			if (event.key !== 'Escape') return;
-			closeDialog(null);
 		};
 
 		CHART_TYPE_KEYS.forEach(type => {
@@ -121,10 +113,8 @@ export function openChartTypePickerDialog({ activeChartType = null, translate })
 		clearButton.addEventListener('click', () => closeDialog({ chartType: null }));
 		cancelButton.addEventListener('click', () => closeDialog(null));
 
-		overlay.addEventListener('click', event => {
-			if (event.target === overlay) closeDialog(null);
+		const lifecycle = showNativeModal(dialog, {
+			onDismiss: () => closeDialog(null),
 		});
-
-		document.addEventListener('keydown', onEscape);
 	});
 }

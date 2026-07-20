@@ -13,10 +13,11 @@
  * on the language control.
  */
 
-import { installDialogFocus } from '../../ui/dialogFocus.js';
+import { showNativeModal } from '../../ui/nativeDialog.js';
 import { t } from '../../services/i18nService.js';
 import { SUPPORTED_LOCALES, LOCALE_LABELS } from '../../config/locale.js';
 import { TIN_COLOR_RENDERING_MODES } from '../../config/settings.js';
+import { formatFileSize } from '../../utils/formatters.js';
 
 const TIN_MODE_LABEL_KEYS = {
 	'optimized': 'chive-settings-tin-optimized',
@@ -49,8 +50,10 @@ function createSection(titleKey) {
  * @param {Object} args
  * @param {string} args.locale - Currently active locale code.
  * @param {string} args.tinColorRendering - Current TIN color-rendering mode.
- * @param {(locale: string) => void} args.onLocaleChange - Applied immediately; the dialog stays open.
+ * @param {(locale: string) => Promise<{ ok: boolean }>} args.onLocaleChange - Applied asynchronously; the dialog stays open.
  * @param {(mode: string) => void} args.onTinColorRenderingChange - Applied immediately.
+ * @param {() => Promise<{ ok: boolean, usage?: number, quota?: number, persisted?: boolean, reason?: string }>} args.onGetStorageStatus
+ * @param {() => Promise<{ ok: boolean, granted?: boolean, reason?: string }>} args.onRequestPersistentStorage
  * @param {() => void} [args.onClose] - Called once after any close path.
  * @returns {{ close: () => void }}
  */
@@ -59,16 +62,18 @@ export function openSettingsDialog({
 	tinColorRendering,
 	onLocaleChange,
 	onTinColorRenderingChange,
+	onGetStorageStatus,
+	onRequestPersistentStorage,
 	onClose,
 }) {
-	const overlay = document.createElement('div');
-	overlay.className = 'settings-overlay';
-
-	const dialog = document.createElement('div');
-	dialog.className = 'settings-dialog';
-	dialog.setAttribute('role', 'dialog');
-	dialog.setAttribute('aria-modal', 'true');
+	const dialog = document.createElement('dialog');
+	dialog.className = 'app-dialog';
 	dialog.setAttribute('aria-labelledby', 'settings-dialog-title');
+
+	const surface = document.createElement('form');
+	surface.method = 'dialog';
+	surface.className = 'settings-dialog';
+	let refreshStorageStatus = async () => {};
 
 	const header = document.createElement('div');
 	header.className = 'settings-dialog-header';
@@ -89,7 +94,7 @@ export function openSettingsDialog({
 	closeBtn.textContent = '×';
 	header.appendChild(closeBtn);
 
-	dialog.appendChild(header);
+	surface.appendChild(header);
 
 	const body = document.createElement('div');
 	body.className = 'settings-dialog-body';
@@ -115,8 +120,25 @@ export function openSettingsDialog({
 		option.selected = code === locale;
 		languageSelect.appendChild(option);
 	});
-	languageSelect.addEventListener('change', () => {
-		onLocaleChange(languageSelect.value);
+	let appliedLocale = locale;
+	languageSelect.addEventListener('change', async () => {
+		const requestedLocale = languageSelect.value;
+		const restoreFocus = document.activeElement === languageSelect;
+		languageSelect.disabled = true;
+		try {
+			const result = await onLocaleChange(requestedLocale);
+			if (result?.ok) {
+				appliedLocale = requestedLocale;
+				void refreshStorageStatus();
+			} else {
+				languageSelect.value = appliedLocale;
+			}
+		} catch {
+			languageSelect.value = appliedLocale;
+		} finally {
+			languageSelect.disabled = false;
+			if (restoreFocus) languageSelect.focus({ preventScroll: true });
+		}
 	});
 	languageControl.appendChild(languageSelect);
 	generalSection.appendChild(languageControl);
@@ -163,33 +185,105 @@ export function openSettingsDialog({
 	performanceSection.appendChild(tinField);
 	body.appendChild(performanceSection);
 
-	dialog.appendChild(body);
-	overlay.appendChild(dialog);
-	document.body.appendChild(overlay);
+	// Storage: read quota status on open, request persistence only from the
+	// explicit button below.
+	const { section: storageSection } = createSection('chive-settings-section-storage');
+	const storageStatus = document.createElement('p');
+	storageStatus.className = 'settings-storage-status';
+	storageStatus.setAttribute('role', 'status');
+	storageStatus.setAttribute('aria-live', 'polite');
 
-	const focusControl = installDialogFocus(overlay, dialog);
+	const storageUsage = document.createElement('p');
+	storageUsage.className = 'settings-hint settings-storage-usage';
+	storageUsage.hidden = true;
+
+	const persistButton = document.createElement('button');
+	persistButton.type = 'button';
+	persistButton.className = 'btn-secondary settings-storage-persist';
+	persistButton.dataset.i18n = 'chive-settings-storage-request';
+	persistButton.textContent = t('chive-settings-storage-request');
+	persistButton.hidden = true;
+
+	const setStorageStatus = key => {
+		storageStatus.dataset.i18n = key;
+		storageStatus.textContent = t(key);
+	};
+
+	refreshStorageStatus = async () => {
+		setStorageStatus('chive-settings-storage-loading');
+		storageUsage.hidden = true;
+		persistButton.hidden = true;
+		if (typeof onGetStorageStatus !== 'function') {
+			setStorageStatus('chive-settings-storage-unsupported');
+			return;
+		}
+
+		const result = await onGetStorageStatus();
+		if (!result?.ok) {
+			setStorageStatus(result?.reason === 'storage-unsupported'
+				? 'chive-settings-storage-unsupported'
+				: 'chive-settings-storage-error');
+			return;
+		}
+
+		setStorageStatus(result.persisted
+			? 'chive-settings-storage-persistent'
+			: 'chive-settings-storage-best-effort');
+		if (result.quota > 0) {
+			storageUsage.textContent = t('chive-settings-storage-usage', [
+				formatFileSize(result.usage || 0),
+				formatFileSize(result.quota),
+			]);
+			storageUsage.hidden = false;
+		}
+		persistButton.hidden = Boolean(result.persisted);
+		persistButton.disabled = false;
+	};
+
+	persistButton.addEventListener('click', async () => {
+		if (typeof onRequestPersistentStorage !== 'function') return;
+		persistButton.disabled = true;
+		setStorageStatus('chive-settings-storage-requesting');
+		try {
+			const result = await onRequestPersistentStorage();
+			if (!result?.ok) {
+				setStorageStatus(result?.reason === 'storage-unsupported'
+					? 'chive-settings-storage-unsupported'
+					: 'chive-settings-storage-error');
+				persistButton.hidden = result?.reason === 'storage-unsupported';
+				return;
+			}
+			if (!result.granted) {
+				setStorageStatus('chive-settings-storage-denied');
+				return;
+			}
+			await refreshStorageStatus();
+		} finally {
+			persistButton.disabled = false;
+		}
+	});
+
+	storageSection.appendChild(storageStatus);
+	storageSection.appendChild(storageUsage);
+	storageSection.appendChild(persistButton);
+	body.appendChild(storageSection);
+
+	surface.appendChild(body);
+	dialog.appendChild(surface);
 
 	let closed = false;
 	const closeDialog = () => {
 		if (closed) return;
 		closed = true;
-		document.removeEventListener('keydown', onEscape);
-		focusControl.release();
-		overlay.remove();
-		focusControl.restoreFocus();
+		lifecycle.close();
 		if (typeof onClose === 'function') onClose();
 	};
 
-	const onEscape = event => {
-		if (event.key !== 'Escape') return;
-		closeDialog();
-	};
-
 	closeBtn.addEventListener('click', closeDialog);
-	overlay.addEventListener('click', event => {
-		if (event.target === overlay) closeDialog();
+	const lifecycle = showNativeModal(dialog, {
+		onDismiss: closeDialog,
 	});
-	document.addEventListener('keydown', onEscape);
+	void refreshStorageStatus();
 
 	return { close: closeDialog };
 }

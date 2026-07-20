@@ -15,14 +15,13 @@
  * a global listener, and the chart actions are delegated off static `index.html`
  * markup. Dataset actions stay with the feature that renders their rows.
  *
- * File/tab/panel setup stays owned by the dataset controller, uiManager, and
- * panelController; this module just wires them in boot order alongside the
- * workflow setups.
+ * File/sidebar/panel setup stays owned by the dataset controller, uiManager,
+ * and panelController; dataset tabs bind lazily from their feature view.
  */
 
 import { setupPanelEventListeners } from '../features/panel/panelController.js';
 import { setupFileInputListeners } from '../features/datasetWorkspace/datasetController.js';
-import { setupTabListeners, setupSidebarToggleListener } from './uiManager.js';
+import { setupSidebarToggleListener } from './uiManager.js';
 import { setupProjectTransferListeners } from './bindings/projectTransfer.js';
 import { setupSidebarNavigationButtons } from './bindings/sidebarNavigation.js';
 import { setupChartActionListeners } from './bindings/chartActions.js';
@@ -32,7 +31,6 @@ import { setupDatasetListeners } from '../features/datasetWorkspace/bindings/dat
 /**
  * Wire all DOM listeners by calling each setup function in boot order:
  *   - `setupFileInputListeners` (datasetController)
- *   - `setupTabListeners` (uiManager)
  *   - `setupSidebarToggleListener` (uiManager)
  *   - `setupSidebarNavigationButtons` (bindings/sidebarNavigation)
  *   - `setupPanelEventListeners` (panelController)
@@ -45,7 +43,6 @@ import { setupDatasetListeners } from '../features/datasetWorkspace/bindings/dat
  */
 export function initializeDomBindings() {
 	setupFileInputListeners();
-	setupTabListeners();
 	setupSidebarToggleListener();
 	setupSidebarNavigationButtons();
 	setupPanelEventListeners();

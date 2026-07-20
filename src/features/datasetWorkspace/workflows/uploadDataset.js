@@ -6,7 +6,7 @@
  * dependency for each invocation.
  */
 
-import { t } from '../../../services/i18nService.js';
+import { t, getLocale } from '../../../services/i18nService.js';
 import { formatFileSize } from '../../../utils/formatters.js';
 import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../../../services/dataIngestService.js';
 import { addDataset } from '../../../state/appState.js';
@@ -21,11 +21,12 @@ import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
  * continues so a single bad file does not block the rest of the batch.
  *
  * Each successful file calls `addDataset`, which emits `DATASET_ADDED`; the
- * render-coordinator subscription re-renders the dataset view (coalesced per microtask),
+ * render-coordinator subscription re-renders the dataset view (coalesced per
+ * animation frame),
  * so a batch renders progressively, one paint per added file.
  *
  * @param {FileList | File[] | null | undefined} files
- * @param {{ confirm: (message: string) => boolean }} dependencies
+ * @param {{ confirm: (message: string) => boolean | Promise<boolean> }} dependencies
  * @returns {Promise<void>}
  */
 export async function uploadDatasetFiles(files, { confirm }) {
@@ -50,7 +51,7 @@ export async function uploadDatasetFiles(files, { confirm }) {
  *
  * @private
  * @param {File} file
- * @param {{ confirm: (message: string) => boolean }} dependencies
+ * @param {{ confirm: (message: string) => boolean | Promise<boolean> }} dependencies
  */
 async function processFileForDataset(file, { confirm }) {
 	// Validate file format
@@ -64,8 +65,12 @@ async function processFileForDataset(file, { confirm }) {
 
 	// Check file size
 	if (file.size > FILE_SIZE_LIMIT_BYTES) {
-		const confirmedLargeFile = confirm(
-			`${t('chive-warn-file-size', [file.name, formatFileSize(FILE_SIZE_LIMIT_BYTES)])} \n${t('chive-warn-file-size-proceed')}`
+		const confirmedLargeFile = await confirm(
+			t('chive-warn-large-file', [
+				file.name,
+				formatFileSize(file.size),
+				formatFileSize(FILE_SIZE_LIMIT_BYTES),
+			]),
 		);
 		if (!confirmedLargeFile) {
 			throw new Error(t('chive-error-cancelled'));
@@ -81,27 +86,38 @@ async function processFileForDataset(file, { confirm }) {
 	const abortController = new AbortController();
 	progress.onCancel(() => abortController.abort());
 
-	const result = await ingestFile(
-		{ kind, text: content, options: { rowLimit: ROW_LIMIT } },
-		{
-			signal: abortController.signal,
-			onProgress: ({ stage, percent }) => {
-				progress.update(percent, progressLabelForStage(stage, file.name));
-			},
+	const workerConfig = {
+		signal: abortController.signal,
+		onProgress: ({ stage, percent }) => {
+			progress.update(percent, progressLabelForStage(stage, file.name));
 		},
+	};
+	let result = await ingestFile(
+		{ kind, text: content, options: { rowLimit: ROW_LIMIT } },
+		workerConfig,
 	);
+	let value = unwrapIngestResult(result, progress);
 
-	if (!result.ok) {
-		if (result.reason === 'cancelled') {
+	if (value.truncatedFrom) {
+		const locale = getLocale();
+		const confirmedLargeRowCount = await confirm(t('chive-warn-large-rows', [
+			file.name,
+			value.truncatedFrom.toLocaleString(locale),
+			ROW_LIMIT.toLocaleString(locale),
+		]));
+		if (!confirmedLargeRowCount) {
 			progress.close();
 			throw new Error(t('chive-error-cancelled'));
 		}
-		const message = ingestErrorMessage(result.reason);
-		progress.fail(t('chive-progress-failed', [message]));
-		throw new Error(`${t('chive-error-parse')}: ${message}`);
+
+		// The bounded first pass is only a threshold probe. Once approved, run
+		// the worker again without a row cap so the dataset keeps every row.
+		progress.update(0, t('chive-progress-parsing', [file.name]));
+		result = await ingestFile({ kind, text: content, options: {} }, workerConfig);
+		value = unwrapIngestResult(result, progress);
 	}
 
-	const { rows, columns, statsNumeric, statsCategorical, truncatedFrom } = result.value;
+	const { rows, columns, statsNumeric, statsCategorical } = value;
 
 	if (rows.length === 0) {
 		progress.fail(t('chive-progress-failed', [t('chive-error-empty-file')]));
@@ -121,10 +137,24 @@ async function processFileForDataset(file, { confirm }) {
 	};
 	addDataset(dataset);
 
-	const successLabel = truncatedFrom
-		? t('chive-progress-ready-truncated', [file.name, truncatedFrom, ROW_LIMIT])
-		: t('chive-progress-ready', [file.name]);
-	progress.succeed(successLabel);
+	progress.succeed(t('chive-progress-ready', [file.name]));
+}
+
+/**
+ * @private
+ * @param {import('../../../types.js').Result} result
+ * @param {{ close: Function, fail: Function }} progress
+ * @returns {import('../../../types.js').IngestPayload}
+ */
+function unwrapIngestResult(result, progress) {
+	if (result.ok) return result.value;
+	if (result.reason === 'cancelled') {
+		progress.close();
+		throw new Error(t('chive-error-cancelled'));
+	}
+	const message = ingestErrorMessage(result.reason);
+	progress.fail(t('chive-progress-failed', [message]));
+	throw new Error(`${t('chive-error-parse')}: ${message}`);
 }
 
 /**

@@ -47,7 +47,7 @@ let descriptionCounter = 0;
  * @param {number} [options.opacity]
  * @param {string} [options.color]
  * @param {string} [options.customTitle]
- * @param {{ ariaLabel?: string, controlsInstructions?: string }} [options.labels]
+ * @param {{ ariaLabel?: string, controlsInstructions?: string, contextLost?: string, contextRestored?: string }} [options.labels]
  *   Pre-localized accessibility strings; the renderer never imports i18n.
  * @returns {import('../../../types.js').Result}
  *   `ok({ renderedCount, validCount, totalCount, truncated })`, or `fail`
@@ -152,11 +152,36 @@ export function renderScatter3dChart(container, rows, x, y, z, options = {}) {
 			canvas.setAttribute('aria-label', labels.ariaLabel);
 		}
 
+		const contextStatus = document.createElement('div');
+		contextStatus.className = 'chart-webgl-status';
+		contextStatus.setAttribute('role', 'status');
+		contextStatus.setAttribute('aria-live', 'polite');
+		contextStatus.hidden = true;
+		let contextLost = false;
+		const onContextLost = event => {
+			event.preventDefault();
+			contextLost = true;
+			contextStatus.textContent = labels.contextLost || '';
+			contextStatus.hidden = !contextStatus.textContent;
+		};
+		const onContextRestored = () => {
+			contextLost = false;
+			contextStatus.textContent = labels.contextRestored || '';
+			contextStatus.hidden = !contextStatus.textContent;
+			renderer.render(scene, camera);
+		};
+		canvas.addEventListener('webglcontextlost', onContextLost);
+		canvas.addEventListener('webglcontextrestored', onContextRestored);
+		disposers.push(() => {
+			canvas.removeEventListener('webglcontextlost', onContextLost);
+			canvas.removeEventListener('webglcontextrestored', onContextRestored);
+		});
+
 		const interaction = attachScatter3dInteraction(canvas, {
 			constants: SCATTER3D_CHART.camera,
 			onChange: state => {
 				applyCamera(state);
-				renderer.render(scene, camera);
+				if (!contextLost) renderer.render(scene, camera);
 			},
 		});
 		disposers.push(() => interaction.detach());
@@ -168,6 +193,7 @@ export function renderScatter3dChart(container, rows, x, y, z, options = {}) {
 			container.appendChild(title);
 		}
 		container.appendChild(canvas);
+		container.appendChild(contextStatus);
 		if (labels.controlsInstructions) {
 			const descriptionId = container.id
 				? `${container.id}-controls-desc`

@@ -123,7 +123,7 @@ describe('renderFileList orchestration', () => {
 		expect(sticky.parentElement.id).toBe('file-info');
 		expect(document.getElementById('file-selected-meta').parentElement).toBe(sticky);
 		expect(document.getElementById('files-tools').parentElement).toBe(sticky);
-		expect(document.getElementById('file-selected-meta').style.display).toBe('none');
+		expect(document.getElementById('file-selected-meta').hidden).toBe(true);
 		expect(document.getElementById('file-selected-meta').getAttribute('title')).toBeNull();
 	});
 

@@ -17,6 +17,7 @@ import { downloadBytes } from '../../services/downloads/bytes.js';
 import { rehydratePanelChartSpecs } from '../../domain/panel/rehydration.js';
 import { getPersistenceSnapshot, replaceAllState } from '../../state/appState.js';
 import { showProgress } from '../../ui/feedback.js';
+import { openConfirmDialog } from '../../ui/confirmDialog.js';
 
 export const PROJECT_TRANSFER_IDS = {
 	projectImportInput: 'project-import-input',
@@ -99,7 +100,11 @@ function onDocumentClickCloseMenu(event) {
 
 /** @private */
 function onDocumentKeydownCloseMenu(event) {
-	if (event.key === 'Escape') setProjectMenuOpen(false);
+	if (event.key !== 'Escape') return;
+	const menuPanel = document.getElementById(PROJECT_TRANSFER_IDS.projectMenuPanel);
+	if (!menuPanel || menuPanel.hidden) return;
+	setProjectMenuOpen(false);
+	document.getElementById(PROJECT_TRANSFER_IDS.projectMenuButton)?.focus();
 }
 
 /**
@@ -151,7 +156,12 @@ async function handleProjectImport(file, input) {
 		return;
 	}
 
-	const confirmed = window.confirm(t('chive-project-import-confirm'));
+	const confirmed = await openConfirmDialog({
+		title: t('chive-project-import-confirm-title'),
+		message: t('chive-project-import-confirm'),
+		confirmLabel: t('chive-confirm-continue'),
+		cancelLabel: t('chive-confirm-cancel'),
+	});
 	if (!confirmed) {
 		input.value = '';
 		return;

@@ -14,6 +14,9 @@ import { TAB_CONTENT_IDS } from '../domIds.js';
 let listenersRegistered = false;
 let currentOnChartConfigChange = null;
 let currentOnGlobalFilterOpen = null;
+let globalFilterDialogOpen = false;
+
+const TAB_NAMES = ['preview', 'charts', 'panel'];
 
 /** @private */
 function getTabElements() {
@@ -46,28 +49,57 @@ export function setupTabListeners(onChartConfigChange, onGlobalFilterOpen) {
 	if (listenersRegistered) return;
 
 	const { tabPreview, tabCharts, tabPanel, globalFilterTrigger } = getTabElements();
+	const tabList = document.getElementById('result-tabs-group');
 	if (!tabPreview || !tabCharts || !tabPanel) return;
 
-	tabPreview.addEventListener('click', () => {
-		if (!currentOnChartConfigChange) return;
-		currentOnChartConfigChange({ activeTab: 'preview' });
+	if (!tabList) return;
+	tabList.setAttribute('role', 'tablist');
+
+	tabList.addEventListener('click', event => {
+		const tab = event.target.closest('[role="tab"]');
+		if (!tab || !tabList.contains(tab) || !currentOnChartConfigChange) return;
+		currentOnChartConfigChange({ activeTab: tab.dataset.tab });
 	});
 
-	tabCharts.addEventListener('click', () => {
-		if (!currentOnChartConfigChange) return;
-		currentOnChartConfigChange({ activeTab: 'charts' });
-	});
+	tabList.addEventListener('keydown', event => {
+		const currentTab = event.target.closest('[role="tab"]');
+		if (!currentTab || !tabList.contains(currentTab)) return;
+		const tabs = [tabPreview, tabCharts, tabPanel];
+		const currentIndex = tabs.indexOf(currentTab);
 
-	tabPanel.addEventListener('click', () => {
-		if (!currentOnChartConfigChange) return;
-		currentOnChartConfigChange({ activeTab: 'panel' });
+		let nextIndex = null;
+		if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
+		if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+		if (event.key === 'Home') nextIndex = 0;
+		if (event.key === 'End') nextIndex = tabs.length - 1;
+
+		if (nextIndex !== null) {
+			event.preventDefault();
+			tabs[nextIndex].focus();
+			return;
+		}
+
+		if ((event.key === 'Enter' || event.key === ' ') && currentOnChartConfigChange) {
+			event.preventDefault();
+			currentOnChartConfigChange({ activeTab: currentTab.dataset.tab });
+		}
 	});
 
 	if (globalFilterTrigger) {
-		globalFilterTrigger.addEventListener('click', () => {
+		globalFilterTrigger.addEventListener('click', async () => {
 			if (globalFilterTrigger.disabled) return;
 			if (!currentOnGlobalFilterOpen) return;
-			currentOnGlobalFilterOpen();
+			if (globalFilterDialogOpen) return;
+			globalFilterDialogOpen = true;
+			globalFilterTrigger.setAttribute('aria-expanded', 'true');
+			try {
+				await currentOnGlobalFilterOpen();
+			} finally {
+				globalFilterDialogOpen = false;
+				if (globalFilterTrigger.isConnected) {
+					globalFilterTrigger.setAttribute('aria-expanded', 'false');
+				}
+			}
 		});
 	}
 
@@ -85,16 +117,25 @@ export function updateTabsUI(activeTab) {
 	const { tabPreview, tabCharts, tabPanel, previewPanel, chartsPanel, dashboardPanel } = getTabElements();
 	if (!tabPreview || !tabCharts || !tabPanel || !previewPanel || !chartsPanel || !dashboardPanel) return;
 
-	const previewActive = activeTab === 'preview';
-	const chartsActive = activeTab === 'charts';
-	const panelActive = activeTab === 'panel';
+	const normalizedTab = TAB_NAMES.includes(activeTab) ? activeTab : 'preview';
+	const pairs = [
+		['preview', tabPreview, previewPanel],
+		['charts', tabCharts, chartsPanel],
+		['panel', tabPanel, dashboardPanel],
+	];
 
-	tabPreview.classList.toggle('active', previewActive);
-	tabCharts.classList.toggle('active', chartsActive);
-	tabPanel.classList.toggle('active', panelActive);
-	previewPanel.classList.toggle('active', previewActive);
-	chartsPanel.classList.toggle('active', chartsActive);
-	dashboardPanel.classList.toggle('active', panelActive);
+	pairs.forEach(([name, tab, panel]) => {
+		const active = name === normalizedTab;
+		tab.classList.toggle('active', active);
+		tab.setAttribute('role', 'tab');
+		tab.setAttribute('aria-controls', panel.id);
+		tab.setAttribute('aria-selected', active ? 'true' : 'false');
+		tab.tabIndex = active ? 0 : -1;
+		panel.classList.toggle('active', active);
+		panel.setAttribute('role', 'tabpanel');
+		panel.setAttribute('aria-labelledby', tab.id);
+		panel.hidden = !active;
+	});
 }
 
 /**
@@ -124,12 +165,14 @@ export function updateGlobalFilterTrigger({
 	globalFilterTrigger.hidden = !showOnDatasetTab;
 
 	if (!showOnDatasetTab) {
+		if (!globalFilterDialogOpen) globalFilterTrigger.setAttribute('aria-expanded', 'false');
 		return;
 	}
 
 	const disabled = !hasDataset;
 	globalFilterTrigger.disabled = disabled;
 	globalFilterTrigger.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+	globalFilterTrigger.setAttribute('aria-expanded', globalFilterDialogOpen ? 'true' : 'false');
 
 	const active = hasDataset && isGlobalFilterActive(globalFilter);
 	globalFilterTrigger.dataset.active = active ? 'true' : 'false';
