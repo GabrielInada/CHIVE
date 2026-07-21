@@ -138,8 +138,9 @@ flowchart TB
 ```
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG. Rows are
-already global-filtered; the renderer aggregates on top of them. Panel snapshots are frozen
-`structuredClone`s (see [Architecture reference](../architecture-reference.md)).
+already global-filtered; the renderer aggregates on top of them. Panel config, rows, and
+columns are detached `structuredClone` captures (see
+[Architecture reference](../architecture-reference.md)).
 
 ---
 
@@ -350,7 +351,7 @@ there is no separate export path.
   non-negative value columns for meaningful part-to-whole pies.
 - **Inner radius** is always kept below the outer radius so a donut never inverts.
 - **Tiny slices** are left unlabeled rather than drawing illegible text.
-- **Stateless renders** and **frozen panel snapshots** behave as for every chart (panel
+- **Stateless renders** and **detached panel captures** behave as for every chart (panel
   wedges carry no filter actions).
 
 Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-pie*`);

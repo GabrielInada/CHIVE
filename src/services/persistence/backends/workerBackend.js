@@ -14,11 +14,13 @@
  *      later fallback / resync never re-reads a live, possibly-moved snapshot.
  *   2. Reference-identity dedup. A dataset's `rows` / a chart's snapshot is
  *      re-sent only when its array reference changed since the last save to the
- *      CURRENT worker (sound because those payloads are immutable per id).
+ *      CURRENT worker (sound while callers honor the facade's read-only policy).
  *
- * Resilience: a generous watchdog plus a fallback on every worker termination
- * (sync spawn/post throw, async onerror, post-success crash, or timeout) so the
- * latest edit is always written somewhere, never silently lost.
+ * Resilience: a generous watchdog routes queued operations to the dynamically
+ * imported main-thread backend after worker termination (sync spawn/post throw,
+ * async onerror, post-success crash, or timeout). The fallback can also fail;
+ * persistence errors propagate to autosave/import callers and no path provides
+ * a browser-termination completion guarantee.
  *
  * @typedef {import('../../../types.js').AppState} AppState
  * @typedef {import('../../../types.js').PersistWorkerRequest} PersistWorkerRequest
@@ -391,10 +393,10 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	function onWorkerError(gen, event) {
 		if (gen !== currentGeneration) return;
 		if (event && typeof event.preventDefault === 'function') event.preventDefault();
-		// A worker error is otherwise invisible: the fallback rescues the write so
-		// no user-facing error fires. Log it like the other persist failures, and
-		// capture the full ErrorEvent (error/stack + filename/lineno/colno) so a
-		// worker-only failure mode stays debuggable.
+		// Log the worker transport failure immediately, including the full
+		// ErrorEvent (error/stack + filename/lineno/colno). Pending operation
+		// promises settle later from the fallback attempt, which may succeed or
+		// reject independently.
 		console.warn('[chive:persist] worker error; falling back to main thread:', {
 			error: event?.error,
 			message: event?.message,

@@ -61,9 +61,14 @@ describe('normalizePanelChartId', () => {
 		expect(normalizePanelChartId(Infinity)).toBeNull();
 	});
 
-	it('coerces null/undefined to 0 (Number() semantics)', () => {
-		expect(normalizePanelChartId(null)).toBe(0);
+	it('rejects coercion-only and non-integer values', () => {
+		expect(normalizePanelChartId(null)).toBeNull();
 		expect(normalizePanelChartId(undefined)).toBeNull();
+		expect(normalizePanelChartId('')).toBeNull();
+		expect(normalizePanelChartId(' 3 ')).toBeNull();
+		expect(normalizePanelChartId(-1)).toBeNull();
+		expect(normalizePanelChartId(1.5)).toBeNull();
+		expect(normalizePanelChartId(true)).toBeNull();
 	});
 });
 
@@ -103,9 +108,16 @@ describe('removeChartSnapshotFromState', () => {
 		expect(appState.panel.blocks[0].slots['slot-1']).toBeUndefined();
 	});
 
-	it('returns null for invalid chart id', () => {
+	it('throws for an invalid chart id', () => {
 		const appState = makeAppState();
-		expect(removeChartSnapshotFromState(appState, 'invalid', ensureDefault(appState))).toBeNull();
+		expect(() => removeChartSnapshotFromState(appState, 'invalid', ensureDefault(appState))).toThrow('Invalid chart id');
+	});
+
+	it('returns null without mutation for a valid missing chart id', () => {
+		const appState = makeAppState({ charts: [{ id: 1 }] });
+		const before = structuredClone(appState.panel);
+		expect(removeChartSnapshotFromState(appState, 99, ensureDefault(appState))).toBeNull();
+		expect(appState.panel).toEqual(before);
 	});
 });
 
@@ -173,7 +185,7 @@ describe('addPanelBlockState', () => {
 describe('removePanelBlockState', () => {
 	it('removes block and keeps at least one', () => {
 		const appState = makeAppState({ blocks: [makeBlock('block-A'), makeBlock('block-B')] });
-		removePanelBlockState(appState, 'block-A', ensureDefault(appState), createPanelBlock);
+		expect(removePanelBlockState(appState, 'block-A', ensureDefault(appState), createPanelBlock)).toBe(true);
 		expect(appState.panel.blocks.length).toBe(1);
 		expect(appState.panel.blocks[0].id).toBe('block-B');
 	});
@@ -183,6 +195,13 @@ describe('removePanelBlockState', () => {
 		removePanelBlockState(appState, 'block-only', ensureDefault(appState), createPanelBlock);
 		expect(appState.panel.blocks.length).toBe(1);
 		expect(appState.panel.blocks[0].id).not.toBe('block-only');
+	});
+
+	it('returns false without replacing the array for a missing block', () => {
+		const appState = makeAppState({ blocks: [makeBlock('block-A')] });
+		const blocks = appState.panel.blocks;
+		expect(removePanelBlockState(appState, 'missing', ensureDefault(appState), createPanelBlock)).toBe(false);
+		expect(appState.panel.blocks).toBe(blocks);
 	});
 });
 
@@ -209,6 +228,12 @@ describe('movePanelBlockState', () => {
 		const result = movePanelBlockState(appState, 'A', 99, ensureDefault(appState));
 		expect(result).toBe(1);
 	});
+
+	it('throws for coercible or fractional target indexes', () => {
+		const appState = makeAppState({ blocks: [makeBlock('A'), makeBlock('B')] });
+		expect(() => movePanelBlockState(appState, 'A', '1', ensureDefault(appState))).toThrow('target index');
+		expect(() => movePanelBlockState(appState, 'A', 0.5, ensureDefault(appState))).toThrow('target index');
+	});
 });
 
 describe('updatePanelBlockProportionsState', () => {
@@ -225,11 +250,20 @@ describe('updatePanelBlockProportionsState', () => {
 		expect(updatePanelBlockProportionsState(appState, 'nope', { split: 50 }, ensureDefault(appState), clamp)).toBeNull();
 	});
 
-	it('returns null for null or non-object proportions', () => {
+	it('throws for malformed, unsupported, or non-finite proportions', () => {
 		const appState = makeAppState({ blocks: [makeBlock('A')] });
 		const clamp = (v) => v;
-		expect(updatePanelBlockProportionsState(appState, 'A', null, ensureDefault(appState), clamp)).toBeNull();
-		expect(updatePanelBlockProportionsState(appState, 'A', 'string', ensureDefault(appState), clamp)).toBeNull();
+		expect(() => updatePanelBlockProportionsState(appState, 'A', null, ensureDefault(appState), clamp)).toThrow('plain object');
+		expect(() => updatePanelBlockProportionsState(appState, 'A', [], ensureDefault(appState), clamp)).toThrow('plain object');
+		expect(() => updatePanelBlockProportionsState(appState, 'A', { other: 1 }, ensureDefault(appState), clamp)).toThrow('proportion key');
+		expect(() => updatePanelBlockProportionsState(appState, 'A', { split: NaN }, ensureDefault(appState), clamp)).toThrow('proportion value');
+	});
+
+	it('returns null for empty and unchanged proportion patches', () => {
+		const appState = makeAppState({ blocks: [makeBlock('A')] });
+		const clamp = (v) => v;
+		expect(updatePanelBlockProportionsState(appState, 'A', {}, ensureDefault(appState), clamp)).toBeNull();
+		expect(updatePanelBlockProportionsState(appState, 'A', { split: 50 }, ensureDefault(appState), clamp)).toBeNull();
 	});
 });
 
@@ -255,9 +289,17 @@ describe('updatePanelBlockHeightState', () => {
 		expect(updatePanelBlockHeightState(appState, 'nope', 300, ensureDefault(appState), 220, 760)).toBeNull();
 	});
 
-	it('returns null for non-finite height', () => {
+	it('throws for non-number or non-finite height', () => {
 		const appState = makeAppState({ blocks: [makeBlock('A')] });
-		expect(updatePanelBlockHeightState(appState, 'A', 'abc', ensureDefault(appState), 220, 760)).toBeNull();
+		expect(() => updatePanelBlockHeightState(appState, 'A', '300', ensureDefault(appState), 220, 760)).toThrow('Invalid panel block height');
+		expect(() => updatePanelBlockHeightState(appState, 'A', Infinity, ensureDefault(appState), 220, 760)).toThrow('Invalid panel block height');
+	});
+
+	it('returns null when rounding and clamping preserve the stored height', () => {
+		const block = makeBlock('A');
+		block.heightPx = 220;
+		const appState = makeAppState({ blocks: [block] });
+		expect(updatePanelBlockHeightState(appState, 'A', 100, ensureDefault(appState), 220, 760)).toBeNull();
 	});
 });
 
@@ -269,10 +311,11 @@ describe('updatePanelBlockBorderState', () => {
 		expect(result.color).toBe('#ff0000');
 	});
 
-	it('ignores invalid hex color', () => {
+	it('rejects invalid input atomically', () => {
 		const appState = makeAppState({ blocks: [makeBlock('A')] });
-		const result = updatePanelBlockBorderState(appState, 'A', { color: 'not-hex' }, ensureDefault(appState));
-		expect(result.color).toBe('#5d645d');
+		expect(() => updatePanelBlockBorderState(appState, 'A', { enabled: true, color: 'not-hex' }, ensureDefault(appState))).toThrow('border color');
+		expect(appState.panel.blocks[0].borderEnabled).toBe(false);
+		expect(() => updatePanelBlockBorderState(appState, 'A', { unknown: true }, ensureDefault(appState))).toThrow('border option');
 	});
 
 	it('returns null for non-existent block', () => {
@@ -280,14 +323,15 @@ describe('updatePanelBlockBorderState', () => {
 		expect(updatePanelBlockBorderState(appState, 'nope', { enabled: true }, ensureDefault(appState))).toBeNull();
 	});
 
-	it('returns null for null options', () => {
+	it('throws for null options and returns null for empty or unchanged patches', () => {
 		const appState = makeAppState({ blocks: [makeBlock('A')] });
-		expect(updatePanelBlockBorderState(appState, 'A', null, ensureDefault(appState))).toBeNull();
+		expect(() => updatePanelBlockBorderState(appState, 'A', null, ensureDefault(appState))).toThrow('plain object');
+		expect(updatePanelBlockBorderState(appState, 'A', {}, ensureDefault(appState))).toBeNull();
+		expect(updatePanelBlockBorderState(appState, 'A', { enabled: false }, ensureDefault(appState))).toBeNull();
 	});
 });
 
 describe('setPanelBlockTemplateState', () => {
-	const normalize = (t) => ['template-single', 'template-2col', 'template-3col'].includes(t) ? t : 'template-2col';
 	const getSlots = (t) => {
 		if (t === 'template-single') return ['slot-1'];
 		if (t === 'template-3col') return ['slot-1', 'slot-2', 'slot-3'];
@@ -297,28 +341,28 @@ describe('setPanelBlockTemplateState', () => {
 
 	it('changes template and returns ok', () => {
 		const appState = makeAppState({ blocks: [makeBlock('A')] });
-		const result = setPanelBlockTemplateState(appState, 'A', 'template-single', ensureDefault(appState), normalize, getSlots, defaultProps);
+		const result = setPanelBlockTemplateState(appState, 'A', 'template-single', ensureDefault(appState), getSlots, defaultProps);
 		expect(result.ok).toBe(true);
+		expect(result.changed).toBe(true);
 		expect(result.templateId).toBe('template-single');
 		expect(appState.panel.blocks[0].templateId).toBe('template-single');
 	});
 
 	it('returns ok without changes when same template', () => {
 		const appState = makeAppState({ blocks: [makeBlock('A')] });
-		const result = setPanelBlockTemplateState(appState, 'A', 'template-2col', ensureDefault(appState), normalize, getSlots, defaultProps);
+		const result = setPanelBlockTemplateState(appState, 'A', 'template-2col', ensureDefault(appState), getSlots, defaultProps);
 		expect(result.ok).toBe(true);
+		expect(result.changed).toBe(false);
 	});
 
 	it('returns not ok for non-existent block', () => {
 		const appState = makeAppState();
-		expect(setPanelBlockTemplateState(appState, 'nope', 'template-2col', ensureDefault(appState), normalize, getSlots, defaultProps).ok).toBe(false);
+		expect(setPanelBlockTemplateState(appState, 'nope', 'template-2col', ensureDefault(appState), getSlots, defaultProps).ok).toBe(false);
 	});
 
-	it('updates panel layout when first block template changes', () => {
-		const block = makeBlock('block-0');
-		const appState = makeAppState({ blocks: [block] });
-		setPanelBlockTemplateState(appState, 'block-0', 'template-3col', ensureDefault(appState), normalize, getSlots, defaultProps);
-		expect(appState.panel.layout).toBe('template-3col');
+	it('throws for an unknown template on an existing block', () => {
+		const appState = makeAppState({ blocks: [makeBlock('A')] });
+		expect(() => setPanelBlockTemplateState(appState, 'A', 'unknown', ensureDefault(appState), getSlots, defaultProps)).toThrow('Invalid panel template');
 	});
 
 	it('prunes slots not in new template', () => {
@@ -326,7 +370,7 @@ describe('setPanelBlockTemplateState', () => {
 		block.templateId = 'template-3col';
 		block.slots = { 'slot-1': 0, 'slot-2': 1, 'slot-3': 2 };
 		const appState = makeAppState({ blocks: [block] });
-		setPanelBlockTemplateState(appState, 'A', 'template-single', ensureDefault(appState), normalize, getSlots, defaultProps);
+		setPanelBlockTemplateState(appState, 'A', 'template-single', ensureDefault(appState), getSlots, defaultProps);
 		expect(Object.keys(appState.panel.blocks[0].slots)).toEqual(['slot-1']);
 	});
 });
@@ -338,6 +382,7 @@ describe('assignChartToPanelBlockSlotState', () => {
 		const getSnapshot = (id) => appState.panel.charts.find(c => c.id === id) || null;
 		const result = assignChartToPanelBlockSlotState(appState, 'block-0', 'slot-1', 0, ensureDefault(appState), getSnapshot);
 		expect(result.ok).toBe(true);
+		expect(result.changed).toBe(true);
 		expect(appState.panel.blocks[0].slots['slot-1']).toBe(0);
 	});
 
@@ -355,6 +400,22 @@ describe('assignChartToPanelBlockSlotState', () => {
 		expect(assignChartToPanelBlockSlotState(appState, 'nope', 'slot-1', null, ensureDefault(appState), () => null).ok).toBe(false);
 	});
 
+	it('returns unchanged for clearing an empty slot or assigning the current chart', () => {
+		const chart = { id: 0, name: 'A' };
+		const block = makeBlock('block-0');
+		const appState = makeAppState({ charts: [chart], blocks: [block] });
+		const getSnapshot = (id) => appState.panel.charts.find(c => c.id === id) || null;
+		expect(assignChartToPanelBlockSlotState(appState, 'block-0', 'slot-1', null, ensureDefault(appState), getSnapshot).changed).toBe(false);
+		block.slots['slot-1'] = 0;
+		expect(assignChartToPanelBlockSlotState(appState, 'block-0', 'slot-1', '0', ensureDefault(appState), getSnapshot).changed).toBe(false);
+	});
+
+	it('throws for slots outside the current template and malformed chart ids', () => {
+		const appState = makeAppState();
+		expect(() => assignChartToPanelBlockSlotState(appState, 'block-0', 'slot-3', null, ensureDefault(appState), () => null)).toThrow('Invalid panel slot');
+		expect(() => assignChartToPanelBlockSlotState(appState, 'block-0', 'slot-1', '', ensureDefault(appState), () => null)).toThrow('Invalid chart id');
+	});
+
 	it('throws for non-existent chart', () => {
 		const appState = makeAppState();
 		const getSnapshot = () => null;
@@ -362,3 +423,30 @@ describe('assignChartToPanelBlockSlotState', () => {
 	});
 });
 
+describe('missing block validation order', () => {
+	it('does not validate secondary arguments when the target block is missing', () => {
+		const appState = makeAppState();
+		const ensure = ensureDefault(appState);
+
+		expect(movePanelBlockState(appState, 'missing', 'bad', ensure)).toBeNull();
+		expect(updatePanelBlockProportionsState(appState, 'missing', null, ensure, value => value)).toBeNull();
+		expect(updatePanelBlockHeightState(appState, 'missing', 'bad', ensure, 220, 760)).toBeNull();
+		expect(updatePanelBlockBorderState(appState, 'missing', null, ensure)).toBeNull();
+		expect(setPanelBlockTemplateState(
+			appState,
+			'missing',
+			'unknown',
+			ensure,
+			() => [],
+			() => ({}),
+		)).toEqual({ ok: false, changed: false });
+		expect(assignChartToPanelBlockSlotState(
+			appState,
+			'missing',
+			null,
+			'bad',
+			ensure,
+			() => null,
+		)).toEqual({ ok: false, changed: false });
+	});
+});

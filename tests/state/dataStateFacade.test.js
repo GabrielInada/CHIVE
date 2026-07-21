@@ -56,6 +56,24 @@ describe('dataStateFacade', () => {
 
 		expect(() => facade.setActiveDataset(99)).toThrow('Invalid dataset index');
 		expect(() => facade.setActiveDataset(-2)).toThrow('Invalid dataset index');
+		expect(() => facade.setActiveDataset('0')).toThrow('Invalid dataset index');
+		expect(() => facade.setActiveDataset(0.5)).toThrow('Invalid dataset index');
+		expect(() => facade.setActiveDataset(NaN)).toThrow('Invalid dataset index');
+		expect(appState.data.activeIndex).toBe(0);
+		expect(emitStateChange).not.toHaveBeenCalled();
+	});
+
+	it('setActiveDataset does not emit for the current index', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: { datasets: [{ rows: [{}] }], activeIndex: 0 },
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		facade.setActiveDataset(0);
+		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 
 	it('returns null for getActiveDataset when no datasets', () => {
@@ -93,6 +111,53 @@ describe('dataStateFacade', () => {
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
 		expect(() => facade.updateActiveDatasetColumns(['a'])).not.toThrow();
+	});
+
+	it('stores a copy of valid selected columns and suppresses unchanged writes', () => {
+		const emitStateChange = vi.fn();
+		const dataset = {
+			rows: [{}],
+			columns: [{ name: 'a' }, { name: 'b' }],
+			selectedColumns: ['a'],
+		};
+		const appState = {
+			data: { datasets: [dataset], activeIndex: 0 },
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+		const selection = ['b', 'a'];
+
+		facade.updateActiveDatasetColumns(selection);
+		expect(dataset.selectedColumns).toEqual(['b', 'a']);
+		expect(dataset.selectedColumns).not.toBe(selection);
+		expect(emitStateChange).toHaveBeenCalledWith('columnsUpdated', ['b', 'a']);
+
+		emitStateChange.mockClear();
+		facade.updateActiveDatasetColumns(['b', 'a']);
+		expect(emitStateChange).not.toHaveBeenCalled();
+	});
+
+	it('rejects invalid selected-column shapes before mutation', () => {
+		const emitStateChange = vi.fn();
+		const dataset = {
+			rows: [{}],
+			columns: [{ name: 'a' }, { name: 'b' }],
+			selectedColumns: ['a'],
+		};
+		const appState = {
+			data: { datasets: [dataset], activeIndex: 0 },
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		expect(() => facade.updateActiveDatasetColumns('a')).toThrow('Invalid selected columns');
+		expect(() => facade.updateActiveDatasetColumns(['missing'])).toThrow('Invalid selected columns');
+		expect(() => facade.updateActiveDatasetColumns(['a', 'a'])).toThrow('Invalid selected columns');
+		expect(() => facade.updateActiveDatasetColumns(['a', null])).toThrow('Invalid selected columns');
+		expect(dataset.selectedColumns).toEqual(['a']);
+		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 
 	it('updateActiveDatasetConfig merges the patch and canonicalizes the config', () => {
@@ -260,6 +325,10 @@ describe('dataStateFacade', () => {
 
 		expect(() => facade.removeDataset(-1)).toThrow();
 		expect(() => facade.removeDataset(5)).toThrow();
+		expect(() => facade.removeDataset('0')).toThrow();
+		expect(() => facade.removeDataset(0.5)).toThrow();
+		expect(() => facade.removeDataset(NaN)).toThrow();
+		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 
 	it('normalizeActiveDatasetConfig writes config without emitting configUpdated', () => {
@@ -290,19 +359,24 @@ describe('dataStateFacade', () => {
 		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 
-	it('removing dataset clears panel snapshots and slots', () => {
+	it('removing a dataset preserves detached panel snapshots and assignments', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
 			data: { datasets: [{ rows: [{}], columns: [] }], activeIndex: 0 },
-			panel: { charts: [{ id: 1 }], slots: { 'slot-1': 1 } },
+			panel: {
+				charts: [{ id: 1, dataSnapshot: [{ x: 1 }], columnsSnapshot: [{ name: 'x' }] }],
+				slots: { 'slot-1': 1 },
+				blocks: [{ id: 'block-1', slots: { 'slot-1': 1 } }],
+			},
 			ui: {},
 		};
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
 		facade.removeDataset(0);
 
-		expect(appState.panel.charts).toEqual([]);
-		expect(appState.panel.slots).toEqual({});
+		expect(appState.panel.charts).toHaveLength(1);
+		expect(appState.panel.slots).toEqual({ 'slot-1': 1 });
+		expect(appState.panel.blocks[0].slots).toEqual({ 'slot-1': 1 });
 		expect(emitStateChange).toHaveBeenCalledWith('datasetRemoved', 0);
 	});
 });

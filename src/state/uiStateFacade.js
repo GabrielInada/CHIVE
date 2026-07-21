@@ -1,5 +1,5 @@
 import { STATE_EVENTS } from './stateEvents.js';
-import { PREVIEW_MIN_ROWS } from '../config/limits.js';
+import { PREVIEW_MAX_ROWS, PREVIEW_MIN_ROWS } from '../config/limits.js';
 
 /**
  * CHIVE UI-domain facade.
@@ -47,12 +47,15 @@ export function createUiStateFacade({ appState, emitStateChange }) {
 	/**
 	 * Set the preview-table row count.
 	 *
-	 * @param {number} rows - Must be ≥ 1.
-	 * @throws {Error} When `rows < 1`.
-	 * @fires STATE_EVENTS.PREVIEW_ROWS_CHANGED
+	 * @param {number} rows - Integer in `[1, 1000]`.
+	 * @throws {Error} When `rows` is not an integer in the supported range.
+	 * @fires STATE_EVENTS.PREVIEW_ROWS_CHANGED - Only when the value changes.
 	 */
 	function setPreviewRows(rows) {
-		if (rows < PREVIEW_MIN_ROWS) throw new Error('Preview rows must be >= 1');
+		if (!Number.isInteger(rows) || rows < PREVIEW_MIN_ROWS || rows > PREVIEW_MAX_ROWS) {
+			throw new Error(`Preview rows must be an integer from ${PREVIEW_MIN_ROWS} to ${PREVIEW_MAX_ROWS}`);
+		}
+		if (appState.ui.previewRows === rows) return;
 		appState.ui.previewRows = rows;
 		emitStateChange(STATE_EVENTS.PREVIEW_ROWS_CHANGED, rows);
 	}

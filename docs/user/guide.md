@@ -57,7 +57,7 @@ charts.
 - Use global filters to focus the active dataset before charting. Global filters
   apply before every chart reads the rows.
 - Chart edits affect the active dataset's current chart configuration. Charts
-  already saved to the dashboard panel stay frozen until you add them again.
+  already saved to the dashboard panel remain unchanged until you add them again.
 
 For exact column requirements and chart-specific empty states, see
 [Chart and data reference](chart-reference.md).

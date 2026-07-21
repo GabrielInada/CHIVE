@@ -16,7 +16,7 @@ import {
 import {
 	createDefaultProportions,
 	getTemplateSlots,
-	normalizeTemplateId,
+	PANEL_LAYOUTS,
 } from '../domain/panel/layoutTemplates.js';
 import { clampPercentage } from '../domain/panel/panelBlockModel.js';
 import { STATE_EVENTS } from './stateEvents.js';
@@ -49,7 +49,8 @@ import { STATE_EVENTS } from './stateEvents.js';
  * @param {AppState} deps.appState
  * @param {(eventType: import('../types.js').StateEventType, data?: *) => void} deps.emitStateChange
  * @param {(templateId?: PanelTemplateId) => PanelBlock} deps.createPanelBlock - Closure-bound block builder that increments `panel.nextBlockId`.
- * @param {() => void} deps.ensureDefaultPanelBlock - Inserts a default `template-2col` block when `panel.blocks` is empty. Called from every method that reads or writes blocks; this is why several "getter" methods have a side effect.
+ * @param {() => void} deps.ensureDefaultPanelBlock - Inserts a block using the canonical compatibility layout when `panel.blocks` is empty and synchronizes `panel.layout`. Called from every method that reads or writes blocks; this is why several "getter" methods have a side effect.
+ * @param {() => void} deps.syncPanelLayout - Mirrors the authoritative first-block template into the compatibility `panel.layout` field.
  * @param {(name: string) => string} deps.sanitizeChartName
  * @param {number} deps.panelBlockLimit
  * @param {number} deps.panelBlockMinHeight
@@ -60,11 +61,19 @@ export function createPanelStateFacade({
 	emitStateChange,
 	createPanelBlock,
 	ensureDefaultPanelBlock,
+	syncPanelLayout,
 	sanitizeChartName,
 	panelBlockLimit,
 	panelBlockMinHeight,
 	panelBlockMaxHeight,
 }) {
+	const synchronizePanelLayout = typeof syncPanelLayout === 'function'
+		? syncPanelLayout
+		: () => {
+			const firstBlock = appState.panel.blocks[0];
+			if (firstBlock) appState.panel.layout = firstBlock.templateId;
+		};
+
 	/**
 	 * @returns {ChartSnapshot[]} Live reference to the snapshots array. Do not mutate.
 	 */
@@ -90,11 +99,11 @@ export function createPanelStateFacade({
 	/**
 	 * Remove a chart snapshot and clean up every reference to it: the
 	 * snapshot itself, the legacy `panel.slots` map, and each block's
-	 * `slots` map. No-op (no event) when `chartId` cannot be coerced to a
-	 * finite number.
+	 * `slots` map. A well-formed id with no matching snapshot is a no-op.
 	 *
-	 * @param {number | string} chartId - Snapshot id; non-numeric strings are silently rejected.
-	 * @fires STATE_EVENTS.CHART_REMOVED - Emitted only when removal proceeds.
+	 * @param {number | string} chartId - Non-negative safe integer or decimal-integer DOM string.
+	 * @throws {Error} When `chartId` is malformed.
+	 * @fires STATE_EVENTS.CHART_REMOVED - Emitted only when a matching snapshot is removed.
 	 */
 	function removeChartSnapshot(chartId) {
 		const normalizedId = removeChartSnapshotFromState(appState, chartId, ensureDefaultPanelBlock);
@@ -106,7 +115,7 @@ export function createPanelStateFacade({
 	 * Look up a snapshot by id.
 	 *
 	 * @param {number | string} chartId
-	 * @returns {ChartSnapshot | null} Live reference. `null` when the id is non-numeric or no snapshot matches.
+	 * @returns {ChartSnapshot | null} Live reference. `null` when the id is malformed or no snapshot matches.
 	 */
 	function getChartSnapshot(chartId) {
 		return getChartSnapshotFromState(appState.panel, chartId);
@@ -116,8 +125,8 @@ export function createPanelStateFacade({
 	 * Read the block list.
 	 *
 	 * **Side effect:** ensures at least one default block exists; this can
-	 * mutate `panel.blocks` on first read after a fresh-state hydration.
-	 * Does not emit.
+	 * mutate `panel.blocks` on first read after a fresh-state hydration and
+	 * synchronizes the compatibility `panel.layout` field. Does not emit.
 	 *
 	 * @returns {PanelBlock[]} Live reference. Do not mutate.
 	 */
@@ -153,9 +162,13 @@ export function createPanelStateFacade({
 	 *
 	 * @param {PanelTemplateId} [templateId='template-2col']
 	 * @returns {string | null} New block id, or `null` when the limit was reached.
+	 * @throws {Error} When `templateId` is not an exact registry id.
 	 * @fires STATE_EVENTS.PANEL_BLOCK_ADDED - Emitted only on success.
 	 */
 	function addPanelBlock(templateId = 'template-2col') {
+		if (!Object.hasOwn(PANEL_LAYOUTS, templateId)) {
+			throw new Error(`Invalid panel template: ${templateId}`);
+		}
 		const block = addPanelBlockState(appState, templateId, ensureDefaultPanelBlock, createPanelBlock, panelBlockLimit);
 		if (!block) return null;
 		emitStateChange(STATE_EVENTS.PANEL_BLOCK_ADDED, block);
@@ -167,37 +180,42 @@ export function createPanelStateFacade({
 	 * `template-2col` block is inserted in its place.
 	 *
 	 * @param {string} blockId
-	 * @fires STATE_EVENTS.PANEL_BLOCK_REMOVED
+	 * @fires STATE_EVENTS.PANEL_BLOCK_REMOVED - Only when a matching block is removed.
 	 */
 	function removePanelBlock(blockId) {
-		removePanelBlockState(appState, blockId, ensureDefaultPanelBlock, createPanelBlock);
+		const removed = removePanelBlockState(appState, blockId, ensureDefaultPanelBlock, createPanelBlock);
+		if (!removed) return;
+		synchronizePanelLayout();
 		emitStateChange(STATE_EVENTS.PANEL_BLOCK_REMOVED, blockId);
 	}
 
 	/**
 	 * Reorder a block. `targetIndex` is clamped to `[0, blocks.length - 1]`.
-	 * No-op (no event) when the block doesn't exist, the target equals the
-	 * current index, or `targetIndex` is non-finite.
+	 * No-op (no event) when the block doesn't exist or the bounded target equals
+	 * the current index.
 	 *
 	 * @param {string} blockId
-	 * @param {number} targetIndex
+	 * @param {number} targetIndex - Integer; values outside the list are clamped.
+	 * @throws {Error} When the block exists and `targetIndex` is not an integer.
 	 * @fires STATE_EVENTS.PANEL_BLOCK_MOVED - Payload `targetIndex` is the clamped value, not the raw input.
 	 */
 	function movePanelBlock(blockId, targetIndex) {
 		const boundedTarget = movePanelBlockState(appState, blockId, targetIndex, ensureDefaultPanelBlock);
 		if (boundedTarget === null) return;
+		synchronizePanelLayout();
 		emitStateChange(STATE_EVENTS.PANEL_BLOCK_MOVED, { blockId, targetIndex: boundedTarget });
 	}
 
 	/**
-	 * Update a block's split proportions. Each value is clamped to `[20, 80]`.
-	 * Partial updates are merged into the existing `proportions`; fields
-	 * not in `partialProportions` are preserved. No-op when the block is
-	 * missing or `partialProportions` is not an object.
+	 * Update a block's mutable split proportions. The patch is atomically
+	 * validated as a plain object containing only keys supported by the current
+	 * template and finite number values; accepted values are clamped to
+	 * `[20, 80]`. Missing blocks, empty patches, and unchanged results are no-op.
 	 *
 	 * @param {string} blockId
 	 * @param {Partial<PanelBlockProportions>} partialProportions
-	 * @fires STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED
+	 * @throws {Error} When the block exists and the patch shape, a key, or a value is invalid.
+	 * @fires STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED - Only when a stored proportion changes.
 	 */
 	function updatePanelBlockProportions(blockId, partialProportions) {
 		const proportions = updatePanelBlockProportionsState(
@@ -214,11 +232,12 @@ export function createPanelStateFacade({
 	/**
 	 * Set a block's pixel height. Value is rounded and clamped to
 	 * `[panelBlockMinHeight, panelBlockMaxHeight]` (defaults 220 to 760, see
-	 * `appState.js`). No-op when the block is missing or `heightPx` is
-	 * non-finite.
+	 * `appState.js`). Missing blocks and unchanged rounded/clamped values are
+	 * no-op.
 	 *
 	 * @param {string} blockId
 	 * @param {number} heightPx
+	 * @throws {Error} When the block exists and `heightPx` is not a finite number.
 	 * @fires STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED - Payload carries the clamped height, not the raw input.
 	 */
 	function updatePanelBlockHeight(blockId, heightPx) {
@@ -235,14 +254,16 @@ export function createPanelStateFacade({
 	}
 
 	/**
-	 * Toggle and/or recolor a block's border. Invalid hex colors are
-	 * silently ignored; non-boolean `enabled` is silently ignored.
+	 * Toggle and/or recolor a block's border. The optional patch is atomically
+	 * validated and accepts only boolean `enabled` and valid hex `color` fields.
+	 * Missing blocks, empty patches, and unchanged results are no-op.
 	 *
 	 * @param {string} blockId
 	 * @param {Object} [options]
 	 * @param {boolean} [options.enabled]
 	 * @param {string} [options.color] - Hex color (e.g. `'#5d645d'`).
-	 * @fires STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED
+	 * @throws {Error} When the block exists and the patch shape or a supplied field is invalid.
+	 * @fires STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED - Only when a stored border value changes.
 	 */
 	function updatePanelBlockBorder(blockId, options = {}) {
 		const nextBorder = updatePanelBlockBorderState(appState, blockId, options, ensureDefaultPanelBlock);
@@ -257,13 +278,14 @@ export function createPanelStateFacade({
 	/**
 	 * Change a block's layout template. Slots whose id is not part of the
 	 * new template are dropped; proportions are reset to the template's
-	 * defaults. If the block is the first one, `panel.layout` is mirrored
-	 * to the new template (since `panel.layout` shadows `blocks[0].templateId`).
+	 * defaults. `panel.layout` remains a compatibility mirror of the first
+	 * block's template.
 	 *
 	 * @param {string} blockId
-	 * @param {PanelTemplateId} templateId - Unknown templates fall back to `'template-2col'`.
-	 * @returns {boolean} `true` when the change was applied (including no-op same-template case), `false` when the block was not found.
-	 * @fires STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED
+	 * @param {PanelTemplateId} templateId - Exact registry id.
+	 * @returns {boolean} `true` for an existing block, including same-template no-op; `false` when the block was not found.
+	 * @throws {Error} When the block exists and `templateId` is not registered.
+	 * @fires STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED - Only when the template changes.
 	 */
 	function setPanelBlockTemplate(blockId, templateId) {
 		const result = setPanelBlockTemplateState(
@@ -271,16 +293,17 @@ export function createPanelStateFacade({
 			blockId,
 			templateId,
 			ensureDefaultPanelBlock,
-			normalizeTemplateId,
 			getTemplateSlots,
 			createDefaultProportions,
 		);
 		if (!result.ok) return false;
-
-		emitStateChange(STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED, {
-			blockId,
-			templateId: result.templateId,
-		});
+		if (result.changed) {
+			synchronizePanelLayout();
+			emitStateChange(STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED, {
+				blockId,
+				templateId: result.templateId,
+			});
+		}
 		return true;
 	}
 
@@ -290,9 +313,9 @@ export function createPanelStateFacade({
 	 *
 	 * @param {string} blockId
 	 * @param {string} slotId - e.g. `'slot-1'`.
-	 * @param {number | null} chartId - Snapshot id, or `null` to unassign.
-	 * @throws {Error} When `chartId` is not `null` and no matching snapshot exists (or `chartId` is non-numeric).
-	 * @fires STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED - Payload `chartId` is `null` for an unassign, otherwise the normalized numeric id.
+	 * @param {number | string | null} chartId - Snapshot id, decimal-integer DOM string, or `null` to unassign.
+	 * @throws {Error} When the block exists and the slot is unsupported, the chart id is malformed, or no matching snapshot exists.
+	 * @fires STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED - Only when the assignment changes; payload `chartId` is `null` or the normalized numeric id.
 	 */
 	function assignChartToPanelBlockSlot(blockId, slotId, chartId) {
 		const result = assignChartToPanelBlockSlotState(
@@ -303,7 +326,7 @@ export function createPanelStateFacade({
 			ensureDefaultPanelBlock,
 			getChartSnapshot,
 		);
-		if (!result.ok) return;
+		if (!result.ok || !result.changed) return;
 		emitStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, { blockId, slotId, chartId: result.normalizedId });
 	}
 

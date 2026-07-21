@@ -59,7 +59,7 @@ describe('renderLinePanelChart', () => {
 		container = document.createElement('div');
 	});
 
-	it('maps a frozen snapshot onto the shared line renderer contract', () => {
+	it('maps a captured snapshot onto the shared line renderer contract', () => {
 		const result = renderLinePanelChart(container, createSpec());
 
 		expect(result).toEqual({ ok: true });

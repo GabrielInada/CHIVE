@@ -115,8 +115,9 @@ flowchart TB
 ```
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG. Rows are
-already global-filtered; aggregation happens on top of them. Panel snapshots are frozen
-`structuredClone`s (see [Architecture reference](../architecture-reference.md)).
+already global-filtered; aggregation happens on top of them. Panel config, rows, and columns
+are detached `structuredClone` captures (see
+[Architecture reference](../architecture-reference.md)).
 
 ---
 
@@ -282,7 +283,7 @@ labels. The panel exporter clones the live `<svg>`; there is no separate export 
 - **Missing/empty categories** collapse into a single `N/A` tile.
 - **Non-positive aggregates** are filtered out (a treemap tile needs positive area).
 - **Tiles too small** to fit text are left unlabeled.
-- **Stateless renders** and **frozen panel snapshots** behave as for every chart (panel tiles
+- **Stateless renders** and **detached panel captures** behave as for every chart (panel tiles
   carry no filter actions).
 
 Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-treemap*`);
@@ -296,7 +297,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   control building and the measure/value and color-mode logic.
 - [workspaceSection.test.js](../../../tests/charts/treemap/workspaceSection.test.js)
   covers the section adapter, including the empty-state message selection.
-- [panelAdapter.test.js](../../../tests/charts/treemap/panelAdapter.test.js) covers the frozen
+- [panelAdapter.test.js](../../../tests/charts/treemap/panelAdapter.test.js) covers the captured
   snapshot mapping and failure passthrough.
 - [svg.test.js](../../../tests/charts/treemap/renderers/svg.test.js),
   [data.test.js](../../../tests/charts/treemap/data.test.js), and

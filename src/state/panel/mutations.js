@@ -23,17 +23,34 @@
  */
 
 import { isValidHexColor } from '../../utils/colorUtils.js';
+import { PANEL_LAYOUTS } from '../../domain/panel/layoutTemplates.js';
+
+function isPlainObject(value) {
+	if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+	const prototype = Object.getPrototypeOf(value);
+	return prototype === Object.prototype || prototype === null;
+}
+
+function getMutableProportionKeys(templateId) {
+	if (templateId === 'template-single') return [];
+	return Object.keys(PANEL_LAYOUTS[templateId]?.defaultProportions || {});
+}
 
 /**
- * Coerce a chart id to a finite number. Used at every boundary that
- * accepts an id from the DOM or user input.
+ * Normalize a canonical numeric chart id or a decimal-integer string from a
+ * DOM drag payload. Signed, fractional, blank, non-finite, and unsafe values
+ * are rejected.
  *
  * @param {*} chartId
- * @returns {number | null} Normalized id, or `null` when not finite.
+ * @returns {number | null} Non-negative safe integer, or `null` when invalid.
  */
 export function normalizePanelChartId(chartId) {
+	if (typeof chartId === 'number') {
+		return Number.isSafeInteger(chartId) && chartId >= 0 ? chartId : null;
+	}
+	if (typeof chartId !== 'string' || !/^\d+$/.test(chartId)) return null;
 	const normalized = Number(chartId);
-	return Number.isFinite(normalized) ? normalized : null;
+	return Number.isSafeInteger(normalized) ? normalized : null;
 }
 
 /**
@@ -72,15 +89,18 @@ export function addChartSnapshotToState(panelState, chartSnapshot, sanitizeChart
  * maps. Ensures the default block exists after cleanup.
  *
  * @param {AppState} appState
- * @param {*} chartId - Coerced via {@link normalizePanelChartId}.
+ * @param {*} chartId - Normalized via {@link normalizePanelChartId}.
  * @param {() => void} ensureDefaultPanelBlock - Closure-bound from `appState.js`.
  * @returns {number | null} The normalized id when removed; `null` when not found.
+ * @throws {Error} When `chartId` is malformed.
  */
 export function removeChartSnapshotFromState(appState, chartId, ensureDefaultPanelBlock) {
 	const normalizedId = normalizePanelChartId(chartId);
-	if (normalizedId === null) return null;
+	if (normalizedId === null) throw new Error(`Invalid chart id: ${chartId}`);
+	const chartIndex = appState.panel.charts.findIndex(chart => chart.id === normalizedId);
+	if (chartIndex === -1) return null;
 
-	appState.panel.charts = appState.panel.charts.filter(c => c.id !== normalizedId);
+	appState.panel.charts.splice(chartIndex, 1);
 	Object.keys(appState.panel.slots).forEach(slotId => {
 		if (appState.panel.slots[slotId] === normalizedId) {
 			delete appState.panel.slots[slotId];
@@ -187,11 +207,17 @@ export function addPanelBlockState(appState, templateId, ensureDefaultPanelBlock
  * @param {string} blockId
  * @param {() => void} ensureDefaultPanelBlock
  * @param {(templateId: PanelTemplateId) => PanelBlock} createPanelBlock
+ * @returns {boolean} Whether a block was removed.
  */
 export function removePanelBlockState(appState, blockId, ensureDefaultPanelBlock, createPanelBlock) {
 	ensureDefaultPanelBlock();
-	const nextBlocks = appState.panel.blocks.filter(block => block.id !== blockId);
-	appState.panel.blocks = nextBlocks.length > 0 ? nextBlocks : [createPanelBlock('template-2col')];
+	const blockIndex = appState.panel.blocks.findIndex(block => block.id === blockId);
+	if (blockIndex === -1) return false;
+	appState.panel.blocks.splice(blockIndex, 1);
+	if (appState.panel.blocks.length === 0) {
+		appState.panel.blocks.push(createPanelBlock('template-2col'));
+	}
+	return true;
 }
 
 /**
@@ -201,17 +227,21 @@ export function removePanelBlockState(appState, blockId, ensureDefaultPanelBlock
  *
  * @param {AppState} appState
  * @param {string} blockId
- * @param {*} targetIndex - Coerced to a finite number; non-finite is rejected.
+ * @param {number} targetIndex - Integer clamped to the block-list bounds.
  * @param {() => void} ensureDefaultPanelBlock
  * @returns {number | null} The resolved target index, or `null` when the move was rejected.
+	 * @throws {Error} When the block exists and `targetIndex` is not an integer.
  */
 export function movePanelBlockState(appState, blockId, targetIndex, ensureDefaultPanelBlock) {
 	ensureDefaultPanelBlock();
 	const currentIndex = appState.panel.blocks.findIndex(block => block.id === blockId);
 	if (currentIndex === -1) return null;
 
-	const boundedTarget = Math.max(0, Math.min(Number(targetIndex), appState.panel.blocks.length - 1));
-	if (!Number.isFinite(boundedTarget) || boundedTarget === currentIndex) return null;
+	if (!Number.isSafeInteger(targetIndex)) {
+		throw new Error(`Invalid panel block target index: ${targetIndex}`);
+	}
+	const boundedTarget = Math.max(0, Math.min(targetIndex, appState.panel.blocks.length - 1));
+	if (boundedTarget === currentIndex) return null;
 
 	const [item] = appState.panel.blocks.splice(currentIndex, 1);
 	appState.panel.blocks.splice(boundedTarget, 0, item);
@@ -219,79 +249,115 @@ export function movePanelBlockState(appState, blockId, targetIndex, ensureDefaul
 }
 
 /**
- * Merge new proportions into a block, clamping each value to `[20, 80]`.
- * Only the keys present in `partialProportions` are touched.
+ * Merge validated proportions into a block, clamping each value to `[20, 80]`.
+ * Keys are limited to the mutable proportions declared by the block template.
  *
  * @param {AppState} appState
  * @param {string} blockId
  * @param {Partial<PanelBlockProportions>} partialProportions
  * @param {() => void} ensureDefaultPanelBlock
  * @param {(value: number, min: number, max: number) => number} clampPercentage
- * @returns {PanelBlockProportions | null} The merged proportions, or `null` when the block was not found or `partialProportions` was invalid.
+ * @returns {PanelBlockProportions | null} The merged proportions, or `null` when the block was missing or no stored value changed.
+	 * @throws {Error} When the block exists and the patch is not a plain object or contains an unsupported key or non-finite numeric value.
  */
 export function updatePanelBlockProportionsState(appState, blockId, partialProportions, ensureDefaultPanelBlock, clampPercentage) {
 	ensureDefaultPanelBlock();
 	const block = appState.panel.blocks.find(item => item.id === blockId);
-	if (!block || !partialProportions || typeof partialProportions !== 'object') return null;
+	if (!block) return null;
+	if (!isPlainObject(partialProportions)) {
+		throw new Error('Invalid panel block proportions: expected a plain object');
+	}
+
+	const keys = Object.keys(partialProportions);
+	if (keys.length === 0) return null;
+	const allowedKeys = new Set(getMutableProportionKeys(block.templateId));
+	for (const key of keys) {
+		if (!allowedKeys.has(key)) {
+			throw new Error(`Invalid panel block proportion key: ${key}`);
+		}
+		if (typeof partialProportions[key] !== 'number' || !Number.isFinite(partialProportions[key])) {
+			throw new Error(`Invalid panel block proportion value for ${key}`);
+		}
+	}
 
 	const next = { ...block.proportions };
-	Object.keys(partialProportions).forEach(key => {
+	keys.forEach(key => {
 		next[key] = clampPercentage(partialProportions[key], 20, 80);
 	});
+	if (keys.every(key => next[key] === block.proportions[key])) return null;
 	block.proportions = next;
 	return block.proportions;
 }
 
 /**
  * Set a block's pixel height, clamped to `[minHeight, maxHeight]` and
- * rounded to an integer. Non-finite heights are rejected.
+ * rounded to an integer. Only finite number inputs are accepted.
  *
  * @param {AppState} appState
  * @param {string} blockId
- * @param {*} heightPx - Coerced to a finite number; non-finite is rejected.
+ * @param {number} heightPx
  * @param {() => void} ensureDefaultPanelBlock
  * @param {number} minHeight
  * @param {number} maxHeight
- * @returns {number | null} The clamped height, or `null` when block not found or input invalid.
+ * @returns {number | null} The clamped height, or `null` when the block is missing or the stored value is unchanged.
+	 * @throws {Error} When the block exists and `heightPx` is not a finite number.
  */
 export function updatePanelBlockHeightState(appState, blockId, heightPx, ensureDefaultPanelBlock, minHeight, maxHeight) {
 	ensureDefaultPanelBlock();
 	const block = appState.panel.blocks.find(item => item.id === blockId);
 	if (!block) return null;
 
-	const numeric = Number(heightPx);
-	if (!Number.isFinite(numeric)) return null;
+	if (typeof heightPx !== 'number' || !Number.isFinite(heightPx)) {
+		throw new Error(`Invalid panel block height: ${heightPx}`);
+	}
 
-	block.heightPx = Math.max(minHeight, Math.min(maxHeight, Math.round(numeric)));
+	const nextHeight = Math.max(minHeight, Math.min(maxHeight, Math.round(heightPx)));
+	if (block.heightPx === nextHeight) return null;
+	block.heightPx = nextHeight;
 	return block.heightPx;
 }
 
 /**
- * Update a block's border settings. Only the fields present in `options`
- * are touched. Invalid hex colors are silently dropped (block keeps its
- * previous color).
+ * Update a block's border settings after atomically validating the supplied
+ * plain-object patch. Only `enabled` and `color` are supported.
  *
  * @param {AppState} appState
  * @param {string} blockId
  * @param {PanelBlockBorderOptions} options
  * @param {() => void} ensureDefaultPanelBlock
- * @returns {{ enabled: boolean, color: string } | null} Current border state after the update, or `null` when block not found or `options` invalid.
+ * @returns {{ enabled: boolean, color: string } | null} Current border state after a change, or `null` when the block is missing or no value changed.
+	 * @throws {Error} When the block exists and the patch shape or either supplied field is invalid.
  */
 export function updatePanelBlockBorderState(appState, blockId, options, ensureDefaultPanelBlock) {
 	ensureDefaultPanelBlock();
 	const block = appState.panel.blocks.find(item => item.id === blockId);
-	if (!block || !options || typeof options !== 'object') return null;
-
-	if (typeof options.enabled === 'boolean') {
-		block.borderEnabled = options.enabled;
+	if (!block) return null;
+	if (!isPlainObject(options)) {
+		throw new Error('Invalid panel block border options: expected a plain object');
 	}
 
-	if (typeof options.color === 'string') {
-		const color = options.color.trim();
-		if (isValidHexColor(color)) {
-			block.borderColor = color;
+	const keys = Object.keys(options);
+	if (keys.length === 0) return null;
+	for (const key of keys) {
+		if (key !== 'enabled' && key !== 'color') {
+			throw new Error(`Invalid panel block border option: ${key}`);
 		}
 	}
+	if ('enabled' in options && typeof options.enabled !== 'boolean') {
+		throw new Error('Invalid panel block border enabled value');
+	}
+	let color = block.borderColor;
+	if ('color' in options) {
+		if (typeof options.color !== 'string' || !isValidHexColor(options.color.trim())) {
+			throw new Error('Invalid panel block border color');
+		}
+		color = options.color.trim();
+	}
+	const enabled = 'enabled' in options ? options.enabled : block.borderEnabled;
+	if (enabled === block.borderEnabled && color === block.borderColor) return null;
+
+	block.borderEnabled = enabled;
+	block.borderColor = color;
 
 	return {
 		enabled: block.borderEnabled,
@@ -300,39 +366,40 @@ export function updatePanelBlockBorderState(appState, blockId, options, ensureDe
 }
 
 /**
- * Switch a block to a different layout template. Slot assignments that
- * are not present in the new template are dropped silently. When the
- * block being switched is the first block, `appState.panel.layout` is
- * kept in sync.
+ * Switch a block to a different layout template. Slot assignments that are
+ * not present in the new template are dropped. The facade uses the returned
+ * `changed` flag to synchronize the compatibility `panel.layout` field and
+ * conditionally emit.
  *
  * @param {AppState} appState
  * @param {string} blockId
- * @param {*} templateId - Coerced via `normalizeTemplateId`.
+ * @param {PanelTemplateId} templateId - Exact registry id.
  * @param {() => void} ensureDefaultPanelBlock
- * @param {(id: *) => PanelTemplateId} normalizeTemplateId - From `domain/panel/layoutTemplates.js`.
  * @param {(templateId: PanelTemplateId) => string[]} getTemplateSlots - Returns the slot ids allowed by a template.
  * @param {(templateId: PanelTemplateId) => PanelBlockProportions} createDefaultProportions
- * @returns {{ ok: true, templateId: PanelTemplateId } | { ok: false }}
+ * @returns {{ ok: true, changed: boolean, templateId: PanelTemplateId } | { ok: false, changed: false }}
+	 * @throws {Error} When the block exists and `templateId` is not a registered template.
  */
 export function setPanelBlockTemplateState(
 	appState,
 	blockId,
 	templateId,
 	ensureDefaultPanelBlock,
-	normalizeTemplateId,
 	getTemplateSlots,
 	createDefaultProportions,
 ) {
 	ensureDefaultPanelBlock();
 	const block = appState.panel.blocks.find(item => item.id === blockId);
-	if (!block) return { ok: false };
-
-	const normalizedTemplate = normalizeTemplateId(templateId);
-	if (block.templateId === normalizedTemplate) {
-		return { ok: true, templateId: normalizedTemplate };
+	if (!block) return { ok: false, changed: false };
+	if (!Object.hasOwn(PANEL_LAYOUTS, templateId)) {
+		throw new Error(`Invalid panel template: ${templateId}`);
 	}
 
-	const allowedSlots = new Set(getTemplateSlots(normalizedTemplate));
+	if (block.templateId === templateId) {
+		return { ok: true, changed: false, templateId };
+	}
+
+	const allowedSlots = new Set(getTemplateSlots(templateId));
 	const nextSlots = {};
 	Object.keys(block.slots).forEach(slotId => {
 		if (allowedSlots.has(slotId)) {
@@ -340,15 +407,11 @@ export function setPanelBlockTemplateState(
 		}
 	});
 
-	block.templateId = normalizedTemplate;
-	block.proportions = createDefaultProportions(normalizedTemplate);
+	block.templateId = templateId;
+	block.proportions = createDefaultProportions(templateId);
 	block.slots = nextSlots;
 
-	if (appState.panel.blocks[0]?.id === blockId) {
-		appState.panel.layout = normalizedTemplate;
-	}
-
-	return { ok: true, templateId: normalizedTemplate };
+	return { ok: true, changed: true, templateId };
 }
 
 /**
@@ -362,11 +425,11 @@ export function setPanelBlockTemplateState(
  * @param {AppState} appState
  * @param {string} blockId
  * @param {string} slotId
- * @param {number | null} chartId
+ * @param {number | string | null} chartId
  * @param {() => void} ensureDefaultPanelBlock
  * @param {(chartId: number) => ChartSnapshot | null} getChartSnapshot
- * @returns {{ ok: true, normalizedId: number | null } | { ok: false }}
- * @throws {Error} When `chartId` is non-null and resolves to a value, but no chart with that id exists.
+ * @returns {{ ok: true, changed: boolean, normalizedId: number | null } | { ok: false, changed: false }}
+	 * @throws {Error} When the block exists and the slot is unsupported, `chartId` is malformed, or no matching chart exists.
  */
 export function assignChartToPanelBlockSlotState(
 	appState,
@@ -378,22 +441,31 @@ export function assignChartToPanelBlockSlotState(
 ) {
 	ensureDefaultPanelBlock();
 	const block = appState.panel.blocks.find(item => item.id === blockId);
-	if (!block) return { ok: false };
+	if (!block) return { ok: false, changed: false };
+	if (typeof slotId !== 'string' || !PANEL_LAYOUTS[block.templateId]?.slots.includes(slotId)) {
+		throw new Error(`Invalid panel slot: ${slotId}`);
+	}
 
 	if (chartId === null) {
+		if (!Object.hasOwn(block.slots, slotId)) {
+			return { ok: true, changed: false, normalizedId: null };
+		}
 		delete block.slots[slotId];
-		return { ok: true, normalizedId: null };
+		return { ok: true, changed: true, normalizedId: null };
 	}
 
 	const normalizedId = normalizePanelChartId(chartId);
 	if (normalizedId === null) {
-		throw new Error(`Chart ${chartId} not found`);
+		throw new Error(`Invalid chart id: ${chartId}`);
 	}
 	const chart = getChartSnapshot(normalizedId);
 	if (!chart) {
 		throw new Error(`Chart ${chartId} not found`);
 	}
 
+	if (block.slots[slotId] === normalizedId) {
+		return { ok: true, changed: false, normalizedId };
+	}
 	block.slots[slotId] = normalizedId;
-	return { ok: true, normalizedId };
+	return { ok: true, changed: true, normalizedId };
 }

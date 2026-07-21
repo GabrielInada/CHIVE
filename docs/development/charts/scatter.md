@@ -501,7 +501,7 @@ no separate export path.
   a zero-variance x (all equal) yields no fit. `regression.overallColor` must be a strict
   `#RRGGBB` color; invalid strings fall back to `#3f3a33`.
 - **Deterministic jitter**: the categorical cloud is stable across re-renders.
-- **Stateless renders** and **frozen panel snapshots** behave as for every chart (panel
+- **Stateless renders** and **detached panel captures** behave as for every chart (panel
   tooltips carry no filter actions).
 
 Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-scatter*`);

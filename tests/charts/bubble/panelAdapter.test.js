@@ -51,7 +51,7 @@ describe('renderBubblePanelChart', () => {
 		container = document.createElement('div');
 	});
 
-	it('maps a frozen snapshot onto the shared bubble renderer contract', () => {
+	it('maps a captured snapshot onto the shared bubble renderer contract', () => {
 		const result = renderBubblePanelChart(container, createSpec());
 
 		expect(result).toEqual({ ok: true });

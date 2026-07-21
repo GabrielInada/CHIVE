@@ -134,7 +134,7 @@ validates the request, then the
 [panel registry](../../../src/charts/registries/panel.js) routes `scatter3d`
 specs to the package's
 [panelAdapter.js](../../../src/charts/scatter3d/panelAdapter.js), which maps
-the frozen snapshot onto the same presentation flow. Panel slot containers
+the captured snapshot onto the same presentation flow. Panel slot containers
 have no DOM id; the renderer generates a unique `aria-describedby` id in
 that case.
 

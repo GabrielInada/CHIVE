@@ -54,7 +54,7 @@ describe('renderBarPanelChart', () => {
 		container = document.createElement('div');
 	});
 
-	it('maps a frozen snapshot onto the shared bar renderer contract', () => {
+	it('maps a captured snapshot onto the shared bar renderer contract', () => {
 		const result = renderBarPanelChart(container, createSpec());
 
 		expect(result).toEqual({ ok: true });

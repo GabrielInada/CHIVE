@@ -6,8 +6,8 @@
  *   - `flush()` , invoke immediately with the most recent args, if pending.
  *
  * `flush()` is the reason this exists instead of an inline `setTimeout`:
- * some callers need to run pending work immediately during lifecycle
- * transitions. Used by `services/persistence.js` and the chartControls writers.
+ * persistence autosave needs to run pending work immediately during lifecycle
+ * transitions. The production caller is `services/persistence/autoSave.js`.
  *
  * @template {(...args: *) => *} F
  * @param {F} fn

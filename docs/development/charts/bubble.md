@@ -126,7 +126,7 @@ flowchart TB
 
 The renderer is **stateless**: each call wipes the container and rebuilds the SVG (and resets
 any drill-down). Rows are already global-filtered; aggregation and hierarchy building happen
-on top of them. Panel snapshots are frozen `structuredClone`s
+on top of them. Panel config, rows, and columns are detached `structuredClone` captures
 (see [Architecture reference](../architecture-reference.md)).
 
 ---
@@ -334,7 +334,7 @@ The panel exporter clones the live `<svg>`; there is no separate export path.
 - **Non-positive sum/mean aggregates** are not filtered by CHIVE before packing; use
   non-negative value columns for meaningful bubble area.
 - **Drill-down resets** on every render (the chart is stateless).
-- **Frozen panel snapshots**: panel bubbles carry no filter actions.
+- **Detached panel captures**: panel bubbles carry no filter actions.
 
 Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-bubble*`);
 Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
@@ -356,7 +356,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   progressive nesting controls and the measure/value cross-constraint.
 - [workspaceSection.test.js](../../../tests/charts/bubble/workspaceSection.test.js) covers
   workspace visibility and empty-state mapping.
-- [panelAdapter.test.js](../../../tests/charts/bubble/panelAdapter.test.js) covers frozen
+- [panelAdapter.test.js](../../../tests/charts/bubble/panelAdapter.test.js) covers captured
   snapshot mapping, localized labels, and failure passthrough.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.

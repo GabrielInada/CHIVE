@@ -110,21 +110,25 @@ When moving, renaming, or adding documentation:
 - Check Markdown links changed by the edit.
 - Update issue templates when a top-level or user-facing doc target changes.
 - Update the documentation hub when a user-facing or top-level doc is added, moved, or renamed.
-- Update [Architecture reference](docs/development/architecture-reference.md) when adding, removing, or renaming a state field, facade method, `STATE_EVENTS` constant, or production subscriber.
+- Update [Architecture reference](docs/development/architecture-reference.md) when adding, removing, or renaming a state field, `appState.js` export, facade method, `STATE_EVENTS` constant, production emitter/subscriber, persistence schema identifier, guarded getter, or supported panel chart.
 
 For exact JSDoc rules and documentation maintenance notes, see
 [Contributor reference](docs/development/contributor-reference.md#documentation-and-jsdoc-conventions).
 
 ## Architecture invariants: do not break
 
-Hard rules. Breaking any of them silently degrades reactivity, and the failure mode is "the UI looks fine until the day it doesn't." See [Architecture overview](docs/development/architecture.md) for the why.
+These are maintained contributor rules. Some are lint-enforced and the exact
+state/event registries are covered by documentation drift tests. See
+[Architecture overview](docs/development/architecture.md) for the ownership
+model.
 
 - All writes to application state go through a facade. Never assign to `dataset.*`, `appState.*`, or anything returned from a getter (`getActiveDataset()`, `getAllDatasets()`, `getPanelCharts()`, …).
-- Event names live in `STATE_EVENTS`. Never use string literals in `src/`. (Tests intentionally keep literals to exercise the wire format; leave them alone.)
-- Subscribers must not synchronously emit a state event from inside their callback (re-entrancy loop). Defer with `queueMicrotask` if you need a follow-up mutation.
-- Make chart config valid at the state boundaries, not during render. `canonicalizeChartConfig` runs at persistence restore, `addDataset`, the emitting config writes (`updateActiveDatasetConfig`, `setActiveChartType`), and defensively in `replaceAllState`; render never repairs config. Reserve `normalizeActiveDatasetConfig` (writes without emitting) for the intentional non-emitting live-preview writes (color picker, chart-height drag).
+- State-bus callers use `STATE_EVENTS.*` instead of string wire values. The registry in `stateEvents.js` necessarily defines those literals, and tests intentionally use literals when exercising the wire contract.
+- Subscribers must not synchronously emit a state event from inside their callback (re-entrancy loop). Use a lint-safe deferred follow-up such as `window.queueMicrotask(() => { ... })` when the owning flow genuinely needs one.
+- Make chart config valid at the state boundaries, not during render. `canonicalizeChartConfig` runs during persistence normalization, `addDataset`, the emitting config writes (`updateActiveDatasetConfig`, `setActiveChartType`), and defensively in `replaceAllState`; render never repairs config. Persistence restore canonicalizes memory but does not rewrite existing SQLite bytes until a later successful project save. Reserve `normalizeActiveDatasetConfig` (writes without emitting) for the intentional non-emitting live-preview writes (color picker, chart-height drag).
+- Keep `panel.layout` equal to the authoritative first block's template; it is a persisted compatibility mirror, not an independent layout choice. Panel chart captures survive source-dataset removal with their slot assignments intact.
 - Renderers and DOM builders do not call write facades. They read durable state via getters and derive DOM from it; user input is surfaced through callbacks injected by a feature controller or workflow owner (e.g. `panelController`, an `app/bindings/` workflow module, or a chart-controls listener). Module-local transient UI state (search query, dialog draft, focus anchor) is allowed; durable application state goes through a facade.
-- `STATE_EVENTS.WILDCARD === '*'` is reserved for state-bus consumers (`services/persistence.js`) that genuinely need every emission. Do not subscribe to it from feature controllers/managers, renderers, or `app/renderCoordinator.js`; use a typed subscription.
+- `STATE_EVENTS.WILDCARD === '*'` is reserved for sink-style state-bus consumers. The only current production subscriber is `src/services/persistence/autoSave.js`, reached publicly through `services/persistence.js`. Do not subscribe from feature controllers/managers, renderers, or `app/renderCoordinator.js`; use a typed subscription.
 
 Lint guard details and the known aliasing gap are documented in
 [Contributor reference](docs/development/contributor-reference.md#architecture-guard-details).

@@ -60,7 +60,7 @@ describe('renderNetworkPanelChart', () => {
 		container = document.createElement('div');
 	});
 
-	it('maps a frozen snapshot onto the shared network renderer contract', () => {
+	it('maps a captured snapshot onto the shared network renderer contract', () => {
 		const result = renderNetworkPanelChart(container, createSpec());
 
 		expect(result).toEqual({ ok: true });

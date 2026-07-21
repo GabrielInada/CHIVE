@@ -13,7 +13,7 @@ import { renderBubbleChart } from './renderers/svg.js';
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 
 /**
- * Render a bubble chart from a live config block or frozen panel snapshot.
+ * Render a bubble chart from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
  * @param {Array<Object<string, *>>} rows

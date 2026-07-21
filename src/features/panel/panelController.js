@@ -180,8 +180,10 @@ function handleUpdateBlockHeight(blockId, heightPx) {
 /**
  * Capture a chart's current state as a snapshot and add it to the panel.
  * Reads the active dataset, merges its `chartConfig` with chart defaults,
- * applies the global filter, and stores a {@link ChartSnapshot} via the
- * panel facade.
+ * applies the global filter, structured-clones config/filtered rows/columns,
+ * and stores a {@link ChartSnapshot} via the panel facade. Metadata is stored
+ * as supplied. The resulting state object is not `Object.freeze`d and remains
+ * read-only by facade policy.
  *
  * @param {string} containerId - DOM element ID of the chart container (unused inside the function; preserved for caller traceability).
  * @param {string} chartBaseName - Display name for the snapshot.
@@ -232,7 +234,7 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
  * CHART_REMOVED subscription re-renders the sidebar + canvas.
  *
  * @param {number | string} chartId
- * @fires STATE_EVENTS.CHART_REMOVED - When the snapshot existed.
+ * @fires STATE_EVENTS.CHART_REMOVED - When a matching snapshot is removed.
  */
 export function removeChartFromPanel(chartId) {
 	removeChartSnapshot(chartId);
@@ -289,9 +291,9 @@ export function renderCanvasPanel() {
 }
 
 /**
- * Change the panel's first-block layout template and re-render.
- * No-op when `layoutId` is not a known layout, or when the panel has no
- * blocks.
+ * Change the panel's first-block layout template. A changed template emits and
+ * re-renders through the panel subscription. Unknown and already-selected
+ * layouts are no-op; `getPanelBlocks()` ensures a block when needed.
  *
  * @param {PanelTemplateId} layoutId
  * @fires STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED - When the change applies.

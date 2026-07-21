@@ -12,7 +12,7 @@ import { getTinColorRendering } from '../../services/settingsService.js';
 import { renderTinChart } from './renderers/svg.js';
 
 /**
- * Render a TIN surface from a live config block or frozen panel snapshot.
+ * Render a TIN surface from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
  * @param {Array<Object<string, *>>} rows

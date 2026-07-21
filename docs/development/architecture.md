@@ -1,232 +1,184 @@
 # CHIVE Architecture Overview
 
-This document is the fast architecture tour for CHIVE. It describes the stable
-mental model, layer boundaries, and invariants contributors need before
-changing code.
-
-It intentionally omits exhaustive implementation tables so it stays readable.
-Those omissions are not shortcuts: the overview should remain accurate. For
-exact state shape, facade methods, event payloads, emitters, subscribers, and
-implementation checklists, see the
-[Architecture Reference](architecture-reference.md).
+This is the short architecture tour for CHIVE. It describes runtime ownership,
+the state boundary, and the rendering paths contributors need before changing
+code. Exact facade behavior, event wiring, and persistence identifiers live in
+the [Architecture Reference](architecture-reference.md).
 
 ## 1. Pattern In One Paragraph
 
-CHIVE uses the **Observer pattern over a single mutable state object held in
-module scope, with writes mediated by facade functions**. The state core owns
-the application model, the facades expose legal mutations, and the event bus
-broadcasts changes to explicit subscribers that decide what to re-render or
-persist.
+CHIVE uses an Observer-style state core: one module-private mutable state object,
+domain facades for ordinary writes, and an in-process event bus for notifying
+explicit subscribers. Application and feature owners translate DOM intent into
+calls on the public `state/appState.js` surface. The facades perform their
+authorized mutations and emit typed state events; subscribers decide what to
+render or save.
 
-It is not Flux, Redux, MobX, signals, or a framework component model. There are
-no actions, reducers, automatic dependency tracking, or virtual DOM. The shape
-is deliberately plain JavaScript plus D3: easy to read cold, small enough to
-audit, and compatible with charts that render imperatively.
+This is a CHIVE-specific design choice, not a claim that this pattern is
+universally preferable to Redux, signals, or a component framework. It keeps the
+project's small browser-only runtime and imperative visualization code directly
+inspectable without adding another runtime abstraction.
 
 ## 2. Why This Shape
 
-The architecture follows from CHIVE's constraints:
+The design follows the current product constraints:
 
-- CHIVE runs in the browser with no required remote or server-side application
-  backend. Persistence-package "backends" are local implementation adapters,
-  not remote services.
-- Uploaded datasets stay in browser memory and browser storage.
-- D3 owns the chart math everywhere (scales, extents, layout) and renders
-  most charts to SVG/DOM directly. Three.js renders the 3D scatter to a
-  WebGL canvas from D3-computed scales; the contract is rows/config ->
-  chart model -> D3 math -> SVG or Three renderer.
-- The project keeps runtime dependencies small on purpose.
-- The contributor base benefits from explicit, inspectable control flow.
-- The state model is narrow: datasets, panel layout, and UI mode.
+- CHIVE has no required remote application backend. Persistence-package
+  "backends" are browser-local implementation adapters.
+- Uploaded datasets remain in browser memory and browser storage.
+- D3 supplies scales, axes, selections, hierarchy/layout utilities,
+  interpolation, and other visualization primitives. CHIVE also owns custom
+  aggregation, regression, sampling/budgeting, and TIN-related algorithms; D3
+  is not the owner of every chart calculation.
+- Most charts render SVG/DOM. Three.js renders the 3D scatter to WebGL after
+  CHIVE and D3 prepare its data and scales.
+- Explicit callbacks and subscriptions keep control flow visible to
+  contributors and tests.
 
-Async work still fits this structure. IndexedDB persistence subscribes to state
-events, and the data-ingest Web Worker is wrapped behind a service boundary.
-Neither requires a framework-level state model.
+These are project tradeoffs. For the longer comparison, see
+[Detailed Rationale](architecture-reference.md#detailed-rationale).
 
-For the longer tradeoff analysis, see
-[Architecture Reference: Detailed Rationale](architecture-reference.md#detailed-rationale).
-
-## 3. System Map
+## 3. Runtime Ownership
 
 ```mermaid
-flowchart TB
-    U(["User"])
+flowchart LR
+    DOM["DOM intent and injected callback owners<br/>app bindings and feature controllers"]
+    API["Public state surface<br/>state/appState.js"]
+    FACADES["Domain facades<br/>data, panel, UI"]
+    STATE[("Module-private appState")]
+    BUS["State event bus<br/>STATE_EVENTS"]
+    COORD["Render coordinator<br/>animation-frame scheduled"]
+    PANEL["Panel controller<br/>synchronous handlers"]
+    AUTOSAVE["Persistence autosave<br/>persistence/autoSave.js"]
+    VIEWS["Feature views and panel slot lifecycle"]
+    REGISTRIES["Surface registries<br/>controls, workspace, panel"]
+    CHARTS["Per-chart packages<br/>SVG or Three/WebGL"]
+    PERSIST["Public persistence facade<br/>services/persistence.js"]
+    HYDRATE["Boot persistence lifecycle"]
 
-    subgraph APP["Application and feature ownership"]
-        BOOT["entries/app.js + applicationInitializer"]
-        CTRL["App bindings + dataset controller<br/>chart controls + UI manager"]
-        PANEL["panelController<br/>intent + writes + subscriptions"]
-        COORD["renderCoordinator<br/>full + region scheduling"]
-        VIEWS["Dataset workspace views<br/>panel views + slot lifecycle"]
-        REG["Surface-specific chart registries<br/>controls · workspace · panel"]
-        CHARTS["Per-chart packages<br/>D3/SVG · D3 math + Three/WebGL"]
-    end
-
-    subgraph CORE["State core"]
-        FAC["Data · panel · UI facades"]
-        STATE[("appState<br/>module-private")]
-        BUS["STATE_EVENTS<br/>in-process event bus"]
-    end
-
-    subgraph LEAVES["Pure leaves"]
-        DOMAIN["domain/datasets<br/>domain/filters<br/>domain/panel"]
-        HELPERS["config + pure utils"]
-    end
-
-    subgraph BROWSER["Browser-side services"]
-        SERVICES["i18n · presets · settings · downloads"]
-        INGEST["dataIngestService<br/>file + join host"]
-        INGESTW["dataIngestWorker<br/>parse · join · normalize · stats"]
-        PERSIST["persistence public facade"]
-        PERSISTW["persistWorker<br/>or blobBackend fallback"]
-        DB[("IndexedDB<br/>SQLite byte image")]
-        PREFS[("localStorage<br/>UI prefs · settings · locale")]
-    end
-
-    U -- DOM input --> CTRL
-    U -- panel interactions --> PANEL
-    BOOT -- initializes --> CTRL
-    BOOT -- initializes --> PANEL
-    BOOT -- installs subscriptions --> COORD
-    BOOT -- initializes locale + settings --> SERVICES
-    BOOT -- hydrates before subscriptions --> PERSIST
-    CTRL -- ordinary state writes --> FAC
-    PANEL -- ordinary state writes --> FAC
-    FAC -- mutate --> STATE
-    FAC -- emit --> BUS
-    BUS -- broad + regional events --> COORD
-    BUS -- panel events --> PANEL
-    BUS -- wildcard dirty tracking --> PERSIST
-    COORD -- compose renders --> VIEWS
-    PANEL -- render panel surfaces --> VIEWS
-    CTRL -- resolve chart controls --> REG
-    VIEWS -- dispatch chart type --> REG
-    REG --> CHARTS
-    COORD -. read through getters .-> STATE
-    PANEL -. read through getters .-> STATE
-    VIEWS -. read through getters where needed .-> STATE
-    CTRL -- preset + locale requests --> SERVICES
-    CTRL -- file + join requests/results --> INGEST
-    INGEST --> INGESTW
-    INGESTW -. pure ingest rules .-> DOMAIN
-    PERSIST -- hydration exception<br/>replaceAllState --> STATE
-    PERSIST --> PERSISTW
-    PERSISTW --> DB
-    PERSIST --> PREFS
-    SERVICES --> PREFS
-    CTRL -. domain operations .-> DOMAIN
-    CHARTS -. defaults + helpers .-> HELPERS
+    DOM -->|"ordinary write"| API
+    API -->|"delegate"| FACADES
+    FACADES -->|"authorized mutation"| STATE
+    FACADES -->|"typed emit"| BUS
+    STATE -. "read through public getters" .-> API
+    BUS -->|"typed; next animation frame"| COORD
+    BUS -->|"typed; same call stack"| PANEL
+    BUS -->|"wildcard"| AUTOSAVE
+    COORD --> VIEWS
+    PANEL --> VIEWS
+    VIEWS --> REGISTRIES
+    REGISTRIES --> CHARTS
+    AUTOSAVE --> PERSIST
+    HYDRATE -. "before subscriptions: replaceAllState" .-> API
+    API -. "hydration escape: replace slices directly" .-> STATE
+    API -. "STATE_HYDRATED" .-> BUS
 ```
 
-The diagram is an abstraction, not a literal call graph. It shows ownership
-boundaries: ordinary state writes enter through facades, state changes leave
-through the bus, and renderers read state rather than owning it. Hydration is
-the documented exception: the persistence lifecycle calls `replaceAllState`
-once and the state core emits `STATE_HYDRATED` after replacement. Browser-side
-"backend" names in the persistence package are local storage implementations,
-not a remote application server. The feature controllers and managers are
-not a thin controller layer. Each one typically owns its domain end to end:
-translating user intent into facade writes, subscribing to the resulting events,
-and triggering its own renders (`panelController` does all three for the panel).
-The horizontal split below is about *roles*, not separate modules.
+The diagram shows ownership, not every import. Ordinary writes pass through a
+domain facade. `replaceAllState` is the deliberate exception: during boot,
+`applicationInitializer.js` hydrates before the render coordinator, panel
+controller, and autosave subscriptions are installed. Its `STATE_HYDRATED`
+emit therefore has no production subscriber during that boot call; the
+initializer performs the first render synchronously afterward. The same method
+can also be used later by project import, when subscriptions are already live.
 
-For exact subscribers and payloads, see
-[Architecture Reference: Event Registry](architecture-reference.md#event-registry)
-and
-[Architecture Reference: Subscriber Map](architecture-reference.md#subscriber-map).
+The bus has three production routing styles:
 
-## 4. Layers
+- The render coordinator handles its typed events through a coalesced
+  animation-frame scheduler.
+- The panel controller handles its typed events synchronously.
+- `services/persistence/autoSave.js` is the only production wildcard
+  subscriber and reaches storage through the public persistence facade.
 
-| Layer | Owns | Rule Of Thumb |
+## 4. Ownership Layers
+
+| Layer | Current owners | Boundary |
 |---|---|---|
-| Feature controllers/managers | A domain's DOM event capture and user-intent translation, plus its bus subscriptions and render-triggering (app/feature bindings, `datasetController`, `panelController`, `chartControlsController`, `uiManager`). | Validate input, call facades, and re-render that domain in response to the resulting events. |
-| State Management Core | `appState`, facades, event registry, event bus. | The only normal path for application state mutation. |
-| Application orchestration | Browser startup in `entries/app.js` (and `entries/about.js` for the About page, which loads only shared i18n/settings and installs no debug surface), initialization order in `app/applicationInitializer.js`, and broad/narrow rendering in `app/renderCoordinator.js`. | Keep the entrypoints thin, order side effects in the initializer, and keep all scheduler state in the render coordinator. |
-| Visualization Layer | Feature views and dialogs, D3/SVG chart renderers, per-chart packages under `src/charts/*`, and panel rendering (the leaf renderers). | Render from inputs and state reads; do not mutate application state. |
-| Reusable UI mechanics | Ownerless browser UI behavior under `src/ui/` (feedback toasts, native-dialog lifecycle, reusable confirmation dialog). | A strict leaf with DOM access: import only config, utils, types, or vendor modules; never state, services, or features. |
-| Services, domain, and utilities | Persistence, i18n, ingest worker host, browser downloads, pure product rules, config, and ownership-neutral helpers. | Browser effects belong in services, pure product rules in `domain/{owner}/`, and generic DOM-free helpers in `utils/`. |
+| Entrypoints and application composition | `entries/`, `app/applicationInitializer.js`, `app/domBindings.js`, `app/renderCoordinator.js` | Entrypoints stay structural; application modules order startup and compose feature owners. |
+| Feature flow owners | Dataset controller and bindings, chart-controls controller, panel controller, settings controller, `uiManager.js` | Translate intent, call public facades/services, and own domain-specific render triggering. |
+| State core | `state/appState.js`, domain facades, panel mutation internals, `stateEvents.js` | Ordinary durable writes enter through the public facade surface. |
+| Presentation | Feature views/dialogs, panel views/slots/export, chart packages and registries | Render from explicit inputs or read-only getters; surface user actions through callbacks. |
+| Browser services | Persistence, ingest worker host, i18n, settings, presets, storage and downloads | Own browser I/O and other effects; persistence internals stay behind `services/persistence.js`. |
+| Pure leaves | `config/`, `utils/`, and `domain/` | Hold static configuration, ownership-neutral helpers, and product rules without DOM effects. |
+| Ownerless UI mechanics | `ui/` | May touch the DOM but is a strict import leaf reusable by higher owners. |
 
-The important distinction is ownership, not file layout. A feature controller or manager may
-write facades, subscribe to the bus, and trigger renders for its own domain; what
-it must not do is reach into another domain's state. `panelController` is a clear
-case (controller + subscriber + render-trigger); `chartControlsController` and `uiManager`
-coordinate owned UI *and* write facades, so they are managers, not leaf renderers. The leaf
-renderers (feature views and dialogs, chart packages under `src/charts/*`, and
-`features/panel/views/`) stay strictly
-read-only with respect to application state: they receive callbacks from a
-manager and read via getters, but never import write facades. A service may
-perform I/O, but state changes still route through the state core boundary.
+The repository is not a model-view-controller stack with one thin controller
+layer. A feature controller may own DOM intent, facade writes, subscriptions,
+and rendering for its feature. The leaf views and chart renderers remain
+read-only with respect to durable application state.
 
-## 5. Invariants
+## 5. Maintained Invariants
 
-These are the rules that keep the app reactive and debuggable:
+The following are contributor policies, backed by lint or tests where noted:
 
-- All application state writes go through facade methods exported by
-  `appState.js`.
-- Do not mutate objects or arrays returned from live-reference getters.
-- Production code uses `STATE_EVENTS.*` constants, not string literals.
-- Subscribers must not synchronously emit another state event from inside their
-  callback.
-- Renderers are stateless with respect to application state: they read and
-  render, but they do not own writes.
-- Wildcard subscriptions are reserved for sink-style state-bus consumers such
-  as persistence.
+- Route ordinary application-state writes through methods exported by
+  `state/appState.js`; do not mutate a getter return.
+- State-bus callers use `STATE_EVENTS.*`. `stateEvents.js` itself necessarily
+  defines the string wire values, and tests may intentionally exercise those
+  values as literals.
+- Do not synchronously emit another state event from a state subscriber. Use a
+  deferred owner-controlled follow-up when one is required.
+- Renderers and DOM builders receive write callbacks; they do not import write
+  facades.
+- Reserve wildcard subscriptions for sink-style consumers. Autosave is the
+  only current production example.
+- Keep `panel.layout` synchronized with the authoritative first block template;
+  it exists only as a persisted compatibility field.
+- Panel chart captures are independent of dataset lifetime. Dataset removal
+  preserves captures and their assignments.
+- Treat the import restrictions as composition and leaf-layer boundaries, not
+  as proof that the complete module graph is a directed acyclic graph.
 
-Some facade methods intentionally do not emit, and hydration intentionally emits
-only once after replacing slices. Those exceptions are documented in
-[Architecture Reference: Mutation Rules](architecture-reference.md#mutation-rules).
+The exact lint coverage and its known aliasing gap are documented in
+[Contributor Reference](contributor-reference.md#architecture-guard-details).
 
-Contributor-facing enforcement details live in
-[CONTRIBUTING.md](../../CONTRIBUTING.md#architecture-invariants-do-not-break).
+## 6. Reactive And Render Flow
 
-## 6. Reactive Flow
+For a committed column-selection change:
 
-Example: a user toggles a column-visibility checkbox.
+1. A workspace DOM handler invokes its injected callback.
+2. `renderCoordinator.updateDatasetColumns` calls
+   `updateActiveDatasetColumns` on the public state surface.
+3. The data facade validates unique declared names, stores a copied array, and
+   emits `STATE_EVENTS.COLUMNS_UPDATED` only when the ordered list changed.
+4. The render coordinator schedules the workspace and controls regions.
+5. A single animation-frame flush reads current state and renders those
+   regions; a synchronous burst is coalesced.
 
-1. A renderer's DOM handler invokes `onColumnSelectionChange`, the callback
-   propagated through `renderDatasetWorkspace`.
-2. In this flow, that callback is `app/renderCoordinator.js`'s
-   `updateDatasetColumns`, which
-   calls `updateActiveDatasetColumns(columns)`.
-3. The data facade writes `dataset.selectedColumns`.
-4. The facade emits `STATE_EVENTS.COLUMNS_UPDATED`.
-5. The render coordinator's `COLUMNS_UPDATED` subscription schedules the
-   workspace and chart-controls regions via `scheduleRegion` (coalesced to one
-   flush per animation frame, so a synchronous burst of events paints once). Broad events
-   (dataset add/remove/select, hydration, locale) schedule a full refresh via
-   `scheduleFullRefresh` instead.
-6. The region flush reads state via cheap getters and delegates rendering to
-   the workspace and chart-controls renderers.
+Other render paths are intentionally different:
 
-Panel changes follow the same ownership pattern but usually have a narrower
-subscriber. For example, block layout events are handled by `panelController`,
-which redraws the panel canvas instead of routing through the render
-coordinator's broad `refreshView()` path.
+| Trigger | Owner | Timing and scope |
+|---|---|---|
+| Dataset add/remove/select or hydration after subscriptions | Render coordinator | One animation-frame-scheduled full refresh. |
+| Column/config/preview-row events | Render coordinator | Animation-frame-scheduled region refreshes. |
+| Panel chart/block events | Panel controller | Synchronous sidebar/canvas/layout-selector renders, depending on the event. |
+| Boot and `chiveDebug.refreshView()` | Render coordinator | Synchronous full refresh through `runFullRefreshNow`. |
+| Locale or rendering-setting browser events | Application initializer + render coordinator | Animation-frame-scheduled full refresh. |
+| Continuous color/height control input | Chart-controls preview bridge | Throttled, charts-only `livePreviewRender`; controls and saved panel captures are untouched. |
 
-Dataset, committed-config, and panel renders are now uniformly bus-driven.
-The application initializer and manual `chiveDebug` calls do a synchronous full
-render through `runFullRefreshNow`; locale and the full-refresh bus events schedule one through
-`scheduleFullRefresh`, and preview-row changes repaint only the workspace region.
-Live color/height preview stays its own charts-only path. `refreshView()` is never
-called bare. The invariant is not "every render comes from the bus"; the invariant
-is that renderers do not write state during render.
+Committed chart configuration is canonicalized at state boundaries:
+persistence normalization, `addDataset`, emitting config writes, and
+defensively in `replaceAllState`. Rendering may derive display values but does
+not write repairs back. A restored config is canonicalized in memory; the
+existing persisted SQLite bytes are not rewritten until some later successful
+project save.
 
-Committed chart config backs that invariant concretely: it is canonicalized at
-the state boundaries (persistence restore, `addDataset`, the emitting config
-writes, and defensively in `replaceAllState`) via `canonicalizeChartConfig`.
-Renderers may derive local display defaults from what they read, but they do not
-write repairs back during render. The invariant is deliberately narrow: render
-and setup paths still attach handlers that mutate state later, and views still
-read state through getters; what render itself never does is write.
+## 7. Dependency Direction
 
-## 7. Where To Look Next
+Lint enforces specific boundaries rather than a universal layer DAG. In
+particular, `entries/` composes `app/`, while `features/` and `ui/` may not
+import those composition layers; `ui/`, `utils/`, `config/`, chart leaves, and
+domain leaves each have narrower allowed imports. Services, state, workers,
+features, and chart integration files still have legitimate cross-layer edges
+described in [Source Map: Direction](source-map.md#direction).
 
-- [Architecture Reference](architecture-reference.md): exact state schema,
-  facade method index, event registry, subscriber map, mutation rules, panel
-  lifecycle, and implementation checklists.
-- [Source map](source-map.md): source tree layout, naming vocabulary, and
-  where new code goes.
-- [CONTRIBUTING.md](../../CONTRIBUTING.md): development workflow, architecture
-  invariants, lint rules, tests, and debugging helpers.
-- [Stylesheet organization](styles.md): CSS
-  layer order and stylesheet ownership.
+## 8. Where To Look Next
+
+- [Architecture Reference](architecture-reference.md): default state, complete
+  public exports, exact facade edge behavior, events/subscribers, persistence,
+  and the panel lifecycle.
+- [Source Map](source-map.md): source layout, naming vocabulary, and placement
+  rules.
+- [CONTRIBUTING.md](../../CONTRIBUTING.md): development workflow and hard
+  architecture rules.
+- [Stylesheet Organization](styles.md): CSS layer and file ownership.

@@ -8,8 +8,11 @@ import {
 	getPanelBlocks,
 	getPanelCharts,
 	getState,
+	movePanelBlock,
 	onStateChange,
+	removePanelBlock,
 	replaceAllState,
+	setPanelBlockTemplate,
 	STATE_EVENTS,
 } from '../../src/state/appState.js';
 
@@ -105,6 +108,16 @@ describe('replaceAllState()', () => {
 		expect(config.globalFilter).toEqual({ rules: [], combine: 'AND' });
 	});
 
+	it('sanitizes hydrated selected columns against the declared schema', () => {
+		replaceAllState({
+			data: {
+				datasets: [makeDataset({ selectedColumns: ['x', 'missing', 'x', null] })],
+				activeIndex: 0,
+			},
+		});
+		expect(getActiveDataset().selectedColumns).toEqual(['x']);
+	});
+
 	it('trims a stale global filter against the dataset columns on hydrate', () => {
 		replaceAllState({
 			data: {
@@ -134,6 +147,40 @@ describe('replaceAllState()', () => {
 		expect(getPanelBlocks().length).toBeGreaterThan(0);
 	});
 
+	it('uses a valid legacy layout when hydrating without blocks', () => {
+		replaceAllState({ panel: { layout: 'template-3col', blocks: [], nextBlockId: 4 } });
+		expect(getPanelBlocks()[0].templateId).toBe('template-3col');
+		expect(getState().panel.layout).toBe('template-3col');
+		expect(getPanelBlocks()[0].id).toBe('block-4');
+	});
+
+	it('mirrors panel.layout through hydration, reorder, removal, and template changes', () => {
+		replaceAllState({
+			panel: {
+				layout: 'template-hero2',
+				blocks: [
+					{ id: 'block-1', templateId: 'template-2col', slots: {}, proportions: { split: 50 } },
+					{ id: 'block-2', templateId: 'template-single', slots: {}, proportions: { split: 100 } },
+				],
+				nextBlockId: 3,
+			},
+		});
+		expect(getState().panel.layout).toBe('template-2col');
+
+		movePanelBlock('block-2', 0);
+		expect(getState().panel.layout).toBe('template-single');
+
+		removePanelBlock('block-2');
+		expect(getState().panel.layout).toBe('template-2col');
+
+		setPanelBlockTemplate('block-1', 'template-3col');
+		expect(getState().panel.layout).toBe('template-3col');
+
+		removePanelBlock('block-1');
+		expect(getState().panel.layout).toBe('template-2col');
+		expect(getPanelBlocks()[0].templateId).toBe('template-2col');
+	});
+
 	it('ignores invalid sidebarMode and previewRows values', () => {
 		// Seed valid values first.
 		addDataset(makeDataset());
@@ -141,7 +188,7 @@ describe('replaceAllState()', () => {
 		const initialRows = getState().ui.previewRows;
 
 		replaceAllState({
-			ui: { sidebarMode: 'not-a-mode', previewRows: 0 },
+			ui: { sidebarMode: 'not-a-mode', previewRows: 1001 },
 		});
 
 		expect(getState().ui.sidebarMode).toBe(initialMode);
