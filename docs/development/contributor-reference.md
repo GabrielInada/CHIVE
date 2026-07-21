@@ -48,6 +48,10 @@ JSDoc rules:
   Cloned returns say `"Deep clone."` Mutating a getter return bypasses the
   facade and breaks reactivity. See
   [`appState.js`](../../src/state/appState.js) for examples.
+- **Captured vs frozen:** use “captured” or “detached” for panel data/config
+  copied with `structuredClone`. Do not call the state object frozen unless the
+  implementation actually applies `Object.freeze`; panel getters remain live
+  references under the read-only policy.
 - **Events:** use `@fires STATE_EVENTS.FOO`, with the constant name rather than
   the string literal. Functions that conditionally emit must say so in the
   description.

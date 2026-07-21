@@ -45,8 +45,11 @@ function createNoopController() {
  *
  * Each save re-exports the whole SQLite image, heavier than the old
  * structured-clone write, so edits are coalesced over a wide quiet window
- * before a save fires. `saveNow` keeps the coalescing/`rev` correctness so a
- * mid-save edit is never lost.
+ * before a save fires. Revision tracking keeps an edit made during a successful
+ * in-flight save dirty and starts one follow-up save after settlement. A failed
+ * save remains dirty and reports its error, but receives no automatic retry
+ * until another dirty event or explicit/lifecycle `saveNow`; page termination
+ * can interrupt asynchronous persistence.
  *
  * @param {() => Partial<AppState>} getStateFn
  * @param {{ debounceMs?: number, onSaveError?: (error: Error, result: Object) => void }} [options]
@@ -98,8 +101,9 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 			}
 		})().finally(() => {
 			saveInFlight = null;
-			// A mid-save edit bumped rev and left dirty set, save the newer
-			// snapshot now that saveInFlight is nulled.
+			// After a successful write, a mid-save edit leaves dirty set; save that
+			// newer revision now that saveInFlight is cleared. Failures stay dirty
+			// and wait for a later event or explicit/lifecycle saveNow call.
 			if (ok && dirty && !disposed) {
 				void saveNow();
 			}

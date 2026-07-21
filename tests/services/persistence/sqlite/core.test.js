@@ -133,4 +133,60 @@ describe('sqliteCore', () => {
 			db.close();
 		}
 	});
+
+	it.each([
+		{
+			name: 'format',
+			rows: [['format', 'chive-project']],
+		},
+		{
+			name: 'schema_version',
+			rows: [['schema_version', '1']],
+		},
+	])('rejects import metadata when $name is the only required key', ({ rows }) => {
+		const db = makeDb(`/partial-meta-${rows[0][0]}.sqlite3`);
+		try {
+			applySchema(db);
+			for (const [key, value] of rows) {
+				db.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: [key, value] });
+			}
+			expect(() => assertMeta(db, { requireMeta: true })).toThrow('Missing CHIVE SQLite project metadata');
+		} finally {
+			db.close();
+		}
+	});
+
+	it('accepts both exact required metadata values', () => {
+		const db = makeDb('/complete-meta-test.sqlite3');
+		try {
+			applySchema(db);
+			db.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: ['format', 'chive-project'] });
+			db.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: ['schema_version', '1'] });
+			expect(() => assertMeta(db, { requireMeta: true })).not.toThrow();
+		} finally {
+			db.close();
+		}
+	});
+
+	it('rejects mismatched required metadata values', () => {
+		const wrongFormat = makeDb('/wrong-format-meta-test.sqlite3');
+		try {
+			applySchema(wrongFormat);
+			wrongFormat.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: ['format', 'other-project'] });
+			wrongFormat.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: ['schema_version', '1'] });
+			expect(() => assertMeta(wrongFormat, { requireMeta: true })).toThrow('Unsupported CHIVE SQLite format');
+		} finally {
+			wrongFormat.close();
+		}
+
+		const wrongVersion = makeDb('/wrong-version-meta-test.sqlite3');
+		try {
+			applySchema(wrongVersion);
+			wrongVersion.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: ['format', 'chive-project'] });
+			wrongVersion.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: ['schema_version', '2'] });
+			expect(() => assertMeta(wrongVersion, { requireMeta: true })).toThrow('Unsupported CHIVE SQLite schema version');
+		} finally {
+			wrongVersion.close();
+		}
+	});
 });

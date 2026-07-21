@@ -68,7 +68,7 @@ describe('renderScatterPanelChart', () => {
 		container = document.createElement('div');
 	});
 
-	it('maps a frozen snapshot onto the shared scatter renderer contract', () => {
+	it('maps a captured snapshot onto the shared scatter renderer contract', () => {
 		const result = renderScatterPanelChart(container, createSpec());
 
 		expect(result).toEqual({ ok: true });

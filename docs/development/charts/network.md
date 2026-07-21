@@ -132,7 +132,8 @@ Unlike the other charts, the render does not end at a static SVG: it starts a si
 keeps ticking and repositioning nodes until it cools. The running simulation is cached on the
 container under a private key so the **next** render can stop it before building a fresh
 layout, preventing an orphaned simulation from ticking on a replaced DOM. The container
-contents are still fully replaced each render. Panel snapshots are frozen `structuredClone`s
+contents are still fully replaced each render. Panel config, rows, and columns are detached
+`structuredClone` captures
 (see [Architecture reference](../architecture-reference.md)).
 
 ---
@@ -329,7 +330,7 @@ that snapshot.
 - **Blank source/target cells** skip that edge.
 - **Re-render lifecycle**: the previous simulation is stopped before a new one starts, so a
   replaced container never keeps ticking.
-- **Frozen panel snapshots**: a panel network re-simulates from its snapshot and carries no
+- **Detached panel captures**: a panel network re-simulates from its capture and carries no
   filter actions in tooltips.
 
 The empty-state string lives in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-network`);

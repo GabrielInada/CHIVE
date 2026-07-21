@@ -82,13 +82,15 @@ describe('appState (edge cases - branch coverage)', () => {
 			expect(getState().data.activeIndex).toBe(0);
 		});
 
-		it('clears panel charts when dataset removed', () => {
+		it('preserves captured panel charts when dataset removed', () => {
 			addDataset({ rows: [{}], columns: [] });
 			addChartSnapshot({ name: 'c1', svgMarkup: '<svg/>' });
 			expect(getPanelCharts().length).toBe(1);
 
 			removeDataset(0);
-			expect(getPanelCharts().length).toBe(0);
+			expect(getPanelCharts()).toEqual([
+				expect.objectContaining({ name: 'c1' }),
+			]);
 		});
 	});
 
@@ -99,6 +101,7 @@ describe('appState (edge cases - branch coverage)', () => {
 
 		it('does nothing if no active dataset (columns)', () => {
 			expect(() => updateActiveDatasetColumns(['x'])).not.toThrow();
+			expect(() => updateActiveDatasetColumns(null)).not.toThrow();
 		});
 
 		it('merges config into active dataset (and canonicalizes)', () => {
@@ -214,6 +217,7 @@ describe('appState (edge cases - branch coverage)', () => {
 
 		it('fires activeDataset on setActiveDataset', () => {
 			const spy = vi.fn();
+			addDataset({ rows: [{}], columns: [] });
 			const idx = addDataset({ rows: [{}], columns: [] });
 
 			onStateChange('activeDataset', spy);

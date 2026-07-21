@@ -186,7 +186,7 @@ export function setupStateSubscriptions() {
 
 /**
  * Re-render only active chart visualizations during a live control preview.
- * The controls sidebar and frozen panel snapshots are deliberately untouched.
+ * The controls sidebar and saved panel captures are deliberately untouched.
  */
 export function livePreviewRender() {
 	const dataset = getActiveDataset();

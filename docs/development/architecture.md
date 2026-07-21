@@ -122,6 +122,10 @@ The following are contributor policies, backed by lint or tests where noted:
   facades.
 - Reserve wildcard subscriptions for sink-style consumers. Autosave is the
   only current production example.
+- Keep `panel.layout` synchronized with the authoritative first block template;
+  it exists only as a persisted compatibility field.
+- Panel chart captures are independent of dataset lifetime. Dataset removal
+  preserves captures and their assignments.
 - Treat the import restrictions as composition and leaf-layer boundaries, not
   as proof that the complete module graph is a directed acyclic graph.
 
@@ -135,8 +139,8 @@ For a committed column-selection change:
 1. A workspace DOM handler invokes its injected callback.
 2. `renderCoordinator.updateDatasetColumns` calls
    `updateActiveDatasetColumns` on the public state surface.
-3. The data facade replaces `dataset.selectedColumns` and emits
-   `STATE_EVENTS.COLUMNS_UPDATED`.
+3. The data facade validates unique declared names, stores a copied array, and
+   emits `STATE_EVENTS.COLUMNS_UPDATED` only when the ordered list changed.
 4. The render coordinator schedules the workspace and controls regions.
 5. A single animation-frame flush reads current state and renders those
    regions; a synchronous burst is coalesced.
@@ -150,7 +154,7 @@ Other render paths are intentionally different:
 | Panel chart/block events | Panel controller | Synchronous sidebar/canvas/layout-selector renders, depending on the event. |
 | Boot and `chiveDebug.refreshView()` | Render coordinator | Synchronous full refresh through `runFullRefreshNow`. |
 | Locale or rendering-setting browser events | Application initializer + render coordinator | Animation-frame-scheduled full refresh. |
-| Continuous color/height control input | Chart-controls preview bridge | Throttled, charts-only `livePreviewRender`; controls and panel snapshots are untouched. |
+| Continuous color/height control input | Chart-controls preview bridge | Throttled, charts-only `livePreviewRender`; controls and saved panel captures are untouched. |
 
 Committed chart configuration is canonicalized at state boundaries:
 persistence normalization, `addDataset`, emitting config writes, and

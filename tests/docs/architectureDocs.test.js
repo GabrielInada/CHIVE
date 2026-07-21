@@ -28,6 +28,7 @@ import {
 	localMarkdownLinkProblems,
 	missingRepoPaths,
 	readRepoFile,
+	readRepoTextFiles,
 	readStringConstant,
 	sourceMapTreePaths,
 	splitContractSites,
@@ -127,5 +128,27 @@ describe('architecture documentation drift guards', () => {
 			settings: SETTINGS_STORAGE_KEY,
 			migrationMarker: LEGACY_MIGRATION_MARKER_KEY,
 		});
+	});
+
+	it('does not overstate panel snapshot immutability or persistence completion', () => {
+		const claims = [
+			{
+				label: 'literal frozen-snapshot claim',
+				pattern: /(?:frozen (?:chart |panel )?snapshots?|(?:chart|panel) snapshots? (?:are|is|remain) frozen|snapshot is \*\*frozen\*\*)/i,
+			},
+			{
+				label: 'absolute persistence-success claim',
+				pattern: /(?:latest edit is always written|mid-save edit is never lost|never silently lost)/i,
+			},
+		];
+		const problems = [];
+		for (const file of readRepoTextFiles(['src', 'docs'], ['.js', '.md'])) {
+			for (const claim of claims) {
+				if (claim.pattern.test(file.content)) {
+					problems.push(`${file.path}: ${claim.label}`);
+				}
+			}
+		}
+		expect(problems).toEqual([]);
 	});
 });

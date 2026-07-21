@@ -2,9 +2,11 @@
  * Stored-snapshot validation and normalization.
  *
  * Turns a raw backend snapshot into the shape appState expects: drops
- * untrustworthy dataset/chart records, resolves the active index, and runs the
- * caller-supplied `transformPanel`. Not side-effect-free: it invokes that
- * callback and emits `console.warn` when it discards malformed records.
+ * untrustworthy dataset records, sanitizes their selected columns and chart
+ * config, resolves the active index, normalizes the panel envelope, and runs
+ * the caller-supplied `transformPanel`. Panel chart/block records are not
+ * generally validated here. Not side-effect-free: it invokes that callback and
+ * emits `console.warn` when it discards malformed dataset records.
  * Internal to the services/persistence.js facade.
  */
 
@@ -76,7 +78,10 @@ function validateDatasetRecord(record) {
 	const sanitizedChartConfig = sanitizeChartConfig(record.chartConfig, declaredColumnNames);
 	return {
 		...record,
-		selectedColumns: Array.isArray(record.selectedColumns) ? record.selectedColumns : [],
+		selectedColumns: normalizeColumnNameList(record.selectedColumns, {
+			allowed: new Set(declaredColumnNames),
+			max: Infinity,
+		}),
 		chartConfig: canonicalizeChartConfig(sanitizedChartConfig, declaredColumnNames),
 	};
 }

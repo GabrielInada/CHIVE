@@ -208,26 +208,28 @@
 /**
  * Partial border-options bag accepted by `updatePanelBlockBorder`. Either
  * or both fields may be present; missing fields leave the block's existing
- * value untouched. Invalid hex strings are silently ignored.
+ * value untouched. The facade rejects invalid fields before mutating state.
  *
  * @typedef {Object} PanelBlockBorderOptions
  * @property {boolean} [enabled] - When set, replaces `block.borderEnabled`.
- * @property {string} [color] - Hex color (e.g. `'#5d645d'`). Validated via {@link isValidHexColor}; invalid values are dropped.
+ * @property {string} [color] - Hex color (e.g. `'#5d645d'`). Validated via {@link isValidHexColor}.
  */
 
 /**
- * Frozen capture of a chart at the moment it was added to the panel.
- * Stores data + config + metadata so the panel can re-render after the
- * underlying dataset changes (or is removed) without losing the chart.
+ * Captured chart state stored when a chart is added to the panel. The
+ * production controller structured-clones config, rows, and columns before
+ * calling the state facade, so those fields remain detached from later dataset
+ * edits and survive source-dataset removal. The snapshot is not deep-frozen;
+ * facade getters expose live references that callers must treat as read-only.
  *
  * @typedef {Object} ChartSnapshot
  * @property {number} id - Monotonic; assigned by `addChartSnapshot`.
  * @property {string} name - Sanitized title, max 100 chars.
  * @property {ChartTypeKey | null} type
- * @property {Object | null} config - Frozen copy of `chartConfig[type]` at capture time.
- * @property {Array<Object<string, *>>} dataSnapshot - Copy of the rows used.
- * @property {ColumnSpec[]} columnsSnapshot
- * @property {Object | null} metadata - Chart-specific render metadata (axis ranges, scales, …).
+ * @property {Object | null} config - Production capture: structured clone of `chartConfig[type]`.
+ * @property {Array<Object<string, *>>} dataSnapshot - Production capture: structured clone of the rows used.
+ * @property {ColumnSpec[]} columnsSnapshot - Production capture: structured clone of the dataset columns.
+ * @property {Object | null} metadata - Chart-specific render metadata stored as supplied (axis ranges, scales, …).
  * @property {string} metaSummary - Plain-text summary; max 180 chars.
  * @property {string} createdAt - ISO 8601 timestamp.
  */
@@ -253,7 +255,7 @@
 /**
  * @typedef {Object} AppStateUi
  * @property {SidebarMode} sidebarMode
- * @property {number} previewRows - Must be ≥ 1.
+ * @property {number} previewRows - Integer from 1 through 1000.
  */
 
 /**
@@ -272,7 +274,8 @@
 /**
  * Canonical event-name string emitted by the state bus. Values match
  * `STATE_EVENTS` in `src/state/stateEvents.js`. The wildcard `'*'` is
- * reserved for sink-style subscribers (`services/persistence.js`).
+ * reserved for sink-style subscribers (`services/persistence/autoSave.js`,
+ * exposed through the public persistence facade).
  *
  * @typedef {(
  *   'activeDataset' | 'datasetAdded' | 'datasetRemoved' | 'configUpdated' | 'columnsUpdated'

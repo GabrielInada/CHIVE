@@ -1,5 +1,5 @@
 /**
- * Bar-chart panel adapter. Maps a frozen chart snapshot onto the package's
+ * Bar-chart panel adapter. Maps a captured chart snapshot onto the package's
  * shared presentation flow without exposing panel internals to the renderer.
  *
  * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot

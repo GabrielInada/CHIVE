@@ -62,14 +62,31 @@ describe('uiStateFacade', () => {
 		expect(facade.getPreviewRows()).toBe(25);
 	});
 
-	it('rejects preview rows less than 1', () => {
+	it('rejects preview rows outside the integer range', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
 			ui: { sidebarMode: 'data', previewRows: 10 },
 		};
 		const facade = createUiStateFacade({ appState, emitStateChange });
 
-		expect(() => facade.setPreviewRows(0)).toThrow('Preview rows must be >= 1');
-		expect(() => facade.setPreviewRows(-5)).toThrow('Preview rows must be >= 1');
+		expect(() => facade.setPreviewRows(0)).toThrow('integer from 1 to 1000');
+		expect(() => facade.setPreviewRows(-5)).toThrow('integer from 1 to 1000');
+		expect(() => facade.setPreviewRows(1001)).toThrow('integer from 1 to 1000');
+		expect(() => facade.setPreviewRows(1.5)).toThrow('integer from 1 to 1000');
+		expect(() => facade.setPreviewRows('25')).toThrow('integer from 1 to 1000');
+		expect(() => facade.setPreviewRows(NaN)).toThrow('integer from 1 to 1000');
+		expect(appState.ui.previewRows).toBe(10);
+		expect(emitStateChange).not.toHaveBeenCalled();
+	});
+
+	it('does not emit when preview rows are unchanged', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			ui: { sidebarMode: 'data', previewRows: 10 },
+		};
+		const facade = createUiStateFacade({ appState, emitStateChange });
+
+		facade.setPreviewRows(10);
+		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 });

@@ -1,9 +1,9 @@
 /**
- * Network-graph panel adapter. Maps a frozen chart snapshot onto the package's
+ * Network-graph panel adapter. Maps a captured chart snapshot onto the package's
  * shared presentation flow without exposing panel internals to the renderer.
  *
- * Panel snapshots are frozen, so no filter callbacks are passed: panel
- * tooltips cannot mutate the live dataset.
+ * No filter callbacks are passed for panel rendering, so panel tooltips cannot
+ * mutate the live dataset.
  *
  * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
  */

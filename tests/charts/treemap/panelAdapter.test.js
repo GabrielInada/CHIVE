@@ -51,7 +51,7 @@ describe('renderTreemapPanelChart', () => {
 		container = document.createElement('div');
 	});
 
-	it('maps a frozen snapshot onto the shared treemap renderer contract', () => {
+	it('maps a captured snapshot onto the shared treemap renderer contract', () => {
 		const result = renderTreemapPanelChart(container, createSpec());
 
 		expect(result).toEqual({ ok: true });

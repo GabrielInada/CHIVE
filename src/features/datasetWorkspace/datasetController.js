@@ -59,8 +59,9 @@ export async function handleFileUpload(files) {
 }
 
 /**
- * Select a dataset as active. The facade emits `ACTIVE_DATASET`, which drives
- * the re-render.
+ * Select a dataset as active. When the index changes, the facade emits
+ * `ACTIVE_DATASET`, which drives the re-render; selecting the current index is
+ * a no-op.
  * @param {number} index - Dataset index
  */
 export function selectDataset(index) {

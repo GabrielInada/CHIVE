@@ -481,11 +481,12 @@ That adapter:
 When a chart is added to the panel, `addChartToPanel`
 ([panelController.js](../../../src/features/panel/panelController.js)) captures a snapshot:
 `config`, `dataSnapshot`, and `columnsSnapshot` are each `structuredClone`d at
-capture time, so the snapshot is **frozen** and decoupled from later edits to the
-active dataset. [panelAdapter.js](../../../src/charts/tin/panelAdapter.js) passes
+capture time, so those fields are detached from later edits to the active
+dataset. The snapshot is not `Object.freeze`d and live facade getters remain
+read-only by policy. [panelAdapter.js](../../../src/charts/tin/panelAdapter.js) passes
 `spec.config` and `spec.dataSnapshot` through the same presentation flow after
 `renderChartFromSpec` validates the request. The panel registry only dispatches to
-that adapter. This frozen-snapshot property is what
+that adapter. This detached-capture property is what
 lets the live preview skip re-rendering the panel (section 9.4 / 10).
 
 ---
@@ -785,8 +786,8 @@ The setting under **Settings > Performance** selects one of two fill-color polic
   per leaf. It can create more paths and render or export more slowly.
 
 The choice is browser-local, not project or dataset config. Workspace and panel
-rendering use the current browser's mode, while panel data/config snapshots remain
-frozen. Both modes use the same adaptive depth budget. Flat fill uses the selected
+rendering use the current browser's mode, while captured panel data/config remain
+detached from the active dataset. Both modes use the same adaptive depth budget. Flat fill uses the selected
 grouping policy, and constant-z surfaces paint at the ramp's low color in either
 mode. These behaviors are covered by renderer and presentation tests.
 
@@ -854,7 +855,7 @@ Separately, `livePreviewRender` in
 [renderCoordinator.js](../../../src/app/renderCoordinator.js) used to also call
 `renderCanvasPanel()` on every tick, re-rendering all panel blocks even when hidden —
 doubling the work if a TIN chart was in the panel. That call was removed: panel
-blocks paint from frozen `structuredClone` snapshots (section 6.2), so a live config
+blocks paint from detached `structuredClone` captures (section 6.2), so a live config
 edit can never change them. The picker's commit (`change`) event fires
 `CONFIG_UPDATED`, but that no longer re-renders the panel either: `onConfigUpdated`
 repaints the workspace and chart-controls regions, and only an `activeTab` switch to
@@ -937,7 +938,7 @@ but that is not implemented here.
 - **Tiny isoline step**: capped at 200 levels.
 - **Stateless renders**: the container is fully wiped each call; no retained state,
   so any caller can re-render at any time safely.
-- **Panel snapshots are frozen**: a saved panel chart does not track later edits to
+- **Panel captures are detached**: a saved panel chart does not track later edits to
   the active dataset's config — by design.
 
 ---

@@ -12,7 +12,7 @@ import { renderBarChart } from './renderers/svg.js';
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 
 /**
- * Render a bar chart from a live config block or frozen panel snapshot.
+ * Render a bar chart from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
  * @param {Array<Object<string, *>>} rows

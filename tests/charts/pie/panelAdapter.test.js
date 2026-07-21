@@ -56,7 +56,7 @@ describe('renderPiePanelChart', () => {
 		container = document.createElement('div');
 	});
 
-	it('maps a frozen snapshot onto the shared pie renderer contract', () => {
+	it('maps a captured snapshot onto the shared pie renderer contract', () => {
 		const result = renderPiePanelChart(container, createSpec());
 
 		expect(result).toEqual({ ok: true });

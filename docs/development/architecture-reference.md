@@ -71,15 +71,13 @@ selection. `panel.charts` contains chart snapshots. Per-block `block.slots` is
 the authoritative assignment map; `panel.slots` is retained for legacy
 single-block compatibility.
 
-`panel.layout` is also a compatibility field, but it is **not an invariant
-mirror** of `panel.blocks[0].templateId`. It is set by the initial state,
-`clearPanel`, `replaceAllState` when a panel slice is supplied, and an actual
-template change applied to the first block. Adding, removing, or moving blocks,
-synthesizing a default block, and a same-template call do not resynchronize it.
+`panel.layout` is a persisted compatibility field and invariant mirror of
+`panel.blocks[0].templateId`; the first block remains authoritative. Default
+block creation, hydration, clear, removal, reorder, and first-block template
+changes all resynchronize it.
 
 `ui.sidebarMode` is intended to be `data`, `viz`, or `panel`.
-`ui.previewRows` is intended to be an integer of at least 1; the exact runtime
-validation gap is documented below.
+`ui.previewRows` is an integer from 1 through 1000.
 
 `getState()` performs a JSON round-trip clone. The focused object/array getters
 return live references unless their row says otherwise and must be treated as
@@ -138,8 +136,8 @@ This is the complete named-export surface of `src/state/appState.js`:
 | `getActiveDatasetIndex()` | Primitive index value. | Returns the stored value; it does not normalize a malformed value. |
 | `getAllDatasets()` | Live datasets array. | No clone or validation. |
 | `getPanelCharts()` | Live snapshot array. | No clone or validation. |
-| `getChartSnapshot(chartId)` | Live snapshot or `null`. | Coerces with `Number`, rejects non-finite results, then matches a numeric `id`; for example `null` and `''` normalize to `0`. |
-| `getPanelBlocks()` | Live blocks array. | Ensures one default block exists, incrementing `nextBlockId`, but emits no event. |
+| `getChartSnapshot(chartId)` | Live snapshot or `null`. | Accepts a non-negative safe integer or decimal-integer string. It tolerantly returns `null` for malformed or missing ids; it does not throw like mutation entry points. |
+| `getPanelBlocks()` | Live blocks array. | Ensures one block exists, using the compatibility layout when synthesis is needed, increments `nextBlockId`, synchronizes `panel.layout`, and emits no event. |
 | `getPreviewRows()` | Primitive stored preview-row value. | No normalization on read. |
 | `sanitizeChartName(name)` | String. | Applies `String(name).slice(0, 100).trim()`. |
 | `validatePanelSlots()` | No return. | Ensures a default block, removes legacy and per-block assignments whose values are not current chart ids, and emits nothing. |
@@ -175,39 +173,39 @@ relies on stable array references.
 
 ### Data Facade Methods
 
-| Method | Mutation and event | Accepted values, no-ops, and current gaps |
+| Method | Mutation and event | Accepted values and no-ops |
 |---|---|---|
-| `setActiveDataset(index)` | Stores `index`; always emits `ACTIVE_DATASET` after passing its check. | Intended for `-1` or an in-range integer. Runtime checks only `index < -1` and `index >= datasets.length`; it does not require a number or integer, so values such as `NaN`, `undefined`, nonnumeric strings, numeric strings, and fractions can pass. **Audit flag: likely validation defect.** |
+| `setActiveDataset(index)` | Stores and emits `ACTIVE_DATASET` only when the index changes. | Accepts integer `-1` or an in-range dataset index; throws for every other value. |
 | `addDataset(dataset)` | Mutates the caller by assigning a missing id and canonical `chartConfig`, pushes it, maybe selects it, emits `DATASET_ADDED`, returns the index. | Throws unless `dataset` is truthy and `dataset.rows` is an array. It does not validate the remaining record shape. |
-| `removeDataset(index)` | Splices a dataset, adjusts selection, clears all panel charts and legacy `panel.slots`, and emits raw `index`. | Intended for an in-range integer. It uses only lower/upper comparisons, so coercible, fractional, or `NaN`-like inputs can pass and be coerced differently by `splice`. **Audit flag: likely validation defect.** Per-block assignments are not cleared here; later panel validation removes stale ids. |
+| `removeDataset(index)` | Splices a dataset, adjusts selection, preserves detached panel captures and both assignment maps, then emits `DATASET_REMOVED`. | Accepts only an in-range integer; throws before mutation otherwise. |
 | `updateActiveDatasetConfig(updates)` | Canonicalizes current config, shallow-merges a plain-object patch, canonicalizes again, stores it, and emits the raw `updates` argument. | No active dataset means no-op/no event. A non-plain patch is treated as `{}` for mutation but is still emitted verbatim. |
-| `updateActiveDatasetColumns(columnNames)` | Stores the supplied value and emits it as `COLUMNS_UPDATED`. | No active dataset means no-op/no event. There is no array or column-membership validation. **Audit flag: validation gap.** |
+| `updateActiveDatasetColumns(columnNames)` | Stores a copied list and emits it as `COLUMNS_UPDATED` only when ordered contents change. | No active dataset means no-op/no event, without validating the argument. Otherwise requires an array of distinct strings declared by the active dataset; malformed, duplicate, and unknown names throw before mutation. |
 | `normalizeActiveDatasetConfig(normalizer)` | Replaces config with `normalizer(currentConfig)` and emits nothing. | No active dataset means no-op. The callback and returned shape are not validated; exceptions propagate. Reserved for continuous preview writes. |
 | `setActiveChartType(chartType, activatedOverrides)` | Enables exactly the selected canonical chart key, or disables every chart for `null`; canonicalizes and emits `{ activeChartType }`. | No active dataset or an unknown non-null key means no-op/no event. Plain-object overrides apply only to a non-null selected type. A valid call emits even if it reproduces the current state. |
 
 ### Panel Facade Methods
 
-| Method | Mutation and event | Accepted values, no-ops, and current gaps |
+| Method | Mutation and event | Accepted values and no-ops |
 |---|---|---|
-| `addChartSnapshot(snapshot)` | Allocates `nextChartId`, normalizes snapshot fields, pushes, emits `CHART_ADDED`, and returns id. | Caller id is ignored. Name is stringified/sanitized; `metaSummary` is capped at 180; missing arrays become empty; missing type/config/metadata become `null`; missing `createdAt` gets the current ISO time. A missing snapshot object throws. Chart type and config are not validated here. |
-| `removeChartSnapshot(chartId)` | Filters charts, removes matching legacy/per-block assignments, ensures a block, and emits normalized id. | A non-finite `Number(chartId)` is a no-op. Any finite id emits even when no snapshot existed. **Audit flag: likely false-positive event defect.** |
+| `addChartSnapshot(snapshot)` | Allocates `nextChartId`, normalizes snapshot fields, pushes, emits `CHART_ADDED`, and returns id. | Caller id is ignored. Name is stringified/sanitized; `metaSummary` is capped at 180; missing arrays become empty; missing type/config/metadata become `null`; missing `createdAt` gets the current ISO time. A missing snapshot object throws. The facade stores supplied config/data/column/metadata references; the production controller performs the structured clones before calling it. |
+| `removeChartSnapshot(chartId)` | Removes the matching chart and legacy/per-block assignments, ensures a block, and emits the normalized id. | Accepts a non-negative safe integer or decimal-integer string. Malformed ids throw; a valid missing id is no-op/no event. |
 | `clearPanel()` | Drops charts and legacy slots, resets both counters, creates one default block, sets `panel.layout`, and emits `PANEL_CLEARED`. | Always mutates and emits. |
-| `addPanelBlock(templateId)` | Ensures a default block, appends one, increments id, emits `PANEL_BLOCK_ADDED`, returns block id. | Returns `null` with no event at the four-block limit. Unknown templates normalize to `template-2col`. It does not update `panel.layout`. |
-| `removePanelBlock(blockId)` | Replaces the block array; if empty, creates a default block; always emits `PANEL_BLOCK_REMOVED`. | A missing id still emits and leaves equivalent block contents. It does not resynchronize `panel.layout`. **Audit flag: likely false-positive event/compatibility defect.** |
-| `movePanelBlock(blockId, targetIndex)` | Moves the block and emits `{ blockId, targetIndex }`. | Missing block, non-finite target, or target equal to current index is no-op/no event. The target is number-coerced and bounded but not integer-normalized before it is emitted; `splice` applies its own integer coercion. It does not resynchronize `panel.layout`. **Audit flag: validation/compatibility gap.** |
-| `updatePanelBlockProportions(blockId, patch)` | Shallow-copies proportions, writes every enumerable patch key after number coercion/clamp to 20–80, and emits the resulting object. | Missing block or a falsy/non-object patch is no-op. Arrays, unknown keys, and an empty object are accepted; non-finite values become 20. **Audit flag: shape-validation gap.** |
-| `updatePanelBlockHeight(blockId, heightPx)` | Number-coerces, rounds, clamps to 220–760, stores, and emits the stored height. | Missing block or non-finite result is no-op/no event. Numeric strings are accepted. |
-| `updatePanelBlockBorder(blockId, options)` | Applies boolean `enabled` and valid trimmed hex `color`, then emits the complete current border state. | Missing block, `null`, or an explicit non-object value is a no-op. Omitted/`undefined` options default to `{}` and emit; empty, array, or invalid-only objects also emit unchanged state. **Audit flag: possible false-positive event.** |
-| `setPanelBlockTemplate(blockId, templateId)` | Normalizes the template, prunes disallowed slots, resets proportions, updates `panel.layout` only for an actual first-block change, and emits normalized template id. | Missing block returns `false` with no event. Unknown template becomes `template-2col`. Same-template calls return `true` and emit even though no state changes; they also do not repair a divergent `panel.layout`. **Audit flag: false-positive event/compatibility gap.** |
-| `assignChartToPanelBlockSlot(blockId, slotId, chartId)` | Assigns a normalized existing chart id, or deletes the key for `null`, then emits. | Missing block is no-op/no event. Missing/non-finite chart ids throw unless the value is exactly `null`. `slotId` is not checked against the block template, and clearing an absent key still emits. **Audit flag: slot-validation/false-positive gap.** |
+| `addPanelBlock(templateId)` | Ensures a default block, appends one, increments id, emits `PANEL_BLOCK_ADDED`, and returns the block id. | Requires an exact registry template id. Returns `null` with no event at the four-block limit; invalid template ids throw. |
+| `removePanelBlock(blockId)` | Removes the matching block; if empty, creates a default block; synchronizes `panel.layout`; and emits `PANEL_BLOCK_REMOVED`. | Missing block is no-op/no event. |
+| `movePanelBlock(blockId, targetIndex)` | Moves the block, synchronizes `panel.layout`, and emits `{ blockId, targetIndex }` with the final bounded integer. | A missing block is no-op/no event without validating the target. For an existing block, the target must be an integer; out-of-range integers are clamped and an unchanged bounded target is no-op. All other targets throw. |
+| `updatePanelBlockProportions(blockId, patch)` | Atomically validates and merges the patch, clamps supplied values to 20–80, and emits the resulting proportions only after a change. | A missing block is no-op/no event without validating the patch. For an existing block, an empty patch or unchanged result is no-op; otherwise the patch must be a plain object with finite values and only the current template's mutable keys: `split`, `splitMain`/`splitRight`, or `a`/`b`/`c`; `template-single` has none. Invalid input throws before mutation. |
+| `updatePanelBlockHeight(blockId, heightPx)` | Rounds, clamps to 220–760, stores, and emits the stored height only after a change. | A missing block is no-op/no event without validating the height. For an existing block, unchanged rounded/clamped results are no-op; the value must be a finite number, while coercion-only and non-finite values throw. |
+| `updatePanelBlockBorder(blockId, options)` | Atomically validates optional boolean `enabled` and valid trimmed hex `color`, applies them, and emits complete current border state only after a change. | A missing block is no-op/no event without validating the patch. For an existing block, empty/unchanged patches are no-op; non-plain patches, unknown keys, and invalid supplied fields throw before mutation. |
+| `setPanelBlockTemplate(blockId, templateId)` | Prunes disallowed slots, resets proportions, synchronizes `panel.layout`, and emits the exact template id only after a change. | A missing block returns `false` with no event without validating the template. For an existing block, an exact registry id is required and invalid ids throw; same-template calls return `true` with no event. |
+| `assignChartToPanelBlockSlot(blockId, slotId, chartId)` | Assigns an existing normalized chart id or deletes the key for `null`, then emits only after a change. | A missing block is no-op/no event without validating the slot or chart id. For an existing block, the slot must belong to its template; chart ids accept non-negative safe integers or decimal strings, and malformed/missing charts throw. Clearing an absent slot or assigning its current chart is no-op/no event. |
 
 ### UI And Hydration Methods
 
-| Method | Mutation and event | Accepted values, no-ops, and current gaps |
+| Method | Mutation and event | Accepted values and no-ops |
 |---|---|---|
 | `setSidebarMode(mode)` | Stores and emits `SIDEBAR_MODE_CHANGED`. | Accepts exactly `data`, `viz`, or `panel`; throws otherwise; same value is no-op/no event. |
-| `setPreviewRows(rows)` | Stores and always emits `PREVIEW_ROWS_CHANGED` after its check. | Checks only `rows < 1`. It does not require a finite integer/number, so strings, fractions, `NaN`, and `Infinity` may be stored. **Audit flag: likely validation defect.** |
-| `replaceAllState({ data, panel, ui })` | Replaces fields directly and unconditionally emits one `STATE_HYDRATED`. | Omitted or non-object slices remain unchanged. Within a supplied data slice, invalid datasets become `[]` and invalid active index becomes `-1`. A supplied panel slice defaults each missing field and either accepts a non-empty raw blocks array or synthesizes one block. A supplied UI slice overwrites only valid individual fields, leaving invalid/missing ones unchanged. Dataset configs are canonicalized into shallow record copies; panel charts/blocks are not generally validated here. Calling with no arguments still emits. |
+| `setPreviewRows(rows)` | Stores and emits `PREVIEW_ROWS_CHANGED` only when the value changes. | Requires an integer from 1 through 1000; every other value throws before mutation. |
+| `replaceAllState({ data, panel, ui })` | Hydrates supplied fields and unconditionally emits one `STATE_HYDRATED`. | Omitted or non-object slices remain unchanged. A supplied data slice defaults invalid collections/indexes, canonicalizes config, and sanitizes selected columns. A supplied panel slice defaults fields, keeps object block entries, canonicalizes block templates, synthesizes from a valid legacy layout when needed, and mirrors `panel.layout`; chart records are not generally validated here. A supplied UI slice overwrites only valid individual fields, including preview rows from 1 through 1000. Calling with no arguments still emits. |
 
 `replaceAllState` is therefore partial at the slice level, not a reset-to-default
 operation. It is a hydration/import escape hatch rather than an ordinary
@@ -233,9 +231,9 @@ The `Emitters` and `Production subscriptions` cells use
 | `DATASET_ADDED` | `datasetAdded` | `src/state/dataStateFacade.js#addDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | `{ index, dataset }`, where dataset is the stored live record. |
 | `DATASET_REMOVED` | `datasetRemoved` | `src/state/dataStateFacade.js#removeDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw index argument. |
 | `CONFIG_UPDATED` | `configUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetConfig`<br>`src/state/dataStateFacade.js#setActiveChartType` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw update argument, or `{ activeChartType }`. |
-| `COLUMNS_UPDATED` | `columnsUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetColumns` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Supplied column-selection value. |
+| `COLUMNS_UPDATED` | `columnsUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetColumns` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Copied, validated column-selection array. |
 | `CHART_ADDED` | `chartAdded` | `src/state/panelStateFacade.js#addChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | `{ id, snapshot }`. |
-| `CHART_REMOVED` | `chartRemoved` | `src/state/panelStateFacade.js#removeChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | Normalized finite chart id. |
+| `CHART_REMOVED` | `chartRemoved` | `src/state/panelStateFacade.js#removeChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | Normalized non-negative safe-integer chart id. |
 | `PANEL_CLEARED` | `panelCleared` | `src/state/panelStateFacade.js#clearPanel` | `src/features/panel/panelController.js#initPanelController` | `undefined`. |
 | `PANEL_BLOCK_ADDED` | `panelBlockAdded` | `src/state/panelStateFacade.js#addPanelBlock` | `src/features/panel/panelController.js#initPanelController` | New live block. |
 | `PANEL_BLOCK_REMOVED` | `panelBlockRemoved` | `src/state/panelStateFacade.js#removePanelBlock` | `src/features/panel/panelController.js#initPanelController` | Raw block id. |
@@ -243,7 +241,7 @@ The `Emitters` and `Production subscriptions` cells use
 | `PANEL_BLOCK_PROPORTIONS_UPDATED` | `panelBlockProportionsUpdated` | `src/state/panelStateFacade.js#updatePanelBlockProportions` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, proportions }`. |
 | `PANEL_BLOCK_HEIGHT_UPDATED` | `panelBlockHeightUpdated` | `src/state/panelStateFacade.js#updatePanelBlockHeight` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, heightPx }` after round/clamp. |
 | `PANEL_BLOCK_BORDER_UPDATED` | `panelBlockBorderUpdated` | `src/state/panelStateFacade.js#updatePanelBlockBorder` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, enabled, color }` with current values. |
-| `PANEL_BLOCK_TEMPLATE_CHANGED` | `panelBlockTemplateChanged` | `src/state/panelStateFacade.js#setPanelBlockTemplate` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, templateId }` after normalization. |
+| `PANEL_BLOCK_TEMPLATE_CHANGED` | `panelBlockTemplateChanged` | `src/state/panelStateFacade.js#setPanelBlockTemplate` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, templateId }` with the exact registered id. |
 | `PANEL_BLOCK_SLOT_ASSIGNED` | `panelBlockSlotAssigned` | `src/state/panelStateFacade.js#assignChartToPanelBlockSlot` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, slotId, chartId }`; id is numeric or `null`. |
 | `SIDEBAR_MODE_CHANGED` | `sidebarModeChanged` | `src/state/uiStateFacade.js#setSidebarMode` | — | Stored mode. |
 | `PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `src/state/uiStateFacade.js#setPreviewRows` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Stored rows value. |
@@ -379,7 +377,7 @@ SQLite schema version `1` contains:
 | `datasets` | `id`, `position`, `name`, `columns_json`, `selected_columns_json`, `chart_config_json`, `precomputed_stats_json`, `size_label`, `fingerprint`, `fingerprint_algorithm` | Dataset metadata/config and deterministic identity, excluding row payloads. |
 | `app_state` | `key`, `doc` | JSON documents for `data_state` with `activeDatasetId`, and `panel` without chart payload arrays. |
 | `dataset_payload` | `dataset_id`, `rows_json` | Dataset rows keyed by dataset id. |
-| `panel_snapshot_payload` | `chart_id`, `rows_json`, `columns_json` | Frozen panel chart rows and columns keyed by chart id. |
+| `panel_snapshot_payload` | `chart_id`, `rows_json`, `columns_json` | Captured panel chart rows and columns keyed by chart id. |
 
 `blobBackend` serializes the complete SQLite database to one byte image and
 stores it at the IndexedDB identifier above. Full exports retain both payload
@@ -397,8 +395,9 @@ Normal boot hydration is:
    deserialize, and read the five schema tables.
 3. When there is no SQLite project and the migration marker is absent, attempt
    the one-time legacy raw-IndexedDB import.
-4. Validate dataset records, canonicalize their chart config in memory, apply
-   the injected panel-spec transform, and read `chive.ui`.
+4. Validate dataset records, sanitize selected columns, canonicalize chart
+   config in memory, apply the injected panel-spec transform, and read
+   `chive.ui`.
 5. Call `replaceAllState` only when normalized project content or UI prefs are
    hydratable.
 
@@ -438,9 +437,8 @@ since the last successful write can therefore be lost on an interrupted close.
 ### Import, Clear, And Local Preferences
 
 `exportProject` returns SQLite bytes and a generated filename. Full project
-import requires at least one `meta` row and rejects a mismatched `format` or
-`schema_version` when those keys are present; it does not currently require
-both keys to exist. **Audit flag: metadata-validation gap.** Import then rejects
+import requires both `format = chive-project` and `schema_version = 1`; either
+missing key or any mismatched value rejects the file. Import then rejects
 work-only content, normalizes the snapshot, persists it as the browser's
 current project, and only afterward replaces in-memory data/panel state.
 Locale and browser settings are not project data.
@@ -479,7 +477,8 @@ A chart snapshot has `{ id, name, type, config, dataSnapshot, columnsSnapshot,
 metadata, metaSummary, createdAt }`. It is a render specification, not
 pre-rendered SVG or canvas output. The production capture flow supplies detached
 structured-cloned data/config, but the state objects are not `Object.freeze`d;
-live getters still expose them under the read-only policy.
+live getters still expose them under the read-only policy. Dataset removal
+preserves these captures and their legacy/per-block slot assignments.
 
 1. `panelController.addChartToPanel` verifies the type against the panel
    registry, reads the active dataset, merges chart defaults, resolves and

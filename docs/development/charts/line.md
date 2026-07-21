@@ -332,7 +332,7 @@ markers, and `<g>` axes with cloned gridline `<line>`s. The panel exporter clone
 - **Invalid dates** are dropped during point building; a degenerate numeric X domain is padded.
 - **Zero baseline**: positive or mixed-positive data includes 0; all-negative data keeps a
   negative-only domain.
-- **Stateless renders** and **frozen panel snapshots** behave as for every chart.
+- **Stateless renders** and **detached panel captures** behave as for every chart.
 
 Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-line*`);
 Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
@@ -353,7 +353,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   building and the X/Y validation and ghost-color enable logic.
 - [workspaceSection.test.js](../../../tests/charts/line/workspaceSection.test.js) covers
   workspace visibility, axis-type forwarding, and empty-state mapping.
-- [panelAdapter.test.js](../../../tests/charts/line/panelAdapter.test.js) covers frozen
+- [panelAdapter.test.js](../../../tests/charts/line/panelAdapter.test.js) covers captured
   snapshot mapping, axis-type derivation, and failure passthrough.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.

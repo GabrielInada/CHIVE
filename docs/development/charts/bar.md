@@ -154,7 +154,8 @@ flowchart TB
 The renderer is **stateless**: every call wipes the container
 (`container.replaceChildren()`) and rebuilds the whole SVG from scratch. Re-rendering is the
 only update mechanism. The rows handed in are already global-filtered; the renderer does its
-own grouping on top of them. (Panel snapshots are frozen `structuredClone`s captured when
+own grouping on top of them. (Panel config, rows, and columns are detached
+`structuredClone` captures made when
 the chart was added; see [Architecture reference](../architecture-reference.md) and the
 TIN doc's [section 6.2](tin.md) for the snapshot lifecycle.)
 
@@ -286,9 +287,9 @@ validates the request, then the
 [panel registry](../../../src/charts/registries/panel.js) dispatches bar snapshots to
 [panelAdapter.js](../../../src/charts/bar/panelAdapter.js). The adapter passes
 `spec.config` and `spec.dataSnapshot` through the same presentation flow and renderer.
-The one difference is that panel charts pass a frozen empty
-`filterCallbacks`, so panel tooltips do **not** offer click-to-filter actions (those would
-mutate the live dataset, but a snapshot is frozen).
+The one difference is that panel charts omit `filterCallbacks`; the shared presentation
+flow uses a frozen empty default, so panel tooltips do **not** offer click-to-filter actions
+(those would mutate the live dataset, while panel rendering is read-only).
 
 ---
 
@@ -442,7 +443,7 @@ screen shows are what gets serialized.
 - **Invalid colors** fall back through `isValidHexColor` to the chart's default color.
 - **Stateless renders**: the container is fully wiped each call, so any caller can re-render
   at any time safely.
-- **Panel snapshots are frozen**: a saved panel bar chart does not track later edits to the
+- **Panel captures are detached**: a saved panel bar chart does not track later edits to the
   active dataset's config, and its tooltips carry no filter actions.
 
 The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys

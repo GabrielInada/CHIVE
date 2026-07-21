@@ -10,6 +10,27 @@ export function readRepoFile(relativePath) {
 	return readFileSync(path.join(repoRoot, relativePath), 'utf8');
 }
 
+export function readRepoTextFiles(relativeRoots, extensions) {
+	const allowedExtensions = new Set(extensions);
+	const files = [];
+	function visit(relativePath) {
+		const absolutePath = path.join(repoRoot, relativePath);
+		for (const entry of readdirSync(absolutePath, { withFileTypes: true })) {
+			const childPath = path.join(relativePath, entry.name);
+			if (entry.isDirectory()) {
+				visit(childPath);
+			} else if (allowedExtensions.has(path.extname(entry.name))) {
+				files.push({
+					path: toPosix(childPath),
+					content: readRepoFile(childPath),
+				});
+			}
+		}
+	}
+	for (const relativeRoot of relativeRoots) visit(relativeRoot);
+	return files;
+}
+
 export function extractJsonContract(markdown, contractName) {
 	const escaped = contractName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 	const match = markdown.match(new RegExp(

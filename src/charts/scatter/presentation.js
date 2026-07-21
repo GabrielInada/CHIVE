@@ -19,7 +19,7 @@ import { renderScatterPlot } from './renderers/svg.js';
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 
 /**
- * Render a scatter plot from a live config block or frozen panel snapshot.
+ * Render a scatter plot from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
  * @param {Array<Object<string, *>>} rows

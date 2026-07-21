@@ -1,8 +1,9 @@
 import { emitStateChange, onStateChange, STATE_EVENTS } from './stateEvents.js';
 import { createPanelBlockModel } from '../domain/panel/panelBlockModel.js';
+import { normalizeTemplateId } from '../domain/panel/layoutTemplates.js';
 import { canonicalizeChartConfig } from '../domain/charts/chartConfig.js';
-import { PREVIEW_DEFAULT_ROWS, PREVIEW_MIN_ROWS } from '../config/limits.js';
-import { getDatasetColumnNames } from '../domain/datasets/columns.js';
+import { PREVIEW_DEFAULT_ROWS, PREVIEW_MAX_ROWS, PREVIEW_MIN_ROWS } from '../config/limits.js';
+import { getDatasetColumnNames, normalizeColumnNameList } from '../domain/datasets/columns.js';
 import { createDataStateFacade } from './dataStateFacade.js';
 import { createUiStateFacade } from './uiStateFacade.js';
 import { createPanelStateFacade } from './panelStateFacade.js';
@@ -74,9 +75,25 @@ function createPanelBlock(templateId = 'template-2col') {
 }
 
 /**
- * Insert a default `template-2col` block when `panel.blocks` is empty (or has
- * been replaced by a non-array). Called from every panel-facade method that
- * touches `blocks`, this is why several "getter" methods on the facade
+ * Keep the persisted compatibility field aligned with the authoritative first
+ * block. Template ids reaching this boundary are canonicalized before either
+ * field is written.
+ *
+ * @private
+ */
+function syncPanelLayout() {
+	const firstBlock = appState.panel.blocks[0];
+	if (!firstBlock) return;
+	const templateId = normalizeTemplateId(firstBlock.templateId);
+	firstBlock.templateId = templateId;
+	appState.panel.layout = templateId;
+}
+
+/**
+ * Insert a block using the canonical compatibility layout when `panel.blocks`
+ * is empty (or has been replaced by a non-array), then synchronize
+ * `panel.layout` with the first block. Called from every panel-facade method
+ * that touches `blocks`, this is why several "getter" methods on the facade
  * have a mutation as a side effect.
  *
  * @private
@@ -86,8 +103,9 @@ function ensureDefaultPanelBlock() {
 		appState.panel.blocks = [];
 	}
 	if (appState.panel.blocks.length === 0) {
-		appState.panel.blocks.push(createPanelBlock('template-2col'));
+		appState.panel.blocks.push(createPanelBlock(normalizeTemplateId(appState.panel.layout)));
 	}
+	syncPanelLayout();
 }
 
 /**
@@ -108,6 +126,7 @@ const panelState = createPanelStateFacade({
 	emitStateChange,
 	createPanelBlock,
 	ensureDefaultPanelBlock,
+	syncPanelLayout,
 	sanitizeChartName,
 	panelBlockLimit: PANEL_BLOCK_LIMIT,
 	panelBlockMinHeight: PANEL_BLOCK_MIN_HEIGHT,
@@ -135,9 +154,10 @@ export function getState() {
  * The returned object is a fresh envelope, but `datasets`, `panel`, and `ui`
  * are the real state references. Do not mutate them, treat this exactly like
  * {@link getAllDatasets} / {@link getPanelCharts}. The reference-identity
- * dedup in the worker backend is sound only because dataset `rows` and chart
- * `dataSnapshot`/`columnsSnapshot` are immutable per id (changing data means
- * remove+add with a new array, never an in-place edit).
+ * dedup in the worker backend relies on sanctioned writes replacing dataset
+ * `rows` and chart `dataSnapshot`/`columnsSnapshot` references rather than
+ * editing those arrays in place. Mutating a live getter result violates that
+ * contract and can invalidate persistence deduplication.
  *
  * @returns {AppState} Live-reference view. Do not mutate.
  */
@@ -179,8 +199,8 @@ export function getAllDatasets() {
  * Switch the active dataset.
  *
  * @param {number} index - Zero-based index, or `-1` to deselect.
- * @throws {Error} When `index < -1` or `index >= datasets.length`.
- * @fires STATE_EVENTS.ACTIVE_DATASET
+ * @throws {Error} When `index` is not an integer, is less than `-1`, or is beyond the datasets array.
+ * @fires STATE_EVENTS.ACTIVE_DATASET - Only when the index changes.
  */
 export function setActiveDataset(index) {
 	return dataState.setActiveDataset(index);
@@ -200,11 +220,11 @@ export function addDataset(dataset) {
 }
 
 /**
- * Remove a dataset. Also clears `panel.charts` and the legacy `panel.slots`
- * map because snapshots may reference columns/rows that no longer exist.
+ * Remove a dataset while preserving detached panel captures and all of their
+ * slot assignments.
  *
- * @param {number} index
- * @throws {Error} When `index` is out of range.
+ * @param {number} index - In-range integer dataset index.
+ * @throws {Error} When `index` is not an in-range integer.
  * @fires STATE_EVENTS.DATASET_REMOVED
  */
 export function removeDataset(index) {
@@ -223,11 +243,13 @@ export function updateActiveDatasetConfig(updates) {
 }
 
 /**
- * Replace the active dataset's selected-column list. No-op when no dataset
- * is active.
+ * Replace the active dataset's selected-column list with a copied array of
+ * unique declared names. No-op when no dataset is active or the ordered list
+ * is unchanged.
  *
  * @param {string[]} columnNames
- * @fires STATE_EVENTS.COLUMNS_UPDATED
+ * @throws {Error} When an active dataset exists and the list contains duplicates or undeclared/non-string names.
+ * @fires STATE_EVENTS.COLUMNS_UPDATED - Only when the ordered list changes.
  */
 export function updateActiveDatasetColumns(columnNames) {
 	return dataState.updateActiveDatasetColumns(columnNames);
@@ -285,10 +307,11 @@ export function addChartSnapshot(chartSnapshot) {
 
 /**
  * Remove a chart snapshot and clear references to it from every slot map.
- * No-op (no event) when `chartId` is non-numeric.
+ * A well-formed id with no matching snapshot is a no-op.
  *
- * @param {number | string} chartId
- * @fires STATE_EVENTS.CHART_REMOVED
+ * @param {number | string} chartId - Non-negative safe integer or decimal-integer DOM string.
+ * @throws {Error} When `chartId` is malformed.
+ * @fires STATE_EVENTS.CHART_REMOVED - Only when a matching snapshot is removed.
  */
 export function removeChartSnapshot(chartId) {
 	return panelState.removeChartSnapshot(chartId);
@@ -333,6 +356,7 @@ export function validatePanelSlots() {
  *
  * @param {PanelTemplateId} [templateId='template-2col']
  * @returns {string | null} New block id, or `null` when at the limit.
+ * @throws {Error} When `templateId` is not an exact registry id.
  * @fires STATE_EVENTS.PANEL_BLOCK_ADDED
  */
 export function addPanelBlock(templateId = 'template-2col') {
@@ -344,7 +368,7 @@ export function addPanelBlock(templateId = 'template-2col') {
  * empty the panel.
  *
  * @param {string} blockId
- * @fires STATE_EVENTS.PANEL_BLOCK_REMOVED
+ * @fires STATE_EVENTS.PANEL_BLOCK_REMOVED - Only when a matching block is removed.
  */
 export function removePanelBlock(blockId) {
 	return panelState.removePanelBlock(blockId);
@@ -354,19 +378,22 @@ export function removePanelBlock(blockId) {
  * Reorder a block. `targetIndex` is clamped to a valid range.
  *
  * @param {string} blockId
- * @param {number} targetIndex
- * @fires STATE_EVENTS.PANEL_BLOCK_MOVED
+ * @param {number} targetIndex - Integer clamped to a valid range.
+ * @throws {Error} When the block exists and `targetIndex` is not an integer.
+ * @fires STATE_EVENTS.PANEL_BLOCK_MOVED - Only when the block's final index changes.
  */
 export function movePanelBlock(blockId, targetIndex) {
 	return panelState.movePanelBlock(blockId, targetIndex);
 }
 
 /**
- * Update split proportions. Each value clamped to `[20, 80]`.
+ * Atomically validate and update template-supported split proportions. Finite
+ * numeric values are clamped to `[20, 80]`.
  *
  * @param {string} blockId
  * @param {Partial<PanelBlockProportions>} partialProportions
- * @fires STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED
+ * @throws {Error} When the block exists and the patch shape, a key, or a value is invalid.
+ * @fires STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED - Only when a value changes.
  */
 export function updatePanelBlockProportions(blockId, partialProportions) {
 	return panelState.updatePanelBlockProportions(blockId, partialProportions);
@@ -377,18 +404,20 @@ export function updatePanelBlockProportions(blockId, partialProportions) {
  *
  * @param {string} blockId
  * @param {number} heightPx
- * @fires STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED
+ * @throws {Error} When the block exists and `heightPx` is not a finite number.
+ * @fires STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED - Only when the rounded/clamped value changes.
  */
 export function updatePanelBlockHeight(blockId, heightPx) {
 	return panelState.updatePanelBlockHeight(blockId, heightPx);
 }
 
 /**
- * Toggle and/or recolor a block's border. Invalid colors are silently ignored.
+ * Atomically validate and update a block's optional border fields.
  *
  * @param {string} blockId
  * @param {{ enabled?: boolean, color?: string }} [options]
- * @fires STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED
+ * @throws {Error} When the block exists and the patch shape or a supplied field is invalid.
+ * @fires STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED - Only when a value changes.
  */
 export function updatePanelBlockBorder(blockId, options = {}) {
 	return panelState.updatePanelBlockBorder(blockId, options);
@@ -400,8 +429,9 @@ export function updatePanelBlockBorder(blockId, options = {}) {
  *
  * @param {string} blockId
  * @param {PanelTemplateId} templateId
- * @returns {boolean} `true` on success, `false` when the block was not found.
- * @fires STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED
+ * @returns {boolean} `true` for an existing block, including same-template no-op; `false` when not found.
+ * @throws {Error} When the block exists and `templateId` is not registered.
+ * @fires STATE_EVENTS.PANEL_BLOCK_TEMPLATE_CHANGED - Only when the template changes.
  */
 export function setPanelBlockTemplate(blockId, templateId) {
 	return panelState.setPanelBlockTemplate(blockId, templateId);
@@ -413,9 +443,9 @@ export function setPanelBlockTemplate(blockId, templateId) {
  *
  * @param {string} blockId
  * @param {string} slotId
- * @param {number | null} chartId
- * @throws {Error} When `chartId` is non-null and no matching snapshot exists.
- * @fires STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED
+ * @param {number | string | null} chartId
+ * @throws {Error} When the block exists and the slot is unsupported, the chart id is malformed, or no matching snapshot exists.
+ * @fires STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED - Only when the assignment changes.
  */
 export function assignChartToPanelBlockSlot(blockId, slotId, chartId) {
 	return panelState.assignChartToPanelBlockSlot(blockId, slotId, chartId);
@@ -437,9 +467,9 @@ export function setSidebarMode(mode) {
 /**
  * Set the preview-table row count.
  *
- * @param {number} rows - Must be ≥ 1.
- * @throws {Error} When `rows < 1`.
- * @fires STATE_EVENTS.PREVIEW_ROWS_CHANGED
+ * @param {number} rows - Integer from 1 through 1000.
+ * @throws {Error} When `rows` is not an integer in the supported range.
+ * @fires STATE_EVENTS.PREVIEW_ROWS_CHANGED - Only when the value changes.
  */
 export function setPreviewRows(rows) {
 	return uiState.setPreviewRows(rows);
@@ -453,12 +483,15 @@ export function getPreviewRows() {
 }
 
 /**
- * Atomically replace the entire state. Bypasses the facades, used by
- * `services/persistence.js` for hydration on boot.
+ * Hydrate the supplied top-level slices synchronously, bypassing ordinary
+ * facade writes. Omitted or non-object slices remain unchanged. Supplied data
+ * and panel slices default missing fields; valid UI fields overwrite their
+ * current values independently. Observers receive one STATE_HYDRATED event
+ * after all supplied writes land.
  *
- * Missing fields fall back to the current default shape so a partial
- * payload (e.g. an older persisted schema) cannot leave the app in a
- * broken state. Emits a single STATE_HYDRATED event after all writes land.
+ * Canonicalization changes in-memory state only. Hydration itself is ignored
+ * by autosave, so persisted bytes are not rewritten until a later dirty event
+ * leads to a successful save.
  *
  * @param {Partial<AppState>} [snapshot={}]
  * @fires STATE_EVENTS.STATE_HYDRATED - Single emit per call.
@@ -474,9 +507,14 @@ export function replaceAllState({ data, panel, ui } = {}) {
 			if (dataset === null || typeof dataset !== 'object' || Array.isArray(dataset)) {
 				return dataset;
 			}
+			const columnNames = getDatasetColumnNames(dataset) || [];
 			return {
 				...dataset,
-				chartConfig: canonicalizeChartConfig(dataset.chartConfig, getDatasetColumnNames(dataset)),
+				selectedColumns: normalizeColumnNameList(dataset.selectedColumns, {
+					allowed: new Set(columnNames),
+					max: Infinity,
+				}),
+				chartConfig: canonicalizeChartConfig(dataset.chartConfig, columnNames),
 			};
 		});
 		const idx = Number.isInteger(data.activeIndex) ? data.activeIndex : -1;
@@ -486,21 +524,26 @@ export function replaceAllState({ data, panel, ui } = {}) {
 	if (panel && typeof panel === 'object') {
 		appState.panel.charts = Array.isArray(panel.charts) ? panel.charts : [];
 		appState.panel.slots = panel.slots && typeof panel.slots === 'object' ? panel.slots : {};
-		appState.panel.layout = typeof panel.layout === 'string' ? panel.layout : 'template-2col';
+		const legacyLayout = normalizeTemplateId(panel.layout);
+		appState.panel.layout = legacyLayout;
 
 		// Seed nextBlockId BEFORE synthesizing the fallback default block, so the
-		// synthesized block uses the requested id (and nextBlockId auto-increments
-		// past it) rather than whatever value leaked in from a prior call.
+		// synthesized block uses either the requested id or a fresh default rather
+		// than a counter leaked from a prior partial hydration.
 		const hasProvidedNextBlockId = Number.isInteger(panel.nextBlockId) && panel.nextBlockId > 0;
-		if (hasProvidedNextBlockId) {
-			appState.panel.nextBlockId = panel.nextBlockId;
-		}
-		appState.panel.blocks = Array.isArray(panel.blocks) && panel.blocks.length > 0
+		appState.panel.nextBlockId = hasProvidedNextBlockId ? panel.nextBlockId : 1;
+		const suppliedBlocks = Array.isArray(panel.blocks)
 			? panel.blocks
-			: [createPanelBlock('template-2col')];
+				.filter(block => block !== null && typeof block === 'object' && !Array.isArray(block))
+				.map(block => ({ ...block, templateId: normalizeTemplateId(block.templateId) }))
+			: [];
+		appState.panel.blocks = suppliedBlocks.length > 0
+			? suppliedBlocks
+			: [createPanelBlock(legacyLayout)];
 		if (!hasProvidedNextBlockId) {
 			appState.panel.nextBlockId = appState.panel.blocks.length + 1;
 		}
+		syncPanelLayout();
 
 		appState.panel.nextChartId = Number.isInteger(panel.nextChartId) && panel.nextChartId >= 0
 			? panel.nextChartId
@@ -511,7 +554,11 @@ export function replaceAllState({ data, panel, ui } = {}) {
 		if (['data', 'viz', 'panel'].includes(ui.sidebarMode)) {
 			appState.ui.sidebarMode = ui.sidebarMode;
 		}
-		if (Number.isInteger(ui.previewRows) && ui.previewRows >= PREVIEW_MIN_ROWS) {
+		if (
+			Number.isInteger(ui.previewRows)
+			&& ui.previewRows >= PREVIEW_MIN_ROWS
+			&& ui.previewRows <= PREVIEW_MAX_ROWS
+		) {
 			appState.ui.previewRows = ui.previewRows;
 		}
 	}

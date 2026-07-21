@@ -1,7 +1,7 @@
 /**
  * CHIVE panel chart-rendering bridge.
  *
- * The panel slot lifecycle delegates here with a frozen chart snapshot. Chart
+ * The panel slot lifecycle delegates here with a captured chart snapshot. Chart
  * implementation lookup and adapter wiring live in the panel-only registry;
  * this bridge owns argument validation and the public result envelope.
  *
@@ -16,7 +16,7 @@ import { fail } from '../../../utils/result.js';
  * Render a chart snapshot into `container` by dispatching on `spec.type`.
  *
  * @param {HTMLElement} container - Mount point for SVG or canvas output.
- * @param {ChartSnapshot} spec - Frozen snapshot built by `addChartSnapshot`.
+ * @param {ChartSnapshot} spec - Saved capture built by `addChartSnapshot`; treated as read-only.
  * @returns {Result} Renderer result, `invalid-args`, or `unknown-type`.
  */
 export function renderChartFromSpec(container, spec) {

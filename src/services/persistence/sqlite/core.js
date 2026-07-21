@@ -100,10 +100,13 @@ export function assertMeta(db, { requireMeta = false } = {}) {
 		return;
 	}
 	const meta = Object.fromEntries(rows.map(row => [row.key, row.value]));
-	if (meta.format && meta.format !== SQLITE_FORMAT) {
+	if (requireMeta && (!Object.hasOwn(meta, 'format') || !Object.hasOwn(meta, 'schema_version'))) {
+		throw new Error('Missing CHIVE SQLite project metadata');
+	}
+	if (Object.hasOwn(meta, 'format') && meta.format !== SQLITE_FORMAT) {
 		throw new Error(`Unsupported CHIVE SQLite format: ${meta.format}`);
 	}
-	if (meta.schema_version && meta.schema_version !== SQLITE_SCHEMA_VERSION) {
+	if (Object.hasOwn(meta, 'schema_version') && meta.schema_version !== SQLITE_SCHEMA_VERSION) {
 		throw new Error(`Unsupported CHIVE SQLite schema version: ${meta.schema_version}`);
 	}
 }

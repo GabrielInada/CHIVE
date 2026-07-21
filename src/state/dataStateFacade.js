@@ -95,13 +95,14 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 * Switch the active dataset.
 	 *
 	 * @param {number} index - Zero-based index into the datasets array, or `-1` to deselect.
-	 * @throws {Error} When `index < -1` or `index >= datasets.length`.
-	 * @fires STATE_EVENTS.ACTIVE_DATASET
+	 * @throws {Error} When `index` is not an integer, is less than `-1`, or is beyond the datasets array.
+	 * @fires STATE_EVENTS.ACTIVE_DATASET - Only when the active index changes.
 	 */
 	function setActiveDataset(index) {
-		if (index < -1 || index >= appState.data.datasets.length) {
+		if (!Number.isInteger(index) || index < -1 || index >= appState.data.datasets.length) {
 			throw new Error(`Invalid dataset index: ${index}`);
 		}
+		if (appState.data.activeIndex === index) return;
 		appState.data.activeIndex = index;
 		emitStateChange(STATE_EVENTS.ACTIVE_DATASET, index);
 	}
@@ -137,17 +138,17 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	}
 
 	/**
-	 * Remove a dataset. **Cascading side effect:** also clears every panel
-	 * snapshot (`panel.charts`) and the legacy slot map (`panel.slots`),
-	 * because snapshots can reference columns and rows that no longer exist
-	 * after removal. The active index is shifted back by one when needed.
+	 * Remove a dataset. Panel chart snapshots and their slot assignments are
+	 * preserved: the production capture path stores detached config, rows, and
+	 * columns so a saved chart does not depend on the source dataset remaining
+	 * loaded. The active index is shifted back by one when needed.
 	 *
-	 * @param {number} index
-	 * @throws {Error} When `index` is out of range.
+	 * @param {number} index - In-range integer dataset index.
+	 * @throws {Error} When `index` is not an in-range integer.
 	 * @fires STATE_EVENTS.DATASET_REMOVED
 	 */
 	function removeDataset(index) {
-		if (index < 0 || index >= appState.data.datasets.length) {
+		if (!Number.isInteger(index) || index < 0 || index >= appState.data.datasets.length) {
 			throw new Error(`Invalid dataset index: ${index}`);
 		}
 		appState.data.datasets.splice(index, 1);
@@ -155,10 +156,6 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (appState.data.activeIndex >= index) {
 			appState.data.activeIndex = Math.max(-1, appState.data.activeIndex - 1);
 		}
-
-		// Clear panel snapshots tied to removed dataset context.
-		appState.panel.charts = [];
-		appState.panel.slots = {};
 
 		emitStateChange(STATE_EVENTS.DATASET_REMOVED, index);
 	}
@@ -191,18 +188,39 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	}
 
 	/**
-	 * Replace the active dataset's selected-column list. No-op when no
-	 * dataset is active.
+	 * Replace the active dataset's selected-column list. The list must contain
+	 * distinct names declared by the active dataset. The stored array is a copy
+	 * so later caller mutation cannot change state. No-op when no dataset is
+	 * active or when the ordered selection is unchanged.
 	 *
-	 * @param {string[]} columnNames - Subset of the dataset's `columns[].name` values.
-	 * @fires STATE_EVENTS.COLUMNS_UPDATED
+	 * @param {string[]} columnNames - Subset of names resolved from the dataset's column declarations (normally `columns[].name`; tolerated bare-string declarations also count).
+	 * @throws {Error} When an active dataset exists and the value is not an array of unique declared column names.
+	 * @fires STATE_EVENTS.COLUMNS_UPDATED - Only when the selection changes.
 	 */
 	function updateActiveDatasetColumns(columnNames) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
 
-		dataset.selectedColumns = columnNames;
-		emitStateChange(STATE_EVENTS.COLUMNS_UPDATED, columnNames);
+		const allowed = new Set(getDatasetColumnNames(dataset) || []);
+		const seen = new Set();
+		const isValid = Array.isArray(columnNames) && columnNames.every(name => {
+			if (typeof name !== 'string' || !allowed.has(name) || seen.has(name)) return false;
+			seen.add(name);
+			return true;
+		});
+		if (!isValid) {
+			throw new Error('Invalid selected columns: expected unique declared column names');
+		}
+
+		const hasCurrentList = Array.isArray(dataset.selectedColumns);
+		const current = hasCurrentList ? dataset.selectedColumns : [];
+		const unchanged = hasCurrentList && current.length === columnNames.length
+			&& current.every((name, index) => name === columnNames[index]);
+		if (unchanged) return;
+
+		const nextColumns = [...columnNames];
+		dataset.selectedColumns = nextColumns;
+		emitStateChange(STATE_EVENTS.COLUMNS_UPDATED, nextColumns);
 	}
 
 	/**

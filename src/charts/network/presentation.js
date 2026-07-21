@@ -20,7 +20,7 @@ import { renderNetworkGraph } from './renderers/svg.js';
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 
 /**
- * Render a network graph from a live config block or frozen panel snapshot.
+ * Render a network graph from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
  * @param {Array<Object<string, *>>} rows
