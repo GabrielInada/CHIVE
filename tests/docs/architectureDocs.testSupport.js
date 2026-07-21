@@ -79,7 +79,7 @@ export function splitContractSites(value) {
 
 function headingSlug(heading) {
 	return heading
-		.replace(/<[^>]*>/g, '')
+		.replace(/[<>]/g, '')
 		.replace(/`/g, '')
 		.trim()
 		.toLowerCase()
