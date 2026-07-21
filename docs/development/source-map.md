@@ -7,13 +7,15 @@ roles; use this file when you need to place or name a file.
 | Field | Value |
 |---|---|
 | Audience | Contributors deciding where a file belongs and what to name it. |
-| Source of truth | Source tree layout, naming vocabulary, code placement rules, and structure direction. |
+| Source of truth | Source tree layout, naming vocabulary, code placement rules, and enforced composition/leaf boundaries. |
 | Update when | Directories move, a naming role is added or retired, or placement rules change. |
 
 ## Current Source Tree
 
-CHIVE is served raw from `src/`, so the tree below is both the source layout
-and the deployed layout. Roles, not file history, decide where a file belongs.
+CHIVE's browser modules can be served raw from `src/` alongside the root HTML
+and `vendor/`, while Vite can produce the optional bundle. The tree below is
+therefore both the source layout and the raw-static import layout. Roles, not
+file history, decide where a file belongs.
 
 | Path | Role |
 |---|---|
@@ -34,7 +36,7 @@ and the deployed layout. Roles, not file history, decide where a file belongs.
 | `src/features/datasetWorkspace/views/` | Callback-driven, state-read-only workspace rendering. `fileListView.js` owns file-list search, pagination, and join/preset orchestration over the item-only `fileListItems.js`; `emptyWorkspaceView.js` restores the empty upload surface; the remaining files own tabs, previews, statistics, controls, and chart composition. |
 | `src/features/datasetWorkspace/filters/` | Feature callback wiring around pure filter rules. `globalFilterActions.js` builds the chart-tooltip actions and read lookups consumed by `workspaceView.js`; product filter semantics stay under `domain/filters/`. |
 | `src/features/panel/` | Panel feature package: `panelController.js` owns user intent, facade writes, bus subscriptions, and render coordination; `views/`, `layout/`, `slots/`, and `export/` own presentation mechanics; `domIds.js` owns the static panel-canvas contract and the shared optional layout-selector ID. The selector is not present in current static HTML, so it is not part of HTML parity coverage. Durable state remains under `state/`; pure layout templates and the block model remain under `domain/panel/`. |
-| `src/charts/` | Chart presentation metadata (`catalog.js`, derived from definitions and `previews.js`), static workspace contracts (`workspaceDomIds.js`, derived from definitions), independent controls/workspace/panel lookup under `registries/`, D3/SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`, `charts/network/`, and `charts/tin/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/` (SVG scaffold, tooltip, control factories/grouping, and the container dispose lifecycle). A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
+| `src/charts/` | Chart presentation metadata (`catalog.js`, derived from definitions and `previews.js`), static workspace contracts (`workspaceDomIds.js`, derived from definitions), independent controls/workspace/panel lookup under `registries/`, SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`, `charts/network/`, and `charts/tin/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/` (SVG scaffold, tooltip, control factories/grouping, render budgeting, and the container dispose lifecycle). Packages use D3 primitives where useful and also own chart-specific aggregation, regression, and TIN logic. A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
 | `src/services/` | Side-effecting services, each crossing a browser boundary: `persistence.js` (the only public persistence import path) with the `persistence/` package behind it, `i18nService.js`, `settingsService.js` (owner of the `chive.settings` localStorage key), `storageService.js` (quota reporting and explicit persistence requests), `presetService.js`, `dataIngestService.js` (the cancellable worker host for file ingest and joins), and `downloads/` for byte and SVG browser-download triggers. The pure dataset algorithms are not here; they live in `domain/datasets/`. |
 | `src/services/persistence/` | Persistence internals, private to the package and reachable only through `services/persistence.js`: lifecycle and backend selection (`lifecycle.js`), snapshot normalization (`snapshot.js`), autosave, dirty tracking, errors, project file naming, and UI prefs. `backends/` holds the storage backends (`workerBackend.js` hosts the worker, `blobBackend.js` does the SQLite work, `legacyIndexedDbReader.js` reads the pre-SQLite format once); `sqlite/core.js` holds the schema and snapshot SQL. `workers/persistWorker.js` is the one permitted internals importer. |
 | `src/data/` | Bundled preset datasets (`presets/`) and `presetCatalog.js`. |
@@ -74,7 +76,7 @@ use Controller for pure renderers, services, registries, or math helpers.
 | If you're adding... | Put it in | Notes |
 |---|---|---|
 | A new chart type | A per-chart package under `src/charts/{name}/` | Use `charts/bar/` as the SVG template or `charts/scatter3d/` as the Three.js/WebGL template, then follow the chart-type checklist below. |
-| A new state field | The relevant domain in `src/state/appState.js` + a facade method that mutates and emits a new `STATE_EVENTS` constant | Add the constant to the domain group in `stateEvents.js`. |
+| A new state field | The relevant domain in `src/state/appState.js` + facade methods for its legal writes | Add a `STATE_EVENTS` constant only when a downstream owner needs to react, then document its emitter and subscriber. |
 | A new DOM event handler | The owning feature's `bindings/` directory, or `src/app/bindings/` when no single feature owns it (or an existing feature controller/manager) | Translate the event into a facade call. Never mutate state directly. Register a global `document`/`window` listener once behind a module-level guard so a repeated `setup*` call cannot stack duplicates. |
 | A shared DOM ID contract | The owning feature's `domIds.js`, or `src/charts/workspaceDomIds.js` for chart workspace blocks | Centralize only IDs used by multiple modules or contracted with static HTML. A single-module HTML contract can stay as an exported constant in that owner module; other single-use selectors stay literal-local. Add static contracts to `tests/staticHtml/parity.test.js`. |
 | A new dataset-workspace view / tab | `src/features/datasetWorkspace/views/` (or `dialogs/`) + a `renderXxx` function composed by `app/renderCoordinator.js` | Read state via getters; pass callbacks for user actions. |
@@ -140,16 +142,15 @@ ownership rather than file history, according to these rules:
   together under `features/datasetWorkspace/`; settings keeps its controller
   and dialog together under `features/settings/`. State ownership and pure
   domain rules stay in their respective layers.
-- Dependency direction is one-way: `entries/` composes `app/`, `app/` composes
-  features, ui, state, and services, and `features/` uses ui, state, and
-  services. Neither `features/` nor `ui/` may import `entries/` or `app/`, and
-  `ui/` (ownerless browser UI mechanics) imports only `config/`, `utils/`,
-  `types.js`, or vendor modules. Lint enforces these boundaries and
-  `tests/lint/boundaries.test.js` keeps them enforced. Reverse edges from
-  general `state/`, `services/`, `workers/`, and `data/` modules into `ui/`
-  are not yet lint-banned; no such edge exists today, and enforcing them
-  requires careful flat-config restatements around `persistWorker.js`, so it
-  is deferred to a later tranche.
+- Composition-layer direction is one-way: `entries/` composes `app/`, while
+  `features/` and `ui/` may not import either composition layer. `ui/`
+  additionally imports only `config/`, `utils/`, `types.js`, or vendor modules.
+  Lint and `tests/lint/boundaries.test.js` enforce those stated edges. This is
+  not a claim that the complete CHIVE module graph is a DAG: state, services,
+  workers, chart integrations, and feature owners have other permitted edges,
+  and reverse edges from general `state/`, `services/`, `workers/`, and `data/`
+  modules into `ui/` are not yet lint-banned. No such reverse edge exists in
+  the current tree.
 - The browser entrypoints (`entries/app.js`, `entries/about.js`) are
   intentionally thin. Initialization order lives in
   `app/applicationInitializer.js`, render scheduler state stays together in
@@ -175,11 +176,12 @@ ownership rather than file history, according to these rules:
   `workspace.js`, and `panel.js` each import only their own adapters and expose
   canonical-order support lists; no universal chart registry joins those
   import graphs.
-- D3 stays the math engine (scales, extents, grouping, hierarchy and layout
-  math, interpolation, data transforms). Three.js owns
-  scene/camera/material/geometry rendering only. The contract:
-  rows/config/columns -> chart model -> D3 math/layout -> SVG or Three
-  renderer.
+- D3 supplies selections, scales, axes, extents, hierarchy/layout utilities,
+  interpolation, and related visualization primitives. CHIVE packages also own
+  custom aggregation, regression, sampling/render-budget, and TIN algorithms.
+  Three.js owns scene/camera/material/geometry rendering for scatter3d. The
+  practical contract is rows/config/columns -> package-specific model and math
+  -> SVG or Three renderer; not every package passes through the same D3 stage.
 - Chart package boundaries: data, options, color, math, and scales files stay pure;
   renderers never import application state or write facades; controls may
   write only through shared chart-control adapters; a workspace

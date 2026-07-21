@@ -25,8 +25,9 @@ When moving, renaming, or adding documentation:
 - Update [Documentation hub](../README.md) when a user-facing or top-level doc
   is added, moved, or renamed.
 - Update [Architecture reference](architecture-reference.md) when adding,
-  removing, or renaming a state field, facade method, `STATE_EVENTS` constant,
-  or production subscriber.
+  removing, or renaming a state field, `appState.js` export, facade method,
+  `STATE_EVENTS` constant, production emitter/subscriber, persistence schema
+  identifier, guarded getter, or supported panel chart.
 
 JSDoc rules:
 
@@ -65,12 +66,13 @@ JSDoc rules:
 The architecture invariants in [CONTRIBUTING.md](../../CONTRIBUTING.md) are
 enforced partly by lint and partly by review.
 
-**The write-facade boundary is enforced by lint.** ESLint (`npm run lint`)
+**The renderer write-facade boundary is enforced by lint.** ESLint (`npm run lint`)
 restricts renderer and DOM-builder files (the dataset workspace views and
 dialogs, the panel feature presentation paths under `src/features/panel/`, and
 the settings dialog; see
 [`eslint.config.js`](../../eslint.config.js))
-to read-only imports from `state/appState.js`: the `get*` functions,
+to the members listed in `APP_STATE_READS` in `eslint.config.js`: the current
+focused getters (excluding persistence-only `getPersistenceSnapshot`),
 `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing
 any write function from those directories is an error. If you need a write from
 a renderer or DOM builder, route it through a feature controller (`panelController.js`,
@@ -104,6 +106,15 @@ Do not write it; route writes through a facade method. When a new mutable-ref
 getter is added to `appState.js`, update both `FACADE_MUTABLE_GETTERS` in
 `eslint.config.js` and `TRACKED_GETTERS` in the local rule.
 
+**State-bus routing is a reviewed contract with drift coverage.** Callers of
+`emitStateChange` and `onStateChange` use `STATE_EVENTS.*`; the registry itself
+necessarily defines the string wire values, and tests may exercise literals.
+Do not synchronously emit from a subscriber. When an owner truly needs a
+follow-up mutation, use a lint-safe deferral such as
+`window.queueMicrotask(() => { ... })`. The only production wildcard
+subscription is in `src/services/persistence/autoSave.js`; feature/render
+owners use typed subscriptions.
+
 **CI runs the full local check on every push and PR** through
 `.github/workflows/lint-and-test.yml`, targeting `main` and `develop`.
 
@@ -135,7 +146,7 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   `src/charts/`; domain owner directories such as `domain/charts/` may depend
   on one another. Both `utils/` and `domain/` reject direct `document` and
   `window` access.
-- **One-way dependency direction.** `entries/` and `app/` are the composition
+- **Composition-layer dependency direction.** `entries/` and `app/` are the composition
   layers: `features/` and `ui/` may not import either of them. `ui/` (ownerless
   browser UI mechanics such as feedback toasts and the dialog focus trap) is a
   strict leaf that imports only `config/`, `utils/`, `types.js`, or vendored
@@ -144,7 +155,8 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   Reverse edges from general `state/`, `services/`, `workers/`, and `data/`
   modules into `ui/` are not yet lint-banned; no such edge exists today, and
   enforcing them requires careful flat-config restatements around
-  `persistWorker.js`, so it is deferred to a later tranche.
+  `persistWorker.js`, so it is deferred to a later tranche. These restrictions
+  do not claim that the complete repository import graph is a DAG.
 - **DOM ID ownership.** Centralize an ID only when multiple modules consume it
   or it forms a contract with static HTML. Put that contract in the owner's
   `domIds.js` (`charts/workspaceDomIds.js` for chart workspace blocks). A
@@ -200,7 +212,7 @@ npm test
 ## Debugging
 
 `app/debugApi.js` constructs `window.chiveDebug`, which exposes state getters
-(`getState`, `getActiveDataset`, `getLoadedDatasets`), facade mutators
+(`getState`, `getStateSummary`, `getActiveDataset`, `getLoadedDatasets`), facade mutators
 (`updateDatasetColumns`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`,
 `showError`), and state-log helpers (`enableStateLog`, `disableStateLog`,
 `getStateLog`, `clearStateLog`).
