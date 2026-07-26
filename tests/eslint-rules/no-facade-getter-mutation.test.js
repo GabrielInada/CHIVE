@@ -24,7 +24,7 @@ ruleTester.run('no-facade-getter-mutation', rule, {
 		// KEY false-positive lock: DOM HTMLElement.dataset writes are unrelated
 		// to the facade alias and must not be flagged, even alongside a facade
 		// read in the same module.
-		`${FROM_APPSTATE}\nconst d = getActiveDataset();\nconst label = d.name;\nconst el = document.createElement('div');\nel.dataset.idx = '1';\nel.dataset.acao = 'x';`,
+		`${FROM_APPSTATE}\nconst d = getActiveDataset();\nconst label = d.name;\nconst el = document.createElement('div');\nel.dataset.idx = '1';\nel.dataset.action = 'x';`,
 
 		// Mutation of a non-facade local.
 		`const obj = {};\nobj.x = 1;\nobj.items = [];`,

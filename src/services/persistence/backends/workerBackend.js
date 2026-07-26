@@ -88,9 +88,9 @@ const chartColsKey = id => `chart:${id}:cols`;
 /**
  * @param {Object} [options]
  * @param {() => Worker} [options.workerFactory] - Spawns the persist worker (tests inject a mock).
- * @param {() => { persist: Function, hydrate: Function, clear: Function, exportBytes?: Function, importBytes?: Function }} [options.fallbackBackendFactory] - Main-thread fallback (tests inject a unique blobBackend).
+ * @param {() => { persist: Function, hydrate: Function, clear: Function, exportBytes?: Function, importBytes?: Function }} [options.fallbackBackendFactory] - Main-thread fallback (tests inject a unique blobBackend). Its `clear` may report an outcome, which is forwarded unchanged.
  * @param {number} [options.timeoutMs] - Watchdog timeout. Generous by default so a big first save on a slow device does not false-trip.
- * @returns {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes: (snapshot: Partial<AppState>, options?: { workOnly?: boolean }) => Promise<Uint8Array>, importBytes: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<void> }}
+ * @returns {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes: (snapshot: Partial<AppState>, options?: { workOnly?: boolean }) => Promise<Uint8Array>, importBytes: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<{ ok: boolean, reason?: string } | null> }}
  */
 export function createWorkerBackend({ workerFactory, fallbackBackendFactory, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
 	const spawn = workerFactory || defaultWorkerFactory;
@@ -338,7 +338,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			} else if (entry.record.op === 'clear') {
 				sentPayloads.clear();
 			}
-			entry.resolve(['hydrate', 'export', 'import'].includes(entry.record.op) ? (msg.result ?? null) : undefined);
+			entry.resolve(['hydrate', 'export', 'import', 'clear'].includes(entry.record.op) ? (msg.result ?? null) : undefined);
 			return;
 		}
 
@@ -476,8 +476,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 				const result = await fb.importBytes(entry.record.bytes);
 				entry.resolve(result);
 			} else if (op === 'clear') {
-				await fb.clear();
-				entry.resolve(undefined);
+				entry.resolve((await fb.clear()) ?? null);
 			} else {
 				entry.resolve(undefined);
 			}

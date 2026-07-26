@@ -26,10 +26,10 @@ describe('fileListItems', () => {
 		expect(list.querySelectorAll('.file-item').length).toBe(2);
 		expect(list.querySelector('.file-item.active')).toBeTruthy();
 
-		list.querySelector('[data-acao="selecionar"][data-idx="0"]').click();
+		list.querySelector('[data-file-action="select"][data-idx="0"]').click();
 		expect(onSelect).toHaveBeenCalledWith(0);
 
-		list.querySelector('[data-acao="remover"][data-idx="1"]').click();
+		list.querySelector('[data-file-action="remove"][data-idx="1"]').click();
 		expect(onRemove).toHaveBeenCalledWith(1);
 	});
 
@@ -82,7 +82,7 @@ describe('fileListItems', () => {
 
 		list.click();
 		const invalid = document.createElement('button');
-		invalid.dataset.acao = 'selecionar';
+		invalid.dataset.fileAction = 'select';
 		invalid.dataset.idx = 'not-a-number';
 		list.appendChild(invalid);
 		invalid.click();

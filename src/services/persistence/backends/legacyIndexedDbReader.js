@@ -97,16 +97,22 @@ export async function readLegacyState() {
 }
 
 /**
- * Best-effort delete of the old raw-IDB database.
+ * Delete the old raw-IDB database and report what happened.
  *
- * @returns {Promise<void>}
+ * Never rejects: the migration path treats a failed legacy delete as
+ * non-fatal. Callers that surface the result to a user, such as stored-data
+ * clearing, read the returned outcome instead. `blocked` means another
+ * connection still holds the database; the request stays pending until that
+ * connection closes, which may never happen.
+ *
+ * @returns {Promise<{ ok: boolean, reason?: 'blocked' | 'error' | 'unavailable' }>}
  */
 export async function deleteLegacyState() {
-	if (!getIndexedDb()) return;
+	if (!getIndexedDb()) return { ok: false, reason: 'unavailable' };
 	return new Promise(resolve => {
 		const req = getIndexedDb().deleteDatabase(LEGACY_DB_NAME);
-		req.onsuccess = () => resolve();
-		req.onerror = () => resolve();
-		req.onblocked = () => resolve();
+		req.onsuccess = () => resolve({ ok: true });
+		req.onerror = () => resolve({ ok: false, reason: 'error' });
+		req.onblocked = () => resolve({ ok: false, reason: 'blocked' });
 	});
 }

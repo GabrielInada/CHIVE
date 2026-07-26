@@ -49,8 +49,8 @@ export function aggregatePieData(rows, categoryColumn, { measureMode, valueColum
 			entries = entries.slice(0, topN);
 		} else {
 			const head = entries.slice(0, topN);
-			const restValor = entries.slice(topN).reduce((sum, item) => sum + item.value, 0);
-			entries = [...head, { category: otherLabel, value: restValor, isOther: true }];
+			const remainderValue = entries.slice(topN).reduce((sum, item) => sum + item.value, 0);
+			entries = [...head, { category: otherLabel, value: remainderValue, isOther: true }];
 		}
 	}
 

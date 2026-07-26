@@ -16,9 +16,14 @@ import { initSettingsController } from '../features/settings/settingsController.
  * Load i18n, then wire the header settings button. Settings wiring waits for
  * i18n so the dialog and static labels resolve against the active locale.
  *
+ * `onClearStoredData` is supplied only by the application entry. Omitting it is
+ * the About-page case: the settings dialog then leaves its Data section out, so
+ * nothing here reaches persistence or state.
+ *
+ * @param {{ onClearStoredData?: () => Promise<{ ok: boolean, cancelled?: boolean }> }} [options]
  * @returns {Promise<void>}
  */
-export async function initializeSharedPage() {
+export async function initializeSharedPage({ onClearStoredData } = {}) {
 	await initializeI18n();
-	initSettingsController();
+	initSettingsController({ onClearStoredData });
 }

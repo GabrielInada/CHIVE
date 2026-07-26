@@ -69,7 +69,7 @@
   color: var(--tag-dat-fg);
 }
 
-/* Estado ativo nos botões de filtro */
+/* Active state for filter buttons */
 .column-action.active {
   border-color: var(--accent);
   color: var(--accent);

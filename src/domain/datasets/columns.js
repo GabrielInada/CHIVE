@@ -15,12 +15,12 @@
  * @returns {ColumnSpec[]} Subset of `dataset.columns` whose `name` appears in the resolved selection.
  */
 export function filterVisibleColumns(dataset, selectedNames) {
-	const nomesSelecionados = selectedNames || (
+	const resolvedSelectedNames = selectedNames || (
 		Array.isArray(dataset.selectedColumns)
 			? dataset.selectedColumns
-			: dataset.columns.map(coluna => coluna.name)
+			: dataset.columns.map(column => column.name)
 	);
-	return dataset.columns.filter(coluna => nomesSelecionados.includes(coluna.name));
+	return dataset.columns.filter(column => resolvedSelectedNames.includes(column.name));
 }
 
 /**
@@ -30,7 +30,7 @@ export function filterVisibleColumns(dataset, selectedNames) {
  * @returns {ColumnSpec[]}
  */
 export function getNumericColumns(columns) {
-	return columns.filter(coluna => coluna.type === 'number');
+	return columns.filter(column => column.type === 'number');
 }
 
 /**
@@ -40,7 +40,7 @@ export function getNumericColumns(columns) {
  * @returns {string[]}
  */
 export function getNumericColumnNames(columns) {
-	return getNumericColumns(columns).map(coluna => coluna.name);
+	return getNumericColumns(columns).map(column => column.name);
 }
 
 /**
@@ -54,7 +54,7 @@ export function getNumericColumnNames(columns) {
  * @returns {ColumnSpec[]}
  */
 export function getCategoricalColumns(columns) {
-	return columns.filter(coluna => coluna.type !== 'number');
+	return columns.filter(column => column.type !== 'number');
 }
 
 /**
@@ -64,7 +64,7 @@ export function getCategoricalColumns(columns) {
  * @returns {string[]}
  */
 export function getCategoricalColumnNames(columns) {
-	return getCategoricalColumns(columns).map(coluna => coluna.name);
+	return getCategoricalColumns(columns).map(column => column.name);
 }
 
 /**
@@ -124,7 +124,7 @@ export function getDatasetColumnNames(dataset) {
 	// Reuse normalizeColumnNameList so name filtering + de-dup match the rest of
 	// the codebase; the non-array guard above keeps "no context" distinct from [].
 	return normalizeColumnNameList(
-		columns.map(col => (typeof col === 'string' ? col : col?.name)),
+		columns.map(column => (typeof column === 'string' ? column : column?.name)),
 		{ max: Infinity },
 	);
 }
@@ -136,7 +136,7 @@ export function getDatasetColumnNames(dataset) {
  * @returns {ColumnSpec[]}
  */
 export function getDateColumns(columns) {
-	return columns.filter(coluna => coluna.type === 'date');
+	return columns.filter(column => column.type === 'date');
 }
 
 /**
@@ -146,5 +146,5 @@ export function getDateColumns(columns) {
  * @returns {string[]}
  */
 export function getDateColumnNames(columns) {
-	return getDateColumns(columns).map(coluna => coluna.name);
+	return getDateColumns(columns).map(column => column.name);
 }

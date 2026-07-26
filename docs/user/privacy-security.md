@@ -83,7 +83,30 @@ analytics code.
 
 ## Clearing Stored Data
 
-Use the browser's site-data controls for the CHIVE origin you use:
+### From CHIVE
+
+Open **Settings** in the header, then use **Clear stored project data** in the
+Data section. Confirm the prompt. This removes the SQLite project, the old
+`chive-state` database, and `chive.ui`, then sets the `chive.migrated`
+tombstone. It does not remove `chive-locale` or `chive.settings`, so your
+language choice and app settings survive.
+
+The workspace and panel empty immediately, with no page reload. If another
+CHIVE tab is open on the same origin, the browser refuses to delete the project
+database while that tab holds it open. CHIVE reports this instead of claiming
+success; close the other tabs and clear again. A second tab also holds its own
+copy of the project in memory and can save that copy back.
+
+The Data section appears only on the application page. The About page's settings
+dialog does not include it. It is also not a recovery route for a CHIVE that
+fails to start: the settings button lives inside the application shell, which
+stays hidden until startup finishes. If CHIVE does not load at all, use the
+browser site-data controls below.
+
+### From the browser
+
+Use the browser's site-data controls for the CHIVE origin you use. This is the
+broader option: it also removes your language choice and app settings.
 
 1. Open the browser settings for site data or storage.
 2. Search for the deployment origin, such as `apps.roberto.eti.br` or
@@ -96,11 +119,8 @@ preferences, browser-local settings, and the saved language choice for that
 origin. Different deployments and local development URLs have separate browser
 storage because the browser keys storage by origin.
 
-The persistence service's `clearPersistedState()` operation removes the SQLite
-project, the old `chive-state` database, and `chive.ui`, then sets the
-`chive.migrated` tombstone. It does not remove `chive-locale` or
-`chive.settings`. The current UI does not expose this operation as a project-menu
-command.
+The in-app action above is the persistence service's `clearPersistedState()`
+operation. The project menu does not expose it as a separate command.
 
 ## External Network Dependencies
 

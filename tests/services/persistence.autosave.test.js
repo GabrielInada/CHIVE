@@ -114,6 +114,7 @@ describe('persistence', () => {
 			expect(controller.getStatus()).toEqual({
 				dirty: false,
 				saving: false,
+				suspended: false,
 				lastSavedAt: null,
 				lastError: null,
 			});
@@ -316,6 +317,110 @@ describe('persistence', () => {
 			await Promise.resolve();
 			await Promise.resolve();
 			expect(activeController.getStatus().dirty).toBe(false);
+		});
+
+		describe('runWithSavesSuspended()', () => {
+			function backendWithPendingPersist() {
+				const resolvers = [];
+				const persist = vi.fn(() => new Promise(resolve => resolvers.push(resolve)));
+				configurePersistenceBackend({
+					available: () => true,
+					hydrate: async () => null,
+					persist,
+					clear: vi.fn(),
+				});
+				return { persist, resolvers };
+			}
+
+			it('holds the operation until an in-flight save has settled', async () => {
+				const { persist, resolvers } = backendWithPendingPersist();
+				activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+				emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+				const inFlight = activeController.saveNow();
+				expect(persist).toHaveBeenCalledTimes(1);
+
+				const order = [];
+				const done = activeController.runWithSavesSuspended(async () => { order.push('operation'); });
+				await flushMicrotasks();
+
+				// This is the whole point: a wipe that ran here would be undone by the
+				// write already on its way to storage.
+				expect(order).toEqual([]);
+				expect(activeController.getStatus().suspended).toBe(true);
+
+				resolvers[0]();
+				await done;
+				expect(order).toEqual(['operation']);
+				await inFlight;
+			});
+
+			it('settles the follow-up save that a mid-save edit would otherwise start', async () => {
+				const { persist, resolvers } = backendWithPendingPersist();
+				activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+				emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+				const inFlight = activeController.saveNow();
+				// Edited while the first save is in flight. Unsuspended, settling that
+				// save starts a second write from inside its own `finally`, which the
+				// caller of saveNow() has no handle on.
+				emitStateChange(STATE_EVENTS.CHART_ADDED, { chartId: 1 });
+
+				const done = activeController.runWithSavesSuspended(async () => 'wiped');
+				resolvers[0]();
+
+				await expect(done).resolves.toBe('wiped');
+				expect(persist).toHaveBeenCalledTimes(1);
+				await inFlight;
+			});
+
+			it('reschedules work that turned dirty during the suspension instead of dropping it', async () => {
+				vi.useFakeTimers();
+				const persist = vi.fn(async () => {});
+				configurePersistenceBackend({
+					available: () => true,
+					hydrate: async () => null,
+					persist,
+					clear: vi.fn(),
+				});
+				activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+				let releaseOperation;
+				const done = activeController.runWithSavesSuspended(
+					() => new Promise(resolve => { releaseOperation = resolve; }),
+				);
+				await flushMicrotasks();
+
+				// The user closed the settings dialog and kept working while the wipe
+				// was still running.
+				emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
+				await vi.advanceTimersByTimeAsync(2000);
+				expect(persist).not.toHaveBeenCalled();
+
+				releaseOperation();
+				await done;
+				expect(activeController.getStatus().dirty).toBe(true);
+
+				await vi.advanceTimersByTimeAsync(2000);
+				expect(persist).toHaveBeenCalledTimes(1);
+			});
+
+			it('resumes saves when the operation throws', async () => {
+				const persist = vi.fn(async () => {});
+				configurePersistenceBackend({
+					available: () => true,
+					hydrate: async () => null,
+					persist,
+					clear: vi.fn(),
+				});
+				activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
+
+				await expect(activeController.runWithSavesSuspended(async () => {
+					throw new Error('wipe exploded');
+				})).rejects.toThrow('wipe exploded');
+
+				expect(activeController.getStatus().suspended).toBe(false);
+			});
 		});
 	});
 });

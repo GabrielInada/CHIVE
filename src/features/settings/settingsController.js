@@ -9,6 +9,11 @@
  * repaint from `app/renderCoordinator.js`). The dialog component owns the
  * modal DOM; the services own storage.
  *
+ * Stored-data clearing is not connected here. It arrives as an injected
+ * callback from the application entry and is passed straight through, so this
+ * module stays free of persistence and state imports and remains loadable on
+ * the About page.
+ *
  * Initialized via `app/sharedPageInitializer.js` right after i18n, which runs
  * on both `index.html` and `about.html`, so settings work on every page.
  * Listener setup is idempotent and pages without the header button are
@@ -26,8 +31,10 @@ let dialogOpen = false;
 /**
  * Wire the header settings button. Safe to call more than once (a bound
  * button is not re-bound) and on documents without the button.
+ *
+ * @param {{ onClearStoredData?: () => Promise<{ ok: boolean, cancelled?: boolean }> }} [options] - Supplied by the application page only; the dialog hides its Data section without it.
  */
-export function initSettingsController() {
+export function initSettingsController({ onClearStoredData } = {}) {
 	const button = document.getElementById(SETTINGS_IDS.button);
 	if (!button) return;
 	if (button.dataset.settingsBound === 'true') return;
@@ -44,6 +51,7 @@ export function initSettingsController() {
 			onTinColorRenderingChange: setTinColorRendering,
 			onGetStorageStatus: getStorageStatus,
 			onRequestPersistentStorage: requestPersistentStorage,
+			onClearStoredData,
 			onClose: () => {
 				dialogOpen = false;
 				button.setAttribute('aria-expanded', 'false');

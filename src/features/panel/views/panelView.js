@@ -72,24 +72,24 @@ function handleDesktopModeChange() {
  * @param {(chartId: number | string) => void} removeChartFromPanel - Callback for the per-item remove button; usually `panelController.removeChartFromPanel`.
  */
 export function renderSidebarPanel(removeChartFromPanel) {
-	const lista = document.getElementById('panel-chart-list');
-	if (!lista) return;
+	const chartList = document.getElementById('panel-chart-list');
+	if (!chartList) return;
 	latestSidebarRemove = removeChartFromPanel;
 
-	teardownAllSlots(lista);
+	teardownAllSlots(chartList);
 
 	const charts = getPanelCharts();
 	if (charts.length === 0) {
-		lista.replaceChildren();
+		chartList.replaceChildren();
 		const emptyDiv = document.createElement('div');
 		emptyDiv.className = 'panel-empty';
 		emptyDiv.textContent = t('chive-panel-empty-sidebar');
-		lista.appendChild(emptyDiv);
+		chartList.appendChild(emptyDiv);
 		return;
 	}
 
 	const desktopDnd = getDesktopMediaQuery().matches;
-	lista.replaceChildren();
+	chartList.replaceChildren();
 
 	charts.forEach(chart => {
 		const article = document.createElement('article');
@@ -98,19 +98,19 @@ export function renderSidebarPanel(removeChartFromPanel) {
 		article.dataset.panelChartId = chart.id;
 
 		// Top section with title and remove button
-		const topo = document.createElement('div');
-		topo.className = 'panel-item-top';
+		const itemHeader = document.createElement('div');
+		itemHeader.className = 'panel-item-top';
 
-		const titulo = document.createElement('span');
-		titulo.className = 'panel-item-title';
-		titulo.textContent = chart.name; // textContent for XSS prevention
-		titulo.title = chart.name;
+		const title = document.createElement('span');
+		title.className = 'panel-item-title';
+		title.textContent = chart.name; // textContent for XSS prevention
+		title.title = chart.name;
 
-		const metaResumo = typeof chart.metaSummary === 'string' ? chart.metaSummary.trim() : '';
-		const subtitulo = document.createElement('span');
-		subtitulo.className = 'panel-item-subtitle';
-		subtitulo.textContent = metaResumo;
-		subtitulo.hidden = metaResumo.length === 0;
+		const metaSummary = typeof chart.metaSummary === 'string' ? chart.metaSummary.trim() : '';
+		const subtitle = document.createElement('span');
+		subtitle.className = 'panel-item-subtitle';
+		subtitle.textContent = metaSummary;
+		subtitle.hidden = metaSummary.length === 0;
 
 		const removeBtn = document.createElement('button');
 		removeBtn.className = 'panel-item-remove';
@@ -121,19 +121,19 @@ export function renderSidebarPanel(removeChartFromPanel) {
 
 		const titleWrap = document.createElement('div');
 		titleWrap.className = 'panel-item-title-wrap';
-		titleWrap.appendChild(titulo);
-		titleWrap.appendChild(subtitulo);
+		titleWrap.appendChild(title);
+		titleWrap.appendChild(subtitle);
 
-		topo.appendChild(titleWrap);
-		topo.appendChild(removeBtn);
+		itemHeader.appendChild(titleWrap);
+		itemHeader.appendChild(removeBtn);
 
 		// Preview section (live chart render)
 		const preview = document.createElement('div');
 		preview.className = 'panel-item-preview';
 
-		article.appendChild(topo);
+		article.appendChild(itemHeader);
 		article.appendChild(preview);
-		lista.appendChild(article);
+		chartList.appendChild(article);
 
 		mountSlot(preview, chart);
 

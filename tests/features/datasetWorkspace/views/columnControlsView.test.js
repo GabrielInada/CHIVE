@@ -5,9 +5,9 @@ import { renderColumnControlsDOM } from '../../../../src/features/datasetWorkspa
 
 describe('columnControlsView', () => {
 	it('renders action buttons and checkbox list, then emits selections', () => {
-		document.body.innerHTML = '<div id="acoes"></div><div id="lista"></div>';
-		const actionsContainer = document.getElementById('acoes');
-		const columnsList = document.getElementById('lista');
+		document.body.innerHTML = '<div id="actions"></div><div id="list"></div>';
+		const actionsContainer = document.getElementById('actions');
+		const columnsList = document.getElementById('list');
 		const onColumnSelectionChange = vi.fn();
 
 		renderColumnControlsDOM({
@@ -27,10 +27,10 @@ describe('columnControlsView', () => {
 			onColumnSelectionChange,
 		});
 
-		expect(actionsContainer.querySelectorAll('[data-acao-coluna]').length).toBe(4);
+		expect(actionsContainer.querySelectorAll('[data-column-action]').length).toBe(4);
 		expect(columnsList.querySelectorAll('.column-checkbox').length).toBe(2);
 
-		actionsContainer.querySelector('[data-acao-coluna="numeric"]').click();
+		actionsContainer.querySelector('[data-column-action="numeric"]').click();
 		expect(onColumnSelectionChange).toHaveBeenCalledWith(['valor']);
 
 		const checkboxes = columnsList.querySelectorAll('.column-checkbox');
@@ -40,12 +40,12 @@ describe('columnControlsView', () => {
 	});
 
 	it('handles all, clear, and text action buttons', () => {
-		document.body.innerHTML = '<div id="acoes"></div><div id="lista"></div>';
+		document.body.innerHTML = '<div id="actions"></div><div id="list"></div>';
 		const onColumnSelectionChange = vi.fn();
 
 		renderColumnControlsDOM({
-			actionsContainer: document.getElementById('acoes'),
-			columnsList: document.getElementById('lista'),
+			actionsContainer: document.getElementById('actions'),
+			columnsList: document.getElementById('list'),
 			columns: [
 				{ name: 'cidade', type: 'text' },
 				{ name: 'valor', type: 'number' },
@@ -60,10 +60,10 @@ describe('columnControlsView', () => {
 			onColumnSelectionChange,
 		});
 
-		expect(document.querySelector('[data-acao-coluna="all"]').classList.contains('active')).toBe(true);
-		document.querySelector('[data-acao-coluna="all"]').click();
-		document.querySelector('[data-acao-coluna="clear"]').click();
-		document.querySelector('[data-acao-coluna="text"]').click();
+		expect(document.querySelector('[data-column-action="all"]').classList.contains('active')).toBe(true);
+		document.querySelector('[data-column-action="all"]').click();
+		document.querySelector('[data-column-action="clear"]').click();
+		document.querySelector('[data-column-action="text"]').click();
 
 		expect(onColumnSelectionChange).toHaveBeenNthCalledWith(1, ['cidade', 'valor']);
 		expect(onColumnSelectionChange).toHaveBeenNthCalledWith(2, []);
@@ -71,9 +71,9 @@ describe('columnControlsView', () => {
 	});
 
 	it('guards missing callbacks and non-checkbox change events', () => {
-		document.body.innerHTML = '<div id="acoes"></div><div id="lista"></div>';
-		const actionsContainer = document.getElementById('acoes');
-		const columnsList = document.getElementById('lista');
+		document.body.innerHTML = '<div id="actions"></div><div id="list"></div>';
+		const actionsContainer = document.getElementById('actions');
+		const columnsList = document.getElementById('list');
 
 		renderColumnControlsDOM({
 			actionsContainer,
@@ -88,10 +88,10 @@ describe('columnControlsView', () => {
 			translateType: type => type,
 		});
 
-		expect(document.querySelector('[data-acao-coluna="text"]').classList.contains('active')).toBe(true);
+		expect(document.querySelector('[data-column-action="text"]').classList.contains('active')).toBe(true);
 		expect(() => {
 			actionsContainer.click();
-			document.querySelector('[data-acao-coluna="text"]').click();
+			document.querySelector('[data-column-action="text"]').click();
 			columnsList.dispatchEvent(new Event('change', { bubbles: true }));
 		}).not.toThrow();
 	});

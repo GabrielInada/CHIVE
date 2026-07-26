@@ -120,9 +120,9 @@ export function parseJson(text) {
 	}
 
 	if (typeof parsed === 'object' && parsed !== null) {
-		const chaveArray = Object.keys(parsed).find(chave => Array.isArray(parsed[chave]));
-		if (chaveArray) {
-			const arr = parsed[chaveArray];
+		const arrayKey = Object.keys(parsed).find(key => Array.isArray(parsed[key]));
+		if (arrayKey) {
+			const arr = parsed[arrayKey];
 			if (arr.length === 0) return fail('json-array-empty');
 			return ok({ rows: stripDangerousKeys(arr) });
 		}

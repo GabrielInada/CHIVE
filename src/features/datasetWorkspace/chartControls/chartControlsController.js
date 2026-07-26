@@ -351,8 +351,8 @@ export function renderChartControlsSidebar(dataset) {
 		return;
 	}
 
-	const colunasVisiveis = filterVisibleColumns(dataset);
-	if (colunasVisiveis.length === 0) {
+	const visibleColumns = filterVisibleColumns(dataset);
+	if (visibleColumns.length === 0) {
 		emptyState(t('chive-chart-sidebar-empty'));
 		restoreSidebarScrollPosition(paramsContainer, scrollAnchor);
 		return;

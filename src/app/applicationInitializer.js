@@ -20,6 +20,7 @@ import { initPanelController } from '../features/panel/panelController.js';
 import { initDatasetController } from '../features/datasetWorkspace/datasetController.js';
 import { VIEW_IDS } from '../features/datasetWorkspace/domIds.js';
 import { initializeDomBindings } from './domBindings.js';
+import { clearStoredProjectData } from './bindings/clearStoredData.js';
 import { initializeSharedPage } from './sharedPageInitializer.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
 import { showFeedback, showError } from '../ui/feedback.js';
@@ -35,6 +36,11 @@ import {
 	updateStartupScreen,
 } from './startupScreen.js';
 
+// Held so the settings dialog's clear action can hold off project saves while it
+// wipes stored data. Assigned below, after hydration; the clear callback is a
+// closure, so wiring the dialog earlier than this is safe.
+let autoSaveController = null;
+
 /**
  * Initialize CHIVE in dependency order. Shared i18n and settings setup is
  * delegated to initializeSharedPage; app-only wiring stops when the main
@@ -43,7 +49,19 @@ import {
  * @returns {Promise<void>}
  */
 export async function initializeApplication() {
-	await initializeSharedPage();
+	// Shared page setup runs first because everything below depends on i18n. The
+	// settings dialog it wires is inside the app shell, which stays hidden and
+	// inert until revealPageShell() below, so the clear action is not a recovery
+	// route for a startup that never completes.
+	await initializeSharedPage({
+		onClearStoredData: () => clearStoredProjectData({
+			withSavesSuspended: operation => (
+				autoSaveController
+					? autoSaveController.runWithSavesSuspended(operation)
+					: operation()
+			),
+		}),
+	});
 
 	if (!document.getElementById(VIEW_IDS.fileInfo)) {
 		revealPageShell();
@@ -70,7 +88,7 @@ export async function initializeApplication() {
 	initializeDomBindings();
 	setupStateSubscriptions();
 
-	enablePersistenceAutoSave(getPersistenceSnapshot, {
+	autoSaveController = enablePersistenceAutoSave(getPersistenceSnapshot, {
 		onSaveError: reportPersistenceSaveError,
 	});
 

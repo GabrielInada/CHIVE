@@ -112,7 +112,9 @@ describe('persistence', () => {
 		expect(imported.ok).toBe(false);
 		expect(getProjectImportErrorMessageKey(imported.error)).toBe('chive-project-import-invalid-error');
 
-		await expect(clearPersistedState()).resolves.toBeUndefined();
+		// A throwing backend clear is reported, not swallowed, and still does not
+		// reject: callers branch on the outcome rather than on control flow.
+		await expect(clearPersistedState()).resolves.toEqual({ ok: false, reason: 'error' });
 		warn.mockRestore();
 	});
 });

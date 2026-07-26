@@ -30,10 +30,12 @@ function createNoopController() {
 	const error = new Error('Persistence controller requires a getState function');
 	return {
 		saveNow: () => Promise.resolve({ ok: false, error }),
+		runWithSavesSuspended: operation => Promise.resolve().then(operation),
 		dispose: () => {},
 		getStatus: () => ({
 			dirty: false,
 			saving: false,
+			suspended: false,
 			lastSavedAt: null,
 			lastError: null,
 		}),
@@ -51,9 +53,12 @@ function createNoopController() {
  * until another dirty event or explicit/lifecycle `saveNow`; page termination
  * can interrupt asynchronous persistence.
  *
+ * `runWithSavesSuspended` is the seam for operations that must own the stored
+ * project outright, such as clearing it.
+ *
  * @param {() => Partial<AppState>} getStateFn
  * @param {{ debounceMs?: number, onSaveError?: (error: Error, result: Object) => void }} [options]
- * @returns {{ saveNow: () => Promise<{ ok: boolean, error?: Error, skipped?: boolean }>, dispose: () => void, getStatus: () => Object, unsubscribe?: UnsubscribeFn }}
+ * @returns {{ saveNow: () => Promise<{ ok: boolean, error?: Error, skipped?: boolean }>, runWithSavesSuspended: <T>(operation: () => T | Promise<T>) => Promise<T>, dispose: () => void, getStatus: () => Object, unsubscribe?: UnsubscribeFn }}
  */
 export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSaveError } = {}) {
 	if (typeof getStateFn !== 'function') return createNoopController();
@@ -64,11 +69,13 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 	let lastSavedAt = null;
 	let lastError = null;
 	let disposed = false;
+	let suspended = false;
 
 	function getStatus() {
 		return {
 			dirty,
 			saving: Boolean(saveInFlight),
+			suspended,
 			lastSavedAt,
 			lastError,
 		};
@@ -76,6 +83,7 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 
 	function saveNow() {
 		if (saveInFlight) return saveInFlight;
+		if (suspended) return Promise.resolve({ ok: true, skipped: true });
 		if (!dirty) return Promise.resolve({ ok: true, skipped: true });
 
 		const revAtStart = rev;
@@ -104,7 +112,7 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 			// After a successful write, a mid-save edit leaves dirty set; save that
 			// newer revision now that saveInFlight is cleared. Failures stay dirty
 			// and wait for a later event or explicit/lifecycle saveNow call.
-			if (ok && dirty && !disposed) {
+			if (ok && dirty && !disposed && !suspended) {
 				void saveNow();
 			}
 		});
@@ -113,6 +121,40 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 	}
 
 	const scheduleSave = debounce(() => { void saveNow(); }, debounceMs);
+
+	/**
+	 * Run an operation with project saves held off, then let them resume.
+	 *
+	 * Exposed as a wrapper rather than as separate suspend/resume calls because a
+	 * caller that forgets to resume silently disables auto-save for the session.
+	 *
+	 * Settling the in-flight save is a loop, not a single await: a successful save
+	 * starts its follow-up from inside its own `finally`, so a newer write can
+	 * already be running by the time the first promise resolves. Waiting for all
+	 * of them is what lets a caller delete the stored project without a write
+	 * landing afterwards and restoring it.
+	 *
+	 * State that turned dirty while saves were suspended lost its debounce timer,
+	 * so resuming reschedules it. Without that, work created during a clear would
+	 * be wiped and then never written again until the next unrelated edit.
+	 *
+	 * @template T
+	 * @param {() => T | Promise<T>} operation
+	 * @returns {Promise<T>}
+	 */
+	async function runWithSavesSuspended(operation) {
+		suspended = true;
+		scheduleSave.cancel();
+		try {
+			while (saveInFlight) {
+				await saveInFlight.catch(() => {});
+			}
+			return await operation();
+		} finally {
+			suspended = false;
+			if (dirty && !disposed) scheduleSave();
+		}
+	}
 
 	const unsubscribe = onStateChange(STATE_EVENTS.WILDCARD, event => {
 		if (isUiPrefsEvent(event?.type)) {
@@ -154,6 +196,7 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 
 	return {
 		saveNow,
+		runWithSavesSuspended,
 		dispose: () => {
 			disposed = true;
 			scheduleSave.cancel();
