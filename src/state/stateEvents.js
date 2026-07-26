@@ -48,6 +48,14 @@ export const STATE_EVENTS = Object.freeze({
 	WILDCARD: '*',
 });
 
+/**
+ * Per-event registration lists. Each entry is a `{ callback, removed }` record
+ * rather than the bare callback so that a registration has an identity of its
+ * own: two subscriptions of the same function are distinguishable, and an
+ * in-progress fan-out can tell that one of them was detached.
+ *
+ * @type {Record<string, Array<{ callback: StateChangeListener, removed: boolean }>>}
+ */
 const stateListeners = {};
 
 const STATE_LOG_CAP = 100;
@@ -106,6 +114,16 @@ function reportListenerError(errorType, eventType, err) {
  * `services/persistence/autoSave.js` behind the public persistence facade); do
  * not use from controllers or renderers.
  *
+ * Mutation during a fan-out follows `EventTarget`-like semantics: once the
+ * returned function has run, that registration is not invoked again. If its
+ * callback is already executing, that invocation completes. A registration not
+ * yet reached in the current emission is skipped. Calling it more than once is
+ * safe and affects only that registration, including when the same function is
+ * subscribed more than once to one event. Unlike `EventTarget`, this bus does
+ * not deduplicate identical registrations: subscribing the same function twice
+ * yields two independent registrations that are each invoked and each detached
+ * separately.
+ *
  * @param {StateEventType} eventType - Event name. Always use `STATE_EVENTS.*` constants, not string literals.
  * @param {StateChangeListener} callback - Receives the payload for typed events, or `{ type, data }` for wildcard.
  * @returns {UnsubscribeFn} Call to detach the listener.
@@ -125,14 +143,50 @@ export function onStateChange(eventType, callback) {
 	if (!stateListeners[eventType]) {
 		stateListeners[eventType] = [];
 	}
-	stateListeners[eventType].push(callback);
+	// A per-event array is created once and never reassigned or deleted, so the
+	// closure can name the array it owns instead of re-resolving the key.
+	const listeners = stateListeners[eventType];
+	const registration = { callback, removed: false };
+	listeners.push(registration);
 
 	return () => {
-		const index = stateListeners[eventType].indexOf(callback);
+		if (registration.removed) {
+			return;
+		}
+		// The flag does double duty: it makes this closure idempotent, and it is
+		// what an in-progress fan-out reads to know the registration is gone. The
+		// splice still matters so the array does not grow without bound.
+		registration.removed = true;
+		const index = listeners.indexOf(registration);
 		if (index > -1) {
-			stateListeners[eventType].splice(index, 1);
+			listeners.splice(index, 1);
 		}
 	};
+}
+
+/**
+ * Invoke one snapshot of registrations, skipping any detached since it was
+ * taken and reporting a throwing listener without stopping the rest.
+ *
+ * @param {Array<{ callback: StateChangeListener, removed: boolean }>} [registrations]
+ * @param {string} errorType - `chive-internal-error` discriminator for this sink.
+ * @param {StateEventType} eventType
+ * @param {() => *} makeArg - Builds the argument per listener, so wildcard subscribers keep receiving their own `{ type, data }` object.
+ */
+function invokeRegistrations(registrations, errorType, eventType, makeArg) {
+	if (!registrations) {
+		return;
+	}
+	registrations.forEach(registration => {
+		if (registration.removed) {
+			return;
+		}
+		try {
+			registration.callback(makeArg());
+		} catch (err) {
+			reportListenerError(errorType, eventType, err);
+		}
+	});
 }
 
 /**
@@ -143,6 +197,11 @@ export function onStateChange(eventType, callback) {
  *
  * Listener errors are caught and rebroadcast as a `chive-internal-error`
  * CustomEvent on `window`, one bad subscriber cannot break the fan-out.
+ *
+ * Typed and wildcard `onStateChange` registrations share one membership
+ * boundary per emission: a registration added while this emission is running is
+ * not invoked by it, and one detached before its turn is skipped. The window
+ * dispatch in step 3 is `EventTarget`'s own and sits outside that boundary.
  *
  * When the in-memory log is enabled ({@link enableStateLog}), the emission
  * is also appended to the log buffer and printed under `[chive:state]`.
@@ -159,25 +218,30 @@ export function emitStateChange(eventType, data) {
 		console.log('[chive:state]', eventType, data);
 	}
 
-	if (stateListeners[eventType]) {
-		stateListeners[eventType].forEach(cb => {
-			try {
-				cb(data);
-			} catch (err) {
-				reportListenerError('state-listener-error', eventType, err);
-			}
-		});
-	}
+	// Both sinks are snapshotted before any listener runs, so one emission has
+	// one membership boundary. Iterating the live arrays instead would drop
+	// listeners: unsubscribe splices them and `forEach` advances by index, so a
+	// removal at or before the current index shifts the next listener into an
+	// already-visited slot. Snapshotting alone would then over-deliver, hence the
+	// `removed` check inside invokeRegistrations. Taking the wildcard snapshot
+	// lazily would leak too, since typed listeners run first and could subscribe
+	// a wildcard sink that this emission would then reach.
+	const typedRegistrations = stateListeners[eventType]?.slice();
+	const wildcardRegistrations = stateListeners['*']?.slice();
 
-	if (stateListeners['*']) {
-		stateListeners['*'].forEach(cb => {
-			try {
-				cb({ type: eventType, data });
-			} catch (err) {
-				reportListenerError('state-wildcard-listener-error', eventType, err);
-			}
-		});
-	}
+	invokeRegistrations(
+		typedRegistrations,
+		'state-listener-error',
+		eventType,
+		() => data,
+	);
+
+	invokeRegistrations(
+		wildcardRegistrations,
+		'state-wildcard-listener-error',
+		eventType,
+		() => ({ type: eventType, data }),
+	);
 
 	window.dispatchEvent(new CustomEvent('chive-state-changed', {
 		detail: { type: eventType, data },

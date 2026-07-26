@@ -296,7 +296,13 @@
  */
 
 /**
- * Returned by `onStateChange`. Calling it detaches the listener.
+ * Returned by `onStateChange`. Calling it detaches that registration.
+ *
+ * Once it returns, the registration is not invoked again. If its callback is
+ * already executing, that invocation completes; a registration not yet reached
+ * in the current emission is skipped. Calling it more than once is safe and
+ * affects only its own registration, including when the same function is
+ * subscribed more than once to one event.
  *
  * @typedef {() => void} UnsubscribeFn
  */
