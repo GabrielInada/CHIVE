@@ -1,9 +1,9 @@
 /**
  * CHIVE stored-data clearing workflow.
  *
- * Confirms, resets in-memory state, settles any pending save, then wipes the
- * persisted project. Its trigger lives in the settings dialog rather than in
- * static markup, so this module exports a handler instead of a listener setup
+ * Confirms, resets in-memory state, then wipes the persisted project with
+ * project saves held off. Its trigger lives in the settings dialog rather than
+ * in static markup, so this module exports a handler instead of a listener setup
  * function; the application initializer injects it as a callback, which is what
  * keeps persistence and state out of the About page's import graph.
  *
@@ -16,45 +16,61 @@ import { t } from '../../services/i18nService.js';
 import { clearPersistedState } from '../../services/persistence.js';
 import { replaceAllState } from '../../state/appState.js';
 import { openConfirmDialog } from '../../ui/confirmDialog.js';
+import { acquireProjectOperation } from './projectOperationLock.js';
+
+/** @typedef {{ ok: boolean, cancelled?: boolean, busy?: boolean, reason?: string }} ClearStoredDataResult */
 
 /**
  * Prompt for confirmation, then clear the browser-stored project.
  *
- * Order matters. Resetting first is safe because `replaceAllState` emits
- * `STATE_HYDRATED`, which auto-save classifies as not dirty, so the reset itself
- * never schedules a write. Awaiting the flush then settles a save that was
- * already in flight with the pre-clear snapshot, which would otherwise land
- * after the wipe and restore the data; a merely dirty controller writes the
- * already-empty snapshot instead, which the wipe removes a moment later.
+ * Two things can undo a wipe, and each has its own guard. A project import
+ * running in another workflow persists the file it read after the wipe
+ * finishes, so the shared project-operation lock is taken before the
+ * confirmation is even shown. A project save started before the wipe lands
+ * after it, so the deletion runs inside `withSavesSuspended`, which settles
+ * every write already in flight, refuses new ones, and reschedules work that
+ * turned dirty during the wipe instead of dropping it. That last part matters:
+ * the settings dialog stays closable while this runs, so the user can return to
+ * the workspace and start editing before the deletion completes.
  *
- * @param {{ flushPendingSave?: () => Promise<*> }} [dependencies]
- * @returns {Promise<{ ok: boolean, cancelled?: boolean }>} `cancelled` marks a declined confirmation, which is not a failure.
+ * The in-memory reset happens first so the workspace empties immediately. It is
+ * safe there because `replaceAllState` emits `STATE_HYDRATED`, which auto-save
+ * classifies as not dirty, so the reset itself never schedules a write.
+ *
+ * @param {{ withSavesSuspended?: <T>(operation: () => Promise<T>) => Promise<T> }} [dependencies]
+ * @returns {Promise<ClearStoredDataResult>} `cancelled` marks a declined confirmation and `busy` a refused start, neither of which is a failure of the wipe itself.
  */
-export async function clearStoredProjectData({ flushPendingSave } = {}) {
-	const confirmed = await openConfirmDialog({
-		title: t('chive-settings-data-clear-confirm-title'),
-		message: t('chive-settings-data-clear-confirm'),
-		confirmLabel: t('chive-confirm-continue'),
-		cancelLabel: t('chive-confirm-cancel'),
-	});
-	if (!confirmed) return { ok: true, cancelled: true };
+export async function clearStoredProjectData({ withSavesSuspended } = {}) {
+	const release = acquireProjectOperation('clear');
+	if (!release) return { ok: false, busy: true };
 
 	try {
-		replaceAllState({ data: { datasets: [], activeIndex: -1 }, panel: {} });
-		if (typeof flushPendingSave === 'function') {
-			// A flush that fails must not block a wipe the user explicitly asked
-			// for. Worst case this falls back to the unflushed race, which is
-			// where the code stood before the flush existed.
-			try {
-				await flushPendingSave();
-			} catch (err) {
-				console.warn('[chive:persist] could not settle a pending save before clearing:', err);
+		const confirmed = await openConfirmDialog({
+			title: t('chive-settings-data-clear-confirm-title'),
+			message: t('chive-settings-data-clear-confirm'),
+			confirmLabel: t('chive-confirm-continue'),
+			cancelLabel: t('chive-confirm-cancel'),
+		});
+		if (!confirmed) return { ok: true, cancelled: true };
+
+		try {
+			replaceAllState({ data: { datasets: [], activeIndex: -1 }, panel: {} });
+
+			const runExclusively = typeof withSavesSuspended === 'function'
+				? withSavesSuspended
+				: operation => operation();
+			const result = await runExclusively(() => clearPersistedState());
+
+			if (result && result.ok === false) {
+				console.warn('[chive:persist] stored data was not cleared:', result.reason);
+				return { ok: false, reason: result.reason || 'error' };
 			}
+			return { ok: true };
+		} catch (err) {
+			console.warn('[chive:persist] clearing stored data failed:', err);
+			return { ok: false, reason: 'error' };
 		}
-		await clearPersistedState();
-		return { ok: true };
-	} catch (err) {
-		console.warn('[chive:persist] clearing stored data failed:', err);
-		return { ok: false };
+	} finally {
+		release();
 	}
 }

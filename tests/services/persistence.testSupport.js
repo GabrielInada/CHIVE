@@ -9,11 +9,19 @@ const sqlite3Ready = sqlite3InitModule().then(sqlite3 => {
 
 let backendCounter = 0;
 
-export function makeBackend() {
+/**
+ * A real SQLite blob backend over fake-indexeddb, on its own database.
+ *
+ * Pass `dbName` when the test also needs to reach that database directly, for
+ * example to hold a connection open and force a blocked delete.
+ *
+ * @param {{ dbName?: string }} [options]
+ */
+export function makeBackend({ dbName } = {}) {
 	backendCounter += 1;
 	return createBlobBackend({
 		initSqlite: () => sqlite3Ready,
-		dbName: `chive-service-test-${backendCounter}`,
+		dbName: dbName || `chive-service-test-${backendCounter}`,
 	});
 }
 

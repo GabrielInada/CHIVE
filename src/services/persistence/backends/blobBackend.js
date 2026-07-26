@@ -59,12 +59,23 @@ function writeRecord(db, storeName, key, value) {
 	});
 }
 
+/**
+ * Delete a database and report what actually happened.
+ *
+ * `onblocked` means another connection, normally a second tab, still holds the
+ * database. The request stays pending until that connection closes, which may
+ * never happen, so this resolves as blocked rather than waiting forever or
+ * reporting a deletion that has not occurred.
+ *
+ * @param {string} dbName
+ * @returns {Promise<{ ok: boolean, reason?: 'blocked' | 'error' }>}
+ */
 function deleteDatabase(dbName) {
 	return new Promise(resolve => {
 		const req = getIndexedDb().deleteDatabase(dbName);
-		req.onsuccess = () => resolve();
-		req.onerror = () => resolve();
-		req.onblocked = () => resolve();
+		req.onsuccess = () => resolve({ ok: true });
+		req.onerror = () => resolve({ ok: false, reason: 'error' });
+		req.onblocked = () => resolve({ ok: false, reason: 'blocked' });
 	});
 }
 
@@ -216,9 +227,12 @@ export function createBlobBackend({
 		}
 	}
 
+	/**
+	 * @returns {Promise<{ ok: boolean, reason?: 'blocked' | 'error' | 'unavailable' }>}
+	 */
 	async function clear() {
-		if (!available()) return;
-		await deleteDatabase(dbName);
+		if (!available()) return { ok: false, reason: 'unavailable' };
+		return deleteDatabase(dbName);
 	}
 
 	return {

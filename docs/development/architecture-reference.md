@@ -414,6 +414,13 @@ arrived; otherwise one follow-up save begins after settlement. A failure leaves
 dirty set, but no automatic retry timer is added until another dirty event or
 explicit/lifecycle `saveNow` call.
 
+`runWithSavesSuspended` is the seam for an operation that must own the stored
+project outright. It cancels the debounce, waits for every save already running,
+including the follow-up a mid-save edit starts, and refuses to begin new ones
+until the operation settles. Resuming reschedules a save when state turned dirty
+during the window, so work created while the operation ran is not dropped.
+Stored-data clearing is the only production caller.
+
 Lifecycle handlers are a best-effort close net:
 
 - [`visibilitychange`](https://developer.mozilla.org/en-US/docs/Web/API/Document/visibilitychange_event)
@@ -445,8 +452,20 @@ Locale and browser settings are not project data.
 
 When a legacy project is successfully migrated, its old database is
 best-effort deleted and `chive.migrated` is set. `clearPersistedState` removes
-`chive.ui`, sets the marker, and best-effort clears both project databases. It
-does not remove `chive-locale` or `chive.settings`.
+`chive.ui`, sets the marker, and deletes both project databases. It does not
+remove `chive-locale` or `chive.settings`.
+
+`clearPersistedState` never rejects, but it does report the project database's
+outcome as `{ ok, reason }`. `blocked` means another connection, normally a
+second tab, still holds the database; the delete request stays pending, so the
+outcome is reported rather than waited on, and a caller must not tell the user
+the data was removed. The legacy database stays best-effort and does not affect
+the reported outcome, since the tombstone already prevents it from being read
+again.
+
+Project export, project import, and stored-data clearing hold one shared lock in
+`app/bindings/projectOperationLock.js`. Each of them replaces or deletes the
+whole project, so overlapping two produces a result neither asked for.
 
 ## Mutation Rules
 

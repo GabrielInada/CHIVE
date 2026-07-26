@@ -36,8 +36,9 @@ import {
 	updateStartupScreen,
 } from './startupScreen.js';
 
-// Held so the settings dialog's clear action can settle a pending or in-flight
-// save before the wipe. Assigned below, after hydration.
+// Held so the settings dialog's clear action can hold off project saves while it
+// wipes stored data. Assigned below, after hydration; the clear callback is a
+// closure, so wiring the dialog earlier than this is safe.
 let autoSaveController = null;
 
 /**
@@ -48,11 +49,17 @@ let autoSaveController = null;
  * @returns {Promise<void>}
  */
 export async function initializeApplication() {
-	// Wired before hydration on purpose: a project that breaks startup is exactly
-	// when a user needs the settings dialog's clear action to be reachable.
+	// Shared page setup runs first because everything below depends on i18n. The
+	// settings dialog it wires is inside the app shell, which stays hidden and
+	// inert until revealPageShell() below, so the clear action is not a recovery
+	// route for a startup that never completes.
 	await initializeSharedPage({
 		onClearStoredData: () => clearStoredProjectData({
-			flushPendingSave: () => autoSaveController?.saveNow(),
+			withSavesSuspended: operation => (
+				autoSaveController
+					? autoSaveController.runWithSavesSuspended(operation)
+					: operation()
+			),
 		}),
 	});
 

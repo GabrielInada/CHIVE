@@ -92,11 +92,16 @@ tombstone. It does not remove `chive-locale` or `chive.settings`, so your
 language choice and app settings survive.
 
 The workspace and panel empty immediately, with no page reload. If another
-CHIVE tab is open on the same origin, it still holds its own copy in memory and
-can save that copy back; close other tabs first.
+CHIVE tab is open on the same origin, the browser refuses to delete the project
+database while that tab holds it open. CHIVE reports this instead of claiming
+success; close the other tabs and clear again. A second tab also holds its own
+copy of the project in memory and can save that copy back.
 
 The Data section appears only on the application page. The About page's settings
-dialog does not include it.
+dialog does not include it. It is also not a recovery route for a CHIVE that
+fails to start: the settings button lives inside the application shell, which
+stays hidden until startup finishes. If CHIVE does not load at all, use the
+browser site-data controls below.
 
 ### From the browser
 

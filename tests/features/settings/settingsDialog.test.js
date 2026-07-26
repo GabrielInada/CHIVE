@@ -274,6 +274,41 @@ describe('settingsDialog Data section', () => {
 			.toBe('chive-settings-data-clear-error');
 	});
 
+	it('names the multi-tab case when deletion was blocked', async () => {
+		const button = openWithClear(vi.fn().mockResolvedValue({ ok: false, reason: 'blocked' }));
+
+		button.click();
+		await flushMicrotasks();
+
+		// A blocked delete is the one failure the user can resolve, so it must not
+		// share the generic message.
+		expect(document.querySelector('.settings-data-status').dataset.i18n)
+			.toBe('chive-settings-data-clear-blocked');
+	});
+
+	it('explains a refused start while another project operation runs', async () => {
+		const button = openWithClear(vi.fn().mockResolvedValue({ ok: false, busy: true }));
+
+		button.click();
+		await flushMicrotasks();
+
+		expect(document.querySelector('.settings-data-status').dataset.i18n)
+			.toBe('chive-settings-data-clear-busy');
+	});
+
+	it('does not report a successful clear as removed storage until the figures refresh', async () => {
+		const onGetStorageStatus = vi.fn().mockResolvedValue({ ok: true, usage: 0, quota: 4096, persisted: false });
+		openDialog({ onClearStoredData: vi.fn().mockResolvedValue({ ok: false, reason: 'blocked' }), onGetStorageStatus });
+		await flushMicrotasks();
+
+		document.querySelector('.settings-data-clear').click();
+		await flushMicrotasks();
+
+		// A failed wipe leaves the reported usage alone; refreshing it would suggest
+		// something was removed.
+		expect(onGetStorageStatus).toHaveBeenCalledTimes(1);
+	});
+
 	it('marks the button busy without removing it from the focus order', async () => {
 		let release;
 		const onClearStoredData = vi.fn(() => new Promise(resolve => { release = resolve; }));

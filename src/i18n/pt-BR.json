@@ -600,6 +600,8 @@
 	"chive-settings-data-clear-confirm": "Isso remove permanentemente o projeto salvo neste navegador, incluindo seus conjuntos de dados e o painel. Exporte o projeto antes se quiser manter uma cópia. Outras abas do CHIVE abertas neste site podem salvar a cópia delas novamente.",
 	"chive-settings-data-cleared": "Os dados do projeto foram removidos.",
 	"chive-settings-data-clear-error": "Não foi possível remover os dados do projeto.",
+	"chive-settings-data-clear-blocked": "Outra aba do CHIVE neste site ainda está usando o projeto salvo, por isso ele não foi removido. Feche as outras abas e tente novamente.",
+	"chive-settings-data-clear-busy": "Outra operação de projeto ainda está em andamento. Aguarde a conclusão e tente novamente.",
 
 	"chive-about-page-title": "Sobre: CHIVE",
 	"chive-footer-copyright": "© 2026 CHIVE. Todos os direitos reservados."

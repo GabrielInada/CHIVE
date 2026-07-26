@@ -143,7 +143,7 @@ describe('workerBackend, watchdog + fallback', () => {
 			persist: vi.fn(async () => {}),
 			exportBytes: vi.fn(async (_snapshot, options) => new Uint8Array(options.workOnly ? [9] : [8])),
 			importBytes: vi.fn(async input => ({ imported: Array.from(input) })),
-			clear: vi.fn(async () => {}),
+			clear: vi.fn(async () => ({ ok: true })),
 		};
 		const backend = createWorkerBackend({
 			workerFactory: () => { throw new Error('Worker is not defined'); },
@@ -154,7 +154,9 @@ describe('workerBackend, watchdog + fallback', () => {
 		await expect(backend.hydrate()).resolves.toEqual({ data: { datasets: [] } });
 		await expect(backend.exportBytes(snap(), { workOnly: true })).resolves.toEqual(new Uint8Array([9]));
 		await expect(backend.importBytes(bytes)).resolves.toEqual({ imported: [1, 2, 3] });
-		await expect(backend.clear()).resolves.toBeUndefined();
+		// The fallback's clear outcome is forwarded, not swallowed: a caller that
+		// reports the wipe to a user needs to know whether it happened.
+		await expect(backend.clear()).resolves.toEqual({ ok: true });
 		expect(fallback.exportBytes.mock.calls[0][1]).toEqual({ workOnly: true });
 	});
 
@@ -287,7 +289,7 @@ describe('workerBackend, crash drains every pending op serially in send order', 
 
 		await expect(pPersist).resolves.toBeUndefined();
 		await expect(pHydrate).resolves.not.toThrow;
-		await expect(pClear).resolves.toBeUndefined();
+		await expect(pClear).resolves.toEqual({ ok: true });
 		expect(fallback.persist).toHaveBeenCalledTimes(1);
 	});
 
@@ -366,7 +368,7 @@ describe('workerBackend, crash drains every pending op serially in send order', 
 		worker.emitError({ message: 'crash' });
 
 		await expect(pPersist).rejects.toMatchObject({ name: 'QuotaExceededError' });
-		await expect(pClear).resolves.toBeUndefined();
+		await expect(pClear).resolves.toEqual({ ok: true });
 		expect(fallback.clear).toHaveBeenCalledTimes(1);
 	});
 });
