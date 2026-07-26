@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	clearPersistedState: vi.fn(),
@@ -26,12 +26,22 @@ vi.mock('../../../src/state/appState.js', () => ({
 }));
 
 import { clearStoredProjectData } from '../../../src/app/bindings/clearStoredData.js';
+import {
+	__resetProjectOperationLockForTesting,
+	acquireProjectOperation,
+	getRunningProjectOperation,
+} from '../../../src/app/bindings/projectOperationLock.js';
 
 describe('clearStoredProjectData', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
+		__resetProjectOperationLockForTesting();
 		mocks.openConfirmDialog.mockResolvedValue(true);
-		mocks.clearPersistedState.mockResolvedValue(undefined);
+		mocks.clearPersistedState.mockResolvedValue({ ok: true });
+	});
+
+	afterEach(() => {
+		__resetProjectOperationLockForTesting();
 	});
 
 	it('asks for confirmation with localized destructive copy', async () => {
@@ -65,48 +75,83 @@ describe('clearStoredProjectData', () => {
 		expect(mocks.clearPersistedState).toHaveBeenCalledTimes(1);
 	});
 
-	it('settles a pending save before wiping, so an in-flight write cannot restore the data', async () => {
+	it('wipes inside the suspension window, so no save can land after the deletion', async () => {
 		const order = [];
-		let releaseSave;
-		const flushPendingSave = vi.fn(() => new Promise(resolve => {
-			releaseSave = () => {
-				order.push('save-settled');
-				resolve();
-			};
-		}));
+		const withSavesSuspended = vi.fn(async operation => {
+			order.push('suspended');
+			try {
+				return await operation();
+			} finally {
+				order.push('resumed');
+			}
+		});
 		mocks.clearPersistedState.mockImplementation(async () => {
 			order.push('cleared');
+			return { ok: true };
 		});
 
-		const done = clearStoredProjectData({ flushPendingSave });
-		await Promise.resolve();
-		await Promise.resolve();
-
-		expect(flushPendingSave).toHaveBeenCalledTimes(1);
-		expect(mocks.clearPersistedState).not.toHaveBeenCalled();
-
-		releaseSave();
-		await expect(done).resolves.toEqual({ ok: true });
-		expect(order).toEqual(['save-settled', 'cleared']);
+		await expect(clearStoredProjectData({ withSavesSuspended })).resolves.toEqual({ ok: true });
+		expect(order).toEqual(['suspended', 'cleared', 'resumed']);
 	});
 
-	it('works without a flush dependency', async () => {
+	it('works without a suspension dependency', async () => {
 		await expect(clearStoredProjectData({})).resolves.toEqual({ ok: true });
 		expect(mocks.clearPersistedState).toHaveBeenCalledTimes(1);
 	});
 
-	it('reports a failed wipe instead of throwing', async () => {
+	it('reports a blocked deletion distinctly, since the user can act on it', async () => {
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		mocks.clearPersistedState.mockResolvedValue({ ok: false, reason: 'blocked' });
+
+		await expect(clearStoredProjectData()).resolves.toEqual({ ok: false, reason: 'blocked' });
+	});
+
+	it('reports a failed deletion that the service resolved rather than threw', async () => {
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		mocks.clearPersistedState.mockResolvedValue({ ok: false, reason: 'error' });
+
+		await expect(clearStoredProjectData()).resolves.toEqual({ ok: false, reason: 'error' });
+	});
+
+	it('reports an unexpected rejection instead of throwing', async () => {
 		vi.spyOn(console, 'warn').mockImplementation(() => {});
 		mocks.clearPersistedState.mockRejectedValue(new Error('backend gone'));
 
-		await expect(clearStoredProjectData()).resolves.toEqual({ ok: false });
+		await expect(clearStoredProjectData()).resolves.toEqual({ ok: false, reason: 'error' });
 	});
 
-	it('still wipes when the flush fails, since a failed save must not block a requested wipe', async () => {
-		vi.spyOn(console, 'warn').mockImplementation(() => {});
-		const flushPendingSave = vi.fn().mockRejectedValue(new Error('save exploded'));
+	it('refuses to start while another project operation holds the lock', async () => {
+		const release = acquireProjectOperation('import');
 
-		await expect(clearStoredProjectData({ flushPendingSave })).resolves.toEqual({ ok: true });
-		expect(mocks.clearPersistedState).toHaveBeenCalledTimes(1);
+		await expect(clearStoredProjectData()).resolves.toEqual({ ok: false, busy: true });
+		// Not even the confirmation is shown: a prompt the app cannot honour is
+		// worse than an explanation.
+		expect(mocks.openConfirmDialog).not.toHaveBeenCalled();
+		expect(mocks.clearPersistedState).not.toHaveBeenCalled();
+
+		release();
+		await expect(clearStoredProjectData()).resolves.toEqual({ ok: true });
+	});
+
+	it('holds the lock across the confirmation and releases it on every path', async () => {
+		let answer;
+		mocks.openConfirmDialog.mockImplementation(() => new Promise(resolve => { answer = resolve; }));
+
+		const done = clearStoredProjectData();
+		await Promise.resolve();
+		expect(getRunningProjectOperation()).toBe('clear');
+
+		answer(false);
+		await expect(done).resolves.toEqual({ ok: true, cancelled: true });
+		expect(getRunningProjectOperation()).toBeNull();
+	});
+
+	it('releases the lock after a rejected wipe', async () => {
+		vi.spyOn(console, 'warn').mockImplementation(() => {});
+		mocks.clearPersistedState.mockRejectedValue(new Error('backend gone'));
+
+		await clearStoredProjectData();
+
+		expect(getRunningProjectOperation()).toBeNull();
 	});
 });

@@ -308,6 +308,14 @@ export function openSettingsDialog({
 			clearStatus.textContent = t(key);
 		};
 
+		// A blocked deletion is the multi-tab case and is the one failure a user can
+		// act on, so it does not share the generic error message.
+		const clearFailureKey = result => {
+			if (result?.busy) return 'chive-settings-data-clear-busy';
+			if (result?.reason === 'blocked') return 'chive-settings-data-clear-blocked';
+			return 'chive-settings-data-clear-error';
+		};
+
 		// aria-disabled rather than the disabled property: a disabled button leaves
 		// the focus order, and the confirmation dialog returns focus to whatever was
 		// focused when it opened, which is this button.
@@ -322,7 +330,7 @@ export function openSettingsDialog({
 				const result = await onClearStoredData();
 				if (result?.cancelled) return;
 				if (!result?.ok) {
-					setClearStatus('chive-settings-data-clear-error');
+					setClearStatus(clearFailureKey(result));
 					return;
 				}
 				setClearStatus('chive-settings-data-cleared');

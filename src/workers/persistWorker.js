@@ -163,10 +163,13 @@ export function createPersistHandler(backend, post) {
 				return;
 			}
 			if (op === 'clear') {
-				await backend.clear();
+				const result = await backend.clear();
+				// The caches are dropped even when deletion was blocked: they
+				// describe what this worker last sent, and the host has already
+				// discarded the matching state.
 				rowsCache.clear();
 				snapshotCache.clear();
-				post({ id, ok: true, result: null });
+				post({ id, ok: true, result: result ?? null });
 				return;
 			}
 			post({ id, ok: false, error: { name: 'Error', message: `Unknown persist op: ${op}` } });

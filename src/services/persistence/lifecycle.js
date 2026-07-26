@@ -36,7 +36,7 @@ let activeBackend = workerBackend;
 /**
  * Swap the storage backend. Used by tests and future storage strategies.
  *
- * @param {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes?: (snapshot: Partial<AppState>, options?: { workOnly?: boolean }) => Promise<Uint8Array>, importBytes?: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<void> } | null} backend
+ * @param {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes?: (snapshot: Partial<AppState>, options?: { workOnly?: boolean }) => Promise<Uint8Array>, importBytes?: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<{ ok: boolean, reason?: string } | void> } | null} backend
  */
 export function configurePersistenceBackend(backend) {
 	activeBackend = backend || workerBackend;
@@ -245,14 +245,28 @@ export async function importProjectBytes(bytes, { replaceAllState, transformPane
  * touched. The legacy migration tombstone is set even if old-IDB deletion is
  * blocked by another tab.
  *
- * @returns {Promise<void>}
+ * Never rejects, but it does report failure. A deletion blocked by another tab
+ * leaves the project database in place, and a caller that told the user their
+ * data was removed would be lying; `blocked` is the outcome that a second open
+ * tab produces, and it is actionable in a way a generic failure is not.
+ *
+ * The legacy database is best-effort and does not affect the reported outcome:
+ * the tombstone above already prevents it from being read again.
+ *
+ * @returns {Promise<{ ok: boolean, reason?: 'blocked' | 'error' | 'unavailable' }>}
  */
 export async function clearPersistedState() {
 	clearUiPrefs();
 	setLegacyMigrationMarker();
 
-	await Promise.all([
-		(activeBackend?.clear?.() || Promise.resolve()).catch(() => {}),
-		deleteLegacyState().catch(() => {}),
+	const [projectOutcome] = await Promise.all([
+		(activeBackend?.clear?.() || Promise.resolve({ ok: true }))
+			.catch(error => ({ ok: false, reason: 'error', error })),
+		deleteLegacyState().catch(() => ({ ok: false, reason: 'error' })),
 	]);
+
+	// A backend that resolves without an outcome predates the reporting contract;
+	// treat a clean resolution as success rather than inventing a failure.
+	if (!projectOutcome || projectOutcome.ok !== false) return { ok: true };
+	return { ok: false, reason: projectOutcome.reason || 'error' };
 }

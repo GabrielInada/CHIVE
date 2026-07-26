@@ -76,8 +76,10 @@ current browser and deployment URL.
   projects are protected from automatic eviction, and can ask the browser for
   that protection.
 - **Data** clears the project stored in this browser after a confirmation. Your
-  language and app settings are kept. This section is on the application page
-  only.
+  language and app settings are kept. Close other CHIVE tabs on the same site
+  first: the browser will not delete the stored project while another tab has it
+  open, and CHIVE reports that instead of clearing. This section is on the
+  application page only.
 
 Changes apply immediately. The TIN preference survives reloads and remains
 separate from saved project data, but clearing this site's browser data removes

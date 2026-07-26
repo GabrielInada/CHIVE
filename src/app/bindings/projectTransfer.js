@@ -2,8 +2,9 @@
  * CHIVE project transfer workflow.
  *
  * Wires the project menu (open/close) and its export / export-work-only / import
- * actions. Import replaces all state; a module-level busy flag blocks overlapping
- * export/import runs.
+ * actions. Import replaces all state; the shared project-operation lock blocks
+ * overlapping export/import runs and keeps them from overlapping a stored-data
+ * clear, which would otherwise delete or recreate the other's project.
  */
 
 import { t } from '../../services/i18nService.js';
@@ -18,6 +19,7 @@ import { rehydratePanelChartSpecs } from '../../domain/panel/rehydration.js';
 import { getPersistenceSnapshot, replaceAllState } from '../../state/appState.js';
 import { showProgress } from '../../ui/feedback.js';
 import { openConfirmDialog } from '../../ui/confirmDialog.js';
+import { acquireProjectOperation } from './projectOperationLock.js';
 
 export const PROJECT_TRANSFER_IDS = {
 	projectImportInput: 'project-import-input',
@@ -28,7 +30,6 @@ export const PROJECT_TRANSFER_IDS = {
 	projectImportButton: 'btn-project-import',
 };
 
-let projectTransferBusy = false;
 let menuDismissListenersReady = false;
 
 /**
@@ -122,8 +123,8 @@ function setProjectMenuOpen(open) {
  * @private
  */
 async function handleProjectExport({ workOnly = false } = {}) {
-	if (projectTransferBusy) return;
-	projectTransferBusy = true;
+	const release = acquireProjectOperation('export');
+	if (!release) return;
 	const progress = showProgress(t('chive-project-exporting'));
 	try {
 		progress.update(20);
@@ -143,7 +144,7 @@ async function handleProjectExport({ workOnly = false } = {}) {
 	} catch {
 		progress.fail(t('chive-project-export-error'));
 	} finally {
-		projectTransferBusy = false;
+		release();
 	}
 }
 
@@ -151,41 +152,43 @@ async function handleProjectExport({ workOnly = false } = {}) {
  * @private
  */
 async function handleProjectImport(file, input) {
-	if (!file || projectTransferBusy) {
+	// The lock is taken before the confirmation, not after it: a clear started
+	// while this prompt is open would delete the project the user is about to
+	// replace, and the import would then recreate it.
+	const release = file ? acquireProjectOperation('import') : null;
+	if (!release) {
 		if (input) input.value = '';
 		return;
 	}
 
-	const confirmed = await openConfirmDialog({
-		title: t('chive-project-import-confirm-title'),
-		message: t('chive-project-import-confirm'),
-		confirmLabel: t('chive-confirm-continue'),
-		cancelLabel: t('chive-confirm-cancel'),
-	});
-	if (!confirmed) {
-		input.value = '';
-		return;
-	}
-
-	projectTransferBusy = true;
-	const progress = showProgress(t('chive-project-importing'));
 	try {
-		progress.update(20);
-		const bytes = new Uint8Array(await file.arrayBuffer());
-		progress.update(55);
-		const result = await importProjectBytes(bytes, {
-			replaceAllState,
-			transformPanel: rehydratePanelChartSpecs,
+		const confirmed = await openConfirmDialog({
+			title: t('chive-project-import-confirm-title'),
+			message: t('chive-project-import-confirm'),
+			confirmLabel: t('chive-confirm-continue'),
+			cancelLabel: t('chive-confirm-cancel'),
 		});
-		if (!result.ok) {
-			progress.fail(t(getProjectImportErrorMessageKey(result.error)));
-			return;
+		if (!confirmed) return;
+
+		const progress = showProgress(t('chive-project-importing'));
+		try {
+			progress.update(20);
+			const bytes = new Uint8Array(await file.arrayBuffer());
+			progress.update(55);
+			const result = await importProjectBytes(bytes, {
+				replaceAllState,
+				transformPanel: rehydratePanelChartSpecs,
+			});
+			if (!result.ok) {
+				progress.fail(t(getProjectImportErrorMessageKey(result.error)));
+				return;
+			}
+			progress.succeed(t('chive-project-import-success'));
+		} catch (err) {
+			progress.fail(t(getProjectImportErrorMessageKey(err)));
 		}
-		progress.succeed(t('chive-project-import-success'));
-	} catch (err) {
-		progress.fail(t(getProjectImportErrorMessageKey(err)));
 	} finally {
-		input.value = '';
-		projectTransferBusy = false;
+		if (input) input.value = '';
+		release();
 	}
 }

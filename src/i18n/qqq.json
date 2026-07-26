@@ -596,6 +596,8 @@
 	"chive-settings-data-clear-confirm": "Body of the confirmation dialog shown before stored project data is erased. States that the action is permanent, points at project export, and warns that another open tab can write its own copy back.",
 	"chive-settings-data-cleared": "Status shown in the settings dialog after stored project data was erased successfully.",
 	"chive-settings-data-clear-error": "Status shown in the settings dialog when erasing stored project data failed.",
+	"chive-settings-data-clear-blocked": "Status shown in the settings dialog when the browser refused to delete the project database because another tab still has it open. Names the user action that resolves it.",
+	"chive-settings-data-clear-busy": "Status shown in the settings dialog when the clear action could not start because a project import or export is still running.",
 	"chive-about-page-title": "Browser tab title for the About page.",
 	"chive-footer-copyright": "Footer copyright notice. Keep the year and project name intact."
 }

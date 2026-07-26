@@ -228,13 +228,17 @@
 }
 
 .settings-data-status {
-  margin: var(--space-3) 0 0;
+  margin: 0;
   color: var(--text);
   font-size: var(--font-size-md);
 }
 
-.settings-data-status:empty {
-  display: none;
+/* The empty region stays rendered and in the accessibility tree on purpose. A
+   live region revealed in the same frame as its first text is announced
+   unreliably, so only the spacing is conditional; an empty paragraph has no
+   line box and takes no height. */
+.settings-data-status:not(:empty) {
+  margin-top: var(--space-3);
 }
 
 @media (max-width: 480px) {
