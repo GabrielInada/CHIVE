@@ -32,10 +32,10 @@ vi.mock('../../../src/features/settings/settingsDialog.js', () => ({
 }));
 
 /** Fresh module per test: the controller tracks the open dialog in module state. */
-async function initFreshController() {
+async function initFreshController(options) {
 	vi.resetModules();
 	const { initSettingsController } = await import('../../../src/features/settings/settingsController.js');
-	initSettingsController();
+	initSettingsController(options);
 	return initSettingsController;
 }
 
@@ -98,6 +98,23 @@ describe('settingsController', () => {
 		expect(mocks.setTinColorRendering).toHaveBeenCalledWith('full-ramp');
 		expect(mocks.getStorageStatus).toHaveBeenCalledTimes(1);
 		expect(mocks.requestPersistentStorage).toHaveBeenCalledTimes(1);
+	});
+
+	it('passes an injected clear callback straight through to the dialog', async () => {
+		const onClearStoredData = vi.fn().mockResolvedValue({ ok: true });
+		await initFreshController({ onClearStoredData });
+		document.getElementById('btn-settings').click();
+
+		const args = mocks.openSettingsDialog.mock.calls[0][0];
+		expect(args.onClearStoredData).toBe(onClearStoredData);
+	});
+
+	it('omits the clear callback when the page does not supply one', async () => {
+		await initFreshController();
+		document.getElementById('btn-settings').click();
+
+		const args = mocks.openSettingsDialog.mock.calls[0][0];
+		expect(args.onClearStoredData).toBeUndefined();
 	});
 
 	it('does not duplicate listeners on repeated initialization', async () => {

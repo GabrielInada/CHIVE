@@ -1,9 +1,9 @@
 @layer foundation {
 /* @feature: settings
-   Header settings button and the global settings dialog (General and
-   Performance sections). Part of the shared chrome: loaded by every HTML
-   page through a direct stylesheet link, since settings live in the shared header
-   on both index.html and about.html. */
+   Header settings button and the global settings dialog (General, Performance,
+   Storage, and the application-only Data section). Part of the shared chrome:
+   loaded by every HTML page through a direct stylesheet link, since settings
+   live in the shared header on both index.html and about.html. */
 
 .header-settings-btn {
   display: inline-flex;
@@ -210,6 +210,31 @@
   width: auto;
   align-self: flex-start;
   margin-top: var(--space-4);
+}
+
+.settings-data-clear {
+  width: auto;
+  align-self: flex-start;
+  margin-top: var(--space-4);
+  color: var(--error-medium);
+  border-color: var(--error-border-muted);
+}
+
+/* aria-disabled, not :disabled: the button stays focusable so the confirmation
+   dialog can return focus to it. */
+.settings-data-clear[aria-disabled='true'] {
+  opacity: 0.35;
+  cursor: progress;
+}
+
+.settings-data-status {
+  margin: var(--space-3) 0 0;
+  color: var(--text);
+  font-size: var(--font-size-md);
+}
+
+.settings-data-status:empty {
+  display: none;
 }
 
 @media (max-width: 480px) {

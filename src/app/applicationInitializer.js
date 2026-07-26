@@ -20,6 +20,7 @@ import { initPanelController } from '../features/panel/panelController.js';
 import { initDatasetController } from '../features/datasetWorkspace/datasetController.js';
 import { VIEW_IDS } from '../features/datasetWorkspace/domIds.js';
 import { initializeDomBindings } from './domBindings.js';
+import { clearStoredProjectData } from './bindings/clearStoredData.js';
 import { initializeSharedPage } from './sharedPageInitializer.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
 import { showFeedback, showError } from '../ui/feedback.js';
@@ -35,6 +36,10 @@ import {
 	updateStartupScreen,
 } from './startupScreen.js';
 
+// Held so the settings dialog's clear action can settle a pending or in-flight
+// save before the wipe. Assigned below, after hydration.
+let autoSaveController = null;
+
 /**
  * Initialize CHIVE in dependency order. Shared i18n and settings setup is
  * delegated to initializeSharedPage; app-only wiring stops when the main
@@ -43,7 +48,13 @@ import {
  * @returns {Promise<void>}
  */
 export async function initializeApplication() {
-	await initializeSharedPage();
+	// Wired before hydration on purpose: a project that breaks startup is exactly
+	// when a user needs the settings dialog's clear action to be reachable.
+	await initializeSharedPage({
+		onClearStoredData: () => clearStoredProjectData({
+			flushPendingSave: () => autoSaveController?.saveNow(),
+		}),
+	});
 
 	if (!document.getElementById(VIEW_IDS.fileInfo)) {
 		revealPageShell();
@@ -70,7 +81,7 @@ export async function initializeApplication() {
 	initializeDomBindings();
 	setupStateSubscriptions();
 
-	enablePersistenceAutoSave(getPersistenceSnapshot, {
+	autoSaveController = enablePersistenceAutoSave(getPersistenceSnapshot, {
 		onSaveError: reportPersistenceSaveError,
 	});
 
