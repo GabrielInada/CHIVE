@@ -117,7 +117,10 @@ Do not synchronously emit from a subscriber. When an owner truly needs a
 follow-up mutation, use a lint-safe deferral such as
 `window.queueMicrotask(() => { ... })`. The only production wildcard
 subscription is in `src/services/persistence/autoSave.js`; feature/render
-owners use typed subscriptions.
+owners use typed subscriptions. Subscribing or unsubscribing from inside a
+listener is safe and follows `EventTarget`-like rules, so teardown code can
+detach without worrying about the emission in flight; the exact contract is in
+[Event Registry](architecture-reference.md#event-registry).
 
 **CI runs the full local check on every push and PR** through
 `.github/workflows/lint-and-test.yml`, targeting `main` and `develop`.

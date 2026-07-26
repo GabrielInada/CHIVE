@@ -222,6 +222,18 @@ then wildcard listeners with `{ type, data }`, then dispatches
 `chive-state-changed` on `window`. Each listener error is caught and reported as
 `chive-internal-error`; one failing listener does not stop later fan-out.
 
+Typed and wildcard `onStateChange` registrations share one membership boundary
+per emission, which is fixed before the first listener runs. A registration
+added during an emission, on either sink, is not invoked by that emission and
+receives the next one. A registration detached before its turn is skipped; a
+callback already executing completes. The unsubscribe function returned by
+`onStateChange` is idempotent and detaches only its own registration, so
+subscribing one function twice to an event yields two registrations that are
+invoked and detached independently. The `chive-state-changed` window dispatch is
+`EventTarget`'s own and sits outside this boundary: a bus listener that adds a
+`window` handler for it during an emission can still be reached by that same
+emission.
+
 The `Emitters` and `Production subscriptions` cells use
 `path#enclosingFunction` and are checked against AST-derived call sites.
 
