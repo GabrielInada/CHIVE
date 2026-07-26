@@ -2,10 +2,15 @@
  * Settings dialog component.
  *
  * Callback-driven modal for global preferences, opened by the settings
- * controller from the shared header on every page. Renders two sections in
- * one scrollable body: General (interface language) and Performance (TIN
- * color rendering). Changes apply immediately through the provided callbacks;
- * there is no Save/Cancel transaction, and the component owns no storage.
+ * controller from the shared header on every page. Renders up to four sections
+ * in one scrollable body: General (interface language), Performance (TIN color
+ * rendering), Storage (quota status), and Data (clearing stored project data).
+ * Changes apply immediately through the provided callbacks; there is no
+ * Save/Cancel transaction, and the component owns no storage.
+ *
+ * The Data section appears only when the host passes `onClearStoredData`, which
+ * only the application page does. That keeps the About page's copy of this
+ * dialog free of any path into persistence or state.
  *
  * Every label carries a `data-i18n` (or `data-i18n-title`) attribute, so a
  * locale change made from the open dialog is refreshed in place by the i18n
@@ -54,6 +59,7 @@ function createSection(titleKey) {
  * @param {(mode: string) => void} args.onTinColorRenderingChange - Applied immediately.
  * @param {() => Promise<{ ok: boolean, usage?: number, quota?: number, persisted?: boolean, reason?: string }>} args.onGetStorageStatus
  * @param {() => Promise<{ ok: boolean, granted?: boolean, reason?: string }>} args.onRequestPersistentStorage
+ * @param {() => Promise<{ ok: boolean, cancelled?: boolean }>} [args.onClearStoredData] - Owns its own confirmation. Omit to leave the Data section out.
  * @param {() => void} [args.onClose] - Called once after any close path.
  * @returns {{ close: () => void }}
  */
@@ -64,6 +70,7 @@ export function openSettingsDialog({
 	onTinColorRenderingChange,
 	onGetStorageStatus,
 	onRequestPersistentStorage,
+	onClearStoredData,
 	onClose,
 }) {
 	const dialog = document.createElement('dialog');
@@ -267,6 +274,73 @@ export function openSettingsDialog({
 	storageSection.appendChild(storageUsage);
 	storageSection.appendChild(persistButton);
 	body.appendChild(storageSection);
+
+	// Data: destructive clear, application page only.
+	if (typeof onClearStoredData === 'function') {
+		const { section: dataSection } = createSection('chive-settings-section-data');
+
+		const clearHint = document.createElement('p');
+		clearHint.className = 'settings-hint';
+		clearHint.dataset.i18n = 'chive-settings-data-clear-hint';
+		clearHint.textContent = t('chive-settings-data-clear-hint');
+
+		// Terminal outcomes only. A "clearing…" interstitial would be announced as
+		// noise and would sit hidden behind the confirmation dialog anyway; the
+		// button's busy state carries the in-progress signal instead.
+		const clearStatus = document.createElement('p');
+		clearStatus.className = 'settings-data-status';
+		clearStatus.setAttribute('role', 'status');
+		clearStatus.setAttribute('aria-live', 'polite');
+
+		const clearButton = document.createElement('button');
+		clearButton.type = 'button';
+		clearButton.className = 'btn-secondary settings-data-clear';
+		clearButton.dataset.i18n = 'chive-settings-data-clear';
+		clearButton.textContent = t('chive-settings-data-clear');
+
+		const setClearStatus = key => {
+			if (!key) {
+				delete clearStatus.dataset.i18n;
+				clearStatus.textContent = '';
+				return;
+			}
+			clearStatus.dataset.i18n = key;
+			clearStatus.textContent = t(key);
+		};
+
+		// aria-disabled rather than the disabled property: a disabled button leaves
+		// the focus order, and the confirmation dialog returns focus to whatever was
+		// focused when it opened, which is this button.
+		let clearing = false;
+		clearButton.addEventListener('click', async () => {
+			if (clearing) return;
+			clearing = true;
+			clearButton.setAttribute('aria-disabled', 'true');
+			clearButton.setAttribute('aria-busy', 'true');
+			setClearStatus(null);
+			try {
+				const result = await onClearStoredData();
+				if (result?.cancelled) return;
+				if (!result?.ok) {
+					setClearStatus('chive-settings-data-clear-error');
+					return;
+				}
+				setClearStatus('chive-settings-data-cleared');
+				await refreshStorageStatus();
+			} catch {
+				setClearStatus('chive-settings-data-clear-error');
+			} finally {
+				clearing = false;
+				clearButton.removeAttribute('aria-disabled');
+				clearButton.removeAttribute('aria-busy');
+			}
+		});
+
+		dataSection.appendChild(clearHint);
+		dataSection.appendChild(clearButton);
+		dataSection.appendChild(clearStatus);
+		body.appendChild(dataSection);
+	}
 
 	surface.appendChild(body);
 	dialog.appendChild(surface);

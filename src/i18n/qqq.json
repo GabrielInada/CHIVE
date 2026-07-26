@@ -589,6 +589,13 @@
 	"chive-settings-storage-request": "Explicit settings action that asks the browser to protect stored project data from eviction.",
 	"chive-settings-storage-requesting": "Live status while the explicit persistent-storage request is pending.",
 	"chive-settings-storage-denied": "Status shown when the browser declines a persistent-storage request.",
+	"chive-settings-section-data": "Heading of the settings section that holds destructive stored-data actions. Rendered only on the application page.",
+	"chive-settings-data-clear": "Label of the destructive settings action that erases the project stored in the browser.",
+	"chive-settings-data-clear-hint": "Explains the scope of the clear action: project content is erased, language and app settings survive.",
+	"chive-settings-data-clear-confirm-title": "Title of the confirmation dialog shown before stored project data is erased.",
+	"chive-settings-data-clear-confirm": "Body of the confirmation dialog shown before stored project data is erased. States that the action is permanent, points at project export, and warns that another open tab can write its own copy back.",
+	"chive-settings-data-cleared": "Status shown in the settings dialog after stored project data was erased successfully.",
+	"chive-settings-data-clear-error": "Status shown in the settings dialog when erasing stored project data failed.",
 	"chive-about-page-title": "Browser tab title for the About page.",
 	"chive-footer-copyright": "Footer copyright notice. Keep the year and project name intact."
 }

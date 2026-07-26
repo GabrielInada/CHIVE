@@ -50,6 +50,23 @@ describe('shared page initializer', () => {
 		expect(mocks.initSettingsController).toHaveBeenCalledTimes(1);
 	});
 
+	it('forwards the clear callback to the settings controller', async () => {
+		const onClearStoredData = vi.fn();
+		const { initializeSharedPage } = await importShared();
+
+		await initializeSharedPage({ onClearStoredData });
+
+		expect(mocks.initSettingsController).toHaveBeenCalledWith({ onClearStoredData });
+	});
+
+	it('wires settings without a clear callback when called with no options', async () => {
+		const { initializeSharedPage } = await importShared();
+
+		await initializeSharedPage();
+
+		expect(mocks.initSettingsController).toHaveBeenCalledWith({ onClearStoredData: undefined });
+	});
+
 	it('propagates an i18n failure and does not wire settings', async () => {
 		mocks.initializeI18n.mockRejectedValue(new Error('bundle load failed'));
 		const { initializeSharedPage } = await importShared();

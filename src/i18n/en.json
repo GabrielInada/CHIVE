@@ -593,6 +593,14 @@
 	"chive-settings-storage-requesting": "Requesting storage protection…",
 	"chive-settings-storage-denied": "The browser did not grant storage protection.",
 
+	"chive-settings-section-data": "Data",
+	"chive-settings-data-clear": "Clear stored project data",
+	"chive-settings-data-clear-hint": "Removes the project saved in this browser, including its datasets and panel. Your language and app settings are kept.",
+	"chive-settings-data-clear-confirm-title": "Clear stored project data?",
+	"chive-settings-data-clear-confirm": "This permanently removes the project saved in this browser, including its datasets and panel. Export the project first if you want to keep a copy. Other CHIVE tabs open on this site may save their own copy again.",
+	"chive-settings-data-cleared": "Stored project data was removed.",
+	"chive-settings-data-clear-error": "Stored project data could not be removed.",
+
 	"chive-about-page-title": "About: CHIVE",
 	"chive-footer-copyright": "© 2026 CHIVE. All rights reserved."
 }
