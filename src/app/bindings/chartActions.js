@@ -50,10 +50,10 @@ function handleChartAction(actionBtn) {
 		const chartBlock = actionBtn.closest('.chart-block');
 		const fallbackTitle = chartBlock?.querySelector('.chart-title')?.textContent?.trim()
 			|| t('chive-card-charts');
-		const titulo = getChartSnapshotTitle(containerId, fallbackTitle);
+		const title = getChartSnapshotTitle(containerId, fallbackTitle);
 		const metadata = buildChartSnapshotMetadata(containerId);
 
-		const result = addChartToPanel(containerId, titulo, metadata);
+		const result = addChartToPanel(containerId, title, metadata);
 		if (!result.ok) {
 			showError(t('chive-panel-add-error'));
 		} else {

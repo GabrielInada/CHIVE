@@ -14,31 +14,31 @@ import { WORKSPACE_ACTION_IDS } from '../../features/datasetWorkspace/domIds.js'
  * Wires the sidebar navigation buttons.
  */
 export function setupSidebarNavigationButtons() {
-	const btnAvancar = document.getElementById(WORKSPACE_ACTION_IDS.advanceButton);
-	const btnEditarColunas = document.getElementById('btn-edit-columns');
-	const btnIrPainel = document.getElementById('btn-go-to-panel');
-	const btnVoltarViz = document.getElementById('btn-back-to-viz');
+	const advanceButton = document.getElementById(WORKSPACE_ACTION_IDS.advanceButton);
+	const editColumnsButton = document.getElementById('btn-edit-columns');
+	const goToPanelButton = document.getElementById('btn-go-to-panel');
+	const backToVisualizationsButton = document.getElementById('btn-back-to-viz');
 
-	if (btnAvancar) {
-		btnAvancar.addEventListener('click', () => {
+	if (advanceButton) {
+		advanceButton.addEventListener('click', () => {
 			navigateToTab('charts');
 		});
 	}
 
-	if (btnEditarColunas) {
-		btnEditarColunas.addEventListener('click', () => {
+	if (editColumnsButton) {
+		editColumnsButton.addEventListener('click', () => {
 			navigateToTab('preview');
 		});
 	}
 
-	if (btnIrPainel) {
-		btnIrPainel.addEventListener('click', () => {
+	if (goToPanelButton) {
+		goToPanelButton.addEventListener('click', () => {
 			navigateToTab('panel');
 		});
 	}
 
-	if (btnVoltarViz) {
-		btnVoltarViz.addEventListener('click', () => {
+	if (backToVisualizationsButton) {
+		backToVisualizationsButton.addEventListener('click', () => {
 			navigateToTab('charts');
 		});
 	}

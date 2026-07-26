@@ -34,10 +34,10 @@ export function createBarColorAccessor({
 	gradientDistribution,
 	manualThresholdPct,
 }) {
-	const minValor = Math.min(...entries.map(item => item[1]));
-	const maxValor = Math.max(...entries.map(item => item[1]));
-	const deltaValor = maxValor - minValor || 1;
-	const thresholdValue = minValor + (deltaValor * (manualThresholdPct / 100));
+	const minValue = Math.min(...entries.map(item => item[1]));
+	const maxValue = Math.max(...entries.map(item => item[1]));
+	const valueRange = maxValue - minValue || 1;
+	const thresholdValue = minValue + (valueRange * (manualThresholdPct / 100));
 	const rankMap = (colorMode === 'gradient' && gradientDistribution === 'rank')
 		? buildRankMap(entries, item => item[1])
 		: null;
@@ -51,7 +51,7 @@ export function createBarColorAccessor({
 				if (rank === undefined) return gradientMinColor;
 				return interpolateColor(gradientMinColor, gradientMaxColor, rank / rankDenom);
 			}
-			return interpolateColor(gradientMinColor, gradientMaxColor, (item[1] - minValor) / deltaValor);
+			return interpolateColor(gradientMinColor, gradientMaxColor, (item[1] - minValue) / valueRange);
 		}
 		if (colorMode === 'gradient-manual') {
 			return item[1] <= thresholdValue ? gradientMinColor : gradientMaxColor;

@@ -38,7 +38,7 @@ export function renderColumnControlsDOM({
 		const button = document.createElement('button');
 		button.className = `column-action${active ? ' active' : ''}`;
 		button.type = 'button';
-		button.dataset.acaoColuna = action;
+		button.dataset.columnAction = action;
 		button.textContent = text;
 		return button;
 	};
@@ -49,9 +49,9 @@ export function renderColumnControlsDOM({
 	actionsContainer.appendChild(createActionButton('text', translate('chive-action-only-text'), activeFilter === 'text'));
 
 	actionsContainer.onclick = event => {
-		const target = event.target.closest('[data-acao-coluna]');
+		const target = event.target.closest('[data-column-action]');
 		if (!target || !onColumnSelectionChange) return;
-		const action = target.dataset.acaoColuna;
+		const action = target.dataset.columnAction;
 		if (action === 'all') {
 			onColumnSelectionChange(columnNames);
 			return;
@@ -78,7 +78,7 @@ export function renderColumnControlsDOM({
 		const checkbox = document.createElement('input');
 		checkbox.className = 'column-checkbox';
 		checkbox.type = 'checkbox';
-		checkbox.dataset.coluna = name;
+		checkbox.dataset.column = name;
 		checkbox.checked = selectedNames.has(name);
 
 		const nameSpan = document.createElement('span');
@@ -100,7 +100,7 @@ export function renderColumnControlsDOM({
 		if (!(target instanceof HTMLInputElement) || target.type !== 'checkbox' || !onColumnSelectionChange) return;
 
 		const selected = Array.from(columnsList.querySelectorAll('.column-checkbox:checked'))
-			.map(checkbox => checkbox.dataset.coluna)
+			.map(checkbox => checkbox.dataset.column)
 			.filter(Boolean);
 		onColumnSelectionChange(selected);
 	};

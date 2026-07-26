@@ -44,7 +44,7 @@ export function renderFileListDOM({
 		const selectButton = document.createElement('button');
 		selectButton.className = 'file-item-button';
 		selectButton.type = 'button';
-		selectButton.dataset.acao = 'selecionar';
+		selectButton.dataset.fileAction = 'select';
 		selectButton.dataset.idx = String(index);
 
 		const name = document.createElement('span');
@@ -64,7 +64,7 @@ export function renderFileListDOM({
 		const removeButton = document.createElement('button');
 		removeButton.className = 'file-item-remove';
 		removeButton.type = 'button';
-		removeButton.dataset.acao = 'remover';
+		removeButton.dataset.fileAction = 'remove';
 		removeButton.dataset.idx = String(index);
 		removeButton.setAttribute('aria-label', translate('chive-remove-file', dataset.name));
 		removeButton.textContent = '×';
@@ -84,13 +84,13 @@ export function renderFileListDOM({
 	}
 
 	list.onclick = event => {
-		const target = event.target.closest('[data-acao]');
+		const target = event.target.closest('[data-file-action]');
 		if (!target) return;
 
 		const index = Number(target.dataset.idx);
 		if (Number.isNaN(index)) return;
 
-		if (target.dataset.acao === 'remover') {
+		if (target.dataset.fileAction === 'remove') {
 			onRemove(index);
 			return;
 		}
