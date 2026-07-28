@@ -14,6 +14,7 @@
  */
 
 import { SCATTER3D_CHART } from '../../config/charts/definitions/scatter3d.js';
+import { toFiniteNumber } from '../../utils/formatters.js';
 import { sampleWithExtrema } from '../shared/pointSampling.js';
 
 /**
@@ -28,9 +29,11 @@ import { sampleWithExtrema } from '../shared/pointSampling.js';
 /**
  * Build the plottable point set for the 3D scatter.
  *
- * Values are coerced with `Number(...)` first and then filtered with
+ * Values are coerced with `toFiniteNumber(...)` and then filtered with
  * `Number.isFinite(...)`, matching the other charts, so numeric strings
- * survive and null/undefined/NaN rows drop out.
+ * survive while null/undefined/blank/NaN rows drop out. Plain `Number()`
+ * would turn a blank cell into a real point at `0`, which then anchors the
+ * axis extent and squeezes every genuine point against the opposite face.
  *
  * @param {Array<Object<string, *>>} rows
  * @param {string} x - Numeric column for the X axis.
@@ -50,9 +53,9 @@ export function buildScatter3dPoints(rows, x, y, z) {
 	const valid = [];
 	for (let index = 0; index < totalCount; index++) {
 		const row = rows[index];
-		const px = Number(row?.[x]);
-		const py = Number(row?.[y]);
-		const pz = Number(row?.[z]);
+		const px = toFiniteNumber(row?.[x]);
+		const py = toFiniteNumber(row?.[y]);
+		const pz = toFiniteNumber(row?.[z]);
 		if (Number.isFinite(px) && Number.isFinite(py) && Number.isFinite(pz)) {
 			valid.push({ x: px, y: py, z: pz, index });
 		}

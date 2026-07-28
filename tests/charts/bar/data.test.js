@@ -39,6 +39,23 @@ describe('aggregateBarData', () => {
 		expect(result.entries).toEqual([['A', 15], ['B', 5]]);
 	});
 
+	it.each([
+		['empty string', ''],
+		['whitespace', '   '],
+		['null', null],
+	])('keeps a %s value out of the mean denominator', (_label, missing) => {
+		const rows = [{ c: 'A', v: 10 }, { c: 'A', v: 20 }, { c: 'A', v: missing }];
+		const result = aggregateBarData(rows, 'c', { ...countArgs, measureMode: 'mean', valueColumn: 'v' });
+		// Counting the blank would divide 30 by 3 and report 10.
+		expect(result.entries).toEqual([['A', 15]]);
+	});
+
+	it('does not invent a zero-value category from blank cells in sum mode', () => {
+		const rows = [{ c: 'A', v: 10 }, { c: 'B', v: '' }];
+		const result = aggregateBarData(rows, 'c', { ...countArgs, measureMode: 'sum', valueColumn: 'v' });
+		expect(result.entries).toEqual([['A', 10]]);
+	});
+
 	it('fails with no-value-column for sum/mean without a usable column', () => {
 		expect(aggregateBarData([{ c: 'A' }], 'c', { ...countArgs, measureMode: 'sum', valueColumn: null }))
 			.toEqual({ ok: false, reason: 'no-value-column' });

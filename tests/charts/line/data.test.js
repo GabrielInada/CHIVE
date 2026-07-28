@@ -53,6 +53,50 @@ describe('aggregatePoints', () => {
 		expect(byX('sum')).toEqual([[1, 30], [2, 5]]);
 		expect(byX('mean')).toEqual([[1, 15], [2, 5]]);
 	});
+
+	describe('a group whose y values are all missing', () => {
+		// buildPoints keeps a missing y as NaN so the renderer can gap it, but
+		// the group still exists because its x was valid.
+		const withEmptyGroup = [{ x: 1, y: 10 }, { x: 2, y: NaN }];
+
+		it('sums to NaN so the renderer gaps it instead of dipping to zero', () => {
+			const summed = aggregatePoints(withEmptyGroup, 'sum');
+			expect(summed.map(p => p.x)).toEqual([1, 2]);
+			expect(summed[0].y).toBe(10);
+			expect(summed[1].y).toBeNaN();
+		});
+
+		it('matches mean, which already gapped it', () => {
+			const summed = aggregatePoints(withEmptyGroup, 'sum');
+			const meaned = aggregatePoints(withEmptyGroup, 'mean');
+			expect(Number.isNaN(summed[1].y)).toBe(Number.isNaN(meaned[1].y));
+		});
+
+		it('still counts zero present values, which is a truthful count', () => {
+			expect(aggregatePoints(withEmptyGroup, 'count').map(p => [p.x, p.y]))
+				.toEqual([[1, 1], [2, 0]]);
+		});
+	});
+});
+
+describe('buildPoints missing-value handling', () => {
+	it.each([
+		['empty string', ''],
+		['whitespace', '   '],
+		['null', null],
+	])('keeps a %s y as NaN rather than zero', (_label, missing) => {
+		const points = buildPoints([{ x: 1, y: missing }], 'x', 'y', AXIS_KIND.numeric);
+		expect(points).toHaveLength(1);
+		expect(points[0].y).toBeNaN();
+	});
+
+	it.each([
+		['empty string', ''],
+		['whitespace', '   '],
+		['null', null],
+	])('skips a row whose numeric x is %s', (_label, missing) => {
+		expect(buildPoints([{ x: missing, y: 1 }], 'x', 'y', AXIS_KIND.numeric)).toEqual([]);
+	});
 });
 
 describe('sortByX', () => {

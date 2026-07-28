@@ -13,6 +13,7 @@ import { joinDatasetsInWorker } from '../../../services/dataIngestService.js';
 import { addDataset, getAllDatasets } from '../../../state/appState.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
 import { ROW_LIMIT } from '../../../config/limits.js';
+import { STATS_NUMERIC_VERSION } from '../../../config/statistics.js';
 import { joinValidationMessageKey, validateJoinSpec } from '../joinValidation.js';
 
 /**
@@ -160,6 +161,7 @@ export async function createJoinedDataset(spec = {}, dependencies = {}) {
 			precomputedStats: {
 				numeric: statsNumeric,
 				categorical: statsCategorical,
+				numericVersion: STATS_NUMERIC_VERSION,
 			},
 		};
 

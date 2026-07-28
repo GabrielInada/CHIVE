@@ -1,5 +1,5 @@
 import { max, mean, median, min } from '../../../vendor/d3/d3.js';
-import { isNullish } from '../../utils/formatters.js';
+import { isNullish, toFiniteNumber } from '../../utils/formatters.js';
 
 /**
  * CHIVE per-column statistics.
@@ -27,9 +27,13 @@ export function calculateStatistics(rows, columns) {
 	return columns
 		.filter(column => column.type === 'number')
 		.map(({ name }) => {
+			// Coerce before filtering, not after: `isNaN('')` is false, so a
+			// blank cell would otherwise reach d3 and take over `min` while
+			// counting as 0 in `mean`/`median`. Mapping also guarantees d3 sees
+			// numbers, since `min(['10', '20'])` returns a string.
 			const values = rows
-				.map(row => row[name])
-				.filter(value => value !== null && value !== undefined && !isNaN(value));
+				.map(row => toFiniteNumber(row[name]))
+				.filter(Number.isFinite);
 
 			if (values.length === 0) return null;
 

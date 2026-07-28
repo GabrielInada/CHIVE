@@ -7,7 +7,7 @@
  * `renderers/svg.js`.
  */
 
-import { isNullish } from '../../utils/formatters.js';
+import { isNullish, toFiniteNumber } from '../../utils/formatters.js';
 import { compareStrings } from '../../domain/filters/chartFilter.js';
 
 // WHY: every count-based sort uses `|| compareStrings(a[0], b[0])` as a tiebreaker
@@ -61,7 +61,7 @@ export function aggregateBarData(rows, categoryColumn, { measureMode, valueColum
 			const category = isNullish(rawValue) || rawValue === ''
 				? 'N/A'
 				: String(rawValue);
-			const value = Number(row[valueColumn]);
+			const value = toFiniteNumber(row[valueColumn]);
 			if (!Number.isFinite(value)) return;
 			counter.set(category, (counter.get(category) || 0) + value);
 			counterN.set(category, (counterN.get(category) || 0) + 1);

@@ -9,24 +9,50 @@ import { calculateStatistics, calculateCategoricalStatistics } from '../../../do
 import { getActiveDataset } from '../../../state/appState.js';
 import { t, getLocale } from '../../../services/i18nService.js';
 import { formatNumber } from '../../../utils/formatters.js';
+import { STATS_NUMERIC_VERSION } from '../../../config/statistics.js';
 import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
 
 /**
- * Reuse worker-computed numeric stats when the rows we're rendering are
- * the active dataset's full unfiltered rows. Falls back to live calc for
- * joined datasets (no worker pass) or filtered slices.
+ * Numeric stats recomputed for a dataset whose cached blob was dropped at
+ * hydrate. Keyed by the rows array itself, so a dataset that stays loaded pays
+ * the scan once instead of on every render. Entries die with their rows array.
+ *
+ * @private
+ * @type {WeakMap<Array<Object<string, *>>, import('../../../types.js').NumericColumnStats[]>}
+ */
+const recomputedNumericStats = new WeakMap();
+
+/**
+ * Reuse worker-computed numeric stats when the rows we're rendering are the
+ * active dataset's full unfiltered rows and the cache was produced by the
+ * current statistics implementation. Falls back to live calc for filtered
+ * slices, and for restored datasets whose stale cache was dropped at hydrate
+ * (see `withValidNumericStats` in services/persistence/snapshot.js).
  *
  * @private
  */
 function getNumericStats(rows, visibleColumns) {
 	const dataset = getActiveDataset();
-	const precomputed = dataset?.precomputedStats?.numeric;
-	if (Array.isArray(precomputed) && dataset.rows === rows) {
-		const visibleNames = new Set(
-			visibleColumns.filter(c => c.type === 'number').map(c => c.name),
-		);
-		return precomputed.filter(stat => visibleNames.has(stat.name));
+	const isFullDatasetRows = Boolean(dataset) && dataset.rows === rows;
+	const visibleNames = new Set(
+		visibleColumns.filter(c => c.type === 'number').map(c => c.name),
+	);
+
+	if (isFullDatasetRows) {
+		const stats = dataset.precomputedStats;
+		if (Array.isArray(stats?.numeric) && stats.numericVersion === STATS_NUMERIC_VERSION) {
+			return stats.numeric.filter(stat => visibleNames.has(stat.name));
+		}
+		// Compute over every column, not just the visible ones, so toggling
+		// column visibility reuses the same cache entry.
+		let recomputed = recomputedNumericStats.get(rows);
+		if (!recomputed) {
+			recomputed = calculateStatistics(rows, dataset.columns || visibleColumns);
+			recomputedNumericStats.set(rows, recomputed);
+		}
+		return recomputed.filter(stat => visibleNames.has(stat.name));
 	}
+
 	return calculateStatistics(rows, visibleColumns);
 }
 

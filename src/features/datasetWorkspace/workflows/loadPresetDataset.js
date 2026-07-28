@@ -7,11 +7,16 @@
 
 import { t } from '../../../services/i18nService.js';
 import { processData } from '../../../domain/datasets/processData.js';
+import {
+	calculateStatistics,
+	calculateCategoricalStatistics,
+} from '../../../domain/datasets/statistics.js';
 import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../../../services/dataIngestService.js';
 import { loadPresetSource } from '../../../services/presetService.js';
 import { addDataset } from '../../../state/appState.js';
 import { showError, showProgress } from '../../../ui/feedback.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
+import { STATS_NUMERIC_VERSION } from '../../../config/statistics.js';
 
 /**
  * Resolve and load a preset dataset.
@@ -72,6 +77,11 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 			const processed = processData(rows);
 			rows = processed.rows;
 			columns = processed.columns;
+			// The ingest worker computes these on the file path; do the same here
+			// or the dataset carries an empty numeric strip that statsView
+			// accepts as a valid cache.
+			statsNumeric = calculateStatistics(rows, columns);
+			statsCategorical = calculateCategoricalStatistics(rows, columns);
 			progress.update(100);
 		} else {
 			const ingestResult = await ingestFile(
@@ -100,7 +110,11 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 			columns,
 			selectedColumns: columns.map(c => c.name),
 			chartConfig: createDefaultChartConfig(),
-			precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
+			precomputedStats: {
+				numeric: statsNumeric,
+				categorical: statsCategorical,
+				numericVersion: STATS_NUMERIC_VERSION,
+			},
 		};
 
 		const index = addDataset(dataset);

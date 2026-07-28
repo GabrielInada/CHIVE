@@ -9,7 +9,7 @@
  * `renderers/svg.js`.
  */
 
-import { formatDate, formatNumber, isNullish } from '../../utils/formatters.js';
+import { formatDate, formatNumber, isNullish, toFiniteNumber } from '../../utils/formatters.js';
 import { compareStrings } from '../../domain/filters/chartFilter.js';
 
 export const AXIS_KIND = { date: 'date', numeric: 'numeric', categorical: 'categorical' };
@@ -51,15 +51,12 @@ export function buildPoints(rows, xColumn, yColumn, xKind) {
 		const row = rows[index];
 		const xRaw = row?.[xColumn];
 		const yRaw = row?.[yColumn];
-		const yIsMissing = isNullish(yRaw) || yRaw === '';
-		const yNum = yIsMissing ? NaN : Number(yRaw);
-		const y = Number.isFinite(yNum) ? yNum : NaN;
+		const y = toFiniteNumber(yRaw);
 		let x;
 		if (xKind === AXIS_KIND.date) {
 			x = toDateOrNull(xRaw);
 		} else if (xKind === AXIS_KIND.numeric) {
-			const xIsMissing = isNullish(xRaw) || xRaw === '';
-			const n = xIsMissing ? NaN : Number(xRaw);
+			const n = toFiniteNumber(xRaw);
 			x = Number.isFinite(n) ? n : null;
 		} else {
 			x = isNullish(xRaw) ? null : String(xRaw);
@@ -94,7 +91,10 @@ export function aggregatePoints(points, mode) {
 		if (mode === 'count') {
 			y = group.ys.length;
 		} else if (mode === 'sum') {
-			y = group.ys.reduce((acc, v) => acc + v, 0);
+			// An empty group means every y in it was missing. Summing to 0 would
+			// draw a real point at zero; NaN lets the renderer gap it instead,
+			// matching mean below.
+			y = group.ys.length ? group.ys.reduce((acc, v) => acc + v, 0) : NaN;
 		} else if (mode === 'mean') {
 			y = group.ys.length ? group.ys.reduce((acc, v) => acc + v, 0) / group.ys.length : NaN;
 		} else {

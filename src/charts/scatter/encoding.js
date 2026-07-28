@@ -9,6 +9,7 @@
 
 import { scaleSqrt } from '../../../vendor/d3/d3.js';
 import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
+import { toFiniteNumber } from '../../utils/formatters.js';
 import { normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
 import { pickMostFrequentCategory } from './axisHelpers.js';
 import { getScatterPalette } from './palettes.js';
@@ -48,7 +49,7 @@ export function buildRadiusAccessor({
 	let sizeScale = null;
 	if (sizeMode === 'numeric' && sizeField && !shouldAggregateCategoricalPairs) {
 		const sizeValues = points
-			.map(point => Number(point.raw?.[sizeField]))
+			.map(point => toFiniteNumber(point.raw?.[sizeField]))
 			.filter(Number.isFinite);
 		if (sizeValues.length > 0) {
 			const minV = Math.min(...sizeValues);
@@ -66,7 +67,7 @@ export function buildRadiusAccessor({
 			return radius + ((maxAggregateRadius - radius) * progress);
 		}
 		if (sizeScale) {
-			const v = Number(point.raw?.[sizeField]);
+			const v = toFiniteNumber(point.raw?.[sizeField]);
 			if (Number.isFinite(v)) return sizeScale(v);
 		}
 		return radius;
@@ -105,10 +106,10 @@ export function buildColorAccessor({
 	if (colorMode === 'numeric' && colorField) {
 		const getNumericColorValue = point => {
 			if (!point.isAggregate) {
-				return Number(point.raw?.[colorField]);
+				return toFiniteNumber(point.raw?.[colorField]);
 			}
 			const values = (point.rawRows || [])
-				.map(row => Number(row?.[colorField]))
+				.map(row => toFiniteNumber(row?.[colorField]))
 				.filter(Number.isFinite);
 			if (values.length === 0) return NaN;
 			return values.reduce((acc, value) => acc + value, 0) / values.length;
