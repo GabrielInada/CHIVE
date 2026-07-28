@@ -84,6 +84,7 @@ import {
   selectDataset,
   setupFileInputListeners,
 } from '../../../src/features/datasetWorkspace/datasetController.js';
+import { STATS_NUMERIC_VERSION } from '../../../src/config/statistics.js';
 
 class FileReaderMock {
   readAsText(file) {
@@ -178,7 +179,11 @@ describe('datasetController', () => {
     expect(added.name).toBe('ok.csv');
     expect(added.selectedColumns).toEqual(['a']);
     expect(added.chartConfig.bar.enabled).toBe(false);
-    expect(added.precomputedStats).toEqual({ numeric: [], categorical: [] });
+    expect(added.precomputedStats).toEqual({
+      numeric: [],
+      categorical: [],
+      numericVersion: STATS_NUMERIC_VERSION,
+    });
   });
 
   it('handles format errors and large-file cancellation', async () => {
@@ -616,7 +621,12 @@ describe('datasetController', () => {
       const added = mocks.addDataset.mock.calls[0][0];
       expect(added.name).toBe('preset-name');
       expect(added.selectedColumns).toEqual(['a']);
-      expect(added.precomputedStats).toEqual({ numeric: [], categorical: [] });
+      // Inline presets skip the ingest worker, so the workflow computes stats
+      // itself rather than storing an empty array statsView would trust.
+      expect(added.precomputedStats.numericVersion).toBe(STATS_NUMERIC_VERSION);
+      expect(added.precomputedStats.numeric).toEqual([
+        { name: 'a', n: 1, min: 1, max: 1, mean: 1, median: 1 },
+      ]);
       expect(mocks.setActiveDataset).toHaveBeenCalledWith(3);
       const progress = mocks.showProgress.mock.results.at(-1).value;
       expect(progress.succeed).toHaveBeenCalledWith('chive-preset-load-success:preset-name');

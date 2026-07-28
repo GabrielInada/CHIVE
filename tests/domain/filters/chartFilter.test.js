@@ -68,6 +68,48 @@ describe('chartFilter', () => {
     expect(equal).toEqual([{ age: 22 }]);
   });
 
+  describe('blank cells in a numeric column', () => {
+    // Rows that carry a label but no measurement. Coerced with plain Number()
+    // these all read as 0, so `eq 0` matched them and any bound spanning zero
+    // swept them in.
+    const rows = [{ v: 5 }, { v: '' }, { v: '   ' }, { v: null }, { v: 0 }];
+
+    it('does not match blanks under eq 0, only the genuine zero', () => {
+      const result = applyChartFilterRows(rows, {
+        column: 'v',
+        mode: 'numeric',
+        operator: 'eq',
+        value: '0',
+      }, ['v']);
+
+      expect(result).toEqual([{ v: 0 }]);
+    });
+
+    it('excludes blanks from lt, gt, and between', () => {
+      const apply = extra => applyChartFilterRows(rows, {
+        column: 'v',
+        mode: 'numeric',
+        ...extra,
+      }, ['v']);
+
+      expect(apply({ operator: 'lt', value: '10' })).toEqual([{ v: 5 }, { v: 0 }]);
+      expect(apply({ operator: 'gt', value: '-1' })).toEqual([{ v: 5 }, { v: 0 }]);
+      expect(apply({ operator: 'between', min: '-1', max: '10' })).toEqual([{ v: 5 }, { v: 0 }]);
+    });
+
+    it('treats a blank bound as unusable and leaves the rows alone', () => {
+      const apply = extra => applyChartFilterRows(rows, {
+        column: 'v',
+        mode: 'numeric',
+        ...extra,
+      }, ['v']);
+
+      expect(apply({ operator: 'eq', value: '' })).toBe(rows);
+      expect(apply({ operator: 'gt', value: '   ' })).toBe(rows);
+      expect(apply({ operator: 'between', min: '', max: '10' })).toBe(rows);
+    });
+  });
+
   it('returns all rows when filter has no selected column', () => {
     const rows = [{ a: 1 }, { a: 2 }];
     const filtered = applyChartFilterRows(rows, createDefaultFilterConfig(), ['a']);

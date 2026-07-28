@@ -25,6 +25,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 }));
 
 import { renderCategoricalStats, renderStats } from '../../../../src/features/datasetWorkspace/views/statsView.js';
+import { STATS_NUMERIC_VERSION } from '../../../../src/config/statistics.js';
 
 const rows = [
 	{ region: 'North', value: 10 },
@@ -62,6 +63,7 @@ describe('statsView', () => {
 		mocks.getActiveDataset.mockReturnValue({
 			rows,
 			precomputedStats: {
+				numericVersion: STATS_NUMERIC_VERSION,
 				numeric: [
 					{ name: 'value', n: 2, min: 10, max: 20, mean: 15, median: 15 },
 					{ name: 'hidden', n: 2, min: 1, max: 2, mean: 1.5, median: 1.5 },
@@ -92,6 +94,49 @@ describe('statsView', () => {
 		renderStats(rows, visibleColumns);
 		expect(document.getElementById('card-stats').hidden).toBe(true);
 		expect(document.getElementById('container-stats').children.length).toBe(0);
+	});
+
+	// The recompute cache is keyed by rows identity and lives for the module's
+	// lifetime, so each of these builds its own array rather than sharing the
+	// module-level `rows` fixture.
+	it.each([
+		['a stale version', 0],
+		['no version at all', undefined],
+	])('recomputes numeric stats live when the cache carries %s', (_label, numericVersion) => {
+		const ownRows = rows.map(row => ({ ...row }));
+		const staleStats = [{ name: 'value', n: 2, min: '', max: 20, mean: 10, median: 10 }];
+		mocks.getActiveDataset.mockReturnValue({
+			rows: ownRows,
+			columns: visibleColumns,
+			precomputedStats: { numericVersion, numeric: staleStats },
+		});
+		mocks.calculateStatistics.mockReturnValue([
+			{ name: 'value', n: 2, min: 10, max: 20, mean: 15, median: 15 },
+		]);
+
+		renderStats(ownRows, visibleColumns);
+
+		expect(mocks.calculateStatistics).toHaveBeenCalledWith(ownRows, visibleColumns);
+		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
+	});
+
+	it('scans the rows once when the same recomputed dataset is re-rendered', () => {
+		const ownRows = rows.map(row => ({ ...row }));
+		mocks.getActiveDataset.mockReturnValue({
+			rows: ownRows,
+			columns: visibleColumns,
+			precomputedStats: { numeric: [], categorical: [] },
+		});
+		mocks.calculateStatistics.mockReturnValue([
+			{ name: 'value', n: 2, min: 10, max: 20, mean: 15, median: 15 },
+		]);
+
+		renderStats(ownRows, visibleColumns);
+		renderStats(ownRows, visibleColumns);
+		renderStats(ownRows, visibleColumns);
+
+		expect(mocks.calculateStatistics).toHaveBeenCalledTimes(1);
+		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
 	});
 
 	it('renders categorical stats including empty-column placeholders', () => {

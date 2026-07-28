@@ -35,7 +35,7 @@
 import { Delaunay, axisBottom, axisLeft, extent, scaleLinear } from '../../../../vendor/d3/d3.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { TIN_CHART } from '../../../config/charts/definitions/tin.js';
-import { formatNumber } from '../../../utils/formatters.js';
+import { formatNumber, toFiniteNumber } from '../../../utils/formatters.js';
 import { interpolateColor } from '../../../utils/colorUtils.js';
 import { ok, fail } from '../../../utils/result.js';
 import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../../shared/tooltip/tooltip.js';
@@ -83,13 +83,13 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 	const cfg = normalizeTinOptions(options, xColumn, yColumn, zColumn);
 	const { axisLabels, locale } = cfg;
 
-	const isMissing = v => v === null || v === undefined || v === '';
+	const hasCoordinate = value => Number.isFinite(toFiniteNumber(value));
 	const points = (Array.isArray(rows) ? rows : [])
-		.filter(row => row && !isMissing(row[xColumn]) && !isMissing(row[yColumn]) && !isMissing(row[zColumn]))
+		.filter(row => row && hasCoordinate(row[xColumn]) && hasCoordinate(row[yColumn]) && hasCoordinate(row[zColumn]))
 		.map((row, index) => ({
-			x: Number(row[xColumn]),
-			y: Number(row[yColumn]),
-			z: Number(row[zColumn]),
+			x: toFiniteNumber(row[xColumn]),
+			y: toFiniteNumber(row[yColumn]),
+			z: toFiniteNumber(row[zColumn]),
 			raw: row,
 			index,
 		}))
@@ -366,9 +366,9 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 		circles
 			.on('mouseenter', (event, d) => {
 				const wrapper = document.createElement('div');
-				wrapper.appendChild(createTooltipLine(axisLabels.x, formatNumber(Number(d.raw?.[xColumn]), locale)));
-				wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(Number(d.raw?.[yColumn]), locale)));
-				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(Number(d.raw?.[zColumn]), locale)));
+				wrapper.appendChild(createTooltipLine(axisLabels.x, formatNumber(d.x, locale)));
+				wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(d.y, locale)));
+				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(d.z, locale)));
 				showChartTooltip(wrapper, event.pageX, event.pageY);
 			})
 			.on('mousemove', event => moveChartTooltip(event.pageX, event.pageY))

@@ -16,6 +16,7 @@ import {
 	getCategoricalFilterOptions,
 } from '../../../domain/filters/chartFilter.js';
 import { createEmptyGlobalFilter } from '../../../domain/filters/globalFilter.js';
+import { toFiniteNumber } from '../../../utils/formatters.js';
 import { showNativeModal } from '../../../ui/nativeDialog.js';
 import {
 	applyRuleColumnChange,
@@ -45,9 +46,9 @@ function renderNumericRuleBody({ body, rule, rows, translate }) {
 	let domainMin = null;
 	let domainMax = null;
 	rows.forEach(row => {
-		const rawValue = row?.[rule.column];
-		if (rawValue === null || rawValue === undefined || rawValue === '') return;
-		const value = Number(rawValue);
+		// Must match chartFilter's numeric coercion, or the dialog advertises a
+		// domain bound that the filter itself excludes.
+		const value = toFiniteNumber(row?.[rule.column]);
 		if (!Number.isFinite(value)) return;
 		domainMin = domainMin === null ? value : Math.min(domainMin, value);
 		domainMax = domainMax === null ? value : Math.max(domainMax, value);

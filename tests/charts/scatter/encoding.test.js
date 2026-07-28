@@ -60,6 +60,24 @@ describe('buildRadiusAccessor', () => {
 		expect(new Set(radii).size).toBe(3);
 	});
 
+	it('keeps blank size values out of the domain and falls back to the base radius', () => {
+		// A blank read as 0 would anchor the sqrt domain at 0 and shrink every
+		// genuine point toward sizeMin.
+		const points = [point({ sz: 10 }, 0), point({ sz: 20 }, 1), point({ sz: '' }, 2)];
+		const getPointRadius = buildRadiusAccessor({
+			points,
+			sizeMode: 'numeric',
+			sizeField: 'sz',
+			sizeMin: 2,
+			sizeMax: 12,
+			radius: 4,
+			shouldAggregateCategoricalPairs: false,
+		});
+		expect(getPointRadius(points[0])).toBeCloseTo(2);
+		expect(getPointRadius(points[1])).toBeCloseTo(12);
+		expect(getPointRadius(points[2])).toBe(4);
+	});
+
 	it('sizes aggregate bubbles by their count', () => {
 		const points = [
 			{ isAggregate: true, count: 1, index: 0 },
@@ -101,6 +119,38 @@ describe('buildColorAccessor', () => {
 		const fills = new Set(points.map(result.getPointColor));
 		expect(fills.has('#000000')).toBe(true);
 		expect(fills.has('#FFFFFF')).toBe(true);
+	});
+
+	it('excludes blank values from the gradient domain on ordinary points', () => {
+		// Read as 0, a blank would stretch the domain down to zero and shift
+		// every real point's position along the gradient.
+		const points = [point({ val: 10 }, 0), point({ val: 20 }, 1), point({ val: '' }, 2)];
+		const result = buildColorAccessor({ ...baseArgs, points, colorMode: 'numeric', colorField: 'val' });
+
+		expect(result.getPointColor(points[0])).toBe('#000000');
+		expect(result.getPointColor(points[1])).toBe('#FFFFFF');
+		// Not on the gradient at all, so it falls back to the base color.
+		expect(result.getPointColor(points[2])).toBe('#1a472a');
+	});
+
+	it('averages only the present values of an aggregate point', () => {
+		const aggregate = {
+			isAggregate: true,
+			index: 0,
+			rawRows: [{ val: 10 }, { val: 20 }, { val: '' }, { val: null }],
+		};
+		const plain = point({ val: 15 }, 1);
+		const result = buildColorAccessor({
+			...baseArgs,
+			points: [aggregate, plain],
+			colorMode: 'numeric',
+			colorField: 'val',
+		});
+
+		// Mean of the two present values is 15, identical to the plain point,
+		// so both land on the same gradient stop. Counting the blanks would
+		// average 30/4 = 7.5 and pull the aggregate toward the min color.
+		expect(result.getPointColor(aggregate)).toBe(result.getPointColor(plain));
 	});
 
 	it('produces different fills for rank vs value distribution on skewed data', () => {

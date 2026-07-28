@@ -9,7 +9,7 @@
  * Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { isNullish } from '../../utils/formatters.js';
+import { isNullish, toFiniteNumber } from '../../utils/formatters.js';
 
 /** @private */
 function sanitizeNodeValue(value) {
@@ -36,7 +36,7 @@ export function buildNetworkData(rows, sourceColumn, targetColumn, weightColumn,
 		const target = sanitizeNodeValue(row[targetColumn]);
 		if (!source || !target) return;
 
-		const rawWeight = weightColumn ? Number(row[weightColumn]) : 1;
+		const rawWeight = weightColumn ? toFiniteNumber(row[weightColumn]) : 1;
 		const weight = Number.isFinite(rawWeight) && rawWeight > 0 ? rawWeight : 1;
 		const rawGroup = groupColumn ? sanitizeNodeValue(row[groupColumn]) : '';
 		const group = rawGroup || 'default';

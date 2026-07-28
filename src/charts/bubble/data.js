@@ -9,6 +9,7 @@
 import { compareStrings, normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
 import { normalizeColumnNameList } from '../../domain/datasets/columns.js';
 import { BUBBLE_CHART } from '../../config/charts/definitions/bubble.js';
+import { toFiniteNumber } from '../../utils/formatters.js';
 
 /**
  * Resolve the effective nesting-column list from a bubble options bag.
@@ -71,7 +72,7 @@ export function aggregateBubbles({ rows, categoryColumn, measureMode, valueColum
 		const counter = new Map();
 		rows.forEach(row => {
 			const category = normalizeCategoryValue(row[categoryColumn]);
-			const rawValue = Number(row[valueColumn]);
+			const rawValue = toFiniteNumber(row[valueColumn]);
 			if (!Number.isFinite(rawValue)) return;
 			aggregated.set(category, (aggregated.get(category) || 0) + rawValue);
 			counter.set(category, (counter.get(category) || 0) + 1);

@@ -50,13 +50,18 @@
  */
 
 /**
- * Worker-computed statistics, cached on the dataset to avoid recomputing on
- * every DATASET_ADDED event. Absent on joined datasets (joins build rows
- * fresh and do not invoke the ingest worker).
+ * Precomputed statistics, cached on the dataset to avoid recomputing on every
+ * DATASET_ADDED event. Produced by the ingest worker for uploads and file
+ * presets, and on the main thread for joins and inline presets.
+ *
+ * `numeric` is dropped at hydrate when `numericVersion` does not match
+ * `STATS_NUMERIC_VERSION`, so a restored dataset can legitimately carry
+ * `categorical` alone.
  *
  * @typedef {Object} PrecomputedStats
- * @property {Object<string, Object>} numeric - Per-column numeric stats (min, max, mean, …).
- * @property {Object<string, Object>} categorical - Per-column categorical stats (top values, distinct count, …).
+ * @property {NumericColumnStats[]} [numeric] - Per-column numeric stats, in column order. Absent when a stale cache was invalidated at hydrate.
+ * @property {CategoricalColumnStats[]} categorical - Per-column categorical stats, in column order.
+ * @property {number} [numericVersion] - Generation of `numeric`. Absent on records written before versioning.
  */
 
 /**

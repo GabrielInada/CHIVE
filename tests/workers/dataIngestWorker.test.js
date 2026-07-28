@@ -90,6 +90,39 @@ describe('runIngest', () => {
 		expect(done.result.truncatedFrom).toBeNull();
 	});
 
+	it('ingests a semicolon CSV with comma decimals and partial rows end to end', () => {
+		// The shape that first surfaced the phantom-zero bug: a survey export
+		// where some rows carry only a point label. Exercises delimiter
+		// detection, decimal-comma normalization, and stats in one pass.
+		const csv = [
+			'Ponto;Codigo;X;Y;Z',
+			'E1;PQT;784431,551;9839149,107;6,358',
+			'E0;PQT;784411,896;9839159,365;7,045',
+			'A17;ARV;784496,014;9839134,221;6,077',
+			'E2;;;;',
+			'E1;;;;',
+		].join('\n') + '\n';
+
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'survey', kind: 'csv', text: csv }, post);
+		const done = msgs.find(m => m.type === 'done');
+
+		const typeByName = Object.fromEntries(done.result.columns.map(c => [c.name, c.type]));
+		expect(typeByName).toEqual({ Ponto: 'text', Codigo: 'text', X: 'number', Y: 'number', Z: 'number' });
+
+		// Comma decimals became real numbers, not 1000x integers.
+		expect(done.result.rows[0].X).toBeCloseTo(784431.551, 3);
+		expect(done.result.rows[0].Z).toBeCloseTo(6.358, 3);
+
+		// The partial rows survive as rows, but contribute nothing numeric.
+		expect(done.result.rows).toHaveLength(5);
+		const statsX = done.result.statsNumeric.find(s => s.name === 'X');
+		expect(statsX.n).toBe(3);
+		expect(statsX.min).toBeCloseTo(784411.896, 3);
+		expect(statsX.max).toBeCloseTo(784496.014, 3);
+		expect(typeof statsX.min).toBe('number');
+	});
+
 	it('caps a threshold-probe response and reports the original length', () => {
 		const { post, msgs } = collectMessages();
 		const csv = 'a\n' + Array.from({ length: 100 }, (_, i) => i).join('\n') + '\n';

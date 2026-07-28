@@ -10,7 +10,7 @@
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
-import { isNullish } from '../../../utils/formatters.js';
+import { isNullish, toFiniteNumber } from '../../../utils/formatters.js';
 import { compareStrings } from '../../../domain/filters/chartFilter.js';
 
 /**
@@ -38,7 +38,7 @@ export function getPieSectorValues(dataset, config) {
 
 		if (config.measureMode === 'sum') {
 			if (!config.valueColumn) return;
-			const numericValue = Number(row[config.valueColumn]);
+			const numericValue = toFiniteNumber(row[config.valueColumn]);
 			if (!Number.isFinite(numericValue)) return;
 			counter.set(category, (counter.get(category) || 0) + numericValue);
 			return;
