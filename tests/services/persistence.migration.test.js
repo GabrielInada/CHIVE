@@ -13,6 +13,7 @@ import {
 	makeSnapshot,
 	writeLegacyState,
 } from './persistence.testSupport.js';
+import { STATS_NUMERIC_VERSION } from '../../src/config/statistics.js';
 
 describe('persistence', () => {
 	beforeEach(async () => {
@@ -52,6 +53,57 @@ describe('persistence', () => {
 		await hydrateState({ replaceAllState: secondReplace });
 		expect(secondReplace).toHaveBeenCalledTimes(1);
 		expect(secondReplace.mock.calls[0][0].data.datasets[0].id).toBe('legacy');
+	});
+
+	it('drops stale numeric stats coming in through the legacy import path', async () => {
+		// Legacy records predate versioning entirely, so their cached numeric
+		// stats were produced by the implementation that counted blank cells.
+		await writeLegacyState({
+			datasets: [{
+				...goodRecord('legacy-stats'),
+				precomputedStats: {
+					numeric: [{ name: 'x', n: 3, min: '', max: 20, mean: 5, median: 5 }],
+					categorical: [{ name: 'label', n: 2, missing: 1, unique: 2, mode: 'a' }],
+				},
+			}],
+			panelRecord: {
+				activeDatasetId: 'legacy-stats',
+				charts: [],
+				slots: {},
+				layout: 'template-2col',
+				blocks: [],
+				nextBlockId: 1,
+				nextChartId: 0,
+			},
+		});
+		const replaceAllState = vi.fn();
+
+		await hydrateState({ replaceAllState });
+
+		const stats = replaceAllState.mock.calls[0][0].data.datasets[0].precomputedStats;
+		expect(stats.numeric).toBeUndefined();
+		expect(stats.categorical).toHaveLength(1);
+	});
+
+	it('round-trips current-version numeric stats through SQLite unchanged', async () => {
+		const precomputedStats = {
+			numericVersion: STATS_NUMERIC_VERSION,
+			numeric: [{ name: 'x', n: 1, min: 1, max: 1, mean: 1, median: 1 }],
+			categorical: [],
+		};
+
+		await persistState(makeSnapshot({
+			data: {
+				activeDatasetId: 'kept',
+				datasets: [{ ...goodRecord('kept'), precomputedStats }],
+			},
+		}));
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+
+		expect(replaceAllState.mock.calls[0][0].data.datasets[0].precomputedStats)
+			.toEqual(precomputedStats);
 	});
 
 	it('clearPersistedState removes project/UI state, sets the legacy tombstone, and keeps browser preferences', async () => {

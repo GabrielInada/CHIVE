@@ -9,7 +9,7 @@
  * `renderers/svg.js`.
  */
 
-import { isNullish } from '../../utils/formatters.js';
+import { isNullish, toFiniteNumber } from '../../utils/formatters.js';
 import { compareStrings } from '../../domain/filters/chartFilter.js';
 
 /**
@@ -36,7 +36,7 @@ export function aggregateTreemapData(rows, categoryColumn, { measureMode, valueC
 			? 'N/A'
 			: String(rawValue);
 		if (measureMode === 'sum') {
-			const value = Number(row[valueColumn]);
+			const value = toFiniteNumber(row[valueColumn]);
 			if (!Number.isFinite(value)) return;
 			counter.set(category, (counter.get(category) || 0) + value);
 		} else {

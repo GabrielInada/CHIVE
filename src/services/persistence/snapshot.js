@@ -12,6 +12,7 @@
 
 import { normalizeColumnNameList } from '../../domain/datasets/columns.js';
 import { BUBBLE_CHART } from '../../config/charts/definitions/bubble.js';
+import { STATS_NUMERIC_VERSION } from '../../config/statistics.js';
 import { canonicalizeChartConfig } from '../../domain/charts/chartConfig.js';
 
 /**
@@ -62,6 +63,18 @@ function sanitizeChartConfig(chartConfig, declaredColumnNames) {
 	return sanitized;
 }
 
+// Cached numeric stats are only trustworthy when they were produced by the
+// current `calculateStatistics`. An older blob may carry a string `min` or a
+// zero-skewed `mean` from when blank cells were counted, so drop `numeric` and
+// let statsView recompute. Categorical stats are unversioned and kept as-is.
+function withValidNumericStats(precomputedStats) {
+	if (!isPlainObject(precomputedStats)) return precomputedStats;
+	if (precomputedStats.numericVersion === STATS_NUMERIC_VERSION) return precomputedStats;
+	const kept = { ...precomputedStats };
+	delete kept.numeric;
+	return kept;
+}
+
 // Drop records the renderers can't trust. Returns a sanitized copy or null
 // when the record is unrecoverable.
 function validateDatasetRecord(record) {
@@ -76,7 +89,7 @@ function validateDatasetRecord(record) {
 	if (!columnsOk) return null;
 	const declaredColumnNames = record.columns.map(column => column.name);
 	const sanitizedChartConfig = sanitizeChartConfig(record.chartConfig, declaredColumnNames);
-	return {
+	const validated = {
 		...record,
 		selectedColumns: normalizeColumnNameList(record.selectedColumns, {
 			allowed: new Set(declaredColumnNames),
@@ -84,6 +97,12 @@ function validateDatasetRecord(record) {
 		}),
 		chartConfig: canonicalizeChartConfig(sanitizedChartConfig, declaredColumnNames),
 	};
+	// Assign in place rather than in the literal, so a record without the key
+	// does not gain an explicit `precomputedStats: undefined`.
+	if ('precomputedStats' in validated) {
+		validated.precomputedStats = withValidNumericStats(validated.precomputedStats);
+	}
+	return validated;
 }
 
 function normalizePanel(panelRecord, transformPanel) {

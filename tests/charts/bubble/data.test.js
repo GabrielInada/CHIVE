@@ -100,6 +100,23 @@ describe('aggregateBubbles', () => {
 		expect(byCat).toEqual({ A: 15, B: 10, C: 30 });
 	});
 
+	it.each([
+		['empty string', ''],
+		['whitespace', '   '],
+		['null', null],
+	])('keeps a %s value out of the mean denominator', (_label, missing) => {
+		const result = aggregateBubbles({
+			rows: [{ cat: 'A', val: 10 }, { cat: 'A', val: 20 }, { cat: 'A', val: missing }],
+			categoryColumn: 'cat',
+			measureMode: 'mean',
+			valueColumn: 'val',
+			nestingColumns: [],
+			topN: 0,
+		});
+		// Counting the blank would divide 30 by 3 and report 10.
+		expect(result.bubbles.map(b => b.value)).toEqual([15]);
+	});
+
 	it('returns no-value-column when valueColumn is missing under sum/mean', () => {
 		expect(aggregateBubbles({
 			rows,

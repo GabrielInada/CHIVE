@@ -27,6 +27,21 @@ export function isEmptyValue(value) {
 }
 
 /**
+ * Coerce a raw cell value to a finite number, treating missing values as
+ * absent rather than zero. `Number('')` and `Number(null)` are both `0`, so a
+ * blank cell in a numeric column would otherwise become a real datum at the
+ * origin and blow out axis extents.
+ *
+ * @param {*} value
+ * @returns {number} The finite number, or `NaN` when missing or unparseable.
+ */
+export function toFiniteNumber(value) {
+	if (isEmptyValue(value)) return NaN;
+	const parsed = Number(value);
+	return Number.isFinite(parsed) ? parsed : NaN;
+}
+
+/**
  * Clamp a number to `[min, max]`. Does not validate that `min <= max`.
  *
  * @param {number} value

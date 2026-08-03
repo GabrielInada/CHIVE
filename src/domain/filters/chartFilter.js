@@ -9,7 +9,7 @@
  * @typedef {import('../../types.js').GlobalFilterRule} GlobalFilterRule
  */
 
-import { isEmptyValue, isNullish } from '../../utils/formatters.js';
+import { isEmptyValue, isNullish, toFiniteNumber } from '../../utils/formatters.js';
 
 /**
  * Sentinel token used to represent missing values (null/undefined/empty
@@ -194,7 +194,7 @@ export function getCategoricalFilterOptions(rows, columnName, options = {}) {
 
 /** @private */
 function parseNumericValue(value) {
-  const parsed = Number(value);
+  const parsed = toFiniteNumber(value);
   return Number.isFinite(parsed) ? parsed : null;
 }
 

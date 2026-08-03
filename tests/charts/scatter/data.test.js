@@ -33,6 +33,21 @@ describe('buildScatterPoints', () => {
 		expect(result.points[0].x).toBe(1);
 	});
 
+	it.each([
+		['null', null],
+		['empty string', ''],
+		['whitespace', '   '],
+	])('drops a %s coordinate rather than plotting it at the origin', (_label, missing) => {
+		const rows = [{ x: 10, y: 20 }, { x: missing, y: 20 }, { x: 10, y: missing }];
+		const result = buildScatterPoints({
+			...baseArgs,
+			rows,
+			configuredAxisTypes: { x: 'number', y: 'number' },
+		});
+		expect(result.points).toHaveLength(1);
+		expect(result.points[0]).toMatchObject({ x: 10, y: 20 });
+	});
+
 	it('honors explicit configured axis types', () => {
 		const rows = [{ x: 1, y: 2 }, { x: 2, y: 4 }];
 		const result = buildScatterPoints({

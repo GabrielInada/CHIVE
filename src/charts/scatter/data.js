@@ -9,6 +9,7 @@
 
 import { normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
 import { SCATTER_PLOT } from '../../config/charts/definitions/scatter.js';
+import { toFiniteNumber } from '../../utils/formatters.js';
 import { sampleWithExtrema } from '../shared/pointSampling.js';
 import {
 	AXIS_TYPE_VALUES,
@@ -60,8 +61,8 @@ export function buildScatterPoints({
 	let points = rows.map((row, index) => ({
 		xRaw: row?.[xColumn],
 		yRaw: row?.[yColumn],
-		x: Number(row?.[xColumn]),
-		y: Number(row?.[yColumn]),
+		x: toFiniteNumber(row?.[xColumn]),
+		y: toFiniteNumber(row?.[yColumn]),
 		xCategory: normalizeCategoryValue(row?.[xColumn]),
 		yCategory: normalizeCategoryValue(row?.[yColumn]),
 		index,

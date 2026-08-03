@@ -14,6 +14,7 @@ import { showError, clearErrors, showProgress } from '../../../ui/feedback.js';
 import { FILE_SIZE_LIMIT_BYTES, ROW_LIMIT } from '../../../config/limits.js';
 import { DELIMITED_EXTENSIONS } from '../../../config/formats.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
+import { STATS_NUMERIC_VERSION } from '../../../config/statistics.js';
 
 /**
  * Process every file from the input or drop event. Failures on
@@ -133,7 +134,11 @@ async function processFileForDataset(file, { confirm }) {
 		chartConfig: createDefaultChartConfig(),
 		// Stats computed in the worker, statsView reads these instead of recomputing
 		// on every DATASET_ADDED event. See `services/dataIngestService.js`.
-		precomputedStats: { numeric: statsNumeric, categorical: statsCategorical },
+		precomputedStats: {
+			numeric: statsNumeric,
+			categorical: statsCategorical,
+			numericVersion: STATS_NUMERIC_VERSION,
+		},
 	};
 	addDataset(dataset);
 

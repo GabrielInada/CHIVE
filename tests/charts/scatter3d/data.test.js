@@ -26,11 +26,37 @@ describe('buildScatter3dPoints', () => {
 		expect(result.points[1]).toEqual({ x: 4, y: 5, z: 6, index: 1 });
 	});
 
-	it('keeps explicit nulls as zero, matching the other charts\' coercion', () => {
-		const result = buildScatter3dPoints([{ x: null, y: 1, z: 2 }], 'x', 'y', 'z');
+	it.each([
+		['null', null],
+		['empty string', ''],
+		['whitespace', '   '],
+		['undefined', undefined],
+	])('drops rows whose coordinate is %s rather than plotting it at zero', (_label, missing) => {
+		const result = buildScatter3dPoints([{ x: missing, y: 1, z: 2 }], 'x', 'y', 'z');
 
-		expect(result.validCount).toBe(1);
-		expect(result.points[0]).toEqual({ x: 0, y: 1, z: 2, index: 0 });
+		expect(result.validCount).toBe(0);
+		expect(result.points).toEqual([]);
+		expect(result.extents).toBeNull();
+	});
+
+	it('keeps blank rows out of the extents so real values are not squeezed against one face', () => {
+		// Survey coordinates: a large constant offset with a small spread. A
+		// phantom zero from a blank row anchors the domain at 0 and collapses
+		// every genuine point onto the opposite cube face.
+		const rows = [
+			{ x: 784431.551, y: 9839149.107, z: 6.358 },
+			{ x: 784411.896, y: 9839159.365, z: 7.045 },
+			{ x: 784496.014, y: 9839134.221, z: 6.077 },
+			{ x: '', y: '', z: '' },
+		];
+
+		const { extents, validCount, totalCount } = buildScatter3dPoints(rows, 'x', 'y', 'z');
+
+		expect(totalCount).toBe(4);
+		expect(validCount).toBe(3);
+		expect(extents.x).toEqual([784411.896, 784496.014]);
+		expect(extents.y).toEqual([9839134.221, 9839159.365]);
+		expect(extents.z).toEqual([6.077, 7.045]);
 	});
 
 	it('returns null extents and empty points when nothing is valid', () => {
