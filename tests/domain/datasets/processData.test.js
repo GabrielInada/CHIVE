@@ -135,6 +135,22 @@ describe('processData', () => {
       expect(result.rows[4].value).toBe(5000);
     });
 
+    it('keeps dot-decimal values with exactly 3 decimals exact', () => {
+      const input = [
+        { x: '784431.551', z: '6.358' },
+        { x: '784411.896', z: '7.045' },
+      ];
+      const result = processData(input);
+      expect(result.rows[0].x).toBeCloseTo(784431.551, 3);
+      expect(result.rows[0].z).toBeCloseTo(6.358, 3);
+    });
+
+    it('keeps already-typed numbers instead of re-reading their text', () => {
+      const result = processData([{ v: 1.125 }, { v: 2.25 }, { v: 3.375 }]);
+      expect(result.columns.find(c => c.name === 'v')?.type).toBe('number');
+      expect(result.rows.map(row => row.v)).toEqual([1.125, 2.25, 3.375]);
+    });
+
     it('does not regress for standard US-format files', () => {
       const input = [
         { a: '1', b: 'x' },

@@ -53,7 +53,11 @@ export function chunkedNormalize(rawData, columns, decimalSeparator, onChunk, ch
 			for (const { name, type } of columns) {
 				const value = row[name];
 				if (type === COLUMN_TYPES.NUMBER && value !== '' && value !== null && value !== undefined) {
-					converted[name] = Number(normalizeNumericString(String(value), decimalSeparator));
+					// A JSON or joined number is already typed; re-reading its text with
+					// a comma separator would turn 1.125 into 1125.
+					converted[name] = typeof value === 'number'
+						? value
+						: Number(normalizeNumericString(String(value), decimalSeparator));
 				} else if (type === COLUMN_TYPES.DATE && value !== '' && value !== null && value !== undefined) {
 					const parsed = value instanceof Date ? value : new Date(value);
 					converted[name] = Number.isFinite(parsed?.getTime?.()) ? parsed : null;
@@ -143,10 +147,13 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 	}
 
 	post({ id, type: 'progress', stage: 'decimal-detection', percent: 32 });
+	// Only text carries a decimal convention. Typed JSON numbers and joined
+	// rows would otherwise vote with their JavaScript spelling ("1.125").
 	const allRawValues = rawData
 		.slice(0, DECIMAL_DETECTION.sampleSize)
 		.flatMap(row => Object.values(row))
-		.map(v => String(v ?? '').trim())
+		.filter(v => typeof v === 'string')
+		.map(v => v.trim())
 		.filter(v => v.length > 0);
 	const decimalSeparator = detectDecimalSeparator(allRawValues);
 	post({ id, type: 'progress', stage: 'decimal-detection', percent: 35 });

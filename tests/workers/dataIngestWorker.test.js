@@ -26,6 +26,12 @@ describe('chunkedNormalize', () => {
 		expect(chunkedNormalize(rows, columns, ',')).toEqual([{ a: 1.5 }]);
 	});
 
+	it('keeps already-typed numbers instead of re-reading their text', () => {
+		const rows = [{ a: 1.125 }, { a: '2,5' }];
+		const columns = [{ name: 'a', type: 'number' }];
+		expect(chunkedNormalize(rows, columns, ',')).toEqual([{ a: 1.125 }, { a: 2.5 }]);
+	});
+
 	it('preserves null/empty/undefined numeric cells without coercing them', () => {
 		const rows = [
 			{ a: '', b: null },
@@ -121,6 +127,64 @@ describe('runIngest', () => {
 		expect(statsX.min).toBeCloseTo(784411.896, 3);
 		expect(statsX.max).toBeCloseTo(784496.014, 3);
 		expect(typeof statsX.min).toBe('number');
+	});
+
+	it('keeps dot-decimal survey coordinates with 3 decimals exact', () => {
+		// Same survey shape as above, exported with dot decimals. The small Z
+		// values look like European thousands ("6.358") and used to cast the only
+		// votes, so every coordinate was read 1000 times too large.
+		const csv = [
+			'Ponto,Codigo,X,Y,Z',
+			'E1,PQT,784431.551,9839149.107,6.358',
+			'E0,PQT,784411.896,9839159.365,7.045',
+			'A17,ARV,784496.014,9839134.221,6.077',
+		].join('\n') + '\n';
+
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'survey-dot', kind: 'csv', text: csv }, post);
+		const done = msgs.find(m => m.type === 'done');
+
+		expect(done.result.decimalSeparator).toBe('.');
+		expect(done.result.rows[0].X).toBeCloseTo(784431.551, 3);
+		expect(done.result.rows[0].Y).toBeCloseTo(9839149.107, 3);
+		expect(done.result.rows[0].Z).toBeCloseTo(6.358, 3);
+	});
+
+	it('keeps typed JSON numbers with 3 decimals exact', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'json-3dp', kind: 'json', text: '[{"v":1.125},{"v":2.25},{"v":3.375}]' }, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done.result.rows).toEqual([{ v: 1.125 }, { v: 2.25 }, { v: 3.375 }]);
+	});
+
+	it('keeps typed join rows with 3 decimals exact', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({
+			id: 'join-3dp',
+			kind: 'join',
+			join: {
+				leftRows: [
+					{ id: 1, amount: 1.125 },
+					{ id: 2, amount: 2.375 },
+				],
+				rightRows: [
+					{ id: 1, target: 6.358 },
+					{ id: 2, target: 7.045 },
+				],
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				joinType: 'inner',
+				leftColumns: ['id', 'amount'],
+				rightColumns: ['target'],
+				leftDatasetName: 'left.csv',
+				rightDatasetName: 'right.csv',
+			},
+		}, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done.result.rows).toEqual([
+			{ id: 1, amount: 1.125, target: 6.358 },
+			{ id: 2, amount: 2.375, target: 7.045 },
+		]);
 	});
 
 	it('caps a threshold-probe response and reports the original length', () => {

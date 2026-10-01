@@ -33,11 +33,30 @@ export function normalizeNumericString(value, decimalSeparator) {
 }
 
 /**
+ * Whether a value's only separator cannot be a thousands separator. A
+ * thousands separator always follows a leading group of one to three digits
+ * that does not start with zero, so "784431.551" (a 4+ digit leading group)
+ * and "0.358" (a leading zero) can only be decimal.
+ *
+ * @private
+ * @param {string} value - A numeric-looking value containing `separator` and not the other one.
+ * @param {'.' | ','} separator
+ * @returns {boolean}
+ */
+function isUngroupedSingleSeparator(value, separator) {
+	const integerPart = value.slice(0, value.lastIndexOf(separator)).replace(/^-/, '');
+	if (!/^\d+$/.test(integerPart)) return false;
+	return integerPart.length > 3 || integerPart.startsWith('0');
+}
+
+/**
  * Detect the decimal separator used in a dataset by inspecting a sample of raw values.
  *
  * Uses a three-stage heuristic:
  *   Stage 1: Values containing both separators - rightmost is decimal (unambiguous)
- *   Stage 2: Structural digit-count after the single separator
+ *   Stage 2: Structural digit-count after the single separator, plus the
+ *            leading group before it (4+ digits or a leading zero rules out
+ *            a thousands separator)
  *   Stage 2b: Whole-number thousands heuristic for European integers like "1.000"
  *   Stage 3: Post-detection NaN validation - if detected separator produces high NaN
  *            rate on numeric-looking values, try the other separator
@@ -86,6 +105,11 @@ export function detectDecimalSeparator(rawValues) {
 			if (digitCount !== 3) {
 				// 1, 2, or >3 digits after dot: likely decimal
 				dotDecimalVotes++;
+			} else if (isUngroupedSingleSeparator(value, '.')) {
+				// Exactly 3 digits, but "784431.551" or "0.358" cannot be thousands.
+				// Without this vote, 3-decimal survey data loses to Stage 2b below
+				// and every value is read 1000 times too large.
+				dotDecimalVotes++;
 			} else {
 				// Exactly 3 digits after dot
 				// Stage 2b: "1.000" pattern - dot is thousands, so comma would be decimal
@@ -105,8 +129,11 @@ export function detectDecimalSeparator(rawValues) {
 			if (digitCount !== 3) {
 				// 1, 2, or >3 digits after comma: likely decimal
 				commaDecimalVotes++;
+			} else if (isUngroupedSingleSeparator(value, ',')) {
+				// Exactly 3 digits, but "784431,551" or "0,358" cannot be thousands.
+				commaDecimalVotes++;
 			}
-			// Exactly 3 digits: ambiguous, skip
+			// Otherwise exactly 3 digits: ambiguous, skip
 			// (no whole-number heuristic for comma - "1,000" is standard US thousands)
 		}
 	}

@@ -56,11 +56,30 @@ describe('typeDetection', () => {
       expect(detectDecimalSeparator(['1.000', '2.000', '50.000'])).toBe(',');
     });
 
+    it('Stage 2: a single separator after a 4+ digit leading group is decimal', () => {
+      // Survey coordinates with millimetre precision: every value has exactly 3
+      // decimals, so the small elevation used to win Stage 2b and read the
+      // whole file as comma-decimal.
+      expect(detectDecimalSeparator(['784431.551', '9839149.107', '6.358'])).toBe('.');
+      expect(detectDecimalSeparator(['784431,551', '9839149,107', '6,358'])).toBe(',');
+      expect(detectDecimalSeparator(['-1234.567', '6.358'])).toBe('.');
+    });
+
+    it('Stage 2: a leading zero group is decimal, never thousands', () => {
+      expect(detectDecimalSeparator(['0.125', '0.375'])).toBe('.');
+      expect(detectDecimalSeparator(['0,125', '0,375'])).toBe(',');
+    });
+
+    it('Stage 2: thousands-grouped values keep their old reading', () => {
+      expect(detectDecimalSeparator(['1.000', '12.500', '1.250.000'])).toBe(',');
+      expect(detectDecimalSeparator(['1,250,000', '3.5'])).toBe('.');
+    });
+
     it('Stage 3: NaN fallback, reverts when detected separator produces many NaN', () => {
       // All values have exactly 3 decimal places in European format.
       // Stages 1-2b skip them as ambiguous, fall back to '.',
       // but Stage 3 sees high NaN rate and switches to ','.
-      const values = ['3,141', '2,718', '1,414', '1,732', '0,001'];
+      const values = ['3,141', '2,718', '1,414', '1,732'];
       expect(detectDecimalSeparator(values)).toBe(',');
     });
 
