@@ -1,23 +1,24 @@
 import { DECIMAL_DETECTION } from '../../config/columnTypeDetection.js';
-import { detectDecimalSeparator, detectType, normalizeNumericString } from './typeDetection.js';
+import { toCanonicalCell } from './cellValues.js';
+import { detectDecimalSeparator, detectType } from './typeDetection.js';
 
 /**
  * CHIVE row-normalization pipeline.
  *
  * Detects column types and decimal convention once per dataset, then
- * parses numeric cells into actual numbers. Pure, safe to use in workers
- * and tests.
+ * brings every cell to its column type's canonical form. Pure, safe to use
+ * in workers and tests.
  *
  * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
  */
 
 /**
- * Detect column types and normalize numeric values in a single pass.
+ * Detect column types and canonicalize every cell in a single pass.
  *
  * The decimal separator is specified or detected once for the whole dataset (it is a
  * file-level property, all numeric columns in one upload share the same
- * convention). Then each column gets a `type` from `detectType`, and
- * numeric cells are parsed into actual numbers via `normalizeNumericString`.
+ * convention). Then each column gets a `type` from `detectType`, and each
+ * cell takes that type's canonical form via `toCanonicalCell`.
  *
  * @param {Array<Object<string, *>>} rawData - The rows from a `parseCsv`/`parseJson` result (`result.rows`).
  * @param {{ decimalSeparator?: 'auto' | '.' | ',' }} [options] - Use an explicit separator for ambiguous input such as European grouped integers.
@@ -49,20 +50,12 @@ export function processData(rawData, options = {}) {
 		return { name: name, type: detectType(values, decimalSeparator), decimalSeparator };
 	});
 
+	const cellOptions = { decimalSeparator };
 	const rows = rawData.map(row => {
 		const convertedRow = {};
 
-		columns.forEach(({ name: name, type }) => {
-			const value = row[name];
-			if (type === 'number' && typeof value === 'number') {
-				// Already typed: re-reading its text could apply the wrong separator.
-				convertedRow[name] = value;
-			} else if (type === 'number' && value !== '' && value !== null && value !== undefined) {
-				const normalized = normalizeNumericString(String(value), decimalSeparator);
-				convertedRow[name] = Number(normalized);
-			} else {
-				convertedRow[name] = value;
-			}
+		columns.forEach(({ name, type }) => {
+			convertedRow[name] = toCanonicalCell(row[name], type, cellOptions);
 		});
 
 		return convertedRow;

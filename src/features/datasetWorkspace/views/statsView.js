@@ -9,7 +9,7 @@ import { calculateStatistics, calculateCategoricalStatistics } from '../../../do
 import { getActiveDataset } from '../../../state/appState.js';
 import { t, getLocale } from '../../../services/i18nService.js';
 import { formatNumber } from '../../../utils/formatters.js';
-import { STATS_NUMERIC_VERSION } from '../../../config/statistics.js';
+import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../config/statistics.js';
 import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
 
 /**
@@ -23,11 +23,19 @@ import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
 const recomputedNumericStats = new WeakMap();
 
 /**
+ * Categorical counterpart of {@link recomputedNumericStats}.
+ *
+ * @private
+ * @type {WeakMap<Array<Object<string, *>>, import('../../../types.js').CategoricalColumnStats[]>}
+ */
+const recomputedCategoricalStats = new WeakMap();
+
+/**
  * Reuse worker-computed numeric stats when the rows we're rendering are the
  * active dataset's full unfiltered rows and the cache was produced by the
  * current statistics implementation. Falls back to live calc for filtered
  * slices, and for restored datasets whose stale cache was dropped at hydrate
- * (see `withValidNumericStats` in services/persistence/snapshot.js).
+ * (see `withValidStats` in services/persistence/snapshot.js).
  *
  * @private
  */
@@ -56,16 +64,32 @@ function getNumericStats(rows, visibleColumns) {
 	return calculateStatistics(rows, visibleColumns);
 }
 
-/** @private */
+/**
+ * Categorical counterpart of {@link getNumericStats}, with the same cache
+ * rules.
+ *
+ * @private
+ */
 function getCategoricalStats(rows, visibleColumns) {
 	const dataset = getActiveDataset();
-	const precomputed = dataset?.precomputedStats?.categorical;
-	if (Array.isArray(precomputed) && dataset.rows === rows) {
-		const visibleNames = new Set(
-			visibleColumns.filter(c => c.type !== 'number').map(c => c.name),
-		);
-		return precomputed.filter(stat => visibleNames.has(stat.name));
+	const isFullDatasetRows = Boolean(dataset) && dataset.rows === rows;
+	const visibleNames = new Set(
+		visibleColumns.filter(c => c.type !== 'number').map(c => c.name),
+	);
+
+	if (isFullDatasetRows) {
+		const stats = dataset.precomputedStats;
+		if (Array.isArray(stats?.categorical) && stats.categoricalVersion === STATS_CATEGORICAL_VERSION) {
+			return stats.categorical.filter(stat => visibleNames.has(stat.name));
+		}
+		let recomputed = recomputedCategoricalStats.get(rows);
+		if (!recomputed) {
+			recomputed = calculateCategoricalStatistics(rows, dataset.columns || visibleColumns);
+			recomputedCategoricalStats.set(rows, recomputed);
+		}
+		return recomputed.filter(stat => visibleNames.has(stat.name));
 	}
+
 	return calculateCategoricalStatistics(rows, visibleColumns);
 }
 

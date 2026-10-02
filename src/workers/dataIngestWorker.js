@@ -1,7 +1,7 @@
 /**
  * CHIVE Data Ingest Worker.
  *
- * Runs parse or dataset join + type detection + numeric normalization + stats
+ * Runs parse or dataset join + type detection + cell canonicalization + stats
  * off the main thread. Posts progress messages between stages so the host can
  * drive a corner-toast progress bar.
  *
@@ -23,15 +23,18 @@
 
 import { parseCsv, parseJson } from '../domain/datasets/parse.js';
 import { joinDatasets } from '../domain/datasets/join.js';
-import { detectDecimalSeparator, detectType, normalizeNumericString } from '../domain/datasets/typeDetection.js';
+import { detectDecimalSeparator, detectType } from '../domain/datasets/typeDetection.js';
+import { toCanonicalCell } from '../domain/datasets/cellValues.js';
 import { calculateStatistics, calculateCategoricalStatistics } from '../domain/datasets/statistics.js';
-import { DECIMAL_DETECTION, COLUMN_TYPES } from '../config/columnTypeDetection.js';
+import { DECIMAL_DETECTION } from '../config/columnTypeDetection.js';
 
 const NORMALIZE_CHUNK_SIZE = 20000;
 
 /**
- * Convert raw rows to typed rows in chunks, invoking `onChunk(done, total)`
- * between each chunk so callers can post progress messages.
+ * Convert raw rows to canonical rows in chunks, invoking
+ * `onChunk(done, total)` between each chunk so callers can post progress
+ * messages. Every output row has every column, each cell in its column type's
+ * canonical form (see `toCanonicalCell`).
  *
  * Exported so tests can exercise the loop without spawning a real Worker.
  *
@@ -44,26 +47,19 @@ const NORMALIZE_CHUNK_SIZE = 20000;
  */
 export function chunkedNormalize(rawData, columns, decimalSeparator, onChunk, chunkSize = NORMALIZE_CHUNK_SIZE) {
 	const out = new Array(rawData.length);
+	const cells = columns.map(({ name, type, decimalSeparator: columnSeparator = decimalSeparator }) => ({
+		name,
+		type,
+		options: { decimalSeparator: columnSeparator },
+	}));
 
 	for (let i = 0; i < rawData.length; i += chunkSize) {
 		const end = Math.min(i + chunkSize, rawData.length);
 		for (let j = i; j < end; j++) {
 			const row = rawData[j];
 			const converted = {};
-			for (const { name, type, decimalSeparator: columnSeparator = decimalSeparator } of columns) {
-				const value = row[name];
-				if (type === COLUMN_TYPES.NUMBER && value !== '' && value !== null && value !== undefined) {
-					// A JSON or joined number is already typed; re-reading its text with
-					// a comma separator would turn 1.125 into 1125.
-					converted[name] = typeof value === 'number'
-						? value
-						: Number(normalizeNumericString(String(value), columnSeparator));
-				} else if (type === COLUMN_TYPES.DATE && value !== '' && value !== null && value !== undefined) {
-					const parsed = value instanceof Date ? value : new Date(value);
-					converted[name] = Number.isFinite(parsed?.getTime?.()) ? parsed : null;
-				} else {
-					converted[name] = value;
-				}
+			for (const { name, type, options } of cells) {
+				converted[name] = toCanonicalCell(row[name], type, options);
 			}
 			out[j] = converted;
 		}

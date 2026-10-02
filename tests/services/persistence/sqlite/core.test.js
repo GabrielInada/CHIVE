@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import sqlite3InitModule from '@sqlite.org/sqlite-wasm';
 import { applySchema, assertMeta, readSnapshot, writeSnapshot } from '../../../../src/services/persistence/sqlite/core.js';
+import { CELL_FORMAT_VERSION } from '../../../../src/domain/datasets/cellValues.js';
 
 let sqlite3;
 
@@ -108,6 +109,39 @@ describe('sqliteCore', () => {
 			expect(restored.data.datasets[0].fingerprint).toBe('hash-b');
 			expect(restored.panel.charts[0].dataSnapshot).toEqual([{ city: 'A', value: 1 }]);
 			expect(restored.panel.charts[0].columnsSnapshot).toEqual([{ name: 'city', type: 'text' }]);
+		} finally {
+			db.close();
+		}
+	});
+
+	it('stamps the cell format on every save and reads it back', () => {
+		const db = makeDb('/cell-format-test.sqlite3');
+		try {
+			writeSnapshot(db, makeSnapshot(), { fingerprintsByDatasetId: makeFingerprints() });
+			writeSnapshot(db, makeSnapshot(), { fingerprintsByDatasetId: makeFingerprints() });
+
+			expect(selectRows(db, "SELECT value FROM meta WHERE key = 'cell_format_version'"))
+				.toEqual([{ value: String(CELL_FORMAT_VERSION) }]);
+			expect(readSnapshot(db).cellFormatVersion).toBe(CELL_FORMAT_VERSION);
+			expect(() => assertMeta(db, { requireMeta: true })).not.toThrow();
+		} finally {
+			db.close();
+		}
+	});
+
+	it.each([
+		['no cell format', null],
+		['an unreadable cell format', 'x'],
+	])('reads a project with %s as saved before canonical cells', (_label, value) => {
+		const db = makeDb(`/legacy-cell-format-${value}.sqlite3`);
+		try {
+			writeSnapshot(db, makeSnapshot(), { fingerprintsByDatasetId: makeFingerprints() });
+			db.exec("DELETE FROM meta WHERE key = 'cell_format_version'");
+			if (value !== null) {
+				db.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: ['cell_format_version', value] });
+			}
+
+			expect(readSnapshot(db).cellFormatVersion).toBeNull();
 		} finally {
 			db.close();
 		}

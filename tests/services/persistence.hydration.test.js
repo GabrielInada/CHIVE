@@ -39,6 +39,38 @@ describe('persistence', () => {
 		expect(restored.ui).toEqual({ sidebarMode: 'panel', previewRows: 25 });
 	});
 
+	it('reloads canonical rows and captures exactly as saved', async () => {
+		// The date-times share a time of day. Read as a project saved before
+		// canonical cells, they would become the midnights of a UTC+9 zone.
+		const columns = [
+			{ name: 'n', type: 'number' },
+			{ name: 't', type: 'text' },
+			{ name: 'day', type: 'date' },
+			{ name: 'at', type: 'date' },
+		];
+		const rows = [
+			{ n: 1.5, t: 'a', day: '2024-01-15', at: '2024-01-14T15:00:00.000Z' },
+			{ n: null, t: null, day: null, at: '2024-07-14T15:00:00.000Z' },
+		];
+		await persistState({
+			data: {
+				datasets: [{ ...goodRecord('canonical'), rows, columns, selectedColumns: columns.map(column => column.name) }],
+				activeIndex: 0,
+			},
+			panel: {
+				...makeSnapshot().panel,
+				charts: [{ id: 0, type: 'bar', config: {}, dataSnapshot: rows, columnsSnapshot: columns }],
+			},
+		});
+
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+
+		const restored = replaceAllState.mock.calls[0][0];
+		expect(restored.data.datasets[0].rows).toEqual(rows);
+		expect(restored.panel.charts[0].dataSnapshot).toEqual(rows);
+	});
+
 	it('does not write UI prefs as part of persistState', async () => {
 		await persistState(makeSnapshot());
 		expect(localStorage.getItem('chive.ui')).toBeNull();

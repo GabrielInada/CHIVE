@@ -293,13 +293,40 @@ function midnightDate(ms, offset) {
 
 /** @private */
 function toIsoInstant(ms) {
-	return Number.isFinite(ms) ? new Date(ms).toISOString() : null;
+	const date = new Date(ms);
+	return Number.isNaN(date.getTime()) ? null : formatUtc(date, true);
 }
 
 /** @private */
 function toIsoDate(ms) {
-	const iso = toIsoInstant(ms);
-	return iso === null ? null : iso.slice(0, iso.indexOf('T'));
+	const date = new Date(ms);
+	return Number.isNaN(date.getTime()) ? null : formatUtc(date, false);
+}
+
+/**
+ * `Date#toISOString`, or its date part, written out. The built-in costs about
+ * three times as much, and ingest pays it once per date cell.
+ *
+ * @private
+ * @param {Date} date - A valid date.
+ * @param {boolean} withTime
+ * @returns {string}
+ */
+function formatUtc(date, withTime) {
+	const year = date.getUTCFullYear();
+	if (year < 0 || year > 9999) {
+		const iso = date.toISOString();
+		return withTime ? iso : iso.slice(0, iso.indexOf('T'));
+	}
+	const day = `${pad(year, 4)}-${pad(date.getUTCMonth() + 1, 2)}-${pad(date.getUTCDate(), 2)}`;
+	if (!withTime) return day;
+	const time = `${pad(date.getUTCHours(), 2)}:${pad(date.getUTCMinutes(), 2)}:${pad(date.getUTCSeconds(), 2)}`;
+	return `${day}T${time}.${pad(date.getUTCMilliseconds(), 3)}Z`;
+}
+
+/** @private */
+function pad(value, length) {
+	return String(value).padStart(length, '0');
 }
 
 /**

@@ -84,7 +84,7 @@ import {
   selectDataset,
   setupFileInputListeners,
 } from '../../../src/features/datasetWorkspace/datasetController.js';
-import { STATS_NUMERIC_VERSION } from '../../../src/config/statistics.js';
+import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../src/config/statistics.js';
 import { runIngest } from '../../../src/workers/dataIngestWorker.js';
 
 class FileReaderMock {
@@ -197,6 +197,7 @@ describe('datasetController', () => {
       numeric: [],
       categorical: [],
       numericVersion: STATS_NUMERIC_VERSION,
+      categoricalVersion: STATS_CATEGORICAL_VERSION,
     });
   });
 
@@ -492,6 +493,12 @@ describe('datasetController', () => {
     expect(ok.ok).toBe(true);
     expect(mocks.joinDatasetsInWorker).toHaveBeenCalled();
     expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+    expect(mocks.addDataset.mock.calls[0][0].precomputedStats).toEqual({
+      numeric: [],
+      categorical: [],
+      numericVersion: STATS_NUMERIC_VERSION,
+      categoricalVersion: STATS_CATEGORICAL_VERSION,
+    });
 
     const invalid = await createJoinedDataset({
       leftIndex: 0,
@@ -759,6 +766,7 @@ describe('datasetController', () => {
       // Inline presets skip the ingest worker, so the workflow computes stats
       // itself rather than storing an empty array statsView would trust.
       expect(added.precomputedStats.numericVersion).toBe(STATS_NUMERIC_VERSION);
+      expect(added.precomputedStats.categoricalVersion).toBe(STATS_CATEGORICAL_VERSION);
       expect(added.precomputedStats.numeric).toEqual([
         { name: 'a', n: 1, min: 1, max: 1, mean: 1, median: 1 },
       ]);
