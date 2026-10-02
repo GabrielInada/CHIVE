@@ -173,11 +173,11 @@ describe('runIngest', () => {
 			expected: [2.5, 1.25],
 		},
 		{
-			name: 'typed fractions with whole-number dot-decimal strings',
+			name: 'grouped integer strings alongside typed fractions',
 			kind: 'json',
 			text: '[{"v":2.5},{"v":"1.000"}]',
-			separator: '.',
-			expected: [2.5, 1],
+			separator: ',',
+			expected: [2.5, 1000],
 		},
 		{
 			name: 'European decimal strings alongside typed fractions',
@@ -187,11 +187,11 @@ describe('runIngest', () => {
 			expected: [2.5, 3.75, 1234.56],
 		},
 		{
-			name: 'three-decimal measurements including whole numbers',
+			name: 'whole-number measurements with explicit dot-decimal evidence',
 			kind: 'csv',
-			text: 'v\n6.000\n7.045\n',
+			text: 'v\n6.000\n7.045\n8.25\n',
 			separator: '.',
-			expected: [6, 7.045],
+			expected: [6, 7.045, 8.25],
 		},
 		{
 			name: 'explicit thousands grouping alongside ambiguous values',
@@ -214,6 +214,44 @@ describe('runIngest', () => {
 		runIngest({ id: 'json-3dp', kind: 'json', text: '[{"v":1.125},{"v":2.25},{"v":3.375}]' }, post);
 		const done = msgs.find(m => m.type === 'done');
 		expect(done.result.rows).toEqual([{ v: 1.125 }, { v: 2.25 }, { v: 3.375 }]);
+	});
+
+	it('preserves grouped CSV integers when only some end in .000', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'grouped-integers', kind: 'csv', text: 'population\n1.000\n1.234\n2.345\n' }, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done).toBeDefined();
+		expect(done.result.rows.map(row => row.population)).toEqual([1000, 1234, 2345]);
+	});
+
+	it('does not let a typed JSON fraction change grouped integers in another column', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'mixed-columns', kind: 'json', text: '[{"rate":2.5,"population":"1.000"}]' }, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done).toBeDefined();
+		expect(done.result.rows).toEqual([{ rate: 2.5, population: 1000 }]);
+	});
+
+	it('does not let a typed joined fraction change grouped integers in another column', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({
+			id: 'mixed-joined-columns',
+			kind: 'join',
+			join: {
+				leftRows: [{ id: 1, rate: 2.5 }],
+				rightRows: [{ id: 1, population: '1.000' }],
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				joinType: 'inner',
+				leftColumns: ['id', 'rate'],
+				rightColumns: ['population'],
+				leftDatasetName: 'rates.json',
+				rightDatasetName: 'population.csv',
+			},
+		}, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done).toBeDefined();
+		expect(done.result.rows).toEqual([{ id: 1, rate: 2.5, population: 1000 }]);
 	});
 
 	it('keeps typed join rows with 3 decimals exact', () => {

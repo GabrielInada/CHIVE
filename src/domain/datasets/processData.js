@@ -35,7 +35,7 @@ export function processData(rawData) {
 	// Detect decimal separator once from a flat sample of all raw values.
 	// This is a dataset-level property - all numeric columns in a single file
 	// will use the same decimal convention.
-	// Preserve sample types so numeric fractions can disambiguate strings.
+	// Only strings provide locale evidence; the detector ignores typed numbers.
 	const allRawValues = rawData
 		.slice(0, DECIMAL_DETECTION.sampleSize)
 		.flatMap(row => Object.values(row));

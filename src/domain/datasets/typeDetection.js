@@ -56,21 +56,19 @@ function isUngroupedSingleSeparator(value, separator) {
  *   Stage 1: Values containing both separators - rightmost is decimal (unambiguous)
  *   Stage 2: Repeated thousands groups, or digit counts around a single separator
  *            (4+ leading digits or a single zero group indicate decimals)
- *   Stage 2b: Without clearer string evidence or typed fractions, treat an entirely
- *             whole-thousand dot sample ("1.000", "2.000") as European integers
+ *   Stage 2b: Without clearer string evidence, a whole-thousand dot value
+ *             ("1.000") is a weak hint for European integers ("1.000", "1.234")
  *   Stage 3: Post-detection NaN validation - if detected separator produces high NaN
  *            rate on numeric-looking values, try the other separator
  *
- * Other ambiguous dot triples ("6.358") fall back to dot. Typed numbers keep
- * their value and only supply a dot-decimal hint; explicit string evidence wins.
+ * Without that hint, ambiguous dot triples ("6.358") fall back to dot. Both
+ * readings are valid, so this remains a heuristic. Typed numbers have no locale
+ * information and do not participate in detection.
  *
  * @param {Array<string | number>} rawValues - Flat array of raw values from the dataset sample
  * @returns {'.' | ','} The detected decimal separator
  */
 export function detectDecimalSeparator(rawValues) {
-	const hasTypedFraction = rawValues.some(v =>
-		typeof v === 'number' && Number.isFinite(v) && !Number.isInteger(v));
-
 	// Filter to values that look like numbers: digits, dots, commas, optional leading minus
 	const numericLike = rawValues
 		.filter(v => typeof v === 'string')
@@ -84,8 +82,7 @@ export function detectDecimalSeparator(rawValues) {
 	// a mistaken thousands interpretation that scales a measurement by 1000.
 	let dotDecimalVotes = 0;
 	let commaDecimalVotes = 0;
-	let ambiguousDotValues = 0;
-	let wholeThousandsDotValues = 0;
+	let hasWholeThousandsDotValue = false;
 
 	for (const value of numericLike) {
 		const hasDot = value.includes('.');
@@ -115,9 +112,8 @@ export function detectDecimalSeparator(rawValues) {
 			} else if (isUngroupedSingleSeparator(value, '.')) {
 				// Exactly 3 digits, but "784431.551" or "0.358" cannot be thousands.
 				dotDecimalVotes++;
-			} else if (/^-?\d{1,3}\.\d{3}$/.test(value)) {
-				ambiguousDotValues++;
-				if (/^-?[1-9]\d{0,2}\.000$/.test(value)) wholeThousandsDotValues++;
+			} else if (/^-?[1-9]\d{0,2}\.000$/.test(value)) {
+				hasWholeThousandsDotValue = true;
 			}
 			continue;
 		}
@@ -141,11 +137,10 @@ export function detectDecimalSeparator(rawValues) {
 		}
 	}
 
-	// Stage 2b is a weak fallback for entirely whole-thousand samples. A
-	// nonzero triple or a typed fraction keeps ambiguous dot decimals intact.
+	// A whole-thousand hint applies to other ambiguous groups too. Clear string
+	// evidence takes priority; typed numbers cannot establish a string's locale.
 	let detected = commaDecimalVotes > dotDecimalVotes ? ',' : '.';
-	if (dotDecimalVotes === 0 && commaDecimalVotes === 0 && !hasTypedFraction
-		&& ambiguousDotValues > 0 && ambiguousDotValues === wholeThousandsDotValues) {
+	if (dotDecimalVotes === 0 && commaDecimalVotes === 0 && hasWholeThousandsDotValue) {
 		detected = ',';
 	}
 

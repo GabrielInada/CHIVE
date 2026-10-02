@@ -147,8 +147,7 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 	}
 
 	post({ id, type: 'progress', stage: 'decimal-detection', percent: 32 });
-	// Preserve sample types: numeric fractions are hints for ambiguous strings,
-	// while the detector gives explicit string conventions priority.
+	// Only strings provide locale evidence; typed JSON/joined numbers are ignored.
 	const allRawValues = rawData
 		.slice(0, DECIMAL_DETECTION.sampleSize)
 		.flatMap(row => Object.values(row));

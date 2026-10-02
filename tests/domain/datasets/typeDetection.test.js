@@ -68,7 +68,6 @@ describe('typeDetection', () => {
 		it.each([
 			['6.358', '7.045'],
 			['-6.358', '-7.045'],
-			['6.000', '7.045'],
 			['1.125', '99.375', '999.875'],
 		])('defaults ambiguous three-decimal measurements to dot: %j', (...values) => {
 			expect(detectDecimalSeparator(values)).toBe('.');
@@ -82,12 +81,32 @@ describe('typeDetection', () => {
 			expect(detectDecimalSeparator(values)).toBe(',');
 		});
 
-		it('uses typed fractions only when strings have no clear decimal convention', () => {
-			expect(detectDecimalSeparator([2.5, '1.250'])).toBe('.');
-			expect(detectDecimalSeparator([2.5, '1.000'])).toBe('.');
-			expect(detectDecimalSeparator([2.5, '1.234,56'])).toBe(',');
-			expect(detectDecimalSeparator([2.5, 3.75, '1,25'])).toBe(',');
-			expect(detectDecimalSeparator([2, '1.000'])).toBe(',');
+		it.each([
+			['1.000', '1.234', '2.345'],
+			['1.234', '2.345', '1.000'],
+			['-1.000', '-1.234', '-2.345'],
+			[' 1.000 ', '01.234'],
+			['6.000', '7.045'],
+		])('uses a whole-thousand hint for otherwise ambiguous groups: %j', (...values) => {
+			expect(detectDecimalSeparator(values)).toBe(',');
+		});
+
+		it.each(['2.5', '0.125', '1234.567', '1,234.56'])(
+			'gives clear dot-decimal evidence priority over whole-thousand hints: %s', (value) => {
+				expect(detectDecimalSeparator(['1.000', '1.234', value])).toBe('.');
+			},
+		);
+
+		it.each([
+			{ values: ['1.000'], expected: ',' },
+			{ values: ['1.000', '1.234', '2.345'], expected: ',' },
+			{ values: ['1.250'], expected: '.' },
+			{ values: ['1.234,56'], expected: ',' },
+			{ values: ['1,25'], expected: ',' },
+		])('ignores typed numbers when detecting the locale of $values', ({ values, expected }) => {
+			expect(detectDecimalSeparator(values)).toBe(expected);
+			expect(detectDecimalSeparator([2.5, ...values, 3.75])).toBe(expected);
+			expect(detectDecimalSeparator([2, ...values])).toBe(expected);
 		});
 
 		it('recognizes repeated thousands groups even without decimal digits', () => {

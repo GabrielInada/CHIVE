@@ -40,9 +40,9 @@ describe('processData', () => {
 			expected: [2.5, 1.25],
 		},
 		{
-			name: 'typed fractions with whole-number dot-decimal strings',
+			name: 'grouped integer strings alongside typed fractions',
 			values: [2.5, '1.000'],
-			expected: [2.5, 1],
+			expected: [2.5, 1000],
 		},
 		{
 			name: 'European decimal strings alongside typed fractions',
@@ -50,9 +50,9 @@ describe('processData', () => {
 			expected: [2.5, 3.75, 1234.56],
 		},
 		{
-			name: 'three-decimal measurements including whole numbers',
-			values: ['6.000', '7.045'],
-			expected: [6, 7.045],
+			name: 'whole-number measurements with explicit dot-decimal evidence',
+			values: ['6.000', '7.045', '8.25'],
+			expected: [6, 7.045, 8.25],
 		},
 		{
 			name: 'explicit thousands grouping alongside ambiguous values',
@@ -66,6 +66,18 @@ describe('processData', () => {
 	});
 
   describe('processData with European decimal separator', () => {
+		it('preserves grouped integers when only some end in .000', () => {
+			const parsed = parseCsv('population\n1.000\n1.234\n2.345\n');
+			expect(parsed.ok).toBe(true);
+			const result = processData(parsed.rows);
+			expect(result.rows.map(row => row.population)).toEqual([1000, 1234, 2345]);
+		});
+
+		it('does not let a typed fraction in another column change grouped integers', () => {
+			const result = processData([{ rate: 2.5, population: '1.000' }]);
+			expect(result.rows).toEqual([{ rate: 2.5, population: 1000 }]);
+		});
+
     it('detects and converts numeric columns in European format (comma decimal)', () => {
       const input = [
         { valor: '3,14', name: 'pi' },
