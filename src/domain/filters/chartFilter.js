@@ -10,6 +10,7 @@
  */
 
 import { isEmptyValue, isNullish, toFiniteNumber } from '../../utils/formatters.js';
+import { MISSING_TOKEN } from '../datasets/cellValues.js';
 
 /**
  * Sentinel token used to represent missing values (null/undefined/empty
@@ -18,7 +19,7 @@ import { isEmptyValue, isNullish, toFiniteNumber } from '../../utils/formatters.
  *
  * @type {string}
  */
-export const FILTER_MISSING_TOKEN = '__chive_missing__';
+export const FILTER_MISSING_TOKEN = MISSING_TOKEN;
 
 /**
  * Maximum number of categorical options surfaced in the filter dialog at
