@@ -104,6 +104,8 @@ export async function createJoinedDataset(spec = {}, dependencies = {}) {
 			joinType: normalizeJoinType(spec.joinType),
 			leftColumns,
 			rightColumns,
+			leftColumnSpecs: leftDataset.columns,
+			rightColumnSpecs: rightDataset.columns,
 			leftDatasetName: leftDataset.name,
 			rightDatasetName: rightDataset.name,
 			normalization: {

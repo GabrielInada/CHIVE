@@ -24,6 +24,12 @@ Start from either a bundled sample dataset or a local file.
   than one exists, CHIVE uses the first one in object-key order.
 - CHIVE parses uploaded files in the browser. Data ingest uses a Web Worker so
   larger files do not block the main UI thread.
+- Choose **Decimal separator** before selecting or dropping files. **Automatic**
+  detects clear decimal or grouping patterns, but ambiguous dot values such as
+  `6.000` and `7.045` default to `6` and `7.045`. If `1.000`, `1.234`, and `2.345`
+  mean grouped integers, select **Comma (1.234,56)** to import them as `1000`,
+  `1234`, and `2345`. An explicit choice applies to every file in that upload
+  batch. Typed JSON numbers keep their values regardless of the choice.
 - Files larger than 15 MB require confirmation before processing. Ingest keeps
   at most the first 200,000 rows from a file.
 
@@ -43,6 +49,11 @@ Use the preview and statistics views before building charts.
 
 If a dataset needs to combine fields from two loaded datasets, use the join
 builder and choose the join keys, join type, and output columns.
+Each column keeps its source decimal format through joins and project saves.
+For example, `1.000` imported with **Comma** still means 1000 if a join narrows
+a mixed text column to numeric values, even when the other dataset uses **Dot**.
+Projects saved before column formats were retained use automatic detection;
+re-upload ambiguous files with the intended format before joining them.
 
 ## Build Charts
 

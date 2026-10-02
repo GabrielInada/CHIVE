@@ -85,6 +85,7 @@ import {
   setupFileInputListeners,
 } from '../../../src/features/datasetWorkspace/datasetController.js';
 import { STATS_NUMERIC_VERSION } from '../../../src/config/statistics.js';
+import { runIngest } from '../../../src/workers/dataIngestWorker.js';
 
 class FileReaderMock {
   readAsText(file) {
@@ -109,6 +110,19 @@ function csvFile({
     __content: content,
     __shouldFailRead: shouldFailRead,
   };
+}
+
+async function useRealIngestService() {
+	const service = await vi.importActual('../../../src/services/dataIngestService.js');
+	service.__setIngestWorkerFactoryForTesting(() => ({
+		postMessage(payload) {
+			queueMicrotask(() => runIngest(payload, message => this.onmessage({ data: message })));
+		},
+		terminate() {},
+	}));
+	mocks.ingestFile.mockImplementation(service.ingestFile);
+	mocks.joinDatasetsInWorker.mockImplementation(service.joinDatasetsInWorker);
+	return () => service.__setIngestWorkerFactoryForTesting(null);
 }
 
 describe('datasetController', () => {
@@ -194,6 +208,42 @@ describe('datasetController', () => {
     await handleFileUpload([csvFile({ size: 30 })]);
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-cancelled');
   });
+
+	it.each([
+		{ separator: 'auto', name: 'measurements.csv', text: 'v\n6.000\n7.045\n', expected: [{ v: 6 }, { v: 7.045 }] },
+		{ separator: ',', name: 'population.csv', text: 'v\n1.000\n1.234\n2.345\n', expected: [{ v: 1000 }, { v: 1234 }, { v: 2345 }] },
+		{ separator: '.', name: 'population.csv', text: 'v\n"1,000"\n"2,000"\n', expected: [{ v: 1000 }, { v: 2000 }] },
+		{ separator: 'auto', name: 'measurements.json', text: '[{"v":2.5},{"v":"1.000"}]', expected: [{ v: 2.5 }, { v: 1 }] },
+		{ separator: ',', name: 'population.json', text: '[{"rate":2.5,"population":"1.000"}]', expected: [{ rate: 2.5, population: 1000 }] },
+	])('uses the selected $separator separator when uploading $name', async ({ separator, name, text, expected }) => {
+		const select = document.createElement('select');
+		select.id = 'upload-decimal-separator';
+		select.innerHTML = '<option value="auto">Auto</option><option value=".">Dot</option><option value=",">Comma</option>';
+		select.value = separator;
+		document.body.appendChild(select);
+		mocks.ingestFile.mockImplementation(async payload => {
+			let result;
+			runIngest({ id: 'upload-format', ...payload }, message => {
+				if (message.type === 'done') result = { ok: true, value: message.result };
+				if (message.type === 'error') result = { ok: false, reason: message.reason };
+			});
+			return result;
+		});
+
+		try {
+			await handleFileUpload([csvFile({ name, content: text })]);
+			expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+			expect(mocks.addDataset.mock.calls[0][0].rows).toEqual(expected);
+			for (const [input] of mocks.ingestFile.mock.calls) {
+				expect(input.options.decimalSeparator).toBe(separator);
+			}
+			// The three-row file exceeds the mocked row limit. The uncapped retry
+			// must use the same format selection as the initial probe.
+			if (expected.length === 3) expect(mocks.ingestFile).toHaveBeenCalledTimes(2);
+		} finally {
+			select.remove();
+		}
+	});
 
   it('surfaces ingest worker errors via the mapped message, not the raw reason', async () => {
     mocks.ingestErrorMessage.mockReturnValueOnce('mapped-detail');
@@ -452,6 +502,91 @@ describe('datasetController', () => {
     expect(invalid.ok).toBe(false);
     expect(invalid.message).toBe('chive-join-error-select-different-files');
   });
+
+	it.each([
+		{ separator: ',', expected: 1000 },
+		{ separator: '.', expected: 1 },
+	])('keeps the $separator upload format when a join makes a mixed text column numeric', async ({ separator, expected }) => {
+		const restoreService = await useRealIngestService();
+		const datasets = [];
+		mocks.addDataset.mockImplementation(dataset => datasets.push(dataset) - 1);
+		mocks.getAllDatasets.mockReturnValue(datasets);
+		const select = document.createElement('select');
+		select.id = 'upload-decimal-separator';
+		select.innerHTML = '<option value=",">Comma</option><option value=".">Dot</option>';
+		select.value = separator;
+		document.body.appendChild(select);
+
+		try {
+			await handleFileUpload([csvFile({ content: 'id,population\na,1.000\nb,unknown\n' })]);
+			expect(datasets[0].columns).toContainEqual(expect.objectContaining({ name: 'population', type: 'text' }));
+			expect(datasets[0].rows[0].population).toBe('1.000');
+			datasets.push({ name: 'selected.csv', rows: [{ id: 'a' }], columns: [{ name: 'id', type: 'text' }] });
+			const result = await createJoinedDataset({
+				leftIndex: 0,
+				rightIndex: 1,
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				leftColumns: ['population'],
+				rightColumns: [],
+			});
+			expect(result.ok).toBe(true);
+			expect(datasets[2].rows).toEqual([{ population: expected }]);
+		} finally {
+			select.remove();
+			mocks.addDataset.mockReset();
+			restoreService();
+		}
+	});
+
+	it('preserves opposite formats through renamed columns and repeated joins', async () => {
+		const restoreService = await useRealIngestService();
+		const datasets = [];
+		mocks.addDataset.mockImplementation(dataset => datasets.push(dataset) - 1);
+		mocks.getAllDatasets.mockReturnValue(datasets);
+		const select = document.createElement('select');
+		select.id = 'upload-decimal-separator';
+		select.innerHTML = '<option value=",">Comma</option><option value=".">Dot</option>';
+		document.body.appendChild(select);
+
+		try {
+			for (const separator of [',', '.']) {
+				select.value = separator;
+				await handleFileUpload([csvFile({ name: 'numbers.csv', content: 'id,population\na,1.000\nb,unknown\n' })]);
+			}
+			const first = await createJoinedDataset({
+				leftIndex: 0,
+				rightIndex: 1,
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				leftColumns: ['id', 'population'],
+				rightColumns: ['population'],
+			});
+			expect(first.ok).toBe(true);
+			expect(datasets[2].columns).toEqual([
+				{ name: 'id', type: 'text', decimalSeparator: ',' },
+				{ name: 'numbers.population', type: 'text', decimalSeparator: ',' },
+				{ name: 'numbers.population_2', type: 'text', decimalSeparator: '.' },
+			]);
+			datasets.push({ name: 'selected.csv', rows: [{ id: 'a' }], columns: [{ name: 'id', type: 'text' }] });
+			const second = await createJoinedDataset({
+				leftIndex: 2,
+				rightIndex: 3,
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				leftColumns: ['numbers.population_2', 'numbers.population'],
+				rightColumns: [],
+			});
+			expect(second.ok).toBe(true);
+			expect(datasets[4].rows).toEqual([{ 'numbers.population_2': 1, 'numbers.population': 1000 }]);
+			expect(datasets[0].rows[0].population).toBe('1.000');
+			expect(datasets[1].rows[0].population).toBe('1.000');
+		} finally {
+			select.remove();
+			mocks.addDataset.mockReset();
+			restoreService();
+		}
+	});
 
   it('returns the generic join error when the worker join fails without adding', async () => {
     mocks.getAllDatasets.mockReturnValue([

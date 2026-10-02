@@ -10,6 +10,7 @@ import {
 	importProjectBytes,
 } from '../../src/services/persistence.js';
 import { goodRecord, makeBackend, makeSnapshot } from './persistence.testSupport.js';
+import { runIngest } from '../../src/workers/dataIngestWorker.js';
 
 describe('persistence', () => {
 	beforeEach(async () => {
@@ -46,6 +47,42 @@ describe('persistence', () => {
 		const hydratedReplace = vi.fn();
 		await hydrateState({ replaceAllState: hydratedReplace });
 		expect(hydratedReplace.mock.calls[0][0].data.datasets.map(dataset => dataset.id)).toEqual(['ds-1', 'ds-2']);
+	});
+
+	it('retains the numeric format of text columns for joins after export, import, and hydration', async () => {
+		function ingest(payload) {
+			let result;
+			runIngest({ id: 'saved-format', ...payload }, message => {
+				if (message.type === 'done') result = message.result;
+			});
+			return result;
+		}
+		const { rows, columns } = ingest({
+			kind: 'csv',
+			text: 'id,population\na,1.000\nb,unknown\n',
+			options: { decimalSeparator: ',' },
+		});
+		const dataset = { ...goodRecord('comma'), rows, columns, selectedColumns: ['id', 'population'] };
+		const exported = await exportProject(makeSnapshot({ data: { datasets: [dataset], activeIndex: 0 } }));
+		expect(exported.ok).toBe(true);
+		const imported = await importProjectBytes(exported.bytes, { replaceAllState: vi.fn() });
+		expect(imported.ok).toBe(true);
+		const replaceAllState = vi.fn();
+		await hydrateState({ replaceAllState });
+		const restored = replaceAllState.mock.calls[0][0].data.datasets[0];
+		const joined = ingest({
+			kind: 'join',
+			join: {
+				leftRows: restored.rows,
+				leftColumnSpecs: restored.columns,
+				rightRows: [{ id: 'a' }],
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				leftColumns: ['population'],
+				rightColumns: [],
+			},
+		});
+		expect(joined.rows).toEqual([{ population: 1000 }]);
 	});
 
 	it('rejects work-only project imports in v1', async () => {

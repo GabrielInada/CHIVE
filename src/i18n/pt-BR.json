@@ -51,6 +51,11 @@
 	"chive-upload-sub": "ou clique para selecionar<br>Formatos aceitos: <strong>CSV</strong> ou <strong>JSON</strong>",
 	"chive-upload-loaded-main": "Arquivo(s) carregado(s)",
 	"chive-upload-loaded-sub": "Clique ou arraste para adicionar mais",
+    "chive-upload-decimal-separator": "Separador decimal",
+    "chive-upload-decimal-auto": "Automático",
+    "chive-upload-decimal-dot": "Ponto (1,234.56)",
+    "chive-upload-decimal-comma": "Vírgula (1.234,56)",
+    "chive-upload-decimal-help": "No modo automático, valores ambíguos como 1.000 usam ponto decimal. Se significar mil, selecione Vírgula antes de carregar.",
 
 	"chive-section-files": "Arquivos carregados",
 	"chive-no-files": "Nenhum arquivo",

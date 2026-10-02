@@ -47,6 +47,7 @@
  * @typedef {Object} ColumnSpec
  * @property {string} name - Column name as it appears in the source file.
  * @property {ColumnType} type - Detected type. Falls back to `'text'` when no rule matches.
+ * @property {'.' | ','} [decimalSeparator] - Source string number format, retained even for text columns so later joins cannot reinterpret their scale. Absent on older saved datasets.
  */
 
 /**
@@ -363,6 +364,7 @@
  * @property {string} [text] - Raw file contents for CSV/JSON requests.
  * @property {JoinDatasetsOptions} [join] - Complete join input for a join request.
  * @property {Object} [options]
+ * @property {'auto' | '.' | ','} [options.decimalSeparator='auto'] - Explicit string number format, overriding saved column formats, or automatic detection with a dot fallback. Joins retain each source column's saved format in automatic mode. Typed numbers are preserved.
  * @property {number} [options.rowLimit] - Cap this worker response after parse; surplus rows trigger `truncatedFrom`. Uploads use this only for a bounded threshold probe, then rerun uncapped after approval.
  * @property {string[]} [options.dropColumns] - Column names to strip before normalization (preset use case).
  */
@@ -375,7 +377,7 @@
  * @typedef {Object} IngestWorkerDoneResult
  * @property {Array<Object<string, *>>} rows
  * @property {ColumnSpec[]} columns
- * @property {string} decimalSeparator - Detected separator (`'.'` or `','`).
+ * @property {string} decimalSeparator - Selected or detected file separator (`'.'` or `','`); a fallback for joined columns without a saved format.
  * @property {NumericColumnStats[] | []} statsNumeric - Empty array when no rows.
  * @property {CategoricalColumnStats[] | []} statsCategorical - Empty array when no rows.
  * @property {number | null} truncatedFrom - Original row count when `options.rowLimit` truncated; `null` otherwise.
@@ -481,6 +483,8 @@
  * @property {JoinType} [joinType='inner'] - Unknown values silently fall back to `'inner'`.
  * @property {string[]} leftColumns - Columns from the left side to include in the output.
  * @property {string[]} rightColumns - Columns from the right side to include in the output.
+ * @property {ColumnSpec[]} [leftColumnSpecs] - Source metadata used by the ingest worker to preserve string number formats after joining.
+ * @property {ColumnSpec[]} [rightColumnSpecs]
  * @property {string} [leftDatasetName] - Used to derive the prefix for column-name conflicts (`leftPrefix.col`). Falls back to `'left'`.
  * @property {string} [rightDatasetName]
  * @property {{ trim?: boolean, caseSensitive?: boolean }} [normalization]
@@ -490,10 +494,11 @@
  * Result of `joinDatasets`. On success carries the merged `rows` (unmatched cells in
  * left/right/full joins are `null`) and `outputColumns` (left-then-right order, with conflicts
  * renamed `'a.salary'`, `'b.salary'`, plus `_2`, `_3` suffixes for further collisions). On failure
- * carries a stable `reason`.
+ * carries a stable `reason`. `columnSources` maps each output name back to its source
+ * so the worker can retain column metadata through conflict renaming.
  *
  * @typedef {(
- *   { ok: true, rows: Array<Object<string, *>>, outputColumns: string[] }
+ *   { ok: true, rows: Array<Object<string, *>>, outputColumns: string[], columnSources: Array<{ source: string, output: string, side: 'left' | 'right' }> }
  *   | { ok: false, reason: string }
  * )} JoinResult
  */

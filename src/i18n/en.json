@@ -51,6 +51,11 @@
 	"chive-upload-sub": "or click to select<br>Accepted formats: <strong>CSV</strong> or <strong>JSON</strong>",
 	"chive-upload-loaded-main": "File(s) loaded",
 	"chive-upload-loaded-sub": "Click or drag to add more",
+    "chive-upload-decimal-separator": "Decimal separator",
+    "chive-upload-decimal-auto": "Automatic",
+    "chive-upload-decimal-dot": "Dot (1,234.56)",
+    "chive-upload-decimal-comma": "Comma (1.234,56)",
+    "chive-upload-decimal-help": "Automatic uses a decimal dot for ambiguous values such as 1.000. If it means one thousand, select Comma before uploading.",
 
 	"chive-section-files": "Loaded files",
 	"chive-no-files": "No files",

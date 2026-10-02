@@ -23,7 +23,70 @@ describe('processData', () => {
     expect(stats[0].mean).toBe(2);
   });
 
+	it.each([
+		{
+			name: 'three-decimal measurements without larger coordinates',
+			values: ['6.358', '7.045'],
+			expected: [6.358, 7.045],
+		},
+		{
+			name: 'zero-padded thousands with explicit European decimals',
+			values: ['01.358', '1.234,56'],
+			expected: [1358, 1234.56],
+		},
+		{
+			name: 'mixed typed numbers and dot-decimal strings',
+			values: [2.5, '1.250'],
+			expected: [2.5, 1.25],
+		},
+		{
+			name: 'whole-number decimal strings alongside typed fractions',
+			values: [2.5, '1.000'],
+			expected: [2.5, 1],
+		},
+		{
+			name: 'whole-number measurements without explicit decimal evidence',
+			values: ['6.000', '7.045'],
+			expected: [6, 7.045],
+		},
+		{
+			name: 'European decimal strings alongside typed fractions',
+			values: [2.5, 3.75, '1.234,56'],
+			expected: [2.5, 3.75, 1234.56],
+		},
+		{
+			name: 'whole-number measurements with explicit dot-decimal evidence',
+			values: ['6.000', '7.045', '8.25'],
+			expected: [6, 7.045, 8.25],
+		},
+		{
+			name: 'explicit thousands grouping alongside ambiguous values',
+			values: ['1.234.567', '01.358', '12.500'],
+			expected: [1234567, 1358, 12500],
+		},
+	])('preserves $name', ({ values, expected }) => {
+		const result = processData(values.map(v => ({ v })));
+		expect(result.columns.find(c => c.name === 'v')?.type).toBe('number');
+		expect(result.rows.map(row => row.v)).toEqual(expected);
+	});
+
   describe('processData with European decimal separator', () => {
+		it('preserves ambiguous grouped integers with an explicit comma separator', () => {
+			const parsed = parseCsv('population\n1.000\n1.234\n2.345\n');
+			expect(parsed.ok).toBe(true);
+			const result = processData(parsed.rows, { decimalSeparator: ',' });
+			expect(result.rows.map(row => row.population)).toEqual([1000, 1234, 2345]);
+		});
+
+		it.each([
+			{ decimalSeparator: 'auto', population: 1 },
+			{ decimalSeparator: '.', population: 1 },
+			{ decimalSeparator: ',', population: 1000 },
+		])('keeps typed fractions independent of $decimalSeparator string formatting', ({ decimalSeparator, population }) => {
+			const result = processData([{ rate: 2.5, population: '1.000' }], { decimalSeparator });
+			expect(result.rows).toEqual([{ rate: 2.5, population }]);
+		});
+
     it('detects and converts numeric columns in European format (comma decimal)', () => {
       const input = [
         { valor: '3,14', name: 'pi' },
@@ -36,13 +99,13 @@ describe('processData', () => {
       expect(result.rows[1].valor).toBeCloseTo(2.71);
     });
 
-    it('detects and converts European integers with dot as thousand separator', () => {
+    it('converts ambiguous European integers with an explicit comma separator', () => {
       const input = [
         { populacao: '1.000', pais: 'A' },
         { populacao: '50.000', pais: 'B' },
         { populacao: '2.000', pais: 'C' },
       ];
-      const result = processData(input);
+      const result = processData(input, { decimalSeparator: ',' });
       expect(result.columns.find(c => c.name === 'populacao')?.type).toBe('number');
       expect(result.rows[0].populacao).toBe(1000);
       expect(result.rows[1].populacao).toBe(50000);
@@ -133,6 +196,22 @@ describe('processData', () => {
       expect(result.columns.find(c => c.name === 'value')?.type).toBe('number');
       expect(result.rows[0].value).toBe(1000);
       expect(result.rows[4].value).toBe(5000);
+    });
+
+    it('keeps dot-decimal values with exactly 3 decimals exact', () => {
+      const input = [
+        { x: '784431.551', z: '6.358' },
+        { x: '784411.896', z: '7.045' },
+      ];
+      const result = processData(input);
+      expect(result.rows[0].x).toBeCloseTo(784431.551, 3);
+      expect(result.rows[0].z).toBeCloseTo(6.358, 3);
+    });
+
+    it('keeps already-typed numbers instead of re-reading their text', () => {
+      const result = processData([{ v: 1.125 }, { v: 2.25 }, { v: 3.375 }]);
+      expect(result.columns.find(c => c.name === 'v')?.type).toBe('number');
+      expect(result.rows.map(row => row.v)).toEqual([1.125, 2.25, 3.375]);
     });
 
     it('does not regress for standard US-format files', () => {

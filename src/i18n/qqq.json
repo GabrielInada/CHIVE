@@ -51,6 +51,11 @@
 	"chive-upload-sub": "Secondary text inside the upload zone. May contain basic HTML (br, strong).",
 	"chive-upload-loaded-main": "Upload zone main text after files have been loaded.",
 	"chive-upload-loaded-sub": "Upload zone secondary text after files have been loaded.",
+    "chive-upload-decimal-separator": "Label for the decimal separator used for the next uploaded files.",
+    "chive-upload-decimal-auto": "Option to infer the decimal separator from string values in a file.",
+    "chive-upload-decimal-dot": "Option forcing dot decimals; the number illustrates comma thousands and dot decimals.",
+    "chive-upload-decimal-comma": "Option forcing comma decimals; the number illustrates dot thousands and comma decimals.",
+    "chive-upload-decimal-help": "Explains the automatic dot-decimal default for ambiguous dot triples and how to import them as grouped integers instead.",
 
 	"chive-section-files": "Heading for the loaded files list section.",
 	"chive-no-files": "Placeholder shown when no files are loaded.",
