@@ -14,6 +14,8 @@ import {
 	removeIncludeTokenFromFilter,
 	resolveGlobalFilterForColumns,
 } from '../../../src/domain/filters/globalFilter.js';
+import { getCategoricalFilterOptions } from '../../../src/domain/filters/chartFilter.js';
+import { MISSING_TOKEN } from '../../../src/domain/datasets/cellValues.js';
 
 describe('globalFilter', () => {
 	describe('createEmptyGlobalFilter', () => {
@@ -169,6 +171,33 @@ describe('globalFilter', () => {
 				{ region: 'North', age: 18 },
 				{ region: 'North', age: 30 },
 			]);
+		});
+	});
+
+	describe('category tokens', () => {
+		const rows = [
+			{ id: 1, status: 'N/A' },
+			{ id: 2, status: null },
+			{ id: 3, status: 'ok' },
+			{ id: 4, status: null },
+			{ id: 5, status: 'N/A' },
+		];
+
+		it.each([
+			['the missing bucket', MISSING_TOKEN, [2, 4]],
+			['a real "N/A" value', 'v:N/A', [1, 5]],
+		])('keeps exactly the rows of %s', (_, token, ids) => {
+			const filter = createSingleCategoryGlobalFilter('status', token);
+			expect(applyGlobalFilterRules(rows, filter).map(row => row.id)).toEqual(ids);
+		});
+
+		it('keeps as many rows as the filter dialog counts for each option', () => {
+			const { options } = getCategoricalFilterOptions(rows, 'status');
+			expect(options).toHaveLength(3);
+			for (const { token, count } of options) {
+				const filter = createSingleCategoryGlobalFilter('status', token);
+				expect(applyGlobalFilterRules(rows, filter)).toHaveLength(count);
+			}
 		});
 	});
 

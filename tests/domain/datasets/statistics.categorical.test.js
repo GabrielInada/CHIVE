@@ -17,7 +17,7 @@ describe('calculateCategoricalStatistics', () => {
 			{ city: 'Manaus' },
 			{ city: 'Recife' },
 			{ city: null },
-			{ city: '' },
+			{ city: null },
 		];
 		const [stat] = calculateCategoricalStatistics(rows, [{ name: 'city', type: 'text' }]);
 		expect(stat.name).toBe('city');
@@ -35,7 +35,7 @@ describe('calculateCategoricalStatistics', () => {
 
 	it('handles a column where every value is missing', () => {
 		const [stat] = calculateCategoricalStatistics(
-			[{ a: null }, { a: undefined }, { a: '   ' }],
+			[{ a: null }, { a: null }, { a: null }],
 			[{ name: 'a', type: 'text' }],
 		);
 		expect(stat.empty).toBe(true);
@@ -44,6 +44,27 @@ describe('calculateCategoricalStatistics', () => {
 		expect(stat.missingPct).toBeCloseTo(1, 4);
 		expect(stat.unique).toBe(0);
 		expect(stat.mode).toBeNull();
+	});
+
+	it('counts a real "N/A" value as a category, not as missing', () => {
+		const [stat] = calculateCategoricalStatistics(
+			[{ s: 'N/A' }, { s: null }, { s: 'N/A' }],
+			[{ name: 's', type: 'text' }],
+		);
+		expect(stat.n).toBe(2);
+		expect(stat.missing).toBe(1);
+		expect(stat.mode).toBe('N/A');
+	});
+
+	it('counts dates by their canonical ISO text', () => {
+		const [stat] = calculateCategoricalStatistics(
+			[{ d: '2024-01-15' }, { d: '2024-01-16T10:30:00.000Z' }, { d: '2024-01-15' }, { d: null }],
+			[{ name: 'd', type: 'date' }],
+		);
+		expect(stat.unique).toBe(2);
+		expect(stat.missing).toBe(1);
+		expect(stat.mode).toBe('2024-01-15');
+		expect(stat.modeCount).toBe(2);
 	});
 
 	it('top5Pct caps at the sum of the top five values', () => {

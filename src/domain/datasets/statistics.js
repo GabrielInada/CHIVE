@@ -1,5 +1,5 @@
 import { max, mean, median, min } from '../../../vendor/d3/d3.js';
-import { isNullish, toFiniteNumber } from '../../utils/formatters.js';
+import { MISSING_KEY, categoryKey } from './cellValues.js';
 
 /**
  * CHIVE per-column statistics.
@@ -15,11 +15,11 @@ import { isNullish, toFiniteNumber } from '../../utils/formatters.js';
 
 /**
  * Compute per-column numeric statistics (n, min, max, mean, median).
- * Columns with `type !== 'number'` are skipped; numeric columns with no
- * finite values are also skipped (the function does not return null
+ * Columns with `type !== 'number'` are skipped; so are numeric columns
+ * where every cell is missing (the function does not return null
  * placeholders).
  *
- * @param {Array<Object<string, *>>} rows
+ * @param {Array<Object<string, *>>} rows - Canonical rows.
  * @param {ColumnSpec[]} columns
  * @returns {NumericColumnStats[]}
  */
@@ -27,13 +27,9 @@ export function calculateStatistics(rows, columns) {
 	return columns
 		.filter(column => column.type === 'number')
 		.map(({ name }) => {
-			// Coerce before filtering, not after: `isNaN('')` is false, so a
-			// blank cell would otherwise reach d3 and take over `min` while
-			// counting as 0 in `mean`/`median`. Mapping also guarantees d3 sees
-			// numbers, since `min(['10', '20'])` returns a string.
 			const values = rows
-				.map(row => toFiniteNumber(row[name]))
-				.filter(Number.isFinite);
+				.map(row => row[name])
+				.filter(value => typeof value === 'number');
 
 			if (values.length === 0) return null;
 
@@ -50,23 +46,13 @@ export function calculateStatistics(rows, columns) {
 }
 
 /**
- * Treat null, undefined, and whitespace-only strings as missing.
- *
- * @private
- */
-function isMissingValue(value) {
-	if (isNullish(value)) return true;
-	if (typeof value === 'string' && value.trim() === '') return true;
-	return false;
-}
-
-/**
  * Compute per-column categorical statistics (mode, top-5 share,
- * missingness) for every non-numeric column. Columns where every value
+ * missingness) for every non-numeric column. Values are counted by
+ * category key, so `mode` is a key. Columns where every value
  * is missing return `empty: true` with zeroed counts so renderers can
  * draw a uniform "no data" state.
  *
- * @param {Array<Object<string, *>>} rows
+ * @param {Array<Object<string, *>>} rows - Canonical rows.
  * @param {ColumnSpec[]} columns
  * @returns {CategoricalColumnStats[]} One entry per non-numeric column, in source order.
  */
@@ -79,12 +65,11 @@ export function calculateCategoricalStatistics(rows, columns) {
 			let n = 0;
 
 			for (let i = 0; i < rows.length; i++) {
-				const value = rows[i]?.[name];
-				if (isMissingValue(value)) {
+				const key = categoryKey(rows[i]?.[name]);
+				if (key === MISSING_KEY) {
 					missing++;
 					continue;
 				}
-				const key = String(value);
 				counts.set(key, (counts.get(key) || 0) + 1);
 				n++;
 			}

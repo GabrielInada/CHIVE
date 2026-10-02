@@ -9,17 +9,8 @@
  * @typedef {import('../../types.js').GlobalFilterRule} GlobalFilterRule
  */
 
-import { isEmptyValue, isNullish, toFiniteNumber } from '../../utils/formatters.js';
-import { MISSING_TOKEN } from '../datasets/cellValues.js';
-
-/**
- * Sentinel token used to represent missing values (null/undefined/empty
- * string) in the include/exclude sets. Keeps the categorical pipeline
- * monomorphic: every value is a string token.
- *
- * @type {string}
- */
-export const FILTER_MISSING_TOKEN = MISSING_TOKEN;
+import { isNullish, toFiniteNumber } from '../../utils/formatters.js';
+import { categoryKey, describeCategory } from '../datasets/cellValues.js';
 
 /**
  * Maximum number of categorical options surfaced in the filter dialog at
@@ -55,28 +46,14 @@ export function createDefaultFilterConfig() {
 }
 
 /**
- * Test whether a raw cell value should be treated as the "missing" bucket.
- * Delegates to {@link isEmptyValue}; this thin wrapper exists so callers
- * have a name that names the intent.
+ * Filter token of a canonical cell, as include and exclude lists store it.
+ * Missing cells share the missing bucket's token.
  *
- * @param {*} value
- * @returns {boolean}
- */
-export function isMissingCategoryValue(value) {
-  return isEmptyValue(value);
-}
-
-/**
- * Map a raw cell value to its categorical token. Missing values collapse
- * to {@link FILTER_MISSING_TOKEN}; everything else gets a `'v:'` prefix
- * so user data can never collide with the sentinel.
- *
- * @param {*} value
+ * @param {*} value - A canonical cell.
  * @returns {string}
  */
 export function toCategoryToken(value) {
-  if (isMissingCategoryValue(value)) return FILTER_MISSING_TOKEN;
-  return `v:${String(value)}`;
+  return describeCategory(categoryKey(value)).token;
 }
 
 /**
@@ -162,21 +139,17 @@ export function getCategoricalFilterOptions(rows, columnName, options = {}) {
     return { options: [], allTokens: [], total: 0, hasMore: false };
   }
 
-  const map = new Map();
+  const counts = new Map();
   rows.forEach(row => {
-    const rawValue = row?.[columnName];
-    const token = toCategoryToken(rawValue);
-    const label = token === FILTER_MISSING_TOKEN ? missingLabel : String(rawValue);
-    const prev = map.get(token);
-    map.set(token, {
-      token,
-      label,
-      count: (prev?.count || 0) + 1,
-    });
+    const key = categoryKey(row?.[columnName]);
+    counts.set(key, (counts.get(key) || 0) + 1);
   });
 
   const normalizedSearch = String(search).trim().toLowerCase();
-  const allOptions = Array.from(map.values())
+  const allOptions = Array.from(counts, ([key, count]) => {
+    const { token, label } = describeCategory(key, { missingLabel });
+    return { token, label, count };
+  })
     .filter(item => normalizedSearch.length === 0 || item.label.toLowerCase().includes(normalizedSearch))
     .sort((a, b) => {
       if (b.count !== a.count) return b.count - a.count;
@@ -193,10 +166,24 @@ export function getCategoricalFilterOptions(rows, columnName, options = {}) {
   };
 }
 
-/** @private */
+/**
+ * A bound the user typed into a numeric rule, or `null` when it does not parse.
+ *
+ * @private
+ */
 function parseNumericValue(value) {
   const parsed = toFiniteNumber(value);
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+/**
+ * The number in a canonical number cell, or `null` when the cell is missing.
+ *
+ * @private
+ */
+function cellNumber(row, column) {
+  const value = row?.[column];
+  return typeof value === 'number' ? value : null;
 }
 
 /**
@@ -230,7 +217,7 @@ export function applyChartFilterRows(rows, rawFilter, numericColumns = []) {
       const low = Math.min(min, max);
       const high = Math.max(min, max);
       return rows.filter(row => {
-        const value = parseNumericValue(row?.[filter.column]);
+        const value = cellNumber(row, filter.column);
         return value !== null && value >= low && value <= high;
       });
     }
@@ -240,20 +227,20 @@ export function applyChartFilterRows(rows, rawFilter, numericColumns = []) {
 
     if (filter.operator === 'lt') {
       return rows.filter(row => {
-        const value = parseNumericValue(row?.[filter.column]);
+        const value = cellNumber(row, filter.column);
         return value !== null && value < target;
       });
     }
 
     if (filter.operator === 'gt') {
       return rows.filter(row => {
-        const value = parseNumericValue(row?.[filter.column]);
+        const value = cellNumber(row, filter.column);
         return value !== null && value > target;
       });
     }
 
     return rows.filter(row => {
-      const value = parseNumericValue(row?.[filter.column]);
+      const value = cellNumber(row, filter.column);
       return value !== null && value === target;
     });
   }

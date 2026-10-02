@@ -1,15 +1,39 @@
 /**
  * Table preview view. Builds the `<table>` element with row index, typed
- * cells (numeric/text), and a footer row showing per-column type tags.
+ * cells (number/date/text), and a footer row showing per-column type tags.
  */
 
 import { t, translateType, getLocale } from '../../../services/i18nService.js';
-import { formatNumber, isEmptyValue } from '../../../utils/formatters.js';
+import { formatDate, formatNumber } from '../../../utils/formatters.js';
 import { VIEW_IDS } from '../domIds.js';
 
 const SYNC_CELL_BUDGET = 2000;
 const CHUNK_CELL_BUDGET = 2000;
+const DATE_TIME_OPTIONS = {
+	year: 'numeric',
+	month: 'short',
+	day: '2-digit',
+	hour: '2-digit',
+	minute: '2-digit',
+	second: '2-digit',
+};
 let renderEpoch = 0;
+
+/**
+ * Display text of a canonical cell. A missing cell shows a dash.
+ *
+ * @param {*} value
+ * @param {string} type
+ * @param {string} locale
+ * @returns {string}
+ */
+function formatCell(value, type, locale) {
+	if (value === null) return '—';
+	if (type === 'number') return formatNumber(value, locale);
+	// Only a date-time has a `T`; a date-only cell shows no time of day.
+	if (type === 'date') return formatDate(value, locale, value.includes('T') ? DATE_TIME_OPTIONS : undefined);
+	return value;
+}
 
 /**
  * @param {HTMLTableSectionElement} tbody
@@ -31,10 +55,7 @@ function appendRows(tbody, rows, visibleColumns, locale, start, end) {
 		visibleColumns.forEach(({ name, type }) => {
 			const td = document.createElement('td');
 			if (type === 'number') td.classList.add('num');
-			const value = row[name];
-			td.textContent = isEmptyValue(value)
-				? '—'
-				: (type === 'number' ? formatNumber(value, locale) : String(value));
+			td.textContent = formatCell(row[name], type, locale);
 			tr.appendChild(td);
 		});
 		fragment.appendChild(tr);

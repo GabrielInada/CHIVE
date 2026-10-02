@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
-  FILTER_MISSING_TOKEN,
   applyChartFilterRows,
   createDefaultFilterConfig,
   getCategoricalFilterOptions,
-  isMissingCategoryValue,
   normalizeFilterConfig,
   toCategoryToken,
 } from '../../../src/domain/filters/chartFilter.js';
+import { MISSING_TOKEN } from '../../../src/domain/datasets/cellValues.js';
 
 describe('chartFilter', () => {
   it('collects categorical options with missing values', () => {
@@ -15,14 +14,25 @@ describe('chartFilter', () => {
       { gender: 'M' },
       { gender: 'F' },
       { gender: 'F' },
-      { gender: '' },
+      { gender: null },
       { gender: null },
     ];
 
-    const out = getCategoricalFilterOptions(rows, 'gender', { missingLabel: '(missing)' });
+    const out = getCategoricalFilterOptions(rows, 'gender', { missingLabel: '(ausente)' });
     expect(out.total).toBe(3);
     expect(out.allTokens).toContain(toCategoryToken('F'));
-    expect(out.allTokens).toContain(FILTER_MISSING_TOKEN);
+    expect(out.options).toContainEqual({ token: MISSING_TOKEN, label: '(ausente)', count: 2 });
+  });
+
+  it('keeps a real "N/A" value apart from the missing bucket', () => {
+    const rows = [{ status: 'N/A' }, { status: null }, { status: 'N/A' }];
+
+    const out = getCategoricalFilterOptions(rows, 'status', { missingLabel: '(missing)' });
+
+    expect(out.options).toEqual([
+      { token: 'v:N/A', label: 'N/A', count: 2 },
+      { token: MISSING_TOKEN, label: '(missing)', count: 1 },
+    ]);
   });
 
   it('filters rows for categorical include list', () => {
@@ -35,7 +45,7 @@ describe('chartFilter', () => {
     const filtered = applyChartFilterRows(rows, {
       column: 'region',
       mode: 'categorical',
-      include: [toCategoryToken('North'), FILTER_MISSING_TOKEN],
+      include: [toCategoryToken('North'), MISSING_TOKEN],
     }, []);
 
     expect(filtered).toEqual([{ region: 'North' }, { region: null }]);
@@ -68,13 +78,13 @@ describe('chartFilter', () => {
     expect(equal).toEqual([{ age: 22 }]);
   });
 
-  describe('blank cells in a numeric column', () => {
+  describe('missing cells in a numeric column', () => {
     // Rows that carry a label but no measurement. Coerced with plain Number()
-    // these all read as 0, so `eq 0` matched them and any bound spanning zero
-    // swept them in.
-    const rows = [{ v: 5 }, { v: '' }, { v: '   ' }, { v: null }, { v: 0 }];
+    // a missing cell reads as 0, so `eq 0` would match it and any bound
+    // spanning zero would sweep it in.
+    const rows = [{ v: 5 }, { v: null }, { v: 0 }];
 
-    it('does not match blanks under eq 0, only the genuine zero', () => {
+    it('does not match missing cells under eq 0, only the genuine zero', () => {
       const result = applyChartFilterRows(rows, {
         column: 'v',
         mode: 'numeric',
@@ -85,7 +95,7 @@ describe('chartFilter', () => {
       expect(result).toEqual([{ v: 0 }]);
     });
 
-    it('excludes blanks from lt, gt, and between', () => {
+    it('excludes missing cells from lt, gt, and between', () => {
       const apply = extra => applyChartFilterRows(rows, {
         column: 'v',
         mode: 'numeric',
@@ -116,29 +126,17 @@ describe('chartFilter', () => {
     expect(filtered).toEqual(rows);
   });
 
-  describe('isMissingCategoryValue', () => {
-    it('identifies null, undefined, and empty strings as missing', () => {
-      expect(isMissingCategoryValue(null)).toBe(true);
-      expect(isMissingCategoryValue(undefined)).toBe(true);
-      expect(isMissingCategoryValue('')).toBe(true);
-      expect(isMissingCategoryValue('  ')).toBe(true);
-    });
-
-    it('identifies non-empty values as not missing', () => {
-      expect(isMissingCategoryValue('a')).toBe(false);
-      expect(isMissingCategoryValue(0)).toBe(false);
-    });
-  });
-
   describe('toCategoryToken', () => {
     it('returns missing token for missing values', () => {
-      expect(toCategoryToken(null)).toBe(FILTER_MISSING_TOKEN);
-      expect(toCategoryToken(undefined)).toBe(FILTER_MISSING_TOKEN);
+      expect(toCategoryToken(null)).toBe(MISSING_TOKEN);
+      expect(toCategoryToken(undefined)).toBe(MISSING_TOKEN);
     });
 
     it('returns prefixed token for normal values', () => {
       expect(toCategoryToken('hello')).toBe('v:hello');
+      expect(toCategoryToken('N/A')).toBe('v:N/A');
       expect(toCategoryToken(42)).toBe('v:42');
+      expect(toCategoryToken('2024-01-15')).toBe('v:2024-01-15');
     });
   });
 
@@ -290,20 +288,6 @@ describe('chartFilter', () => {
         include: [],
       }, []);
       expect(result).toEqual([]);
-    });
-
-    it('skips rows with non-numeric values in numeric filter', () => {
-      const mixed = [
-        { val: 10 },
-        { val: 'text' },
-        { val: 30 },
-      ];
-      const result = applyChartFilterRows(mixed, {
-        column: 'val',
-        operator: 'gt',
-        value: '5',
-      }, ['val']);
-      expect(result).toEqual([{ val: 10 }, { val: 30 }]);
     });
 
     it('handles between with min > max by swapping', () => {

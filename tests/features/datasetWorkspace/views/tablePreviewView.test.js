@@ -37,7 +37,7 @@ describe('renderTablePreview', () => {
 		renderTablePreview(
 			[
 				{ name: 'Alpha', value: 1234.5, missing: null },
-				{ name: 'Beta', value: 2, missing: '' },
+				{ name: 'Beta', value: null, missing: null },
 				{ name: 'Gamma', value: 3, missing: 'kept out by limit' },
 			],
 			[
@@ -58,10 +58,25 @@ describe('renderTablePreview', () => {
 		expect(rows[0].querySelector('.row-index').textContent).toBe('1');
 		expect(rows[0].querySelector('td.num').textContent).toBe('1,234.5');
 		expect(rows[0].lastElementChild.textContent).toBe('\u2014');
+		expect(rows[1].querySelector('td.num').textContent).toBe('\u2014');
 		expect(rows[1].lastElementChild.textContent).toBe('\u2014');
 
 		expect(Array.from(table.querySelectorAll('tfoot td')).map(td => td.textContent))
 			.toEqual(['', 'type:text', 'type:number', 'type:text']);
+	});
+
+	it('shows date cells in UTC, with a time of day only for date-times', () => {
+		renderTablePreview(
+			[{ day: '2024-01-01' }, { day: '2024-01-15T22:30:05.000Z' }, { day: null }],
+			[{ name: 'day', type: 'date' }],
+			10,
+		);
+
+		const cells = Array.from(document.querySelectorAll('tbody td:not(.row-index)'), td => td.textContent);
+		expect(cells[0]).toBe('Jan 01, 2024');
+		// Some ICU versions put a narrow no-break space before PM.
+		expect(cells[1]).toMatch(/^Jan 15, 2024, 10:30:05\sPM$/);
+		expect(cells[2]).toBe('\u2014');
 	});
 
 	it('chunks previews above 2,000 cells and exposes aria-busy until complete', async () => {
