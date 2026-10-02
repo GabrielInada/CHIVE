@@ -35,13 +35,10 @@ export function processData(rawData) {
 	// Detect decimal separator once from a flat sample of all raw values.
 	// This is a dataset-level property - all numeric columns in a single file
 	// will use the same decimal convention.
-	// Only text carries a decimal convention; typed numbers are skipped.
+	// Preserve sample types so numeric fractions can disambiguate strings.
 	const allRawValues = rawData
 		.slice(0, DECIMAL_DETECTION.sampleSize)
-		.flatMap(row => Object.values(row))
-		.filter(v => typeof v === 'string')
-		.map(v => v.trim())
-		.filter(v => v.length > 0);
+		.flatMap(row => Object.values(row));
 	const decimalSeparator = detectDecimalSeparator(allRawValues);
 
 	const columnNames = Object.keys(rawData[0]);

@@ -34,9 +34,9 @@ export function normalizeNumericString(value, decimalSeparator) {
 
 /**
  * Whether a value's only separator cannot be a thousands separator. A
- * thousands separator always follows a leading group of one to three digits
- * that does not start with zero, so "784431.551" (a 4+ digit leading group)
- * and "0.358" (a leading zero) can only be decimal.
+ * thousands separator follows a leading group of one to three digits, so
+ * "784431.551" (a 4+ digit leading group) and "0.358" (a single zero group)
+ * indicate decimals. A padded group such as "01" is still ambiguous.
  *
  * @private
  * @param {string} value - A numeric-looking value containing `separator` and not the other one.
@@ -46,7 +46,7 @@ export function normalizeNumericString(value, decimalSeparator) {
 function isUngroupedSingleSeparator(value, separator) {
 	const integerPart = value.slice(0, value.lastIndexOf(separator)).replace(/^-/, '');
 	if (!/^\d+$/.test(integerPart)) return false;
-	return integerPart.length > 3 || integerPart.startsWith('0');
+	return integerPart.length > 3 || integerPart === '0';
 }
 
 /**
@@ -54,34 +54,38 @@ function isUngroupedSingleSeparator(value, separator) {
  *
  * Uses a three-stage heuristic:
  *   Stage 1: Values containing both separators - rightmost is decimal (unambiguous)
- *   Stage 2: Structural digit-count after the single separator, plus the
- *            leading group before it (4+ digits or a leading zero rules out
- *            a thousands separator)
- *   Stage 2b: Whole-number thousands heuristic for European integers like "1.000"
+ *   Stage 2: Repeated thousands groups, or digit counts around a single separator
+ *            (4+ leading digits or a single zero group indicate decimals)
+ *   Stage 2b: Without clearer string evidence or typed fractions, treat an entirely
+ *             whole-thousand dot sample ("1.000", "2.000") as European integers
  *   Stage 3: Post-detection NaN validation - if detected separator produces high NaN
  *            rate on numeric-looking values, try the other separator
  *
- * Falls back to '.' (dot) in all ambiguous or empty cases.
+ * Other ambiguous dot triples ("6.358") fall back to dot. Typed numbers keep
+ * their value and only supply a dot-decimal hint; explicit string evidence wins.
  *
- * @param {string[]} rawValues - Flat array of raw string values from the dataset sample
+ * @param {Array<string | number>} rawValues - Flat array of raw values from the dataset sample
  * @returns {'.' | ','} The detected decimal separator
  */
 export function detectDecimalSeparator(rawValues) {
+	const hasTypedFraction = rawValues.some(v =>
+		typeof v === 'number' && Number.isFinite(v) && !Number.isInteger(v));
+
 	// Filter to values that look like numbers: digits, dots, commas, optional leading minus
 	const numericLike = rawValues
-		.map(v => String(v ?? '').trim())
+		.filter(v => typeof v === 'string')
+		.map(v => v.trim())
 		.filter(v => v.length > 0 && /^-?[\d.,]+$/.test(v));
 
 	if (numericLike.length === 0) return '.';
 
-	// WHY: stages are ordered so each handles a different international-format gotcha.
-	// Stage 1 (both separators) is unambiguous → trust the position. Stage 2 (one
-	// separator) uses digit-count heuristics, with Stage 2b ("1.000") catching the
-	// classic European-thousands trap. Stage 3 (NaN-rate validation) is the safety
-	// net for the rare case where the votes were misleading. Reordering breaks
-	// real-world data.
+	// Ambiguous dot triples must not outvote evidence from other strings. Both
+	// decimal readings can parse successfully, so NaN validation cannot catch
+	// a mistaken thousands interpretation that scales a measurement by 1000.
 	let dotDecimalVotes = 0;
 	let commaDecimalVotes = 0;
+	let ambiguousDotValues = 0;
+	let wholeThousandsDotValues = 0;
 
 	for (const value of numericLike) {
 		const hasDot = value.includes('.');
@@ -102,21 +106,18 @@ export function detectDecimalSeparator(rawValues) {
 			const afterDot = value.slice(value.lastIndexOf('.') + 1);
 			const digitCount = afterDot.length;
 
-			if (digitCount !== 3) {
+			if (/^-?\d{1,3}(?:\.\d{3}){2,}$/.test(value)) {
+				// Multiple complete groups, unlike "6.358", establish thousands.
+				commaDecimalVotes++;
+			} else if (digitCount !== 3) {
 				// 1, 2, or >3 digits after dot: likely decimal
 				dotDecimalVotes++;
 			} else if (isUngroupedSingleSeparator(value, '.')) {
 				// Exactly 3 digits, but "784431.551" or "0.358" cannot be thousands.
-				// Without this vote, 3-decimal survey data loses to Stage 2b below
-				// and every value is read 1000 times too large.
 				dotDecimalVotes++;
-			} else {
-				// Exactly 3 digits after dot
-				// Stage 2b: "1.000" pattern - dot is thousands, so comma would be decimal
-				if (/^\d{1,3}\.\d{3}$/.test(value)) {
-					commaDecimalVotes++;
-				}
-				// Otherwise skip - genuinely ambiguous
+			} else if (/^-?\d{1,3}\.\d{3}$/.test(value)) {
+				ambiguousDotValues++;
+				if (/^-?[1-9]\d{0,2}\.000$/.test(value)) wholeThousandsDotValues++;
 			}
 			continue;
 		}
@@ -126,7 +127,9 @@ export function detectDecimalSeparator(rawValues) {
 			const afterComma = value.slice(value.lastIndexOf(',') + 1);
 			const digitCount = afterComma.length;
 
-			if (digitCount !== 3) {
+			if (/^-?\d{1,3}(?:,\d{3}){2,}$/.test(value)) {
+				dotDecimalVotes++;
+			} else if (digitCount !== 3) {
 				// 1, 2, or >3 digits after comma: likely decimal
 				commaDecimalVotes++;
 			} else if (isUngroupedSingleSeparator(value, ',')) {
@@ -138,8 +141,13 @@ export function detectDecimalSeparator(rawValues) {
 		}
 	}
 
-	// Determine winner from votes
-	const detected = commaDecimalVotes > dotDecimalVotes ? ',' : '.';
+	// Stage 2b is a weak fallback for entirely whole-thousand samples. A
+	// nonzero triple or a typed fraction keeps ambiguous dot decimals intact.
+	let detected = commaDecimalVotes > dotDecimalVotes ? ',' : '.';
+	if (dotDecimalVotes === 0 && commaDecimalVotes === 0 && !hasTypedFraction
+		&& ambiguousDotValues > 0 && ambiguousDotValues === wholeThousandsDotValues) {
+		detected = ',';
+	}
 
 	// Stage 3: NaN validation fallback
 	// If the detected separator produces a high NaN rate on the sample,

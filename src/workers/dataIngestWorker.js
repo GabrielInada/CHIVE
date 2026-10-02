@@ -147,14 +147,11 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 	}
 
 	post({ id, type: 'progress', stage: 'decimal-detection', percent: 32 });
-	// Only text carries a decimal convention. Typed JSON numbers and joined
-	// rows would otherwise vote with their JavaScript spelling ("1.125").
+	// Preserve sample types: numeric fractions are hints for ambiguous strings,
+	// while the detector gives explicit string conventions priority.
 	const allRawValues = rawData
 		.slice(0, DECIMAL_DETECTION.sampleSize)
-		.flatMap(row => Object.values(row))
-		.filter(v => typeof v === 'string')
-		.map(v => v.trim())
-		.filter(v => v.length > 0);
+		.flatMap(row => Object.values(row));
 	const decimalSeparator = detectDecimalSeparator(allRawValues);
 	post({ id, type: 'progress', stage: 'decimal-detection', percent: 35 });
 

@@ -65,7 +65,37 @@ describe('typeDetection', () => {
       expect(detectDecimalSeparator(['-1234.567', '6.358'])).toBe('.');
     });
 
-    it('Stage 2: a leading zero group is decimal, never thousands', () => {
+		it.each([
+			['6.358', '7.045'],
+			['-6.358', '-7.045'],
+			['6.000', '7.045'],
+			['1.125', '99.375', '999.875'],
+		])('defaults ambiguous three-decimal measurements to dot: %j', (...values) => {
+			expect(detectDecimalSeparator(values)).toBe('.');
+		});
+
+		it.each([
+			['01.358', '1.234,56'],
+			['-01.358', '-1.234,56'],
+			['001.358', '1.234,56'],
+		])('does not treat a zero-padded integer as a zero group: %j', (...values) => {
+			expect(detectDecimalSeparator(values)).toBe(',');
+		});
+
+		it('uses typed fractions only when strings have no clear decimal convention', () => {
+			expect(detectDecimalSeparator([2.5, '1.250'])).toBe('.');
+			expect(detectDecimalSeparator([2.5, '1.000'])).toBe('.');
+			expect(detectDecimalSeparator([2.5, '1.234,56'])).toBe(',');
+			expect(detectDecimalSeparator([2.5, 3.75, '1,25'])).toBe(',');
+			expect(detectDecimalSeparator([2, '1.000'])).toBe(',');
+		});
+
+		it('recognizes repeated thousands groups even without decimal digits', () => {
+			expect(detectDecimalSeparator(['1.234.567', '-2.345.678'])).toBe(',');
+			expect(detectDecimalSeparator(['1,234,567', '-2,345,678'])).toBe('.');
+		});
+
+    it('Stage 2: a single zero group is decimal, never thousands', () => {
       expect(detectDecimalSeparator(['0.125', '0.375'])).toBe('.');
       expect(detectDecimalSeparator(['0,125', '0,375'])).toBe(',');
     });

@@ -23,6 +23,48 @@ describe('processData', () => {
     expect(stats[0].mean).toBe(2);
   });
 
+	it.each([
+		{
+			name: 'three-decimal measurements without larger coordinates',
+			values: ['6.358', '7.045'],
+			expected: [6.358, 7.045],
+		},
+		{
+			name: 'zero-padded thousands with explicit European decimals',
+			values: ['01.358', '1.234,56'],
+			expected: [1358, 1234.56],
+		},
+		{
+			name: 'mixed typed numbers and dot-decimal strings',
+			values: [2.5, '1.250'],
+			expected: [2.5, 1.25],
+		},
+		{
+			name: 'typed fractions with whole-number dot-decimal strings',
+			values: [2.5, '1.000'],
+			expected: [2.5, 1],
+		},
+		{
+			name: 'European decimal strings alongside typed fractions',
+			values: [2.5, 3.75, '1.234,56'],
+			expected: [2.5, 3.75, 1234.56],
+		},
+		{
+			name: 'three-decimal measurements including whole numbers',
+			values: ['6.000', '7.045'],
+			expected: [6, 7.045],
+		},
+		{
+			name: 'explicit thousands grouping alongside ambiguous values',
+			values: ['1.234.567', '01.358', '12.500'],
+			expected: [1234567, 1358, 12500],
+		},
+	])('preserves $name', ({ values, expected }) => {
+		const result = processData(values.map(v => ({ v })));
+		expect(result.columns.find(c => c.name === 'v')?.type).toBe('number');
+		expect(result.rows.map(row => row.v)).toEqual(expected);
+	});
+
   describe('processData with European decimal separator', () => {
     it('detects and converts numeric columns in European format (comma decimal)', () => {
       const input = [

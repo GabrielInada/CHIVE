@@ -150,6 +150,65 @@ describe('runIngest', () => {
 		expect(done.result.rows[0].Z).toBeCloseTo(6.358, 3);
 	});
 
+	it.each([
+		{
+			name: 'three-decimal measurements without larger coordinates',
+			kind: 'csv',
+			text: 'v\n6.358\n7.045\n',
+			separator: '.',
+			expected: [6.358, 7.045],
+		},
+		{
+			name: 'zero-padded thousands with explicit European decimals',
+			kind: 'csv',
+			text: 'id;v\n1;01.358\n2;1.234,56\n',
+			separator: ',',
+			expected: [1358, 1234.56],
+		},
+		{
+			name: 'mixed typed numbers and dot-decimal strings',
+			kind: 'json',
+			text: '[{"v":2.5},{"v":"1.250"}]',
+			separator: '.',
+			expected: [2.5, 1.25],
+		},
+		{
+			name: 'typed fractions with whole-number dot-decimal strings',
+			kind: 'json',
+			text: '[{"v":2.5},{"v":"1.000"}]',
+			separator: '.',
+			expected: [2.5, 1],
+		},
+		{
+			name: 'European decimal strings alongside typed fractions',
+			kind: 'json',
+			text: '[{"v":2.5},{"v":3.75},{"v":"1.234,56"}]',
+			separator: ',',
+			expected: [2.5, 3.75, 1234.56],
+		},
+		{
+			name: 'three-decimal measurements including whole numbers',
+			kind: 'csv',
+			text: 'v\n6.000\n7.045\n',
+			separator: '.',
+			expected: [6, 7.045],
+		},
+		{
+			name: 'explicit thousands grouping alongside ambiguous values',
+			kind: 'csv',
+			text: 'v\n1.234.567\n01.358\n12.500\n',
+			separator: ',',
+			expected: [1234567, 1358, 12500],
+		},
+	])('preserves $name', ({ kind, text, separator, expected }) => {
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'decimal-regression', kind, text }, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done).toBeDefined();
+		expect(done.result.rows.map(row => row.v)).toEqual(expected);
+		expect(done.result.decimalSeparator).toBe(separator);
+	});
+
 	it('keeps typed JSON numbers with 3 decimals exact', () => {
 		const { post, msgs } = collectMessages();
 		runIngest({ id: 'json-3dp', kind: 'json', text: '[{"v":1.125},{"v":2.25},{"v":3.375}]' }, post);
