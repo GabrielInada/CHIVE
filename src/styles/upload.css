@@ -81,6 +81,12 @@
     font-size: var(--font-size-sm);
 }
 
+@container sidebar (max-width: 120px) {
+    .upload-format {
+        display: none;
+    }
+}
+
 .upload-format select {
     width: 100%;
     min-width: 0;

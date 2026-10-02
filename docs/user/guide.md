@@ -49,6 +49,11 @@ Use the preview and statistics views before building charts.
 
 If a dataset needs to combine fields from two loaded datasets, use the join
 builder and choose the join keys, join type, and output columns.
+Each column keeps its source decimal format through joins and project saves.
+For example, `1.000` imported with **Comma** still means 1000 if a join narrows
+a mixed text column to numeric values, even when the other dataset uses **Dot**.
+Projects saved before column formats were retained use automatic detection;
+re-upload ambiguous files with the intended format before joining them.
 
 ## Build Charts
 

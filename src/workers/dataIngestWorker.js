@@ -37,7 +37,7 @@ const NORMALIZE_CHUNK_SIZE = 20000;
  *
  * @param {Array<Object<string, *>>} rawData
  * @param {ColumnSpec[]} columns
- * @param {string} decimalSeparator - `'.'` or `','`.
+ * @param {string} decimalSeparator - Fallback for columns without a saved separator: `'.'` or `','`.
  * @param {((done: number, total: number) => void) | null | undefined} onChunk
  * @param {number} [chunkSize=20000]
  * @returns {Array<Object<string, *>>}
@@ -50,14 +50,14 @@ export function chunkedNormalize(rawData, columns, decimalSeparator, onChunk, ch
 		for (let j = i; j < end; j++) {
 			const row = rawData[j];
 			const converted = {};
-			for (const { name, type } of columns) {
+			for (const { name, type, decimalSeparator: columnSeparator = decimalSeparator } of columns) {
 				const value = row[name];
 				if (type === COLUMN_TYPES.NUMBER && value !== '' && value !== null && value !== undefined) {
 					// A JSON or joined number is already typed; re-reading its text with
 					// a comma separator would turn 1.125 into 1125.
 					converted[name] = typeof value === 'number'
 						? value
-						: Number(normalizeNumericString(String(value), decimalSeparator));
+						: Number(normalizeNumericString(String(value), columnSeparator));
 				} else if (type === COLUMN_TYPES.DATE && value !== '' && value !== null && value !== undefined) {
 					const parsed = value instanceof Date ? value : new Date(value);
 					converted[name] = Number.isFinite(parsed?.getTime?.()) ? parsed : null;
@@ -88,6 +88,7 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 	const rowLimit = Number.isFinite(options.rowLimit) ? options.rowLimit : Infinity;
 	let rawData;
 	let outputColumns = null;
+	const inheritedSeparators = new Map();
 
 	if (kind === 'join') {
 		post({ id, type: 'progress', stage: 'joining', percent: 0 });
@@ -98,6 +99,16 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 		}
 		rawData = joined.rows;
 		outputColumns = joined.outputColumns;
+		const sourceColumns = {
+			left: new Map((join.leftColumnSpecs || []).map(column => [column.name, column])),
+			right: new Map((join.rightColumnSpecs || []).map(column => [column.name, column])),
+		};
+		// A join can narrow a text column to numeric-looking strings. Keep each
+		// source's format, including when conflicting column names are renamed.
+		for (const { side, source, output } of joined.columnSources) {
+			const separator = sourceColumns[side].get(source)?.decimalSeparator;
+			if (separator === '.' || separator === ',') inheritedSeparators.set(output, separator);
+		}
 		post({ id, type: 'progress', stage: 'joining', percent: 30 });
 	} else {
 		post({ id, type: 'progress', stage: 'parsing', percent: 0 });
@@ -159,7 +170,10 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 	for (let i = 0; i < columnNames.length; i++) {
 		const name = columnNames[i];
 		const values = rawData.map(row => row[name]);
-		columns.push({ name: name, type: detectType(values, decimalSeparator) });
+		const columnSeparator = options.decimalSeparator === '.' || options.decimalSeparator === ','
+			? decimalSeparator
+			: inheritedSeparators.get(name) ?? decimalSeparator;
+		columns.push({ name, type: detectType(values, columnSeparator), decimalSeparator: columnSeparator });
 		const pct = 35 + Math.round(((i + 1) / columnNames.length) * 15);
 		post({ id, type: 'progress', stage: 'type-detection', percent: pct });
 	}

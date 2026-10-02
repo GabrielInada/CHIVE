@@ -21,7 +21,7 @@ import { detectDecimalSeparator, detectType, normalizeNumericString } from './ty
  *
  * @param {Array<Object<string, *>>} rawData - The rows from a `parseCsv`/`parseJson` result (`result.rows`).
  * @param {{ decimalSeparator?: 'auto' | '.' | ',' }} [options] - Use an explicit separator for ambiguous input such as European grouped integers.
- * @returns {{ rows: Array<Object<string, *>>, columns: ColumnSpec[] }} - `rows` is the normalized row set; `columns` lists `{ name, type }` in source order. Empty input returns empty arrays.
+ * @returns {{ rows: Array<Object<string, *>>, columns: ColumnSpec[] }} - Columns retain their decimal format for strings that a later join may classify as numeric. Empty input returns empty arrays.
  * @throws {Error} When `rawData` is not an array.
  */
 export function processData(rawData, options = {}) {
@@ -46,7 +46,7 @@ export function processData(rawData, options = {}) {
 
 	const columns = columnNames.map(name => {
 		const values = rawData.map(row => row[name]);
-		return { name: name, type: detectType(values, decimalSeparator) };
+		return { name: name, type: detectType(values, decimalSeparator), decimalSeparator };
 	});
 
 	const rows = rawData.map(row => {

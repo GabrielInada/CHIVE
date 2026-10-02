@@ -112,6 +112,19 @@ function csvFile({
   };
 }
 
+async function useRealIngestService() {
+	const service = await vi.importActual('../../../src/services/dataIngestService.js');
+	service.__setIngestWorkerFactoryForTesting(() => ({
+		postMessage(payload) {
+			queueMicrotask(() => runIngest(payload, message => this.onmessage({ data: message })));
+		},
+		terminate() {},
+	}));
+	mocks.ingestFile.mockImplementation(service.ingestFile);
+	mocks.joinDatasetsInWorker.mockImplementation(service.joinDatasetsInWorker);
+	return () => service.__setIngestWorkerFactoryForTesting(null);
+}
+
 describe('datasetController', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -489,6 +502,91 @@ describe('datasetController', () => {
     expect(invalid.ok).toBe(false);
     expect(invalid.message).toBe('chive-join-error-select-different-files');
   });
+
+	it.each([
+		{ separator: ',', expected: 1000 },
+		{ separator: '.', expected: 1 },
+	])('keeps the $separator upload format when a join makes a mixed text column numeric', async ({ separator, expected }) => {
+		const restoreService = await useRealIngestService();
+		const datasets = [];
+		mocks.addDataset.mockImplementation(dataset => datasets.push(dataset) - 1);
+		mocks.getAllDatasets.mockReturnValue(datasets);
+		const select = document.createElement('select');
+		select.id = 'upload-decimal-separator';
+		select.innerHTML = '<option value=",">Comma</option><option value=".">Dot</option>';
+		select.value = separator;
+		document.body.appendChild(select);
+
+		try {
+			await handleFileUpload([csvFile({ content: 'id,population\na,1.000\nb,unknown\n' })]);
+			expect(datasets[0].columns).toContainEqual(expect.objectContaining({ name: 'population', type: 'text' }));
+			expect(datasets[0].rows[0].population).toBe('1.000');
+			datasets.push({ name: 'selected.csv', rows: [{ id: 'a' }], columns: [{ name: 'id', type: 'text' }] });
+			const result = await createJoinedDataset({
+				leftIndex: 0,
+				rightIndex: 1,
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				leftColumns: ['population'],
+				rightColumns: [],
+			});
+			expect(result.ok).toBe(true);
+			expect(datasets[2].rows).toEqual([{ population: expected }]);
+		} finally {
+			select.remove();
+			mocks.addDataset.mockReset();
+			restoreService();
+		}
+	});
+
+	it('preserves opposite formats through renamed columns and repeated joins', async () => {
+		const restoreService = await useRealIngestService();
+		const datasets = [];
+		mocks.addDataset.mockImplementation(dataset => datasets.push(dataset) - 1);
+		mocks.getAllDatasets.mockReturnValue(datasets);
+		const select = document.createElement('select');
+		select.id = 'upload-decimal-separator';
+		select.innerHTML = '<option value=",">Comma</option><option value=".">Dot</option>';
+		document.body.appendChild(select);
+
+		try {
+			for (const separator of [',', '.']) {
+				select.value = separator;
+				await handleFileUpload([csvFile({ name: 'numbers.csv', content: 'id,population\na,1.000\nb,unknown\n' })]);
+			}
+			const first = await createJoinedDataset({
+				leftIndex: 0,
+				rightIndex: 1,
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				leftColumns: ['id', 'population'],
+				rightColumns: ['population'],
+			});
+			expect(first.ok).toBe(true);
+			expect(datasets[2].columns).toEqual([
+				{ name: 'id', type: 'text', decimalSeparator: ',' },
+				{ name: 'numbers.population', type: 'text', decimalSeparator: ',' },
+				{ name: 'numbers.population_2', type: 'text', decimalSeparator: '.' },
+			]);
+			datasets.push({ name: 'selected.csv', rows: [{ id: 'a' }], columns: [{ name: 'id', type: 'text' }] });
+			const second = await createJoinedDataset({
+				leftIndex: 2,
+				rightIndex: 3,
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				leftColumns: ['numbers.population_2', 'numbers.population'],
+				rightColumns: [],
+			});
+			expect(second.ok).toBe(true);
+			expect(datasets[4].rows).toEqual([{ 'numbers.population_2': 1, 'numbers.population': 1000 }]);
+			expect(datasets[0].rows[0].population).toBe('1.000');
+			expect(datasets[1].rows[0].population).toBe('1.000');
+		} finally {
+			select.remove();
+			mocks.addDataset.mockReset();
+			restoreService();
+		}
+	});
 
   it('returns the generic join error when the worker join fails without adding', async () => {
     mocks.getAllDatasets.mockReturnValue([
