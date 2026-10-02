@@ -363,6 +363,7 @@
  * @property {string} [text] - Raw file contents for CSV/JSON requests.
  * @property {JoinDatasetsOptions} [join] - Complete join input for a join request.
  * @property {Object} [options]
+ * @property {'auto' | '.' | ','} [options.decimalSeparator='auto'] - Explicit string number format, or detection with a dot fallback for ambiguous dot triples. Typed numbers are preserved.
  * @property {number} [options.rowLimit] - Cap this worker response after parse; surplus rows trigger `truncatedFrom`. Uploads use this only for a bounded threshold probe, then rerun uncapped after approval.
  * @property {string[]} [options.dropColumns] - Column names to strip before normalization (preset use case).
  */
@@ -375,7 +376,7 @@
  * @typedef {Object} IngestWorkerDoneResult
  * @property {Array<Object<string, *>>} rows
  * @property {ColumnSpec[]} columns
- * @property {string} decimalSeparator - Detected separator (`'.'` or `','`).
+ * @property {string} decimalSeparator - Selected or detected separator (`'.'` or `','`).
  * @property {NumericColumnStats[] | []} statsNumeric - Empty array when no rows.
  * @property {CategoricalColumnStats[] | []} statsCategorical - Empty array when no rows.
  * @property {number | null} truncatedFrom - Original row count when `options.rowLimit` truncated; `null` otherwise.

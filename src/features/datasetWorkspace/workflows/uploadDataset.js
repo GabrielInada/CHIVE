@@ -28,9 +28,10 @@ import { STATS_NUMERIC_VERSION } from '../../../config/statistics.js';
  *
  * @param {FileList | File[] | null | undefined} files
  * @param {{ confirm: (message: string) => boolean | Promise<boolean> }} dependencies
+ * @param {{ decimalSeparator?: 'auto' | '.' | ',' }} [options] - Format captured when this upload batch starts.
  * @returns {Promise<void>}
  */
-export async function uploadDatasetFiles(files, { confirm }) {
+export async function uploadDatasetFiles(files, { confirm }, options = {}) {
 	if (!files || files.length === 0) return;
 
 	clearErrors();
@@ -38,7 +39,7 @@ export async function uploadDatasetFiles(files, { confirm }) {
 
 	for (const file of filesToProcess) {
 		try {
-			await processFileForDataset(file, { confirm });
+			await processFileForDataset(file, { confirm }, options);
 		} catch (err) {
 			showError(err.message || t('chive-error-upload-processing'));
 		}
@@ -53,8 +54,9 @@ export async function uploadDatasetFiles(files, { confirm }) {
  * @private
  * @param {File} file
  * @param {{ confirm: (message: string) => boolean | Promise<boolean> }} dependencies
+ * @param {{ decimalSeparator?: 'auto' | '.' | ',' }} options
  */
-async function processFileForDataset(file, { confirm }) {
+async function processFileForDataset(file, { confirm }, options) {
 	// Validate file format
 	const extension = file.name.split('.').pop()?.toLowerCase() ?? '';
 	const isDelimited = DELIMITED_EXTENSIONS.includes(extension);
@@ -94,7 +96,7 @@ async function processFileForDataset(file, { confirm }) {
 		},
 	};
 	let result = await ingestFile(
-		{ kind, text: content, options: { rowLimit: ROW_LIMIT } },
+		{ kind, text: content, options: { ...options, rowLimit: ROW_LIMIT } },
 		workerConfig,
 	);
 	let value = unwrapIngestResult(result, progress);
@@ -114,7 +116,7 @@ async function processFileForDataset(file, { confirm }) {
 		// The bounded first pass is only a threshold probe. Once approved, run
 		// the worker again without a row cap so the dataset keeps every row.
 		progress.update(0, t('chive-progress-parsing', [file.name]));
-		result = await ingestFile({ kind, text: content, options: {} }, workerConfig);
+		result = await ingestFile({ kind, text: content, options }, workerConfig);
 		value = unwrapIngestResult(result, progress);
 	}
 

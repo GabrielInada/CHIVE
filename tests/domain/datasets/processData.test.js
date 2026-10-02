@@ -40,9 +40,14 @@ describe('processData', () => {
 			expected: [2.5, 1.25],
 		},
 		{
-			name: 'grouped integer strings alongside typed fractions',
+			name: 'whole-number decimal strings alongside typed fractions',
 			values: [2.5, '1.000'],
-			expected: [2.5, 1000],
+			expected: [2.5, 1],
+		},
+		{
+			name: 'whole-number measurements without explicit decimal evidence',
+			values: ['6.000', '7.045'],
+			expected: [6, 7.045],
 		},
 		{
 			name: 'European decimal strings alongside typed fractions',
@@ -66,16 +71,20 @@ describe('processData', () => {
 	});
 
   describe('processData with European decimal separator', () => {
-		it('preserves grouped integers when only some end in .000', () => {
+		it('preserves ambiguous grouped integers with an explicit comma separator', () => {
 			const parsed = parseCsv('population\n1.000\n1.234\n2.345\n');
 			expect(parsed.ok).toBe(true);
-			const result = processData(parsed.rows);
+			const result = processData(parsed.rows, { decimalSeparator: ',' });
 			expect(result.rows.map(row => row.population)).toEqual([1000, 1234, 2345]);
 		});
 
-		it('does not let a typed fraction in another column change grouped integers', () => {
-			const result = processData([{ rate: 2.5, population: '1.000' }]);
-			expect(result.rows).toEqual([{ rate: 2.5, population: 1000 }]);
+		it.each([
+			{ decimalSeparator: 'auto', population: 1 },
+			{ decimalSeparator: '.', population: 1 },
+			{ decimalSeparator: ',', population: 1000 },
+		])('keeps typed fractions independent of $decimalSeparator string formatting', ({ decimalSeparator, population }) => {
+			const result = processData([{ rate: 2.5, population: '1.000' }], { decimalSeparator });
+			expect(result.rows).toEqual([{ rate: 2.5, population }]);
 		});
 
     it('detects and converts numeric columns in European format (comma decimal)', () => {
@@ -90,13 +99,13 @@ describe('processData', () => {
       expect(result.rows[1].valor).toBeCloseTo(2.71);
     });
 
-    it('detects and converts European integers with dot as thousand separator', () => {
+    it('converts ambiguous European integers with an explicit comma separator', () => {
       const input = [
         { populacao: '1.000', pais: 'A' },
         { populacao: '50.000', pais: 'B' },
         { populacao: '2.000', pais: 'C' },
       ];
-      const result = processData(input);
+      const result = processData(input, { decimalSeparator: ',' });
       expect(result.columns.find(c => c.name === 'populacao')?.type).toBe('number');
       expect(result.rows[0].populacao).toBe(1000);
       expect(result.rows[1].populacao).toBe(50000);

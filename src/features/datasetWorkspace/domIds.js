@@ -19,6 +19,7 @@ export const VIEW_IDS = {
 
 export const FILE_IDS = {
 	fileInput: 'file-input',
+	decimalSeparator: 'upload-decimal-separator',
 	uploadZone: 'upload-zone',
 	fileSummary: 'file-summary-text',
 	fileListContent: 'file-list-content',

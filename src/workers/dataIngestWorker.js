@@ -132,7 +132,7 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 		const result = {
 			rows: [],
 			columns: [],
-			decimalSeparator: '.',
+			decimalSeparator: detectDecimalSeparator([], options.decimalSeparator),
 			statsNumeric: [],
 			statsCategorical: [],
 			truncatedFrom,
@@ -151,7 +151,7 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 	const allRawValues = rawData
 		.slice(0, DECIMAL_DETECTION.sampleSize)
 		.flatMap(row => Object.values(row));
-	const decimalSeparator = detectDecimalSeparator(allRawValues);
+	const decimalSeparator = detectDecimalSeparator(allRawValues, options.decimalSeparator);
 	post({ id, type: 'progress', stage: 'decimal-detection', percent: 35 });
 
 	const columnNames = Object.keys(rawData[0]);

@@ -14,16 +14,17 @@ import { detectDecimalSeparator, detectType, normalizeNumericString } from './ty
 /**
  * Detect column types and normalize numeric values in a single pass.
  *
- * The decimal separator is detected once for the whole dataset (it is a
+ * The decimal separator is specified or detected once for the whole dataset (it is a
  * file-level property, all numeric columns in one upload share the same
  * convention). Then each column gets a `type` from `detectType`, and
  * numeric cells are parsed into actual numbers via `normalizeNumericString`.
  *
  * @param {Array<Object<string, *>>} rawData - The rows from a `parseCsv`/`parseJson` result (`result.rows`).
+ * @param {{ decimalSeparator?: 'auto' | '.' | ',' }} [options] - Use an explicit separator for ambiguous input such as European grouped integers.
  * @returns {{ rows: Array<Object<string, *>>, columns: ColumnSpec[] }} - `rows` is the normalized row set; `columns` lists `{ name, type }` in source order. Empty input returns empty arrays.
  * @throws {Error} When `rawData` is not an array.
  */
-export function processData(rawData) {
+export function processData(rawData, options = {}) {
 	if (!Array.isArray(rawData)) {
 		throw new Error('rawData must be an array');
 	}
@@ -39,7 +40,7 @@ export function processData(rawData) {
 	const allRawValues = rawData
 		.slice(0, DECIMAL_DETECTION.sampleSize)
 		.flatMap(row => Object.values(row));
-	const decimalSeparator = detectDecimalSeparator(allRawValues);
+	const decimalSeparator = detectDecimalSeparator(allRawValues, options.decimalSeparator);
 
 	const columnNames = Object.keys(rawData[0]);
 

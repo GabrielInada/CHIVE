@@ -52,10 +52,6 @@ describe('typeDetection', () => {
       expect(detectDecimalSeparator(['3.14159', '2.71828'])).toBe('.');
     });
 
-    it('Stage 2b: detects comma as decimal for European integers like 1.000', () => {
-      expect(detectDecimalSeparator(['1.000', '2.000', '50.000'])).toBe(',');
-    });
-
     it('Stage 2: a single separator after a 4+ digit leading group is decimal', () => {
       // Survey coordinates with millimetre precision: every value has exactly 3
       // decimals, so the small elevation used to win Stage 2b and read the
@@ -67,6 +63,13 @@ describe('typeDetection', () => {
 
 		it.each([
 			['6.358', '7.045'],
+			['6.000', '7.045'],
+			['7.045', '6.000'],
+			['6.000'],
+			['1.000', '2.000', '50.000'],
+			['1.000', '1.234', '2.345'],
+			['-1.000', '-1.234', '-2.345'],
+			[' 1.000 ', '01.234'],
 			['-6.358', '-7.045'],
 			['1.125', '99.375', '999.875'],
 		])('defaults ambiguous three-decimal measurements to dot: %j', (...values) => {
@@ -81,25 +84,15 @@ describe('typeDetection', () => {
 			expect(detectDecimalSeparator(values)).toBe(',');
 		});
 
-		it.each([
-			['1.000', '1.234', '2.345'],
-			['1.234', '2.345', '1.000'],
-			['-1.000', '-1.234', '-2.345'],
-			[' 1.000 ', '01.234'],
-			['6.000', '7.045'],
-		])('uses a whole-thousand hint for otherwise ambiguous groups: %j', (...values) => {
-			expect(detectDecimalSeparator(values)).toBe(',');
-		});
-
 		it.each(['2.5', '0.125', '1234.567', '1,234.56'])(
-			'gives clear dot-decimal evidence priority over whole-thousand hints: %s', (value) => {
+			'gives clear dot-decimal evidence priority over ambiguous triples: %s', (value) => {
 				expect(detectDecimalSeparator(['1.000', '1.234', value])).toBe('.');
 			},
 		);
 
 		it.each([
-			{ values: ['1.000'], expected: ',' },
-			{ values: ['1.000', '1.234', '2.345'], expected: ',' },
+			{ values: ['1.000'], expected: '.' },
+			{ values: ['1.000', '1.234', '2.345'], expected: '.' },
 			{ values: ['1.250'], expected: '.' },
 			{ values: ['1.234,56'], expected: ',' },
 			{ values: ['1,25'], expected: ',' },
@@ -114,6 +107,17 @@ describe('typeDetection', () => {
 			expect(detectDecimalSeparator(['1,234,567', '-2,345,678'])).toBe('.');
 		});
 
+		it('uses an explicit separator instead of inferring ambiguous values', () => {
+			expect(detectDecimalSeparator(['1.000', '1.234', '2.345'], ',')).toBe(',');
+			expect(detectDecimalSeparator([2.5, '1.000'], ',')).toBe(',');
+			expect(detectDecimalSeparator(['1,000', '2,000'], '.')).toBe('.');
+			expect(detectDecimalSeparator(['6.000', '7.045'], 'auto')).toBe('.');
+		});
+
+		it('rejects unsupported separator overrides', () => {
+			expect(() => detectDecimalSeparator(['1.000'], ';')).toThrow(RangeError);
+		});
+
     it('Stage 2: a single zero group is decimal, never thousands', () => {
       expect(detectDecimalSeparator(['0.125', '0.375'])).toBe('.');
       expect(detectDecimalSeparator(['0,125', '0,375'])).toBe(',');
@@ -126,7 +130,7 @@ describe('typeDetection', () => {
 
     it('Stage 3: NaN fallback, reverts when detected separator produces many NaN', () => {
       // All values have exactly 3 decimal places in European format.
-      // Stages 1-2b skip them as ambiguous, fall back to '.',
+      // Stages 1-2 skip them as ambiguous, fall back to '.',
       // but Stage 3 sees high NaN rate and switches to ','.
       const values = ['3,141', '2,718', '1,414', '1,732'];
       expect(detectDecimalSeparator(values)).toBe(',');

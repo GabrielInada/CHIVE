@@ -24,6 +24,12 @@ Start from either a bundled sample dataset or a local file.
   than one exists, CHIVE uses the first one in object-key order.
 - CHIVE parses uploaded files in the browser. Data ingest uses a Web Worker so
   larger files do not block the main UI thread.
+- Choose **Decimal separator** before selecting or dropping files. **Automatic**
+  detects clear decimal or grouping patterns, but ambiguous dot values such as
+  `6.000` and `7.045` default to `6` and `7.045`. If `1.000`, `1.234`, and `2.345`
+  mean grouped integers, select **Comma (1.234,56)** to import them as `1000`,
+  `1234`, and `2345`. An explicit choice applies to every file in that upload
+  batch. Typed JSON numbers keep their values regardless of the choice.
 - Files larger than 15 MB require confirmation before processing. Ingest keeps
   at most the first 200,000 rows from a file.
 

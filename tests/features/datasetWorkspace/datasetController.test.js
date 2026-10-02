@@ -85,6 +85,7 @@ import {
   setupFileInputListeners,
 } from '../../../src/features/datasetWorkspace/datasetController.js';
 import { STATS_NUMERIC_VERSION } from '../../../src/config/statistics.js';
+import { runIngest } from '../../../src/workers/dataIngestWorker.js';
 
 class FileReaderMock {
   readAsText(file) {
@@ -194,6 +195,42 @@ describe('datasetController', () => {
     await handleFileUpload([csvFile({ size: 30 })]);
     expect(mocks.showError).toHaveBeenCalledWith('chive-error-cancelled');
   });
+
+	it.each([
+		{ separator: 'auto', name: 'measurements.csv', text: 'v\n6.000\n7.045\n', expected: [{ v: 6 }, { v: 7.045 }] },
+		{ separator: ',', name: 'population.csv', text: 'v\n1.000\n1.234\n2.345\n', expected: [{ v: 1000 }, { v: 1234 }, { v: 2345 }] },
+		{ separator: '.', name: 'population.csv', text: 'v\n"1,000"\n"2,000"\n', expected: [{ v: 1000 }, { v: 2000 }] },
+		{ separator: 'auto', name: 'measurements.json', text: '[{"v":2.5},{"v":"1.000"}]', expected: [{ v: 2.5 }, { v: 1 }] },
+		{ separator: ',', name: 'population.json', text: '[{"rate":2.5,"population":"1.000"}]', expected: [{ rate: 2.5, population: 1000 }] },
+	])('uses the selected $separator separator when uploading $name', async ({ separator, name, text, expected }) => {
+		const select = document.createElement('select');
+		select.id = 'upload-decimal-separator';
+		select.innerHTML = '<option value="auto">Auto</option><option value=".">Dot</option><option value=",">Comma</option>';
+		select.value = separator;
+		document.body.appendChild(select);
+		mocks.ingestFile.mockImplementation(async payload => {
+			let result;
+			runIngest({ id: 'upload-format', ...payload }, message => {
+				if (message.type === 'done') result = { ok: true, value: message.result };
+				if (message.type === 'error') result = { ok: false, reason: message.reason };
+			});
+			return result;
+		});
+
+		try {
+			await handleFileUpload([csvFile({ name, content: text })]);
+			expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+			expect(mocks.addDataset.mock.calls[0][0].rows).toEqual(expected);
+			for (const [input] of mocks.ingestFile.mock.calls) {
+				expect(input.options.decimalSeparator).toBe(separator);
+			}
+			// The three-row file exceeds the mocked row limit. The uncapped retry
+			// must use the same format selection as the initial probe.
+			if (expected.length === 3) expect(mocks.ingestFile).toHaveBeenCalledTimes(2);
+		} finally {
+			select.remove();
+		}
+	});
 
   it('surfaces ingest worker errors via the mapped message, not the raw reason', async () => {
     mocks.ingestErrorMessage.mockReturnValueOnce('mapped-detail');

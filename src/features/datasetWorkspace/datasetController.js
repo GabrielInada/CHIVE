@@ -55,7 +55,9 @@ export function initDatasetController(options = {}) {
  * @returns {Promise<void>}
  */
 export async function handleFileUpload(files) {
-	return uploadDatasetFiles(files, { confirm: confirmFn });
+	const separatorSelect = document.getElementById(FILE_IDS.decimalSeparator);
+	const options = separatorSelect ? { decimalSeparator: separatorSelect.value } : {};
+	return uploadDatasetFiles(files, { confirm: confirmFn }, options);
 }
 
 /**

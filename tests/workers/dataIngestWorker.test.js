@@ -173,11 +173,18 @@ describe('runIngest', () => {
 			expected: [2.5, 1.25],
 		},
 		{
-			name: 'grouped integer strings alongside typed fractions',
+			name: 'whole-number decimal strings alongside typed fractions',
 			kind: 'json',
 			text: '[{"v":2.5},{"v":"1.000"}]',
-			separator: ',',
-			expected: [2.5, 1000],
+			separator: '.',
+			expected: [2.5, 1],
+		},
+		{
+			name: 'whole-number measurements without explicit decimal evidence',
+			kind: 'csv',
+			text: 'v\n6.000\n7.045\n',
+			separator: '.',
+			expected: [6, 7.045],
 		},
 		{
 			name: 'European decimal strings alongside typed fractions',
@@ -200,9 +207,24 @@ describe('runIngest', () => {
 			separator: ',',
 			expected: [1234567, 1358, 12500],
 		},
-	])('preserves $name', ({ kind, text, separator, expected }) => {
+		{
+			name: 'whole-number measurements in joined data',
+			kind: 'join',
+			join: {
+				leftRows: [{ id: 1, v: '6.000' }, { id: 2, v: '7.045' }],
+				rightRows: [{ id: 1 }, { id: 2 }],
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				joinType: 'inner',
+				leftColumns: ['id', 'v'],
+				rightColumns: [],
+			},
+			separator: '.',
+			expected: [6, 7.045],
+		},
+	])('preserves $name', ({ kind, text, join, separator, expected }) => {
 		const { post, msgs } = collectMessages();
-		runIngest({ id: 'decimal-regression', kind, text }, post);
+		runIngest({ id: 'decimal-regression', kind, text, join }, post);
 		const done = msgs.find(m => m.type === 'done');
 		expect(done).toBeDefined();
 		expect(done.result.rows.map(row => row.v)).toEqual(expected);
@@ -216,27 +238,38 @@ describe('runIngest', () => {
 		expect(done.result.rows).toEqual([{ v: 1.125 }, { v: 2.25 }, { v: 3.375 }]);
 	});
 
-	it('preserves grouped CSV integers when only some end in .000', () => {
+	it('preserves ambiguous grouped CSV integers with an explicit comma separator', () => {
 		const { post, msgs } = collectMessages();
-		runIngest({ id: 'grouped-integers', kind: 'csv', text: 'population\n1.000\n1.234\n2.345\n' }, post);
+		runIngest({
+			id: 'grouped-integers', kind: 'csv', text: 'population\n1.000\n1.234\n2.345\n',
+			options: { decimalSeparator: ',' },
+		}, post);
 		const done = msgs.find(m => m.type === 'done');
 		expect(done).toBeDefined();
 		expect(done.result.rows.map(row => row.population)).toEqual([1000, 1234, 2345]);
 	});
 
-	it('does not let a typed JSON fraction change grouped integers in another column', () => {
+	it.each([
+		{ decimalSeparator: 'auto', population: 1 },
+		{ decimalSeparator: '.', population: 1 },
+		{ decimalSeparator: ',', population: 1000 },
+	])('keeps typed JSON fractions independent of $decimalSeparator string formatting', ({ decimalSeparator, population }) => {
 		const { post, msgs } = collectMessages();
-		runIngest({ id: 'mixed-columns', kind: 'json', text: '[{"rate":2.5,"population":"1.000"}]' }, post);
+		runIngest({
+			id: 'mixed-columns', kind: 'json', text: '[{"rate":2.5,"population":"1.000"}]',
+			options: { decimalSeparator },
+		}, post);
 		const done = msgs.find(m => m.type === 'done');
 		expect(done).toBeDefined();
-		expect(done.result.rows).toEqual([{ rate: 2.5, population: 1000 }]);
+		expect(done.result.rows).toEqual([{ rate: 2.5, population }]);
 	});
 
-	it('does not let a typed joined fraction change grouped integers in another column', () => {
+	it('preserves ambiguous grouped joined values with an explicit comma separator', () => {
 		const { post, msgs } = collectMessages();
 		runIngest({
 			id: 'mixed-joined-columns',
 			kind: 'join',
+			options: { decimalSeparator: ',' },
 			join: {
 				leftRows: [{ id: 1, rate: 2.5 }],
 				rightRows: [{ id: 1, population: '1.000' }],
