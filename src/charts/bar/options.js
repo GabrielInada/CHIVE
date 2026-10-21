@@ -30,6 +30,7 @@ export function normalizeBarOptions(options, categoryColumn) {
 		percentage: options.labels?.percentage || 'Percentage',
 		focusOnThis: options.labels?.focusOnThis || 'Show only this',
 		addToFilter: options.labels?.addToFilter || 'Add to global filter',
+		missing: options.labels?.missing || '(missing)',
 	};
 	const measureMode = BAR_CHART.measureModes.includes(options.measureMode)
 		? options.measureMode

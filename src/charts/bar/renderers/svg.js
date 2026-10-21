@@ -24,7 +24,6 @@ import {
 import { BAR_CHART } from '../../../config/charts/definitions/bar.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { formatNumber } from '../../../utils/formatters.js';
-import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { ok, fail } from '../../../utils/result.js';
 import {
 	appendAxisLabels,
@@ -81,7 +80,9 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		locale,
 	} = normalizeBarOptions(options, categoryColumn);
 
-	const aggregated = aggregateBarData(rows, categoryColumn, { measureMode, valueColumn, sort, topN });
+	const aggregated = aggregateBarData(rows, categoryColumn, {
+		measureMode, valueColumn, sort, topN, missingLabel: labels.missing,
+	});
 	if (!aggregated.ok) return fail(aggregated.reason);
 	const { entries, total: totalContagem } = aggregated;
 
@@ -99,7 +100,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 	let pinnedCategory = null;
 
 	const buildTooltipContent = item => {
-		const percentage = totalContagem > 0 ? ((item[1] / totalContagem) * 100) : 0;
+		const percentage = totalContagem > 0 ? ((item.value / totalContagem) * 100) : 0;
 		const wrapper = document.createElement('div');
 		const valueLabel = measureMode === 'mean'
 			? labels.mean
@@ -107,8 +108,8 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 				? labels.sum
 				: labels.count;
 
-		wrapper.appendChild(createTooltipLine(labels.category, String(item[0])));
-		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(item[1], locale)));
+		wrapper.appendChild(createTooltipLine(labels.category, item.label));
+		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(item.value, locale)));
 		if (measureMode !== 'mean') {
 			wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		}
@@ -132,7 +133,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 
 	const showPinnedTooltip = (event, item, onDismiss) => {
 		const content = buildTooltipContent(item);
-		const token = toCategoryToken(item[0]);
+		const { token } = item;
 		const state = typeof filterCallbacks.getTokenFilterState === 'function'
 			? filterCallbacks.getTokenFilterState(categoryColumn, token)
 			: null;
@@ -158,7 +159,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		});
 		const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
 		showPinnedChartTooltip(content, event.pageX, event.pageY, {
-			headerTitle: String(item[0]),
+			headerTitle: item.label,
 			closeLabel: filterLabels.close,
 			onDismiss,
 			actionSets: actionSet ? [actionSet] : [],
@@ -166,13 +167,14 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		});
 	};
 
+	const labelByKey = new Map(entries.map(item => [item.key, item.label]));
 	const xScale = scaleBand()
-		.domain(entries.map(item => item[0]))
+		.domain(entries.map(item => item.key))
 		.range([0, innerWidth])
 		.padding(0.14);
 
 	const yScale = scaleLinear()
-		.domain([0, max(entries, item => item[1]) || 0])
+		.domain([0, max(entries, item => item.value) || 0])
 		.nice()
 		.range([innerHeight, 0]);
 
@@ -191,10 +193,10 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		.data(entries)
 		.enter()
 		.append('rect')
-		.attr('x', item => xScale(item[0]))
-		.attr('y', item => yScale(item[1]))
+		.attr('x', item => xScale(item.key))
+		.attr('y', item => yScale(item.value))
 		.attr('width', xScale.bandwidth())
-		.attr('height', item => innerHeight - yScale(item[1]))
+		.attr('height', item => innerHeight - yScale(item.value))
 		.attr('rx', 3)
 		.attr('fill', item => getBarColor(item))
 		.on('mouseenter', (event, item) => {
@@ -211,12 +213,12 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		})
 		.on('click', (event, item) => {
 			event.stopPropagation();
-			if (pinnedCategory === item[0]) {
+			if (pinnedCategory === item.key) {
 				pinnedCategory = null;
 				hideChartTooltip();
 				return;
 			}
-			pinnedCategory = item[0];
+			pinnedCategory = item.key;
 			showPinnedTooltip(event, item, () => {
 				pinnedCategory = null;
 				hideChartTooltip();
@@ -229,7 +231,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 	});
 
 	appendBottomAxis(group, {
-		axis: axisBottom(xScale),
+		axis: axisBottom(xScale).tickFormat(key => labelByKey.get(key) ?? key),
 		innerHeight,
 		tickRotation: { angle: -30, dx: '-0.6em', dy: '0.15em' },
 	});

@@ -9,7 +9,7 @@
  * @typedef {import('../../types.js').GlobalFilterRule} GlobalFilterRule
  */
 
-import { isNullish, toFiniteNumber } from '../../utils/formatters.js';
+import { toFiniteNumber } from '../../utils/formatters.js';
 import { categoryKey, describeCategory } from '../datasets/cellValues.js';
 
 /**
@@ -54,30 +54,6 @@ export function createDefaultFilterConfig() {
  */
 export function toCategoryToken(value) {
   return describeCategory(categoryKey(value)).token;
-}
-
-/**
- * String comparator used as a sort tiebreaker across chart renderers.
- * Coerces inputs to `String` so undefined/null are ordered deterministically
- * instead of throwing from `localeCompare`.
- *
- * @param {*} a
- * @param {*} b
- * @returns {number} Negative if `a < b`, positive if `a > b`, `0` if equal.
- */
-export function compareStrings(a, b) {
-  return String(a).localeCompare(String(b));
-}
-
-/**
- * Collapse missing/empty values into a single N/A bucket so they do
- * not fragment categorical series. Used by scatter/bubble grouping.
- *
- * @param {*} value
- * @returns {string} `'N/A'` for missing/empty; `String(value)` otherwise.
- */
-export function normalizeCategoryValue(value) {
-  return isNullish(value) || value === '' ? 'N/A' : String(value);
 }
 
 /**

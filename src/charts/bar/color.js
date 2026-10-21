@@ -11,19 +11,18 @@ import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
 
 /**
  * Build a `(entry) => colorString` accessor for the bar entries. The entry is
- * the `[category, value]` tuple, identical to what the renderer binds to each
- * rect; `gradient` rank mode keys off tuple identity, so pass the same array
- * references the renderer renders.
+ * the object the renderer binds to each rect; `gradient` rank mode keys off
+ * entry identity, so pass the same references the renderer renders.
  *
  * @param {Object} params
- * @param {Array<[string, number]>} params.entries
+ * @param {Array<{ value: number }>} params.entries
  * @param {'uniform'|'gradient'|'gradient-manual'} params.colorMode
  * @param {string} params.color
  * @param {string} params.gradientMinColor
  * @param {string} params.gradientMaxColor
  * @param {'value'|'rank'} params.gradientDistribution
  * @param {number} params.manualThresholdPct
- * @returns {(entry: [string, number]) => string}
+ * @returns {(entry: { value: number }) => string}
  */
 export function createBarColorAccessor({
 	entries,
@@ -34,12 +33,12 @@ export function createBarColorAccessor({
 	gradientDistribution,
 	manualThresholdPct,
 }) {
-	const minValue = Math.min(...entries.map(item => item[1]));
-	const maxValue = Math.max(...entries.map(item => item[1]));
+	const minValue = Math.min(...entries.map(item => item.value));
+	const maxValue = Math.max(...entries.map(item => item.value));
 	const valueRange = maxValue - minValue || 1;
 	const thresholdValue = minValue + (valueRange * (manualThresholdPct / 100));
 	const rankMap = (colorMode === 'gradient' && gradientDistribution === 'rank')
-		? buildRankMap(entries, item => item[1])
+		? buildRankMap(entries, item => item.value)
 		: null;
 	const rankDenom = Math.max(entries.length - 1, 1);
 
@@ -51,10 +50,10 @@ export function createBarColorAccessor({
 				if (rank === undefined) return gradientMinColor;
 				return interpolateColor(gradientMinColor, gradientMaxColor, rank / rankDenom);
 			}
-			return interpolateColor(gradientMinColor, gradientMaxColor, (item[1] - minValue) / valueRange);
+			return interpolateColor(gradientMinColor, gradientMaxColor, (item.value - minValue) / valueRange);
 		}
 		if (colorMode === 'gradient-manual') {
-			return item[1] <= thresholdValue ? gradientMinColor : gradientMaxColor;
+			return item.value <= thresholdValue ? gradientMinColor : gradientMaxColor;
 		}
 		return color;
 	};

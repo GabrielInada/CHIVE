@@ -90,14 +90,15 @@ describe('renderTreemap', () => {
 		expect(rects(container).length).toBe(2);
 	});
 
-	it('buckets nullish or empty categories as N/A', () => {
+	it('draws missing cells as one labelled tile apart from literal N/A text', () => {
 		const container = document.getElementById('treemap');
-		const rows = [{ region: 'North' }, { region: null }, { region: '' }];
-		const result = renderTreemap(container, rows, 'region');
+		const rows = [{ region: 'North' }, { region: null }, { region: null }, { region: 'N/A' }];
+		const result = renderTreemap(container, rows, 'region', { labels: { missing: '(sem valor)' } });
 		expect(result.ok).toBe(true);
-		// North + a single N/A bucket = 2 cells.
-		expect(rects(container).length).toBe(2);
+		// North + the missing bucket + the literal N/A tile = 3 cells.
+		expect(rects(container).length).toBe(3);
 		const texts = Array.from(container.querySelectorAll('text')).map(t => t.textContent);
+		expect(texts.some(t => t.includes('(sem valor)'))).toBe(true);
 		expect(texts.some(t => t.includes('N/A'))).toBe(true);
 	});
 

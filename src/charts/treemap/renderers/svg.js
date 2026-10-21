@@ -24,7 +24,6 @@ import {
 } from '../../shared/tooltip/tooltip.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
-import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
 import { normalizeTreemapOptions } from '../options.js';
 import { aggregateTreemapData } from '../data.js';
@@ -79,7 +78,9 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 		labels,
 	} = normalizeTreemapOptions(options);
 
-	const aggregated = aggregateTreemapData(rows, categoryColumn, { measureMode, valueColumn, topN });
+	const aggregated = aggregateTreemapData(rows, categoryColumn, {
+		measureMode, valueColumn, topN, missingLabel: labels.missing,
+	});
 	if (!aggregated.ok) return aggregated;
 	const { entries, total } = aggregated;
 
@@ -103,8 +104,8 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 	const treemapHeight = height - titleOffset;
 
 	const rootData = {
-		name: 'root',
-		children: entries.map(([name, value]) => ({ name, value })),
+		key: 'root',
+		children: entries,
 	};
 
 	const root = hierarchy(rootData)
@@ -125,7 +126,7 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 		return schemeColors[i % schemeColors.length];
 	};
 
-	let pinnedName = null;
+	let pinnedKey = null;
 	const filterCallbacks = options.filterCallbacks || {};
 	const filterLabels = filterCallbacks.filterActionLabels || {};
 	const actionLabels = {
@@ -140,7 +141,7 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 		const wrapper = document.createElement('div');
 		const valueLabel = measureMode === 'sum' ? labels.sum : labels.count;
 
-		wrapper.appendChild(createTooltipLine(labels.category, String(d.data.name)));
+		wrapper.appendChild(createTooltipLine(labels.category, d.data.label));
 		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(d.data.value, locale)));
 		wrapper.appendChild(createTooltipLine(labels.percentage, `${pct.toFixed(1)}%`));
 		return wrapper;
@@ -170,29 +171,29 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 		.attr('stroke-width', 1)
 		.style('cursor', 'pointer')
 		.on('mouseenter', (event, d) => {
-			if (pinnedName !== null) return;
+			if (pinnedKey !== null) return;
 			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
 			showChartTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY);
 		})
 		.on('mousemove', event => {
-			if (pinnedName !== null) return;
+			if (pinnedKey !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseleave', () => {
-			if (pinnedName !== null) return;
+			if (pinnedKey !== null) return;
 			hideChartTooltip();
 		})
 		.on('click', (event, d) => {
 			event.stopPropagation();
-			if (pinnedName === d.data.name) {
-				pinnedName = null;
+			if (pinnedKey === d.data.key) {
+				pinnedKey = null;
 				hideChartTooltip();
 				return;
 			}
-			pinnedName = d.data.name;
+			pinnedKey = d.data.key;
 			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
 			const content = buildTooltipContent(d, pct);
-			const token = toCategoryToken(d.data.name);
+			const { token } = d.data;
 			const state = typeof filterCallbacks.getTokenFilterState === 'function'
 				? filterCallbacks.getTokenFilterState(categoryColumn, token)
 				: null;
@@ -218,10 +219,10 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 			});
 			const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
 			showPinnedChartTooltip(content, event.pageX, event.pageY, {
-				headerTitle: String(d.data.name),
+				headerTitle: d.data.label,
 				closeLabel: filterLabels.close,
 				onDismiss: () => {
-					pinnedName = null;
+					pinnedKey = null;
 					hideChartTooltip();
 				},
 				actionSets: actionSet ? [actionSet] : [],
@@ -247,7 +248,7 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 					.attr('font-size', clamp(Math.min(w / 6, h / 4, 13), 8, 13))
 					.attr('fill', '#fffef9')
 					.attr('pointer-events', 'none')
-					.text(truncate(d.data.name, Math.max(3, Math.floor(w / 7))));
+					.text(truncate(d.data.label, Math.max(3, Math.floor(w / 7))));
 
 				g.append('text')
 					.attr('x', cx)
@@ -267,7 +268,7 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 					.attr('font-size', clamp(Math.min(w / 6, h / 4, 13), 8, 13))
 					.attr('fill', '#fffef9')
 					.attr('pointer-events', 'none')
-					.text(truncate(d.data.name, Math.max(3, Math.floor(w / 7))));
+					.text(truncate(d.data.label, Math.max(3, Math.floor(w / 7))));
 			} else if (showValues) {
 				g.append('text')
 					.attr('x', cx)
@@ -283,7 +284,7 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 	}
 
 	svg.on('click', () => {
-		pinnedName = null;
+		pinnedKey = null;
 		hideChartTooltip();
 	});
 

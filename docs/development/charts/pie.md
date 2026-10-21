@@ -51,7 +51,7 @@ tooltips.
 
 The category column partitions the rows; each group is reduced to a single number by the
 **measure mode**: `count` (rows per category) or `sum` (total of a numeric value column).
-Missing/empty categories collapse to one `N/A` group. This is the same count/sum vocabulary
+Missing cells collapse to one "(missing)" group, kept apart from text that reads "N/A". This is the same count/sum vocabulary
 the bar chart uses (see the bar doc's [section 2.2](bar.md)); the pie just omits
 `mean`, because a mean has no meaningful "share of total."
 
@@ -260,7 +260,8 @@ radii/pad-angle/zoom clamped to `PIE_CHART` bounds, height to 220 to 720, title 
 A `Map` aggregates count or sum per category (sum skips rows whose value is non-finite, and
 needs `valueColumn`). It does not filter zero or negative sums; D3's pie layout allocates
 proportional angle only to positive values. Entries are sorted descending by value with a
-`compareStrings` tiebreaker. No entries → `fail('sum-no-numeric')` in sum mode, else `fail()`.
+`compareCategoryKeys` tiebreaker (missing last). Each entry is `{ key, label, token, value }`;
+the synthetic Other sector carries `isOther` and no token. No entries → `fail('sum-no-numeric')` in sum mode, else `fail()`.
 
 ### 7.2 Top-N
 
@@ -345,7 +346,9 @@ there is no separate export path.
 - **sum mode with no numeric value column** (or no parseable values) → `fail('sum-no-numeric')`,
   mapped to `chive-chart-empty-pie-sum` ("Select a visible numeric value column to render
   pie/donut in sum mode.").
-- **Missing/empty categories** collapse into a single `N/A` wedge.
+- **Missing categories** collapse into a single "(missing)" wedge. Slice colors are keyed by
+  category key, so a color saved under `'N/A'` before this change now applies only to a
+  literal "N/A" category.
 - **Top-N other** keeps the rendered positive-value circle at 100%; **truncate** does not.
 - **Non-positive sum aggregates** are not filtered by CHIVE before the D3 pie layout; use
   non-negative value columns for meaningful part-to-whole pies.
@@ -403,7 +406,7 @@ bounds, zoom bounds, `otherSliceColor`, `defaultTopN`/`defaultTopNMode`.
 
 | Concept (section 2) | Implementation |
 |---|---|
-| Count/sum aggregation, N/A (2.1) | the `Map` build (7.1) |
+| Count/sum aggregation, missing bucket (2.1) | the `Map` build (7.1) |
 | Value → angle (2.2) | `pie()` + `arc()` generators (7.3) |
 | Donut / pad / radius (2.3) | inner/outer radius clamp, `padAngle` (7.1, 7.3) |
 | Top-N + Other rollup (2.4) | the Top-N branch (7.2) |

@@ -552,7 +552,7 @@
 	"chive-chart-filter-clear": "Button label to clear all selected categorical values in current chart filter.",
 	"chive-chart-filter-showing": "Summary text under categorical filter list. $1 = currently shown options, $2 = total options after search.",
 	"chive-chart-filter-more": "Hint shown when categorical values are truncated to first N options. $1 = hidden count.",
-	"chive-chart-filter-missing": "Label used for checkbox representing null/undefined/empty values in categorical filter.",
+	"chive-chart-filter-missing": "Label of the missing bucket (null/undefined/empty values): the checkbox in the categorical filter, and the bar, slice, tile, bubble, or axis tick that charts draw for it.",
 	"chive-chart-filter-operator": "Label for select control choosing numeric filter condition operator.",
 	"chive-chart-filter-op-between": "Option label for numeric filter condition that keeps values between min and max.",
 	"chive-chart-filter-op-lt": "Option label for numeric filter condition that keeps values less than target.",

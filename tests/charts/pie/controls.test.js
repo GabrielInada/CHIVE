@@ -11,6 +11,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 }));
 
 import { createPieChartControls } from '../../../src/charts/pie/controls/builder.js';
+import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/pie/controls/activationDefaults.js';
 
@@ -177,17 +178,17 @@ describe('pieControls UI structure', () => {
 		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
 		dataset.rows = [
 			{ region: 'North', sales: 10 },
-			{ region: '', sales: 7 },
+			{ region: null, sales: 7 },
 			{ region: null, sales: 5 },
-			{ region: 'South', sales: 'bad' },
+			{ region: 'South', sales: null },
 			{ region: 'East', sales: 9 },
 		];
 
 		appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
 
-		const tokens = Array.from(document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]'))
-			.map(input => input.dataset.colorItem);
-		expect(tokens).toEqual(['N/A', 'North', 'East']);
+		const inputs = Array.from(document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]'));
+		expect(inputs.map(input => input.dataset.colorItem)).toEqual([MISSING_KEY, 'North', 'East']);
+		expect(inputs[0].nextElementSibling.textContent).toBe('chive-chart-filter-missing'.slice(0, 12));
 	});
 
 	it('renders disabled controls and fallback selections for invalid options', () => {

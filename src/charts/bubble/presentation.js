@@ -52,6 +52,7 @@ export function renderBubbleInto(
 			group: t('chive-chart-control-bubble-group'),
 			children: t('chive-chart-control-bubble-node-children-count'),
 			level: t('chive-chart-control-bubble-node-depth'),
+			missing: t('chive-chart-filter-missing'),
 		},
 		filterCallbacks,
 	});

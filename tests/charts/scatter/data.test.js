@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildScatterPoints } from '../../../src/charts/scatter/data.js';
+import { MISSING_KEY, MISSING_TOKEN } from '../../../src/domain/datasets/cellValues.js';
+import { applyChartFilterRows } from '../../../src/domain/filters/chartFilter.js';
 
 const baseArgs = {
 	xColumn: 'x',
@@ -11,6 +13,27 @@ const baseArgs = {
 };
 
 describe('buildScatterPoints', () => {
+	it('keys missing categories apart from literal N/A text', () => {
+		const rows = [{ x: 'A', y: 1 }, { x: null, y: 2 }, { x: 'N/A', y: 3 }];
+		const result = buildScatterPoints({
+			...baseArgs,
+			rows,
+			configuredAxisTypes: { x: 'text', y: 'number' },
+			missingLabel: '(missing)',
+		});
+		expect(result.points.map(point => point.xCategory)).toEqual(['A', MISSING_KEY, 'N/A']);
+		expect(result.points.map(point => point.xCategoryToken)).toEqual(['v:A', MISSING_TOKEN, 'v:N/A']);
+		expect(result.categoryLabel(MISSING_KEY)).toBe('(missing)');
+		expect(result.categoryLabel('N/A')).toBe('N/A');
+	});
+
+	it('hides exactly the missing rows through a missing point token', () => {
+		const rows = [{ x: 'A', y: 1 }, { x: null, y: 2 }, { x: 'N/A', y: 3 }, { x: null, y: 4 }];
+		const result = buildScatterPoints({ ...baseArgs, rows, configuredAxisTypes: { x: 'text', y: 'number' } });
+		const { xCategoryToken } = result.points.find(point => point.xCategory === MISSING_KEY);
+		expect(applyChartFilterRows(rows, { column: 'x', exclude: [xCategoryToken] })).toEqual([rows[0], rows[2]]);
+	});
+
 	it('classifies numeric axes and keeps one point per finite row', () => {
 		const rows = [{ x: 1, y: 2 }, { x: 2, y: 4 }, { x: 3, y: 6 }];
 		const result = buildScatterPoints({ ...baseArgs, rows });

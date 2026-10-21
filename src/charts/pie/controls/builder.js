@@ -279,7 +279,7 @@ function buildDisplayControls(dataset, config) {
  * @private
  * @param {Dataset} dataset
  * @param {Object} config - The pie config block.
- * @param {string[]} sectorValues - Source category tokens in aggregate order.
+ * @param {Array<{ key: string, label: string }>} sectorValues - Source categories in aggregate order.
  * @returns {HTMLElement[]}
  */
 function buildStylingControls(dataset, config, sectorValues) {
@@ -328,7 +328,7 @@ function buildStylingControls(dataset, config, sectorValues) {
  */
 export function createPieChartControls(dataset, categoryOptions, numericOptions, _allColumns = []) {
 	const config = dataset.chartConfig.pie;
-	const sectorValues = getPieSectorValues(dataset, config);
+	const sectorValues = getPieSectorValues(dataset, config, { missingLabel: t('chive-chart-filter-missing') });
 
 	return groupControls([
 		{ id: 'data', title: 'Data & Aggregation', controls: buildDataControls(dataset, categoryOptions, numericOptions, config), expanded: true, icon: 'data' },
@@ -343,7 +343,7 @@ export function createPieChartControls(dataset, categoryOptions, numericOptions,
  *
  * @private
  * @param {Dataset} dataset
- * @param {string[]} sectorValues - Source category tokens in aggregate order.
+ * @param {Array<{ key: string, label: string }>} sectorValues - Source categories in aggregate order.
  * @returns {HTMLElement}
  */
 function updatePieColorPickerGrid(dataset, sectorValues) {

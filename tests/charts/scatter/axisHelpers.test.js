@@ -14,6 +14,7 @@ import {
 	pickMostFrequentCategory,
 	normalizeDomain,
 } from '../../../src/charts/scatter/axisHelpers.js';
+import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 
 describe('isNumericLikeAxisType', () => {
 	it('accepts "numeric" and "number" (case-insensitive)', () => {
@@ -138,6 +139,11 @@ describe('estimateLongestCategoryLength', () => {
 		expect(estimateLongestCategoryLength(points, 'x')).toBe(5);
 	});
 
+	it('measures the text a labeller shows for each key', () => {
+		const points = [{ x: MISSING_KEY }, { x: 'ab' }];
+		expect(estimateLongestCategoryLength(points, 'x', key => (key === MISSING_KEY ? '(m)' : key))).toBe(3);
+	});
+
 	it('treats missing/null values as length 0', () => {
 		const points = [{ x: null }, { x: undefined }, { x: 'ab' }];
 		expect(estimateLongestCategoryLength(points, 'x')).toBe(2);
@@ -217,8 +223,17 @@ describe('pickMostFrequentCategory', () => {
 		expect(pickMostFrequentCategory(rows, 'k')).toBe('A');
 	});
 
-	it('returns N/A for an empty input', () => {
-		expect(pickMostFrequentCategory([], 'k')).toBe('N/A');
+	it('returns the missing key for an empty input', () => {
+		expect(pickMostFrequentCategory([], 'k')).toBe(MISSING_KEY);
+	});
+
+	it('counts missing cells as one key apart from literal N/A text', () => {
+		const rows = [{ k: null }, { k: 'N/A' }, {}, { k: 'B' }];
+		expect(pickMostFrequentCategory(rows, 'k')).toBe(MISSING_KEY);
+	});
+
+	it('breaks ties with the missing bucket last', () => {
+		expect(pickMostFrequentCategory([{ k: null }, { k: 'Z' }], 'k')).toBe('Z');
 	});
 });
 

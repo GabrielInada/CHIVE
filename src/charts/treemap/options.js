@@ -43,6 +43,7 @@ export function normalizeTreemapOptions(options) {
 		percentage: options.labels?.percentage || 'Percentage',
 		focusOnThis: options.labels?.focusOnThis || 'Show only this',
 		addToFilter: options.labels?.addToFilter || 'Add to global filter',
+		missing: options.labels?.missing || '(missing)',
 	};
 
 	return {

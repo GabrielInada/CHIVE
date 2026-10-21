@@ -1,45 +1,48 @@
 /**
  * Pie-chart data aggregation.
  *
- * Aggregates rows into pie sectors by a count or numeric sum measure, applying
- * the same `N/A` bucketing, descending sort with string tiebreaker, and Top-N
- * handling (`truncate` drops the tail; `other` folds it into a single
- * caller-labelled "Other" sector) as the renderer did inline. The returned
- * `total` is summed AFTER Top-N handling, so percentages are relative to the
- * rendered sectors. Pure: no DOM, no d3. Used by `renderers/svg.js`.
+ * Aggregates canonical rows into pie sectors by a count or numeric sum
+ * measure, grouped by category key so the missing bucket never merges with
+ * text that reads "N/A". Sorts descending with a key tiebreaker (missing
+ * last) and applies Top-N handling (`truncate` drops the tail; `other` folds
+ * it into a single caller-labelled "Other" sector, which has no filter
+ * token). The returned `total` is summed AFTER Top-N handling, so percentages
+ * are relative to the rendered sectors. Pure: no DOM, no d3. Used by
+ * `renderers/svg.js` and `controls/sectorValues.js`.
  */
 
-import { isNullish, toFiniteNumber } from '../../utils/formatters.js';
-import { compareStrings } from '../../domain/filters/chartFilter.js';
+import { toFiniteNumber } from '../../utils/formatters.js';
+import { categoryKey, describeCategory } from '../../domain/datasets/cellValues.js';
+import { compareCategoryKeys } from '../shared/categoryOrder.js';
+
+/**
+ * @typedef {{ key: string, label: string, token: string|null, value: number, isOther?: boolean }} PieEntry
+ */
 
 /**
  * Aggregate rows for the pie chart.
  *
- * @param {Array<Object<string, *>>} rows - Source rows.
+ * @param {Array<Object<string, *>>} rows - Canonical source rows.
  * @param {string} categoryColumn - Categorical column name.
- * @param {{ measureMode: 'count'|'sum', valueColumn: string|null, topN: number, topNMode: 'other'|'truncate', otherLabel: string }} params
- * @returns {{ ok: false, reason?: string } | { ok: true, entries: Array<{category: string, value: number, isOther?: boolean}>, total: number }}
+ * @param {{ measureMode: 'count'|'sum', valueColumn: string|null, topN: number, topNMode: 'other'|'truncate', otherLabel: string, missingLabel?: string }} params
+ * @returns {{ ok: false, reason?: string } | { ok: true, entries: PieEntry[], total: number }}
  */
-export function aggregatePieData(rows, categoryColumn, { measureMode, valueColumn, topN, topNMode, otherLabel }) {
+export function aggregatePieData(rows, categoryColumn, { measureMode, valueColumn, topN, topNMode, otherLabel, missingLabel }) {
 	const counter = new Map();
 	rows.forEach(row => {
-		const rawValue = row[categoryColumn];
-		const category = isNullish(rawValue) || rawValue === ''
-			? 'N/A'
-			: String(rawValue);
+		const key = categoryKey(row[categoryColumn]);
 		if (measureMode === 'sum') {
 			if (!valueColumn) return;
 			const value = toFiniteNumber(row[valueColumn]);
 			if (!Number.isFinite(value)) return;
-			counter.set(category, (counter.get(category) || 0) + value);
+			counter.set(key, (counter.get(key) || 0) + value);
 			return;
 		}
-		counter.set(category, (counter.get(category) || 0) + 1);
+		counter.set(key, (counter.get(key) || 0) + 1);
 	});
 
-	let entries = Array.from(counter.entries())
-		.map(([category, value]) => ({ category, value }))
-		.sort((a, b) => b.value - a.value || compareStrings(a.category, b.category));
+	let entries = Array.from(counter, ([key, value]) => ({ key, ...describeCategory(key, { missingLabel }), value }))
+		.sort((a, b) => b.value - a.value || compareCategoryKeys(a.key, b.key));
 	if (entries.length === 0) {
 		return { ok: false, reason: measureMode === 'sum' ? 'sum-no-numeric' : undefined };
 	}
@@ -50,7 +53,7 @@ export function aggregatePieData(rows, categoryColumn, { measureMode, valueColum
 		} else {
 			const head = entries.slice(0, topN);
 			const remainderValue = entries.slice(topN).reduce((sum, item) => sum + item.value, 0);
-			entries = [...head, { category: otherLabel, value: remainderValue, isOther: true }];
+			entries = [...head, { key: otherLabel, label: otherLabel, token: null, value: remainderValue, isOther: true }];
 		}
 	}
 

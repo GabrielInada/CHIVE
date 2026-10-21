@@ -67,6 +67,7 @@ export function normalizeScatterOptions(options, xColumn, yColumn) {
 		regressionR2: options.labels?.regressionR2 || 'R²',
 		regressionN: options.labels?.regressionN || 'Points',
 		regressionGroup: options.labels?.regressionGroup || 'Group',
+		missing: options.labels?.missing || '(missing)',
 	};
 	const axisLabels = {
 		x: options.axisLabels?.x || xColumn,

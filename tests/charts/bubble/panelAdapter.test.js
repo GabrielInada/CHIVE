@@ -86,6 +86,7 @@ describe('renderBubblePanelChart', () => {
 			group: 'chive-chart-control-bubble-group',
 			children: 'chive-chart-control-bubble-node-children-count',
 			level: 'chive-chart-control-bubble-node-depth',
+			missing: 'chive-chart-filter-missing',
 		});
 		expect(options.filterCallbacks).toEqual({});
 	});

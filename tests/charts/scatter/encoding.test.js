@@ -7,6 +7,7 @@ import {
 	buildColorAccessor,
 	buildRadiusAccessor,
 } from '../../../src/charts/scatter/encoding.js';
+import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 
 function point(raw, index) {
 	return { raw, index, isAggregate: false };
@@ -167,6 +168,14 @@ describe('buildColorAccessor', () => {
 		expect(result.categoryMap.get('a')).toBe('#FF6B6B');
 		expect(typeof result.getCategoryColorValue).toBe('function');
 		expect(result.getCategoryColorValue(points[0])).toBe('a');
+	});
+
+	it('colors the missing bucket apart from literal N/A text', () => {
+		const points = [point({ grp: null }, 0), point({ grp: 'N/A' }, 1), point({}, 2)];
+		const result = buildColorAccessor({ ...baseArgs, points, colorMode: 'category', colorField: 'grp' });
+		expect(result.getCategoryColorValue(points[0])).toBe(MISSING_KEY);
+		expect(result.getCategoryColorValue(points[2])).toBe(MISSING_KEY);
+		expect([...result.categoryMap.keys()]).toEqual([MISSING_KEY, 'N/A']);
 	});
 
 	it('falls back to the base color when the numeric color field is missing', () => {

@@ -260,6 +260,14 @@ describe('createColorPickerGridControl', () => {
 		expect(input.value).toBe('#999999');
 	});
 
+	it('keys an object item by its key and shows its label', () => {
+		const el = createColorPickerGridControl('grid4', 'Colors', [{ key: '__chive_missing__', label: '(missing)' }], { __chive_missing__: '#aabbcc' });
+		const input = el.querySelector('input[type="color"]');
+		expect(input.dataset.colorItem).toBe('__chive_missing__');
+		expect(input.value).toBe('#aabbcc');
+		expect(el.querySelector('.chart-color-picker-item span').textContent).toBe('(missing)');
+	});
+
 	it('calls onColorChange when input changes', () => {
 		const onChange = vi.fn();
 		const el = createColorPickerGridControl('grid3', 'Colors', ['item1'], { item1: '#aabbcc' }, false, onChange);
