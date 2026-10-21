@@ -199,6 +199,9 @@ const TEST_GLOBALS = {
 	PointerEvent: 'readonly',
 	// Settings-service tests stub Storage.prototype to simulate blocked storage.
 	Storage: 'readonly',
+	// The fetch setup shim and catalog tests build fetch responses.
+	Request: 'readonly',
+	Response: 'readonly',
 };
 
 export default [

@@ -9,10 +9,25 @@ import Banana from '../../vendor/banana-i18n/banana-i18n.js';
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_STORAGE_KEY } from '../config/locale.js';
 import { fail, ok } from '../utils/result.js';
 
-const catalogLoaders = Object.freeze({
-	'pt-BR': () => import('../i18n/pt-BR.json', { with: { type: 'json' } }),
-	'en': () => import('../i18n/en.json', { with: { type: 'json' } }),
+// WHY: catalogs are fetched, not imported as JSON modules. JSON module scripts
+// are only Baseline Newly available, and the Vite dev server serves `.json`
+// imports as JS, which the browser rejects for a `type: 'json'` import. Each
+// URL stays a literal `new URL(..., import.meta.url)` so `vite build` emits
+// the catalog as an asset.
+const catalogUrls = Object.freeze({
+	'pt-BR': new URL('../i18n/pt-BR.json', import.meta.url),
+	'en': new URL('../i18n/en.json', import.meta.url),
 });
+
+/**
+ * @param {string} locale
+ * @returns {Promise<Object>}
+ */
+async function fetchCatalog(locale) {
+	const response = await fetch(catalogUrls[locale]);
+	if (!response.ok) throw new Error(`Catalog ${locale} failed with HTTP ${response.status}`);
+	return response.json();
+}
 
 const catalogPromises = new Map();
 const loadedCatalogs = new Set();
@@ -25,8 +40,7 @@ let latestLocaleRequest = 0;
  */
 function loadCatalog(locale) {
 	if (!catalogPromises.has(locale)) {
-		const promise = catalogLoaders[locale]()
-			.then(module => module.default)
+		const promise = fetchCatalog(locale)
 			.catch(error => {
 				catalogPromises.delete(locale);
 				throw error;
