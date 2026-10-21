@@ -34,10 +34,13 @@ describe('application startup import graph', () => {
 		for (const deferred of [
 			'src/app/debugApi.js',
 			'src/charts/scatter3d/renderers/three.js',
-			'src/i18n/en.json',
-			'src/i18n/pt-BR.json',
 		]) {
 			expect(dynamicReached.has(deferred), deferred).toBe(true);
 		}
+	});
+
+	it('fetches message catalogs instead of importing JSON modules', () => {
+		const jsonModules = [...visited, ...dynamicReached].filter(path => path.endsWith('.json'));
+		expect(jsonModules).toEqual([]);
 	});
 });

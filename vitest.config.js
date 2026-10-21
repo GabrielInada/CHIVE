@@ -4,10 +4,11 @@ import { defineConfig } from 'vitest/config';
 // that need the DOM. Keeping the global default at `node` preserves existing
 // behavior; the setup files pin a time zone west of UTC and install
 // fake-indexeddb on globalThis so tests that exercise persistence get a
-// working IndexedDB without each test having to register one.
+// working IndexedDB without each test having to register one. They also let
+// fetch read `file:` URLs, which is how source modules load their assets.
 export default defineConfig({
 	test: {
-		setupFiles: ['./tests/setup/timezone.js', './tests/setup/indexeddb.js'],
+		setupFiles: ['./tests/setup/timezone.js', './tests/setup/indexeddb.js', './tests/setup/fileFetch.js'],
 		coverage: {
 			// Report coverage for our own source only. Bundled third-party
 			// libraries (d3, sqlite, banana-i18n) are large and barely
