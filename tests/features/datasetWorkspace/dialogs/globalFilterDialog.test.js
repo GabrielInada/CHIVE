@@ -82,7 +82,7 @@ describe('openGlobalFilterDialog (multi-rule)', () => {
 
 	describe('numeric input domain', () => {
 		// The advertised min/max must match what chartFilter would actually
-		// keep. Coerced with plain Number(), a blank cell reads as 0 and the
+		// keep. Coerced with plain Number(), a missing cell reads as 0 and the
 		// dialog offers a bound for a row the filter then excludes.
 		const openWith = numericRows => openGlobalFilterDialog({
 			rows: numericRows,
@@ -94,12 +94,8 @@ describe('openGlobalFilterDialog (multi-rule)', () => {
 			translate,
 		});
 
-		it.each([
-			['empty string', ''],
-			['whitespace', '   '],
-			['null', null],
-		])('ignores a %s cell when deriving the bounds', (_label, missing) => {
-			openWith([{ age: 18 }, { age: 50 }, { age: missing }]);
+		it('ignores a missing cell when deriving the bounds', () => {
+			openWith([{ age: 18 }, { age: 50 }, { age: null }]);
 
 			const input = document.querySelector('.gf-numeric-inputs input[type="number"]');
 			expect(input.min).toBe('18');
@@ -107,7 +103,7 @@ describe('openGlobalFilterDialog (multi-rule)', () => {
 		});
 
 		it('still offers a genuine zero as the lower bound', () => {
-			openWith([{ age: 0 }, { age: 50 }, { age: '' }]);
+			openWith([{ age: 0 }, { age: 50 }, { age: null }]);
 
 			const input = document.querySelector('.gf-numeric-inputs input[type="number"]');
 			expect(input.min).toBe('0');

@@ -21,7 +21,7 @@ const ROWS = [
 	{ region: 'B', sales: 20 },
 	{ region: 'C', sales: 8 },
 	{ region: 'C', sales: 2 },
-	{ region: '', sales: 3 },
+	{ region: null, sales: 3 },
 	{ region: 'D', sales: 1 },
 ];
 

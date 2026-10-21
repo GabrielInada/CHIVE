@@ -3,11 +3,13 @@
  *
  * Maps source rows into point records, infers each axis type, derives the
  * effective scale types, drops non-finite (and, on log axes, non-positive)
- * points, and optionally aggregates repeated categorical pairs. Pure: no DOM,
- * no d3. Used by `renderers/svg.js`.
+ * points, and optionally aggregates repeated categorical pairs. Categorical
+ * positions are category keys, so the missing bucket never shares a position
+ * with text that reads "N/A"; `categoryLabel` gives the text shown for a key.
+ * Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
 
-import { normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
+import { categoryKey, describeCategory } from '../../domain/datasets/cellValues.js';
 import { SCATTER_PLOT } from '../../config/charts/definitions/scatter.js';
 import { toFiniteNumber } from '../../utils/formatters.js';
 import { sampleWithExtrema } from '../shared/pointSampling.js';
@@ -33,6 +35,7 @@ import {
  * @param {{x?: string, y?: string}} params.configuredAxisTypes - Optional explicit axis types.
  * @param {boolean} [params.renderAll=false] - Bypass the geometry budget after explicit approval.
  * @param {number} [params.maxPoints=SCATTER_PLOT.maxPoints] - Injectable budget for deterministic tests.
+ * @param {string} [params.missingLabel] - Localized label of the missing bucket.
  * @returns {{
  *   points: Array<Object<string, *>>,
  *   renderedPoints: Array<Object<string, *>>,
@@ -44,6 +47,7 @@ import {
  *   effectiveXScaleType: string,
  *   effectiveYScaleType: string,
  *   shouldAggregateCategoricalPairs: boolean,
+ *   categoryLabel: (key: string) => string,
  * }}
  */
 export function buildScatterPoints({
@@ -56,18 +60,26 @@ export function buildScatterPoints({
 	configuredAxisTypes,
 	renderAll = false,
 	maxPoints = SCATTER_PLOT.maxPoints,
+	missingLabel,
 }) {
 	const totalCount = Array.isArray(rows) ? rows.length : 0;
-	let points = rows.map((row, index) => ({
-		xRaw: row?.[xColumn],
-		yRaw: row?.[yColumn],
-		x: toFiniteNumber(row?.[xColumn]),
-		y: toFiniteNumber(row?.[yColumn]),
-		xCategory: normalizeCategoryValue(row?.[xColumn]),
-		yCategory: normalizeCategoryValue(row?.[yColumn]),
-		index,
-		raw: row,
-	}));
+	const categoryLabel = key => describeCategory(key, { missingLabel }).label;
+	let points = rows.map((row, index) => {
+		const xCategory = categoryKey(row?.[xColumn]);
+		const yCategory = categoryKey(row?.[yColumn]);
+		return {
+			xRaw: row?.[xColumn],
+			yRaw: row?.[yColumn],
+			x: toFiniteNumber(row?.[xColumn]),
+			y: toFiniteNumber(row?.[yColumn]),
+			xCategory,
+			yCategory,
+			xCategoryToken: describeCategory(xCategory).token,
+			yCategoryToken: describeCategory(yCategory).token,
+			index,
+			raw: row,
+		};
+	});
 
 	const axisTypes = {
 		x: inferAxisType(points.map(point => point.xRaw), configuredAxisTypes.x),
@@ -125,5 +137,6 @@ export function buildScatterPoints({
 		effectiveXScaleType,
 		effectiveYScaleType,
 		shouldAggregateCategoricalPairs,
+		categoryLabel,
 	};
 }

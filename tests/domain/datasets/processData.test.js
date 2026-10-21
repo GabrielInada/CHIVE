@@ -23,6 +23,21 @@ describe('processData', () => {
     expect(stats[0].mean).toBe(2);
   });
 
+	it('gives every row every column, each cell in canonical form', () => {
+		const result = processData([
+			{ amount: '1.5', name: ' Ana ', day: '2024-01-15' },
+			{ amount: '  ', name: '   ', day: '' },
+			{ amount: '2', name: 'Bia' },
+		]);
+
+		expect(result.columns.map(column => column.type)).toEqual(['number', 'text', 'date']);
+		expect(result.rows).toStrictEqual([
+			{ amount: 1.5, name: 'Ana', day: '2024-01-15' },
+			{ amount: null, name: null, day: null },
+			{ amount: 2, name: 'Bia', day: null },
+		]);
+	});
+
 	it.each([
 		{
 			name: 'three-decimal measurements without larger coordinates',

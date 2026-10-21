@@ -105,19 +105,38 @@ export function formatNumber(value, locale) {
 	return numberValue.toPrecision(4);
 }
 
+const DEFAULT_DATE_OPTIONS = { year: 'numeric', month: 'short', day: '2-digit' };
+
 /**
- * Format a date with locale awareness. Accepts Date instances or
- * date-parseable strings (ISO is the canonical CHIVE shape after ingest).
+ * Formatters built by {@link formatDate}, keyed by locale and options. Building
+ * one costs far more than formatting with it, and the table preview formats
+ * every date cell it shows.
+ *
+ * @private
+ * @type {Map<string, Intl.DateTimeFormat>}
+ */
+const dateFormats = new Map();
+
+/**
+ * Format a date with locale awareness, in UTC. Canonical date cells keep
+ * their wall-clock reading in the UTC fields, so a date reads the same in
+ * every time zone. Accepts Date instances or date-parseable strings.
  * Returns '' for nullish/invalid values.
  * @param {Date|string|number|null|undefined} value
  * @param {string} locale - Active app locale. Required by convention — callers pass it explicitly so this stays pure (no global-state read).
- * @param {Intl.DateTimeFormatOptions} [options] - Override formatter options
+ * @param {Intl.DateTimeFormatOptions} [options] - Override formatter options. The time zone is always UTC.
  * @returns {string}
  */
 export function formatDate(value, locale, options) {
 	if (value === null || value === undefined || value === '') return '';
 	const date = value instanceof Date ? value : new Date(value);
 	if (!Number.isFinite(date.getTime())) return '';
-	const formatOptions = options || { year: 'numeric', month: 'short', day: '2-digit' };
-	return new Intl.DateTimeFormat(locale, formatOptions).format(date);
+	const formatOptions = options || DEFAULT_DATE_OPTIONS;
+	const key = `${locale}|${JSON.stringify(formatOptions)}`;
+	let format = dateFormats.get(key);
+	if (!format) {
+		format = new Intl.DateTimeFormat(locale, { ...formatOptions, timeZone: 'UTC' });
+		dateFormats.set(key, format);
+	}
+	return format.format(date);
 }

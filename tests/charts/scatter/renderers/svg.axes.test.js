@@ -29,6 +29,24 @@ describe('scatterPlot mixed axis behavior', () => {
 		expect(container.querySelectorAll('circle')).toHaveLength(3);
 	});
 
+	it('gives the missing bucket its own labelled tick apart from literal N/A text', () => {
+		const container = document.getElementById('scatter');
+		const rows = [
+			{ group: 'N/A', value: 10 },
+			{ group: null, value: 20 },
+		];
+
+		renderScatterPlot(container, rows, 'group', 'value', {
+			axisTypes: { x: 'text', y: 'number' },
+			labels: { missing: '(sem valor)' },
+		});
+
+		const ticks = Array.from(container.querySelectorAll('.tick text')).map(text => text.textContent);
+		expect(ticks).toContain('N/A');
+		expect(ticks).toContain('(sem valor)');
+		expect(ticks.join(' ')).not.toContain('__chive_missing__');
+	});
+
 	it('ignores log mode for categorical axes', () => {
 		const container = document.getElementById('scatter');
 		const rows = [

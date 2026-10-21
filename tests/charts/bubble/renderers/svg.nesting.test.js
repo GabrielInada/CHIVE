@@ -112,7 +112,7 @@ describe('bubble chart multi-level nesting', () => {
 		expect(parents.length).toBe(2);
 	});
 
-	it('null values in nesting columns normalized and rendered', () => {
+	it('groups null nesting cells into the missing bucket', () => {
 		const container = document.getElementById('bubble');
 		const rows = [
 			{ categoria: 'A', grupo: null },
@@ -125,7 +125,7 @@ describe('bubble chart multi-level nesting', () => {
 		});
 
 		expect(result.ok).toBe(true);
-		// Two groups: 'N/A' and 'X'
+		// Two groups: the missing bucket and 'X'
 		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
 	});
 

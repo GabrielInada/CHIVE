@@ -17,8 +17,7 @@ import {
 	showChartTooltip,
 	showPinnedChartTooltip,
 } from '../shared/tooltip/tooltip.js';
-import { toCategoryToken } from '../../domain/filters/chartFilter.js';
-import { formatNumber, isNullish } from '../../utils/formatters.js';
+import { formatNumber } from '../../utils/formatters.js';
 import { AXIS_TYPE_VALUES } from './axisHelpers.js';
 
 /**
@@ -29,6 +28,7 @@ import { AXIS_TYPE_VALUES } from './axisHelpers.js';
  * @param {{x: string, y: string}} params.axisLabels - Resolved axis label text.
  * @param {Object} params.labels - i18n label bag (index/count).
  * @param {string|undefined} params.locale - Number-format locale.
+ * @param {(key: string) => string} params.categoryLabel - Text shown for a category key.
  * @param {Object} params.filterCallbacks - Click-to-filter callback bag.
  * @param {?string} params.xFilterColumn - X filter column name (from the options bag).
  * @param {?string} params.yFilterColumn - Y filter column name (from the options bag).
@@ -39,6 +39,7 @@ export function createScatterInteractions({
 	axisLabels,
 	labels,
 	locale,
+	categoryLabel,
 	filterCallbacks,
 	xFilterColumn,
 	yFilterColumn,
@@ -57,10 +58,10 @@ export function createScatterInteractions({
 
 		const xValue = axisTypes.x === AXIS_TYPE_VALUES.numeric
 			? formatNumber(point.x, locale)
-			: point.xCategory;
+			: categoryLabel(point.xCategory);
 		const yValue = axisTypes.y === AXIS_TYPE_VALUES.numeric
 			? formatNumber(point.y, locale)
-			: point.yCategory;
+			: categoryLabel(point.yCategory);
 
 		wrapper.appendChild(createTooltipLine(axisLabels.x, xValue));
 		wrapper.appendChild(createTooltipLine(axisLabels.y, yValue));
@@ -77,9 +78,8 @@ export function createScatterInteractions({
 		showChartTooltip(buildTooltipContent(point), event.pageX, event.pageY);
 	};
 
-	const buildAxisActionSet = (column, rawValue, headingLabel) => {
-		if (!column || isNullish(rawValue) || rawValue === '') return null;
-		const token = toCategoryToken(rawValue);
+	const buildAxisActionSet = (column, token, headingLabel) => {
+		if (!column || !token) return null;
 		const state = typeof filterCallbacks.getTokenFilterState === 'function'
 			? filterCallbacks.getTokenFilterState(column, token)
 			: null;
@@ -115,27 +115,19 @@ export function createScatterInteractions({
 		const content = buildTooltipContent(point);
 		const actionSets = [];
 		let primaryState = null;
-		let primaryColumn = null;
-		let primaryToken = null;
 
 		if (axisTypes.x === AXIS_TYPE_VALUES.categorical && xFilterColumn) {
-			const xResult = buildAxisActionSet(xFilterColumn, point.xCategory, `${axisLabels.x}`);
+			const xResult = buildAxisActionSet(xFilterColumn, point.xCategoryToken, `${axisLabels.x}`);
 			if (xResult) {
 				actionSets.push(xResult.node);
 				primaryState = xResult.state;
-				primaryColumn = xFilterColumn;
-				primaryToken = toCategoryToken(point.xCategory);
 			}
 		}
 		if (axisTypes.y === AXIS_TYPE_VALUES.categorical && yFilterColumn) {
-			const yResult = buildAxisActionSet(yFilterColumn, point.yCategory, `${axisLabels.y}`);
+			const yResult = buildAxisActionSet(yFilterColumn, point.yCategoryToken, `${axisLabels.y}`);
 			if (yResult) {
 				actionSets.push(yResult.node);
-				if (!primaryState) {
-					primaryState = yResult.state;
-					primaryColumn = yFilterColumn;
-					primaryToken = toCategoryToken(point.yCategory);
-				}
+				if (!primaryState) primaryState = yResult.state;
 			}
 		}
 
@@ -148,9 +140,9 @@ export function createScatterInteractions({
 			: null;
 
 		const headerTitle = axisTypes.x === AXIS_TYPE_VALUES.categorical
-			? String(point.xCategory ?? '')
+			? categoryLabel(point.xCategory)
 			: axisTypes.y === AXIS_TYPE_VALUES.categorical
-				? String(point.yCategory ?? '')
+				? categoryLabel(point.yCategory)
 				: '';
 
 		showPinnedChartTooltip(content, event.pageX, event.pageY, {
@@ -160,10 +152,6 @@ export function createScatterInteractions({
 			actionSets,
 			stateBadge,
 		});
-		// Reference primaryColumn/primaryToken to silence unused-var warnings; they document
-		// the per-axis context for future enhancements.
-		void primaryColumn;
-		void primaryToken;
 	};
 
 	return { showTooltip, showPinnedTooltip };

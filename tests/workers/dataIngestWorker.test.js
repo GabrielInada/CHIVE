@@ -32,32 +32,42 @@ describe('chunkedNormalize', () => {
 		expect(chunkedNormalize(rows, columns, ',')).toEqual([{ a: 1.125 }, { a: 2.5 }]);
 	});
 
-	it('preserves null/empty/undefined numeric cells without coercing them', () => {
+	it('turns blank, whitespace-only, and absent cells into null', () => {
 		const rows = [
 			{ a: '', b: null },
-			{ a: '5', b: undefined },
+			{ a: '  ', b: '   ' },
+			{ a: '5' },
 		];
 		const columns = [
 			{ name: 'a', type: 'number' },
 			{ name: 'b', type: 'text' },
 		];
-		const out = chunkedNormalize(rows, columns, '.');
-		expect(out[0]).toEqual({ a: '', b: null });
-		expect(out[1]).toEqual({ a: 5, b: undefined });
+		expect(chunkedNormalize(rows, columns, '.')).toStrictEqual([
+			{ a: null, b: null },
+			{ a: null, b: null },
+			{ a: 5, b: null },
+		]);
 	});
 
-	it('parses date columns into Date instances and null for invalid', () => {
+	it('reads each column with its own decimal separator', () => {
+		const rows = [{ dot: '1.250', comma: '1,25' }];
+		const columns = [
+			{ name: 'dot', type: 'number', decimalSeparator: '.' },
+			{ name: 'comma', type: 'number', decimalSeparator: ',' },
+		];
+		expect(chunkedNormalize(rows, columns, ',')).toEqual([{ dot: 1.25, comma: 1.25 }]);
+	});
+
+	it('reads date columns as ISO strings and unparseable dates as null', () => {
 		const rows = [
 			{ d: '2024-01-15' },
+			{ d: '2024-01-15 10:30' },
 			{ d: 'not-a-date' },
 			{ d: '' },
 		];
 		const columns = [{ name: 'd', type: 'date' }];
-		const out = chunkedNormalize(rows, columns, '.');
-		expect(out[0].d).toBeInstanceOf(Date);
-		expect(out[0].d.getUTCFullYear()).toBe(2024);
-		expect(out[1].d).toBeNull();
-		expect(out[2].d).toBe('');
+		expect(chunkedNormalize(rows, columns, '.').map(row => row.d))
+			.toEqual(['2024-01-15', '2024-01-15T10:30:00.000Z', null, null]);
 	});
 
 	it('invokes onChunk between batches with running counts', () => {
@@ -94,6 +104,31 @@ describe('runIngest', () => {
 		expect(done.result.columns.map(c => c.name)).toEqual(['a', 'b']);
 		expect(done.result.statsNumeric.length).toBe(2);
 		expect(done.result.truncatedFrom).toBeNull();
+	});
+
+	it.each([
+		{
+			kind: 'csv',
+			text: 'name,amount,day\n Ana ,1.5,2024-01-15\n,  ,\nBia,2,2024-02-01 10:30\n',
+			expected: [
+				{ name: 'Ana', amount: 1.5, day: '2024-01-15' },
+				{ name: null, amount: null, day: null },
+				{ name: 'Bia', amount: 2, day: '2024-02-01T10:30:00.000Z' },
+			],
+		},
+		{
+			kind: 'json',
+			text: '[{"name":"Ana","tags":{"a":1},"amount":1.5},{"name":"  ","tags":"x"}]',
+			expected: [
+				{ name: 'Ana', tags: '{"a":1}', amount: 1.5 },
+				{ name: null, tags: 'x', amount: null },
+			],
+		},
+	])('posts canonical $kind rows', ({ kind, text, expected }) => {
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'canonical', kind, text }, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done.result.rows).toStrictEqual(expected);
 	});
 
 	it('ingests a semicolon CSV with comma decimals and partial rows end to end', () => {

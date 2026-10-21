@@ -16,7 +16,6 @@ import {
 	getCategoricalFilterOptions,
 } from '../../../domain/filters/chartFilter.js';
 import { createEmptyGlobalFilter } from '../../../domain/filters/globalFilter.js';
-import { toFiniteNumber } from '../../../utils/formatters.js';
 import { showNativeModal } from '../../../ui/nativeDialog.js';
 import {
 	applyRuleColumnChange,
@@ -46,10 +45,10 @@ function renderNumericRuleBody({ body, rule, rows, translate }) {
 	let domainMin = null;
 	let domainMax = null;
 	rows.forEach(row => {
-		// Must match chartFilter's numeric coercion, or the dialog advertises a
-		// domain bound that the filter itself excludes.
-		const value = toFiniteNumber(row?.[rule.column]);
-		if (!Number.isFinite(value)) return;
+		// A canonical number cell is a number or null. Reading it any other way
+		// than chartFilter does would advertise a bound the filter excludes.
+		const value = row?.[rule.column];
+		if (typeof value !== 'number') return;
 		domainMin = domainMin === null ? value : Math.min(domainMin, value);
 		domainMax = domainMax === null ? value : Math.max(domainMax, value);
 	});

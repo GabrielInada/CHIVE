@@ -25,8 +25,7 @@ import {
 import { BUBBLE_CHART } from '../../../config/charts/definitions/bubble.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
-import { formatNumber, isNullish } from '../../../utils/formatters.js';
-import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
+import { formatNumber } from '../../../utils/formatters.js';
 import { ok, fail } from '../../../utils/result.js';
 import { setupChartSvg } from '../../shared/svg/scaffold.js';
 import {
@@ -98,6 +97,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 		group: options.labels?.group || 'Group',
 		children: options.labels?.children || 'Children',
 		level: options.labels?.level || 'Level',
+		missing: options.labels?.missing || '(missing)',
 	};
 
 	// Grouped mode needs at least one resolved nesting column. The resolver already
@@ -115,6 +115,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 		valueColumn,
 		nestingColumns,
 		topN,
+		missingLabel: labels.missing,
 	});
 	if (aggregation.reason) return fail(aggregation.reason);
 	const bubbles = aggregation.bubbles;
@@ -172,9 +173,9 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 	// Color domain: by top-level nesting group names (depth 1 children of root)
 	let colorDomain;
 	if (isGrouped && root.children) {
-		colorDomain = root.children.map(c => c.data.groupName || 'N/A');
+		colorDomain = root.children.map(c => c.data.groupKey);
 	} else {
-		colorDomain = Array.from(new Set(leaves.map(item => item.data.group)));
+		colorDomain = Array.from(new Set(leaves.map(item => item.data.groupKey)));
 	}
 	const colorScale = scaleOrdinal(getBubblePalette(colorScheme)).domain(colorDomain);
 
@@ -189,8 +190,8 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 		bringBack: filterLabels.bringBack || 'Bring back',
 	};
 
-	const buildPinnedFilterTooltip = (event, content, headerTitle, filterColumn, rawValue, onDismiss) => {
-		if (!filterColumn || isNullish(rawValue) || rawValue === '') {
+	const buildPinnedFilterTooltip = (event, content, headerTitle, filterColumn, token, onDismiss) => {
+		if (!filterColumn || !token) {
 			showPinnedChartTooltip(content, event.pageX, event.pageY, {
 				headerTitle,
 				closeLabel: filterLabels.close,
@@ -199,7 +200,6 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 			});
 			return;
 		}
-		const token = toCategoryToken(rawValue);
 		const state = typeof filterCallbacks.getTokenFilterState === 'function'
 			? filterCallbacks.getTokenFilterState(filterColumn, token)
 			: null;
@@ -252,8 +252,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 	 * Get color for any node by resolving its top-level ancestor.
 	 */
 	function getNodeColor(node) {
-		const topGroup = getTopLevelGroup(node);
-		return colorScale(topGroup);
+		return colorScale(getTopLevelGroup(node).key);
 	}
 
 	function renderParentLabels(scale) {
@@ -272,7 +271,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 				.attr('y', -d.r + fontSize + 4)
 				.attr('fill', '#3f3a33')
 				.attr('fill-opacity', 0.7)
-				.text(String(d.data.groupName));
+				.text(d.data.groupLabel);
 		});
 	}
 
@@ -302,13 +301,13 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 					.attr('dominant-baseline', 'middle')
 					.attr('fill', '#fff')
 					.style('clip-path', `circle(${d.r}px)`)
-					.text(String(d.data.category));
+					.text(d.data.label);
 			} else {
 				textEl
 					.attr('y', d.r + fontSize + 2)
 					.attr('dominant-baseline', 'hanging')
 					.attr('fill', '#3f3a33')
-					.text(String(d.data.category));
+					.text(d.data.label);
 			}
 		});
 	}
@@ -382,17 +381,17 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 
 	const createLeafTooltip = item => {
 		const wrapper = document.createElement('div');
-		wrapper.appendChild(createTooltipLine(labels.category, item.data.category));
+		wrapper.appendChild(createTooltipLine(labels.category, item.data.label));
 		wrapper.appendChild(createTooltipLine(measureLabel, formatNumber(item.data.value, locale)));
 		if (isGrouped) {
-			wrapper.appendChild(createTooltipLine(labels.group, getTopLevelGroup(item)));
+			wrapper.appendChild(createTooltipLine(labels.group, getTopLevelGroup(item).label));
 		}
 		return wrapper;
 	};
 
 	const createParentTooltip = item => {
 		const wrapper = document.createElement('div');
-		wrapper.appendChild(createTooltipLine(labels.group, item.data.groupName));
+		wrapper.appendChild(createTooltipLine(labels.group, item.data.groupLabel));
 		wrapper.appendChild(createTooltipLine(measureLabel, formatNumber(item.value, locale)));
 		wrapper.appendChild(createTooltipLine(labels.children, item.children.length));
 		wrapper.appendChild(createTooltipLine(labels.level, item.depth));
@@ -457,9 +456,9 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 				buildPinnedFilterTooltip(
 					event,
 					createParentTooltip(item),
-					String(item.data.groupName),
+					item.data.groupLabel,
 					parentColumn,
-					item.data.groupName,
+					item.data.groupToken,
 					() => {
 						pinnedNode = null;
 						hideChartTooltip();
@@ -502,18 +501,18 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 
 	node.append('title').text(d => {
 		const lines = [
-			`${labels.category}: ${d.data.category}`,
+			`${labels.category}: ${d.data.label}`,
 			`${measureLabel}: ${formatNumber(d.data.value, locale)}`,
 		];
 		if (isGrouped) {
-			lines.push(`${labels.group}: ${getTopLevelGroup(d)}`);
+			lines.push(`${labels.group}: ${getTopLevelGroup(d).label}`);
 		}
 		return lines.join('\n');
 	});
 
 	node.append('circle')
 		.attr('r', d => d.r)
-		.attr('fill', d => isGrouped ? getNodeColor(d) : colorScale(d.data.group))
+		.attr('fill', d => isGrouped ? getNodeColor(d) : colorScale(d.data.groupKey))
 		.attr('fill-opacity', 0.7)
 		.attr('stroke', '#fff')
 		.attr('stroke-width', 1);
@@ -548,9 +547,9 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 			buildPinnedFilterTooltip(
 				event,
 				createLeafTooltip(item),
-				String(item.data.category),
+				item.data.label,
 				categoryColumn,
-				item.data.category,
+				item.data.token,
 				() => {
 					pinnedNode = null;
 					hideChartTooltip();

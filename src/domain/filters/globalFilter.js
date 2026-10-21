@@ -34,7 +34,7 @@ export function createEmptyGlobalFilter() {
  * Returns an empty filter when either input is invalid.
  *
  * @param {string} column
- * @param {string} token - Categorical token (use {@link toCategoryToken} on raw values).
+ * @param {string} token - Categorical token (use {@link toCategoryToken} on a canonical cell).
  * @returns {GlobalFilter}
  */
 export function createSingleCategoryGlobalFilter(column, token) {

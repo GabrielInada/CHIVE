@@ -3,16 +3,18 @@
  *
  * Turns a raw backend snapshot into the shape appState expects: drops
  * untrustworthy dataset records, sanitizes their selected columns and chart
- * config, resolves the active index, normalizes the panel envelope, and runs
- * the caller-supplied `transformPanel`. Panel chart/block records are not
+ * config, canonicalizes the cells of their rows and of panel captures,
+ * resolves the active index, normalizes the panel envelope, and runs the
+ * caller-supplied `transformPanel`. Panel chart/block records are not
  * generally validated here. Not side-effect-free: it invokes that callback and
  * emits `console.warn` when it discards malformed dataset records.
  * Internal to the services/persistence.js facade.
  */
 
 import { normalizeColumnNameList } from '../../domain/datasets/columns.js';
+import { canonicalizeRows } from '../../domain/datasets/cellValues.js';
 import { BUBBLE_CHART } from '../../config/charts/definitions/bubble.js';
-import { STATS_NUMERIC_VERSION } from '../../config/statistics.js';
+import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../config/statistics.js';
 import { canonicalizeChartConfig } from '../../domain/charts/chartConfig.js';
 
 /**
@@ -63,21 +65,25 @@ function sanitizeChartConfig(chartConfig, declaredColumnNames) {
 	return sanitized;
 }
 
-// Cached numeric stats are only trustworthy when they were produced by the
-// current `calculateStatistics`. An older blob may carry a string `min` or a
-// zero-skewed `mean` from when blank cells were counted, so drop `numeric` and
-// let statsView recompute. Categorical stats are unversioned and kept as-is.
-function withValidNumericStats(precomputedStats) {
+// Cached stats are only trustworthy when they were produced by the current
+// statistics implementation. An older numeric blob may carry a string `min` or
+// a zero-skewed `mean` from when blank cells were counted, and an older
+// categorical blob keyed dates by text the canonical cells no longer match.
+// Drop each stale part and let statsView recompute it.
+function withValidStats(precomputedStats) {
 	if (!isPlainObject(precomputedStats)) return precomputedStats;
-	if (precomputedStats.numericVersion === STATS_NUMERIC_VERSION) return precomputedStats;
+	const numericValid = precomputedStats.numericVersion === STATS_NUMERIC_VERSION;
+	const categoricalValid = precomputedStats.categoricalVersion === STATS_CATEGORICAL_VERSION;
+	if (numericValid && categoricalValid) return precomputedStats;
 	const kept = { ...precomputedStats };
-	delete kept.numeric;
+	if (!numericValid) delete kept.numeric;
+	if (!categoricalValid) delete kept.categorical;
 	return kept;
 }
 
-// Drop records the renderers can't trust. Returns a sanitized copy or null
-// when the record is unrecoverable.
-function validateDatasetRecord(record) {
+// Drop records the renderers can't trust. Returns a sanitized copy with
+// canonical rows, or null when the record is unrecoverable.
+function validateDatasetRecord(record, formatVersion) {
 	if (!isPlainObject(record)) return null;
 	if (!record.id) return null;
 	if (typeof record.name !== 'string') return null;
@@ -91,6 +97,7 @@ function validateDatasetRecord(record) {
 	const sanitizedChartConfig = sanitizeChartConfig(record.chartConfig, declaredColumnNames);
 	const validated = {
 		...record,
+		rows: canonicalizeRows(record.rows, record.columns, { formatVersion }),
 		selectedColumns: normalizeColumnNameList(record.selectedColumns, {
 			allowed: new Set(declaredColumnNames),
 			max: Infinity,
@@ -100,17 +107,34 @@ function validateDatasetRecord(record) {
 	// Assign in place rather than in the literal, so a record without the key
 	// does not gain an explicit `precomputedStats: undefined`.
 	if ('precomputedStats' in validated) {
-		validated.precomputedStats = withValidNumericStats(validated.precomputedStats);
+		validated.precomputedStats = withValidStats(validated.precomputedStats);
 	}
 	return validated;
 }
 
-function normalizePanel(panelRecord, transformPanel) {
+// A panel capture holds dataset rows, so its cells are canonicalized like a
+// dataset's. This runs here rather than in transformPanel because the legacy
+// IndexedDB import passes none.
+function withCanonicalCapture(chart, formatVersion) {
+	if (!isPlainObject(chart) || !Array.isArray(chart.dataSnapshot) || !Array.isArray(chart.columnsSnapshot)) {
+		return chart;
+	}
+	const columns = chart.columnsSnapshot.filter(
+		column => isPlainObject(column) && typeof column.name === 'string' && typeof column.type === 'string'
+	);
+	const dataSnapshot = canonicalizeRows(chart.dataSnapshot, columns, { formatVersion });
+	return dataSnapshot === chart.dataSnapshot ? chart : { ...chart, dataSnapshot };
+}
+
+function normalizePanel(panelRecord, transformPanel, formatVersion) {
 	if (!panelRecord) return null;
 	if (!isPlainObject(panelRecord)) return null;
 	let panel = { ...panelRecord };
 	delete panel.key;
 	delete panel.activeDatasetId;
+	if (Array.isArray(panel.charts)) {
+		panel.charts = panel.charts.map(chart => withCanonicalCapture(chart, formatVersion));
+	}
 	if (typeof transformPanel === 'function') {
 		try {
 			panel = transformPanel(panel) || panel;
@@ -123,16 +147,17 @@ function normalizePanel(panelRecord, transformPanel) {
 
 /**
  * @internal
- * @param {Object | null | undefined} storedSnapshot
+ * @param {Object | null | undefined} storedSnapshot - A backend read. Its `cellFormatVersion` is absent or `null` when the cells predate canonical cells.
  * @param {{ transformPanel?: (panel: Object) => Object }} [options]
  * @returns {{ data: { datasets: Array, activeIndex: number }, panel: Object | null }}
  */
 export function normalizeStoredSnapshot(storedSnapshot, { transformPanel } = {}) {
+	const formatVersion = storedSnapshot?.cellFormatVersion;
 	const rawDatasets = Array.isArray(storedSnapshot?.data?.datasets)
 		? storedSnapshot.data.datasets
 		: [];
 	const rawCount = rawDatasets.length;
-	const datasets = rawDatasets.map(validateDatasetRecord).filter(Boolean);
+	const datasets = rawDatasets.map(record => validateDatasetRecord(record, formatVersion)).filter(Boolean);
 	if (datasets.length < rawCount) {
 		console.warn(`[chive:persist] dropped ${rawCount - datasets.length} malformed dataset record(s) at hydrate`);
 	}
@@ -147,7 +172,7 @@ export function normalizeStoredSnapshot(storedSnapshot, { transformPanel } = {})
 			datasets,
 			activeIndex,
 		},
-		panel: normalizePanel(storedSnapshot?.panel, transformPanel),
+		panel: normalizePanel(storedSnapshot?.panel, transformPanel, formatVersion),
 	};
 }
 

@@ -336,7 +336,8 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
  *
  * @param {string} id
  * @param {string} labelText
- * @param {Array<string | number>} items - Per-item identifiers.
+ * @param {Array<string | number | { key: string, label: string }>} items - Per-item identifiers,
+ *   or `{ key, label }` when the shown text differs from the identifier.
  * @param {Object<string, string>} colorMap - Current hex value per item.
  * @param {boolean} [disabled=false]
  * @param {((item: string | number, color: string) => void) | undefined} onColorChange
@@ -357,7 +358,9 @@ export function createColorPickerGridControl(id, labelText, items, colorMap, dis
 	grid.style.gap = '8px';
 	grid.style.marginTop = '6px';
 
-	items.forEach((item) => {
+	items.forEach((entry) => {
+		const item = typeof entry === 'object' && entry !== null ? entry.key : entry;
+		const itemText = typeof entry === 'object' && entry !== null ? entry.label : entry;
 		const itemDiv = document.createElement('div');
 		itemDiv.className = 'chart-color-picker-item';
 		itemDiv.style.alignItems = 'center';
@@ -378,7 +381,7 @@ export function createColorPickerGridControl(id, labelText, items, colorMap, dis
 		colorInput.style.height = '28px';
 
 		const label2 = document.createElement('span');
-		label2.textContent = String(item).slice(0, 12);
+		label2.textContent = String(itemText).slice(0, 12);
 		label2.style.fontSize = '12px';
 		label2.style.whiteSpace = 'nowrap';
 		label2.style.overflow = 'hidden';

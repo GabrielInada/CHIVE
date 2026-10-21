@@ -8,6 +8,11 @@ import {
 	isDescendantOf,
 } from '../../../src/charts/bubble/data.js';
 import { BUBBLE_CHART } from '../../../src/config/charts/definitions/bubble.js';
+import { MISSING_KEY, describeCategory } from '../../../src/domain/datasets/cellValues.js';
+import { applyChartFilterRows } from '../../../src/domain/filters/chartFilter.js';
+
+const segment = key => ({ key, ...describeCategory(key) });
+const leaf = (key, value, path) => ({ key, value, nestingPath: path.map(segment) });
 
 describe('resolveNestingColumns', () => {
 	it('returns deduplicated string array from opcoes.nestingColumns', () => {
@@ -65,7 +70,7 @@ describe('aggregateBubbles', () => {
 			topN: 0,
 		});
 		expect(result.reason).toBeNull();
-		expect(result.bubbles.map(b => [b.category, b.value])).toEqual([
+		expect(result.bubbles.map(b => [b.key, b.value])).toEqual([
 			['A', 2],
 			['C', 1],
 			['B', 2],
@@ -82,7 +87,7 @@ describe('aggregateBubbles', () => {
 			topN: 0,
 		});
 		expect(result.reason).toBeNull();
-		const byCat = Object.fromEntries(result.bubbles.map(b => [b.category, b.value]));
+		const byCat = Object.fromEntries(result.bubbles.map(b => [b.key, b.value]));
 		expect(byCat).toEqual({ A: 30, B: 20, C: 30 });
 	});
 
@@ -96,15 +101,14 @@ describe('aggregateBubbles', () => {
 			topN: 0,
 		});
 		expect(result.reason).toBeNull();
-		const byCat = Object.fromEntries(result.bubbles.map(b => [b.category, b.value]));
+		const byCat = Object.fromEntries(result.bubbles.map(b => [b.key, b.value]));
 		expect(byCat).toEqual({ A: 15, B: 10, C: 30 });
 	});
 
 	it.each([
-		['empty string', ''],
-		['whitespace', '   '],
-		['null', null],
-	])('keeps a %s value out of the mean denominator', (_label, missing) => {
+		['a null', null],
+		['an absent', undefined],
+	])('keeps %s value out of the mean denominator', (_label, missing) => {
 		const result = aggregateBubbles({
 			rows: [{ cat: 'A', val: 10 }, { cat: 'A', val: 20 }, { cat: 'A', val: missing }],
 			categoryColumn: 'cat',
@@ -141,7 +145,7 @@ describe('aggregateBubbles', () => {
 
 	it('returns no-numeric when sum/mean produces zero aggregated values', () => {
 		expect(aggregateBubbles({
-			rows: [{ cat: 'A', val: 'nope' }, { cat: 'B', val: 'NaN' }],
+			rows: [{ cat: 'A', val: null }, { cat: 'B', val: null }],
 			categoryColumn: 'cat',
 			measureMode: 'sum',
 			valueColumn: 'val',
@@ -159,7 +163,7 @@ describe('aggregateBubbles', () => {
 			nestingColumns: ['parent'],
 			topN: 0,
 		});
-		const byCat = Object.fromEntries(result.bubbles.map(b => [b.category, b.nestingPath]));
+		const byCat = Object.fromEntries(result.bubbles.map(b => [b.key, b.nestingPath.map(part => part.key)]));
 		expect(byCat.A).toEqual(['P1']);
 		expect(byCat.B).toEqual(['P2']);
 		expect(byCat.C).toEqual(['P1']);
@@ -177,14 +181,43 @@ describe('aggregateBubbles', () => {
 		expect(result.bubbles.length).toBe(2);
 		expect(result.bubbles[0].value).toBe(30);
 		expect(result.bubbles[1].value).toBe(30);
-		expect(result.bubbles.map(b => b.category)).toEqual(['A', 'C']);
+		expect(result.bubbles.map(b => b.key)).toEqual(['A', 'C']);
+	});
+});
+
+describe('aggregateBubbles missing bucket', () => {
+	const base = { categoryColumn: 'cat', measureMode: 'count', valueColumn: null, topN: 0, missingLabel: '(missing)' };
+
+	it('keeps missing cells apart from literal N/A text', () => {
+		const rows = [{ cat: 'A' }, { cat: null }, { cat: 'N/A' }, {}];
+		const { bubbles } = aggregateBubbles({ ...base, rows, nestingColumns: [] });
+		const missing = bubbles.find(b => b.key === MISSING_KEY);
+		expect(missing).toMatchObject({ label: '(missing)', token: '__chive_missing__', value: 2, groupKey: MISSING_KEY });
+		expect(bubbles.find(b => b.key === 'N/A')).toMatchObject({ label: 'N/A', token: 'v:N/A', value: 1 });
+	});
+
+	it('hides exactly the missing rows through the missing bubble token', () => {
+		const rows = [{ cat: 'A' }, { cat: null }, { cat: 'N/A' }, { cat: null }];
+		const { bubbles } = aggregateBubbles({ ...base, rows, nestingColumns: [] });
+		const missing = bubbles.find(b => b.key === MISSING_KEY);
+		expect(applyChartFilterRows(rows, { column: 'cat', exclude: [missing.token] })).toEqual([{ cat: 'A' }, { cat: 'N/A' }]);
+	});
+
+	it('keys a missing nesting segment so its group token hides the missing rows', () => {
+		const rows = [{ cat: 'A', g: null }, { cat: 'B', g: 'N/A' }, { cat: 'C', g: null }];
+		const { bubbles } = aggregateBubbles({ ...base, rows, nestingColumns: ['g'] });
+		const tree = buildMultiLevelHierarchy(bubbles, ['g']);
+		const missingGroup = tree.children.find(node => node.groupKey === MISSING_KEY);
+		expect(missingGroup.groupLabel).toBe('(missing)');
+		expect(missingGroup.children.map(child => child.key)).toEqual(['A', 'C']);
+		expect(applyChartFilterRows(rows, { column: 'g', exclude: [missingGroup.groupToken] })).toEqual([{ cat: 'B', g: 'N/A' }]);
 	});
 });
 
 describe('buildMultiLevelHierarchy', () => {
 	it('returns empty children when nestingColumns is empty', () => {
 		const result = buildMultiLevelHierarchy(
-			[{ category: 'A', value: 1, nestingPath: [] }],
+			[leaf('A', 1, [])],
 			[],
 		);
 		expect(result).toEqual({ children: [] });
@@ -192,41 +225,41 @@ describe('buildMultiLevelHierarchy', () => {
 
 	it('builds a single-level tree from one nesting column', () => {
 		const bubbles = [
-			{ category: 'A', value: 1, nestingPath: ['G1'] },
-			{ category: 'B', value: 2, nestingPath: ['G1'] },
-			{ category: 'C', value: 3, nestingPath: ['G2'] },
+			leaf('A', 1, ['G1']),
+			leaf('B', 2, ['G1']),
+			leaf('C', 3, ['G2']),
 		];
 		const result = buildMultiLevelHierarchy(bubbles, ['parent']);
 		expect(result.children).toHaveLength(2);
-		const g1 = result.children.find(c => c.groupName === 'G1');
-		const g2 = result.children.find(c => c.groupName === 'G2');
+		const g1 = result.children.find(c => c.groupKey === 'G1');
+		const g2 = result.children.find(c => c.groupKey === 'G2');
 		expect(g1.depth).toBe(1);
 		expect(g1.pathKey).toBe('G1');
-		expect(g1.children.map(c => c.category)).toEqual(['A', 'B']);
-		expect(g2.children.map(c => c.category)).toEqual(['C']);
+		expect(g1.children.map(c => c.key)).toEqual(['A', 'B']);
+		expect(g2.children.map(c => c.key)).toEqual(['C']);
 	});
 
 	it('builds a two-level tree from two nesting columns', () => {
 		const bubbles = [
-			{ category: 'A', value: 1, nestingPath: ['G1', 'S1'] },
-			{ category: 'B', value: 2, nestingPath: ['G1', 'S2'] },
-			{ category: 'C', value: 3, nestingPath: ['G2', 'S1'] },
+			leaf('A', 1, ['G1', 'S1']),
+			leaf('B', 2, ['G1', 'S2']),
+			leaf('C', 3, ['G2', 'S1']),
 		];
 		const result = buildMultiLevelHierarchy(bubbles, ['l1', 'l2']);
 		expect(result.children).toHaveLength(2);
-		const g1 = result.children.find(c => c.groupName === 'G1');
+		const g1 = result.children.find(c => c.groupKey === 'G1');
 		expect(g1.depth).toBe(1);
 		expect(g1.pathKey).toBe('G1');
 		expect(g1.children).toHaveLength(2);
-		const s1 = g1.children.find(c => c.groupName === 'S1');
+		const s1 = g1.children.find(c => c.groupKey === 'S1');
 		expect(s1.depth).toBe(2);
 		expect(s1.pathKey).toBe('G1→S1');
-		expect(s1.children.map(c => c.category)).toEqual(['A']);
+		expect(s1.children.map(c => c.key)).toEqual(['A']);
 	});
 
 	it('builds a three-level tree from three nesting columns', () => {
 		const bubbles = [
-			{ category: 'A', value: 1, nestingPath: ['L1', 'L2', 'L3'] },
+			leaf('A', 1, ['L1', 'L2', 'L3']),
 		];
 		const result = buildMultiLevelHierarchy(bubbles, ['a', 'b', 'c']);
 		const l1 = result.children[0];
@@ -236,48 +269,46 @@ describe('buildMultiLevelHierarchy', () => {
 		expect(l2.depth).toBe(2);
 		expect(l3.depth).toBe(3);
 		expect(l3.pathKey).toBe('L1→L2→L3');
-		expect(l3.children[0].category).toBe('A');
+		expect(l3.children[0].key).toBe('A');
 	});
 
 	it('groups multiple bubbles that share the deepest path under one intermediate node', () => {
 		const bubbles = [
-			{ category: 'A', value: 1, nestingPath: ['G1', 'S1'] },
-			{ category: 'B', value: 2, nestingPath: ['G1', 'S1'] },
+			leaf('A', 1, ['G1', 'S1']),
+			leaf('B', 2, ['G1', 'S1']),
 		];
 		const result = buildMultiLevelHierarchy(bubbles, ['l1', 'l2']);
 		const s1 = result.children[0].children[0];
-		expect(s1.children.map(c => c.category)).toEqual(['A', 'B']);
+		expect(s1.children.map(c => c.key)).toEqual(['A', 'B']);
 	});
 
-	it('produces intermediate nodes with {groupName, depth, pathKey, children} shape (D3-compatible)', () => {
-		const bubbles = [{ category: 'A', value: 1, nestingPath: ['G1'] }];
+	it('produces intermediate nodes with {groupKey, groupLabel, groupToken, depth, pathKey, children} shape (D3-compatible)', () => {
+		const bubbles = [leaf('A', 1, ['G1'])];
 		const result = buildMultiLevelHierarchy(bubbles, ['parent']);
 		const node = result.children[0];
-		expect(Object.keys(node).sort()).toEqual(['children', 'depth', 'groupName', 'pathKey']);
+		expect(Object.keys(node).sort()).toEqual(['children', 'depth', 'groupKey', 'groupLabel', 'groupToken', 'pathKey']);
 	});
 });
 
 describe('getTopLevelGroup', () => {
-	const root = { parent: null, depth: 0, data: { groupName: 'root' } };
-	const level1 = { parent: root, depth: 1, data: { groupName: 'L1' } };
-	const level2 = { parent: level1, depth: 2, data: { groupName: 'L2' } };
-	const leaf = { parent: level2, depth: 3, data: { category: 'cat1' } };
+	const root = { parent: null, depth: 0, data: {} };
+	const level1 = { parent: root, depth: 1, data: { groupKey: 'L1', groupLabel: 'L1' } };
+	const level2 = { parent: level1, depth: 2, data: { groupKey: 'L2', groupLabel: 'L2' } };
+	const deepLeaf = { parent: level2, depth: 3, data: { key: 'cat1', label: 'cat1' } };
 
 	it('walks up to the first child of root for a deep leaf', () => {
-		expect(getTopLevelGroup(leaf)).toBe('L1');
+		expect(getTopLevelGroup(deepLeaf)).toEqual({ key: 'L1', label: 'L1' });
 	});
 
 	it('returns the depth-1 node directly when passed', () => {
-		expect(getTopLevelGroup(level1)).toBe('L1');
+		expect(getTopLevelGroup(level1)).toEqual({ key: 'L1', label: 'L1' });
 	});
 
-	it('falls back through groupName → group → category → N/A', () => {
+	it('reads a flat bubble group and falls back to the missing bucket', () => {
+		const flat = { parent: root, depth: 1, data: { key: 'c', groupKey: 'c', groupLabel: 'c' } };
+		expect(getTopLevelGroup(flat)).toEqual({ key: 'c', label: 'c' });
 		const orphan = { parent: null, depth: 0, data: {} };
-		expect(getTopLevelGroup(orphan)).toBe('N/A');
-		const withGroup = { parent: null, depth: 0, data: { group: 'g' } };
-		expect(getTopLevelGroup(withGroup)).toBe('g');
-		const withCategory = { parent: null, depth: 0, data: { category: 'c' } };
-		expect(getTopLevelGroup(withCategory)).toBe('c');
+		expect(getTopLevelGroup(orphan)).toEqual({ key: MISSING_KEY, label: '(missing)' });
 	});
 });
 

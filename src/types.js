@@ -56,13 +56,15 @@
  * presets, and on the main thread for joins and inline presets.
  *
  * `numeric` is dropped at hydrate when `numericVersion` does not match
- * `STATS_NUMERIC_VERSION`, so a restored dataset can legitimately carry
- * `categorical` alone.
+ * `STATS_NUMERIC_VERSION`, and `categorical` when `categoricalVersion` does not
+ * match `STATS_CATEGORICAL_VERSION`, so a restored dataset can legitimately
+ * carry either one alone, or neither.
  *
  * @typedef {Object} PrecomputedStats
  * @property {NumericColumnStats[]} [numeric] - Per-column numeric stats, in column order. Absent when a stale cache was invalidated at hydrate.
- * @property {CategoricalColumnStats[]} categorical - Per-column categorical stats, in column order.
+ * @property {CategoricalColumnStats[]} [categorical] - Per-column categorical stats, in column order. Absent when a stale cache was invalidated at hydrate.
  * @property {number} [numericVersion] - Generation of `numeric`. Absent on records written before versioning.
+ * @property {number} [categoricalVersion] - Generation of `categorical`. Absent on records written before versioning.
  */
 
 /**

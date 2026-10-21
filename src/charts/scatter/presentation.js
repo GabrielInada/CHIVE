@@ -77,6 +77,7 @@ export function renderScatterInto(
 			regressionR2: t('chive-chart-tooltip-regression-r2'),
 			regressionN: t('chive-chart-tooltip-regression-n'),
 			regressionGroup: t('chive-chart-tooltip-regression-group'),
+			missing: t('chive-chart-filter-missing'),
 		},
 		xColumn: config.x,
 		yColumn: config.y,

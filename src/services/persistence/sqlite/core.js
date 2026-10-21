@@ -7,8 +7,14 @@
  * @typedef {import('../../../types.js').AppState} AppState
  */
 
+import { CELL_FORMAT_VERSION } from '../../../domain/datasets/cellValues.js';
+
 export const SQLITE_SCHEMA_VERSION = '1';
 export const SQLITE_FORMAT = 'chive-project';
+
+// Meta key for the generation of the stored cell format. Projects saved before
+// cells were canonical have none, and readers that predate it ignore it.
+const CELL_FORMAT_META_KEY = 'cell_format_version';
 
 function jsonStringify(value, fallback) {
 	return JSON.stringify(value === undefined ? fallback : value);
@@ -93,6 +99,12 @@ function getActiveDatasetId(snapshot, datasets) {
 		: null;
 }
 
+function readCellFormatVersion(db) {
+	const [row] = selectRows(db, 'SELECT value FROM meta WHERE key = ?', [CELL_FORMAT_META_KEY]);
+	const version = Number(row?.value);
+	return Number.isInteger(version) && version > 0 ? version : null;
+}
+
 export function assertMeta(db, { requireMeta = false } = {}) {
 	const rows = selectRows(db, 'SELECT key, value FROM meta');
 	if (rows.length === 0) {
@@ -151,7 +163,8 @@ export function applySchema(db) {
 }
 
 /**
- * Replace all project content in the SQLite DB with `snapshot`.
+ * Replace all project content in the SQLite DB with `snapshot`. Its cells are
+ * canonical, as every in-memory row is, so the current cell format is stamped.
  *
  * @param {*} db sqlite-wasm oo1 DB instance
  * @param {Partial<AppState>} snapshot
@@ -176,6 +189,7 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 
 		bindExec(db, 'INSERT INTO meta(key, value) VALUES (?, ?)', ['format', SQLITE_FORMAT]);
 		bindExec(db, 'INSERT INTO meta(key, value) VALUES (?, ?)', ['schema_version', SQLITE_SCHEMA_VERSION]);
+		bindExec(db, 'INSERT INTO meta(key, value) VALUES (?, ?)', [CELL_FORMAT_META_KEY, String(CELL_FORMAT_VERSION)]);
 
 		datasets.forEach((dataset, position) => {
 			const fingerprint = getFingerprintForDataset(dataset, fingerprintsByDatasetId);
@@ -244,7 +258,7 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
  * Read a project snapshot from the SQLite DB.
  *
  * @param {*} db sqlite-wasm oo1 DB instance
- * @returns {{ data: { datasets: Array<Object>, activeDatasetId: string | null }, panel: Object | null }}
+ * @returns {{ cellFormatVersion: number | null, data: { datasets: Array<Object>, activeDatasetId: string | null }, panel: Object | null }} `cellFormatVersion` is `null` for projects saved before cells were canonical.
  */
 export function readSnapshot(db) {
 	applySchema(db);
@@ -301,6 +315,7 @@ export function readSnapshot(db) {
 
 	const dataState = isPlainObject(appStateDocs.data_state) ? appStateDocs.data_state : {};
 	return {
+		cellFormatVersion: readCellFormatVersion(db),
 		data: {
 			datasets,
 			activeDatasetId: dataState.activeDatasetId || null,

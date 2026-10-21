@@ -31,6 +31,7 @@ export function normalizePieOptions(options) {
 		count: options.labels?.count || 'Count',
 		percentage: options.labels?.percentage || 'Percentage',
 		other: options.labels?.other || 'Other',
+		missing: options.labels?.missing || '(missing)',
 		focusOnThis: options.labels?.focusOnThis || 'Show only this',
 		addToFilter: options.labels?.addToFilter || 'Add to global filter',
 	};

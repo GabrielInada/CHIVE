@@ -44,8 +44,8 @@ the shared click-to-filter tooltips.
 ### 2.1 Aggregation and area
 
 Like bar and pie, the treemap aggregates: the category column partitions the rows, and each
-group is reduced to a number by `count` or `sum` of a value column (missing categories
-collapse to `N/A`). That number becomes the tile's **area**. Because the tiles tile the whole
+group is reduced to a number by `count` or `sum` of a value column (missing cells
+collapse to one "(missing)" tile). That number becomes the tile's **area**. Because the tiles tile the whole
 frame without gaps, the picture reads as "this category is this fraction of the total."
 
 ### 2.2 The tiling problem and squarify
@@ -215,8 +215,8 @@ count or sum per category (sum skips non-finite values). Empty result returns `{
 
 ### 7.2 Sort, Top-N, layout
 
-Entries are filtered to positive values, sorted descending (with a `compareStrings`
-tiebreaker), and sliced to `topN`. A one-level `hierarchy({ root, children: entries })`
+Entries are filtered to positive values, sorted descending (with a `compareCategoryKeys`
+tiebreaker, missing last), and sliced to `topN`. A one-level `hierarchy({ root, children: entries })`
 `.sum(value)` feeds `treemap().tile(treemapSquarify).size([w, h]).padding(p).round(true)`,
 which assigns each leaf its `(x0, y0, x1, y1)` rectangle (the squarified tiling of section
 2.2). `round(true)` snaps coordinates to whole pixels for crisp edges.
@@ -280,7 +280,7 @@ labels. The panel exporter clones the live `<svg>`; there is no separate export 
 - **sum mode without a numeric value column** → `{ ok: false, reason: 'no-value-column' }`,
   mapped to `chive-chart-empty-treemap-numeric` ("Select a numeric column to render the treemap
   in sum mode.").
-- **Missing/empty categories** collapse into a single `N/A` tile.
+- **Missing categories** collapse into a single "(missing)" tile, apart from literal "N/A" text.
 - **Non-positive aggregates** are filtered out (a treemap tile needs positive area).
 - **Tiles too small** to fit text are left unlabeled.
 - **Stateless renders** and **detached panel captures** behave as for every chart (panel tiles
