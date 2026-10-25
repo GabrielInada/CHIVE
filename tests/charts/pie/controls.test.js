@@ -14,6 +14,7 @@ import { createPieChartControls } from '../../../src/charts/pie/controls/builder
 import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/pie/controls/activationDefaults.js';
+import { renderPieChart } from '../../../src/charts/pie/renderers/svg.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -157,6 +158,37 @@ describe('pieControls UI structure', () => {
 		expect(sliceInputs.length).toBe(3); // North, South, East
 		const tokens = Array.from(sliceInputs).map(input => input.dataset.colorItem).sort();
 		expect(tokens).toEqual(['East', 'North', 'South']);
+	});
+
+	it('shows each slice in the color grid in the color the chart draws it', () => {
+		const dataset = createDataset({ customSliceColors: { South: '#123456' } });
+		appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
+
+		const chart = document.createElement('div');
+		document.body.appendChild(chart);
+		const { pie } = dataset.chartConfig;
+		renderPieChart(chart, dataset.rows, pie.category, { color: pie.color, customSliceColors: pie.customSliceColors });
+		const drawn = Object.fromEntries(Array.from(chart.querySelectorAll('path'), path => [path.__data__.data.key, path.getAttribute('fill')]));
+
+		const swatches = Object.fromEntries(Array.from(
+			document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]'),
+			input => [input.dataset.colorItem, input.value],
+		));
+		expect(swatches).toEqual(drawn);
+	});
+
+	it('keeps a slice the global filter hides in the grid with the neutral swatch', () => {
+		const dataset = createDataset();
+		dataset.chartConfig.globalFilter = {
+			rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:North'] }],
+			combine: 'AND',
+		};
+		appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
+
+		const swatch = key => document.querySelector(`input[data-color-grid-control="viz-pie-color-grid"][data-color-item="${key}"]`).value;
+		expect(swatch('North')).toBe('#999999');
+		// East now leads the drawn chart, so it takes the base color.
+		expect(swatch('East')).toBe('#4e79a7');
 	});
 
 	it('omits sector color controls when there is no usable category data', () => {

@@ -5,10 +5,10 @@
  * measure, grouped by category key so the missing bucket never merges with
  * text that reads "N/A". Sorts descending with a key tiebreaker (missing
  * last) and applies Top-N handling (`truncate` drops the tail; `other` folds
- * it into a single caller-labelled "Other" sector, which has no filter
- * token). The returned `total` is summed AFTER Top-N handling, so percentages
- * are relative to the rendered sectors. Pure: no DOM, no d3. Used by
- * `renderers/svg.js` and `controls/sectorValues.js`.
+ * it into a single caller-labelled "Other" sector, which has its own key and
+ * no filter token). The returned `total` is summed AFTER Top-N handling, so
+ * percentages are relative to the rendered sectors. Pure: no DOM, no d3.
+ * Used by `renderers/svg.js` and `controls/sectorValues.js`.
  */
 
 import { toFiniteNumber } from '../../utils/formatters.js';
@@ -18,6 +18,13 @@ import { compareCategoryKeys } from '../shared/categoryOrder.js';
 /**
  * @typedef {{ key: string, label: string, token: string|null, value: number, isOther?: boolean }} PieEntry
  */
+
+/**
+ * Key of the synthetic Other sector. Like the missing key, no category value
+ * produces it by accident, so a real category spelled like the Other label
+ * keeps its own pin and color identity.
+ */
+export const OTHER_SECTOR_KEY = '__chive_other__';
 
 /**
  * Aggregate rows for the pie chart.
@@ -53,7 +60,7 @@ export function aggregatePieData(rows, categoryColumn, { measureMode, valueColum
 		} else {
 			const head = entries.slice(0, topN);
 			const remainderValue = entries.slice(topN).reduce((sum, item) => sum + item.value, 0);
-			entries = [...head, { key: otherLabel, label: otherLabel, token: null, value: remainderValue, isOther: true }];
+			entries = [...head, { key: OTHER_SECTOR_KEY, label: otherLabel, token: null, value: remainderValue, isOther: true }];
 		}
 	}
 

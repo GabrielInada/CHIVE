@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { getPieSectorValues } from '../../../src/charts/pie/controls/sectorValues.js';
+import { getPieSectorValues, getPieSwatchColors } from '../../../src/charts/pie/controls/sectorValues.js';
+import { buildSliceColor } from '../../../src/charts/pie/color.js';
 import { aggregatePieData } from '../../../src/charts/pie/data.js';
 import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 
@@ -74,5 +75,57 @@ describe('getPieSectorValues', () => {
 	it('returns an empty list without a category or rows', () => {
 		expect(getPieSectorValues({ rows: [] }, { ...sumConfig, category: null })).toEqual([]);
 		expect(getPieSectorValues(null, sumConfig)).toEqual([]);
+	});
+});
+
+describe('getPieSwatchColors', () => {
+	const BASE = '#888888';
+	const columns = { columnNames: ['c'], numericColumnNames: [] };
+	const excludeA = { rules: [{ column: 'c', mode: 'categorical', include: [], exclude: ['v:A'] }], combine: 'AND' };
+
+	function swatchDataset(globalFilter) {
+		const rows = ['A', 'A', 'A', 'B', 'B', 'C'].map(c => ({ c }));
+		return { rows, chartConfig: { globalFilter } };
+	}
+
+	function swatchConfig(overrides = {}) {
+		return { category: 'c', measureMode: 'count', topN: 0, topNMode: 'other', color: BASE, customSliceColors: {}, ...overrides };
+	}
+
+	it('gives every drawn sector the shade the chart draws it with', () => {
+		expect(getPieSwatchColors(swatchDataset(), swatchConfig(), columns)).toEqual({
+			A: BASE,
+			B: buildSliceColor(BASE, 1),
+			C: buildSliceColor(BASE, 2),
+		});
+	});
+
+	// Shades follow the drawn order, so a global filter that hides the largest
+	// sector moves every other sector up one shade on the chart.
+	it('follows the chart when a global filter hides a larger sector', () => {
+		expect(getPieSwatchColors(swatchDataset(excludeA), swatchConfig(), columns)).toEqual({
+			B: BASE,
+			C: buildSliceColor(BASE, 1),
+		});
+	});
+
+	it('keeps the custom color of a sector the chart does not draw', () => {
+		const config = swatchConfig({ customSliceColors: { A: '#123456' } });
+		expect(getPieSwatchColors(swatchDataset(excludeA), config, columns).A).toBe('#123456');
+	});
+
+	it('leaves sectors past Top-N and the Other sector without a color', () => {
+		const colors = getPieSwatchColors(swatchDataset(), swatchConfig({ topN: 1 }), columns);
+		expect(colors).toEqual({ A: BASE });
+	});
+
+	it('ignores a global-filter rule on a column the chart cannot see, like the chart does', () => {
+		const colors = getPieSwatchColors(swatchDataset(excludeA), swatchConfig(), { columnNames: [], numericColumnNames: [] });
+		expect(colors.A).toBe(BASE);
+	});
+
+	it('returns no colors without a category or rows', () => {
+		expect(getPieSwatchColors(swatchDataset(), swatchConfig({ category: null }), columns)).toEqual({});
+		expect(getPieSwatchColors({ rows: null, chartConfig: {} }, swatchConfig(), columns)).toEqual({});
 	});
 });

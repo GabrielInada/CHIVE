@@ -1,16 +1,19 @@
 /**
- * Pie sector ordering (package-private).
+ * Pie sector ordering and swatch colors (package-private).
  *
- * Computes the full aggregated category-key order used by the color controls.
- * Shared by the builder (per-slice color grid order) and the listeners
- * (palette-preset to per-slice color mapping), so it lives in its own module
- * rather than being owned by either consumer. Pure: reads rows + config,
- * touches no DOM.
+ * Computes the full aggregated category-key order used by the color controls,
+ * and the color each per-slice swatch shows. The order is shared by the
+ * builder (per-slice color grid order) and the listeners (palette-preset to
+ * per-slice color mapping), so it lives in its own module rather than being
+ * owned by either consumer. Pure: reads rows + config, touches no DOM.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
+import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../../domain/filters/globalFilter.js';
+import { resolveSliceColors } from '../color.js';
 import { aggregatePieData } from '../data.js';
+import { normalizePieOptions } from '../options.js';
 
 /**
  * Every source category in the chart's aggregate order, projected from
@@ -37,4 +40,45 @@ export function getPieSectorValues(dataset, config, { missingLabel } = {}) {
 	});
 	if (!aggregated.ok) return [];
 	return aggregated.entries.map(({ key, label }) => ({ key, label }));
+}
+
+/**
+ * Swatch color per category key for the per-slice color grid: the color the
+ * chart draws the category with, else its custom color. Categories with
+ * neither (hidden by the global filter or past Top-N, with no override) are
+ * left out, so the grid shows its neutral swatch for them.
+ *
+ * @internal Package-private to `controls/`; imported only by the builder.
+ * @param {Dataset} dataset
+ * @param {Object} config - The pie config block.
+ * @param {{ columnNames: string[], numericColumnNames: string[] }} columns - Visible column names.
+ * @returns {Object<string, string>} Hex color by category key.
+ */
+export function getPieSwatchColors(dataset, config, { columnNames, numericColumnNames }) {
+	if (!config?.category || !Array.isArray(dataset?.rows)) return {};
+
+	const options = normalizePieOptions(config);
+	const swatches = { ...options.customSliceColors };
+	// WHY: shades follow the drawn order, so a global filter that hides a
+	// larger sector moves the others up a shade. Aggregate the rows the chart
+	// draws, filtered the way the charts view filters them.
+	const drawnRows = applyGlobalFilterRules(
+		dataset.rows,
+		resolveGlobalFilterForColumns(dataset.chartConfig?.globalFilter, columnNames),
+		numericColumnNames,
+	);
+	const drawn = aggregatePieData(drawnRows, config.category, {
+		measureMode: options.measureMode,
+		valueColumn: options.valueColumn,
+		topN: options.topN,
+		topNMode: options.topNMode,
+		otherLabel: options.labels.other,
+	});
+	if (!drawn.ok) return swatches;
+
+	const colors = resolveSliceColors(drawn.entries, options);
+	drawn.entries.forEach(entry => {
+		if (!entry.isOther) swatches[entry.key] = colors.get(entry.key);
+	});
+	return swatches;
 }

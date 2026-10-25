@@ -195,6 +195,25 @@ describe('renderPieChart behavior', () => {
 		expect(container.querySelectorAll('text').length).toBe(0);
 	});
 
+	it('pins the Other sector after a real category spelled the same way', () => {
+		const container = document.getElementById('pie');
+		const rows = ['Other', 'Other', 'Other', 'A', 'A', 'B', 'C'].map(categoria => ({ categoria }));
+		renderPieChart(container, rows, 'categoria', { topN: 2, topNMode: 'other', labels: { other: 'Other' } });
+		const slices = Array.from(container.querySelectorAll('path'));
+		const realOther = slices.find(path => path.__data__.data.key === 'Other');
+		const otherSector = slices.find(path => path.__data__.data.isOther);
+
+		realOther.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		otherSector.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+
+		// The second click pins the Other sector (2 of 7 rows) instead of
+		// unpinning the real category (3 of 7).
+		const tooltip = document.querySelector('.chart-tooltip');
+		expect(tooltip.hidden).toBe(false);
+		expect(tooltip.textContent).toContain('28.6%');
+		expect(tooltip.textContent).not.toContain('42.9%');
+	});
+
 	it('covers pie Other-slice pinned tooltip without filter actions and included/excluded filter states', () => {
 		const container = document.getElementById('pie');
 		const rows = ['A', 'A', 'B', 'C', 'D'].map(categoria => ({ categoria }));
