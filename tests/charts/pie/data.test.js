@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aggregatePieData } from '../../../src/charts/pie/data.js';
+import { OTHER_SECTOR_KEY, aggregatePieData } from '../../../src/charts/pie/data.js';
 import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 import { applyChartFilterRows } from '../../../src/domain/filters/chartFilter.js';
 
@@ -48,7 +48,17 @@ describe('aggregatePieData', () => {
 	it('labels the Other sector and gives it no filter token', () => {
 		const rows = [{ c: 'A' }, { c: 'A' }, { c: 'B' }, { c: 'C' }];
 		const other = aggregatePieData(rows, 'c', { ...countArgs, topN: 1 }).entries.at(-1);
-		expect(other).toEqual({ key: 'Other', label: 'Other', token: null, value: 2, isOther: true });
+		expect(other).toEqual({ key: OTHER_SECTOR_KEY, label: 'Other', token: null, value: 2, isOther: true });
+	});
+
+	it('keeps a real category spelled like the Other label apart from the Other sector', () => {
+		const rows = ['Other', 'Other', 'Other', 'A', 'A', 'B', 'C'].map(c => ({ c }));
+		const { entries } = aggregatePieData(rows, 'c', { ...countArgs, topN: 2 });
+		expect(sectors(entries)).toEqual([
+			{ key: 'Other', value: 3 },
+			{ key: 'A', value: 2 },
+			{ key: OTHER_SECTOR_KEY, value: 2, isOther: true },
+		]);
 	});
 
 	it('sums a numeric value column and skips non-finite values', () => {
@@ -82,7 +92,7 @@ describe('aggregatePieData', () => {
 		expect(sectors(result.entries)).toEqual([
 			{ key: 'A', value: 3 },
 			{ key: 'B', value: 2 },
-			{ key: 'Outros', value: 2, isOther: true },
+			{ key: OTHER_SECTOR_KEY, value: 2, isOther: true },
 		]);
 		// total is over the rendered sectors (incl. the Other bucket).
 		expect(result.total).toBe(7);

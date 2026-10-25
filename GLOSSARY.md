@@ -41,3 +41,9 @@ _Avoid_: category name
 How a chart filter rule refers to one category key in its include and exclude
 lists.
 _Avoid_: filter value, category id
+
+**Other sector**:
+The pie sector that folds every category past the Top-N cut into one wedge. It
+is not a category: it has no category token and never shares a key or a color
+with a category spelled the same way.
+_Avoid_: Other category, Other bucket
