@@ -1,16 +1,17 @@
 /**
  * Scatter-plot qualitative color palettes.
  *
- * Owns the category-color palettes for scatter rendering. The arrays are
- * frozen so callers can reuse them without being able to mutate global
- * palette state.
+ * Owns the category-color palettes for scatter rendering: frozen copies of
+ * the shared chart palettes, so the scatter offers every palette its preset
+ * buttons do and callers can reuse the arrays without being able to mutate
+ * global palette state.
  */
 
-const SCATTER_PALETTES = Object.freeze({
-	Pastel: Object.freeze(['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB']),
-	Bold: Object.freeze(['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2']),
-	'Colorblind-Safe': Object.freeze(['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF']),
-});
+import { CHART_COLOR_PALETTES } from '../../config/charts/shared.js';
+
+const SCATTER_PALETTES = Object.freeze(Object.fromEntries(
+	Object.entries(CHART_COLOR_PALETTES).map(([name, colors]) => [name, Object.freeze([...colors])]),
+));
 
 /**
  * Resolve a palette name to a known scheme, falling back to `'Bold'` for an

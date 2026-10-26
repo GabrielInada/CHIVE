@@ -108,7 +108,7 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, wr
 
 	setupColorPresetListeners(
 		'viz-tin-color-preset',
-		{ gradientMinColor: 0, gradientMaxColor: -1 },
+		TIN_CHART.presetColorKeys,
 		{ gradientMinColor: CHART_COLORS.tin, gradientMaxColor: '#ffffff' }, writer, COLOR_PRESETS,
 	);
 }

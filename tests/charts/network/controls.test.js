@@ -13,6 +13,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 import { createNetworkGraphControls } from '../../../src/charts/network/controls/builder.js';
 import { setupNetworkGraphControlListeners } from '../../../src/charts/network/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/network/controls/activationDefaults.js';
+import { NETWORK_DEFINITION } from '../../../src/config/charts/definitions/network.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -56,6 +57,23 @@ function createDataset(overrides = {}) {
 
 function appendControls(controls) {
 	controls.forEach(control => document.body.appendChild(control));
+}
+
+/** Rebuild and rewire the controls, as the sidebar does after each commit. */
+function mountControls(dataset, writer) {
+	document.body.innerHTML = '';
+	appendControls(createNetworkGraphControls(dataset, ['from', 'to'], [], []));
+	setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], writer);
+}
+
+function applyLastCommit(dataset, writer) {
+	Object.assign(dataset.chartConfig.network, writer.commit.mock.calls.at(-1)[0]);
+}
+
+function markedPresets() {
+	return [...document.querySelectorAll('button[data-color-preset-control="viz-network-color-preset"]')]
+		.filter(button => button.style.border.startsWith('2px'))
+		.map(button => button.dataset.presetName);
 }
 
 function extractStructure(controls) {
@@ -227,6 +245,38 @@ describe('networkControls listeners', () => {
 		expect(call.sourceNodeColor).toMatch(/^#[0-9a-fA-F]{6}$/);
 		expect(call.targetNodeColor).toMatch(/^#[0-9a-fA-F]{6}$/);
 		expect(call.sourceNodeColor).not.toBe(call.targetNodeColor);
+	});
+});
+
+describe('networkControls color palette mark', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('marks no palette on a new chart', () => {
+		const { colorScheme, sourceNodeColor, targetNodeColor } = NETWORK_DEFINITION.createDefaultConfig();
+		mountControls(createDataset({ colorScheme, sourceNodeColor, targetNodeColor }), createWriter());
+
+		expect(markedPresets()).toEqual([]);
+	});
+
+	it('marks a palette once its button applies it, until a node color is edited', () => {
+		const dataset = createDataset();
+		const writer = createWriter();
+		mountControls(dataset, writer);
+
+		document.querySelector('button[data-color-preset-control="viz-network-color-preset"][data-preset-name="Pastel"]').click();
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual(['Pastel']);
+
+		const targetInput = document.getElementById('viz-input-network-target-color');
+		targetInput.value = '#123456';
+		targetInput.dispatchEvent(new Event('change'));
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual([]);
 	});
 });
 

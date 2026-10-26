@@ -18,7 +18,7 @@ import { CHART_COLORS } from '../../../config/charts/definitions.js';
 import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { t } from '../../../services/i18nService.js';
 import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl } from '../../shared/controls/factories.js';
-import { createColorPresetControl, createColorPickerGridControl } from '../../shared/controls/factories.js';
+import { createColorPresetControl, createColorPickerGridControl, findAppliedColorPreset } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
 import { getPieSectorValues, getPieSwatchColors } from './sectorValues.js';
 
@@ -294,12 +294,15 @@ function buildStylingControls(dataset, config, sectorValues, columns) {
 		!dataset.chartConfig.pie.enabled,
 	));
 
-	// Palette presets for quick color application
+	// Palette presets for quick color application. A palette button colors the
+	// sectors in this order, repeating the palette, so the palette stays marked
+	// only while every sector keeps the color it got.
 	if (sectorValues.length > 0) {
+		const slicePositions = Object.fromEntries(sectorValues.map(({ key }, index) => [key, index]));
 		stylingControls.push(createColorPresetControl(
 			'viz-pie-color-preset',
 			t('chive-chart-color-palette'),
-			config.colorScheme || 'Bold',
+			findAppliedColorPreset(config.customSliceColors, slicePositions),
 			!dataset.chartConfig.pie.enabled,
 			t
 		));

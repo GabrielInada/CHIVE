@@ -11,6 +11,7 @@
  */
 
 import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { BAR_CHART } from '../../../config/charts/definitions/bar.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,
@@ -85,9 +86,9 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 			['value', 'rank'].includes(v) ? v : 'value' },
 	], writer);
 	setupSliderListener('viz-slider-bar-threshold', 'manualThresholdPct', writer);
-	setupColorPresetListeners('viz-bar-color-preset', {
-		color: 0, gradientMinColor: 0, gradientMaxColor: -1,
-	}, { color: CHART_COLORS.bar, gradientMinColor: CHART_COLORS.bar, gradientMaxColor: '#ffffff' }, writer, COLOR_PRESETS);
+	setupColorPresetListeners('viz-bar-color-preset', BAR_CHART.presetColorKeys, {
+		color: CHART_COLORS.bar, gradientMinColor: CHART_COLORS.bar, gradientMaxColor: '#ffffff',
+	}, writer, COLOR_PRESETS);
 
 	// --- Display controls ---
 	setupCheckboxListeners([

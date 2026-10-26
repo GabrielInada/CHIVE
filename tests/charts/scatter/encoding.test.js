@@ -7,6 +7,7 @@ import {
 	buildColorAccessor,
 	buildRadiusAccessor,
 } from '../../../src/charts/scatter/encoding.js';
+import { CHART_COLOR_PALETTES } from '../../../src/config/charts/shared.js';
 import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 
 function point(raw, index) {
@@ -18,6 +19,11 @@ describe('palette helpers', () => {
 		expect(resolveScatterColorScheme('Pastel')).toBe('Pastel');
 		expect(resolveScatterColorScheme('missing')).toBe('Bold');
 		expect(resolveScatterColorScheme(undefined)).toBe('Bold');
+	});
+
+	it('offers every palette the color buttons do, Tableau10 included', () => {
+		expect(resolveScatterColorScheme('Tableau10')).toBe('Tableau10');
+		expect(getScatterPalette('Tableau10')).toEqual(CHART_COLOR_PALETTES.Tableau10);
 	});
 
 	it('returns a frozen palette array that cannot be mutated', () => {

@@ -15,6 +15,8 @@ import {
 } from '../../../src/charts/tin/controls/builder.js';
 import { setupTinControlListeners } from '../../../src/charts/tin/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/tin/controls/activationDefaults.js';
+import { COLOR_PRESETS } from '../../../src/charts/shared/controls/factories.js';
+import { TIN_DEFINITION } from '../../../src/config/charts/definitions/tin.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -103,6 +105,23 @@ function changeSelect(id, value) {
 
 function lastTinConfig(writer) {
 	return writer.commit.mock.calls.at(-1)[0];
+}
+
+/** Rebuild and rewire the controls, as the sidebar does after each commit. */
+function mountControls(dataset, writer) {
+	document.body.innerHTML = '';
+	appendControls(createTinControls(dataset, ['lon', 'lat', 'elev'], []));
+	setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
+}
+
+function applyLastCommit(dataset, writer) {
+	Object.assign(dataset.chartConfig.tin, lastTinConfig(writer));
+}
+
+function markedPresets() {
+	return [...document.querySelectorAll('button[data-color-preset-control="viz-tin-color-preset"]')]
+		.filter(button => button.style.border.startsWith('2px'))
+		.map(button => button.dataset.presetName);
 }
 
 describe('tinControls UI structure', () => {
@@ -209,8 +228,8 @@ describe('tinControls UI structure', () => {
 		expect(document.getElementById('viz-select-tin-x').value).toBe('');
 		expect(document.getElementById('viz-select-tin-fill-mode').value).toBe('smooth');
 		expect(document.getElementById('viz-select-tin-color-ramp').value).toBe('custom');
-		const selectedPreset = document.querySelector('button[data-color-preset-control="viz-tin-color-preset"][data-preset-name="Colorblind-Safe"]');
-		expect(selectedPreset?.style.border).toContain('2px');
+		// An empty colorScheme falls back to no palette: the gradient colors are not a palette's.
+		expect(markedPresets()).toEqual([]);
 		expect(document.getElementById('viz-select-tin-gradient-distribution').value).toBe('value');
 		expect(document.getElementById('viz-slider-tin-subdivision').disabled).toBe(true);
 		expect(document.getElementById('viz-input-tin-edge-color').disabled).toBe(true);
@@ -340,6 +359,48 @@ describe('tinControls listeners', () => {
 		const writer = createWriter();
 		expect(() => setupTinControlListeners(dataset, ['lon'], [], writer)).not.toThrow();
 		expect(writer.commit).not.toHaveBeenCalled();
+	});
+});
+
+describe('tinControls color palette mark', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('marks no palette on a new chart', () => {
+		const { colorRamp, colorScheme, gradientMinColor, gradientMaxColor } = TIN_DEFINITION.createDefaultConfig();
+		mountControls(createDataset({ colorRamp, colorScheme, gradientMinColor, gradientMaxColor }), createWriter());
+
+		expect(markedPresets()).toEqual([]);
+	});
+
+	it('marks a palette once its button applies it, until a gradient color is edited', () => {
+		const dataset = createDataset();
+		const writer = createWriter();
+		mountControls(dataset, writer);
+
+		document.querySelector('button[data-color-preset-control="viz-tin-color-preset"][data-preset-name="Bold"]').click();
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual(['Bold']);
+
+		const maxInput = document.getElementById('viz-input-tin-gradient-max');
+		maxInput.value = '#ffffff';
+		maxInput.dispatchEvent(new Event('change'));
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual([]);
+	});
+
+	it('marks no palette while a named ramp draws the surface', () => {
+		mountControls(createDataset({
+			colorRamp: 'viridis',
+			gradientMinColor: COLOR_PRESETS.Bold[0],
+			gradientMaxColor: COLOR_PRESETS.Bold.at(-1),
+		}), createWriter());
+
+		expect(markedPresets()).toEqual([]);
 	});
 });
 

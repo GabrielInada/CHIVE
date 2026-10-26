@@ -13,6 +13,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 import { createScatterPlotControls } from '../../../src/charts/scatter/controls/builder.js';
 import { setupScatterPlotControlListeners } from '../../../src/charts/scatter/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/scatter/controls/activationDefaults.js';
+import { SCATTER_DEFINITION } from '../../../src/config/charts/definitions/scatter.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -71,6 +72,23 @@ function selectValue(id, value) {
 
 function lastConfig(writer) {
 	return writer.commit.mock.calls.at(-1)[0];
+}
+
+/** Rebuild and rewire the controls, as the sidebar does after each commit. */
+function mountControls(dataset, writer) {
+	document.body.innerHTML = '';
+	appendControls(createScatterPlotControls(dataset, ['value'], ['category', 'value']));
+	setupScatterPlotControlListeners(dataset, ['value'], ['category', 'value'], writer);
+}
+
+function applyLastCommit(dataset, writer) {
+	Object.assign(dataset.chartConfig.scatter, lastConfig(writer));
+}
+
+function markedPresets() {
+	return [...document.querySelectorAll('button[data-color-preset-control="viz-scatter-color-preset"]')]
+		.filter(button => button.style.border.startsWith('2px'))
+		.map(button => button.dataset.presetName);
 }
 
 describe('scatter controls module boundaries', () => {
@@ -494,6 +512,49 @@ describe('scatterControls axis listeners', () => {
 		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
 		expect(lastConfig(writer)).toEqual({ regression: { showCI: false } });
+	});
+});
+
+describe('scatterControls color palette mark', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('marks no palette on a new chart', () => {
+		const { color, colorMode, colorScheme, gradientMinColor, gradientMaxColor } = SCATTER_DEFINITION.createDefaultConfig();
+		mountControls(createDataset({ color, colorMode, colorScheme, gradientMinColor, gradientMaxColor }), createWriter());
+
+		expect(markedPresets()).toEqual([]);
+	});
+
+	it('marks a palette once its button applies it, until the point color is edited', () => {
+		const dataset = createDataset();
+		const writer = createWriter();
+		mountControls(dataset, writer);
+
+		document.querySelector('button[data-color-preset-control="viz-scatter-color-preset"][data-preset-name="Colorblind-Safe"]').click();
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual(['Colorblind-Safe']);
+
+		const colorInput = document.getElementById('viz-input-scatter-color');
+		colorInput.value = '#123456';
+		colorInput.dispatchEvent(new Event('change'));
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual([]);
+	});
+
+	it('marks the stored palette while a category field colors the points', () => {
+		mountControls(createDataset({
+			colorMode: 'category',
+			colorField: 'category',
+			colorFieldType: 'category',
+			colorScheme: 'Tableau10',
+		}), createWriter());
+
+		expect(markedPresets()).toEqual(['Tableau10']);
 	});
 });
 

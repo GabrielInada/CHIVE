@@ -17,6 +17,7 @@ import {
 	createSelectControl,
 	createSliderControl,
 	createTextControl,
+	findAppliedColorPreset,
 } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
 
@@ -144,10 +145,14 @@ export function createTreemapControls(dataset, categoryOptions, numericOptions =
 	// ====== ADVANCED SECTION ======
 	const advancedControls = [];
 
+	// Scheme mode draws the stored palette. Uniform mode draws the one color a
+	// palette button copies in, so that palette counts only until it is edited.
 	advancedControls.push(createColorPresetControl(
 		'viz-treemap-color-preset',
 		t('chive-chart-color-palette'),
-		config.colorScheme || 'Bold',
+		config.colorMode === 'uniform'
+			? findAppliedColorPreset(config, TREEMAP_CHART.presetColorKeys)
+			: (config.colorScheme || 'Bold'),
 		isDisabled,
 		t
 	));

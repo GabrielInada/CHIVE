@@ -80,7 +80,7 @@ export function setupTreemapControlListeners(dataset, baseCat, numericOptions, a
 	setupColorInputListener('viz-input-treemap-color', 'color', CHART_COLORS.treemap, writer);
 	setupColorPresetListeners(
 		'viz-treemap-color-preset',
-		{ color: 0 },
+		TREEMAP_CHART.presetColorKeys,
 		{ color: CHART_COLORS.treemap }, writer, COLOR_PRESETS,
 	);
 }

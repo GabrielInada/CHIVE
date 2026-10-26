@@ -23,20 +23,15 @@ import {
 	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
 import { normalizeTreemapOptions } from '../options.js';
 import { aggregateTreemapData } from '../data.js';
 
-const COLOR_PALETTE = {
-	Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
-	Pastel: ['#FFB3BA', '#FFCCCB', '#FFFFBA', '#BAE1BA', '#BAC7FF', '#E0BBE4', '#FFDFD3', '#DFF8EB'],
-	'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
-};
-
 /** @private */
 function getSchemeColors(schemeName) {
-	return COLOR_PALETTE[schemeName] || COLOR_PALETTE['Bold'];
+	return CHART_COLOR_PALETTES[schemeName] || CHART_COLOR_PALETTES.Bold;
 }
 
 /** @private */

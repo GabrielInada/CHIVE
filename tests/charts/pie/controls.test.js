@@ -15,6 +15,7 @@ import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/pie/controls/activationDefaults.js';
 import { renderPieChart } from '../../../src/charts/pie/renderers/svg.js';
+import { PIE_DEFINITION } from '../../../src/config/charts/definitions/pie.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -92,6 +93,23 @@ function selectValue(id, value) {
 
 function lastConfig(writer) {
 	return writer.commit.mock.calls.at(-1)[0];
+}
+
+/** Rebuild and rewire the controls, as the sidebar does after each commit. */
+function mountControls(dataset, writer) {
+	document.body.innerHTML = '';
+	appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
+	setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], writer);
+}
+
+function applyLastCommit(dataset, writer) {
+	Object.assign(dataset.chartConfig.pie, lastConfig(writer));
+}
+
+function markedPresets() {
+	return [...document.querySelectorAll('button[data-color-preset-control="viz-pie-color-preset"]')]
+		.filter(button => button.style.border.startsWith('2px'))
+		.map(button => button.dataset.presetName);
 }
 
 describe('pieControls UI structure', () => {
@@ -454,6 +472,38 @@ describe('pieControls listeners', () => {
 
 		expect(writer.preview).not.toHaveBeenCalled();
 		expect(writer.commit).not.toHaveBeenCalled();
+	});
+});
+
+describe('pieControls color palette mark', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('marks no palette while the sectors keep their default shades', () => {
+		const { colorScheme, customSliceColors } = PIE_DEFINITION.createDefaultConfig();
+		mountControls(createDataset({ colorScheme, customSliceColors }), createWriter());
+
+		expect(markedPresets()).toEqual([]);
+	});
+
+	it('marks a palette once its button colors the sectors, until one sector color is edited', () => {
+		const dataset = createDataset();
+		const writer = createWriter();
+		mountControls(dataset, writer);
+
+		document.querySelector('button[data-color-preset-control="viz-pie-color-preset"][data-preset-name="Pastel"]').click();
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual(['Pastel']);
+
+		const southSwatch = document.querySelector('input[data-color-grid-control="viz-pie-color-grid"][data-color-item="South"]');
+		southSwatch.value = '#123456';
+		southSwatch.dispatchEvent(new Event('change'));
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual([]);
 	});
 });
 
