@@ -195,6 +195,29 @@ describe('pieControls UI structure', () => {
 		expect(swatches).toEqual(drawn);
 	});
 
+	// Past 9 slices every shade depends on how many sectors are drawn, so the
+	// grid has to count the same sectors as the chart.
+	it('shows the drawn colors past 9 slices with Top-N and Other', () => {
+		const dataset = createDataset({ topN: 10 });
+		dataset.rows = Array.from({ length: 12 }, (_, index) => Array.from(
+			{ length: 12 - index },
+			() => ({ region: `R${String(index + 1).padStart(2, '0')}`, sales: 1 }),
+		)).flat();
+		appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
+
+		const chart = document.createElement('div');
+		document.body.appendChild(chart);
+		const { pie } = dataset.chartConfig;
+		renderPieChart(chart, dataset.rows, pie.category, { color: pie.color, topN: pie.topN, topNMode: pie.topNMode });
+		const drawn = Array.from(chart.querySelectorAll('path'))
+			.filter(path => !path.__data__.data.isOther)
+			.map(path => [path.__data__.data.key, path.getAttribute('fill')]);
+
+		const swatch = key => document.querySelector(`input[data-color-grid-control="viz-pie-color-grid"][data-color-item="${key}"]`).value;
+		expect(drawn).toHaveLength(10);
+		expect(drawn.map(([key]) => [key, swatch(key)])).toEqual(drawn);
+	});
+
 	it('keeps a slice the global filter hides in the grid with the neutral swatch', () => {
 		const dataset = createDataset();
 		dataset.chartConfig.globalFilter = {
