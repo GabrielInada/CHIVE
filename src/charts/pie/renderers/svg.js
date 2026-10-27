@@ -26,12 +26,11 @@ import {
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
-import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { ok, fail } from '../../../utils/result.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
 import { normalizePieOptions } from '../options.js';
 import { aggregatePieData } from '../data.js';
-import { buildSliceColor } from '../color.js';
+import { resolveSliceColors } from '../color.js';
 
 /**
  * Render a pie chart into `container`. Returns `ok()` on success, or
@@ -42,7 +41,7 @@ import { buildSliceColor } from '../color.js';
  * `topN`, `topNMode` ('other' | 'truncate'), `innerRadius`/`outerRadius`,
  * `padAngle`, `zoomScale`, `showCategoryLabel`/`showValueLabel`/
  * `showLegend`, `labelPosition` ('inside' | 'outside'), `color`,
- * `customSliceColors` (per-token overrides), `customTitle`,
+ * `customSliceColors` (overrides by category key), `customTitle`,
  * `chartHeight`, `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
@@ -81,9 +80,11 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		topN,
 		topNMode,
 		otherLabel: labels.other,
+		missingLabel: labels.missing,
 	});
 	if (!aggregated.ok) return fail(aggregated.reason);
 	const { entries, total } = aggregated;
+	const sliceColors = resolveSliceColors(entries, { color, customSliceColors });
 
 	container.replaceChildren();
 	hideChartTooltip();
@@ -139,7 +140,7 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 	const buildTooltipContent = item => {
 		const percentage = total > 0 ? ((item.value / total) * 100) : 0;
 		const wrapper = document.createElement('div');
-		wrapper.appendChild(createTooltipLine(labels.category, item.category));
+		wrapper.appendChild(createTooltipLine(labels.category, item.label));
 		wrapper.appendChild(createTooltipLine(labels.count, formatNumber(item.value, locale)));
 		wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		return wrapper;
@@ -163,14 +164,14 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		const content = buildTooltipContent(item);
 		if (item.isOther) {
 			showPinnedChartTooltip(content, event.pageX, event.pageY, {
-				headerTitle: String(item.category),
+				headerTitle: item.label,
 				closeLabel: filterLabels.close,
 				onDismiss,
 				actionSets: [],
 			});
 			return;
 		}
-		const token = toCategoryToken(item.category);
+		const { token } = item;
 		const state = typeof filterCallbacks.getTokenFilterState === 'function'
 			? filterCallbacks.getTokenFilterState(categoryColumn, token)
 			: null;
@@ -196,7 +197,7 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		});
 		const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
 		showPinnedChartTooltip(content, event.pageX, event.pageY, {
-			headerTitle: String(item.category),
+			headerTitle: item.label,
 			closeLabel: filterLabels.close,
 			onDismiss,
 			actionSets: actionSet ? [actionSet] : [],
@@ -210,16 +211,7 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		.enter()
 		.append('path')
 		.attr('d', arcGenerator)
-		.attr('fill', (item) => {
-			const category = item.data.category;
-			if (item.data.isOther) {
-				return PIE_CHART.otherSliceColor;
-			}
-			if (customSliceColors[category]) {
-				return customSliceColors[category];
-			}
-			return buildSliceColor(color, entries.findIndex(line => line.category === category));
-		})
+		.attr('fill', item => sliceColors.get(item.data.key))
 		.attr('stroke', '#fff')
 		.attr('stroke-width', 1)
 		.on('mouseenter', (event, item) => {
@@ -236,12 +228,12 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		})
 		.on('click', (event, item) => {
 			event.stopPropagation();
-			if (pinnedCategory === item.data.category) {
+			if (pinnedCategory === item.data.key) {
 				pinnedCategory = null;
 				hideChartTooltip();
 				return;
 			}
-			pinnedCategory = item.data.category;
+			pinnedCategory = item.data.key;
 			showPinnedTooltip(event, item.data, () => {
 				pinnedCategory = null;
 				hideChartTooltip();
@@ -277,7 +269,7 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 			.selectAll('tspan')
 			.data(item => {
 				const parts = [];
-				if (showCategoryLabel) parts.push({ text: String(item.data.category), dy: '0' });
+				if (showCategoryLabel) parts.push({ text: item.data.label, dy: '0' });
 				if (showValueLabel) parts.push({ text: formatNumber(item.data.value, locale), dy: showCategoryLabel ? '1.1em' : '0' });
 				return parts;
 			})
@@ -326,7 +318,7 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 			.selectAll('tspan')
 			.data(item => {
 				const parts = [];
-				if (showCategoryLabel) parts.push({ text: String(item.data.category), dy: '0' });
+				if (showCategoryLabel) parts.push({ text: item.data.label, dy: '0' });
 				if (showValueLabel) parts.push({ text: formatNumber(item.data.value, locale), dy: showCategoryLabel ? '1.1em' : '0' });
 				return parts;
 			})
@@ -344,20 +336,17 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 
 		entries.slice(0, 8).forEach((item, index) => {
 			const row = legend.append('g').attr('transform', `translate(0,${index * 16})`);
-			const swatch = item.isOther
-				? PIE_CHART.otherSliceColor
-				: (customSliceColors[item.category] || buildSliceColor(color, index));
 			row.append('rect')
 				.attr('width', 10)
 				.attr('height', 10)
 				.attr('rx', 2)
-				.attr('fill', swatch);
+				.attr('fill', sliceColors.get(item.key));
 			row.append('text')
 				.attr('x', 14)
 				.attr('y', 9)
 				.attr('font-size', 10)
 				.attr('fill', '#3f3a33')
-				.text(`${item.category} (${formatNumber(item.value, locale)})`);
+				.text(`${item.label} (${formatNumber(item.value, locale)})`);
 		});
 	}
 

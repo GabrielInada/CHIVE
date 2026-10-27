@@ -17,6 +17,8 @@ export const NETWORK_GRAPH = {
   maxZoomScale: 4,
   minAlphaDecay: 0.01,
   maxAlphaDecay: 0.2,
+  // Config key -> palette position for the color palette buttons.
+  presetColorKeys: { sourceNodeColor: 0, targetNodeColor: 1 },
 };
 
 function createDefaultConfig() {

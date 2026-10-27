@@ -99,6 +99,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		effectiveXScaleType,
 		effectiveYScaleType,
 		shouldAggregateCategoricalPairs,
+		categoryLabel,
 	} = buildScatterPoints({
 		rows,
 		xColumn,
@@ -108,6 +109,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		categoricalPairMode,
 		configuredAxisTypes,
 		renderAll: allowFullRender,
+		missingLabel: labels.missing,
 	});
 
 	if (points.length === 0) {
@@ -116,7 +118,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 
 	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
 	const height = chartHeight;
-	const margin = computeAdaptiveMargins(CHART_DIMENSIONS.scatter.margins, points, axisTypes);
+	const margin = computeAdaptiveMargins(CHART_DIMENSIONS.scatter.margins, points, axisTypes, categoryLabel);
 	const { svg, group, innerWidth, innerHeight } = setupChartSvg(container, {
 		width,
 		height,
@@ -133,6 +135,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		axisLabels,
 		labels,
 		locale,
+		categoryLabel,
 		filterCallbacks: options.filterCallbacks || {},
 		xFilterColumn,
 		yFilterColumn,
@@ -179,6 +182,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		colorField,
 		categoryMap,
 		getCategoryColorValue,
+		categoryLabel,
 		group,
 		xScale,
 		yScale,
@@ -249,7 +253,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 	appendBottomAxis(group, {
 		axis: axisTypes.x === AXIS_TYPE_VALUES.numeric
 			? axisBottom(xScale).ticks(8)
-			: axisBottom(xScale).tickFormat(value => truncateCategoryTick(value)),
+			: axisBottom(xScale).tickFormat(key => truncateCategoryTick(categoryLabel(key))),
 		innerHeight,
 		tickRotation: axisTypes.x === AXIS_TYPE_VALUES.categorical
 			? { angle: -28, dx: '-0.55em', dy: '0.2em' }
@@ -259,7 +263,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 	const yAxis = appendLeftAxis(group, {
 		axis: axisTypes.y === AXIS_TYPE_VALUES.numeric
 			? axisLeft(yScale).ticks(8)
-			: axisLeft(yScale).tickFormat(value => String(value)),
+			: axisLeft(yScale).tickFormat(key => categoryLabel(key)),
 	});
 
 	if (axisTypes.y === AXIS_TYPE_VALUES.categorical) {

@@ -15,9 +15,10 @@
  */
 
 import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { SCATTER_PLOT } from '../../../config/charts/definitions/scatter.js';
 import { t } from '../../../services/i18nService.js';
 import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createSelectControl } from '../../shared/controls/factories.js';
-import { COLOR_PRESETS, createColorPresetControl } from '../../shared/controls/factories.js';
+import { COLOR_PRESETS, createColorPresetControl, findAppliedColorPreset } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
 
 /**
@@ -366,10 +367,16 @@ function buildColorControls(config, numericOptions, categoryOptions, disabled) {
 		));
 	}
 
+	// Category coloring draws the stored palette. The other modes draw the
+	// colors a palette button copies in, so that palette counts only until one
+	// of them is edited.
+	const appliedPreset = config.colorMode === 'category' && config.colorField
+		? (config.colorScheme || 'Bold')
+		: findAppliedColorPreset(config, SCATTER_PLOT.presetColorKeys);
 	controls.push(createColorPresetControl(
 		'viz-scatter-color-preset',
 		t('chive-chart-color-palette'),
-		config.colorScheme || 'Bold',
+		appliedPreset,
 		disabled,
 		t
 	));

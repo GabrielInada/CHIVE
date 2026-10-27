@@ -329,7 +329,8 @@ The panel exporter clones the live `<svg>`; there is no separate export path.
 - **grouped mode with no nesting columns** → `fail('no-nesting-columns')`, mapped to
   `chive-chart-empty-bubble-nesting-required` ("Select at least one nesting column for grouped
   mode.").
-- **Missing/empty values** normalize to `N/A` groups and categories.
+- **Missing cells** form one "(missing)" bubble or group per column, keyed apart from literal
+  "N/A" text; group colors and filter tokens follow the key.
 - **Legacy `groupColumn`** is transparently treated as a one-level `nestingColumns`.
 - **Non-positive sum/mean aggregates** are not filtered by CHIVE before packing; use
   non-negative value columns for meaningful bubble area.

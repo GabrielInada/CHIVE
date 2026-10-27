@@ -21,7 +21,7 @@ const ROWS = [
 	{ region: 'B', sales: 5 },
 	{ region: 'C', sales: 12 },
 	{ region: 'D', sales: 8 },
-	{ region: '', sales: 3 },
+	{ region: null, sales: 3 },
 ];
 
 const BASE = { locale: 'en-US', chartHeight: 320 };

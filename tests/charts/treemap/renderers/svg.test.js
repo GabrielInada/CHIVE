@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderTreemap } from '../../../../src/charts/treemap/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
+import { CHART_COLOR_PALETTES } from '../../../../src/config/charts/shared.js';
 
 const ROWS = [
 	{ region: 'North', sales: 30 },
@@ -90,14 +91,15 @@ describe('renderTreemap', () => {
 		expect(rects(container).length).toBe(2);
 	});
 
-	it('buckets nullish or empty categories as N/A', () => {
+	it('draws missing cells as one labelled tile apart from literal N/A text', () => {
 		const container = document.getElementById('treemap');
-		const rows = [{ region: 'North' }, { region: null }, { region: '' }];
-		const result = renderTreemap(container, rows, 'region');
+		const rows = [{ region: 'North' }, { region: null }, { region: null }, { region: 'N/A' }];
+		const result = renderTreemap(container, rows, 'region', { labels: { missing: '(sem valor)' } });
 		expect(result.ok).toBe(true);
-		// North + a single N/A bucket = 2 cells.
-		expect(rects(container).length).toBe(2);
+		// North + the missing bucket + the literal N/A tile = 3 cells.
+		expect(rects(container).length).toBe(3);
 		const texts = Array.from(container.querySelectorAll('text')).map(t => t.textContent);
+		expect(texts.some(t => t.includes('(sem valor)'))).toBe(true);
 		expect(texts.some(t => t.includes('N/A'))).toBe(true);
 	});
 
@@ -126,6 +128,12 @@ describe('renderTreemap', () => {
 		renderTreemap(container, ROWS, 'region', { colorMode: 'scheme', colorScheme: 'Bold' });
 		// Three categories pull three distinct palette entries.
 		expect(new Set(fills(container)).size).toBe(3);
+	});
+
+	it('draws every palette its color buttons offer, Tableau10 included', () => {
+		const container = document.getElementById('treemap');
+		renderTreemap(container, ROWS, 'region', { colorMode: 'scheme', colorScheme: 'Tableau10' });
+		expect(new Set(fills(container))).toEqual(new Set(CHART_COLOR_PALETTES.Tableau10.slice(0, 3)));
 	});
 
 	it('renders a custom title', () => {

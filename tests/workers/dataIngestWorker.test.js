@@ -26,32 +26,48 @@ describe('chunkedNormalize', () => {
 		expect(chunkedNormalize(rows, columns, ',')).toEqual([{ a: 1.5 }]);
 	});
 
-	it('preserves null/empty/undefined numeric cells without coercing them', () => {
+	it('keeps already-typed numbers instead of re-reading their text', () => {
+		const rows = [{ a: 1.125 }, { a: '2,5' }];
+		const columns = [{ name: 'a', type: 'number' }];
+		expect(chunkedNormalize(rows, columns, ',')).toEqual([{ a: 1.125 }, { a: 2.5 }]);
+	});
+
+	it('turns blank, whitespace-only, and absent cells into null', () => {
 		const rows = [
 			{ a: '', b: null },
-			{ a: '5', b: undefined },
+			{ a: '  ', b: '   ' },
+			{ a: '5' },
 		];
 		const columns = [
 			{ name: 'a', type: 'number' },
 			{ name: 'b', type: 'text' },
 		];
-		const out = chunkedNormalize(rows, columns, '.');
-		expect(out[0]).toEqual({ a: '', b: null });
-		expect(out[1]).toEqual({ a: 5, b: undefined });
+		expect(chunkedNormalize(rows, columns, '.')).toStrictEqual([
+			{ a: null, b: null },
+			{ a: null, b: null },
+			{ a: 5, b: null },
+		]);
 	});
 
-	it('parses date columns into Date instances and null for invalid', () => {
+	it('reads each column with its own decimal separator', () => {
+		const rows = [{ dot: '1.250', comma: '1,25' }];
+		const columns = [
+			{ name: 'dot', type: 'number', decimalSeparator: '.' },
+			{ name: 'comma', type: 'number', decimalSeparator: ',' },
+		];
+		expect(chunkedNormalize(rows, columns, ',')).toEqual([{ dot: 1.25, comma: 1.25 }]);
+	});
+
+	it('reads date columns as ISO strings and unparseable dates as null', () => {
 		const rows = [
 			{ d: '2024-01-15' },
+			{ d: '2024-01-15 10:30' },
 			{ d: 'not-a-date' },
 			{ d: '' },
 		];
 		const columns = [{ name: 'd', type: 'date' }];
-		const out = chunkedNormalize(rows, columns, '.');
-		expect(out[0].d).toBeInstanceOf(Date);
-		expect(out[0].d.getUTCFullYear()).toBe(2024);
-		expect(out[1].d).toBeNull();
-		expect(out[2].d).toBe('');
+		expect(chunkedNormalize(rows, columns, '.').map(row => row.d))
+			.toEqual(['2024-01-15', '2024-01-15T10:30:00.000Z', null, null]);
 	});
 
 	it('invokes onChunk between batches with running counts', () => {
@@ -90,6 +106,31 @@ describe('runIngest', () => {
 		expect(done.result.truncatedFrom).toBeNull();
 	});
 
+	it.each([
+		{
+			kind: 'csv',
+			text: 'name,amount,day\n Ana ,1.5,2024-01-15\n,  ,\nBia,2,2024-02-01 10:30\n',
+			expected: [
+				{ name: 'Ana', amount: 1.5, day: '2024-01-15' },
+				{ name: null, amount: null, day: null },
+				{ name: 'Bia', amount: 2, day: '2024-02-01T10:30:00.000Z' },
+			],
+		},
+		{
+			kind: 'json',
+			text: '[{"name":"Ana","tags":{"a":1},"amount":1.5},{"name":"  ","tags":"x"}]',
+			expected: [
+				{ name: 'Ana', tags: '{"a":1}', amount: 1.5 },
+				{ name: null, tags: 'x', amount: null },
+			],
+		},
+	])('posts canonical $kind rows', ({ kind, text, expected }) => {
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'canonical', kind, text }, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done.result.rows).toStrictEqual(expected);
+	});
+
 	it('ingests a semicolon CSV with comma decimals and partial rows end to end', () => {
 		// The shape that first surfaced the phantom-zero bug: a survey export
 		// where some rows carry only a point label. Exercises delimiter
@@ -121,6 +162,194 @@ describe('runIngest', () => {
 		expect(statsX.min).toBeCloseTo(784411.896, 3);
 		expect(statsX.max).toBeCloseTo(784496.014, 3);
 		expect(typeof statsX.min).toBe('number');
+	});
+
+	it('keeps dot-decimal survey coordinates with 3 decimals exact', () => {
+		// Same survey shape as above, exported with dot decimals. The small Z
+		// values look like European thousands ("6.358") and used to cast the only
+		// votes, so every coordinate was read 1000 times too large.
+		const csv = [
+			'Ponto,Codigo,X,Y,Z',
+			'E1,PQT,784431.551,9839149.107,6.358',
+			'E0,PQT,784411.896,9839159.365,7.045',
+			'A17,ARV,784496.014,9839134.221,6.077',
+		].join('\n') + '\n';
+
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'survey-dot', kind: 'csv', text: csv }, post);
+		const done = msgs.find(m => m.type === 'done');
+
+		expect(done.result.decimalSeparator).toBe('.');
+		expect(done.result.rows[0].X).toBeCloseTo(784431.551, 3);
+		expect(done.result.rows[0].Y).toBeCloseTo(9839149.107, 3);
+		expect(done.result.rows[0].Z).toBeCloseTo(6.358, 3);
+	});
+
+	it.each([
+		{
+			name: 'three-decimal measurements without larger coordinates',
+			kind: 'csv',
+			text: 'v\n6.358\n7.045\n',
+			separator: '.',
+			expected: [6.358, 7.045],
+		},
+		{
+			name: 'zero-padded thousands with explicit European decimals',
+			kind: 'csv',
+			text: 'id;v\n1;01.358\n2;1.234,56\n',
+			separator: ',',
+			expected: [1358, 1234.56],
+		},
+		{
+			name: 'mixed typed numbers and dot-decimal strings',
+			kind: 'json',
+			text: '[{"v":2.5},{"v":"1.250"}]',
+			separator: '.',
+			expected: [2.5, 1.25],
+		},
+		{
+			name: 'whole-number decimal strings alongside typed fractions',
+			kind: 'json',
+			text: '[{"v":2.5},{"v":"1.000"}]',
+			separator: '.',
+			expected: [2.5, 1],
+		},
+		{
+			name: 'whole-number measurements without explicit decimal evidence',
+			kind: 'csv',
+			text: 'v\n6.000\n7.045\n',
+			separator: '.',
+			expected: [6, 7.045],
+		},
+		{
+			name: 'European decimal strings alongside typed fractions',
+			kind: 'json',
+			text: '[{"v":2.5},{"v":3.75},{"v":"1.234,56"}]',
+			separator: ',',
+			expected: [2.5, 3.75, 1234.56],
+		},
+		{
+			name: 'whole-number measurements with explicit dot-decimal evidence',
+			kind: 'csv',
+			text: 'v\n6.000\n7.045\n8.25\n',
+			separator: '.',
+			expected: [6, 7.045, 8.25],
+		},
+		{
+			name: 'explicit thousands grouping alongside ambiguous values',
+			kind: 'csv',
+			text: 'v\n1.234.567\n01.358\n12.500\n',
+			separator: ',',
+			expected: [1234567, 1358, 12500],
+		},
+		{
+			name: 'whole-number measurements in joined data',
+			kind: 'join',
+			join: {
+				leftRows: [{ id: 1, v: '6.000' }, { id: 2, v: '7.045' }],
+				rightRows: [{ id: 1 }, { id: 2 }],
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				joinType: 'inner',
+				leftColumns: ['id', 'v'],
+				rightColumns: [],
+			},
+			separator: '.',
+			expected: [6, 7.045],
+		},
+	])('preserves $name', ({ kind, text, join, separator, expected }) => {
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'decimal-regression', kind, text, join }, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done).toBeDefined();
+		expect(done.result.rows.map(row => row.v)).toEqual(expected);
+		expect(done.result.decimalSeparator).toBe(separator);
+	});
+
+	it('keeps typed JSON numbers with 3 decimals exact', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'json-3dp', kind: 'json', text: '[{"v":1.125},{"v":2.25},{"v":3.375}]' }, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done.result.rows).toEqual([{ v: 1.125 }, { v: 2.25 }, { v: 3.375 }]);
+	});
+
+	it('preserves ambiguous grouped CSV integers with an explicit comma separator', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({
+			id: 'grouped-integers', kind: 'csv', text: 'population\n1.000\n1.234\n2.345\n',
+			options: { decimalSeparator: ',' },
+		}, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done).toBeDefined();
+		expect(done.result.rows.map(row => row.population)).toEqual([1000, 1234, 2345]);
+	});
+
+	it.each([
+		{ decimalSeparator: 'auto', population: 1 },
+		{ decimalSeparator: '.', population: 1 },
+		{ decimalSeparator: ',', population: 1000 },
+	])('keeps typed JSON fractions independent of $decimalSeparator string formatting', ({ decimalSeparator, population }) => {
+		const { post, msgs } = collectMessages();
+		runIngest({
+			id: 'mixed-columns', kind: 'json', text: '[{"rate":2.5,"population":"1.000"}]',
+			options: { decimalSeparator },
+		}, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done).toBeDefined();
+		expect(done.result.rows).toEqual([{ rate: 2.5, population }]);
+	});
+
+	it('preserves ambiguous grouped joined values with an explicit comma separator', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({
+			id: 'mixed-joined-columns',
+			kind: 'join',
+			options: { decimalSeparator: ',' },
+			join: {
+				leftRows: [{ id: 1, rate: 2.5 }],
+				rightRows: [{ id: 1, population: '1.000' }],
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				joinType: 'inner',
+				leftColumns: ['id', 'rate'],
+				rightColumns: ['population'],
+				leftDatasetName: 'rates.json',
+				rightDatasetName: 'population.csv',
+			},
+		}, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done).toBeDefined();
+		expect(done.result.rows).toEqual([{ id: 1, rate: 2.5, population: 1000 }]);
+	});
+
+	it('keeps typed join rows with 3 decimals exact', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({
+			id: 'join-3dp',
+			kind: 'join',
+			join: {
+				leftRows: [
+					{ id: 1, amount: 1.125 },
+					{ id: 2, amount: 2.375 },
+				],
+				rightRows: [
+					{ id: 1, target: 6.358 },
+					{ id: 2, target: 7.045 },
+				],
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				joinType: 'inner',
+				leftColumns: ['id', 'amount'],
+				rightColumns: ['target'],
+				leftDatasetName: 'left.csv',
+				rightDatasetName: 'right.csv',
+			},
+		}, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done.result.rows).toEqual([
+			{ id: 1, amount: 1.125, target: 6.358 },
+			{ id: 2, amount: 2.375, target: 7.045 },
+		]);
 	});
 
 	it('caps a threshold-probe response and reports the original length', () => {

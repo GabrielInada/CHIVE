@@ -54,9 +54,9 @@ that operation explains every option the chart exposes.
 The category column partitions the rows into groups, one per distinct value. Two conventions
 matter:
 
-- **Missing collapses to one group.** A null, undefined, or empty-string category is mapped
-  to a single `N/A` group rather than many distinct empty values, so a column with gaps does
-  not fragment into noise.
+- **Missing collapses to one group.** Every missing cell joins one missing bucket, labeled
+  "(missing)", so a column with gaps does not fragment into noise. The bucket is keyed apart
+  from text that reads "N/A", and its filter token hides exactly the missing rows.
 - **Stringification.** Category keys are compared as strings, so `1` and `"1"` land in the
   same bar. This matches how the rest of CHIVE tokenizes categorical values for filtering.
 
@@ -255,6 +255,9 @@ nothing:
 
 The color-preset buttons write `gradientMinColor` from palette index 0, `gradientMaxColor`
 from the last index, and `color` from index 0, plus the palette name into `colorScheme`.
+The builder reads the same mapping (`BAR_CHART.presetColorKeys`) and marks a palette only
+while all three colors still hold it, so a new chart marks none and editing a color clears
+the mark; nothing draws from `colorScheme`.
 Every write merges a partial into `chartConfig.bar` and fires `onConfigChanged`. The
 renderer never reads the DOM controls; it only reads config the listeners have written.
 
@@ -309,8 +312,9 @@ on success or `fail(reason)` when it cannot draw. The pipeline in order:
 
 ### 7.2 Aggregation
 
-- **count mode**: a `Map` accumulates a row count per category; missing/empty categories
-  fold into `'N/A'`.
+- **count mode**: a `Map` accumulates a row count per category key (`categoryKey`); missing
+  cells fold into the missing bucket. Each entry is `{ key, label, token, value }`, with the
+  label and filter token from `describeCategory`.
 - **sum / mean mode**: requires `valueColumn` and that the rows actually carry that column,
   else `fail('no-value-column')`. Each row's value is `Number(...)`; non-finite values are
   skipped. A second `Map` tracks the per-category count so mean can divide. If, after this,
@@ -321,7 +325,8 @@ on success or `fail(reason)` when it cannot draw. The pipeline in order:
 ### 7.3 Sort, Top-N, and the empty guard
 
 Entries are sorted by `sortCategories` (the count/label orderings of section 2.5, each with
-a `compareStrings` tiebreaker for stable order), then sliced to `topN` when `topN > 0`. If
+a `compareCategoryKeys` tiebreaker for stable order; label sorts keep the missing bucket
+last in both directions), then sliced to `topN` when `topN > 0`. If
 no entries remain, `fail()`. The grand total across the kept entries is computed for
 tooltip percentages.
 
@@ -436,8 +441,9 @@ screen shows are what gets serialized.
   column whose cells never parse to finite numbers → `fail('no-numeric')`; both map to
   `chive-chart-empty-bar-numeric` ("Select a numeric value column to render the bar chart in
   sum or mean mode.").
-- **Missing/empty categories** collapse into a single `N/A` bar, never many empty bars.
-- **Equal measures** keep a deterministic order via the `compareStrings` tiebreaker.
+- **Missing categories** collapse into a single "(missing)" bar, never many empty bars, and
+  never merge with a literal "N/A" category.
+- **Equal measures** keep a deterministic order via the `compareCategoryKeys` tiebreaker.
 - **Negative sum/mean aggregates** are allowed by aggregation, but the renderer keeps a
   zero-based bar scale; use signed measures with care.
 - **Invalid colors** fall back through `isValidHexColor` to the chart's default color.
@@ -497,7 +503,7 @@ gap), `ticks` (y axis), `defaultSort`, `defaultTopN`, `defaultMeasureMode`.
 
 | Concept (section 2) | Implementation |
 |---|---|
-| Categorical grouping, N/A bucket (2.1) | the count/sum `Map` build (7.2) |
+| Categorical grouping, missing bucket (2.1) | the count/sum `Map` build (7.2) |
 | count / sum / mean reducer (2.2) | measure-mode branch (7.2) |
 | Band + linear scales (2.3) | `scaleBand` / `scaleLinear` (7.4) |
 | Color encodings (2.4, 8) | `getBarColor` (7.5) |

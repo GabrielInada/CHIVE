@@ -44,6 +44,7 @@ export function renderRegressionLayer({
 	colorField,
 	categoryMap,
 	getCategoryColorValue,
+	categoryLabel = String,
 	group,
 	xScale,
 	yScale,
@@ -159,7 +160,7 @@ export function renderRegressionLayer({
 		lineSelection
 			.on('mouseenter', (event, d) => {
 				if (isPinned()) return;
-				showRegressionTooltip(event, d, effectiveMode, labels);
+				showRegressionTooltip(event, d, effectiveMode, labels, categoryLabel);
 			})
 			.on('mousemove', event => {
 				if (isPinned()) return;
@@ -174,10 +175,10 @@ export function renderRegressionLayer({
 	return { results: resultsWithColor, mode: effectiveMode, config };
 }
 
-function showRegressionTooltip(event, regressionResult, mode, labels) {
+function showRegressionTooltip(event, regressionResult, mode, labels, categoryLabel) {
 	const lines = document.createDocumentFragment();
 	if (mode === 'perCategory') {
-		lines.appendChild(createTooltipLine(labels.regressionGroup, String(regressionResult.groupKey)));
+		lines.appendChild(createTooltipLine(labels.regressionGroup, categoryLabel(regressionResult.groupKey)));
 	}
 	const { slope, intercept, r2, n } = regressionResult.fit;
 	lines.appendChild(createTooltipLine(labels.regressionSlope, formatRegressionNumber(slope)));

@@ -7,6 +7,8 @@ import {
 	buildColorAccessor,
 	buildRadiusAccessor,
 } from '../../../src/charts/scatter/encoding.js';
+import { CHART_COLOR_PALETTES } from '../../../src/config/charts/shared.js';
+import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 
 function point(raw, index) {
 	return { raw, index, isAggregate: false };
@@ -17,6 +19,11 @@ describe('palette helpers', () => {
 		expect(resolveScatterColorScheme('Pastel')).toBe('Pastel');
 		expect(resolveScatterColorScheme('missing')).toBe('Bold');
 		expect(resolveScatterColorScheme(undefined)).toBe('Bold');
+	});
+
+	it('offers every palette the color buttons do, Tableau10 included', () => {
+		expect(resolveScatterColorScheme('Tableau10')).toBe('Tableau10');
+		expect(getScatterPalette('Tableau10')).toEqual(CHART_COLOR_PALETTES.Tableau10);
 	});
 
 	it('returns a frozen palette array that cannot be mutated', () => {
@@ -167,6 +174,14 @@ describe('buildColorAccessor', () => {
 		expect(result.categoryMap.get('a')).toBe('#FF6B6B');
 		expect(typeof result.getCategoryColorValue).toBe('function');
 		expect(result.getCategoryColorValue(points[0])).toBe('a');
+	});
+
+	it('colors the missing bucket apart from literal N/A text', () => {
+		const points = [point({ grp: null }, 0), point({ grp: 'N/A' }, 1), point({}, 2)];
+		const result = buildColorAccessor({ ...baseArgs, points, colorMode: 'category', colorField: 'grp' });
+		expect(result.getCategoryColorValue(points[0])).toBe(MISSING_KEY);
+		expect(result.getCategoryColorValue(points[2])).toBe(MISSING_KEY);
+		expect([...result.categoryMap.keys()]).toEqual([MISSING_KEY, 'N/A']);
 	});
 
 	it('falls back to the base color when the numeric color field is missing', () => {

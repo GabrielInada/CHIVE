@@ -13,6 +13,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 import { createTreemapControls } from '../../../src/charts/treemap/controls/builder.js';
 import { setupTreemapControlListeners } from '../../../src/charts/treemap/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/treemap/controls/activationDefaults.js';
+import { TREEMAP_DEFINITION } from '../../../src/config/charts/definitions/treemap.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -65,6 +66,23 @@ function selectValue(id, value) {
 
 function lastConfig(writer) {
 	return writer.commit.mock.calls.at(-1)[0];
+}
+
+/** Rebuild and rewire the controls, as the sidebar does after each commit. */
+function mountControls(dataset, writer) {
+	document.body.innerHTML = '';
+	appendControls(createTreemapControls(dataset, ['region'], ['sales'], []));
+	setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
+}
+
+function applyLastCommit(dataset, writer) {
+	Object.assign(dataset.chartConfig.treemap, lastConfig(writer));
+}
+
+function markedPresets() {
+	return [...document.querySelectorAll('button[data-color-preset-control="viz-treemap-color-preset"]')]
+		.filter(button => button.style.border.startsWith('2px'))
+		.map(button => button.dataset.presetName);
 }
 
 function extractStructure(controls) {
@@ -361,6 +379,40 @@ describe('treemapControls listeners', () => {
 		missing.click();
 
 		expect(writer.commit).not.toHaveBeenCalled();
+	});
+});
+
+describe('treemapControls color palette mark', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('marks the stored palette in scheme mode, which is the one the treemap draws', () => {
+		const { colorMode, colorScheme } = TREEMAP_DEFINITION.createDefaultConfig();
+		mountControls(createDataset({ colorMode, colorScheme }), createWriter());
+
+		expect(markedPresets()).toEqual([colorScheme]);
+	});
+
+	it('in uniform mode, marks a palette only while the color its button set is unchanged', () => {
+		const { color, colorScheme } = TREEMAP_DEFINITION.createDefaultConfig();
+		const dataset = createDataset({ colorMode: 'uniform', color, colorScheme });
+		const writer = createWriter();
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual([]);
+
+		document.querySelector('button[data-color-preset-control="viz-treemap-color-preset"][data-preset-name="Pastel"]').click();
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual(['Pastel']);
+
+		const colorInput = document.getElementById('viz-input-treemap-color');
+		colorInput.value = '#123456';
+		colorInput.dispatchEvent(new Event('change'));
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual([]);
 	});
 });
 

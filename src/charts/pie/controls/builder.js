@@ -9,7 +9,7 @@
  * conditionally includes the palette preset and per-slice color picker grid,
  * which appear only when the chart has sectors to color.
  *
- * Slice colors persist as `config.customSliceColors[categoryToken]`.
+ * Slice colors persist as `config.customSliceColors[categoryKey]`.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
@@ -18,9 +18,9 @@ import { CHART_COLORS } from '../../../config/charts/definitions.js';
 import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { t } from '../../../services/i18nService.js';
 import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl } from '../../shared/controls/factories.js';
-import { createColorPresetControl, createColorPickerGridControl } from '../../shared/controls/factories.js';
+import { createColorPresetControl, createColorPickerGridControl, findAppliedColorPreset } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
-import { getPieSectorValues } from './sectorValues.js';
+import { getPieSectorValues, getPieSwatchColors } from './sectorValues.js';
 
 /**
  * Build the Data & Aggregation controls: category / measure / value selects
@@ -279,10 +279,11 @@ function buildDisplayControls(dataset, config) {
  * @private
  * @param {Dataset} dataset
  * @param {Object} config - The pie config block.
- * @param {string[]} sectorValues - Source category tokens in aggregate order.
+ * @param {Array<{ key: string, label: string }>} sectorValues - Source categories in aggregate order.
+ * @param {{ columnNames: string[], numericColumnNames: string[] }} columns - Visible column names.
  * @returns {HTMLElement[]}
  */
-function buildStylingControls(dataset, config, sectorValues) {
+function buildStylingControls(dataset, config, sectorValues, columns) {
 	const stylingControls = [];
 
 	stylingControls.push(createColorInputControl(
@@ -293,12 +294,15 @@ function buildStylingControls(dataset, config, sectorValues) {
 		!dataset.chartConfig.pie.enabled,
 	));
 
-	// Palette presets for quick color application
+	// Palette presets for quick color application. A palette button colors the
+	// sectors in this order, repeating the palette, so the palette stays marked
+	// only while every sector keeps the color it got.
 	if (sectorValues.length > 0) {
+		const slicePositions = Object.fromEntries(sectorValues.map(({ key }, index) => [key, index]));
 		stylingControls.push(createColorPresetControl(
 			'viz-pie-color-preset',
 			t('chive-chart-color-palette'),
-			config.colorScheme || 'Bold',
+			findAppliedColorPreset(config.customSliceColors, slicePositions),
 			!dataset.chartConfig.pie.enabled,
 			t
 		));
@@ -306,7 +310,7 @@ function buildStylingControls(dataset, config, sectorValues) {
 
 	// Per-slice custom color picker grid
 	if (sectorValues.length > 0) {
-		const colorGridElement = updatePieColorPickerGrid(dataset, sectorValues);
+		const colorGridElement = updatePieColorPickerGrid(dataset, sectorValues, getPieSwatchColors(dataset, config, columns));
 		stylingControls.push(colorGridElement);
 	}
 
@@ -323,35 +327,38 @@ function buildStylingControls(dataset, config, sectorValues) {
  * @param {Dataset} dataset
  * @param {string[]} categoryOptions - Categorical (or fallback "all") column names for the category select.
  * @param {string[]} numericOptions - Numeric column names; populates the sum value-column select.
- * @param {string[]} [_allColumns=[]] - All visible column names; kept for API parity.
+ * @param {string[]} [allColumns=[]] - All visible column names; resolves the global filter for the slice swatches.
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
-export function createPieChartControls(dataset, categoryOptions, numericOptions, _allColumns = []) {
+export function createPieChartControls(dataset, categoryOptions, numericOptions, allColumns = []) {
 	const config = dataset.chartConfig.pie;
-	const sectorValues = getPieSectorValues(dataset, config);
+	const sectorValues = getPieSectorValues(dataset, config, { missingLabel: t('chive-chart-filter-missing') });
+	const columns = { columnNames: allColumns, numericColumnNames: numericOptions };
 
 	return groupControls([
 		{ id: 'data', title: 'Data & Aggregation', controls: buildDataControls(dataset, categoryOptions, numericOptions, config), expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: buildDisplayControls(dataset, config), expanded: true, icon: 'display' },
-		{ id: 'styling', title: 'Styling', controls: buildStylingControls(dataset, config, sectorValues), expanded: false, icon: 'styling' },
+		{ id: 'styling', title: 'Styling', controls: buildStylingControls(dataset, config, sectorValues, columns), expanded: false, icon: 'styling' },
 	]);
 }
 
 /**
  * Build the per-slice color picker grid for the pie chart. One color
- * input per sector value; commits write into `customSliceColors`.
+ * input per sector value, showing the color the chart draws it with;
+ * commits write into `customSliceColors`.
  *
  * @private
  * @param {Dataset} dataset
- * @param {string[]} sectorValues - Source category tokens in aggregate order.
+ * @param {Array<{ key: string, label: string }>} sectorValues - Source categories in aggregate order.
+ * @param {Object<string, string>} swatchColors - From `getPieSwatchColors`; absent keys show the neutral swatch.
  * @returns {HTMLElement}
  */
-function updatePieColorPickerGrid(dataset, sectorValues) {
+function updatePieColorPickerGrid(dataset, sectorValues, swatchColors) {
 	return createColorPickerGridControl(
 		'viz-pie-color-grid',
 		t('chive-chart-color-pie-slices'),
 		sectorValues,
-		dataset.chartConfig.pie.customSliceColors || {},
+		swatchColors,
 		!dataset.chartConfig.pie.enabled,
 		null
 	);

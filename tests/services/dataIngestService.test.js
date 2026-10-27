@@ -96,7 +96,7 @@ describe('ingestFile', () => {
 		expect(worker.postMessages[0].options).toEqual({ rowLimit: 100, dropColumns: ['drop_me'] });
 	});
 
-	it('sends complete join inputs through the same worker host', async () => {
+	it.each([undefined, ','])('sends join inputs and the %s separator through the worker host', async decimalSeparator => {
 		const join = {
 			leftRows: [{ id: 1 }],
 			rightRows: [{ id: 1 }],
@@ -121,14 +121,14 @@ describe('ingestFile', () => {
 			});
 		});
 
-		const result = await joinDatasetsInWorker(join);
+		const result = await joinDatasetsInWorker(join, { decimalSeparator });
 
 		expect(result.ok).toBe(true);
 		expect(result.value.outputColumns).toEqual(['id']);
 		expect(worker.postMessages[0]).toEqual(expect.objectContaining({
 			kind: 'join',
 			join,
-			options: {},
+			options: decimalSeparator === undefined ? {} : { decimalSeparator },
 		}));
 	});
 

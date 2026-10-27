@@ -10,9 +10,11 @@ describe('calculateStatistics edge cases', () => {
     expect(stats).toEqual([]);
   });
 
-  it('ignores null and NaN values in statistics calculation', () => {
+  it('ignores missing cells in statistics calculation', () => {
+    // Coerced with plain Number(), a missing cell would count as 0 in
+    // `mean`/`median` and take over `min`.
     const stats = calculateStatistics(
-      [{ val: 10 }, { val: null }, { val: 20 }, { val: NaN }],
+      [{ val: 10 }, { val: null }, { val: 20 }, { val: null }],
       [{ name: 'val', type: 'number' }],
     );
     expect(stats.length).toBe(1);
@@ -20,57 +22,24 @@ describe('calculateStatistics edge cases', () => {
     expect(stats[0].min).toBe(10);
     expect(stats[0].max).toBe(20);
     expect(stats[0].mean).toBe(15);
+    expect(stats[0].median).toBe(15);
   });
 
-  it('ignores numeric columns where all values are null', () => {
+  it('ignores numeric columns where all values are missing', () => {
     const stats = calculateStatistics(
-      [{ val: null }, { val: undefined }],
+      [{ val: null }, { val: null }],
       [{ name: 'val', type: 'number' }],
     );
     expect(stats).toEqual([]);
   });
 
-  it.each([
-    ['empty strings', ''],
-    ['whitespace', '   '],
-  ])('excludes %s left in a numeric column by the ingest normalizer', (_label, missing) => {
-    // `isNaN('')` is false, so blanks used to reach d3: they took over `min`
-    // (comparing as 0) and counted as 0 in `mean`/`median`.
-    const stats = calculateStatistics(
-      [{ val: 10 }, { val: missing }, { val: 20 }, { val: missing }],
-      [{ name: 'val', type: 'number' }],
-    );
-
-    expect(stats[0].n).toBe(2);
-    expect(stats[0].min).toBe(10);
-    expect(stats[0].max).toBe(20);
-    expect(stats[0].mean).toBe(15);
-    expect(stats[0].median).toBe(15);
-  });
-
-  it('returns numbers, not strings, for a column of numeric strings', () => {
-    // d3's min/max compare without coercing, so `min(['10','20'])` is the
-    // string '10'. NumericColumnStats promises numbers.
-    const stats = calculateStatistics(
-      [{ val: '10' }, { val: '20' }, { val: '5' }],
-      [{ name: 'val', type: 'number' }],
-    );
-
-    expect(stats[0].min).toBe(5);
-    expect(stats[0].max).toBe(20);
-    expect(typeof stats[0].min).toBe('number');
-    expect(typeof stats[0].max).toBe('number');
-    expect(typeof stats[0].mean).toBe('number');
-    expect(typeof stats[0].median).toBe('number');
-  });
-
-  it('reports the real minimum for large-offset survey coordinates with blank rows', () => {
+  it('reports the real minimum for large-offset survey coordinates with missing rows', () => {
     const stats = calculateStatistics(
       [
         { x: 784431.551 },
         { x: 784411.896 },
         { x: 784496.014 },
-        { x: '' },
+        { x: null },
       ],
       [{ name: 'x', type: 'number' }],
     );
@@ -80,9 +49,9 @@ describe('calculateStatistics edge cases', () => {
     expect(stats[0].max).toBe(784496.014);
   });
 
-  it('keeps a genuine zero, which is a measurement and not a blank', () => {
+  it('keeps a genuine zero, which is a measurement and not a missing cell', () => {
     const stats = calculateStatistics(
-      [{ val: 0 }, { val: 10 }, { val: '' }],
+      [{ val: 0 }, { val: 10 }, { val: null }],
       [{ name: 'val', type: 'number' }],
     );
 

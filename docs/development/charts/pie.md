@@ -26,7 +26,7 @@ Key files:
 - Shared presentation mapping: [presentation.js](../../../src/charts/pie/presentation.js)
 - Section adapter (dataset workspace): [workspaceSection.js](../../../src/charts/pie/workspaceSection.js)
 - Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/pie/panelAdapter.js)
-- Color math: [color.js](../../../src/charts/pie/color.js) (`buildSliceColor`)
+- Color math: [color.js](../../../src/charts/pie/color.js) (`buildSliceColor`, `resolveSliceColors`)
 
 ---
 
@@ -51,7 +51,7 @@ tooltips.
 
 The category column partitions the rows; each group is reduced to a single number by the
 **measure mode**: `count` (rows per category) or `sum` (total of a numeric value column).
-Missing/empty categories collapse to one `N/A` group. This is the same count/sum vocabulary
+Missing cells collapse to one "(missing)" group, kept apart from text that reads "N/A". This is the same count/sum vocabulary
 the bar chart uses (see the bar doc's [section 2.2](bar.md)); the pie just omits
 `mean`, because a mean has no meaningful "share of total."
 
@@ -168,7 +168,7 @@ columns are detached `structuredClone` captures (see
 | `topN` | Keep N largest categories (0 = all) | `0` |
 | `topNMode` | `'other'` (rollup) or `'truncate'` | `'other'` |
 | `color` | Base color slices are derived from | `CHART_COLORS.pie` (`#5f7c33`) |
-| `customSliceColors` | Per-category color overrides (`{ token: hex }`) | `{}` |
+| `customSliceColors` | Per-category color overrides (`{ categoryKey: hex }`) | `{}` |
 | `colorScheme` | Named palette last applied | `'Colorblind-Safe'` |
 | `showCategoryLabel` / `showValueLabel` / `showLegend` | Label and legend toggles | `true` |
 | `labelPosition` | `'inside'` or `'outside'` | `'inside'` |
@@ -210,6 +210,11 @@ registry imports those three entry points directly.
   one sector (`getPieSectorValues` returns all source categories, descending by aggregate with
   a stable tiebreaker). Top-N is not applied to this color list, so hidden categories retain
   their overrides; the synthetic `Other` sector uses its fixed color.
+- Each swatch shows the color the chart draws that category with (`getPieSwatchColors`,
+  which aggregates the globally filtered rows with the chart's Top-N and resolves fills
+  through `resolveSliceColors`). A category the chart does not draw, because the global
+  filter hides it or it falls past Top-N, shows its override, or the grid's neutral gray
+  when it has none.
 
 ### 5.3 Listener wiring and cross-constraints
 
@@ -220,7 +225,8 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
   below the outer (adjusting one can clamp the other).
 - **Reset Zoom**: resets both the zoom slider DOM and `zoomScale` to the default.
 - **Palette presets**: map an N-color palette across the N sectors by writing
-  `customSliceColors` for each (not a single gradient).
+  `customSliceColors` for each (not a single gradient). A palette stays marked only while
+  every sector keeps the color its button gave it.
 - **Per-slice color grid**: each swatch writes through the non-emitting facade on `input`
   (live drag preview, no sidebar rebuild) and commits through the emitting facade on `change`,
   the same live-preview discipline the TIN color picker uses (TIN doc [section 10](tin.md)).
@@ -260,13 +266,16 @@ radii/pad-angle/zoom clamped to `PIE_CHART` bounds, height to 220 to 720, title 
 A `Map` aggregates count or sum per category (sum skips rows whose value is non-finite, and
 needs `valueColumn`). It does not filter zero or negative sums; D3's pie layout allocates
 proportional angle only to positive values. Entries are sorted descending by value with a
-`compareStrings` tiebreaker. No entries → `fail('sum-no-numeric')` in sum mode, else `fail()`.
+`compareCategoryKeys` tiebreaker (missing last). Each entry is `{ key, label, token, value }`;
+the synthetic Other sector carries `isOther`, the reserved key `OTHER_SECTOR_KEY`, and no token.
+No entries → `fail('sum-no-numeric')` in sum mode, else `fail()`.
 
 ### 7.2 Top-N
 
 When `topN > 0` and there are more categories than N: in `truncate` mode the list is cut to
 N; in `other` mode the top N are kept and the rest are summed into a single
-`{ category: Other, isOther: true }` entry.
+`{ key: OTHER_SECTOR_KEY, label: Other, isOther: true }` entry. The reserved key keeps a
+real category spelled like the Other label apart from the rollup.
 
 ### 7.3 Geometry
 
@@ -277,13 +286,15 @@ wedge paths. A separate `labelArc` at 62% of the ring radius positions inside la
 
 ### 7.4 Wedges, color, and interaction
 
-One `<path>` per slice. Fill precedence: the `Other` slice uses `PIE_CHART.otherSliceColor`;
-a category with a `customSliceColors` override uses that; otherwise `buildSliceColor` darkens
-the base color by 8% per index step so adjacent wedges are distinguishable. Each wedge has a
-white stroke. Hover shows a category/value/percentage tooltip; click pins the shared
-categorical filter-action tooltip (the bar doc's [section 7.6](bar.md)), except the
+One `<path>` per slice. Fill precedence, resolved once by `resolveSliceColors` for the wedges
+and the legend: the `Other` slice uses `PIE_CHART.otherSliceColor`; a category with a
+`customSliceColors` override uses that; otherwise `buildSliceColor` gives it the base color's
+shade for its position in the drawn order (section 8), so adjacent wedges are distinguishable.
+Each wedge has a white stroke. Hover shows a category/value/percentage tooltip; click pins the
+shared categorical filter-action tooltip (the bar doc's [section 7.6](bar.md)), except the
 `Other` slice, which pins a plain tooltip with no filter actions (it is an aggregate, not a
-real category).
+real category). The pin is tracked by sector key, so clicking the pinned wedge again unpins
+it and clicking another wedge moves the pin.
 
 ### 7.5 Zoom, labels, and legend
 
@@ -297,14 +308,26 @@ angular share. An optional legend lists the first 8 entries with color swatches.
 
 ## 8. The color system
 
-- **Base + shade**: `buildSliceColor(base, index)` from
-  [color.js](../../../src/charts/pie/color.js) darkens the base color 8% per step (capped at
-  8 steps), giving a monochrome family from one color.
-- **Per-slice overrides**: `customSliceColors[categoryToken]` wins over the shade for that
+- **Base + shade**: `buildSliceColor(base, index, count)` from
+  [color.js](../../../src/charts/pie/color.js) darkens the base color 8% per step of the
+  slice's position, down to 64% darker at the 9th slice, giving a monochrome family from one
+  color. `count` is the number of sectors other than Other. Past 9, the same range is cut into
+  one shade per slice, and those shades sit too close together for neighbors to take them in
+  order. Even positions take the lighter half in order and odd positions the darker half, so
+  each wedge stays about half the range from the ones beside it, including the last and first,
+  which touch when there is no Other. No shade is lighter than the base color, so the white
+  inside labels keep at least the base color's contrast. Past 81 slices with the default
+  color, and sooner with a darker one, rounding to whole RGB values repeats some shades, but
+  never on neighboring slices.
+- **Per-slice overrides**: `customSliceColors[categoryKey]` wins over the shade for that
   category, set via the color grid or a palette preset.
 - **Palette presets**: distribute a qualitative palette across the sectors (writing
   per-slice overrides), unlike the bar/scatter presets which seed a two-color gradient.
 - **Other**: always the fixed `otherSliceColor` gray.
+- **Shades follow the drawn order**: a global filter that hides a larger category moves
+  every category below it up one position, to that position's shade. Past 9 slices the shades
+  also depend on how many are drawn, so hiding a category or changing Top-N respreads them.
+  The color grid follows the chart (section 5.2).
 
 ---
 
@@ -345,7 +368,11 @@ there is no separate export path.
 - **sum mode with no numeric value column** (or no parseable values) → `fail('sum-no-numeric')`,
   mapped to `chive-chart-empty-pie-sum` ("Select a visible numeric value column to render
   pie/donut in sum mode.").
-- **Missing/empty categories** collapse into a single `N/A` wedge.
+- **Missing categories** collapse into a single "(missing)" wedge. Slice colors are keyed by
+  category key, so a color saved under `'N/A'` before this change now applies only to a
+  literal "N/A" category.
+- **A real category spelled like the Other label** (for example "Other" in English or
+  "Outros" in pt-BR) stays its own sector, with its own pin and color, apart from the rollup.
 - **Top-N other** keeps the rendered positive-value circle at 100%; **truncate** does not.
 - **Non-positive sum aggregates** are not filtered by CHIVE before the D3 pie layout; use
   non-negative value columns for meaningful part-to-whole pies.
@@ -363,12 +390,17 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 - [renderEquivalence.test.js](../../../tests/charts/pie/renderEquivalence.test.js) pins the
   renderer's SVG and result output across representative options.
-- [renderers/svg.test.js](../../../tests/charts/pie/renderers/svg.test.js) covers slices, labels,
-  Top-N behavior, zoom, and pinned-tooltip filter states.
+- [renderers/svg.test.js](../../../tests/charts/pie/renderers/svg.test.js) covers slices
+  (one color each past 9 slices), labels, Top-N behavior, zoom, and pinned-tooltip filter
+  states.
 - [color.test.js](../../../tests/charts/pie/color.test.js) covers the base-color shade
-  sequence and its fallback.
+  sequence (8% steps up to 9 slices, the alternating spread past 9), its fallback, and the
+  fill precedence.
+- [sectorValues.test.js](../../../tests/charts/pie/sectorValues.test.js) covers the color-grid
+  category order and the swatch colors under a global filter and Top-N.
 - [controls.test.js](../../../tests/charts/pie/controls.test.js) covers control building, the
-  radius cross-constraint, and the per-slice color logic.
+  radius cross-constraint, the per-slice color logic, and that each swatch matches its drawn
+  wedge, past 9 slices too.
 - [workspaceSection.test.js](../../../tests/charts/pie/workspaceSection.test.js) and
   [panelAdapter.test.js](../../../tests/charts/pie/panelAdapter.test.js) cover both integration
   surfaces and their shared renderer contract.
@@ -403,7 +435,7 @@ bounds, zoom bounds, `otherSliceColor`, `defaultTopN`/`defaultTopNMode`.
 
 | Concept (section 2) | Implementation |
 |---|---|
-| Count/sum aggregation, N/A (2.1) | the `Map` build (7.1) |
+| Count/sum aggregation, missing bucket (2.1) | the `Map` build (7.1) |
 | Value → angle (2.2) | `pie()` + `arc()` generators (7.3) |
 | Donut / pad / radius (2.3) | inner/outer radius clamp, `padAngle` (7.1, 7.3) |
 | Top-N + Other rollup (2.4) | the Top-N branch (7.2) |

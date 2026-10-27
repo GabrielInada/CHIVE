@@ -113,8 +113,10 @@ doc rather than repeated:
   [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter, and network.
 - **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
   builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets) and
-  [grouping.js](../../../src/charts/shared/controls/grouping.js) wraps them in collapsible
-  sections. Both are DOM-only; the config writes are wired by the listener helpers in
+  finds the palette preset a chart's colors still match (`findAppliedColorPreset`), the one
+  its palette buttons mark; [grouping.js](../../../src/charts/shared/controls/grouping.js)
+  wraps them in collapsible sections. Neither writes config; the config writes are wired by
+  the listener helpers in
   [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's
   [section 10](tin.md) and shared by every chart's color inputs.

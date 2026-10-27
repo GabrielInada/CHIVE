@@ -55,6 +55,8 @@ export const TIN_CHART = {
   defaultThresholdWidth: 2,
   minThresholdWidth: 0.5,
   maxThresholdWidth: 4,
+  // Config key -> palette position for the color palette buttons.
+  presetColorKeys: { gradientMinColor: 0, gradientMaxColor: -1 },
 };
 
 function createDefaultConfig() {

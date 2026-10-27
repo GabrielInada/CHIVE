@@ -112,6 +112,7 @@ describe('renderScatterPanelChart', () => {
 			regressionR2: 'chive-chart-tooltip-regression-r2',
 			regressionN: 'chive-chart-tooltip-regression-n',
 			regressionGroup: 'chive-chart-tooltip-regression-group',
+			missing: 'chive-chart-filter-missing',
 		});
 	});
 

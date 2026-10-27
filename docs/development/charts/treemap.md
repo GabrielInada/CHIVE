@@ -44,8 +44,8 @@ the shared click-to-filter tooltips.
 ### 2.1 Aggregation and area
 
 Like bar and pie, the treemap aggregates: the category column partitions the rows, and each
-group is reduced to a number by `count` or `sum` of a value column (missing categories
-collapse to `N/A`). That number becomes the tile's **area**. Because the tiles tile the whole
+group is reduced to a number by `count` or `sum` of a value column (missing cells
+collapse to one "(missing)" tile). That number becomes the tile's **area**. Because the tiles tile the whole
 frame without gaps, the picture reads as "this category is this fraction of the total."
 
 ### 2.2 The tiling problem and squarify
@@ -151,8 +151,11 @@ are detached `structuredClone` captures (see
 
 [treemap.js](../../../src/config/charts/definitions/treemap.js): the treemap color is `#5a7d99`;
 `CHART_HEIGHT_LIMITS.treemap` = `{ min: 220, max: 720 }`; `TREEMAP_CHART` holds the measure
-modes, `defaultTopN: 20`, and the padding options (`[1, 2, 4]`, default 2). The scheme palettes
-are defined in the renderer (`COLOR_PALETTE`: Bold, Pastel, Colorblind-Safe).
+modes, `defaultTopN: 20`, the padding options (`[1, 2, 4]`, default 2), and
+`presetColorKeys`, the config key each palette button writes. The scheme palettes are the
+shared `CHART_COLOR_PALETTES` in [shared.js](../../../src/config/charts/shared.js) (Tableau10,
+Pastel, Bold, Colorblind-Safe), the same set the palette buttons offer; an unknown name draws
+Bold.
 
 ---
 
@@ -177,6 +180,8 @@ text, slider, checkbox, color, and preset controls use the shared chart-control 
 adapters. Measure and value-column changes retain small custom handlers because they enforce a
 cross-field constraint: switching to count clears `valueColumn`, while sum mode preserves only
 a valid numeric selection. The color presets set the uniform `color` to the palette's first
+swatch. In scheme mode the palette buttons mark the stored `colorScheme`, which is what the
+renderer draws; in uniform mode they mark a palette only while `color` still holds its first
 swatch. `computeDefaults` picks the category column.
 
 ---
@@ -215,8 +220,8 @@ count or sum per category (sum skips non-finite values). Empty result returns `{
 
 ### 7.2 Sort, Top-N, layout
 
-Entries are filtered to positive values, sorted descending (with a `compareStrings`
-tiebreaker), and sliced to `topN`. A one-level `hierarchy({ root, children: entries })`
+Entries are filtered to positive values, sorted descending (with a `compareCategoryKeys`
+tiebreaker, missing last), and sliced to `topN`. A one-level `hierarchy({ root, children: entries })`
 `.sum(value)` feeds `treemap().tile(treemapSquarify).size([w, h]).padding(p).round(true)`,
 which assigns each leaf its `(x0, y0, x1, y1)` rectangle (the squarified tiling of section
 2.2). `round(true)` snaps coordinates to whole pixels for crisp edges.
@@ -240,8 +245,8 @@ clicking the background dismisses it.
 ## 8. The color system
 
 Treemap color is **categorical**, not value-driven: a palette hue per tile by index
-(`scheme` mode) or one uniform color (`uniform` mode). The palettes live in the renderer's
-`COLOR_PALETTE`; the preset buttons also seed the uniform `color`. Area, not color, carries
+(`scheme` mode) or one uniform color (`uniform` mode). The palettes are the shared
+`CHART_COLOR_PALETTES`; the preset buttons also seed the uniform `color`. Area, not color, carries
 magnitude, so there is no gradient or rank distribution here.
 
 ---
@@ -280,7 +285,7 @@ labels. The panel exporter clones the live `<svg>`; there is no separate export 
 - **sum mode without a numeric value column** → `{ ok: false, reason: 'no-value-column' }`,
   mapped to `chive-chart-empty-treemap-numeric` ("Select a numeric column to render the treemap
   in sum mode.").
-- **Missing/empty categories** collapse into a single `N/A` tile.
+- **Missing categories** collapse into a single "(missing)" tile, apart from literal "N/A" text.
 - **Non-positive aggregates** are filtered out (a treemap tile needs positive area).
 - **Tiles too small** to fit text are left unlabeled.
 - **Stateless renders** and **detached panel captures** behave as for every chart (panel tiles

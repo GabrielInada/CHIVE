@@ -1,7 +1,7 @@
 /**
  * CHIVE Data Ingest Worker.
  *
- * Runs parse or dataset join + type detection + numeric normalization + stats
+ * Runs parse or dataset join + type detection + cell canonicalization + stats
  * off the main thread. Posts progress messages between stages so the host can
  * drive a corner-toast progress bar.
  *
@@ -23,43 +23,43 @@
 
 import { parseCsv, parseJson } from '../domain/datasets/parse.js';
 import { joinDatasets } from '../domain/datasets/join.js';
-import { detectDecimalSeparator, detectType, normalizeNumericString } from '../domain/datasets/typeDetection.js';
+import { detectDecimalSeparator, detectType } from '../domain/datasets/typeDetection.js';
+import { toCanonicalCell } from '../domain/datasets/cellValues.js';
 import { calculateStatistics, calculateCategoricalStatistics } from '../domain/datasets/statistics.js';
-import { DECIMAL_DETECTION, COLUMN_TYPES } from '../config/columnTypeDetection.js';
+import { DECIMAL_DETECTION } from '../config/columnTypeDetection.js';
 
 const NORMALIZE_CHUNK_SIZE = 20000;
 
 /**
- * Convert raw rows to typed rows in chunks, invoking `onChunk(done, total)`
- * between each chunk so callers can post progress messages.
+ * Convert raw rows to canonical rows in chunks, invoking
+ * `onChunk(done, total)` between each chunk so callers can post progress
+ * messages. Every output row has every column, each cell in its column type's
+ * canonical form (see `toCanonicalCell`).
  *
  * Exported so tests can exercise the loop without spawning a real Worker.
  *
  * @param {Array<Object<string, *>>} rawData
  * @param {ColumnSpec[]} columns
- * @param {string} decimalSeparator - `'.'` or `','`.
+ * @param {string} decimalSeparator - Fallback for columns without a saved separator: `'.'` or `','`.
  * @param {((done: number, total: number) => void) | null | undefined} onChunk
  * @param {number} [chunkSize=20000]
  * @returns {Array<Object<string, *>>}
  */
 export function chunkedNormalize(rawData, columns, decimalSeparator, onChunk, chunkSize = NORMALIZE_CHUNK_SIZE) {
 	const out = new Array(rawData.length);
+	const cells = columns.map(({ name, type, decimalSeparator: columnSeparator = decimalSeparator }) => ({
+		name,
+		type,
+		options: { decimalSeparator: columnSeparator },
+	}));
 
 	for (let i = 0; i < rawData.length; i += chunkSize) {
 		const end = Math.min(i + chunkSize, rawData.length);
 		for (let j = i; j < end; j++) {
 			const row = rawData[j];
 			const converted = {};
-			for (const { name, type } of columns) {
-				const value = row[name];
-				if (type === COLUMN_TYPES.NUMBER && value !== '' && value !== null && value !== undefined) {
-					converted[name] = Number(normalizeNumericString(String(value), decimalSeparator));
-				} else if (type === COLUMN_TYPES.DATE && value !== '' && value !== null && value !== undefined) {
-					const parsed = value instanceof Date ? value : new Date(value);
-					converted[name] = Number.isFinite(parsed?.getTime?.()) ? parsed : null;
-				} else {
-					converted[name] = value;
-				}
+			for (const { name, type, options } of cells) {
+				converted[name] = toCanonicalCell(row[name], type, options);
 			}
 			out[j] = converted;
 		}
@@ -84,6 +84,7 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 	const rowLimit = Number.isFinite(options.rowLimit) ? options.rowLimit : Infinity;
 	let rawData;
 	let outputColumns = null;
+	const inheritedSeparators = new Map();
 
 	if (kind === 'join') {
 		post({ id, type: 'progress', stage: 'joining', percent: 0 });
@@ -94,6 +95,16 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 		}
 		rawData = joined.rows;
 		outputColumns = joined.outputColumns;
+		const sourceColumns = {
+			left: new Map((join.leftColumnSpecs || []).map(column => [column.name, column])),
+			right: new Map((join.rightColumnSpecs || []).map(column => [column.name, column])),
+		};
+		// A join can narrow a text column to numeric-looking strings. Keep each
+		// source's format, including when conflicting column names are renamed.
+		for (const { side, source, output } of joined.columnSources) {
+			const separator = sourceColumns[side].get(source)?.decimalSeparator;
+			if (separator === '.' || separator === ',') inheritedSeparators.set(output, separator);
+		}
 		post({ id, type: 'progress', stage: 'joining', percent: 30 });
 	} else {
 		post({ id, type: 'progress', stage: 'parsing', percent: 0 });
@@ -128,7 +139,7 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 		const result = {
 			rows: [],
 			columns: [],
-			decimalSeparator: '.',
+			decimalSeparator: detectDecimalSeparator([], options.decimalSeparator),
 			statsNumeric: [],
 			statsCategorical: [],
 			truncatedFrom,
@@ -143,12 +154,11 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 	}
 
 	post({ id, type: 'progress', stage: 'decimal-detection', percent: 32 });
+	// Only strings provide locale evidence; typed JSON/joined numbers are ignored.
 	const allRawValues = rawData
 		.slice(0, DECIMAL_DETECTION.sampleSize)
-		.flatMap(row => Object.values(row))
-		.map(v => String(v ?? '').trim())
-		.filter(v => v.length > 0);
-	const decimalSeparator = detectDecimalSeparator(allRawValues);
+		.flatMap(row => Object.values(row));
+	const decimalSeparator = detectDecimalSeparator(allRawValues, options.decimalSeparator);
 	post({ id, type: 'progress', stage: 'decimal-detection', percent: 35 });
 
 	const columnNames = Object.keys(rawData[0]);
@@ -156,7 +166,10 @@ export function runIngest({ id, kind, text, join, options = {} }, post) {
 	for (let i = 0; i < columnNames.length; i++) {
 		const name = columnNames[i];
 		const values = rawData.map(row => row[name]);
-		columns.push({ name: name, type: detectType(values, decimalSeparator) });
+		const columnSeparator = options.decimalSeparator === '.' || options.decimalSeparator === ','
+			? decimalSeparator
+			: inheritedSeparators.get(name) ?? decimalSeparator;
+		columns.push({ name, type: detectType(values, columnSeparator), decimalSeparator: columnSeparator });
 		const pct = 35 + Math.round(((i + 1) / columnNames.length) * 15);
 		post({ id, type: 'progress', stage: 'type-detection', percent: pct });
 	}

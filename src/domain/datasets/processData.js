@@ -1,29 +1,31 @@
 import { DECIMAL_DETECTION } from '../../config/columnTypeDetection.js';
-import { detectDecimalSeparator, detectType, normalizeNumericString } from './typeDetection.js';
+import { toCanonicalCell } from './cellValues.js';
+import { detectDecimalSeparator, detectType } from './typeDetection.js';
 
 /**
  * CHIVE row-normalization pipeline.
  *
  * Detects column types and decimal convention once per dataset, then
- * parses numeric cells into actual numbers. Pure, safe to use in workers
- * and tests.
+ * brings every cell to its column type's canonical form. Pure, safe to use
+ * in workers and tests.
  *
  * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
  */
 
 /**
- * Detect column types and normalize numeric values in a single pass.
+ * Detect column types and canonicalize every cell in a single pass.
  *
- * The decimal separator is detected once for the whole dataset (it is a
+ * The decimal separator is specified or detected once for the whole dataset (it is a
  * file-level property, all numeric columns in one upload share the same
- * convention). Then each column gets a `type` from `detectType`, and
- * numeric cells are parsed into actual numbers via `normalizeNumericString`.
+ * convention). Then each column gets a `type` from `detectType`, and each
+ * cell takes that type's canonical form via `toCanonicalCell`.
  *
  * @param {Array<Object<string, *>>} rawData - The rows from a `parseCsv`/`parseJson` result (`result.rows`).
- * @returns {{ rows: Array<Object<string, *>>, columns: ColumnSpec[] }} - `rows` is the normalized row set; `columns` lists `{ name, type }` in source order. Empty input returns empty arrays.
+ * @param {{ decimalSeparator?: 'auto' | '.' | ',' }} [options] - Use an explicit separator for ambiguous input such as European grouped integers.
+ * @returns {{ rows: Array<Object<string, *>>, columns: ColumnSpec[] }} - Columns retain their decimal format for strings that a later join may classify as numeric. Empty input returns empty arrays.
  * @throws {Error} When `rawData` is not an array.
  */
-export function processData(rawData) {
+export function processData(rawData, options = {}) {
 	if (!Array.isArray(rawData)) {
 		throw new Error('rawData must be an array');
 	}
@@ -35,31 +37,25 @@ export function processData(rawData) {
 	// Detect decimal separator once from a flat sample of all raw values.
 	// This is a dataset-level property - all numeric columns in a single file
 	// will use the same decimal convention.
+	// Only strings provide locale evidence; the detector ignores typed numbers.
 	const allRawValues = rawData
 		.slice(0, DECIMAL_DETECTION.sampleSize)
-		.flatMap(row => Object.values(row))
-		.map(v => String(v ?? '').trim())
-		.filter(v => v.length > 0);
-	const decimalSeparator = detectDecimalSeparator(allRawValues);
+		.flatMap(row => Object.values(row));
+	const decimalSeparator = detectDecimalSeparator(allRawValues, options.decimalSeparator);
 
 	const columnNames = Object.keys(rawData[0]);
 
 	const columns = columnNames.map(name => {
 		const values = rawData.map(row => row[name]);
-		return { name: name, type: detectType(values, decimalSeparator) };
+		return { name: name, type: detectType(values, decimalSeparator), decimalSeparator };
 	});
 
+	const cellOptions = { decimalSeparator };
 	const rows = rawData.map(row => {
 		const convertedRow = {};
 
-		columns.forEach(({ name: name, type }) => {
-			const value = row[name];
-			if (type === 'number' && value !== '' && value !== null && value !== undefined) {
-				const normalized = normalizeNumericString(String(value), decimalSeparator);
-				convertedRow[name] = Number(normalized);
-			} else {
-				convertedRow[name] = value;
-			}
+		columns.forEach(({ name, type }) => {
+			convertedRow[name] = toCanonicalCell(row[name], type, cellOptions);
 		});
 
 		return convertedRow;

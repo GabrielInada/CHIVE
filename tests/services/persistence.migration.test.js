@@ -13,7 +13,7 @@ import {
 	makeSnapshot,
 	writeLegacyState,
 } from './persistence.testSupport.js';
-import { STATS_NUMERIC_VERSION } from '../../src/config/statistics.js';
+import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../src/config/statistics.js';
 
 describe('persistence', () => {
 	beforeEach(async () => {
@@ -55,9 +55,10 @@ describe('persistence', () => {
 		expect(secondReplace.mock.calls[0][0].data.datasets[0].id).toBe('legacy');
 	});
 
-	it('drops stale numeric stats coming in through the legacy import path', async () => {
+	it('drops stale stats coming in through the legacy import path', async () => {
 		// Legacy records predate versioning entirely, so their cached numeric
-		// stats were produced by the implementation that counted blank cells.
+		// stats were produced by the implementation that counted blank cells, and
+		// their categorical stats from cells that were not yet canonical.
 		await writeLegacyState({
 			datasets: [{
 				...goodRecord('legacy-stats'),
@@ -81,13 +82,48 @@ describe('persistence', () => {
 		await hydrateState({ replaceAllState });
 
 		const stats = replaceAllState.mock.calls[0][0].data.datasets[0].precomputedStats;
-		expect(stats.numeric).toBeUndefined();
-		expect(stats.categorical).toHaveLength(1);
+		expect('numeric' in stats).toBe(false);
+		expect('categorical' in stats).toBe(false);
 	});
 
-	it('round-trips current-version numeric stats through SQLite unchanged', async () => {
+	it('canonicalizes legacy rows and captures, and saves them in the current format', async () => {
+		// Old IndexedDB projects stored dates as Date objects at local midnight
+		// (UTC-3 here) and kept blank cells as empty strings.
+		const columns = [{ name: 'x', type: 'number' }, { name: 'd', type: 'date' }];
+		const legacyRows = [
+			{ x: 1, d: new Date('2024-01-15T03:00:00.000Z') },
+			{ x: '', d: new Date('2024-07-15T03:00:00.000Z') },
+		];
+		const canonicalRows = [{ x: 1, d: '2024-01-15' }, { x: null, d: '2024-07-15' }];
+		await writeLegacyState({
+			datasets: [{ ...goodRecord('legacy-cells'), rows: legacyRows, columns, selectedColumns: ['x', 'd'] }],
+			panelRecord: {
+				activeDatasetId: 'legacy-cells',
+				charts: [{ id: 0, type: 'bar', config: {}, dataSnapshot: legacyRows, columnsSnapshot: columns }],
+				slots: {},
+				layout: 'template-2col',
+				blocks: [],
+				nextBlockId: 1,
+				nextChartId: 1,
+			},
+		});
+
+		const migrated = vi.fn();
+		await hydrateState({ replaceAllState: migrated });
+		const reloaded = vi.fn();
+		await hydrateState({ replaceAllState: reloaded });
+
+		for (const replaceAllState of [migrated, reloaded]) {
+			const restored = replaceAllState.mock.calls[0][0];
+			expect(restored.data.datasets[0].rows).toEqual(canonicalRows);
+			expect(restored.panel.charts[0].dataSnapshot).toEqual(canonicalRows);
+		}
+	});
+
+	it('round-trips current-version stats through SQLite unchanged', async () => {
 		const precomputedStats = {
 			numericVersion: STATS_NUMERIC_VERSION,
+			categoricalVersion: STATS_CATEGORICAL_VERSION,
 			numeric: [{ name: 'x', n: 1, min: 1, max: 1, mean: 1, median: 1 }],
 			categorical: [],
 		};

@@ -25,7 +25,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 }));
 
 import { renderCategoricalStats, renderStats } from '../../../../src/features/datasetWorkspace/views/statsView.js';
-import { STATS_NUMERIC_VERSION } from '../../../../src/config/statistics.js';
+import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../../src/config/statistics.js';
 
 const rows = [
 	{ region: 'North', value: 10 },
@@ -143,6 +143,7 @@ describe('statsView', () => {
 		mocks.getActiveDataset.mockReturnValue({
 			rows,
 			precomputedStats: {
+				categoricalVersion: STATS_CATEGORICAL_VERSION,
 				categorical: [
 					{
 						name: 'region',
@@ -178,6 +179,29 @@ describe('statsView', () => {
 		expect(document.querySelectorAll('#container-cat-stats .stat-col').length).toBe(2);
 		expect(document.querySelector('[title="A very long region name"]')).not.toBeNull();
 		expect(document.getElementById('container-cat-stats').textContent).toContain('chive-cat-stat-empty');
+	});
+
+	it.each([
+		['a stale version', 0],
+		['no version at all', undefined],
+	])('recomputes categorical stats once when the cache carries %s', (_label, categoricalVersion) => {
+		const ownRows = rows.map(row => ({ ...row }));
+		const staleStats = [{ name: 'region', n: 2, missing: 0, unique: 2, mode: 'stale' }];
+		mocks.getActiveDataset.mockReturnValue({
+			rows: ownRows,
+			columns: visibleColumns,
+			precomputedStats: { categoricalVersion, categorical: staleStats },
+		});
+		mocks.calculateCategoricalStatistics.mockReturnValue([
+			{ name: 'region', n: 2, missing: 0, missingPct: 0, unique: 2, uniquenessRate: 1, mode: 'North', modeCount: 1, modePct: 0.5, top5Pct: 1 },
+		]);
+
+		renderCategoricalStats(ownRows, visibleColumns);
+		renderCategoricalStats(ownRows, visibleColumns);
+
+		expect(mocks.calculateCategoricalStatistics).toHaveBeenCalledTimes(1);
+		expect(mocks.calculateCategoricalStatistics).toHaveBeenCalledWith(ownRows, visibleColumns);
+		expect(document.querySelector('[title="North"]')).not.toBeNull();
 	});
 
 	it('falls back to live categorical calculation and tolerates missing optional DOM nodes', () => {

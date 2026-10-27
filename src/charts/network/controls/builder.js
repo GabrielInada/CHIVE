@@ -9,7 +9,7 @@
 
 import { t } from '../../../services/i18nService.js';
 import { NETWORK_GRAPH } from '../../../config/charts/definitions/network.js';
-import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createColorPresetControl, createSelectControl } from '../../shared/controls/factories.js';
+import { createCheckboxControl, createColorInputControl, createSliderControl, createTextControl, createColorPresetControl, createSelectControl, findAppliedColorPreset } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
 
 /**
@@ -180,7 +180,7 @@ export function createNetworkGraphControls(dataset, allOptions, numericOptions, 
 	stylingControls.push(createColorPresetControl(
 		'viz-network-color-preset',
 		t('chive-chart-color-palette'),
-		config.colorScheme || 'Bold',
+		findAppliedColorPreset(config, NETWORK_GRAPH.presetColorKeys),
 		disabled,
 		t
 	));

@@ -98,6 +98,15 @@
                     </button>
 
                     <input type="file" id="file-input" accept=".csv,.tsv,.dsv,.txt,.json,text/csv,text/tab-separated-values,application/json" multiple />
+					<div class="upload-format sidebar-expanded-only">
+						<label for="upload-decimal-separator" data-i18n="chive-upload-decimal-separator">Separador decimal</label>
+						<select id="upload-decimal-separator" name="decimalSeparator" aria-describedby="upload-decimal-help">
+							<option value="auto" data-i18n="chive-upload-decimal-auto">Automático</option>
+							<option value="." data-i18n="chive-upload-decimal-dot">Ponto (1,234.56)</option>
+							<option value="," data-i18n="chive-upload-decimal-comma">Vírgula (1.234,56)</option>
+						</select>
+						<p id="upload-decimal-help" data-i18n="chive-upload-decimal-help">No modo automático, valores ambíguos como 1.000 usam ponto decimal. Se significar mil, selecione Vírgula antes de carregar.</p>
+					</div>
                 </div>
 
                 <div id="file-info" class="sidebar-expanded-only" hidden>

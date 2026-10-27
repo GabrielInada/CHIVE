@@ -221,7 +221,7 @@ async function runDataWorker(input, config = {}) {
 /**
  * Parse and normalize a CSV/JSON file in the data worker.
  *
- * @param {{ kind: 'csv' | 'json', text: string, options?: { rowLimit?: number, dropColumns?: string[] } }} input
+ * @param {{ kind: 'csv' | 'json', text: string, options?: { rowLimit?: number, dropColumns?: string[], decimalSeparator?: 'auto' | '.' | ',' } }} input
  * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal }} [config]
  * @returns {Promise<Result>}
  */
@@ -233,9 +233,11 @@ export function ingestFile(input, config = {}) {
  * Join two datasets and normalize the complete output in the data worker.
  *
  * @param {Object} join
- * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal }} [config]
+ * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal, decimalSeparator?: 'auto' | '.' | ',' }} [config]
  * @returns {Promise<Result>}
  */
 export function joinDatasetsInWorker(join, config = {}) {
-	return runDataWorker({ kind: 'join', join }, config);
+	const { decimalSeparator, ...workerConfig } = config;
+	const options = decimalSeparator === undefined ? {} : { decimalSeparator };
+	return runDataWorker({ kind: 'join', join, options }, workerConfig);
 }

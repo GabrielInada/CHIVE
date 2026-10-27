@@ -6,7 +6,8 @@
  * (rendering) and the regression module; also covered by unit tests.
  */
 
-import { compareStrings, normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
+import { MISSING_KEY, categoryKey } from '../../domain/datasets/cellValues.js';
+import { compareCategoryKeys } from '../shared/categoryOrder.js';
 
 /**
  * Two-value enumeration of scatter-plot axis types: `'numeric'` or
@@ -131,14 +132,15 @@ export function truncateCategoryTick(value, maxLength = 20) {
 }
 
 /**
- * Find the longest stringified value across `points[].[key]`.
+ * Find the longest shown text across `points[].[key]`.
  *
  * @param {Array<Object<string, *>>} points
  * @param {string} key
+ * @param {(value: *) => string} [labelOf] - Text shown for a value; defaults to its string form.
  * @returns {number}
  */
-export function estimateLongestCategoryLength(points, key) {
-	return points.reduce((maxLength, point) => Math.max(maxLength, String(point[key] || '').length), 0);
+export function estimateLongestCategoryLength(points, key, labelOf = value => String(value || '')) {
+	return points.reduce((maxLength, point) => Math.max(maxLength, labelOf(point[key]).length), 0);
 }
 
 /**
@@ -149,19 +151,20 @@ export function estimateLongestCategoryLength(points, key) {
  * @param {{ top: number, right: number, bottom: number, left: number }} baseMargins
  * @param {Array<Object<string, *>>} points
  * @param {{ x: string, y: string }} axisTypes - Values from {@link AXIS_TYPE_VALUES}.
+ * @param {(key: string) => string} [labelOf] - Text shown for a category key.
  * @returns {{ top: number, right: number, bottom: number, left: number }}
  */
-export function computeAdaptiveMargins(baseMargins, points, axisTypes) {
+export function computeAdaptiveMargins(baseMargins, points, axisTypes, labelOf) {
 	const margins = { ...baseMargins };
 
 	if (axisTypes.y === AXIS_TYPE_VALUES.categorical) {
-		const maxYLength = estimateLongestCategoryLength(points, 'yCategory');
+		const maxYLength = estimateLongestCategoryLength(points, 'yCategory', labelOf);
 		const estimatedLeft = 28 + (Math.min(maxYLength, 64) * 6.8);
 		margins.left = Math.max(baseMargins.left, Math.min(340, Math.round(estimatedLeft)));
 	}
 
 	if (axisTypes.x === AXIS_TYPE_VALUES.categorical) {
-		const maxXLength = estimateLongestCategoryLength(points, 'xCategory');
+		const maxXLength = estimateLongestCategoryLength(points, 'xCategory', labelOf);
 		const estimatedBottom = 48 + (Math.min(maxXLength, 52) * 4.2);
 		margins.bottom = Math.max(baseMargins.bottom, Math.min(250, Math.round(estimatedBottom)));
 	}
@@ -206,9 +209,9 @@ export function aggregateCategoricalPairs(points) {
 }
 
 /**
- * Find the most-frequent normalized value of `rows[].[fieldName]`. Ties
- * broken alphabetically by {@link compareStrings} so the result is stable.
- * Returns `'N/A'` when `rows` is empty.
+ * Find the most-frequent category key of `rows[].[fieldName]`. Ties are
+ * broken alphabetically with the missing bucket last, so the result is
+ * stable. Returns the missing key when `rows` is empty.
  *
  * @param {Array<Object<string, *>>} rows
  * @param {string} fieldName
@@ -218,11 +221,11 @@ export function pickMostFrequentCategory(rows, fieldName) {
 	const categoryCount = new Map();
 
 	rows.forEach(row => {
-		const category = normalizeCategoryValue(row?.[fieldName]);
+		const category = categoryKey(row?.[fieldName]);
 		categoryCount.set(category, (categoryCount.get(category) || 0) + 1);
 	});
 
-	let bestCategory = 'N/A';
+	let bestCategory = MISSING_KEY;
 	let bestCount = -1;
 	for (const [category, count] of categoryCount.entries()) {
 		if (count > bestCount) {
@@ -230,7 +233,7 @@ export function pickMostFrequentCategory(rows, fieldName) {
 			bestCount = count;
 			continue;
 		}
-		if (count === bestCount && compareStrings(category, bestCategory) < 0) {
+		if (count === bestCount && compareCategoryKeys(category, bestCategory) < 0) {
 			bestCategory = category;
 		}
 	}

@@ -445,7 +445,8 @@ that does nothing. The pattern is a boolean passed as the `disabled` argument:
 - **Color inputs** (`setupColorInputListener`): the live-preview path, see section 10.
 - **Color presets** (`setupColorPresetListeners`): each palette button writes
   `gradientMinColor` from palette index 0 and `gradientMaxColor` from index −1
-  (last), plus the palette name into `colorScheme`.
+  (last), plus the palette name into `colorScheme`. A palette is marked only while
+  the ramp is `custom` and both gradient colors still hold it.
 
 Every write goes through `makeUpdater`, which merges the partial into
 `chartConfig.tin` and fires `onConfigChanged`. The renderer never reads the DOM

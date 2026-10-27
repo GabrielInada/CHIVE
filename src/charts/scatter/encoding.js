@@ -10,7 +10,7 @@
 import { scaleSqrt } from '../../../vendor/d3/d3.js';
 import { interpolateColor, buildRankMap } from '../../utils/colorUtils.js';
 import { toFiniteNumber } from '../../utils/formatters.js';
-import { normalizeCategoryValue } from '../../domain/filters/chartFilter.js';
+import { categoryKey } from '../../domain/datasets/cellValues.js';
 import { pickMostFrequentCategory } from './axisHelpers.js';
 import { getScatterPalette } from './palettes.js';
 
@@ -145,7 +145,7 @@ export function buildColorAccessor({
 	if (colorMode === 'category' && colorField) {
 		getCategoryColorValue = point => {
 			if (!point.isAggregate) {
-				return normalizeCategoryValue(point.raw?.[colorField]);
+				return categoryKey(point.raw?.[colorField]);
 			}
 			return pickMostFrequentCategory(point.rawRows || [], colorField);
 		};

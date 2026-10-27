@@ -232,5 +232,9 @@ export function joinDatasets({
 			...leftColumnMap.map(item => item.output),
 			...rightColumnMap.map(item => item.output),
 		],
+		columnSources: [
+			...leftColumnMap.map(item => ({ ...item, side: 'left' })),
+			...rightColumnMap.map(item => ({ ...item, side: 'right' })),
+		],
 	});
 }

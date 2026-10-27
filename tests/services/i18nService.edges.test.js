@@ -23,9 +23,6 @@ vi.mock('../../vendor/banana-i18n/banana-i18n.js', () => ({
 	default: mocks.MockBanana,
 }));
 
-vi.mock('../../src/i18n/pt-BR.json', () => ({ default: {} }));
-vi.mock('../../src/i18n/en.json', () => ({ default: {} }));
-
 import { t, getLocale, setLocale, initializeI18n } from '../../src/services/i18nService.js';
 
 /**
@@ -75,6 +72,27 @@ describe('i18nService branching coverage', () => {
 			});
 			expect(mocks.mockBanana.setLocale).not.toHaveBeenCalled();
 			expect(localStorage.getItem('chive-locale')).toBeNull();
+		});
+
+		it('reports an unavailable catalog and fetches it again on the next request', async () => {
+			vi.resetModules();
+			const fetchCatalog = vi.fn()
+				.mockResolvedValueOnce(new Response(null, { status: 404 }))
+				.mockResolvedValueOnce(new Response('{"key-test":"value"}', { status: 200 }));
+			vi.stubGlobal('fetch', fetchCatalog);
+			try {
+				const fresh = await import('../../src/services/i18nService.js');
+
+				await expect(fresh.setLocale('en')).resolves.toEqual({ ok: false, reason: 'catalog-unavailable' });
+				expect(localStorage.getItem('chive-locale')).toBeNull();
+
+				await expect(fresh.setLocale('en')).resolves.toEqual({ ok: true, locale: 'en' });
+				expect(fetchCatalog).toHaveBeenCalledTimes(2);
+				expect(String(fetchCatalog.mock.calls[0][0])).toMatch(/\/src\/i18n\/en\.json$/);
+				expect(mocks.mockBanana.load).toHaveBeenCalledWith({ 'key-test': 'value' }, 'en');
+			} finally {
+				vi.unstubAllGlobals();
+			}
 		});
 
 		it('accepts valid locale and emits event', async () => {

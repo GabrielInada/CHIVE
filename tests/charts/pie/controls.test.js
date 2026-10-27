@@ -11,8 +11,11 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 }));
 
 import { createPieChartControls } from '../../../src/charts/pie/controls/builder.js';
+import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/pie/controls/activationDefaults.js';
+import { renderPieChart } from '../../../src/charts/pie/renderers/svg.js';
+import { PIE_DEFINITION } from '../../../src/config/charts/definitions/pie.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -92,6 +95,23 @@ function lastConfig(writer) {
 	return writer.commit.mock.calls.at(-1)[0];
 }
 
+/** Rebuild and rewire the controls, as the sidebar does after each commit. */
+function mountControls(dataset, writer) {
+	document.body.innerHTML = '';
+	appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
+	setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], writer);
+}
+
+function applyLastCommit(dataset, writer) {
+	Object.assign(dataset.chartConfig.pie, lastConfig(writer));
+}
+
+function markedPresets() {
+	return [...document.querySelectorAll('button[data-color-preset-control="viz-pie-color-preset"]')]
+		.filter(button => button.style.border.startsWith('2px'))
+		.map(button => button.dataset.presetName);
+}
+
 describe('pieControls UI structure', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -158,6 +178,60 @@ describe('pieControls UI structure', () => {
 		expect(tokens).toEqual(['East', 'North', 'South']);
 	});
 
+	it('shows each slice in the color grid in the color the chart draws it', () => {
+		const dataset = createDataset({ customSliceColors: { South: '#123456' } });
+		appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
+
+		const chart = document.createElement('div');
+		document.body.appendChild(chart);
+		const { pie } = dataset.chartConfig;
+		renderPieChart(chart, dataset.rows, pie.category, { color: pie.color, customSliceColors: pie.customSliceColors });
+		const drawn = Object.fromEntries(Array.from(chart.querySelectorAll('path'), path => [path.__data__.data.key, path.getAttribute('fill')]));
+
+		const swatches = Object.fromEntries(Array.from(
+			document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]'),
+			input => [input.dataset.colorItem, input.value],
+		));
+		expect(swatches).toEqual(drawn);
+	});
+
+	// Past 9 slices every shade depends on how many sectors are drawn, so the
+	// grid has to count the same sectors as the chart.
+	it('shows the drawn colors past 9 slices with Top-N and Other', () => {
+		const dataset = createDataset({ topN: 10 });
+		dataset.rows = Array.from({ length: 12 }, (_, index) => Array.from(
+			{ length: 12 - index },
+			() => ({ region: `R${String(index + 1).padStart(2, '0')}`, sales: 1 }),
+		)).flat();
+		appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
+
+		const chart = document.createElement('div');
+		document.body.appendChild(chart);
+		const { pie } = dataset.chartConfig;
+		renderPieChart(chart, dataset.rows, pie.category, { color: pie.color, topN: pie.topN, topNMode: pie.topNMode });
+		const drawn = Array.from(chart.querySelectorAll('path'))
+			.filter(path => !path.__data__.data.isOther)
+			.map(path => [path.__data__.data.key, path.getAttribute('fill')]);
+
+		const swatch = key => document.querySelector(`input[data-color-grid-control="viz-pie-color-grid"][data-color-item="${key}"]`).value;
+		expect(drawn).toHaveLength(10);
+		expect(drawn.map(([key]) => [key, swatch(key)])).toEqual(drawn);
+	});
+
+	it('keeps a slice the global filter hides in the grid with the neutral swatch', () => {
+		const dataset = createDataset();
+		dataset.chartConfig.globalFilter = {
+			rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:North'] }],
+			combine: 'AND',
+		};
+		appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
+
+		const swatch = key => document.querySelector(`input[data-color-grid-control="viz-pie-color-grid"][data-color-item="${key}"]`).value;
+		expect(swatch('North')).toBe('#999999');
+		// East now leads the drawn chart, so it takes the base color.
+		expect(swatch('East')).toBe('#4e79a7');
+	});
+
 	it('omits sector color controls when there is no usable category data', () => {
 		const dataset = createDataset({ category: null });
 		const controls = createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
@@ -177,17 +251,17 @@ describe('pieControls UI structure', () => {
 		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
 		dataset.rows = [
 			{ region: 'North', sales: 10 },
-			{ region: '', sales: 7 },
+			{ region: null, sales: 7 },
 			{ region: null, sales: 5 },
-			{ region: 'South', sales: 'bad' },
+			{ region: 'South', sales: null },
 			{ region: 'East', sales: 9 },
 		];
 
 		appendControls(createPieChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
 
-		const tokens = Array.from(document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]'))
-			.map(input => input.dataset.colorItem);
-		expect(tokens).toEqual(['N/A', 'North', 'East']);
+		const inputs = Array.from(document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]'));
+		expect(inputs.map(input => input.dataset.colorItem)).toEqual([MISSING_KEY, 'North', 'East']);
+		expect(inputs[0].nextElementSibling.textContent).toBe('chive-chart-filter-missing'.slice(0, 12));
 	});
 
 	it('renders disabled controls and fallback selections for invalid options', () => {
@@ -421,6 +495,38 @@ describe('pieControls listeners', () => {
 
 		expect(writer.preview).not.toHaveBeenCalled();
 		expect(writer.commit).not.toHaveBeenCalled();
+	});
+});
+
+describe('pieControls color palette mark', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('marks no palette while the sectors keep their default shades', () => {
+		const { colorScheme, customSliceColors } = PIE_DEFINITION.createDefaultConfig();
+		mountControls(createDataset({ colorScheme, customSliceColors }), createWriter());
+
+		expect(markedPresets()).toEqual([]);
+	});
+
+	it('marks a palette once its button colors the sectors, until one sector color is edited', () => {
+		const dataset = createDataset();
+		const writer = createWriter();
+		mountControls(dataset, writer);
+
+		document.querySelector('button[data-color-preset-control="viz-pie-color-preset"][data-preset-name="Pastel"]').click();
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual(['Pastel']);
+
+		const southSwatch = document.querySelector('input[data-color-grid-control="viz-pie-color-grid"][data-color-item="South"]');
+		southSwatch.value = '#123456';
+		southSwatch.dispatchEvent(new Event('change'));
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual([]);
 	});
 });
 

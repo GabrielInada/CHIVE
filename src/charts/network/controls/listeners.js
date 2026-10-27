@@ -74,9 +74,7 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 	setupColorInputListener('viz-input-network-source-color', 'sourceNodeColor', '#e3743d', writer);
 	setupColorInputListener('viz-input-network-target-color', 'targetNodeColor', '#6b94c9', writer);
 
-	setupColorPresetListeners('viz-network-color-preset', {
-		sourceNodeColor: 0, targetNodeColor: 1,
-	}, {
+	setupColorPresetListeners('viz-network-color-preset', NETWORK_GRAPH.presetColorKeys, {
 		sourceNodeColor: '#e3743d', targetNodeColor: '#6b94c9',
 	}, writer, COLOR_PRESETS);
 

@@ -137,8 +137,8 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			if (presetColors.length === 0 || sectorValues.length === 0) return;
 
 			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
-			sectorValues.forEach((sector, index) => {
-				nextSliceColors[sector] = presetColors[index % presetColors.length];
+			sectorValues.forEach(({ key }, index) => {
+				nextSliceColors[key] = presetColors[index % presetColors.length];
 			});
 
 			writer.commit({
