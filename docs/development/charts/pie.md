@@ -288,9 +288,9 @@ wedge paths. A separate `labelArc` at 62% of the ring radius positions inside la
 
 One `<path>` per slice. Fill precedence, resolved once by `resolveSliceColors` for the wedges
 and the legend: the `Other` slice uses `PIE_CHART.otherSliceColor`; a category with a
-`customSliceColors` override uses that; otherwise `buildSliceColor` darkens the base color by
-8% per step of its position in the drawn order, so adjacent wedges are distinguishable. Each
-wedge has a white stroke. Hover shows a category/value/percentage tooltip; click pins the
+`customSliceColors` override uses that; otherwise `buildSliceColor` gives it the base color's
+shade for its position in the drawn order (section 8), so adjacent wedges are distinguishable.
+Each wedge has a white stroke. Hover shows a category/value/percentage tooltip; click pins the
 shared categorical filter-action tooltip (the bar doc's [section 7.6](bar.md)), except the
 `Other` slice, which pins a plain tooltip with no filter actions (it is an aggregate, not a
 real category). The pin is tracked by sector key, so clicking the pinned wedge again unpins
@@ -308,16 +308,26 @@ angular share. An optional legend lists the first 8 entries with color swatches.
 
 ## 8. The color system
 
-- **Base + shade**: `buildSliceColor(base, index)` from
-  [color.js](../../../src/charts/pie/color.js) darkens the base color 8% per step (capped at
-  8 steps), giving a monochrome family from one color.
+- **Base + shade**: `buildSliceColor(base, index, count)` from
+  [color.js](../../../src/charts/pie/color.js) darkens the base color 8% per step of the
+  slice's position, down to 64% darker at the 9th slice, giving a monochrome family from one
+  color. `count` is the number of sectors other than Other. Past 9, the same range is cut into
+  one shade per slice, and those shades sit too close together for neighbors to take them in
+  order. Even positions take the lighter half in order and odd positions the darker half, so
+  each wedge stays about half the range from the ones beside it, including the last and first,
+  which touch when there is no Other. No shade is lighter than the base color, so the white
+  inside labels keep at least the base color's contrast. Past 81 slices with the default
+  color, and sooner with a darker one, rounding to whole RGB values repeats some shades, but
+  never on neighboring slices.
 - **Per-slice overrides**: `customSliceColors[categoryKey]` wins over the shade for that
   category, set via the color grid or a palette preset.
 - **Palette presets**: distribute a qualitative palette across the sectors (writing
   per-slice overrides), unlike the bar/scatter presets which seed a two-color gradient.
 - **Other**: always the fixed `otherSliceColor` gray.
 - **Shades follow the drawn order**: a global filter that hides a larger category moves
-  every category below it up one shade. The color grid follows the chart (section 5.2).
+  every category below it up one position, to that position's shade. Past 9 slices the shades
+  also depend on how many are drawn, so hiding a category or changing Top-N respreads them.
+  The color grid follows the chart (section 5.2).
 
 ---
 
@@ -380,15 +390,17 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 - [renderEquivalence.test.js](../../../tests/charts/pie/renderEquivalence.test.js) pins the
   renderer's SVG and result output across representative options.
-- [renderers/svg.test.js](../../../tests/charts/pie/renderers/svg.test.js) covers slices, labels,
-  Top-N behavior, zoom, and pinned-tooltip filter states.
+- [renderers/svg.test.js](../../../tests/charts/pie/renderers/svg.test.js) covers slices
+  (one color each past 9 slices), labels, Top-N behavior, zoom, and pinned-tooltip filter
+  states.
 - [color.test.js](../../../tests/charts/pie/color.test.js) covers the base-color shade
-  sequence, its fallback, and the fill precedence.
+  sequence (8% steps up to 9 slices, the alternating spread past 9), its fallback, and the
+  fill precedence.
 - [sectorValues.test.js](../../../tests/charts/pie/sectorValues.test.js) covers the color-grid
   category order and the swatch colors under a global filter and Top-N.
 - [controls.test.js](../../../tests/charts/pie/controls.test.js) covers control building, the
   radius cross-constraint, the per-slice color logic, and that each swatch matches its drawn
-  wedge.
+  wedge, past 9 slices too.
 - [workspaceSection.test.js](../../../tests/charts/pie/workspaceSection.test.js) and
   [panelAdapter.test.js](../../../tests/charts/pie/panelAdapter.test.js) cover both integration
   surfaces and their shared renderer contract.

@@ -34,6 +34,21 @@ describe('renderPieChart behavior', () => {
 		expect(slices[0].getAttribute('fill')).toBe('#336699');
 	});
 
+	it('draws each slice of a pie with more than 9 slices in its own color', () => {
+		const container = document.getElementById('pie');
+		// C01 to C12 with 12 down to 1 rows each.
+		const rows = Array.from({ length: 12 }, (_, index) => Array.from(
+			{ length: 12 - index },
+			() => ({ categoria: `C${String(index + 1).padStart(2, '0')}` }),
+		)).flat();
+
+		renderPieChart(container, rows, 'categoria', { color: '#5f7c33' });
+
+		const fills = Array.from(container.querySelectorAll('path'), path => path.getAttribute('fill'));
+		expect(fills).toHaveLength(12);
+		expect(new Set(fills).size).toBe(12);
+	});
+
 	it('supports pie sum mode with legend and outside labels', () => {
 		const container = document.getElementById('pie');
 		const rows = [
