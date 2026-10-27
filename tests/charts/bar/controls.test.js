@@ -13,6 +13,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 import { createBarChartControls } from '../../../src/charts/bar/controls/builder.js';
 import { setupBarChartControlListeners } from '../../../src/charts/bar/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/bar/controls/activationDefaults.js';
+import { BAR_DEFINITION } from '../../../src/config/charts/definitions/bar.js';
 
 /**
  * Writer test double. The listeners' contract is that they hand the right
@@ -54,6 +55,23 @@ function createDataset(overrides = {}) {
 
 function appendControls(controls) {
 	controls.forEach(control => document.body.appendChild(control));
+}
+
+/** Rebuild and rewire the controls, as the sidebar does after each commit. */
+function mountControls(dataset, writer) {
+	document.body.innerHTML = '';
+	appendControls(createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
+	setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
+}
+
+function applyLastCommit(dataset, writer) {
+	Object.assign(dataset.chartConfig.bar, writer.commit.mock.calls.at(-1)[0]);
+}
+
+function markedPresets() {
+	return [...document.querySelectorAll('button[data-color-preset-control="viz-bar-color-preset"]')]
+		.filter(button => button.style.border.startsWith('2px'))
+		.map(button => button.dataset.presetName);
 }
 
 describe('bar controls package surface', () => {
@@ -301,6 +319,38 @@ describe('barControls listeners', () => {
 		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
 
 		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ showXAxisLabel: false }));
+	});
+});
+
+describe('barControls color palette mark', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	it('marks no palette on a new chart', () => {
+		const { color, colorScheme, gradientMinColor, gradientMaxColor } = BAR_DEFINITION.createDefaultConfig();
+		mountControls(createDataset({ color, colorScheme, gradientMinColor, gradientMaxColor }), createWriter());
+
+		expect(markedPresets()).toEqual([]);
+	});
+
+	it('marks a palette once its button applies it, until a bar color is edited', () => {
+		const dataset = createDataset();
+		const writer = createWriter();
+		mountControls(dataset, writer);
+
+		document.querySelector('button[data-color-preset-control="viz-bar-color-preset"][data-preset-name="Colorblind-Safe"]').click();
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual(['Colorblind-Safe']);
+
+		const colorInput = document.getElementById('viz-input-bar-color');
+		colorInput.value = '#ff0000';
+		colorInput.dispatchEvent(new Event('change'));
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual([]);
 	});
 });
 

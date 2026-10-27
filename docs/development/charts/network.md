@@ -199,7 +199,9 @@ Everything is disabled when `!config.enabled`. The selects, checkboxes, sliders,
 title, and presets use the shared helpers. Two custom pieces: the Reset Zoom button resets the
 zoom slider DOM and commits `zoomScale` back to its default through the shared
 `commitChartConfigPatch` adapter (the package never writes state directly); the color-preset
-buttons map `sourceNodeColor` to palette index 0 and `targetNodeColor` to index 1.
+buttons map `sourceNodeColor` to palette index 0 and `targetNodeColor` to index 1
+(`NETWORK_GRAPH.presetColorKeys`), and a palette is marked only while both still hold its
+colors.
 `computeDefaults` picks the first two visible columns as source and target.
 
 Because the force defaults (charge, distance, alpha decay) live in the Advanced section,

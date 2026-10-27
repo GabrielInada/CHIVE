@@ -14,6 +14,7 @@ import {
 	interpolateColor,
 	createColorPresetControl,
 	createColorPickerGridControl,
+	findAppliedColorPreset,
 } from '../../../../src/charts/shared/controls/factories.js';
 
 describe('normalizeHexColor', () => {
@@ -243,6 +244,38 @@ describe('createColorPresetControl', () => {
 		const el = createColorPresetControl('preset-fallback', 'Palette', 'Bold');
 		const tableauBtn = el.querySelector('button[data-preset-name="Tableau10"]');
 		expect(tableauBtn.textContent).toBe('Tableau10');
+	});
+
+	it('marks only the named preset, and none for null', () => {
+		const marked = el => [...el.querySelectorAll('button')]
+			.filter(button => button.style.border.startsWith('2px'))
+			.map(button => button.dataset.presetName);
+		expect(marked(createColorPresetControl('preset-marked', 'Palette', 'Pastel'))).toEqual(['Pastel']);
+		expect(marked(createColorPresetControl('preset-unmarked', 'Palette', null))).toEqual([]);
+	});
+});
+
+describe('findAppliedColorPreset', () => {
+	const colorKeys = { color: 0, gradientMaxColor: -1 };
+
+	it('names the preset whose colors every key still holds, ignoring case', () => {
+		expect(findAppliedColorPreset({ color: '#0173b2', gradientMaxColor: '#A6ACAF' }, colorKeys)).toBe('Colorblind-Safe');
+	});
+
+	it('returns null once any key holds another color', () => {
+		expect(findAppliedColorPreset({ color: '#0173b2', gradientMaxColor: '#ffffff' }, colorKeys)).toBeNull();
+		expect(findAppliedColorPreset({ color: '#d4622a', gradientMaxColor: '#ffffff' }, colorKeys)).toBeNull();
+	});
+
+	it('wraps positions past the end of the palette', () => {
+		const pastel = COLOR_PRESETS.Pastel;
+		expect(findAppliedColorPreset({ first: pastel[0], wrapped: pastel[0] }, { first: 0, wrapped: pastel.length })).toBe('Pastel');
+		expect(findAppliedColorPreset({ first: pastel[0], wrapped: pastel[1] }, { first: 0, wrapped: pastel.length })).toBeNull();
+	});
+
+	it('returns null without colors or keys to compare', () => {
+		expect(findAppliedColorPreset(undefined, colorKeys)).toBeNull();
+		expect(findAppliedColorPreset({ color: '#0173B2' }, {})).toBeNull();
 	});
 });
 

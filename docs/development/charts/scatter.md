@@ -321,6 +321,11 @@ interesting custom listeners encode the cross-constraints:
 - **Regression mode → perCategory**: if the user asks for per-category fits while not already
   in category color mode, the listener switches color to category on the first categorical
   column so the split is meaningful.
+- **Color presets**: each palette button writes `color` and `gradientMinColor` from palette
+  index 0 and `gradientMaxColor` from the last (`SCATTER_PLOT.presetColorKeys`), plus the
+  name into `colorScheme`. While a category field colors the points, the buttons mark the
+  stored `colorScheme`, which the renderer draws; in the other modes they mark a palette
+  only while all three colors still hold it.
 
 `computeDefaults` picks X as the first numeric column (or first column) and Y as the second
 numeric column that is not X, each scale defaulting to linear unless its column is numeric.
@@ -440,11 +445,11 @@ titles are drawn, and the function returns `ok()`.
   (size). `normalizeDomain` guards against degenerate (single-value or non-finite) extents.
 - **Color**: `interpolateColor` (clamped RGB lerp) for numeric gradients, with value or rank
   (`buildRankMap`) distribution, both from [colorUtils.js](../../../src/utils/colorUtils.js); a
-  fixed qualitative palette for category color. The palettes are owned by
-  [palettes.js](../../../src/charts/scatter/palettes.js) as a frozen
-  constant, reached through `getScatterPalette(scheme)` /
-  `resolveScatterColorScheme(scheme)` (both fall back to `Bold`) so callers cannot mutate
-  them.
+  fixed qualitative palette for category color. The palettes are frozen copies of the shared
+  `CHART_COLOR_PALETTES` (Tableau10, Pastel, Bold, Colorblind-Safe, the set the palette
+  buttons offer), owned by [palettes.js](../../../src/charts/scatter/palettes.js) and reached
+  through `getScatterPalette(scheme)` / `resolveScatterColorScheme(scheme)` (both fall back
+  to `Bold`) so callers cannot mutate them.
 
 ---
 

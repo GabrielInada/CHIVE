@@ -255,6 +255,9 @@ nothing:
 
 The color-preset buttons write `gradientMinColor` from palette index 0, `gradientMaxColor`
 from the last index, and `color` from index 0, plus the palette name into `colorScheme`.
+The builder reads the same mapping (`BAR_CHART.presetColorKeys`) and marks a palette only
+while all three colors still hold it, so a new chart marks none and editing a color clears
+the mark; nothing draws from `colorScheme`.
 Every write merges a partial into `chartConfig.bar` and fires `onConfigChanged`. The
 renderer never reads the DOM controls; it only reads config the listeners have written.
 

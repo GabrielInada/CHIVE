@@ -242,6 +242,35 @@ export const COLOR_PRESETS = CHART_COLOR_PALETTES;
 
 export { hexToRgb, rgbToHex, interpolateColor, normalizeHexColor } from '../../../utils/colorUtils.js';
 
+/**
+ * Find the preset whose colors are still in place, for charts whose preset
+ * buttons copy palette colors into their own color keys. `colorKeys` maps each
+ * key a button writes to the palette position it takes, the same map the chart
+ * passes to `setupColorPresetListeners`. Negative positions count from the end;
+ * positions past the end wrap, the way the pie repeats a palette over its
+ * slices. A preset matches only while every one of those keys still holds its
+ * color, so editing any of them clears the match.
+ *
+ * Colors compare ignoring case: the palettes mix cases and a color input
+ * reports lowercase.
+ *
+ * @param {Object<string, *> | null | undefined} colors - The chart config block, or the pie's `customSliceColors`.
+ * @param {Object<string, number>} colorKeys - Color key → palette position.
+ * @returns {string | null} The matching preset name, or `null` when none matches.
+ */
+export function findAppliedColorPreset(colors, colorKeys) {
+	const positions = Object.entries(colorKeys);
+	if (positions.length === 0) return null;
+
+	const sameColor = (value, expected) => typeof value === 'string'
+		&& typeof expected === 'string'
+		&& value.toLowerCase() === expected.toLowerCase();
+	const match = Object.entries(COLOR_PRESETS).find(([, palette]) => positions.every(([key, position]) => (
+		sameColor(colors?.[key], palette.at(position % palette.length))
+	)));
+	return match ? match[0] : null;
+}
+
 const PALETTE_LABEL_KEYS = {
 	Tableau10: 'chive-chart-palette-tableau10',
 	Bold: 'chive-chart-palette-bold',
@@ -269,7 +298,7 @@ function localizedPaletteName(paletteId, translate) {
  *
  * @param {string} id
  * @param {string} labelText
- * @param {string} presetName - Currently-active preset; gets a highlighted border.
+ * @param {string | null} presetName - The preset the chart is drawn with, or `null` for none; its button gets a highlighted border.
  * @param {boolean} [disabled=false]
  * @param {((key: string) => string) | undefined} translate - i18n lookup for palette names and help text.
  * @param {((name: string, colors: string[]) => void) | undefined} onSelect - Per-button click handler.

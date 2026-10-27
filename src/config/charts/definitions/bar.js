@@ -13,6 +13,8 @@ export const BAR_CHART = {
   defaultTopN: 10,
   measureModes: ['count', 'sum', 'mean'],
   defaultMeasureMode: 'count',
+  // Config key -> palette position for the color palette buttons.
+  presetColorKeys: { color: 0, gradientMinColor: 0, gradientMaxColor: -1 },
 };
 
 function createDefaultConfig() {

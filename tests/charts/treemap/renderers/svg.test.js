@@ -3,6 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderTreemap } from '../../../../src/charts/treemap/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
+import { CHART_COLOR_PALETTES } from '../../../../src/config/charts/shared.js';
 
 const ROWS = [
 	{ region: 'North', sales: 30 },
@@ -127,6 +128,12 @@ describe('renderTreemap', () => {
 		renderTreemap(container, ROWS, 'region', { colorMode: 'scheme', colorScheme: 'Bold' });
 		// Three categories pull three distinct palette entries.
 		expect(new Set(fills(container)).size).toBe(3);
+	});
+
+	it('draws every palette its color buttons offer, Tableau10 included', () => {
+		const container = document.getElementById('treemap');
+		renderTreemap(container, ROWS, 'region', { colorMode: 'scheme', colorScheme: 'Tableau10' });
+		expect(new Set(fills(container))).toEqual(new Set(CHART_COLOR_PALETTES.Tableau10.slice(0, 3)));
 	});
 
 	it('renders a custom title', () => {

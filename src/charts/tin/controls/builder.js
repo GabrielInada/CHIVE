@@ -24,6 +24,7 @@ import {
 	createSliderControl,
 	createTextControl,
 	createColorPresetControl,
+	findAppliedColorPreset,
 } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
 
@@ -177,7 +178,8 @@ function buildSurfaceControls(config, disabled) {
 		createColorPresetControl(
 			'viz-tin-color-preset',
 			t('chive-chart-color-palette'),
-			config.colorScheme || 'Colorblind-Safe',
+			// A named ramp ignores the gradient colors, so no palette is in use.
+			isCustomRamp ? findAppliedColorPreset(config, TIN_CHART.presetColorKeys) : null,
 			disabled || !isCustomRamp,
 			t,
 		),

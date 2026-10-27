@@ -151,8 +151,11 @@ are detached `structuredClone` captures (see
 
 [treemap.js](../../../src/config/charts/definitions/treemap.js): the treemap color is `#5a7d99`;
 `CHART_HEIGHT_LIMITS.treemap` = `{ min: 220, max: 720 }`; `TREEMAP_CHART` holds the measure
-modes, `defaultTopN: 20`, and the padding options (`[1, 2, 4]`, default 2). The scheme palettes
-are defined in the renderer (`COLOR_PALETTE`: Bold, Pastel, Colorblind-Safe).
+modes, `defaultTopN: 20`, the padding options (`[1, 2, 4]`, default 2), and
+`presetColorKeys`, the config key each palette button writes. The scheme palettes are the
+shared `CHART_COLOR_PALETTES` in [shared.js](../../../src/config/charts/shared.js) (Tableau10,
+Pastel, Bold, Colorblind-Safe), the same set the palette buttons offer; an unknown name draws
+Bold.
 
 ---
 
@@ -177,6 +180,8 @@ text, slider, checkbox, color, and preset controls use the shared chart-control 
 adapters. Measure and value-column changes retain small custom handlers because they enforce a
 cross-field constraint: switching to count clears `valueColumn`, while sum mode preserves only
 a valid numeric selection. The color presets set the uniform `color` to the palette's first
+swatch. In scheme mode the palette buttons mark the stored `colorScheme`, which is what the
+renderer draws; in uniform mode they mark a palette only while `color` still holds its first
 swatch. `computeDefaults` picks the category column.
 
 ---
@@ -240,8 +245,8 @@ clicking the background dismisses it.
 ## 8. The color system
 
 Treemap color is **categorical**, not value-driven: a palette hue per tile by index
-(`scheme` mode) or one uniform color (`uniform` mode). The palettes live in the renderer's
-`COLOR_PALETTE`; the preset buttons also seed the uniform `color`. Area, not color, carries
+(`scheme` mode) or one uniform color (`uniform` mode). The palettes are the shared
+`CHART_COLOR_PALETTES`; the preset buttons also seed the uniform `color`. Area, not color, carries
 magnitude, so there is no gradient or rank distribution here.
 
 ---

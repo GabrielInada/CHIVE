@@ -12,6 +12,7 @@
  */
 
 import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { BAR_CHART } from '../../../config/charts/definitions/bar.js';
 import { t } from '../../../services/i18nService.js';
 import {
 	createCheckboxControl,
@@ -20,6 +21,7 @@ import {
 	createSelectControl,
 	createSliderControl,
 	createTextControl,
+	findAppliedColorPreset,
 } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
 
@@ -267,7 +269,7 @@ function buildAdvancedControls(config, isDisabled) {
 	advancedControls.push(createColorPresetControl(
 		'viz-bar-color-preset',
 		t('chive-chart-color-palette'),
-		config.colorScheme || 'Bold',
+		findAppliedColorPreset(config, BAR_CHART.presetColorKeys),
 		isDisabled,
 		t
 	));

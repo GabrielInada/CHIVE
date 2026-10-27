@@ -14,6 +14,7 @@
  */
 
 import { CHART_COLORS } from '../../../config/charts/definitions.js';
+import { SCATTER_PLOT } from '../../../config/charts/definitions/scatter.js';
 import { normalizeHexColor, COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,
@@ -135,9 +136,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, w
 			['value', 'rank'].includes(v) ? v : 'value' },
 	], writer);
 
-	setupColorPresetListeners('viz-scatter-color-preset', {
-		color: 0, gradientMinColor: 0, gradientMaxColor: -1,
-	}, {
+	setupColorPresetListeners('viz-scatter-color-preset', SCATTER_PLOT.presetColorKeys, {
 		color: CHART_COLORS.scatter, gradientMinColor: CHART_COLORS.scatter, gradientMaxColor: '#ffffff',
 	}, writer, COLOR_PRESETS);
 

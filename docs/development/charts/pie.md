@@ -225,7 +225,8 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
   below the outer (adjusting one can clamp the other).
 - **Reset Zoom**: resets both the zoom slider DOM and `zoomScale` to the default.
 - **Palette presets**: map an N-color palette across the N sectors by writing
-  `customSliceColors` for each (not a single gradient).
+  `customSliceColors` for each (not a single gradient). A palette stays marked only while
+  every sector keeps the color its button gave it.
 - **Per-slice color grid**: each swatch writes through the non-emitting facade on `input`
   (live drag preview, no sidebar rebuild) and commits through the emitting facade on `change`,
   the same live-preview discipline the TIN color picker uses (TIN doc [section 10](tin.md)).

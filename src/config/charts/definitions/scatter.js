@@ -13,6 +13,8 @@ export const SCATTER_PLOT = {
   defaultRadius: 3,
   opacityOptions: [0.3, 0.5, 0.7, 1],
   defaultOpacity: 0.7,
+  // Config key -> palette position for the color palette buttons.
+  presetColorKeys: { color: 0, gradientMinColor: 0, gradientMaxColor: -1 },
 };
 
 function createDefaultConfig() {

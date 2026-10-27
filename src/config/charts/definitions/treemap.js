@@ -11,6 +11,8 @@ export const TREEMAP_CHART = {
   defaultTopN: 20,
   paddingOptions: [1, 2, 4],
   defaultPadding: 2,
+  // Config key -> palette position for the color palette buttons.
+  presetColorKeys: { color: 0 },
 };
 
 function createDefaultConfig() {
