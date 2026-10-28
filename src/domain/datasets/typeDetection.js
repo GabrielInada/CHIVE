@@ -203,9 +203,10 @@ export function detectType(values, decimalSeparator = '.') {
 
 	if (validValues.length === 0) return TYPE_DEFAULTS.fallback;
 
+	// Match canonicalization, which keeps only finite numbers.
 	const totalNumbers = validValues.filter(v => {
 		const normalized = normalizeNumericString(String(v), decimalSeparator);
-		return !isNaN(Number(normalized));
+		return Number.isFinite(Number(normalized));
 	}).length;
 	if (totalNumbers / validValues.length >= TYPE_DETECTION.numberThreshold) return COLUMN_TYPES.NUMBER;
 

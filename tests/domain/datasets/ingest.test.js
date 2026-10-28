@@ -261,6 +261,12 @@ describe('ingestDataset', () => {
 		expect(value.rows.map(row => row[column])).toEqual(expected);
 	});
 
+	it('keeps values that read as infinite as text instead of typing the column as numbers', () => {
+		const value = ingest({ kind: 'csv', text: 'label,value\na,Infinity\nb,-Infinity\nc,1e999\n' });
+		expect(value.columns.find(c => c.name === 'value')?.type).toBe('text');
+		expect(value.rows.map(row => row.value)).toEqual(['Infinity', '-Infinity', '1e999']);
+	});
+
 	it('keeps typed JSON numbers with 3 decimals exact', () => {
 		const value = ingest({ kind: 'json', text: '[{"v":1.125},{"v":2.25},{"v":3.375}]' });
 		expect(value.rows).toEqual([{ v: 1.125 }, { v: 2.25 }, { v: 3.375 }]);

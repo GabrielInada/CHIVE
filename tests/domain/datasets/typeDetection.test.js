@@ -155,5 +155,13 @@ describe('typeDetection', () => {
     it('detects numbers with European decimal separator', () => {
       expect(detectType(['3,14', '2,71', '1,41'], ',')).toBe('number');
     });
+
+    it('counts only values that read as finite numbers toward the number type', () => {
+      expect(detectType(['Infinity', '-Infinity', '1e999'])).toBe('text');
+      expect(detectType([Infinity, -Infinity])).toBe('text');
+      // Counting "Infinity" would make four numbers of five, enough for the 80% threshold.
+      expect(detectType(['1', '2', '3', 'Infinity', 'n/a'])).toBe('text');
+      expect(detectType(['1', '2', '3', '4', '5', '6', '7', '8', '9', 'Infinity'])).toBe('number');
+    });
   });
 });
