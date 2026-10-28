@@ -350,7 +350,7 @@
  *
  * @typedef {Object} IngestPayload
  * @property {Array<Object<string, *>>} rows - Canonical rows: every row has every column, each cell in its column type's canonical form.
- * @property {ColumnSpec[]} columns - Columns in source order, each with its type and decimal separator. A join that matched nothing keeps its output columns, typed as text.
+ * @property {ColumnSpec[]} columns - Columns in source order, each with its type and decimal separator. JSON columns follow the first row's keys, which list integer-like names first. A join that matched nothing keeps its output columns, typed as text.
  * @property {PrecomputedStats} precomputedStats - Numeric and categorical stats with both versions stamped. Both lists are empty when there are no rows.
  * @property {number | null} truncatedFrom - Original row count when `options.rowLimit` truncated; `null` otherwise.
  */

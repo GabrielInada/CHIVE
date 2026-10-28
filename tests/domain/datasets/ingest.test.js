@@ -387,6 +387,31 @@ describe('ingestDataset', () => {
 		expect(ingest({ kind: 'json', text: '[{"a":1},{"a":2}]' }).rows).toEqual([{ a: 1 }, { a: 2 }]);
 	});
 
+	it('keeps the CSV header order for columns with integer-like names', () => {
+		const value = ingest({ kind: 'csv', text: 'country,1990,2000\nBR,1,2\n' });
+		expect(value.columns.map(c => c.name)).toEqual(['country', '1990', '2000']);
+	});
+
+	it('lists a repeated CSV header name once, where it first appears', () => {
+		const value = ingest({ kind: 'csv', text: 'a,1990,a\nx,1,y\n' });
+		expect(value.columns.map(c => c.name)).toEqual(['a', '1990']);
+	});
+
+	it('keeps the join output order for columns with integer-like names', () => {
+		const value = ingest({
+			kind: 'join',
+			join: {
+				leftRows: [{ id: '1', country: 'BR' }],
+				rightRows: [{ id: '1', 1990: '5' }],
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				leftColumns: ['id', 'country'],
+				rightColumns: ['1990'],
+			},
+		});
+		expect(value.columns.map(c => c.name)).toEqual(['id', 'country', '1990']);
+	});
+
 	it('joins and canonicalizes complete row sets', () => {
 		const { result, progress } = ingestWithProgress({
 			kind: 'join',
