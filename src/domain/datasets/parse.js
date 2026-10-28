@@ -9,8 +9,8 @@ import { ok, fail } from '../../utils/result.js';
  * DOM, no state, no I/O, safe to use in workers and tests.
  *
  * `parseCsv`/`parseJson` return a {@link Result}: `ok({ rows })` on success,
- * `fail(reason)` with a stable reason code on failure (the worker maps the
- * reason to a localized message).
+ * plus the `header` for CSV, or `fail(reason)` with a stable reason code on
+ * failure (the worker maps the reason to a localized message).
  *
  * @typedef {import('../../types.js').Result} Result
  */
@@ -43,9 +43,11 @@ export function detectDelimiter(firstLine) {
 /**
  * Parse a delimited text file with automatic delimiter detection.
  * Inspects the first line to detect the delimiter, then parses the full content.
+ * Row objects list integer-like keys such as years first, so only `header`
+ * keeps the file's column order.
  *
  * @param {string} text - Full file content as a string
- * @returns {Result} `ok({ rows })` with parsed rows as plain objects, or `fail('csv-empty')`.
+ * @returns {Result} `ok({ rows, header })` with parsed rows as plain objects and the header's names in file order, or `fail('csv-empty')`.
  */
 export function parseCsv(text) {
 	if (!text || text.trim().length === 0) {
@@ -55,11 +57,12 @@ export function parseCsv(text) {
 	const firstLine = text.split(/\r?\n/).find(line => line.trim().length > 0) || '';
 	const delimiter = detectDelimiter(firstLine);
 	const rows = dsvFormat(delimiter).parse(text);
+	const header = rows.columns;
 
 	if (rows.columns) delete rows.columns;
 	if (rows.length === 0) return fail('csv-empty');
 
-	return ok({ rows });
+	return ok({ rows, header });
 }
 
 const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);

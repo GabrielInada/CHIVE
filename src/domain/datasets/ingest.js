@@ -37,6 +37,10 @@ const NORMALIZE_CHUNK_SIZE = 20000;
  * separator, and any other column gets the one detected from the first rows'
  * strings, with a dot fallback.
  *
+ * Columns keep the order of the CSV header or of the join's output. A JSON
+ * file's columns follow its first row's keys, which list integer-like names
+ * such as years first.
+ *
  * Progress goes to `onProgress` stage by stage (see {@link IngestProgress}).
  * A result with no rows reports only the first stage.
  *
@@ -48,7 +52,7 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 	const report = (stage, percent) => onProgress?.({ stage, percent });
 	const rowLimit = Number.isFinite(options.rowLimit) ? options.rowLimit : Infinity;
 	let rawData;
-	let outputColumns = [];
+	let columnOrder = [];
 	const inheritedSeparators = new Map();
 
 	if (kind === 'join') {
@@ -56,7 +60,7 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 		const joined = joinDatasets(join || {});
 		if (!joined.ok) return fail(joined.reason || 'join-error');
 		rawData = joined.rows;
-		outputColumns = joined.outputColumns;
+		columnOrder = joined.outputColumns;
 		const sourceColumns = {
 			left: new Map((join.leftColumnSpecs || []).map(column => [column.name, column])),
 			right: new Map((join.rightColumnSpecs || []).map(column => [column.name, column])),
@@ -73,6 +77,7 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 		const parsed = kind === 'json' ? parseJson(text) : parseCsv(text);
 		if (!parsed.ok) return fail(parsed.reason);
 		rawData = parsed.rows;
+		columnOrder = parsed.header ?? [];
 		report('parsing', 30);
 	}
 
@@ -86,7 +91,7 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 			}
 			return next;
 		});
-		outputColumns = outputColumns.filter(name => !dropSet.has(name));
+		columnOrder = columnOrder.filter(name => !dropSet.has(name));
 	}
 
 	let truncatedFrom = null;
@@ -103,7 +108,7 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 	if (rawData.length === 0) {
 		// No values to type: a join that matched nothing keeps its output columns as text.
 		const fileSeparator = detectDecimalSeparator([], options.decimalSeparator);
-		const columns = outputColumns.map(name => ({
+		const columns = columnOrder.map(name => ({
 			name,
 			type: 'text',
 			decimalSeparator: columnSeparator(name, fileSeparator),
@@ -119,7 +124,7 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 	const fileSeparator = detectDecimalSeparator(allRawValues, options.decimalSeparator);
 	report('decimal-detection', 35);
 
-	const columnNames = Object.keys(rawData[0]);
+	const columnNames = inSourceOrder(Object.keys(rawData[0]), columnOrder);
 	const columns = [];
 	for (let i = 0; i < columnNames.length; i++) {
 		const name = columnNames[i];
@@ -140,6 +145,26 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 	report('stats', 100);
 
 	return ok({ value: { rows, columns, precomputedStats: versionedStats(numeric, categorical), truncatedFrom } });
+}
+
+/**
+ * Order a row's keys by the source's column list. Object keys list
+ * integer-like names such as years first, so only the source still knows
+ * where those columns sit. Names the row lacks and repeated names are
+ * skipped; keys the list leaves out follow in key order.
+ *
+ * @private
+ * @param {string[]} keys - The first row's keys.
+ * @param {string[]} columnOrder - Column names in source order: a CSV header or a join's output columns.
+ * @returns {string[]} The same names as `keys`, in source order.
+ */
+function inSourceOrder(keys, columnOrder) {
+	const remaining = new Set(keys);
+	const ordered = [];
+	for (const name of columnOrder) {
+		if (remaining.delete(name)) ordered.push(name);
+	}
+	return [...ordered, ...remaining];
 }
 
 /**
