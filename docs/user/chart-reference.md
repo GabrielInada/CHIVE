@@ -202,9 +202,11 @@ controls of the per-chart packages under `src/charts/`.
 ## Filters and chart data
 
 - **Global filters.** The global filter applies a multi-rule pipeline to the active dataset
-  before any chart reads it (`src/domain/filters/globalFilter.js`, with single-rule primitives in
-  `src/domain/filters/chartFilter.js`). A categorical rule includes or excludes values; a numeric
-  rule filters by range or comparison. Charts always render the filtered rows.
+  before any chart reads it (`src/domain/filters/datasetFilter.js`, with the pipeline in
+  `globalFilter.js` and single-rule primitives in `chartFilter.js`). A categorical rule includes
+  or excludes values; a numeric rule filters by range or comparison. Charts always render the
+  filtered rows. A rule keeps applying while its column is hidden from the column list, so the
+  table, statistics, charts, and panel snapshots always show the same rows.
 - **Missing-value bucket.** Missing values do not fragment a categorical series: they
   collapse into one bucket, labeled `N/A` in grouping and `(missing)` in the filter dialog.
 - **Panel snapshots.** Adding a chart to the dashboard panel snapshots the current

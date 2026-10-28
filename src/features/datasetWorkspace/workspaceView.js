@@ -24,10 +24,7 @@ import { renderColumnControlsDOM } from './views/columnControlsView.js';
 import { VIEW_IDS, FILE_IDS, BADGE_IDS, WORKSPACE_ACTION_IDS } from './domIds.js';
 import { openGlobalFilterDialog } from './dialogs/globalFilterDialog.js';
 import { createGlobalFilterActions } from './filters/globalFilterActions.js';
-import {
-  applyGlobalFilterRules,
-  resolveGlobalFilterForColumns,
-} from '../../domain/filters/globalFilter.js';
+import { filterDataset } from '../../domain/filters/datasetFilter.js';
 
 /**
  * Render the main data-interface for the active dataset: tabs, table
@@ -103,8 +100,7 @@ export function renderDatasetWorkspace(
   });
 
   const allColumnNames = columns.map(column => column.name);
-  const safeGlobalFilter = resolveGlobalFilterForColumns(config.globalFilter, allColumnNames);
-  const filteredRows = applyGlobalFilterRules(rows, safeGlobalFilter, numericNames);
+  const { filter: safeGlobalFilter, rows: filteredRows } = filterDataset({ rows, columns, chartConfig: config });
 
   const globalFilterActions = createGlobalFilterActions({
     globalFilter: config.globalFilter,
@@ -160,7 +156,7 @@ export function renderDatasetWorkspace(
   renderTablePreview(filteredRows, visibleColumns, rowLimit);
   renderStats(filteredRows, visibleColumns);
   renderCategoricalStats(filteredRows, visibleColumns);
-  renderCharts(config, rows, visibleColumns, visibleNumericColumns, globalFilterActions);
+  renderCharts(config, filteredRows, visibleColumns, visibleNumericColumns, globalFilterActions);
 
   document.getElementById(WORKSPACE_ACTION_IDS.advanceButton).disabled = false;
   document.getElementById(FILE_IDS.uploadZone).classList.add('loaded');
