@@ -61,9 +61,7 @@ describe('ingestFile', () => {
 					result: {
 						rows: [{ x: 1 }],
 						columns: [{ name: 'x', type: 'number' }],
-						decimalSeparator: '.',
-						statsNumeric: [],
-						statsCategorical: [],
+						precomputedStats: { numeric: [], categorical: [] },
 						truncatedFrom: null,
 					},
 				});
@@ -83,7 +81,7 @@ describe('ingestFile', () => {
 	it('forwards options including rowLimit and dropColumns to the worker', async () => {
 		worker.onPost((data, w) => {
 			queueMicrotask(() => {
-				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
+				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
 			});
 		});
 
@@ -111,10 +109,7 @@ describe('ingestFile', () => {
 					result: {
 						rows: [{ id: 1 }],
 						columns: [{ name: 'id', type: 'number' }],
-						outputColumns: ['id'],
-						decimalSeparator: '.',
-						statsNumeric: [],
-						statsCategorical: [],
+						precomputedStats: { numeric: [], categorical: [] },
 						truncatedFrom: null,
 					},
 				});
@@ -124,7 +119,7 @@ describe('ingestFile', () => {
 		const result = await joinDatasetsInWorker(join, { decimalSeparator });
 
 		expect(result.ok).toBe(true);
-		expect(result.value.outputColumns).toEqual(['id']);
+		expect(result.value.rows).toEqual([{ id: 1 }]);
 		expect(worker.postMessages[0]).toEqual(expect.objectContaining({
 			kind: 'join',
 			join,
@@ -143,7 +138,7 @@ describe('ingestFile', () => {
 			worker.onPost((data, w) => {
 				expect(data.id).toMatch(/^ingest-\d+-\d+$/);
 				queueMicrotask(() => {
-					w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
+					w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
 				});
 			});
 
@@ -238,7 +233,7 @@ describe('ingestFile', () => {
 		worker.onPost((data, w) => {
 			queueMicrotask(() => {
 				w.emit({ id: 'wrong-id', type: 'progress', stage: 'parsing', percent: 50 });
-				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
+				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
 			});
 		});
 
@@ -272,7 +267,7 @@ describe('ingestFile message validation', () => {
 	});
 
 	function validResult() {
-		return { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null };
+		return { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null };
 	}
 
 	it('skips a progress message with a non-string stage', async () => {

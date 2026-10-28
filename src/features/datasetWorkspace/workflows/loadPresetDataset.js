@@ -11,7 +11,6 @@ import { loadPresetSource } from '../../../services/presetService.js';
 import { addDataset } from '../../../state/appState.js';
 import { showError, showProgress } from '../../../ui/feedback.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
-import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../config/statistics.js';
 
 /**
  * Resolve and load a preset dataset.
@@ -68,7 +67,7 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 			return;
 		}
 
-		const { rows, columns, statsNumeric, statsCategorical } = ingestResult.value;
+		const { rows, columns, precomputedStats } = ingestResult.value;
 
 		const dataset = {
 			name: presetName,
@@ -77,12 +76,7 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 			columns,
 			selectedColumns: columns.map(c => c.name),
 			chartConfig: createDefaultChartConfig(),
-			precomputedStats: {
-				numeric: statsNumeric,
-				categorical: statsCategorical,
-				numericVersion: STATS_NUMERIC_VERSION,
-				categoricalVersion: STATS_CATEGORICAL_VERSION,
-			},
+			precomputedStats,
 		};
 
 		const index = addDataset(dataset);

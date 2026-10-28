@@ -1,7 +1,7 @@
 /**
  * Controller-internal dataset join workflow.
  *
- * Owns join validation, domain joining, dataset normalization, naming, and
+ * Owns join validation, the join's ingest in the data worker, naming, and
  * insertion into state. The controller remains the public feature surface.
  *
  * @typedef {import('../../../types.js').JoinDatasetResult} JoinDatasetResult
@@ -13,7 +13,6 @@ import { joinDatasetsInWorker } from '../../../services/dataIngestService.js';
 import { addDataset, getAllDatasets } from '../../../state/appState.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
 import { ROW_LIMIT } from '../../../config/limits.js';
-import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../config/statistics.js';
 import { joinValidationMessageKey, validateJoinSpec } from '../joinValidation.js';
 
 /**
@@ -127,13 +126,7 @@ export async function createJoinedDataset(spec = {}, dependencies = {}) {
 			};
 		}
 
-		const {
-			rows,
-			columns,
-			outputColumns = [],
-			statsNumeric = [],
-			statsCategorical = [],
-		} = result.value;
+		const { rows, columns, precomputedStats } = result.value;
 
 		if (rows.length > ROW_LIMIT) {
 			const locale = getLocale();
@@ -150,22 +143,15 @@ export async function createJoinedDataset(spec = {}, dependencies = {}) {
 			}
 		}
 
-		const fallbackColumns = outputColumns.map(columnName => ({ name: columnName, type: 'text' }));
-		const resolvedColumns = columns.length > 0 ? columns : fallbackColumns;
 		const datasetName = buildJoinDatasetName(leftDataset.name, rightDataset.name);
 		const dataset = {
 			name: datasetName,
 			sizeLabel: t('chive-join-generated-size', [rows.length]),
 			rows,
-			columns: resolvedColumns,
-			selectedColumns: resolvedColumns.map(column => column.name),
+			columns,
+			selectedColumns: columns.map(column => column.name),
 			chartConfig: createDefaultChartConfig(),
-			precomputedStats: {
-				numeric: statsNumeric,
-				categorical: statsCategorical,
-				numericVersion: STATS_NUMERIC_VERSION,
-				categoricalVersion: STATS_CATEGORICAL_VERSION,
-			},
+			precomputedStats,
 		};
 
 		const index = addDataset(dataset);

@@ -80,6 +80,7 @@ import {
   setupFileInputListeners,
 } from '../../../src/features/datasetWorkspace/datasetController.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../src/config/statistics.js';
+import { ingestDataset } from '../../../src/domain/datasets/ingest.js';
 import { runIngest } from '../../../src/workers/dataIngestWorker.js';
 
 class FileReaderMock {
@@ -104,6 +105,15 @@ function csvFile({
     size,
     __content: content,
     __shouldFailRead: shouldFailRead,
+  };
+}
+
+function emptyStats() {
+  return {
+    numeric: [],
+    categorical: [],
+    numericVersion: STATS_NUMERIC_VERSION,
+    categoricalVersion: STATS_CATEGORICAL_VERSION,
   };
 }
 
@@ -136,9 +146,7 @@ describe('datasetController', () => {
       value: {
         rows: [{ a: 1 }],
         columns: [{ name: 'a', type: 'number' }],
-        decimalSeparator: '.',
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
         truncatedFrom: null,
       },
     });
@@ -154,9 +162,7 @@ describe('datasetController', () => {
       value: {
         rows: [{ id: '1' }],
         columns: [{ name: 'id', type: 'text' }],
-        outputColumns: ['id'],
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
         truncatedFrom: null,
       },
     });
@@ -213,14 +219,7 @@ describe('datasetController', () => {
 		select.innerHTML = '<option value="auto">Auto</option><option value=".">Dot</option><option value=",">Comma</option>';
 		select.value = separator;
 		document.body.appendChild(select);
-		mocks.ingestFile.mockImplementation(async payload => {
-			let result;
-			runIngest({ id: 'upload-format', ...payload }, message => {
-				if (message.type === 'done') result = { ok: true, value: message.result };
-				if (message.type === 'error') result = { ok: false, reason: message.reason };
-			});
-			return result;
-		});
+		mocks.ingestFile.mockImplementation(async request => ingestDataset(request));
 
 		try {
 			await handleFileUpload([csvFile({ name, content: text })]);
@@ -255,9 +254,7 @@ describe('datasetController', () => {
         value: {
           rows: [{ x: 1 }, { x: 2 }],
           columns: [{ name: 'x', type: 'number' }],
-          decimalSeparator: '.',
-          statsNumeric: [],
-          statsCategorical: [],
+          precomputedStats: emptyStats(),
           truncatedFrom: 3,
         },
       })
@@ -266,9 +263,7 @@ describe('datasetController', () => {
         value: {
           rows: [{ x: 1 }, { x: 2 }, { x: 3 }],
           columns: [{ name: 'x', type: 'number' }],
-          decimalSeparator: '.',
-          statsNumeric: [],
-          statsCategorical: [],
+          precomputedStats: emptyStats(),
           truncatedFrom: null,
         },
       });
@@ -290,9 +285,7 @@ describe('datasetController', () => {
       value: {
         rows: [{ x: 1 }, { x: 2 }],
         columns: [{ name: 'x', type: 'number' }],
-        decimalSeparator: '.',
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
         truncatedFrom: 3,
       },
     });
@@ -464,9 +457,8 @@ describe('datasetController', () => {
       value: {
         rows: [{ id: '1', target: 99 }],
         columns: [{ name: 'id', type: 'text' }, { name: 'target', type: 'number' }],
-        outputColumns: ['id', 'target'],
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
+        truncatedFrom: null,
       },
     });
     mocks.addDataset.mockReturnValue(2);
@@ -639,9 +631,8 @@ describe('datasetController', () => {
       value: {
         rows: joinedRows,
         columns: [{ name: 'id', type: 'number' }],
-        outputColumns: ['id'],
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
+        truncatedFrom: null,
       },
     });
     mocks.addDataset.mockReturnValueOnce(2);
@@ -671,9 +662,8 @@ describe('datasetController', () => {
       value: {
         rows: [{ id: 1 }, { id: 2 }, { id: 3 }],
         columns: [{ name: 'id', type: 'number' }],
-        outputColumns: ['id'],
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
+        truncatedFrom: null,
       },
     });
 
