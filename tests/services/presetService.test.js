@@ -15,19 +15,7 @@ describe('loadPresetSource', () => {
 		vi.useRealTimers();
 	});
 
-	it('returns an inline source without calling fetch for presets with an inline data array', async () => {
-		const mockFetch = vi.fn();
-		globalThis.fetch = mockFetch;
-
-		const preset = { data: [{ x: 1 }, { x: 2 }], dropColumns: ['drop_me'] };
-		const result = await loadPresetSource(preset);
-
-		expect(result.ok).toBe(true);
-		expect(result.value).toEqual({ mode: 'inline', rows: preset.data, dropColumns: ['drop_me'] });
-		expect(mockFetch).not.toHaveBeenCalled();
-	});
-
-	it('fails with preset-data-missing when neither data nor dataUrl is present', async () => {
+	it('fails with preset-data-missing when dataUrl is missing or blank', async () => {
 		const noData = await loadPresetSource({});
 		expect(noData.ok).toBe(false);
 		expect(noData.reason).toBe('preset-data-missing');
@@ -63,7 +51,6 @@ describe('loadPresetSource', () => {
 
 		expect(result.ok).toBe(true);
 		expect(result.value).toEqual({
-			mode: 'fetched',
 			kind: 'csv',
 			text: 'x,y\n1,2',
 			dropColumns: [],

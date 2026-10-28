@@ -5,6 +5,19 @@ statistics, and the table read the same way.
 
 ## Language
 
+### Datasets
+
+**Ingest**:
+Turning a CSV or JSON file, or the join of two datasets, into a new dataset:
+each column gets its type and decimal separator, and every cell its canonical
+form.
+_Avoid_: process, normalize, import
+
+**Decimal separator**:
+The character, dot or comma, that a column's text numbers put before their
+fraction. Each column has its own, fixed at ingest.
+_Avoid_: number format, decimal convention
+
 ### Cells
 
 **Canonical cell**:

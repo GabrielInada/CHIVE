@@ -52,8 +52,8 @@
 
 /**
  * Precomputed statistics, cached on the dataset to avoid recomputing on every
- * DATASET_ADDED event. Produced by the ingest worker for uploads and file
- * presets, and on the main thread for joins and inline presets.
+ * DATASET_ADDED event. Produced by the ingest worker for uploads, presets, and
+ * joins.
  *
  * `numeric` is dropped at hydrate when `numericVersion` does not match
  * `STATS_NUMERIC_VERSION`, and `categorical` when `categoricalVersion` does not
@@ -542,26 +542,23 @@
 // ─── Preset loading (presetService) ─────────────────────────────────────
 
 /**
- * Descriptor for a bundled preset dataset. Either `data` (inline) or
- * `dataUrl` (remote) must be present; if both are, `data` wins.
+ * Descriptor for a bundled preset dataset, loaded from `dataUrl`.
  *
  * @typedef {Object} PresetDescriptor
  * @property {string} [id]
  * @property {string} [name]
- * @property {Array<Object<string, *>>} [data] - Inline rows.
  * @property {string} [dataUrl] - Remote source. Resolved with a 10s timeout.
  * @property {string} [dataFormat] - Wins over URL extension when distinguishing CSV vs JSON.
  * @property {string[]} [dropColumns] - Columns the loader strips after parse.
  */
 
 /**
- * Resolved preset source. Discriminated by `mode`; callers should narrow
- * before reading fields specific to one variant.
+ * Fetched preset source, ready for the ingest worker.
  *
- * @typedef {(
- *   { mode: 'inline', rows: Array<Object<string, *>>, dropColumns: string[] }
- *   | { mode: 'fetched', kind: 'csv' | 'json', text: string, dropColumns: string[] }
- * )} PresetSource
+ * @typedef {Object} PresetSource
+ * @property {'csv' | 'json'} kind
+ * @property {string} text - Raw file contents.
+ * @property {string[]} dropColumns
  */
 
 /**
