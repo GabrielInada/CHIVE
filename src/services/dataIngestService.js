@@ -3,8 +3,10 @@
  *
  * Host-side wrapper for the data-ingest Web Worker. Spawns one worker per
  * call, forwards progress messages via the supplied callback, and resolves
- * with an ok/fail result when the worker reports `done` or `error` (or when
- * the caller's AbortSignal fires).
+ * with an ok/fail result when the worker reports `done` or `error`. Any other
+ * outcome resolves with a failure too: the caller's AbortSignal fires, the
+ * worker errors or goes silent, or a message cannot be sent, read or
+ * recognized. The call never rejects.
  *
  * The worker is spawned lazily with the browser-native
  * `new Worker(new URL(...), { type: 'module' })` pattern so the app runs
@@ -65,6 +67,13 @@ export function ingestErrorMessage(reason) {
 	return 'ingest-error';
 }
 
+/**
+ * How long the worker may stay silent before the call fails. A healthy worker
+ * reports progress between stages, so each progress message restarts the wait.
+ * @private
+ */
+const WORKER_IDLE_TIMEOUT_MS = 120000;
+
 let workerFactory = null;
 let ingestIdCounter = 0;
 
@@ -118,10 +127,12 @@ function isFiniteNumber(value) {
  * {@link IngestPayload} or joined-data payload). On failure,
  * `result.reason` is a stable string
  * id (`'cancelled'`, `'worker-spawn-failed'`, `'worker-error'`,
- * `'ingest-error'`, `'ingest-malformed-result'`, …).
+ * `'worker-post-failed'`, `'worker-message-error'`, `'worker-timeout'`,
+ * `'ingest-error'`, `'ingest-malformed-result'`, `'ingest-unknown-message'`, …).
  *
- * The worker is terminated and the abort listener is removed before the
- * Promise settles, regardless of outcome.
+ * The call fails with `'worker-timeout'` after two minutes without a message
+ * from the worker. The worker is terminated and the abort listener is removed
+ * before the Promise settles, regardless of outcome. The Promise never rejects.
  *
  * @param {Object} input
  * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal }} [config]
@@ -144,6 +155,7 @@ async function runDataWorker(input, config = {}) {
 
 	return new Promise((resolve) => {
 		let settled = false;
+		let watchdog = null;
 
 		const onAbort = () => {
 			if (settled) return;
@@ -153,10 +165,20 @@ async function runDataWorker(input, config = {}) {
 
 		const finalize = () => {
 			settled = true;
+			clearTimeout(watchdog);
 			try { worker.terminate(); } catch { /* ignore */ }
 			if (signal && typeof signal.removeEventListener === 'function') {
 				signal.removeEventListener('abort', onAbort);
 			}
+		};
+
+		const restartWatchdog = () => {
+			clearTimeout(watchdog);
+			watchdog = setTimeout(() => {
+				if (settled) return;
+				finalize();
+				resolve(fail('worker-timeout'));
+			}, WORKER_IDLE_TIMEOUT_MS);
 		};
 
 		worker.onmessage = (event) => {
@@ -165,6 +187,7 @@ async function runDataWorker(input, config = {}) {
 			if (message.id !== id) return;
 
 			if (message.type === 'progress') {
+				restartWatchdog();
 				const stageOk = typeof message.stage === 'string' && message.stage.length > 0;
 				const percentOk = isFiniteNumber(message.percent) && message.percent >= 0 && message.percent <= 100;
 				if (!stageOk || !percentOk) {
@@ -201,7 +224,11 @@ async function runDataWorker(input, config = {}) {
 							? message.message
 							: 'ingest-error';
 				resolve(fail(reason));
+				return;
 			}
+
+			finalize();
+			resolve(fail('ingest-unknown-message'));
 		};
 
 		worker.onerror = (event) => {
@@ -210,11 +237,26 @@ async function runDataWorker(input, config = {}) {
 			resolve(fail(event?.message || 'worker-error'));
 		};
 
+		worker.onmessageerror = () => {
+			if (settled) return;
+			finalize();
+			resolve(fail('worker-message-error'));
+		};
+
 		if (signal && typeof signal.addEventListener === 'function') {
 			signal.addEventListener('abort', onAbort, { once: true });
 		}
 
-		worker.postMessage({ id, ...input, options: input.options || {} });
+		try {
+			worker.postMessage({ id, ...input, options: input.options || {} });
+		} catch (err) {
+			// Keep the error for diagnosis; the reason id drops it.
+			console.warn('[chive:ingest] could not send the request to the worker', err);
+			finalize();
+			resolve(fail('worker-post-failed'));
+			return;
+		}
+		restartWatchdog();
 	});
 }
 
