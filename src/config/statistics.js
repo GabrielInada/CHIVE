@@ -5,10 +5,10 @@
 /**
  * Cache generation for precomputed numeric statistics.
  *
- * Stamped onto `dataset.precomputedStats.numericVersion` by every producer and
- * checked at the hydration boundary. A stored blob whose version is absent or
- * lower is dropped and recomputed, because its numbers were produced by an
- * older, incorrect implementation.
+ * Stamped onto `dataset.precomputedStats.numericVersion` at ingest
+ * (`domain/datasets/ingest.js`) and checked at the hydration boundary. A
+ * stored blob whose version is absent or lower is dropped and recomputed,
+ * because its numbers were produced by an older, incorrect implementation.
  *
  * Bump this whenever `calculateStatistics` changes which values it counts or
  * how it aggregates them. Categorical stats carry their own
@@ -22,8 +22,8 @@ export const STATS_NUMERIC_VERSION = 1;
 /**
  * Cache generation for precomputed categorical statistics.
  *
- * Stamped onto `dataset.precomputedStats.categoricalVersion` by every producer
- * and checked at the hydration boundary like {@link STATS_NUMERIC_VERSION}.
+ * Stamped onto `dataset.precomputedStats.categoricalVersion` at ingest and
+ * checked at the hydration boundary like {@link STATS_NUMERIC_VERSION}.
  *
  * Bump this whenever `calculateCategoricalStatistics` changes which values it
  * counts or how it keys them.
