@@ -6,10 +6,8 @@
  * drive a corner-toast progress bar.
  *
  * Pure logic comes from `domain/datasets/` (no DOM deps). The
- * row-normalization loop is duplicated here as {@link chunkedNormalize} so
- * it can yield progress between batches; the canonical sync `processData`
- * in `domain/datasets/processData.js` stays available for small inline presets
- * and pure-domain tests.
+ * row-normalization loop lives here as {@link chunkedNormalize} so it can
+ * post progress between batches.
  *
  * Message protocol, see `services/dataIngestService.js` for the host side
  * and the {@link IngestWorkerRequest} / {@link IngestWorkerResponse}

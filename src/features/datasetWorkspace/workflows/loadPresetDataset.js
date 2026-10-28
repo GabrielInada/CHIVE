@@ -6,11 +6,6 @@
  */
 
 import { t } from '../../../services/i18nService.js';
-import { processData } from '../../../domain/datasets/processData.js';
-import {
-	calculateStatistics,
-	calculateCategoricalStatistics,
-} from '../../../domain/datasets/statistics.js';
 import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../../../services/dataIngestService.js';
 import { loadPresetSource } from '../../../services/presetService.js';
 import { addDataset } from '../../../state/appState.js';
@@ -57,51 +52,23 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 		}
 
 		const source = result.value;
-
-		let rows;
-		let columns;
-		let statsNumeric = [];
-		let statsCategorical = [];
-
-		if (source.mode === 'inline') {
-			// Inline presets are tiny demo arrays, sync processData is cheap.
-			rows = source.rows;
-			if (source.dropColumns.length > 0) {
-				const dropSet = new Set(source.dropColumns);
-				rows = rows.map(row => {
-					const next = { ...row };
-					dropSet.forEach(key => { delete next[key]; });
-					return next;
-				});
-			}
-			const processed = processData(rows);
-			rows = processed.rows;
-			columns = processed.columns;
-			// The ingest worker computes these on the file path; do the same here
-			// or the dataset carries an empty numeric strip that statsView
-			// accepts as a valid cache.
-			statsNumeric = calculateStatistics(rows, columns);
-			statsCategorical = calculateCategoricalStatistics(rows, columns);
-			progress.update(100);
-		} else {
-			const ingestResult = await ingestFile(
-				{ kind: source.kind, text: source.text, options: { dropColumns: source.dropColumns } },
-				{
-					signal: abortController.signal,
-					onProgress: ({ stage, percent }) => {
-						progress.update(percent, progressLabelForStage(stage, presetName));
-					},
+		const ingestResult = await ingestFile(
+			{ kind: source.kind, text: source.text, options: { dropColumns: source.dropColumns } },
+			{
+				signal: abortController.signal,
+				onProgress: ({ stage, percent }) => {
+					progress.update(percent, progressLabelForStage(stage, presetName));
 				},
-			);
+			},
+		);
 
-			if (!ingestResult.ok) {
-				if (ingestResult.reason === 'cancelled') progress.close();
-				else progress.fail(t('chive-progress-failed', [ingestErrorMessage(ingestResult.reason)]));
-				return;
-			}
-
-			({ rows, columns, statsNumeric, statsCategorical } = ingestResult.value);
+		if (!ingestResult.ok) {
+			if (ingestResult.reason === 'cancelled') progress.close();
+			else progress.fail(t('chive-progress-failed', [ingestErrorMessage(ingestResult.reason)]));
+			return;
 		}
+
+		const { rows, columns, statsNumeric, statsCategorical } = ingestResult.value;
 
 		const dataset = {
 			name: presetName,
@@ -122,7 +89,7 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 		selectDataset(index);
 		progress.succeed(t('chive-preset-load-success', [presetName]));
 	} catch (err) {
-		// Genuinely-unexpected throws from processData/addDataset/selectDataset.
+		// Genuinely-unexpected throws from addDataset/selectDataset.
 		progress.fail(t('chive-progress-failed', [err?.message || 'error']));
 		showError(t('chive-join-error-generic'));
 	}

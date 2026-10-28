@@ -266,6 +266,78 @@ describe('runIngest', () => {
 		expect(done.result.decimalSeparator).toBe(separator);
 	});
 
+	it.each([
+		{
+			name: 'comma decimals next to a text column',
+			kind: 'json',
+			text: JSON.stringify([{ valor: '3,14', name: 'pi' }, { valor: '2,71', name: 'e' }, { valor: '1,41', name: 'sqrt2' }]),
+			column: 'valor',
+			expected: [3.14, 2.71, 1.41],
+		},
+		{
+			name: 'European grouping with comma decimals',
+			kind: 'json',
+			text: JSON.stringify([{ preco: '1.234,56' }, { preco: '2.000,75' }]),
+			column: 'preco',
+			expected: [1234.56, 2000.75],
+		},
+		{
+			name: 'comma decimals in a semicolon CSV',
+			kind: 'csv',
+			text: 'id;valor\n1;3,14\n2;2,71\n3;1,41',
+			column: 'valor',
+			expected: [3.14, 2.71, 1.41],
+		},
+		{
+			name: 'quoted US grouping with dot decimals',
+			kind: 'csv',
+			text: 'id,value\n1,"1,234.56"\n2,"2,345.67"\n3,"3,456.78"',
+			column: 'value',
+			expected: [1234.56, 2345.67, 3456.78],
+		},
+		{
+			name: 'quoted US grouping without decimals',
+			kind: 'csv',
+			text: 'id,value\n1,"1,000"\n2,"2,000"\n3,"3,000"\n4,"4,000"\n5,"5,000"',
+			column: 'value',
+			expected: [1000, 2000, 3000, 4000, 5000],
+		},
+		{
+			name: 'high-precision decimals',
+			kind: 'json',
+			text: JSON.stringify([{ value: '1234.56789' }, { value: '2345.67891' }, { value: '3456.78912' }]),
+			column: 'value',
+			expected: [1234.56789, 2345.67891, 3456.78912],
+		},
+		{
+			name: 'scientific notation',
+			kind: 'json',
+			text: JSON.stringify([{ value: '1.23456e3' }, { value: '2.34567e3' }, { value: '3.45678e3' }]),
+			column: 'value',
+			expected: [1234.56, 2345.67, 3456.78],
+		},
+		{
+			name: 'negative numbers',
+			kind: 'json',
+			text: JSON.stringify([{ value: '-1234.56' }, { value: '-2345.67' }, { value: '-3456.78' }]),
+			column: 'value',
+			expected: [-1234.56, -2345.67, -3456.78],
+		},
+		{
+			name: 'decimals with a leading zero',
+			kind: 'json',
+			text: JSON.stringify([{ value: '0.56' }, { value: '0.78' }, { value: '0.91' }]),
+			column: 'value',
+			expected: [0.56, 0.78, 0.91],
+		},
+	])('reads $name as numbers', ({ kind, text, column, expected }) => {
+		const { post, msgs } = collectMessages();
+		runIngest({ id: 'number-format', kind, text }, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done.result.columns.find(c => c.name === column)?.type).toBe('number');
+		expect(done.result.rows.map(row => row[column])).toEqual(expected);
+	});
+
 	it('keeps typed JSON numbers with 3 decimals exact', () => {
 		const { post, msgs } = collectMessages();
 		runIngest({ id: 'json-3dp', kind: 'json', text: '[{"v":1.125},{"v":2.25},{"v":3.375}]' }, post);
@@ -417,6 +489,32 @@ describe('runIngest', () => {
 		]);
 		expect(done.result.outputColumns).toEqual(['id', 'amount', 'target']);
 		expect(done.result.truncatedFrom).toBeNull();
+	});
+
+	it('posts empty rows and columns when a join matches nothing', () => {
+		const { post, msgs } = collectMessages();
+		runIngest({
+			id: 'empty-join',
+			kind: 'join',
+			join: {
+				leftRows: [{ id: 1, v: '2' }],
+				rightRows: [{ id: 9, w: 'a' }],
+				leftKeys: ['id'],
+				rightKeys: ['id'],
+				joinType: 'inner',
+				leftColumns: ['id', 'v'],
+				rightColumns: ['w'],
+			},
+		}, post);
+		const done = msgs.find(m => m.type === 'done');
+		expect(done.result).toMatchObject({
+			rows: [],
+			columns: [],
+			statsNumeric: [],
+			statsCategorical: [],
+			truncatedFrom: null,
+			outputColumns: ['id', 'v', 'w'],
+		});
 	});
 
 	it('progress percentages are non-decreasing and reach 100 by the final message', () => {
