@@ -141,9 +141,10 @@ controls of the per-chart packages under `src/charts/`.
 - **Optional settings:** top N, padding, label and value toggles, color mode
   (scheme / uniform), color scheme.
 - **Aggregation behavior:** `count` sizes cells by row count; `sum` sizes them by a numeric
-  value column.
+  value column, and a category whose sum is 0 or less gets no cell.
 - **Good sample dataset:** Amazonian Trees (`family` sized by `biomass_kg`).
-- **Common empty states:** no category; `sum` mode without a numeric value column.
+- **Common empty states:** no category; `sum` mode without a numeric value column; `sum` mode
+  where no category sums to more than 0.
 
 ### Line chart
 
@@ -232,6 +233,7 @@ exactly what to fix.
 | Bubble: grouped without nesting | Select at least one nesting column for grouped mode. |
 | Treemap: no categorical column | Select at least one visible categorical column to build the treemap. |
 | Treemap: sum without numeric | Select a numeric column to render the treemap in sum mode. |
+| Treemap: no sum above 0 | No category sums to more than 0 in the selected value column. |
 | Network: no source/target | Select valid source and target columns to render the network graph. |
 | Line: no X or numeric Y | Select an X column and a numeric Y column to render the line chart. |
 | Line: no finite Y | Select a numeric Y column with finite values to render the line chart. |

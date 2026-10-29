@@ -33,7 +33,9 @@ export function renderTreemapChartSection({ config, rows, filterCallbacks }) {
 	if (!result.ok) {
 		const key = result.reason === 'no-numeric' || result.reason === 'no-value-column'
 			? 'chive-chart-empty-treemap-numeric'
-			: 'chive-chart-empty-treemap';
+			: result.reason === 'no-positive-value'
+				? 'chive-chart-empty-no-positive-sum'
+				: 'chive-chart-empty-treemap';
 		showChartMessage(CHART_CONTAINERS.treemap, t(key));
 	}
 }

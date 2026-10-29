@@ -51,11 +51,12 @@ describe('renderTreemap', () => {
 		expect(renderTreemap(container, [], 'region').ok).toBe(false);
 	});
 
-	it('returns failure when no category has a positive sum', () => {
+	it('returns no-positive-value when no category has a positive sum', () => {
 		const container = document.getElementById('treemap');
 		const zeros = [{ region: 'North', sales: 0 }, { region: 'South', sales: 0 }];
 		const result = renderTreemap(container, zeros, 'region', { measureMode: 'sum', valueColumn: 'sales' });
 		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('no-positive-value');
 	});
 
 	it('renders one rect per category in count mode', () => {
