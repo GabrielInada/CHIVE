@@ -181,6 +181,49 @@ describe('renderPieChart behavior', () => {
 		expect(result.reason).toBe('no-numeric');
 	});
 
+	it('draws only categories whose total is above 0, each with its share of the circle', () => {
+		const container = document.getElementById('pie');
+		const rows = [
+			{ categoria: 'A', valor: 5 },
+			{ categoria: 'B', valor: -3 },
+			{ categoria: 'C', valor: 2 },
+		];
+		const share = slice => {
+			slice.dispatchEvent(new MouseEvent('mouseenter'));
+			return document.querySelector('.chart-tooltip').textContent;
+		};
+
+		const result = renderPieChart(container, rows, 'categoria', {
+			measureMode: 'sum',
+			valueColumn: 'valor',
+			showLegend: true,
+		});
+
+		expect(result.ok).toBe(true);
+		const slices = Array.from(container.querySelectorAll('path'));
+		expect(slices.map(path => path.__data__.data.key)).toEqual(['A', 'C']);
+		expect(container.textContent).not.toContain('B (');
+		expect(share(slices[0])).toContain('71.4%');
+		expect(share(slices[1])).toContain('28.6%');
+	});
+
+	it('returns no-positive-value and draws nothing when no total is above 0', () => {
+		const container = document.getElementById('pie');
+		const rows = [
+			{ categoria: 'A', valor: -5 },
+			{ categoria: 'B', valor: -3 },
+		];
+
+		const result = renderPieChart(container, rows, 'categoria', {
+			measureMode: 'sum',
+			valueColumn: 'valor',
+		});
+
+		expect(result.ok).toBe(false);
+		expect(result.reason).toBe('no-positive-value');
+		expect(container.querySelector('svg')).toBeNull();
+	});
+
 	it('covers pie invalid args, hidden labels/legend, custom slice colors, and invalid radius options', () => {
 		const container = document.getElementById('pie');
 		expect(renderPieChart(null, [], 'categoria').ok).toBe(false);

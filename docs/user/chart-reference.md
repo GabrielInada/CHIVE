@@ -95,10 +95,10 @@ controls of the per-chart packages under `src/charts/`.
 - **Optional settings:** inner radius (pie vs donut), outer radius, pad angle, top N with an
   "other" or truncate mode, category/value labels, legend, per-slice color overrides.
 - **Aggregation behavior:** `count` sizes slices by row count; `sum` sizes them by a numeric
-  value column. Use non-negative values for meaningful part-to-whole pies; zero or negative
-  category sums are not filtered before the D3 pie layout.
+  value column, and a category whose sum is 0 or less gets no slice.
 - **Good sample dataset:** Iris (`Species`).
-- **Common empty states:** no categorical column; `sum` mode without a numeric value column.
+- **Common empty states:** no categorical column; `sum` mode without a numeric value column;
+  `sum` mode where no category sums to more than 0.
 
 ### Bubble chart
 
@@ -228,6 +228,7 @@ exactly what to fix.
 | Scatter: log axis without positives | Not enough positive numeric values for log scale on selected axes. |
 | Pie: no categorical column | Select at least one visible categorical column to build the pie/donut chart. |
 | Pie: sum without numeric | Select a visible numeric value column to render pie/donut in sum mode. |
+| Pie: no sum above 0 | No category sums to more than 0 in the selected value column. |
 | Bubble: no categorical column | Select at least one visible categorical column to build the bubble chart. |
 | Bubble: sum/mean without numeric | Select a visible numeric value column to render the bubble chart in sum or mean mode. |
 | Bubble: grouped without nesting | Select at least one nesting column for grouped mode. |

@@ -12,16 +12,18 @@
 
 import { filterDataset } from '../../../domain/filters/datasetFilter.js';
 import { resolveSliceColors } from '../color.js';
-import { aggregatePieData } from '../data.js';
+import { aggregatePieCategories, aggregatePieData } from '../data.js';
 import { normalizePieOptions } from '../options.js';
 
 /**
  * Every source category in the chart's aggregate order, projected from
- * {@link aggregatePieData} so the controls and the rendered chart agree on
- * which sectors exist. Top-N is intentionally not applied: controls retain
- * colors for source categories that may be hidden by the current Top-N,
- * while the synthetic Other sector always uses its fixed color. Slice colors
- * are keyed by category key.
+ * {@link aggregatePieCategories} so the controls and the rendered chart agree
+ * on which categories exist. Neither Top-N nor the chart's rule that a sector
+ * needs a value above 0 is applied: controls retain colors for source
+ * categories that may be hidden by the current Top-N, and for categories
+ * whose total is 0 or less, which a global filter can leave above 0. The
+ * synthetic Other sector always uses its fixed color. Slice colors are keyed
+ * by category key.
  *
  * @internal Package-private to `controls/`; imported only by the builder and listeners.
  * @param {Dataset} dataset
@@ -32,10 +34,9 @@ import { normalizePieOptions } from '../options.js';
 export function getPieSectorValues(dataset, config, { missingLabel } = {}) {
 	if (!config?.category || !Array.isArray(dataset?.rows)) return [];
 
-	const aggregated = aggregatePieData(dataset.rows, config.category, {
+	const aggregated = aggregatePieCategories(dataset.rows, config.category, {
 		measureMode: config.measureMode,
 		valueColumn: config.valueColumn,
-		topN: 0,
 		missingLabel,
 	});
 	if (!aggregated.ok) return [];
@@ -45,8 +46,9 @@ export function getPieSectorValues(dataset, config, { missingLabel } = {}) {
 /**
  * Swatch color per category key for the per-slice color grid: the color the
  * chart draws the category with, else its custom color. Categories with
- * neither (hidden by the global filter or past Top-N, with no override) are
- * left out, so the grid shows its neutral swatch for them.
+ * neither (hidden by the global filter, past Top-N or with a total of 0 or
+ * less, with no override) are left out, so the grid shows its neutral swatch
+ * for them.
  *
  * @internal Package-private to `controls/`; imported only by the builder.
  * @param {Dataset} dataset

@@ -56,6 +56,13 @@ describe('getPieSectorValues', () => {
 		expect(keys(controlOrder)).toEqual(chart.entries.map(entry => entry.key));
 	});
 
+	// A global filter such as "v > 0" can leave such a total above 0, and the
+	// chart then draws the category, so the grid keeps a color for it.
+	it('keeps a category whose total is 0 or less', () => {
+		const dataset = { rows: [{ c: 'A', v: 5 }, { c: 'B', v: -3 }, { c: 'C', v: 2 }] };
+		expect(keys(getPieSectorValues(dataset, sumConfig))).toEqual(['A', 'C', 'B']);
+	});
+
 	it('counts every row, blank or not, in count mode', () => {
 		const dataset = { rows: [{ c: 'A', v: null }, { c: 'A', v: 1 }, { c: 'B', v: 9 }] };
 		const countConfig = { category: 'c', measureMode: 'count', valueColumn: null, topN: 0 };
@@ -116,6 +123,30 @@ describe('getPieSwatchColors', () => {
 	it('leaves sectors past Top-N and the Other sector without a color', () => {
 		const colors = getPieSwatchColors(swatchDataset(), swatchConfig({ topN: 1 }));
 		expect(colors).toEqual({ A: BASE });
+	});
+
+	it('leaves a category whose total is 0 or less without a color', () => {
+		const dataset = {
+			rows: [{ c: 'A', v: 5 }, { c: 'B', v: -3 }, { c: 'C', v: 2 }],
+			columns: [{ name: 'c', type: 'text' }, { name: 'v', type: 'number' }],
+			chartConfig: {},
+		};
+		expect(getPieSwatchColors(dataset, swatchConfig({ measureMode: 'sum', valueColumn: 'v' }))).toEqual({
+			A: BASE,
+			C: buildSliceColor(BASE, 1),
+		});
+	});
+
+	it('colors a category that a global filter leaves above 0', () => {
+		// B sums to -5 over every row and to 10 once the filter drops v <= 0.
+		const dataset = {
+			rows: [{ c: 'A', v: 5 }, { c: 'B', v: 10 }, { c: 'B', v: -15 }],
+			columns: [{ name: 'c', type: 'text' }, { name: 'v', type: 'number' }],
+			chartConfig: { globalFilter: { rules: [{ column: 'v', operator: 'gt', value: 0 }], combine: 'AND' } },
+		};
+		const config = swatchConfig({ measureMode: 'sum', valueColumn: 'v' });
+		expect(keys(getPieSectorValues(dataset, config))).toEqual(['A', 'B']);
+		expect(getPieSwatchColors(dataset, config)).toEqual({ B: BASE, A: buildSliceColor(BASE, 1) });
 	});
 
 	it('applies a global-filter rule while the column list hides its column, like the chart does', () => {
