@@ -5,15 +5,15 @@
  * and the color each per-slice swatch shows. The order is shared by the
  * builder (per-slice color grid order) and the listeners (palette-preset to
  * per-slice color mapping), so it lives in its own module rather than being
- * owned by either consumer. Pure: reads rows + config, touches no DOM.
+ * owned by either consumer. The swatch colors are the fills of the sectors
+ * the chart draws, from `computePieSectors`. Pure: reads rows + config,
+ * touches no DOM.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
 import { filterDataset } from '../../../domain/filters/datasetFilter.js';
-import { resolveSliceColors } from '../color.js';
-import { aggregatePieCategories, aggregatePieData } from '../data.js';
-import { normalizePieOptions } from '../options.js';
+import { aggregatePieCategories, computePieSectors } from '../data.js';
 
 /**
  * Every source category in the chart's aggregate order, projected from
@@ -21,9 +21,9 @@ import { normalizePieOptions } from '../options.js';
  * on which categories exist. Neither Top-N nor the chart's rule that a sector
  * needs a value above 0 is applied: controls retain colors for source
  * categories that may be hidden by the current Top-N, and for categories
- * whose total is 0 or less, which a global filter can leave above 0. The
- * synthetic Other sector always uses its fixed color. Slice colors are keyed
- * by category key.
+ * whose total is 0 or less, which a global filter can leave above 0. Slice
+ * colors are keyed by category key, so the Other sector, which is not a
+ * category, has no entry.
  *
  * @internal Package-private to `controls/`; imported only by the builder and listeners.
  * @param {Dataset} dataset
@@ -44,38 +44,24 @@ export function getPieSectorValues(dataset, config, { missingLabel } = {}) {
 }
 
 /**
- * Swatch color per category key for the per-slice color grid: the color the
- * chart draws the category with, else its custom color. Categories with
- * neither (hidden by the global filter, past Top-N or with a total of 0 or
- * less, with no override) are left out, so the grid shows its neutral swatch
- * for them.
+ * Swatch colors for the per-slice color grid: the fill of every sector the
+ * chart draws, by sector key, over the custom slice colors. The grid looks
+ * up category keys, so a category the chart does not draw (hidden by the
+ * global filter, past Top-N or with a total of 0 or less) shows its custom
+ * color, or the grid's neutral swatch without one.
  *
  * @internal Package-private to `controls/`; imported only by the builder.
  * @param {Dataset} dataset
  * @param {Object} config - The pie config block.
- * @returns {Object<string, string>} Hex color by category key.
+ * @returns {Object<string, string>} Hex color by key.
  */
 export function getPieSwatchColors(dataset, config) {
 	if (!config?.category || !Array.isArray(dataset?.rows)) return {};
 
-	const options = normalizePieOptions(config);
-	const swatches = { ...options.customSliceColors };
 	// WHY: shades follow the drawn order, so a global filter that hides a
-	// larger sector moves the others up a shade. Aggregate the rows the chart
+	// larger sector moves the others up a shade. Take the rows the chart
 	// draws, which come from the same filterDataset call.
-	const drawnRows = filterDataset(dataset).rows;
-	const drawn = aggregatePieData(drawnRows, config.category, {
-		measureMode: options.measureMode,
-		valueColumn: options.valueColumn,
-		topN: options.topN,
-		topNMode: options.topNMode,
-		otherLabel: options.labels.other,
-	});
-	if (!drawn.ok) return swatches;
-
-	const colors = resolveSliceColors(drawn.entries, options);
-	drawn.entries.forEach(entry => {
-		if (!entry.isOther) swatches[entry.key] = colors.get(entry.key);
-	});
-	return swatches;
+	const drawn = computePieSectors(filterDataset(dataset).rows, config.category, config);
+	const fills = drawn.ok ? drawn.sectors.map(({ key, color }) => [key, color]) : [];
+	return { ...config.customSliceColors, ...Object.fromEntries(fills) };
 }
