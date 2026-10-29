@@ -69,4 +69,36 @@ describe('aggregatePieData', () => {
 		// total is over the rendered sectors (incl. the Other bucket).
 		expect(result.total).toBe(7);
 	});
+
+	it('leaves out categories whose total is 0 or less', () => {
+		const rows = [{ c: 'A', v: 5 }, { c: 'B', v: -3 }, { c: 'C', v: 2 }, { c: 'D', v: 0 }];
+		const result = aggregatePieData(rows, 'c', { ...countArgs, measureMode: 'sum', valueColumn: 'v' });
+		expect(sectors(result.entries)).toEqual([{ key: 'A', value: 5 }, { key: 'C', value: 2 }]);
+		expect(result.total).toBe(7);
+	});
+
+	it.each([
+		['every total negative', -5, -3],
+		['the largest total 0', 0, -3],
+		['every total 0', 0, 0],
+	])('fails with no-positive-value with %s', (_label, a, b) => {
+		const rows = [{ c: 'A', v: a }, { c: 'B', v: b }];
+		expect(aggregatePieData(rows, 'c', { ...countArgs, measureMode: 'sum', valueColumn: 'v' }))
+			.toEqual({ ok: false, reason: 'no-positive-value' });
+	});
+
+	it('folds only totals above 0 into the Other sector', () => {
+		// T01 to T10 sum to 20 down to 11, T11 to 4 and T12 to -6.
+		const rows = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 4, -6]
+			.map((v, index) => ({ c: `T${String(index + 1).padStart(2, '0')}`, v }));
+		const result = aggregatePieData(rows, 'c', { ...countArgs, measureMode: 'sum', valueColumn: 'v', topN: 10 });
+		expect(sectors(result.entries).at(-1)).toEqual({ key: OTHER_SECTOR_KEY, value: 4, isOther: true });
+		expect(result.total).toBe(159);
+	});
+
+	it('makes no Other sector when only totals at or below 0 are past Top-N', () => {
+		const rows = [{ c: 'A', v: 5 }, { c: 'B', v: -3 }, { c: 'C', v: 2 }];
+		const result = aggregatePieData(rows, 'c', { ...countArgs, measureMode: 'sum', valueColumn: 'v', topN: 2 });
+		expect(sectors(result.entries)).toEqual([{ key: 'A', value: 5 }, { key: 'C', value: 2 }]);
+	});
 });

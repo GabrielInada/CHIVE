@@ -33,7 +33,9 @@ export function renderPieChartSection({ config, rows, filterCallbacks }) {
 	if (!result.ok) {
 		const key = result.reason === 'no-numeric' || result.reason === 'no-value-column'
 			? 'chive-chart-empty-pie-sum'
-			: 'chive-chart-empty-pie';
+			: result.reason === 'no-positive-value'
+				? 'chive-chart-empty-no-positive-sum'
+				: 'chive-chart-empty-pie';
 		showChartMessage(CHART_CONTAINERS.pie, t(key));
 	}
 }

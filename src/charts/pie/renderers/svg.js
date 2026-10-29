@@ -34,8 +34,9 @@ import { resolveSliceColors } from '../color.js';
 
 /**
  * Render a pie chart into `container`. Returns `ok()` on success, or
- * `fail()` when required arguments are missing or the data has no
- * non-zero sectors.
+ * `fail()` when required arguments are missing or `aggregatePieData` fails,
+ * as it does with `'no-positive-value'` when no category has a value
+ * above 0.
  *
  * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
  * `topN`, `topNMode` ('other' | 'truncate'), `innerRadius`/`outerRadius`,

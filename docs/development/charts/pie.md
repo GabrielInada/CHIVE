@@ -57,18 +57,17 @@ the bar chart uses (see the bar doc's [section 2.2](bar.md)); the pie just omits
 
 ### 2.2 From value to angle
 
-For positive sector values, each slice's angle is its value's fraction of the positive grand
-total, swept around the full circle:
+Each slice's angle is its value's fraction of the grand total of the drawn sectors, swept
+around the full circle:
 
 ```
 sliceAngle = (value / total) · 2π
 ```
 
-So the wedges sum to a full turn when the rendered values are positive, which is exactly why a
-pie reads as "parts of one whole." Sum mode should be used with non-negative measures; the
-renderer does not currently filter negative category totals before handing values to D3. The
-`pie()` layout generator turns the sorted values into start/end angles, and the `arc()`
-generator turns each angle pair plus an inner and outer radius into an SVG path.
+So the wedges sum to a full turn, which is exactly why a pie reads as "parts of one whole." A
+wedge needs a value above 0, so in sum mode a category whose total is 0 or less gets no wedge
+(section 7.1). The `pie()` layout generator turns the sorted values into start/end angles, and
+the `arc()` generator turns each angle pair plus an inner and outer radius into an SVG path.
 
 ### 2.3 Donut, pad angle, and radius
 
@@ -207,14 +206,17 @@ registry imports those three entry points directly.
 - Everything is disabled when `!config.enabled`.
 - The value-column select is disabled in `count` mode.
 - The palette presets and per-slice grid render only when the category column yields at least
-  one sector (`getPieSectorValues` returns all source categories, descending by aggregate with
-  a stable tiebreaker). Top-N is not applied to this color list, so hidden categories retain
-  their overrides; the synthetic `Other` sector uses its fixed color.
+  one sector (`getPieSectorValues` returns all source categories from
+  `aggregatePieCategories`, descending by aggregate with a stable tiebreaker). Neither Top-N
+  nor the rule that a wedge needs a value above 0 (section 7.1) is applied to this color list,
+  so hidden categories retain their overrides, and so does a category whose total is 0 or
+  less, since a global filter can leave its total above 0; the synthetic `Other` sector uses
+  its fixed color.
 - Each swatch shows the color the chart draws that category with (`getPieSwatchColors`,
   which aggregates the globally filtered rows with the chart's Top-N and resolves fills
   through `resolveSliceColors`). A category the chart does not draw, because the global
-  filter hides it or it falls past Top-N, shows its override, or the grid's neutral gray
-  when it has none.
+  filter hides it, it falls past Top-N or its total is 0 or less, shows its override, or the
+  grid's neutral gray when it has none.
 
 ### 5.3 Listener wiring and cross-constraints
 
@@ -243,7 +245,7 @@ the block/container, hides+clears when disabled, sets the min-height, maps confi
 shared presentation flow (with localized labels including the `Other` label), and calls the
 renderer.
 On failure it shows `chive-chart-empty-pie-sum` for `no-value-column` and `no-numeric`,
-else `chive-chart-empty-pie`.
+`chive-chart-empty-no-positive-sum` for `no-positive-value`, else `chive-chart-empty-pie`.
 
 ### 6.2 Panel view
 
@@ -265,20 +267,24 @@ Returns `fail()` if container or category is missing. Options are clamped (color
 radii/pad-angle/zoom clamped to `PIE_CHART` bounds, height to 220 to 720, title to 80 chars).
 The shared `aggregateCategories`
 ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)) aggregates
-count or sum per category; any measure other than sum counts rows, since the color controls
-pass the saved config as is. Sum reads only number cells and needs a `valueColumn` that the
-rows carry. It does not filter zero or negative sums; D3's pie layout allocates proportional
-angle only to positive values. Entries come back sorted descending by value with a
+count or sum per category; any measure other than sum counts rows (`aggregatePieCategories`
+in [data.js](../../../src/charts/pie/data.js)), since the color controls pass the saved
+config as is. Sum reads only number cells and needs a `valueColumn` that the rows carry.
+Entries come back sorted descending by value with a
 `compareCategoryKeys` tiebreaker (missing last). Each entry is
 `{ key, label, token, value, firstRow }`; the synthetic Other sector carries `isOther`, the
 reserved key `OTHER_SECTOR_KEY`, and no token. Sum mode without a usable value column →
 `fail('no-value-column')`, without a number → `fail('no-numeric')`; count mode with no rows
 → `fail()`.
 
+`aggregatePieData` then keeps only the categories whose value is above 0, since D3's pie
+layout gives no angle to a value at or below 0. Only a sum can be 0 or less. With no category
+left → `fail('no-positive-value')`.
+
 ### 7.2 Top-N
 
-When `topN > 0` and there are more categories than N: in `truncate` mode the list is cut to
-N; in `other` mode the top N are kept and the rest are summed into a single
+When `topN > 0` and there are more categories above 0 than N: in `truncate` mode the list is
+cut to N; in `other` mode the top N are kept and the rest, all above 0, are summed into a single
 `{ key: OTHER_SECTOR_KEY, label: Other, isOther: true }` entry. The reserved key keeps a
 real category spelled like the Other label apart from the rollup.
 
@@ -379,14 +385,18 @@ there is no separate export path.
 - **A real category spelled like the Other label** (for example "Other" in English or
   "Outros" in pt-BR) stays its own sector, with its own pin and color, apart from the rollup.
 - **Top-N other** keeps the rendered positive-value circle at 100%; **truncate** does not.
-- **Non-positive sum aggregates** are not filtered by CHIVE before the D3 pie layout; use
-  non-negative value columns for meaningful part-to-whole pies.
+- **Non-positive sum aggregates** are filtered out before Top-N (a wedge needs an angle), so
+  they get no wedge or legend entry, take no share of the total and add nothing to the Other
+  sector. With none left → `fail('no-positive-value')`, mapped to
+  `chive-chart-empty-no-positive-sum` ("No category sums to more than 0 in the selected value
+  column."). The per-slice color grid still lists them (section 5.2).
 - **Inner radius** is always kept below the outer radius so a donut never inverts.
 - **Tiny slices** are left unlabeled rather than drawing illegible text.
 - **Stateless renders** and **detached panel captures** behave as for every chart (panel
   wedges carry no filter actions).
 
-Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-pie*`);
+Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-pie*`
+and `chive-chart-empty-no-positive-sum`);
 Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ---

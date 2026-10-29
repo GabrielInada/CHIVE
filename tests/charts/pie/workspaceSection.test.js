@@ -102,6 +102,19 @@ describe('renderPieChartSection', () => {
 		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-pie-sum');
 	});
 
+	it('shows the no-positive-sum empty-state when reason is no-positive-value', () => {
+		const { container } = setupDom();
+		mocks.renderPieChart.mockReturnValueOnce({ ok: false, reason: 'no-positive-value' });
+
+		renderPieChartSection({
+			config: defaultConfig({ measureMode: 'sum', valueColumn: 'profit' }),
+			rows: [],
+			filterCallbacks,
+		});
+
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-no-positive-sum');
+	});
+
 	it('shows the generic empty-state for any other failure reason', () => {
 		const { container } = setupDom();
 		mocks.renderPieChart.mockReturnValueOnce({ ok: false, reason: 'other' });
