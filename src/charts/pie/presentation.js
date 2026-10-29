@@ -47,6 +47,7 @@ export function renderPieInto(
 		labels: {
 			category: t('chive-chart-control-pie-category'),
 			count: t('chive-tooltip-count'),
+			sum: t('chive-tooltip-sum'),
 			percentage: t('chive-tooltip-percentage'),
 			other: t('chive-chart-pie-other'),
 			missing: t('chive-chart-filter-missing'),

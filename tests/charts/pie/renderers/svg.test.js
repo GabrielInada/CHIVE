@@ -229,6 +229,28 @@ describe('renderPieChart behavior', () => {
 		expect(tooltip.textContent).not.toContain('42.9%');
 	});
 
+	it('labels the tooltip value Sum in sum mode and Count in count mode', () => {
+		const container = document.getElementById('pie');
+		// A has two rows that sum to 8.
+		const rows = [
+			{ categoria: 'A', valor: 6 },
+			{ categoria: 'A', valor: 2 },
+			{ categoria: 'B', valor: 3 },
+			{ categoria: 'C', valor: 1 },
+		];
+		const hoverA = () => {
+			const slice = Array.from(container.querySelectorAll('path')).find(path => path.__data__.data.key === 'A');
+			slice.dispatchEvent(new MouseEvent('mouseenter'));
+			return document.querySelector('.chart-tooltip').textContent;
+		};
+
+		renderPieChart(container, rows, 'categoria', { measureMode: 'sum', valueColumn: 'valor' });
+		expect(hoverA()).toContain('Sum: 8');
+
+		renderPieChart(container, rows, 'categoria', { measureMode: 'count' });
+		expect(hoverA()).toContain('Count: 2');
+	});
+
 	it('covers pie Other-slice pinned tooltip without filter actions and included/excluded filter states', () => {
 		const container = document.getElementById('pie');
 		const rows = ['A', 'A', 'B', 'C', 'D'].map(categoria => ({ categoria }));
