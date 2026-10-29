@@ -323,47 +323,42 @@ describe('renderScatterPlot interaction', () => {
 			.toEqual(['click', 'mousemove', 'mouseout', 'mouseover']);
 	});
 
-	it('renders categorical pinned filter actions and state badges', () => {
+	it('offers filter actions for each categorical axis under its heading', () => {
 		const container = document.getElementById('scatter');
-		const calls = { remove: [], bringBack: [] };
+		const calls = [];
+		const filterCallbacks = {
+			onAddToGlobalFilter: (column, token) => calls.push([column, token]),
+		};
 		const rows = [
 			{ group: 'A', segment: 'North', value: 1 },
 			{ group: 'B', segment: 'South', value: 2 },
 		];
+		const headings = () => Array.from(document.querySelectorAll('.chart-tooltip__action-set-label'))
+			.map(heading => heading.textContent);
 
 		let result = renderScatterPlot(container, rows, 'group', 'value', {
 			axisTypes: { x: 'text', y: 'number' },
 			xColumn: 'group',
-			filterCallbacks: {
-				onRemoveFromGlobalFilter: (column, token) => calls.remove.push([column, token]),
-				getTokenFilterState: () => 'included',
-				filterActionLabels: { stateIncluded: 'Included', remove: 'Remove' },
-			},
+			filterCallbacks,
 		});
 		expect(result.ok).toBe(true);
 		dispatchMouse(circles(container)[0], 'click');
-		expect(document.querySelector('.chart-tooltip__filter-state--included')).not.toBeNull();
+		expect(headings()).toEqual(['group']);
 		document.querySelector('.chart-tooltip__action').click();
-		expect(calls.remove).toEqual([['group', 'v:A']]);
+		expect(calls).toEqual([['group', 'v:A']]);
 
+		calls.length = 0;
 		result = renderScatterPlot(container, rows, 'group', 'segment', {
 			axisTypes: { x: 'text', y: 'text' },
 			xColumn: 'group',
 			yColumn: 'segment',
-			filterCallbacks: {
-				onAddToGlobalFilter: () => {},
-				onExcludeGlobalFilter: () => {},
-				onBringBackGlobalFilter: (column, token) => calls.bringBack.push([column, token]),
-				getTokenFilterState: () => 'excluded',
-				isShowOnlyThisRedundant: () => true,
-				filterActionLabels: { add: 'Add', exclude: 'Hide', bringBack: 'Bring back' },
-			},
+			filterCallbacks,
 		});
 		expect(result.ok).toBe(true);
 		dispatchMouse(circles(container)[0], 'click');
-		expect(document.querySelectorAll('.chart-tooltip__action-set-wrap').length).toBe(2);
-		expect(Array.from(document.querySelectorAll('.chart-tooltip__action')).map(button => button.textContent))
-			.toEqual(['Bring back', 'Bring back']);
+		expect(headings()).toEqual(['group', 'segment']);
+		document.querySelectorAll('.chart-tooltip__action').forEach(button => button.click());
+		expect(calls).toEqual([['group', 'v:A'], ['segment', 'v:North']]);
 	});
 
 	it('clears a pinned tooltip on background click', () => {

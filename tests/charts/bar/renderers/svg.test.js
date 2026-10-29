@@ -149,117 +149,6 @@ describe('renderBarChart behavior', () => {
 		expect(calls.add).toEqual([['categoria', 'v:A']]);
 	});
 
-	it('adds an exclude (danger) action and a state badge when wired with the full filter bundle', () => {
-		const container = document.getElementById('bar');
-		const calls = { focus: [], add: [], excl: [] };
-		const rows = [
-			{ categoria: 'A' },
-			{ categoria: 'A' },
-			{ categoria: 'B' },
-		];
-
-		const result = renderBarChart(container, rows, 'categoria', {
-			filterCallbacks: {
-				onFocusGlobalFilter: (column, token) => calls.focus.push([column, token]),
-				onAddToGlobalFilter: (column, token) => calls.add.push([column, token]),
-				onExcludeGlobalFilter: (column, token) => calls.excl.push([column, token]),
-				getTokenFilterState: () => null,
-				filterActionLabels: {
-					focus: 'Show only',
-					add: 'Add',
-					exclude: 'Hide',
-					stateIncluded: 'In filter',
-					stateExcluded: 'Excluded',
-					close: 'Close',
-				},
-			},
-		});
-
-		expect(result.ok).toBe(true);
-
-		const firstBar = container.querySelector('rect');
-		firstBar.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-
-		const buttons = document.querySelectorAll('.chart-tooltip__action');
-		expect(buttons).toHaveLength(3);
-		expect(buttons[0].className).toContain('chart-tooltip__action--primary');
-		expect(buttons[2].className).toContain('chart-tooltip__action--danger');
-		buttons[2].click();
-		expect(calls.excl).toEqual([['categoria', 'v:A']]);
-	});
-
-	it('hides "Show only this" when isShowOnlyThisRedundant returns true', () => {
-		const container = document.getElementById('bar');
-		const calls = { focus: [], add: [] };
-		const rows = [
-			{ categoria: 'A' },
-			{ categoria: 'B' },
-		];
-
-		const result = renderBarChart(container, rows, 'categoria', {
-			filterCallbacks: {
-				onFocusGlobalFilter: (column, token) => calls.focus.push([column, token]),
-				onAddToGlobalFilter: (column, token) => calls.add.push([column, token]),
-				onExcludeGlobalFilter: () => {},
-				getTokenFilterState: () => null,
-				isShowOnlyThisRedundant: () => true,
-			},
-		});
-
-		expect(result.ok).toBe(true);
-
-		const firstBar = container.querySelector('rect');
-		firstBar.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-
-		const buttons = document.querySelectorAll('.chart-tooltip__action');
-		// no "Show only this", only [Add, Hide]
-		expect(buttons).toHaveLength(2);
-		expect(buttons[0].className).not.toContain('chart-tooltip__action--primary');
-	});
-
-	it('shows an "in filter" state badge and Remove action when token is already included', () => {
-		const container = document.getElementById('bar');
-		const calls = { focus: [], remove: [] };
-		const rows = [
-			{ categoria: 'A' },
-			{ categoria: 'B' },
-		];
-
-		const result = renderBarChart(container, rows, 'categoria', {
-			filterCallbacks: {
-				onFocusGlobalFilter: (column, token) => calls.focus.push([column, token]),
-				onAddToGlobalFilter: () => {},
-				onExcludeGlobalFilter: () => {},
-				onRemoveFromGlobalFilter: (column, token) => calls.remove.push([column, token]),
-				getTokenFilterState: () => 'included',
-				filterActionLabels: {
-					focus: 'Show only',
-					add: 'Add',
-					exclude: 'Hide',
-					remove: 'Remove',
-					bringBack: 'Bring back',
-					stateIncluded: 'In filter',
-					stateExcluded: 'Excluded',
-					close: 'Close',
-				},
-			},
-		});
-
-		expect(result.ok).toBe(true);
-
-		const firstBar = container.querySelector('rect');
-		firstBar.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-
-		const badge = document.querySelector('.chart-tooltip__filter-state--included');
-		expect(badge).not.toBeNull();
-		expect(badge.textContent).toContain('In filter');
-		const buttons = document.querySelectorAll('.chart-tooltip__action');
-		expect(buttons).toHaveLength(2);
-		expect(buttons[1].textContent).toBe('Remove');
-		buttons[1].click();
-		expect(calls.remove).toEqual([['categoria', 'v:A']]);
-	});
-
 	it('returns explicit failure reasons for bar sum/mean when value column is missing or non-numeric', () => {
 		const container = document.getElementById('bar');
 		const rows = [
@@ -338,14 +227,6 @@ describe('renderBarChart behavior', () => {
 
 		const result = renderBarChart(container, [{ categoria: 'A' }], 'categoria', {
 			measureMode: 'not-real',
-			filterCallbacks: {
-				getTokenFilterState: () => 'excluded',
-				onBringBackGlobalFilter: () => {},
-				filterActionLabels: {
-					stateExcluded: 'Excluded',
-					bringBack: 'Bring back',
-				},
-			},
 		});
 		expect(result.ok).toBe(true);
 		const firstBar = container.querySelector('rect');
@@ -353,7 +234,7 @@ describe('renderBarChart behavior', () => {
 		firstBar.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, pageX: 2, pageY: 2 }));
 		firstBar.dispatchEvent(new MouseEvent('mouseleave', { bubbles: true }));
 		firstBar.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-		expect(document.querySelector('.chart-tooltip__filter-state--excluded')).not.toBeNull();
+		expect(document.querySelector('.chart-tooltip').classList.contains('chart-tooltip--fixado')).toBe(true);
 		firstBar.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 3, pageY: 3 }));
 		firstBar.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 		expect(document.querySelector('.chart-tooltip').hidden).toBe(true);

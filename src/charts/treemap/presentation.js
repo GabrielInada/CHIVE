@@ -44,9 +44,7 @@ export function renderTreemapInto(
 			count: t('chive-tooltip-count'),
 			sum: t('chive-tooltip-sum'),
 			percentage: t('chive-tooltip-percentage'),
-			focusOnThis: t('chive-tooltip-show-only-this'),
 			missing: t('chive-chart-filter-missing'),
-			addToFilter: t('chive-tooltip-add-to-filter'),
 		},
 		filterCallbacks,
 	});

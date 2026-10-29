@@ -23,8 +23,9 @@ import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
  * the config has multiple enabled flags (legacy), the first one in
  * canonical order wins, the rest are coerced to disabled before render.
  *
- * The `options` callbacks all share the same `(column, token) => void`
- * signature and are wired into the per-chart tooltip actions.
+ * The `options` callbacks reach the charts' pinned tooltips as they are, with
+ * the localized action labels added; the tooltips offer an action only when
+ * its callback is a function.
  *
  * @param {Partial<ChartConfig>} config
  * @param {Array<Object<string, *>>} rows - Rows to draw, already narrowed by the global filter (see `filterDataset`).
@@ -41,48 +42,20 @@ import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
  * @returns {void}
  */
 export function renderCharts(config, rows, visibleColumns, visibleNumericColumns, options = {}) {
-	const onAddToGlobalFilter = typeof options.onAddToGlobalFilter === 'function'
-		? options.onAddToGlobalFilter
-		: null;
-	const onFocusGlobalFilter = typeof options.onFocusGlobalFilter === 'function'
-		? options.onFocusGlobalFilter
-		: null;
-	const onExcludeGlobalFilter = typeof options.onExcludeGlobalFilter === 'function'
-		? options.onExcludeGlobalFilter
-		: null;
-	const onRemoveFromGlobalFilter = typeof options.onRemoveFromGlobalFilter === 'function'
-		? options.onRemoveFromGlobalFilter
-		: null;
-	const onBringBackGlobalFilter = typeof options.onBringBackGlobalFilter === 'function'
-		? options.onBringBackGlobalFilter
-		: null;
-	const getTokenFilterState = typeof options.getTokenFilterState === 'function'
-		? options.getTokenFilterState
-		: null;
-	const isShowOnlyThisRedundant = typeof options.isShowOnlyThisRedundant === 'function'
-		? options.isShowOnlyThisRedundant
-		: null;
-	const filterActionLabels = {
-		focus: t('chive-tooltip-show-only-this'),
-		add: t('chive-tooltip-add-to-filter'),
-		exclude: t('chive-tooltip-exclude'),
-		remove: t('chive-tooltip-remove-from-filter'),
-		bringBack: t('chive-tooltip-bring-back'),
-		stateIncluded: t('chive-tooltip-state-included'),
-		stateExcluded: t('chive-tooltip-state-excluded'),
-		close: t('chive-tooltip-close'),
-		filterBySource: t('chive-tooltip-filter-by-source'),
-		filterByTarget: t('chive-tooltip-filter-by-target'),
-	};
 	const filterCallbacks = {
-		onAddToGlobalFilter,
-		onFocusGlobalFilter,
-		onExcludeGlobalFilter,
-		onRemoveFromGlobalFilter,
-		onBringBackGlobalFilter,
-		getTokenFilterState,
-		isShowOnlyThisRedundant,
-		filterActionLabels,
+		...options,
+		filterActionLabels: {
+			focus: t('chive-tooltip-show-only-this'),
+			add: t('chive-tooltip-add-to-filter'),
+			exclude: t('chive-tooltip-exclude'),
+			remove: t('chive-tooltip-remove-from-filter'),
+			bringBack: t('chive-tooltip-bring-back'),
+			stateIncluded: t('chive-tooltip-state-included'),
+			stateExcluded: t('chive-tooltip-state-excluded'),
+			close: t('chive-tooltip-close'),
+			filterBySource: t('chive-tooltip-filter-by-source'),
+			filterByTarget: t('chive-tooltip-filter-by-target'),
+		},
 	};
 	const chartConfig = mergeChartConfigWithDefaults(config);
 	const columnTypeByName = Array.isArray(visibleColumns)

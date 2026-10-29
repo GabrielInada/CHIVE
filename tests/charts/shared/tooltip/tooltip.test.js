@@ -16,7 +16,6 @@ describe('tooltip', () => {
 	let createTooltipLine;
 	let createNamedActionGroup;
 	let showPinnedChartTooltip;
-	let buildCategoricalFilterActions;
 	let createFilterStateBadge;
 	let frames;
 	let nextFrameId;
@@ -50,7 +49,6 @@ describe('tooltip', () => {
 		createTooltipLine = mod.createTooltipLine;
 		createNamedActionGroup = mod.createNamedActionGroup;
 		showPinnedChartTooltip = mod.showPinnedChartTooltip;
-		buildCategoricalFilterActions = mod.buildCategoricalFilterActions;
 		createFilterStateBadge = mod.createFilterStateBadge;
 	});
 
@@ -74,10 +72,9 @@ describe('tooltip', () => {
 		return tooltip;
 	}
 
-	it('exposes exactly the 15 documented exports (no internal leaks through the facade)', async () => {
+	it('exposes exactly the 14 documented exports (no internal leaks through the facade)', async () => {
 		const mod = await import('../../../../src/charts/shared/tooltip/tooltip.js');
 		expect(Object.keys(mod).sort()).toEqual([
-			'buildCategoricalFilterActions',
 			'createFilterStateBadge',
 			'createNamedActionGroup',
 			'createTooltipActionGroup',
@@ -498,76 +495,6 @@ describe('tooltip', () => {
 		expect(onDismiss).not.toHaveBeenCalled();
 	});
 
-	it('buildCategoricalFilterActions returns Show only / Add / Hide for unfiltered token', () => {
-		const calls = [];
-		const actions = buildCategoricalFilterActions({
-			column: 'col',
-			token: 'v:apple',
-			state: null,
-			labels: { focus: 'Focus', add: 'Add', exclude: 'Hide', remove: 'Rm', bringBack: 'Back' },
-			onFocus: (c, t) => calls.push(['focus', c, t]),
-			onAdd: (c, t) => calls.push(['add', c, t]),
-			onExclude: (c, t) => calls.push(['excl', c, t]),
-			onRemove: (c, t) => calls.push(['rm', c, t]),
-			onBringBack: (c, t) => calls.push(['back', c, t]),
-		});
-		expect(actions.map(a => a.label)).toEqual(['Focus', 'Add', 'Hide']);
-		actions[0].onClick();
-		actions[1].onClick();
-		actions[2].onClick();
-		expect(calls).toEqual([
-			['focus', 'col', 'v:apple'],
-			['add', 'col', 'v:apple'],
-			['excl', 'col', 'v:apple'],
-		]);
-		expect(actions[0].variant).toBe('primary');
-		expect(actions[2].variant).toBe('danger');
-	});
-
-	it('buildCategoricalFilterActions swaps Add for Remove when token is included', () => {
-		const actions = buildCategoricalFilterActions({
-			column: 'col',
-			token: 'v:apple',
-			state: 'included',
-			labels: { focus: 'Focus', add: 'Add', exclude: 'Hide', remove: 'Rm', bringBack: 'Back' },
-			onFocus: () => {},
-			onAdd: () => {},
-			onExclude: () => {},
-			onRemove: () => {},
-			onBringBack: () => {},
-		});
-		expect(actions.map(a => a.label)).toEqual(['Focus', 'Rm']);
-	});
-
-	it('buildCategoricalFilterActions omits the focus action when omitFocus is true', () => {
-		const actions = buildCategoricalFilterActions({
-			column: 'col',
-			token: 'v:apple',
-			state: null,
-			omitFocus: true,
-			labels: { focus: 'Focus', add: 'Add', exclude: 'Hide', remove: 'Rm', bringBack: 'Back' },
-			onFocus: () => {},
-			onAdd: () => {},
-			onExclude: () => {},
-		});
-		expect(actions.map(a => a.label)).toEqual(['Add', 'Hide']);
-	});
-
-	it('buildCategoricalFilterActions shows Bring back when token is excluded', () => {
-		const actions = buildCategoricalFilterActions({
-			column: 'col',
-			token: 'v:apple',
-			state: 'excluded',
-			labels: { focus: 'Focus', add: 'Add', exclude: 'Hide', remove: 'Rm', bringBack: 'Back' },
-			onFocus: () => {},
-			onAdd: () => {},
-			onExclude: () => {},
-			onRemove: () => {},
-			onBringBack: () => {},
-		});
-		expect(actions.map(a => a.label)).toEqual(['Focus', 'Back']);
-	});
-
 	it('createFilterStateBadge returns null when state is null and a styled element when set', () => {
 		expect(createFilterStateBadge({ state: null })).toBeNull();
 		const included = createFilterStateBadge({ state: 'included', includedLabel: 'In filter' });
@@ -575,48 +502,6 @@ describe('tooltip', () => {
 		expect(included.textContent).toContain('In filter');
 		const excluded = createFilterStateBadge({ state: 'excluded', excludedLabel: 'Excluded' });
 		expect(excluded.className).toContain('chart-tooltip__filter-state--excluded');
-	});
-
-	it('uses default filter action labels and omits unavailable callbacks', () => {
-		const unfiltered = buildCategoricalFilterActions({
-			column: 'region',
-			token: 'v:North',
-			state: null,
-			labels: {},
-			onAdd: undefined,
-			onExclude: undefined,
-		});
-		expect(unfiltered).toEqual([]);
-
-		const included = buildCategoricalFilterActions({
-			column: 'region',
-			token: 'v:North',
-			state: 'included',
-			labels: {},
-			onRemove: undefined,
-		});
-		expect(included).toEqual([]);
-
-		const excluded = buildCategoricalFilterActions({
-			column: 'region',
-			token: 'v:North',
-			state: 'excluded',
-			labels: {},
-			onBringBack: undefined,
-		});
-		expect(excluded).toEqual([]);
-
-		const defaults = buildCategoricalFilterActions({
-			column: 'region',
-			token: 'v:North',
-			state: null,
-			labels: {},
-			onFocus: () => {},
-			onAdd: () => {},
-			onExclude: () => {},
-		});
-		expect(defaults.map(action => action.label)).toEqual(['Show only this', 'Add to filter', 'Hide this']);
-
 		expect(createFilterStateBadge({ state: 'included' }).textContent).toContain('In filter');
 		expect(createFilterStateBadge({ state: 'excluded' }).textContent).toContain('Excluded');
 	});

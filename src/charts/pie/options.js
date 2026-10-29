@@ -33,8 +33,6 @@ export function normalizePieOptions(options) {
 		percentage: options.labels?.percentage || 'Percentage',
 		other: options.labels?.other || 'Other',
 		missing: options.labels?.missing || '(missing)',
-		focusOnThis: options.labels?.focusOnThis || 'Show only this',
-		addToFilter: options.labels?.addToFilter || 'Add to global filter',
 	};
 	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : 0;
 	const topNMode = options.topNMode === 'truncate' ? 'truncate' : 'other';

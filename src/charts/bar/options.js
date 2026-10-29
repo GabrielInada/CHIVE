@@ -28,8 +28,6 @@ export function normalizeBarOptions(options, categoryColumn) {
 		sum: options.labels?.sum || 'Sum',
 		mean: options.labels?.mean || 'Mean',
 		percentage: options.labels?.percentage || 'Percentage',
-		focusOnThis: options.labels?.focusOnThis || 'Show only this',
-		addToFilter: options.labels?.addToFilter || 'Add to global filter',
 		missing: options.labels?.missing || '(missing)',
 	};
 	const measureMode = BAR_CHART.measureModes.includes(options.measureMode)

@@ -410,8 +410,8 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 - [renderEquivalence.test.js](../../../tests/charts/pie/renderEquivalence.test.js) pins the
   renderer's SVG and result output across representative options.
 - [renderers/svg.test.js](../../../tests/charts/pie/renderers/svg.test.js) covers slices
-  (one color each past 9 slices), labels, Top-N behavior, zoom, and pinned-tooltip filter
-  states.
+  (one color each past 9 slices), labels, Top-N behavior, zoom, and the filter actions a
+  pinned tooltip offers (none for the `Other` sector).
 - [data.test.js](../../../tests/charts/pie/data.test.js) covers the drawn sectors: the rule
   that a sector needs a value above 0, Top-N, the Other sector, each sector's fill, and that
   the saved config and the renderer's options give the same sectors.

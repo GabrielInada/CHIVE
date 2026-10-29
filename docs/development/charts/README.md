@@ -108,9 +108,13 @@ doc rather than repeated:
   ([color.js](../../../src/charts/pie/color.js)).
 - **SVG scaffold**: [scaffold.js](../../../src/charts/shared/svg/scaffold.js) owns the
   shared title, SVG/group setup, axes, and axis-label builders used by SVG charts.
-- **Tooltips and click-to-filter**: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js).
-  The categorical filter-action subsystem is documented in detail in the bar chart's
-  [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter, and network.
+- **Tooltips and click-to-filter**: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js)
+  owns the tooltip overlay, and
+  [filterActions.js](../../../src/charts/shared/tooltip/filterActions.js)
+  (`showPinnedFilterTooltip`) pins a tooltip with the global-filter actions for the column and
+  category token a chart names. The categorical filter-action subsystem is documented in
+  detail in the bar chart's [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter,
+  and network.
 - **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
   builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets) and
   finds the palette preset a chart's colors still match (`findAppliedColorPreset`), the one
