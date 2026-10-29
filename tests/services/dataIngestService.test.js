@@ -61,9 +61,7 @@ describe('ingestFile', () => {
 					result: {
 						rows: [{ x: 1 }],
 						columns: [{ name: 'x', type: 'number' }],
-						decimalSeparator: '.',
-						statsNumeric: [],
-						statsCategorical: [],
+						precomputedStats: { numeric: [], categorical: [] },
 						truncatedFrom: null,
 					},
 				});
@@ -83,7 +81,7 @@ describe('ingestFile', () => {
 	it('forwards options including rowLimit and dropColumns to the worker', async () => {
 		worker.onPost((data, w) => {
 			queueMicrotask(() => {
-				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
+				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
 			});
 		});
 
@@ -111,10 +109,7 @@ describe('ingestFile', () => {
 					result: {
 						rows: [{ id: 1 }],
 						columns: [{ name: 'id', type: 'number' }],
-						outputColumns: ['id'],
-						decimalSeparator: '.',
-						statsNumeric: [],
-						statsCategorical: [],
+						precomputedStats: { numeric: [], categorical: [] },
 						truncatedFrom: null,
 					},
 				});
@@ -124,7 +119,7 @@ describe('ingestFile', () => {
 		const result = await joinDatasetsInWorker(join, { decimalSeparator });
 
 		expect(result.ok).toBe(true);
-		expect(result.value.outputColumns).toEqual(['id']);
+		expect(result.value.rows).toEqual([{ id: 1 }]);
 		expect(worker.postMessages[0]).toEqual(expect.objectContaining({
 			kind: 'join',
 			join,
@@ -143,7 +138,7 @@ describe('ingestFile', () => {
 			worker.onPost((data, w) => {
 				expect(data.id).toMatch(/^ingest-\d+-\d+$/);
 				queueMicrotask(() => {
-					w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
+					w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
 				});
 			});
 
@@ -238,7 +233,7 @@ describe('ingestFile', () => {
 		worker.onPost((data, w) => {
 			queueMicrotask(() => {
 				w.emit({ id: 'wrong-id', type: 'progress', stage: 'parsing', percent: 50 });
-				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null } });
+				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
 			});
 		});
 
@@ -272,7 +267,7 @@ describe('ingestFile message validation', () => {
 	});
 
 	function validResult() {
-		return { rows: [], columns: [], decimalSeparator: '.', statsNumeric: [], statsCategorical: [], truncatedFrom: null };
+		return { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null };
 	}
 
 	it('skips a progress message with a non-string stage', async () => {
@@ -389,6 +384,81 @@ describe('ingestFile message validation', () => {
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('ingest-malformed-result');
 		expect(worker.terminated).toBe(true);
+	});
+});
+
+describe('ingestFile when the worker misbehaves', () => {
+	let worker;
+
+	beforeEach(() => {
+		vi.useFakeTimers();
+		worker = new MockWorker();
+		__setIngestWorkerFactoryForTesting(() => worker);
+	});
+
+	afterEach(() => {
+		__setIngestWorkerFactoryForTesting(null);
+		vi.restoreAllMocks();
+		vi.useRealTimers();
+	});
+
+	it.each([
+		{
+			outcome: 'its request cannot be cloned',
+			reason: 'worker-post-failed',
+			warnings: 1,
+			misbehave: w => {
+				w.postMessage = () => {
+					const err = new Error('could not be cloned');
+					err.name = 'DataCloneError';
+					throw err;
+				};
+			},
+		},
+		{
+			outcome: 'it never replies',
+			reason: 'worker-timeout',
+			warnings: 0,
+			misbehave: () => {},
+		},
+		{
+			outcome: 'its reply cannot be deserialized',
+			reason: 'worker-message-error',
+			warnings: 0,
+			misbehave: w => w.onPost(() => queueMicrotask(() => w.onmessageerror?.({ data: null }))),
+		},
+		{
+			outcome: 'it replies with an unknown type',
+			reason: 'ingest-unknown-message',
+			warnings: 0,
+			misbehave: w => w.onPost(data => queueMicrotask(() => w.emit({ id: data.id, type: 'surprise' }))),
+		},
+	])('resolves $reason and cleans up when $outcome', async ({ reason, warnings, misbehave }) => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		const controller = new AbortController();
+		const removeListener = vi.spyOn(controller.signal, 'removeEventListener');
+		misbehave(worker);
+
+		const promise = ingestFile({ kind: 'csv', text: 'x\n1' }, { signal: controller.signal });
+		await vi.advanceTimersByTimeAsync(120000);
+
+		await expect(promise).resolves.toEqual({ ok: false, reason });
+		expect(worker.terminated).toBe(true);
+		expect(removeListener).toHaveBeenCalledWith('abort', expect.any(Function));
+		expect(vi.getTimerCount()).toBe(0);
+		expect(warn).toHaveBeenCalledTimes(warnings);
+	});
+
+	it('restarts the two-minute wait on every progress message', async () => {
+		const promise = ingestFile({ kind: 'csv', text: 'x\n1' });
+		await vi.advanceTimersByTimeAsync(100000);
+		const { id } = worker.postMessages[0];
+		worker.emit({ id, type: 'progress', stage: 'parsing', percent: 30 });
+		await vi.advanceTimersByTimeAsync(100000);
+		worker.emit({ id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
+
+		await expect(promise).resolves.toMatchObject({ ok: true });
+		expect(vi.getTimerCount()).toBe(0);
 	});
 });
 

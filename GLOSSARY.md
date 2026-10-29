@@ -5,6 +5,19 @@ statistics, and the table read the same way.
 
 ## Language
 
+### Datasets
+
+**Ingest**:
+Turning a CSV or JSON file, or the join of two datasets, into a new dataset:
+each column gets its type and decimal separator, and every cell its canonical
+form.
+_Avoid_: process, normalize, import
+
+**Decimal separator**:
+The character, dot or comma, that a column's text numbers put before their
+fraction. Each column has its own, fixed at ingest.
+_Avoid_: number format, decimal convention
+
 ### Cells
 
 **Canonical cell**:
@@ -38,7 +51,7 @@ The localized text shown for a category key.
 _Avoid_: category name
 
 **Category token**:
-How a chart filter rule refers to one category key in its include and exclude
+How a global filter rule refers to one category key in its include and exclude
 lists.
 _Avoid_: filter value, category id
 
@@ -47,3 +60,17 @@ The pie sector that folds every category past the Top-N cut into one wedge. It
 is not a category: it has no category token and never shares a key or a color
 with a category spelled the same way.
 _Avoid_: Other category, Other bucket
+
+**Measure**:
+What a chart shows for each category: how many rows it has (count), or the sum
+or mean of a numeric value column over its rows. A missing value adds nothing to
+a sum and does not count toward a mean.
+_Avoid_: metric, aggregation mode
+
+### Filters
+
+**Global filter**:
+A dataset's filter rules. The table, statistics, charts and Panel captures show
+only the rows that pass every rule, and a rule keeps applying while the column
+list hides its column.
+_Avoid_: chart filter, local filter

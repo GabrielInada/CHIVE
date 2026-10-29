@@ -329,6 +329,7 @@
 	"chive-chart-empty-pie-sum": "Select a visible numeric value column to render pie/donut in sum mode.",
 	"chive-chart-empty-treemap": "Select at least one visible categorical column to build the treemap.",
 	"chive-chart-empty-treemap-numeric": "Select a numeric column to render the treemap in sum mode.",
+	"chive-chart-empty-no-positive-sum": "No category sums to more than 0 in the selected value column.",
 	"chive-chart-empty-bubble": "Select at least one visible categorical column to build the bubble chart.",
 	"chive-chart-empty-bubble-numeric": "Select a visible numeric value column to render the bubble chart in sum or mean mode.",
 	"chive-chart-empty-line": "Select an X column and a numeric Y column to render the line chart.",

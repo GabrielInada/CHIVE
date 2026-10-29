@@ -64,8 +64,9 @@ controls of the per-chart packages under `src/charts/`.
 - **Optional settings:** sort order, top N, color mode (uniform / gradient), X and Y axis
   label toggles.
 - **Aggregation behavior:** `count` counts rows per category. `sum` and `mean` require a
-  numeric value column and aggregate that column per category. Signed values are allowed,
-  but bar sum/mean mode is clearest for measures that compare from a zero baseline.
+  numeric value column and aggregate that column per category. Signed values are allowed:
+  a category whose sum or mean is below 0 gets a bar that hangs down from 0, and the
+  tooltips then leave out the percentage.
 - **Good sample dataset:** Iris (category `Species`), Amazonian Trees (`family` with
   `abundance` or `biomass_kg`).
 - **Common empty states:** no category selected; `sum`/`mean` selected without a numeric
@@ -95,10 +96,10 @@ controls of the per-chart packages under `src/charts/`.
 - **Optional settings:** inner radius (pie vs donut), outer radius, pad angle, top N with an
   "other" or truncate mode, category/value labels, legend, per-slice color overrides.
 - **Aggregation behavior:** `count` sizes slices by row count; `sum` sizes them by a numeric
-  value column. Use non-negative values for meaningful part-to-whole pies; zero or negative
-  category sums are not filtered before the D3 pie layout.
+  value column, and a category whose sum is 0 or less gets no slice.
 - **Good sample dataset:** Iris (`Species`).
-- **Common empty states:** no categorical column; `sum` mode without a numeric value column.
+- **Common empty states:** no categorical column; `sum` mode without a numeric value column;
+  `sum` mode where no category sums to more than 0.
 
 ### Bubble chart
 
@@ -141,9 +142,10 @@ controls of the per-chart packages under `src/charts/`.
 - **Optional settings:** top N, padding, label and value toggles, color mode
   (scheme / uniform), color scheme.
 - **Aggregation behavior:** `count` sizes cells by row count; `sum` sizes them by a numeric
-  value column.
+  value column, and a category whose sum is 0 or less gets no cell.
 - **Good sample dataset:** Amazonian Trees (`family` sized by `biomass_kg`).
-- **Common empty states:** no category; `sum` mode without a numeric value column.
+- **Common empty states:** no category; `sum` mode without a numeric value column; `sum` mode
+  where no category sums to more than 0.
 
 ### Line chart
 
@@ -202,9 +204,11 @@ controls of the per-chart packages under `src/charts/`.
 ## Filters and chart data
 
 - **Global filters.** The global filter applies a multi-rule pipeline to the active dataset
-  before any chart reads it (`src/domain/filters/globalFilter.js`, with single-rule primitives in
-  `src/domain/filters/chartFilter.js`). A categorical rule includes or excludes values; a numeric
-  rule filters by range or comparison. Charts always render the filtered rows.
+  before any chart reads it (`src/domain/filters/datasetFilter.js`, with the pipeline in
+  `globalFilter.js` and single-rule primitives in `chartFilter.js`). A categorical rule includes
+  or excludes values; a numeric rule filters by range or comparison. Charts always render the
+  filtered rows. A rule keeps applying while its column is hidden from the column list, so the
+  table, statistics, charts, and panel snapshots always show the same rows.
 - **Missing-value bucket.** Missing values do not fragment a categorical series: they
   collapse into one bucket, labeled `N/A` in grouping and `(missing)` in the filter dialog.
 - **Panel snapshots.** Adding a chart to the dashboard panel snapshots the current
@@ -225,11 +229,13 @@ exactly what to fix.
 | Scatter: log axis without positives | Not enough positive numeric values for log scale on selected axes. |
 | Pie: no categorical column | Select at least one visible categorical column to build the pie/donut chart. |
 | Pie: sum without numeric | Select a visible numeric value column to render pie/donut in sum mode. |
+| Pie: no sum above 0 | No category sums to more than 0 in the selected value column. |
 | Bubble: no categorical column | Select at least one visible categorical column to build the bubble chart. |
 | Bubble: sum/mean without numeric | Select a visible numeric value column to render the bubble chart in sum or mean mode. |
 | Bubble: grouped without nesting | Select at least one nesting column for grouped mode. |
 | Treemap: no categorical column | Select at least one visible categorical column to build the treemap. |
 | Treemap: sum without numeric | Select a numeric column to render the treemap in sum mode. |
+| Treemap: no sum above 0 | No category sums to more than 0 in the selected value column. |
 | Network: no source/target | Select valid source and target columns to render the network graph. |
 | Line: no X or numeric Y | Select an X column and a numeric Y column to render the line chart. |
 | Line: no finite Y | Select a numeric Y column with finite values to render the line chart. |

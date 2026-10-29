@@ -34,8 +34,9 @@ import { resolveSliceColors } from '../color.js';
 
 /**
  * Render a pie chart into `container`. Returns `ok()` on success, or
- * `fail()` when required arguments are missing or the data has no
- * non-zero sectors.
+ * `fail()` when required arguments are missing or `aggregatePieData` fails,
+ * as it does with `'no-positive-value'` when no category has a value
+ * above 0.
  *
  * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
  * `topN`, `topNMode` ('other' | 'truncate'), `innerRadius`/`outerRadius`,
@@ -139,9 +140,10 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 
 	const buildTooltipContent = item => {
 		const percentage = total > 0 ? ((item.value / total) * 100) : 0;
+		const valueLabel = measureMode === 'sum' ? labels.sum : labels.count;
 		const wrapper = document.createElement('div');
 		wrapper.appendChild(createTooltipLine(labels.category, item.label));
-		wrapper.appendChild(createTooltipLine(labels.count, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(item.value, locale)));
 		wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		return wrapper;
 	};

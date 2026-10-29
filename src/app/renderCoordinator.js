@@ -14,6 +14,7 @@ import { renderEmptyState } from '../features/datasetWorkspace/views/emptyWorksp
 import { renderCharts } from '../features/datasetWorkspace/views/chartsView.js';
 import { renderChartControlsSidebar } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
 import { getNumericColumns } from '../domain/datasets/columns.js';
+import { filterDataset } from '../domain/filters/datasetFilter.js';
 import {
 	getActiveDataset,
 	getActiveDatasetIndex,
@@ -200,7 +201,7 @@ export function livePreviewRender() {
 	);
 	const visibleColumns = dataset.columns.filter(column => selectedNames.has(column.name));
 	const visibleNumericColumns = getNumericColumns(visibleColumns);
-	renderCharts(dataset.chartConfig, dataset.rows, visibleColumns, visibleNumericColumns);
+	renderCharts(dataset.chartConfig, filterDataset(dataset).rows, visibleColumns, visibleNumericColumns);
 }
 
 /**

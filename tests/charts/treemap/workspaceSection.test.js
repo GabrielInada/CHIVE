@@ -72,18 +72,27 @@ describe('renderTreemapChartSection', () => {
 		expect(mocks.renderTreemap).not.toHaveBeenCalled();
 	});
 
-	it('maps no-value-column reason to numeric empty-state', () => {
+	it.each(['no-value-column', 'no-numeric'])('maps %s reason to numeric empty-state', reason => {
 		const { container } = setupDom();
-		mocks.renderTreemap.mockReturnValueOnce({ ok: false, reason: 'no-value-column' });
+		mocks.renderTreemap.mockReturnValueOnce({ ok: false, reason });
 
 		renderTreemapChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 
 		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-treemap-numeric');
 	});
 
-	it('falls back to generic empty-state for any other failure', () => {
+	it('maps no-positive-value reason to the no-positive-sum empty-state', () => {
 		const { container } = setupDom();
-		mocks.renderTreemap.mockReturnValueOnce({ ok: false, reason: 'other' });
+		mocks.renderTreemap.mockReturnValueOnce({ ok: false, reason: 'no-positive-value' });
+
+		renderTreemapChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
+
+		expect(container.querySelector('.chart-empty').textContent).toBe('chive-chart-empty-no-positive-sum');
+	});
+
+	it.each([{ ok: false }, { ok: false, reason: 'other' }])('falls back to generic empty-state for %j', failure => {
+		const { container } = setupDom();
+		mocks.renderTreemap.mockReturnValueOnce(failure);
 
 		renderTreemapChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 

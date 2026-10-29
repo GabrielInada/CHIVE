@@ -82,8 +82,9 @@ scale types:
   cut into equal-width bands with a little padding between them. There is no notion of
   "distance" between categories, only order.
 - The **y axis is a linear scale** (`scaleLinear`): the measure is continuous, so height is
-  proportional to value. The domain starts at 0 (a bar chart must have a zero baseline, or
-  bar heights misrepresent ratios) and is `.nice()`d to round tick values.
+  proportional to value. The domain always includes 0 (a bar chart must have a zero
+  baseline, or bar heights misrepresent ratios) and is `.nice()`d to round tick values.
+  Each bar runs from 0 to its value, so a sum or mean below 0 hangs down from 0.
 
 ### 2.4 Color as a second encoding
 
@@ -312,23 +313,26 @@ on success or `fail(reason)` when it cannot draw. The pipeline in order:
 
 ### 7.2 Aggregation
 
-- **count mode**: a `Map` accumulates a row count per category key (`categoryKey`); missing
-  cells fold into the missing bucket. Each entry is `{ key, label, token, value }`, with the
-  label and filter token from `describeCategory`.
+`aggregateBarData` starts from `aggregateCategories`
+([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)), which bar, pie,
+treemap, and bubble share:
+
+- **count mode**: one entry per category key (`categoryKey`) with its row count; missing
+  cells fold into the missing bucket. Each entry is `{ key, label, token, value, firstRow }`,
+  with the label and filter token from `describeCategory`.
 - **sum / mean mode**: requires `valueColumn` and that the rows actually carry that column,
-  else `fail('no-value-column')`. Each row's value is `Number(...)`; non-finite values are
-  skipped. A second `Map` tracks the per-category count so mean can divide. If, after this,
-  no category accumulated anything, `fail('no-numeric')`. Negative category totals are not
-  specially handled; bar sum/mean mode is clearest for measures that compare from a zero
-  baseline.
+  else `fail('no-value-column')`. Only number cells count: a missing value adds nothing to a
+  sum and stays out of a mean's denominator. If no row has a number, `fail('no-numeric')`.
+  A sum or mean can be below 0; the renderer draws that bar down from 0 (section 7.5).
 
 ### 7.3 Sort, Top-N, and the empty guard
 
-Entries are sorted by `sortCategories` (the count/label orderings of section 2.5, each with
+`aggregateCategories` returns the entries largest first. `sortCategories` keeps that order
+for `count-desc` and re-sorts for the other count/label orderings of section 2.5, each with
 a `compareCategoryKeys` tiebreaker for stable order; label sorts keep the missing bucket
-last in both directions), then sliced to `topN` when `topN > 0`. If
-no entries remain, `fail()`. The grand total across the kept entries is computed for
-tooltip percentages.
+last in both directions. The entries are then sliced to `topN` when `topN > 0`. With no
+rows to count, `aggregateCategories` fails and the renderer returns `fail()`. The grand
+total across the kept entries is computed for tooltip percentages.
 
 ### 7.4 Layout and scales
 
@@ -338,13 +342,15 @@ tooltip percentages.
   clamped `chartHeight`. Inner dimensions subtract the margins and a 20px title offset when a
   title is present.
 - `xScale` is a `scaleBand` over the category keys with `padding(0.14)`; `yScale` is a
-  `scaleLinear` from 0 to the max measure, `.nice()`d, with an inverted range
-  (`[innerHeight, 0]`) so taller bars rise.
+  `scaleLinear` from the smaller of 0 and the smallest kept measure to the larger of 0 and
+  the largest, `.nice()`d, with an inverted range (`[innerHeight, 0]`) so larger values sit
+  higher. When every kept measure is 0, the domain is `[0, 1]` instead of the single value 0.
 
 ### 7.5 Bars and color
 
-One `<rect>` per entry, positioned by the scales, with a 3px corner radius. The fill comes
-from `getBarColor`:
+One `<rect>` per entry, with a 3px corner radius, spanning from `yScale(0)` to
+`yScale(value)`: up from 0 for a measure above 0, down from 0 for one below, and with no
+height for a measure of 0. The fill comes from `getBarColor`:
 
 - **uniform** → the single `color`.
 - **gradient** → `interpolateColor(min, max, t)` where `t` is either the value position
@@ -359,8 +365,9 @@ This is the shared categorical-tooltip subsystem from
 [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js), used by bar, pie, treemap, and
 bubble:
 
-- **Hover** shows a tooltip with the category, the measure value, and (except in mean mode)
-  the percentage of the total.
+- **Hover** shows a tooltip with the category, the measure value, and the percentage of the
+  total. The percentage is left out in mean mode, and when a kept sum is below 0, since a
+  share of the net total could then pass 100% or go below 0%.
 - **Click pins** a tooltip that stays open and carries filter-action buttons built by
   `buildCategoricalFilterActions`: focus on this value ("show only this"), add to / remove
   from the global filter, exclude ("hide this"), and bring back. The actions and a
@@ -373,9 +380,11 @@ filter-actions.
 ### 7.7 Axes and labels
 
 The bottom (category) axis labels are rotated -30 degrees and anchored at their end so long
-category names do not overlap; the left axis uses `BAR_CHART.ticks` (6) tick marks. Optional
-x/y axis-title text is drawn when `showXAxisLabel` / `showYAxisLabel` are on. The function
-returns `ok()`.
+category names do not overlap; the left axis uses `BAR_CHART.ticks` (6) tick marks. The
+category axis stays at the bottom of the plot, so its labels never sit on a bar below 0.
+When a kept measure is below 0, a separate `line.bar-zero-line` marks 0 across the plot,
+drawn over the bars and ignored by the pointer. Optional x/y axis-title text is drawn when
+`showXAxisLabel` / `showYAxisLabel` are on. The function returns `ok()`.
 
 ---
 
@@ -438,14 +447,16 @@ screen shows are what gets serialized.
 - **No category column** → `fail()`, the section adapter shows `chive-chart-empty-bar`
   ("Select at least one visible column to build the bar chart.").
 - **sum/mean without a numeric value column** → `fail('no-value-column')`, and a value
-  column whose cells never parse to finite numbers → `fail('no-numeric')`; both map to
+  column with no number cell in the rows → `fail('no-numeric')`; both map to
   `chive-chart-empty-bar-numeric` ("Select a numeric value column to render the bar chart in
   sum or mean mode.").
 - **Missing categories** collapse into a single "(missing)" bar, never many empty bars, and
   never merge with a literal "N/A" category.
 - **Equal measures** keep a deterministic order via the `compareCategoryKeys` tiebreaker.
-- **Negative sum/mean aggregates** are allowed by aggregation, but the renderer keeps a
-  zero-based bar scale; use signed measures with care.
+- **Sums and means below 0** draw down from 0, on a y axis that always includes 0, and the
+  tooltips leave out the percentage. With every measure below 0, 0 sits at the top of the
+  plot. With every measure 0, the axis runs from 0 to 1 and every bar sits at 0 with no
+  height, as a measure of 0 does next to others.
 - **Invalid colors** fall back through `isValidHexColor` to the chart's default color.
 - **Stateless renders**: the container is fully wiped each call, so any caller can re-render
   at any time safely.
@@ -491,6 +502,7 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
   <text>                  (optional title)
   <g transform=margins>
     <rect> × N            (one per kept category, rounded corners)
+    <line>                (bar-zero-line, only with a measure below 0)
     <g> bottom axis       (category labels rotated -30°)
     <g> left axis         (6 ticks)
     <text> axis titles    (optional)

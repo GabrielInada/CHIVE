@@ -7,10 +7,9 @@
  */
 
 import { normalizeColumnNameList } from '../../domain/datasets/columns.js';
-import { MISSING_KEY, categoryKey, describeCategory } from '../../domain/datasets/cellValues.js';
-import { compareCategoryKeys } from '../shared/categoryOrder.js';
+import { categoryKey, describeCategory } from '../../domain/datasets/cellValues.js';
+import { aggregateCategories } from '../shared/categoryAggregation.js';
 import { BUBBLE_CHART } from '../../config/charts/definitions/bubble.js';
-import { toFiniteNumber } from '../../utils/formatters.js';
 
 /**
  * Resolve the effective nesting-column list from a bubble options bag.
@@ -37,13 +36,12 @@ export function resolveNestingColumns(options) {
 /**
  * Aggregate canonical rows into bubbles (one per category key). Each bubble
  * carries its measured value, top-level group, and the full nesting path
- * through the configured nesting columns. Missing cells form one missing
- * bucket per column, apart from text that reads "N/A".
+ * through the configured nesting columns, read from the first row counted
+ * toward it. Missing cells form one missing bucket per column, apart from
+ * text that reads "N/A".
  *
- * Failure modes: sum/mean without `valueColumn` → `'no-value-column'`;
- * sum/mean over rows with no parseable values → `'no-numeric'`. On
- * success, sorts bubbles descending by value (key tiebreak, missing last)
- * and applies the `topN` cap.
+ * Fails like `aggregateCategories`. On success, bubbles are ordered by
+ * value descending (key tiebreak, missing last) and capped at `topN`.
  *
  * @param {Object} args
  * @param {Array<Object<string, *>>} args.rows
@@ -53,68 +51,20 @@ export function resolveNestingColumns(options) {
  * @param {string[]} args.nestingColumns
  * @param {number} args.topN - `0` or negative → keep all bubbles.
  * @param {string} [args.missingLabel] - Localized label of the missing bucket.
- * @returns {{ bubbles: Bubble[], reason: 'no-value-column' | 'no-numeric' | null }}
+ * @returns {{ ok: false, reason?: 'no-value-column' | 'no-numeric' } | { ok: true, entries: Bubble[] }}
  */
 export function aggregateBubbles({ rows, categoryColumn, measureMode, valueColumn, nestingColumns, topN, missingLabel }) {
-	if (measureMode !== 'count' && !valueColumn) {
-		return { bubbles: [], reason: 'no-value-column' };
-	}
-
-	const hasValueColumn = measureMode === 'count'
-		? true
-		: rows.some(row => Object.prototype.hasOwnProperty.call(row, valueColumn));
+	const aggregated = aggregateCategories(rows, categoryColumn, { measureMode, valueColumn, missingLabel });
+	if (!aggregated.ok) return aggregated;
 
 	const describe = key => ({ key, ...describeCategory(key, { missingLabel }) });
-	const aggregated = new Map();
-	const nestingByKey = new Map();
-	const recordNesting = (key, row) => {
-		if (nestingColumns.length > 0 && !nestingByKey.has(key)) {
-			nestingByKey.set(key, nestingColumns.map(col => describe(categoryKey(row[col]))));
-		}
-	};
-
-	if (measureMode === 'count') {
-		rows.forEach(row => {
-			const key = categoryKey(row[categoryColumn]);
-			aggregated.set(key, (aggregated.get(key) || 0) + 1);
-			recordNesting(key, row);
-		});
-	} else {
-		if (!hasValueColumn) return { bubbles: [], reason: 'no-value-column' };
-		const counter = new Map();
-		rows.forEach(row => {
-			const key = categoryKey(row[categoryColumn]);
-			const rawValue = toFiniteNumber(row[valueColumn]);
-			if (!Number.isFinite(rawValue)) return;
-			aggregated.set(key, (aggregated.get(key) || 0) + rawValue);
-			counter.set(key, (counter.get(key) || 0) + 1);
-			recordNesting(key, row);
-		});
-
-		if (measureMode === 'mean') {
-			for (const [key, sum] of aggregated.entries()) {
-				aggregated.set(key, sum / (counter.get(key) || 1));
-			}
-		}
-	}
-
-	if ((measureMode === 'sum' || measureMode === 'mean') && aggregated.size === 0) {
-		return { bubbles: [], reason: 'no-numeric' };
-	}
-
-	let bubbles = Array.from(aggregated, ([key, value]) => {
-		const category = describe(key);
-		const nestingPath = nestingByKey.get(key) || [];
+	const kept = topN > 0 ? aggregated.entries.slice(0, topN) : aggregated.entries;
+	const entries = kept.map(({ firstRow, ...category }) => {
+		const nestingPath = nestingColumns.map(column => describe(categoryKey(firstRow[column])));
 		const group = nestingPath[0] || category;
-		return { ...category, value, groupKey: group.key, groupLabel: group.label, nestingPath };
+		return { ...category, groupKey: group.key, groupLabel: group.label, nestingPath };
 	});
-
-	bubbles.sort((a, b) => b.value - a.value || compareCategoryKeys(a.key, b.key));
-	if (topN > 0) {
-		bubbles = bubbles.slice(0, topN);
-	}
-
-	return { bubbles, reason: null };
+	return { ok: true, entries };
 }
 
 /**
@@ -172,7 +122,7 @@ export function buildMultiLevelHierarchy(bubbles, nestingColumns) {
  * group node (one level below the root). Used to color bubbles by their
  * outermost group: the key picks the color, the label is shown.
  *
- * @param {*} node - A D3 `hierarchy()` node with `.parent` and `.data`.
+ * @param {*} node - A D3 `hierarchy()` node below the root, with `.parent` and `.data`.
  * @returns {{ key: string, label: string }}
  */
 export function getTopLevelGroup(node) {
@@ -181,7 +131,6 @@ export function getTopLevelGroup(node) {
 		current = current.parent;
 	}
 	const { groupKey, groupLabel } = current.data;
-	if (groupKey === undefined) return { key: MISSING_KEY, label: describeCategory(MISSING_KEY).label };
 	return { key: groupKey, label: groupLabel };
 }
 

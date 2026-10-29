@@ -194,8 +194,9 @@ swatch. `computeDefaults` picks the category column.
 ([workspaceSection.js](../../../src/charts/treemap/workspaceSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
 through [presentation.js](../../../src/charts/treemap/presentation.js), and calls
-`renderTreemap`. On failure it shows
-`chive-chart-empty-treemap-numeric` for `no-value-column`, else `chive-chart-empty-treemap`.
+`renderTreemap`. On failure it shows `chive-chart-empty-treemap-numeric` for
+`no-value-column` and `no-numeric`, `chive-chart-empty-no-positive-sum` for
+`no-positive-value`, else `chive-chart-empty-treemap`.
 
 ### 6.2 Panel view
 
@@ -209,19 +210,22 @@ click-to-filter in panels). The panel registry only dispatches to that adapter.
 
 `renderTreemap(container, rows, categoryColumn, options = {})`. Unlike most renderers it does
 not use the `ok()`/`fail()` factories; it returns a plain `{ ok }` object (with a `reason` on
-the value-column failure) that the section adapter inspects.
+the value-column failures and when no value is positive) that the section adapter inspects.
 
 ### 7.1 Guard, options, aggregation
 
 Returns `{ ok: false }` if container or category is missing. Options are clamped (`measureMode`
-to its enum, `padding` to 1 to 6, height to 220 to 720, title to 80 chars). Sum mode without a
-usable value column returns `{ ok: false, reason: 'no-value-column' }`. A `Map` aggregates
-count or sum per category (sum skips non-finite values). Empty result returns `{ ok: false }`.
+to its enum, `padding` to 1 to 6, height to 220 to 720, title to 80 chars). The shared
+`aggregateCategories` ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js))
+aggregates count or sum per category, reading only number cells in sum mode. Sum mode without
+a usable value column returns `{ ok: false, reason: 'no-value-column' }`, and without a number
+`{ ok: false, reason: 'no-numeric' }`. Count mode with no rows returns `{ ok: false }`.
 
 ### 7.2 Sort, Top-N, layout
 
-Entries are filtered to positive values, sorted descending (with a `compareCategoryKeys`
-tiebreaker, missing last), and sliced to `topN`. A one-level `hierarchy({ root, children: entries })`
+Entries arrive sorted descending (with a `compareCategoryKeys` tiebreaker, missing last), are
+filtered to positive values, and are sliced to `topN`; with no positive value the result is
+`{ ok: false, reason: 'no-positive-value' }`. A one-level `hierarchy({ root, children: entries })`
 `.sum(value)` feeds `treemap().tile(treemapSquarify).size([w, h]).padding(p).round(true)`,
 which assigns each leaf its `(x0, y0, x1, y1)` rectangle (the squarified tiling of section
 2.2). `round(true)` snaps coordinates to whole pixels for crisp edges.
@@ -282,16 +286,21 @@ labels. The panel exporter clones the live `<svg>`; there is no separate export 
 
 - **No category column** → `{ ok: false }`, the adapter shows `chive-chart-empty-treemap`
   ("Select at least one visible categorical column to build the treemap.").
-- **sum mode without a numeric value column** → `{ ok: false, reason: 'no-value-column' }`,
-  mapped to `chive-chart-empty-treemap-numeric` ("Select a numeric column to render the treemap
-  in sum mode.").
+- **sum mode without a numeric value column** → `{ ok: false, reason: 'no-value-column' }`, or
+  no number in it → `{ ok: false, reason: 'no-numeric' }`; both map to
+  `chive-chart-empty-treemap-numeric` ("Select a numeric column to render the treemap in sum
+  mode.").
 - **Missing categories** collapse into a single "(missing)" tile, apart from literal "N/A" text.
-- **Non-positive aggregates** are filtered out (a treemap tile needs positive area).
+- **Non-positive aggregates** are filtered out (a treemap tile needs positive area). With none
+  left → `{ ok: false, reason: 'no-positive-value' }`, mapped to
+  `chive-chart-empty-no-positive-sum` ("No category sums to more than 0 in the selected value
+  column.").
 - **Tiles too small** to fit text are left unlabeled.
 - **Stateless renders** and **detached panel captures** behave as for every chart (panel tiles
   carry no filter actions).
 
-Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-treemap*`);
+Empty-state strings live in [en.json](../../../src/i18n/en.json) (`chive-chart-empty-treemap*`
+and `chive-chart-empty-no-positive-sum`);
 Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 ---

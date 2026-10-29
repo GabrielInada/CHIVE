@@ -83,6 +83,7 @@ describe('renderPiePanelChart', () => {
 		expect(options.labels).toEqual({
 			category: 'chive-chart-control-pie-category',
 			count: 'chive-tooltip-count',
+			sum: 'chive-tooltip-sum',
 			percentage: 'chive-tooltip-percentage',
 			other: 'chive-chart-pie-other',
 			missing: 'chive-chart-filter-missing',
@@ -104,11 +105,11 @@ describe('renderPiePanelChart', () => {
 	});
 
 	it('returns renderer failures unchanged', () => {
-		mocks.renderPieChart.mockReturnValueOnce({ ok: false, reason: 'sum-no-numeric' });
+		mocks.renderPieChart.mockReturnValueOnce({ ok: false, reason: 'no-numeric' });
 
 		expect(renderPiePanelChart(container, createSpec())).toEqual({
 			ok: false,
-			reason: 'sum-no-numeric',
+			reason: 'no-numeric',
 		});
 	});
 });

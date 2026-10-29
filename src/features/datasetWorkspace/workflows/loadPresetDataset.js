@@ -6,17 +6,11 @@
  */
 
 import { t } from '../../../services/i18nService.js';
-import { processData } from '../../../domain/datasets/processData.js';
-import {
-	calculateStatistics,
-	calculateCategoricalStatistics,
-} from '../../../domain/datasets/statistics.js';
 import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../../../services/dataIngestService.js';
 import { loadPresetSource } from '../../../services/presetService.js';
 import { addDataset } from '../../../state/appState.js';
 import { showError, showProgress } from '../../../ui/feedback.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
-import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../config/statistics.js';
 
 /**
  * Resolve and load a preset dataset.
@@ -57,51 +51,23 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 		}
 
 		const source = result.value;
-
-		let rows;
-		let columns;
-		let statsNumeric = [];
-		let statsCategorical = [];
-
-		if (source.mode === 'inline') {
-			// Inline presets are tiny demo arrays, sync processData is cheap.
-			rows = source.rows;
-			if (source.dropColumns.length > 0) {
-				const dropSet = new Set(source.dropColumns);
-				rows = rows.map(row => {
-					const next = { ...row };
-					dropSet.forEach(key => { delete next[key]; });
-					return next;
-				});
-			}
-			const processed = processData(rows);
-			rows = processed.rows;
-			columns = processed.columns;
-			// The ingest worker computes these on the file path; do the same here
-			// or the dataset carries an empty numeric strip that statsView
-			// accepts as a valid cache.
-			statsNumeric = calculateStatistics(rows, columns);
-			statsCategorical = calculateCategoricalStatistics(rows, columns);
-			progress.update(100);
-		} else {
-			const ingestResult = await ingestFile(
-				{ kind: source.kind, text: source.text, options: { dropColumns: source.dropColumns } },
-				{
-					signal: abortController.signal,
-					onProgress: ({ stage, percent }) => {
-						progress.update(percent, progressLabelForStage(stage, presetName));
-					},
+		const ingestResult = await ingestFile(
+			{ kind: source.kind, text: source.text, options: { dropColumns: source.dropColumns } },
+			{
+				signal: abortController.signal,
+				onProgress: ({ stage, percent }) => {
+					progress.update(percent, progressLabelForStage(stage, presetName));
 				},
-			);
+			},
+		);
 
-			if (!ingestResult.ok) {
-				if (ingestResult.reason === 'cancelled') progress.close();
-				else progress.fail(t('chive-progress-failed', [ingestErrorMessage(ingestResult.reason)]));
-				return;
-			}
-
-			({ rows, columns, statsNumeric, statsCategorical } = ingestResult.value);
+		if (!ingestResult.ok) {
+			if (ingestResult.reason === 'cancelled') progress.close();
+			else progress.fail(t('chive-progress-failed', [ingestErrorMessage(ingestResult.reason)]));
+			return;
 		}
+
+		const { rows, columns, precomputedStats } = ingestResult.value;
 
 		const dataset = {
 			name: presetName,
@@ -110,19 +76,14 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 			columns,
 			selectedColumns: columns.map(c => c.name),
 			chartConfig: createDefaultChartConfig(),
-			precomputedStats: {
-				numeric: statsNumeric,
-				categorical: statsCategorical,
-				numericVersion: STATS_NUMERIC_VERSION,
-				categoricalVersion: STATS_CATEGORICAL_VERSION,
-			},
+			precomputedStats,
 		};
 
 		const index = addDataset(dataset);
 		selectDataset(index);
 		progress.succeed(t('chive-preset-load-success', [presetName]));
 	} catch (err) {
-		// Genuinely-unexpected throws from processData/addDataset/selectDataset.
+		// Genuinely-unexpected throws from addDataset/selectDataset.
 		progress.fail(t('chive-progress-failed', [err?.message || 'error']));
 		showError(t('chive-join-error-generic'));
 	}

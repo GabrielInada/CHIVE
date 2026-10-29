@@ -18,8 +18,7 @@
 import { t } from '../../services/i18nService.js';
 import { ok, fail } from '../../utils/result.js';
 import { mergeChartConfigWithDefaults } from '../../domain/charts/chartConfig.js';
-import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../domain/filters/globalFilter.js';
-import { getNumericColumnNames } from '../../domain/datasets/columns.js';
+import { filterDataset } from '../../domain/filters/datasetFilter.js';
 import {
 	PANEL_LAYOUTS,
 	getLayoutConfig as getPanelLayoutConfig,
@@ -202,12 +201,7 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 		if (!dataset) return fail('no-dataset');
 
 		const mergedConfig = mergeChartConfigWithDefaults(dataset.chartConfig);
-		const allColumnNames = Array.isArray(dataset.columns)
-			? dataset.columns.map(column => column?.name).filter(Boolean)
-			: [];
-		const numericColumnNames = getNumericColumnNames(dataset.columns || []);
-		const safeGlobalFilter = resolveGlobalFilterForColumns(mergedConfig.globalFilter, allColumnNames);
-		const filteredRows = applyGlobalFilterRules(dataset.rows || [], safeGlobalFilter, numericColumnNames);
+		const filteredRows = filterDataset(dataset).rows;
 
 		const chartId = addChartSnapshot({
 			name: chartBaseName,

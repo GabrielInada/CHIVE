@@ -52,8 +52,8 @@
 
 /**
  * Precomputed statistics, cached on the dataset to avoid recomputing on every
- * DATASET_ADDED event. Produced by the ingest worker for uploads and file
- * presets, and on the main thread for joins and inline presets.
+ * DATASET_ADDED event. Produced at ingest for uploads, presets, and joins, with
+ * both versions stamped.
  *
  * `numeric` is dropped at hydrate when `numericVersion` does not match
  * `STATS_NUMERIC_VERSION`, and `categorical` when `categoricalVersion` does not
@@ -326,27 +326,41 @@
  * @typedef {{ ok: true, [key: string]: * } | { ok: false, reason?: string }} Result
  */
 
-// ─── Ingest pipeline (worker → service → datasetController) ─────────────
+// ─── Ingest (domain/datasets/ingest.js → worker → service) ──────────────
 
 /**
- * Resolved payload from the data-ingest worker. Lives at `result.value`
- * when `ingestFile` resolves successfully.
+ * What to ingest: a CSV or JSON file's text, or the two datasets to join,
+ * with options. `ingestDataset` takes it as is; the worker receives it with
+ * a correlation id ({@link IngestWorkerRequest}).
  *
- * @typedef {Object} IngestPayload
- * @property {Array<Object<string, *>>} rows - Normalized rows (numeric columns parsed; missing values preserved).
- * @property {ColumnSpec[]} columns - Detected columns in source order.
- * @property {Object<string, Object>} statsNumeric - Per-column numeric stats (n, min, max, mean, median).
- * @property {Object<string, Object>} statsCategorical - Per-column categorical stats (mode, top-N, missingness).
- * @property {number} [truncatedFrom] - Original row count before the worker capped to `rowLimit`. Absent when no truncation occurred.
- * @property {string[]} [outputColumns] - Stable output order for a joined-data request.
+ * @typedef {Object} IngestRequest
+ * @property {'csv' | 'json' | 'join'} kind - File parser or joined-data operation.
+ * @property {string} [text] - Raw file contents for CSV/JSON requests.
+ * @property {JoinDatasetsOptions} [join] - Complete join input for a join request.
+ * @property {Object} [options]
+ * @property {'auto' | '.' | ','} [options.decimalSeparator='auto'] - Explicit string number format, overriding saved column formats, or automatic detection with a dot fallback. Joins retain each source column's saved format in automatic mode. Typed numbers are preserved.
+ * @property {number} [options.rowLimit] - Cap the rows after parse or join; surplus rows set `truncatedFrom`. Uploads use this only for a bounded threshold probe, then rerun uncapped after approval.
+ * @property {string[]} [options.dropColumns] - Column names to strip before normalization (preset use case).
  */
 
 /**
- * One progress tick emitted by the worker. File stages start with
- * `'parsing'`; join stages start with `'joining'`; both continue through
- * `'decimal-detection'` → `'type-detection'` → `'normalize'` → `'stats'`.
- * `percent` is the overall pipeline progress (0 to 100), not a per-stage
- * value.
+ * A new dataset's content, as ingest produced it. `ingestDataset` returns it
+ * at `result.value`, the worker posts it in its `done` message, and
+ * `ingestFile` and `joinDatasetsInWorker` resolve with it at `result.value`.
+ *
+ * @typedef {Object} IngestPayload
+ * @property {Array<Object<string, *>>} rows - Canonical rows: every row has every column, each cell in its column type's canonical form.
+ * @property {ColumnSpec[]} columns - Columns in source order, each with its type and decimal separator. JSON columns follow the first row's keys, which list integer-like names first. A join that matched nothing keeps its output columns, typed as text.
+ * @property {PrecomputedStats} precomputedStats - Numeric and categorical stats with both versions stamped. Both lists are empty when there are no rows.
+ * @property {number | null} truncatedFrom - Original row count when `options.rowLimit` truncated; `null` otherwise.
+ */
+
+/**
+ * One progress tick reported by ingest and relayed by the worker. File
+ * stages start with `'parsing'`; join stages start with `'joining'`; both
+ * continue through `'decimal-detection'` → `'type-detection'` →
+ * `'normalize'` → `'stats'`. `percent` is the overall pipeline progress
+ * (0 to 100), not a per-stage value.
  *
  * @typedef {Object} IngestProgress
  * @property {string} stage
@@ -355,35 +369,13 @@
  */
 
 /**
- * Wire shape posted to the data-ingest Worker via `postMessage`. The `id`
- * field is reflected in every response so the host can correlate concurrent
- * ingests. The host side lives in `services/dataIngestService.js`; the
- * worker side lives in `workers/dataIngestWorker.js`.
+ * Wire shape posted to the data-ingest Worker via `postMessage`: an
+ * {@link IngestRequest} plus an `id`, which is reflected in every response so
+ * the host can correlate concurrent ingests. The host side lives in
+ * `services/dataIngestService.js`; the worker side lives in
+ * `workers/dataIngestWorker.js`.
  *
- * @typedef {Object} IngestWorkerRequest
- * @property {string} id - Correlation id; mirrored on every response.
- * @property {'csv' | 'json' | 'join'} kind - File parser or joined-data operation.
- * @property {string} [text] - Raw file contents for CSV/JSON requests.
- * @property {JoinDatasetsOptions} [join] - Complete join input for a join request.
- * @property {Object} [options]
- * @property {'auto' | '.' | ','} [options.decimalSeparator='auto'] - Explicit string number format, overriding saved column formats, or automatic detection with a dot fallback. Joins retain each source column's saved format in automatic mode. Typed numbers are preserved.
- * @property {number} [options.rowLimit] - Cap this worker response after parse; surplus rows trigger `truncatedFrom`. Uploads use this only for a bounded threshold probe, then rerun uncapped after approval.
- * @property {string[]} [options.dropColumns] - Column names to strip before normalization (preset use case).
- */
-
-/**
- * Done-state result body posted back by the Worker. Distinct from
- * {@link IngestPayload}. This is the wire shape; the host service may
- * reshape it before exposing to callers.
- *
- * @typedef {Object} IngestWorkerDoneResult
- * @property {Array<Object<string, *>>} rows
- * @property {ColumnSpec[]} columns
- * @property {string} decimalSeparator - Selected or detected file separator (`'.'` or `','`); a fallback for joined columns without a saved format.
- * @property {NumericColumnStats[] | []} statsNumeric - Empty array when no rows.
- * @property {CategoricalColumnStats[] | []} statsCategorical - Empty array when no rows.
- * @property {number | null} truncatedFrom - Original row count when `options.rowLimit` truncated; `null` otherwise.
- * @property {string[]} [outputColumns] - Join output order; present only for join requests.
+ * @typedef {IngestRequest & { id: string }} IngestWorkerRequest
  */
 
 /**
@@ -395,7 +387,7 @@
  *
  * @typedef {(
  *   { id: string, type: 'progress', stage: string, percent: number }
- *   | { id: string, type: 'done', result: IngestWorkerDoneResult }
+ *   | { id: string, type: 'done', result: IngestPayload }
  *   | { id: string, type: 'error', reason?: string, message?: string }
  * )} IngestWorkerResponse
  */
@@ -485,7 +477,7 @@
  * @property {JoinType} [joinType='inner'] - Unknown values silently fall back to `'inner'`.
  * @property {string[]} leftColumns - Columns from the left side to include in the output.
  * @property {string[]} rightColumns - Columns from the right side to include in the output.
- * @property {ColumnSpec[]} [leftColumnSpecs] - Source metadata used by the ingest worker to preserve string number formats after joining.
+ * @property {ColumnSpec[]} [leftColumnSpecs] - Source metadata that ingest uses to preserve string number formats after joining.
  * @property {ColumnSpec[]} [rightColumnSpecs]
  * @property {string} [leftDatasetName] - Used to derive the prefix for column-name conflicts (`leftPrefix.col`). Falls back to `'left'`.
  * @property {string} [rightDatasetName]
@@ -497,7 +489,7 @@
  * left/right/full joins are `null`) and `outputColumns` (left-then-right order, with conflicts
  * renamed `'a.salary'`, `'b.salary'`, plus `_2`, `_3` suffixes for further collisions). On failure
  * carries a stable `reason`. `columnSources` maps each output name back to its source
- * so the worker can retain column metadata through conflict renaming.
+ * so ingest can retain column metadata through conflict renaming.
  *
  * @typedef {(
  *   { ok: true, rows: Array<Object<string, *>>, outputColumns: string[], columnSources: Array<{ source: string, output: string, side: 'left' | 'right' }> }
@@ -542,26 +534,23 @@
 // ─── Preset loading (presetService) ─────────────────────────────────────
 
 /**
- * Descriptor for a bundled preset dataset. Either `data` (inline) or
- * `dataUrl` (remote) must be present; if both are, `data` wins.
+ * Descriptor for a bundled preset dataset, loaded from `dataUrl`.
  *
  * @typedef {Object} PresetDescriptor
  * @property {string} [id]
  * @property {string} [name]
- * @property {Array<Object<string, *>>} [data] - Inline rows.
  * @property {string} [dataUrl] - Remote source. Resolved with a 10s timeout.
  * @property {string} [dataFormat] - Wins over URL extension when distinguishing CSV vs JSON.
  * @property {string[]} [dropColumns] - Columns the loader strips after parse.
  */
 
 /**
- * Resolved preset source. Discriminated by `mode`; callers should narrow
- * before reading fields specific to one variant.
+ * Fetched preset source, ready for the ingest worker.
  *
- * @typedef {(
- *   { mode: 'inline', rows: Array<Object<string, *>>, dropColumns: string[] }
- *   | { mode: 'fetched', kind: 'csv' | 'json', text: string, dropColumns: string[] }
- * )} PresetSource
+ * @typedef {Object} PresetSource
+ * @property {'csv' | 'json'} kind
+ * @property {string} text - Raw file contents.
+ * @property {string[]} dropColumns
  */
 
 /**

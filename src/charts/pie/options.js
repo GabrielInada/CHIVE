@@ -29,6 +29,7 @@ export function normalizePieOptions(options) {
 	const labels = {
 		category: options.labels?.category || 'Category',
 		count: options.labels?.count || 'Count',
+		sum: options.labels?.sum || 'Sum',
 		percentage: options.labels?.percentage || 'Percentage',
 		other: options.labels?.other || 'Other',
 		missing: options.labels?.missing || '(missing)',

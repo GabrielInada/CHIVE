@@ -240,11 +240,14 @@ to 80 chars). In grouped mode with no nesting columns (and no legacy `groupColum
 ### 7.2 Aggregation (`aggregateBubbles`)
 
 [data.js](../../../src/charts/bubble/data.js) reduces
-rows to one bubble per category, each carrying its measured value, its top-level group, and
-its full nesting path. Sum/mean without a usable value column returns `'no-value-column'`; no
-parseable values returns `'no-numeric'`. Bubbles are sorted descending by value (with a stable
-tiebreaker) and capped to `topN`. The helper does not filter zero or negative aggregates
-before the D3 pack layout, so sum/mean mode is intended for non-negative measures.
+rows to one bubble per category through the shared `aggregateCategories`
+([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)), each bubble
+carrying its measured value, its top-level group, and its full nesting path, read from the
+first row counted toward the category. Sum/mean without a usable value column returns
+`'no-value-column'`; no number cell returns `'no-numeric'`. Bubbles are sorted descending by
+value (with a stable tiebreaker) and capped to `topN`. The helper does not filter zero or
+negative aggregates before the D3 pack layout, so sum/mean mode is intended for non-negative
+measures.
 
 ### 7.3 Hierarchy and pack layout
 
@@ -323,7 +326,7 @@ The panel exporter clones the live `<svg>`; there is no separate export path.
 
 - **No category column** → `fail()`, the adapter shows `chive-chart-empty-bubble` ("Select at
   least one visible categorical column to build the bubble chart.").
-- **sum/mean without a numeric value column** (or no parseable values) →
+- **sum/mean without a numeric value column** (or no number cell in it) →
   `fail('no-value-column')` / `fail('no-numeric')`, mapped to
   `chive-chart-empty-bubble-numeric`.
 - **grouped mode with no nesting columns** → `fail('no-nesting-columns')`, mapped to

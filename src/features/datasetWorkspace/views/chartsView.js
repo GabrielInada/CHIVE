@@ -13,7 +13,6 @@
 import { t } from '../../../services/i18nService.js';
 import { mergeChartConfigWithDefaults } from '../../../domain/charts/chartConfig.js';
 import { CHART_TYPE_KEYS } from '../../../config/charts/definitions.js';
-import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../../domain/filters/globalFilter.js';
 import { clearChartContainer } from '../../../charts/shared/containerLifecycle.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../charts/workspaceDomIds.js';
 import { renderWorkspaceChart } from '../../../charts/registries/workspace.js';
@@ -28,7 +27,7 @@ import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
  * signature and are wired into the per-chart tooltip actions.
  *
  * @param {Partial<ChartConfig>} config
- * @param {Array<Object<string, *>>} rows - Pre-filter rows; the global filter is applied inside.
+ * @param {Array<Object<string, *>>} rows - Rows to draw, already narrowed by the global filter (see `filterDataset`).
  * @param {ColumnSpec[]} visibleColumns
  * @param {ColumnSpec[]} visibleNumericColumns
  * @param {Object} [options]
@@ -86,17 +85,9 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		filterActionLabels,
 	};
 	const chartConfig = mergeChartConfigWithDefaults(config);
-	const numericColumnNames = Array.isArray(visibleNumericColumns)
-		? visibleNumericColumns.map(column => column?.name).filter(Boolean)
-		: [];
-	const allColumnNames = Array.isArray(visibleColumns)
-		? visibleColumns.map(column => column?.name).filter(Boolean)
-		: [];
 	const columnTypeByName = Array.isArray(visibleColumns)
 		? Object.fromEntries(visibleColumns.map(column => [column?.name, column?.type]))
 		: {};
-	const safeGlobalFilter = resolveGlobalFilterForColumns(chartConfig.globalFilter, allColumnNames);
-	const filteredRows = applyGlobalFilterRules(rows, safeGlobalFilter, numericColumnNames);
 	const chartsGrid = document.getElementById(VIEW_IDS.chartsGrid);
 	const emptyState = document.getElementById(VIEW_IDS.chartsEmptyState);
 	const chartBlocks = CHART_TYPE_KEYS
@@ -150,7 +141,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	for (const type of CHART_TYPE_KEYS) {
 		renderWorkspaceChart(type, {
 			config: chartConfig[type],
-			rows: filteredRows,
+			rows,
 			columnTypeByName,
 			filterCallbacks,
 		});

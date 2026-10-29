@@ -172,6 +172,30 @@ describe('renderCoordinator', () => {
 		expect(mocks.syncSidebarToTab).not.toHaveBeenCalled();
 	});
 
+	it('draws live previews from the rows the global filter keeps, hidden columns included', async () => {
+		const dataset = {
+			...baseDataset,
+			chartConfig: {
+				...baseDataset.chartConfig,
+				globalFilter: {
+					rules: [{ column: 'region', mode: 'categorical', include: ['v:North'], exclude: [] }],
+					combine: 'AND',
+				},
+			},
+		};
+		mocks.getActiveDataset.mockReturnValue(dataset);
+		const coordinator = await importCoordinator();
+
+		coordinator.livePreviewRender();
+
+		expect(mocks.renderCharts).toHaveBeenCalledWith(
+			dataset.chartConfig,
+			[{ region: 'North', value: 10 }],
+			[{ name: 'value', type: 'number' }],
+			[{ name: 'value', type: 'number' }],
+		);
+	});
+
 	it('renders the active dataset and bridges workspace and live-preview callbacks', async () => {
 		setActiveDataset();
 		const coordinator = await importCoordinator();

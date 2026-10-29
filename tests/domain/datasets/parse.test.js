@@ -13,6 +13,10 @@ describe('parse', () => {
     expect(empty.reason).toBe('csv-empty');
   });
 
+  it('returns the CSV header names in file order', () => {
+    expect(parseCsv('country,1990,2000\nBR,1,2').header).toEqual(['country', '1990', '2000']);
+  });
+
   it('parses JSON in supported formats and fails on invalid', () => {
     const arr = parseJson('[{"a":1},{"a":2}]');
     expect(arr.ok).toBe(true);

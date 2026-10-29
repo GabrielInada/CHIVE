@@ -5,7 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   t: vi.fn((key, params) => `${key}${params ? `:${params.join('|')}` : ''}`),
   getLocale: vi.fn(() => 'en'),
-  processData: vi.fn(),
   formatFileSize: vi.fn(size => `${size}B`),
   ingestFile: vi.fn(),
   joinDatasetsInWorker: vi.fn(),
@@ -26,10 +25,6 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../../src/services/i18nService.js', () => ({
   t: mocks.t,
   getLocale: mocks.getLocale,
-}));
-
-vi.mock('../../../src/domain/datasets/processData.js', () => ({
-  processData: mocks.processData,
 }));
 
 // Spread the real module: formatters.js also exports isNullish, which the
@@ -85,6 +80,7 @@ import {
   setupFileInputListeners,
 } from '../../../src/features/datasetWorkspace/datasetController.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../src/config/statistics.js';
+import { ingestDataset } from '../../../src/domain/datasets/ingest.js';
 import { runIngest } from '../../../src/workers/dataIngestWorker.js';
 
 class FileReaderMock {
@@ -112,6 +108,15 @@ function csvFile({
   };
 }
 
+function emptyStats() {
+  return {
+    numeric: [],
+    categorical: [],
+    numericVersion: STATS_NUMERIC_VERSION,
+    categoricalVersion: STATS_CATEGORICAL_VERSION,
+  };
+}
+
 async function useRealIngestService() {
 	const service = await vi.importActual('../../../src/services/dataIngestService.js');
 	service.__setIngestWorkerFactoryForTesting(() => ({
@@ -134,20 +139,14 @@ describe('datasetController', () => {
 
     mocks.loadPresetSource.mockResolvedValue({
       ok: true,
-      value: { mode: 'inline', rows: [{ a: 1 }], dropColumns: [] },
-    });
-    mocks.processData.mockReturnValue({
-      rows: [{ a: 1 }],
-      columns: [{ name: 'a', type: 'number' }],
+      value: { kind: 'csv', text: 'a\n1\n', dropColumns: [] },
     });
     mocks.ingestFile.mockResolvedValue({
       ok: true,
       value: {
         rows: [{ a: 1 }],
         columns: [{ name: 'a', type: 'number' }],
-        decimalSeparator: '.',
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
         truncatedFrom: null,
       },
     });
@@ -163,9 +162,7 @@ describe('datasetController', () => {
       value: {
         rows: [{ id: '1' }],
         columns: [{ name: 'id', type: 'text' }],
-        outputColumns: ['id'],
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
         truncatedFrom: null,
       },
     });
@@ -222,14 +219,7 @@ describe('datasetController', () => {
 		select.innerHTML = '<option value="auto">Auto</option><option value=".">Dot</option><option value=",">Comma</option>';
 		select.value = separator;
 		document.body.appendChild(select);
-		mocks.ingestFile.mockImplementation(async payload => {
-			let result;
-			runIngest({ id: 'upload-format', ...payload }, message => {
-				if (message.type === 'done') result = { ok: true, value: message.result };
-				if (message.type === 'error') result = { ok: false, reason: message.reason };
-			});
-			return result;
-		});
+		mocks.ingestFile.mockImplementation(async request => ingestDataset(request));
 
 		try {
 			await handleFileUpload([csvFile({ name, content: text })]);
@@ -264,9 +254,7 @@ describe('datasetController', () => {
         value: {
           rows: [{ x: 1 }, { x: 2 }],
           columns: [{ name: 'x', type: 'number' }],
-          decimalSeparator: '.',
-          statsNumeric: [],
-          statsCategorical: [],
+          precomputedStats: emptyStats(),
           truncatedFrom: 3,
         },
       })
@@ -275,9 +263,7 @@ describe('datasetController', () => {
         value: {
           rows: [{ x: 1 }, { x: 2 }, { x: 3 }],
           columns: [{ name: 'x', type: 'number' }],
-          decimalSeparator: '.',
-          statsNumeric: [],
-          statsCategorical: [],
+          precomputedStats: emptyStats(),
           truncatedFrom: null,
         },
       });
@@ -299,9 +285,7 @@ describe('datasetController', () => {
       value: {
         rows: [{ x: 1 }, { x: 2 }],
         columns: [{ name: 'x', type: 'number' }],
-        decimalSeparator: '.',
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
         truncatedFrom: 3,
       },
     });
@@ -473,9 +457,8 @@ describe('datasetController', () => {
       value: {
         rows: [{ id: '1', target: 99 }],
         columns: [{ name: 'id', type: 'text' }, { name: 'target', type: 'number' }],
-        outputColumns: ['id', 'target'],
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
+        truncatedFrom: null,
       },
     });
     mocks.addDataset.mockReturnValue(2);
@@ -648,9 +631,8 @@ describe('datasetController', () => {
       value: {
         rows: joinedRows,
         columns: [{ name: 'id', type: 'number' }],
-        outputColumns: ['id'],
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
+        truncatedFrom: null,
       },
     });
     mocks.addDataset.mockReturnValueOnce(2);
@@ -680,9 +662,8 @@ describe('datasetController', () => {
       value: {
         rows: [{ id: 1 }, { id: 2 }, { id: 3 }],
         columns: [{ name: 'id', type: 'number' }],
-        outputColumns: ['id'],
-        statsNumeric: [],
-        statsCategorical: [],
+        precomputedStats: emptyStats(),
+        truncatedFrom: null,
       },
     });
 
@@ -749,30 +730,33 @@ describe('datasetController', () => {
   });
 
   describe('handlePresetDatasetRequest', () => {
-    it('adds and activates an inline preset', async () => {
+    it('adds and activates a preset with the stats its ingest computed', async () => {
+      const restoreService = await useRealIngestService();
       mocks.addDataset.mockReturnValueOnce(3);
 
-      await handlePresetDatasetRequest({ nameKey: 'preset-name', rows: 1 });
+      try {
+        await handlePresetDatasetRequest({ nameKey: 'preset-name', rows: 1 });
 
-      expect(mocks.loadPresetSource).toHaveBeenCalledWith(
-        { nameKey: 'preset-name', rows: 1 },
-        { signal: expect.any(AbortSignal) },
-      );
-      expect(mocks.processData).toHaveBeenCalledWith([{ a: 1 }]);
-      expect(mocks.addDataset).toHaveBeenCalledTimes(1);
-      const added = mocks.addDataset.mock.calls[0][0];
-      expect(added.name).toBe('preset-name');
-      expect(added.selectedColumns).toEqual(['a']);
-      // Inline presets skip the ingest worker, so the workflow computes stats
-      // itself rather than storing an empty array statsView would trust.
-      expect(added.precomputedStats.numericVersion).toBe(STATS_NUMERIC_VERSION);
-      expect(added.precomputedStats.categoricalVersion).toBe(STATS_CATEGORICAL_VERSION);
-      expect(added.precomputedStats.numeric).toEqual([
-        { name: 'a', n: 1, min: 1, max: 1, mean: 1, median: 1 },
-      ]);
-      expect(mocks.setActiveDataset).toHaveBeenCalledWith(3);
-      const progress = mocks.showProgress.mock.results.at(-1).value;
-      expect(progress.succeed).toHaveBeenCalledWith('chive-preset-load-success:preset-name');
+        expect(mocks.loadPresetSource).toHaveBeenCalledWith(
+          { nameKey: 'preset-name', rows: 1 },
+          { signal: expect.any(AbortSignal) },
+        );
+        expect(mocks.addDataset).toHaveBeenCalledTimes(1);
+        const added = mocks.addDataset.mock.calls[0][0];
+        expect(added.name).toBe('preset-name');
+        expect(added.rows).toEqual([{ a: 1 }]);
+        expect(added.selectedColumns).toEqual(['a']);
+        expect(added.precomputedStats.numericVersion).toBe(STATS_NUMERIC_VERSION);
+        expect(added.precomputedStats.categoricalVersion).toBe(STATS_CATEGORICAL_VERSION);
+        expect(added.precomputedStats.numeric).toEqual([
+          { name: 'a', n: 1, min: 1, max: 1, mean: 1, median: 1 },
+        ]);
+        expect(mocks.setActiveDataset).toHaveBeenCalledWith(3);
+        const progress = mocks.showProgress.mock.results.at(-1).value;
+        expect(progress.succeed).toHaveBeenCalledWith('chive-preset-load-success:preset-name');
+      } finally {
+        restoreService();
+      }
     });
 
     it('reports a null preset as a generic error', async () => {
@@ -785,7 +769,7 @@ describe('datasetController', () => {
     it('maps a fetched-ingest failure and adds nothing', async () => {
       mocks.loadPresetSource.mockResolvedValueOnce({
         ok: true,
-        value: { mode: 'fetched', kind: 'csv', text: 'a,b', dropColumns: ['drop'] },
+        value: { kind: 'csv', text: 'a,b', dropColumns: ['drop'] },
       });
       mocks.ingestFile.mockResolvedValueOnce({ ok: false, reason: 'csv-empty' });
       mocks.ingestErrorMessage.mockReturnValueOnce('mapped-detail');
