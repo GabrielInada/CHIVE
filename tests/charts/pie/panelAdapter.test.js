@@ -83,6 +83,7 @@ describe('renderPiePanelChart', () => {
 		expect(options.labels).toEqual({
 			category: 'chive-chart-control-pie-category',
 			count: 'chive-tooltip-count',
+			sum: 'chive-tooltip-sum',
 			percentage: 'chive-tooltip-percentage',
 			other: 'chive-chart-pie-other',
 			missing: 'chive-chart-filter-missing',

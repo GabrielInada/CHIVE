@@ -59,5 +59,6 @@ describe('normalizePieOptions', () => {
 		expect(o.labels.other).toBe('Outros');
 		expect(o.labels.category).toBe('Região');
 		expect(o.labels.count).toBe('Count');
+		expect(o.labels.sum).toBe('Sum');
 	});
 });

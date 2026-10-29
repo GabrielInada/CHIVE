@@ -139,9 +139,10 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 
 	const buildTooltipContent = item => {
 		const percentage = total > 0 ? ((item.value / total) * 100) : 0;
+		const valueLabel = measureMode === 'sum' ? labels.sum : labels.count;
 		const wrapper = document.createElement('div');
 		wrapper.appendChild(createTooltipLine(labels.category, item.label));
-		wrapper.appendChild(createTooltipLine(labels.count, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(item.value, locale)));
 		wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		return wrapper;
 	};
