@@ -269,9 +269,9 @@ describe('network graph visualization', () => {
 		expect(container.querySelector('line').getAttribute('stroke')).toBe('#7d7d7d');
 	});
 
-	it('renders same-column node filter actions with a state badge', () => {
+	it('offers one group of node filter actions, headed by the column, when source and target share it', () => {
 		const container = document.getElementById('network');
-		const calls = { remove: [] };
+		const calls = [];
 		const rows = [
 			{ node: 'A' },
 			{ node: 'B' },
@@ -280,14 +280,7 @@ describe('network graph visualization', () => {
 
 		const result = renderNetworkGraph(container, rows, 'node', 'node', {
 			filterCallbacks: {
-				onRemoveFromGlobalFilter: (column, token) => calls.remove.push([column, token]),
-				getTokenFilterState: () => 'included',
-				filterActionLabels: {
-					stateIncluded: 'Included',
-					remove: 'Remove',
-					filterBySource: 'Source filter',
-					filterByTarget: 'Target filter',
-				},
+				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 			},
 		});
 		expect(result.ok).toBe(true);
@@ -295,14 +288,15 @@ describe('network graph visualization', () => {
 
 		container.querySelector('circle').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
-		expect(document.querySelector('.chart-tooltip__filter-state--included')).not.toBeNull();
-		expect(document.querySelector('.chart-tooltip__action-set-label').textContent).toBe('node');
+		expect(Array.from(document.querySelectorAll('.chart-tooltip__action-set-label')).map(heading => heading.textContent))
+			.toEqual(['node']);
 		document.querySelector('.chart-tooltip__action').click();
-		expect(calls.remove).toEqual([['node', 'v:A']]);
+		expect(calls).toEqual([['node', 'v:A']]);
 	});
 
-	it('renders separate source/target action sets and suppresses redundant focus actions', () => {
+	it('offers node filter actions for the source and the target column under their headings', () => {
 		const container = document.getElementById('network');
+		const calls = [];
 		const rows = [
 			{ source: 'A', target: 'B' },
 			{ source: 'B', target: 'C' },
@@ -310,13 +304,8 @@ describe('network graph visualization', () => {
 
 		const result = renderNetworkGraph(container, rows, 'source', 'target', {
 			filterCallbacks: {
-				onFocusGlobalFilter: () => {},
-				onAddToGlobalFilter: () => {},
-				onExcludeGlobalFilter: () => {},
-				isShowOnlyThisRedundant: () => true,
+				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 				filterActionLabels: {
-					add: 'Add',
-					exclude: 'Hide',
 					filterBySource: 'Filter source',
 					filterByTarget: 'Filter target',
 				},
@@ -327,9 +316,10 @@ describe('network graph visualization', () => {
 
 		container.querySelector('circle').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
-		expect(document.querySelectorAll('.chart-tooltip__action-set-wrap').length).toBe(2);
-		expect(Array.from(document.querySelectorAll('.chart-tooltip__action')).map(button => button.textContent))
-			.toEqual(['Add', 'Hide', 'Add', 'Hide']);
+		expect(Array.from(document.querySelectorAll('.chart-tooltip__action-set-label')).map(heading => heading.textContent))
+			.toEqual(['Filter source (source)', 'Filter target (target)']);
+		document.querySelectorAll('.chart-tooltip__action').forEach(button => button.click());
+		expect(calls).toEqual([['source', 'v:A'], ['target', 'v:A']]);
 	});
 
 	it('covers link and node hover branches while a tooltip is pinned', () => {

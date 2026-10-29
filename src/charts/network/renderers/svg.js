@@ -26,20 +26,17 @@ import {
 	zoomIdentity,
 } from '../../../../vendor/d3/d3.js';
 import {
-	buildCategoricalFilterActions,
-	createFilterStateBadge,
-	createTooltipActionGroup,
 	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	repositionPinnedTooltip,
 	showChartTooltip,
-	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
+import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { NETWORK_GRAPH } from '../../../config/charts/definitions/network.js';
-import { formatNumber, isNullish } from '../../../utils/formatters.js';
+import { formatNumber } from '../../../utils/formatters.js';
 import { interpolateColor, isValidHexColor } from '../../../utils/colorUtils.js';
 import { fail } from '../../../utils/result.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
@@ -176,15 +173,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 	container[SIMULATION_KEY] = simulation;
 
 	let pinnedNodeDatum = null;
-	const filterCallbacks = options.filterCallbacks || {};
-	const filterLabels = filterCallbacks.filterActionLabels || {};
-	const actionLabels = {
-		focus: filterLabels.focus || 'Show only this',
-		add: filterLabels.add || 'Add to filter',
-		exclude: filterLabels.exclude || 'Hide this',
-		remove: filterLabels.remove || 'Remove from filter',
-		bringBack: filterLabels.bringBack || 'Bring back',
-	};
+	const filterLabels = options.filterCallbacks?.filterActionLabels || {};
 
 	const buildNodeTooltipContent = (nodeData) => {
 		const content = document.createElement('div');
@@ -192,38 +181,17 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 		return content;
 	};
 
-	const buildNodeActionSet = (column, rawValue, headingLabel) => {
-		if (!column || isNullish(rawValue) || rawValue === '') return null;
-		const token = toCategoryToken(rawValue);
-		const state = typeof filterCallbacks.getTokenFilterState === 'function'
-			? filterCallbacks.getTokenFilterState(column, token)
-			: null;
-		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
-			? !!filterCallbacks.isShowOnlyThisRedundant(column, token)
-			: false;
-		const actions = buildCategoricalFilterActions({
-			column,
-			token,
-			state,
-			labels: actionLabels,
-			omitFocus,
-			onFocus: filterCallbacks.onFocusGlobalFilter,
-			onAdd: filterCallbacks.onAddToGlobalFilter,
-			onExclude: filterCallbacks.onExcludeGlobalFilter,
-			onRemove: filterCallbacks.onRemoveFromGlobalFilter,
-			onBringBack: filterCallbacks.onBringBackGlobalFilter,
-		});
-		if (actions.length === 0) return null;
-		const wrap = document.createElement('div');
-		wrap.className = 'chart-tooltip__action-set-wrap';
-		if (headingLabel) {
-			const heading = document.createElement('div');
-			heading.className = 'chart-tooltip__action-set-label';
-			heading.textContent = headingLabel;
-			wrap.appendChild(heading);
+	// A node id can sit in the source column, the target column, or both, so
+	// a node offers actions for each column under its own heading.
+	const nodeFilterCategories = (nodeData) => {
+		const token = toCategoryToken(nodeData.id);
+		if (sourceColumn === targetColumn) {
+			return [{ column: sourceColumn, token, heading: sourceColumn }];
 		}
-		wrap.appendChild(createTooltipActionGroup(actions));
-		return { node: wrap, state };
+		return [
+			{ column: sourceColumn, token, heading: `${filterLabels.filterBySource || 'Filter source'} (${sourceColumn})` },
+			{ column: targetColumn, token, heading: `${filterLabels.filterByTarget || 'Filter target'} (${targetColumn})` },
+		];
 	};
 	const showNodeTooltip = (event, nodeData) => {
 		showChartTooltip(buildNodeTooltipContent(nodeData), event.pageX, event.pageY);
@@ -272,53 +240,15 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 		const startX = anchorPoint ? anchorPoint.x : event.pageX;
 		const startY = anchorPoint ? anchorPoint.y : event.pageY;
 
-		const content = buildNodeTooltipContent(nodeData);
-		const actionSets = [];
-		let primaryState = null;
-
-		if (sourceColumn && targetColumn && sourceColumn === targetColumn) {
-			const set = buildNodeActionSet(sourceColumn, nodeData.id, sourceColumn);
-			if (set) {
-				actionSets.push(set.node);
-				primaryState = set.state;
-			}
-		} else {
-			if (sourceColumn) {
-				const headingPrefix = filterLabels.filterBySource || 'Filter source';
-				const set = buildNodeActionSet(sourceColumn, nodeData.id, `${headingPrefix} (${sourceColumn})`);
-				if (set) {
-					actionSets.push(set.node);
-					primaryState = primaryState || set.state;
-				}
-			}
-			if (targetColumn) {
-				const headingPrefix = filterLabels.filterByTarget || 'Filter target';
-				const set = buildNodeActionSet(targetColumn, nodeData.id, `${headingPrefix} (${targetColumn})`);
-				if (set) {
-					actionSets.push(set.node);
-					primaryState = primaryState || set.state;
-				}
-			}
-		}
-
-		const stateBadge = actionSets.length === 1 && primaryState
-			? createFilterStateBadge({
-				state: primaryState,
-				includedLabel: filterLabels.stateIncluded,
-				excludedLabel: filterLabels.stateExcluded,
-			})
-			: null;
-
-		showPinnedChartTooltip(content, startX, startY, {
+		showPinnedFilterTooltip(buildNodeTooltipContent(nodeData), startX, startY, {
 			headerTitle: String(nodeData.id),
-			closeLabel: filterLabels.close,
 			onDismiss: () => {
 				pinnedNodeDatum = null;
 				hideChartTooltip();
 			},
 			anchor: () => nodeScreenPoint(pinnedNodeDatum),
-			actionSets,
-			stateBadge,
+			filterCallbacks: options.filterCallbacks,
+			categories: nodeFilterCategories(nodeData),
 		});
 	};
 

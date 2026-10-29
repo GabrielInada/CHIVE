@@ -41,8 +41,6 @@ export function normalizeTreemapOptions(options) {
 		count: options.labels?.count || 'Count',
 		sum: options.labels?.sum || 'Sum',
 		percentage: options.labels?.percentage || 'Percentage',
-		focusOnThis: options.labels?.focusOnThis || 'Show only this',
-		addToFilter: options.labels?.addToFilter || 'Add to global filter',
 		missing: options.labels?.missing || '(missing)',
 	};
 

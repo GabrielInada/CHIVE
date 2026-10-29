@@ -40,7 +40,8 @@ Key files:
 - Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bar/workspaceSection.js)
 - Shared presentation mapping: [presentation.js](../../../src/charts/bar/presentation.js)
 - Panel adapter: [panelAdapter.js](../../../src/charts/bar/panelAdapter.js)
-- Shared tooltip + filter actions: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js)
+- Shared tooltip: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js); its filter
+  actions: [filterActions.js](../../../src/charts/shared/tooltip/filterActions.js)
 
 ---
 
@@ -362,17 +363,22 @@ height for a measure of 0. The fill comes from `getBarColor`:
 ### 7.6 Interaction: hover and click-to-filter
 
 This is the shared categorical-tooltip subsystem from
-[tooltip.js](../../../src/charts/shared/tooltip/tooltip.js), used by bar, pie, treemap, and
-bubble:
+[tooltip.js](../../../src/charts/shared/tooltip/tooltip.js) and
+[filterActions.js](../../../src/charts/shared/tooltip/filterActions.js), used by bar, pie,
+treemap, bubble, network, and scatter:
 
 - **Hover** shows a tooltip with the category, the measure value, and the percentage of the
   total. The percentage is left out in mean mode, and when a kept sum is below 0, since a
   share of the net total could then pass 100% or go below 0%.
-- **Click pins** a tooltip that stays open and carries filter-action buttons built by
-  `buildCategoricalFilterActions`: focus on this value ("show only this"), add to / remove
-  from the global filter, exclude ("hide this"), and bring back. The actions and a
-  filter-state badge come from the `filterCallbacks` bag the section adapter supplies;
-  clicking the same bar again or clicking the SVG background dismisses the pin.
+- **Click pins** a tooltip that stays open. The bar passes `showPinnedFilterTooltip` its
+  category column and the bar's category token, with the `filterCallbacks` bag as the
+  section adapter supplied it. The shared module reads the token's state in the global
+  filter and offers the actions that apply: focus on this value ("show only this", left out
+  when it would give the same filter as adding the value), then add to the global filter and
+  exclude ("hide this") for a value the filter does not name, remove from the filter for an
+  included value, or bring back an excluded one. An included or excluded value also gets a
+  filter-state badge. Each label falls back to its English default when the bag lacks it.
+  Clicking the same bar again or clicking the SVG background dismisses the pin.
 
 Because the panel passes empty `filterCallbacks`, panel bars hover but do not pin
 filter-actions.
@@ -474,6 +480,11 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
 - [tests/charts/bar/](../../../tests/charts/bar) mirrors the package. Data,
   options, color, SVG rendering, and render-equivalence tests cover the leaf
   implementation.
+- [filterActions.test.js](../../../tests/charts/shared/tooltip/filterActions.test.js)
+  covers the pinned tooltip's filter actions (section 7.6) for every chart that offers
+  them: the actions each filter state gets, the badge, headed groups for two columns, and
+  the label defaults. Each renderer's tests only check that its pinned tooltip offers the
+  actions for the right column and category token.
 - [workspaceSection.test.js](../../../tests/charts/bar/workspaceSection.test.js)
   covers workspace visibility and empty-state selection.
 - [controls.test.js](../../../tests/charts/bar/controls.test.js) and

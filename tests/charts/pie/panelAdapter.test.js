@@ -87,8 +87,6 @@ describe('renderPiePanelChart', () => {
 			percentage: 'chive-tooltip-percentage',
 			other: 'chive-chart-pie-other',
 			missing: 'chive-chart-filter-missing',
-			focusOnThis: 'chive-tooltip-show-only-this',
-			addToFilter: 'chive-tooltip-add-to-filter',
 		});
 		expect(options.filterCallbacks).toEqual({});
 	});

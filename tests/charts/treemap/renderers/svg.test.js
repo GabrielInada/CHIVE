@@ -174,7 +174,7 @@ describe('renderTreemap', () => {
 
 		const addBtn = Array.from(actions).find(b => b.textContent === 'Add');
 		addBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-		expect(onAdd).toHaveBeenCalled();
+		expect(onAdd).toHaveBeenCalledWith('region', 'v:North');
 	});
 
 	it('unpins when the same tile is clicked twice', () => {

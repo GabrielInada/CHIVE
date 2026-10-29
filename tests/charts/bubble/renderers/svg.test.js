@@ -315,7 +315,7 @@ describe('bubble chart visualization', () => {
 		expect(document.querySelector('.chart-tooltip')?.hidden).toBe(true);
 	});
 
-	it('shows parent filter actions and state badges for included tokens', () => {
+	it('offers filter actions for a parent bubble on its nesting column', () => {
 		const container = document.getElementById('bubble');
 		const calls = [];
 		renderBubbleChart(container, [
@@ -325,67 +325,32 @@ describe('bubble chart visualization', () => {
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao', 'estado'],
 			filterCallbacks: {
-				filterActionLabels: { remove: 'Remove', stateIncluded: 'Already included' },
-				getTokenFilterState: () => 'included',
-				isShowOnlyThisRedundant: () => true,
-				onRemoveFromGlobalFilter: (column, token) => calls.push(['remove', column, token]),
+				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 			},
 		});
 
-		const parent = container.querySelector('g.bubble-parent[data-depth="1"]');
-		parent.dispatchEvent(mouse('click'));
-
-		const tooltip = document.querySelector('.chart-tooltip');
-		expect(tooltip.textContent).toContain('Already included');
-		expect(tooltip.textContent).toContain('Remove');
-		tooltip.querySelector('.chart-tooltip__action').click();
-		expect(calls[0]).toEqual(['remove', 'regiao', 'v:North']);
+		container.querySelector('g.bubble-parent[data-depth="1"]').dispatchEvent(mouse('click'));
+		document.querySelector('.chart-tooltip__action').click();
+		expect(calls).toEqual([['regiao', 'v:North']]);
 	});
 
-	it('shows leaf filter actions for excluded and unfiltered tokens and honors redundant focus', () => {
+	it('offers filter actions for a leaf bubble on the category column', () => {
 		const container = document.getElementById('bubble');
 		const calls = [];
-		const rows = [
+		renderBubbleChart(container, [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'Y' },
-		];
-
-		renderBubbleChart(container, rows, 'categoria', {
+		], 'categoria', {
 			filterCallbacks: {
-				filterActionLabels: {
-					focus: 'Only',
-					add: 'Add',
-					exclude: 'Hide',
-					bringBack: 'Bring back',
-					stateExcluded: 'Hidden',
-				},
-				getTokenFilterState: (_column, token) => (token === 'v:A' ? 'excluded' : null),
-				isShowOnlyThisRedundant: (_column, token) => token === 'v:B',
-				onFocusGlobalFilter: (column, token) => calls.push(['focus', column, token]),
-				onAddToGlobalFilter: (column, token) => calls.push(['add', column, token]),
-				onExcludeGlobalFilter: (column, token) => calls.push(['exclude', column, token]),
-				onBringBackGlobalFilter: (column, token) => calls.push(['back', column, token]),
+				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 			},
 		});
 
-		const leaves = Array.from(container.querySelectorAll('g.bubble-node'));
-		const leafA = leaves.find(node => node.textContent.includes('A'));
-		const leafB = leaves.find(node => node.textContent.includes('B'));
-
-		leafA.dispatchEvent(mouse('click'));
-		expect(document.querySelector('.chart-tooltip').textContent).toContain('Hidden');
-		Array.from(document.querySelectorAll('.chart-tooltip__action'))
-			.find(button => button.textContent === 'Bring back')
-			.click();
-		expect(calls).toContainEqual(['back', 'categoria', 'v:A']);
-
-		leafB.dispatchEvent(mouse('click'));
-		const actionLabels = Array.from(document.querySelectorAll('.chart-tooltip__action')).map(button => button.textContent);
-		expect(actionLabels).toEqual(['Add', 'Hide']);
-		document.querySelectorAll('.chart-tooltip__action')[0].click();
-		document.querySelectorAll('.chart-tooltip__action')[1].click();
-		expect(calls).toContainEqual(['add', 'categoria', 'v:B']);
-		expect(calls).toContainEqual(['exclude', 'categoria', 'v:B']);
+		Array.from(container.querySelectorAll('g.bubble-node'))
+			.find(node => node.textContent.includes('B'))
+			.dispatchEvent(mouse('click'));
+		document.querySelector('.chart-tooltip__action').click();
+		expect(calls).toEqual([['categoria', 'v:B']]);
 	});
 
 	it('renders pinned leaf tooltip without action sets when callbacks are absent', () => {
