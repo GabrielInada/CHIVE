@@ -10,7 +10,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
-import { axisBottom, axisLeft, max, scaleBand, scaleLinear } from '../../../../vendor/d3/d3.js';
+import { axisBottom, axisLeft, max, min, scaleBand, scaleLinear } from '../../../../vendor/d3/d3.js';
 import {
 	buildCategoricalFilterActions,
 	createFilterStateBadge,
@@ -98,6 +98,9 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 	hideChartTooltip();
 
 	let pinnedCategory = null;
+	// WHY: with a total below 0, a share of the net total can pass 100% or go
+	// below 0%, so the tooltip leaves it out, as it does for a mean.
+	const showsShare = measureMode !== 'mean' && entries.every(item => item.value >= 0);
 
 	const buildTooltipContent = item => {
 		const percentage = totalContagem > 0 ? ((item.value / totalContagem) * 100) : 0;
@@ -110,7 +113,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 
 		wrapper.appendChild(createTooltipLine(labels.category, item.label));
 		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(item.value, locale)));
-		if (measureMode !== 'mean') {
+		if (showsShare) {
 			wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		}
 
@@ -173,10 +176,16 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		.range([0, innerWidth])
 		.padding(0.14);
 
+	// WHY: 0 stays on the y axis so every bar runs from it, up for a value
+	// above 0 and down for one below. With every value 0 the domain would
+	// collapse to 0 alone, so the axis runs from 0 to 1 instead.
+	const yLower = Math.min(0, min(entries, item => item.value));
+	const yUpper = Math.max(0, max(entries, item => item.value));
 	const yScale = scaleLinear()
-		.domain([0, max(entries, item => item.value) || 0])
+		.domain(yLower === yUpper ? [0, 1] : [yLower, yUpper])
 		.nice()
 		.range([innerHeight, 0]);
+	const zeroY = yScale(0);
 
 	const getBarColor = createBarColorAccessor({
 		entries,
@@ -194,9 +203,9 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		.enter()
 		.append('rect')
 		.attr('x', item => xScale(item.key))
-		.attr('y', item => yScale(item.value))
+		.attr('y', item => Math.min(yScale(item.value), zeroY))
 		.attr('width', xScale.bandwidth())
-		.attr('height', item => innerHeight - yScale(item.value))
+		.attr('height', item => Math.abs(yScale(item.value) - zeroY))
 		.attr('rx', 3)
 		.attr('fill', item => getBarColor(item))
 		.on('mouseenter', (event, item) => {
@@ -229,6 +238,20 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		pinnedCategory = null;
 		hideChartTooltip();
 	});
+
+	// WHY: the category axis stays at the bottom of the plot, where its labels
+	// never sit on a bar below 0, so when 0 is higher up it gets a line of its own.
+	if (yLower < 0) {
+		group
+			.append('line')
+			.attr('class', 'bar-zero-line')
+			.attr('x1', 0)
+			.attr('x2', innerWidth)
+			.attr('y1', zeroY)
+			.attr('y2', zeroY)
+			.attr('stroke', 'currentColor')
+			.attr('pointer-events', 'none');
+	}
 
 	appendBottomAxis(group, {
 		axis: axisBottom(xScale).tickFormat(key => labelByKey.get(key) ?? key),

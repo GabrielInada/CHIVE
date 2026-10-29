@@ -380,3 +380,141 @@ describe('renderBarChart behavior', () => {
 		expect(barContainer.textContent).not.toContain('Bar Axis Y Custom');
 	});
 });
+
+describe('renderBarChart with totals at or below 0', () => {
+	// The default 320px chart less its 12px top and 90px bottom margins.
+	const PLOT_HEIGHT = 218;
+	const MIXED_ROWS = [
+		{ team: 'A', profit: 5 },
+		{ team: 'B', profit: -3 },
+		{ team: 'C', profit: 2 },
+	];
+	const NEGATIVE_ROWS = [
+		{ team: 'A', profit: -5 },
+		{ team: 'B', profit: -3 },
+	];
+	const SUM = { measureMode: 'sum', valueColumn: 'profit' };
+
+	const bars = container => Array.from(container.querySelectorAll('rect')).map(rect => ({
+		key: rect.__data__.key,
+		y: Number(rect.getAttribute('y')),
+		height: Number(rect.getAttribute('height')),
+	}));
+	const yTicks = container => Array.from(container.querySelectorAll('g[text-anchor="end"] > .tick > text'))
+		.map(text => text.textContent);
+	const tooltipText = rect => {
+		rect.dispatchEvent(new MouseEvent('mouseenter'));
+		return document.querySelector('.chart-tooltip').textContent;
+	};
+
+	beforeEach(() => {
+		document.body.innerHTML = '<div id="bar"></div>';
+	});
+
+	afterEach(() => {
+		hideChartTooltip();
+	});
+
+	it.each(['sum', 'mean'])('draws a total below 0 down from 0 and the others up from it in %s mode', measureMode => {
+		const container = document.getElementById('bar');
+
+		const result = renderBarChart(container, MIXED_ROWS, 'team', { measureMode, valueColumn: 'profit' });
+
+		expect(result.ok).toBe(true);
+		const [a, c, b] = bars(container);
+		expect([a.key, c.key, b.key]).toEqual(['A', 'C', 'B']);
+		const zero = a.y + a.height;
+		expect(c.y + c.height).toBe(zero);
+		expect(b.y).toBe(zero);
+		expect(b.height).toBeCloseTo((a.height * 3) / 5);
+		expect(b.y + b.height).toBeLessThanOrEqual(PLOT_HEIGHT);
+	});
+
+	it('hangs every bar from 0 at the top of the plot when every total is below 0', () => {
+		const container = document.getElementById('bar');
+
+		renderBarChart(container, NEGATIVE_ROWS, 'team', SUM);
+
+		const [b, a] = bars(container);
+		expect([b.key, a.key]).toEqual(['B', 'A']);
+		expect([b.y, a.y]).toEqual([0, 0]);
+		expect(a.height).toBe(PLOT_HEIGHT);
+		expect(b.height).toBeCloseTo((PLOT_HEIGHT * 3) / 5);
+	});
+
+	it('hangs a total below 0 from the top of the plot when the largest total is 0', () => {
+		const container = document.getElementById('bar');
+
+		renderBarChart(container, [{ team: 'A', profit: 0 }, { team: 'B', profit: -3 }], 'team', SUM);
+
+		expect(bars(container)).toEqual([
+			{ key: 'A', y: 0, height: 0 },
+			{ key: 'B', y: 0, height: PLOT_HEIGHT },
+		]);
+	});
+
+	it('keeps a readable axis and draws every bar at 0 when every total is 0', () => {
+		const container = document.getElementById('bar');
+
+		renderBarChart(container, [{ team: 'A', profit: 0 }, { team: 'B', profit: 0 }], 'team', SUM);
+
+		expect(bars(container)).toEqual([
+			{ key: 'A', y: PLOT_HEIGHT, height: 0 },
+			{ key: 'B', y: PLOT_HEIGHT, height: 0 },
+		]);
+		expect(yTicks(container)).toEqual(['0.0', '0.2', '0.4', '0.6', '0.8', '1.0']);
+	});
+
+	it('draws a line at 0 across the plot when a total is below 0', () => {
+		const container = document.getElementById('bar');
+
+		renderBarChart(container, MIXED_ROWS, 'team', SUM);
+
+		const [a] = bars(container);
+		const line = container.querySelector('.bar-zero-line');
+		expect(line).not.toBeNull();
+		expect(Number(line.getAttribute('y1'))).toBe(a.y + a.height);
+		expect(Number(line.getAttribute('y2'))).toBe(a.y + a.height);
+		expect([line.getAttribute('x1'), line.getAttribute('x2')]).toEqual(['0', '636']);
+	});
+
+	it('draws no separate line at 0 when 0 is at the bottom of the plot', () => {
+		const container = document.getElementById('bar');
+
+		renderBarChart(container, [{ team: 'A' }, { team: 'A' }, { team: 'B' }], 'team');
+		expect(container.querySelector('.bar-zero-line')).toBeNull();
+
+		renderBarChart(container, [{ team: 'A', profit: 0 }, { team: 'B', profit: 0 }], 'team', SUM);
+		expect(container.querySelector('.bar-zero-line')).toBeNull();
+	});
+
+	it.each([
+		['some totals are', MIXED_ROWS],
+		['every total is', NEGATIVE_ROWS],
+	])('leaves the percentage out of the tooltip when %s below 0', (_, rows) => {
+		const container = document.getElementById('bar');
+
+		renderBarChart(container, rows, 'team', SUM);
+
+		for (const rect of container.querySelectorAll('rect')) {
+			const text = tooltipText(rect);
+			expect(text).toContain('Sum');
+			expect(text).not.toContain('Percentage');
+		}
+	});
+
+	it('keeps the percentage in the tooltip when no total is below 0', () => {
+		const container = document.getElementById('bar');
+		const rows = [
+			{ team: 'A', profit: 5 },
+			{ team: 'B', profit: 0 },
+			{ team: 'C', profit: 3 },
+		];
+
+		renderBarChart(container, rows, 'team', SUM);
+
+		const text = tooltipText(container.querySelector('rect'));
+		expect(text).toContain('Percentage');
+		expect(text).toContain('62.5%');
+	});
+});

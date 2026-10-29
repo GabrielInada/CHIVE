@@ -64,8 +64,9 @@ controls of the per-chart packages under `src/charts/`.
 - **Optional settings:** sort order, top N, color mode (uniform / gradient), X and Y axis
   label toggles.
 - **Aggregation behavior:** `count` counts rows per category. `sum` and `mean` require a
-  numeric value column and aggregate that column per category. Signed values are allowed,
-  but bar sum/mean mode is clearest for measures that compare from a zero baseline.
+  numeric value column and aggregate that column per category. Signed values are allowed:
+  a category whose sum or mean is below 0 gets a bar that hangs down from 0, and the
+  tooltips then leave out the percentage.
 - **Good sample dataset:** Iris (category `Species`), Amazonian Trees (`family` with
   `abundance` or `biomass_kg`).
 - **Common empty states:** no category selected; `sum`/`mean` selected without a numeric
