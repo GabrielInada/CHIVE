@@ -242,8 +242,8 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
 the block/container, hides+clears when disabled, sets the min-height, maps config into the
 shared presentation flow (with localized labels including the `Other` label), and calls the
 renderer.
-On failure it shows `chive-chart-empty-pie-sum` for `sum-no-numeric`, else
-`chive-chart-empty-pie`.
+On failure it shows `chive-chart-empty-pie-sum` for `no-value-column` and `no-numeric`,
+else `chive-chart-empty-pie`.
 
 ### 6.2 Panel view
 
@@ -263,12 +263,17 @@ The panel registry dispatches to
 
 Returns `fail()` if container or category is missing. Options are clamped (colors validated,
 radii/pad-angle/zoom clamped to `PIE_CHART` bounds, height to 220 to 720, title to 80 chars).
-A `Map` aggregates count or sum per category (sum skips rows whose value is non-finite, and
-needs `valueColumn`). It does not filter zero or negative sums; D3's pie layout allocates
-proportional angle only to positive values. Entries are sorted descending by value with a
-`compareCategoryKeys` tiebreaker (missing last). Each entry is `{ key, label, token, value }`;
-the synthetic Other sector carries `isOther`, the reserved key `OTHER_SECTOR_KEY`, and no token.
-No entries → `fail('sum-no-numeric')` in sum mode, else `fail()`.
+The shared `aggregateCategories`
+([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)) aggregates
+count or sum per category; any measure other than sum counts rows, since the color controls
+pass the saved config as is. Sum reads only number cells and needs a `valueColumn` that the
+rows carry. It does not filter zero or negative sums; D3's pie layout allocates proportional
+angle only to positive values. Entries come back sorted descending by value with a
+`compareCategoryKeys` tiebreaker (missing last). Each entry is
+`{ key, label, token, value, firstRow }`; the synthetic Other sector carries `isOther`, the
+reserved key `OTHER_SECTOR_KEY`, and no token. Sum mode without a usable value column →
+`fail('no-value-column')`, without a number → `fail('no-numeric')`; count mode with no rows
+→ `fail()`.
 
 ### 7.2 Top-N
 
@@ -365,9 +370,9 @@ there is no separate export path.
 
 - **No category column** → `fail()`, the adapter shows `chive-chart-empty-pie` ("Select at
   least one visible categorical column to build the pie/donut chart.").
-- **sum mode with no numeric value column** (or no parseable values) → `fail('sum-no-numeric')`,
-  mapped to `chive-chart-empty-pie-sum` ("Select a visible numeric value column to render
-  pie/donut in sum mode.").
+- **sum mode with no numeric value column** → `fail('no-value-column')`, or no number in it
+  → `fail('no-numeric')`; both map to `chive-chart-empty-pie-sum` ("Select a visible numeric
+  value column to render pie/donut in sum mode.").
 - **Missing categories** collapse into a single "(missing)" wedge. Slice colors are keyed by
   category key, so a color saved under `'N/A'` before this change now applies only to a
   literal "N/A" category.

@@ -178,7 +178,7 @@ describe('renderPieChart behavior', () => {
 		});
 
 		expect(result.ok).toBe(false);
-		expect(result.reason).toBe('sum-no-numeric');
+		expect(result.reason).toBe('no-numeric');
 	});
 
 	it('covers pie invalid args, hidden labels/legend, custom slice colors, and invalid radius options', () => {

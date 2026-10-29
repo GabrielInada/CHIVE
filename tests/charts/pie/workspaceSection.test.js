@@ -89,9 +89,9 @@ describe('renderPieChartSection', () => {
 		expect(mocks.renderPieChart.mock.calls[0][3].customSliceColors).toEqual({ A: '#abc', B: '#def' });
 	});
 
-	it('shows the sum-specific empty-state when reason is sum-no-numeric', () => {
+	it.each(['no-value-column', 'no-numeric'])('shows the sum-specific empty-state when reason is %s', reason => {
 		const { container } = setupDom();
-		mocks.renderPieChart.mockReturnValueOnce({ ok: false, reason: 'sum-no-numeric' });
+		mocks.renderPieChart.mockReturnValueOnce({ ok: false, reason });
 
 		renderPieChartSection({
 			config: defaultConfig(),

@@ -59,7 +59,7 @@ exports[`pieChart render equivalence (pure-move guard) > is byte-stable: sum mea
 exports[`pieChart render equivalence (pure-move guard) > is byte-stable: sum with missing valueColumn (fail) 1`] = `
 {
   "ok": false,
-  "reason": "sum-no-numeric",
+  "reason": "no-value-column",
 }
 `;
 

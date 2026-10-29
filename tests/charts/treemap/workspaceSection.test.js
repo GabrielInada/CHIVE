@@ -72,9 +72,9 @@ describe('renderTreemapChartSection', () => {
 		expect(mocks.renderTreemap).not.toHaveBeenCalled();
 	});
 
-	it('maps no-value-column reason to numeric empty-state', () => {
+	it.each(['no-value-column', 'no-numeric'])('maps %s reason to numeric empty-state', reason => {
 		const { container } = setupDom();
-		mocks.renderTreemap.mockReturnValueOnce({ ok: false, reason: 'no-value-column' });
+		mocks.renderTreemap.mockReturnValueOnce({ ok: false, reason });
 
 		renderTreemapChartSection({ config: defaultConfig(), rows: [], filterCallbacks });
 

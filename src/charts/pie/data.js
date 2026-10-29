@@ -1,22 +1,18 @@
 /**
  * Pie-chart data aggregation.
  *
- * Aggregates canonical rows into pie sectors by a count or numeric sum
- * measure, grouped by category key so the missing bucket never merges with
- * text that reads "N/A". Sorts descending with a key tiebreaker (missing
- * last) and applies Top-N handling (`truncate` drops the tail; `other` folds
- * it into a single caller-labelled "Other" sector, which has its own key and
- * no filter token). The returned `total` is summed AFTER Top-N handling, so
- * percentages are relative to the rendered sectors. Pure: no DOM, no d3.
- * Used by `renderers/svg.js` and `controls/sectorValues.js`.
+ * Applies Top-N handling to the shared category aggregation (`truncate`
+ * drops the tail; `other` folds it into a single caller-labelled "Other"
+ * sector, which has its own key and no filter token). The returned `total` is
+ * summed AFTER Top-N handling, so percentages are relative to the rendered
+ * sectors. Pure: no DOM, no d3. Used by `renderers/svg.js` and
+ * `controls/sectorValues.js`.
  */
 
-import { toFiniteNumber } from '../../utils/formatters.js';
-import { categoryKey, describeCategory } from '../../domain/datasets/cellValues.js';
-import { compareCategoryKeys } from '../shared/categoryOrder.js';
+import { aggregateCategories } from '../shared/categoryAggregation.js';
 
 /**
- * @typedef {{ key: string, label: string, token: string|null, value: number, isOther?: boolean }} PieEntry
+ * @typedef {{ key: string, label: string, token: string|null, value: number, firstRow?: Object<string, *>, isOther?: boolean }} PieEntry
  */
 
 /**
@@ -27,33 +23,23 @@ import { compareCategoryKeys } from '../shared/categoryOrder.js';
 export const OTHER_SECTOR_KEY = '__chive_other__';
 
 /**
- * Aggregate rows for the pie chart.
+ * Aggregate rows for the pie chart. A measure other than sum counts rows,
+ * because the color controls pass the saved config without normalizing it.
  *
  * @param {Array<Object<string, *>>} rows - Canonical source rows.
  * @param {string} categoryColumn - Categorical column name.
  * @param {{ measureMode: 'count'|'sum', valueColumn: string|null, topN: number, topNMode: 'other'|'truncate', otherLabel: string, missingLabel?: string }} params
- * @returns {{ ok: false, reason?: string } | { ok: true, entries: PieEntry[], total: number }}
+ * @returns {{ ok: false, reason?: string } | { ok: true, entries: PieEntry[], total: number }} Fails like `aggregateCategories`.
  */
 export function aggregatePieData(rows, categoryColumn, { measureMode, valueColumn, topN, topNMode, otherLabel, missingLabel }) {
-	const counter = new Map();
-	rows.forEach(row => {
-		const key = categoryKey(row[categoryColumn]);
-		if (measureMode === 'sum') {
-			if (!valueColumn) return;
-			const value = toFiniteNumber(row[valueColumn]);
-			if (!Number.isFinite(value)) return;
-			counter.set(key, (counter.get(key) || 0) + value);
-			return;
-		}
-		counter.set(key, (counter.get(key) || 0) + 1);
+	const aggregated = aggregateCategories(rows, categoryColumn, {
+		measureMode: measureMode === 'sum' ? 'sum' : 'count',
+		valueColumn,
+		missingLabel,
 	});
+	if (!aggregated.ok) return aggregated;
 
-	let entries = Array.from(counter, ([key, value]) => ({ key, ...describeCategory(key, { missingLabel }), value }))
-		.sort((a, b) => b.value - a.value || compareCategoryKeys(a.key, b.key));
-	if (entries.length === 0) {
-		return { ok: false, reason: measureMode === 'sum' ? 'sum-no-numeric' : undefined };
-	}
-
+	let entries = aggregated.entries;
 	if (topN > 0 && entries.length > topN) {
 		if (topNMode === 'truncate') {
 			entries = entries.slice(0, topN);

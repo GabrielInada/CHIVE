@@ -59,154 +59,53 @@ describe('aggregateBubbles', () => {
 		{ cat: 'B', val: 15, parent: 'P2' },
 		{ cat: 'C', val: 30, parent: 'P1' },
 	];
+	const base = { rows, categoryColumn: 'cat', measureMode: 'count', valueColumn: null, nestingColumns: [], topN: 0 };
 
-	it('count mode produces one bubble per category with row counts', () => {
-		const result = aggregateBubbles({
-			rows,
-			categoryColumn: 'cat',
-			measureMode: 'count',
-			valueColumn: null,
-			nestingColumns: [],
-			topN: 0,
-		});
-		expect(result.reason).toBeNull();
-		expect(result.bubbles.map(b => [b.key, b.value])).toEqual([
-			['A', 2],
-			['C', 1],
-			['B', 2],
-		].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)));
+	it('measures bubbles through the shared category aggregation', () => {
+		const result = aggregateBubbles({ ...base, measureMode: 'mean', valueColumn: 'val' });
+		expect(result.ok).toBe(true);
+		expect(result.entries.map(b => [b.key, b.value])).toEqual([['C', 30], ['A', 15], ['B', 10]]);
 	});
 
-	it('sum mode sums the value column per category', () => {
-		const result = aggregateBubbles({
-			rows,
-			categoryColumn: 'cat',
-			measureMode: 'sum',
-			valueColumn: 'val',
-			nestingColumns: [],
-			topN: 0,
-		});
-		expect(result.reason).toBeNull();
-		const byCat = Object.fromEntries(result.bubbles.map(b => [b.key, b.value]));
-		expect(byCat).toEqual({ A: 30, B: 20, C: 30 });
-	});
-
-	it('mean mode averages the value column per category', () => {
-		const result = aggregateBubbles({
-			rows,
-			categoryColumn: 'cat',
-			measureMode: 'mean',
-			valueColumn: 'val',
-			nestingColumns: [],
-			topN: 0,
-		});
-		expect(result.reason).toBeNull();
-		const byCat = Object.fromEntries(result.bubbles.map(b => [b.key, b.value]));
-		expect(byCat).toEqual({ A: 15, B: 10, C: 30 });
-	});
-
-	it.each([
-		['a null', null],
-		['an absent', undefined],
-	])('keeps %s value out of the mean denominator', (_label, missing) => {
-		const result = aggregateBubbles({
-			rows: [{ cat: 'A', val: 10 }, { cat: 'A', val: 20 }, { cat: 'A', val: missing }],
-			categoryColumn: 'cat',
-			measureMode: 'mean',
-			valueColumn: 'val',
-			nestingColumns: [],
-			topN: 0,
-		});
-		// Counting the blank would divide 30 by 3 and report 10.
-		expect(result.bubbles.map(b => b.value)).toEqual([15]);
-	});
-
-	it('returns no-value-column when valueColumn is missing under sum/mean', () => {
-		expect(aggregateBubbles({
-			rows,
-			categoryColumn: 'cat',
-			measureMode: 'sum',
-			valueColumn: null,
-			nestingColumns: [],
-			topN: 0,
-		})).toEqual({ bubbles: [], reason: 'no-value-column' });
-	});
-
-	it('returns no-value-column when no row carries the configured valueColumn', () => {
-		expect(aggregateBubbles({
-			rows: [{ cat: 'A' }, { cat: 'B' }],
-			categoryColumn: 'cat',
-			measureMode: 'sum',
-			valueColumn: 'val',
-			nestingColumns: [],
-			topN: 0,
-		})).toEqual({ bubbles: [], reason: 'no-value-column' });
-	});
-
-	it('returns no-numeric when sum/mean produces zero aggregated values', () => {
-		expect(aggregateBubbles({
-			rows: [{ cat: 'A', val: null }, { cat: 'B', val: null }],
-			categoryColumn: 'cat',
-			measureMode: 'sum',
-			valueColumn: 'val',
-			nestingColumns: [],
-			topN: 0,
-		})).toEqual({ bubbles: [], reason: 'no-numeric' });
+	it('passes the shared failures through', () => {
+		expect(aggregateBubbles({ ...base, measureMode: 'sum' })).toEqual({ ok: false, reason: 'no-value-column' });
+		expect(aggregateBubbles({ ...base, rows: [{ cat: 'A', val: null }], measureMode: 'sum', valueColumn: 'val' }))
+			.toEqual({ ok: false, reason: 'no-numeric' });
+		expect(aggregateBubbles({ ...base, rows: [] })).toEqual({ ok: false });
 	});
 
 	it('populates nestingPath from the first row per category', () => {
+		const result = aggregateBubbles({ ...base, nestingColumns: ['parent'] });
+		const byCat = Object.fromEntries(result.entries.map(b => [b.key, b.nestingPath.map(part => part.key)]));
+		expect(byCat).toEqual({ A: ['P1'], B: ['P2'], C: ['P1'] });
+	});
+
+	it('reads the nesting path from the first row with a number in sum mode', () => {
 		const result = aggregateBubbles({
-			rows,
-			categoryColumn: 'cat',
-			measureMode: 'count',
-			valueColumn: null,
+			...base,
+			rows: [{ cat: 'A', val: null, parent: 'P1' }, { cat: 'A', val: 4, parent: 'P2' }],
+			measureMode: 'sum',
+			valueColumn: 'val',
 			nestingColumns: ['parent'],
-			topN: 0,
 		});
-		const byCat = Object.fromEntries(result.bubbles.map(b => [b.key, b.nestingPath.map(part => part.key)]));
-		expect(byCat.A).toEqual(['P1']);
-		expect(byCat.B).toEqual(['P2']);
-		expect(byCat.C).toEqual(['P1']);
+		expect(result.entries.map(b => [b.key, b.value, b.groupKey])).toEqual([['A', 4, 'P2']]);
+	});
+
+	it('groups a flat bubble under its own category, missing bucket included', () => {
+		const result = aggregateBubbles({ ...base, rows: [{ cat: 'A' }, { cat: null }], missingLabel: '(sem valor)' });
+		expect(result.entries.map(b => [b.key, b.groupKey, b.groupLabel, b.nestingPath]))
+			.toEqual([['A', 'A', 'A', []], [MISSING_KEY, MISSING_KEY, '(sem valor)', []]]);
 	});
 
 	it('topN truncates after sorting by value desc, then category asc', () => {
-		const result = aggregateBubbles({
-			rows,
-			categoryColumn: 'cat',
-			measureMode: 'sum',
-			valueColumn: 'val',
-			nestingColumns: [],
-			topN: 2,
-		});
-		expect(result.bubbles.length).toBe(2);
-		expect(result.bubbles[0].value).toBe(30);
-		expect(result.bubbles[1].value).toBe(30);
-		expect(result.bubbles.map(b => b.key)).toEqual(['A', 'C']);
-	});
-});
-
-describe('aggregateBubbles missing bucket', () => {
-	const base = { categoryColumn: 'cat', measureMode: 'count', valueColumn: null, topN: 0, missingLabel: '(missing)' };
-
-	it('keeps missing cells apart from literal N/A text', () => {
-		const rows = [{ cat: 'A' }, { cat: null }, { cat: 'N/A' }, {}];
-		const { bubbles } = aggregateBubbles({ ...base, rows, nestingColumns: [] });
-		const missing = bubbles.find(b => b.key === MISSING_KEY);
-		expect(missing).toMatchObject({ label: '(missing)', token: '__chive_missing__', value: 2, groupKey: MISSING_KEY });
-		expect(bubbles.find(b => b.key === 'N/A')).toMatchObject({ label: 'N/A', token: 'v:N/A', value: 1 });
-	});
-
-	it('hides exactly the missing rows through the missing bubble token', () => {
-		const rows = [{ cat: 'A' }, { cat: null }, { cat: 'N/A' }, { cat: null }];
-		const { bubbles } = aggregateBubbles({ ...base, rows, nestingColumns: [] });
-		const missing = bubbles.find(b => b.key === MISSING_KEY);
-		expect(applyChartFilterRows(rows, { column: 'cat', exclude: [missing.token] })).toEqual([{ cat: 'A' }, { cat: 'N/A' }]);
+		const result = aggregateBubbles({ ...base, measureMode: 'sum', valueColumn: 'val', topN: 2 });
+		expect(result.entries.map(b => [b.key, b.value])).toEqual([['A', 30], ['C', 30]]);
 	});
 
 	it('keys a missing nesting segment so its group token hides the missing rows', () => {
 		const rows = [{ cat: 'A', g: null }, { cat: 'B', g: 'N/A' }, { cat: 'C', g: null }];
-		const { bubbles } = aggregateBubbles({ ...base, rows, nestingColumns: ['g'] });
-		const tree = buildMultiLevelHierarchy(bubbles, ['g']);
+		const { entries } = aggregateBubbles({ ...base, rows, nestingColumns: ['g'], missingLabel: '(missing)' });
+		const tree = buildMultiLevelHierarchy(entries, ['g']);
 		const missingGroup = tree.children.find(node => node.groupKey === MISSING_KEY);
 		expect(missingGroup.groupLabel).toBe('(missing)');
 		expect(missingGroup.children.map(child => child.key)).toEqual(['A', 'C']);
@@ -304,11 +203,9 @@ describe('getTopLevelGroup', () => {
 		expect(getTopLevelGroup(level1)).toEqual({ key: 'L1', label: 'L1' });
 	});
 
-	it('reads a flat bubble group and falls back to the missing bucket', () => {
+	it('reads a flat bubble group', () => {
 		const flat = { parent: root, depth: 1, data: { key: 'c', groupKey: 'c', groupLabel: 'c' } };
 		expect(getTopLevelGroup(flat)).toEqual({ key: 'c', label: 'c' });
-		const orphan = { parent: null, depth: 0, data: {} };
-		expect(getTopLevelGroup(orphan)).toEqual({ key: MISSING_KEY, label: '(missing)' });
 	});
 });
 

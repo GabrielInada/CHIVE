@@ -117,12 +117,8 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 		topN,
 		missingLabel: labels.missing,
 	});
-	if (aggregation.reason) return fail(aggregation.reason);
-	const bubbles = aggregation.bubbles;
-
-	if (bubbles.length === 0) {
-		return fail();
-	}
+	if (!aggregation.ok) return fail(aggregation.reason);
+	const bubbles = aggregation.entries;
 
 	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bubble.width, 320);
 	const height = chartHeight;

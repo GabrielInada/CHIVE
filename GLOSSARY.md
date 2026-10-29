@@ -61,6 +61,12 @@ is not a category: it has no category token and never shares a key or a color
 with a category spelled the same way.
 _Avoid_: Other category, Other bucket
 
+**Measure**:
+What a chart shows for each category: how many rows it has (count), or the sum
+or mean of a numeric value column over its rows. A missing value adds nothing to
+a sum and does not count toward a mean.
+_Avoid_: metric, aggregation mode
+
 ### Filters
 
 **Global filter**:
