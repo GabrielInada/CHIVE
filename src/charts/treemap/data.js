@@ -20,7 +20,7 @@ import { aggregateCategories } from '../shared/categoryAggregation.js';
  * @param {Array<Object<string, *>>} rows - Canonical source rows.
  * @param {string} categoryColumn - Categorical column name.
  * @param {{ measureMode: 'count'|'sum', valueColumn: string|null, topN: number, missingLabel: string }} params
- * @returns {{ ok: false, reason?: string } | { ok: true, entries: TreemapEntry[], total: number }} Fails like `aggregateCategories`, and with no reason when no value is positive.
+ * @returns {{ ok: false, reason?: string } | { ok: true, entries: TreemapEntry[], total: number }} Fails like `aggregateCategories`, and with `'no-positive-value'` when no value is positive.
  */
 export function aggregateTreemapData(rows, categoryColumn, { measureMode, valueColumn, topN, missingLabel }) {
 	const aggregated = aggregateCategories(rows, categoryColumn, { measureMode, valueColumn, missingLabel });
@@ -28,7 +28,7 @@ export function aggregateTreemapData(rows, categoryColumn, { measureMode, valueC
 
 	let entries = aggregated.entries.filter(entry => entry.value > 0);
 	if (topN > 0) entries = entries.slice(0, topN);
-	if (entries.length === 0) return { ok: false };
+	if (entries.length === 0) return { ok: false, reason: 'no-positive-value' };
 
 	const total = entries.reduce((acc, entry) => acc + entry.value, 0);
 

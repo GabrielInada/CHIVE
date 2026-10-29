@@ -28,9 +28,9 @@ describe('aggregateTreemapData', () => {
 		expect(pairs(aggregateTreemapData(rows, 'c', sumArgs).entries)).toEqual([['A', 5]]);
 	});
 
-	it('fails (no reason) when no category has a positive value', () => {
+	it('fails with no-positive-value when no category has a positive value', () => {
 		const rows = [{ c: 'A', v: 0 }, { c: 'B', v: -2 }];
-		expect(aggregateTreemapData(rows, 'c', sumArgs)).toEqual({ ok: false });
+		expect(aggregateTreemapData(rows, 'c', sumArgs)).toEqual({ ok: false, reason: 'no-positive-value' });
 	});
 
 	it('trims to Top-N and computes total over the trimmed entries (post-trim base)', () => {

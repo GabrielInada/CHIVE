@@ -329,6 +329,7 @@
 	"chive-chart-empty-pie-sum": "Selecione uma coluna numérica visível para renderizar pizza/rosca em modo soma.",
 	"chive-chart-empty-treemap": "Selecione ao menos uma coluna categórica visível para montar o treemap.",
 	"chive-chart-empty-treemap-numeric": "Selecione uma coluna numérica para renderizar o treemap em modo soma.",
+	"chive-chart-empty-no-positive-sum": "Nenhuma categoria tem soma maior que 0 na coluna de valor selecionada.",
 	"chive-chart-empty-bubble": "Selecione ao menos uma coluna categórica visível para montar o gráfico de bolhas.",
 	"chive-chart-empty-bubble-numeric": "Selecione uma coluna numérica visível para renderizar o gráfico de bolhas em modo soma ou média.",
 	"chive-chart-empty-line": "Selecione uma coluna X e uma coluna Y numérica para montar o gráfico de linhas.",

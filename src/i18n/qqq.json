@@ -383,6 +383,7 @@
 	"chive-chart-empty-pie-sum": "Message shown when pie/donut chart is in sum mode but no suitable visible numeric value column is selected.",
 	"chive-chart-empty-treemap": "Message shown when treemap chart cannot be rendered due to missing suitable visible categorical column.",
 	"chive-chart-empty-treemap-numeric": "Message shown when treemap chart is in sum mode but no suitable numeric value column is selected.",
+	"chive-chart-empty-no-positive-sum": "Message shown when a chart that draws only categories whose sum is above 0, such as the treemap, is in sum mode and no category's sum in the selected value column is above 0.",
 	"chive-chart-empty-bubble": "Message shown when bubble chart cannot be rendered due to missing suitable visible categorical column.",
 	"chive-chart-empty-bubble-numeric": "Message shown when bubble chart is in sum/mean mode but no suitable visible numeric value column is selected.",
 	"chive-chart-empty-line": "Message shown when line chart cannot be rendered due to missing X or numeric Y column selections.",
