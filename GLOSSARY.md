@@ -51,7 +51,7 @@ The localized text shown for a category key.
 _Avoid_: category name
 
 **Category token**:
-How a chart filter rule refers to one category key in its include and exclude
+How a global filter rule refers to one category key in its include and exclude
 lists.
 _Avoid_: filter value, category id
 
@@ -60,3 +60,11 @@ The pie sector that folds every category past the Top-N cut into one wedge. It
 is not a category: it has no category token and never shares a key or a color
 with a category spelled the same way.
 _Avoid_: Other category, Other bucket
+
+### Filters
+
+**Global filter**:
+A dataset's filter rules. The table, statistics, charts and Panel captures show
+only the rows that pass every rule, and a rule keeps applying while the column
+list hides its column.
+_Avoid_: chart filter, local filter

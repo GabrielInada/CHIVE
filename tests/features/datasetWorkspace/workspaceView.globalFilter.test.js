@@ -84,7 +84,7 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 		setupDom();
 	});
 
-	it('uses filtered rows for preview/stats while leaving chart filtering to renderCharts', () => {
+	it('gives the preview, the stats and the charts the same filtered rows', () => {
 		const rows = [{ region: 'A', value: 1 }, { region: 'B', value: 2 }];
 		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
 		const config = {
@@ -100,7 +100,7 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 		expect(mocks.renderTablePreview).toHaveBeenCalledWith(filtered, columns, 10);
 		expect(mocks.renderStats).toHaveBeenCalledWith(filtered, columns);
 		expect(mocks.renderCategoricalStats).toHaveBeenCalledWith(filtered, columns);
-		expect(mocks.renderCharts.mock.calls[0][1]).toBe(rows);
+		expect(mocks.renderCharts.mock.calls[0][1]).toEqual(filtered);
 		const triggerState = mocks.updateTabs.mock.calls[0][3].triggerState;
 		expect(triggerState).toEqual(expect.objectContaining({
 			hasDataset: true,
@@ -112,6 +112,24 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 			include: ['v:A'],
 		}));
 		expect(document.getElementById('badge-rows').textContent).toBe('chive-badge-preview:1,1,2,2');
+	});
+
+	it('keeps applying a rule while the column list hides its column', () => {
+		const rows = [{ region: 'A', value: 1 }, { region: 'B', value: 2 }];
+		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+		const config = {
+			activeTab: 'charts',
+			globalFilter: {
+				rules: [{ column: 'region', mode: 'categorical', include: ['v:A'], exclude: [] }],
+			},
+		};
+
+		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, ['value'], null, config, vi.fn());
+
+		const filtered = [{ region: 'A', value: 1 }];
+		const visible = [{ name: 'value', type: 'number' }];
+		expect(mocks.renderTablePreview).toHaveBeenCalledWith(filtered, visible, 10);
+		expect(mocks.renderCharts).toHaveBeenCalledWith(config, filtered, visible, visible, expect.any(Object));
 	});
 
 	it('wires preview-row changes and ignores invalid row counts', () => {

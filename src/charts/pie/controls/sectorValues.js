@@ -10,7 +10,7 @@
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
 
-import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from '../../../domain/filters/globalFilter.js';
+import { filterDataset } from '../../../domain/filters/datasetFilter.js';
 import { resolveSliceColors } from '../color.js';
 import { aggregatePieData } from '../data.js';
 import { normalizePieOptions } from '../options.js';
@@ -51,22 +51,17 @@ export function getPieSectorValues(dataset, config, { missingLabel } = {}) {
  * @internal Package-private to `controls/`; imported only by the builder.
  * @param {Dataset} dataset
  * @param {Object} config - The pie config block.
- * @param {{ columnNames: string[], numericColumnNames: string[] }} columns - Visible column names.
  * @returns {Object<string, string>} Hex color by category key.
  */
-export function getPieSwatchColors(dataset, config, { columnNames, numericColumnNames }) {
+export function getPieSwatchColors(dataset, config) {
 	if (!config?.category || !Array.isArray(dataset?.rows)) return {};
 
 	const options = normalizePieOptions(config);
 	const swatches = { ...options.customSliceColors };
 	// WHY: shades follow the drawn order, so a global filter that hides a
 	// larger sector moves the others up a shade. Aggregate the rows the chart
-	// draws, filtered the way the charts view filters them.
-	const drawnRows = applyGlobalFilterRules(
-		dataset.rows,
-		resolveGlobalFilterForColumns(dataset.chartConfig?.globalFilter, columnNames),
-		numericColumnNames,
-	);
+	// draws, which come from the same filterDataset call.
+	const drawnRows = filterDataset(dataset).rows;
 	const drawn = aggregatePieData(drawnRows, config.category, {
 		measureMode: options.measureMode,
 		valueColumn: options.valueColumn,

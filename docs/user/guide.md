@@ -66,7 +66,8 @@ charts.
 - Use the sidebar controls for aggregation, colors, labels, sorting, limits,
   axes, and chart-specific options.
 - Use global filters to focus the active dataset before charting. Global filters
-  apply before every chart reads the rows.
+  apply before every chart reads the rows. Hiding a column does not turn off its
+  filter rules.
 - Chart edits affect the active dataset's current chart configuration. Charts
   already saved to the dashboard panel remain unchanged until you add them again.
 

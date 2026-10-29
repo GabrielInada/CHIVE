@@ -5,8 +5,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
 	t: vi.fn((key, ...args) => (args.length ? `${key}:${args.join(',')}` : key)),
 	mergeChartConfigWithDefaults: vi.fn(config => config),
-	resolveGlobalFilterForColumns: vi.fn((filter) => filter),
-	applyGlobalFilterRules: vi.fn((rows) => rows),
 	renderBarChartSection: vi.fn(),
 	renderLineChartSection: vi.fn(),
 	renderScatterChartSection: vi.fn(),
@@ -24,11 +22,6 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 
 vi.mock('../../../../src/domain/charts/chartConfig.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
-}));
-
-vi.mock('../../../../src/domain/filters/globalFilter.js', () => ({
-	resolveGlobalFilterForColumns: mocks.resolveGlobalFilterForColumns,
-	applyGlobalFilterRules: mocks.applyGlobalFilterRules,
 }));
 
 vi.mock('../../../../src/charts/bar/workspaceSection.js', () => ({
@@ -121,8 +114,6 @@ describe('renderCharts orchestration', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		mocks.mergeChartConfigWithDefaults.mockImplementation(config => config);
-		mocks.resolveGlobalFilterForColumns.mockImplementation(filter => filter);
-		mocks.applyGlobalFilterRules.mockImplementation(rows => rows);
 	});
 
 	it('resets all containers and shows all blocks when tab is not charts', () => {
@@ -260,20 +251,16 @@ describe('renderCharts orchestration', () => {
 		expect(typeof cb.onFocusGlobalFilter).toBe('function');
 	});
 
-	it('applies the global filter and forwards the filtered rows to each section', () => {
+	it('draws the rows it is given in each section, without filtering them again', () => {
 		setupDom();
-		const rawRows = [{ a: 1 }, { a: 2 }, { a: 3 }];
-		const filteredRows = [{ a: 1 }];
-		mocks.applyGlobalFilterRules.mockReturnValueOnce(filteredRows);
-		const config = makeConfig();
+		const rows = [{ a: 1 }, { a: 2 }];
+		const config = makeConfig({
+			globalFilter: { rules: [{ column: 'a', mode: 'numeric', operator: 'gt', value: '1' }], combine: 'AND' },
+		});
 		config.bar.enabled = true;
 
-		renderCharts(config, rawRows, [{ name: 'a' }], [{ name: 'a' }]);
+		renderCharts(config, rows, [{ name: 'a' }], [{ name: 'a' }]);
 
-		expect(mocks.applyGlobalFilterRules).toHaveBeenCalledTimes(1);
-		const [calledRows, , numericNames] = mocks.applyGlobalFilterRules.mock.calls[0];
-		expect(calledRows).toBe(rawRows);
-		expect(numericNames).toEqual(['a']);
-		expect(mocks.renderBarChartSection.mock.calls[0][0].rows).toBe(filteredRows);
+		expect(mocks.renderBarChartSection.mock.calls[0][0].rows).toBe(rows);
 	});
 });

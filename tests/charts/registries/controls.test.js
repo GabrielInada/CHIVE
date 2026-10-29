@@ -57,7 +57,7 @@ describe('controls registry', () => {
 		['line', 'createLineChartControls', 'setupLineChartControlListeners', ['numeric', 'dates', 'all'], ['numeric', 'dates', 'all']],
 		['scatter', 'createScatterPlotControls', 'setupScatterPlotControlListeners', ['numeric', 'all'], ['numeric', 'all']],
 		['scatter3d', 'createScatter3dControls', 'setupScatter3dControlListeners', ['numeric', 'all'], ['numeric', 'all']],
-		['pie', 'createPieChartControls', 'setupPieChartControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
+		['pie', 'createPieChartControls', 'setupPieChartControlListeners', ['base', 'numeric'], ['base', 'numeric', 'all']],
 		['bubble', 'createBubbleChartControls', 'setupBubbleChartControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
 		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners', ['all', 'numeric', 'categorical'], ['all', 'numeric']],
 		['treemap', 'createTreemapControls', 'setupTreemapControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],

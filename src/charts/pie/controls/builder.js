@@ -280,10 +280,9 @@ function buildDisplayControls(dataset, config) {
  * @param {Dataset} dataset
  * @param {Object} config - The pie config block.
  * @param {Array<{ key: string, label: string }>} sectorValues - Source categories in aggregate order.
- * @param {{ columnNames: string[], numericColumnNames: string[] }} columns - Visible column names.
  * @returns {HTMLElement[]}
  */
-function buildStylingControls(dataset, config, sectorValues, columns) {
+function buildStylingControls(dataset, config, sectorValues) {
 	const stylingControls = [];
 
 	stylingControls.push(createColorInputControl(
@@ -310,7 +309,7 @@ function buildStylingControls(dataset, config, sectorValues, columns) {
 
 	// Per-slice custom color picker grid
 	if (sectorValues.length > 0) {
-		const colorGridElement = updatePieColorPickerGrid(dataset, sectorValues, getPieSwatchColors(dataset, config, columns));
+		const colorGridElement = updatePieColorPickerGrid(dataset, sectorValues, getPieSwatchColors(dataset, config));
 		stylingControls.push(colorGridElement);
 	}
 
@@ -327,18 +326,16 @@ function buildStylingControls(dataset, config, sectorValues, columns) {
  * @param {Dataset} dataset
  * @param {string[]} categoryOptions - Categorical (or fallback "all") column names for the category select.
  * @param {string[]} numericOptions - Numeric column names; populates the sum value-column select.
- * @param {string[]} [allColumns=[]] - All visible column names; resolves the global filter for the slice swatches.
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
-export function createPieChartControls(dataset, categoryOptions, numericOptions, allColumns = []) {
+export function createPieChartControls(dataset, categoryOptions, numericOptions) {
 	const config = dataset.chartConfig.pie;
 	const sectorValues = getPieSectorValues(dataset, config, { missingLabel: t('chive-chart-filter-missing') });
-	const columns = { columnNames: allColumns, numericColumnNames: numericOptions };
 
 	return groupControls([
 		{ id: 'data', title: 'Data & Aggregation', controls: buildDataControls(dataset, categoryOptions, numericOptions, config), expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: buildDisplayControls(dataset, config), expanded: true, icon: 'display' },
-		{ id: 'styling', title: 'Styling', controls: buildStylingControls(dataset, config, sectorValues, columns), expanded: false, icon: 'styling' },
+		{ id: 'styling', title: 'Styling', controls: buildStylingControls(dataset, config, sectorValues), expanded: false, icon: 'styling' },
 	]);
 }
 
