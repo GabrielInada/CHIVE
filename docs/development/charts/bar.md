@@ -312,23 +312,27 @@ on success or `fail(reason)` when it cannot draw. The pipeline in order:
 
 ### 7.2 Aggregation
 
-- **count mode**: a `Map` accumulates a row count per category key (`categoryKey`); missing
-  cells fold into the missing bucket. Each entry is `{ key, label, token, value }`, with the
-  label and filter token from `describeCategory`.
+`aggregateBarData` starts from `aggregateCategories`
+([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)), which bar, pie,
+treemap, and bubble share:
+
+- **count mode**: one entry per category key (`categoryKey`) with its row count; missing
+  cells fold into the missing bucket. Each entry is `{ key, label, token, value, firstRow }`,
+  with the label and filter token from `describeCategory`.
 - **sum / mean mode**: requires `valueColumn` and that the rows actually carry that column,
-  else `fail('no-value-column')`. Each row's value is `Number(...)`; non-finite values are
-  skipped. A second `Map` tracks the per-category count so mean can divide. If, after this,
-  no category accumulated anything, `fail('no-numeric')`. Negative category totals are not
-  specially handled; bar sum/mean mode is clearest for measures that compare from a zero
-  baseline.
+  else `fail('no-value-column')`. Only number cells count: a missing value adds nothing to a
+  sum and stays out of a mean's denominator. If no row has a number, `fail('no-numeric')`.
+  Negative category totals are not specially handled; bar sum/mean mode is clearest for
+  measures that compare from a zero baseline.
 
 ### 7.3 Sort, Top-N, and the empty guard
 
-Entries are sorted by `sortCategories` (the count/label orderings of section 2.5, each with
+`aggregateCategories` returns the entries largest first. `sortCategories` keeps that order
+for `count-desc` and re-sorts for the other count/label orderings of section 2.5, each with
 a `compareCategoryKeys` tiebreaker for stable order; label sorts keep the missing bucket
-last in both directions), then sliced to `topN` when `topN > 0`. If
-no entries remain, `fail()`. The grand total across the kept entries is computed for
-tooltip percentages.
+last in both directions. The entries are then sliced to `topN` when `topN > 0`. With no
+rows to count, `aggregateCategories` fails and the renderer returns `fail()`. The grand
+total across the kept entries is computed for tooltip percentages.
 
 ### 7.4 Layout and scales
 
@@ -438,7 +442,7 @@ screen shows are what gets serialized.
 - **No category column** → `fail()`, the section adapter shows `chive-chart-empty-bar`
   ("Select at least one visible column to build the bar chart.").
 - **sum/mean without a numeric value column** → `fail('no-value-column')`, and a value
-  column whose cells never parse to finite numbers → `fail('no-numeric')`; both map to
+  column with no number cell in the rows → `fail('no-numeric')`; both map to
   `chive-chart-empty-bar-numeric` ("Select a numeric value column to render the bar chart in
   sum or mean mode.").
 - **Missing categories** collapse into a single "(missing)" bar, never many empty bars, and

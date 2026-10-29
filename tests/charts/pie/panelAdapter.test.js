@@ -104,11 +104,11 @@ describe('renderPiePanelChart', () => {
 	});
 
 	it('returns renderer failures unchanged', () => {
-		mocks.renderPieChart.mockReturnValueOnce({ ok: false, reason: 'sum-no-numeric' });
+		mocks.renderPieChart.mockReturnValueOnce({ ok: false, reason: 'no-numeric' });
 
 		expect(renderPiePanelChart(container, createSpec())).toEqual({
 			ok: false,
-			reason: 'sum-no-numeric',
+			reason: 'no-numeric',
 		});
 	});
 });
