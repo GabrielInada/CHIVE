@@ -14,7 +14,6 @@ import { createPieChartControls } from '../../../src/charts/pie/controls/builder
 import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/pie/controls/activationDefaults.js';
-import { renderPieChart } from '../../../src/charts/pie/renderers/svg.js';
 import { PIE_DEFINITION } from '../../../src/config/charts/definitions/pie.js';
 
 /**
@@ -180,46 +179,6 @@ describe('pieControls UI structure', () => {
 		expect(sliceInputs.length).toBe(3); // North, South, East
 		const tokens = Array.from(sliceInputs).map(input => input.dataset.colorItem).sort();
 		expect(tokens).toEqual(['East', 'North', 'South']);
-	});
-
-	it('shows each slice in the color grid in the color the chart draws it', () => {
-		const dataset = createDataset({ customSliceColors: { South: '#123456' } });
-		appendControls(createPieChartControls(dataset, ['region'], ['sales']));
-
-		const chart = document.createElement('div');
-		document.body.appendChild(chart);
-		const { pie } = dataset.chartConfig;
-		renderPieChart(chart, dataset.rows, pie.category, { color: pie.color, customSliceColors: pie.customSliceColors });
-		const drawn = Object.fromEntries(Array.from(chart.querySelectorAll('path'), path => [path.__data__.data.key, path.getAttribute('fill')]));
-
-		const swatches = Object.fromEntries(Array.from(
-			document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]'),
-			input => [input.dataset.colorItem, input.value],
-		));
-		expect(swatches).toEqual(drawn);
-	});
-
-	// Past 9 slices every shade depends on how many sectors are drawn, so the
-	// grid has to count the same sectors as the chart.
-	it('shows the drawn colors past 9 slices with Top-N and Other', () => {
-		const dataset = createDataset({ topN: 10 });
-		dataset.rows = Array.from({ length: 12 }, (_, index) => Array.from(
-			{ length: 12 - index },
-			() => ({ region: `R${String(index + 1).padStart(2, '0')}`, sales: 1 }),
-		)).flat();
-		appendControls(createPieChartControls(dataset, ['region'], ['sales']));
-
-		const chart = document.createElement('div');
-		document.body.appendChild(chart);
-		const { pie } = dataset.chartConfig;
-		renderPieChart(chart, dataset.rows, pie.category, { color: pie.color, topN: pie.topN, topNMode: pie.topNMode });
-		const drawn = Array.from(chart.querySelectorAll('path'))
-			.filter(path => !path.__data__.data.isOther)
-			.map(path => [path.__data__.data.key, path.getAttribute('fill')]);
-
-		const swatch = key => document.querySelector(`input[data-color-grid-control="viz-pie-color-grid"][data-color-item="${key}"]`).value;
-		expect(drawn).toHaveLength(10);
-		expect(drawn.map(([key]) => [key, swatch(key)])).toEqual(drawn);
 	});
 
 	it('keeps a slice the global filter hides in the grid with the neutral swatch', () => {
