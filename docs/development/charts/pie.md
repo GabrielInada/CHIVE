@@ -388,6 +388,9 @@ there is no separate export path.
   literal "N/A" category.
 - **A real category spelled like the Other label** (for example "Other" in English or
   "Outros" in pt-BR) stays its own sector, with its own pin and color, apart from the rollup.
+- **A category named like an `Object.prototype` member** (`constructor`, `toString`,
+  `__proto__` and the rest) takes its shade or its custom color like any other category:
+  slice colors are read and written as own keys of `customSliceColors`.
 - **Top-N other** keeps the rendered positive-value circle at 100%; **truncate** does not.
 - **Non-positive sum aggregates** are filtered out before Top-N (a wedge needs an angle), so
   they get no wedge or legend entry, take no share of the total and add nothing to the Other

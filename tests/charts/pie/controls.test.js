@@ -10,6 +10,7 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
+import { buildSliceColor } from '../../../src/charts/pie/color.js';
 import { createPieChartControls } from '../../../src/charts/pie/controls/builder.js';
 import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
@@ -489,6 +490,53 @@ describe('pieControls color palette mark', () => {
 		southSwatch.dispatchEvent(new Event('change'));
 		applyLastCommit(dataset, writer);
 		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual([]);
+	});
+});
+
+describe('pieControls with categories named like Object.prototype members', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	// Category keys are cell text, and the slice colors are keyed by them.
+	function prototypeNamesDataset() {
+		const dataset = createDataset();
+		dataset.rows = ['constructor', 'constructor', 'constructor', 'toString', 'toString', '__proto__']
+			.map(region => ({ region, sales: 1 }));
+		return dataset;
+	}
+
+	function swatch(key) {
+		return document.querySelector(`input[data-color-grid-control="viz-pie-color-grid"][data-color-item="${key}"]`);
+	}
+
+	it('shows the shades the chart draws them with in the grid', () => {
+		mountControls(prototypeNamesDataset(), createWriter());
+
+		expect(['constructor', 'toString', '__proto__'].map(key => swatch(key).value)).toEqual([
+			'#4e79a7',
+			buildSliceColor('#4e79a7', 1),
+			buildSliceColor('#4e79a7', 2),
+		]);
+	});
+
+	it('keeps the palette color and a picked color of a category named __proto__', () => {
+		const dataset = prototypeNamesDataset();
+		const writer = createWriter();
+		mountControls(dataset, writer);
+
+		document.querySelector('button[data-color-preset-control="viz-pie-color-preset"][data-preset-name="Pastel"]').click();
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual(['Pastel']);
+
+		swatch('__proto__').value = '#123456';
+		swatch('__proto__').dispatchEvent(new Event('change'));
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(swatch('__proto__').value).toBe('#123456');
 		expect(markedPresets()).toEqual([]);
 	});
 });

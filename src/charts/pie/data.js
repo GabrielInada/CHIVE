@@ -81,12 +81,16 @@ export function computePieSectors(rows, categoryColumn, options) {
 		categories = categories.slice(0, topN);
 	}
 
+	// WHY: category keys are cell text, so read only own keys. A category
+	// named `constructor` would otherwise take Object.prototype's function as
+	// its fill and draw black.
+	const customColor = key => (Object.hasOwn(customSliceColors, key) ? customSliceColors[key] : null);
 	const sectors = categories.map(({ key, label, token, value }, index) => ({
 		key,
 		label,
 		token,
 		value,
-		color: customSliceColors[key] || buildSliceColor(color, index, categories.length),
+		color: customColor(key) || buildSliceColor(color, index, categories.length),
 		isOther: false,
 	}));
 	if (otherValue !== null) {
