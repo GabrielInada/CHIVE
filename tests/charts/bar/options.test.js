@@ -10,7 +10,6 @@ describe('normalizeBarOptions', () => {
 		expect(o.topN).toBe(BAR_CHART.defaultTopN);
 		expect(o.showXAxisLabel).toBe(true);
 		expect(o.showYAxisLabel).toBe(true);
-		expect(o.measureMode).toBe(BAR_CHART.defaultMeasureMode);
 		expect(o.valueColumn).toBeNull();
 		expect(o.color).toBe(CHART_COLORS.bar);
 		expect(o.colorMode).toBe('uniform');
@@ -19,6 +18,13 @@ describe('normalizeBarOptions', () => {
 		expect(o.gradientDistribution).toBe('value');
 		expect(o.customTitle).toBe('');
 		expect(o.chartHeight).toBe(CHART_DIMENSIONS.bar.height);
+	});
+
+	// Chart config canonicalization checks the measure against the chart's
+	// definition, so the normalizer reads it as given.
+	it('reads measureMode as given', () => {
+		expect(normalizeBarOptions({ measureMode: 'mean' }, 'region').measureMode).toBe('mean');
+		expect(normalizeBarOptions({}, 'region').measureMode).toBeUndefined();
 	});
 
 	it('derives the default x label from the category column and the y label from the measure', () => {

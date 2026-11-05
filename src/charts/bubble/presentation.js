@@ -6,7 +6,6 @@
  * stateless and i18n-free.
  */
 
-import { BUBBLE_CHART } from '../../config/charts/definitions/bubble.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { renderBubbleChart } from './renderers/svg.js';
 
@@ -27,15 +26,11 @@ export function renderBubbleInto(
 	config = {},
 	filterCallbacks = EMPTY_FILTER_CALLBACKS,
 ) {
-	const measureMode = BUBBLE_CHART.measureModes.includes(config.measureMode)
-		? config.measureMode
-		: BUBBLE_CHART.defaultMeasureMode;
-
 	return renderBubbleChart(container, rows, config.category, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
 		topN: config.topN,
-		measureMode,
+		measureMode: config.measureMode,
 		valueColumn: config.valueColumn,
 		nestingColumns: config.nestingColumns,
 		groupColumn: config.groupColumn,

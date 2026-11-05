@@ -70,13 +70,13 @@ describe('barControls measure mode', () => {
 		expect(valueSelectSum.value).toBe('valor');
 	});
 
-	it('emits measure/value updates and clears value column when switching back to count', () => {
+	it('emits measure/value updates and keeps the value column when switching back to count', () => {
 		const dataset = createDataset('count', null);
-		const controls = createBarChartControls(dataset, ['categoria'], ['valor']);
+		const controls = createBarChartControls(dataset, ['categoria'], ['valor', 'peso']);
 		controls.forEach(control => document.body.appendChild(control));
 
 		const writer = createWriter();
-		setupBarChartControlListeners(dataset, ['categoria'], ['valor'], [], writer);
+		setupBarChartControlListeners(dataset, ['categoria'], ['valor', 'peso'], [], writer);
 
 		const measureSelect = document.getElementById('viz-select-bar-measure');
 		const valueSelect = document.getElementById('viz-select-bar-value-column');
@@ -85,25 +85,30 @@ describe('barControls measure mode', () => {
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				measureMode: 'sum',
-				valueColumn: null,
-			}));
-
-		dataset.chartConfig.bar.measureMode = 'sum';
-		dataset.chartConfig.bar.valueColumn = null;
-		valueSelect.value = 'valor';
-		valueSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				valueColumn: 'valor',
 			}));
 
+		dataset.chartConfig.bar.measureMode = 'sum';
 		dataset.chartConfig.bar.valueColumn = 'valor';
+		valueSelect.value = 'peso';
+		valueSelect.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
+				valueColumn: 'peso',
+			}));
+
+		dataset.chartConfig.bar.valueColumn = 'peso';
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				measureMode: 'count',
-				valueColumn: null,
+				valueColumn: 'peso',
 			}));
 
-		expect(writer.commit).toHaveBeenCalledTimes(3);
+		dataset.chartConfig.bar.measureMode = 'count';
+		measureSelect.value = 'mean';
+		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(writer.commit).toHaveBeenLastCalledWith({ measureMode: 'mean', valueColumn: 'peso' });
+
+		expect(writer.commit).toHaveBeenCalledTimes(4);
 	});
 });

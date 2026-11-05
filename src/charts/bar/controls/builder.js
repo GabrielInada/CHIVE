@@ -65,7 +65,7 @@ export function createBarChartControls(dataset, categoryOptions, numericOptions 
  * @returns {HTMLElement[]}
  */
 function buildDataControls(config, categoryOptions, numericOptions, isDisabled) {
-	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode) ? config.measureMode : 'count';
+	const { measureMode } = config;
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;
 
 	const dataControls = [];

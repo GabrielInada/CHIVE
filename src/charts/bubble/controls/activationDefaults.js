@@ -5,27 +5,24 @@
  * @typedef {import('../../../types.js').ChartControlContext} ChartControlContext
  */
 
+import { valueColumnForMeasure } from '../../shared/controls/measureValueColumn.js';
+
 /**
  * Compute the bubble chart's activation defaults. Preserves the user's
- * current `category` and `valueColumn` when they still match visible
- * columns; otherwise falls back to the first available column. In
- * `measureMode === 'count'` the `valueColumn` is left untouched.
+ * current `category` when it still matches a visible column; otherwise falls
+ * back to the first available column. The value column follows the shared
+ * measure rule, {@link valueColumnForMeasure}.
  *
  * @param {Dataset} dataset
  * @param {ChartControlContext} ctx
  * @returns {{ category: string | null, valueColumn: string | null }}
  */
 export function computeDefaults(dataset, ctx) {
-	const currentCat = dataset.chartConfig?.bubble?.category;
-	const currentVal = dataset.chartConfig?.bubble?.valueColumn;
-	const measureMode = dataset.chartConfig?.bubble?.measureMode;
-	const valueColumn = measureMode !== 'count'
-		? (ctx.numeric.includes(currentVal) ? currentVal : (ctx.numeric[0] || null))
-		: currentVal;
+	const config = dataset.chartConfig?.bubble;
 	return {
-		category: ctx.baseCategoricalOrAll.includes(currentCat)
-			? currentCat
+		category: ctx.baseCategoricalOrAll.includes(config?.category)
+			? config.category
 			: (ctx.baseCategoricalOrAll[0] || null),
-		valueColumn,
+		valueColumn: valueColumnForMeasure(config?.measureMode, config?.valueColumn, ctx.numeric),
 	};
 }

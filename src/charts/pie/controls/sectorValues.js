@@ -13,11 +13,12 @@
  */
 
 import { filterDataset } from '../../../domain/filters/datasetFilter.js';
-import { aggregatePieCategories, computePieSectors } from '../data.js';
+import { aggregateCategories } from '../../shared/categoryAggregation.js';
+import { computePieSectors } from '../data.js';
 
 /**
  * Every source category in the chart's aggregate order, projected from
- * {@link aggregatePieCategories} so the controls and the rendered chart agree
+ * {@link aggregateCategories} so the controls and the rendered chart agree
  * on which categories exist. Neither Top-N nor the chart's rule that a sector
  * needs a value above 0 is applied: controls retain colors for source
  * categories that may be hidden by the current Top-N, and for categories
@@ -34,7 +35,7 @@ import { aggregatePieCategories, computePieSectors } from '../data.js';
 export function getPieSectorValues(dataset, config, { missingLabel } = {}) {
 	if (!config?.category || !Array.isArray(dataset?.rows)) return [];
 
-	const aggregated = aggregatePieCategories(dataset.rows, config.category, {
+	const aggregated = aggregateCategories(dataset.rows, config.category, {
 		measureMode: config.measureMode,
 		valueColumn: config.valueColumn,
 		missingLabel,

@@ -493,8 +493,11 @@ whole project, so overlapping two produces a result neither asked for.
 - Wildcard subscription is reserved for sink-style consumers; the only current
   production site is `services/persistence/autoSave.js`.
 - `canonicalizeChartConfig` fills defaults, migrates known legacy shape, and
-  removes stale global-filter column references. It is not comprehensive scalar
-  or enum validation and does not remove every unknown top-level key.
+  removes stale global-filter column references. It replaces an enumerated
+  setting whose value is not in its chart definition's `allowedValues` with the
+  chart's default; `mergeChartConfigWithDefaults`, which it builds on, applies
+  the same check for render, Panel captures, and Panel rehydration. It does not
+  validate other scalars and does not remove every unknown top-level key.
 - Persistence normalization, `addDataset`, emitting config writes, and
   `replaceAllState` canonicalize committed dataset config. Hydration does not
   rewrite stored bytes on its own.

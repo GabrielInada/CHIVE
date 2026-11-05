@@ -27,12 +27,6 @@ describe('computePieSectors', () => {
 		expect(result.total).toBe(35);
 	});
 
-	it('counts rows for a measure other than sum, as the pie offers only count and sum', () => {
-		const rows = [{ c: 'A', v: 10 }, { c: 'A', v: 20 }, { c: 'B', v: 50 }];
-		const result = computePieSectors(rows, 'c', { ...countOptions, measureMode: 'mean', valueColumn: 'v' });
-		expect(values(result.sectors)).toEqual([['A', 2], ['B', 1]]);
-	});
-
 	it('passes the shared failures through', () => {
 		expect(computePieSectors([{ c: 'A' }], 'c', { ...sumOptions, valueColumn: null }))
 			.toEqual({ ok: false, reason: 'no-value-column' });
@@ -164,7 +158,7 @@ describe('computePieSectors', () => {
 	// The color grid passes the saved config and the renderer its options bag,
 	// so both have to read to the same sectors.
 	it('reads the saved config as the renderer reads its options', () => {
-		const savedConfig = { category: 'c', measureMode: 'mean', topN: '2', topNMode: 'bogus', color: 'not-a-color', customSliceColors: null };
+		const savedConfig = { category: 'c', measureMode: 'count', topN: '2', topNMode: 'bogus', color: 'not-a-color', customSliceColors: null };
 		const renderOptions = { measureMode: 'count', topN: 2, topNMode: 'other', color: CHART_COLORS.pie, customSliceColors: {} };
 		expect(computePieSectors(twelveCategories, 'c', savedConfig)).toEqual(computePieSectors(twelveCategories, 'c', renderOptions));
 	});

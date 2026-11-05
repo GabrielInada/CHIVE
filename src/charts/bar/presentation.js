@@ -26,9 +26,7 @@ export function renderBarInto(
 	config = {},
 	filterCallbacks = EMPTY_FILTER_CALLBACKS,
 ) {
-	const measureMode = ['count', 'sum', 'mean'].includes(config.measureMode)
-		? config.measureMode
-		: 'count';
+	const { measureMode } = config;
 	const yAxisLabel = measureMode === 'mean'
 		? t('chive-tooltip-mean')
 		: measureMode === 'sum'

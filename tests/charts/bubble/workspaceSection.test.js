@@ -72,14 +72,16 @@ describe('renderBubbleChartSection', () => {
 		expect(mocks.renderBubbleChart).not.toHaveBeenCalled();
 	});
 
-	it('coerces invalid measureMode to count', () => {
+	// The charts view merges the config, which checks the measure against the
+	// chart's definition, so the section passes it on as stored.
+	it('passes measureMode on as stored', () => {
 		setupDom();
 		renderBubbleChartSection({
-			config: defaultConfig({ measureMode: 'invalid' }),
+			config: defaultConfig({ measureMode: 'mean' }),
 			rows: [],
 			filterCallbacks,
 		});
-		expect(mocks.renderBubbleChart.mock.calls[0][3].measureMode).toBe('count');
+		expect(mocks.renderBubbleChart.mock.calls[0][3].measureMode).toBe('mean');
 	});
 
 	it('maps no-numeric and no-value-column reasons to numeric empty-state', () => {

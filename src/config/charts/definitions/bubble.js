@@ -63,5 +63,8 @@ export const BUBBLE_DEFINITION = Object.freeze({
 		block: 'chart-block-bubble',
 	},
 	catalogCategoryKey: 'chive-viz-category-hierarchy',
+	allowedValues: {
+		measureMode: BUBBLE_CHART.measureModes,
+	},
 	createDefaultConfig,
 });

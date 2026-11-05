@@ -16,6 +16,7 @@ import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { COLOR_PRESETS, normalizeHexColor } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,
+	setupMeasureListener,
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
@@ -32,7 +33,7 @@ import { getPieSectorValues } from './sectorValues.js';
  *
  * @param {Dataset} dataset
  * @param {string[]} basePie - Categorical (or fallback "all") column names; kept for parity.
- * @param {string[]} numeric - Numeric column names; used to validate the value-column select.
+ * @param {string[]} numeric - Visible numeric column names; the measure listener picks the value column from them.
  * @param {string[]} allColumns - Visible column names.
  * @param {ChartConfigWriter} writer
  * @returns {void}
@@ -48,21 +49,7 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 		{ id: 'viz-select-pie-topn-mode', key: 'topNMode', transform: v => v === 'truncate' ? 'truncate' : 'other' },
 	], writer);
 
-	// Measure select (custom: updates valueColumn dependency)
-	const measureSelect = document.getElementById('viz-select-pie-measure');
-	if (measureSelect) {
-		measureSelect.addEventListener('change', () => {
-			const measureMode = measureSelect.value === 'sum' ? 'sum' : 'count';
-			const currentValueColumn = dataset.chartConfig.pie?.valueColumn;
-			const nextValueColumn = measureMode === 'sum'
-				? (numeric.includes(currentValueColumn) ? currentValueColumn : (numeric[0] || null))
-				: currentValueColumn;
-			writer.commit({
-				measureMode,
-				valueColumn: nextValueColumn,
-			});
-		});
-	}
+	setupMeasureListener('viz-select-pie-measure', () => dataset.chartConfig.pie.valueColumn, numeric, writer);
 
 	// Inner/outer radius sliders (custom: cross-constraint logic)
 	const innerSlider = document.getElementById('viz-slider-pie-inner-radius');

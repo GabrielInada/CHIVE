@@ -61,9 +61,9 @@ function getBubblePalette(colorScheme) {
 export function renderBubbleChart(container, rows, categoryColumn, options = {}) {
 	if (!container || !categoryColumn) return fail();
 
-	const measureMode = BUBBLE_CHART.measureModes.includes(options.measureMode)
-		? options.measureMode
-		: BUBBLE_CHART.defaultMeasureMode;
+	// Read as given: chart config canonicalization checks the measure against
+	// the chart's definition.
+	const { measureMode } = options;
 	const valueColumn = options.valueColumn || null;
 	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : BUBBLE_CHART.defaultTopN;
 	const padding = Number.isFinite(Number(options.padding))

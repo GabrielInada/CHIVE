@@ -44,5 +44,8 @@ export const TREEMAP_DEFINITION = Object.freeze({
 		block: 'chart-block-treemap',
 	},
 	catalogCategoryKey: 'chive-viz-category-composition',
+	allowedValues: {
+		measureMode: TREEMAP_CHART.measureModes,
+	},
 	createDefaultConfig,
 });

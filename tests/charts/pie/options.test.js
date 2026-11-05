@@ -7,7 +7,6 @@ describe('normalizePieOptions', () => {
 	it('applies defaults for an empty options bag', () => {
 		const o = normalizePieOptions({});
 		expect(o.color).toBe(CHART_COLORS.pie);
-		expect(o.measureMode).toBe('count');
 		expect(o.valueColumn).toBeNull();
 		expect(o.topN).toBe(0);
 		expect(o.topNMode).toBe('other');
@@ -26,9 +25,14 @@ describe('normalizePieOptions', () => {
 		expect(normalizePieOptions({ color: '#abcdef' }).color).toBe('#abcdef');
 	});
 
-	it('collapses measureMode/topNMode/labelPosition to their enums', () => {
+	// Chart config canonicalization checks the measure against the chart's
+	// definition, so the normalizer reads it as given.
+	it('reads measureMode as given', () => {
 		expect(normalizePieOptions({ measureMode: 'sum' }).measureMode).toBe('sum');
-		expect(normalizePieOptions({ measureMode: 'whatever' }).measureMode).toBe('count');
+		expect(normalizePieOptions({}).measureMode).toBeUndefined();
+	});
+
+	it('collapses topNMode/labelPosition to their enums', () => {
 		expect(normalizePieOptions({ topNMode: 'truncate' }).topNMode).toBe('truncate');
 		expect(normalizePieOptions({ topNMode: 'nonsense' }).topNMode).toBe('other');
 		expect(normalizePieOptions({ labelPosition: 'outside' }).labelPosition).toBe('outside');

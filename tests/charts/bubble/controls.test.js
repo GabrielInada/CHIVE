@@ -189,7 +189,7 @@ describe('bubbleControls measure mode', () => {
 		expect(document.querySelector('button[data-color-preset-control="viz-bubble-color-preset"][data-preset-name="Tableau10"]').disabled).toBe(true);
 	});
 
-	it('emits measure/value updates and clears value column when switching back to count', () => {
+	it('emits measure/value updates and keeps the value column when switching back to count', () => {
 		const dataset = createDataset('count', null);
 		const controls = createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']);
 		controls.forEach(control => document.body.appendChild(control));
@@ -220,23 +220,24 @@ describe('bubbleControls measure mode', () => {
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
 				measureMode: 'count',
-				valueColumn: null,
+				valueColumn: 'valor',
 			}));
 
 		expect(writer.commit).toHaveBeenCalledTimes(3);
 	});
 
-	it('coerces invalid measure and value-column selections', () => {
+	it('commits a forged measure as chosen and coerces an invalid value-column selection', () => {
 		const dataset = createDataset('sum', 'old');
 		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']));
 
 		const writer = createWriter();
 		setupBubbleChartControlListeners(dataset, ['categoria'], ['valor'], ['categoria', 'grupo'], writer);
 
+		// The commit canonicalizes the config, which stores a measure the bubble
+		// chart does not offer as count. Like count, it keeps the value column.
 		selectValue('viz-select-bubble-measure', 'bogus');
-		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
+		expect(lastConfig(writer)).toEqual({ measureMode: 'bogus', valueColumn: 'old' });
 
-		dataset.chartConfig.bubble.valueColumn = 'old';
 		selectValue('viz-select-bubble-measure', 'mean');
 		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'mean', valueColumn: 'valor' }));
 

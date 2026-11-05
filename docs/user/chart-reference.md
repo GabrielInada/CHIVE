@@ -54,6 +54,11 @@ controls of the per-chart packages under `src/charts/`.
 | Line | X column (any type) + numeric Y column | Axis type, curve, missing-value mode, aggregate mode, sort X | Time series and trends | Monthly Visits |
 | TIN | Numeric X, Y, and Z columns | Color ramp, isolines, threshold, edges/points/hull | Terrain and surface interpolation | Terrain Surface |
 
+Bar, pie, bubble, and treemap pick their value column the same way. When you switch the
+measure to `sum` or `mean`, the chart keeps the selected value column while it is a visible
+numeric column, and otherwise takes the first visible numeric column. Switching to `count`
+keeps the selection, so switching back restores it.
+
 ## Per-chart reference
 
 ### Bar chart

@@ -181,6 +181,23 @@ describe('dataStateFacade', () => {
 		expect(emitStateChange).toHaveBeenCalledWith('configUpdated', { title: 'Test' });
 	});
 
+	// The measure listeners commit the select's value as chosen, so this write
+	// is where a measure the chart does not offer is caught.
+	it('updateActiveDatasetConfig stores a measure the chart does not offer as its default', () => {
+		const emitStateChange = vi.fn();
+		const appState = {
+			data: { datasets: [{ rows: [{}], columns: [], chartConfig: {} }], activeIndex: 0 },
+			panel: { charts: [], slots: {} },
+			ui: {},
+		};
+		const facade = createDataStateFacade({ appState, emitStateChange });
+
+		facade.updateActiveDatasetConfig({ pie: { measureMode: 'mean', valueColumn: 'v' } });
+		const { pie } = appState.data.datasets[0].chartConfig;
+		expect(pie.measureMode).toBe('count');
+		expect(pie.valueColumn).toBe('v');
+	});
+
 	it('emits DATASET_ADDED with the stored, canonical dataset (payload identity)', () => {
 		const emitStateChange = vi.fn();
 		const appState = {

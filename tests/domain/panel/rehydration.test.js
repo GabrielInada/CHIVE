@@ -57,6 +57,18 @@ describe('rehydratePanelChartSpecs', () => {
 		expect(config.chartHeight).toBe(460);
 	});
 
+	it('replaces a saved measure the chart does not offer with its default', () => {
+		const panel = {
+			id: 'p1',
+			charts: [{ id: 'c1', type: 'pie', config: { category: 'region', measureMode: 'mean', valueColumn: 'sales' } }],
+		};
+		const config = rehydratePanelChartSpecs(panel).charts[0].config;
+
+		expect(config.measureMode).toBe('count');
+		expect(config.category).toBe('region');
+		expect(config.valueColumn).toBe('sales');
+	});
+
 	it('fills a full default config when a spec has no config', () => {
 		const panel = { id: 'p1', charts: [{ id: 'c1', type: 'treemap' }] };
 		const result = rehydratePanelChartSpecs(panel);

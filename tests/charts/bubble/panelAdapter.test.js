@@ -73,11 +73,13 @@ describe('renderBubblePanelChart', () => {
 		);
 	});
 
-	it('normalizes invalid measure mode and supplies localized labels without panel filters', () => {
-		renderBubblePanelChart(container, createSpec({ measureMode: 'invalid' }));
+	// Panel rehydration checks the measure against the chart's definition, so
+	// the adapter passes it on as stored.
+	it('passes the measure mode on and supplies localized labels without panel filters', () => {
+		renderBubblePanelChart(container, createSpec({ measureMode: 'mean' }));
 
 		const options = mocks.renderBubbleChart.mock.calls[0][3];
-		expect(options.measureMode).toBe('count');
+		expect(options.measureMode).toBe('mean');
 		expect(options.labels).toEqual({
 			category: 'chive-chart-control-bubble-category',
 			count: 'chive-tooltip-count',
@@ -98,7 +100,7 @@ describe('renderBubblePanelChart', () => {
 			container,
 			rows,
 			undefined,
-			expect.objectContaining({ measureMode: 'count', filterCallbacks: {} }),
+			expect.objectContaining({ filterCallbacks: {} }),
 		);
 	});
 

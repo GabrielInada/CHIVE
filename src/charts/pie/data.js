@@ -10,8 +10,6 @@
  * the per-slice color grid shows their fills, so the two cannot disagree.
  * Pure: no DOM, no d3. Used by `renderers/svg.js` and
  * `controls/sectorValues.js`.
- *
- * @typedef {import('../shared/categoryAggregation.js').CategoryEntry} CategoryEntry
  */
 
 import { PIE_CHART } from '../../config/charts/definitions/pie.js';
@@ -31,26 +29,8 @@ import { normalizePieOptions } from './options.js';
 export const OTHER_SECTOR_KEY = '__chive_other__';
 
 /**
- * Aggregate rows into the pie's categories, whatever the sign of their value,
- * before Top-N. A measure other than sum counts rows, because the color
- * controls pass the saved config without normalizing it.
- *
- * @param {Array<Object<string, *>>} rows - Canonical source rows.
- * @param {string} categoryColumn - Categorical column name.
- * @param {{ measureMode: 'count'|'sum', valueColumn: string|null, missingLabel?: string }} params
- * @returns {{ ok: false, reason?: string } | { ok: true, entries: CategoryEntry[] }} Fails like `aggregateCategories`.
- */
-export function aggregatePieCategories(rows, categoryColumn, { measureMode, valueColumn, missingLabel }) {
-	return aggregateCategories(rows, categoryColumn, {
-		measureMode: measureMode === 'sum' ? 'sum' : 'count',
-		valueColumn,
-		missingLabel,
-	});
-}
-
-/**
  * The pie's sectors in drawn order: the categories of
- * {@link aggregatePieCategories} whose value is above 0, with Top-N applied
+ * {@link aggregateCategories} whose value is above 0, with Top-N applied
  * and the Other sector last. The Other sector takes its fixed color; a
  * category takes its custom slice color, else the base color's shade for its
  * place among the category sectors. A category with a custom color keeps its
@@ -70,7 +50,7 @@ export function aggregatePieCategories(rows, categoryColumn, { measureMode, valu
  */
 export function computePieSectors(rows, categoryColumn, options) {
 	const { measureMode, valueColumn, topN, topNMode, color, customSliceColors, labels } = normalizePieOptions(options);
-	const aggregated = aggregatePieCategories(rows, categoryColumn, { measureMode, valueColumn, missingLabel: labels.missing });
+	const aggregated = aggregateCategories(rows, categoryColumn, { measureMode, valueColumn, missingLabel: labels.missing });
 	if (!aggregated.ok) return aggregated;
 
 	let categories = aggregated.entries.filter(entry => entry.value > 0);

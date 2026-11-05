@@ -52,6 +52,17 @@ describe('chart-type metadata', () => {
 		}
 	});
 
+	// Canonicalization replaces a value a chart does not offer with the chart's
+	// default, so each default has to be one of the values offered.
+	it('offers the default of every enumerated setting', () => {
+		const defaults = createDefaultChartConfig();
+		for (const { key, allowedValues = {} } of Object.values(CHART_DEFINITIONS)) {
+			for (const [setting, offered] of Object.entries(allowedValues)) {
+				expect(offered, `${key}.${setting}`).toContain(defaults[key][setting]);
+			}
+		}
+	});
+
 	it('keeps default config blocks aligned with supported chart identities', () => {
 		const config = createDefaultChartConfig();
 		const configChartKeys = Object.keys(config)
