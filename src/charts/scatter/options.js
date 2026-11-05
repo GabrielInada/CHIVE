@@ -9,15 +9,15 @@
 import { SCATTER_PLOT } from '../../config/charts/definitions/scatter.js';
 import { CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts/definitions.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
-import { resolveScatterColorScheme } from './palettes.js';
 
 /**
  * Normalize the scatter render options. Mirrors the renderer's historical
  * semantics exactly: `radius`/`opacity` fall back to defaults only when
  * non-finite (no range clamp); `sizeMin` floors at 0.5, `sizeMax` floors at
  * `sizeMin`; `chartHeight` clamps to 220-720; colors validate through
- * `isValidHexColor`; `colorMode`/`categoricalPairMode` collapse to their
- * enums; the title trims to 80 chars. `xFilterColumn`/`yFilterColumn` come
+ * `isValidHexColor`; the title trims to 80 chars. The enumerated settings
+ * (scales, size, color and categorical-pair modes, gradient distribution and
+ * palette) pass through as given. `xFilterColumn`/`yFilterColumn` come
  * from the options bag's `xColumn`/`yColumn` (the click-to-filter column
  * names), distinct from the positional data columns.
  *
@@ -27,22 +27,27 @@ import { resolveScatterColorScheme } from './palettes.js';
  * @returns {Object} Validated config locals.
  */
 export function normalizeScatterOptions(options, xColumn, yColumn) {
-	const xScaleType = options.xScale === 'log' ? 'log' : 'linear';
-	const yScaleType = options.yScale === 'log' ? 'log' : 'linear';
+	// Read as given: chart config canonicalization checks the enumerated
+	// settings against the chart's definition.
+	const {
+		xScale: xScaleType,
+		yScale: yScaleType,
+		sizeMode,
+		categoricalPairMode,
+		colorMode,
+		gradientDistribution,
+		colorScheme,
+	} = options;
 	const showXAxisLabel = options.showXAxisLabel !== false;
 	const showYAxisLabel = options.showYAxisLabel !== false;
 	const radius = Number.isFinite(Number(options.radius)) ? Number(options.radius) : SCATTER_PLOT.defaultRadius;
 	const opacity = Number.isFinite(Number(options.opacity)) ? Number(options.opacity) : SCATTER_PLOT.defaultOpacity;
-	const sizeMode = options.sizeMode === 'numeric' ? 'numeric' : 'uniform';
 	const sizeField = options.sizeField || null;
 	const sizeMin = Number.isFinite(Number(options.sizeMin)) ? Math.max(0.5, Number(options.sizeMin)) : 2;
 	const sizeMax = Number.isFinite(Number(options.sizeMax)) ? Math.max(sizeMin, Number(options.sizeMax)) : 12;
 	const color = isValidHexColor(String(options.color || '').trim())
 		? String(options.color).trim()
 		: CHART_COLORS.scatter;
-	const colorMode = ['uniform', 'numeric', 'category'].includes(options.colorMode)
-		? options.colorMode
-		: 'uniform';
 	const colorField = options.colorField || null;
 	const gradientMinColor = isValidHexColor(String(options.gradientMinColor || '').trim())
 		? String(options.gradientMinColor).trim()
@@ -50,13 +55,10 @@ export function normalizeScatterOptions(options, xColumn, yColumn) {
 	const gradientMaxColor = isValidHexColor(String(options.gradientMaxColor || '').trim())
 		? String(options.gradientMaxColor).trim()
 		: '#ffffff';
-	const colorScheme = resolveScatterColorScheme(options.colorScheme);
-	const gradientDistribution = options.gradientDistribution === 'rank' ? 'rank' : 'value';
 	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(options.chartHeight))
 		? Math.max(220, Math.min(720, Number(options.chartHeight)))
 		: CHART_DIMENSIONS.scatter.height;
-	const categoricalPairMode = options.categoricalPairMode === 'aggregate' ? 'aggregate' : 'jitter';
 	const labels = {
 		xAxis: options.labels?.xAxis || 'X',
 		yAxis: options.labels?.yAxis || 'Y',

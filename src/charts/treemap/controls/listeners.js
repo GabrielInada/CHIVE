@@ -41,11 +41,7 @@ export function setupTreemapControlListeners(dataset, baseCat, numericOptions, a
 	setupSelectListeners([
 		{ id: 'viz-select-treemap-category', key: 'category', transform: value => value || null },
 		{ id: 'viz-select-treemap-topn', key: 'topN', transform: value => Number(value) },
-		{
-			id: 'viz-select-treemap-color-mode',
-			key: 'colorMode',
-			transform: value => ['scheme', 'uniform'].includes(value) ? value : 'scheme',
-		},
+		{ id: 'viz-select-treemap-color-mode', key: 'colorMode' },
 	], writer);
 
 	setupMeasureListener('viz-select-treemap-measure', () => dataset.chartConfig.treemap.valueColumn, numericOptions, writer);

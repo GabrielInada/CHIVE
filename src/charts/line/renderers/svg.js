@@ -5,7 +5,7 @@
  * (linear, monotone, step variants, basis, cardinal). Accepts numeric,
  * categorical, or date X-axes, date detection happens via the row's value
  * type. Missing-data handling: `missingMode` selects how gaps are drawn
- * (skip / connect / break).
+ * (connect / gap / interpolate).
  *
  * Internal D3 helpers (scale construction, curve resolution, tooltip
  * tracking) are intentionally undocumented per the Tier 5 plan.
@@ -77,9 +77,9 @@ function truncateCategoryTick(value, maxLength = 18) {
  * fewer than two finite points.
  *
  * Common option keys: `curve` (one of `LINE_CHART.curveOptions`), `missingMode`
- * ('skip' | 'connect' | 'break'), `aggregateMode` ('none' | 'mean' | 'sum'),
- * `sortX`, `showPoints`, `strokeWidth`, `color`, `ghostStrokeColor`,
- * axis-label toggles, `customTitle`, `chartHeight`, `locale`.
+ * (one of `LINE_CHART.missingModes`), `aggregateMode` (one of
+ * `LINE_CHART.aggregateModes`), `sortX`, `showPoints`, `strokeWidth`, `color`,
+ * `ghostStrokeColor`, axis-label toggles, `customTitle`, `chartHeight`, `locale`.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
@@ -93,7 +93,9 @@ export function renderLineChart(container, rows, xColumn, yColumn, options = {})
 	if (!Array.isArray(rows) || rows.length === 0) return fail();
 
 	const xKind = resolveXAxisKind(options.axisTypes?.x);
-	const curve = CURVE_BY_KEY[options.curve] || curveLinear;
+	// Read as given: chart config canonicalization checks the curve against the
+	// chart's definition.
+	const curve = CURVE_BY_KEY[options.curve];
 	const {
 		missingMode,
 		strokeWidth,

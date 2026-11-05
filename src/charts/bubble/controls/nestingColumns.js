@@ -41,10 +41,7 @@ export function resolveNestingColumnsFromConfig(config, allowed = null) {
  */
 export function computeNestingControlCount(config, allowed = null) {
 	const nestingColumns = resolveNestingColumnsFromConfig(config, allowed);
-	const nestingMode = BUBBLE_CHART.nestingModes.includes(config.nestingMode)
-		? config.nestingMode
-		: BUBBLE_CHART.defaultNestingMode;
-	if (nestingMode !== 'grouped') return BUBBLE_CHART.maxInitialNestingControlsVisible;
+	if (config.nestingMode !== 'grouped') return BUBBLE_CHART.maxInitialNestingControlsVisible;
 	const maximumSelectableDepth = allowed
 		? Math.min(BUBBLE_CHART.maxNestingDepth, allowed.size)
 		: BUBBLE_CHART.maxNestingDepth;

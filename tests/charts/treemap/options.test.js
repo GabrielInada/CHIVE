@@ -4,7 +4,7 @@ import { CHART_COLORS } from '../../../src/config/charts/definitions.js';
 import { TREEMAP_CHART } from '../../../src/config/charts/definitions/treemap.js';
 
 describe('normalizeTreemapOptions', () => {
-	it('applies defaults for an empty options bag', () => {
+	it('applies non-enumerated defaults for an empty options bag', () => {
 		const o = normalizeTreemapOptions({});
 		expect(o.valueColumn).toBeNull();
 		expect(o.topN).toBe(TREEMAP_CHART.defaultTopN);
@@ -13,17 +13,17 @@ describe('normalizeTreemapOptions', () => {
 		expect(o.showValues).toBe(true);
 		expect(o.customTitle).toBe('');
 		expect(o.chartHeight).toBe(380);
-		expect(o.colorMode).toBe('scheme');
-		expect(o.colorScheme).toBe('Bold');
+		expect(o.colorMode).toBeUndefined();
+		expect(o.colorScheme).toBeUndefined();
 		expect(o.uniformColor).toBe(CHART_COLORS.treemap);
 		expect(o.locale).toBeUndefined();
 	});
 
-	// Chart config canonicalization checks the measure against the chart's
+	// Chart config canonicalization checks enumerated settings against the chart's
 	// definition, so the normalizer reads it as given.
-	it('reads measureMode as given', () => {
-		expect(normalizeTreemapOptions({ measureMode: 'sum' }).measureMode).toBe('sum');
-		expect(normalizeTreemapOptions({}).measureMode).toBeUndefined();
+	it.each(['measureMode', 'colorMode', 'colorScheme'])('reads %s as given', key => {
+		expect(normalizeTreemapOptions({ [key]: 'chosen' })[key]).toBe('chosen');
+		expect(normalizeTreemapOptions({})[key]).toBeUndefined();
 	});
 
 	it('coerces topN from string and keeps a negative value (no-trim sentinel) as-is', () => {

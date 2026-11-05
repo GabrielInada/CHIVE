@@ -2,6 +2,8 @@
  * Treemap identity, rendering constants, static metadata, and fresh config.
  */
 
+import { CHART_COLOR_PALETTE_NAMES } from '../shared.js';
+
 const COLOR = '#5a7d99';
 
 export const TREEMAP_CHART = {
@@ -11,6 +13,7 @@ export const TREEMAP_CHART = {
   defaultTopN: 20,
   paddingOptions: [1, 2, 4],
   defaultPadding: 2,
+	colorModes: ['scheme', 'uniform'],
   // Config key -> palette position for the color palette buttons.
   presetColorKeys: { color: 0 },
 };
@@ -46,6 +49,8 @@ export const TREEMAP_DEFINITION = Object.freeze({
 	catalogCategoryKey: 'chive-viz-category-composition',
 	allowedValues: {
 		measureMode: TREEMAP_CHART.measureModes,
+		colorMode: TREEMAP_CHART.colorModes,
+		colorScheme: CHART_COLOR_PALETTE_NAMES,
 	},
 	createDefaultConfig,
 });

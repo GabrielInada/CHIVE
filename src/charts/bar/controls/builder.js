@@ -235,7 +235,7 @@ function buildStylingControls(config, isDisabled) {
 				{ value: 'value', label: t('chive-chart-color-gradient-distribution-value') },
 				{ value: 'rank', label: t('chive-chart-color-gradient-distribution-rank') },
 			],
-			config.gradientDistribution || 'value',
+			config.gradientDistribution,
 			isDisabled
 		));
 	}

@@ -279,7 +279,10 @@ describe('bubbleControls nesting mode', () => {
 		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
-	it('coerces generic select, title, slider, and palette listeners', () => {
+	// Forged nesting and label modes are committed as chosen: the commit
+	// canonicalizes the chart's config, which replaces a mode the bubble chart
+	// does not offer.
+	it('commits generic select, title, slider, and palette values', () => {
 		const dataset = createDataset('count', null, 'flat');
 		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']));
 
@@ -290,13 +293,13 @@ describe('bubbleControls nesting mode', () => {
 		expect(lastConfig(writer).category).toBe('grupo');
 
 		selectValue('viz-select-bubble-nesting-mode', 'unknown');
-		expect(lastConfig(writer).nestingMode).toBe('flat');
+		expect(lastConfig(writer)).toEqual({ nestingMode: 'unknown' });
 
 		selectValue('viz-select-bubble-topn', '20');
 		expect(lastConfig(writer).topN).toBe(20);
 
 		selectValue('viz-select-bubble-label-mode', 'bad');
-		expect(lastConfig(writer).labelMode).toBe('auto');
+		expect(lastConfig(writer)).toEqual({ labelMode: 'bad' });
 
 		const title = document.getElementById('viz-input-bubble-title');
 		title.value = '  Bubble panel  ';

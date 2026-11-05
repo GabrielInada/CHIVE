@@ -2,6 +2,8 @@
  * Network chart identity, rendering constants, static metadata, and fresh config.
  */
 
+import { CHART_COLOR_PALETTE_NAMES } from '../shared.js';
+
 const COLOR = '#3b6a9f';
 
 export const NETWORK_GRAPH = {
@@ -17,6 +19,7 @@ export const NETWORK_GRAPH = {
   maxZoomScale: 4,
   minAlphaDecay: 0.01,
   maxAlphaDecay: 0.2,
+	edgeColorModes: ['gradient', 'uniform'],
   // Config key -> palette position for the color palette buttons.
   presetColorKeys: { sourceNodeColor: 0, targetNodeColor: 1 },
 };
@@ -56,5 +59,9 @@ export const NETWORK_DEFINITION = Object.freeze({
 		block: 'chart-block-network',
 	},
 	catalogCategoryKey: 'chive-viz-category-relationship',
+	allowedValues: {
+		colorScheme: CHART_COLOR_PALETTE_NAMES,
+		edgeColorMode: NETWORK_GRAPH.edgeColorModes,
+	},
 	createDefaultConfig,
 });

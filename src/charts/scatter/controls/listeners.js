@@ -44,7 +44,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, w
 		if (!select) return;
 		select.addEventListener('change', () => {
 			const selected = allOptions.includes(select.value) ? select.value : null;
-			const currentScale = dataset.chartConfig.scatter?.[scaleKey] === 'log' ? 'log' : 'linear';
+			const currentScale = dataset.chartConfig.scatter?.[scaleKey];
 			writer.commit({
 				[axisKey]: selected,
 				[scaleKey]: numeric.includes(selected) ? currentScale : 'linear',
@@ -55,35 +55,28 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, w
 	attachAxisListener('viz-select-x', 'x', 'xScale');
 	attachAxisListener('viz-select-y', 'y', 'yScale');
 
-	// Simple selects (no cross-dependency logic)
+	// Simple selects (no cross-dependency logic beyond the scales: a log scale
+	// needs a numeric axis column)
 	setupSelectListeners([
 		{
 			id: 'viz-select-scatter-xscale',
 			key: 'xScale',
-			transform: v => (numeric.includes(dataset.chartConfig.scatter?.x) && v === 'log' ? 'log' : 'linear'),
+			transform: v => (numeric.includes(dataset.chartConfig.scatter?.x) ? v : 'linear'),
 		},
 		{
 			id: 'viz-select-scatter-yscale',
 			key: 'yScale',
-			transform: v => (numeric.includes(dataset.chartConfig.scatter?.y) && v === 'log' ? 'log' : 'linear'),
+			transform: v => (numeric.includes(dataset.chartConfig.scatter?.y) ? v : 'linear'),
 		},
 		{ id: 'viz-select-scatter-radius', key: 'radius', transform: v => Number(v) },
 		{ id: 'viz-select-scatter-opacity', key: 'opacity', transform: v => Number(v) },
-		{
-			id: 'viz-select-scatter-size-mode',
-			key: 'sizeMode',
-			transform: v => (v === 'numeric' ? 'numeric' : 'uniform'),
-		},
+		{ id: 'viz-select-scatter-size-mode', key: 'sizeMode' },
 		{
 			id: 'viz-select-scatter-size-field',
 			key: 'sizeField',
 			transform: v => (numeric.includes(v) ? v : null),
 		},
-		{
-			id: 'viz-select-scatter-categorical-mode',
-			key: 'categoricalPairMode',
-			transform: value => (value === 'aggregate' ? 'aggregate' : 'jitter'),
-		},
+		{ id: 'viz-select-scatter-categorical-mode', key: 'categoricalPairMode' },
 		{ id: 'viz-select-scatter-color-field', key: 'colorField', transform: v => v || null },
 		{ id: 'viz-select-scatter-color-scheme', key: 'colorScheme' },
 	], writer);
@@ -96,14 +89,13 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, w
 			const availableFields = value === 'category' ? categorical : numeric;
 			const currentField = dataset.chartConfig.scatter.colorField;
 			const currentRegression = dataset.chartConfig.scatter.regression || {};
-			const nextRegressionMode = value === 'category' ? currentRegression.mode : 'overall';
 			writer.commit({
-				colorMode: value === 'uniform' ? 'uniform' : value,
+				colorMode: value,
 				colorField: value === 'uniform'
 					? null
 					: (availableFields.includes(currentField) ? currentField : (availableFields[0] || null)),
 				colorFieldType: value === 'category' ? 'category' : (value === 'numeric' ? 'numeric' : null),
-				regression: { ...currentRegression, mode: nextRegressionMode || 'overall' },
+				regression: { ...currentRegression, mode: value === 'category' ? currentRegression.mode : 'overall' },
 			});
 		});
 	}
@@ -132,8 +124,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, w
 	setupColorInputListener('viz-input-scatter-gradient-min', 'gradientMinColor', CHART_COLORS.scatter, writer);
 	setupColorInputListener('viz-input-scatter-gradient-max', 'gradientMaxColor', '#ffffff', writer);
 	setupSelectListeners([
-		{ id: 'viz-select-scatter-gradient-distribution', key: 'gradientDistribution', transform: v =>
-			['value', 'rank'].includes(v) ? v : 'value' },
+		{ id: 'viz-select-scatter-gradient-distribution', key: 'gradientDistribution' },
 	], writer);
 
 	setupColorPresetListeners('viz-scatter-color-preset', SCATTER_PLOT.presetColorKeys, {
@@ -172,7 +163,7 @@ export function setupScatterPlotControlListeners(dataset, numeric, allOptions, w
 	const regressionModeSelect = document.getElementById('viz-select-scatter-regression-mode');
 	if (regressionModeSelect) {
 		regressionModeSelect.addEventListener('change', () => {
-			const value = regressionModeSelect.value === 'perCategory' ? 'perCategory' : 'overall';
+			const value = regressionModeSelect.value;
 			const currentScatter = dataset.chartConfig.scatter || {};
 			const patch = {
 				regression: { ...(currentScatter.regression || {}), mode: value },

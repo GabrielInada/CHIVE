@@ -3,6 +3,20 @@ import { canonicalizeChartConfig, mergeChartConfigWithDefaults } from '../../../
 import { createDefaultChartConfig } from '../../../src/config/charts/defaults.js';
 import { CHART_DEFINITIONS, CHART_TYPE_KEYS } from '../../../src/config/charts/definitions.js';
 
+function enumeratedSettings(allowedValues, path) {
+	return Object.entries(allowedValues).flatMap(([key, offered]) => {
+		const keys = [...path, key];
+		return Array.isArray(offered)
+			? [[keys.join('.'), keys, offered]]
+			: enumeratedSettings(offered, keys);
+	});
+}
+
+const ENUMERATED_SETTINGS = Object.values(CHART_DEFINITIONS)
+	.flatMap(({ key, allowedValues }) => enumeratedSettings(allowedValues, [key]));
+const readSetting = (config, keys) => keys.reduce((block, key) => block[key], config);
+const savedSetting = (keys, value) => keys.reduceRight((block, key) => ({ [key]: block }), value);
+
 describe('chartConfig', () => {
 	describe('mergeChartConfigWithDefaults', () => {
 		it('returns full defaults when config is null', () => {
@@ -159,32 +173,28 @@ describe('chartConfig', () => {
 
 		describe('enumerated settings', () => {
 			const defaults = createDefaultChartConfig();
-			const measureModes = Object.values(CHART_DEFINITIONS)
-				.filter(definition => definition.allowedValues?.measureMode)
-				.map(definition => [definition.key, definition.allowedValues.measureMode]);
-
-			it('checks the measure of the four charts that measure categories', () => {
-				expect(measureModes.map(([key]) => key).sort()).toEqual(['bar', 'bubble', 'pie', 'treemap']);
-			});
-
-			it.each(measureModes)('keeps every measure the %s chart offers', (key, offered) => {
-				for (const measureMode of offered) {
-					expect(mergeChartConfigWithDefaults({ [key]: { measureMode } })[key].measureMode).toBe(measureMode);
+			it.each(ENUMERATED_SETTINGS)('keeps every offered %s value', (_name, keys, offered) => {
+				for (const value of offered) {
+					const result = mergeChartConfigWithDefaults(savedSetting(keys, value));
+					expect(readSetting(result, keys)).toBe(value);
 				}
 			});
 
-			it.each([
-				['bar', 'median'],
-				['treemap', 'mean'],
-				['pie', 'mean'],
-				['bubble', 'SUM'],
-				['bubble', null],
-				['bar', undefined],
-				['pie', 1],
-			])('replaces the %s measure %s with the chart default', (key, measureMode) => {
-				const result = mergeChartConfigWithDefaults({ [key]: { measureMode, valueColumn: 'v' } });
-				expect(result[key].measureMode).toBe(defaults[key].measureMode);
-				expect(result[key].valueColumn).toBe('v');
+			it.each(ENUMERATED_SETTINGS)('replaces invalid %s values with the default', (_name, keys) => {
+				for (const value of ['bogus', null, undefined, 1, 'toString', 'constructor', '__proto__']) {
+					const result = mergeChartConfigWithDefaults(savedSetting(keys, value));
+					expect(readSetting(result, keys), String(value)).toBe(readSetting(defaults, keys));
+				}
+			});
+
+			it('replaces nested regression mode while preserving its siblings and the input', () => {
+				const regression = Object.freeze({ mode: 'bogus', enabled: true, showCI: false, degree: 3, color: '#123456' });
+				const saved = { scatter: { regression, x: 'age', colorScheme: 'Pastel' } };
+				const result = mergeChartConfigWithDefaults(saved);
+				expect(result.scatter.regression).toEqual({ ...defaults.scatter.regression, ...regression, mode: 'overall' });
+				expect(result.scatter).toMatchObject({ x: 'age', colorScheme: 'Pastel' });
+				expect(saved.scatter.regression).toBe(regression);
+				expect(regression.mode).toBe('bogus');
 			});
 
 			it('replaces only the value the chart does not offer and leaves the saved block untouched', () => {
@@ -250,7 +260,12 @@ describe('chartConfig', () => {
 			expect(result.treemap.valueColumn).toBe('v');
 		});
 
-		it('is idempotent', () => {
+		it.each(ENUMERATED_SETTINGS)('is idempotent after replacing invalid %s', (_name, keys) => {
+			const once = canonicalizeChartConfig(savedSetting(keys, 'bogus'));
+			expect(canonicalizeChartConfig(once)).toEqual(once);
+		});
+
+		it('is idempotent with migrations and filter trimming', () => {
 			const input = {
 				bubble: { groupColumn: 'grupo' },
 				pie: { measureMode: 'mean' },

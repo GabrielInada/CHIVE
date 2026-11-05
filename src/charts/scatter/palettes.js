@@ -14,22 +14,12 @@ const SCATTER_PALETTES = Object.freeze(Object.fromEntries(
 ));
 
 /**
- * Resolve a palette name to a known scheme, falling back to `'Bold'` for an
- * unknown or missing name.
+ * Get the frozen palette array for a scheme. The scheme is read as given:
+ * chart config canonicalization checks it against the chart's definition.
  *
- * @param {string} colorScheme
- * @returns {string} A valid scatter palette key.
- */
-export function resolveScatterColorScheme(colorScheme) {
-	return SCATTER_PALETTES[colorScheme] ? colorScheme : 'Bold';
-}
-
-/**
- * Get the frozen palette array for a scheme (Bold fallback).
- *
- * @param {string} colorScheme
+ * @param {string} colorScheme - One of the palette names.
  * @returns {ReadonlyArray<string>}
  */
 export function getScatterPalette(colorScheme) {
-	return SCATTER_PALETTES[resolveScatterColorScheme(colorScheme)];
+	return SCATTER_PALETTES[colorScheme];
 }

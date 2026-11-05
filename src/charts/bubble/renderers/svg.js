@@ -34,11 +34,6 @@ import {
 	isDescendantOf,
 } from '../data.js';
 
-/** @private */
-function getBubblePalette(colorScheme) {
-	return CHART_COLOR_PALETTES[colorScheme] || CHART_COLOR_PALETTES.Tableau10;
-}
-
 /**
  * Render a bubble chart into `container`. Returns `ok()` on success, or
  * `fail()` when `categoryColumn` is missing, when sum/mean aggregation
@@ -61,31 +56,24 @@ function getBubblePalette(colorScheme) {
 export function renderBubbleChart(container, rows, categoryColumn, options = {}) {
 	if (!container || !categoryColumn) return fail();
 
-	// Read as given: chart config canonicalization checks the measure against
-	// the chart's definition.
-	const { measureMode } = options;
+	// Read as given: chart config canonicalization checks the enumerated
+	// settings against the chart's definition.
+	const { measureMode, labelMode, nestingMode, colorScheme } = options;
 	const valueColumn = options.valueColumn || null;
 	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : BUBBLE_CHART.defaultTopN;
 	const padding = Number.isFinite(Number(options.padding))
 		? Number(options.padding)
 		: BUBBLE_CHART.defaultPadding;
-	const labelMode = BUBBLE_CHART.labelModes.includes(options.labelMode)
-		? options.labelMode
-		: BUBBLE_CHART.defaultLabelMode;
 	const autoLabelMinRadius = Number.isFinite(Number(options.autoLabelMinRadius))
 		? Number(options.autoLabelMinRadius)
 		: BUBBLE_CHART.autoLabelMinRadius;
 	const parentLabelMinRadius = BUBBLE_CHART.parentLabelMinRadius;
-	const nestingMode = BUBBLE_CHART.nestingModes.includes(options.nestingMode)
-		? options.nestingMode
-		: BUBBLE_CHART.defaultNestingMode;
 	const nestingColumns = resolveNestingColumns(options);
 	const locale = options.locale || undefined;
 	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(options.chartHeight))
 		? Math.max(400, Math.min(900, Number(options.chartHeight)))
 		: CHART_DIMENSIONS.bubble.height;
-	const colorScheme = String(options.colorScheme || '').trim() || 'Tableau10';
 	const labels = {
 		category: options.labels?.category || 'Category',
 		count: options.labels?.count || 'Count',
@@ -170,7 +158,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 	} else {
 		colorDomain = Array.from(new Set(leaves.map(item => item.data.groupKey)));
 	}
-	const colorScale = scaleOrdinal(getBubblePalette(colorScheme)).domain(colorDomain);
+	const colorScale = scaleOrdinal(CHART_COLOR_PALETTES[colorScheme]).domain(colorDomain);
 
 	let pinnedNode = null;
 

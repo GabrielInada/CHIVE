@@ -2,6 +2,8 @@
  * TIN chart identity, rendering constants, static metadata, and fresh config.
  */
 
+import { CHART_COLOR_PALETTE_NAMES, CHART_GRADIENT_DISTRIBUTIONS } from '../shared.js';
+
 const COLOR = '#5d8aa8';
 
 export const TIN_COLOR_RAMPS = Object.freeze([
@@ -16,6 +18,7 @@ export const TIN_COLOR_RAMPS = Object.freeze([
 ]);
 
 export const TIN_CHART = {
+	fillModes: ['smooth', 'flat'],
   defaultFillMode: 'smooth',
   defaultColorRamp: 'custom',
   defaultSubdivisionDepth: 3,
@@ -31,6 +34,7 @@ export const TIN_CHART = {
   defaultShowZLabels: false,
   defaultShowHull: false,
   defaultShowIsolines: false,
+	isolineModes: ['count', 'step'],
   defaultIsolineMode: 'count',
   defaultIsolineCount: 5,
   minIsolineCount: 2,
@@ -122,5 +126,12 @@ export const TIN_DEFINITION = Object.freeze({
 		block: 'chart-block-tin',
 	},
 	catalogCategoryKey: 'chive-viz-category-spatial',
+	allowedValues: {
+		fillMode: TIN_CHART.fillModes,
+		colorRamp: TIN_COLOR_RAMPS,
+		gradientDistribution: CHART_GRADIENT_DISTRIBUTIONS,
+		colorScheme: CHART_COLOR_PALETTE_NAMES,
+		isolineMode: TIN_CHART.isolineModes,
+	},
 	createDefaultConfig,
 });

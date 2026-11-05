@@ -55,8 +55,16 @@ IDs, catalog category, and fresh default-config factory in
 `src/config/charts/definitions/<type>.js`. A definition's `allowedValues` maps an
 enumerated config key to the values the chart offers; chart config
 canonicalization replaces any other value with the chart's default, so readers
-use those keys as stored. Today only `measureMode` (bar, pie, treemap, bubble)
-is listed. The composition module
+use those keys as stored. The lists cover measures, sort and curve choices,
+missing-data and aggregation modes, palettes, color and gradient modes, bubble
+labels and nesting, pie Top-N and label placement, scatter scales and encodings,
+and TIN surface and isoline modes. An object instead of a list describes a nested
+block, currently scatter's `regression.mode`. Numeric ranges and column bindings
+keep their existing checks. Pie's unused `colorMode`, scatter's derived
+`colorFieldType`, and TIN's renderer-only `colorRenderingMode` are not listed.
+`tests/charts/enumeratedSettings.test.js` checks that the controls offer exactly
+the values their definitions accept, including conditional selects and palettes.
+The composition module
 `src/config/charts/definitions.js` supplies canonical display order and derives
 the shared keyed maps without registering renderers or controls. Follow the
 [new-chart checklist in the source map](../source-map.md#where-do-i-put-new-code)

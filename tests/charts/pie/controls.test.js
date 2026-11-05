@@ -336,7 +336,7 @@ describe('pieControls listeners', () => {
 		expect(writer.commit).not.toHaveBeenCalled();
 	});
 
-	it('coerces select values and supports the legacy callback argument position', () => {
+	it('commits selected enums as chosen and coerces the numeric select', () => {
 		const dataset = createDataset();
 		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales']);
 		appendControls(controls);
@@ -351,13 +351,14 @@ describe('pieControls listeners', () => {
 		expect(lastConfig(writer).valueColumn).toBeNull();
 
 		selectValue('viz-select-pie-label-position', 'sideways');
-		expect(lastConfig(writer).labelPosition).toBe('inside');
+		// The commit canonicalizes forged enumerated values.
+		expect(lastConfig(writer).labelPosition).toBe('sideways');
 
 		selectValue('viz-select-pie-topn', '20');
 		expect(lastConfig(writer).topN).toBe(20);
 
 		selectValue('viz-select-pie-topn-mode', 'unknown');
-		expect(lastConfig(writer).topNMode).toBe('other');
+		expect(lastConfig(writer).topNMode).toBe('unknown');
 
 		expect(writer.commit).toHaveBeenCalledTimes(5);
 	});

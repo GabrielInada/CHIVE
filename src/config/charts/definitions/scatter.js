@@ -2,6 +2,8 @@
  * Scatter chart identity, rendering constants, static metadata, and fresh config.
  */
 
+import { CHART_COLOR_PALETTE_NAMES, CHART_GRADIENT_DISTRIBUTIONS } from '../shared.js';
+
 const COLOR = '#1a472a';
 
 export const SCATTER_PLOT = {
@@ -13,6 +15,10 @@ export const SCATTER_PLOT = {
   defaultRadius: 3,
   opacityOptions: [0.3, 0.5, 0.7, 1],
   defaultOpacity: 0.7,
+	sizeModes: ['uniform', 'numeric'],
+	categoricalPairModes: ['jitter', 'aggregate'],
+	colorModes: ['uniform', 'numeric', 'category'],
+	regressionModes: ['overall', 'perCategory'],
   // Config key -> palette position for the color palette buttons.
   presetColorKeys: { color: 0, gradientMinColor: 0, gradientMaxColor: -1 },
 };
@@ -78,5 +84,17 @@ export const SCATTER_DEFINITION = Object.freeze({
 		block: 'chart-block-scatter',
 	},
 	catalogCategoryKey: 'chive-viz-category-relationship',
+	allowedValues: {
+		xScale: SCATTER_PLOT.scaleOptions,
+		yScale: SCATTER_PLOT.scaleOptions,
+		sizeMode: SCATTER_PLOT.sizeModes,
+		categoricalPairMode: SCATTER_PLOT.categoricalPairModes,
+		colorMode: SCATTER_PLOT.colorModes,
+		gradientDistribution: CHART_GRADIENT_DISTRIBUTIONS,
+		colorScheme: CHART_COLOR_PALETTE_NAMES,
+		regression: {
+			mode: SCATTER_PLOT.regressionModes,
+		},
+	},
 	createDefaultConfig,
 });

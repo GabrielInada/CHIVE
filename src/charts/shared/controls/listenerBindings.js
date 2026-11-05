@@ -21,7 +21,9 @@ import { valueColumnForMeasure } from './measureValueColumn.js';
 /**
  * Wire `change` listeners on a batch of `<select>` elements. Each entry's
  * `transform` (when present) maps the raw `value` to the stored config
- * value (e.g. parseInt, lookup table).
+ * value (e.g. parseInt, lookup table). An enumerated setting needs none: the
+ * commit canonicalizes the chart's config, which replaces a value the chart's
+ * definition does not offer with the chart's default.
  *
  * @param {Array<{ id: string, key: string, transform?: (value: string) => * }>} controls
  * @param {ChartConfigWriter} writer

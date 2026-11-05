@@ -49,21 +49,9 @@ export function setupLineChartControlListeners(dataset, numericOptions, dateOpti
 	}
 
 	setupSelectListeners([
-		{
-			id: 'viz-select-line-curve',
-			key: 'curve',
-			transform: v => (LINE_CHART.curveOptions.includes(v) ? v : LINE_CHART.defaultCurve),
-		},
-		{
-			id: 'viz-select-line-missing',
-			key: 'missingMode',
-			transform: v => (LINE_CHART.missingModes.includes(v) ? v : LINE_CHART.defaultMissingMode),
-		},
-		{
-			id: 'viz-select-line-aggregate',
-			key: 'aggregateMode',
-			transform: v => (LINE_CHART.aggregateModes.includes(v) ? v : LINE_CHART.defaultAggregateMode),
-		},
+		{ id: 'viz-select-line-curve', key: 'curve' },
+		{ id: 'viz-select-line-missing', key: 'missingMode' },
+		{ id: 'viz-select-line-aggregate', key: 'aggregateMode' },
 	], writer);
 
 	setupCheckboxListeners([

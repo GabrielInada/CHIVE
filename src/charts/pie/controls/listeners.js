@@ -44,9 +44,9 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 	setupSelectListeners([
 		{ id: 'viz-select-pie-category', key: 'category' },
 		{ id: 'viz-select-pie-value-column', key: 'valueColumn', transform: v => v || null },
-		{ id: 'viz-select-pie-label-position', key: 'labelPosition', transform: v => v === 'outside' ? 'outside' : 'inside' },
+		{ id: 'viz-select-pie-label-position', key: 'labelPosition' },
 		{ id: 'viz-select-pie-topn', key: 'topN', transform: v => Number(v) },
-		{ id: 'viz-select-pie-topn-mode', key: 'topNMode', transform: v => v === 'truncate' ? 'truncate' : 'other' },
+		{ id: 'viz-select-pie-topn-mode', key: 'topNMode' },
 	], writer);
 
 	setupMeasureListener('viz-select-pie-measure', () => dataset.chartConfig.pie.valueColumn, numeric, writer);

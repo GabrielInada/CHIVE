@@ -26,9 +26,9 @@ function normalizeHex(value, fallback) {
  * @returns {Object} Validated config locals.
  */
 export function normalizeLineOptions(options, xColumn, yColumn) {
-	const missingMode = LINE_CHART.missingModes.includes(options.missingMode)
-		? options.missingMode
-		: LINE_CHART.defaultMissingMode;
+	// Read as given: chart config canonicalization checks the enumerated
+	// settings against the chart's definition.
+	const { missingMode, aggregateMode } = options;
 	const strokeWidth = Number.isFinite(Number(options.strokeWidth))
 		? Math.max(0.5, Math.min(8, Number(options.strokeWidth)))
 		: LINE_CHART.defaultStrokeWidth;
@@ -36,9 +36,6 @@ export function normalizeLineOptions(options, xColumn, yColumn) {
 	const ghostColor = normalizeHex(options.ghostStrokeColor, LINE_CHART.defaultGhostStrokeColor);
 	const showPoints = options.showPoints === true;
 	const sortX = options.sortX !== false;
-	const aggregateMode = LINE_CHART.aggregateModes.includes(options.aggregateMode)
-		? options.aggregateMode
-		: 'none';
 	const showXAxisLabel = options.showXAxisLabel !== false;
 	const showYAxisLabel = options.showYAxisLabel !== false;
 	const customTitle = String(options.customTitle || '').trim().slice(0, 80);

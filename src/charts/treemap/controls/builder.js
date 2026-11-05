@@ -130,7 +130,7 @@ export function createTreemapControls(dataset, categoryOptions, numericOptions =
 			{ value: 'scheme', label: t('chive-chart-color-scheme') },
 			{ value: 'uniform', label: t('chive-chart-color-uniform') },
 		],
-		config.colorMode || 'scheme',
+		config.colorMode,
 		isDisabled
 	));
 
@@ -152,7 +152,7 @@ export function createTreemapControls(dataset, categoryOptions, numericOptions =
 		t('chive-chart-color-palette'),
 		config.colorMode === 'uniform'
 			? findAppliedColorPreset(config, TREEMAP_CHART.presetColorKeys)
-			: (config.colorScheme || 'Bold'),
+			: config.colorScheme,
 		isDisabled,
 		t
 	));

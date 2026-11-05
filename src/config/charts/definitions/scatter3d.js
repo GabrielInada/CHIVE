@@ -65,5 +65,7 @@ export const SCATTER3D_DEFINITION = Object.freeze({
 		block: 'chart-block-scatter3d',
 	},
 	catalogCategoryKey: 'chive-viz-category-relationship',
+	// The 3D scatter has no enumerated settings.
+	allowedValues: {},
 	createDefaultConfig,
 });

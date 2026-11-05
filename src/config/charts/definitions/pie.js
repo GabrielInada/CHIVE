@@ -2,6 +2,8 @@
  * Pie chart identity, rendering constants, static metadata, and fresh config.
  */
 
+import { CHART_COLOR_PALETTE_NAMES } from '../shared.js';
+
 const COLOR = '#5f7c33';
 
 export const PIE_CHART = {
@@ -72,6 +74,9 @@ export const PIE_DEFINITION = Object.freeze({
 	catalogCategoryKey: 'chive-viz-category-composition',
 	allowedValues: {
 		measureMode: PIE_CHART.measureModes,
+		topNMode: PIE_CHART.topNModes,
+		labelPosition: PIE_CHART.labelPositions,
+		colorScheme: CHART_COLOR_PALETTE_NAMES,
 	},
 	createDefaultConfig,
 });
