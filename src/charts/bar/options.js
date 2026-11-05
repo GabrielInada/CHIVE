@@ -30,9 +30,9 @@ export function normalizeBarOptions(options, categoryColumn) {
 		percentage: options.labels?.percentage || 'Percentage',
 		missing: options.labels?.missing || '(missing)',
 	};
-	const measureMode = BAR_CHART.measureModes.includes(options.measureMode)
-		? options.measureMode
-		: BAR_CHART.defaultMeasureMode;
+	// Read as given: chart config canonicalization checks the measure against
+	// the chart's definition.
+	const { measureMode } = options;
 	const valueColumn = options.valueColumn || null;
 	const axisLabels = {
 		x: options.axisLabels?.x || categoryColumn,

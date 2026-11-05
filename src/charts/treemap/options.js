@@ -18,9 +18,9 @@ import { isValidHexColor } from '../../utils/colorUtils.js';
  * @returns {Object} Validated config locals.
  */
 export function normalizeTreemapOptions(options) {
-	const measureMode = TREEMAP_CHART.measureModes.includes(options.measureMode)
-		? options.measureMode
-		: TREEMAP_CHART.defaultMeasureMode;
+	// Read as given: chart config canonicalization checks the measure against
+	// the chart's definition.
+	const { measureMode } = options;
 	const valueColumn = options.valueColumn || null;
 	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : TREEMAP_CHART.defaultTopN;
 	const padding = Number.isFinite(Number(options.padding)) ? clamp(Number(options.padding), 1, 6) : TREEMAP_CHART.defaultPadding;

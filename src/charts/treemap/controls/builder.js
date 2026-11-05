@@ -32,7 +32,7 @@ import { groupControls } from '../../shared/controls/grouping.js';
  */
 export function createTreemapControls(dataset, categoryOptions, numericOptions = [], _allColumns = []) {
 	const config = dataset.chartConfig.treemap;
-	const measureMode = TREEMAP_CHART.measureModes.includes(config.measureMode) ? config.measureMode : 'count';
+	const { measureMode } = config;
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;
 	const isDisabled = !config.enabled;
 

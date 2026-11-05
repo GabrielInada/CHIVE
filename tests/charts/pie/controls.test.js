@@ -548,14 +548,20 @@ describe('pieControls computeDefaults', () => {
 		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'sales' });
 	});
 
-	it('falls back to the first option when the current value is out of scope', () => {
-		const dataset = createDataset({ category: 'old', valueColumn: 'gone' });
+	it('falls back to the first option when the current value is out of scope in sum mode', () => {
+		const dataset = createDataset({ category: 'old', measureMode: 'sum', valueColumn: 'gone' });
 		const ctx = { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] };
 		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'sales' });
 	});
 
+	it('keeps the value column in count mode', () => {
+		const dataset = createDataset({ measureMode: 'count', valueColumn: 'gone' });
+		const ctx = { baseCategoricalOrAll: ['region'], numeric: ['sales'] };
+		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'gone' });
+	});
+
 	it('returns null when there are no candidate columns', () => {
-		const dataset = createDataset();
+		const dataset = createDataset({ measureMode: 'sum' });
 		const ctx = { baseCategoricalOrAll: [], numeric: [] };
 		expect(computeDefaults(dataset, ctx)).toEqual({ category: null, valueColumn: null });
 	});

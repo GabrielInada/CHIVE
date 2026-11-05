@@ -6,6 +6,7 @@ import {
 	setupCheckboxListeners,
 	setupColorInputListener,
 	setupColorPresetListeners,
+	setupMeasureListener,
 	setupNumberInputListener,
 	setupSelectListeners,
 	setupSliderListener,
@@ -73,6 +74,47 @@ describe('listenerBindings setupColorInputListener', () => {
 		expect(() => setupColorInputListener('missing-color', 'color', '#abcdef', writer)).not.toThrow();
 		expect(writer.commit).not.toHaveBeenCalled();
 		expect(writer.preview).not.toHaveBeenCalled();
+	});
+});
+
+describe('listenerBindings setupMeasureListener', () => {
+	beforeEach(() => {
+		document.body.innerHTML = `
+			<select id="viz-select-bar-measure">
+				<option value="count">Count</option>
+				<option value="sum">Sum</option>
+				<option value="mean">Mean</option>
+			</select>`;
+	});
+
+	function changeMeasure(value) {
+		const select = document.getElementById('viz-select-bar-measure');
+		select.value = value;
+		select.dispatchEvent(new Event('change'));
+	}
+
+	it('commits the measure with the value column the shared rule keeps', () => {
+		const writer = createWriter();
+		let valueColumn = 'profit';
+		setupMeasureListener('viz-select-bar-measure', () => valueColumn, ['sales', 'profit'], writer);
+
+		changeMeasure('count');
+		expect(writer.commit).toHaveBeenLastCalledWith({ measureMode: 'count', valueColumn: 'profit' });
+
+		valueColumn = 'hidden';
+		changeMeasure('sum');
+		expect(writer.commit).toHaveBeenLastCalledWith({ measureMode: 'sum', valueColumn: 'sales' });
+
+		valueColumn = 'profit';
+		changeMeasure('mean');
+		expect(writer.commit).toHaveBeenLastCalledWith({ measureMode: 'mean', valueColumn: 'profit' });
+		expect(writer.preview).not.toHaveBeenCalled();
+	});
+
+	it('is a no-op when the element is absent', () => {
+		document.body.innerHTML = '';
+		const writer = createWriter();
+		expect(() => setupMeasureListener('viz-select-bar-measure', () => null, [], writer)).not.toThrow();
 	});
 });
 

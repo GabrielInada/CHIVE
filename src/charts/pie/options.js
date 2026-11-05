@@ -39,7 +39,9 @@ export function normalizePieOptions(options) {
 	const rawInner = Number(options.innerRadius);
 	const rawOuter = Number(options.outerRadius);
 	const rawPadAngle = Number(options.padAngle);
-	const measureMode = options.measureMode === 'sum' ? 'sum' : 'count';
+	// Read as given: chart config canonicalization checks the measure against
+	// the chart's definition.
+	const { measureMode } = options;
 	const valueColumn = options.valueColumn || null;
 	const showCategoryLabel = options.showCategoryLabel !== false;
 	const showValueLabel = options.showValueLabel !== false;

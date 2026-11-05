@@ -239,7 +239,7 @@ describe('barControls listeners', () => {
 		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
-	it('nulls valueColumn when measureMode switches to count', () => {
+	it('keeps valueColumn when measureMode switches to count', () => {
 		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
@@ -251,7 +251,21 @@ describe('barControls listeners', () => {
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'count', valueColumn: 'sales' }));
+	});
+
+	it('takes the first numeric column when switching to mean without a usable valueColumn', () => {
+		const dataset = createDataset({ measureMode: 'count', valueColumn: 'hidden' });
+		appendControls(createBarChartControls(dataset, ['region'], ['sales', 'profit'], ['region', 'sales', 'profit']));
+
+		const writer = createWriter();
+		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales', 'profit'], ['region', 'sales', 'profit'], writer);
+
+		const measureSelect = document.getElementById('viz-select-bar-measure');
+		measureSelect.value = 'mean';
+		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(writer.commit).toHaveBeenCalledWith({ measureMode: 'mean', valueColumn: 'sales' });
 	});
 
 	it('coerces an unknown color mode to uniform', () => {
@@ -357,19 +371,31 @@ describe('barControls color palette mark', () => {
 describe('barControls computeDefaults', () => {
 	it('preserves the current category when it is still in scope', () => {
 		const dataset = createDataset({ category: 'region' });
-		const ctx = { baseCategoricalOrAll: ['region', 'team'] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region' });
+		const ctx = { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] };
+		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: null });
 	});
 
 	it('falls back to the first option when the current value is out of scope', () => {
 		const dataset = createDataset({ category: 'old' });
-		const ctx = { baseCategoricalOrAll: ['region', 'team'] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region' });
+		const ctx = { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] };
+		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: null });
 	});
 
 	it('returns null when there are no candidate categorical columns', () => {
 		const dataset = createDataset();
-		const ctx = { baseCategoricalOrAll: [] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: null });
+		const ctx = { baseCategoricalOrAll: [], numeric: [] };
+		expect(computeDefaults(dataset, ctx)).toEqual({ category: null, valueColumn: null });
+	});
+
+	it('takes the first numeric column for a sum whose value column is gone', () => {
+		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'hidden' });
+		const ctx = { baseCategoricalOrAll: ['region'], numeric: ['sales', 'profit'] };
+		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'sales' });
+	});
+
+	it('keeps the value column in count mode', () => {
+		const dataset = createDataset({ measureMode: 'count', valueColumn: 'hidden' });
+		const ctx = { baseCategoricalOrAll: ['region'], numeric: ['sales'] };
+		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'hidden' });
 	});
 });

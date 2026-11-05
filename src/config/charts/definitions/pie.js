@@ -70,5 +70,8 @@ export const PIE_DEFINITION = Object.freeze({
 		block: 'chart-block-pie',
 	},
 	catalogCategoryKey: 'chive-viz-category-composition',
+	allowedValues: {
+		measureMode: PIE_CHART.measureModes,
+	},
 	createDefaultConfig,
 });

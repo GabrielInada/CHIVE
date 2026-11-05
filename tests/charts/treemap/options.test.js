@@ -6,7 +6,6 @@ import { TREEMAP_CHART } from '../../../src/config/charts/definitions/treemap.js
 describe('normalizeTreemapOptions', () => {
 	it('applies defaults for an empty options bag', () => {
 		const o = normalizeTreemapOptions({});
-		expect(o.measureMode).toBe(TREEMAP_CHART.defaultMeasureMode);
 		expect(o.valueColumn).toBeNull();
 		expect(o.topN).toBe(TREEMAP_CHART.defaultTopN);
 		expect(o.padding).toBe(TREEMAP_CHART.defaultPadding);
@@ -20,9 +19,11 @@ describe('normalizeTreemapOptions', () => {
 		expect(o.locale).toBeUndefined();
 	});
 
-	it('coerces an unknown measureMode to the default', () => {
-		expect(normalizeTreemapOptions({ measureMode: 'median' }).measureMode).toBe(TREEMAP_CHART.defaultMeasureMode);
+	// Chart config canonicalization checks the measure against the chart's
+	// definition, so the normalizer reads it as given.
+	it('reads measureMode as given', () => {
 		expect(normalizeTreemapOptions({ measureMode: 'sum' }).measureMode).toBe('sum');
+		expect(normalizeTreemapOptions({}).measureMode).toBeUndefined();
 	});
 
 	it('coerces topN from string and keeps a negative value (no-trim sentinel) as-is', () => {

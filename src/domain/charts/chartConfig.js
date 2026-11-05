@@ -2,13 +2,15 @@
  * CHIVE chart-configuration product rules.
  *
  * Owns deep merge with static defaults, legacy migration, malformed-block
- * hardening, and column-aware stale-filter trimming. This module is pure and
- * DOM-free; the default data itself lives in config/charts/definitions/.
+ * hardening, the enumerated-value check against each chart's definition, and
+ * column-aware stale-filter trimming. This module is pure and DOM-free; the
+ * default data itself lives in config/charts/definitions/.
  *
  * @typedef {import('../../types.js').ChartConfig} ChartConfig
  */
 
 import { createDefaultChartConfig } from '../../config/charts/defaults.js';
+import { CHART_DEFINITIONS } from '../../config/charts/definitions.js';
 import { normalizeGlobalFilter, createEmptyGlobalFilter, resolveGlobalFilterForColumns } from '../filters/globalFilter.js';
 
 /**
@@ -39,6 +41,24 @@ function pickGlobalFilter(config) {
 }
 
 /**
+ * Return `block` with each enumerated setting whose value the chart does not
+ * offer replaced by the chart's default. Returns `block` itself when every
+ * value is offered.
+ *
+ * @private
+ * @param {Object} block - A merged chart block.
+ * @param {Object<string, ReadonlyArray<*>>} allowedValues - Config key to the values the chart offers, from its definition.
+ * @param {Object} defaultBlock - The chart's default block.
+ * @returns {Object}
+ */
+function withAllowedValues(block, allowedValues, defaultBlock) {
+	const replaced = Object.keys(allowedValues)
+		.filter(key => !allowedValues[key].includes(block[key]))
+		.map(key => [key, defaultBlock[key]]);
+	return replaced.length === 0 ? block : { ...block, ...Object.fromEntries(replaced) };
+}
+
+/**
  * Deep-merge `chartConfig` onto the defaults. User-set fields always
  * win; missing fields fall back to defaults. The merge is per-chart-type
  * (each `bar`, `scatter`, … block is independently shallow-merged), with
@@ -48,6 +68,12 @@ function pickGlobalFilter(config) {
  * `nestingColumns` but has a legacy single `groupColumn`, it is promoted
  * into a one-element `nestingColumns` array. This preserves pre-multilevel
  * bubble configs across reloads.
+ *
+ * Each block's enumerated settings, the keys of its chart definition's
+ * `allowedValues`, then hold only values the chart offers: any other value
+ * becomes the chart's default. The check runs here, not only in
+ * {@link canonicalizeChartConfig}, so render, the controls sidebar, Panel
+ * captures and Panel rehydration read the same values.
  *
  * @param {*} chartConfig - Saved (possibly partial) chart config, or `null`/`undefined`.
  * @returns {ChartConfig} Merged, fully-populated config.
@@ -61,7 +87,7 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 	const config = asPlainObject(chartConfig);
 	const scatterConfig = asPlainObject(config.scatter);
 
-	return {
+	const merged = {
 		...defaults,
 		...config,
 		globalFilter: pickGlobalFilter(config),
@@ -113,15 +139,21 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 			...asPlainObject(config.scatter3d),
 		},
 	};
+
+	for (const { key, allowedValues } of Object.values(CHART_DEFINITIONS)) {
+		if (allowedValues) merged[key] = withAllowedValues(merged[key], allowedValues, defaults[key]);
+	}
+	return merged;
 }
 
 /**
  * Bring a (possibly-partial or legacy) chart config to its canonical shape:
  * default-filled and legacy-migrated via {@link mergeChartConfigWithDefaults},
  * then stale global-filter rules trimmed against `columnNames`. Pure and
- * idempotent. "Canonical" here means object/default shape, legacy migration, and
- * stale-column filter cleanup; it does not validate scalar/enumerated values and
- * does not strip unknown top-level keys.
+ * idempotent. "Canonical" here means object/default shape, legacy migration,
+ * the enumerated settings each chart definition lists in `allowedValues`, and
+ * stale-column filter cleanup; it does not validate other scalar values and does
+ * not strip unknown top-level keys.
  *
  * @param {*} chartConfig - Saved (possibly partial/malformed) chart config.
  * @param {string[]} [columnNames] - Dataset column names. Omit when column context is not trustworthy: filter rules are then kept (shape-normalized) rather than trimmed, since `resolveGlobalFilterForColumns` would treat a non-array as "no columns" and drop them all.

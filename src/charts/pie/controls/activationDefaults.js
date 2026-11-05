@@ -9,22 +9,24 @@
  * @typedef {import('../../../types.js').ChartControlContext} ChartControlContext
  */
 
+import { valueColumnForMeasure } from '../../shared/controls/measureValueColumn.js';
+
 /**
  * Compute the pie chart's activation defaults. Preserves the user's
- * current `category` and `valueColumn` when they still match visible
- * columns; otherwise falls back to the first available column.
+ * current `category` when it still matches a visible column; otherwise falls
+ * back to the first available column. The value column follows the shared
+ * measure rule, {@link valueColumnForMeasure}.
  *
  * @param {Dataset} dataset
  * @param {ChartControlContext} ctx
  * @returns {{ category: string | null, valueColumn: string | null }}
  */
 export function computeDefaults(dataset, ctx) {
-	const currentCat = dataset.chartConfig?.pie?.category;
-	const currentVal = dataset.chartConfig?.pie?.valueColumn;
+	const config = dataset.chartConfig?.pie;
 	return {
-		category: ctx.baseCategoricalOrAll.includes(currentCat)
-			? currentCat
+		category: ctx.baseCategoricalOrAll.includes(config?.category)
+			? config.category
 			: (ctx.baseCategoricalOrAll[0] || null),
-		valueColumn: ctx.numeric.includes(currentVal) ? currentVal : (ctx.numeric[0] || null),
+		valueColumn: valueColumnForMeasure(config?.measureMode, config?.valueColumn, ctx.numeric),
 	};
 }

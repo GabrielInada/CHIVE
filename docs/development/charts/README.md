@@ -52,7 +52,11 @@ canonical-key stem rather than extending the legacy forms.
 
 Each chart owns its static identity, behavior constants, dimensions, workspace
 IDs, catalog category, and fresh default-config factory in
-`src/config/charts/definitions/<type>.js`. The composition module
+`src/config/charts/definitions/<type>.js`. A definition's `allowedValues` maps an
+enumerated config key to the values the chart offers; chart config
+canonicalization replaces any other value with the chart's default, so readers
+use those keys as stored. Today only `measureMode` (bar, pie, treemap, bubble)
+is listed. The composition module
 `src/config/charts/definitions.js` supplies canonical display order and derives
 the shared keyed maps without registering renderers or controls. Follow the
 [new-chart checklist in the source map](../source-map.md#where-do-i-put-new-code)
@@ -122,6 +126,12 @@ doc rather than repeated:
   wraps them in collapsible sections. Neither writes config; the config writes are wired by
   the listener helpers in
   [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
+- **Measure and value column**: bar, pie, treemap, and bubble keep their value column by one
+  rule, `valueColumnForMeasure` in
+  [measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js), both
+  when the user switches the measure (`setupMeasureListener`) and when the chart is activated
+  (`computeDefaults`). Count keeps the stored column; sum and mean keep it while it is a
+  visible numeric column and otherwise take the first one.
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's
   [section 10](tin.md) and shared by every chart's color inputs.
 - **Detached panel captures**: see [Architecture reference](../architecture-reference.md).

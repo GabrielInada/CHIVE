@@ -59,5 +59,8 @@ export const BAR_DEFINITION = Object.freeze({
 		block: 'chart-block-bar',
 	},
 	catalogCategoryKey: 'chive-viz-category-comparison',
+	allowedValues: {
+		measureMode: BAR_CHART.measureModes,
+	},
 	createDefaultConfig,
 });

@@ -151,7 +151,9 @@ columns are detached `structuredClone` captures (see
 `createDefaultChartConfig()` in
 [defaults.js](../../../src/config/charts/defaults.js) and merged by
 `mergeChartConfigWithDefaults()` in
-[chartConfig.js](../../../src/domain/charts/chartConfig.js).
+[chartConfig.js](../../../src/domain/charts/chartConfig.js). The merge also checks
+`measureMode` against `PIE_DEFINITION.allowedValues`: a measure the pie does not offer, such as
+`'mean'`, becomes `'count'`, so every reader uses the stored measure as is.
 
 ### 4.2 The `chartConfig.pie` keys
 
@@ -207,7 +209,7 @@ registry imports those three entry points directly.
 - The value-column select is disabled in `count` mode.
 - The palette presets and per-slice grid render only when the category column yields at least
   one sector (`getPieSectorValues` returns all source categories from
-  `aggregatePieCategories`, descending by aggregate with a stable tiebreaker). Neither Top-N
+  `aggregateCategories`, descending by aggregate with a stable tiebreaker). Neither Top-N
   nor the rule that a wedge needs a value above 0 (section 7.1) is applied to this color list,
   so hidden categories retain their overrides, and so does a category whose total is 0 or
   less, since a global filter can leave its total above 0. The Other sector is not a
@@ -222,7 +224,12 @@ registry imports those three entry points directly.
 
 Beyond the shared select/checkbox/text/color helpers, the pie has several custom listeners:
 
-- **Measure**: switching to sum auto-picks the first numeric value column if none is set.
+- **Measure**: the shared `setupMeasureListener` applies the value-column rule bar, pie,
+  treemap, and bubble share
+  ([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+  switching to count keeps `valueColumn`, so switching back restores it, and switching to sum
+  keeps it while it is a numeric option and otherwise takes the first numeric column.
+  `computeDefaults` picks the value column by the same rule.
 - **Inner/outer radius**: cross-constrained so the inner radius is always kept at least 8px
   below the outer (adjusting one can clamp the other).
 - **Reset Zoom**: resets both the zoom slider DOM and `zoomScale` to the default.
@@ -272,11 +279,11 @@ their `total`. It reads the options through `normalizePieOptions` itself, so the
 the color controls pass and the renderer's options bag give the same sectors. The shared
 `aggregateCategories`
 ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)) aggregates
-count or sum per category; any measure other than sum counts rows (`aggregatePieCategories`).
-Sum reads only number cells and needs a `valueColumn` that the rows carry. Categories come
-back sorted descending by value with a `compareCategoryKeys` tiebreaker (missing last). Sum
-mode without a usable value column → `fail('no-value-column')`, without a number →
-`fail('no-numeric')`; count mode with no rows → `fail()`.
+count or sum per category; the measure is read as given, since chart config canonicalization
+already checked it (section 4.1). Sum reads only number cells and needs a `valueColumn` that
+the rows carry. Categories come back sorted descending by value with a `compareCategoryKeys`
+tiebreaker (missing last). Sum mode without a usable value column → `fail('no-value-column')`,
+without a number → `fail('no-numeric')`; count mode with no rows → `fail()`.
 
 `computePieSectors` keeps only the categories whose value is above 0, since D3's pie layout
 gives no angle to a value at or below 0. Only a sum can be 0 or less. With no category left →

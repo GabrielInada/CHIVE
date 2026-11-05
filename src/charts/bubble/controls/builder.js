@@ -100,9 +100,7 @@ function createNestingControls(config, categoryColumn, allColumns, disabled) {
  * @returns {HTMLElement[]}
  */
 function buildDataControls(config, categoryOptions, numericOptions, allColumns, disabled) {
-	const measureMode = BUBBLE_CHART.measureModes.includes(config.measureMode)
-		? config.measureMode
-		: BUBBLE_CHART.defaultMeasureMode;
+	const { measureMode } = config;
 	const nestingMode = BUBBLE_CHART.nestingModes.includes(config.nestingMode)
 		? config.nestingMode
 		: BUBBLE_CHART.defaultNestingMode;

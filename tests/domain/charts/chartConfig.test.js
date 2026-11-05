@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalizeChartConfig, mergeChartConfigWithDefaults } from '../../../src/domain/charts/chartConfig.js';
 import { createDefaultChartConfig } from '../../../src/config/charts/defaults.js';
-import { CHART_TYPE_KEYS } from '../../../src/config/charts/definitions.js';
+import { CHART_DEFINITIONS, CHART_TYPE_KEYS } from '../../../src/config/charts/definitions.js';
 
 describe('chartConfig', () => {
 	describe('mergeChartConfigWithDefaults', () => {
@@ -156,6 +156,44 @@ describe('chartConfig', () => {
 				expect(result.pie).not.toHaveProperty('0');
 			});
 		});
+
+		describe('enumerated settings', () => {
+			const defaults = createDefaultChartConfig();
+			const measureModes = Object.values(CHART_DEFINITIONS)
+				.filter(definition => definition.allowedValues?.measureMode)
+				.map(definition => [definition.key, definition.allowedValues.measureMode]);
+
+			it('checks the measure of the four charts that measure categories', () => {
+				expect(measureModes.map(([key]) => key).sort()).toEqual(['bar', 'bubble', 'pie', 'treemap']);
+			});
+
+			it.each(measureModes)('keeps every measure the %s chart offers', (key, offered) => {
+				for (const measureMode of offered) {
+					expect(mergeChartConfigWithDefaults({ [key]: { measureMode } })[key].measureMode).toBe(measureMode);
+				}
+			});
+
+			it.each([
+				['bar', 'median'],
+				['treemap', 'mean'],
+				['pie', 'mean'],
+				['bubble', 'SUM'],
+				['bubble', null],
+				['bar', undefined],
+				['pie', 1],
+			])('replaces the %s measure %s with the chart default', (key, measureMode) => {
+				const result = mergeChartConfigWithDefaults({ [key]: { measureMode, valueColumn: 'v' } });
+				expect(result[key].measureMode).toBe(defaults[key].measureMode);
+				expect(result[key].valueColumn).toBe('v');
+			});
+
+			it('replaces only the value the chart does not offer and leaves the saved block untouched', () => {
+				const saved = { pie: { measureMode: 'mean', category: 'region', colorScheme: 'Bold' } };
+				const result = mergeChartConfigWithDefaults(saved);
+				expect(result.pie).toMatchObject({ measureMode: 'count', category: 'region', colorScheme: 'Bold' });
+				expect(saved.pie).toEqual({ measureMode: 'mean', category: 'region', colorScheme: 'Bold' });
+			});
+		});
 	});
 
 	describe('canonicalizeChartConfig', () => {
@@ -206,9 +244,16 @@ describe('chartConfig', () => {
 			expect(result.globalFilter.rules[0].column).toBe('gone');
 		});
 
+		it('replaces a measure the chart does not offer with the chart default', () => {
+			const result = canonicalizeChartConfig({ treemap: { measureMode: 'mean', valueColumn: 'v' } }, ['v']);
+			expect(result.treemap.measureMode).toBe('count');
+			expect(result.treemap.valueColumn).toBe('v');
+		});
+
 		it('is idempotent', () => {
 			const input = {
 				bubble: { groupColumn: 'grupo' },
+				pie: { measureMode: 'mean' },
 				globalFilter: {
 					rules: [
 						{ column: 'age', operator: 'gt', value: '30' },

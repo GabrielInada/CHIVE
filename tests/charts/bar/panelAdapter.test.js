@@ -76,15 +76,17 @@ describe('renderBarPanelChart', () => {
 		);
 	});
 
+	// Panel rehydration checks the measure against the chart's definition, so
+	// the adapter passes it on as stored.
 	it.each([
+		['count', 'chive-tooltip-count'],
 		['sum', 'chive-tooltip-sum'],
 		['mean', 'chive-tooltip-mean'],
-		['invalid', 'chive-tooltip-count'],
-	])('normalizes %s and builds its localized y-axis label', (measureMode, expectedLabel) => {
+	])('passes %s on and builds its localized y-axis label', (measureMode, expectedLabel) => {
 		renderBarPanelChart(container, createSpec({ measureMode }));
 
 		const options = mocks.renderBarChart.mock.calls[0][3];
-		expect(options.measureMode).toBe(measureMode === 'invalid' ? 'count' : measureMode);
+		expect(options.measureMode).toBe(measureMode);
 		expect(options.axisLabels.y).toBe(expectedLabel);
 	});
 
@@ -95,7 +97,7 @@ describe('renderBarPanelChart', () => {
 			container,
 			[],
 			undefined,
-			expect.objectContaining({ measureMode: 'count' }),
+			expect.objectContaining({ axisLabels: { x: 'chive-chart-control-bar-category', y: 'chive-tooltip-count' } }),
 		);
 	});
 
