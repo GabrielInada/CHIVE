@@ -142,6 +142,25 @@ describe('computePieSectors', () => {
 		expect(computePieSectors(rows, 'c', options).sectors.at(-1).color).toBe(PIE_CHART.otherSliceColor);
 	});
 
+	// Category keys are cell text, so a category can share its name with a
+	// member of Object.prototype.
+	it('fills a category named like an Object.prototype member as any other category', () => {
+		const rows = ['constructor', 'constructor', 'constructor', 'toString', 'toString', '__proto__'].map(c => ({ c }));
+		expect(fills(computePieSectors(rows, 'c', countOptions).sectors)).toEqual([
+			['constructor', BASE],
+			['toString', buildSliceColor(BASE, 1)],
+			['__proto__', buildSliceColor(BASE, 2)],
+		]);
+
+		// A computed key, so the object holds `__proto__` as its own key.
+		const customSliceColors = { toString: '#123456', ['__proto__']: '#abcdef' };
+		expect(fills(computePieSectors(rows, 'c', { ...countOptions, customSliceColors }).sectors)).toEqual([
+			['constructor', BASE],
+			['toString', '#123456'],
+			['__proto__', '#abcdef'],
+		]);
+	});
+
 	// The color grid passes the saved config and the renderer its options bag,
 	// so both have to read to the same sectors.
 	it('reads the saved config as the renderer reads its options', () => {

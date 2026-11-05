@@ -367,7 +367,8 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
  * @param {string} labelText
  * @param {Array<string | number | { key: string, label: string }>} items - Per-item identifiers,
  *   or `{ key, label }` when the shown text differs from the identifier.
- * @param {Object<string, string>} colorMap - Current hex value per item.
+ * @param {Object<string, string>} colorMap - Current hex value per item. An
+ *   item that is not an own key, or whose value is not a hex color, shows gray.
  * @param {boolean} [disabled=false]
  * @param {((item: string | number, color: string) => void) | undefined} onColorChange
  * @param {((item: string | number, color: string) => void) | undefined} onColorPreview
@@ -403,7 +404,9 @@ export function createColorPickerGridControl(id, labelText, items, colorMap, dis
 		colorInput.dataset.colorItem = String(item);
 		colorInput.dataset.colorGridControl = id;
 		colorInput.className = 'chart-color-picker-input';
-		colorInput.value = normalizeHexColor(colorMap[item], '#999999');
+		// WHY: items can be cell text, such as `toString`, which must not read
+		// Object.prototype.
+		colorInput.value = normalizeHexColor(Object.hasOwn(colorMap, item) ? colorMap[item] : null, '#999999');
 		colorInput.disabled = disabled;
 		colorInput.style.cursor = disabled ? 'not-allowed' : 'pointer';
 		colorInput.style.width = '30px';

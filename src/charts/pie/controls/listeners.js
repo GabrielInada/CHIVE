@@ -136,14 +136,20 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const presetColors = COLOR_PRESETS[presetName] || [];
 			if (presetColors.length === 0 || sectorValues.length === 0) return;
 
-			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
-			sectorValues.forEach(({ key }, index) => {
-				nextSliceColors[key] = presetColors[index % presetColors.length];
-			});
+			// WHY: build the colors as own keys. Assigning one to a category
+			// named `__proto__` would call the prototype setter, which ignores
+			// a string, and the category would lose its color.
+			const presetSliceColors = Object.fromEntries(sectorValues.map(({ key }, index) => [
+				key,
+				presetColors[index % presetColors.length],
+			]));
 
 			writer.commit({
 				colorScheme: presetName,
-				customSliceColors: nextSliceColors,
+				customSliceColors: {
+					...(dataset.chartConfig.pie.customSliceColors || {}),
+					...presetSliceColors,
+				},
 			});
 		});
 	});
@@ -168,11 +174,13 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const sector = input.dataset.colorItem;
 			if (!sector) return;
 
-			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
-			nextSliceColors[sector] = normalizeHexColor(input.value, CHART_COLORS.pie);
-
+			// A computed key, as in the preview above, so a category named
+			// `__proto__` keeps its color.
 			writer.commit({
-				customSliceColors: nextSliceColors,
+				customSliceColors: {
+					...(dataset.chartConfig.pie.customSliceColors || {}),
+					[sector]: normalizeHexColor(input.value, CHART_COLORS.pie),
+				},
 			});
 		});
 	});
