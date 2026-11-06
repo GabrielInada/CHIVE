@@ -81,6 +81,7 @@ describe('renderPiePanelChart', () => {
 
 		const options = mocks.renderPieChart.mock.calls[0][3];
 		expect(options.labels).toEqual({
+			close: 'chive-tooltip-close',
 			category: 'chive-chart-control-pie-category',
 			count: 'chive-tooltip-count',
 			sum: 'chive-tooltip-sum',

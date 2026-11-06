@@ -75,6 +75,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 		? Math.max(400, Math.min(900, Number(options.chartHeight)))
 		: CHART_DIMENSIONS.bubble.height;
 	const labels = {
+		close: options.labels?.close,
 		category: options.labels?.category || 'Category',
 		count: options.labels?.count || 'Count',
 		sum: options.labels?.sum || 'Sum',
@@ -383,6 +384,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 				pinnedNode = item;
 				showPinnedFilterTooltip(createParentTooltip(item), event.pageX, event.pageY, {
 					headerTitle: item.data.groupLabel,
+					closeLabel: labels.close,
 					onDismiss: () => {
 						pinnedNode = null;
 						hideChartTooltip();
@@ -472,6 +474,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 			pinnedNode = item;
 			showPinnedFilterTooltip(createLeafTooltip(item), event.pageX, event.pageY, {
 				headerTitle: item.data.label,
+				closeLabel: labels.close,
 				onDismiss: () => {
 					pinnedNode = null;
 					hideChartTooltip();

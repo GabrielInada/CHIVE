@@ -141,7 +141,7 @@
 	"chive-card-cat-stats": "Statistics: categorical columns",
 	"chive-card-charts": "Visualizations",
 	"chive-charts-badge": "$1 visible columns · $2 numeric",
-	"chive-chart-bar-title": "Bar chart (count by category)",
+	"chive-chart-bar-title": "Bar chart (by category)",
 	"chive-chart-scatter-title": "Scatter plot (X vs Y)",
 	"chive-chart-network-title": "Network graph (source-target links)",
 	"chive-chart-pie-title": "Pie/Donut chart (composition by category)",

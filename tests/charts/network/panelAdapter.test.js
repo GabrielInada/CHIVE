@@ -97,6 +97,7 @@ describe('renderNetworkPanelChart', () => {
 		renderNetworkPanelChart(container, createSpec());
 
 		expect(mocks.renderNetworkGraph.mock.calls[0][4].labels).toEqual({
+			close: 'chive-tooltip-close',
 			node: 'chive-chart-control-network-source',
 			linkWeight: 'chive-chart-control-network-weight',
 			source: 'from',
@@ -108,6 +109,7 @@ describe('renderNetworkPanelChart', () => {
 		renderNetworkPanelChart(container, createSpec({ source: '', target: '' }));
 
 		expect(mocks.renderNetworkGraph.mock.calls[0][4].labels).toEqual({
+			close: 'chive-tooltip-close',
 			node: 'chive-chart-control-network-source',
 			linkWeight: 'chive-chart-control-network-weight',
 			source: 'chive-chart-control-network-source',

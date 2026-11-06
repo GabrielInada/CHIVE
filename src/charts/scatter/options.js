@@ -60,6 +60,7 @@ export function normalizeScatterOptions(options, xColumn, yColumn) {
 		? Math.max(220, Math.min(720, Number(options.chartHeight)))
 		: CHART_DIMENSIONS.scatter.height;
 	const labels = {
+		close: options.labels?.close,
 		xAxis: options.labels?.xAxis || 'X',
 		yAxis: options.labels?.yAxis || 'Y',
 		index: options.labels?.index || 'Index',

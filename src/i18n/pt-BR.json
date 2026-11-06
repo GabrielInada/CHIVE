@@ -141,7 +141,7 @@
 	"chive-card-cat-stats": "Estatísticas: colunas categóricas",
 	"chive-card-charts": "Visualizações",
 	"chive-charts-badge": "$1 colunas visíveis · $2 numéricas",
-	"chive-chart-bar-title": "Barras (contagem por categoria)",
+	"chive-chart-bar-title": "Barras (por categoria)",
 	"chive-chart-scatter-title": "Dispersão (X vs Y)",
 	"chive-chart-network-title": "Grafo de rede (ligações origem-destino)",
 	"chive-chart-pie-title": "Pizza/Rosca (composição por categoria)",

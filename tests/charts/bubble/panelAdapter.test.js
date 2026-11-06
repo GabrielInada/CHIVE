@@ -81,6 +81,7 @@ describe('renderBubblePanelChart', () => {
 		const options = mocks.renderBubbleChart.mock.calls[0][3];
 		expect(options.measureMode).toBe('mean');
 		expect(options.labels).toEqual({
+			close: 'chive-tooltip-close',
 			category: 'chive-chart-control-bubble-category',
 			count: 'chive-tooltip-count',
 			sum: 'chive-tooltip-sum',

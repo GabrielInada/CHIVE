@@ -138,6 +138,7 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		// The Other sector has no category token, so it offers no filter actions.
 		showPinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
 			headerTitle: item.label,
+			closeLabel: labels.close,
 			onDismiss,
 			filterCallbacks: options.filterCallbacks,
 			categories: [{ column: categoryColumn, token: item.token }],

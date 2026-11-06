@@ -23,7 +23,7 @@ import { AXIS_TYPE_VALUES } from './axisHelpers.js';
  * @param {Object} params
  * @param {{x: string, y: string}} params.axisTypes - Axis-type enum values.
  * @param {{x: string, y: string}} params.axisLabels - Resolved axis label text.
- * @param {Object} params.labels - i18n label bag (index/count).
+ * @param {Object} params.labels - i18n label bag (index/count/close).
  * @param {string|undefined} params.locale - Number-format locale.
  * @param {(key: string) => string} params.categoryLabel - Text shown for a category key.
  * @param {Object} params.filterCallbacks - Click-to-filter callback bag.
@@ -83,6 +83,7 @@ export function createScatterInteractions({
 
 		showPinnedFilterTooltip(buildTooltipContent(point), event.pageX, event.pageY, {
 			headerTitle,
+			closeLabel: labels.close,
 			onDismiss,
 			filterCallbacks,
 			categories,

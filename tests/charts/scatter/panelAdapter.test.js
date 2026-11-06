@@ -103,6 +103,7 @@ describe('renderScatterPanelChart', () => {
 		renderScatterPanelChart(container, createSpec());
 
 		expect(mocks.renderScatterPlot.mock.calls[0][4].labels).toEqual({
+			close: 'chive-tooltip-close',
 			xAxis: 'chive-chart-control-scatter-x',
 			yAxis: 'chive-chart-control-scatter-y',
 			index: 'chive-tooltip-row',
