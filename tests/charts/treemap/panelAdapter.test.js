@@ -78,6 +78,7 @@ describe('renderTreemapPanelChart', () => {
 
 		const options = mocks.renderTreemap.mock.calls[0][3];
 		expect(options.labels).toEqual({
+			close: 'chive-tooltip-close',
 			category: 'chive-chart-control-treemap-category',
 			count: 'chive-tooltip-count',
 			sum: 'chive-tooltip-sum',

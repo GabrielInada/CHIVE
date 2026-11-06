@@ -54,6 +54,7 @@ export function renderBarInto(
 		},
 		locale: getLocale(),
 		labels: {
+			close: t('chive-tooltip-close'),
 			category: t('chive-chart-control-bar-category'),
 			count: t('chive-tooltip-count'),
 			sum: t('chive-tooltip-sum'),

@@ -258,7 +258,6 @@ describe('renderCharts orchestration', () => {
 		expect(filterActionLabels).toMatchObject({
 			focus: 'chive-tooltip-show-only-this',
 			add: 'chive-tooltip-add-to-filter',
-			close: 'chive-tooltip-close',
 			filterBySource: 'chive-tooltip-filter-by-source',
 		});
 	});

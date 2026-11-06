@@ -25,6 +25,7 @@ export function normalizeBarOptions(options, categoryColumn) {
 	const showXAxisLabel = options.showXAxisLabel !== false;
 	const showYAxisLabel = options.showYAxisLabel !== false;
 	const labels = {
+		close: options.labels?.close,
 		category: options.labels?.category || 'Category',
 		count: options.labels?.count || 'Count',
 		sum: options.labels?.sum || 'Sum',

@@ -12,7 +12,6 @@ const LABELS = {
 	bringBack: 'Restore',
 	stateIncluded: 'Kept',
 	stateExcluded: 'Dropped',
-	close: 'Dismiss',
 };
 const NORTH = { column: 'region', token: 'v:North' };
 
@@ -172,10 +171,11 @@ describe('showPinnedFilterTooltip', () => {
 	it('labels the close button and passes the dismiss handler and the anchor on', () => {
 		const onDismiss = vi.fn();
 		const anchor = vi.fn(() => ({ x: 30, y: 40 }));
-		pin({ filterActionLabels: LABELS }, [], { onDismiss, anchor });
+		pin(undefined, [], { closeLabel: 'Fechar', onDismiss, anchor });
 
 		const close = document.querySelector('.chart-tooltip__close');
-		expect(close.getAttribute('aria-label')).toBe('Dismiss');
+		expect(close.getAttribute('aria-label')).toBe('Fechar');
+		expect(close.title).toBe('Fechar');
 		expect(anchor).toHaveBeenCalled();
 		close.click();
 		expect(onDismiss).toHaveBeenCalledTimes(1);

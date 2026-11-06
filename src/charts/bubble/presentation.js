@@ -40,6 +40,7 @@ export function renderBubbleInto(
 		colorScheme: config.colorScheme,
 		locale: getLocale(),
 		labels: {
+			close: t('chive-tooltip-close'),
 			category: t('chive-chart-control-bubble-category'),
 			count: t('chive-tooltip-count'),
 			sum: t('chive-tooltip-sum'),

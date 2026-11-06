@@ -172,6 +172,7 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
 			showPinnedFilterTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY, {
 				headerTitle: d.data.label,
+				closeLabel: labels.close,
 				onDismiss: () => {
 					pinnedKey = null;
 					hideChartTooltip();

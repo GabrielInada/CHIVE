@@ -35,6 +35,7 @@ export function normalizeTreemapOptions(options) {
 		: CHART_COLORS.treemap;
 	const locale = options.locale || undefined;
 	const labels = {
+		close: options.labels?.close,
 		category: options.labels?.category || 'Category',
 		count: options.labels?.count || 'Count',
 		sum: options.labels?.sum || 'Sum',

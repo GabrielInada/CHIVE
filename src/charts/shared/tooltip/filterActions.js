@@ -16,7 +16,7 @@
  * @property {(column: string, token: string) => void} [onBringBackGlobalFilter]
  * @property {(column: string, token: string) => 'included'|'excluded'|null} [getTokenFilterState]
  * @property {(column: string, token: string) => boolean} [isShowOnlyThisRedundant]
- * @property {Object<string, string>} [filterActionLabels] - Localized labels by name. This module reads focus, add, exclude, remove, bringBack, stateIncluded, stateExcluded and close; a missing one falls back to its English default.
+ * @property {Object<string, string>} [filterActionLabels] - Localized labels by name. This module reads focus, add, exclude, remove, bringBack, stateIncluded and stateExcluded; a missing one falls back to its English default.
  *
  * @typedef {Object} FilterCategory
  * @property {?string} column - Dataset column the category belongs to.
@@ -88,6 +88,7 @@ function buildCategoryActions(column, token, state, callbacks) {
  * @param {number} y - Page Y coordinate.
  * @param {Object} [options]
  * @param {string} [options.headerTitle]
+ * @param {string} [options.closeLabel] - Localized close label, independent of filter callbacks.
  * @param {() => void} [options.onDismiss]
  * @param {() => { x: number, y: number }} [options.anchor] - See `pinTooltip`.
  * @param {FilterCallbacks} [options.filterCallbacks] - The chart's filter callbacks, as it received them.
@@ -96,6 +97,7 @@ function buildCategoryActions(column, token, state, callbacks) {
  */
 export function showPinnedFilterTooltip(content, x, y, {
 	headerTitle,
+	closeLabel,
 	onDismiss,
 	anchor,
 	filterCallbacks,
@@ -125,7 +127,7 @@ export function showPinnedFilterTooltip(content, x, y, {
 		: null;
 	showPinnedChartTooltip(content, x, y, {
 		headerTitle,
-		closeLabel: labels.close,
+		closeLabel,
 		onDismiss,
 		anchor,
 		actionSets,
