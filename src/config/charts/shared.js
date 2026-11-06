@@ -8,3 +8,10 @@ export const CHART_COLOR_PALETTES = {
   Bold: ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E2'],
   'Colorblind-Safe': ['#0173B2', '#029E73', '#ECE133', '#CC78BC', '#CA9161', '#949494', '#ECE2F0', '#A6ACAF'],
 };
+
+// The values a chart's `colorScheme` may hold: the palette names.
+export const CHART_COLOR_PALETTE_NAMES = Object.keys(CHART_COLOR_PALETTES);
+
+// The values a chart's `gradientDistribution` may hold: spread the gradient
+// over the values themselves or over their rank.
+export const CHART_GRADIENT_DISTRIBUTIONS = ['value', 'rank'];

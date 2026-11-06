@@ -24,8 +24,9 @@ const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
  * builders may include axis bindings or config snapshots used by the
  * panel renderer.
  *
- * Builders read the measure as stored: committed chart config is
- * canonicalized, so each measure is one its chart offers.
+ * Builders read the enumerated settings, such as the measure, as stored:
+ * committed chart config is canonicalized, so each holds a value its chart
+ * offers.
  *
  * @private
  */
@@ -128,7 +129,7 @@ const CHART_SNAPSHOT_BUILDERS = {
 			type: 'line',
 			x,
 			y,
-			curve: line.curve || null,
+			curve: line.curve,
 			summary: `${t('chive-chart-control-line-x')}: ${x} · ${t('chive-chart-control-line-y')}: ${y}`,
 		};
 	},

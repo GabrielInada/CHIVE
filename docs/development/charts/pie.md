@@ -152,8 +152,9 @@ columns are detached `structuredClone` captures (see
 [defaults.js](../../../src/config/charts/defaults.js) and merged by
 `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js). The merge also checks
-`measureMode` against `PIE_DEFINITION.allowedValues`: a measure the pie does not offer, such as
-`'mean'`, becomes `'count'`, so every reader uses the stored measure as is.
+`measureMode`, `topNMode`, `labelPosition`, and `colorScheme` against
+`PIE_DEFINITION.allowedValues`: an unoffered value becomes the chart default, so every reader
+uses these values as given. The unused `colorMode` key is not checked.
 
 ### 4.2 The `chartConfig.pie` keys
 

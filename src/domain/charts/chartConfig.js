@@ -42,19 +42,24 @@ function pickGlobalFilter(config) {
 
 /**
  * Return `block` with each enumerated setting whose value the chart does not
- * offer replaced by the chart's default. Returns `block` itself when every
- * value is offered.
+ * offer replaced by the chart's default. A key that maps to an object instead
+ * of a list names a nested block, such as scatter's `regression`, checked the
+ * same way. Returns `block` itself when every value is offered.
  *
  * @private
  * @param {Object} block - A merged chart block.
- * @param {Object<string, ReadonlyArray<*>>} allowedValues - Config key to the values the chart offers, from its definition.
+ * @param {Object<string, ReadonlyArray<*> | Object>} allowedValues - Config key to the values the chart offers, from its definition.
  * @param {Object} defaultBlock - The chart's default block.
  * @returns {Object}
  */
 function withAllowedValues(block, allowedValues, defaultBlock) {
-	const replaced = Object.keys(allowedValues)
-		.filter(key => !allowedValues[key].includes(block[key]))
-		.map(key => [key, defaultBlock[key]]);
+	const replaced = Object.entries(allowedValues).flatMap(([key, allowed]) => {
+		if (!Array.isArray(allowed)) {
+			const nested = withAllowedValues(block[key], allowed, defaultBlock[key]);
+			return nested === block[key] ? [] : [[key, nested]];
+		}
+		return allowed.includes(block[key]) ? [] : [[key, defaultBlock[key]]];
+	});
 	return replaced.length === 0 ? block : { ...block, ...Object.fromEntries(replaced) };
 }
 
@@ -141,7 +146,7 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 	};
 
 	for (const { key, allowedValues } of Object.values(CHART_DEFINITIONS)) {
-		if (allowedValues) merged[key] = withAllowedValues(merged[key], allowedValues, defaults[key]);
+		merged[key] = withAllowedValues(merged[key], allowedValues, defaults[key]);
 	}
 	return merged;
 }

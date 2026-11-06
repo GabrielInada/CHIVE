@@ -268,7 +268,9 @@ describe('barControls listeners', () => {
 		expect(writer.commit).toHaveBeenCalledWith({ measureMode: 'mean', valueColumn: 'sales' });
 	});
 
-	it('coerces an unknown color mode to uniform', () => {
+	// The commit canonicalizes the chart's config, which replaces a color mode
+	// the bar does not offer.
+	it('commits a forged color mode as chosen', () => {
 		const dataset = createDataset({ colorMode: 'uniform' });
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
 		appendControls(controls);
@@ -284,7 +286,7 @@ describe('barControls listeners', () => {
 		select.value = 'gibberish';
 		select.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ colorMode: 'uniform' }));
+		expect(writer.commit).toHaveBeenCalledWith({ colorMode: 'gibberish' });
 	});
 
 	it('rejects value-column values not in numericOptions', () => {

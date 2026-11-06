@@ -62,14 +62,12 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	// --- Styling controls ---
 	setupColorInputListener('viz-input-bar-color', 'color', CHART_COLORS.bar, writer);
 	setupSelectListeners([
-		{ id: 'viz-select-bar-color-mode', key: 'colorMode', transform: v =>
-			['uniform', 'gradient', 'gradient-manual'].includes(v) ? v : 'uniform' },
+		{ id: 'viz-select-bar-color-mode', key: 'colorMode' },
 	], writer);
 	setupColorInputListener('viz-input-bar-gradient-min', 'gradientMinColor', CHART_COLORS.bar, writer);
 	setupColorInputListener('viz-input-bar-gradient-max', 'gradientMaxColor', '#ffffff', writer);
 	setupSelectListeners([
-		{ id: 'viz-select-bar-gradient-distribution', key: 'gradientDistribution', transform: v =>
-			['value', 'rank'].includes(v) ? v : 'value' },
+		{ id: 'viz-select-bar-gradient-distribution', key: 'gradientDistribution' },
 	], writer);
 	setupSliderListener('viz-slider-bar-threshold', 'manualThresholdPct', writer);
 	setupColorPresetListeners('viz-bar-color-preset', BAR_CHART.presetColorKeys, {

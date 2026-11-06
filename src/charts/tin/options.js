@@ -2,23 +2,19 @@
  * TIN render-option normalization.
  *
  * Turns the raw render options bag into a validated config object with every
- * default, bound, and enum collapse applied exactly once. Pure: no DOM, no d3.
- * Owns the ramp-enum normalization (`resolveColorRamp`, config-only) so the
- * d3-loading color module never has to. Used by `renderers/svg.js`.
+ * default and bound applied exactly once. The enumerated settings (fill mode,
+ * color ramp, gradient distribution, isoline mode) pass through as given: chart
+ * config canonicalization checks them against the chart's definition. Pure: no
+ * DOM, no d3. Used by `renderers/svg.js`.
  */
 
 import { CHART_COLORS, CHART_DIMENSIONS } from '../../config/charts/definitions.js';
-import { TIN_CHART, TIN_COLOR_RAMPS } from '../../config/charts/definitions/tin.js';
+import { TIN_CHART } from '../../config/charts/definitions/tin.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 
 function normalizeColor(value, fallback) {
 	const v = String(value || '').trim();
 	return isValidHexColor(v) ? v : fallback;
-}
-
-/** Collapse an arbitrary ramp name to a known ramp or 'custom'. Config-only, no d3. */
-function resolveColorRamp(rampName) {
-	return TIN_COLOR_RAMPS.includes(rampName) ? rampName : 'custom';
 }
 
 /**
@@ -35,12 +31,12 @@ function resolveColorRamp(rampName) {
  * @returns {Object} Validated config locals.
  */
 export function normalizeTinOptions(options, xColumn, yColumn, zColumn) {
-	const fillMode = options.fillMode === 'flat' ? 'flat' : 'smooth';
+	// Read as given: chart config canonicalization checks the enumerated
+	// settings against the chart's definition.
+	const { fillMode, gradientDistribution, colorRamp, isolineMode } = options;
 	const colorRenderingMode = options.colorRenderingMode === 'full-ramp' ? 'full-ramp' : 'optimized';
 	const gradientMin = normalizeColor(options.gradientMinColor, CHART_COLORS.tin);
 	const gradientMax = normalizeColor(options.gradientMaxColor, '#ffffff');
-	const gradientDistribution = options.gradientDistribution === 'rank' ? 'rank' : 'value';
-	const colorRamp = resolveColorRamp(options.colorRamp);
 	const showEdges = options.showEdges !== false;
 	const edgeColor = normalizeColor(options.edgeColor, TIN_CHART.defaultEdgeColor);
 	const showPoints = options.showPoints !== false;
@@ -51,7 +47,6 @@ export function normalizeTinOptions(options, xColumn, yColumn, zColumn) {
 	const showHull = options.showHull === true;
 	const hullColor = normalizeColor(options.hullColor, TIN_CHART.defaultHullColor);
 	const showIsolines = options.showIsolines === true;
-	const isolineMode = options.isolineMode === 'step' ? 'step' : 'count';
 	const isolineCountRaw = Math.round(Number(options.isolineCount));
 	const isolineCount = Number.isFinite(isolineCountRaw)
 		? Math.max(TIN_CHART.minIsolineCount, Math.min(TIN_CHART.maxIsolineCount, isolineCountRaw))

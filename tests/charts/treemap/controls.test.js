@@ -355,7 +355,7 @@ describe('treemapControls listeners', () => {
 		expect(writer.commit).toHaveBeenCalledTimes(6);
 	});
 
-	it('commits a forged measure as chosen and coerces color-mode selections through fallback branches', () => {
+	it('commits forged measure and color-mode selections as chosen', () => {
 		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'old' });
 		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
@@ -375,7 +375,8 @@ describe('treemapControls listeners', () => {
 		expect(lastConfig(writer).colorMode).toBe('uniform');
 
 		selectValue('viz-select-treemap-color-mode', 'unexpected');
-		expect(lastConfig(writer).colorMode).toBe('scheme');
+		// The commit canonicalizes the color mode too.
+		expect(lastConfig(writer).colorMode).toBe('unexpected');
 	});
 
 	it('ignores unknown color presets', () => {

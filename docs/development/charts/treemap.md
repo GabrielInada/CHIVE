@@ -130,8 +130,10 @@ are detached `structuredClone` captures (see
 [defaults.js](../../../src/config/charts/defaults.js) and merged by
 `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js). The merge also checks
-`measureMode` against `TREEMAP_DEFINITION.allowedValues`: a measure the treemap does not offer,
-such as `'mean'`, becomes `'count'`, so every reader uses the stored measure as is.
+`measureMode`, `colorMode`, and `colorScheme` against `TREEMAP_DEFINITION.allowedValues`:
+an unoffered value becomes the chart default, so every reader uses these values as given.
+An invalid stored palette now draws `Colorblind-Safe`, the chart default, instead of the
+old reader fallback of `Bold`. Valid saved palettes keep their colors.
 
 ### 4.2 The `chartConfig.treemap` keys
 
@@ -222,8 +224,8 @@ the value-column failures and when no value is positive) that the section adapte
 ### 7.1 Guard, options, aggregation
 
 Returns `{ ok: false }` if container or category is missing. Options are clamped (`padding` to
-1 to 6, height to 220 to 720, title to 80 chars); `measureMode` is read as given, since chart
-config canonicalization already checked it (section 4.1). The shared
+1 to 6, height to 220 to 720, title to 80 chars); measure, color mode, and palette are read
+as given, since chart config canonicalization already checked them (section 4.1). The shared
 `aggregateCategories` ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js))
 aggregates count or sum per category, reading only number cells in sum mode. Sum mode without
 a usable value column returns `{ ok: false, reason: 'no-value-column' }`, and without a number

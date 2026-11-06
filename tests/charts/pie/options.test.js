@@ -9,11 +9,9 @@ describe('normalizePieOptions', () => {
 		expect(o.color).toBe(CHART_COLORS.pie);
 		expect(o.valueColumn).toBeNull();
 		expect(o.topN).toBe(0);
-		expect(o.topNMode).toBe('other');
 		expect(o.showCategoryLabel).toBe(true);
 		expect(o.showValueLabel).toBe(true);
 		expect(o.showLegend).toBe(true);
-		expect(o.labelPosition).toBe('inside');
 		expect(o.customTitle).toBe('');
 		expect(o.chartHeight).toBe(CHART_DIMENSIONS.pie.height);
 		expect(o.customSliceColors).toEqual({});
@@ -25,18 +23,15 @@ describe('normalizePieOptions', () => {
 		expect(normalizePieOptions({ color: '#abcdef' }).color).toBe('#abcdef');
 	});
 
-	// Chart config canonicalization checks the measure against the chart's
-	// definition, so the normalizer reads it as given.
-	it('reads measureMode as given', () => {
-		expect(normalizePieOptions({ measureMode: 'sum' }).measureMode).toBe('sum');
-		expect(normalizePieOptions({}).measureMode).toBeUndefined();
-	});
-
-	it('collapses topNMode/labelPosition to their enums', () => {
-		expect(normalizePieOptions({ topNMode: 'truncate' }).topNMode).toBe('truncate');
-		expect(normalizePieOptions({ topNMode: 'nonsense' }).topNMode).toBe('other');
-		expect(normalizePieOptions({ labelPosition: 'outside' }).labelPosition).toBe('outside');
-		expect(normalizePieOptions({ labelPosition: 'sideways' }).labelPosition).toBe('inside');
+	// Chart config canonicalization checks the enumerated settings against the
+	// chart's definition, so the normalizer reads them as given.
+	it.each([
+		['measureMode', 'sum'],
+		['topNMode', 'truncate'],
+		['labelPosition', 'outside'],
+	])('reads %s as given', (key, value) => {
+		expect(normalizePieOptions({ [key]: value })[key]).toBe(value);
+		expect(normalizePieOptions({})[key]).toBeUndefined();
 	});
 
 	it('coerces topN from string and keeps a negative value (no-trim sentinel) as-is', () => {

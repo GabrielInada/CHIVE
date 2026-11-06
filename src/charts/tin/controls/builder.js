@@ -117,8 +117,7 @@ function buildDisplayControls(config, disabled) {
  * @returns {HTMLElement[]}
  */
 function buildSurfaceControls(config, disabled) {
-	const fillMode = config.fillMode === 'flat' ? 'flat' : 'smooth';
-	const colorRamp = TIN_COLOR_RAMPS.includes(config.colorRamp) ? config.colorRamp : TIN_CHART.defaultColorRamp;
+	const { fillMode, colorRamp } = config;
 	const isCustomRamp = colorRamp === 'custom';
 
 	return [
@@ -172,7 +171,7 @@ function buildSurfaceControls(config, disabled) {
 				{ value: 'value', label: t('chive-chart-color-gradient-distribution-value') },
 				{ value: 'rank', label: t('chive-chart-color-gradient-distribution-rank') },
 			],
-			config.gradientDistribution || 'value',
+			config.gradientDistribution,
 			disabled,
 		),
 		createColorPresetControl(
@@ -258,7 +257,7 @@ function buildMeshOverlayControls(config, disabled) {
  * @returns {HTMLElement[]}
  */
 function buildIsolineControls(config, disabled) {
-	const isolineMode = config.isolineMode === 'step' ? 'step' : 'count';
+	const { isolineMode } = config;
 
 	return [
 		createCheckboxControl(

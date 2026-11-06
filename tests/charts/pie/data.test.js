@@ -158,7 +158,7 @@ describe('computePieSectors', () => {
 	// The color grid passes the saved config and the renderer its options bag,
 	// so both have to read to the same sectors.
 	it('reads the saved config as the renderer reads its options', () => {
-		const savedConfig = { category: 'c', measureMode: 'count', topN: '2', topNMode: 'bogus', color: 'not-a-color', customSliceColors: null };
+		const savedConfig = { category: 'c', measureMode: 'count', topN: '2', topNMode: 'other', color: 'not-a-color', customSliceColors: null };
 		const renderOptions = { measureMode: 'count', topN: 2, topNMode: 'other', color: CHART_COLORS.pie, customSliceColors: {} };
 		expect(computePieSectors(twelveCategories, 'c', savedConfig)).toEqual(computePieSectors(twelveCategories, 'c', renderOptions));
 	});

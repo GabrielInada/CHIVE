@@ -172,9 +172,9 @@ it. The canonical fresh shape is built by `createDefaultChartConfig()` in
 [defaults.js](../../../src/config/charts/defaults.js); a saved or partial config is
 deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js) (user-set fields win,
-missing fields fall back to default). The merge also checks `measureMode` against
-`BAR_DEFINITION.allowedValues`: a measure the bar does not offer becomes `'count'`, so the
-controls, the presentation flow, and the renderer read the stored measure as is.
+missing fields fall back to default). The merge also checks the enumerated settings against
+`BAR_DEFINITION.allowedValues`: an unoffered value becomes the chart's default, so the
+controls, presentation flow, and renderer read the stored values as given.
 
 ### 4.2 The `chartConfig.bar` keys
 
@@ -205,7 +205,7 @@ controls, the presentation flow, and the renderer read the stored measure as is.
 - `CHART_DIMENSIONS.bar` = `{ width: 700, height: 320, margins: { top:12, right:12, bottom:90, left:52 } }`. The large bottom margin (90) leaves room for rotated category labels.
 - `CHART_HEIGHT_LIMITS.bar` = `{ min: 220, max: 720 }` (the height-drag handle and the renderer clamp to the same range so the drag box and SVG agree).
 - `BAR_CHART`: `padding: 0.14` (band gap), `ticks: 6` (y axis), the `sortOptions` / `defaultSort`, `topNOptions` / `defaultTopN: 10`, and `measureModes` / `defaultMeasureMode: 'count'`.
-- `BAR_DEFINITION.allowedValues` = `{ measureMode: BAR_CHART.measureModes }`: the values chart config canonicalization lets `measureMode` hold.
+- `BAR_DEFINITION.allowedValues`: the values chart config canonicalization lets `measureMode`, `sort`, `colorMode`, `colorScheme`, and `gradientDistribution` hold.
 
 ---
 
@@ -314,10 +314,9 @@ on success or `fail(reason)` when it cannot draw. The pipeline in order:
 ### 7.1 Guard and option parsing
 
 - Returns `fail()` immediately if the container or `categoryColumn` is missing.
-- Reads and clamps every option into a local with a safe fallback: `sort` and `topN` fall
-  back to the `BAR_CHART` defaults; colors run through `isValidHexColor` (valid `#RRGGBB` or
-  fallback); `manualThresholdPct` is clamped to 0 to 100; `colorMode` collapses to one of the
-  three allowed values; `gradientDistribution` collapses to `'value'` unless `'rank'`;
+- Reads the enumerated options as given, after chart config canonicalization. `topN` falls
+  back to the `BAR_CHART` default; colors run through `isValidHexColor` (valid `#RRGGBB` or
+  fallback); `manualThresholdPct` is clamped to 0 to 100;
   `chartHeight` is clamped to 220 to 720; `customTitle` is trimmed and capped at 80 chars.
 
 ### 7.2 Aggregation

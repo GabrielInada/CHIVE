@@ -2,6 +2,8 @@
  * Bubble chart identity, rendering constants, static metadata, and fresh config.
  */
 
+import { CHART_COLOR_PALETTE_NAMES } from '../shared.js';
+
 const COLOR = '#7b4f9d';
 
 export const BUBBLE_CHART = {
@@ -65,6 +67,9 @@ export const BUBBLE_DEFINITION = Object.freeze({
 	catalogCategoryKey: 'chive-viz-category-hierarchy',
 	allowedValues: {
 		measureMode: BUBBLE_CHART.measureModes,
+		labelMode: BUBBLE_CHART.labelModes,
+		nestingMode: BUBBLE_CHART.nestingModes,
+		colorScheme: CHART_COLOR_PALETTE_NAMES,
 	},
 	createDefaultConfig,
 });

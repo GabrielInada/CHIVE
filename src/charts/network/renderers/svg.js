@@ -96,7 +96,9 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 	const targetNodeColor = isValidHexColor(String(options.targetNodeColor || '').trim())
 		? String(options.targetNodeColor).trim()
 		: '#6b94c9';
-	const edgeColorMode = options.edgeColorMode === 'uniform' ? 'uniform' : 'gradient';
+	// Read as given: chart config canonicalization checks the edge color mode
+	// against the chart's definition.
+	const { edgeColorMode } = options;
 	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(options.chartHeight))
 		? Math.max(220, Math.min(720, Number(options.chartHeight)))

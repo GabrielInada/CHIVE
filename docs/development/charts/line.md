@@ -204,7 +204,8 @@ adapters.
 Everything is disabled when `!config.enabled`; the ghost color input is disabled unless
 `missingMode === 'interpolate'` (it only matters there). The X and Y selects have custom
 listeners that validate against the available columns (X any visible column, Y numeric only);
-curve, missing mode, and aggregate use the shared select helper with enum-guarding transforms;
+curve, missing mode, and aggregate use the shared select helper as chosen, with enum checks
+at chart config canonicalization against `LINE_DEFINITION.allowedValues`;
 both color inputs use `setupColorInputListener` for live preview. `computeDefaults` prefers a
 date column for X (then numeric, then first available) and the first numeric column for Y that
 is not also X, which makes a freshly enabled line chart default to a time series when one is
@@ -243,7 +244,7 @@ pipeline:
 
 Returns `fail('invalid-args')` if container or either column is missing, and `fail()` if there
 are no rows. The X axis kind is resolved from `axisTypes.x`; the curve, missing mode, and
-aggregate mode collapse to their enums; stroke width clamps to 0.5 to 8; colors validate;
+aggregate mode are read as given after chart config canonicalization; stroke width clamps to 0.5 to 8; colors validate;
 height clamps to 220 to 720; title trims to 80 chars.
 
 ### 7.2 Building, aggregating, sorting points

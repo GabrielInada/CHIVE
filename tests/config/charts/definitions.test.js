@@ -49,17 +49,28 @@ describe('chart-type metadata', () => {
 			expect(en).toHaveProperty(`chive-chart-toggle-${key}`);
 			expect(en).toHaveProperty(`chive-viz-${key}-desc`);
 			expect(en).toHaveProperty(definition.catalogCategoryKey);
+			expect(definition.allowedValues).toBeTypeOf('object');
 		}
 	});
 
 	// Canonicalization replaces a value a chart does not offer with the chart's
-	// default, so each default has to be one of the values offered.
-	it('offers the default of every enumerated setting', () => {
+	// default, so each listed setting has to exist in the chart's config and its
+	// default has to be one of the values offered.
+	it('offers the default of every enumerated setting it lists', () => {
 		const defaults = createDefaultChartConfig();
-		for (const { key, allowedValues = {} } of Object.values(CHART_DEFINITIONS)) {
+		const expectDefaultsOffered = (path, allowedValues, defaultBlock) => {
 			for (const [setting, offered] of Object.entries(allowedValues)) {
-				expect(offered, `${key}.${setting}`).toContain(defaults[key][setting]);
+				const settingPath = `${path}.${setting}`;
+				expect(Object.hasOwn(defaultBlock, setting), settingPath).toBe(true);
+				if (Array.isArray(offered)) {
+					expect(offered, settingPath).toContain(defaultBlock[setting]);
+				} else {
+					expectDefaultsOffered(settingPath, offered, defaultBlock[setting]);
+				}
 			}
+		};
+		for (const { key, allowedValues } of Object.values(CHART_DEFINITIONS)) {
+			expectDefaultsOffered(key, allowedValues, defaults[key]);
 		}
 	});
 

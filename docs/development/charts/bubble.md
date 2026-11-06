@@ -141,9 +141,9 @@ on top of them. Panel config, rows, and columns are detached `structuredClone` c
 `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js). The merge has special
 handling for `bubble`: a legacy single `groupColumn` is promoted into a one-element
-`nestingColumns` array so pre-multilevel configs keep working. It also checks `measureMode`
-against `BUBBLE_DEFINITION.allowedValues`: a measure the bubble chart does not offer becomes
-`'count'`, so every reader uses the stored measure as is.
+`nestingColumns` array so pre-multilevel configs keep working. It also checks `measureMode`,
+`labelMode`, `nestingMode`, and `colorScheme` against `BUBBLE_DEFINITION.allowedValues`:
+an unoffered value becomes the chart default, so every reader uses these values as given.
 
 ### 4.2 The `chartConfig.bubble` keys
 
@@ -239,9 +239,9 @@ click-to-filter in panels). The panel registry only dispatches to that adapter.
 
 ### 7.1 Guard, options, and the nesting guard
 
-Returns `fail()` if container or category is missing. Options are clamped to safe locals
-(`labelMode`, `nestingMode` to their enums; `chartHeight` to 400 to 900; title to 80 chars);
-`measureMode` is read as given, since chart config canonicalization already checked it
+Returns `fail()` if container or category is missing. Height clamps to 400 to 900 and title
+to 80 chars. Measure, label mode, nesting mode, and palette are read as given, since chart
+config canonicalization already checked them
 (section 4.1). In grouped mode with no nesting columns (and no legacy `groupColumn`) it returns
 `fail('no-nesting-columns')`.
 

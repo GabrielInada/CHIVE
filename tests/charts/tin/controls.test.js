@@ -329,7 +329,7 @@ describe('tinControls listeners', () => {
 		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ showIsolines: true }));
 	});
 
-	it('coerces invalid select listener values to safe defaults', () => {
+	it('commits forged enums as chosen and checks column selections', () => {
 		const dataset = createDataset();
 		appendControls(createTinControls(dataset, ['lon', 'lat', 'elev'], []));
 		const writer = createWriter();
@@ -342,16 +342,17 @@ describe('tinControls listeners', () => {
 		expect(lastTinConfig(writer).z).toBe('elev');
 
 		changeSelect('viz-select-tin-gradient-distribution', 'bogus');
-		expect(lastTinConfig(writer).gradientDistribution).toBe('value');
+		// The commit canonicalizes forged enumerated values.
+		expect(lastTinConfig(writer).gradientDistribution).toBe('bogus');
 
 		changeSelect('viz-select-tin-fill-mode', 'bogus');
-		expect(lastTinConfig(writer).fillMode).toBe('smooth');
+		expect(lastTinConfig(writer).fillMode).toBe('bogus');
 
 		changeSelect('viz-select-tin-isoline-mode', 'bogus');
-		expect(lastTinConfig(writer).isolineMode).toBe('count');
+		expect(lastTinConfig(writer).isolineMode).toBe('bogus');
 
 		changeSelect('viz-select-tin-color-ramp', 'bogus');
-		expect(lastTinConfig(writer).colorRamp).toBe('custom');
+		expect(lastTinConfig(writer).colorRamp).toBe('bogus');
 	});
 
 	it('still wires listeners when controls are absent', () => {

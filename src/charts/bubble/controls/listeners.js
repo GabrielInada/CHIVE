@@ -39,9 +39,9 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 
 	setupSelectListeners([
 		{ id: 'viz-select-bubble-category', key: 'category' },
-		{ id: 'viz-select-bubble-nesting-mode', key: 'nestingMode', transform: v => (BUBBLE_CHART.nestingModes.includes(v) ? v : BUBBLE_CHART.defaultNestingMode) },
+		{ id: 'viz-select-bubble-nesting-mode', key: 'nestingMode' },
 		{ id: 'viz-select-bubble-topn', key: 'topN', transform: v => Number(v) },
-		{ id: 'viz-select-bubble-label-mode', key: 'labelMode', transform: v => (['all', 'hover', 'auto'].includes(v) ? v : 'auto') },
+		{ id: 'viz-select-bubble-label-mode', key: 'labelMode' },
 	], writer);
 
 	// Allowlist of eligible (visible, non-category) columns, so the write sink

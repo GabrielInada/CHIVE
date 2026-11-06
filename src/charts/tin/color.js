@@ -49,8 +49,8 @@ const D3_RAMP_BY_NAME = Object.freeze({
  * Build the TIN color scale for a render.
  *
  * @param {Object} args
- * @param {string} args.colorRamp - Already-normalized ramp name (a key of the
- *   private ramp table, or 'custom' for the two-color gradient).
+ * @param {string} args.colorRamp - The chart's ramp, one of `TIN_COLOR_RAMPS`: a key
+ *   of the private ramp table, or 'custom' for the two-color gradient.
  * @param {string} args.gradientMin - Custom-gradient low color.
  * @param {string} args.gradientMax - Custom-gradient high color.
  * @param {string} args.gradientDistribution - 'rank' or 'value'.

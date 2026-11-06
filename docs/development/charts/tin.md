@@ -436,7 +436,8 @@ that does nothing. The pattern is a boolean passed as the `disabled` argument:
 
 - **Selects** (`setupSelectListeners`): x/y/z transform to `null` if the chosen
   value is no longer a numeric column; `gradientDistribution`, `fillMode`,
-  `isolineMode`, and `colorRamp` transform to their allowed enums.
+  `isolineMode`, and `colorRamp` are committed as chosen. Chart config canonicalization
+  checks them and `colorScheme` against `TIN_DEFINITION.allowedValues`.
 - **Checkboxes** (`setupCheckboxListeners`): store the boolean `checked` state.
 - **Sliders** (`setupSliderListener`): update the inline `<output>` on every
   `input` (live tick display) but only write config on `change` (release).
@@ -504,8 +505,9 @@ mechanics.
 
 - Returns `fail()` immediately if the container or any of the three column names is
   missing.
-- Reads and clamps every option into a local with a safe fallback: `fillMode`
-  collapses anything but `'flat'` to `'smooth'`; colors run through
+- Reads `fillMode`, `colorRamp`, `gradientDistribution`, and `isolineMode` as given
+  after chart config canonicalization. The renderer-only `colorRenderingMode` still
+  defaults to `'optimized'` unless it is `'full-ramp'`. Colors run through
   `normalizeColor` (valid `#RRGGBB` or fallback); numeric options are range-clamped;
   `chartHeight` is clamped to 220–900; isoline count/width/label size and threshold
   width are clamped to their `TIN_CHART` bounds. `customTitle` is trimmed and capped

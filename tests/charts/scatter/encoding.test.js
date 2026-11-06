@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-	getScatterPalette,
-	resolveScatterColorScheme,
-} from '../../../src/charts/scatter/palettes.js';
+import { getScatterPalette } from '../../../src/charts/scatter/palettes.js';
 import {
 	buildColorAccessor,
 	buildRadiusAccessor,
@@ -15,15 +12,8 @@ function point(raw, index) {
 }
 
 describe('palette helpers', () => {
-	it('resolves known schemes and falls back to Bold', () => {
-		expect(resolveScatterColorScheme('Pastel')).toBe('Pastel');
-		expect(resolveScatterColorScheme('missing')).toBe('Bold');
-		expect(resolveScatterColorScheme(undefined)).toBe('Bold');
-	});
-
-	it('offers every palette the color buttons do, Tableau10 included', () => {
-		expect(resolveScatterColorScheme('Tableau10')).toBe('Tableau10');
-		expect(getScatterPalette('Tableau10')).toEqual(CHART_COLOR_PALETTES.Tableau10);
+	it.each(Object.keys(CHART_COLOR_PALETTES))('returns the %s palette as stored', scheme => {
+		expect(getScatterPalette(scheme)).toEqual(CHART_COLOR_PALETTES[scheme]);
 	});
 
 	it('returns a frozen palette array that cannot be mutated', () => {

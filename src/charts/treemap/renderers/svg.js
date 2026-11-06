@@ -27,11 +27,6 @@ import { normalizeTreemapOptions } from '../options.js';
 import { aggregateTreemapData } from '../data.js';
 
 /** @private */
-function getSchemeColors(schemeName) {
-	return CHART_COLOR_PALETTES[schemeName] || CHART_COLOR_PALETTES.Bold;
-}
-
-/** @private */
 function truncate(text, maxLen) {
 	return text.length > maxLen ? `${text.slice(0, maxLen - 1)}…` : text;
 }
@@ -112,7 +107,7 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 
 	layoutFn(root);
 
-	const schemeColors = getSchemeColors(colorScheme);
+	const schemeColors = CHART_COLOR_PALETTES[colorScheme];
 	const getColor = (d, i) => {
 		if (colorMode === 'uniform') return uniformColor;
 		return schemeColors[i % schemeColors.length];

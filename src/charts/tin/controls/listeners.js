@@ -10,7 +10,7 @@
  */
 
 import { CHART_COLORS } from '../../../config/charts/definitions.js';
-import { TIN_CHART, TIN_COLOR_RAMPS } from '../../../config/charts/definitions/tin.js';
+import { TIN_CHART } from '../../../config/charts/definitions/tin.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,
@@ -51,26 +51,10 @@ export function setupTinControlListeners(dataset, numericOptions, allColumns, wr
 			key: 'z',
 			transform: v => (numericOptions.includes(v) ? v : null),
 		},
-		{
-			id: 'viz-select-tin-gradient-distribution',
-			key: 'gradientDistribution',
-			transform: v => (['value', 'rank'].includes(v) ? v : 'value'),
-		},
-		{
-			id: 'viz-select-tin-fill-mode',
-			key: 'fillMode',
-			transform: v => (v === 'flat' ? 'flat' : 'smooth'),
-		},
-		{
-			id: 'viz-select-tin-isoline-mode',
-			key: 'isolineMode',
-			transform: v => (v === 'step' ? 'step' : 'count'),
-		},
-		{
-			id: 'viz-select-tin-color-ramp',
-			key: 'colorRamp',
-			transform: v => (TIN_COLOR_RAMPS.includes(v) ? v : TIN_CHART.defaultColorRamp),
-		},
+		{ id: 'viz-select-tin-gradient-distribution', key: 'gradientDistribution' },
+		{ id: 'viz-select-tin-fill-mode', key: 'fillMode' },
+		{ id: 'viz-select-tin-isoline-mode', key: 'isolineMode' },
+		{ id: 'viz-select-tin-color-ramp', key: 'colorRamp' },
 	], writer);
 
 	setupCheckboxListeners([

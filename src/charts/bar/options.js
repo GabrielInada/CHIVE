@@ -18,7 +18,9 @@ import { isValidHexColor } from '../../utils/colorUtils.js';
  * @returns {Object} Validated config locals.
  */
 export function normalizeBarOptions(options, categoryColumn) {
-	const sort = options.sort || BAR_CHART.defaultSort;
+	// Read as given: chart config canonicalization checks the enumerated
+	// settings against the chart's definition.
+	const { sort, measureMode, colorMode, gradientDistribution } = options;
 	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : BAR_CHART.defaultTopN;
 	const showXAxisLabel = options.showXAxisLabel !== false;
 	const showYAxisLabel = options.showYAxisLabel !== false;
@@ -30,9 +32,6 @@ export function normalizeBarOptions(options, categoryColumn) {
 		percentage: options.labels?.percentage || 'Percentage',
 		missing: options.labels?.missing || '(missing)',
 	};
-	// Read as given: chart config canonicalization checks the measure against
-	// the chart's definition.
-	const { measureMode } = options;
 	const valueColumn = options.valueColumn || null;
 	const axisLabels = {
 		x: options.axisLabels?.x || categoryColumn,
@@ -46,9 +45,6 @@ export function normalizeBarOptions(options, categoryColumn) {
 	const color = isValidHexColor(String(options.color || '').trim())
 		? String(options.color).trim()
 		: CHART_COLORS.bar;
-	const colorMode = ['uniform', 'gradient', 'gradient-manual'].includes(options.colorMode)
-		? options.colorMode
-		: 'uniform';
 	const gradientMinColor = isValidHexColor(String(options.gradientMinColor || '').trim())
 		? String(options.gradientMinColor).trim()
 		: color;
@@ -58,7 +54,6 @@ export function normalizeBarOptions(options, categoryColumn) {
 	const manualThresholdPct = Number.isFinite(Number(options.manualThresholdPct))
 		? Math.max(0, Math.min(100, Number(options.manualThresholdPct)))
 		: 50;
-	const gradientDistribution = options.gradientDistribution === 'rank' ? 'rank' : 'value';
 	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(options.chartHeight))
 		? Math.max(220, Math.min(720, Number(options.chartHeight)))
