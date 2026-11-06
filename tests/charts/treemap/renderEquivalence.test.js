@@ -25,7 +25,7 @@ const ROWS = [
 	{ region: 'D', sales: 1 },
 ];
 
-const BASE = { locale: 'en-US', chartHeight: 400 };
+const BASE = { measureMode: 'count', colorMode: 'scheme', colorScheme: 'Bold', locale: 'en-US', chartHeight: 400 };
 
 function makeContainer() {
 	document.body.innerHTML = '<div id="treemap"></div>';

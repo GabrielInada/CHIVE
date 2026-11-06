@@ -15,6 +15,7 @@ import { BAR_CHART } from '../../../config/charts/definitions/bar.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,
+	setupMeasureListener,
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
@@ -30,7 +31,7 @@ import {
  *
  * @param {Dataset} dataset
  * @param {string[]} baseBar - Categorical (or fallback "all") column names; kept for parity with the listener signature, currently unused.
- * @param {string[]} numericOptions - Numeric column names; used to validate the value-column select.
+ * @param {string[]} numericOptions - Visible numeric column names; the value-column select is checked against them, and the measure listener picks the value column from them.
  * @param {string[]} allColumns - Visible column names.
  * @param {ChartConfigWriter} writer
  * @returns {void}
@@ -44,22 +45,7 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 		{ id: 'viz-select-bar-topn', key: 'topN', transform: v => Number(v) },
 	], writer);
 
-	// Measure mode (custom logic for valueColumn dependency)
-	const selectBarMeasure = document.getElementById('viz-select-bar-measure');
-	if (selectBarMeasure) {
-		selectBarMeasure.addEventListener('change', () => {
-			const nextMode = ['count', 'sum', 'mean'].includes(selectBarMeasure.value)
-				? selectBarMeasure.value
-				: 'count';
-			const currentValueColumn = numericOptions.includes(dataset.chartConfig.bar?.valueColumn)
-				? dataset.chartConfig.bar?.valueColumn
-				: null;
-			writer.commit({
-				measureMode: nextMode,
-				valueColumn: nextMode === 'count' ? null : currentValueColumn,
-			});
-		});
-	}
+	setupMeasureListener('viz-select-bar-measure', () => dataset.chartConfig.bar.valueColumn, numericOptions, writer);
 
 	// Value column (custom validation against numericOptions)
 	const selectBarValueColumn = document.getElementById('viz-select-bar-value-column');
@@ -76,14 +62,12 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	// --- Styling controls ---
 	setupColorInputListener('viz-input-bar-color', 'color', CHART_COLORS.bar, writer);
 	setupSelectListeners([
-		{ id: 'viz-select-bar-color-mode', key: 'colorMode', transform: v =>
-			['uniform', 'gradient', 'gradient-manual'].includes(v) ? v : 'uniform' },
+		{ id: 'viz-select-bar-color-mode', key: 'colorMode' },
 	], writer);
 	setupColorInputListener('viz-input-bar-gradient-min', 'gradientMinColor', CHART_COLORS.bar, writer);
 	setupColorInputListener('viz-input-bar-gradient-max', 'gradientMaxColor', '#ffffff', writer);
 	setupSelectListeners([
-		{ id: 'viz-select-bar-gradient-distribution', key: 'gradientDistribution', transform: v =>
-			['value', 'rank'].includes(v) ? v : 'value' },
+		{ id: 'viz-select-bar-gradient-distribution', key: 'gradientDistribution' },
 	], writer);
 	setupSliderListener('viz-slider-bar-threshold', 'manualThresholdPct', writer);
 	setupColorPresetListeners('viz-bar-color-preset', BAR_CHART.presetColorKeys, {

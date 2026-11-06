@@ -40,7 +40,8 @@ Key files:
 - Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bar/workspaceSection.js)
 - Shared presentation mapping: [presentation.js](../../../src/charts/bar/presentation.js)
 - Panel adapter: [panelAdapter.js](../../../src/charts/bar/panelAdapter.js)
-- Shared tooltip + filter actions: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js)
+- Shared tooltip: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js); its filter
+  actions: [filterActions.js](../../../src/charts/shared/tooltip/filterActions.js)
 
 ---
 
@@ -171,7 +172,9 @@ it. The canonical fresh shape is built by `createDefaultChartConfig()` in
 [defaults.js](../../../src/config/charts/defaults.js); a saved or partial config is
 deep-merged onto these defaults by `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js) (user-set fields win,
-missing fields fall back to default).
+missing fields fall back to default). The merge also checks the enumerated settings against
+`BAR_DEFINITION.allowedValues`: an unoffered value becomes the chart's default, so the
+controls, presentation flow, and renderer read the stored values as given.
 
 ### 4.2 The `chartConfig.bar` keys
 
@@ -202,6 +205,7 @@ missing fields fall back to default).
 - `CHART_DIMENSIONS.bar` = `{ width: 700, height: 320, margins: { top:12, right:12, bottom:90, left:52 } }`. The large bottom margin (90) leaves room for rotated category labels.
 - `CHART_HEIGHT_LIMITS.bar` = `{ min: 220, max: 720 }` (the height-drag handle and the renderer clamp to the same range so the drag box and SVG agree).
 - `BAR_CHART`: `padding: 0.14` (band gap), `ticks: 6` (y axis), the `sortOptions` / `defaultSort`, `topNOptions` / `defaultTopN: 10`, and `measureModes` / `defaultMeasureMode: 'count'`.
+- `BAR_DEFINITION.allowedValues`: the values chart config canonicalization lets `measureMode`, `sort`, `colorMode`, `colorScheme`, and `gradientDistribution` hold.
 
 ---
 
@@ -215,7 +219,7 @@ registry entry:
 
 - `createBarChartControls(dataset, categoryOptions, numericOptions, allColumns)` builds the DOM.
 - `setupBarChartControlListeners(dataset, baseBar, numericOptions, …, onConfigChanged)` wires events.
-- `computeDefaults(dataset, ctx)` picks the category column when the chart is first enabled (keeps the current one if it is still a visible categorical column, else the first available).
+- `computeDefaults(dataset, ctx)` picks the category column when the chart is first enabled (keeps the current one if it is still a visible categorical column, else the first available), and the value column by the same rule as the measure listener (section 5.3).
 
 ### 5.1 The four sections
 
@@ -245,14 +249,19 @@ nothing:
 
 `setupBarChartControlListeners` uses the shared adapters in
 [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js)
-(`setupSelectListeners`, `setupCheckboxListeners`, `setupTextInputListener`,
-`setupSliderListener`, `setupColorInputListener`, `setupColorPresetListeners`, and
-`commitChartConfigPatch`). Two controls have custom listeners instead of the generic select helper:
+(`setupSelectListeners`, `setupMeasureListener`, `setupCheckboxListeners`,
+`setupTextInputListener`, `setupSliderListener`, `setupColorInputListener`,
+`setupColorPresetListeners`, and `commitChartConfigPatch`). Two controls tie the measure to
+the value column:
 
-- **Measure mode**: switching to `count` also clears `valueColumn` to `null`; switching to
-  sum/mean keeps the current value column only if it is still a numeric option.
-- **Value column**: the chosen value is validated against `numericOptions` and stored as
-  `null` if it is not a current numeric column.
+- **Measure mode**: `setupMeasureListener` commits the chosen measure with the value column
+  that the rule shared by bar, pie, treemap, and bubble keeps
+  ([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+  switching to `count` keeps `valueColumn`, so switching back to sum or mean restores it;
+  switching to sum/mean keeps it while it is a numeric option and otherwise takes the first
+  numeric column. The commit canonicalizes the config, which checks the measure itself.
+- **Value column**: a custom listener validates the chosen value against `numericOptions`
+  and stores `null` if it is not a current numeric column.
 
 The color-preset buttons write `gradientMinColor` from palette index 0, `gradientMaxColor`
 from the last index, and `color` from index 0, plus the palette name into `colorScheme`.
@@ -305,10 +314,9 @@ on success or `fail(reason)` when it cannot draw. The pipeline in order:
 ### 7.1 Guard and option parsing
 
 - Returns `fail()` immediately if the container or `categoryColumn` is missing.
-- Reads and clamps every option into a local with a safe fallback: `sort` and `topN` fall
-  back to the `BAR_CHART` defaults; colors run through `isValidHexColor` (valid `#RRGGBB` or
-  fallback); `manualThresholdPct` is clamped to 0 to 100; `colorMode` collapses to one of the
-  three allowed values; `gradientDistribution` collapses to `'value'` unless `'rank'`;
+- Reads the enumerated options as given, after chart config canonicalization. `topN` falls
+  back to the `BAR_CHART` default; colors run through `isValidHexColor` (valid `#RRGGBB` or
+  fallback); `manualThresholdPct` is clamped to 0 to 100;
   `chartHeight` is clamped to 220 to 720; `customTitle` is trimmed and capped at 80 chars.
 
 ### 7.2 Aggregation
@@ -362,17 +370,22 @@ height for a measure of 0. The fill comes from `getBarColor`:
 ### 7.6 Interaction: hover and click-to-filter
 
 This is the shared categorical-tooltip subsystem from
-[tooltip.js](../../../src/charts/shared/tooltip/tooltip.js), used by bar, pie, treemap, and
-bubble:
+[tooltip.js](../../../src/charts/shared/tooltip/tooltip.js) and
+[filterActions.js](../../../src/charts/shared/tooltip/filterActions.js), used by bar, pie,
+treemap, bubble, network, and scatter:
 
 - **Hover** shows a tooltip with the category, the measure value, and the percentage of the
   total. The percentage is left out in mean mode, and when a kept sum is below 0, since a
   share of the net total could then pass 100% or go below 0%.
-- **Click pins** a tooltip that stays open and carries filter-action buttons built by
-  `buildCategoricalFilterActions`: focus on this value ("show only this"), add to / remove
-  from the global filter, exclude ("hide this"), and bring back. The actions and a
-  filter-state badge come from the `filterCallbacks` bag the section adapter supplies;
-  clicking the same bar again or clicking the SVG background dismisses the pin.
+- **Click pins** a tooltip that stays open. The bar passes `showPinnedFilterTooltip` its
+  category column and the bar's category token, with the `filterCallbacks` bag as the
+  section adapter supplied it. The shared module reads the token's state in the global
+  filter and offers the actions that apply: focus on this value ("show only this", left out
+  when it would give the same filter as adding the value), then add to the global filter and
+  exclude ("hide this") for a value the filter does not name, remove from the filter for an
+  included value, or bring back an excluded one. An included or excluded value also gets a
+  filter-state badge. Each label falls back to its English default when the bag lacks it.
+  Clicking the same bar again or clicking the SVG background dismisses the pin.
 
 Because the panel passes empty `filterCallbacks`, panel bars hover but do not pin
 filter-actions.
@@ -474,6 +487,11 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
 - [tests/charts/bar/](../../../tests/charts/bar) mirrors the package. Data,
   options, color, SVG rendering, and render-equivalence tests cover the leaf
   implementation.
+- [filterActions.test.js](../../../tests/charts/shared/tooltip/filterActions.test.js)
+  covers the pinned tooltip's filter actions (section 7.6) for every chart that offers
+  them: the actions each filter state gets, the badge, headed groups for two columns, and
+  the label defaults. Each renderer's tests only check that its pinned tooltip offers the
+  actions for the right column and category token.
 - [workspaceSection.test.js](../../../tests/charts/bar/workspaceSection.test.js)
   covers workspace visibility and empty-state selection.
 - [controls.test.js](../../../tests/charts/bar/controls.test.js) and

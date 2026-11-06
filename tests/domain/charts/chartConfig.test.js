@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import { canonicalizeChartConfig, mergeChartConfigWithDefaults } from '../../../src/domain/charts/chartConfig.js';
 import { createDefaultChartConfig } from '../../../src/config/charts/defaults.js';
-import { CHART_TYPE_KEYS } from '../../../src/config/charts/definitions.js';
+import { CHART_DEFINITIONS, CHART_TYPE_KEYS } from '../../../src/config/charts/definitions.js';
+
+function enumeratedSettings(allowedValues, path) {
+	return Object.entries(allowedValues).flatMap(([key, offered]) => {
+		const keys = [...path, key];
+		return Array.isArray(offered)
+			? [[keys.join('.'), keys, offered]]
+			: enumeratedSettings(offered, keys);
+	});
+}
+
+const ENUMERATED_SETTINGS = Object.values(CHART_DEFINITIONS)
+	.flatMap(({ key, allowedValues }) => enumeratedSettings(allowedValues, [key]));
+const readSetting = (config, keys) => keys.reduce((block, key) => block[key], config);
+const savedSetting = (keys, value) => keys.reduceRight((block, key) => ({ [key]: block }), value);
 
 describe('chartConfig', () => {
 	describe('mergeChartConfigWithDefaults', () => {
@@ -156,6 +170,40 @@ describe('chartConfig', () => {
 				expect(result.pie).not.toHaveProperty('0');
 			});
 		});
+
+		describe('enumerated settings', () => {
+			const defaults = createDefaultChartConfig();
+			it.each(ENUMERATED_SETTINGS)('keeps every offered %s value', (_name, keys, offered) => {
+				for (const value of offered) {
+					const result = mergeChartConfigWithDefaults(savedSetting(keys, value));
+					expect(readSetting(result, keys)).toBe(value);
+				}
+			});
+
+			it.each(ENUMERATED_SETTINGS)('replaces invalid %s values with the default', (_name, keys) => {
+				for (const value of ['bogus', null, undefined, 1, 'toString', 'constructor', '__proto__']) {
+					const result = mergeChartConfigWithDefaults(savedSetting(keys, value));
+					expect(readSetting(result, keys), String(value)).toBe(readSetting(defaults, keys));
+				}
+			});
+
+			it('replaces nested regression mode while preserving its siblings and the input', () => {
+				const regression = Object.freeze({ mode: 'bogus', enabled: true, showCI: false, degree: 3, color: '#123456' });
+				const saved = { scatter: { regression, x: 'age', colorScheme: 'Pastel' } };
+				const result = mergeChartConfigWithDefaults(saved);
+				expect(result.scatter.regression).toEqual({ ...defaults.scatter.regression, ...regression, mode: 'overall' });
+				expect(result.scatter).toMatchObject({ x: 'age', colorScheme: 'Pastel' });
+				expect(saved.scatter.regression).toBe(regression);
+				expect(regression.mode).toBe('bogus');
+			});
+
+			it('replaces only the value the chart does not offer and leaves the saved block untouched', () => {
+				const saved = { pie: { measureMode: 'mean', category: 'region', colorScheme: 'Bold' } };
+				const result = mergeChartConfigWithDefaults(saved);
+				expect(result.pie).toMatchObject({ measureMode: 'count', category: 'region', colorScheme: 'Bold' });
+				expect(saved.pie).toEqual({ measureMode: 'mean', category: 'region', colorScheme: 'Bold' });
+			});
+		});
 	});
 
 	describe('canonicalizeChartConfig', () => {
@@ -206,9 +254,21 @@ describe('chartConfig', () => {
 			expect(result.globalFilter.rules[0].column).toBe('gone');
 		});
 
-		it('is idempotent', () => {
+		it('replaces a measure the chart does not offer with the chart default', () => {
+			const result = canonicalizeChartConfig({ treemap: { measureMode: 'mean', valueColumn: 'v' } }, ['v']);
+			expect(result.treemap.measureMode).toBe('count');
+			expect(result.treemap.valueColumn).toBe('v');
+		});
+
+		it.each(ENUMERATED_SETTINGS)('is idempotent after replacing invalid %s', (_name, keys) => {
+			const once = canonicalizeChartConfig(savedSetting(keys, 'bogus'));
+			expect(canonicalizeChartConfig(once)).toEqual(once);
+		});
+
+		it('is idempotent with migrations and filter trimming', () => {
 			const input = {
 				bubble: { groupColumn: 'grupo' },
+				pie: { measureMode: 'mean' },
 				globalFilter: {
 					rules: [
 						{ column: 'age', operator: 'gt', value: '30' },

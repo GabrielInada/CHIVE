@@ -18,9 +18,9 @@ import { isValidHexColor } from '../../utils/colorUtils.js';
  * @returns {Object} Validated config locals.
  */
 export function normalizeTreemapOptions(options) {
-	const measureMode = TREEMAP_CHART.measureModes.includes(options.measureMode)
-		? options.measureMode
-		: TREEMAP_CHART.defaultMeasureMode;
+	// Read as given: chart config canonicalization checks the enumerated
+	// settings against the chart's definition.
+	const { measureMode, colorMode, colorScheme } = options;
 	const valueColumn = options.valueColumn || null;
 	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : TREEMAP_CHART.defaultTopN;
 	const padding = Number.isFinite(Number(options.padding)) ? clamp(Number(options.padding), 1, 6) : TREEMAP_CHART.defaultPadding;
@@ -30,8 +30,6 @@ export function normalizeTreemapOptions(options) {
 	const chartHeight = Number.isFinite(Number(options.chartHeight))
 		? clamp(Number(options.chartHeight), 220, 720)
 		: 380;
-	const colorMode = options.colorMode || 'scheme';
-	const colorScheme = options.colorScheme || 'Bold';
 	const uniformColor = isValidHexColor(String(options.color || '').trim())
 		? String(options.color).trim()
 		: CHART_COLORS.treemap;
@@ -41,8 +39,6 @@ export function normalizeTreemapOptions(options) {
 		count: options.labels?.count || 'Count',
 		sum: options.labels?.sum || 'Sum',
 		percentage: options.labels?.percentage || 'Percentage',
-		focusOnThis: options.labels?.focusOnThis || 'Show only this',
-		addToFilter: options.labels?.addToFilter || 'Add to global filter',
 		missing: options.labels?.missing || '(missing)',
 	};
 

@@ -301,7 +301,7 @@ describe('scatterControls axis listeners', () => {
 	});
 
 	it('stores valid numeric axis selections and falls back invalid axes to null', () => {
-		const dataset = createDataset({ x: 'value', y: 'otherValue', xScale: 'log', yScale: 'weird' });
+		const dataset = createDataset({ x: 'value', y: 'otherValue', xScale: 'log', yScale: 'log' });
 		const controls = createScatterPlotControls(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue']);
 		appendControls(controls);
 
@@ -309,13 +309,13 @@ describe('scatterControls axis listeners', () => {
 		setupScatterPlotControlListeners(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue'], writer);
 
 		selectValue('viz-select-y', 'value');
-		expect(lastConfig(writer)).toEqual(expect.objectContaining({ y: 'value', yScale: 'linear' }));
+		expect(lastConfig(writer)).toEqual(expect.objectContaining({ y: 'value', yScale: 'log' }));
 
 		selectValue('viz-select-x', 'missing');
 		expect(lastConfig(writer)).toEqual(expect.objectContaining({ x: null, xScale: 'linear' }));
 	});
 
-	it('coerces simple select values through their validation transforms', () => {
+	it('commits forged enums as chosen and checks field selections', () => {
 		const dataset = createDataset({ x: 'value', y: 'otherValue', sizeMode: 'numeric' });
 		const controls = createScatterPlotControls(dataset, ['value', 'otherValue'], ['category', 'value', 'otherValue']);
 		appendControls(controls);
@@ -330,7 +330,8 @@ describe('scatterControls axis listeners', () => {
 		expect(lastConfig(writer).yScale).toBe('log');
 
 		selectValue('viz-select-scatter-size-mode', 'unexpected');
-		expect(lastConfig(writer).sizeMode).toBe('uniform');
+		// The commit canonicalizes forged enumerated values.
+		expect(lastConfig(writer).sizeMode).toBe('unexpected');
 
 		selectValue('viz-select-scatter-size-field', 'otherValue');
 		expect(lastConfig(writer).sizeField).toBe('otherValue');
@@ -339,7 +340,7 @@ describe('scatterControls axis listeners', () => {
 		expect(lastConfig(writer).sizeField).toBeNull();
 
 		selectValue('viz-select-scatter-categorical-mode', 'invalid');
-		expect(lastConfig(writer).categoricalPairMode).toBe('jitter');
+		expect(lastConfig(writer).categoricalPairMode).toBe('invalid');
 
 		selectValue('viz-select-scatter-color-field', '');
 		expect(lastConfig(writer).colorField).toBeNull();
@@ -427,7 +428,7 @@ describe('scatterControls axis listeners', () => {
 		expect(lastConfig(writer).gradientDistribution).toBe('rank');
 
 		selectValue('viz-select-scatter-gradient-distribution', 'unknown');
-		expect(lastConfig(writer).gradientDistribution).toBe('value');
+		expect(lastConfig(writer).gradientDistribution).toBe('unknown');
 
 		document.querySelector('button[data-color-preset-control="viz-scatter-color-preset"][data-preset-name="Pastel"]').click();
 		expect(lastConfig(writer)).toEqual(expect.objectContaining({
@@ -475,7 +476,7 @@ describe('scatterControls axis listeners', () => {
 		}));
 
 		selectValue('viz-select-scatter-regression-mode', 'invalid');
-		expect(lastConfig(writer).regression.mode).toBe('overall');
+		expect(lastConfig(writer).regression.mode).toBe('invalid');
 	});
 
 	it('keeps per-category regression from replacing an existing category field', () => {

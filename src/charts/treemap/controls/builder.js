@@ -32,7 +32,7 @@ import { groupControls } from '../../shared/controls/grouping.js';
  */
 export function createTreemapControls(dataset, categoryOptions, numericOptions = [], _allColumns = []) {
 	const config = dataset.chartConfig.treemap;
-	const measureMode = TREEMAP_CHART.measureModes.includes(config.measureMode) ? config.measureMode : 'count';
+	const { measureMode } = config;
 	const valueColumn = numericOptions.includes(config.valueColumn) ? config.valueColumn : null;
 	const isDisabled = !config.enabled;
 
@@ -130,7 +130,7 @@ export function createTreemapControls(dataset, categoryOptions, numericOptions =
 			{ value: 'scheme', label: t('chive-chart-color-scheme') },
 			{ value: 'uniform', label: t('chive-chart-color-uniform') },
 		],
-		config.colorMode || 'scheme',
+		config.colorMode,
 		isDisabled
 	));
 
@@ -152,7 +152,7 @@ export function createTreemapControls(dataset, categoryOptions, numericOptions =
 		t('chive-chart-color-palette'),
 		config.colorMode === 'uniform'
 			? findAppliedColorPreset(config, TREEMAP_CHART.presetColorKeys)
-			: (config.colorScheme || 'Bold'),
+			: config.colorScheme,
 		isDisabled,
 		t
 	));

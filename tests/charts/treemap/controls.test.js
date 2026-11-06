@@ -188,7 +188,6 @@ describe('treemapControls UI structure', () => {
 	it('renders fallback values and disabled controls for invalid config', () => {
 		const dataset = createDataset({
 			enabled: false,
-			measureMode: 'invalid',
 			valueColumn: 'old',
 			padding: 0,
 			colorMode: '',
@@ -197,7 +196,6 @@ describe('treemapControls UI structure', () => {
 		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
 
-		expect(document.getElementById('viz-select-treemap-measure').value).toBe('count');
 		expect(document.getElementById('viz-select-treemap-value-column').value).toBe('');
 		expect(document.getElementById('viz-slider-treemap-padding').value).toBe('2');
 		expect(document.getElementById('viz-select-treemap-color-mode').value).toBe('scheme');
@@ -212,7 +210,7 @@ describe('treemapControls listeners', () => {
 		document.body.innerHTML = '';
 	});
 
-	it('clears valueColumn when measure flips back to count', () => {
+	it('keeps valueColumn when measure flips back to count', () => {
 		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
 		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
@@ -224,8 +222,22 @@ describe('treemapControls listeners', () => {
 		measure.value = 'count';
 		measure.dispatchEvent(new Event('change', { bubbles: true }));
 
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
+		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'count', valueColumn: 'sales' }));
 		expect(writer.commit).toHaveBeenCalledTimes(1);
+	});
+
+	it('takes the first numeric column when switching to sum without a valueColumn', () => {
+		const dataset = createDataset({ measureMode: 'count', valueColumn: null });
+		appendControls(createTreemapControls(dataset, ['region'], ['sales', 'profit'], []));
+
+		const writer = createWriter();
+		setupTreemapControlListeners(dataset, ['region'], ['sales', 'profit'], [], writer);
+
+		const measure = document.getElementById('viz-select-treemap-measure');
+		measure.value = 'sum';
+		measure.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(writer.commit).toHaveBeenCalledWith({ measureMode: 'sum', valueColumn: 'sales' });
 	});
 
 	it('resolves the callback from the 4-arg overload (callback in slot 4)', () => {
@@ -343,7 +355,7 @@ describe('treemapControls listeners', () => {
 		expect(writer.commit).toHaveBeenCalledTimes(6);
 	});
 
-	it('coerces measure and color-mode selections through fallback branches', () => {
+	it('commits forged measure and color-mode selections as chosen', () => {
 		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'old' });
 		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
 		appendControls(controls);
@@ -351,18 +363,20 @@ describe('treemapControls listeners', () => {
 		const writer = createWriter();
 		setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
 
+		// The commit canonicalizes the config, which stores a measure the
+		// treemap does not offer as count. Like count, it keeps the value column.
 		selectValue('viz-select-treemap-measure', 'invalid');
-		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'count', valueColumn: null }));
+		expect(lastConfig(writer)).toEqual({ measureMode: 'invalid', valueColumn: 'old' });
 
-		dataset.chartConfig.treemap.valueColumn = 'old';
 		selectValue('viz-select-treemap-measure', 'sum');
-		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: null }));
+		expect(lastConfig(writer)).toEqual({ measureMode: 'sum', valueColumn: 'sales' });
 
 		selectValue('viz-select-treemap-color-mode', 'uniform');
 		expect(lastConfig(writer).colorMode).toBe('uniform');
 
 		selectValue('viz-select-treemap-color-mode', 'unexpected');
-		expect(lastConfig(writer).colorMode).toBe('scheme');
+		// The commit canonicalizes the color mode too.
+		expect(lastConfig(writer).colorMode).toBe('unexpected');
 	});
 
 	it('ignores unknown color presets', () => {
@@ -419,16 +433,24 @@ describe('treemapControls color palette mark', () => {
 describe('treemapControls computeDefaults', () => {
 	it('preserves the current category when still in scope', () => {
 		const dataset = createDataset({ category: 'region' });
-		expect(computeDefaults(dataset, { baseCategoricalOrAll: ['region', 'team'] })).toEqual({ category: 'region' });
+		expect(computeDefaults(dataset, { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] }))
+			.toEqual({ category: 'region', valueColumn: null });
 	});
 
 	it('falls back to the first option when the current category is gone', () => {
 		const dataset = createDataset({ category: 'gone' });
-		expect(computeDefaults(dataset, { baseCategoricalOrAll: ['region', 'team'] })).toEqual({ category: 'region' });
+		expect(computeDefaults(dataset, { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] }))
+			.toEqual({ category: 'region', valueColumn: null });
 	});
 
 	it('returns null when no categorical columns are available', () => {
 		const dataset = createDataset();
-		expect(computeDefaults(dataset, { baseCategoricalOrAll: [] })).toEqual({ category: null });
+		expect(computeDefaults(dataset, { baseCategoricalOrAll: [], numeric: [] })).toEqual({ category: null, valueColumn: null });
+	});
+
+	it('takes the first numeric column for a sum whose value column is gone', () => {
+		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'gone' });
+		expect(computeDefaults(dataset, { baseCategoricalOrAll: ['region'], numeric: ['sales', 'profit'] }))
+			.toEqual({ category: 'region', valueColumn: 'sales' });
 	});
 });

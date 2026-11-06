@@ -2,6 +2,8 @@
  * Bar chart identity, rendering constants, static metadata, and fresh config.
  */
 
+import { CHART_COLOR_PALETTE_NAMES, CHART_GRADIENT_DISTRIBUTIONS } from '../shared.js';
+
 const COLOR = '#d4622a';
 
 export const BAR_CHART = {
@@ -13,6 +15,7 @@ export const BAR_CHART = {
   defaultTopN: 10,
   measureModes: ['count', 'sum', 'mean'],
   defaultMeasureMode: 'count',
+	colorModes: ['uniform', 'gradient', 'gradient-manual'],
   // Config key -> palette position for the color palette buttons.
   presetColorKeys: { color: 0, gradientMinColor: 0, gradientMaxColor: -1 },
 };
@@ -59,5 +62,12 @@ export const BAR_DEFINITION = Object.freeze({
 		block: 'chart-block-bar',
 	},
 	catalogCategoryKey: 'chive-viz-category-comparison',
+	allowedValues: {
+		sort: BAR_CHART.sortOptions,
+		colorMode: BAR_CHART.colorModes,
+		colorScheme: CHART_COLOR_PALETTE_NAMES,
+		gradientDistribution: CHART_GRADIENT_DISTRIBUTIONS,
+		measureMode: BAR_CHART.measureModes,
+	},
 	createDefaultConfig,
 });

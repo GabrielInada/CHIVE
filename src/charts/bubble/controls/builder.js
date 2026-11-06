@@ -47,12 +47,9 @@ function createNestingControls(config, categoryColumn, allColumns, disabled) {
 		normalizeColumnNameList(allColumns, { max: Infinity }).filter(name => name !== categoryColumn),
 	);
 	const nestingColumns = resolveNestingColumnsFromConfig(config, allowed);
-	const nestingMode = BUBBLE_CHART.nestingModes.includes(config.nestingMode)
-		? config.nestingMode
-		: BUBBLE_CHART.defaultNestingMode;
 
 	const controls = [];
-	const isGrouped = nestingMode === 'grouped';
+	const isGrouped = config.nestingMode === 'grouped';
 	const nestingDisabled = disabled || !isGrouped;
 
 	// One shared source of truth for the level count (flat-vs-grouped + capacity
@@ -100,12 +97,7 @@ function createNestingControls(config, categoryColumn, allColumns, disabled) {
  * @returns {HTMLElement[]}
  */
 function buildDataControls(config, categoryOptions, numericOptions, allColumns, disabled) {
-	const measureMode = BUBBLE_CHART.measureModes.includes(config.measureMode)
-		? config.measureMode
-		: BUBBLE_CHART.defaultMeasureMode;
-	const nestingMode = BUBBLE_CHART.nestingModes.includes(config.nestingMode)
-		? config.nestingMode
-		: BUBBLE_CHART.defaultNestingMode;
+	const { measureMode, nestingMode } = config;
 
 	const dataControls = [];
 	dataControls.push(createSelectControl(
@@ -224,7 +216,7 @@ function buildStylingControls(config, disabled) {
 	stylingControls.push(createColorPresetControl(
 		'viz-bubble-color-preset',
 		t('chive-chart-color-palette'),
-		config.colorScheme || 'Tableau10',
+		config.colorScheme,
 		disabled,
 		t
 	));

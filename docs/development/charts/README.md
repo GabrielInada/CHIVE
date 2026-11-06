@@ -52,7 +52,19 @@ canonical-key stem rather than extending the legacy forms.
 
 Each chart owns its static identity, behavior constants, dimensions, workspace
 IDs, catalog category, and fresh default-config factory in
-`src/config/charts/definitions/<type>.js`. The composition module
+`src/config/charts/definitions/<type>.js`. A definition's `allowedValues` maps an
+enumerated config key to the values the chart offers; chart config
+canonicalization replaces any other value with the chart's default, so readers
+use those keys as stored. The lists cover measures, sort and curve choices,
+missing-data and aggregation modes, palettes, color and gradient modes, bubble
+labels and nesting, pie Top-N and label placement, scatter scales and encodings,
+and TIN surface and isoline modes. An object instead of a list describes a nested
+block, currently scatter's `regression.mode`. Numeric ranges and column bindings
+keep their existing checks. Pie's unused `colorMode`, scatter's derived
+`colorFieldType`, and TIN's renderer-only `colorRenderingMode` are not listed.
+`tests/charts/enumeratedSettings.test.js` checks that the controls offer exactly
+the values their definitions accept, including conditional selects and palettes.
+The composition module
 `src/config/charts/definitions.js` supplies canonical display order and derives
 the shared keyed maps without registering renderers or controls. Follow the
 [new-chart checklist in the source map](../source-map.md#where-do-i-put-new-code)
@@ -108,9 +120,13 @@ doc rather than repeated:
   ([color.js](../../../src/charts/pie/color.js)).
 - **SVG scaffold**: [scaffold.js](../../../src/charts/shared/svg/scaffold.js) owns the
   shared title, SVG/group setup, axes, and axis-label builders used by SVG charts.
-- **Tooltips and click-to-filter**: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js).
-  The categorical filter-action subsystem is documented in detail in the bar chart's
-  [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter, and network.
+- **Tooltips and click-to-filter**: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js)
+  owns the tooltip overlay, and
+  [filterActions.js](../../../src/charts/shared/tooltip/filterActions.js)
+  (`showPinnedFilterTooltip`) pins a tooltip with the global-filter actions for the column and
+  category token a chart names. The categorical filter-action subsystem is documented in
+  detail in the bar chart's [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter,
+  and network.
 - **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
   builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets) and
   finds the palette preset a chart's colors still match (`findAppliedColorPreset`), the one
@@ -118,6 +134,12 @@ doc rather than repeated:
   wraps them in collapsible sections. Neither writes config; the config writes are wired by
   the listener helpers in
   [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
+- **Measure and value column**: bar, pie, treemap, and bubble keep their value column by one
+  rule, `valueColumnForMeasure` in
+  [measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js), both
+  when the user switches the measure (`setupMeasureListener`) and when the chart is activated
+  (`computeDefaults`). Count keeps the stored column; sum and mean keep it while it is a
+  visible numeric column and otherwise take the first one.
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's
   [section 10](tin.md) and shared by every chart's color inputs.
 - **Detached panel captures**: see [Architecture reference](../architecture-reference.md).

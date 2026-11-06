@@ -59,5 +59,10 @@ export const LINE_DEFINITION = Object.freeze({
 		block: 'chart-block-line',
 	},
 	catalogCategoryKey: 'chive-viz-category-trend',
+	allowedValues: {
+		curve: LINE_CHART.curveOptions,
+		missingMode: LINE_CHART.missingModes,
+		aggregateMode: LINE_CHART.aggregateModes,
+	},
 	createDefaultConfig,
 });

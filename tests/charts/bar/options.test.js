@@ -6,19 +6,27 @@ import { CHART_COLORS, CHART_DIMENSIONS } from '../../../src/config/charts/defin
 describe('normalizeBarOptions', () => {
 	it('applies defaults for an empty options bag', () => {
 		const o = normalizeBarOptions({}, 'region');
-		expect(o.sort).toBe(BAR_CHART.defaultSort);
 		expect(o.topN).toBe(BAR_CHART.defaultTopN);
 		expect(o.showXAxisLabel).toBe(true);
 		expect(o.showYAxisLabel).toBe(true);
-		expect(o.measureMode).toBe(BAR_CHART.defaultMeasureMode);
 		expect(o.valueColumn).toBeNull();
 		expect(o.color).toBe(CHART_COLORS.bar);
-		expect(o.colorMode).toBe('uniform');
 		expect(o.gradientMaxColor).toBe('#ffffff');
 		expect(o.manualThresholdPct).toBe(50);
-		expect(o.gradientDistribution).toBe('value');
 		expect(o.customTitle).toBe('');
 		expect(o.chartHeight).toBe(CHART_DIMENSIONS.bar.height);
+	});
+
+	// Chart config canonicalization checks the enumerated settings against the
+	// chart's definition, so the normalizer reads them as given.
+	it.each([
+		['sort', 'label-asc'],
+		['measureMode', 'mean'],
+		['colorMode', 'gradient-manual'],
+		['gradientDistribution', 'rank'],
+	])('reads %s as given', (key, value) => {
+		expect(normalizeBarOptions({ [key]: value }, 'region')[key]).toBe(value);
+		expect(normalizeBarOptions({}, 'region')[key]).toBeUndefined();
 	});
 
 	it('derives the default x label from the category column and the y label from the measure', () => {
@@ -35,9 +43,7 @@ describe('normalizeBarOptions', () => {
 		expect(normalizeBarOptions({ topN: 'x' }, 'c').topN).toBe(BAR_CHART.defaultTopN);
 	});
 
-	it('collapses colorMode to its enum and falls back invalid colors', () => {
-		expect(normalizeBarOptions({ colorMode: 'gradient' }, 'c').colorMode).toBe('gradient');
-		expect(normalizeBarOptions({ colorMode: 'rainbow' }, 'c').colorMode).toBe('uniform');
+	it('falls back invalid colors', () => {
 		expect(normalizeBarOptions({ color: 'nope' }, 'c').color).toBe(CHART_COLORS.bar);
 		// gradientMinColor falls back to the (already-validated) base color.
 		expect(normalizeBarOptions({ color: '#123456', gradientMinColor: 'bad' }, 'c').gradientMinColor).toBe('#123456');
@@ -50,9 +56,7 @@ describe('normalizeBarOptions', () => {
 		expect(normalizeBarOptions({ chartHeight: 9000 }, 'c').chartHeight).toBe(720);
 	});
 
-	it('passes through caller labels and collapses gradientDistribution', () => {
-		expect(normalizeBarOptions({ gradientDistribution: 'rank' }, 'c').gradientDistribution).toBe('rank');
-		expect(normalizeBarOptions({ gradientDistribution: 'weird' }, 'c').gradientDistribution).toBe('value');
+	it('passes through caller labels', () => {
 		expect(normalizeBarOptions({ labels: { count: 'Contagem' } }, 'c').labels.count).toBe('Contagem');
 	});
 });

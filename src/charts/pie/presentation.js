@@ -51,8 +51,6 @@ export function renderPieInto(
 			percentage: t('chive-tooltip-percentage'),
 			other: t('chive-chart-pie-other'),
 			missing: t('chive-chart-filter-missing'),
-			focusOnThis: t('chive-tooltip-show-only-this'),
-			addToFilter: t('chive-tooltip-add-to-filter'),
 		},
 		filterCallbacks,
 	});

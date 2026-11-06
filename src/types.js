@@ -167,8 +167,10 @@
  *
  * The two methods are not interchangeable:
  *
- *   - `commit` writes through the emitting facade, so `CONFIG_UPDATED` fires,
- *     auto-save marks the project dirty, and the controls sidebar refreshes.
+ *   - `commit` writes through the emitting facade, so the chart config is
+ *     canonicalized (an enumerated value the chart does not offer becomes its
+ *     default), `CONFIG_UPDATED` fires, auto-save marks the project dirty, and
+ *     the controls sidebar refreshes.
  *   - `preview` writes through the non-emitting facade and repaints only the
  *     chart. Use it for continuous input (a color picker's `input` event):
  *     emitting there would rebuild the sidebar mid-drag and steal focus from

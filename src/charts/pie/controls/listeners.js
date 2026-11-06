@@ -16,6 +16,7 @@ import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { COLOR_PRESETS, normalizeHexColor } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,
+	setupMeasureListener,
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
@@ -32,7 +33,7 @@ import { getPieSectorValues } from './sectorValues.js';
  *
  * @param {Dataset} dataset
  * @param {string[]} basePie - Categorical (or fallback "all") column names; kept for parity.
- * @param {string[]} numeric - Numeric column names; used to validate the value-column select.
+ * @param {string[]} numeric - Visible numeric column names; the measure listener picks the value column from them.
  * @param {string[]} allColumns - Visible column names.
  * @param {ChartConfigWriter} writer
  * @returns {void}
@@ -43,26 +44,12 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 	setupSelectListeners([
 		{ id: 'viz-select-pie-category', key: 'category' },
 		{ id: 'viz-select-pie-value-column', key: 'valueColumn', transform: v => v || null },
-		{ id: 'viz-select-pie-label-position', key: 'labelPosition', transform: v => v === 'outside' ? 'outside' : 'inside' },
+		{ id: 'viz-select-pie-label-position', key: 'labelPosition' },
 		{ id: 'viz-select-pie-topn', key: 'topN', transform: v => Number(v) },
-		{ id: 'viz-select-pie-topn-mode', key: 'topNMode', transform: v => v === 'truncate' ? 'truncate' : 'other' },
+		{ id: 'viz-select-pie-topn-mode', key: 'topNMode' },
 	], writer);
 
-	// Measure select (custom: updates valueColumn dependency)
-	const measureSelect = document.getElementById('viz-select-pie-measure');
-	if (measureSelect) {
-		measureSelect.addEventListener('change', () => {
-			const measureMode = measureSelect.value === 'sum' ? 'sum' : 'count';
-			const currentValueColumn = dataset.chartConfig.pie?.valueColumn;
-			const nextValueColumn = measureMode === 'sum'
-				? (numeric.includes(currentValueColumn) ? currentValueColumn : (numeric[0] || null))
-				: currentValueColumn;
-			writer.commit({
-				measureMode,
-				valueColumn: nextValueColumn,
-			});
-		});
-	}
+	setupMeasureListener('viz-select-pie-measure', () => dataset.chartConfig.pie.valueColumn, numeric, writer);
 
 	// Inner/outer radius sliders (custom: cross-constraint logic)
 	const innerSlider = document.getElementById('viz-slider-pie-inner-radius');
@@ -136,14 +123,20 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const presetColors = COLOR_PRESETS[presetName] || [];
 			if (presetColors.length === 0 || sectorValues.length === 0) return;
 
-			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
-			sectorValues.forEach(({ key }, index) => {
-				nextSliceColors[key] = presetColors[index % presetColors.length];
-			});
+			// WHY: build the colors as own keys. Assigning one to a category
+			// named `__proto__` would call the prototype setter, which ignores
+			// a string, and the category would lose its color.
+			const presetSliceColors = Object.fromEntries(sectorValues.map(({ key }, index) => [
+				key,
+				presetColors[index % presetColors.length],
+			]));
 
 			writer.commit({
 				colorScheme: presetName,
-				customSliceColors: nextSliceColors,
+				customSliceColors: {
+					...(dataset.chartConfig.pie.customSliceColors || {}),
+					...presetSliceColors,
+				},
 			});
 		});
 	});
@@ -168,11 +161,13 @@ export function setupPieChartControlListeners(dataset, basePie, numeric, allColu
 			const sector = input.dataset.colorItem;
 			if (!sector) return;
 
-			const nextSliceColors = { ...(dataset.chartConfig.pie.customSliceColors || {}) };
-			nextSliceColors[sector] = normalizeHexColor(input.value, CHART_COLORS.pie);
-
+			// A computed key, as in the preview above, so a category named
+			// `__proto__` keeps its color.
 			writer.commit({
-				customSliceColors: nextSliceColors,
+				customSliceColors: {
+					...(dataset.chartConfig.pie.customSliceColors || {}),
+					[sector]: normalizeHexColor(input.value, CHART_COLORS.pie),
+				},
 			});
 		});
 	});

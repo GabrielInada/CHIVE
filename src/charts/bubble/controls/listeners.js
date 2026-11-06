@@ -16,6 +16,7 @@ import { normalizeColumnNameList } from '../../../domain/datasets/columns.js';
 import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,
+	setupMeasureListener,
 	setupSliderListener,
 	setupTextInputListener,
 	setupColorPresetListeners,
@@ -29,7 +30,7 @@ import { resolveNestingColumnsFromConfig, computeNestingControlCount } from './n
  *
  * @param {Dataset} dataset
  * @param {string[]} baseBubble - Categorical (or fallback "all") column names; kept for parity.
- * @param {string[]} numericOptions - Numeric column names; used to validate the value-column select.
+ * @param {string[]} numericOptions - Visible numeric column names; the value-column select is checked against them, and the measure listener picks the value column from them.
  * @param {string[]} allColumns - Visible column names; an empty array means allow-nothing.
  * @param {ChartConfigWriter} writer
  * @returns {void}
@@ -38,9 +39,9 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 
 	setupSelectListeners([
 		{ id: 'viz-select-bubble-category', key: 'category' },
-		{ id: 'viz-select-bubble-nesting-mode', key: 'nestingMode', transform: v => (BUBBLE_CHART.nestingModes.includes(v) ? v : BUBBLE_CHART.defaultNestingMode) },
+		{ id: 'viz-select-bubble-nesting-mode', key: 'nestingMode' },
 		{ id: 'viz-select-bubble-topn', key: 'topN', transform: v => Number(v) },
-		{ id: 'viz-select-bubble-label-mode', key: 'labelMode', transform: v => (['all', 'hover', 'auto'].includes(v) ? v : 'auto') },
+		{ id: 'viz-select-bubble-label-mode', key: 'labelMode' },
 	], writer);
 
 	// Allowlist of eligible (visible, non-category) columns, so the write sink
@@ -76,21 +77,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 		});
 	}
 
-	const measureSelect = document.getElementById('viz-select-bubble-measure');
-	if (measureSelect) {
-		measureSelect.addEventListener('change', () => {
-			const nextMode = BUBBLE_CHART.measureModes.includes(measureSelect.value)
-				? measureSelect.value
-				: BUBBLE_CHART.defaultMeasureMode;
-			const currentValueColumn = numericOptions.includes(dataset.chartConfig.bubble?.valueColumn)
-				? dataset.chartConfig.bubble?.valueColumn
-				: null;
-			writer.commit({
-				measureMode: nextMode,
-				valueColumn: nextMode === 'count' ? null : (currentValueColumn || numericOptions[0] || null),
-			});
-		});
-	}
+	setupMeasureListener('viz-select-bubble-measure', () => dataset.chartConfig.bubble.valueColumn, numericOptions, writer);
 
 	const valueSelect = document.getElementById('viz-select-bubble-value-column');
 	if (valueSelect) {

@@ -158,7 +158,10 @@ Other render paths are intentionally different:
 
 Committed chart configuration is canonicalized at state boundaries:
 persistence normalization, `addDataset`, emitting config writes, and
-defensively in `replaceAllState`. Rendering may derive display values but does
+defensively in `replaceAllState`. Canonicalization also replaces an enumerated
+setting that a chart's definition does not offer (its `allowedValues`) with the
+chart's default, so controls, presentation flows, and renderers read those
+settings as stored. Rendering may derive display values but does
 not write repairs back. A restored config is canonicalized in memory; the
 existing persisted SQLite bytes are not rewritten until some later successful
 project save.

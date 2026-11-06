@@ -28,8 +28,8 @@ function pickPreferred(options, preferredIndex = 0, avoid = null) {
 /**
  * Compute the scatter plot's activation defaults. X prefers the user's
  * current pick → first numeric → first column. Y picks the second numeric
- * column that is not also X. Each axis scale falls back to `'linear'` when
- * its column is non-numeric.
+ * column that is not also X. Each axis keeps its stored scale while its column
+ * is numeric and takes `'linear'` otherwise.
  *
  * @param {Dataset} dataset
  * @param {ChartControlContext} ctx
@@ -46,12 +46,10 @@ export function computeDefaults(dataset, ctx) {
 	const yPadrao = ctx.allColumns.includes(currentY) && currentY !== xPadrao
 		? currentY
 		: (pickPreferred(numericInAll, 1, xPadrao) ?? pickPreferred(ctx.allColumns, 0, xPadrao) ?? xPadrao);
-	const currentXScale = config.scatter?.xScale === 'log' ? 'log' : 'linear';
-	const currentYScale = config.scatter?.yScale === 'log' ? 'log' : 'linear';
 	return {
 		x: xPadrao,
 		y: yPadrao,
-		xScale: ctx.numeric.includes(xPadrao) ? currentXScale : 'linear',
-		yScale: ctx.numeric.includes(yPadrao) ? currentYScale : 'linear',
+		xScale: ctx.numeric.includes(xPadrao) ? config.scatter?.xScale : 'linear',
+		yScale: ctx.numeric.includes(yPadrao) ? config.scatter?.yScale : 'linear',
 	};
 }

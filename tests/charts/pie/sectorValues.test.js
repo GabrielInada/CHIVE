@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { getPieSectorValues, getPieSwatchColors } from '../../../src/charts/pie/controls/sectorValues.js';
 import { buildSliceColor } from '../../../src/charts/pie/color.js';
-import { aggregatePieData } from '../../../src/charts/pie/data.js';
 import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 
 const sumConfig = { category: 'c', measureMode: 'sum', valueColumn: 'v', topN: 0 };
@@ -31,29 +30,6 @@ describe('getPieSectorValues', () => {
 	it('drops a category whose every value is blank rather than ranking it at zero', () => {
 		const dataset = { rows: [{ c: 'A', v: 10 }, { c: 'B', v: null }] };
 		expect(keys(getPieSectorValues(dataset, sumConfig))).toEqual(['A']);
-	});
-
-	// The controls readout and the rendered chart must agree, or the per-slice
-	// color grid maps colors onto sectors the chart never draws.
-	it('agrees with aggregatePieData on which categories survive blank values', () => {
-		const rows = [
-			{ c: 'A', v: 10 },
-			{ c: 'A', v: null },
-			{ c: 'B', v: 4 },
-			{ c: 'C', v: null },
-		];
-
-		const controlOrder = getPieSectorValues({ rows }, sumConfig);
-		const chart = aggregatePieData(rows, 'c', {
-			measureMode: 'sum',
-			valueColumn: 'v',
-			topN: 0,
-			topNMode: 'other',
-			otherLabel: 'Other',
-		});
-
-		expect(chart.ok).toBe(true);
-		expect(keys(controlOrder)).toEqual(chart.entries.map(entry => entry.key));
 	});
 
 	// A global filter such as "v > 0" can leave such a total above 0, and the
@@ -98,17 +74,9 @@ describe('getPieSwatchColors', () => {
 		return { category: 'c', measureMode: 'count', topN: 0, topNMode: 'other', color: BASE, customSliceColors: {}, ...overrides };
 	}
 
-	it('gives every drawn sector the shade the chart draws it with', () => {
-		expect(getPieSwatchColors(swatchDataset(), swatchConfig())).toEqual({
-			A: BASE,
-			B: buildSliceColor(BASE, 1),
-			C: buildSliceColor(BASE, 2),
-		});
-	});
-
 	// Shades follow the drawn order, so a global filter that hides the largest
 	// sector moves every other sector up one shade on the chart.
-	it('follows the chart when a global filter hides a larger sector', () => {
+	it('shows the fills of the sectors drawn from the rows the global filter keeps', () => {
 		expect(getPieSwatchColors(swatchDataset(excludeA), swatchConfig())).toEqual({
 			B: BASE,
 			C: buildSliceColor(BASE, 1),
@@ -120,12 +88,13 @@ describe('getPieSwatchColors', () => {
 		expect(getPieSwatchColors(swatchDataset(excludeA), config).A).toBe('#123456');
 	});
 
-	it('leaves sectors past Top-N and the Other sector without a color', () => {
-		const colors = getPieSwatchColors(swatchDataset(), swatchConfig({ topN: 1 }));
-		expect(colors).toEqual({ A: BASE });
-	});
+	it('leaves a category the chart does not draw without a color', () => {
+		// B and C fall past Top-N, into the Other sector.
+		const pastTopN = getPieSwatchColors(swatchDataset(), swatchConfig({ topN: 1 }));
+		expect(pastTopN.A).toBe(BASE);
+		expect(pastTopN).not.toHaveProperty('B');
+		expect(pastTopN).not.toHaveProperty('C');
 
-	it('leaves a category whose total is 0 or less without a color', () => {
 		const dataset = {
 			rows: [{ c: 'A', v: 5 }, { c: 'B', v: -3 }, { c: 'C', v: 2 }],
 			columns: [{ name: 'c', type: 'text' }, { name: 'v', type: 'number' }],

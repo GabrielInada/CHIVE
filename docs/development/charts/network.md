@@ -150,6 +150,10 @@ contents are still fully replaced each render. Panel config, rows, and columns a
 
 ### 4.2 The `chartConfig.network` keys
 
+Chart config canonicalization checks `edgeColorMode` and `colorScheme` against
+`NETWORK_DEFINITION.allowedValues`, replacing unoffered values with the chart defaults.
+Controls and renderers read those settings as given.
+
 | Key | Meaning | Default |
 |---|---|---|
 | `enabled` / `expanded` | Shown at all / sidebar expanded | `false` / `false` |

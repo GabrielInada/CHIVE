@@ -12,15 +12,12 @@
 
 import { axisBottom, axisLeft, max, min, scaleBand, scaleLinear } from '../../../../vendor/d3/d3.js';
 import {
-	buildCategoricalFilterActions,
-	createFilterStateBadge,
-	createTooltipActionGroup,
 	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
-	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
+import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { BAR_CHART } from '../../../config/charts/definitions/bar.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { formatNumber } from '../../../utils/formatters.js';
@@ -124,49 +121,12 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		showChartTooltip(buildTooltipContent(item), event.pageX, event.pageY);
 	};
 
-	const filterCallbacks = options.filterCallbacks || {};
-	const filterLabels = filterCallbacks.filterActionLabels || {};
-	const actionLabels = {
-		focus: filterLabels.focus || labels.focusOnThis,
-		add: filterLabels.add || labels.addToFilter,
-		exclude: filterLabels.exclude || 'Hide this',
-		remove: filterLabels.remove || 'Remove from filter',
-		bringBack: filterLabels.bringBack || 'Bring back',
-	};
-
 	const showPinnedTooltip = (event, item, onDismiss) => {
-		const content = buildTooltipContent(item);
-		const { token } = item;
-		const state = typeof filterCallbacks.getTokenFilterState === 'function'
-			? filterCallbacks.getTokenFilterState(categoryColumn, token)
-			: null;
-		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
-			? !!filterCallbacks.isShowOnlyThisRedundant(categoryColumn, token)
-			: false;
-		const actions = buildCategoricalFilterActions({
-			column: categoryColumn,
-			token,
-			state,
-			labels: actionLabels,
-			omitFocus,
-			onFocus: filterCallbacks.onFocusGlobalFilter,
-			onAdd: filterCallbacks.onAddToGlobalFilter,
-			onExclude: filterCallbacks.onExcludeGlobalFilter,
-			onRemove: filterCallbacks.onRemoveFromGlobalFilter,
-			onBringBack: filterCallbacks.onBringBackGlobalFilter,
-		});
-		const stateBadge = createFilterStateBadge({
-			state,
-			includedLabel: filterLabels.stateIncluded,
-			excludedLabel: filterLabels.stateExcluded,
-		});
-		const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
-		showPinnedChartTooltip(content, event.pageX, event.pageY, {
+		showPinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
 			headerTitle: item.label,
-			closeLabel: filterLabels.close,
 			onDismiss,
-			actionSets: actionSet ? [actionSet] : [],
-			stateBadge,
+			filterCallbacks: options.filterCallbacks,
+			categories: [{ column: categoryColumn, token: item.token }],
 		});
 	};
 

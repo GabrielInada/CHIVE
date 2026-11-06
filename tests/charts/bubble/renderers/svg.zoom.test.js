@@ -3,6 +3,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderBubbleChart } from '../../../../src/charts/bubble/renderers/svg.js';
 
+// Explicit enum inputs preserve the renderer's historical output.
+const BASE_OPTIONS = { measureMode: 'count', labelMode: 'auto', nestingMode: 'flat', colorScheme: 'Tableau10' };
+
 describe('bubble chart zoom exploration', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '<div id="bubble"></div>';
@@ -23,7 +26,7 @@ describe('bubble chart zoom exploration', () => {
 
 	it('double-click on parent circle applies zoom transform', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+		renderBubbleChart(container, groupedData, 'categoria', { ...BASE_OPTIONS, ...groupedOpts });
 
 		const parentGroup = container.querySelector('g.bubble-parent');
 		const viewportG = container.querySelector('svg > g');
@@ -38,7 +41,7 @@ describe('bubble chart zoom exploration', () => {
 
 	it('click on SVG background resets zoom', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+		renderBubbleChart(container, groupedData, 'categoria', { ...BASE_OPTIONS, ...groupedOpts });
 
 		const parentGroup = container.querySelector('g.bubble-parent');
 		const viewportG = container.querySelector('svg > g');
@@ -54,6 +57,7 @@ describe('bubble chart zoom exploration', () => {
 	it('flat mode has no parent circles to zoom into', () => {
 		const container = document.getElementById('bubble');
 		renderBubbleChart(container, groupedData, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'flat',
 			groupColumn: 'grupo',
 			zoomTransitionDuration: 0,
@@ -67,7 +71,7 @@ describe('bubble chart zoom exploration', () => {
 
 	it('zoom dims non-focused sibling groups', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+		renderBubbleChart(container, groupedData, 'categoria', { ...BASE_OPTIONS, ...groupedOpts });
 
 		const parents = container.querySelectorAll('g.bubble-parent');
 		expect(parents.length).toBe(2);
@@ -80,7 +84,7 @@ describe('bubble chart zoom exploration', () => {
 
 	it('zoom disables pointer-events on non-focused siblings', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+		renderBubbleChart(container, groupedData, 'categoria', { ...BASE_OPTIONS, ...groupedOpts });
 
 		const parents = container.querySelectorAll('g.bubble-parent');
 		parents[0].dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
@@ -91,7 +95,7 @@ describe('bubble chart zoom exploration', () => {
 
 	it('reset zoom restores sibling opacity and pointer-events', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+		renderBubbleChart(container, groupedData, 'categoria', { ...BASE_OPTIONS, ...groupedOpts });
 
 		const parents = container.querySelectorAll('g.bubble-parent');
 		parents[0].dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
@@ -105,7 +109,7 @@ describe('bubble chart zoom exploration', () => {
 
 	it('parent circles have pointer cursor in grouped mode', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+		renderBubbleChart(container, groupedData, 'categoria', { ...BASE_OPTIONS, ...groupedOpts });
 
 		const parentCircle = container.querySelector('g.bubble-parent circle');
 		expect(parentCircle.style.cursor).toBe('pointer');
@@ -113,7 +117,7 @@ describe('bubble chart zoom exploration', () => {
 
 	it('single-click on leaf node does not trigger zoom', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, groupedData, 'categoria', groupedOpts);
+		renderBubbleChart(container, groupedData, 'categoria', { ...BASE_OPTIONS, ...groupedOpts });
 
 		const viewportG = container.querySelector('svg > g');
 		const originalTransform = viewportG.getAttribute('transform');
@@ -145,7 +149,7 @@ describe('bubble chart zoom stack (multi-level drill-down)', () => {
 
 	it('double-click drills from level 1 to level 2', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, multiLevelData, 'categoria', multiLevelOpts);
+		renderBubbleChart(container, multiLevelData, 'categoria', { ...BASE_OPTIONS, ...multiLevelOpts });
 
 		const viewportG = container.querySelector('svg > g');
 		const originalTransform = viewportG.getAttribute('transform');
@@ -176,7 +180,7 @@ describe('bubble chart zoom stack (multi-level drill-down)', () => {
 
 	it('background click goes back one level, not all levels', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, multiLevelData, 'categoria', multiLevelOpts);
+		renderBubbleChart(container, multiLevelData, 'categoria', { ...BASE_OPTIONS, ...multiLevelOpts });
 
 		const viewportG = container.querySelector('svg > g');
 
@@ -205,7 +209,7 @@ describe('bubble chart zoom stack (multi-level drill-down)', () => {
 
 	it('second background click returns to root', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, multiLevelData, 'categoria', multiLevelOpts);
+		renderBubbleChart(container, multiLevelData, 'categoria', { ...BASE_OPTIONS, ...multiLevelOpts });
 
 		const viewportG = container.querySelector('svg > g');
 		const originalTransform = viewportG.getAttribute('transform');
@@ -235,7 +239,7 @@ describe('bubble chart zoom stack (multi-level drill-down)', () => {
 
 	it('non-focused branches dimmed and pointer-events none while zoomed', () => {
 		const container = document.getElementById('bubble');
-		renderBubbleChart(container, multiLevelData, 'categoria', multiLevelOpts);
+		renderBubbleChart(container, multiLevelData, 'categoria', { ...BASE_OPTIONS, ...multiLevelOpts });
 
 		const depth1Parents = container.querySelectorAll('g.bubble-parent[data-depth="1"]');
 		expect(depth1Parents.length).toBe(2);
@@ -251,6 +255,7 @@ describe('bubble chart zoom stack (multi-level drill-down)', () => {
 	it('leaf labels re-evaluated after zoom scale', () => {
 		const container = document.getElementById('bubble');
 		renderBubbleChart(container, multiLevelData, 'categoria', {
+			...BASE_OPTIONS,
 			...multiLevelOpts,
 			labelMode: 'auto',
 		});

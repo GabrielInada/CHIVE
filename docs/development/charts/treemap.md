@@ -129,7 +129,11 @@ are detached `structuredClone` captures (see
 `createDefaultChartConfig()` in
 [defaults.js](../../../src/config/charts/defaults.js) and merged by
 `mergeChartConfigWithDefaults()` in
-[chartConfig.js](../../../src/domain/charts/chartConfig.js).
+[chartConfig.js](../../../src/domain/charts/chartConfig.js). The merge also checks
+`measureMode`, `colorMode`, and `colorScheme` against `TREEMAP_DEFINITION.allowedValues`:
+an unoffered value becomes the chart default, so every reader uses these values as given.
+An invalid stored palette now draws `Colorblind-Safe`, the chart default, instead of the
+old reader fallback of `Bold`. Valid saved palettes keep their colors.
 
 ### 4.2 The `chartConfig.treemap` keys
 
@@ -177,12 +181,17 @@ separate modules.
 Everything is disabled when `!config.enabled`; the value-column select is disabled in `count`
 mode; the uniform color input is disabled unless `colorMode === 'uniform'`. Standard select,
 text, slider, checkbox, color, and preset controls use the shared chart-control listener
-adapters. Measure and value-column changes retain small custom handlers because they enforce a
-cross-field constraint: switching to count clears `valueColumn`, while sum mode preserves only
-a valid numeric selection. The color presets set the uniform `color` to the palette's first
+adapters. The measure uses the shared `setupMeasureListener`, which applies the value-column
+rule bar, pie, treemap, and bubble share
+([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+switching to count keeps `valueColumn`, so switching back to sum restores it, and switching to
+sum keeps it while it is a numeric option and otherwise takes the first numeric column. The
+value-column change keeps a small custom handler that stores only a valid numeric selection.
+The color presets set the uniform `color` to the palette's first
 swatch. In scheme mode the palette buttons mark the stored `colorScheme`, which is what the
 renderer draws; in uniform mode they mark a palette only while `color` still holds its first
-swatch. `computeDefaults` picks the category column.
+swatch. `computeDefaults` picks the category column, and the value column by the same rule as
+the measure listener.
 
 ---
 
@@ -214,8 +223,9 @@ the value-column failures and when no value is positive) that the section adapte
 
 ### 7.1 Guard, options, aggregation
 
-Returns `{ ok: false }` if container or category is missing. Options are clamped (`measureMode`
-to its enum, `padding` to 1 to 6, height to 220 to 720, title to 80 chars). The shared
+Returns `{ ok: false }` if container or category is missing. Options are clamped (`padding` to
+1 to 6, height to 220 to 720, title to 80 chars); measure, color mode, and palette are read
+as given, since chart config canonicalization already checked them (section 4.1). The shared
 `aggregateCategories` ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js))
 aggregates count or sum per category, reading only number cells in sum mode. Sum mode without
 a usable value column returns `{ ok: false, reason: 'no-value-column' }`, and without a number

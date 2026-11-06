@@ -379,10 +379,12 @@ The pipeline:
 
 ### 7.1 Guard and option parsing
 
-Returns `fail()` if the container or either column is missing. Every option is clamped to a
-safe local: scales collapse to linear unless `'log'`; `radius`/`opacity`/`sizeMin`/`sizeMax`
-fall back to defaults (`sizeMax` is floored at `sizeMin`); colors validate through
-`isValidHexColor`; `colorMode` and `categoricalPairMode` collapse to their enums;
+Returns `fail()` if the container or either column is missing. Scales, size/color modes,
+categorical-pair mode, gradient distribution, palette, and nested `regression.mode` are
+checked against `SCATTER_DEFINITION.allowedValues` during chart config canonicalization.
+Readers use those values as given. `radius`/`opacity`/`sizeMin`/`sizeMax` fall back to defaults
+when non-finite (`sizeMin` is floored at 0.5 and `sizeMax` at `sizeMin`); colors validate through
+`isValidHexColor`;
 `chartHeight` clamps to 220 to 720; title trims to 80 chars.
 
 ### 7.2 Point extraction and axis inference
@@ -448,8 +450,9 @@ titles are drawn, and the function returns `ok()`.
   fixed qualitative palette for category color. The palettes are frozen copies of the shared
   `CHART_COLOR_PALETTES` (Tableau10, Pastel, Bold, Colorblind-Safe, the set the palette
   buttons offer), owned by [palettes.js](../../../src/charts/scatter/palettes.js) and reached
-  through `getScatterPalette(scheme)` / `resolveScatterColorScheme(scheme)` (both fall back
-  to `Bold`) so callers cannot mutate them.
+  through `getScatterPalette(scheme)` so callers cannot mutate them. Invalid stored palette
+  names become the chart default, `Colorblind-Safe`, during canonicalization. Previously
+  the reader fell back to `Bold`; valid saved palettes keep their colors.
 
 ---
 

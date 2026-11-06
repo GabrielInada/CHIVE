@@ -294,45 +294,29 @@ describe('renderPieChart behavior', () => {
 		expect(hoverA()).toContain('Count: 2');
 	});
 
-	it('covers pie Other-slice pinned tooltip without filter actions and included/excluded filter states', () => {
+	it('offers filter actions for a category sector and none for the Other sector', () => {
 		const container = document.getElementById('pie');
 		const rows = ['A', 'A', 'B', 'C', 'D'].map(categoria => ({ categoria }));
-		let result = renderPieChart(container, rows, 'categoria', {
+		const calls = [];
+		const result = renderPieChart(container, rows, 'categoria', {
 			topN: 1,
 			topNMode: 'other',
 			labels: { other: 'Other' },
 			filterCallbacks: {
-				onFocusGlobalFilter: () => {},
-				onAddToGlobalFilter: () => {},
-				onExcludeGlobalFilter: () => {},
-				getTokenFilterState: () => null,
+				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 			},
 		});
 		expect(result.ok).toBe(true);
-		const otherSlice = Array.from(container.querySelectorAll('path')).find(path => path.__data__?.data?.isOther);
-		otherSlice.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-		expect(document.querySelectorAll('.chart-tooltip__action').length).toBe(0);
+		const sectors = Array.from(container.querySelectorAll('path')).filter(path => path.__data__?.data);
 
-		result = renderPieChart(container, rows, 'categoria', {
-			filterCallbacks: {
-				onRemoveFromGlobalFilter: () => {},
-				getTokenFilterState: () => 'included',
-				filterActionLabels: { stateIncluded: 'Included', remove: 'Remove' },
-			},
-		});
-		expect(result.ok).toBe(true);
-		container.querySelector('path').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-		expect(document.querySelector('.chart-tooltip__filter-state--included')).not.toBeNull();
+		sectors.find(path => path.__data__.data.key === 'A')
+			.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		document.querySelector('.chart-tooltip__action').click();
+		expect(calls).toEqual([['categoria', 'v:A']]);
 
-		result = renderPieChart(container, rows, 'categoria', {
-			filterCallbacks: {
-				onBringBackGlobalFilter: () => {},
-				getTokenFilterState: () => 'excluded',
-				filterActionLabels: { stateExcluded: 'Excluded', bringBack: 'Bring back' },
-			},
-		});
-		expect(result.ok).toBe(true);
-		container.querySelector('path').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
-		expect(document.querySelector('.chart-tooltip__filter-state--excluded')).not.toBeNull();
+		sectors.find(path => path.__data__.data.isOther)
+			.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+		expect(document.querySelector('.chart-tooltip').classList.contains('chart-tooltip--fixado')).toBe(true);
+		expect(document.querySelectorAll('.chart-tooltip__action')).toHaveLength(0);
 	});
 });

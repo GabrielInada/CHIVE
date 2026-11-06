@@ -111,14 +111,16 @@ describe('renderBarChartSection', () => {
 		expect(calledOpts.axisLabels.x).toBe('chive-chart-control-bar-category');
 	});
 
-	it('coerces invalid measureMode to count', () => {
+	// The charts view merges the config, which checks the measure against the
+	// chart's definition, so the section passes it on as stored.
+	it('passes measureMode on as stored', () => {
 		setupDom();
 		renderBarChartSection({
-			config: defaultConfig({ measureMode: 'bogus' }),
+			config: defaultConfig({ measureMode: 'mean' }),
 			rows: [],
 			filterCallbacks,
 		});
-		expect(mocks.renderBarChart.mock.calls[0][3].measureMode).toBe('count');
+		expect(mocks.renderBarChart.mock.calls[0][3].measureMode).toBe('mean');
 	});
 
 	it('maps measureMode to the corresponding y-axis label', () => {

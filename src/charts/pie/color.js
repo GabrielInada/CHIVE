@@ -5,14 +5,11 @@
  * color instead of per-slice overrides: 8% darker per index step, down to
  * 64% darker at the 9th slice. A pie with more slices spreads that range over
  * all of them, alternating lighter and darker shades. The default pie base
- * color is the parse fallback. Also owns the fill precedence of a drawn
- * sector, so the chart and the per-slice color grid agree. Pure over
- * `colorUtils`; no DOM, no d3. Used by `renderers/svg.js` and
- * `controls/sectorValues.js`.
+ * color is the parse fallback. Pure over `colorUtils`; no DOM, no d3. Used by
+ * `data.js`, which decides each sector's fill.
  */
 
 import { CHART_COLORS } from '../../config/charts/definitions.js';
-import { PIE_CHART } from '../../config/charts/definitions/pie.js';
 import { parseHexColor, toHex } from '../../utils/colorUtils.js';
 
 const SHADE_STEP = 0.08;
@@ -55,23 +52,4 @@ export function buildSliceColor(baseHex, index, count = STEPPED_SLICES) {
 	if (!rgb) return baseHex;
 	const factor = 1 - sliceDarkening(index, count);
 	return `#${toHex(rgb.r * factor)}${toHex(rgb.g * factor)}${toHex(rgb.b * factor)}`;
-}
-
-/**
- * Fill of every drawn sector: the synthetic Other sector keeps its fixed
- * color, a custom slice color wins next, and any other sector takes the base
- * color's shade for its position in the drawn order. A sector with a custom
- * color still holds its position, so changing it never shifts other shades.
- *
- * @param {Array<{ key: string, isOther?: boolean }>} entries - Drawn sectors in order, after Top-N, with Other last.
- * @param {{ color: string, customSliceColors?: Object<string, string> | null }} colors
- * @returns {Map<string, string>} Hex color by sector key.
- */
-export function resolveSliceColors(entries, { color, customSliceColors }) {
-	const custom = customSliceColors || {};
-	const shadedCount = entries.filter(entry => !entry.isOther).length;
-	return new Map(entries.map((entry, index) => [
-		entry.key,
-		entry.isOther ? PIE_CHART.otherSliceColor : (custom[entry.key] || buildSliceColor(color, index, shadedCount)),
-	]));
 }

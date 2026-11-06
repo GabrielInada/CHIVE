@@ -33,20 +33,18 @@ export function normalizePieOptions(options) {
 		percentage: options.labels?.percentage || 'Percentage',
 		other: options.labels?.other || 'Other',
 		missing: options.labels?.missing || '(missing)',
-		focusOnThis: options.labels?.focusOnThis || 'Show only this',
-		addToFilter: options.labels?.addToFilter || 'Add to global filter',
 	};
+	// Read as given: chart config canonicalization checks the enumerated
+	// settings against the chart's definition.
+	const { measureMode, topNMode, labelPosition } = options;
 	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : 0;
-	const topNMode = options.topNMode === 'truncate' ? 'truncate' : 'other';
 	const rawInner = Number(options.innerRadius);
 	const rawOuter = Number(options.outerRadius);
 	const rawPadAngle = Number(options.padAngle);
-	const measureMode = options.measureMode === 'sum' ? 'sum' : 'count';
 	const valueColumn = options.valueColumn || null;
 	const showCategoryLabel = options.showCategoryLabel !== false;
 	const showValueLabel = options.showValueLabel !== false;
 	const showLegend = options.showLegend !== false;
-	const labelPosition = options.labelPosition === 'outside' ? 'outside' : 'inside';
 	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(options.chartHeight))
 		? clamp(Number(options.chartHeight), 220, 720)

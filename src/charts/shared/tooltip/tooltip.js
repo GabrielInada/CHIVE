@@ -12,14 +12,14 @@
  *
  * The pinned shell renders a header with optional title + close button,
  * the chart-provided content, an optional filter-state badge, and grouped
- * action buttons (built via {@link buildCategoricalFilterActions} on the
- * chart side).
+ * action buttons. Charts that offer global-filter actions pin through
+ * `showPinnedFilterTooltip` in `filterActions.js`, which builds the badge and
+ * the actions and calls {@link showPinnedChartTooltip}.
  *
  * This module owns the overlay singleton and its lifecycle. The DOM builders
  * live in `content.js` (re-exported below so the public surface stays a
- * single import) and the categorical filter-action defs in
- * `filterActions.js`. Highest-traffic helper in the chart layer, imported
- * by every chart.
+ * single import). Highest-traffic helper in the chart layer, imported by
+ * every chart.
  */
 
 import {
@@ -41,7 +41,6 @@ export {
 	createTooltipFilterAction,
 	createTooltipLine,
 } from './content.js';
-export { buildCategoricalFilterActions } from './filterActions.js';
 
 const TOOLTIP_OFFSET = 12;
 const VIEWPORT_PADDING = 8;

@@ -1,22 +1,19 @@
 /**
  * Scatter-plot tooltip and filter interactions.
  *
- * Builds the hover-tooltip content and the click-to-pin tooltip (with the
- * shared categorical filter actions and state badge). The pinned-state
- * bookkeeping (`pinnedIndex`) and circle event wiring stay in the renderer;
- * these closures are stateless with respect to it. DOM is built with
- * `textContent`/`appendChild` and the shared tooltip builders, never with
+ * Builds the hover-tooltip content and the click-to-pin tooltip, which offers
+ * the shared global-filter actions for each categorical axis. The
+ * pinned-state bookkeeping (`pinnedIndex`) and circle event wiring stay in
+ * the renderer; these closures are stateless with respect to it. DOM is built
+ * with `textContent`/`appendChild` and the shared tooltip builders, never with
  * string markup. Used by `renderers/svg.js`.
  */
 
 import {
-	buildCategoricalFilterActions,
-	createFilterStateBadge,
-	createTooltipActionGroup,
 	createTooltipLine,
 	showChartTooltip,
-	showPinnedChartTooltip,
 } from '../shared/tooltip/tooltip.js';
+import { showPinnedFilterTooltip } from '../shared/tooltip/filterActions.js';
 import { formatNumber } from '../../utils/formatters.js';
 import { AXIS_TYPE_VALUES } from './axisHelpers.js';
 
@@ -44,15 +41,6 @@ export function createScatterInteractions({
 	xFilterColumn,
 	yFilterColumn,
 }) {
-	const filterLabels = filterCallbacks.filterActionLabels || {};
-	const actionLabels = {
-		focus: filterLabels.focus || 'Show only this',
-		add: filterLabels.add || 'Add to filter',
-		exclude: filterLabels.exclude || 'Hide this',
-		remove: filterLabels.remove || 'Remove from filter',
-		bringBack: filterLabels.bringBack || 'Bring back',
-	};
-
 	const buildTooltipContent = point => {
 		const wrapper = document.createElement('div');
 
@@ -78,66 +66,14 @@ export function createScatterInteractions({
 		showChartTooltip(buildTooltipContent(point), event.pageX, event.pageY);
 	};
 
-	const buildAxisActionSet = (column, token, headingLabel) => {
-		if (!column || !token) return null;
-		const state = typeof filterCallbacks.getTokenFilterState === 'function'
-			? filterCallbacks.getTokenFilterState(column, token)
-			: null;
-		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
-			? !!filterCallbacks.isShowOnlyThisRedundant(column, token)
-			: false;
-		const actions = buildCategoricalFilterActions({
-			column,
-			token,
-			state,
-			labels: actionLabels,
-			omitFocus,
-			onFocus: filterCallbacks.onFocusGlobalFilter,
-			onAdd: filterCallbacks.onAddToGlobalFilter,
-			onExclude: filterCallbacks.onExcludeGlobalFilter,
-			onRemove: filterCallbacks.onRemoveFromGlobalFilter,
-			onBringBack: filterCallbacks.onBringBackGlobalFilter,
-		});
-		if (actions.length === 0) return null;
-		const wrap = document.createElement('div');
-		wrap.className = 'chart-tooltip__action-set-wrap';
-		if (headingLabel) {
-			const heading = document.createElement('div');
-			heading.className = 'chart-tooltip__action-set-label';
-			heading.textContent = headingLabel;
-			wrap.appendChild(heading);
-		}
-		wrap.appendChild(createTooltipActionGroup(actions));
-		return { node: wrap, state };
-	};
-
 	const showPinnedTooltip = (event, point, onDismiss) => {
-		const content = buildTooltipContent(point);
-		const actionSets = [];
-		let primaryState = null;
-
-		if (axisTypes.x === AXIS_TYPE_VALUES.categorical && xFilterColumn) {
-			const xResult = buildAxisActionSet(xFilterColumn, point.xCategoryToken, `${axisLabels.x}`);
-			if (xResult) {
-				actionSets.push(xResult.node);
-				primaryState = xResult.state;
-			}
+		const categories = [];
+		if (axisTypes.x === AXIS_TYPE_VALUES.categorical) {
+			categories.push({ column: xFilterColumn, token: point.xCategoryToken, heading: `${axisLabels.x}` });
 		}
-		if (axisTypes.y === AXIS_TYPE_VALUES.categorical && yFilterColumn) {
-			const yResult = buildAxisActionSet(yFilterColumn, point.yCategoryToken, `${axisLabels.y}`);
-			if (yResult) {
-				actionSets.push(yResult.node);
-				if (!primaryState) primaryState = yResult.state;
-			}
+		if (axisTypes.y === AXIS_TYPE_VALUES.categorical) {
+			categories.push({ column: yFilterColumn, token: point.yCategoryToken, heading: `${axisLabels.y}` });
 		}
-
-		const stateBadge = actionSets.length === 1 && primaryState
-			? createFilterStateBadge({
-				state: primaryState,
-				includedLabel: filterLabels.stateIncluded,
-				excludedLabel: filterLabels.stateExcluded,
-			})
-			: null;
 
 		const headerTitle = axisTypes.x === AXIS_TYPE_VALUES.categorical
 			? categoryLabel(point.xCategory)
@@ -145,12 +81,11 @@ export function createScatterInteractions({
 				? categoryLabel(point.yCategory)
 				: '';
 
-		showPinnedChartTooltip(content, event.pageX, event.pageY, {
+		showPinnedFilterTooltip(buildTooltipContent(point), event.pageX, event.pageY, {
 			headerTitle,
-			closeLabel: filterLabels.close,
 			onDismiss,
-			actionSets,
-			stateBadge,
+			filterCallbacks,
+			categories,
 		});
 	};
 

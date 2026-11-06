@@ -293,6 +293,13 @@ describe('createColorPickerGridControl', () => {
 		expect(input.value).toBe('#999999');
 	});
 
+	it('reads only own keys, so an item named like an inherited key shows gray', () => {
+		const colorMap = Object.create({ inherited: '#ff0000' });
+		const el = createColorPickerGridControl('grid5', 'Colors', ['inherited', 'toString', 'constructor'], colorMap);
+		expect([...el.querySelectorAll('input[type="color"]')].map(input => input.value))
+			.toEqual(['#999999', '#999999', '#999999']);
+	});
+
 	it('keys an object item by its key and shows its label', () => {
 		const el = createColorPickerGridControl('grid4', 'Colors', [{ key: '__chive_missing__', label: '(missing)' }], { __chive_missing__: '#aabbcc' });
 		const input = el.querySelector('input[type="color"]');

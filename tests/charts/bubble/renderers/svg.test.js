@@ -3,6 +3,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderBubbleChart } from '../../../../src/charts/bubble/renderers/svg.js';
 
+// Explicit enum inputs preserve the renderer's historical output.
+const BASE_OPTIONS = { measureMode: 'count', labelMode: 'auto', nestingMode: 'flat', colorScheme: 'Tableau10' };
+
 function mouse(type, options = {}) {
 	return new MouseEvent(type, {
 		bubbles: true,
@@ -21,8 +24,8 @@ describe('bubble chart visualization', () => {
 	it('returns failure when container or category column is missing', () => {
 		const rows = [{ categoria: 'A' }];
 
-		expect(renderBubbleChart(null, rows, 'categoria')).toEqual({ ok: false });
-		expect(renderBubbleChart(document.getElementById('bubble'), rows, null)).toEqual({ ok: false });
+		expect(renderBubbleChart(null, rows, 'categoria', BASE_OPTIONS)).toEqual({ ok: false });
+		expect(renderBubbleChart(document.getElementById('bubble'), rows, null, BASE_OPTIONS)).toEqual({ ok: false });
 	});
 
 	it('renders packed bubbles and returns ok', () => {
@@ -35,6 +38,7 @@ describe('bubble chart visualization', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			chartHeight: 700,
 			labelMode: 'auto',
 		});
@@ -46,7 +50,7 @@ describe('bubble chart visualization', () => {
 
 	it('keeps the no-title viewport transform at the chart margins', () => {
 		const container = document.getElementById('bubble');
-		const result = renderBubbleChart(container, [{ categoria: 'A' }], 'categoria');
+		const result = renderBubbleChart(container, [{ categoria: 'A' }], 'categoria', BASE_OPTIONS);
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelector('svg > g').getAttribute('transform')).toBe('translate(10,10)');
@@ -61,12 +65,13 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'C', valor: 40 },
 		];
 
-		const countResult = renderBubbleChart(container, rows, 'categoria', { topN: 2 });
+		const countResult = renderBubbleChart(container, rows, 'categoria', { ...BASE_OPTIONS, topN: 2 });
 		expect(countResult.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-node').length).toBe(2);
 
 		container.innerHTML = '';
 		const sumResult = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			measureMode: 'sum',
 			valueColumn: 'valor',
 			topN: 0,
@@ -76,6 +81,7 @@ describe('bubble chart visualization', () => {
 
 		container.innerHTML = '';
 		const meanResult = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			measureMode: 'mean',
 			valueColumn: 'valor',
 		});
@@ -90,6 +96,7 @@ describe('bubble chart visualization', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			measureMode: 'sum',
 			valueColumn: 'valor',
 		});
@@ -98,7 +105,7 @@ describe('bubble chart visualization', () => {
 		expect(result.reason).toBe('no-numeric');
 	});
 
-	it('flat mode unchanged when nestingMode is flat or omitted', () => {
+	it('flat mode ignores a group column', () => {
 		const container = document.getElementById('bubble');
 		const rows = [
 			{ categoria: 'A', grupo: 'X' },
@@ -107,6 +114,7 @@ describe('bubble chart visualization', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'flat',
 			groupColumn: 'grupo',
 		});
@@ -126,6 +134,7 @@ describe('bubble chart visualization', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 		});
@@ -143,6 +152,7 @@ describe('bubble chart visualization', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 		});
 
@@ -161,6 +171,7 @@ describe('bubble chart visualization', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 			topN: 3,
@@ -179,6 +190,7 @@ describe('bubble chart visualization', () => {
 		];
 
 		const sumResult = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 			measureMode: 'sum',
@@ -200,6 +212,7 @@ describe('bubble chart visualization', () => {
 		];
 
 		renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			labelMode: 'all',
 		});
 
@@ -217,6 +230,7 @@ describe('bubble chart visualization', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 		});
@@ -226,7 +240,7 @@ describe('bubble chart visualization', () => {
 		expect(parentGroups.length).toBe(2);
 	});
 
-	it('uses fallback options, clamps height, renders title, and falls back to the default palette', () => {
+	it('uses numeric fallbacks, clamps height, and renders a title', () => {
 		const container = document.getElementById('bubble');
 		const rows = [
 			{ categoria: 'A', valor: 10 },
@@ -234,13 +248,14 @@ describe('bubble chart visualization', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
-			measureMode: 'unknown',
+			...BASE_OPTIONS,
+			measureMode: 'count',
 			topN: 'bad',
 			padding: 'bad',
-			labelMode: 'bad',
+			labelMode: 'auto',
 			autoLabelMinRadius: 'bad',
-			nestingMode: 'bad',
-			colorScheme: 'Missing',
+			nestingMode: 'flat',
+			colorScheme: 'Tableau10',
 			customTitle: '  Bubble title  ',
 			chartHeight: 100,
 			labels: {},
@@ -257,11 +272,12 @@ describe('bubble chart visualization', () => {
 		const container = document.getElementById('bubble');
 		const rows = Array.from({ length: 12 }, (_, index) => ({ categoria: `Item ${index}` }));
 
-		renderBubbleChart(container, rows, 'categoria', { labelMode: 'hover' });
+		renderBubbleChart(container, rows, 'categoria', { ...BASE_OPTIONS, labelMode: 'hover' });
 		expect(container.querySelectorAll('text.bubble-leaf-label')).toHaveLength(0);
 
 		container.innerHTML = '';
 		renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			labelMode: 'all',
 			autoLabelMinRadius: 999,
 		});
@@ -274,6 +290,7 @@ describe('bubble chart visualization', () => {
 		const container = document.getElementById('bubble');
 
 		const result = renderBubbleChart(container, [{ categoria: 'A' }], 'categoria', {
+			...BASE_OPTIONS,
 			measureMode: 'sum',
 		});
 
@@ -290,6 +307,7 @@ describe('bubble chart visualization', () => {
 		];
 
 		renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
 			zoomTransitionDuration: 0,
@@ -315,77 +333,44 @@ describe('bubble chart visualization', () => {
 		expect(document.querySelector('.chart-tooltip')?.hidden).toBe(true);
 	});
 
-	it('shows parent filter actions and state badges for included tokens', () => {
+	it('offers filter actions for a parent bubble on its nesting column', () => {
 		const container = document.getElementById('bubble');
 		const calls = [];
 		renderBubbleChart(container, [
 			{ categoria: 'A', regiao: 'North', estado: 'PA' },
 			{ categoria: 'B', regiao: 'North', estado: 'AM' },
 		], 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao', 'estado'],
 			filterCallbacks: {
-				filterActionLabels: { remove: 'Remove', stateIncluded: 'Already included' },
-				getTokenFilterState: () => 'included',
-				isShowOnlyThisRedundant: () => true,
-				onRemoveFromGlobalFilter: (column, token) => calls.push(['remove', column, token]),
+				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 			},
 		});
 
-		const parent = container.querySelector('g.bubble-parent[data-depth="1"]');
-		parent.dispatchEvent(mouse('click'));
-
-		const tooltip = document.querySelector('.chart-tooltip');
-		expect(tooltip.textContent).toContain('Already included');
-		expect(tooltip.textContent).toContain('Remove');
-		tooltip.querySelector('.chart-tooltip__action').click();
-		expect(calls[0]).toEqual(['remove', 'regiao', 'v:North']);
+		container.querySelector('g.bubble-parent[data-depth="1"]').dispatchEvent(mouse('click'));
+		document.querySelector('.chart-tooltip__action').click();
+		expect(calls).toEqual([['regiao', 'v:North']]);
 	});
 
-	it('shows leaf filter actions for excluded and unfiltered tokens and honors redundant focus', () => {
+	it('offers filter actions for a leaf bubble on the category column', () => {
 		const container = document.getElementById('bubble');
 		const calls = [];
-		const rows = [
+		renderBubbleChart(container, [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'Y' },
-		];
-
-		renderBubbleChart(container, rows, 'categoria', {
+		], 'categoria', {
+			...BASE_OPTIONS,
 			filterCallbacks: {
-				filterActionLabels: {
-					focus: 'Only',
-					add: 'Add',
-					exclude: 'Hide',
-					bringBack: 'Bring back',
-					stateExcluded: 'Hidden',
-				},
-				getTokenFilterState: (_column, token) => (token === 'v:A' ? 'excluded' : null),
-				isShowOnlyThisRedundant: (_column, token) => token === 'v:B',
-				onFocusGlobalFilter: (column, token) => calls.push(['focus', column, token]),
-				onAddToGlobalFilter: (column, token) => calls.push(['add', column, token]),
-				onExcludeGlobalFilter: (column, token) => calls.push(['exclude', column, token]),
-				onBringBackGlobalFilter: (column, token) => calls.push(['back', column, token]),
+				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 			},
 		});
 
-		const leaves = Array.from(container.querySelectorAll('g.bubble-node'));
-		const leafA = leaves.find(node => node.textContent.includes('A'));
-		const leafB = leaves.find(node => node.textContent.includes('B'));
-
-		leafA.dispatchEvent(mouse('click'));
-		expect(document.querySelector('.chart-tooltip').textContent).toContain('Hidden');
-		Array.from(document.querySelectorAll('.chart-tooltip__action'))
-			.find(button => button.textContent === 'Bring back')
-			.click();
-		expect(calls).toContainEqual(['back', 'categoria', 'v:A']);
-
-		leafB.dispatchEvent(mouse('click'));
-		const actionLabels = Array.from(document.querySelectorAll('.chart-tooltip__action')).map(button => button.textContent);
-		expect(actionLabels).toEqual(['Add', 'Hide']);
-		document.querySelectorAll('.chart-tooltip__action')[0].click();
-		document.querySelectorAll('.chart-tooltip__action')[1].click();
-		expect(calls).toContainEqual(['add', 'categoria', 'v:B']);
-		expect(calls).toContainEqual(['exclude', 'categoria', 'v:B']);
+		Array.from(container.querySelectorAll('g.bubble-node'))
+			.find(node => node.textContent.includes('B'))
+			.dispatchEvent(mouse('click'));
+		document.querySelector('.chart-tooltip__action').click();
+		expect(calls).toEqual([['categoria', 'v:B']]);
 	});
 
 	it('renders pinned leaf tooltip without action sets when callbacks are absent', () => {
@@ -393,7 +378,7 @@ describe('bubble chart visualization', () => {
 		renderBubbleChart(container, [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'Y' },
-		], 'categoria');
+		], 'categoria', BASE_OPTIONS);
 
 		const leaf = container.querySelector('g.bubble-node');
 		leaf.dispatchEvent(mouse('click'));

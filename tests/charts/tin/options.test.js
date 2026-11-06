@@ -2,16 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { normalizeTinOptions } from '../../../src/charts/tin/options.js';
 
 describe('normalizeTinOptions defaults', () => {
-	it('returns the full validated config for an empty options bag', () => {
+	it('returns non-enumerated defaults for an empty options bag', () => {
 		// Locks the complete contract: forgetting to surface any local is the
 		// likeliest regression after the split, so assert the whole object.
 		expect(normalizeTinOptions({}, 'X', 'Y', 'Z')).toStrictEqual({
-			fillMode: 'smooth',
+			fillMode: undefined,
 			colorRenderingMode: 'optimized',
 			gradientMin: '#5d8aa8',
 			gradientMax: '#ffffff',
-			gradientDistribution: 'value',
-			colorRamp: 'custom',
+			gradientDistribution: undefined,
+			colorRamp: undefined,
 			showEdges: true,
 			edgeColor: '#5f5a53',
 			showPoints: true,
@@ -20,7 +20,7 @@ describe('normalizeTinOptions defaults', () => {
 			showHull: false,
 			hullColor: '#3f3a33',
 			showIsolines: false,
-			isolineMode: 'count',
+			isolineMode: undefined,
 			isolineCount: 5,
 			isolineStep: 1,
 			isolineColor: '#1f2937',
@@ -57,20 +57,24 @@ describe('normalizeTinOptions defaults', () => {
 	});
 });
 
-describe('normalizeTinOptions enum collapse', () => {
+describe('normalizeTinOptions enumerated settings', () => {
+	// Chart config canonicalization checks these settings before rendering.
 	it.each([
-		['fillMode', 'flat', 'flat'],
-		['fillMode', 'weird', 'smooth'],
-		['colorRenderingMode', 'full-ramp', 'full-ramp'],
-		['colorRenderingMode', 'weird', 'optimized'],
-		['isolineMode', 'step', 'step'],
-		['isolineMode', 'weird', 'count'],
-		['gradientDistribution', 'rank', 'rank'],
-		['gradientDistribution', 'weird', 'value'],
-		['colorRamp', 'viridis', 'viridis'],
-		['colorRamp', 'nonsense', 'custom'],
-	])('%s=%s -> %s', (key, input, expected) => {
-		expect(normalizeTinOptions({ [key]: input }, 'X', 'Y', 'Z')[key]).toBe(expected);
+		['fillMode', 'flat'],
+		['isolineMode', 'step'],
+		['gradientDistribution', 'rank'],
+		['colorRamp', 'viridis'],
+	])('reads %s as given', (key, value) => {
+		expect(normalizeTinOptions({ [key]: value }, 'X', 'Y', 'Z')[key]).toBe(value);
+		expect(normalizeTinOptions({}, 'X', 'Y', 'Z')[key]).toBeUndefined();
+	});
+
+	// This is a renderer option, not persisted chart config.
+	it.each([
+		['full-ramp', 'full-ramp'],
+		['weird', 'optimized'],
+	])('normalizes colorRenderingMode %s to %s', (input, expected) => {
+		expect(normalizeTinOptions({ colorRenderingMode: input }, 'X', 'Y', 'Z').colorRenderingMode).toBe(expected);
 	});
 });
 

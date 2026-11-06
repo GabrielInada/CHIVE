@@ -3,6 +3,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderBubbleChart } from '../../../../src/charts/bubble/renderers/svg.js';
 
+// Explicit enum inputs preserve the renderer's historical output.
+const BASE_OPTIONS = { measureMode: 'count', labelMode: 'auto', nestingMode: 'flat', colorScheme: 'Tableau10' };
+
 describe('bubble chart multi-level nesting', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '<div id="bubble"></div>';
@@ -17,6 +20,7 @@ describe('bubble chart multi-level nesting', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
 		});
@@ -36,6 +40,7 @@ describe('bubble chart multi-level nesting', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao', 'estado'],
 		});
@@ -63,6 +68,7 @@ describe('bubble chart multi-level nesting', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['continente', 'pais', 'regiao'],
 		});
@@ -85,6 +91,7 @@ describe('bubble chart multi-level nesting', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 		});
@@ -101,6 +108,7 @@ describe('bubble chart multi-level nesting', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao'],
 			groupColumn: 'grupo',
@@ -120,6 +128,7 @@ describe('bubble chart multi-level nesting', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
 		});
@@ -136,6 +145,7 @@ describe('bubble chart multi-level nesting', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
 			zoomTransitionDuration: 0,
@@ -153,6 +163,7 @@ describe('bubble chart multi-level nesting', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: [],
 		});
@@ -171,6 +182,7 @@ describe('bubble chart multi-level nesting', () => {
 		for (const badGroup of [{}, 1, true]) {
 			container.innerHTML = '';
 			const result = renderBubbleChart(container, rows, 'categoria', {
+				...BASE_OPTIONS,
 				nestingMode: 'grouped',
 				groupColumn: badGroup,
 			});
@@ -182,6 +194,7 @@ describe('bubble chart multi-level nesting', () => {
 		// A valid string groupColumn in the same setup still resolves and renders grouped.
 		container.innerHTML = '';
 		const ok = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 		});
@@ -197,6 +210,7 @@ describe('bubble chart multi-level nesting', () => {
 		];
 
 		const result = renderBubbleChart(container, rows, 'categoria', {
+			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao', 'estado'],
 		});

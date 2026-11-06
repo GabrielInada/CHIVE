@@ -131,7 +131,7 @@ function buildDataControls(config, numericOptions, allOptions, disabled) {
 		'viz-select-scatter-categorical-mode',
 		t('chive-chart-control-scatter-categorical-mode'),
 		categoricalModeOptions,
-		config.categoricalPairMode || 'jitter',
+		config.categoricalPairMode,
 		disabled || !bothAxesCategorical,
 	));
 
@@ -240,7 +240,7 @@ function buildMarkerControls(config, numericOptions, disabled) {
 		'viz-select-scatter-size-mode',
 		t('chive-chart-control-scatter-size-mode'),
 		sizeModeOptions,
-		config.sizeMode || 'uniform',
+		config.sizeMode,
 		disabled,
 	));
 
@@ -352,7 +352,7 @@ function buildColorControls(config, numericOptions, categoryOptions, disabled) {
 				{ value: 'value', label: t('chive-chart-color-gradient-distribution-value') },
 				{ value: 'rank', label: t('chive-chart-color-gradient-distribution-rank') },
 			],
-			config.gradientDistribution || 'value',
+			config.gradientDistribution,
 			disabled,
 		));
 	}
@@ -362,7 +362,7 @@ function buildColorControls(config, numericOptions, categoryOptions, disabled) {
 			'viz-select-scatter-color-scheme',
 			t('chive-chart-color-scheme'),
 			Object.keys(COLOR_PRESETS).map(name => ({ value: name, label: name })),
-			config.colorScheme || 'Bold',
+			config.colorScheme,
 			disabled,
 		));
 	}
@@ -371,7 +371,7 @@ function buildColorControls(config, numericOptions, categoryOptions, disabled) {
 	// colors a palette button copies in, so that palette counts only until one
 	// of them is edited.
 	const appliedPreset = config.colorMode === 'category' && config.colorField
-		? (config.colorScheme || 'Bold')
+		? config.colorScheme
 		: findAppliedColorPreset(config, SCATTER_PLOT.presetColorKeys);
 	controls.push(createColorPresetControl(
 		'viz-scatter-color-preset',
@@ -421,7 +421,7 @@ function buildAnalyticsControls(config, numericOptions, categoryOptions, disable
 			{ value: 'overall', label: t('chive-chart-control-scatter-regression-mode-overall') },
 			{ value: 'perCategory', label: t('chive-chart-control-scatter-regression-mode-per-category') },
 		],
-		regressionConfig.mode === 'perCategory' ? 'perCategory' : 'overall',
+		regressionConfig.mode,
 		disabled || !regressionEnabled || !hasCategoricalColumns,
 	));
 

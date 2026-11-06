@@ -24,7 +24,7 @@ const ROWS = [
 	{ region: null, sales: 2 },
 ];
 
-const BASE = { locale: 'en-US', chartHeight: 400 };
+const BASE = { measureMode: 'count', topNMode: 'other', labelPosition: 'inside', locale: 'en-US', chartHeight: 400 };
 
 function makeContainer() {
 	document.body.innerHTML = '<div id="pie"></div>';

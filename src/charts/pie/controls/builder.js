@@ -141,7 +141,7 @@ function buildDataControls(dataset, categoryOptions, numericOptions, config) {
 			{ value: 'other', label: t('chive-chart-pie-topn-mode-other') },
 			{ value: 'truncate', label: t('chive-chart-pie-topn-mode-truncate') },
 		],
-		config.topNMode === 'truncate' ? 'truncate' : 'other',
+		config.topNMode,
 		!dataset.chartConfig.pie.enabled
 	));
 

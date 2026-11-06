@@ -236,19 +236,31 @@ describe('renderCharts orchestration', () => {
 		expect(badge.textContent).toBe('chive-charts-badge:3,1');
 	});
 
-	it('normalizes non-function callback options to null in filterCallbacks', () => {
+	it('passes the filter callbacks on as they are, with the localized action labels', () => {
 		setupDom();
 		const config = makeConfig();
 		config.bar.enabled = true;
+		const callbacks = {
+			onAddToGlobalFilter: vi.fn(),
+			onFocusGlobalFilter: vi.fn(),
+			onExcludeGlobalFilter: vi.fn(),
+			onRemoveFromGlobalFilter: vi.fn(),
+			onBringBackGlobalFilter: vi.fn(),
+			getTokenFilterState: vi.fn(),
+			isShowOnlyThisRedundant: vi.fn(),
+		};
 
-		renderCharts(config, [], [], [], {
-			onAddToGlobalFilter: 'not a function',
-			onFocusGlobalFilter: () => 'real',
+		renderCharts(config, [], [], [], callbacks);
+
+		const { filterActionLabels, ...passed } = mocks.renderBarChartSection.mock.calls[0][0].filterCallbacks;
+		expect(passed).toEqual(callbacks);
+		Object.entries(callbacks).forEach(([name, callback]) => expect(passed[name]).toBe(callback));
+		expect(filterActionLabels).toMatchObject({
+			focus: 'chive-tooltip-show-only-this',
+			add: 'chive-tooltip-add-to-filter',
+			close: 'chive-tooltip-close',
+			filterBySource: 'chive-tooltip-filter-by-source',
 		});
-
-		const cb = mocks.renderBarChartSection.mock.calls[0][0].filterCallbacks;
-		expect(cb.onAddToGlobalFilter).toBeNull();
-		expect(typeof cb.onFocusGlobalFilter).toBe('function');
 	});
 
 	it('draws the rows it is given in each section, without filtering them again', () => {

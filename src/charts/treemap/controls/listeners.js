@@ -4,9 +4,9 @@
  * Wires every treemap control. Handles the `measureMode` ↔ `valueColumn`
  * cross-constraint and the color-preset → primary-color mapping.
  *
- * Standard controls use the shared chart-control listener adapters. Measure
- * and value-column changes keep small custom handlers for their cross-field
- * validation.
+ * Standard controls use the shared chart-control listener adapters, and the
+ * measure uses the shared measure listener. The value-column change keeps a
+ * small custom handler that checks the column against the numeric options.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
  * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
@@ -19,6 +19,7 @@ import {
 	setupCheckboxListeners,
 	setupColorInputListener,
 	setupColorPresetListeners,
+	setupMeasureListener,
 	setupSelectListeners,
 	setupSliderListener,
 	setupTextInputListener,
@@ -40,26 +41,10 @@ export function setupTreemapControlListeners(dataset, baseCat, numericOptions, a
 	setupSelectListeners([
 		{ id: 'viz-select-treemap-category', key: 'category', transform: value => value || null },
 		{ id: 'viz-select-treemap-topn', key: 'topN', transform: value => Number(value) },
-		{
-			id: 'viz-select-treemap-color-mode',
-			key: 'colorMode',
-			transform: value => ['scheme', 'uniform'].includes(value) ? value : 'scheme',
-		},
+		{ id: 'viz-select-treemap-color-mode', key: 'colorMode' },
 	], writer);
 
-	const selectMeasure = document.getElementById('viz-select-treemap-measure');
-	if (selectMeasure) {
-		selectMeasure.addEventListener('change', () => {
-			const nextMode = TREEMAP_CHART.measureModes.includes(selectMeasure.value) ? selectMeasure.value : 'count';
-			const currentValueColumn = numericOptions.includes(dataset.chartConfig.treemap?.valueColumn)
-				? dataset.chartConfig.treemap?.valueColumn
-				: null;
-			writer.commit({
-				measureMode: nextMode,
-				valueColumn: nextMode === 'count' ? null : currentValueColumn,
-			});
-		});
-	}
+	setupMeasureListener('viz-select-treemap-measure', () => dataset.chartConfig.treemap.valueColumn, numericOptions, writer);
 
 	const selectValueColumn = document.getElementById('viz-select-treemap-value-column');
 	if (selectValueColumn) {

@@ -24,6 +24,10 @@ const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
  * builders may include axis bindings or config snapshots used by the
  * panel renderer.
  *
+ * Builders read the enumerated settings, such as the measure, as stored:
+ * committed chart config is canonicalized, so each holds a value its chart
+ * offers.
+ *
  * @private
  */
 const CHART_SNAPSHOT_BUILDERS = {
@@ -46,13 +50,11 @@ const CHART_SNAPSHOT_BUILDERS = {
 
 	pie: (config) => {
 		const pie = config.pie || {};
-		const measureLabel = pie.measureMode === 'sum'
-			? t('chive-chart-control-pie-measure-sum')
-			: t('chive-chart-control-pie-measure-count');
+		const measureLabel = t(`chive-chart-control-pie-measure-${pie.measureMode}`);
 		const category = pie.category || '-';
-		const valuePart = pie.measureMode === 'sum'
-			? ` · ${t('chive-chart-control-pie-value-column')}: ${pie.valueColumn || '-'}`
-			: '';
+		const valuePart = pie.measureMode === 'count'
+			? ''
+			: ` · ${t('chive-chart-control-pie-value-column')}: ${pie.valueColumn || '-'}`;
 		const padPart = ` · ${t('chive-chart-control-pie-pad-angle')}: ${Number(pie.padAngle || 0)}deg`;
 		return {
 			type: 'pie',
@@ -68,11 +70,7 @@ const CHART_SNAPSHOT_BUILDERS = {
 
 	bubble: (config) => {
 		const bubble = config.bubble || {};
-		const measureLabel = bubble.measureMode === 'sum'
-			? t('chive-chart-control-bubble-measure-sum')
-			: bubble.measureMode === 'mean'
-				? t('chive-chart-control-bubble-measure-mean')
-				: t('chive-chart-control-bubble-measure-count');
+		const measureLabel = t(`chive-chart-control-bubble-measure-${bubble.measureMode}`);
 		const category = bubble.category || '-';
 		const valuePart = bubble.measureMode === 'count'
 			? ''
@@ -107,13 +105,12 @@ const CHART_SNAPSHOT_BUILDERS = {
 
 	treemap: (config) => {
 		const treemap = config.treemap || {};
-		const measureLabel = treemap.measureMode === 'sum'
-			? t('chive-chart-control-bar-measure-sum')
-			: t('chive-chart-control-bar-measure-count');
+		// The treemap's measure select shows the bar's option labels.
+		const measureLabel = t(`chive-chart-control-bar-measure-${treemap.measureMode}`);
 		const category = treemap.category || '-';
-		const valuePart = treemap.measureMode === 'sum'
-			? ` · ${t('chive-chart-control-treemap-value-column')}: ${treemap.valueColumn || '-'}`
-			: '';
+		const valuePart = treemap.measureMode === 'count'
+			? ''
+			: ` · ${t('chive-chart-control-treemap-value-column')}: ${treemap.valueColumn || '-'}`;
 		return {
 			type: 'treemap',
 			category,
@@ -132,7 +129,7 @@ const CHART_SNAPSHOT_BUILDERS = {
 			type: 'line',
 			x,
 			y,
-			curve: line.curve || null,
+			curve: line.curve,
 			summary: `${t('chive-chart-control-line-x')}: ${x} · ${t('chive-chart-control-line-y')}: ${y}`,
 		};
 	},

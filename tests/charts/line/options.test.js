@@ -6,13 +6,11 @@ import { LINE_CHART } from '../../../src/config/charts/definitions/line.js';
 describe('normalizeLineOptions', () => {
 	it('applies defaults for an empty options bag', () => {
 		const o = normalizeLineOptions({}, 'month', 'visits');
-		expect(o.missingMode).toBe(LINE_CHART.defaultMissingMode);
 		expect(o.strokeWidth).toBe(LINE_CHART.defaultStrokeWidth);
 		expect(o.color).toBe(CHART_COLORS.line);
 		expect(o.ghostColor).toBe(LINE_CHART.defaultGhostStrokeColor);
 		expect(o.showPoints).toBe(false);
 		expect(o.sortX).toBe(true);
-		expect(o.aggregateMode).toBe('none');
 		expect(o.showXAxisLabel).toBe(true);
 		expect(o.showYAxisLabel).toBe(true);
 		expect(o.customTitle).toBe('');
@@ -20,11 +18,14 @@ describe('normalizeLineOptions', () => {
 		expect(o.axisLabels).toEqual({ x: 'month', y: 'visits' });
 	});
 
-	it('collapses missingMode and aggregateMode to their enums', () => {
-		expect(normalizeLineOptions({ missingMode: 'interpolate' }, 'x', 'y').missingMode).toBe('interpolate');
-		expect(normalizeLineOptions({ missingMode: 'bogus' }, 'x', 'y').missingMode).toBe(LINE_CHART.defaultMissingMode);
-		expect(normalizeLineOptions({ aggregateMode: 'mean' }, 'x', 'y').aggregateMode).toBe('mean');
-		expect(normalizeLineOptions({ aggregateMode: 'bogus' }, 'x', 'y').aggregateMode).toBe('none');
+	// Chart config canonicalization checks the enumerated settings against the
+	// chart's definition, so the normalizer reads them as given.
+	it.each([
+		['missingMode', 'interpolate'],
+		['aggregateMode', 'mean'],
+	])('reads %s as given', (key, value) => {
+		expect(normalizeLineOptions({ [key]: value }, 'x', 'y')[key]).toBe(value);
+		expect(normalizeLineOptions({}, 'x', 'y')[key]).toBeUndefined();
 	});
 
 	it('clamps strokeWidth to 0.5..8 and chartHeight to 220..720', () => {

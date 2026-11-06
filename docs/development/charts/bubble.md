@@ -141,7 +141,9 @@ on top of them. Panel config, rows, and columns are detached `structuredClone` c
 `mergeChartConfigWithDefaults()` in
 [chartConfig.js](../../../src/domain/charts/chartConfig.js). The merge has special
 handling for `bubble`: a legacy single `groupColumn` is promoted into a one-element
-`nestingColumns` array so pre-multilevel configs keep working.
+`nestingColumns` array so pre-multilevel configs keep working. It also checks `measureMode`,
+`labelMode`, `nestingMode`, and `colorScheme` against `BUBBLE_DEFINITION.allowedValues`:
+an unoffered value becomes the chart default, so every reader uses these values as given.
 
 ### 4.2 The `chartConfig.bubble` keys
 
@@ -195,13 +197,18 @@ are disabled unless `nestingMode === 'grouped'`.
 ### 5.3 Enable/disable and cross-constraints
 
 - Everything is disabled when `!config.enabled`.
-- The value-column select is disabled in `count` mode; switching to sum/mean auto-picks the
-  first numeric column if none is set.
+- The value-column select is disabled in `count` mode.
 - Nesting selects are disabled in flat mode.
-- The measure listener clears `valueColumn` on count; the nesting listeners keep
-  `nestingColumns` and the legacy `groupColumn` mirror in sync.
+- The measure uses the shared `setupMeasureListener`, which applies the value-column rule
+  bar, pie, treemap, and bubble share
+  ([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+  switching to count keeps `valueColumn`, so switching back restores it, and switching to
+  sum/mean keeps it while it is a numeric option and otherwise takes the first numeric
+  column. The nesting listeners keep `nestingColumns` and the legacy `groupColumn` mirror in
+  sync.
 
-`computeDefaults` picks the root category and (for sum/mean) a value column.
+`computeDefaults` picks the root category, and the value column by the same rule as the
+measure listener.
 
 ---
 
@@ -232,9 +239,10 @@ click-to-filter in panels). The panel registry only dispatches to that adapter.
 
 ### 7.1 Guard, options, and the nesting guard
 
-Returns `fail()` if container or category is missing. Options are clamped to safe locals
-(`measureMode`, `labelMode`, `nestingMode` to their enums; `chartHeight` to 400 to 900; title
-to 80 chars). In grouped mode with no nesting columns (and no legacy `groupColumn`) it returns
+Returns `fail()` if container or category is missing. Height clamps to 400 to 900 and title
+to 80 chars. Measure, label mode, nesting mode, and palette are read as given, since chart
+config canonicalization already checked them
+(section 4.1). In grouped mode with no nesting columns (and no legacy `groupColumn`) it returns
 `fail('no-nesting-columns')`.
 
 ### 7.2 Aggregation (`aggregateBubbles`)

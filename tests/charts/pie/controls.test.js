@@ -10,11 +10,11 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 	t: mocks.t,
 }));
 
+import { buildSliceColor } from '../../../src/charts/pie/color.js';
 import { createPieChartControls } from '../../../src/charts/pie/controls/builder.js';
 import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
 import { computeDefaults } from '../../../src/charts/pie/controls/activationDefaults.js';
-import { renderPieChart } from '../../../src/charts/pie/renderers/svg.js';
 import { PIE_DEFINITION } from '../../../src/config/charts/definitions/pie.js';
 
 /**
@@ -182,46 +182,6 @@ describe('pieControls UI structure', () => {
 		expect(tokens).toEqual(['East', 'North', 'South']);
 	});
 
-	it('shows each slice in the color grid in the color the chart draws it', () => {
-		const dataset = createDataset({ customSliceColors: { South: '#123456' } });
-		appendControls(createPieChartControls(dataset, ['region'], ['sales']));
-
-		const chart = document.createElement('div');
-		document.body.appendChild(chart);
-		const { pie } = dataset.chartConfig;
-		renderPieChart(chart, dataset.rows, pie.category, { color: pie.color, customSliceColors: pie.customSliceColors });
-		const drawn = Object.fromEntries(Array.from(chart.querySelectorAll('path'), path => [path.__data__.data.key, path.getAttribute('fill')]));
-
-		const swatches = Object.fromEntries(Array.from(
-			document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]'),
-			input => [input.dataset.colorItem, input.value],
-		));
-		expect(swatches).toEqual(drawn);
-	});
-
-	// Past 9 slices every shade depends on how many sectors are drawn, so the
-	// grid has to count the same sectors as the chart.
-	it('shows the drawn colors past 9 slices with Top-N and Other', () => {
-		const dataset = createDataset({ topN: 10 });
-		dataset.rows = Array.from({ length: 12 }, (_, index) => Array.from(
-			{ length: 12 - index },
-			() => ({ region: `R${String(index + 1).padStart(2, '0')}`, sales: 1 }),
-		)).flat();
-		appendControls(createPieChartControls(dataset, ['region'], ['sales']));
-
-		const chart = document.createElement('div');
-		document.body.appendChild(chart);
-		const { pie } = dataset.chartConfig;
-		renderPieChart(chart, dataset.rows, pie.category, { color: pie.color, topN: pie.topN, topNMode: pie.topNMode });
-		const drawn = Array.from(chart.querySelectorAll('path'))
-			.filter(path => !path.__data__.data.isOther)
-			.map(path => [path.__data__.data.key, path.getAttribute('fill')]);
-
-		const swatch = key => document.querySelector(`input[data-color-grid-control="viz-pie-color-grid"][data-color-item="${key}"]`).value;
-		expect(drawn).toHaveLength(10);
-		expect(drawn.map(([key]) => [key, swatch(key)])).toEqual(drawn);
-	});
-
 	it('keeps a slice the global filter hides in the grid with the neutral swatch', () => {
 		const dataset = createDataset();
 		dataset.chartConfig.globalFilter = {
@@ -376,7 +336,7 @@ describe('pieControls listeners', () => {
 		expect(writer.commit).not.toHaveBeenCalled();
 	});
 
-	it('coerces select values and supports the legacy callback argument position', () => {
+	it('commits selected enums as chosen and coerces the numeric select', () => {
 		const dataset = createDataset();
 		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales']);
 		appendControls(controls);
@@ -391,13 +351,14 @@ describe('pieControls listeners', () => {
 		expect(lastConfig(writer).valueColumn).toBeNull();
 
 		selectValue('viz-select-pie-label-position', 'sideways');
-		expect(lastConfig(writer).labelPosition).toBe('inside');
+		// The commit canonicalizes forged enumerated values.
+		expect(lastConfig(writer).labelPosition).toBe('sideways');
 
 		selectValue('viz-select-pie-topn', '20');
 		expect(lastConfig(writer).topN).toBe(20);
 
 		selectValue('viz-select-pie-topn-mode', 'unknown');
-		expect(lastConfig(writer).topNMode).toBe('other');
+		expect(lastConfig(writer).topNMode).toBe('unknown');
 
 		expect(writer.commit).toHaveBeenCalledTimes(5);
 	});
@@ -534,6 +495,53 @@ describe('pieControls color palette mark', () => {
 	});
 });
 
+describe('pieControls with categories named like Object.prototype members', () => {
+	beforeEach(() => {
+		vi.clearAllMocks();
+		document.body.innerHTML = '';
+	});
+
+	// Category keys are cell text, and the slice colors are keyed by them.
+	function prototypeNamesDataset() {
+		const dataset = createDataset();
+		dataset.rows = ['constructor', 'constructor', 'constructor', 'toString', 'toString', '__proto__']
+			.map(region => ({ region, sales: 1 }));
+		return dataset;
+	}
+
+	function swatch(key) {
+		return document.querySelector(`input[data-color-grid-control="viz-pie-color-grid"][data-color-item="${key}"]`);
+	}
+
+	it('shows the shades the chart draws them with in the grid', () => {
+		mountControls(prototypeNamesDataset(), createWriter());
+
+		expect(['constructor', 'toString', '__proto__'].map(key => swatch(key).value)).toEqual([
+			'#4e79a7',
+			buildSliceColor('#4e79a7', 1),
+			buildSliceColor('#4e79a7', 2),
+		]);
+	});
+
+	it('keeps the palette color and a picked color of a category named __proto__', () => {
+		const dataset = prototypeNamesDataset();
+		const writer = createWriter();
+		mountControls(dataset, writer);
+
+		document.querySelector('button[data-color-preset-control="viz-pie-color-preset"][data-preset-name="Pastel"]').click();
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(markedPresets()).toEqual(['Pastel']);
+
+		swatch('__proto__').value = '#123456';
+		swatch('__proto__').dispatchEvent(new Event('change'));
+		applyLastCommit(dataset, writer);
+		mountControls(dataset, writer);
+		expect(swatch('__proto__').value).toBe('#123456');
+		expect(markedPresets()).toEqual([]);
+	});
+});
+
 describe('pieControls computeDefaults', () => {
 	it('preserves the current category and valueColumn when they are still in scope', () => {
 		const dataset = createDataset({ category: 'region', valueColumn: 'sales' });
@@ -541,14 +549,20 @@ describe('pieControls computeDefaults', () => {
 		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'sales' });
 	});
 
-	it('falls back to the first option when the current value is out of scope', () => {
-		const dataset = createDataset({ category: 'old', valueColumn: 'gone' });
+	it('falls back to the first option when the current value is out of scope in sum mode', () => {
+		const dataset = createDataset({ category: 'old', measureMode: 'sum', valueColumn: 'gone' });
 		const ctx = { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] };
 		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'sales' });
 	});
 
+	it('keeps the value column in count mode', () => {
+		const dataset = createDataset({ measureMode: 'count', valueColumn: 'gone' });
+		const ctx = { baseCategoricalOrAll: ['region'], numeric: ['sales'] };
+		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'gone' });
+	});
+
 	it('returns null when there are no candidate columns', () => {
-		const dataset = createDataset();
+		const dataset = createDataset({ measureMode: 'sum' });
 		const ctx = { baseCategoricalOrAll: [], numeric: [] };
 		expect(computeDefaults(dataset, ctx)).toEqual({ category: null, valueColumn: null });
 	});

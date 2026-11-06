@@ -16,11 +16,14 @@
  */
 
 import { normalizeHexColor } from '../../../utils/colorUtils.js';
+import { valueColumnForMeasure } from './measureValueColumn.js';
 
 /**
  * Wire `change` listeners on a batch of `<select>` elements. Each entry's
  * `transform` (when present) maps the raw `value` to the stored config
- * value (e.g. parseInt, lookup table).
+ * value (e.g. parseInt, lookup table). An enumerated setting needs none: the
+ * commit canonicalizes the chart's config, which replaces a value the chart's
+ * definition does not offer with the chart's default.
  *
  * @param {Array<{ id: string, key: string, transform?: (value: string) => * }>} controls
  * @param {ChartConfigWriter} writer
@@ -32,6 +35,30 @@ export function setupSelectListeners(controls, writer) {
 		el.addEventListener('change', () => {
 			const value = transform ? transform(el.value) : el.value;
 			writer.commit({ [key]: value });
+		});
+	});
+}
+
+/**
+ * Wire the measure select of the bar, pie, treemap or bubble chart. A change
+ * commits the chosen measure with the value column
+ * {@link valueColumnForMeasure} keeps for it. The measure is committed as
+ * chosen: the commit canonicalizes the chart's config, which checks the
+ * measure against the chart's definition.
+ *
+ * @param {string} elementId
+ * @param {() => (string | null)} getValueColumn - Reads the stored value column when the measure changes.
+ * @param {string[]} numericOptions - Visible numeric column names.
+ * @param {ChartConfigWriter} writer
+ */
+export function setupMeasureListener(elementId, getValueColumn, numericOptions, writer) {
+	const el = document.getElementById(elementId);
+	if (!el) return;
+	el.addEventListener('change', () => {
+		const measureMode = el.value;
+		writer.commit({
+			measureMode,
+			valueColumn: valueColumnForMeasure(measureMode, getValueColumn(), numericOptions),
 		});
 	});
 }

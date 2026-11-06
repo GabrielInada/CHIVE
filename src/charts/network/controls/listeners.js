@@ -38,7 +38,7 @@ export function setupNetworkGraphControlListeners(dataset, allOptions, numericOp
 		{ id: 'viz-select-network-target', key: 'target' },
 		{ id: 'viz-select-network-weight', key: 'weight', transform: v => v || null },
 		{ id: 'viz-select-network-group', key: 'group', transform: v => v || null },
-		{ id: 'viz-select-network-edge-color-mode', key: 'edgeColorMode', transform: v => v === 'uniform' ? 'uniform' : 'gradient' },
+		{ id: 'viz-select-network-edge-color-mode', key: 'edgeColorMode' },
 	], writer);
 
 	setupSliderListeners([

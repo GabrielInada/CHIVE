@@ -82,9 +82,7 @@ describe('renderTreemapPanelChart', () => {
 			count: 'chive-tooltip-count',
 			sum: 'chive-tooltip-sum',
 			percentage: 'chive-tooltip-percentage',
-			focusOnThis: 'chive-tooltip-show-only-this',
 			missing: 'chive-chart-filter-missing',
-			addToFilter: 'chive-tooltip-add-to-filter',
 		});
 		expect(options.filterCallbacks).toEqual({});
 	});

@@ -147,6 +147,24 @@ describe('eventHandlers', () => {
 		expect(mocks.showFeedback).toHaveBeenCalledWith('tr:chive-panel-add-success');
 	});
 
+	it.each([
+		['pie', 'count', 'tr:chive-chart-control-pie-category: family · tr:chive-chart-control-pie-measure-count · tr:chive-chart-control-pie-pad-angle: 2deg'],
+		['pie', 'sum', 'tr:chive-chart-control-pie-category: family · tr:chive-chart-control-pie-measure-sum · tr:chive-chart-control-pie-value-column: biomass · tr:chive-chart-control-pie-pad-angle: 2deg'],
+		['bubble', 'count', 'tr:chive-chart-control-bubble-category: family · tr:chive-chart-control-bubble-measure-count · tr:chive-chart-control-bubble-topn: tr:chive-chart-topn-all'],
+		['bubble', 'mean', 'tr:chive-chart-control-bubble-category: family · tr:chive-chart-control-bubble-measure-mean · tr:chive-chart-control-bubble-value-column: biomass · tr:chive-chart-control-bubble-topn: tr:chive-chart-topn-all'],
+		['treemap', 'count', 'tr:chive-chart-control-treemap-category: family · tr:chive-chart-control-bar-measure-count'],
+		['treemap', 'sum', 'tr:chive-chart-control-treemap-category: family · tr:chive-chart-control-bar-measure-sum · tr:chive-chart-control-treemap-value-column: biomass'],
+	])('captions a %s chart measured by %s', (type, measureMode, summary) => {
+		setupChartActionListeners();
+		mocks.getActiveDataset.mockReturnValue({
+			chartConfig: fullChartConfig({ [type]: { measureMode, valueColumn: 'biomass' } }),
+		});
+
+		appendChartAction({ type, action: 'add-panel' }).click();
+
+		expect(mocks.addChartToPanel.mock.calls.at(-1)[2].summary).toBe(summary);
+	});
+
 	it('uses custom chart titles, generic fallback titles, and empty metadata for unresolved chart types', () => {
 		setupChartActionListeners();
 		mocks.getActiveDataset.mockReturnValue({

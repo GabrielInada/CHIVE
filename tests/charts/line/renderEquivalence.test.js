@@ -27,7 +27,7 @@ const ROWS_NUM = [
 const ROWS_CAT = [{ x: 'Jan', y: 10 }, { x: 'Feb', y: 5 }, { x: 'Mar', y: 8 }];
 const ROWS_DATE = [{ x: '2024-01-01', y: 10 }, { x: '2024-02-01', y: 5 }, { x: '2024-03-01', y: 8 }];
 
-const BASE = { locale: 'en-US', chartHeight: 320 };
+const BASE = { curve: 'linear', missingMode: 'connect', aggregateMode: 'none', locale: 'en-US', chartHeight: 320 };
 
 function makeContainer() {
 	document.body.innerHTML = '<div id="line"></div>';

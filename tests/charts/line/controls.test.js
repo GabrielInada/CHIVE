@@ -246,7 +246,9 @@ describe('lineControls listeners', () => {
 		expect(writer.commit).toHaveBeenCalledTimes(3);
 	});
 
-	it('coerces invalid curve, missing, and aggregate options to defaults', () => {
+	// The commit canonicalizes the chart's config, which replaces a value the
+	// line chart does not offer.
+	it('commits forged curve, missing, and aggregate options as chosen', () => {
 		const dataset = createDataset();
 		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
 		appendControls(controls);
@@ -255,13 +257,13 @@ describe('lineControls listeners', () => {
 		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
 
 		selectValue('viz-select-line-curve', 'made-up');
-		expect(lastConfig(writer).curve).toBe('linear');
+		expect(lastConfig(writer)).toEqual({ curve: 'made-up' });
 
 		selectValue('viz-select-line-missing', 'made-up');
-		expect(lastConfig(writer).missingMode).toBe('connect');
+		expect(lastConfig(writer)).toEqual({ missingMode: 'made-up' });
 
 		selectValue('viz-select-line-aggregate', 'made-up');
-		expect(lastConfig(writer).aggregateMode).toBe('none');
+		expect(lastConfig(writer)).toEqual({ aggregateMode: 'made-up' });
 	});
 
 	it('skips listener setup when controls are absent', () => {

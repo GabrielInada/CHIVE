@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildSliceColor, resolveSliceColors } from '../../../src/charts/pie/color.js';
+import { buildSliceColor } from '../../../src/charts/pie/color.js';
 import { CHART_COLORS } from '../../../src/config/charts/definitions.js';
-import { PIE_CHART } from '../../../src/config/charts/definitions/pie.js';
 
 describe('pie buildSliceColor', () => {
 	// The default base color's shades, each 8% darker than the one before.
@@ -45,32 +44,5 @@ describe('pie buildSliceColor', () => {
 
 	it('falls back to the default pie base color when the base does not parse', () => {
 		expect(buildSliceColor('not-a-color', 0)).toBe(CHART_COLORS.pie);
-	});
-});
-
-describe('pie resolveSliceColors', () => {
-	it('gives Other its fixed color, then a custom color, then the shade for the sector position', () => {
-		const entries = [{ key: 'A' }, { key: 'B' }, { key: 'C' }, { key: 'rest', isOther: true }];
-		const colors = resolveSliceColors(entries, { color: '#888888', customSliceColors: { B: '#123456', rest: '#ff0000' } });
-		expect([...colors]).toEqual([
-			['A', '#888888'],
-			['B', '#123456'],
-			['C', buildSliceColor('#888888', 2)],
-			['rest', PIE_CHART.otherSliceColor],
-		]);
-	});
-
-	it('spreads the shades over every sector but Other, custom-colored ones included', () => {
-		const entries = [...Array.from({ length: 12 }, (_, index) => ({ key: `S${index}` })), { key: 'rest', isOther: true }];
-		const colors = resolveSliceColors(entries, { color: '#888888', customSliceColors: { S3: '#123456' } });
-		expect(new Set(colors.values()).size).toBe(13);
-		expect(colors.get('S3')).toBe('#123456');
-		expect(colors.get('S4')).toBe(buildSliceColor('#888888', 4, 12));
-		expect(colors.get('rest')).toBe(PIE_CHART.otherSliceColor);
-	});
-
-	it('treats absent custom colors as none', () => {
-		const colors = resolveSliceColors([{ key: 'A' }], { color: '#888888', customSliceColors: null });
-		expect(colors.get('A')).toBe('#888888');
 	});
 });

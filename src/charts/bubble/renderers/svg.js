@@ -13,15 +13,12 @@
 
 import { hierarchy, pack, scaleOrdinal, select } from '../../../../vendor/d3/d3.js';
 import {
-	buildCategoricalFilterActions,
-	createFilterStateBadge,
-	createTooltipActionGroup,
 	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
-	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
+import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { BUBBLE_CHART } from '../../../config/charts/definitions/bubble.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
@@ -36,11 +33,6 @@ import {
 	isIntermediate,
 	isDescendantOf,
 } from '../data.js';
-
-/** @private */
-function getBubblePalette(colorScheme) {
-	return CHART_COLOR_PALETTES[colorScheme] || CHART_COLOR_PALETTES.Tableau10;
-}
 
 /**
  * Render a bubble chart into `container`. Returns `ok()` on success, or
@@ -64,31 +56,24 @@ function getBubblePalette(colorScheme) {
 export function renderBubbleChart(container, rows, categoryColumn, options = {}) {
 	if (!container || !categoryColumn) return fail();
 
-	const measureMode = BUBBLE_CHART.measureModes.includes(options.measureMode)
-		? options.measureMode
-		: BUBBLE_CHART.defaultMeasureMode;
+	// Read as given: chart config canonicalization checks the enumerated
+	// settings against the chart's definition.
+	const { measureMode, labelMode, nestingMode, colorScheme } = options;
 	const valueColumn = options.valueColumn || null;
 	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : BUBBLE_CHART.defaultTopN;
 	const padding = Number.isFinite(Number(options.padding))
 		? Number(options.padding)
 		: BUBBLE_CHART.defaultPadding;
-	const labelMode = BUBBLE_CHART.labelModes.includes(options.labelMode)
-		? options.labelMode
-		: BUBBLE_CHART.defaultLabelMode;
 	const autoLabelMinRadius = Number.isFinite(Number(options.autoLabelMinRadius))
 		? Number(options.autoLabelMinRadius)
 		: BUBBLE_CHART.autoLabelMinRadius;
 	const parentLabelMinRadius = BUBBLE_CHART.parentLabelMinRadius;
-	const nestingMode = BUBBLE_CHART.nestingModes.includes(options.nestingMode)
-		? options.nestingMode
-		: BUBBLE_CHART.defaultNestingMode;
 	const nestingColumns = resolveNestingColumns(options);
 	const locale = options.locale || undefined;
 	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
 	const chartHeight = Number.isFinite(Number(options.chartHeight))
 		? Math.max(400, Math.min(900, Number(options.chartHeight)))
 		: CHART_DIMENSIONS.bubble.height;
-	const colorScheme = String(options.colorScheme || '').trim() || 'Tableau10';
 	const labels = {
 		category: options.labels?.category || 'Category',
 		count: options.labels?.count || 'Count',
@@ -173,61 +158,9 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 	} else {
 		colorDomain = Array.from(new Set(leaves.map(item => item.data.groupKey)));
 	}
-	const colorScale = scaleOrdinal(getBubblePalette(colorScheme)).domain(colorDomain);
+	const colorScale = scaleOrdinal(CHART_COLOR_PALETTES[colorScheme]).domain(colorDomain);
 
 	let pinnedNode = null;
-	const filterCallbacks = options.filterCallbacks || {};
-	const filterLabels = filterCallbacks.filterActionLabels || {};
-	const actionLabels = {
-		focus: filterLabels.focus || 'Show only this',
-		add: filterLabels.add || 'Add to filter',
-		exclude: filterLabels.exclude || 'Hide this',
-		remove: filterLabels.remove || 'Remove from filter',
-		bringBack: filterLabels.bringBack || 'Bring back',
-	};
-
-	const buildPinnedFilterTooltip = (event, content, headerTitle, filterColumn, token, onDismiss) => {
-		if (!filterColumn || !token) {
-			showPinnedChartTooltip(content, event.pageX, event.pageY, {
-				headerTitle,
-				closeLabel: filterLabels.close,
-				onDismiss,
-				actionSets: [],
-			});
-			return;
-		}
-		const state = typeof filterCallbacks.getTokenFilterState === 'function'
-			? filterCallbacks.getTokenFilterState(filterColumn, token)
-			: null;
-		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
-			? !!filterCallbacks.isShowOnlyThisRedundant(filterColumn, token)
-			: false;
-		const actions = buildCategoricalFilterActions({
-			column: filterColumn,
-			token,
-			state,
-			labels: actionLabels,
-			omitFocus,
-			onFocus: filterCallbacks.onFocusGlobalFilter,
-			onAdd: filterCallbacks.onAddToGlobalFilter,
-			onExclude: filterCallbacks.onExcludeGlobalFilter,
-			onRemove: filterCallbacks.onRemoveFromGlobalFilter,
-			onBringBack: filterCallbacks.onBringBackGlobalFilter,
-		});
-		const stateBadge = createFilterStateBadge({
-			state,
-			includedLabel: filterLabels.stateIncluded,
-			excludedLabel: filterLabels.stateExcluded,
-		});
-		const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
-		showPinnedChartTooltip(content, event.pageX, event.pageY, {
-			headerTitle,
-			closeLabel: filterLabels.close,
-			onDismiss,
-			actionSets: actionSet ? [actionSet] : [],
-			stateBadge,
-		});
-	};
 
 	const resolveParentColumn = (item) => {
 		if (!item || typeof item.depth !== 'number') return null;
@@ -448,18 +381,15 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 					return;
 				}
 				pinnedNode = item;
-				const parentColumn = resolveParentColumn(item);
-				buildPinnedFilterTooltip(
-					event,
-					createParentTooltip(item),
-					item.data.groupLabel,
-					parentColumn,
-					item.data.groupToken,
-					() => {
+				showPinnedFilterTooltip(createParentTooltip(item), event.pageX, event.pageY, {
+					headerTitle: item.data.groupLabel,
+					onDismiss: () => {
 						pinnedNode = null;
 						hideChartTooltip();
 					},
-				);
+					filterCallbacks: options.filterCallbacks,
+					categories: [{ column: resolveParentColumn(item), token: item.data.groupToken }],
+				});
 			})
 			.on('dblclick', (event, item) => {
 				event.stopPropagation();
@@ -540,17 +470,15 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 				return;
 			}
 			pinnedNode = item;
-			buildPinnedFilterTooltip(
-				event,
-				createLeafTooltip(item),
-				item.data.label,
-				categoryColumn,
-				item.data.token,
-				() => {
+			showPinnedFilterTooltip(createLeafTooltip(item), event.pageX, event.pageY, {
+				headerTitle: item.data.label,
+				onDismiss: () => {
 					pinnedNode = null;
 					hideChartTooltip();
 				},
-			);
+				filterCallbacks: options.filterCallbacks,
+				categories: [{ column: categoryColumn, token: item.data.token }],
+			});
 		});
 
 	svg.on('click', () => {

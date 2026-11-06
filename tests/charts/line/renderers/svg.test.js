@@ -4,6 +4,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderLineChart } from '../../../../src/charts/line/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 
+// Explicit enum inputs preserve the renderer's historical output.
+const BASE_OPTIONS = { curve: 'linear', missingMode: 'connect', aggregateMode: 'none' };
+
 describe('renderLineChart', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '<div id="line"></div>';
@@ -21,6 +24,7 @@ describe('renderLineChart', () => {
 			{ x: 3, y: 15 },
 		];
 		const result = renderLineChart(container, rows, 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
 			missingMode: 'connect',
 		});
@@ -37,6 +41,7 @@ describe('renderLineChart', () => {
 			{ d: new Date('2024-03-01'), y: 3 },
 		];
 		const result = renderLineChart(container, rows, 'd', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'date', y: 'number' },
 		});
 		expect(result.ok).toBe(true);
@@ -50,6 +55,7 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 'oops' },
 		];
 		const result = renderLineChart(container, rows, 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
 		});
 		expect(result.ok).toBe(false);
@@ -64,6 +70,7 @@ describe('renderLineChart', () => {
 			{ x: 3, y: 30 },
 		];
 		const result = renderLineChart(container, rows, 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
 			missingMode: 'interpolate',
 		});
@@ -79,6 +86,7 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 20 },
 		];
 		const result = renderLineChart(container, rows, 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
 			showPoints: true,
 		});
@@ -94,6 +102,7 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 30 },
 		];
 		const result = renderLineChart(container, rows, 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
 			aggregateMode: 'mean',
 			showPoints: true,
@@ -104,9 +113,9 @@ describe('renderLineChart', () => {
 
 	it('returns invalid-args without container or column names', () => {
 		const container = document.getElementById('line');
-		expect(renderLineChart(null, [{ x: 1, y: 1 }], 'x', 'y').ok).toBe(false);
-		expect(renderLineChart(container, [{ x: 1, y: 1 }], null, 'y').ok).toBe(false);
-		expect(renderLineChart(container, [{ x: 1, y: 1 }], 'x', null).ok).toBe(false);
+		expect(renderLineChart(null, [{ x: 1, y: 1 }], 'x', 'y', BASE_OPTIONS).ok).toBe(false);
+		expect(renderLineChart(container, [{ x: 1, y: 1 }], null, 'y', BASE_OPTIONS).ok).toBe(false);
+		expect(renderLineChart(container, [{ x: 1, y: 1 }], 'x', null, BASE_OPTIONS).ok).toBe(false);
 	});
 
 	it('honors custom title and axis labels', () => {
@@ -116,6 +125,7 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 20 },
 		];
 		renderLineChart(container, rows, 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
 			customTitle: 'Trend',
 			axisLabels: { x: 'Day', y: 'Visits' },
@@ -128,11 +138,13 @@ describe('renderLineChart', () => {
 	it('returns failure for empty rows and for rows without usable X values', () => {
 		const container = document.getElementById('line');
 
-		expect(renderLineChart(container, [], 'x', 'y').ok).toBe(false);
+		expect(renderLineChart(container, [], 'x', 'y', BASE_OPTIONS).ok).toBe(false);
 		expect(renderLineChart(container, [{ x: '', y: 1 }, { x: null, y: 2 }], 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'number' },
 		})).toEqual({ ok: false, reason: 'no-x-values' });
 		expect(renderLineChart(container, [{ d: 'not-a-date', y: 1 }], 'd', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'date' },
 		})).toEqual({ ok: false, reason: 'no-x-values' });
 	});
@@ -147,6 +159,7 @@ describe('renderLineChart', () => {
 		];
 
 		const result = renderLineChart(container, rows, 'bucket', 'y', {
+			...BASE_OPTIONS,
 			sortX: false,
 			showXAxisLabel: false,
 			showYAxisLabel: false,
@@ -170,6 +183,7 @@ describe('renderLineChart', () => {
 		];
 
 		const result = renderLineChart(container, rows, 'bucket', 'y', {
+			...BASE_OPTIONS,
 			sortX: false,
 		});
 
@@ -198,6 +212,7 @@ describe('renderLineChart', () => {
 		];
 
 		const sum = renderLineChart(container, rows, 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'numeric' },
 			aggregateMode: 'sum',
 			showPoints: true,
@@ -207,6 +222,7 @@ describe('renderLineChart', () => {
 
 		container.innerHTML = '';
 		const count = renderLineChart(container, rows, 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'numeric' },
 			aggregateMode: 'count',
 			showPoints: true,
@@ -215,7 +231,7 @@ describe('renderLineChart', () => {
 		expect(container.querySelectorAll('circle.line-point')).toHaveLength(2);
 	});
 
-	it('uses renderer fallbacks for invalid options and constant domains', () => {
+	it('uses numeric and color fallbacks with constant domains', () => {
 		const container = document.getElementById('line');
 		const rows = [
 			{ x: 5, y: 10 },
@@ -223,10 +239,8 @@ describe('renderLineChart', () => {
 		];
 
 		const result = renderLineChart(container, rows, 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'unknown' },
-			aggregateMode: 'bad',
-			curve: 'bad',
-			missingMode: 'bad',
 			strokeWidth: 'bad',
 			color: 'bad',
 			ghostStrokeColor: 'bad',
@@ -248,6 +262,7 @@ describe('renderLineChart', () => {
 		];
 
 		const result = renderLineChart(container, rows, 'x', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'number' },
 			strokeWidth: 99,
 			chartHeight: 1000,
@@ -278,6 +293,7 @@ describe('renderLineChart', () => {
 			{ d: '2024-01-01', y: 10 },
 			{ d: '2024-02-01', y: 20 },
 		], 'd', 'y', {
+			...BASE_OPTIONS,
 			axisTypes: { x: 'date' },
 			showPoints: true,
 			axisLabels: { x: 'When', y: 'Total' },

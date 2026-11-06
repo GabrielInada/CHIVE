@@ -383,9 +383,14 @@ describe('computeActivationDefaults', () => {
 		expect(defaults.x).not.toBe(defaults.y);
 	});
 
-	it('pie: returns category + first-numeric valueColumn', () => {
-		const defaults = computeActivationDefaults('pie', makeDataset(), { numeric, categorical, allColumns });
+	it('pie: returns category + first-numeric valueColumn in sum mode', () => {
+		const defaults = computeActivationDefaults('pie', makeDataset({ pie: { measureMode: 'sum', valueColumn: null } }), { numeric, categorical, allColumns });
 		expect(defaults).toEqual({ category: 'c1', valueColumn: 'n1' });
+	});
+
+	it('pie: keeps the valueColumn in count mode', () => {
+		const defaults = computeActivationDefaults('pie', makeDataset({ pie: { measureMode: 'count', valueColumn: null } }), { numeric, categorical, allColumns });
+		expect(defaults).toEqual({ category: 'c1', valueColumn: null });
 	});
 
 	it('network: picks source and target from allColumns', () => {

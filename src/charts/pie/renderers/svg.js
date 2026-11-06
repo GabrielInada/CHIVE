@@ -1,10 +1,9 @@
 /**
  * Pie-chart renderer.
  *
- * Renders a D3 pie/donut with Top-N truncation, optional pad-angle gaps,
- * inside/outside slice labels, zoom, and pinned tooltips for filter
- * actions. Slice colors can be palette-derived (auto) or per-slice overrides
- * (`customSliceColors`).
+ * Renders a D3 pie/donut of the sectors `computePieSectors` returns, in their
+ * order and fills, with optional pad-angle gaps, inside/outside slice labels,
+ * zoom, and pinned tooltips for filter actions.
  *
  * Internal D3 helpers (arc/pie generators, label placement, zoom integration)
  * are intentionally undocumented per the Tier 5 plan.
@@ -14,27 +13,23 @@
 
 import { arc, pie, select, zoom, zoomIdentity } from '../../../../vendor/d3/d3.js';
 import {
-	buildCategoricalFilterActions,
-	createFilterStateBadge,
-	createTooltipActionGroup,
 	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
-	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
+import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
 import { ok, fail } from '../../../utils/result.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
 import { normalizePieOptions } from '../options.js';
-import { aggregatePieData } from '../data.js';
-import { resolveSliceColors } from '../color.js';
+import { computePieSectors } from '../data.js';
 
 /**
  * Render a pie chart into `container`. Returns `ok()` on success, or
- * `fail()` when required arguments are missing or `aggregatePieData` fails,
+ * `fail()` when required arguments are missing or `computePieSectors` fails,
  * as it does with `'no-positive-value'` when no category has a value
  * above 0.
  *
@@ -55,16 +50,11 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 	if (!container || !categoryColumn) return fail();
 
 	const {
-		color,
 		locale,
-		customSliceColors,
 		labels,
-		topN,
-		topNMode,
 		rawInner,
 		rawOuter,
 		measureMode,
-		valueColumn,
 		showCategoryLabel,
 		showValueLabel,
 		showLegend,
@@ -75,17 +65,9 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		zoomScale,
 	} = normalizePieOptions(options);
 
-	const aggregated = aggregatePieData(rows, categoryColumn, {
-		measureMode,
-		valueColumn,
-		topN,
-		topNMode,
-		otherLabel: labels.other,
-		missingLabel: labels.missing,
-	});
-	if (!aggregated.ok) return fail(aggregated.reason);
-	const { entries, total } = aggregated;
-	const sliceColors = resolveSliceColors(entries, { color, customSliceColors });
+	const drawn = computePieSectors(rows, categoryColumn, options);
+	if (!drawn.ok) return fail(drawn.reason);
+	const { sectors, total } = drawn;
 
 	container.replaceChildren();
 	hideChartTooltip();
@@ -152,68 +134,23 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		showChartTooltip(buildTooltipContent(item), event.pageX, event.pageY);
 	};
 
-	const filterCallbacks = options.filterCallbacks || {};
-	const filterLabels = filterCallbacks.filterActionLabels || {};
-	const actionLabels = {
-		focus: filterLabels.focus || labels.focusOnThis,
-		add: filterLabels.add || labels.addToFilter,
-		exclude: filterLabels.exclude || 'Hide this',
-		remove: filterLabels.remove || 'Remove from filter',
-		bringBack: filterLabels.bringBack || 'Bring back',
-	};
-
 	const showPinnedTooltip = (event, item, onDismiss) => {
-		const content = buildTooltipContent(item);
-		if (item.isOther) {
-			showPinnedChartTooltip(content, event.pageX, event.pageY, {
-				headerTitle: item.label,
-				closeLabel: filterLabels.close,
-				onDismiss,
-				actionSets: [],
-			});
-			return;
-		}
-		const { token } = item;
-		const state = typeof filterCallbacks.getTokenFilterState === 'function'
-			? filterCallbacks.getTokenFilterState(categoryColumn, token)
-			: null;
-		const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
-			? !!filterCallbacks.isShowOnlyThisRedundant(categoryColumn, token)
-			: false;
-		const actions = buildCategoricalFilterActions({
-			column: categoryColumn,
-			token,
-			state,
-			labels: actionLabels,
-			omitFocus,
-			onFocus: filterCallbacks.onFocusGlobalFilter,
-			onAdd: filterCallbacks.onAddToGlobalFilter,
-			onExclude: filterCallbacks.onExcludeGlobalFilter,
-			onRemove: filterCallbacks.onRemoveFromGlobalFilter,
-			onBringBack: filterCallbacks.onBringBackGlobalFilter,
-		});
-		const stateBadge = createFilterStateBadge({
-			state,
-			includedLabel: filterLabels.stateIncluded,
-			excludedLabel: filterLabels.stateExcluded,
-		});
-		const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
-		showPinnedChartTooltip(content, event.pageX, event.pageY, {
+		// The Other sector has no category token, so it offers no filter actions.
+		showPinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
 			headerTitle: item.label,
-			closeLabel: filterLabels.close,
 			onDismiss,
-			actionSets: actionSet ? [actionSet] : [],
-			stateBadge,
+			filterCallbacks: options.filterCallbacks,
+			categories: [{ column: categoryColumn, token: item.token }],
 		});
 	};
 
 	group
 		.selectAll('path')
-		.data(pieGenerator(entries))
+		.data(pieGenerator(sectors))
 		.enter()
 		.append('path')
 		.attr('d', arcGenerator)
-		.attr('fill', item => sliceColors.get(item.data.key))
+		.attr('fill', item => item.data.color)
 		.attr('stroke', '#fff')
 		.attr('stroke-width', 1)
 		.on('mouseenter', (event, item) => {
@@ -257,7 +194,7 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 	svg.call(zoomBehavior);
 	svg.call(zoomBehavior.transform, zoomIdentity.scale(zoomScale));
 
-	const pieData = pieGenerator(entries);
+	const pieData = pieGenerator(sectors);
 	if ((showCategoryLabel || showValueLabel) && labelPosition === 'inside') {
 		group
 			.selectAll('text')
@@ -336,13 +273,13 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 			.append('g')
 			.attr('transform', `translate(${Math.max(centerX + outerRadius + 26, width - 180)},${Math.max(14, centerY - outerRadius)})`);
 
-		entries.slice(0, 8).forEach((item, index) => {
+		sectors.slice(0, 8).forEach((item, index) => {
 			const row = legend.append('g').attr('transform', `translate(0,${index * 16})`);
 			row.append('rect')
 				.attr('width', 10)
 				.attr('height', 10)
 				.attr('rx', 2)
-				.attr('fill', sliceColors.get(item.key));
+				.attr('fill', item.color);
 			row.append('text')
 				.attr('x', 14)
 				.attr('y', 9)

@@ -13,26 +13,18 @@
 
 import { hierarchy, select, treemap, treemapSquarify } from '../../../../vendor/d3/d3.js';
 import {
-	buildCategoricalFilterActions,
-	createFilterStateBadge,
-	createTooltipActionGroup,
 	createTooltipLine,
 	hideChartTooltip,
 	moveChartTooltip,
 	showChartTooltip,
-	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
+import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
 import { normalizeTreemapOptions } from '../options.js';
 import { aggregateTreemapData } from '../data.js';
-
-/** @private */
-function getSchemeColors(schemeName) {
-	return CHART_COLOR_PALETTES[schemeName] || CHART_COLOR_PALETTES.Bold;
-}
 
 /** @private */
 function truncate(text, maxLen) {
@@ -115,22 +107,13 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 
 	layoutFn(root);
 
-	const schemeColors = getSchemeColors(colorScheme);
+	const schemeColors = CHART_COLOR_PALETTES[colorScheme];
 	const getColor = (d, i) => {
 		if (colorMode === 'uniform') return uniformColor;
 		return schemeColors[i % schemeColors.length];
 	};
 
 	let pinnedKey = null;
-	const filterCallbacks = options.filterCallbacks || {};
-	const filterLabels = filterCallbacks.filterActionLabels || {};
-	const actionLabels = {
-		focus: filterLabels.focus || labels.focusOnThis,
-		add: filterLabels.add || labels.addToFilter,
-		exclude: filterLabels.exclude || 'Hide this',
-		remove: filterLabels.remove || 'Remove from filter',
-		bringBack: filterLabels.bringBack || 'Bring back',
-	};
 
 	const buildTooltipContent = (d, pct) => {
 		const wrapper = document.createElement('div');
@@ -187,41 +170,14 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 			}
 			pinnedKey = d.data.key;
 			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
-			const content = buildTooltipContent(d, pct);
-			const { token } = d.data;
-			const state = typeof filterCallbacks.getTokenFilterState === 'function'
-				? filterCallbacks.getTokenFilterState(categoryColumn, token)
-				: null;
-			const omitFocus = typeof filterCallbacks.isShowOnlyThisRedundant === 'function'
-				? !!filterCallbacks.isShowOnlyThisRedundant(categoryColumn, token)
-				: false;
-			const actions = buildCategoricalFilterActions({
-				column: categoryColumn,
-				token,
-				state,
-				labels: actionLabels,
-				omitFocus,
-				onFocus: filterCallbacks.onFocusGlobalFilter,
-				onAdd: filterCallbacks.onAddToGlobalFilter,
-				onExclude: filterCallbacks.onExcludeGlobalFilter,
-				onRemove: filterCallbacks.onRemoveFromGlobalFilter,
-				onBringBack: filterCallbacks.onBringBackGlobalFilter,
-			});
-			const stateBadge = createFilterStateBadge({
-				state,
-				includedLabel: filterLabels.stateIncluded,
-				excludedLabel: filterLabels.stateExcluded,
-			});
-			const actionSet = actions.length > 0 ? createTooltipActionGroup(actions) : null;
-			showPinnedChartTooltip(content, event.pageX, event.pageY, {
+			showPinnedFilterTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY, {
 				headerTitle: d.data.label,
-				closeLabel: filterLabels.close,
 				onDismiss: () => {
 					pinnedKey = null;
 					hideChartTooltip();
 				},
-				actionSets: actionSet ? [actionSet] : [],
-				stateBadge,
+				filterCallbacks: options.filterCallbacks,
+				categories: [{ column: categoryColumn, token: d.data.token }],
 			});
 		});
 

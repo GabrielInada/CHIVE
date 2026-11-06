@@ -5,6 +5,9 @@ import { renderTreemap } from '../../../../src/charts/treemap/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 import { CHART_COLOR_PALETTES } from '../../../../src/config/charts/shared.js';
 
+// Explicit enum inputs preserve the renderer's historical output.
+const BASE_OPTIONS = { measureMode: 'count', colorMode: 'scheme', colorScheme: 'Bold' };
+
 const ROWS = [
 	{ region: 'North', sales: 30 },
 	{ region: 'North', sales: 10 },
@@ -35,33 +38,33 @@ describe('renderTreemap', () => {
 
 	it('returns failure when container or category column is missing', () => {
 		const container = document.getElementById('treemap');
-		expect(renderTreemap(null, ROWS, 'region').ok).toBe(false);
-		expect(renderTreemap(container, ROWS, null).ok).toBe(false);
+		expect(renderTreemap(null, ROWS, 'region', BASE_OPTIONS).ok).toBe(false);
+		expect(renderTreemap(container, ROWS, null, BASE_OPTIONS).ok).toBe(false);
 	});
 
 	it('returns no-value-column when sum mode has no value column', () => {
 		const container = document.getElementById('treemap');
-		const result = renderTreemap(container, ROWS, 'region', { measureMode: 'sum' });
+		const result = renderTreemap(container, ROWS, 'region', { ...BASE_OPTIONS, measureMode: 'sum' });
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-value-column');
 	});
 
 	it('returns failure when there are no rows to aggregate', () => {
 		const container = document.getElementById('treemap');
-		expect(renderTreemap(container, [], 'region').ok).toBe(false);
+		expect(renderTreemap(container, [], 'region', BASE_OPTIONS).ok).toBe(false);
 	});
 
 	it('returns no-positive-value when no category has a positive sum', () => {
 		const container = document.getElementById('treemap');
 		const zeros = [{ region: 'North', sales: 0 }, { region: 'South', sales: 0 }];
-		const result = renderTreemap(container, zeros, 'region', { measureMode: 'sum', valueColumn: 'sales' });
+		const result = renderTreemap(container, zeros, 'region', { ...BASE_OPTIONS, measureMode: 'sum', valueColumn: 'sales' });
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-positive-value');
 	});
 
 	it('renders one rect per category in count mode', () => {
 		const container = document.getElementById('treemap');
-		const result = renderTreemap(container, ROWS, 'region');
+		const result = renderTreemap(container, ROWS, 'region', BASE_OPTIONS);
 		expect(result.ok).toBe(true);
 		// North, South, East -> 3 distinct categories.
 		expect(rects(container).length).toBe(3);
@@ -73,7 +76,7 @@ describe('renderTreemap', () => {
 
 	it('slices to the topN largest categories', () => {
 		const container = document.getElementById('treemap');
-		const result = renderTreemap(container, ROWS, 'region', { topN: 2 });
+		const result = renderTreemap(container, ROWS, 'region', { ...BASE_OPTIONS, topN: 2 });
 		expect(result.ok).toBe(true);
 		expect(rects(container).length).toBe(2);
 	});
@@ -86,7 +89,7 @@ describe('renderTreemap', () => {
 			{ region: 'South', sales: 5 },
 			{ region: 'East', sales: 'oops' },
 		];
-		const result = renderTreemap(container, rows, 'region', { measureMode: 'sum', valueColumn: 'sales' });
+		const result = renderTreemap(container, rows, 'region', { ...BASE_OPTIONS, measureMode: 'sum', valueColumn: 'sales' });
 		expect(result.ok).toBe(true);
 		// East only has a non-numeric value, so it never enters the treemap.
 		expect(rects(container).length).toBe(2);
@@ -95,7 +98,7 @@ describe('renderTreemap', () => {
 	it('draws missing cells as one labelled tile apart from literal N/A text', () => {
 		const container = document.getElementById('treemap');
 		const rows = [{ region: 'North' }, { region: null }, { region: null }, { region: 'N/A' }];
-		const result = renderTreemap(container, rows, 'region', { labels: { missing: '(sem valor)' } });
+		const result = renderTreemap(container, rows, 'region', { ...BASE_OPTIONS, labels: { missing: '(sem valor)' } });
 		expect(result.ok).toBe(true);
 		// North + the missing bucket + the literal N/A tile = 3 cells.
 		expect(rects(container).length).toBe(3);
@@ -106,47 +109,47 @@ describe('renderTreemap', () => {
 
 	it('omits all text when labels and values are both hidden', () => {
 		const container = document.getElementById('treemap');
-		const result = renderTreemap(container, ROWS, 'region', { showLabels: false, showValues: false });
+		const result = renderTreemap(container, ROWS, 'region', { ...BASE_OPTIONS, showLabels: false, showValues: false });
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('text').length).toBe(0);
 	});
 
 	it('renders category labels when showLabels is on', () => {
 		const container = document.getElementById('treemap');
-		renderTreemap(container, ROWS, 'region', { showLabels: true, showValues: false });
+		renderTreemap(container, ROWS, 'region', { ...BASE_OPTIONS, showLabels: true, showValues: false });
 		const texts = Array.from(container.querySelectorAll('text')).map(t => t.textContent);
 		expect(texts.some(t => t.includes('North'))).toBe(true);
 	});
 
 	it('paints every rect with the uniform color in uniform mode', () => {
 		const container = document.getElementById('treemap');
-		renderTreemap(container, ROWS, 'region', { colorMode: 'uniform', color: '#123456' });
+		renderTreemap(container, ROWS, 'region', { ...BASE_OPTIONS, colorMode: 'uniform', color: '#123456' });
 		expect(new Set(fills(container))).toEqual(new Set(['#123456']));
 	});
 
 	it('cycles palette colors in scheme mode', () => {
 		const container = document.getElementById('treemap');
-		renderTreemap(container, ROWS, 'region', { colorMode: 'scheme', colorScheme: 'Bold' });
+		renderTreemap(container, ROWS, 'region', { ...BASE_OPTIONS, colorMode: 'scheme', colorScheme: 'Bold' });
 		// Three categories pull three distinct palette entries.
 		expect(new Set(fills(container)).size).toBe(3);
 	});
 
 	it('draws every palette its color buttons offer, Tableau10 included', () => {
 		const container = document.getElementById('treemap');
-		renderTreemap(container, ROWS, 'region', { colorMode: 'scheme', colorScheme: 'Tableau10' });
+		renderTreemap(container, ROWS, 'region', { ...BASE_OPTIONS, colorMode: 'scheme', colorScheme: 'Tableau10' });
 		expect(new Set(fills(container))).toEqual(new Set(CHART_COLOR_PALETTES.Tableau10.slice(0, 3)));
 	});
 
 	it('renders a custom title', () => {
 		const container = document.getElementById('treemap');
-		renderTreemap(container, ROWS, 'region', { customTitle: 'Revenue by region' });
+		renderTreemap(container, ROWS, 'region', { ...BASE_OPTIONS, customTitle: 'Revenue by region' });
 		const texts = Array.from(container.querySelectorAll('text')).map(t => t.textContent);
 		expect(texts).toContain('Revenue by region');
 	});
 
 	it('shows a hover tooltip with category and percentage', () => {
 		const container = document.getElementById('treemap');
-		renderTreemap(container, ROWS, 'region');
+		renderTreemap(container, ROWS, 'region', BASE_OPTIONS);
 		dispatchMouse(rects(container)[0], 'mouseenter');
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
@@ -159,6 +162,7 @@ describe('renderTreemap', () => {
 		const onAdd = vi.fn();
 		const onFocus = vi.fn();
 		renderTreemap(container, ROWS, 'region', {
+			...BASE_OPTIONS,
 			filterCallbacks: {
 				onAddToGlobalFilter: onAdd,
 				onFocusGlobalFilter: onFocus,
@@ -174,12 +178,12 @@ describe('renderTreemap', () => {
 
 		const addBtn = Array.from(actions).find(b => b.textContent === 'Add');
 		addBtn.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-		expect(onAdd).toHaveBeenCalled();
+		expect(onAdd).toHaveBeenCalledWith('region', 'v:North');
 	});
 
 	it('unpins when the same tile is clicked twice', () => {
 		const container = document.getElementById('treemap');
-		renderTreemap(container, ROWS, 'region', { filterCallbacks: {} });
+		renderTreemap(container, ROWS, 'region', { ...BASE_OPTIONS, filterCallbacks: {} });
 		const firstRect = rects(container)[0];
 		dispatchMouse(firstRect, 'click');
 		expect(document.querySelector('.chart-tooltip').hidden).toBe(false);
