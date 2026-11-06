@@ -293,6 +293,11 @@ entry calls `renderBarChartSection({ config, rows, filterCallbacks })` from
    `chive-chart-empty-bar-numeric`, anything else to `chive-chart-empty-bar`
    (via `showChartMessage`).
 
+The block heading, `chive-chart-bar-title`, is measure-neutral: "Bar chart (by category)"
+in English and "Barras (por categoria)" in Portuguese. The y axis names the selected measure.
+Add to Panel uses this heading for a new capture's name when no custom title is set; names
+already saved in Panel keep their stored text.
+
 ### 6.2 Panel view
 
 [renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
@@ -384,11 +389,13 @@ treemap, bubble, network, and scatter:
   when it would give the same filter as adding the value), then add to the global filter and
   exclude ("hide this") for a value the filter does not name, remove from the filter for an
   included value, or bring back an excluded one. An included or excluded value also gets a
-  filter-state badge. Each label falls back to its English default when the bag lacks it.
+  filter-state badge. Each filter-action label falls back to its English default when the bag
+  lacks it. The close button receives `labels.close` from the shared presentation flow as a
+  separate `closeLabel`, so its accessible name and hover title are translated in both views.
   Clicking the same bar again or clicking the SVG background dismisses the pin.
 
-Because the panel passes empty `filterCallbacks`, panel bars hover but do not pin
-filter-actions.
+Panel passes empty `filterCallbacks`. Its bars still show hover and pinned tooltips, with a
+translated close button and no filter actions or filter-state badge.
 
 ### 7.7 Axes and labels
 

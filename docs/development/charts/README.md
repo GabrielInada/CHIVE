@@ -126,7 +126,9 @@ doc rather than repeated:
   (`showPinnedFilterTooltip`) pins a tooltip with the global-filter actions for the column and
   category token a chart names. The categorical filter-action subsystem is documented in
   detail in the bar chart's [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter,
-  and network.
+  and network. Each chart's presentation flow supplies `labels.close`; the renderer passes
+  it as `closeLabel` independently of the filter callbacks, so Panel tooltips also use the
+  current interface language for the close button's accessible name and hover title.
 - **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
   builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets) and
   finds the palette preset a chart's colors still match (`findAppliedColorPreset`), the one

@@ -124,6 +124,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 	const showPinnedTooltip = (event, item, onDismiss) => {
 		showPinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
 			headerTitle: item.label,
+			closeLabel: labels.close,
 			onDismiss,
 			filterCallbacks: options.filterCallbacks,
 			categories: [{ column: categoryColumn, token: item.token }],

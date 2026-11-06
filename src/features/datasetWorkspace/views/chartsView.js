@@ -52,7 +52,6 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 			bringBack: t('chive-tooltip-bring-back'),
 			stateIncluded: t('chive-tooltip-state-included'),
 			stateExcluded: t('chive-tooltip-state-excluded'),
-			close: t('chive-tooltip-close'),
 			filterBySource: t('chive-tooltip-filter-by-source'),
 			filterByTarget: t('chive-tooltip-filter-by-target'),
 		},

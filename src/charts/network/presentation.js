@@ -48,6 +48,7 @@ export function renderNetworkInto(container, rows, config = {}, filterCallbacks 
 		showLegend: config.showLegend,
 		locale: getLocale(),
 		labels: {
+			close: t('chive-tooltip-close'),
 			node: t('chive-chart-control-network-source'),
 			linkWeight: t('chive-chart-control-network-weight'),
 			source: config.source || t('chive-chart-control-network-source'),

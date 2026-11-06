@@ -105,6 +105,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 		: 420;
 	const locale = options.locale || undefined;
 	const labels = {
+		close: options.labels?.close,
 		node: options.labels?.node || 'Node',
 		linkWeight: options.labels?.linkWeight || 'Weight',
 		source: options.labels?.source || 'Source',
@@ -244,6 +245,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 
 		showPinnedFilterTooltip(buildNodeTooltipContent(nodeData), startX, startY, {
 			headerTitle: String(nodeData.id),
+			closeLabel: labels.close,
 			onDismiss: () => {
 				pinnedNodeDatum = null;
 				hideChartTooltip();

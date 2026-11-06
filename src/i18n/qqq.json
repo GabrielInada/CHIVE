@@ -141,7 +141,7 @@
 	"chive-card-cat-stats": "Title of the categorical-columns statistics card (mode, missing, unique, top-5 concentration).",
 	"chive-card-charts": "Title of the chart visualization card.",
 	"chive-charts-badge": "Badge in chart card header. $1 = count of currently visible columns, $2 = count of visible numeric columns.",
-	"chive-chart-bar-title": "Heading for the bar chart block.",
+	"chive-chart-bar-title": "Heading for the bar chart block and default name for new Panel captures. Keep it independent of the selected measure (count, sum or mean).",
 	"chive-chart-scatter-title": "Heading for the scatter plot block.",
 	"chive-chart-network-title": "Heading for the network graph block.",
 	"chive-chart-pie-title": "Heading for the pie/donut chart block.",

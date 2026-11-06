@@ -68,6 +68,7 @@ export function renderScatterInto(
 		},
 		locale: getLocale(),
 		labels: {
+			close: t('chive-tooltip-close'),
 			xAxis: t('chive-chart-control-scatter-x'),
 			yAxis: t('chive-chart-control-scatter-y'),
 			index: t('chive-tooltip-row'),
