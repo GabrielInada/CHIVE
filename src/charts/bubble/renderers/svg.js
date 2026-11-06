@@ -37,8 +37,8 @@ import {
 /**
  * Render a bubble chart into `container`. Returns `ok()` on success, or
  * `fail()` when `categoryColumn` is missing, when sum/mean aggregation
- * is requested without a usable `valueColumn`, or when no rows remain
- * after aggregation.
+ * is requested without a usable `valueColumn`, or when no positive
+ * category values remain after aggregation.
  *
  * Common option keys: `measureMode` ('count' | 'sum' | 'mean'),
  * `valueColumn`, `topN`, `padding`, `labelMode` ('all' | 'hover' | 'auto'),

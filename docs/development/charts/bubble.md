@@ -222,6 +222,7 @@ resolves the block/container, hides+clears when disabled, sets the min-height, m
 through [presentation.js](../../../src/charts/bubble/presentation.js), and calls
 `renderBubbleChart`. On failure it shows distinct messages:
 `no-value-column`/`no-numeric` to `chive-chart-empty-bubble-numeric`,
+`no-positive-value` to `chive-chart-empty-no-positive-sum`,
 `no-nesting-columns`/`no-group-column` to `chive-chart-empty-bubble-nesting-required`, else
 `chive-chart-empty-bubble`.
 
@@ -252,10 +253,11 @@ rows to one bubble per category through the shared `aggregateCategories`
 ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)), each bubble
 carrying its measured value, its top-level group, and its full nesting path, read from the
 first row counted toward the category. Sum/mean without a usable value column returns
-`'no-value-column'`; no number cell returns `'no-numeric'`. Bubbles are sorted descending by
-value (with a stable tiebreaker) and capped to `topN`. The helper does not filter zero or
-negative aggregates before the D3 pack layout, so sum/mean mode is intended for non-negative
-measures.
+`'no-value-column'`; no number cell returns `'no-numeric'`. Only categories whose aggregated
+value is above 0 are kept, sorted descending by value (with a stable tiebreaker), and capped
+to `topN`. If none have positive area, the helper returns `'no-positive-value'` before
+building or packing the hierarchy. This rule applies to both sum and mean in flat and
+grouped mode; individual negative rows still contribute to their category's aggregate.
 
 ### 7.3 Hierarchy and pack layout
 
@@ -343,8 +345,8 @@ The panel exporter clones the live `<svg>`; there is no separate export path.
 - **Missing cells** form one "(missing)" bubble or group per column, keyed apart from literal
   "N/A" text; group colors and filter tokens follow the key.
 - **Legacy `groupColumn`** is transparently treated as a one-level `nestingColumns`.
-- **Non-positive sum/mean aggregates** are not filtered by CHIVE before packing; use
-  non-negative value columns for meaningful bubble area.
+- **Non-positive sum/mean aggregates** are omitted before Top-N and packing. When none
+  remain, `fail('no-positive-value')` shows the same message as pie and treemap.
 - **Drill-down resets** on every render (the chart is stateless).
 - **Detached panel captures**: panel bubbles carry no filter actions.
 
@@ -368,6 +370,9 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   progressive nesting controls and the measure/value cross-constraint.
 - [workspaceSection.test.js](../../../tests/charts/bubble/workspaceSection.test.js) covers
   workspace visibility and empty-state mapping.
+- [emptyStates.test.js](../../../tests/charts/bubble/emptyStates.test.js) renders real bubbles
+  and verifies non-positive messages, finite mixed-value radii, and recovery to count mode
+  in English and Portuguese for flat and nested charts.
 - [panelAdapter.test.js](../../../tests/charts/bubble/panelAdapter.test.js) covers captured
   snapshot mapping, localized labels, and failure passthrough.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
