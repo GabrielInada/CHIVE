@@ -2,13 +2,15 @@
  * Shared scatter-plot presentation flow.
  *
  * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. Localized labels stay here so the renderer remains
+ * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Localized labels stay here so the renderer remains
  * stateless and i18n-free. Column types are forwarded per axis so the
  * renderer can honor explicit numeric/categorical axis decisions, and the
  * data column names double as the click-to-filter columns.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { showChartMessage } from '../shared/containerLifecycle.js';
 import {
 	appendRenderBudgetNotice,
 	approveFullRender,
@@ -101,5 +103,11 @@ export function renderScatterInto(
 		});
 	}
 
+	if (!result.ok) {
+		const key = result.reason === 'log-no-positive'
+			? 'chive-chart-empty-scatter-log'
+			: 'chive-chart-empty-scatter';
+		showChartMessage(container, t(key));
+	}
 	return result;
 }

@@ -1,12 +1,10 @@
 /**
- * Scatter-plot workspace section adapter. Owns the static block's visibility,
- * delegates rendering to the package presentation flow, and surfaces localized
- * empty-state messages when rendering fails.
+ * Scatter-chart workspace section adapter. Owns block visibility and
+ * minimum height; the presentation flow draws the chart or its empty state.
  */
 
-import { t } from '../../services/i18nService.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
-import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
+import { clearChartContainer } from '../shared/containerLifecycle.js';
 import { renderScatterInto } from './presentation.js';
 
 /**
@@ -30,12 +28,5 @@ export function renderScatterChartSection({ config, rows, columnTypeByName, filt
 	}
 	block.hidden = false;
 	container.style.minHeight = `${Number(config.chartHeight || 320)}px`;
-	const result = renderScatterInto(container, rows, config, columnTypeByName, filterCallbacks);
-
-	if (!result.ok) {
-		const key = result.reason === 'log-no-positive'
-			? 'chive-chart-empty-scatter-log'
-			: 'chive-chart-empty-scatter';
-		showChartMessage(CHART_CONTAINERS.scatter, t(key));
-	}
+	renderScatterInto(container, rows, config, columnTypeByName, filterCallbacks);
 }

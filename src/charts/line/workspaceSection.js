@@ -1,12 +1,10 @@
 /**
- * Line-chart workspace section adapter. Owns the static block's visibility,
- * delegates rendering to the package presentation flow, and surfaces localized
- * empty-state messages when rendering fails.
+ * Line-chart workspace section adapter. Owns block visibility and
+ * minimum height; the presentation flow draws the chart or its empty state.
  */
 
-import { t } from '../../services/i18nService.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
-import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
+import { clearChartContainer } from '../shared/containerLifecycle.js';
 import { renderLineInto } from './presentation.js';
 
 /**
@@ -30,14 +28,5 @@ export function renderLineChartSection({ config, rows, columnTypeByName, filterC
 	}
 	block.hidden = false;
 	container.style.minHeight = `${Number(config.chartHeight || 320)}px`;
-	const result = renderLineInto(container, rows, config, columnTypeByName, filterCallbacks);
-
-	if (!result.ok) {
-		const key = result.reason === 'no-numeric'
-			? 'chive-chart-empty-line-numeric'
-			: result.reason === 'no-x-values'
-				? 'chive-chart-empty-line-x'
-				: 'chive-chart-empty-line';
-		showChartMessage(CHART_CONTAINERS.line, t(key));
-	}
+	renderLineInto(container, rows, config, columnTypeByName, filterCallbacks);
 }

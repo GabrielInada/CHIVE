@@ -1,18 +1,14 @@
 /**
- * Bubble-chart workspace section adapter. Owns the static block's visibility,
- * delegates rendering to the package presentation flow, and surfaces localized
- * empty-state messages when rendering fails.
+ * Bubble-chart workspace section adapter. Owns block visibility and
+ * minimum height; the presentation flow draws the chart or its empty state.
  */
 
-import { t } from '../../services/i18nService.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
-import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
+import { clearChartContainer } from '../shared/containerLifecycle.js';
 import { renderBubbleInto } from './presentation.js';
 
 /**
- * Render the bubble-chart section. Surfaces `'no-value-column'`,
- * `'no-numeric'`, `'no-positive-value'`, `'no-nesting-columns'`, and `'no-group-column'` as
- * distinct empty messages.
+ * Render the bubble-chart section.
  *
  * @param {Object} args
  * @param {Object} args.config
@@ -30,16 +26,5 @@ export function renderBubbleChartSection({ config, rows, filterCallbacks }) {
 	}
 	block.hidden = false;
 	container.style.minHeight = `${Number(config.chartHeight || 700)}px`;
-	const result = renderBubbleInto(container, rows, config, filterCallbacks);
-
-	if (!result.ok) {
-		const key = result.reason === 'no-value-column' || result.reason === 'no-numeric'
-			? 'chive-chart-empty-bubble-numeric'
-			: result.reason === 'no-positive-value'
-				? 'chive-chart-empty-no-positive-sum'
-				: result.reason === 'no-nesting-columns' || result.reason === 'no-group-column'
-					? 'chive-chart-empty-bubble-nesting-required'
-					: 'chive-chart-empty-bubble';
-		showChartMessage(CHART_CONTAINERS.bubble, t(key));
-	}
+	renderBubbleInto(container, rows, config, filterCallbacks);
 }

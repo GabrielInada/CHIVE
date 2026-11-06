@@ -1,12 +1,10 @@
 /**
- * Treemap workspace section adapter. Owns the static block's visibility,
- * delegates rendering to the package presentation flow, and surfaces a
- * localized empty-state message when rendering fails.
+ * Treemap-chart workspace section adapter. Owns block visibility and
+ * minimum height; the presentation flow draws the chart or its empty state.
  */
 
-import { t } from '../../services/i18nService.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
-import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
+import { clearChartContainer } from '../shared/containerLifecycle.js';
 import { renderTreemapInto } from './presentation.js';
 
 /**
@@ -28,14 +26,5 @@ export function renderTreemapChartSection({ config, rows, filterCallbacks }) {
 	}
 	block.hidden = false;
 	container.style.minHeight = `${Number(config.chartHeight || 380)}px`;
-	const result = renderTreemapInto(container, rows, config, filterCallbacks);
-
-	if (!result.ok) {
-		const key = result.reason === 'no-numeric' || result.reason === 'no-value-column'
-			? 'chive-chart-empty-treemap-numeric'
-			: result.reason === 'no-positive-value'
-				? 'chive-chart-empty-no-positive-sum'
-				: 'chive-chart-empty-treemap';
-		showChartMessage(CHART_CONTAINERS.treemap, t(key));
-	}
+	renderTreemapInto(container, rows, config, filterCallbacks);
 }

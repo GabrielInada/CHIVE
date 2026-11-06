@@ -1,12 +1,10 @@
 /**
- * Pie-chart workspace section adapter. Owns the static block's visibility,
- * delegates rendering to the package presentation flow, and surfaces a
- * localized empty-state message when rendering fails.
+ * Pie-chart workspace section adapter. Owns block visibility and
+ * minimum height; the presentation flow draws the chart or its empty state.
  */
 
-import { t } from '../../services/i18nService.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
-import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
+import { clearChartContainer } from '../shared/containerLifecycle.js';
 import { renderPieInto } from './presentation.js';
 
 /**
@@ -28,14 +26,5 @@ export function renderPieChartSection({ config, rows, filterCallbacks }) {
 	}
 	block.hidden = false;
 	container.style.minHeight = `${Number(config.chartHeight || 360)}px`;
-	const result = renderPieInto(container, rows, config, filterCallbacks);
-
-	if (!result.ok) {
-		const key = result.reason === 'no-numeric' || result.reason === 'no-value-column'
-			? 'chive-chart-empty-pie-sum'
-			: result.reason === 'no-positive-value'
-				? 'chive-chart-empty-no-positive-sum'
-				: 'chive-chart-empty-pie';
-		showChartMessage(CHART_CONTAINERS.pie, t(key));
-	}
+	renderPieInto(container, rows, config, filterCallbacks);
 }

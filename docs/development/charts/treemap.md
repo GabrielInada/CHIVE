@@ -203,7 +203,7 @@ the measure listener.
 ([workspaceSection.js](../../../src/charts/treemap/workspaceSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
 through [presentation.js](../../../src/charts/treemap/presentation.js), and calls
-`renderTreemap`. On failure it shows `chive-chart-empty-treemap-numeric` for
+`renderTreemap`. On failure the presentation flow shows `chive-chart-empty-treemap-numeric` for
 `no-value-column` and `no-numeric`, `chive-chart-empty-no-positive-sum` for
 `no-positive-value`, else `chive-chart-empty-treemap`.
 
@@ -219,7 +219,8 @@ click-to-filter in panels). The panel registry only dispatches to that adapter.
 
 `renderTreemap(container, rows, categoryColumn, options = {})`. Unlike most renderers it does
 not use the `ok()`/`fail()` factories; it returns a plain `{ ok }` object (with a `reason` on
-the value-column failures and when no value is positive) that the section adapter inspects.
+the value-column failures and when no value is positive) that the presentation flow inspects
+to show the same message in the workspace and Panel.
 
 ### 7.1 Guard, options, aggregation
 

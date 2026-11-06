@@ -2,11 +2,13 @@
  * Shared bar-chart presentation flow.
  *
  * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. Localized labels stay here so the renderer remains
+ * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Localized labels stay here so the renderer remains
  * stateless and i18n-free.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { showChartMessage } from '../shared/containerLifecycle.js';
 import { renderBarChart } from './renderers/svg.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
@@ -33,7 +35,7 @@ export function renderBarInto(
 			? t('chive-tooltip-sum')
 			: t('chive-tooltip-count');
 
-	return renderBarChart(container, rows, config.category, {
+	const result = renderBarChart(container, rows, config.category, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
 		sort: config.sort,
@@ -64,4 +66,12 @@ export function renderBarInto(
 		},
 		filterCallbacks,
 	});
+
+	if (!result.ok) {
+		const key = result.reason === 'no-numeric' || result.reason === 'no-value-column'
+			? 'chive-chart-empty-bar-numeric'
+			: 'chive-chart-empty-bar';
+		showChartMessage(container, t(key));
+	}
+	return result;
 }

@@ -289,9 +289,10 @@ entry calls `renderBarChartSection({ config, rows, filterCallbacks })` from
 4. Delegates option and localized-label mapping to
    [presentation.js](../../../src/charts/bar/presentation.js).
 5. Calls `renderBarChart(container, rows, config.category, options)` through that shared flow.
-6. On failure, shows a localized empty state: `no-numeric` / `no-value-column` map to
-   `chive-chart-empty-bar-numeric`, anything else to `chive-chart-empty-bar`
-   (via `showChartMessage`).
+
+The presentation flow shows a localized empty state on either surface: `no-numeric` /
+`no-value-column` map to `chive-chart-empty-bar-numeric`, anything else to
+`chive-chart-empty-bar` (via `showChartMessage`). The original renderer result is returned unchanged.
 
 The block heading, `chive-chart-bar-title`, is measure-neutral: "Bar chart (by category)"
 in English and "Barras (por categoria)" in Portuguese. The y axis names the selected measure.

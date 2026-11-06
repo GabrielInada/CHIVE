@@ -341,8 +341,9 @@ numeric column that is not X, each scale defaulting to linear unless its column 
 resolves the block/container, hides+clears when disabled, sets the container min-height, and
 delegates to `renderScatterInto` ([presentation.js](../../../src/charts/scatter/presentation.js)),
 which maps config into the options bag (including `axisTypes` taken from `columnTypeByName`
-so detection is consistent) and calls `renderScatterPlot`. On failure the section shows
-`chive-chart-empty-scatter-log` for `log-no-positive`, else `chive-chart-empty-scatter`.
+so detection is consistent) and calls `renderScatterPlot`. On failure the presentation flow shows
+`chive-chart-empty-scatter-log` for `log-no-positive`, else `chive-chart-empty-scatter`,
+in both the workspace and Panel. Sampling notices keep their existing approval flow.
 
 ### 6.2 Panel view
 

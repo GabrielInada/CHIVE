@@ -1,12 +1,10 @@
 /**
- * Bar-chart workspace section adapter. Owns the static block's visibility,
- * delegates rendering to the package presentation flow, and surfaces a
- * localized empty-state message when rendering fails.
+ * Bar-chart workspace section adapter. Owns block visibility and
+ * minimum height; the presentation flow draws the chart or its empty state.
  */
 
-import { t } from '../../services/i18nService.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
-import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
+import { clearChartContainer } from '../shared/containerLifecycle.js';
 import { renderBarInto } from './presentation.js';
 
 /**
@@ -29,11 +27,5 @@ export function renderBarChartSection({ config, rows, filterCallbacks }) {
 	if (block) block.hidden = false;
 	if (!container) return;
 	container.style.minHeight = `${Number(config.chartHeight || 320)}px`;
-	const result = renderBarInto(container, rows, config, filterCallbacks);
-	if (!result.ok) {
-		const key = result.reason === 'no-numeric' || result.reason === 'no-value-column'
-			? 'chive-chart-empty-bar-numeric'
-			: 'chive-chart-empty-bar';
-		showChartMessage(CHART_CONTAINERS.bar, t(key));
-	}
+	renderBarInto(container, rows, config, filterCallbacks);
 }

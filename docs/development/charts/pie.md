@@ -252,7 +252,7 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
 the block/container, hides+clears when disabled, sets the min-height, maps config into the
 shared presentation flow (with localized labels including the `Other` label), and calls the
 renderer.
-On failure it shows `chive-chart-empty-pie-sum` for `no-value-column` and `no-numeric`,
+On failure the presentation flow shows `chive-chart-empty-pie-sum` for `no-value-column` and `no-numeric`,
 `chive-chart-empty-no-positive-sum` for `no-positive-value`, else `chive-chart-empty-pie`.
 
 ### 6.2 Panel view
@@ -260,7 +260,8 @@ On failure it shows `chive-chart-empty-pie-sum` for `no-value-column` and `no-nu
 The panel registry dispatches to
 [`renderPiePanelChart`](../../../src/charts/pie/panelAdapter.js), which sends
 `spec.config` and `spec.dataSnapshot` through the same presentation flow with empty
-`filterCallbacks` (no click-to-filter in panels).
+`filterCallbacks` (no click-to-filter in panels). Empty captures show the same localized
+message as the workspace, including saved previews and resized layout slots.
 
 ---
 

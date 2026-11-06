@@ -224,7 +224,9 @@ to `renderNetworkInto` in [presentation.js](../../../src/charts/network/presenta
 which maps config into the options bag (note `weight`/`group` map to
 `weightColumn`/`groupColumn`, and the source/target column names are also passed as
 `sourceColumn`/`targetColumn` for the filter tooltips) and calls `renderNetworkGraph`. Any
-failure shows the single `chive-chart-empty-network` message.
+ordinary failure shows the single `chive-chart-empty-network` message through the
+presentation flow, in both the workspace and Panel. The render-budget approval notice
+keeps its own existing handling.
 
 ### 6.2 Panel view
 
