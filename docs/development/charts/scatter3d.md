@@ -52,7 +52,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderScatter3dChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -65,11 +64,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderScatter3dPanelChart"]
     end
 
-    WSECTION --> PRESENT["renderScatter3dInto<br/>labels + failure mapping + notice"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderScatter3dInto<br/>labels + failure mapping + notice"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderScatter3dChart"]
 
     subgraph INTERNALS["Three renderer internals"]
@@ -115,11 +113,9 @@ which `chartControlsController.js` consumes.
 
 ### 6.1 Dataset workspace
 
-`chartsView.js` passes the shared context to the
-[workspace registry](../../../src/charts/registries/workspace.js), whose
-`scatter3d` entry dispatches to the package's
-[workspaceSection.js](../../../src/charts/scatter3d/workspaceSection.js),
-which owns the static block's visibility and delegates to
+`chartsView.js` passes the chart input to the
+[workspace registry](../../../src/charts/registries/workspace.js), which owns the
+static block's visibility and the container's min height and hands the input to
 [presentation.js](../../../src/charts/scatter3d/presentation.js): build the
 renderer options with the localized `labels`, map fail reasons onto i18n
 keys (`no-valid-points` and `webgl-unavailable` have their own keys;
@@ -127,14 +123,17 @@ keys (`no-valid-points` and `webgl-unavailable` have their own keys;
 post-render extras that need the ok payload: the accurate aria-label
 (rendered point count) and the sampling notice when `truncated`.
 
+While the renderer module loads, the presentation flow shows a loading message and
+stashes a dispose hook on the container. Hiding the chart, or any other
+`clearChartContainer` call, cancels the pending render, and so does a newer render into
+the same container.
+
 ### 6.2 Panel
 
 [renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
 validates the request, then the
-[panel registry](../../../src/charts/registries/panel.js) routes `scatter3d`
-specs to the package's
-[panelAdapter.js](../../../src/charts/scatter3d/panelAdapter.js), which maps
-the captured snapshot onto the same presentation flow. Panel slot containers
+[panel registry](../../../src/charts/registries/panel.js) builds the chart input
+from the captured snapshot and hands it to the same presentation flow. Panel slot containers
 have no DOM id; the renderer generates a unique `aria-describedby` id in
 that case.
 
@@ -225,9 +224,8 @@ instead of silently dropping them (a canvas-only panel fails with
 
 - Boundary lint (`eslint.config.js` blocks B3/B4): `data.js`, `options.js`,
   `scales.js`, `interaction.js`, and `renderers/**` import only config,
-  utils, and vendor modules; `workspaceSection.js`, `panelAdapter.js`,
-  `presentation.js`, and `controls/**` may not import state, panel
-  internals, or workspace components.
+  utils, and vendor modules; `presentation.js` and `controls/**` may not
+  import state, panel internals, or workspace components.
 - Coercion matches the other charts: `Number(value)` then
   `Number.isFinite` (numeric strings survive; `null` coerces to 0).
 - Constant columns render (padded domain), single points render, and a
@@ -243,9 +241,11 @@ extents-before-sampling, extrema force-include and de-dupe, stride spread,
 cap), `scales.test.js` (unit-cube mapping, zero-span padding),
 `options.test.js` (clamps), `renderers/three.test.js` (vendored three
 mocked with fakes: sizing calls, a11y wiring, dispose hook contract,
-partial-build disposal, render-on-demand), `workspaceSection.test.js` /
-`panelAdapter.test.js` (label pass-through, fail-key mapping, sampling
-notice), and `controls.test.js`. Panel export omission is covered in
+partial-build disposal, render-on-demand), `presentation.test.js` (loading
+message, label pass-through, fail-key mapping, sampling notice, cancelling a
+pending render), and `controls.test.js`. The cross-chart
+`tests/charts/registries/workspaceSections.test.js` and `panel.test.js` cover
+the two surfaces. Panel export omission is covered in
 `tests/features/panel/export/svgExporter.test.js`.
 
 ## 14. Quick reference

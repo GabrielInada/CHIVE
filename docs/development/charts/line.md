@@ -24,8 +24,6 @@ Key files:
 - Chart definition and constants: [line.js](../../../src/config/charts/definitions/line.js) (`LINE_DEFINITION`, `LINE_CHART`)
 - Per-dataset config defaults: [line.js](../../../src/config/charts/definitions/line.js) (the definition's fresh `line` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/line/presentation.js)
-- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/line/workspaceSection.js)
-- Panel adapter: [panelAdapter.js](../../../src/charts/line/panelAdapter.js)
 
 ---
 
@@ -115,7 +113,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderLineChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -128,11 +125,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderLinePanelChart"]
     end
 
-    WSECTION --> PRESENT["renderLineInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderLineInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderLineChart"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -217,21 +213,21 @@ present.
 
 ### 6.1 Dataset workspace
 
-`renderLineChartSection({ config, rows, columnTypeByName, filterCallbacks })`
-([workspaceSection.js](../../../src/charts/line/workspaceSection.js)) resolves
-the block/container, hides+clears when disabled, sets the min-height, maps config
-through [presentation.js](../../../src/charts/line/presentation.js) (forwarding
-`axisTypes.x` from `columnTypeByName` so the renderer picks the right X scale), and calls
-`renderLineChart`. On failure the presentation flow maps the reason to a message on both surfaces:
+The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
+block/container, hides+clears when disabled, sets the min-height to the height the chart is
+drawn at, and hands the chart input (`rows`, `config`, `columnTypeByName`, `filterCallbacks`)
+to `renderLineInto` in [presentation.js](../../../src/charts/line/presentation.js), which
+maps config (forwarding `axisTypes.x` from `columnTypeByName` so the renderer picks the
+right X scale) and calls `renderLineChart`. On failure the presentation flow maps the reason to a message on both surfaces:
 `no-numeric` to `chive-chart-empty-line-numeric`, `no-x-values` to `chive-chart-empty-line-x`,
 anything else to `chive-chart-empty-line`.
 
 ### 6.2 Panel view
 
-[panelAdapter.js](../../../src/charts/line/panelAdapter.js) passes `spec.config` and
-`spec.dataSnapshot` through the same presentation flow, deriving `axisTypes` from the
-snapshot's `columnsSnapshot`. The panel registry only dispatches to that adapter. (The
-line chart has no click-to-filter tooltips, so the empty filter-callbacks bag is moot here.)
+The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot`, `spec.config`, and column types from every column in
+`columnsSnapshot`) and hands it to the same presentation flow. (The line chart has no
+click-to-filter tooltips, so the missing filter callbacks are moot here.)
 
 ---
 
@@ -352,12 +348,12 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   the rendered SVG markup across an option matrix so structural moves stay byte-identical.
 - [controls.test.js](../../../tests/charts/line/controls.test.js) covers control
   building and the X/Y validation and ghost-color enable logic.
-- [workspaceSection.test.js](../../../tests/charts/line/workspaceSection.test.js) covers
-  workspace visibility, axis-type forwarding, and empty-state mapping.
-- [panelAdapter.test.js](../../../tests/charts/line/panelAdapter.test.js) covers captured
-  snapshot mapping, axis-type derivation, and failure passthrough.
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
+  checks through the workspace registry, for every chart, block visibility, the min height,
+  the dispose contract, and the inputs each chart draws from.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
-  covers the panel dispatch path.
+  covers the panel registry and how it builds the chart input from a snapshot. Both check that the x axis follows the column types each surface
+  supplies.
 
 ---
 

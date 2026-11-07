@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../../../src/i18n/en.json';
 import ptBR from '../../../src/i18n/pt-BR.json';
 import { BUBBLE_DEFINITION } from '../../../src/config/charts/definitions/bubble.js';
-import { renderBubbleChartSection } from '../../../src/charts/bubble/workspaceSection.js';
+import { renderWorkspaceChart } from '../../../src/charts/registries/workspace.js';
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../src/charts/workspaceDomIds.js';
 
 const locale = vi.hoisted(() => ({ value: 'en' }));
@@ -41,7 +41,7 @@ describe.each(['en', 'pt-BR'])('bubble empty states in %s', language => {
 			...BUBBLE_DEFINITION.createDefaultConfig(), enabled: true, category: 'team',
 			measureMode, nestingMode, nestingColumns: ['group'], valueColumn: 'net',
 		};
-		renderBubbleChartSection({ config, rows, filterCallbacks: {} });
+		renderWorkspaceChart('bubble', { config, rows, filterCallbacks: {} });
 		const circles = Array.from(container.querySelectorAll('g.bubble-node > circle'));
 		expect(circles).toHaveLength(2);
 		for (const circle of circles) {
@@ -49,12 +49,12 @@ describe.each(['en', 'pt-BR'])('bubble empty states in %s', language => {
 			expect(Number(circle.getAttribute('r'))).toBeGreaterThan(0);
 		}
 
-		renderBubbleChartSection({ config: { ...config, valueColumn: 'returns' }, rows, filterCallbacks: {} });
+		renderWorkspaceChart('bubble', { config: { ...config, valueColumn: 'returns' }, rows, filterCallbacks: {} });
 		expect(container.querySelector('svg')).toBeNull();
 		expect(container.querySelector('.chart-empty')?.textContent)
 			.toBe(catalogs[language]['chive-chart-empty-no-positive-sum']);
 
-		renderBubbleChartSection({ config: { ...config, measureMode: 'count' }, rows, filterCallbacks: {} });
+		renderWorkspaceChart('bubble', { config: { ...config, measureMode: 'count' }, rows, filterCallbacks: {} });
 		expect(container.querySelector('.chart-empty')).toBeNull();
 		expect(container.querySelectorAll('g.bubble-node')).toHaveLength(3);
 	});

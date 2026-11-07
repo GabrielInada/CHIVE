@@ -17,11 +17,10 @@ import { renderTinChart } from './renderers/svg.js';
  * Render a TIN surface from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
- * @param {Array<Object<string, *>>} rows
- * @param {Object} [config]
+ * @param {import('../../types.js').ChartInput} input
  * @returns {import('../../types.js').Result}
  */
-export function renderTinInto(container, rows, config = {}) {
+export function renderTinInto(container, { rows, config }) {
 	const result = renderTinChart(container, rows, config.x, config.y, config.z, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,

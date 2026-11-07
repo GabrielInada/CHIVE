@@ -459,7 +459,7 @@ export default [
 				paths: BARE_IMPORT_BANS,
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**', '**/ui/**'],
-					message: 'Chart package leaf files import only package-local or charts/shared modules, config, domain, utils, and vendor modules. Localized strings arrive via options.labels; state stays behind the section/adapter props.',
+					message: 'Chart package leaf files import only package-local or charts/shared modules, config, domain, utils, and vendor modules. Localized strings arrive via options.labels; state stays with the surfaces that build the chart input.',
 				}],
 			}],
 		},
@@ -531,7 +531,7 @@ export default [
 				],
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/features/**', '**/services/**', '**/state/**', '**/chartControls/**', '**/ui/**'],
-					message: 'The workspace registry imports only chart workspace sections and leaf config/types.',
+					message: 'The workspace registry imports only chart presentation flows, shared chart infrastructure, and leaf config/types.',
 				}],
 			}],
 		},
@@ -547,26 +547,24 @@ export default [
 				],
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/components/**', '**/features/**', '**/services/**', '**/state/**', '**/chartControls/**', '**/ui/**'],
-					message: 'The panel registry imports only chart panel adapters and leaf config/types.',
+					message: 'The panel registry imports only chart presentation flows and leaf config/types.',
 				}],
 			}],
 		},
 	},
 
-	// (B4) Per-chart package integration files: sections/adapters receive
-	// props and callbacks, never state; controls write through an injected
+	// (B4) Per-chart package integration files: presentation flows receive
+	// the chart input and callbacks, never state; controls write through an injected
 	// ChartConfigWriter, whose adapter lives in the dataset-workspace feature.
 	// No panel internals and no workspace components. The container lifecycle
 	// lives in charts/shared/containerLifecycle.js so each rendering surface can
 	// share the chart-owned dispose contract.
-	// services/ is deliberately NOT banned here: builders, sections, and
-	// presentation legitimately import i18nService for their labels. That is the
+	// services/ is deliberately NOT banned here: builders and presentation
+	// flows legitimately import i18nService for their labels. That is the
 	// line between (B3) leaf files, which take strings via options.labels, and
 	// these integration files. Listeners are stricter still, see (B4a).
 	{
 		files: [
-			'src/charts/*/workspaceSection.js',
-			'src/charts/*/panelAdapter.js',
 			'src/charts/*/presentation.js',
 			'src/charts/*/controls/**/*.js',
 		],

@@ -4,11 +4,12 @@
  *
  * Canvas/WebGL renderers stash a disposer on their container under
  * `CHART_DISPOSE_HOOK` (event listeners, GPU resources, the rendering
- * context). Every generic clear path (workspace chart clears, panel slot
- * teardown and resize re-render) goes through `clearChartContainer` so
- * the disposer always runs before the DOM is emptied. SVG charts never
- * set the hook and are unaffected. Only this module reads or deletes the
- * hook property; renderers only assign it.
+ * context), and the 3D scatter stashes one that cancels its render while
+ * its renderer loads. Every generic clear path (workspace chart clears,
+ * panel slot teardown and resize re-render) goes through
+ * `clearChartContainer` so the disposer always runs before the DOM is
+ * emptied. SVG charts never set the hook and are unaffected. Only this
+ * module reads or deletes the hook property; charts only assign it.
  *
  * This lives in charts/shared because chart packages, panel slots, and
  * workspace views may all import shared chart infrastructure. The dispose

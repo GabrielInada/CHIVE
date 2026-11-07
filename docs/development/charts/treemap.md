@@ -24,8 +24,6 @@ Key files:
 - Chart definition and constants: [treemap.js](../../../src/config/charts/definitions/treemap.js) (`TREEMAP_DEFINITION`, `TREEMAP_CHART`)
 - Per-dataset config defaults: [treemap.js](../../../src/config/charts/definitions/treemap.js) (the definition's fresh `treemap` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/treemap/presentation.js)
-- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/treemap/workspaceSection.js)
-- Panel adapter: [panelAdapter.js](../../../src/charts/treemap/panelAdapter.js)
 
 ---
 
@@ -93,7 +91,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderTreemapChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -106,11 +103,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderTreemapPanelChart"]
     end
 
-    WSECTION --> PRESENT["renderTreemapInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderTreemapInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderTreemap"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -204,19 +200,19 @@ the measure listener.
 
 ### 6.1 Dataset workspace
 
-`renderTreemapChartSection({ config, rows, filterCallbacks })`
-([workspaceSection.js](../../../src/charts/treemap/workspaceSection.js))
-resolves the block/container, hides+clears when disabled, sets the min-height, maps config
-through [presentation.js](../../../src/charts/treemap/presentation.js), and calls
-`renderTreemap`. On failure the presentation flow shows `chive-chart-empty-treemap-numeric` for
+The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
+block/container, hides+clears when disabled, sets the min-height to the height the chart is
+drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to
+`renderTreemapInto` in [presentation.js](../../../src/charts/treemap/presentation.js), which
+maps config and calls `renderTreemap`. On failure the presentation flow shows `chive-chart-empty-treemap-numeric` for
 `no-value-column` and `no-numeric`, `chive-chart-empty-no-positive-sum` for
 `no-positive-value`, else `chive-chart-empty-treemap`.
 
 ### 6.2 Panel view
 
-[panelAdapter.js](../../../src/charts/treemap/panelAdapter.js) passes `spec.config` and
-`spec.dataSnapshot` through the same presentation flow with empty `filterCallbacks` (no
-click-to-filter in panels). The panel registry only dispatches to that adapter.
+The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same presentation
+flow without `filterCallbacks` (no click-to-filter in panels).
 
 ---
 
@@ -327,10 +323,9 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 - [controls.test.js](../../../tests/charts/treemap/controls.test.js) covers
   control building and the measure/value and color-mode logic.
-- [workspaceSection.test.js](../../../tests/charts/treemap/workspaceSection.test.js)
-  covers the section adapter, including the empty-state message selection.
-- [panelAdapter.test.js](../../../tests/charts/treemap/panelAdapter.test.js) covers the captured
-  snapshot mapping and failure passthrough.
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
+  checks through the workspace registry, for every chart, block visibility, the min height,
+  the dispose contract, and the inputs each chart draws from.
 - [svg.test.js](../../../tests/charts/treemap/renderers/svg.test.js) and
   [options.test.js](../../../tests/charts/treemap/options.test.js) cover renderer behavior and
   its pure helpers.
@@ -339,7 +334,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   [drawnCategories.test.js](../../../tests/charts/registries/drawnCategories.test.js) checks
   them through the panel registry.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
-  covers the panel dispatch path.
+  covers the panel registry and how it builds the chart input from a snapshot.
 
 ---
 

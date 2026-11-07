@@ -24,8 +24,6 @@ Key files:
 - Chart definition and constants: [pie.js](../../../src/config/charts/definitions/pie.js) (`PIE_DEFINITION`, `PIE_CHART`)
 - Per-dataset config defaults: [pie.js](../../../src/config/charts/definitions/pie.js) (the definition's fresh `pie` factory)
 - Shared presentation mapping: [presentation.js](../../../src/charts/pie/presentation.js)
-- Section adapter (dataset workspace): [workspaceSection.js](../../../src/charts/pie/workspaceSection.js)
-- Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/pie/panelAdapter.js)
 - Shade math: [color.js](../../../src/charts/pie/color.js) (`buildSliceColor`)
 
 ---
@@ -114,7 +112,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderPieChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -127,11 +124,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderPiePanelChart"]
     end
 
-    WSECTION --> PRESENT["renderPieInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderPieInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderPieChart"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -251,20 +247,19 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
 
 ### 6.1 Dataset workspace
 
-`renderPieChartSection({ config, rows, filterCallbacks })`
-([workspaceSection.js](../../../src/charts/pie/workspaceSection.js)) resolves
-the block/container, hides+clears when disabled, sets the min-height, maps config into the
-shared presentation flow (with localized labels including the `Other` label), and calls the
-renderer.
+The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
+block/container, hides+clears when disabled, sets the min-height to the height the chart is
+drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to `renderPieInto`
+in the shared presentation flow, which maps config (with localized labels including the
+`Other` label) and calls the renderer.
 On failure the presentation flow shows `chive-chart-empty-pie-sum` for `no-value-column` and `no-numeric`,
 `chive-chart-empty-no-positive-sum` for `no-positive-value`, else `chive-chart-empty-pie`.
 
 ### 6.2 Panel view
 
-The panel registry dispatches to
-[`renderPiePanelChart`](../../../src/charts/pie/panelAdapter.js), which sends
-`spec.config` and `spec.dataSnapshot` through the same presentation flow with empty
-`filterCallbacks` (no click-to-filter in panels). Empty captures show the same localized
+The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same presentation
+flow without `filterCallbacks` (no click-to-filter in panels). Empty captures show the same localized
 message as the workspace, including saved previews and resized layout slots.
 
 ---
@@ -438,11 +433,11 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   category order and the swatch colors under a global filter and Top-N.
 - [controls.test.js](../../../tests/charts/pie/controls.test.js) covers control building, the
   radius cross-constraint, and the per-slice color logic.
-- [workspaceSection.test.js](../../../tests/charts/pie/workspaceSection.test.js) and
-  [panelAdapter.test.js](../../../tests/charts/pie/panelAdapter.test.js) cover both integration
-  surfaces and their shared renderer contract.
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
+  checks through the workspace registry, for every chart, block visibility, the min height,
+  the dispose contract, and the inputs each chart draws from.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
-  covers the panel dispatch path.
+  covers the panel registry and how it builds the chart input from a snapshot.
 
 ---
 

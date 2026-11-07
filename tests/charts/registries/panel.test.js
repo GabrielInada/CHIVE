@@ -1,57 +1,92 @@
 // @vitest-environment jsdom
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+/**
+ * The Panel registry and render bridge. Captures render for real into jsdom;
+ * only the 3D scatter's WebGL renderer is replaced, since jsdom has no WebGL.
+ */
 
-const renderers = vi.hoisted(() => ({
-	renderBarPanelChart: vi.fn(() => ({ ok: true })),
-	renderBubblePanelChart: vi.fn(() => ({ ok: true })),
-	renderLinePanelChart: vi.fn(() => ({ ok: true })),
-	renderNetworkPanelChart: vi.fn(() => ({ ok: true })),
-	renderPiePanelChart: vi.fn(() => ({ ok: true })),
-	renderScatterPanelChart: vi.fn(() => ({ ok: true })),
-	renderTreemapPanelChart: vi.fn(() => ({ ok: true })),
-	renderTinPanelChart: vi.fn(() => ({ ok: true })),
-	renderScatter3dPanelChart: vi.fn(() => ({ ok: true })),
-}));
-
-vi.mock('../../../src/charts/bar/panelAdapter.js', () => ({ renderBarPanelChart: renderers.renderBarPanelChart }));
-vi.mock('../../../src/charts/bubble/panelAdapter.js', () => ({ renderBubblePanelChart: renderers.renderBubblePanelChart }));
-vi.mock('../../../src/charts/line/panelAdapter.js', () => ({ renderLinePanelChart: renderers.renderLinePanelChart }));
-vi.mock('../../../src/charts/network/panelAdapter.js', () => ({ renderNetworkPanelChart: renderers.renderNetworkPanelChart }));
-vi.mock('../../../src/charts/pie/panelAdapter.js', () => ({ renderPiePanelChart: renderers.renderPiePanelChart }));
-vi.mock('../../../src/charts/scatter/panelAdapter.js', () => ({ renderScatterPanelChart: renderers.renderScatterPanelChart }));
-vi.mock('../../../src/charts/tin/panelAdapter.js', () => ({ renderTinPanelChart: renderers.renderTinPanelChart }));
-vi.mock('../../../src/charts/treemap/panelAdapter.js', () => ({ renderTreemapPanelChart: renderers.renderTreemapPanelChart }));
-vi.mock('../../../src/charts/scatter3d/panelAdapter.js', () => ({ renderScatter3dPanelChart: renderers.renderScatter3dPanelChart }));
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import en from '../../../src/i18n/en.json';
+import { CHART_DEFINITIONS } from '../../../src/config/charts/definitions.js';
 import { getPanelChartRenderer, SUPPORTED_PANEL_CHART_TYPES } from '../../../src/charts/registries/panel.js';
 import { renderChartFromSpec } from '../../../src/features/panel/slots/renderChartFromSpec.js';
+import { clearChartContainer } from '../../../src/charts/shared/containerLifecycle.js';
 
-const baseRows = [{ a: 1 }, { a: 2 }];
-const baseColumns = [
-	{ name: 'a', type: 'number' },
-	{ name: 'b', type: 'text' },
+const three = vi.hoisted(() => ({ renderScatter3dChart: vi.fn() }));
+
+vi.mock('../../../src/services/i18nService.js', () => ({
+	t: (key, ...params) => (en[key] ?? key).replace(/\$(\d+)/g, (_, n) => String(params[n - 1])),
+	getLocale: () => 'en',
+}));
+vi.mock('../../../src/charts/scatter3d/renderers/three.js', () => three);
+
+const rows = [
+	{ team: 'A', sales: 10, profit: 4, source: 'A', target: 'B', x: 1, y: 2, z: 3 },
+	{ team: 'B', sales: 20, profit: 6, source: 'B', target: 'C', x: 2, y: 1, z: 5 },
+	{ team: 'C', sales: 15, profit: 9, source: 'C', target: 'A', x: 3, y: 3, z: 4 },
+	{ team: 'D', sales: 5, profit: 2, source: 'A', target: 'C', x: 1.5, y: 2.5, z: 6 },
+];
+const columnsSnapshot = [
+	{ name: 'team', type: 'text' },
+	{ name: 'sales', type: 'number' },
+	{ name: 'profit', type: 'number' },
+	{ name: 'source', type: 'text' },
+	{ name: 'target', type: 'text' },
+	{ name: 'x', type: 'number' },
+	{ name: 'y', type: 'number' },
+	{ name: 'z', type: 'number' },
 ];
 
-function makeSpec(type, configOverrides = {}) {
-	return {
-		id: 1,
-		name: 'Test',
-		type,
-		config: configOverrides,
-		dataSnapshot: baseRows,
-		columnsSnapshot: baseColumns,
-	};
+// The columns each chart draws `rows` from.
+const columns = {
+	bar: { category: 'team' },
+	line: { x: 'x', y: 'y' },
+	scatter: { x: 'sales', y: 'profit' },
+	scatter3d: { x: 'x', y: 'y', z: 'z' },
+	pie: { category: 'team' },
+	bubble: { category: 'team' },
+	network: { source: 'source', target: 'target' },
+	treemap: { category: 'team' },
+	tin: { x: 'x', y: 'y', z: 'z' },
+};
+const svgTypes = SUPPORTED_PANEL_CHART_TYPES.filter(type => type !== 'scatter3d');
+
+// Like the WebGL renderer, empty the container through the dispose contract first.
+function drawCanvas(container) {
+	clearChartContainer(container);
+	const canvas = document.createElement('canvas');
+	canvas.className = 'chart-canvas-3d';
+	container.append(canvas);
+	return { ok: true, renderedCount: 0, validCount: 0, totalCount: 0, truncated: false };
 }
 
+function configFor(type, overrides = {}) {
+	return { ...CHART_DEFINITIONS[type].createDefaultConfig(), ...columns[type], ...overrides };
+}
+
+function mount() {
+	const container = document.createElement('div');
+	document.body.append(container);
+	return container;
+}
+
+function xTickLabels(container) {
+	const axis = [...container.querySelectorAll('svg g')]
+		.find(group => /^translate\(0,/.test(group.getAttribute('transform') || '') && group.querySelector('.tick'));
+	return [...axis.querySelectorAll('.tick text')].map(text => text.textContent);
+}
+
+beforeEach(() => {
+	document.body.replaceChildren();
+	three.renderScatter3dChart.mockReset();
+	three.renderScatter3dChart.mockImplementation(drawCanvas);
+});
+
+afterEach(() => {
+	for (const container of document.body.children) container.__chive_network_simulation__?.stop();
+});
+
 describe('panel chart registry and render bridge', () => {
-	let container;
-
-	beforeEach(() => {
-		container = document.createElement('div');
-		document.body.appendChild(container);
-		Object.values(renderers).forEach(fn => fn.mockClear());
-	});
-
 	it('exposes the supported renderer types', () => {
 		expect(SUPPORTED_PANEL_CHART_TYPES).toEqual(['bar', 'line', 'scatter', 'scatter3d', 'pie', 'bubble', 'network', 'treemap', 'tin']);
 	});
@@ -61,103 +96,69 @@ describe('panel chart registry and render bridge', () => {
 		expect(getPanelChartRenderer('__proto__')).toBeNull();
 	});
 
-	it('dispatches scatter3d to the package panel adapter with the whole spec', () => {
-		const spec = makeSpec('scatter3d', { x: 'a', y: 'b', z: 'a' });
-		renderChartFromSpec(container, spec);
-		expect(renderers.renderScatter3dPanelChart).toHaveBeenCalledTimes(1);
-		expect(renderers.renderScatter3dPanelChart).toHaveBeenCalledWith(container, spec);
-	});
-
 	it('returns invalid-args when container or spec is missing', () => {
-		expect(renderChartFromSpec(null, makeSpec('bar')).ok).toBe(false);
-		expect(renderChartFromSpec(container, null).ok).toBe(false);
+		expect(renderChartFromSpec(null, { type: 'bar' })).toEqual({ ok: false, reason: 'invalid-args' });
+		expect(renderChartFromSpec(mount(), null)).toEqual({ ok: false, reason: 'invalid-args' });
 	});
 
 	it('returns unknown-type for unsupported chart types', () => {
-		const result = renderChartFromSpec(container, makeSpec('sankey'));
+		expect(renderChartFromSpec(mount(), { type: 'sankey', config: {}, dataSnapshot: rows })).toEqual({ ok: false, reason: 'unknown-type' });
+	});
+
+	it("returns the chart's own result", () => {
+		const spec = { type: 'pie', config: configFor('pie', { measureMode: 'sum', valueColumn: null }), dataSnapshot: rows, columnsSnapshot };
+
+		expect(renderChartFromSpec(mount(), spec)).toEqual({ ok: false, reason: 'no-value-column' });
+	});
+});
+
+describe('Panel captures', () => {
+	it.each(svgTypes)('%s: a capture without rows draws like a capture with no rows', type => {
+		const config = configFor(type);
+		const expected = mount();
+		const expectedResult = getPanelChartRenderer(type)(expected, { type, config, dataSnapshot: [], columnsSnapshot });
+		const container = mount();
+
+		const result = getPanelChartRenderer(type)(container, { type, config, columnsSnapshot });
+
+		expect(result).toEqual(expectedResult);
+		expect(container.querySelector('.chart-empty').textContent).toBe(expected.querySelector('.chart-empty').textContent);
+	});
+
+	it.each(svgTypes)("%s: a capture without config shows the chart's empty-state message", type => {
+		const container = mount();
+
+		const result = getPanelChartRenderer(type)(container, { type, dataSnapshot: rows, columnsSnapshot });
+
 		expect(result.ok).toBe(false);
-		expect(result.reason).toBe('unknown-type');
+		expect(container.querySelector('.chart-empty').textContent).toBe(en[`chive-chart-empty-${type}`]);
 	});
 
-	it('dispatches bar to the package panel adapter with the whole spec', () => {
-		const spec = makeSpec('bar', { category: 'a' });
-		renderChartFromSpec(container, spec);
-		expect(renderers.renderBarPanelChart).toHaveBeenCalledTimes(1);
-		expect(renderers.renderBarPanelChart).toHaveBeenCalledWith(container, spec);
+	it('scatter3d: a capture without rows or config reaches the renderer with no rows', async () => {
+		renderChartFromSpec(mount(), { type: 'scatter3d' });
+
+		await vi.waitFor(() => expect(three.renderScatter3dChart).toHaveBeenCalledTimes(1));
+		expect(three.renderScatter3dChart.mock.calls[0][1]).toEqual([]);
 	});
 
-	it('dispatches scatter to the package panel adapter with the whole spec', () => {
-		const spec = makeSpec('scatter', { x: 'a', y: 'b' });
-		renderChartFromSpec(container, spec);
-		expect(renderers.renderScatterPanelChart).toHaveBeenCalledTimes(1);
-		expect(renderers.renderScatterPanelChart).toHaveBeenCalledWith(container, spec);
+	it.each(['line', 'scatter'])('%s: the x axis follows the captured column types', type => {
+		const dataSnapshot = [{ code: 1, value: 5 }, { code: 2, value: 7 }, { code: 10, value: 6 }];
+		const config = configFor(type, { x: 'code', y: 'value' });
+		const container = mount();
+
+		getPanelChartRenderer(type)(container, { type, config, dataSnapshot, columnsSnapshot: [{ name: 'code', type: 'text' }, { name: 'value', type: 'number' }] });
+		expect(new Set(xTickLabels(container))).toEqual(new Set(['1', '2', '10']));
+
+		getPanelChartRenderer(type)(container, { type, config, dataSnapshot, columnsSnapshot: [{ name: 'code', type: 'number' }, { name: 'value', type: 'number' }] });
+		expect(xTickLabels(container)).toContain('4');
 	});
 
-	it('dispatches network to the package panel adapter with the whole spec', () => {
-		const spec = makeSpec('network', { source: 'src', target: 'tgt', weight: 'w' });
-		renderChartFromSpec(container, spec);
-		expect(renderers.renderNetworkPanelChart).toHaveBeenCalledTimes(1);
-		expect(renderers.renderNetworkPanelChart).toHaveBeenCalledWith(container, spec);
+	it.each(['line', 'scatter'])('%s: a capture without column types still draws', type => {
+		const container = mount();
+
+		const result = getPanelChartRenderer(type)(container, { type, config: configFor(type), dataSnapshot: rows });
+
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('svg')).not.toBeNull();
 	});
-
-	it('dispatches pie to the package panel adapter with the whole spec', () => {
-		const spec = makeSpec('pie', { category: 'a', measureMode: 'sum', valueColumn: 'a' });
-		renderChartFromSpec(container, spec);
-		expect(renderers.renderPiePanelChart).toHaveBeenCalledTimes(1);
-		expect(renderers.renderPiePanelChart).toHaveBeenCalledWith(container, spec);
-	});
-
-	it('dispatches bubble to the package panel adapter with the whole spec', () => {
-		const spec = makeSpec('bubble', { category: 'a', measureMode: 'bogus' });
-		renderChartFromSpec(container, spec);
-		expect(renderers.renderBubblePanelChart).toHaveBeenCalledTimes(1);
-		expect(renderers.renderBubblePanelChart).toHaveBeenCalledWith(container, spec);
-	});
-
-	it('dispatches treemap to the package panel adapter with the whole spec', () => {
-		const spec = makeSpec('treemap', { category: 'a', topN: 5 });
-		renderChartFromSpec(container, spec);
-		expect(renderers.renderTreemapPanelChart).toHaveBeenCalledTimes(1);
-		expect(renderers.renderTreemapPanelChart).toHaveBeenCalledWith(container, spec);
-	});
-
-	it('dispatches line to the package panel adapter with the whole spec', () => {
-		const spec = makeSpec('line', { x: 'a', y: 'a', curve: 'monotone', missingMode: 'gap' });
-		renderChartFromSpec(container, spec);
-		expect(renderers.renderLinePanelChart).toHaveBeenCalledTimes(1);
-		expect(renderers.renderLinePanelChart).toHaveBeenCalledWith(container, spec);
-	});
-
-	it('dispatches tin to the package panel adapter with the whole spec', () => {
-		const spec = makeSpec('tin', { x: 'a', y: 'b', z: 'a' });
-		renderChartFromSpec(container, spec);
-		expect(renderers.renderTinPanelChart).toHaveBeenCalledTimes(1);
-		expect(renderers.renderTinPanelChart).toHaveBeenCalledWith(container, spec);
-	});
-
-	it('accepts chart specs without config objects', () => {
-		for (const type of SUPPORTED_PANEL_CHART_TYPES) {
-			const spec = makeSpec(type);
-			delete spec.config;
-			expect(renderChartFromSpec(container, spec).ok).toBe(true);
-		}
-
-		expect(renderers.renderBarPanelChart).toHaveBeenCalled();
-		expect(renderers.renderScatterPanelChart).toHaveBeenCalled();
-		expect(renderers.renderNetworkPanelChart).toHaveBeenCalled();
-		expect(renderers.renderPiePanelChart).toHaveBeenCalled();
-		expect(renderers.renderBubblePanelChart).toHaveBeenCalled();
-		expect(renderers.renderTreemapPanelChart).toHaveBeenCalled();
-		expect(renderers.renderLinePanelChart).toHaveBeenCalled();
-		expect(renderers.renderTinPanelChart).toHaveBeenCalled();
-	});
-
-	it('returns renderer failure results unchanged', () => {
-		renderers.renderLinePanelChart.mockReturnValueOnce({ ok: false, reason: 'renderer-failed' });
-
-		const result = renderChartFromSpec(container, makeSpec('line', { x: 'a', y: 'a' }));
-
-		expect(result).toEqual({ ok: false, reason: 'renderer-failed' });
-	});
-
 });
