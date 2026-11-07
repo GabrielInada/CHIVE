@@ -11,7 +11,7 @@ import { renderBubbleInto } from './presentation.js';
 
 /**
  * Render the bubble-chart section. Surfaces `'no-value-column'`,
- * `'no-numeric'`, `'no-nesting-columns'`, and `'no-group-column'` as
+ * `'no-numeric'`, `'no-positive-value'`, `'no-nesting-columns'`, and `'no-group-column'` as
  * distinct empty messages.
  *
  * @param {Object} args
@@ -35,9 +35,11 @@ export function renderBubbleChartSection({ config, rows, filterCallbacks }) {
 	if (!result.ok) {
 		const key = result.reason === 'no-value-column' || result.reason === 'no-numeric'
 			? 'chive-chart-empty-bubble-numeric'
-			: result.reason === 'no-nesting-columns' || result.reason === 'no-group-column'
-				? 'chive-chart-empty-bubble-nesting-required'
-				: 'chive-chart-empty-bubble';
+			: result.reason === 'no-positive-value'
+				? 'chive-chart-empty-no-positive-sum'
+				: result.reason === 'no-nesting-columns' || result.reason === 'no-group-column'
+					? 'chive-chart-empty-bubble-nesting-required'
+					: 'chive-chart-empty-bubble';
 		showChartMessage(CHART_CONTAINERS.bubble, t(key));
 	}
 }
