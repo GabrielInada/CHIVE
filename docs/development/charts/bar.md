@@ -37,9 +37,7 @@ Key files:
 - Sidebar controls: [controls/](../../../src/charts/bar/controls)
 - Chart definition and constants: [bar.js](../../../src/config/charts/definitions/bar.js) (`BAR_DEFINITION`, `BAR_CHART`)
 - Per-dataset config defaults: [bar.js](../../../src/config/charts/definitions/bar.js) (the definition's fresh `bar` factory)
-- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bar/workspaceSection.js)
 - Shared presentation mapping: [presentation.js](../../../src/charts/bar/presentation.js)
-- Panel adapter: [panelAdapter.js](../../../src/charts/bar/panelAdapter.js)
 - Shared tooltip: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js); its filter
   actions: [filterActions.js](../../../src/charts/shared/tooltip/filterActions.js)
 
@@ -131,7 +129,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderBarChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -144,11 +141,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderBarPanelChart"]
     end
 
-    WSECTION --> PRESENT["renderBarInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderBarInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderBarChart"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -284,17 +280,19 @@ renderer never reads the DOM controls; it only reads config the listeners have w
 ### 6.1 Dataset workspace
 
 [chartsView.js](../../../src/features/datasetWorkspace/views/chartsView.js) decides
-which chart is active and passes the shared render context to the
-[workspace registry](../../../src/charts/registries/workspace.js). Its `bar`
-entry calls `renderBarChartSection({ config, rows, filterCallbacks })` from
-[workspaceSection.js](../../../src/charts/bar/workspaceSection.js). That adapter:
+which chart is active and passes the chart input (`rows`, `config`,
+`columnTypeByName`, `filterCallbacks`) to the
+[workspace registry](../../../src/charts/registries/workspace.js), which runs the
+same section routine for every chart:
 
 1. Resolves the block (`CHART_BLOCKS.bar`) and container (`CHART_CONTAINERS.bar`) elements.
 2. Hides the block and clears the container if the chart is disabled.
-3. Sets the container `min-height` to the configured `chartHeight`.
-4. Delegates option and localized-label mapping to
-   [presentation.js](../../../src/charts/bar/presentation.js).
-5. Calls `renderBarChart(container, rows, config.category, options)` through that shared flow.
+3. Sets the container `min-height` to the height the chart is drawn at: `chartHeight`
+   clamped to the definition's `heightLimits`, or the default height when it is not a
+   number ([chartHeight.js](../../../src/charts/shared/chartHeight.js)).
+4. Hands the chart input to `renderBarInto` in
+   [presentation.js](../../../src/charts/bar/presentation.js), which maps options and
+   localized labels and calls `renderBarChart(container, rows, config.category, options)`.
 
 The presentation flow shows a localized empty state on either surface: `no-numeric` /
 `no-value-column` map to `chive-chart-empty-bar-numeric`, anything else to
@@ -311,9 +309,9 @@ already saved in Panel keep their stored text.
 
 [renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
 validates the request, then the
-[panel registry](../../../src/charts/registries/panel.js) dispatches bar snapshots to
-[panelAdapter.js](../../../src/charts/bar/panelAdapter.js). The adapter passes
-`spec.config` and `spec.dataSnapshot` through the same presentation flow and renderer.
+[panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same
+presentation flow and renderer.
 The one difference is that panel charts omit `filterCallbacks`; the shared presentation
 flow uses a frozen empty default, so panel tooltips do **not** offer click-to-filter actions
 (those would mutate the live dataset, while panel rendering is read-only).
@@ -393,8 +391,8 @@ treemap, bubble, network, and scatter:
   total. The percentage is left out in mean mode, and when a kept sum is below 0, since a
   share of the net total could then pass 100% or go below 0%.
 - **Click pins** a tooltip that stays open. The bar passes `showPinnedFilterTooltip` its
-  category column and the bar's category token, with the `filterCallbacks` bag as the
-  section adapter supplied it. The shared module reads the token's state in the global
+  category column and the bar's category token, with the `filterCallbacks` bag as
+  Visualizations supplied it. The shared module reads the token's state in the global
   filter and offers the actions that apply: focus on this value ("show only this", left out
   when it would give the same filter as adding the value), then add to the global filter and
   exclude ("hide this") for a value the filter does not name, remove from the filter for an
@@ -475,7 +473,7 @@ screen shows are what gets serialized.
 
 ## 12. Invariants and edge cases
 
-- **No category column** → `fail()`, the section adapter shows `chive-chart-empty-bar`
+- **No category column** → `fail()`, the presentation flow shows `chive-chart-empty-bar`
   ("Select at least one visible column to build the bar chart.").
 - **sum/mean without a numeric value column** → `fail('no-value-column')`, and a value
   column with no number cell in the rows → `fail('no-numeric')`; both map to
@@ -514,18 +512,17 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
   them: the actions each filter state gets, the badge, headed groups for two columns, and
   the label defaults. Each renderer's tests only check that its pinned tooltip offers the
   actions for the right column and category token.
-- [workspaceSection.test.js](../../../tests/charts/bar/workspaceSection.test.js)
-  covers workspace visibility and empty-state selection.
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
+  checks through the workspace registry, for every chart, block visibility, the min height,
+  the dispose contract, and the inputs each chart draws from.
 - [controls.test.js](../../../tests/charts/bar/controls.test.js) and
   [controls.measureMode.test.js](../../../tests/charts/bar/controls.measureMode.test.js)
   cover control construction and config writes.
   [dataControls.test.js](../../../tests/charts/registries/dataControls.test.js) checks the
   data controls bar shares with pie, treemap, and bubble through the controls registry, and
   the sort options that name the measure.
-- [panelAdapter.test.js](../../../tests/charts/bar/panelAdapter.test.js) covers
-  snapshot-to-renderer mapping and localized aggregate labels.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
-  covers the panel dispatch path.
+  covers the panel registry and how it builds the chart input from a snapshot.
 - [chartsView.test.js](../../../tests/features/datasetWorkspace/views/chartsView.test.js) covers view-level
   orchestration of which blocks render.
 

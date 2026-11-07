@@ -570,9 +570,9 @@ Supported panel chart types, in canonical chart-definition order:
 3. Inject write callbacks from `panelController`; views, slots, layout helpers,
    and exporters do not import write facades.
 4. Emit only when an owner needs to react and document no-op/error behavior.
-5. For a new chart type, add the panel adapter to
-   `charts/registries/panel.js`; the supported list derives from the canonical
-   chart order. Update SVG-export behavior and tests when its rendering surface
+5. For a new chart type, register its presentation flow in
+   `charts/registries/panel.js`, which builds the chart input from the
+   snapshot; the supported list derives from the canonical chart order. Update SVG-export behavior and tests when its rendering surface
    differs.
 
 ## Debugging State Events

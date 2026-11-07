@@ -111,7 +111,7 @@ const FORBIDDEN_IMPORTS = [
 	['src/charts/registries/controls.js', "import '../../ui/feedback.js';", 'controls registry bans ui/'],
 	['src/charts/registries/workspace.js', "import '../../ui/feedback.js';", 'workspace registry bans ui/'],
 	['src/charts/registries/panel.js', "import '../../ui/feedback.js';", 'panel registry bans ui/'],
-	['src/charts/bar/workspaceSection.js', "import '../../ui/feedback.js';", 'chart integration files ban ui/'],
+	['src/charts/bar/presentation.js', "import '../../ui/feedback.js';", 'chart integration files ban ui/'],
 	['src/charts/bar/controls/listeners.js', "import '../../../ui/feedback.js';", 'control listeners ban ui/'],
 	['src/features/datasetWorkspace/datasetController.js', "import 'd3';", 'features block restated BARE_IMPORT_BANS'],
 	['src/ui/feedback.js', "import 'd3';", 'ui block restated BARE_IMPORT_BANS'],

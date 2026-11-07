@@ -18,17 +18,10 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
  * Render a bar chart from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
- * @param {Array<Object<string, *>>} rows
- * @param {Object} [config]
- * @param {Object} [filterCallbacks]
+ * @param {import('../../types.js').ChartInput} input
  * @returns {import('../../types.js').Result}
  */
-export function renderBarInto(
-	container,
-	rows,
-	config = {},
-	filterCallbacks = EMPTY_FILTER_CALLBACKS,
-) {
+export function renderBarInto(container, { rows, config, filterCallbacks = EMPTY_FILTER_CALLBACKS }) {
 	const result = renderBarChart(container, rows, config.category, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,

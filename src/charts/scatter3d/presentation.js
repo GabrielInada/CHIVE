@@ -7,7 +7,7 @@
 
 import { t } from '../../services/i18nService.js';
 import { ok } from '../../utils/result.js';
-import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
+import { CHART_DISPOSE_HOOK, clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
 
 const RENDER_TOKEN = '__chiveScatter3dRenderToken__';
 let rendererModulePromise = null;
@@ -23,24 +23,26 @@ function loadRendererModule() {
 }
 
 /**
- * Invalidate a pending lazy render before a container is disabled or removed.
+ * Draw the 3D scatter once its renderer has loaded. Clearing the container
+ * through `clearChartContainer` while the renderer loads cancels the render,
+ * as does a newer render into the same container.
  *
- * @param {HTMLElement | null | undefined} container
- */
-export function invalidateScatter3dRender(container) {
-	if (container) container[RENDER_TOKEN] = Symbol('scatter3d-render-cancelled');
-}
-
-/**
  * @param {HTMLElement} container
- * @param {Array<Object<string, *>>} rows
- * @param {Object} config
+ * @param {import('../../types.js').ChartInput} input
  * @returns {import('../../types.js').Result}
  */
-export function renderScatter3dInto(container, rows, config) {
+export function renderScatter3dInto(container, { rows, config }) {
 	clearChartContainer(container);
 	const token = Symbol('scatter3d-render');
 	container[RENDER_TOKEN] = token;
+	let loading = true;
+	// WHY: the renderer empties the container through the same dispose
+	// contract before it draws, so the hook cancels only while loading.
+	container[CHART_DISPOSE_HOOK] = () => {
+		if (loading && container[RENDER_TOKEN] === token) {
+			container[RENDER_TOKEN] = Symbol('scatter3d-render-cancelled');
+		}
+	};
 
 	const pending = document.createElement('div');
 	pending.className = 'chart-empty chart-loading';
@@ -50,6 +52,7 @@ export function renderScatter3dInto(container, rows, config) {
 	void loadRendererModule()
 		.then(({ renderScatter3dChart }) => {
 			if (container[RENDER_TOKEN] !== token || !container.isConnected) return;
+			loading = false;
 			const result = renderScatter3dChart(container, rows, config.x, config.y, config.z, {
 				customTitle: config.customTitle,
 				chartHeight: config.chartHeight,

@@ -9,7 +9,7 @@ mathematical or algorithmic theory it rests on.
 |---|---|
 | Audience | Contributors changing chart renderers, controls, panel rendering, or tests. |
 | Source of truth | Implementation-level chart data flow, algorithms, config, edge cases, and test coverage. |
-| Update when | A chart renderer, control surface, panel adapter, algorithm, empty-state path, or test contract changes. |
+| Update when | A chart renderer, control surface, presentation flow, algorithm, empty-state path, or test contract changes. |
 
 These are the companion to the higher-level docs one directory up:
 
@@ -37,8 +37,7 @@ These are the companion to the higher-level docs one directory up:
 
 The package directory and persisted chart key use the canonical lowercase chart
 key. Exported symbols use a PascalCase chart stem followed by a role suffix such
-as `Controls`, `ControlListeners`, `PanelChart`, `ChartSection`, `Into`,
-`Options`, or `Interactions`. New symbols should use one plain stem consistently
+as `Controls`, `ControlListeners`, `Into`, `Options`, or `Interactions`. New symbols should use one plain stem consistently
 within their package.
 
 The current plain stems are `Bar`, `Pie`, `Treemap`, `Bubble`, `Line`, `Tin`,
@@ -109,10 +108,15 @@ doc rather than repeated:
 - **Render dispatch**: panel snapshots enter through
   [renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js),
   which validates the request and resolves its implementation through the
-  [panel registry](../../../src/charts/registries/panel.js). Every chart resolves
-  to its package-owned `panelAdapter.js` under [src/charts/](../../../src/charts).
-- **Section adapters**: every per-chart package owns a `workspaceSection.js`.
-  These own workspace visibility and minimum height. Each package's
+  [panel registry](../../../src/charts/registries/panel.js). The registry builds the
+  chart input from the snapshot (its rows, config and column types) and hands it to the
+  chart's package-owned `presentation.js` under [src/charts/](../../../src/charts).
+- **Chart input and sections**: both surfaces hand each chart the same chart input
+  (`rows`, `config`, `columnTypeByName`, `filterCallbacks`; see `ChartInput` in
+  [types.js](../../../src/types.js)). In Visualizations the
+  [workspace registry](../../../src/charts/registries/workspace.js) owns the section
+  routine for every chart: block visibility, and a minimum height equal to the height
+  the chart is drawn at ([chartHeight.js](../../../src/charts/shared/chartHeight.js)). Each package's
   `presentation.js` maps config and labels and renders localized empty states via
   `showChartMessage` from
   [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).

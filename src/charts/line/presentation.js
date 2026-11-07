@@ -18,19 +18,10 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
  * Render a line chart from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
- * @param {Array<Object<string, *>>} rows
- * @param {Object} [config]
- * @param {Object<string, string>} [columnTypeByName] - Column name → `ColumnType`.
- * @param {Object} [filterCallbacks]
+ * @param {import('../../types.js').ChartInput} input
  * @returns {import('../../types.js').Result}
  */
-export function renderLineInto(
-	container,
-	rows,
-	config = {},
-	columnTypeByName = {},
-	filterCallbacks = EMPTY_FILTER_CALLBACKS,
-) {
+export function renderLineInto(container, { rows, config, columnTypeByName = {}, filterCallbacks = EMPTY_FILTER_CALLBACKS }) {
 	const result = renderLineChart(container, rows, config.x, config.y, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,

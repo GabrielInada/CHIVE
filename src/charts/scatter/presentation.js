@@ -24,19 +24,11 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
  * Render a scatter plot from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
- * @param {Array<Object<string, *>>} rows
- * @param {Object} [config]
- * @param {Object<string, string>} [columnTypeByName] - Column name → `ColumnType`.
- * @param {Object} [filterCallbacks]
+ * @param {import('../../types.js').ChartInput} input
  * @returns {import('../../types.js').Result}
  */
-export function renderScatterInto(
-	container,
-	rows,
-	config = {},
-	columnTypeByName = {},
-	filterCallbacks = EMPTY_FILTER_CALLBACKS,
-) {
+export function renderScatterInto(container, input) {
+	const { rows, config, columnTypeByName = {}, filterCallbacks = EMPTY_FILTER_CALLBACKS } = input;
 	container.querySelector('.chart-render-budget-notice')?.remove();
 	const result = renderScatterPlot(container, rows, config.x, config.y, {
 		customTitle: config.customTitle,
@@ -98,7 +90,7 @@ export function renderScatterInto(
 			actionLabel: t('chive-chart-render-full'),
 			onApprove: () => {
 				approveFullRender(container, 'scatter');
-				renderScatterInto(container, rows, config, columnTypeByName, filterCallbacks);
+				renderScatterInto(container, input);
 			},
 		});
 	}

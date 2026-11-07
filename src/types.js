@@ -244,6 +244,18 @@
  * @property {string} createdAt - ISO 8601 timestamp.
  */
 
+/**
+ * What a chart's presentation flow draws from, on either surface. The
+ * workspace registry passes it from Visualizations and the panel registry
+ * builds it from a {@link ChartSnapshot}.
+ *
+ * @typedef {Object} ChartInput
+ * @property {Array<Object<string, *>>} rows - The rows to draw: under the global filter in Visualizations, the captured rows in Panel.
+ * @property {Object} config - The chart's config block, `chartConfig[type]`.
+ * @property {Object<string, ColumnType>} [columnTypeByName] - Column name to type; line and scatter read it for their axes.
+ * @property {Object} [filterCallbacks] - Global filter actions for pinned tooltips, with their labels. Visualizations only, so Panel tooltips cannot change the live dataset.
+ */
+
 // ─── UI domain ──────────────────────────────────────────────────────────
 
 /**

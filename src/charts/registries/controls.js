@@ -3,7 +3,7 @@
  *
  * Each entry adapts one chart's controls package to the shared manager
  * contract. This registry owns controls wiring only; it does not import
- * workspace renderers, panel adapters, state, or services.
+ * presentation flows, the other registries, state, or services.
  *
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {import('../../types.js').Dataset} Dataset

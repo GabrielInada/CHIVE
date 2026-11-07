@@ -5,15 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
 	t: vi.fn((key, ...args) => (args.length ? `${key}:${args.join(',')}` : key)),
 	mergeChartConfigWithDefaults: vi.fn(config => config),
-	renderBarChartSection: vi.fn(),
-	renderLineChartSection: vi.fn(),
-	renderScatterChartSection: vi.fn(),
-	renderPieChartSection: vi.fn(),
-	renderBubbleChartSection: vi.fn(),
-	renderNetworkChartSection: vi.fn(),
-	renderTreemapChartSection: vi.fn(),
-	renderTinChartSection: vi.fn(),
-	renderScatter3dChartSection: vi.fn(),
+	renderWorkspaceChart: vi.fn(() => true),
 }));
 
 vi.mock('../../../../src/services/i18nService.js', () => ({
@@ -24,51 +16,19 @@ vi.mock('../../../../src/domain/charts/chartConfig.js', () => ({
 	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
 }));
 
-vi.mock('../../../../src/charts/bar/workspaceSection.js', () => ({
-	renderBarChartSection: mocks.renderBarChartSection,
-}));
-vi.mock('../../../../src/charts/line/workspaceSection.js', () => ({
-	renderLineChartSection: mocks.renderLineChartSection,
-}));
-vi.mock('../../../../src/charts/scatter/workspaceSection.js', () => ({
-	renderScatterChartSection: mocks.renderScatterChartSection,
-}));
-vi.mock('../../../../src/charts/pie/workspaceSection.js', () => ({
-	renderPieChartSection: mocks.renderPieChartSection,
-}));
-vi.mock('../../../../src/charts/bubble/workspaceSection.js', () => ({
-	renderBubbleChartSection: mocks.renderBubbleChartSection,
-}));
-vi.mock('../../../../src/charts/network/workspaceSection.js', () => ({
-	renderNetworkChartSection: mocks.renderNetworkChartSection,
-}));
-vi.mock('../../../../src/charts/treemap/workspaceSection.js', () => ({
-	renderTreemapChartSection: mocks.renderTreemapChartSection,
-}));
-vi.mock('../../../../src/charts/tin/workspaceSection.js', () => ({
-	renderTinChartSection: mocks.renderTinChartSection,
-}));
-vi.mock('../../../../src/charts/scatter3d/workspaceSection.js', () => ({
-	renderScatter3dChartSection: mocks.renderScatter3dChartSection,
+vi.mock('../../../../src/charts/registries/workspace.js', () => ({
+	renderWorkspaceChart: mocks.renderWorkspaceChart,
 }));
 
 import { renderCharts } from '../../../../src/features/datasetWorkspace/views/chartsView.js';
-import { renderWorkspaceChart } from '../../../../src/charts/registries/workspace.js';
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../../src/charts/workspaceDomIds.js';
 import { VIEW_IDS, BADGE_IDS } from '../../../../src/features/datasetWorkspace/domIds.js';
 import { CHART_TYPE_KEYS } from '../../../../src/config/charts/definitions.js';
 
-const SECTION_MOCKS = {
-	bar: 'renderBarChartSection',
-	line: 'renderLineChartSection',
-	scatter: 'renderScatterChartSection',
-	scatter3d: 'renderScatter3dChartSection',
-	pie: 'renderPieChartSection',
-	bubble: 'renderBubbleChartSection',
-	network: 'renderNetworkChartSection',
-	treemap: 'renderTreemapChartSection',
-	tin: 'renderTinChartSection',
-};
+// The chart input each chart type was rendered with, by type.
+function inputsByType() {
+	return Object.fromEntries(mocks.renderWorkspaceChart.mock.calls);
+}
 
 function setupDom() {
 	document.body.innerHTML = '';
@@ -128,9 +88,7 @@ describe('renderCharts orchestration', () => {
 			expect(blocks[type].hidden).toBe(false);
 			expect(containers[type].children.length).toBe(0);
 		}
-		for (const key of Object.values(SECTION_MOCKS)) {
-			expect(mocks[key]).not.toHaveBeenCalled();
-		}
+		expect(mocks.renderWorkspaceChart).not.toHaveBeenCalled();
 	});
 
 	it('shows the empty-state and hides all blocks when no chart is enabled', () => {
@@ -145,73 +103,31 @@ describe('renderCharts orchestration', () => {
 			expect(blocks[type].hidden).toBe(true);
 			expect(containers[type].children.length).toBe(0);
 		}
-		for (const key of Object.values(SECTION_MOCKS)) {
-			expect(mocks[key]).not.toHaveBeenCalled();
-		}
+		expect(mocks.renderWorkspaceChart).not.toHaveBeenCalled();
 	});
 
-	it.each(CHART_TYPE_KEYS)('dispatches to %s section helper when only %s is enabled', (type) => {
+	it.each(CHART_TYPE_KEYS)('renders every chart section with only %s enabled', (type) => {
 		setupDom();
 		const config = makeConfig();
 		config[type].enabled = true;
 
 		renderCharts(config, [], [], []);
 
-		const mockKey = SECTION_MOCKS[type];
-		expect(mocks[mockKey]).toHaveBeenCalledTimes(1);
-		const call = mocks[mockKey].mock.calls[0][0];
-		expect(call.config.enabled).toBe(true);
+		const inputs = inputsByType();
+		expect(mocks.renderWorkspaceChart).toHaveBeenCalledTimes(CHART_TYPE_KEYS.length);
 		for (const other of CHART_TYPE_KEYS) {
-			if (other === type) continue;
-			const otherCall = mocks[SECTION_MOCKS[other]].mock.calls[0][0];
-			expect(otherCall.config.enabled).toBe(false);
+			expect(inputs[other].config.enabled).toBe(other === type);
 		}
 	});
 
-	it('dispatches workspace sections in canonical registry order', () => {
+	it('renders the chart sections in canonical chart order', () => {
 		setupDom();
 		const config = makeConfig();
 		config.bar.enabled = true;
 
 		renderCharts(config, [], [], []);
 
-		const invocationOrder = CHART_TYPE_KEYS.map(type => (
-			mocks[SECTION_MOCKS[type]].mock.invocationCallOrder[0]
-		));
-		expect(invocationOrder).toEqual([...invocationOrder].sort((a, b) => a - b));
-	});
-
-	it('returns false for unknown and inherited workspace keys', () => {
-		const context = {
-			config: {},
-			rows: [],
-			columnTypeByName: {},
-			filterCallbacks: {},
-		};
-		expect(renderWorkspaceChart('histogram', context)).toBe(false);
-		expect(renderWorkspaceChart('__proto__', context)).toBe(false);
-	});
-
-	it.each(CHART_TYPE_KEYS)('normalizes the %s workspace adapter arguments', type => {
-		const context = {
-			config: { enabled: true },
-			rows: [{ value: 1 }],
-			columnTypeByName: { value: 'number' },
-			filterCallbacks: { onAddToGlobalFilter: vi.fn() },
-		};
-		const expected = {
-			config: context.config,
-			rows: context.rows,
-		};
-		if (type === 'line' || type === 'scatter') {
-			expected.columnTypeByName = context.columnTypeByName;
-		}
-		if (!['tin', 'scatter3d'].includes(type)) {
-			expected.filterCallbacks = context.filterCallbacks;
-		}
-
-		expect(renderWorkspaceChart(type, context)).toBe(true);
-		expect(mocks[SECTION_MOCKS[type]]).toHaveBeenCalledWith(expected);
+		expect(mocks.renderWorkspaceChart.mock.calls.map(([type]) => type)).toEqual(CHART_TYPE_KEYS);
 	});
 
 	it('coerces multi-enabled config to the first chart in canonical order', () => {
@@ -222,8 +138,8 @@ describe('renderCharts orchestration', () => {
 
 		renderCharts(config, [], [], []);
 
-		expect(mocks.renderBarChartSection.mock.calls[0][0].config.enabled).toBe(true);
-		expect(mocks.renderScatterChartSection.mock.calls[0][0].config.enabled).toBe(false);
+		expect(inputsByType().bar.config.enabled).toBe(true);
+		expect(inputsByType().scatter.config.enabled).toBe(false);
 	});
 
 	it('writes the i18n badge text using visible-column counts', () => {
@@ -252,7 +168,7 @@ describe('renderCharts orchestration', () => {
 
 		renderCharts(config, [], [], [], callbacks);
 
-		const { filterActionLabels, ...passed } = mocks.renderBarChartSection.mock.calls[0][0].filterCallbacks;
+		const { filterActionLabels, ...passed } = inputsByType().bar.filterCallbacks;
 		expect(passed).toEqual(callbacks);
 		Object.entries(callbacks).forEach(([name, callback]) => expect(passed[name]).toBe(callback));
 		expect(filterActionLabels).toMatchObject({
@@ -272,6 +188,6 @@ describe('renderCharts orchestration', () => {
 
 		renderCharts(config, rows, [{ name: 'a' }], [{ name: 'a' }]);
 
-		expect(mocks.renderBarChartSection.mock.calls[0][0].rows).toBe(rows);
+		expect(inputsByType().bar.rows).toBe(rows);
 	});
 });

@@ -20,8 +20,6 @@ Key files (the `src/charts/network/` package):
 - Renderer: [renderers/svg.js](../../../src/charts/network/renderers/svg.js)
 - Graph model derivation: [data.js](../../../src/charts/network/data.js)
 - Shared presentation flow: [presentation.js](../../../src/charts/network/presentation.js)
-- Workspace section adapter: [workspaceSection.js](../../../src/charts/network/workspaceSection.js)
-- Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/network/panelAdapter.js)
 - Sidebar controls: [controls/builder.js](../../../src/charts/network/controls/builder.js),
   [controls/listeners.js](../../../src/charts/network/controls/listeners.js),
   [controls/activationDefaults.js](../../../src/charts/network/controls/activationDefaults.js)
@@ -106,7 +104,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderNetworkChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -119,11 +116,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderNetworkPanelChart"]
     end
 
-    WSECTION --> PRESENT["renderNetworkInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderNetworkInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderNetworkGraph"]
     RENDERER --> OUTPUT["SVG + force simulation"]
 ```
@@ -217,10 +213,10 @@ casual users get a sensible layout without touching physics, while power users c
 
 ### 6.1 Dataset workspace
 
-`renderNetworkChartSection({ config, rows, filterCallbacks })`
-([workspaceSection.js](../../../src/charts/network/workspaceSection.js))
-resolves the block/container, hides+clears when disabled, sets the min-height, and delegates
-to `renderNetworkInto` in [presentation.js](../../../src/charts/network/presentation.js),
+The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
+block/container, hides+clears when disabled, sets the min-height to the height the chart is
+drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to
+`renderNetworkInto` in [presentation.js](../../../src/charts/network/presentation.js),
 which maps config into the options bag (note `weight`/`group` map to
 `weightColumn`/`groupColumn`, and the source/target column names are also passed as
 `sourceColumn`/`targetColumn` for the filter tooltips) and calls `renderNetworkGraph`. Any
@@ -230,9 +226,9 @@ keeps its own existing handling.
 
 ### 6.2 Panel view
 
-`renderNetworkPanelChart` ([panelAdapter.js](../../../src/charts/network/panelAdapter.js))
-routes `spec.config` and `spec.dataSnapshot` through the same `renderNetworkInto` flow,
-omitting `filterCallbacks` (no click-to-filter in panels).
+The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same
+`renderNetworkInto` flow without `filterCallbacks` (no click-to-filter in panels).
 
 ---
 
@@ -358,10 +354,11 @@ All under [tests/charts/network/](../../../tests/charts/network):
   the stable rendered structure across option combinations.
 - [controls.test.js](../../../tests/charts/network/controls.test.js) covers control building,
   the reset-zoom and preset listeners, and the module boundaries.
-- [workspaceSection.test.js](../../../tests/charts/network/workspaceSection.test.js) and
-  [panelAdapter.test.js](../../../tests/charts/network/panelAdapter.test.js) cover the two
-  surface adapters; [panel.test.js](../../../tests/charts/registries/panel.test.js) covers
-  the panel dispatch path.
+- [presentation.test.js](../../../tests/charts/network/presentation.test.js) covers the
+  render-budget notice: an over-budget graph draws nothing until the user approves it.
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js) and
+  [panel.test.js](../../../tests/charts/registries/panel.test.js) check the two surfaces
+  through their registries.
 
 ---
 

@@ -24,8 +24,6 @@ Key files:
 - Chart definition and constants: [bubble.js](../../../src/config/charts/definitions/bubble.js) (`BUBBLE_DEFINITION`, `BUBBLE_CHART`) and [shared.js](../../../src/config/charts/shared.js) (`CHART_COLOR_PALETTES`)
 - Per-dataset config defaults: [bubble.js](../../../src/config/charts/definitions/bubble.js) (the definition's fresh `bubble` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/bubble/presentation.js)
-- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bubble/workspaceSection.js)
-- Panel adapter: [panelAdapter.js](../../../src/charts/bubble/panelAdapter.js)
 
 ---
 
@@ -103,7 +101,6 @@ flowchart TB
         DSTATE -. read through getters .-> COORD
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderBubbleChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -116,11 +113,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderBubblePanelChart"]
     end
 
-    WSECTION --> PRESENT["renderBubbleInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderBubbleInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderBubbleChart"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -221,11 +217,11 @@ measure listener.
 
 ### 6.1 Dataset workspace
 
-`renderBubbleChartSection({ config, rows, filterCallbacks })`
-([workspaceSection.js](../../../src/charts/bubble/workspaceSection.js))
-resolves the block/container, hides+clears when disabled, sets the min-height, maps config
-through [presentation.js](../../../src/charts/bubble/presentation.js), and calls
-`renderBubbleChart`. The presentation flow shows distinct messages on both surfaces:
+The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
+block/container, hides+clears when disabled, sets the min-height to the height the chart is
+drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to
+`renderBubbleInto` in [presentation.js](../../../src/charts/bubble/presentation.js), which
+maps config and calls `renderBubbleChart`. The presentation flow shows distinct messages on both surfaces:
 `no-value-column`/`no-numeric` to `chive-chart-empty-bubble-numeric`,
 `no-positive-value` to `chive-chart-empty-no-positive-sum`,
 `no-nesting-columns`/`no-group-column` to `chive-chart-empty-bubble-nesting-required`, else
@@ -233,9 +229,9 @@ through [presentation.js](../../../src/charts/bubble/presentation.js), and calls
 
 ### 6.2 Panel view
 
-[panelAdapter.js](../../../src/charts/bubble/panelAdapter.js) passes `spec.config` and
-`spec.dataSnapshot` through the same presentation flow with empty `filterCallbacks` (no
-click-to-filter in panels). The panel registry only dispatches to that adapter.
+The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same presentation
+flow without `filterCallbacks` (no click-to-filter in panels).
 
 ---
 
@@ -373,15 +369,14 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   (no DOM).
 - [controls.test.js](../../../tests/charts/bubble/controls.test.js) covers the
   progressive nesting controls and the measure/value cross-constraint.
-- [workspaceSection.test.js](../../../tests/charts/bubble/workspaceSection.test.js) covers
-  workspace visibility and empty-state mapping.
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
+  checks through the workspace registry, for every chart, block visibility, the min height,
+  the dispose contract, and the inputs each chart draws from.
 - [emptyStates.test.js](../../../tests/charts/bubble/emptyStates.test.js) renders real bubbles
   and verifies non-positive messages, finite mixed-value radii, and recovery to count mode
   in English and Portuguese for flat and nested charts.
-- [panelAdapter.test.js](../../../tests/charts/bubble/panelAdapter.test.js) covers captured
-  snapshot mapping, localized labels, and failure passthrough.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
-  covers the panel dispatch path.
+  covers the panel registry and how it builds the chart input from a snapshot.
 
 ---
 
