@@ -83,9 +83,7 @@ describe('renderBubblePanelChart', () => {
 		expect(options.labels).toEqual({
 			close: 'chive-tooltip-close',
 			category: 'chive-chart-control-bubble-category',
-			count: 'chive-tooltip-count',
-			sum: 'chive-tooltip-sum',
-			mean: 'chive-tooltip-mean',
+			measure: 'chive-tooltip-mean',
 			group: 'chive-chart-control-bubble-group',
 			children: 'chive-chart-control-bubble-node-children-count',
 			level: 'chive-chart-control-bubble-node-depth',

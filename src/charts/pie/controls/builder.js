@@ -20,6 +20,7 @@ import { t } from '../../../services/i18nService.js';
 import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl } from '../../shared/controls/factories.js';
 import { createColorPresetControl, createColorPickerGridControl, findAppliedColorPreset } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
+import { measureOptionLabelKey } from '../../shared/measure.js';
 import { getPieSectorValues, getPieSwatchColors } from './sectorValues.js';
 
 /**
@@ -70,7 +71,7 @@ function buildDataControls(dataset, categoryOptions, numericOptions, config) {
 
 	const measureLabel = document.createElement('label');
 	measureLabel.htmlFor = 'viz-select-pie-measure';
-	measureLabel.textContent = t('chive-chart-control-pie-measure');
+	measureLabel.textContent = t('chive-chart-control-measure');
 
 	const measureSelect = document.createElement('select');
 	measureSelect.id = 'viz-select-pie-measure';
@@ -78,8 +79,8 @@ function buildDataControls(dataset, categoryOptions, numericOptions, config) {
 	measureSelect.disabled = !dataset.chartConfig.pie.enabled;
 
 	[
-		{ value: 'count', label: t('chive-chart-control-pie-measure-count') },
-		{ value: 'sum', label: t('chive-chart-control-pie-measure-sum') },
+		{ value: 'count', label: t(measureOptionLabelKey('count')) },
+		{ value: 'sum', label: t(measureOptionLabelKey('sum')) },
 	].forEach(opt => {
 		const option = document.createElement('option');
 		option.value = opt.value;
@@ -97,7 +98,7 @@ function buildDataControls(dataset, categoryOptions, numericOptions, config) {
 
 	const valueLabel = document.createElement('label');
 	valueLabel.htmlFor = 'viz-select-pie-value-column';
-	valueLabel.textContent = t('chive-chart-control-pie-value-column');
+	valueLabel.textContent = t('chive-chart-control-value-column');
 
 	const valueSelect = document.createElement('select');
 	valueSelect.id = 'viz-select-pie-value-column';

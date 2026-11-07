@@ -27,21 +27,14 @@ export function normalizeBarOptions(options, categoryColumn) {
 	const labels = {
 		close: options.labels?.close,
 		category: options.labels?.category || 'Category',
-		count: options.labels?.count || 'Count',
-		sum: options.labels?.sum || 'Sum',
-		mean: options.labels?.mean || 'Mean',
+		measure: options.labels?.measure || 'Value',
 		percentage: options.labels?.percentage || 'Percentage',
 		missing: options.labels?.missing || '(missing)',
 	};
 	const valueColumn = options.valueColumn || null;
 	const axisLabels = {
 		x: options.axisLabels?.x || categoryColumn,
-		y: options.axisLabels?.y
-			|| (measureMode === 'mean'
-				? labels.mean
-				: measureMode === 'sum'
-					? labels.sum
-					: labels.count),
+		y: options.axisLabels?.y || labels.measure,
 	};
 	const color = isValidHexColor(String(options.color || '').trim())
 		? String(options.color).trim()

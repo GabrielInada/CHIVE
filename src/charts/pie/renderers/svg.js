@@ -38,7 +38,8 @@ import { computePieSectors } from '../data.js';
  * `padAngle`, `zoomScale`, `showCategoryLabel`/`showValueLabel`/
  * `showLegend`, `labelPosition` ('inside' | 'outside'), `color`,
  * `customSliceColors` (overrides by category key), `customTitle`,
- * `chartHeight`, `locale`.
+ * `chartHeight`, `locale`, and the localized `labels` bag, whose `measure`
+ * names the measure in the tooltip.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
@@ -54,7 +55,6 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		labels,
 		rawInner,
 		rawOuter,
-		measureMode,
 		showCategoryLabel,
 		showValueLabel,
 		showLegend,
@@ -122,10 +122,9 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 
 	const buildTooltipContent = item => {
 		const percentage = total > 0 ? ((item.value / total) * 100) : 0;
-		const valueLabel = measureMode === 'sum' ? labels.sum : labels.count;
 		const wrapper = document.createElement('div');
 		wrapper.appendChild(createTooltipLine(labels.category, item.label));
-		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale)));
 		wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		return wrapper;
 	};

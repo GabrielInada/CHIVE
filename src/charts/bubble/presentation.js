@@ -9,6 +9,7 @@
 
 import { t, getLocale } from '../../services/i18nService.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
+import { measureLabelKey } from '../shared/measure.js';
 import { renderBubbleChart } from './renderers/svg.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
@@ -44,9 +45,7 @@ export function renderBubbleInto(
 		labels: {
 			close: t('chive-tooltip-close'),
 			category: t('chive-chart-control-bubble-category'),
-			count: t('chive-tooltip-count'),
-			sum: t('chive-tooltip-sum'),
-			mean: t('chive-tooltip-mean'),
+			measure: t(measureLabelKey(config.measureMode)),
 			group: t('chive-chart-control-bubble-group'),
 			children: t('chive-chart-control-bubble-node-children-count'),
 			level: t('chive-chart-control-bubble-node-depth'),

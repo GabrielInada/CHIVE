@@ -57,7 +57,6 @@ describe('normalizePieOptions', () => {
 		const o = normalizePieOptions({ labels: { other: 'Outros', category: 'Região' } });
 		expect(o.labels.other).toBe('Outros');
 		expect(o.labels.category).toBe('Região');
-		expect(o.labels.count).toBe('Count');
-		expect(o.labels.sum).toBe('Sum');
+		expect(o.labels.measure).toBe('Value');
 	});
 });

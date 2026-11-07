@@ -25,6 +25,7 @@ import {
 	createColorPresetControl,
 } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
+import { measureOptionLabelKey } from '../../shared/measure.js';
 import { resolveNestingColumnsFromConfig, computeNestingControlCount } from './nestingColumns.js';
 
 /**
@@ -124,11 +125,11 @@ function buildDataControls(config, categoryOptions, numericOptions, allColumns, 
 
 	dataControls.push(createSelectControl(
 		'viz-select-bubble-measure',
-		t('chive-chart-control-bubble-measure'),
+		t('chive-chart-control-measure'),
 		[
-			{ value: 'count', label: t('chive-chart-control-bubble-measure-count') },
-			{ value: 'sum', label: t('chive-chart-control-bubble-measure-sum') },
-			{ value: 'mean', label: t('chive-chart-control-bubble-measure-mean') },
+			{ value: 'count', label: t(measureOptionLabelKey('count')) },
+			{ value: 'sum', label: t(measureOptionLabelKey('sum')) },
+			{ value: 'mean', label: t(measureOptionLabelKey('mean')) },
 		],
 		measureMode,
 		disabled
@@ -136,7 +137,7 @@ function buildDataControls(config, categoryOptions, numericOptions, allColumns, 
 
 	dataControls.push(createSelectControl(
 		'viz-select-bubble-value-column',
-		t('chive-chart-control-bubble-value-column'),
+		t('chive-chart-control-value-column'),
 		[
 			{ value: '', label: t('chive-chart-option-none') },
 			...numericOptions.map(opt => ({ value: opt, label: opt })),

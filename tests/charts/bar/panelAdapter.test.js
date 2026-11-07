@@ -67,10 +67,8 @@ describe('renderBarPanelChart', () => {
 				customTitle: 'Snapshot',
 				chartHeight: 420,
 				locale: 'en',
-				axisLabels: {
-					x: 'region',
-					y: 'chive-tooltip-count',
-				},
+				axisLabels: { x: 'region' },
+				labels: expect.objectContaining({ measure: 'chive-tooltip-count' }),
 				filterCallbacks: {},
 			}),
 		);
@@ -82,12 +80,12 @@ describe('renderBarPanelChart', () => {
 		['count', 'chive-tooltip-count'],
 		['sum', 'chive-tooltip-sum'],
 		['mean', 'chive-tooltip-mean'],
-	])('passes %s on and builds its localized y-axis label', (measureMode, expectedLabel) => {
+	])('passes %s on and builds its localized measure label', (measureMode, expectedLabel) => {
 		renderBarPanelChart(container, createSpec({ measureMode }));
 
 		const options = mocks.renderBarChart.mock.calls[0][3];
 		expect(options.measureMode).toBe(measureMode);
-		expect(options.axisLabels.y).toBe(expectedLabel);
+		expect(options.labels.measure).toBe(expectedLabel);
 	});
 
 	it('tolerates a snapshot without config or rows', () => {
@@ -97,7 +95,10 @@ describe('renderBarPanelChart', () => {
 			container,
 			[],
 			undefined,
-			expect.objectContaining({ axisLabels: { x: 'chive-chart-control-bar-category', y: 'chive-tooltip-count' } }),
+			expect.objectContaining({
+				axisLabels: { x: 'chive-chart-control-bar-category' },
+				labels: expect.objectContaining({ measure: 'chive-tooltip-count' }),
+			}),
 		);
 	});
 

@@ -295,7 +295,9 @@ The presentation flow shows a localized empty state on either surface: `no-numer
 `chive-chart-empty-bar` (via `showChartMessage`). The original renderer result is returned unchanged.
 
 The block heading, `chive-chart-bar-title`, is measure-neutral: "Bar chart (by category)"
-in English and "Barras (por categoria)" in Portuguese. The y axis names the selected measure.
+in English and "Barras (por categoria)" in Portuguese. The y axis and the tooltip name the
+selected measure with its measure label, which the presentation flow passes as
+`labels.measure` (see the measure label in the [charts README](README.md)).
 Add to Panel uses this heading for a new capture's name when no custom title is set; names
 already saved in Panel keep their stored text.
 
@@ -405,7 +407,8 @@ category names do not overlap; the left axis uses `BAR_CHART.ticks` (6) tick mar
 category axis stays at the bottom of the plot, so its labels never sit on a bar below 0.
 When a kept measure is below 0, a separate `line.bar-zero-line` marks 0 across the plot,
 drawn over the bars and ignored by the pointer. Optional x/y axis-title text is drawn when
-`showXAxisLabel` / `showYAxisLabel` are on. The function returns `ok()`.
+`showXAxisLabel` / `showYAxisLabel` are on; the y title is `labels.measure` unless
+`axisLabels.y` is given. The function returns `ok()`.
 
 ---
 

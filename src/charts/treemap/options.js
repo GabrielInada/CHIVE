@@ -37,8 +37,7 @@ export function normalizeTreemapOptions(options) {
 	const labels = {
 		close: options.labels?.close,
 		category: options.labels?.category || 'Category',
-		count: options.labels?.count || 'Count',
-		sum: options.labels?.sum || 'Sum',
+		measure: options.labels?.measure || 'Value',
 		percentage: options.labels?.percentage || 'Percentage',
 		missing: options.labels?.missing || '(missing)',
 	};
