@@ -75,8 +75,9 @@ _Avoid_: metric, aggregation mode
 
 **Measure label**:
 The localized name of a chart's measure. Charts show its short form with the
-numbers ("Sum: 8", bar's y axis); the measure select and Panel capture
-subtitles show its long form ("Sum numeric column").
+numbers ("Sum: 8", bar's y axis) and in bar's sort options ("Sum (high → low)");
+the measure select and Panel capture subtitles show its long form ("Sum numeric
+column").
 _Avoid_: value label, tooltip label
 
 ### Filters

@@ -16,9 +16,9 @@ see [Architecture reference](../architecture-reference.md).
 Key files:
 
 - Renderer: [renderers/svg.js](../../../src/charts/pie/renderers/svg.js)
-- Sidebar controls: [builder.js](../../../src/charts/pie/controls/builder.js),
-  [listeners.js](../../../src/charts/pie/controls/listeners.js), and
-  [activationDefaults.js](../../../src/charts/pie/controls/activationDefaults.js)
+- Sidebar controls: [builder.js](../../../src/charts/pie/controls/builder.js) and
+  [listeners.js](../../../src/charts/pie/controls/listeners.js); the activation defaults come
+  from the shared [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
 - Sectors and options: [data.js](../../../src/charts/pie/data.js) (`computePieSectors`, the
   sectors as drawn) and [options.js](../../../src/charts/pie/options.js)
 - Chart definition and constants: [pie.js](../../../src/config/charts/definitions/pie.js) (`PIE_DEFINITION`, `PIE_CHART`)
@@ -189,15 +189,17 @@ uses these values as given. The unused `colorMode` key is not checked.
 ## 5. The control sidebar
 
 The controls package separates
-[`createPieChartControls`](../../../src/charts/pie/controls/builder.js),
-[`setupPieChartControlListeners`](../../../src/charts/pie/controls/listeners.js), and
-[`computeDefaults`](../../../src/charts/pie/controls/activationDefaults.js) by role. The controls
-registry imports those three entry points directly.
+[`createPieChartControls`](../../../src/charts/pie/controls/builder.js) and
+[`setupPieChartControlListeners`](../../../src/charts/pie/controls/listeners.js) by role. The
+controls registry imports those two entry points directly and takes `computeDefaults` from
+the shared `categoryChartDefaults('pie')`
+([activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)).
 
 ### 5.1 The three sections
 
 1. **Data & aggregation** (expanded): category select, measure (count/sum), value-column
-   select, Top-N select, Top-N mode (other/truncate).
+   select, Top-N select, Top-N mode (other/truncate). The measure and Top-N selects list
+   `PIE_CHART.measureModes` and `PIE_CHART.topNOptions`.
 2. **Display** (expanded): inner/outer radius sliders, pad-angle slider, zoom slider,
    category/value label toggles, legend toggle, title, label-position select, and a Reset
    Zoom button.
@@ -226,11 +228,13 @@ registry imports those three entry points directly.
 Beyond the shared select/checkbox/text/color helpers, the pie has several custom listeners:
 
 - **Measure**: the shared `setupMeasureListener` applies the value-column rule bar, pie,
-  treemap, and bubble share
-  ([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+  treemap, and bubble share (`valueColumnForMeasure` in
+  [measure.js](../../../src/charts/shared/measure.js)):
   switching to count keeps `valueColumn`, so switching back restores it, and switching to sum
   keeps it while it is a numeric option and otherwise takes the first numeric column.
   `computeDefaults` picks the value column by the same rule.
+- **Value column**: the shared `setupValueColumnListener` stores the chosen column only while
+  it is a visible numeric column, and `null` otherwise.
 - **Inner/outer radius**: cross-constrained so the inner radius is always kept at least 8px
   below the outer (adjusting one can clamp the other).
 - **Reset Zoom**: resets both the zoom slider DOM and `zoomScale` to the default.

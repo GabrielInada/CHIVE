@@ -135,9 +135,9 @@ doc rather than repeated:
   it as `closeLabel` independently of the filter callbacks, so Panel tooltips also use the
   current interface language for the close button's accessible name and hover title.
 - **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
-  builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets) and
-  finds the palette preset a chart's colors still match (`findAppliedColorPreset`), the one
-  its palette buttons mark; [grouping.js](../../../src/charts/shared/controls/grouping.js)
+  builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets), the
+  options of a Top-N select (`topNSelectOptions`), and finds the palette preset a chart's
+  colors still match (`findAppliedColorPreset`), the one its palette buttons mark; [grouping.js](../../../src/charts/shared/controls/grouping.js)
   wraps them in collapsible sections. Neither writes config; the config writes are wired by
   the listener helpers in
   [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
@@ -152,15 +152,22 @@ doc rather than repeated:
   [measure.js](../../../src/charts/shared/measure.js), which returns i18n keys. Each
   presentation flow translates the short form (`measureLabelKey`: "Count", "Sum", "Mean")
   once and passes it to its renderer as `labels.measure`, for tooltips, bar's y axis, and
-  bubble titles. The measure select and Panel capture subtitles use the long form
+  bubble titles; bar's sort select names its value orders with it ("Sum (high → low)"). The
+  measure select and Panel capture subtitles use the long form
   (`measureOptionLabelKey`: "Count rows", "Sum numeric column", "Average numeric column").
   Any measure other than sum or mean is named as count.
 - **Measure and value column**: bar, pie, treemap, and bubble keep their value column by one
-  rule, `valueColumnForMeasure` in
-  [measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js), both
+  rule, `valueColumnForMeasure` in [measure.js](../../../src/charts/shared/measure.js), both
   when the user switches the measure (`setupMeasureListener`) and when the chart is activated
-  (`computeDefaults`). Count keeps the stored column; sum and mean keep it while it is a
-  visible numeric column and otherwise take the first one.
+  (`categoryChartDefaults` in
+  [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js), the
+  `computeDefaults` the four share). Count keeps the stored column; sum and mean keep it
+  while it is a visible numeric column and otherwise take the first one. The value-column
+  select is disabled when the measure reads no value column (`measureUsesValueColumn`), and
+  `setupValueColumnListener` stores only a visible numeric column. Their measure and Top-N
+  selects list the definition's `measureModes` and `topNOptions`.
+  [dataControls.test.js](../../../tests/charts/registries/dataControls.test.js) checks these
+  rules for the four charts through the controls registry.
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's
   [section 10](tin.md) and shared by every chart's color inputs.
 - **Detached panel captures**: see [Architecture reference](../architecture-reference.md).

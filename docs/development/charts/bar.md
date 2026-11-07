@@ -213,20 +213,24 @@ controls, presentation flow, and renderer read the stored values as given.
 
 [controls/](../../../src/charts/bar/controls) owns the right-sidebar control
 group and its config writes. The
-[controls registry](../../../src/charts/registries/controls.js) imports three
-explicit package modules; `chartControlsController.js` consumes the normalized
-registry entry:
+[controls registry](../../../src/charts/registries/controls.js) imports two
+explicit package modules and the activation defaults bar shares with pie, treemap, and
+bubble; `chartControlsController.js` consumes the normalized registry entry:
 
 - `createBarChartControls(dataset, categoryOptions, numericOptions, allColumns)` builds the DOM.
 - `setupBarChartControlListeners(dataset, baseBar, numericOptions, …, onConfigChanged)` wires events.
-- `computeDefaults(dataset, ctx)` picks the category column when the chart is first enabled (keeps the current one if it is still a visible categorical column, else the first available), and the value column by the same rule as the measure listener (section 5.3).
+- `computeDefaults(dataset, ctx)`, which is `categoryChartDefaults('bar')` from
+  [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js), picks the category column when the chart is first enabled (keeps the current one if it is still a visible categorical column, else the first available), and the value column by the same rule as the measure listener (section 5.3).
 
 ### 5.1 The four sections
 
 `createBarChartControls` groups controls (via `groupControls`) into:
 
 1. **Data & aggregation** (expanded): category select, measure-mode select (count / sum /
-   mean), value-column select, sort select, Top-N select.
+   mean), value-column select, sort select, Top-N select. The measure and Top-N selects list
+   `BAR_CHART.measureModes` and `BAR_CHART.topNOptions`. The two value orders of the sort
+   select name the measure with its short label ("Sum (high → low)"); their stored values
+   stay `count-desc` and `count-asc`.
 2. **Display** (expanded): custom title text, x/y axis-label toggles.
 3. **Styling** (collapsed): color-mode select, the uniform color input, the gradient
    min/max color inputs, and (conditionally) the gradient-distribution select or the
@@ -239,7 +243,9 @@ Controls disable themselves based on dependent state so the UI never offers a kn
 nothing:
 
 - Everything is disabled when `!config.enabled`.
-- The value-column select is disabled in `count` mode (count needs no value column).
+- The value-column select is disabled when the measure reads no value column
+  (`measureUsesValueColumn` in [measure.js](../../../src/charts/shared/measure.js)), that is
+  in `count` mode.
 - The uniform color input is disabled unless `colorMode === 'uniform'`; the gradient min/max
   inputs are disabled when `colorMode === 'uniform'`.
 - The gradient-distribution select renders only in `gradient` mode; the manual-threshold
@@ -249,19 +255,19 @@ nothing:
 
 `setupBarChartControlListeners` uses the shared adapters in
 [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js)
-(`setupSelectListeners`, `setupMeasureListener`, `setupCheckboxListeners`,
-`setupTextInputListener`, `setupSliderListener`, `setupColorInputListener`,
-`setupColorPresetListeners`, and `commitChartConfigPatch`). Two controls tie the measure to
-the value column:
+(`setupSelectListeners`, `setupMeasureListener`, `setupValueColumnListener`,
+`setupCheckboxListeners`, `setupTextInputListener`, `setupSliderListener`,
+`setupColorInputListener`, `setupColorPresetListeners`, and `commitChartConfigPatch`). Two
+controls tie the measure to the value column:
 
 - **Measure mode**: `setupMeasureListener` commits the chosen measure with the value column
-  that the rule shared by bar, pie, treemap, and bubble keeps
-  ([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+  that the rule shared by bar, pie, treemap, and bubble keeps (`valueColumnForMeasure` in
+  [measure.js](../../../src/charts/shared/measure.js)):
   switching to `count` keeps `valueColumn`, so switching back to sum or mean restores it;
   switching to sum/mean keeps it while it is a numeric option and otherwise takes the first
   numeric column. The commit canonicalizes the config, which checks the measure itself.
-- **Value column**: a custom listener validates the chosen value against `numericOptions`
-  and stores `null` if it is not a current numeric column.
+- **Value column**: the shared `setupValueColumnListener` stores the chosen column only while
+  it is one of `numericOptions`, and `null` otherwise.
 
 The color-preset buttons write `gradientMinColor` from palette index 0, `gradientMaxColor`
 from the last index, and `color` from index 0, plus the palette name into `colorScheme`.
@@ -513,6 +519,9 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
 - [controls.test.js](../../../tests/charts/bar/controls.test.js) and
   [controls.measureMode.test.js](../../../tests/charts/bar/controls.measureMode.test.js)
   cover control construction and config writes.
+  [dataControls.test.js](../../../tests/charts/registries/dataControls.test.js) checks the
+  data controls bar shares with pie, treemap, and bubble through the controls registry, and
+  the sort options that name the measure.
 - [panelAdapter.test.js](../../../tests/charts/bar/panelAdapter.test.js) covers
   snapshot-to-renderer mapping and localized aggregate labels.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
