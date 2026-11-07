@@ -475,8 +475,9 @@ That adapter:
    every `config.*` key into the renderer's options bag, including localized axis
    labels and the current locale.
 5. Calls `renderTinChart(container, rows, config.x, config.y, config.z, options)`.
-6. On failure, shows a localized empty-state message (`insufficient-points` gets a
-   specific message; anything else a generic one).
+
+The presentation flow shows a localized empty-state message on either surface
+(`insufficient-points` gets a specific message; anything else a generic one).
 
 ### 6.2 Panel view
 
@@ -930,7 +931,7 @@ but that is not implemented here.
   but heavy overlays, isolines, Delaunay construction, and SVG export can still stress
   the browser.
 
-- **< 3 valid points** → `fail('insufficient-points')`, section adapter shows a
+- **< 3 valid points** → `fail('insufficient-points')`, presentation flow shows a
   specific empty state (a triangle is the minimum triangulable set, section 2.3).
 - **Constant z** (`zMin === zMax`): depth forced to 0, a single path, filled at the
   ramp's low color; isolines are skipped (no levels to draw).

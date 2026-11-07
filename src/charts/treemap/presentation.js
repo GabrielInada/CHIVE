@@ -2,11 +2,13 @@
  * Shared treemap presentation flow.
  *
  * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. Localized labels stay here so the renderer remains
+ * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Localized labels stay here so the renderer remains
  * stateless and i18n-free.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { showChartMessage } from '../shared/containerLifecycle.js';
 import { renderTreemap } from './renderers/svg.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
@@ -26,7 +28,7 @@ export function renderTreemapInto(
 	config = {},
 	filterCallbacks = EMPTY_FILTER_CALLBACKS,
 ) {
-	return renderTreemap(container, rows, config.category, {
+	const result = renderTreemap(container, rows, config.category, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
 		measureMode: config.measureMode,
@@ -49,4 +51,14 @@ export function renderTreemapInto(
 		},
 		filterCallbacks,
 	});
+
+	if (!result.ok) {
+		const key = result.reason === 'no-numeric' || result.reason === 'no-value-column'
+			? 'chive-chart-empty-treemap-numeric'
+			: result.reason === 'no-positive-value'
+				? 'chive-chart-empty-no-positive-sum'
+				: 'chive-chart-empty-treemap';
+		showChartMessage(container, t(key));
+	}
+	return result;
 }

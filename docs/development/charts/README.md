@@ -112,9 +112,14 @@ doc rather than repeated:
   [panel registry](../../../src/charts/registries/panel.js). Every chart resolves
   to its package-owned `panelAdapter.js` under [src/charts/](../../../src/charts).
 - **Section adapters**: every per-chart package owns a `workspaceSection.js`.
-  These map config to the renderer options bag and surface localized empty
-  states via `showChartMessage` from
+  These own workspace visibility and minimum height. Each package's
+  `presentation.js` maps config and labels and renders localized empty states via
+  `showChartMessage` from
   [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).
+  Workspace charts, saved Panel previews, and layout slots therefore show the
+  same failure message, including after resize or reopening an existing project.
+  Add to panel also accepts charts displaying an empty state; captures keep their
+  frozen rows and config, and the presentation flow returns the renderer result.
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
   `buildRankMap`, `isValidHexColor`); pie's `buildSliceColor` lives in its package
   ([color.js](../../../src/charts/pie/color.js)).

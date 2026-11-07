@@ -222,7 +222,7 @@ present.
 the block/container, hides+clears when disabled, sets the min-height, maps config
 through [presentation.js](../../../src/charts/line/presentation.js) (forwarding
 `axisTypes.x` from `columnTypeByName` so the renderer picks the right X scale), and calls
-`renderLineChart`. On failure it maps the reason to a message:
+`renderLineChart`. On failure the presentation flow maps the reason to a message on both surfaces:
 `no-numeric` to `chive-chart-empty-line-numeric`, `no-x-values` to `chive-chart-empty-line-x`,
 anything else to `chive-chart-empty-line`.
 

@@ -220,7 +220,7 @@ measure listener.
 ([workspaceSection.js](../../../src/charts/bubble/workspaceSection.js))
 resolves the block/container, hides+clears when disabled, sets the min-height, maps config
 through [presentation.js](../../../src/charts/bubble/presentation.js), and calls
-`renderBubbleChart`. On failure it shows distinct messages:
+`renderBubbleChart`. The presentation flow shows distinct messages on both surfaces:
 `no-value-column`/`no-numeric` to `chive-chart-empty-bubble-numeric`,
 `no-positive-value` to `chive-chart-empty-no-positive-sum`,
 `no-nesting-columns`/`no-group-column` to `chive-chart-empty-bubble-nesting-required`, else

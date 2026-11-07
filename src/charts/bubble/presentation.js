@@ -2,11 +2,13 @@
  * Shared bubble-chart presentation flow.
  *
  * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. Localized labels stay here so the renderer remains
+ * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Localized labels stay here so the renderer remains
  * stateless and i18n-free.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { showChartMessage } from '../shared/containerLifecycle.js';
 import { renderBubbleChart } from './renderers/svg.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
@@ -26,7 +28,7 @@ export function renderBubbleInto(
 	config = {},
 	filterCallbacks = EMPTY_FILTER_CALLBACKS,
 ) {
-	return renderBubbleChart(container, rows, config.category, {
+	const result = renderBubbleChart(container, rows, config.category, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
 		topN: config.topN,
@@ -52,4 +54,16 @@ export function renderBubbleInto(
 		},
 		filterCallbacks,
 	});
+
+	if (!result.ok) {
+		const key = result.reason === 'no-value-column' || result.reason === 'no-numeric'
+			? 'chive-chart-empty-bubble-numeric'
+			: result.reason === 'no-positive-value'
+				? 'chive-chart-empty-no-positive-sum'
+				: result.reason === 'no-nesting-columns' || result.reason === 'no-group-column'
+					? 'chive-chart-empty-bubble-nesting-required'
+					: 'chive-chart-empty-bubble';
+		showChartMessage(container, t(key));
+	}
+	return result;
 }

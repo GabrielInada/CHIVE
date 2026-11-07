@@ -1,12 +1,10 @@
 /**
- * TIN-chart workspace section adapter. Owns the static block's visibility,
- * delegates rendering to the package presentation flow, and surfaces localized
- * empty-state messages. TIN does not currently expose filter actions.
+ * Tin-chart workspace section adapter. Owns block visibility and
+ * minimum height; the presentation flow draws the chart or its empty state.
  */
 
-import { t } from '../../services/i18nService.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
-import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
+import { clearChartContainer } from '../shared/containerLifecycle.js';
 import { renderTinInto } from './presentation.js';
 
 /**
@@ -28,11 +26,5 @@ export function renderTinChartSection({ config, rows }) {
 	if (block) block.hidden = false;
 	if (!container) return;
 	container.style.minHeight = `${Number(config.chartHeight || 460)}px`;
-	const result = renderTinInto(container, rows, config);
-	if (!result.ok) {
-		const key = result.reason === 'insufficient-points'
-			? 'chive-chart-empty-tin-insufficient-points'
-			: 'chive-chart-empty-tin';
-		showChartMessage(CHART_CONTAINERS.tin, t(key));
-	}
+	renderTinInto(container, rows, config);
 }

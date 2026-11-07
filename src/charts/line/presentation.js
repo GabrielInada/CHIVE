@@ -2,12 +2,14 @@
  * Shared line-chart presentation flow.
  *
  * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. Localized labels stay here so the renderer remains
+ * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Localized labels stay here so the renderer remains
  * stateless and i18n-free. The x-axis column type is forwarded so the
  * renderer can decide between numeric, point, and time scales.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { showChartMessage } from '../shared/containerLifecycle.js';
 import { renderLineChart } from './renderers/svg.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
@@ -29,7 +31,7 @@ export function renderLineInto(
 	columnTypeByName = {},
 	filterCallbacks = EMPTY_FILTER_CALLBACKS,
 ) {
-	return renderLineChart(container, rows, config.x, config.y, {
+	const result = renderLineChart(container, rows, config.x, config.y, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
 		curve: config.curve,
@@ -53,4 +55,14 @@ export function renderLineInto(
 		locale: getLocale(),
 		filterCallbacks,
 	});
+
+	if (!result.ok) {
+		const key = result.reason === 'no-numeric'
+			? 'chive-chart-empty-line-numeric'
+			: result.reason === 'no-x-values'
+				? 'chive-chart-empty-line-x'
+				: 'chive-chart-empty-line';
+		showChartMessage(container, t(key));
+	}
+	return result;
 }

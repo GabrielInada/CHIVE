@@ -1,12 +1,10 @@
 /**
- * Network-graph workspace section adapter. Owns the static block's visibility,
- * delegates rendering to the package presentation flow, and surfaces the
- * localized empty-state message when rendering fails.
+ * Network-chart workspace section adapter. Owns block visibility and
+ * minimum height; the presentation flow draws the chart or its empty state.
  */
 
-import { t } from '../../services/i18nService.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../workspaceDomIds.js';
-import { clearChartContainer, showChartMessage } from '../shared/containerLifecycle.js';
+import { clearChartContainer } from '../shared/containerLifecycle.js';
 import { renderNetworkInto } from './presentation.js';
 
 /**
@@ -28,9 +26,5 @@ export function renderNetworkChartSection({ config, rows, filterCallbacks }) {
 	}
 	block.hidden = false;
 	container.style.minHeight = `${Number(config.chartHeight || 420)}px`;
-	const result = renderNetworkInto(container, rows, config, filterCallbacks);
-
-	if (!result.ok) {
-		showChartMessage(CHART_CONTAINERS.network, t('chive-chart-empty-network'));
-	}
+	renderNetworkInto(container, rows, config, filterCallbacks);
 }

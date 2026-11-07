@@ -51,6 +51,7 @@
   background: var(--bg);
   padding: var(--space-3);
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
   cursor: grab;
 }
@@ -446,6 +447,15 @@
 .panel-slot-svg svg {
   width: 100%;
   height: 100%;
+}
+
+.panel-item-preview > .chart-empty,
+.panel-slot-svg > .chart-empty {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  padding: var(--space-3);
+  overflow: auto;
 }
 
 /* Canvas charts (scatter3d) fill their slot like SVGs do; the renderer

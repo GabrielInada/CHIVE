@@ -44,7 +44,7 @@ export function clearChartContainer(container) {
 /**
  * Show an empty-state message inside a chart container. Replaces the
  * container's contents with a single `.chart-empty` element. Used by every
- * `*ChartSection` adapter when the underlying renderer returns `fail`.
+ * chart presentation flow when the underlying renderer returns `fail`.
  * Accepts the container element itself or its id (panel slot containers
  * have no id). No-op when neither resolves.
  *
