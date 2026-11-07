@@ -20,6 +20,7 @@ import {
 	setupColorInputListener,
 	setupColorPresetListeners,
 	setupMeasureListener,
+	setupValueColumnListener,
 	setupSelectListeners,
 	setupSliderListener,
 	setupTextInputListener,
@@ -45,16 +46,7 @@ export function setupTreemapControlListeners(dataset, baseCat, numericOptions, a
 	], writer);
 
 	setupMeasureListener('viz-select-treemap-measure', () => dataset.chartConfig.treemap.valueColumn, numericOptions, writer);
-
-	const selectValueColumn = document.getElementById('viz-select-treemap-value-column');
-	if (selectValueColumn) {
-		selectValueColumn.addEventListener('change', () => {
-			const nextValue = numericOptions.includes(selectValueColumn.value) ? selectValueColumn.value : null;
-			writer.commit({
-				valueColumn: nextValue,
-			});
-		});
-	}
+	setupValueColumnListener('viz-select-treemap-value-column', numericOptions, writer);
 
 	setupTextInputListener('viz-input-treemap-title', 'customTitle', writer);
 	setupSliderListener('viz-slider-treemap-padding', 'padding', writer);

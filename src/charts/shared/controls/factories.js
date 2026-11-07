@@ -199,6 +199,18 @@ export function createSelectControl(id, labelText, optionsArray, selectedValue, 
 }
 
 /**
+ * The options of a Top-N select for {@link createSelectControl}: `allLabel`
+ * for 0, which keeps every category, and "Top N" for each other limit.
+ *
+ * @param {number[]} topNOptions - The limits the chart's definition lists.
+ * @param {string} allLabel - Localized label of the 0 option.
+ * @returns {Array<{ value: string, label: string }>}
+ */
+export function topNSelectOptions(topNOptions, allLabel) {
+	return topNOptions.map(limit => ({ value: String(limit), label: limit === 0 ? allLabel : `Top ${limit}` }));
+}
+
+/**
  * Build a labeled color input. Value is sanitized via
  * {@link normalizeHexColor}.
  *

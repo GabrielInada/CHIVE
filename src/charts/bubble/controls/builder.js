@@ -23,9 +23,10 @@ import {
 	createSliderControl,
 	createSelectControl,
 	createColorPresetControl,
+	topNSelectOptions,
 } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
-import { measureOptionLabelKey } from '../../shared/measure.js';
+import { measureOptionLabelKey, measureUsesValueColumn } from '../../shared/measure.js';
 import { resolveNestingColumnsFromConfig, computeNestingControlCount } from './nestingColumns.js';
 
 /**
@@ -126,11 +127,7 @@ function buildDataControls(config, categoryOptions, numericOptions, allColumns, 
 	dataControls.push(createSelectControl(
 		'viz-select-bubble-measure',
 		t('chive-chart-control-measure'),
-		[
-			{ value: 'count', label: t(measureOptionLabelKey('count')) },
-			{ value: 'sum', label: t(measureOptionLabelKey('sum')) },
-			{ value: 'mean', label: t(measureOptionLabelKey('mean')) },
-		],
+		BUBBLE_CHART.measureModes.map(measure => ({ value: measure, label: t(measureOptionLabelKey(measure)) })),
 		measureMode,
 		disabled
 	));
@@ -143,7 +140,7 @@ function buildDataControls(config, categoryOptions, numericOptions, allColumns, 
 			...numericOptions.map(opt => ({ value: opt, label: opt })),
 		],
 		config.valueColumn,
-		disabled || measureMode === 'count'
+		disabled || !measureUsesValueColumn(measureMode)
 	));
 
 	// Progressive nesting level selectors
@@ -153,10 +150,7 @@ function buildDataControls(config, categoryOptions, numericOptions, allColumns, 
 	dataControls.push(createSelectControl(
 		'viz-select-bubble-topn',
 		t('chive-chart-control-bubble-topn'),
-		BUBBLE_CHART.topNOptions.map(option => ({
-			value: String(option),
-			label: option === 0 ? t('chive-chart-topn-all') : `Top ${option}`,
-		})),
+		topNSelectOptions(BUBBLE_CHART.topNOptions, t('chive-chart-topn-all')),
 		String(config.topN),
 		disabled
 	));

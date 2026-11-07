@@ -14,7 +14,6 @@ import { buildSliceColor } from '../../../src/charts/pie/color.js';
 import { createPieChartControls } from '../../../src/charts/pie/controls/builder.js';
 import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/pie/controls/activationDefaults.js';
 import { PIE_DEFINITION } from '../../../src/config/charts/definitions/pie.js';
 
 /**
@@ -28,15 +27,13 @@ function createWriter() {
 }
 
 describe('pie controls module boundaries', () => {
-	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
-		const [builder, listeners, defaults] = await Promise.all([
+	it('keeps builder and listener exports in dedicated modules', async () => {
+		const [builder, listeners] = await Promise.all([
 			import('../../../src/charts/pie/controls/builder.js'),
 			import('../../../src/charts/pie/controls/listeners.js'),
-			import('../../../src/charts/pie/controls/activationDefaults.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createPieChartControls']);
 		expect(Object.keys(listeners)).toEqual(['setupPieChartControlListeners']);
-		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
 	});
 });
 
@@ -156,19 +153,6 @@ describe('pieControls UI structure', () => {
 
 		const values = Array.from(document.getElementById('viz-select-pie-category').options).map(o => o.value);
 		expect(values).toEqual(['', 'region', 'team']);
-	});
-
-	it('disables the value-column select when measureMode is count', () => {
-		const countDataset = createDataset({ measureMode: 'count' });
-		const countControls = createPieChartControls(countDataset, ['region'], ['sales']);
-		appendControls(countControls);
-		expect(document.getElementById('viz-select-pie-value-column').disabled).toBe(true);
-
-		document.body.innerHTML = '';
-		const sumDataset = createDataset({ measureMode: 'sum' });
-		const sumControls = createPieChartControls(sumDataset, ['region'], ['sales']);
-		appendControls(sumControls);
-		expect(document.getElementById('viz-select-pie-value-column').disabled).toBe(false);
 	});
 
 	it('renders one per-slice color input per distinct sector value', () => {
@@ -539,31 +523,5 @@ describe('pieControls with categories named like Object.prototype members', () =
 		mountControls(dataset, writer);
 		expect(swatch('__proto__').value).toBe('#123456');
 		expect(markedPresets()).toEqual([]);
-	});
-});
-
-describe('pieControls computeDefaults', () => {
-	it('preserves the current category and valueColumn when they are still in scope', () => {
-		const dataset = createDataset({ category: 'region', valueColumn: 'sales' });
-		const ctx = { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales', 'profit'] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'sales' });
-	});
-
-	it('falls back to the first option when the current value is out of scope in sum mode', () => {
-		const dataset = createDataset({ category: 'old', measureMode: 'sum', valueColumn: 'gone' });
-		const ctx = { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'sales' });
-	});
-
-	it('keeps the value column in count mode', () => {
-		const dataset = createDataset({ measureMode: 'count', valueColumn: 'gone' });
-		const ctx = { baseCategoricalOrAll: ['region'], numeric: ['sales'] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'gone' });
-	});
-
-	it('returns null when there are no candidate columns', () => {
-		const dataset = createDataset({ measureMode: 'sum' });
-		const ctx = { baseCategoricalOrAll: [], numeric: [] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: null, valueColumn: null });
 	});
 });

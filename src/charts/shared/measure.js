@@ -1,10 +1,10 @@
 /**
- * The measure of the bar, pie, treemap and bubble charts: how it is named and
- * whether it reads a value column.
+ * The measure of the bar, pie, treemap and bubble charts: how it is named,
+ * whether it reads a value column, and which value column it keeps.
  *
- * Returns i18n keys rather than text, so each caller translates them where it
- * translates its other labels. Any measure other than sum or mean is treated
- * as count, as category aggregation treats it. Pure: no DOM.
+ * Names come back as i18n keys rather than text, so each caller translates
+ * them where it translates its other labels. Any measure other than sum or
+ * mean is treated as count, as category aggregation treats it. Pure: no DOM.
  */
 
 const MEASURE_LABEL_KEYS = Object.freeze({
@@ -57,4 +57,23 @@ export function measureOptionLabelKey(measureMode) {
  */
 export function measureUsesValueColumn(measureMode) {
 	return resolveMeasure(measureMode) !== 'count';
+}
+
+/**
+ * The value column to store with `measureMode`, both when the user switches
+ * the measure and when the chart is activated.
+ *
+ * Count keeps `valueColumn`: its select is disabled under count, and
+ * switching back to sum or mean finds the user's choice still there. Sum and
+ * mean keep `valueColumn` while it is one of `numericOptions`, and otherwise
+ * take the first of them, so the chart draws right away.
+ *
+ * @param {string} [measureMode]
+ * @param {string | null} valueColumn - The stored value column.
+ * @param {string[]} numericOptions - Visible numeric column names.
+ * @returns {string | null}
+ */
+export function valueColumnForMeasure(measureMode, valueColumn, numericOptions) {
+	if (!measureUsesValueColumn(measureMode)) return valueColumn;
+	return numericOptions.includes(valueColumn) ? valueColumn : (numericOptions[0] || null);
 }

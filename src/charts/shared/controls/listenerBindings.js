@@ -16,7 +16,7 @@
  */
 
 import { normalizeHexColor } from '../../../utils/colorUtils.js';
-import { valueColumnForMeasure } from './measureValueColumn.js';
+import { valueColumnForMeasure } from '../measure.js';
 
 /**
  * Wire `change` listeners on a batch of `<select>` elements. Each entry's
@@ -60,6 +60,24 @@ export function setupMeasureListener(elementId, getValueColumn, numericOptions, 
 			measureMode,
 			valueColumn: valueColumnForMeasure(measureMode, getValueColumn(), numericOptions),
 		});
+	});
+}
+
+/**
+ * Wire the value column select of the bar, pie, treemap or bubble chart. A
+ * change stores the chosen column while it is one of the visible numeric
+ * columns, and null otherwise, so a forged option cannot store a column the
+ * measure cannot read.
+ *
+ * @param {string} elementId
+ * @param {string[]} numericOptions - Visible numeric column names.
+ * @param {ChartConfigWriter} writer
+ */
+export function setupValueColumnListener(elementId, numericOptions, writer) {
+	const el = document.getElementById(elementId);
+	if (!el) return;
+	el.addEventListener('change', () => {
+		writer.commit({ valueColumn: numericOptions.includes(el.value) ? el.value : null });
 	});
 }
 

@@ -17,9 +17,10 @@ Key files:
 - SVG renderer: [svg.js](../../../src/charts/bubble/renderers/svg.js)
 - Data and hierarchy helpers: [data.js](../../../src/charts/bubble/data.js)
 - Sidebar controls: [builder.js](../../../src/charts/bubble/controls/builder.js),
-  [listeners.js](../../../src/charts/bubble/controls/listeners.js),
-  [activationDefaults.js](../../../src/charts/bubble/controls/activationDefaults.js), and
-  [nestingColumns.js](../../../src/charts/bubble/controls/nestingColumns.js)
+  [listeners.js](../../../src/charts/bubble/controls/listeners.js), and
+  [nestingColumns.js](../../../src/charts/bubble/controls/nestingColumns.js); the activation
+  defaults come from the shared
+  [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
 - Chart definition and constants: [bubble.js](../../../src/config/charts/definitions/bubble.js) (`BUBBLE_DEFINITION`, `BUBBLE_CHART`) and [shared.js](../../../src/config/charts/shared.js) (`CHART_COLOR_PALETTES`)
 - Per-dataset config defaults: [bubble.js](../../../src/config/charts/definitions/bubble.js) (the definition's fresh `bubble` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/bubble/presentation.js)
@@ -176,13 +177,16 @@ ordinal color palettes (Tableau10, Pastel, Bold, Colorblind-Safe).
 ## 5. The control sidebar
 
 The package's [controls directory](../../../src/charts/bubble/controls/) keeps the standard
-`createBubbleChartControls`, `setupBubbleChartControlListeners`, and `computeDefaults` roles
-in separate modules, with progressive nesting rules in `nestingColumns.js`.
+`createBubbleChartControls` and `setupBubbleChartControlListeners` roles in separate modules,
+with progressive nesting rules in `nestingColumns.js`; `computeDefaults` is the shared
+`categoryChartDefaults('bubble')`
+([activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)).
 
 ### 5.1 The three sections
 
 1. **Data** (expanded): root category select, nesting mode (flat/grouped), measure
-   (count/sum/mean), value column, the **progressive nesting selects**, and Top-N.
+   (count/sum/mean), value column, the **progressive nesting selects**, and Top-N. The
+   measure and Top-N selects list `BUBBLE_CHART.measureModes` and `BUBBLE_CHART.topNOptions`.
 2. **Display** (expanded): title, label mode (all/hover/auto).
 3. **Styling** (collapsed): padding slider, color-preset palette.
 
@@ -200,12 +204,13 @@ are disabled unless `nestingMode === 'grouped'`.
 - The value-column select is disabled in `count` mode.
 - Nesting selects are disabled in flat mode.
 - The measure uses the shared `setupMeasureListener`, which applies the value-column rule
-  bar, pie, treemap, and bubble share
-  ([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+  bar, pie, treemap, and bubble share (`valueColumnForMeasure` in
+  [measure.js](../../../src/charts/shared/measure.js)):
   switching to count keeps `valueColumn`, so switching back restores it, and switching to
   sum/mean keeps it while it is a numeric option and otherwise takes the first numeric
-  column. The nesting listeners keep `nestingColumns` and the legacy `groupColumn` mirror in
-  sync.
+  column. The value column goes through the shared `setupValueColumnListener`, which stores
+  only a visible numeric column. The nesting listeners keep `nestingColumns` and the legacy
+  `groupColumn` mirror in sync.
 
 `computeDefaults` picks the root category, and the value column by the same rule as the
 measure listener.

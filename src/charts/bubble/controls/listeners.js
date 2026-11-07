@@ -17,6 +17,7 @@ import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,
 	setupMeasureListener,
+	setupValueColumnListener,
 	setupSliderListener,
 	setupTextInputListener,
 	setupColorPresetListeners,
@@ -78,15 +79,7 @@ export function setupBubbleChartControlListeners(dataset, baseBubble, numericOpt
 	}
 
 	setupMeasureListener('viz-select-bubble-measure', () => dataset.chartConfig.bubble.valueColumn, numericOptions, writer);
-
-	const valueSelect = document.getElementById('viz-select-bubble-value-column');
-	if (valueSelect) {
-		valueSelect.addEventListener('change', () => {
-			writer.commit({
-				valueColumn: numericOptions.includes(valueSelect.value) ? valueSelect.value : null,
-			});
-		});
-	}
+	setupValueColumnListener('viz-select-bubble-value-column', numericOptions, writer);
 
 	setupSliderListener('viz-slider-bubble-padding', 'padding', writer);
 	setupTextInputListener('viz-input-bubble-title', 'customTitle', writer);

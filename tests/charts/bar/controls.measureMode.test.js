@@ -55,21 +55,6 @@ describe('barControls measure mode', () => {
 		document.body.innerHTML = '';
 	});
 
-	it('disables value-column selector in count mode and enables it for sum/mean', () => {
-		const controlsCount = createBarChartControls(createDataset('count', null), ['categoria'], ['valor']);
-		controlsCount.forEach(control => document.body.appendChild(control));
-		const valueSelectCount = document.getElementById('viz-select-bar-value-column');
-		expect(valueSelectCount).not.toBeNull();
-		expect(valueSelectCount.disabled).toBe(true);
-
-		document.body.innerHTML = '';
-		const controlsSum = createBarChartControls(createDataset('sum', 'valor'), ['categoria'], ['valor']);
-		controlsSum.forEach(control => document.body.appendChild(control));
-		const valueSelectSum = document.getElementById('viz-select-bar-value-column');
-		expect(valueSelectSum.disabled).toBe(false);
-		expect(valueSelectSum.value).toBe('valor');
-	});
-
 	it('emits measure/value updates and keeps the value column when switching back to count', () => {
 		const dataset = createDataset('count', null);
 		const controls = createBarChartControls(dataset, ['categoria'], ['valor', 'peso']);

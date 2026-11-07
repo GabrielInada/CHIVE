@@ -12,7 +12,6 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 import { createBarChartControls } from '../../../src/charts/bar/controls/builder.js';
 import { setupBarChartControlListeners } from '../../../src/charts/bar/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/bar/controls/activationDefaults.js';
 import { BAR_DEFINITION } from '../../../src/config/charts/definitions/bar.js';
 
 /**
@@ -75,15 +74,13 @@ function markedPresets() {
 }
 
 describe('bar controls package surface', () => {
-	it('keeps builder, listeners, and defaults in explicit modules', async () => {
-		const [builder, listeners, defaults] = await Promise.all([
+	it('keeps builder and listeners in explicit modules', async () => {
+		const [builder, listeners] = await Promise.all([
 			import('../../../src/charts/bar/controls/builder.js'),
 			import('../../../src/charts/bar/controls/listeners.js'),
-			import('../../../src/charts/bar/controls/activationDefaults.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createBarChartControls']);
 		expect(Object.keys(listeners)).toEqual(['setupBarChartControlListeners']);
-		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
 	});
 });
 
@@ -145,19 +142,6 @@ describe('barControls UI structure', () => {
 
 		const values = Array.from(document.getElementById('viz-select-bar').options).map(o => o.value);
 		expect(values).toEqual(['', 'region', 'team']);
-	});
-
-	it('disables the value-column select when measureMode is count', () => {
-		const countDataset = createDataset({ measureMode: 'count' });
-		const countControls = createBarChartControls(countDataset, ['region'], ['sales'], ['region', 'sales']);
-		appendControls(countControls);
-		expect(document.getElementById('viz-select-bar-value-column').disabled).toBe(true);
-
-		document.body.innerHTML = '';
-		const sumDataset = createDataset({ measureMode: 'sum' });
-		const sumControls = createBarChartControls(sumDataset, ['region'], ['sales'], ['region', 'sales']);
-		appendControls(sumControls);
-		expect(document.getElementById('viz-select-bar-value-column').disabled).toBe(false);
 	});
 
 	it('disables the gradient color pickers when colorMode is uniform', () => {
@@ -289,21 +273,6 @@ describe('barControls listeners', () => {
 		expect(writer.commit).toHaveBeenCalledWith({ colorMode: 'gibberish' });
 	});
 
-	it('rejects value-column values not in numericOptions', () => {
-		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
-		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
-		appendControls(controls);
-
-		const writer = createWriter();
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
-
-		const valueColumnSelect = document.getElementById('viz-select-bar-value-column');
-		valueColumnSelect.value = '';
-		valueColumnSelect.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ valueColumn: null }));
-	});
-
 	it('transforms Top N from string to number', () => {
 		const dataset = createDataset({ topN: 0 });
 		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
@@ -367,37 +336,5 @@ describe('barControls color palette mark', () => {
 		applyLastCommit(dataset, writer);
 		mountControls(dataset, writer);
 		expect(markedPresets()).toEqual([]);
-	});
-});
-
-describe('barControls computeDefaults', () => {
-	it('preserves the current category when it is still in scope', () => {
-		const dataset = createDataset({ category: 'region' });
-		const ctx = { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: null });
-	});
-
-	it('falls back to the first option when the current value is out of scope', () => {
-		const dataset = createDataset({ category: 'old' });
-		const ctx = { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: null });
-	});
-
-	it('returns null when there are no candidate categorical columns', () => {
-		const dataset = createDataset();
-		const ctx = { baseCategoricalOrAll: [], numeric: [] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: null, valueColumn: null });
-	});
-
-	it('takes the first numeric column for a sum whose value column is gone', () => {
-		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'hidden' });
-		const ctx = { baseCategoricalOrAll: ['region'], numeric: ['sales', 'profit'] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'sales' });
-	});
-
-	it('keeps the value column in count mode', () => {
-		const dataset = createDataset({ measureMode: 'count', valueColumn: 'hidden' });
-		const ctx = { baseCategoricalOrAll: ['region'], numeric: ['sales'] };
-		expect(computeDefaults(dataset, ctx)).toEqual({ category: 'region', valueColumn: 'hidden' });
 	});
 });

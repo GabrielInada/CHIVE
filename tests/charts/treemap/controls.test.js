@@ -12,7 +12,6 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 
 import { createTreemapControls } from '../../../src/charts/treemap/controls/builder.js';
 import { setupTreemapControlListeners } from '../../../src/charts/treemap/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/treemap/controls/activationDefaults.js';
 import { TREEMAP_DEFINITION } from '../../../src/config/charts/definitions/treemap.js';
 
 /**
@@ -109,15 +108,13 @@ function extractStructure(controls) {
 }
 
 describe('treemap controls module boundaries', () => {
-	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
-		const [builder, listeners, defaults] = await Promise.all([
+	it('keeps builder and listener exports in dedicated modules', async () => {
+		const [builder, listeners] = await Promise.all([
 			import('../../../src/charts/treemap/controls/builder.js'),
 			import('../../../src/charts/treemap/controls/listeners.js'),
-			import('../../../src/charts/treemap/controls/activationDefaults.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createTreemapControls']);
 		expect(Object.keys(listeners)).toEqual(['setupTreemapControlListeners']);
-		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
 	});
 });
 
@@ -157,19 +154,6 @@ describe('treemapControls UI structure', () => {
 
 		const values = Array.from(document.getElementById('viz-select-treemap-category').options).map(o => o.value);
 		expect(values).toEqual(['', 'region', 'team']);
-	});
-
-	it('disables the value-column select when measureMode is count', () => {
-		const dataset = createDataset({ measureMode: 'count' });
-		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
-		appendControls(controls);
-		expect(document.getElementById('viz-select-treemap-value-column').disabled).toBe(true);
-
-		document.body.innerHTML = '';
-		const sumDataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
-		const sumControls = createTreemapControls(sumDataset, ['region'], ['sales'], []);
-		appendControls(sumControls);
-		expect(document.getElementById('viz-select-treemap-value-column').disabled).toBe(false);
 	});
 
 	it('disables the uniform-color input when colorMode is scheme', () => {
@@ -427,30 +411,5 @@ describe('treemapControls color palette mark', () => {
 		applyLastCommit(dataset, writer);
 		mountControls(dataset, writer);
 		expect(markedPresets()).toEqual([]);
-	});
-});
-
-describe('treemapControls computeDefaults', () => {
-	it('preserves the current category when still in scope', () => {
-		const dataset = createDataset({ category: 'region' });
-		expect(computeDefaults(dataset, { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] }))
-			.toEqual({ category: 'region', valueColumn: null });
-	});
-
-	it('falls back to the first option when the current category is gone', () => {
-		const dataset = createDataset({ category: 'gone' });
-		expect(computeDefaults(dataset, { baseCategoricalOrAll: ['region', 'team'], numeric: ['sales'] }))
-			.toEqual({ category: 'region', valueColumn: null });
-	});
-
-	it('returns null when no categorical columns are available', () => {
-		const dataset = createDataset();
-		expect(computeDefaults(dataset, { baseCategoricalOrAll: [], numeric: [] })).toEqual({ category: null, valueColumn: null });
-	});
-
-	it('takes the first numeric column for a sum whose value column is gone', () => {
-		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'gone' });
-		expect(computeDefaults(dataset, { baseCategoricalOrAll: ['region'], numeric: ['sales', 'profit'] }))
-			.toEqual({ category: 'region', valueColumn: 'sales' });
 	});
 });

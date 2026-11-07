@@ -18,9 +18,9 @@ Key files:
 - Option helpers: [options.js](../../../src/charts/treemap/options.js); the categories it
   draws come from the shared
   [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)
-- Sidebar controls: [builder.js](../../../src/charts/treemap/controls/builder.js),
-  [listeners.js](../../../src/charts/treemap/controls/listeners.js), and
-  [activationDefaults.js](../../../src/charts/treemap/controls/activationDefaults.js)
+- Sidebar controls: [builder.js](../../../src/charts/treemap/controls/builder.js) and
+  [listeners.js](../../../src/charts/treemap/controls/listeners.js); the activation defaults
+  come from the shared [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
 - Chart definition and constants: [treemap.js](../../../src/config/charts/definitions/treemap.js) (`TREEMAP_DEFINITION`, `TREEMAP_CHART`)
 - Per-dataset config defaults: [treemap.js](../../../src/config/charts/definitions/treemap.js) (the definition's fresh `treemap` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/treemap/presentation.js)
@@ -167,12 +167,15 @@ Bold.
 ## 5. The control sidebar
 
 The package's [controls directory](../../../src/charts/treemap/controls/) exposes the standard
-`createTreemapControls`, `setupTreemapControlListeners`, and `computeDefaults` roles through
-separate modules.
+`createTreemapControls` and `setupTreemapControlListeners` roles through separate modules;
+`computeDefaults` is the shared `categoryChartDefaults('treemap')`
+([activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)).
 
 ### 5.1 The four sections
 
 1. **Data** (expanded): category select, measure (count/sum), value-column select, Top-N.
+   The measure and Top-N selects list `TREEMAP_CHART.measureModes` and
+   `TREEMAP_CHART.topNOptions`.
 2. **Display** (expanded): title, padding slider, show-labels toggle, show-values toggle.
 3. **Styling** (collapsed): color-mode select (scheme/uniform) and the uniform color input.
 4. **Advanced** (collapsed): the color-preset palette buttons.
@@ -183,11 +186,12 @@ Everything is disabled when `!config.enabled`; the value-column select is disabl
 mode; the uniform color input is disabled unless `colorMode === 'uniform'`. Standard select,
 text, slider, checkbox, color, and preset controls use the shared chart-control listener
 adapters. The measure uses the shared `setupMeasureListener`, which applies the value-column
-rule bar, pie, treemap, and bubble share
-([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+rule bar, pie, treemap, and bubble share (`valueColumnForMeasure` in
+[measure.js](../../../src/charts/shared/measure.js)):
 switching to count keeps `valueColumn`, so switching back to sum restores it, and switching to
 sum keeps it while it is a numeric option and otherwise takes the first numeric column. The
-value-column change keeps a small custom handler that stores only a valid numeric selection.
+value-column change goes through the shared `setupValueColumnListener`, which stores only a
+visible numeric column.
 The color presets set the uniform `color` to the palette's first
 swatch. In scheme mode the palette buttons mark the stored `colorScheme`, which is what the
 renderer draws; in uniform mode they mark a palette only while `color` still holds its first
