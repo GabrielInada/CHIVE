@@ -23,8 +23,8 @@ import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
+import { aggregateCategories } from '../../shared/categoryAggregation.js';
 import { normalizeTreemapOptions } from '../options.js';
-import { aggregateTreemapData } from '../data.js';
 
 /** @private */
 function truncate(text, maxLen) {
@@ -66,8 +66,8 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 		labels,
 	} = normalizeTreemapOptions(options);
 
-	const aggregated = aggregateTreemapData(rows, categoryColumn, {
-		measureMode, valueColumn, topN, missingLabel: labels.missing,
+	const aggregated = aggregateCategories(rows, categoryColumn, {
+		measureMode, valueColumn, positiveOnly: true, topN, missingLabel: labels.missing,
 	});
 	if (!aggregated.ok) return aggregated;
 	const { entries, total } = aggregated;

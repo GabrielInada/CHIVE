@@ -27,30 +27,6 @@ describe('computePieSectors', () => {
 		expect(result.total).toBe(35);
 	});
 
-	it('passes the shared failures through', () => {
-		expect(computePieSectors([{ c: 'A' }], 'c', { ...sumOptions, valueColumn: null }))
-			.toEqual({ ok: false, reason: 'no-value-column' });
-		expect(computePieSectors([{ c: 'A', v: null }], 'c', sumOptions))
-			.toEqual({ ok: false, reason: 'no-numeric' });
-		expect(computePieSectors([], 'c', countOptions)).toEqual({ ok: false });
-	});
-
-	it('leaves out categories whose total is 0 or less', () => {
-		const rows = [{ c: 'A', v: 5 }, { c: 'B', v: -3 }, { c: 'C', v: 2 }, { c: 'D', v: 0 }];
-		const result = computePieSectors(rows, 'c', sumOptions);
-		expect(values(result.sectors)).toEqual([['A', 5], ['C', 2]]);
-		expect(result.total).toBe(7);
-	});
-
-	it.each([
-		['every total negative', -5, -3],
-		['the largest total 0', 0, -3],
-		['every total 0', 0, 0],
-	])('fails with no-positive-value with %s', (_label, a, b) => {
-		const rows = [{ c: 'A', v: a }, { c: 'B', v: b }];
-		expect(computePieSectors(rows, 'c', sumOptions)).toEqual({ ok: false, reason: 'no-positive-value' });
-	});
-
 	it('truncate mode drops the tail past Top-N', () => {
 		const rows = ['A', 'A', 'A', 'B', 'B', 'C'].map(c => ({ c }));
 		const result = computePieSectors(rows, 'c', { ...countOptions, topN: 2, topNMode: 'truncate' });

@@ -15,8 +15,9 @@ see [Architecture reference](../architecture-reference.md).
 Key files:
 
 - SVG renderer: [svg.js](../../../src/charts/treemap/renderers/svg.js)
-- Data and option helpers: [data.js](../../../src/charts/treemap/data.js) and
-  [options.js](../../../src/charts/treemap/options.js)
+- Option helpers: [options.js](../../../src/charts/treemap/options.js); the categories it
+  draws come from the shared
+  [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)
 - Sidebar controls: [builder.js](../../../src/charts/treemap/controls/builder.js),
   [listeners.js](../../../src/charts/treemap/controls/listeners.js), and
   [activationDefaults.js](../../../src/charts/treemap/controls/activationDefaults.js)
@@ -234,9 +235,11 @@ a usable value column returns `{ ok: false, reason: 'no-value-column' }`, and wi
 
 ### 7.2 Sort, Top-N, layout
 
-Entries arrive sorted descending (with a `compareCategoryKeys` tiebreaker, missing last), are
-filtered to positive values, and are sliced to `topN`; with no positive value the result is
-`{ ok: false, reason: 'no-positive-value' }`. A one-level `hierarchy({ root, children: entries })`
+The renderer asks `aggregateCategories` to leave out values at or below 0 (`positiveOnly`),
+since a tile needs an area, and to keep the first `topN`. Entries arrive sorted descending
+(with a `compareCategoryKeys` tiebreaker, missing last); with no positive value the result is
+`{ ok: false, reason: 'no-positive-value' }`. Its `total` sums the kept tiles, the base of
+the tooltip percentages. A one-level `hierarchy({ root, children: entries })`
 `.sum(value)` feeds `treemap().tile(treemapSquarify).size([w, h]).padding(p).round(true)`,
 which assigns each leaf its `(x0, y0, x1, y1)` rectangle (the squarified tiling of section
 2.2). `round(true)` snaps coordinates to whole pixels for crisp edges.
@@ -324,10 +327,13 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   covers the section adapter, including the empty-state message selection.
 - [panelAdapter.test.js](../../../tests/charts/treemap/panelAdapter.test.js) covers the captured
   snapshot mapping and failure passthrough.
-- [svg.test.js](../../../tests/charts/treemap/renderers/svg.test.js),
-  [data.test.js](../../../tests/charts/treemap/data.test.js), and
+- [svg.test.js](../../../tests/charts/treemap/renderers/svg.test.js) and
   [options.test.js](../../../tests/charts/treemap/options.test.js) cover renderer behavior and
   its pure helpers.
+- [categoryAggregation.test.js](../../../tests/charts/shared/categoryAggregation.test.js)
+  covers the categories the treemap draws, and
+  [drawnCategories.test.js](../../../tests/charts/registries/drawnCategories.test.js) checks
+  them through the panel registry.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
   covers the panel dispatch path.
 
