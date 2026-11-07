@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-  t: vi.fn((key, params) => `${key}${params ? `:${params.join('|')}` : ''}`),
+  t: vi.fn((key, ...params) => `${key}${params.length ? `:${params.flat().join('|')}` : ''}`),
   getLocale: vi.fn(() => 'en'),
   formatFileSize: vi.fn(size => `${size}B`),
   ingestFile: vi.fn(),
@@ -759,10 +759,10 @@ describe('datasetController', () => {
       }
     });
 
-    it('reports a null preset as a generic error', async () => {
+    it('reports a null preset as a sample-loading error', async () => {
       await handlePresetDatasetRequest(null);
 
-      expect(mocks.showError).toHaveBeenCalledWith('chive-join-error-generic');
+      expect(mocks.showError).toHaveBeenCalledWith('chive-preset-load-error-generic');
       expect(mocks.addDataset).not.toHaveBeenCalled();
     });
 
@@ -780,9 +780,10 @@ describe('datasetController', () => {
         expect.objectContaining({ options: expect.objectContaining({ dropColumns: ['drop'] }) }),
         expect.anything(),
       );
-      expect(mocks.ingestErrorMessage).toHaveBeenCalledWith('csv-empty');
+      expect(mocks.ingestErrorMessage).toHaveBeenCalledWith('csv-empty', '');
       const progress = mocks.showProgress.mock.results.at(-1).value;
-      expect(progress.fail).toHaveBeenCalledWith('chive-progress-failed:mapped-detail');
+      expect(progress.fail).toHaveBeenCalledWith('chive-preset-load-failed-detail:preset-name|mapped-detail');
+      expect(mocks.showError).toHaveBeenCalledWith('chive-preset-load-failed-detail:preset-name|mapped-detail');
       expect(mocks.addDataset).not.toHaveBeenCalled();
       expect(mocks.setActiveDataset).not.toHaveBeenCalled();
     });
@@ -798,14 +799,14 @@ describe('datasetController', () => {
       expect(mocks.addDataset).not.toHaveBeenCalled();
     });
 
-    it('shows the timeout message and generic error on a fetch timeout', async () => {
+    it('shows the timeout message in both feedback surfaces', async () => {
       mocks.loadPresetSource.mockResolvedValueOnce({ ok: false, reason: 'preset-fetch-timeout' });
 
       await handlePresetDatasetRequest({ nameKey: 'preset-name', rows: 1 });
 
       const progress = mocks.showProgress.mock.results.at(-1).value;
       expect(progress.fail).toHaveBeenCalledWith('chive-preset-fetch-timeout:preset-name');
-      expect(mocks.showError).toHaveBeenCalledWith('chive-join-error-generic');
+      expect(mocks.showError).toHaveBeenCalledWith('chive-preset-fetch-timeout:preset-name');
       expect(mocks.addDataset).not.toHaveBeenCalled();
     });
 
@@ -815,8 +816,8 @@ describe('datasetController', () => {
       await handlePresetDatasetRequest({ nameKey: 'preset-name', rows: 1 });
 
       const progress = mocks.showProgress.mock.results.at(-1).value;
-      expect(progress.fail).toHaveBeenCalledWith('chive-progress-failed:preset-fetch-network');
-      expect(mocks.showError).toHaveBeenCalledWith('chive-join-error-generic');
+      expect(progress.fail).toHaveBeenCalledWith('chive-preset-load-failed:preset-name');
+      expect(mocks.showError).toHaveBeenCalledWith('chive-preset-load-failed:preset-name');
       expect(mocks.addDataset).not.toHaveBeenCalled();
     });
   });

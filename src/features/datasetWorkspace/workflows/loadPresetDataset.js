@@ -17,7 +17,8 @@ import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
  *
  * `loadPresetSource` returns a result: `{ ok:false, reason:'preset-fetch-timeout' }`
  * surfaces a dedicated timeout message, `'cancelled'` closes the toast quietly,
- * and every other reason is reported as a generic join/preset error.
+ * and every other failure uses localized sample-loading feedback. Known parser
+ * failures retain their translated detail; internal reason codes stay out of UI.
  *
  * @param {import('../../../types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
  * @param {{ selectDataset: (index: number) => void }} dependencies
@@ -25,7 +26,7 @@ import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
  */
 export async function loadPresetDataset(preset, { selectDataset }) {
 	if (!preset) {
-		showError(t('chive-join-error-generic'));
+		showError(t('chive-preset-load-error-generic'));
 		return;
 	}
 
@@ -33,6 +34,10 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 	const progress = showProgress(t('chive-progress-parsing', [presetName]));
 	const abortController = new AbortController();
 	progress.onCancel(() => abortController.abort());
+	const reportFailure = (message = t('chive-preset-load-failed', presetName)) => {
+		progress.fail(message);
+		showError(message);
+	};
 
 	try {
 		const result = await loadPresetSource(preset, { signal: abortController.signal });
@@ -41,11 +46,9 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 			if (result.reason === 'cancelled') {
 				progress.close();
 			} else if (result.reason === 'preset-fetch-timeout') {
-				progress.fail(t('chive-preset-fetch-timeout', [presetName]));
-				showError(t('chive-join-error-generic'));
+				reportFailure(t('chive-preset-fetch-timeout', [presetName]));
 			} else {
-				progress.fail(t('chive-progress-failed', [result.reason || 'preset-error']));
-				showError(t('chive-join-error-generic'));
+				reportFailure();
 			}
 			return;
 		}
@@ -63,7 +66,10 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 
 		if (!ingestResult.ok) {
 			if (ingestResult.reason === 'cancelled') progress.close();
-			else progress.fail(t('chive-progress-failed', [ingestErrorMessage(ingestResult.reason)]));
+			else {
+				const detail = ingestErrorMessage(ingestResult.reason, '');
+				reportFailure(detail ? t('chive-preset-load-failed-detail', presetName, detail) : undefined);
+			}
 			return;
 		}
 
@@ -82,9 +88,8 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 		const index = addDataset(dataset);
 		selectDataset(index);
 		progress.succeed(t('chive-preset-load-success', [presetName]));
-	} catch (err) {
-		// Genuinely-unexpected throws from addDataset/selectDataset.
-		progress.fail(t('chive-progress-failed', [err?.message || 'error']));
-		showError(t('chive-join-error-generic'));
+	} catch {
+		if (abortController.signal.aborted) progress.close();
+		else reportFailure();
 	}
 }

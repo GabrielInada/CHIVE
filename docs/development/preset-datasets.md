@@ -112,6 +112,16 @@ In `qqq.json`, explain where the text appears and what workflow the sample is
 meant to support. Follow the translation workflow in
 [Translation Contributor Guide](i18n.md).
 
+## Loading Failures
+
+The sample-loading workflow reports the same localized message in its progress
+toast and error notice. Fetch, HTTP, and unexpected failures name the sample
+without exposing internal reason codes or exception text. Timeouts retain their
+specific explanation, and known parsing failures include translated details.
+Unknown ingest failures use the generic sample-loading message. Cancellation
+during either fetching or ingest closes the toast quietly and adds no dataset.
+A missing preset descriptor shows an unnamed error notice without a progress toast.
+
 ## Validation Checklist
 
 - The file is in `src/data/presets/`.
