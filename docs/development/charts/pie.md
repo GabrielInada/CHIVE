@@ -287,15 +287,16 @@ the rows carry. Categories come back sorted descending by value with a `compareC
 tiebreaker (missing last). Sum mode without a usable value column → `fail('no-value-column')`,
 without a number → `fail('no-numeric')`; count mode with no rows → `fail()`.
 
-`computePieSectors` keeps only the categories whose value is above 0, since D3's pie layout
-gives no angle to a value at or below 0. Only a sum can be 0 or less. With no category left →
-`fail('no-positive-value')`.
+`computePieSectors` asks `aggregateCategories` for only the categories whose value is above 0
+(`positiveOnly`), since D3's pie layout gives no angle to a value at or below 0. Only a sum
+can be 0 or less. With no category left → `fail('no-positive-value')`.
 
 ### 7.2 Top-N
 
-When `topN > 0` and there are more categories above 0 than N: in `truncate` mode the list is
-cut to N; in `other` mode the top N are kept and the rest, all above 0, are summed into the
-Other sector, drawn last: the reserved key `OTHER_SECTOR_KEY`, the localized Other label, no
+When `topN > 0`, `aggregateCategories` keeps the first N categories above 0 and returns
+`rest`, the sum of those the cut leaves out, or null when it leaves none out. In `truncate`
+mode the pie draws the N kept; in `other` mode it folds `rest` into the Other sector, drawn
+last: the reserved key `OTHER_SECTOR_KEY`, the localized Other label, no
 category token, and `isOther: true`. The reserved key keeps a real category spelled like the
 Other label apart from the rollup.
 

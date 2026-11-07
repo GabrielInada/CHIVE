@@ -31,9 +31,9 @@ Key files:
 
 - Package root: [src/charts/bar/](../../../src/charts/bar)
 - Renderer: [renderers/svg.js](../../../src/charts/bar/renderers/svg.js)
-- Data, options, and color logic: [data.js](../../../src/charts/bar/data.js),
-  [options.js](../../../src/charts/bar/options.js), and
-  [color.js](../../../src/charts/bar/color.js)
+- Options and color logic: [options.js](../../../src/charts/bar/options.js) and
+  [color.js](../../../src/charts/bar/color.js); the categories it draws come from the shared
+  [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)
 - Sidebar controls: [controls/](../../../src/charts/bar/controls)
 - Chart definition and constants: [bar.js](../../../src/config/charts/definitions/bar.js) (`BAR_DEFINITION`, `BAR_CHART`)
 - Per-dataset config defaults: [bar.js](../../../src/config/charts/definitions/bar.js) (the definition's fresh `bar` factory)
@@ -329,7 +329,7 @@ on success or `fail(reason)` when it cannot draw. The pipeline in order:
 
 ### 7.2 Aggregation
 
-`aggregateBarData` starts from `aggregateCategories`
+The renderer takes the categories it draws from `aggregateCategories`
 ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)), which bar, pie,
 treemap, and bubble share:
 
@@ -343,12 +343,13 @@ treemap, and bubble share:
 
 ### 7.3 Sort, Top-N, and the empty guard
 
-`aggregateCategories` returns the entries largest first. `sortCategories` keeps that order
-for `count-desc` and re-sorts for the other count/label orderings of section 2.5, each with
-a `compareCategoryKeys` tiebreaker for stable order; label sorts keep the missing bucket
-last in both directions. The entries are then sliced to `topN` when `topN > 0`. With no
-rows to count, `aggregateCategories` fails and the renderer returns `fail()`. The grand
-total across the kept entries is computed for tooltip percentages.
+`aggregateCategories` orders the entries by bar's `sort`: largest first for `count-desc`, the
+default, or by one of the other count/label orderings of section 2.5, each with a
+`compareCategoryKeys` tiebreaker for stable order; label sorts keep the missing bucket last
+in both directions. It then keeps the first `topN` entries when `topN > 0`. Bar does not ask
+it to leave out values at or below 0, so every category gets a bar (section 7.5). With no
+rows to count, `aggregateCategories` fails and the renderer returns `fail()`. Its `total`
+sums the kept entries, the base of the tooltip percentages.
 
 ### 7.4 Layout and scales
 
@@ -495,9 +496,13 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
 
 ## 13. Tests
 
-- [tests/charts/bar/](../../../tests/charts/bar) mirrors the package. Data,
-  options, color, SVG rendering, and render-equivalence tests cover the leaf
+- [tests/charts/bar/](../../../tests/charts/bar) mirrors the package. Options,
+  color, SVG rendering, and render-equivalence tests cover the leaf
   implementation.
+- [categoryAggregation.test.js](../../../tests/charts/shared/categoryAggregation.test.js)
+  covers the categories bar draws: the measures, the sort orders, the Top-N cut, and the
+  total. [drawnCategories.test.js](../../../tests/charts/registries/drawnCategories.test.js)
+  checks through the panel registry which categories bar, pie, treemap, and bubble draw.
 - [filterActions.test.js](../../../tests/charts/shared/tooltip/filterActions.test.js)
   covers the pinned tooltip's filter actions (section 7.6) for every chart that offers
   them: the actions each filter state gets, the badge, headed groups for two columns, and
@@ -548,4 +553,4 @@ gap), `ticks` (y axis), `defaultSort`, `defaultTopN`, `defaultMeasureMode`.
 | count / sum / mean reducer (2.2) | measure-mode branch (7.2) |
 | Band + linear scales (2.3) | `scaleBand` / `scaleLinear` (7.4) |
 | Color encodings (2.4, 8) | `getBarColor` (7.5) |
-| Sort + Top-N framing (2.5) | `sortCategories`, slice (7.3) |
+| Sort + Top-N framing (2.5) | `sort` and `topN` of `aggregateCategories` (7.3) |

@@ -141,6 +141,13 @@ doc rather than repeated:
   wraps them in collapsible sections. Neither writes config; the config writes are wired by
   the listener helpers in
   [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
+- **Drawn categories**: bar, pie, treemap, and bubble take the categories they draw from
+  `aggregateCategories` in
+  [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js). It groups and
+  measures the rows, leaves out values at or below 0 for pie, treemap, and bubble
+  (`positiveOnly`), orders them by bar's sort, and keeps the first `topN`. It also returns
+  `rest`, the sum the cut leaves out, which pie folds into its Other sector, and `total`, the
+  sum of the kept values that tooltip shares are taken of.
 - **Measure label**: bar, pie, treemap, and bubble name their measure through
   [measure.js](../../../src/charts/shared/measure.js), which returns i18n keys. Each
   presentation flow translates the short form (`measureLabelKey`: "Count", "Sum", "Mean")

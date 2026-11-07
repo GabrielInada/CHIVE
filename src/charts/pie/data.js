@@ -1,10 +1,10 @@
 /**
  * The sectors a pie chart draws.
  *
- * Keeps the categories of the shared category aggregation whose value is
- * above 0, since a sector needs an angle, applies Top-N handling to them
- * (`truncate` drops the tail; `other` folds it into the Other sector) and
- * fills each sector. Every rule that sets the Other sector apart lives here:
+ * Asks the shared category aggregation for the categories whose value is
+ * above 0, since a sector needs an angle, cut to Top-N. `truncate` drops what
+ * the cut leaves out; `other` folds it into the Other sector. Then it fills
+ * each sector. Every rule that sets the Other sector apart lives here:
  * its key, its label, its lack of a category token, its fixed color, and its
  * place outside the base color's shades. The renderer draws these sectors and
  * the per-slice color grid shows their fills, so the two cannot disagree.
@@ -44,22 +44,19 @@ export const OTHER_SECTOR_KEY = '__chive_other__';
  * @param {string} categoryColumn - Categorical column name.
  * @param {Object} options - The pie config block or the renderer's options bag.
  * @returns {{ ok: false, reason?: string } | { ok: true, sectors: PieSector[], total: number }}
- *   Fails like `aggregateCategories`, and with `'no-positive-value'` when no
- *   value is above 0. `total` is summed after Top-N, so a sector's value over
- *   it is its share of the circle.
+ *   Fails like `aggregateCategories`, including `'no-positive-value'` when no
+ *   value is above 0. `total` sums the sectors drawn, the Other sector
+ *   included, so a sector's value over it is its share of the circle.
  */
 export function computePieSectors(rows, categoryColumn, options) {
 	const { measureMode, valueColumn, topN, topNMode, color, customSliceColors, labels } = normalizePieOptions(options);
-	const aggregated = aggregateCategories(rows, categoryColumn, { measureMode, valueColumn, missingLabel: labels.missing });
+	const aggregated = aggregateCategories(rows, categoryColumn, {
+		measureMode, valueColumn, missingLabel: labels.missing, positiveOnly: true, topN,
+	});
 	if (!aggregated.ok) return aggregated;
 
-	let categories = aggregated.entries.filter(entry => entry.value > 0);
-	if (categories.length === 0) return { ok: false, reason: 'no-positive-value' };
-	let otherValue = null;
-	if (topN > 0 && categories.length > topN) {
-		if (topNMode === 'other') otherValue = categories.slice(topN).reduce((sum, entry) => sum + entry.value, 0);
-		categories = categories.slice(0, topN);
-	}
+	const { entries: categories, rest } = aggregated;
+	const otherValue = topNMode === 'other' ? rest : null;
 
 	// WHY: category keys are cell text, so read only own keys. A category
 	// named `constructor` would otherwise take Object.prototype's function as
@@ -84,6 +81,5 @@ export function computePieSectors(rows, categoryColumn, options) {
 		});
 	}
 
-	const total = sectors.reduce((sum, sector) => sum + sector.value, 0);
-	return { ok: true, sectors, total };
+	return { ok: true, sectors, total: aggregated.total + (otherValue ?? 0) };
 }

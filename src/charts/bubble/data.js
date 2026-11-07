@@ -40,9 +40,10 @@ export function resolveNestingColumns(options) {
  * toward it. Missing cells form one missing bucket per column, apart from
  * text that reads "N/A".
  *
- * Fails like `aggregateCategories`, or with `no-positive-value` when no
- * category has positive area. Positive aggregates are ordered by value
- * descending (key tiebreak, missing last) and capped at `topN`.
+ * Takes the categories `aggregateCategories` keeps for a chart that draws only
+ * values above 0, since a bubble needs an area: largest first (key tiebreak,
+ * missing last) and capped at `topN`. Fails like `aggregateCategories`,
+ * including `no-positive-value` when no category has positive area.
  *
  * @param {Object} args
  * @param {Array<Object<string, *>>} args.rows
@@ -55,14 +56,13 @@ export function resolveNestingColumns(options) {
  * @returns {{ ok: false, reason?: 'no-value-column' | 'no-numeric' | 'no-positive-value' } | { ok: true, entries: Bubble[] }}
  */
 export function aggregateBubbles({ rows, categoryColumn, measureMode, valueColumn, nestingColumns, topN, missingLabel }) {
-	const aggregated = aggregateCategories(rows, categoryColumn, { measureMode, valueColumn, missingLabel });
+	const aggregated = aggregateCategories(rows, categoryColumn, {
+		measureMode, valueColumn, missingLabel, positiveOnly: true, topN,
+	});
 	if (!aggregated.ok) return aggregated;
-	const positive = aggregated.entries.filter(entry => entry.value > 0);
-	if (positive.length === 0) return { ok: false, reason: 'no-positive-value' };
 
 	const describe = key => ({ key, ...describeCategory(key, { missingLabel }) });
-	const kept = topN > 0 ? positive.slice(0, topN) : positive;
-	const entries = kept.map(({ firstRow, ...category }) => {
+	const entries = aggregated.entries.map(({ firstRow, ...category }) => {
 		const nestingPath = nestingColumns.map(column => describe(categoryKey(firstRow[column])));
 		const group = nestingPath[0] || category;
 		return { ...category, groupKey: group.key, groupLabel: group.label, nestingPath };

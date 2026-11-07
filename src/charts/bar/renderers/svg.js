@@ -28,8 +28,8 @@ import {
 	appendLeftAxis,
 	setupChartSvg,
 } from '../../shared/svg/scaffold.js';
+import { aggregateCategories } from '../../shared/categoryAggregation.js';
 import { normalizeBarOptions } from '../options.js';
-import { aggregateBarData } from '../data.js';
 import { createBarColorAccessor } from '../color.js';
 
 /**
@@ -78,7 +78,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		locale,
 	} = normalizeBarOptions(options, categoryColumn);
 
-	const aggregated = aggregateBarData(rows, categoryColumn, {
+	const aggregated = aggregateCategories(rows, categoryColumn, {
 		measureMode, valueColumn, sort, topN, missingLabel: labels.missing,
 	});
 	if (!aggregated.ok) return fail(aggregated.reason);

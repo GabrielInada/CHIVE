@@ -55,6 +55,12 @@ How a global filter rule refers to one category key in its include and exclude
 lists.
 _Avoid_: filter value, category id
 
+**Drawn categories**:
+The categories a chart shows, in its order. Bar shows every category; pie,
+treemap and bubble show only those whose measure is above 0. A Top-N limit
+keeps the first N of them; pie can fold the rest into the Other sector.
+_Avoid_: visible categories, kept categories
+
 **Other sector**:
 The pie sector that folds every category past the Top-N cut into one wedge. It
 is not a category: it has no category token and never shares a key or a color

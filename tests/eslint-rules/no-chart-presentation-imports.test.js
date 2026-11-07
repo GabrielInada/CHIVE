@@ -24,7 +24,7 @@ ruleTester.run('no-chart-presentation-imports', rule, {
 	invalid: [
 		{
 			filename: domainFilename,
-			code: "import '../../charts/bar/data.js';",
+			code: "import '../../charts/pie/data.js';",
 			errors: [{ messageId: 'chartPresentation' }],
 		},
 		{

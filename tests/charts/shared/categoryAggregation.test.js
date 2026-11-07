@@ -6,7 +6,22 @@ import { applyChartFilterRows } from '../../../src/domain/filters/chartFilter.js
 const count = { measureMode: 'count', valueColumn: null };
 const sum = { measureMode: 'sum', valueColumn: 'v' };
 const mean = { measureMode: 'mean', valueColumn: 'v' };
+const measures = { count, sum, mean };
 const pairs = result => result.entries.map(entry => [entry.key, entry.value]);
+
+// Per category: count C 3, B 2, D 2, A 1, E 1.
+// Sum: A 9, B 4, C 3, D 0, E -2. Mean: A 9, B 2, C 1, D 0, E -2.
+const mixed = [
+	{ c: 'A', v: 9 },
+	{ c: 'B', v: 1 },
+	{ c: 'B', v: 3 },
+	{ c: 'C', v: 1 },
+	{ c: 'C', v: 1 },
+	{ c: 'C', v: 1 },
+	{ c: 'D', v: 5 },
+	{ c: 'D', v: -5 },
+	{ c: 'E', v: -2 },
+];
 
 describe('aggregateCategories', () => {
 	it('counts rows per category, largest first, with ties by category key', () => {
@@ -87,5 +102,90 @@ describe('aggregateCategories', () => {
 
 	it('fails with no reason when there are no rows to count', () => {
 		expect(aggregateCategories([], 'c', count)).toEqual({ ok: false });
+	});
+});
+
+describe('the categories a chart draws', () => {
+	it('keeps every value, 0 and below included, unless only positive values can be drawn', () => {
+		expect(pairs(aggregateCategories(mixed, 'c', sum))).toEqual([['A', 9], ['B', 4], ['C', 3], ['D', 0], ['E', -2]]);
+	});
+
+	it.each([
+		['count', count, [['C', 3], ['B', 2], ['D', 2], ['A', 1], ['E', 1]]],
+		['sum', sum, [['A', 9], ['B', 4], ['C', 3]]],
+		['mean', mean, [['A', 9], ['B', 2], ['C', 1]]],
+	])('leaves out a %s at or below 0 when only positive values can be drawn', (_label, measure, expected) => {
+		expect(pairs(aggregateCategories(mixed, 'c', { ...measure, positiveOnly: true }))).toEqual(expected);
+	});
+
+	it.each([
+		['sum', sum],
+		['mean', mean],
+	])('fails with no-positive-value when no %s is above 0 and only positive values can be drawn', (_label, measure) => {
+		const rows = [{ c: 'A', v: -1 }, { c: 'B', v: 0 }];
+		expect(aggregateCategories(rows, 'c', { ...measure, positiveOnly: true }))
+			.toEqual({ ok: false, reason: 'no-positive-value' });
+	});
+
+	it.each([
+		['count', {}, [['C', 3], ['B', 2]], 4],
+		['sum', {}, [['A', 9], ['B', 4]], 1],
+		['sum', { positiveOnly: true }, [['A', 9], ['B', 4]], 3],
+		['mean', { positiveOnly: true }, [['A', 9], ['B', 2]], 1],
+	])('keeps the first two of a %s with %j and sums what the cut leaves out', (measureMode, options, expected, rest) => {
+		const result = aggregateCategories(mixed, 'c', { ...measures[measureMode], ...options, topN: 2 });
+		expect(pairs(result)).toEqual(expected);
+		expect(result.rest).toBe(rest);
+	});
+
+	it('breaks a tie at the cut by category key, with the missing bucket last', () => {
+		const rows = [{ c: null }, { c: 'Z' }, { c: 'Y' }];
+		const result = aggregateCategories(rows, 'c', { ...count, topN: 2 });
+		expect(pairs(result)).toEqual([['Y', 1], ['Z', 1]]);
+		expect(result.rest).toBe(1);
+	});
+
+	it.each([
+		['no limit', 0],
+		['a negative limit', -1],
+		['a limit as large as the categories', 5],
+		['a limit beyond them', 10],
+	])('leaves nothing out with %s', (_label, topN) => {
+		const result = aggregateCategories(mixed, 'c', { ...sum, topN });
+		expect(result.entries).toHaveLength(5);
+		expect(result.rest).toBeNull();
+	});
+
+	it.each([
+		['count', { topN: 2 }, 5],
+		['sum', {}, 14],
+		['sum', { positiveOnly: true, topN: 2 }, 13],
+		['mean', { positiveOnly: true }, 12],
+	])('totals the %s of the categories it keeps with %j, without the rest', (measureMode, options, total) => {
+		expect(aggregateCategories(mixed, 'c', { ...measures[measureMode], ...options }).total).toBe(total);
+	});
+
+	it.each([
+		['count-desc', ['C', 'B', 'D'], 2],
+		['count-asc', ['A', 'E', 'B'], 5],
+		['label-asc', ['A', 'B', 'C'], 3],
+		['label-desc', ['E', 'D', 'C'], 3],
+	])('orders by %s before the cut', (sort, expected, rest) => {
+		const result = aggregateCategories(mixed, 'c', { ...count, sort, topN: 3 });
+		expect(result.entries.map(entry => entry.key)).toEqual(expected);
+		expect(result.rest).toBe(rest);
+	});
+
+	it.each([
+		['label-asc', ['A', 'B', MISSING_KEY]],
+		['label-desc', ['B', 'A', MISSING_KEY]],
+	])('keeps the missing bucket last in %s', (sort, expected) => {
+		const rows = [{ c: null }, { c: 'B' }, { c: 'A' }];
+		expect(aggregateCategories(rows, 'c', { ...count, sort }).entries.map(entry => entry.key)).toEqual(expected);
+	});
+
+	it.each([undefined, 'constructor'])('keeps the largest first for the order %s', sort => {
+		expect(aggregateCategories(mixed, 'c', { ...count, sort }).entries.map(entry => entry.key))
+			.toEqual(['C', 'B', 'D', 'A', 'E']);
 	});
 });

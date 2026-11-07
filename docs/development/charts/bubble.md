@@ -253,9 +253,9 @@ rows to one bubble per category through the shared `aggregateCategories`
 ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)), each bubble
 carrying its measured value, its top-level group, and its full nesting path, read from the
 first row counted toward the category. Sum/mean without a usable value column returns
-`'no-value-column'`; no number cell returns `'no-numeric'`. Only categories whose aggregated
-value is above 0 are kept, sorted descending by value (with a stable tiebreaker), and capped
-to `topN`. If none have positive area, the helper returns `'no-positive-value'` before
+`'no-value-column'`; no number cell returns `'no-numeric'`. It asks for only the categories
+whose aggregated value is above 0 (`positiveOnly`), sorted descending by value (with a stable
+tiebreaker) and capped to `topN`. If none have positive area, the helper returns `'no-positive-value'` before
 building or packing the hierarchy. This rule applies to both sum and mean in flat and
 grouped mode; individual negative rows still contribute to their category's aggregate.
 
