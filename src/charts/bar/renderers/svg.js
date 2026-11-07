@@ -28,8 +28,8 @@ import {
 	appendLeftAxis,
 	setupChartSvg,
 } from '../../shared/svg/scaffold.js';
+import { aggregateCategories } from '../../shared/categoryAggregation.js';
 import { normalizeBarOptions } from '../options.js';
-import { aggregateBarData } from '../data.js';
 import { createBarColorAccessor } from '../color.js';
 
 /**
@@ -47,7 +47,8 @@ import { createBarColorAccessor } from '../color.js';
  * ('count' | 'sum' | 'mean'), `valueColumn`, `colorMode`
  * ('uniform' | 'gradient' | 'gradient-manual'), color stops, axis label
  * toggles, `customTitle`, `chartHeight`, `locale`, and the localized
- * `labels`/`axisLabels` bags.
+ * `labels`/`axisLabels` bags. `labels.measure` names the measure in the
+ * tooltip and, unless `axisLabels.y` is given, on the y axis.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
@@ -77,7 +78,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		locale,
 	} = normalizeBarOptions(options, categoryColumn);
 
-	const aggregated = aggregateBarData(rows, categoryColumn, {
+	const aggregated = aggregateCategories(rows, categoryColumn, {
 		measureMode, valueColumn, sort, topN, missingLabel: labels.missing,
 	});
 	if (!aggregated.ok) return fail(aggregated.reason);
@@ -102,14 +103,9 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 	const buildTooltipContent = item => {
 		const percentage = totalContagem > 0 ? ((item.value / totalContagem) * 100) : 0;
 		const wrapper = document.createElement('div');
-		const valueLabel = measureMode === 'mean'
-			? labels.mean
-			: measureMode === 'sum'
-				? labels.sum
-				: labels.count;
 
 		wrapper.appendChild(createTooltipLine(labels.category, item.label));
-		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale)));
 		if (showsShare) {
 			wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		}

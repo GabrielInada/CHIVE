@@ -2,12 +2,14 @@
  * Shared TIN presentation flow.
  *
  * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. Localized axis labels and the browser-local color
+ * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Localized axis labels and the browser-local color
  * rendering preference stay here so the renderer remains stateless: it
  * receives `colorRenderingMode` explicitly instead of reading settings.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { showChartMessage } from '../shared/containerLifecycle.js';
 import { getTinColorRendering } from '../../services/settingsService.js';
 import { renderTinChart } from './renderers/svg.js';
 
@@ -15,12 +17,11 @@ import { renderTinChart } from './renderers/svg.js';
  * Render a TIN surface from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
- * @param {Array<Object<string, *>>} rows
- * @param {Object} [config]
+ * @param {import('../../types.js').ChartInput} input
  * @returns {import('../../types.js').Result}
  */
-export function renderTinInto(container, rows, config = {}) {
-	return renderTinChart(container, rows, config.x, config.y, config.z, {
+export function renderTinInto(container, { rows, config }) {
+	const result = renderTinChart(container, rows, config.x, config.y, config.z, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
 		fillMode: config.fillMode,
@@ -62,4 +63,12 @@ export function renderTinInto(container, rows, config = {}) {
 		},
 		locale: getLocale(),
 	});
+
+	if (!result.ok) {
+		const key = result.reason === 'insufficient-points'
+			? 'chive-chart-empty-tin-insufficient-points'
+			: 'chive-chart-empty-tin';
+		showChartMessage(container, t(key));
+	}
+	return result;
 }

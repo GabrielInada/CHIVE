@@ -40,8 +40,10 @@ export function resolveNestingColumns(options) {
  * toward it. Missing cells form one missing bucket per column, apart from
  * text that reads "N/A".
  *
- * Fails like `aggregateCategories`. On success, bubbles are ordered by
- * value descending (key tiebreak, missing last) and capped at `topN`.
+ * Takes the categories `aggregateCategories` keeps for a chart that draws only
+ * values above 0, since a bubble needs an area: largest first (key tiebreak,
+ * missing last) and capped at `topN`. Fails like `aggregateCategories`,
+ * including `no-positive-value` when no category has positive area.
  *
  * @param {Object} args
  * @param {Array<Object<string, *>>} args.rows
@@ -51,15 +53,16 @@ export function resolveNestingColumns(options) {
  * @param {string[]} args.nestingColumns
  * @param {number} args.topN - `0` or negative → keep all bubbles.
  * @param {string} [args.missingLabel] - Localized label of the missing bucket.
- * @returns {{ ok: false, reason?: 'no-value-column' | 'no-numeric' } | { ok: true, entries: Bubble[] }}
+ * @returns {{ ok: false, reason?: 'no-value-column' | 'no-numeric' | 'no-positive-value' } | { ok: true, entries: Bubble[] }}
  */
 export function aggregateBubbles({ rows, categoryColumn, measureMode, valueColumn, nestingColumns, topN, missingLabel }) {
-	const aggregated = aggregateCategories(rows, categoryColumn, { measureMode, valueColumn, missingLabel });
+	const aggregated = aggregateCategories(rows, categoryColumn, {
+		measureMode, valueColumn, missingLabel, positiveOnly: true, topN,
+	});
 	if (!aggregated.ok) return aggregated;
 
 	const describe = key => ({ key, ...describeCategory(key, { missingLabel }) });
-	const kept = topN > 0 ? aggregated.entries.slice(0, topN) : aggregated.entries;
-	const entries = kept.map(({ firstRow, ...category }) => {
+	const entries = aggregated.entries.map(({ firstRow, ...category }) => {
 		const nestingPath = nestingColumns.map(column => describe(categoryKey(firstRow[column])));
 		const group = nestingPath[0] || category;
 		return { ...category, groupKey: group.key, groupLabel: group.label, nestingPath };

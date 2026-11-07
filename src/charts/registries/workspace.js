@@ -1,59 +1,41 @@
 /**
  * Dataset-workspace chart integration registry.
  *
- * Entries normalize per-chart workspace sections to one context shape. This
- * registry owns workspace rendering only; it does not import
- * controls, panel adapters, state, or services.
+ * Owns the Visualizations section of every chart: block visibility, the
+ * container's min height, and handing the chart input to the chart's
+ * presentation flow, which draws the chart or its empty-state message. This
+ * registry owns workspace rendering only; it does not import controls, the
+ * panel registry, state, or services.
  *
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
- * @typedef {{
- *   config: Object,
- *   rows: Array<Object<string, *>>,
- *   columnTypeByName: Object<string, string>,
- *   filterCallbacks: Object
- * }} WorkspaceChartContext
+ * @typedef {import('../../types.js').ChartInput} ChartInput
  */
 
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
-import { renderBarChartSection } from '../bar/workspaceSection.js';
-import { renderScatter3dChartSection } from '../scatter3d/workspaceSection.js';
-import { renderLineChartSection } from '../line/workspaceSection.js';
-import { renderScatterChartSection } from '../scatter/workspaceSection.js';
-import { renderPieChartSection } from '../pie/workspaceSection.js';
-import { renderBubbleChartSection } from '../bubble/workspaceSection.js';
-import { renderNetworkChartSection } from '../network/workspaceSection.js';
-import { renderTreemapChartSection } from '../treemap/workspaceSection.js';
-import { renderTinChartSection } from '../tin/workspaceSection.js';
+import { CHART_BLOCKS, CHART_CONTAINERS } from '../workspaceDomIds.js';
+import { clearChartContainer } from '../shared/containerLifecycle.js';
+import { resolveChartHeight } from '../shared/chartHeight.js';
+import { renderBarInto } from '../bar/presentation.js';
+import { renderBubbleInto } from '../bubble/presentation.js';
+import { renderLineInto } from '../line/presentation.js';
+import { renderNetworkInto } from '../network/presentation.js';
+import { renderPieInto } from '../pie/presentation.js';
+import { renderScatterInto } from '../scatter/presentation.js';
+import { renderScatter3dInto } from '../scatter3d/presentation.js';
+import { renderTinInto } from '../tin/presentation.js';
+import { renderTreemapInto } from '../treemap/presentation.js';
 
-/** @type {Readonly<Object<ChartTypeKey, (context: WorkspaceChartContext) => void>>} */
-const WORKSPACE_RENDERERS = Object.freeze({
-	bar: ({ config, rows, filterCallbacks }) => {
-		renderBarChartSection({ config, rows, filterCallbacks });
-	},
-	line: ({ config, rows, columnTypeByName, filterCallbacks }) => {
-		renderLineChartSection({ config, rows, columnTypeByName, filterCallbacks });
-	},
-	scatter: ({ config, rows, columnTypeByName, filterCallbacks }) => {
-		renderScatterChartSection({ config, rows, columnTypeByName, filterCallbacks });
-	},
-	scatter3d: ({ config, rows }) => {
-		renderScatter3dChartSection({ config, rows });
-	},
-	pie: ({ config, rows, filterCallbacks }) => {
-		renderPieChartSection({ config, rows, filterCallbacks });
-	},
-	bubble: ({ config, rows, filterCallbacks }) => {
-		renderBubbleChartSection({ config, rows, filterCallbacks });
-	},
-	network: ({ config, rows, filterCallbacks }) => {
-		renderNetworkChartSection({ config, rows, filterCallbacks });
-	},
-	treemap: ({ config, rows, filterCallbacks }) => {
-		renderTreemapChartSection({ config, rows, filterCallbacks });
-	},
-	tin: ({ config, rows }) => {
-		renderTinChartSection({ config, rows });
-	},
+/** @type {Readonly<Object<ChartTypeKey, (container: HTMLElement, input: ChartInput) => *>>} */
+const PRESENTATIONS = Object.freeze({
+	bar: renderBarInto,
+	line: renderLineInto,
+	scatter: renderScatterInto,
+	scatter3d: renderScatter3dInto,
+	pie: renderPieInto,
+	bubble: renderBubbleInto,
+	network: renderNetworkInto,
+	treemap: renderTreemapInto,
+	tin: renderTinInto,
 });
 
 /**
@@ -62,19 +44,32 @@ const WORKSPACE_RENDERERS = Object.freeze({
  * @type {ReadonlyArray<ChartTypeKey>}
  */
 export const SUPPORTED_WORKSPACE_CHART_TYPES = Object.freeze(
-	CHART_TYPE_KEYS.filter(type => Object.hasOwn(WORKSPACE_RENDERERS, type)),
+	CHART_TYPE_KEYS.filter(type => Object.hasOwn(PRESENTATIONS, type)),
 );
 
 /**
- * Dispatch one chart workspace section. Unknown keys return `false`; known
- * keys invoke exactly one renderer and return `true`.
+ * Render one chart's Visualizations section. A disabled chart hides its block
+ * and clears its container through the dispose contract, which also cancels a
+ * render still loading. An enabled chart shows its block, takes the height it
+ * is drawn at as its min height, and draws. A missing block or container is
+ * skipped. Unknown keys return `false`; known keys return `true`.
  *
  * @param {string} chartType
- * @param {WorkspaceChartContext} context
+ * @param {ChartInput} input - `input.config` is the chart's config block.
  * @returns {boolean}
  */
-export function renderWorkspaceChart(chartType, context) {
-	if (!Object.hasOwn(WORKSPACE_RENDERERS, chartType)) return false;
-	WORKSPACE_RENDERERS[chartType](context);
+export function renderWorkspaceChart(chartType, input) {
+	if (!Object.hasOwn(PRESENTATIONS, chartType)) return false;
+	const block = document.getElementById(CHART_BLOCKS[chartType]);
+	const container = document.getElementById(CHART_CONTAINERS[chartType]);
+	if (!input.config?.enabled) {
+		if (block) block.hidden = true;
+		clearChartContainer(container);
+		return true;
+	}
+	if (block) block.hidden = false;
+	if (!container) return true;
+	container.style.minHeight = `${resolveChartHeight(chartType, input.config.chartHeight)}px`;
+	PRESENTATIONS[chartType](container, input);
 	return true;
 }

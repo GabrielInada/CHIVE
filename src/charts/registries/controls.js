@@ -3,7 +3,7 @@
  *
  * Each entry adapts one chart's controls package to the shared manager
  * contract. This registry owns controls wiring only; it does not import
- * workspace renderers, panel adapters, state, or services.
+ * presentation flows, the other registries, state, or services.
  *
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {import('../../types.js').Dataset} Dataset
@@ -17,15 +17,14 @@
  */
 
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
+import { categoryChartDefaults } from '../shared/controls/activationDefaults.js';
 import { createBarChartControls } from '../bar/controls/builder.js';
 import { setupBarChartControlListeners } from '../bar/controls/listeners.js';
-import { computeDefaults as computeBarDefaults } from '../bar/controls/activationDefaults.js';
 import { createScatter3dControls } from '../scatter3d/controls/builder.js';
 import { setupScatter3dControlListeners } from '../scatter3d/controls/listeners.js';
 import { computeDefaults as computeScatter3dDefaults } from '../scatter3d/controls/activationDefaults.js';
 import { createBubbleChartControls } from '../bubble/controls/builder.js';
 import { setupBubbleChartControlListeners } from '../bubble/controls/listeners.js';
-import { computeDefaults as computeBubbleDefaults } from '../bubble/controls/activationDefaults.js';
 import { createLineChartControls } from '../line/controls/builder.js';
 import { setupLineChartControlListeners } from '../line/controls/listeners.js';
 import { computeDefaults as computeLineDefaults } from '../line/controls/activationDefaults.js';
@@ -37,10 +36,8 @@ import { setupScatterPlotControlListeners } from '../scatter/controls/listeners.
 import { computeDefaults as computeScatterDefaults } from '../scatter/controls/activationDefaults.js';
 import { createPieChartControls } from '../pie/controls/builder.js';
 import { setupPieChartControlListeners } from '../pie/controls/listeners.js';
-import { computeDefaults as computePieDefaults } from '../pie/controls/activationDefaults.js';
 import { createTreemapControls } from '../treemap/controls/builder.js';
 import { setupTreemapControlListeners } from '../treemap/controls/listeners.js';
-import { computeDefaults as computeTreemapDefaults } from '../treemap/controls/activationDefaults.js';
 import { createTinControls } from '../tin/controls/builder.js';
 import { setupTinControlListeners } from '../tin/controls/listeners.js';
 import { computeDefaults as computeTinDefaults } from '../tin/controls/activationDefaults.js';
@@ -61,7 +58,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.allColumns,
 			writer,
 		),
-		computeDefaults: computeBarDefaults,
+		computeDefaults: categoryChartDefaults('bar'),
 	}),
 	line: Object.freeze({
 		build: (dataset, context) => createLineChartControls(
@@ -120,7 +117,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.allColumns,
 			writer,
 		),
-		computeDefaults: computePieDefaults,
+		computeDefaults: categoryChartDefaults('pie'),
 	}),
 	bubble: Object.freeze({
 		build: (dataset, context) => createBubbleChartControls(
@@ -136,7 +133,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.allColumns,
 			writer,
 		),
-		computeDefaults: computeBubbleDefaults,
+		computeDefaults: categoryChartDefaults('bubble'),
 	}),
 	network: Object.freeze({
 		build: (dataset, context) => createNetworkGraphControls(
@@ -167,7 +164,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 			context.allColumns,
 			writer,
 		),
-		computeDefaults: computeTreemapDefaults,
+		computeDefaults: categoryChartDefaults('treemap'),
 	}),
 	tin: Object.freeze({
 		build: (dataset, context) => createTinControls(

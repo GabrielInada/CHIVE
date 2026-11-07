@@ -31,15 +31,13 @@ Key files:
 
 - Package root: [src/charts/bar/](../../../src/charts/bar)
 - Renderer: [renderers/svg.js](../../../src/charts/bar/renderers/svg.js)
-- Data, options, and color logic: [data.js](../../../src/charts/bar/data.js),
-  [options.js](../../../src/charts/bar/options.js), and
-  [color.js](../../../src/charts/bar/color.js)
+- Options and color logic: [options.js](../../../src/charts/bar/options.js) and
+  [color.js](../../../src/charts/bar/color.js); the categories it draws come from the shared
+  [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)
 - Sidebar controls: [controls/](../../../src/charts/bar/controls)
 - Chart definition and constants: [bar.js](../../../src/config/charts/definitions/bar.js) (`BAR_DEFINITION`, `BAR_CHART`)
 - Per-dataset config defaults: [bar.js](../../../src/config/charts/definitions/bar.js) (the definition's fresh `bar` factory)
-- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bar/workspaceSection.js)
 - Shared presentation mapping: [presentation.js](../../../src/charts/bar/presentation.js)
-- Panel adapter: [panelAdapter.js](../../../src/charts/bar/panelAdapter.js)
 - Shared tooltip: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js); its filter
   actions: [filterActions.js](../../../src/charts/shared/tooltip/filterActions.js)
 
@@ -131,7 +129,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderBarChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -144,11 +141,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderBarPanelChart"]
     end
 
-    WSECTION --> PRESENT["renderBarInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderBarInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderBarChart"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -213,20 +209,24 @@ controls, presentation flow, and renderer read the stored values as given.
 
 [controls/](../../../src/charts/bar/controls) owns the right-sidebar control
 group and its config writes. The
-[controls registry](../../../src/charts/registries/controls.js) imports three
-explicit package modules; `chartControlsController.js` consumes the normalized
-registry entry:
+[controls registry](../../../src/charts/registries/controls.js) imports two
+explicit package modules and the activation defaults bar shares with pie, treemap, and
+bubble; `chartControlsController.js` consumes the normalized registry entry:
 
 - `createBarChartControls(dataset, categoryOptions, numericOptions, allColumns)` builds the DOM.
 - `setupBarChartControlListeners(dataset, baseBar, numericOptions, …, onConfigChanged)` wires events.
-- `computeDefaults(dataset, ctx)` picks the category column when the chart is first enabled (keeps the current one if it is still a visible categorical column, else the first available), and the value column by the same rule as the measure listener (section 5.3).
+- `computeDefaults(dataset, ctx)`, which is `categoryChartDefaults('bar')` from
+  [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js), picks the category column when the chart is first enabled (keeps the current one if it is still a visible categorical column, else the first available), and the value column by the same rule as the measure listener (section 5.3).
 
 ### 5.1 The four sections
 
 `createBarChartControls` groups controls (via `groupControls`) into:
 
 1. **Data & aggregation** (expanded): category select, measure-mode select (count / sum /
-   mean), value-column select, sort select, Top-N select.
+   mean), value-column select, sort select, Top-N select. The measure and Top-N selects list
+   `BAR_CHART.measureModes` and `BAR_CHART.topNOptions`. The two value orders of the sort
+   select name the measure with its short label ("Sum (high → low)"); their stored values
+   stay `count-desc` and `count-asc`.
 2. **Display** (expanded): custom title text, x/y axis-label toggles.
 3. **Styling** (collapsed): color-mode select, the uniform color input, the gradient
    min/max color inputs, and (conditionally) the gradient-distribution select or the
@@ -239,7 +239,9 @@ Controls disable themselves based on dependent state so the UI never offers a kn
 nothing:
 
 - Everything is disabled when `!config.enabled`.
-- The value-column select is disabled in `count` mode (count needs no value column).
+- The value-column select is disabled when the measure reads no value column
+  (`measureUsesValueColumn` in [measure.js](../../../src/charts/shared/measure.js)), that is
+  in `count` mode.
 - The uniform color input is disabled unless `colorMode === 'uniform'`; the gradient min/max
   inputs are disabled when `colorMode === 'uniform'`.
 - The gradient-distribution select renders only in `gradient` mode; the manual-threshold
@@ -249,19 +251,19 @@ nothing:
 
 `setupBarChartControlListeners` uses the shared adapters in
 [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js)
-(`setupSelectListeners`, `setupMeasureListener`, `setupCheckboxListeners`,
-`setupTextInputListener`, `setupSliderListener`, `setupColorInputListener`,
-`setupColorPresetListeners`, and `commitChartConfigPatch`). Two controls tie the measure to
-the value column:
+(`setupSelectListeners`, `setupMeasureListener`, `setupValueColumnListener`,
+`setupCheckboxListeners`, `setupTextInputListener`, `setupSliderListener`,
+`setupColorInputListener`, `setupColorPresetListeners`, and `commitChartConfigPatch`). Two
+controls tie the measure to the value column:
 
 - **Measure mode**: `setupMeasureListener` commits the chosen measure with the value column
-  that the rule shared by bar, pie, treemap, and bubble keeps
-  ([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+  that the rule shared by bar, pie, treemap, and bubble keeps (`valueColumnForMeasure` in
+  [measure.js](../../../src/charts/shared/measure.js)):
   switching to `count` keeps `valueColumn`, so switching back to sum or mean restores it;
   switching to sum/mean keeps it while it is a numeric option and otherwise takes the first
   numeric column. The commit canonicalizes the config, which checks the measure itself.
-- **Value column**: a custom listener validates the chosen value against `numericOptions`
-  and stores `null` if it is not a current numeric column.
+- **Value column**: the shared `setupValueColumnListener` stores the chosen column only while
+  it is one of `numericOptions`, and `null` otherwise.
 
 The color-preset buttons write `gradientMinColor` from palette index 0, `gradientMaxColor`
 from the last index, and `color` from index 0, plus the palette name into `colorScheme`.
@@ -278,23 +280,28 @@ renderer never reads the DOM controls; it only reads config the listeners have w
 ### 6.1 Dataset workspace
 
 [chartsView.js](../../../src/features/datasetWorkspace/views/chartsView.js) decides
-which chart is active and passes the shared render context to the
-[workspace registry](../../../src/charts/registries/workspace.js). Its `bar`
-entry calls `renderBarChartSection({ config, rows, filterCallbacks })` from
-[workspaceSection.js](../../../src/charts/bar/workspaceSection.js). That adapter:
+which chart is active and passes the chart input (`rows`, `config`,
+`columnTypeByName`, `filterCallbacks`) to the
+[workspace registry](../../../src/charts/registries/workspace.js), which runs the
+same section routine for every chart:
 
 1. Resolves the block (`CHART_BLOCKS.bar`) and container (`CHART_CONTAINERS.bar`) elements.
 2. Hides the block and clears the container if the chart is disabled.
-3. Sets the container `min-height` to the configured `chartHeight`.
-4. Delegates option and localized-label mapping to
-   [presentation.js](../../../src/charts/bar/presentation.js).
-5. Calls `renderBarChart(container, rows, config.category, options)` through that shared flow.
-6. On failure, shows a localized empty state: `no-numeric` / `no-value-column` map to
-   `chive-chart-empty-bar-numeric`, anything else to `chive-chart-empty-bar`
-   (via `showChartMessage`).
+3. Sets the container `min-height` to the height the chart is drawn at: `chartHeight`
+   clamped to the definition's `heightLimits`, or the default height when it is not a
+   number ([chartHeight.js](../../../src/charts/shared/chartHeight.js)).
+4. Hands the chart input to `renderBarInto` in
+   [presentation.js](../../../src/charts/bar/presentation.js), which maps options and
+   localized labels and calls `renderBarChart(container, rows, config.category, options)`.
+
+The presentation flow shows a localized empty state on either surface: `no-numeric` /
+`no-value-column` map to `chive-chart-empty-bar-numeric`, anything else to
+`chive-chart-empty-bar` (via `showChartMessage`). The original renderer result is returned unchanged.
 
 The block heading, `chive-chart-bar-title`, is measure-neutral: "Bar chart (by category)"
-in English and "Barras (por categoria)" in Portuguese. The y axis names the selected measure.
+in English and "Barras (por categoria)" in Portuguese. The y axis and the tooltip name the
+selected measure with its measure label, which the presentation flow passes as
+`labels.measure` (see the measure label in the [charts README](README.md)).
 Add to Panel uses this heading for a new capture's name when no custom title is set; names
 already saved in Panel keep their stored text.
 
@@ -302,9 +309,9 @@ already saved in Panel keep their stored text.
 
 [renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
 validates the request, then the
-[panel registry](../../../src/charts/registries/panel.js) dispatches bar snapshots to
-[panelAdapter.js](../../../src/charts/bar/panelAdapter.js). The adapter passes
-`spec.config` and `spec.dataSnapshot` through the same presentation flow and renderer.
+[panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same
+presentation flow and renderer.
 The one difference is that panel charts omit `filterCallbacks`; the shared presentation
 flow uses a frozen empty default, so panel tooltips do **not** offer click-to-filter actions
 (those would mutate the live dataset, while panel rendering is read-only).
@@ -326,7 +333,7 @@ on success or `fail(reason)` when it cannot draw. The pipeline in order:
 
 ### 7.2 Aggregation
 
-`aggregateBarData` starts from `aggregateCategories`
+The renderer takes the categories it draws from `aggregateCategories`
 ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)), which bar, pie,
 treemap, and bubble share:
 
@@ -340,12 +347,13 @@ treemap, and bubble share:
 
 ### 7.3 Sort, Top-N, and the empty guard
 
-`aggregateCategories` returns the entries largest first. `sortCategories` keeps that order
-for `count-desc` and re-sorts for the other count/label orderings of section 2.5, each with
-a `compareCategoryKeys` tiebreaker for stable order; label sorts keep the missing bucket
-last in both directions. The entries are then sliced to `topN` when `topN > 0`. With no
-rows to count, `aggregateCategories` fails and the renderer returns `fail()`. The grand
-total across the kept entries is computed for tooltip percentages.
+`aggregateCategories` orders the entries by bar's `sort`: largest first for `count-desc`, the
+default, or by one of the other count/label orderings of section 2.5, each with a
+`compareCategoryKeys` tiebreaker for stable order; label sorts keep the missing bucket last
+in both directions. It then keeps the first `topN` entries when `topN > 0`. Bar does not ask
+it to leave out values at or below 0, so every category gets a bar (section 7.5). With no
+rows to count, `aggregateCategories` fails and the renderer returns `fail()`. Its `total`
+sums the kept entries, the base of the tooltip percentages.
 
 ### 7.4 Layout and scales
 
@@ -383,8 +391,8 @@ treemap, bubble, network, and scatter:
   total. The percentage is left out in mean mode, and when a kept sum is below 0, since a
   share of the net total could then pass 100% or go below 0%.
 - **Click pins** a tooltip that stays open. The bar passes `showPinnedFilterTooltip` its
-  category column and the bar's category token, with the `filterCallbacks` bag as the
-  section adapter supplied it. The shared module reads the token's state in the global
+  category column and the bar's category token, with the `filterCallbacks` bag as
+  Visualizations supplied it. The shared module reads the token's state in the global
   filter and offers the actions that apply: focus on this value ("show only this", left out
   when it would give the same filter as adding the value), then add to the global filter and
   exclude ("hide this") for a value the filter does not name, remove from the filter for an
@@ -404,7 +412,8 @@ category names do not overlap; the left axis uses `BAR_CHART.ticks` (6) tick mar
 category axis stays at the bottom of the plot, so its labels never sit on a bar below 0.
 When a kept measure is below 0, a separate `line.bar-zero-line` marks 0 across the plot,
 drawn over the bars and ignored by the pointer. Optional x/y axis-title text is drawn when
-`showXAxisLabel` / `showYAxisLabel` are on. The function returns `ok()`.
+`showXAxisLabel` / `showYAxisLabel` are on; the y title is `labels.measure` unless
+`axisLabels.y` is given. The function returns `ok()`.
 
 ---
 
@@ -464,7 +473,7 @@ screen shows are what gets serialized.
 
 ## 12. Invariants and edge cases
 
-- **No category column** → `fail()`, the section adapter shows `chive-chart-empty-bar`
+- **No category column** → `fail()`, the presentation flow shows `chive-chart-empty-bar`
   ("Select at least one visible column to build the bar chart.").
 - **sum/mean without a numeric value column** → `fail('no-value-column')`, and a value
   column with no number cell in the rows → `fail('no-numeric')`; both map to
@@ -491,23 +500,29 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
 
 ## 13. Tests
 
-- [tests/charts/bar/](../../../tests/charts/bar) mirrors the package. Data,
-  options, color, SVG rendering, and render-equivalence tests cover the leaf
+- [tests/charts/bar/](../../../tests/charts/bar) mirrors the package. Options,
+  color, SVG rendering, and render-equivalence tests cover the leaf
   implementation.
+- [categoryAggregation.test.js](../../../tests/charts/shared/categoryAggregation.test.js)
+  covers the categories bar draws: the measures, the sort orders, the Top-N cut, and the
+  total. [drawnCategories.test.js](../../../tests/charts/registries/drawnCategories.test.js)
+  checks through the panel registry which categories bar, pie, treemap, and bubble draw.
 - [filterActions.test.js](../../../tests/charts/shared/tooltip/filterActions.test.js)
   covers the pinned tooltip's filter actions (section 7.6) for every chart that offers
   them: the actions each filter state gets, the badge, headed groups for two columns, and
   the label defaults. Each renderer's tests only check that its pinned tooltip offers the
   actions for the right column and category token.
-- [workspaceSection.test.js](../../../tests/charts/bar/workspaceSection.test.js)
-  covers workspace visibility and empty-state selection.
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
+  checks through the workspace registry, for every chart, block visibility, the min height,
+  the dispose contract, and the inputs each chart draws from.
 - [controls.test.js](../../../tests/charts/bar/controls.test.js) and
   [controls.measureMode.test.js](../../../tests/charts/bar/controls.measureMode.test.js)
   cover control construction and config writes.
-- [panelAdapter.test.js](../../../tests/charts/bar/panelAdapter.test.js) covers
-  snapshot-to-renderer mapping and localized aggregate labels.
+  [dataControls.test.js](../../../tests/charts/registries/dataControls.test.js) checks the
+  data controls bar shares with pie, treemap, and bubble through the controls registry, and
+  the sort options that name the measure.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
-  covers the panel dispatch path.
+  covers the panel registry and how it builds the chart input from a snapshot.
 - [chartsView.test.js](../../../tests/features/datasetWorkspace/views/chartsView.test.js) covers view-level
   orchestration of which blocks render.
 
@@ -544,4 +559,4 @@ gap), `ticks` (y axis), `defaultSort`, `defaultTopN`, `defaultMeasureMode`.
 | count / sum / mean reducer (2.2) | measure-mode branch (7.2) |
 | Band + linear scales (2.3) | `scaleBand` / `scaleLinear` (7.4) |
 | Color encodings (2.4, 8) | `getBarColor` (7.5) |
-| Sort + Top-N framing (2.5) | `sortCategories`, slice (7.3) |
+| Sort + Top-N framing (2.5) | `sort` and `topN` of `aggregateCategories` (7.3) |

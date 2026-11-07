@@ -22,8 +22,10 @@ import {
 	createSliderControl,
 	createTextControl,
 	findAppliedColorPreset,
+	topNSelectOptions,
 } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
+import { measureLabelKey, measureOptionLabelKey, measureUsesValueColumn } from '../../shared/measure.js';
 
 /**
  * Build the bar-chart control sections (Data, Display, Styling, Advanced).
@@ -86,12 +88,8 @@ function buildDataControls(config, categoryOptions, numericOptions, isDisabled) 
 	// Measure mode select
 	const measureDiv = createSelectControl(
 		'viz-select-bar-measure',
-		t('chive-chart-control-bar-measure'),
-		[
-			{ value: 'count', label: t('chive-chart-control-bar-measure-count') },
-			{ value: 'sum', label: t('chive-chart-control-bar-measure-sum') },
-			{ value: 'mean', label: t('chive-chart-control-bar-measure-mean') },
-		],
+		t('chive-chart-control-measure'),
+		BAR_CHART.measureModes.map(measure => ({ value: measure, label: t(measureOptionLabelKey(measure)) })),
 		measureMode,
 		isDisabled
 	);
@@ -100,23 +98,24 @@ function buildDataControls(config, categoryOptions, numericOptions, isDisabled) 
 	// Value column select (for sum/mean)
 	const valueColDiv = createSelectControl(
 		'viz-select-bar-value-column',
-		t('chive-chart-control-bar-value-column'),
+		t('chive-chart-control-value-column'),
 		[
 			{ value: '', label: t('chive-chart-option-none') },
 			...numericOptions.map(opt => ({ value: opt, label: opt })),
 		],
 		valueColumn,
-		isDisabled || measureMode === 'count'
+		isDisabled || !measureUsesValueColumn(measureMode)
 	);
 	dataControls.push(valueColDiv);
 
-	// Sort order
+	// Sort order. The count orders sort by the measure, so they name it.
+	const measureLabel = t(measureLabelKey(measureMode));
 	const sortDiv = createSelectControl(
 		'viz-select-bar-sort',
 		t('chive-chart-control-bar-sort'),
 		[
-			{ value: 'count-desc', label: t('chive-chart-sort-count-desc') },
-			{ value: 'count-asc', label: t('chive-chart-sort-count-asc') },
+			{ value: 'count-desc', label: t('chive-chart-sort-measure-desc', measureLabel) },
+			{ value: 'count-asc', label: t('chive-chart-sort-measure-asc', measureLabel) },
 			{ value: 'label-asc', label: t('chive-chart-sort-label-asc') },
 			{ value: 'label-desc', label: t('chive-chart-sort-label-desc') },
 		],
@@ -129,12 +128,7 @@ function buildDataControls(config, categoryOptions, numericOptions, isDisabled) 
 	const topnDiv = createSelectControl(
 		'viz-select-bar-topn',
 		t('chive-chart-control-bar-topn'),
-		[
-			{ value: '0', label: t('chive-chart-topn-all') },
-			{ value: '10', label: 'Top 10' },
-			{ value: '20', label: 'Top 20' },
-			{ value: '50', label: 'Top 50' },
-		],
+		topNSelectOptions(BAR_CHART.topNOptions, t('chive-chart-topn-all')),
 		String(config.topN),
 		isDisabled
 	);

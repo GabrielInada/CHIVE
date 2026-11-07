@@ -379,7 +379,7 @@ describe('renderBarChart with totals at or below 0', () => {
 
 		for (const rect of container.querySelectorAll('rect')) {
 			const text = tooltipText(rect);
-			expect(text).toContain('Sum');
+			expect(text).toContain('Value');
 			expect(text).not.toContain('Percentage');
 		}
 	});

@@ -36,8 +36,6 @@ Key files (the per-chart package under [src/charts/scatter/](../../../src/charts
 - Shared presentation flow: [presentation.js](../../../src/charts/scatter/presentation.js)
 - Chart definition and constants: [scatter.js](../../../src/config/charts/definitions/scatter.js) (`SCATTER_DEFINITION`, `SCATTER_PLOT`)
 - Per-dataset config defaults: [scatter.js](../../../src/config/charts/definitions/scatter.js) (the definition's fresh `scatter` factory)
-- Section adapter (dataset workspace): [workspaceSection.js](../../../src/charts/scatter/workspaceSection.js)
-- Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/scatter/panelAdapter.js)
 
 ---
 
@@ -183,7 +181,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderScatterChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -196,11 +193,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderScatterPanelChart"]
     end
 
-    WSECTION --> PRESENT["renderScatterInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderScatterInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderScatterPlot"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -336,20 +332,21 @@ numeric column that is not X, each scale defaulting to linear unless its column 
 
 ### 6.1 Dataset workspace
 
-`renderScatterChartSection({ config, rows, columnTypeByName, filterCallbacks })`
-([workspaceSection.js](../../../src/charts/scatter/workspaceSection.js))
-resolves the block/container, hides+clears when disabled, sets the container min-height, and
-delegates to `renderScatterInto` ([presentation.js](../../../src/charts/scatter/presentation.js)),
+The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
+block/container, hides+clears when disabled, sets the container min-height to the height
+the chart is drawn at, and hands the chart input (`rows`, `config`, `columnTypeByName`,
+`filterCallbacks`) to `renderScatterInto` ([presentation.js](../../../src/charts/scatter/presentation.js)),
 which maps config into the options bag (including `axisTypes` taken from `columnTypeByName`
-so detection is consistent) and calls `renderScatterPlot`. On failure the section shows
-`chive-chart-empty-scatter-log` for `log-no-positive`, else `chive-chart-empty-scatter`.
+so detection is consistent) and calls `renderScatterPlot`. On failure the presentation flow shows
+`chive-chart-empty-scatter-log` for `log-no-positive`, else `chive-chart-empty-scatter`,
+in both the workspace and Panel. Sampling notices keep their existing approval flow.
 
 ### 6.2 Panel view
 
-`renderScatterPanelChart()` ([panelAdapter.js](../../../src/charts/scatter/panelAdapter.js))
-derives `axisTypes` from the snapshot's `columnsSnapshot` and calls the same
-`renderScatterInto` flow against `spec.dataSnapshot` with empty `filterCallbacks` (no
-click-to-filter in panels).
+The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot`, `spec.config`, and column types from every column in
+`columnsSnapshot`) and hands it to the same `renderScatterInto` flow without
+`filterCallbacks` (no click-to-filter in panels).
 
 ---
 
@@ -543,10 +540,12 @@ Package tests live under [tests/charts/scatter/](../../../tests/charts/scatter):
   covers axis rendering behavior.
 - [controls.test.js](../../../tests/charts/scatter/controls.test.js) covers
   the control building and the axis/scale and color-mode cross-constraints.
-- [workspaceSection.test.js](../../../tests/charts/scatter/workspaceSection.test.js),
-  [panelAdapter.test.js](../../../tests/charts/scatter/panelAdapter.test.js), and
-  [panel.test.js](../../../tests/charts/registries/panel.test.js)
-  cover the workspace and panel paths.
+- [presentation.test.js](../../../tests/charts/scatter/presentation.test.js) covers the
+  sampling notice: past the point budget the chart draws a sample until the user approves
+  every point, and the approval holds for the container's later renders.
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js) and
+  [panel.test.js](../../../tests/charts/registries/panel.test.js) check the two surfaces
+  through their registries, including the x axis following the column types each supplies.
 
 ---
 

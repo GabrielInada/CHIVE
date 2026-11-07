@@ -1,8 +1,9 @@
 /**
  * Charts-tab controller.
  *
- * Decides which chart section to render (single-chart-at-a-time), applies
- * the global filter to rows, and dispatches to per-chart workspace sections.
+ * Decides which chart section to render (single-chart-at-a-time) and hands
+ * every chart its input through the workspace registry, which shows or hides
+ * each section.
  * When the active tab is not `'charts'` (or no chart type is enabled), clears
  * every container and shows the empty state.
  *

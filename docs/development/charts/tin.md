@@ -69,8 +69,6 @@ Key files:
 - Per-dataset config defaults: [tin.js](../../../src/config/charts/definitions/tin.js)
 - Color math: [colorUtils.js](../../../src/utils/colorUtils.js)
 - Shared presentation flow: [presentation.js](../../../src/charts/tin/presentation.js)
-- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/tin/workspaceSection.js)
-- Panel adapter: [panelAdapter.js](../../../src/charts/tin/panelAdapter.js)
 
 ---
 
@@ -298,7 +296,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderTinChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -311,11 +308,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderTinPanelChart"]
     end
 
-    WSECTION --> PRESENT["renderTinInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderTinInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderTinChart"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -460,23 +456,25 @@ controls; it only reads config that the listeners have written.
 ### 6.1 Dataset workspace
 
 [chartsView.js](../../../src/features/datasetWorkspace/views/chartsView.js) decides
-which chart is active and delegates through the
-[workspace registry](../../../src/charts/registries/workspace.js). Its `tin`
-entry calls `renderTinChartSection({ config: chartConfig.tin, rows })` from
-[workspaceSection.js](../../../src/charts/tin/workspaceSection.js).
-That adapter:
+which chart is active and passes the chart input (`rows`, `config: chartConfig.tin`) to
+the [workspace registry](../../../src/charts/registries/workspace.js), which runs the
+same section routine for every chart:
 
 1. Resolves the block (`chart-block-tin`) and container (`chart-tin-container`)
    elements (IDs in [workspaceDomIds.js](../../../src/charts/workspaceDomIds.js), as
    `CHART_BLOCKS.tin` / `CHART_CONTAINERS.tin`).
 2. Hides the block and clears the container if the chart is disabled.
-3. Sets the container `min-height` to the configured `chartHeight`.
-4. Delegates to [presentation.js](../../../src/charts/tin/presentation.js), which maps
-   every `config.*` key into the renderer's options bag, including localized axis
-   labels and the current locale.
-5. Calls `renderTinChart(container, rows, config.x, config.y, config.z, options)`.
-6. On failure, shows a localized empty-state message (`insufficient-points` gets a
-   specific message; anything else a generic one).
+3. Sets the container `min-height` to the height the chart is drawn at: `chartHeight`
+   clamped to the definition's `heightLimits`, or the default height when it is not a
+   number ([chartHeight.js](../../../src/charts/shared/chartHeight.js)).
+4. Hands the chart input to `renderTinInto` in
+   [presentation.js](../../../src/charts/tin/presentation.js), which maps every
+   `config.*` key into the renderer's options bag, including localized axis labels and
+   the current locale, and calls
+   `renderTinChart(container, rows, config.x, config.y, config.z, options)`.
+
+The presentation flow shows a localized empty-state message on either surface
+(`insufficient-points` gets a specific message; anything else a generic one).
 
 ### 6.2 Panel view
 
@@ -485,10 +483,10 @@ When a chart is added to the panel, `addChartToPanel`
 `config`, `dataSnapshot`, and `columnsSnapshot` are each `structuredClone`d at
 capture time, so those fields are detached from later edits to the active
 dataset. The snapshot is not `Object.freeze`d and live facade getters remain
-read-only by policy. [panelAdapter.js](../../../src/charts/tin/panelAdapter.js) passes
-`spec.config` and `spec.dataSnapshot` through the same presentation flow after
-`renderChartFromSpec` validates the request. The panel registry only dispatches to
-that adapter. This detached-capture property is what
+read-only by policy. After `renderChartFromSpec` validates the request, the
+[panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+`spec.dataSnapshot` and `spec.config` and hands it to the same presentation flow. This
+detached-capture property is what
 lets the live preview skip re-rendering the panel (section 9.4 / 10).
 
 ---
@@ -930,7 +928,7 @@ but that is not implemented here.
   but heavy overlays, isolines, Delaunay construction, and SVG export can still stress
   the browser.
 
-- **< 3 valid points** → `fail('insufficient-points')`, section adapter shows a
+- **< 3 valid points** → `fail('insufficient-points')`, presentation flow shows a
   specific empty state (a triangle is the minimum triangulable set, section 2.3).
 - **Constant z** (`zMin === zMax`): depth forced to 0, a single path, filled at the
   ramp's low color; isolines are skipped (no levels to draw).
@@ -972,14 +970,15 @@ Notable fill-path cases:
 - [color.test.js](../../../tests/charts/tin/color.test.js) covers exact `colorAt`
   lookup and bucket quantization separately.
 - [presentation.test.js](../../../tests/charts/tin/presentation.test.js) verifies that
-  workspace and panel rendering re-read and forward the browser-local mode.
+  each render re-reads the browser-local mode and draws the surface in it, Panel captures
+  included.
 
 Additional package tests cover [options](../../../tests/charts/tin/options.test.js),
 [color scales](../../../tests/charts/tin/color.test.js),
 [interactions](../../../tests/charts/tin/interaction.test.js),
-[controls](../../../tests/charts/tin/controls.test.js),
-[workspace integration](../../../tests/charts/tin/workspaceSection.test.js), and
-[panel integration](../../../tests/charts/tin/panelAdapter.test.js).
+[controls](../../../tests/charts/tin/controls.test.js), and, through the registries,
+[Visualizations](../../../tests/charts/registries/workspaceSections.test.js) and
+[Panel](../../../tests/charts/registries/panel.test.js).
 [panelController.edges.test.js](../../../tests/features/panel/panelController.edges.test.js)
 has a snapshot-isolation regression test guarding that a panel snapshot's config is
 captured by value (so the live-preview panel skip is safe).

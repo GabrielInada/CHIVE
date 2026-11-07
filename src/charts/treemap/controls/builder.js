@@ -18,8 +18,10 @@ import {
 	createSliderControl,
 	createTextControl,
 	findAppliedColorPreset,
+	topNSelectOptions,
 } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
+import { measureOptionLabelKey, measureUsesValueColumn } from '../../shared/measure.js';
 
 /**
  * Build the treemap control sections (Data, Display, Styling, Advanced).
@@ -52,35 +54,27 @@ export function createTreemapControls(dataset, categoryOptions, numericOptions =
 
 	dataControls.push(createSelectControl(
 		'viz-select-treemap-measure',
-		t('chive-chart-control-treemap-measure'),
-		[
-			{ value: 'count', label: t('chive-chart-control-bar-measure-count') },
-			{ value: 'sum', label: t('chive-chart-control-bar-measure-sum') },
-		],
+		t('chive-chart-control-measure'),
+		TREEMAP_CHART.measureModes.map(measure => ({ value: measure, label: t(measureOptionLabelKey(measure)) })),
 		measureMode,
 		isDisabled
 	));
 
 	dataControls.push(createSelectControl(
 		'viz-select-treemap-value-column',
-		t('chive-chart-control-treemap-value-column'),
+		t('chive-chart-control-value-column'),
 		[
 			{ value: '', label: t('chive-chart-option-none') },
 			...numericOptions.map(opt => ({ value: opt, label: opt })),
 		],
 		valueColumn,
-		isDisabled || measureMode === 'count'
+		isDisabled || !measureUsesValueColumn(measureMode)
 	));
 
 	dataControls.push(createSelectControl(
 		'viz-select-treemap-topn',
 		t('chive-chart-control-bar-topn'),
-		[
-			{ value: '0', label: t('chive-chart-topn-all') },
-			{ value: '10', label: 'Top 10' },
-			{ value: '20', label: 'Top 20' },
-			{ value: '50', label: 'Top 50' },
-		],
+		topNSelectOptions(TREEMAP_CHART.topNOptions, t('chive-chart-topn-all')),
 		String(config.topN),
 		isDisabled
 	));

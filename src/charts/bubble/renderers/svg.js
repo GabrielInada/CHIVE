@@ -37,15 +37,16 @@ import {
 /**
  * Render a bubble chart into `container`. Returns `ok()` on success, or
  * `fail()` when `categoryColumn` is missing, when sum/mean aggregation
- * is requested without a usable `valueColumn`, or when no rows remain
- * after aggregation.
+ * is requested without a usable `valueColumn`, or when no positive
+ * category values remain after aggregation.
  *
  * Common option keys: `measureMode` ('count' | 'sum' | 'mean'),
  * `valueColumn`, `topN`, `padding`, `labelMode` ('all' | 'hover' | 'auto'),
  * `nestingMode` ('flat' | 'grouped'), `nestingColumns` (progressive
  * hierarchy column names), `groupColumn` (legacy single-group fallback),
  * `colorScheme`, `customTitle`, `chartHeight`, `locale`, and the localized
- * `labels` bag.
+ * `labels` bag, whose `measure` names the measure in tooltips and bubble
+ * titles.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
@@ -77,9 +78,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 	const labels = {
 		close: options.labels?.close,
 		category: options.labels?.category || 'Category',
-		count: options.labels?.count || 'Count',
-		sum: options.labels?.sum || 'Sum',
-		mean: options.labels?.mean || 'Mean',
+		measure: options.labels?.measure || 'Value',
 		group: options.labels?.group || 'Group',
 		children: options.labels?.children || 'Children',
 		level: options.labels?.level || 'Level',
@@ -303,16 +302,10 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 		applyZoom(target);
 	}
 
-	const measureLabel = measureMode === 'mean'
-		? labels.mean
-		: measureMode === 'sum'
-			? labels.sum
-			: labels.count;
-
 	const createLeafTooltip = item => {
 		const wrapper = document.createElement('div');
 		wrapper.appendChild(createTooltipLine(labels.category, item.data.label));
-		wrapper.appendChild(createTooltipLine(measureLabel, formatNumber(item.data.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.data.value, locale)));
 		if (isGrouped) {
 			wrapper.appendChild(createTooltipLine(labels.group, getTopLevelGroup(item).label));
 		}
@@ -322,7 +315,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 	const createParentTooltip = item => {
 		const wrapper = document.createElement('div');
 		wrapper.appendChild(createTooltipLine(labels.group, item.data.groupLabel));
-		wrapper.appendChild(createTooltipLine(measureLabel, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale)));
 		wrapper.appendChild(createTooltipLine(labels.children, item.children.length));
 		wrapper.appendChild(createTooltipLine(labels.level, item.depth));
 		return wrapper;
@@ -430,7 +423,7 @@ export function renderBubbleChart(container, rows, categoryColumn, options = {})
 	node.append('title').text(d => {
 		const lines = [
 			`${labels.category}: ${d.data.label}`,
-			`${measureLabel}: ${formatNumber(d.data.value, locale)}`,
+			`${labels.measure}: ${formatNumber(d.data.value, locale)}`,
 		];
 		if (isGrouped) {
 			lines.push(`${labels.group}: ${getTopLevelGroup(d).label}`);

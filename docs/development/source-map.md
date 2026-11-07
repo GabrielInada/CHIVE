@@ -36,7 +36,7 @@ file history, decide where a file belongs.
 | `src/features/datasetWorkspace/views/` | Callback-driven, state-read-only workspace rendering. `fileListView.js` owns file-list search, pagination, and join/preset orchestration over the item-only `fileListItems.js`; `emptyWorkspaceView.js` restores the empty upload surface; the remaining files own tabs, previews, statistics, controls, and chart composition. |
 | `src/features/datasetWorkspace/filters/` | Feature callback wiring around pure filter rules. `globalFilterActions.js` builds the chart-tooltip actions and read lookups consumed by `workspaceView.js`; product filter semantics stay under `domain/filters/`. |
 | `src/features/panel/` | Panel feature package: `panelController.js` owns user intent, facade writes, bus subscriptions, and render coordination; `views/`, `layout/`, `slots/`, and `export/` own presentation mechanics; `domIds.js` owns the static panel-canvas contract and the shared optional layout-selector ID. The selector is not present in current static HTML, so it is not part of HTML parity coverage. Durable state remains under `state/`; pure layout templates and the block model remain under `domain/panel/`. |
-| `src/charts/` | Chart presentation metadata (`catalog.js`, derived from definitions and `previews.js`), static workspace contracts (`workspaceDomIds.js`, derived from definitions), independent controls/workspace/panel lookup under `registries/`, SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`, `charts/network/`, and `charts/tin/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/` (SVG scaffold, tooltip and the global-filter actions of its pinned tooltips, control factories/grouping, category-key ordering, the category aggregation that bar, pie, treemap, and bubble share and the rule that keeps their value column when the measure changes, render budgeting, and the container dispose lifecycle). Packages use D3 primitives where useful and also own chart-specific aggregation, regression, and TIN logic. A package keeps its data prep, options, renderers, controls, workspace section, presentation flow, and panel adapter together; leaf boundaries are enforced by lint. |
+| `src/charts/` | Chart presentation metadata (`catalog.js`, derived from definitions and `previews.js`), static workspace contracts (`workspaceDomIds.js`, derived from definitions), independent controls/workspace/panel lookup under `registries/`, SVG per-chart packages (`charts/bar/`, `charts/pie/`, `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`, `charts/network/`, and `charts/tin/`), the Three.js/WebGL package (`charts/scatter3d/`), and shared chart-only infrastructure under `charts/shared/` (SVG scaffold, tooltip and the global-filter actions of its pinned tooltips, control factories/grouping, category-key ordering, the category aggregation that decides which categories bar, pie, treemap, and bubble draw, the measure module that names their measure and picks its value column, and the data-control rules and activation defaults they share, render budgeting, the height a chart container is sized to, and the container dispose lifecycle). Packages use D3 primitives where useful and also own chart-specific aggregation, regression, and TIN logic. A package keeps its data prep, options, renderers, controls, and presentation flow (localized labels and empty states for both surfaces) together; the workspace and panel registries hand each presentation flow the same chart input. Leaf boundaries are enforced by lint. |
 | `src/services/` | Side-effecting services, each crossing a browser boundary: `persistence.js` (the only public persistence import path) with the `persistence/` package behind it, `i18nService.js`, `settingsService.js` (owner of the `chive.settings` localStorage key), `storageService.js` (quota reporting and explicit persistence requests), `presetService.js`, `dataIngestService.js` (the cancellable worker host for file ingest and joins), and `downloads/` for byte and SVG browser-download triggers. The pure dataset algorithms are not here; they live in `domain/datasets/`. |
 | `src/services/persistence/` | Persistence internals, private to the package and reachable only through `services/persistence.js`: lifecycle and backend selection (`lifecycle.js`), snapshot normalization (`snapshot.js`), autosave, dirty tracking, errors, project file naming, and UI prefs. `backends/` holds the storage backends (`workerBackend.js` hosts the worker, `blobBackend.js` does the SQLite work, `legacyIndexedDbReader.js` reads the pre-SQLite format once); `sqlite/core.js` holds the schema and snapshot SQL. `workers/persistWorker.js` is the one permitted internals importer. |
 | `src/data/` | Bundled preset datasets (`presets/`) and `presetCatalog.js`. |
@@ -62,7 +62,7 @@ with real work:
 | Facade | State or service boundary | `state/dataStateFacade.js` |
 | Catalog | Identity-keyed descriptive or presentation metadata | `charts/catalog.js` |
 | Registry | Supported-type implementation lookup for one integration surface | `charts/registries/workspace.js` |
-| Adapter | Bridge between a generic system and a chart/domain implementation | `charts/bar/panelAdapter.js` |
+| Adapter | Bridge between a generic system and a chart/domain implementation | `features/datasetWorkspace/chartControls/chartConfigAdapter.js` |
 
 Manager is legacy naming, still valid for `uiManager.js`, which keeps its name
 until its domain is reworked for real. Controller is the name for new feature or
@@ -94,10 +94,10 @@ use Controller for pure renderers, services, registries, or math helpers.
 
 For a new chart type, update the full chart surface in one pass:
 
-- Build the package's data/options modules, renderer, controls, workspace
-  section, presentation flow, and panel adapter, then register those entry
-  points in `charts/registries/controls.js`,
-  `charts/registries/workspace.js`, and `charts/registries/panel.js`.
+- Build the package's data/options modules, renderer, controls, and
+  presentation flow, then register those entry points in
+  `charts/registries/controls.js`, `charts/registries/workspace.js`, and
+  `charts/registries/panel.js`.
 - Add `config/charts/definitions/<type>.js`, import it into
   `config/charts/definitions.js`, and place it in the ordered definition list.
   Add one keyed SVG string to `charts/previews.js`. The catalog and workspace
@@ -167,8 +167,8 @@ ownership rather than file history, according to these rules:
   that. `workers/persistWorker.js` is the single exception, since hosting the
   blob backend off the main thread is the point of the worker.
 - Per-chart packages are the chart direction: a chart's data prep,
-  options, math/scales, renderers, controls, workspace section, and panel
-  adapter live together. `charts/scatter3d/` established the Three.js path and
+  options, math/scales, renderers, controls, and presentation flow live
+  together. `charts/scatter3d/` established the Three.js path and
   `charts/bar/` established the shared SVG path. `charts/pie/`,
   `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`,
   `charts/network/`, and `charts/tin/` are the completed migrations from the
@@ -185,9 +185,8 @@ ownership rather than file history, according to these rules:
   -> SVG or Three renderer; not every package passes through the same D3 stage.
 - Chart package boundaries: data, options, color, math, and scales files stay pure;
   renderers never import application state or write facades; controls may
-  write only through shared chart-control adapters; a workspace
-  section receives callbacks and owns no global state; a panel adapter maps
-  chart config/data to the panel's snapshot and render contracts. Boundary
+  write only through shared chart-control adapters; a presentation flow
+  receives the chart input and callbacks and owns no global state. Boundary
   lint rules for `src/charts/**` are in place in `eslint.config.js`.
 - Canvas charts have no SVG export yet: the scatter3d block ships without a
   download button and panel exports omit canvas slots (with a feedback

@@ -17,14 +17,13 @@ Key files:
 - SVG renderer: [svg.js](../../../src/charts/bubble/renderers/svg.js)
 - Data and hierarchy helpers: [data.js](../../../src/charts/bubble/data.js)
 - Sidebar controls: [builder.js](../../../src/charts/bubble/controls/builder.js),
-  [listeners.js](../../../src/charts/bubble/controls/listeners.js),
-  [activationDefaults.js](../../../src/charts/bubble/controls/activationDefaults.js), and
-  [nestingColumns.js](../../../src/charts/bubble/controls/nestingColumns.js)
+  [listeners.js](../../../src/charts/bubble/controls/listeners.js), and
+  [nestingColumns.js](../../../src/charts/bubble/controls/nestingColumns.js); the activation
+  defaults come from the shared
+  [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
 - Chart definition and constants: [bubble.js](../../../src/config/charts/definitions/bubble.js) (`BUBBLE_DEFINITION`, `BUBBLE_CHART`) and [shared.js](../../../src/config/charts/shared.js) (`CHART_COLOR_PALETTES`)
 - Per-dataset config defaults: [bubble.js](../../../src/config/charts/definitions/bubble.js) (the definition's fresh `bubble` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/bubble/presentation.js)
-- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/bubble/workspaceSection.js)
-- Panel adapter: [panelAdapter.js](../../../src/charts/bubble/panelAdapter.js)
 
 ---
 
@@ -102,7 +101,6 @@ flowchart TB
         DSTATE -. read through getters .-> COORD
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderBubbleChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -115,11 +113,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderBubblePanelChart"]
     end
 
-    WSECTION --> PRESENT["renderBubbleInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderBubbleInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderBubbleChart"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -176,13 +173,16 @@ ordinal color palettes (Tableau10, Pastel, Bold, Colorblind-Safe).
 ## 5. The control sidebar
 
 The package's [controls directory](../../../src/charts/bubble/controls/) keeps the standard
-`createBubbleChartControls`, `setupBubbleChartControlListeners`, and `computeDefaults` roles
-in separate modules, with progressive nesting rules in `nestingColumns.js`.
+`createBubbleChartControls` and `setupBubbleChartControlListeners` roles in separate modules,
+with progressive nesting rules in `nestingColumns.js`; `computeDefaults` is the shared
+`categoryChartDefaults('bubble')`
+([activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)).
 
 ### 5.1 The three sections
 
 1. **Data** (expanded): root category select, nesting mode (flat/grouped), measure
-   (count/sum/mean), value column, the **progressive nesting selects**, and Top-N.
+   (count/sum/mean), value column, the **progressive nesting selects**, and Top-N. The
+   measure and Top-N selects list `BUBBLE_CHART.measureModes` and `BUBBLE_CHART.topNOptions`.
 2. **Display** (expanded): title, label mode (all/hover/auto).
 3. **Styling** (collapsed): padding slider, color-preset palette.
 
@@ -200,12 +200,13 @@ are disabled unless `nestingMode === 'grouped'`.
 - The value-column select is disabled in `count` mode.
 - Nesting selects are disabled in flat mode.
 - The measure uses the shared `setupMeasureListener`, which applies the value-column rule
-  bar, pie, treemap, and bubble share
-  ([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+  bar, pie, treemap, and bubble share (`valueColumnForMeasure` in
+  [measure.js](../../../src/charts/shared/measure.js)):
   switching to count keeps `valueColumn`, so switching back restores it, and switching to
   sum/mean keeps it while it is a numeric option and otherwise takes the first numeric
-  column. The nesting listeners keep `nestingColumns` and the legacy `groupColumn` mirror in
-  sync.
+  column. The value column goes through the shared `setupValueColumnListener`, which stores
+  only a visible numeric column. The nesting listeners keep `nestingColumns` and the legacy
+  `groupColumn` mirror in sync.
 
 `computeDefaults` picks the root category, and the value column by the same rule as the
 measure listener.
@@ -216,20 +217,21 @@ measure listener.
 
 ### 6.1 Dataset workspace
 
-`renderBubbleChartSection({ config, rows, filterCallbacks })`
-([workspaceSection.js](../../../src/charts/bubble/workspaceSection.js))
-resolves the block/container, hides+clears when disabled, sets the min-height, maps config
-through [presentation.js](../../../src/charts/bubble/presentation.js), and calls
-`renderBubbleChart`. On failure it shows distinct messages:
+The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
+block/container, hides+clears when disabled, sets the min-height to the height the chart is
+drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to
+`renderBubbleInto` in [presentation.js](../../../src/charts/bubble/presentation.js), which
+maps config and calls `renderBubbleChart`. The presentation flow shows distinct messages on both surfaces:
 `no-value-column`/`no-numeric` to `chive-chart-empty-bubble-numeric`,
+`no-positive-value` to `chive-chart-empty-no-positive-sum`,
 `no-nesting-columns`/`no-group-column` to `chive-chart-empty-bubble-nesting-required`, else
 `chive-chart-empty-bubble`.
 
 ### 6.2 Panel view
 
-[panelAdapter.js](../../../src/charts/bubble/panelAdapter.js) passes `spec.config` and
-`spec.dataSnapshot` through the same presentation flow with empty `filterCallbacks` (no
-click-to-filter in panels). The panel registry only dispatches to that adapter.
+The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same presentation
+flow without `filterCallbacks` (no click-to-filter in panels).
 
 ---
 
@@ -252,10 +254,11 @@ rows to one bubble per category through the shared `aggregateCategories`
 ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)), each bubble
 carrying its measured value, its top-level group, and its full nesting path, read from the
 first row counted toward the category. Sum/mean without a usable value column returns
-`'no-value-column'`; no number cell returns `'no-numeric'`. Bubbles are sorted descending by
-value (with a stable tiebreaker) and capped to `topN`. The helper does not filter zero or
-negative aggregates before the D3 pack layout, so sum/mean mode is intended for non-negative
-measures.
+`'no-value-column'`; no number cell returns `'no-numeric'`. It asks for only the categories
+whose aggregated value is above 0 (`positiveOnly`), sorted descending by value (with a stable
+tiebreaker) and capped to `topN`. If none have positive area, the helper returns `'no-positive-value'` before
+building or packing the hierarchy. This rule applies to both sum and mean in flat and
+grouped mode; individual negative rows still contribute to their category's aggregate.
 
 ### 7.3 Hierarchy and pack layout
 
@@ -343,8 +346,8 @@ The panel exporter clones the live `<svg>`; there is no separate export path.
 - **Missing cells** form one "(missing)" bubble or group per column, keyed apart from literal
   "N/A" text; group colors and filter tokens follow the key.
 - **Legacy `groupColumn`** is transparently treated as a one-level `nestingColumns`.
-- **Non-positive sum/mean aggregates** are not filtered by CHIVE before packing; use
-  non-negative value columns for meaningful bubble area.
+- **Non-positive sum/mean aggregates** are omitted before Top-N and packing. When none
+  remain, `fail('no-positive-value')` shows the same message as pie and treemap.
 - **Drill-down resets** on every render (the chart is stateless).
 - **Detached panel captures**: panel bubbles carry no filter actions.
 
@@ -366,12 +369,14 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   (no DOM).
 - [controls.test.js](../../../tests/charts/bubble/controls.test.js) covers the
   progressive nesting controls and the measure/value cross-constraint.
-- [workspaceSection.test.js](../../../tests/charts/bubble/workspaceSection.test.js) covers
-  workspace visibility and empty-state mapping.
-- [panelAdapter.test.js](../../../tests/charts/bubble/panelAdapter.test.js) covers captured
-  snapshot mapping, localized labels, and failure passthrough.
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
+  checks through the workspace registry, for every chart, block visibility, the min height,
+  the dispose contract, and the inputs each chart draws from.
+- [emptyStates.test.js](../../../tests/charts/bubble/emptyStates.test.js) renders real bubbles
+  and verifies non-positive messages, finite mixed-value radii, and recovery to count mode
+  in English and Portuguese for flat and nested charts.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
-  covers the panel dispatch path.
+  covers the panel registry and how it builds the chart input from a snapshot.
 
 ---
 

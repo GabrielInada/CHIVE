@@ -9,7 +9,7 @@ mathematical or algorithmic theory it rests on.
 |---|---|
 | Audience | Contributors changing chart renderers, controls, panel rendering, or tests. |
 | Source of truth | Implementation-level chart data flow, algorithms, config, edge cases, and test coverage. |
-| Update when | A chart renderer, control surface, panel adapter, algorithm, empty-state path, or test contract changes. |
+| Update when | A chart renderer, control surface, presentation flow, algorithm, empty-state path, or test contract changes. |
 
 These are the companion to the higher-level docs one directory up:
 
@@ -37,8 +37,7 @@ These are the companion to the higher-level docs one directory up:
 
 The package directory and persisted chart key use the canonical lowercase chart
 key. Exported symbols use a PascalCase chart stem followed by a role suffix such
-as `Controls`, `ControlListeners`, `PanelChart`, `ChartSection`, `Into`,
-`Options`, or `Interactions`. New symbols should use one plain stem consistently
+as `Controls`, `ControlListeners`, `Into`, `Options`, or `Interactions`. New symbols should use one plain stem consistently
 within their package.
 
 The current plain stems are `Bar`, `Pie`, `Treemap`, `Bubble`, `Line`, `Tin`,
@@ -109,12 +108,22 @@ doc rather than repeated:
 - **Render dispatch**: panel snapshots enter through
   [renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js),
   which validates the request and resolves its implementation through the
-  [panel registry](../../../src/charts/registries/panel.js). Every chart resolves
-  to its package-owned `panelAdapter.js` under [src/charts/](../../../src/charts).
-- **Section adapters**: every per-chart package owns a `workspaceSection.js`.
-  These map config to the renderer options bag and surface localized empty
-  states via `showChartMessage` from
+  [panel registry](../../../src/charts/registries/panel.js). The registry builds the
+  chart input from the snapshot (its rows, config and column types) and hands it to the
+  chart's package-owned `presentation.js` under [src/charts/](../../../src/charts).
+- **Chart input and sections**: both surfaces hand each chart the same chart input
+  (`rows`, `config`, `columnTypeByName`, `filterCallbacks`; see `ChartInput` in
+  [types.js](../../../src/types.js)). In Visualizations the
+  [workspace registry](../../../src/charts/registries/workspace.js) owns the section
+  routine for every chart: block visibility, and a minimum height equal to the height
+  the chart is drawn at ([chartHeight.js](../../../src/charts/shared/chartHeight.js)). Each package's
+  `presentation.js` maps config and labels and renders localized empty states via
+  `showChartMessage` from
   [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).
+  Workspace charts, saved Panel previews, and layout slots therefore show the
+  same failure message, including after resize or reopening an existing project.
+  Add to panel also accepts charts displaying an empty state; captures keep their
+  frozen rows and config, and the presentation flow returns the renderer result.
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
   `buildRankMap`, `isValidHexColor`); pie's `buildSliceColor` lives in its package
   ([color.js](../../../src/charts/pie/color.js)).
@@ -130,18 +139,39 @@ doc rather than repeated:
   it as `closeLabel` independently of the filter callbacks, so Panel tooltips also use the
   current interface language for the close button's accessible name and hover title.
 - **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
-  builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets) and
-  finds the palette preset a chart's colors still match (`findAppliedColorPreset`), the one
-  its palette buttons mark; [grouping.js](../../../src/charts/shared/controls/grouping.js)
+  builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets), the
+  options of a Top-N select (`topNSelectOptions`), and finds the palette preset a chart's
+  colors still match (`findAppliedColorPreset`), the one its palette buttons mark; [grouping.js](../../../src/charts/shared/controls/grouping.js)
   wraps them in collapsible sections. Neither writes config; the config writes are wired by
   the listener helpers in
   [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
+- **Drawn categories**: bar, pie, treemap, and bubble take the categories they draw from
+  `aggregateCategories` in
+  [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js). It groups and
+  measures the rows, leaves out values at or below 0 for pie, treemap, and bubble
+  (`positiveOnly`), orders them by bar's sort, and keeps the first `topN`. It also returns
+  `rest`, the sum the cut leaves out, which pie folds into its Other sector, and `total`, the
+  sum of the kept values that tooltip shares are taken of.
+- **Measure label**: bar, pie, treemap, and bubble name their measure through
+  [measure.js](../../../src/charts/shared/measure.js), which returns i18n keys. Each
+  presentation flow translates the short form (`measureLabelKey`: "Count", "Sum", "Mean")
+  once and passes it to its renderer as `labels.measure`, for tooltips, bar's y axis, and
+  bubble titles; bar's sort select names its value orders with it ("Sum (high → low)"). The
+  measure select and Panel capture subtitles use the long form
+  (`measureOptionLabelKey`: "Count rows", "Sum numeric column", "Average numeric column").
+  Any measure other than sum or mean is named as count.
 - **Measure and value column**: bar, pie, treemap, and bubble keep their value column by one
-  rule, `valueColumnForMeasure` in
-  [measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js), both
+  rule, `valueColumnForMeasure` in [measure.js](../../../src/charts/shared/measure.js), both
   when the user switches the measure (`setupMeasureListener`) and when the chart is activated
-  (`computeDefaults`). Count keeps the stored column; sum and mean keep it while it is a
-  visible numeric column and otherwise take the first one.
+  (`categoryChartDefaults` in
+  [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js), the
+  `computeDefaults` the four share). Count keeps the stored column; sum and mean keep it
+  while it is a visible numeric column and otherwise take the first one. The value-column
+  select is disabled when the measure reads no value column (`measureUsesValueColumn`), and
+  `setupValueColumnListener` stores only a visible numeric column. Their measure and Top-N
+  selects list the definition's `measureModes` and `topNOptions`.
+  [dataControls.test.js](../../../tests/charts/registries/dataControls.test.js) checks these
+  rules for the four charts through the controls registry.
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's
   [section 10](tin.md) and shared by every chart's color inputs.
 - **Detached panel captures**: see [Architecture reference](../architecture-reference.md).

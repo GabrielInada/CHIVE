@@ -18,8 +18,9 @@ import { CHART_COLORS } from '../../../config/charts/definitions.js';
 import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { t } from '../../../services/i18nService.js';
 import { createCheckboxControl, createColorInputControl, createSelectControl, createSliderControl, createTextControl } from '../../shared/controls/factories.js';
-import { createColorPresetControl, createColorPickerGridControl, findAppliedColorPreset } from '../../shared/controls/factories.js';
+import { createColorPresetControl, createColorPickerGridControl, findAppliedColorPreset, topNSelectOptions } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
+import { measureOptionLabelKey, measureUsesValueColumn } from '../../shared/measure.js';
 import { getPieSectorValues, getPieSwatchColors } from './sectorValues.js';
 
 /**
@@ -70,17 +71,14 @@ function buildDataControls(dataset, categoryOptions, numericOptions, config) {
 
 	const measureLabel = document.createElement('label');
 	measureLabel.htmlFor = 'viz-select-pie-measure';
-	measureLabel.textContent = t('chive-chart-control-pie-measure');
+	measureLabel.textContent = t('chive-chart-control-measure');
 
 	const measureSelect = document.createElement('select');
 	measureSelect.id = 'viz-select-pie-measure';
 	measureSelect.className = 'rows-select';
 	measureSelect.disabled = !dataset.chartConfig.pie.enabled;
 
-	[
-		{ value: 'count', label: t('chive-chart-control-pie-measure-count') },
-		{ value: 'sum', label: t('chive-chart-control-pie-measure-sum') },
-	].forEach(opt => {
+	PIE_CHART.measureModes.map(measure => ({ value: measure, label: t(measureOptionLabelKey(measure)) })).forEach(opt => {
 		const option = document.createElement('option');
 		option.value = opt.value;
 		option.textContent = opt.label;
@@ -97,12 +95,12 @@ function buildDataControls(dataset, categoryOptions, numericOptions, config) {
 
 	const valueLabel = document.createElement('label');
 	valueLabel.htmlFor = 'viz-select-pie-value-column';
-	valueLabel.textContent = t('chive-chart-control-pie-value-column');
+	valueLabel.textContent = t('chive-chart-control-value-column');
 
 	const valueSelect = document.createElement('select');
 	valueSelect.id = 'viz-select-pie-value-column';
 	valueSelect.className = 'rows-select';
-	valueSelect.disabled = !dataset.chartConfig.pie.enabled || config.measureMode !== 'sum';
+	valueSelect.disabled = !dataset.chartConfig.pie.enabled || !measureUsesValueColumn(config.measureMode);
 
 	const noneOptionValue = document.createElement('option');
 	noneOptionValue.value = '';
@@ -124,12 +122,7 @@ function buildDataControls(dataset, categoryOptions, numericOptions, config) {
 	dataControls.push(createSelectControl(
 		'viz-select-pie-topn',
 		t('chive-chart-control-pie-topn'),
-		[
-			{ value: '0', label: t('chive-chart-topn-all') },
-			{ value: '10', label: 'Top 10' },
-			{ value: '20', label: 'Top 20' },
-			{ value: '50', label: 'Top 50' },
-		],
+		topNSelectOptions(PIE_CHART.topNOptions, t('chive-chart-topn-all')),
 		String(Number.isFinite(Number(config.topN)) ? Number(config.topN) : PIE_CHART.defaultTopN),
 		!dataset.chartConfig.pie.enabled
 	));

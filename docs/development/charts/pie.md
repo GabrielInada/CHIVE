@@ -16,16 +16,14 @@ see [Architecture reference](../architecture-reference.md).
 Key files:
 
 - Renderer: [renderers/svg.js](../../../src/charts/pie/renderers/svg.js)
-- Sidebar controls: [builder.js](../../../src/charts/pie/controls/builder.js),
-  [listeners.js](../../../src/charts/pie/controls/listeners.js), and
-  [activationDefaults.js](../../../src/charts/pie/controls/activationDefaults.js)
+- Sidebar controls: [builder.js](../../../src/charts/pie/controls/builder.js) and
+  [listeners.js](../../../src/charts/pie/controls/listeners.js); the activation defaults come
+  from the shared [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
 - Sectors and options: [data.js](../../../src/charts/pie/data.js) (`computePieSectors`, the
   sectors as drawn) and [options.js](../../../src/charts/pie/options.js)
 - Chart definition and constants: [pie.js](../../../src/config/charts/definitions/pie.js) (`PIE_DEFINITION`, `PIE_CHART`)
 - Per-dataset config defaults: [pie.js](../../../src/config/charts/definitions/pie.js) (the definition's fresh `pie` factory)
 - Shared presentation mapping: [presentation.js](../../../src/charts/pie/presentation.js)
-- Section adapter (dataset workspace): [workspaceSection.js](../../../src/charts/pie/workspaceSection.js)
-- Panel adapter (saved snapshots): [panelAdapter.js](../../../src/charts/pie/panelAdapter.js)
 - Shade math: [color.js](../../../src/charts/pie/color.js) (`buildSliceColor`)
 
 ---
@@ -114,7 +112,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderPieChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -127,11 +124,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderPiePanelChart"]
     end
 
-    WSECTION --> PRESENT["renderPieInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderPieInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderPieChart"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -189,15 +185,17 @@ uses these values as given. The unused `colorMode` key is not checked.
 ## 5. The control sidebar
 
 The controls package separates
-[`createPieChartControls`](../../../src/charts/pie/controls/builder.js),
-[`setupPieChartControlListeners`](../../../src/charts/pie/controls/listeners.js), and
-[`computeDefaults`](../../../src/charts/pie/controls/activationDefaults.js) by role. The controls
-registry imports those three entry points directly.
+[`createPieChartControls`](../../../src/charts/pie/controls/builder.js) and
+[`setupPieChartControlListeners`](../../../src/charts/pie/controls/listeners.js) by role. The
+controls registry imports those two entry points directly and takes `computeDefaults` from
+the shared `categoryChartDefaults('pie')`
+([activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)).
 
 ### 5.1 The three sections
 
 1. **Data & aggregation** (expanded): category select, measure (count/sum), value-column
-   select, Top-N select, Top-N mode (other/truncate).
+   select, Top-N select, Top-N mode (other/truncate). The measure and Top-N selects list
+   `PIE_CHART.measureModes` and `PIE_CHART.topNOptions`.
 2. **Display** (expanded): inner/outer radius sliders, pad-angle slider, zoom slider,
    category/value label toggles, legend toggle, title, label-position select, and a Reset
    Zoom button.
@@ -226,11 +224,13 @@ registry imports those three entry points directly.
 Beyond the shared select/checkbox/text/color helpers, the pie has several custom listeners:
 
 - **Measure**: the shared `setupMeasureListener` applies the value-column rule bar, pie,
-  treemap, and bubble share
-  ([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+  treemap, and bubble share (`valueColumnForMeasure` in
+  [measure.js](../../../src/charts/shared/measure.js)):
   switching to count keeps `valueColumn`, so switching back restores it, and switching to sum
   keeps it while it is a numeric option and otherwise takes the first numeric column.
   `computeDefaults` picks the value column by the same rule.
+- **Value column**: the shared `setupValueColumnListener` stores the chosen column only while
+  it is a visible numeric column, and `null` otherwise.
 - **Inner/outer radius**: cross-constrained so the inner radius is always kept at least 8px
   below the outer (adjusting one can clamp the other).
 - **Reset Zoom**: resets both the zoom slider DOM and `zoomScale` to the default.
@@ -247,20 +247,20 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
 
 ### 6.1 Dataset workspace
 
-`renderPieChartSection({ config, rows, filterCallbacks })`
-([workspaceSection.js](../../../src/charts/pie/workspaceSection.js)) resolves
-the block/container, hides+clears when disabled, sets the min-height, maps config into the
-shared presentation flow (with localized labels including the `Other` label), and calls the
-renderer.
-On failure it shows `chive-chart-empty-pie-sum` for `no-value-column` and `no-numeric`,
+The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
+block/container, hides+clears when disabled, sets the min-height to the height the chart is
+drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to `renderPieInto`
+in the shared presentation flow, which maps config (with localized labels including the
+`Other` label) and calls the renderer.
+On failure the presentation flow shows `chive-chart-empty-pie-sum` for `no-value-column` and `no-numeric`,
 `chive-chart-empty-no-positive-sum` for `no-positive-value`, else `chive-chart-empty-pie`.
 
 ### 6.2 Panel view
 
-The panel registry dispatches to
-[`renderPiePanelChart`](../../../src/charts/pie/panelAdapter.js), which sends
-`spec.config` and `spec.dataSnapshot` through the same presentation flow with empty
-`filterCallbacks` (no click-to-filter in panels).
+The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same presentation
+flow without `filterCallbacks` (no click-to-filter in panels). Empty captures show the same localized
+message as the workspace, including saved previews and resized layout slots.
 
 ---
 
@@ -286,15 +286,16 @@ the rows carry. Categories come back sorted descending by value with a `compareC
 tiebreaker (missing last). Sum mode without a usable value column → `fail('no-value-column')`,
 without a number → `fail('no-numeric')`; count mode with no rows → `fail()`.
 
-`computePieSectors` keeps only the categories whose value is above 0, since D3's pie layout
-gives no angle to a value at or below 0. Only a sum can be 0 or less. With no category left →
-`fail('no-positive-value')`.
+`computePieSectors` asks `aggregateCategories` for only the categories whose value is above 0
+(`positiveOnly`), since D3's pie layout gives no angle to a value at or below 0. Only a sum
+can be 0 or less. With no category left → `fail('no-positive-value')`.
 
 ### 7.2 Top-N
 
-When `topN > 0` and there are more categories above 0 than N: in `truncate` mode the list is
-cut to N; in `other` mode the top N are kept and the rest, all above 0, are summed into the
-Other sector, drawn last: the reserved key `OTHER_SECTOR_KEY`, the localized Other label, no
+When `topN > 0`, `aggregateCategories` keeps the first N categories above 0 and returns
+`rest`, the sum of those the cut leaves out, or null when it leaves none out. In `truncate`
+mode the pie draws the N kept; in `other` mode it folds `rest` into the Other sector, drawn
+last: the reserved key `OTHER_SECTOR_KEY`, the localized Other label, no
 category token, and `isOther: true`. The reserved key keeps a real category spelled like the
 Other label apart from the rollup.
 
@@ -432,11 +433,11 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   category order and the swatch colors under a global filter and Top-N.
 - [controls.test.js](../../../tests/charts/pie/controls.test.js) covers control building, the
   radius cross-constraint, and the per-slice color logic.
-- [workspaceSection.test.js](../../../tests/charts/pie/workspaceSection.test.js) and
-  [panelAdapter.test.js](../../../tests/charts/pie/panelAdapter.test.js) cover both integration
-  surfaces and their shared renderer contract.
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
+  checks through the workspace registry, for every chart, block visibility, the min height,
+  the dispose contract, and the inputs each chart draws from.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
-  covers the panel dispatch path.
+  covers the panel registry and how it builds the chart input from a snapshot.
 
 ---
 

@@ -14,7 +14,6 @@ import {
 	createBubbleChartControls,
 } from '../../../src/charts/bubble/controls/builder.js';
 import { setupBubbleChartControlListeners } from '../../../src/charts/bubble/controls/listeners.js';
-import { computeDefaults } from '../../../src/charts/bubble/controls/activationDefaults.js';
 import { BUBBLE_CHART } from '../../../src/config/charts/definitions/bubble.js';
 
 /**
@@ -80,16 +79,14 @@ function lastConfig(writer) {
 }
 
 describe('bubble controls module boundaries', () => {
-	it('keeps builder, listener, defaults, and nesting exports in dedicated modules', async () => {
-		const [builder, listeners, defaults, nesting] = await Promise.all([
+	it('keeps builder, listener, and nesting exports in dedicated modules', async () => {
+		const [builder, listeners, nesting] = await Promise.all([
 			import('../../../src/charts/bubble/controls/builder.js'),
 			import('../../../src/charts/bubble/controls/listeners.js'),
-			import('../../../src/charts/bubble/controls/activationDefaults.js'),
 			import('../../../src/charts/bubble/controls/nestingColumns.js'),
 		]);
 		expect(Object.keys(builder)).toEqual(['createBubbleChartControls']);
 		expect(Object.keys(listeners)).toEqual(['setupBubbleChartControlListeners']);
-		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
 		expect(Object.keys(nesting).sort()).toEqual([
 			'computeNestingControlCount',
 			'resolveNestingColumnsFromConfig',
@@ -163,18 +160,6 @@ describe('bubbleControls measure mode', () => {
 		document.body.innerHTML = '';
 	});
 
-	it('disables value-column selector in count mode and enables it for sum/mean', () => {
-		const controls = createBubbleChartControls(createDataset('count', null), ['categoria'], ['valor'], ['categoria', 'grupo']);
-		controls.forEach(control => document.body.appendChild(control));
-		const valueSelect = document.getElementById('viz-select-bubble-value-column');
-		expect(valueSelect.disabled).toBe(true);
-
-		document.body.innerHTML = '';
-		const sumControls = createBubbleChartControls(createDataset('sum', 'valor'), ['categoria'], ['valor'], ['categoria', 'grupo']);
-		sumControls.forEach(control => document.body.appendChild(control));
-		expect(document.getElementById('viz-select-bubble-value-column').disabled).toBe(false);
-	});
-
 	it('renders disabled controls and falls back invalid modes/options', () => {
 		const dataset = createDataset('bad', 'old', 'bad', []);
 		dataset.chartConfig.bubble.enabled = false;
@@ -226,7 +211,7 @@ describe('bubbleControls measure mode', () => {
 		expect(writer.commit).toHaveBeenCalledTimes(3);
 	});
 
-	it('commits a forged measure as chosen and coerces an invalid value-column selection', () => {
+	it('commits a forged measure as chosen', () => {
 		const dataset = createDataset('sum', 'old');
 		appendControls(createBubbleChartControls(dataset, ['categoria'], ['valor'], ['categoria', 'grupo']));
 
@@ -240,9 +225,6 @@ describe('bubbleControls measure mode', () => {
 
 		selectValue('viz-select-bubble-measure', 'mean');
 		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'mean', valueColumn: 'valor' }));
-
-		selectValue('viz-select-bubble-value-column', 'missing');
-		expect(lastConfig(writer).valueColumn).toBeNull();
 	});
 });
 
@@ -616,26 +598,4 @@ describe('bubbleControls nesting depth bound', () => {
 		expect(lastConfig(writer).nestingColumns).toEqual([]); // empty allowlist allows nothing
 	});
 
-});
-
-describe('bubbleControls computeDefaults', () => {
-	it('preserves valid category and sum/mean value columns', () => {
-		const dataset = createDataset('sum', 'valor');
-		expect(computeDefaults(dataset, {
-			baseCategoricalOrAll: ['categoria', 'grupo'],
-			numeric: ['valor'],
-		})).toEqual({ category: 'categoria', valueColumn: 'valor' });
-	});
-
-	it('falls back category and value columns while preserving count-mode value', () => {
-		expect(computeDefaults(createDataset('mean', 'old'), {
-			baseCategoricalOrAll: ['grupo'],
-			numeric: ['valor'],
-		})).toEqual({ category: 'grupo', valueColumn: 'valor' });
-
-		expect(computeDefaults(createDataset('count', 'old'), {
-			baseCategoricalOrAll: [],
-			numeric: [],
-		})).toEqual({ category: null, valueColumn: 'old' });
-	});
 });

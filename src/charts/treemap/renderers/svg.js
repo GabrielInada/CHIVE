@@ -23,8 +23,8 @@ import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
+import { aggregateCategories } from '../../shared/categoryAggregation.js';
 import { normalizeTreemapOptions } from '../options.js';
-import { aggregateTreemapData } from '../data.js';
 
 /** @private */
 function truncate(text, maxLen) {
@@ -38,7 +38,8 @@ function truncate(text, maxLen) {
  * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
  * `topN`, `padding`, `showLabels`/`showValues`, `colorMode` ('scheme' |
  * 'uniform'), `colorScheme`, `color`, `customTitle`, `chartHeight`,
- * `locale`.
+ * `locale`, and the localized `labels` bag, whose `measure` names the
+ * measure in the tooltip.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
@@ -65,8 +66,8 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 		labels,
 	} = normalizeTreemapOptions(options);
 
-	const aggregated = aggregateTreemapData(rows, categoryColumn, {
-		measureMode, valueColumn, topN, missingLabel: labels.missing,
+	const aggregated = aggregateCategories(rows, categoryColumn, {
+		measureMode, valueColumn, positiveOnly: true, topN, missingLabel: labels.missing,
 	});
 	if (!aggregated.ok) return aggregated;
 	const { entries, total } = aggregated;
@@ -117,10 +118,9 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 
 	const buildTooltipContent = (d, pct) => {
 		const wrapper = document.createElement('div');
-		const valueLabel = measureMode === 'sum' ? labels.sum : labels.count;
 
 		wrapper.appendChild(createTooltipLine(labels.category, d.data.label));
-		wrapper.appendChild(createTooltipLine(valueLabel, formatNumber(d.data.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(d.data.value, locale)));
 		wrapper.appendChild(createTooltipLine(labels.percentage, `${pct.toFixed(1)}%`));
 		return wrapper;
 	};

@@ -15,16 +15,15 @@ see [Architecture reference](../architecture-reference.md).
 Key files:
 
 - SVG renderer: [svg.js](../../../src/charts/treemap/renderers/svg.js)
-- Data and option helpers: [data.js](../../../src/charts/treemap/data.js) and
-  [options.js](../../../src/charts/treemap/options.js)
-- Sidebar controls: [builder.js](../../../src/charts/treemap/controls/builder.js),
-  [listeners.js](../../../src/charts/treemap/controls/listeners.js), and
-  [activationDefaults.js](../../../src/charts/treemap/controls/activationDefaults.js)
+- Option helpers: [options.js](../../../src/charts/treemap/options.js); the categories it
+  draws come from the shared
+  [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)
+- Sidebar controls: [builder.js](../../../src/charts/treemap/controls/builder.js) and
+  [listeners.js](../../../src/charts/treemap/controls/listeners.js); the activation defaults
+  come from the shared [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
 - Chart definition and constants: [treemap.js](../../../src/config/charts/definitions/treemap.js) (`TREEMAP_DEFINITION`, `TREEMAP_CHART`)
 - Per-dataset config defaults: [treemap.js](../../../src/config/charts/definitions/treemap.js) (the definition's fresh `treemap` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/treemap/presentation.js)
-- Dataset-workspace adapter: [workspaceSection.js](../../../src/charts/treemap/workspaceSection.js)
-- Panel adapter: [panelAdapter.js](../../../src/charts/treemap/panelAdapter.js)
 
 ---
 
@@ -92,7 +91,6 @@ flowchart TB
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         PREVIEW -. chart render only .-> CHARTSVIEW
         CHARTSVIEW --> WREG["workspace registry"]
-        WREG --> WSECTION["renderTreemapChartSection"]
     end
 
     subgraph SAVED["Panel snapshot"]
@@ -105,11 +103,10 @@ flowchart TB
         PVIEW -. callback via panelController .-> PFACADE
         PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
         MOUNT --> PREG["panel registry"]
-        PREG --> ADAPTER["renderTreemapPanelChart"]
     end
 
-    WSECTION --> PRESENT["renderTreemapInto"]
-    ADAPTER --> PRESENT
+    WREG -- chart input --> PRESENT["renderTreemapInto"]
+    PREG -- chart input from the snapshot --> PRESENT
     PRESENT --> RENDERER["renderTreemap"]
     RENDERER --> OUTPUT["SVG in container"]
 ```
@@ -166,12 +163,15 @@ Bold.
 ## 5. The control sidebar
 
 The package's [controls directory](../../../src/charts/treemap/controls/) exposes the standard
-`createTreemapControls`, `setupTreemapControlListeners`, and `computeDefaults` roles through
-separate modules.
+`createTreemapControls` and `setupTreemapControlListeners` roles through separate modules;
+`computeDefaults` is the shared `categoryChartDefaults('treemap')`
+([activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)).
 
 ### 5.1 The four sections
 
 1. **Data** (expanded): category select, measure (count/sum), value-column select, Top-N.
+   The measure and Top-N selects list `TREEMAP_CHART.measureModes` and
+   `TREEMAP_CHART.topNOptions`.
 2. **Display** (expanded): title, padding slider, show-labels toggle, show-values toggle.
 3. **Styling** (collapsed): color-mode select (scheme/uniform) and the uniform color input.
 4. **Advanced** (collapsed): the color-preset palette buttons.
@@ -182,11 +182,12 @@ Everything is disabled when `!config.enabled`; the value-column select is disabl
 mode; the uniform color input is disabled unless `colorMode === 'uniform'`. Standard select,
 text, slider, checkbox, color, and preset controls use the shared chart-control listener
 adapters. The measure uses the shared `setupMeasureListener`, which applies the value-column
-rule bar, pie, treemap, and bubble share
-([measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js)):
+rule bar, pie, treemap, and bubble share (`valueColumnForMeasure` in
+[measure.js](../../../src/charts/shared/measure.js)):
 switching to count keeps `valueColumn`, so switching back to sum restores it, and switching to
 sum keeps it while it is a numeric option and otherwise takes the first numeric column. The
-value-column change keeps a small custom handler that stores only a valid numeric selection.
+value-column change goes through the shared `setupValueColumnListener`, which stores only a
+visible numeric column.
 The color presets set the uniform `color` to the palette's first
 swatch. In scheme mode the palette buttons mark the stored `colorScheme`, which is what the
 renderer draws; in uniform mode they mark a palette only while `color` still holds its first
@@ -199,19 +200,19 @@ the measure listener.
 
 ### 6.1 Dataset workspace
 
-`renderTreemapChartSection({ config, rows, filterCallbacks })`
-([workspaceSection.js](../../../src/charts/treemap/workspaceSection.js))
-resolves the block/container, hides+clears when disabled, sets the min-height, maps config
-through [presentation.js](../../../src/charts/treemap/presentation.js), and calls
-`renderTreemap`. On failure it shows `chive-chart-empty-treemap-numeric` for
+The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
+block/container, hides+clears when disabled, sets the min-height to the height the chart is
+drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to
+`renderTreemapInto` in [presentation.js](../../../src/charts/treemap/presentation.js), which
+maps config and calls `renderTreemap`. On failure the presentation flow shows `chive-chart-empty-treemap-numeric` for
 `no-value-column` and `no-numeric`, `chive-chart-empty-no-positive-sum` for
 `no-positive-value`, else `chive-chart-empty-treemap`.
 
 ### 6.2 Panel view
 
-[panelAdapter.js](../../../src/charts/treemap/panelAdapter.js) passes `spec.config` and
-`spec.dataSnapshot` through the same presentation flow with empty `filterCallbacks` (no
-click-to-filter in panels). The panel registry only dispatches to that adapter.
+The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
+the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same presentation
+flow without `filterCallbacks` (no click-to-filter in panels).
 
 ---
 
@@ -219,7 +220,8 @@ click-to-filter in panels). The panel registry only dispatches to that adapter.
 
 `renderTreemap(container, rows, categoryColumn, options = {})`. Unlike most renderers it does
 not use the `ok()`/`fail()` factories; it returns a plain `{ ok }` object (with a `reason` on
-the value-column failures and when no value is positive) that the section adapter inspects.
+the value-column failures and when no value is positive) that the presentation flow inspects
+to show the same message in the workspace and Panel.
 
 ### 7.1 Guard, options, aggregation
 
@@ -233,9 +235,11 @@ a usable value column returns `{ ok: false, reason: 'no-value-column' }`, and wi
 
 ### 7.2 Sort, Top-N, layout
 
-Entries arrive sorted descending (with a `compareCategoryKeys` tiebreaker, missing last), are
-filtered to positive values, and are sliced to `topN`; with no positive value the result is
-`{ ok: false, reason: 'no-positive-value' }`. A one-level `hierarchy({ root, children: entries })`
+The renderer asks `aggregateCategories` to leave out values at or below 0 (`positiveOnly`),
+since a tile needs an area, and to keep the first `topN`. Entries arrive sorted descending
+(with a `compareCategoryKeys` tiebreaker, missing last); with no positive value the result is
+`{ ok: false, reason: 'no-positive-value' }`. Its `total` sums the kept tiles, the base of
+the tooltip percentages. A one-level `hierarchy({ root, children: entries })`
 `.sum(value)` feeds `treemap().tile(treemapSquarify).size([w, h]).padding(p).round(true)`,
 which assigns each leaf its `(x0, y0, x1, y1)` rectangle (the squarified tiling of section
 2.2). `round(true)` snaps coordinates to whole pixels for crisp edges.
@@ -319,16 +323,18 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 
 - [controls.test.js](../../../tests/charts/treemap/controls.test.js) covers
   control building and the measure/value and color-mode logic.
-- [workspaceSection.test.js](../../../tests/charts/treemap/workspaceSection.test.js)
-  covers the section adapter, including the empty-state message selection.
-- [panelAdapter.test.js](../../../tests/charts/treemap/panelAdapter.test.js) covers the captured
-  snapshot mapping and failure passthrough.
-- [svg.test.js](../../../tests/charts/treemap/renderers/svg.test.js),
-  [data.test.js](../../../tests/charts/treemap/data.test.js), and
+- [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
+  checks through the workspace registry, for every chart, block visibility, the min height,
+  the dispose contract, and the inputs each chart draws from.
+- [svg.test.js](../../../tests/charts/treemap/renderers/svg.test.js) and
   [options.test.js](../../../tests/charts/treemap/options.test.js) cover renderer behavior and
   its pure helpers.
+- [categoryAggregation.test.js](../../../tests/charts/shared/categoryAggregation.test.js)
+  covers the categories the treemap draws, and
+  [drawnCategories.test.js](../../../tests/charts/registries/drawnCategories.test.js) checks
+  them through the panel registry.
 - [panel.test.js](../../../tests/charts/registries/panel.test.js)
-  covers the panel dispatch path.
+  covers the panel registry and how it builds the chart input from a snapshot.
 
 ---
 

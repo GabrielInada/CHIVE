@@ -16,6 +16,7 @@ import { COLOR_PRESETS } from '../../shared/controls/factories.js';
 import {
 	setupSelectListeners,
 	setupMeasureListener,
+	setupValueColumnListener,
 	setupCheckboxListeners,
 	setupTextInputListener,
 	setupColorInputListener,
@@ -46,18 +47,7 @@ export function setupBarChartControlListeners(dataset, baseBar, numericOptions, 
 	], writer);
 
 	setupMeasureListener('viz-select-bar-measure', () => dataset.chartConfig.bar.valueColumn, numericOptions, writer);
-
-	// Value column (custom validation against numericOptions)
-	const selectBarValueColumn = document.getElementById('viz-select-bar-value-column');
-	if (selectBarValueColumn) {
-		selectBarValueColumn.addEventListener('change', () => {
-			writer.commit({
-				valueColumn: numericOptions.includes(selectBarValueColumn.value)
-					? selectBarValueColumn.value
-					: null,
-			});
-		});
-	}
+	setupValueColumnListener('viz-select-bar-value-column', numericOptions, writer);
 
 	// --- Styling controls ---
 	setupColorInputListener('viz-input-bar-color', 'color', CHART_COLORS.bar, writer);

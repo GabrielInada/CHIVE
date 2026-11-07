@@ -29,11 +29,10 @@ describe('normalizeBarOptions', () => {
 		expect(normalizeBarOptions({}, 'region')[key]).toBeUndefined();
 	});
 
-	it('derives the default x label from the category column and the y label from the measure', () => {
+	it('derives the default x label from the category column and the y label from the measure label', () => {
 		expect(normalizeBarOptions({}, 'region').axisLabels.x).toBe('region');
-		expect(normalizeBarOptions({}, 'region').axisLabels.y).toBe('Count');
-		expect(normalizeBarOptions({ measureMode: 'sum' }, 'region').axisLabels.y).toBe('Sum');
-		expect(normalizeBarOptions({ measureMode: 'mean' }, 'region').axisLabels.y).toBe('Mean');
+		expect(normalizeBarOptions({ measureMode: 'mean', labels: { measure: 'Média' } }, 'region').axisLabels.y).toBe('Média');
+		expect(normalizeBarOptions({ measureMode: 'sum' }, 'region').axisLabels.y).toBe('Value');
 		expect(normalizeBarOptions({ axisLabels: { x: 'X!', y: 'Y!' } }, 'region').axisLabels).toEqual({ x: 'X!', y: 'Y!' });
 	});
 
@@ -57,6 +56,6 @@ describe('normalizeBarOptions', () => {
 	});
 
 	it('passes through caller labels', () => {
-		expect(normalizeBarOptions({ labels: { count: 'Contagem' } }, 'c').labels.count).toBe('Contagem');
+		expect(normalizeBarOptions({ labels: { measure: 'Contagem' } }, 'c').labels.measure).toBe('Contagem');
 	});
 });

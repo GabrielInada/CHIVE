@@ -1,39 +1,75 @@
 /**
  * Panel chart integration registry.
  *
- * Package adapters use the shared `(container, snapshot) => Result` contract.
- * This registry owns panel rendering only; it does not import controls,
- * workspace components, state, or services.
+ * Turns a captured chart snapshot into the chart input and hands it to the
+ * chart's presentation flow, the same one Visualizations draws with, under the
+ * shared `(container, snapshot) => Result` contract. Panel passes no filter
+ * callbacks, so its tooltips cannot change the live dataset. This registry
+ * owns panel rendering only; it does not import controls, the workspace
+ * registry, state, or services.
  *
  * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
+ * @typedef {import('../../types.js').ChartInput} ChartInput
+ * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
+ * @typedef {import('../../types.js').ColumnType} ColumnType
  * @typedef {import('../../types.js').Result} Result
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {(container: HTMLElement, spec: ChartSnapshot) => Result} PanelChartRenderer
  */
 
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
-import { renderBarPanelChart } from '../bar/panelAdapter.js';
-import { renderBubblePanelChart } from '../bubble/panelAdapter.js';
-import { renderLinePanelChart } from '../line/panelAdapter.js';
-import { renderNetworkPanelChart } from '../network/panelAdapter.js';
-import { renderPiePanelChart } from '../pie/panelAdapter.js';
-import { renderScatterPanelChart } from '../scatter/panelAdapter.js';
-import { renderScatter3dPanelChart } from '../scatter3d/panelAdapter.js';
-import { renderTreemapPanelChart } from '../treemap/panelAdapter.js';
-import { renderTinPanelChart } from '../tin/panelAdapter.js';
+import { renderBarInto } from '../bar/presentation.js';
+import { renderBubbleInto } from '../bubble/presentation.js';
+import { renderLineInto } from '../line/presentation.js';
+import { renderNetworkInto } from '../network/presentation.js';
+import { renderPieInto } from '../pie/presentation.js';
+import { renderScatterInto } from '../scatter/presentation.js';
+import { renderScatter3dInto } from '../scatter3d/presentation.js';
+import { renderTinInto } from '../tin/presentation.js';
+import { renderTreemapInto } from '../treemap/presentation.js';
+
+/**
+ * Column name to type, from a capture's columns.
+ *
+ * @param {ColumnSpec[] | null | undefined} columnsSnapshot
+ * @returns {Object<string, ColumnType>}
+ */
+function columnTypesOf(columnsSnapshot) {
+	if (!Array.isArray(columnsSnapshot)) return {};
+	const columnTypeByName = {};
+	for (const column of columnsSnapshot) {
+		if (column?.name) columnTypeByName[column.name] = column.type;
+	}
+	return columnTypeByName;
+}
+
+/**
+ * The chart input for a capture. Missing rows draw as no rows and a missing
+ * config as an empty one; column types come from every captured column.
+ *
+ * @param {ChartSnapshot} spec
+ * @returns {ChartInput}
+ */
+function inputOf(spec) {
+	return {
+		rows: Array.isArray(spec.dataSnapshot) ? spec.dataSnapshot : [],
+		config: spec.config || {},
+		columnTypeByName: columnTypesOf(spec.columnsSnapshot),
+	};
+}
 
 /** @type {Readonly<Object<ChartTypeKey, PanelChartRenderer>>} */
-const PANEL_RENDERERS = Object.freeze({
-	bar: renderBarPanelChart,
-	line: renderLinePanelChart,
-	scatter: renderScatterPanelChart,
-	scatter3d: renderScatter3dPanelChart,
-	pie: renderPiePanelChart,
-	bubble: renderBubblePanelChart,
-	network: renderNetworkPanelChart,
-	treemap: renderTreemapPanelChart,
-	tin: renderTinPanelChart,
-});
+const PANEL_RENDERERS = Object.freeze(Object.fromEntries(Object.entries({
+	bar: renderBarInto,
+	line: renderLineInto,
+	scatter: renderScatterInto,
+	scatter3d: renderScatter3dInto,
+	pie: renderPieInto,
+	bubble: renderBubbleInto,
+	network: renderNetworkInto,
+	treemap: renderTreemapInto,
+	tin: renderTinInto,
+}).map(([type, present]) => [type, (container, spec) => present(container, inputOf(spec))])));
 
 /**
  * Chart types with panel renderers, in canonical chart order.

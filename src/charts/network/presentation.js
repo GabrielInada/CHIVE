@@ -2,12 +2,14 @@
  * Shared network-graph presentation flow.
  *
  * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. Localized labels stay here so the renderer remains
+ * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Localized labels stay here so the renderer remains
  * stateless and i18n-free. The source/target column names double as the
  * click-to-filter columns for node tooltips.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { showChartMessage } from '../shared/containerLifecycle.js';
 import { ok } from '../../utils/result.js';
 import { NETWORK_GRAPH } from '../../config/charts/definitions/network.js';
 import {
@@ -23,12 +25,11 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
  * Render a network graph from a live config block or captured panel snapshot.
  *
  * @param {HTMLElement} container
- * @param {Array<Object<string, *>>} rows
- * @param {Object} [config]
- * @param {Object} [filterCallbacks]
+ * @param {import('../../types.js').ChartInput} input
  * @returns {import('../../types.js').Result}
  */
-export function renderNetworkInto(container, rows, config = {}, filterCallbacks = EMPTY_FILTER_CALLBACKS) {
+export function renderNetworkInto(container, input) {
+	const { rows, config, filterCallbacks = EMPTY_FILTER_CALLBACKS } = input;
 	container.querySelector('.chart-render-budget-notice')?.remove();
 	const result = renderNetworkGraph(container, rows, config.source, config.target, {
 		customTitle: config.customTitle,
@@ -73,7 +74,7 @@ export function renderNetworkInto(container, rows, config = {}, filterCallbacks 
 			blocked: true,
 			onApprove: () => {
 				approveFullRender(container, 'network');
-				renderNetworkInto(container, rows, config, filterCallbacks);
+				renderNetworkInto(container, input);
 			},
 		});
 		return ok({
@@ -83,5 +84,8 @@ export function renderNetworkInto(container, rows, config = {}, filterCallbacks 
 		});
 	}
 
+	if (!result.ok) {
+		showChartMessage(container, t('chive-chart-empty-network'));
+	}
 	return result;
 }
