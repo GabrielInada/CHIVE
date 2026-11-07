@@ -479,6 +479,12 @@ describe('progressLabelForStage', () => {
 });
 
 describe('ingestErrorMessage', () => {
+	it('accepts an explicit fallback for untranslated reasons without replacing known details', () => {
+		expect(ingestErrorMessage('worker-error', '')).toBe('');
+		expect(ingestErrorMessage('constructor', '')).toBe('');
+		expect(ingestErrorMessage(undefined, 'fallback')).toBe('fallback');
+		expect(ingestErrorMessage('csv-empty', '')).toBe(t('chive-ingest-error-csv-empty'));
+	});
 	it('maps a known parse reason to its localized message', () => {
 		// Compare against t(key) (not an English literal) so it is locale-independent.
 		expect(ingestErrorMessage('csv-empty')).toBe(t('chive-ingest-error-csv-empty'));

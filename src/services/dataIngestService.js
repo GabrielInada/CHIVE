@@ -52,17 +52,21 @@ const INGEST_ERROR_KEYS = {
  * detail string. Known parse reasons resolve to a localized message; any other
  * non-empty reason is returned as-is (a diagnostic id like `'worker-error'`);
  * a falsy reason yields the neutral `'ingest-error'`.
+ * Callers may supply a localized fallback (or an empty string) to avoid exposing
+ * diagnostic ids for unknown reasons. Known parse reasons keep their detail.
  *
  * Never returns `undefined`, and never returns the generic parse-prefix text
  * (`chive-error-parse`) that callers add around it, so the toast cannot read
  * "Could not parse file: Could not parse file".
  *
  * @param {string} [reason]
+ * @param {string} [fallbackMessage] - Used only when the reason has no translation.
  * @returns {string}
  */
-export function ingestErrorMessage(reason) {
-	const key = INGEST_ERROR_KEYS[reason];
+export function ingestErrorMessage(reason, fallbackMessage) {
+	const key = Object.hasOwn(INGEST_ERROR_KEYS, reason) ? INGEST_ERROR_KEYS[reason] : null;
 	if (key) return t(key);
+	if (fallbackMessage !== undefined) return fallbackMessage;
 	if (reason) return String(reason);
 	return 'ingest-error';
 }
