@@ -141,6 +141,13 @@ doc rather than repeated:
   wraps them in collapsible sections. Neither writes config; the config writes are wired by
   the listener helpers in
   [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
+- **Measure label**: bar, pie, treemap, and bubble name their measure through
+  [measure.js](../../../src/charts/shared/measure.js), which returns i18n keys. Each
+  presentation flow translates the short form (`measureLabelKey`: "Count", "Sum", "Mean")
+  once and passes it to its renderer as `labels.measure`, for tooltips, bar's y axis, and
+  bubble titles. The measure select and Panel capture subtitles use the long form
+  (`measureOptionLabelKey`: "Count rows", "Sum numeric column", "Average numeric column").
+  Any measure other than sum or mean is named as count.
 - **Measure and value column**: bar, pie, treemap, and bubble keep their value column by one
   rule, `valueColumnForMeasure` in
   [measureValueColumn.js](../../../src/charts/shared/controls/measureValueColumn.js), both

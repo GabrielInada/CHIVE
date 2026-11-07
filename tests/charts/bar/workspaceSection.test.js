@@ -123,19 +123,19 @@ describe('renderBarChartSection', () => {
 		expect(mocks.renderBarChart.mock.calls[0][3].measureMode).toBe('mean');
 	});
 
-	it('maps measureMode to the corresponding y-axis label', () => {
+	it('maps measureMode to its localized measure label', () => {
 		setupDom();
 
 		renderBarChartSection({ config: defaultConfig({ measureMode: 'sum' }), rows: [], filterCallbacks });
-		expect(mocks.renderBarChart.mock.calls[0][3].axisLabels.y).toBe('chive-tooltip-sum');
+		expect(mocks.renderBarChart.mock.calls[0][3].labels.measure).toBe('chive-tooltip-sum');
 
 		mocks.renderBarChart.mockClear();
 		renderBarChartSection({ config: defaultConfig({ measureMode: 'mean' }), rows: [], filterCallbacks });
-		expect(mocks.renderBarChart.mock.calls[0][3].axisLabels.y).toBe('chive-tooltip-mean');
+		expect(mocks.renderBarChart.mock.calls[0][3].labels.measure).toBe('chive-tooltip-mean');
 
 		mocks.renderBarChart.mockClear();
 		renderBarChartSection({ config: defaultConfig({ measureMode: 'count' }), rows: [], filterCallbacks });
-		expect(mocks.renderBarChart.mock.calls[0][3].axisLabels.y).toBe('chive-tooltip-count');
+		expect(mocks.renderBarChart.mock.calls[0][3].labels.measure).toBe('chive-tooltip-count');
 	});
 
 	it('shows the numeric-specific empty-state message when reason is no-numeric', () => {

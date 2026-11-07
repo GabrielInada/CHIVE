@@ -20,6 +20,7 @@ import {
 	findAppliedColorPreset,
 } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
+import { measureOptionLabelKey } from '../../shared/measure.js';
 
 /**
  * Build the treemap control sections (Data, Display, Styling, Advanced).
@@ -52,10 +53,10 @@ export function createTreemapControls(dataset, categoryOptions, numericOptions =
 
 	dataControls.push(createSelectControl(
 		'viz-select-treemap-measure',
-		t('chive-chart-control-treemap-measure'),
+		t('chive-chart-control-measure'),
 		[
-			{ value: 'count', label: t('chive-chart-control-bar-measure-count') },
-			{ value: 'sum', label: t('chive-chart-control-bar-measure-sum') },
+			{ value: 'count', label: t(measureOptionLabelKey('count')) },
+			{ value: 'sum', label: t(measureOptionLabelKey('sum')) },
 		],
 		measureMode,
 		isDisabled
@@ -63,7 +64,7 @@ export function createTreemapControls(dataset, categoryOptions, numericOptions =
 
 	dataControls.push(createSelectControl(
 		'viz-select-treemap-value-column',
-		t('chive-chart-control-treemap-value-column'),
+		t('chive-chart-control-value-column'),
 		[
 			{ value: '', label: t('chive-chart-option-none') },
 			...numericOptions.map(opt => ({ value: opt, label: opt })),

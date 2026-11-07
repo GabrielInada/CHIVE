@@ -9,6 +9,7 @@
 
 import { t, getLocale } from '../../services/i18nService.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
+import { measureLabelKey } from '../shared/measure.js';
 import { renderPieChart } from './renderers/svg.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
@@ -49,8 +50,7 @@ export function renderPieInto(
 		labels: {
 			close: t('chive-tooltip-close'),
 			category: t('chive-chart-control-pie-category'),
-			count: t('chive-tooltip-count'),
-			sum: t('chive-tooltip-sum'),
+			measure: t(measureLabelKey(config.measureMode)),
 			percentage: t('chive-tooltip-percentage'),
 			other: t('chive-chart-pie-other'),
 			missing: t('chive-chart-filter-missing'),

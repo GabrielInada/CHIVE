@@ -9,6 +9,7 @@
 
 import { t, getLocale } from '../../services/i18nService.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
+import { measureLabelKey } from '../shared/measure.js';
 import { renderTreemap } from './renderers/svg.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
@@ -44,8 +45,7 @@ export function renderTreemapInto(
 		labels: {
 			close: t('chive-tooltip-close'),
 			category: t('chive-chart-control-treemap-category'),
-			count: t('chive-tooltip-count'),
-			sum: t('chive-tooltip-sum'),
+			measure: t(measureLabelKey(config.measureMode)),
 			percentage: t('chive-tooltip-percentage'),
 			missing: t('chive-chart-filter-missing'),
 		},

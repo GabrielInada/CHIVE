@@ -118,7 +118,7 @@ describe('eventHandlers', () => {
 	});
 
 	it.each([
-		['bar', {}, { summary: 'tr:chive-chart-control-bar-category: species' }],
+		['bar', {}, { summary: 'tr:chive-chart-control-bar-category: species · tr:chive-chart-control-measure-count' }],
 		['scatter', {}, { summary: 'X: width · Y: height' }],
 		['pie', {}, { measureMode: 'count', valueColumn: null, padAngle: 2 }],
 		['pie', { pie: { measureMode: 'sum', valueColumn: 'biomass', padAngle: '3' } }, { measureMode: 'sum', valueColumn: 'biomass', padAngle: 3 }],
@@ -148,12 +148,14 @@ describe('eventHandlers', () => {
 	});
 
 	it.each([
-		['pie', 'count', 'tr:chive-chart-control-pie-category: family · tr:chive-chart-control-pie-measure-count · tr:chive-chart-control-pie-pad-angle: 2deg'],
-		['pie', 'sum', 'tr:chive-chart-control-pie-category: family · tr:chive-chart-control-pie-measure-sum · tr:chive-chart-control-pie-value-column: biomass · tr:chive-chart-control-pie-pad-angle: 2deg'],
-		['bubble', 'count', 'tr:chive-chart-control-bubble-category: family · tr:chive-chart-control-bubble-measure-count · tr:chive-chart-control-bubble-topn: tr:chive-chart-topn-all'],
-		['bubble', 'mean', 'tr:chive-chart-control-bubble-category: family · tr:chive-chart-control-bubble-measure-mean · tr:chive-chart-control-bubble-value-column: biomass · tr:chive-chart-control-bubble-topn: tr:chive-chart-topn-all'],
-		['treemap', 'count', 'tr:chive-chart-control-treemap-category: family · tr:chive-chart-control-bar-measure-count'],
-		['treemap', 'sum', 'tr:chive-chart-control-treemap-category: family · tr:chive-chart-control-bar-measure-sum · tr:chive-chart-control-treemap-value-column: biomass'],
+		['bar', 'count', 'tr:chive-chart-control-bar-category: species · tr:chive-chart-control-measure-count'],
+		['bar', 'mean', 'tr:chive-chart-control-bar-category: species · tr:chive-chart-control-measure-mean · tr:chive-chart-control-value-column: biomass'],
+		['pie', 'count', 'tr:chive-chart-control-pie-category: family · tr:chive-chart-control-measure-count · tr:chive-chart-control-pie-pad-angle: 2deg'],
+		['pie', 'sum', 'tr:chive-chart-control-pie-category: family · tr:chive-chart-control-measure-sum · tr:chive-chart-control-value-column: biomass · tr:chive-chart-control-pie-pad-angle: 2deg'],
+		['bubble', 'count', 'tr:chive-chart-control-bubble-category: family · tr:chive-chart-control-measure-count · tr:chive-chart-control-bubble-topn: tr:chive-chart-topn-all'],
+		['bubble', 'mean', 'tr:chive-chart-control-bubble-category: family · tr:chive-chart-control-measure-mean · tr:chive-chart-control-value-column: biomass · tr:chive-chart-control-bubble-topn: tr:chive-chart-topn-all'],
+		['treemap', 'count', 'tr:chive-chart-control-treemap-category: family · tr:chive-chart-control-measure-count'],
+		['treemap', 'sum', 'tr:chive-chart-control-treemap-category: family · tr:chive-chart-control-measure-sum · tr:chive-chart-control-value-column: biomass'],
 	])('captions a %s chart measured by %s', (type, measureMode, summary) => {
 		setupChartActionListeners();
 		mocks.getActiveDataset.mockReturnValue({

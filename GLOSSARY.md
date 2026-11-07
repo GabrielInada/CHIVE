@@ -67,6 +67,12 @@ or mean of a numeric value column over its rows. A missing value adds nothing to
 a sum and does not count toward a mean.
 _Avoid_: metric, aggregation mode
 
+**Measure label**:
+The localized name of a chart's measure. Charts show its short form with the
+numbers ("Sum: 8", bar's y axis); the measure select and Panel capture
+subtitles show its long form ("Sum numeric column").
+_Avoid_: value label, tooltip label
+
 ### Filters
 
 **Global filter**:

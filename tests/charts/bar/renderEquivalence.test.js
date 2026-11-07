@@ -25,6 +25,9 @@ const ROWS = [
 ];
 
 const BASE = { locale: 'en-US', chartHeight: 320 };
+// The renderer draws the measure label its caller passes. These are the y-axis
+// labels the snapshots were captured with.
+const MEASURE_LABELS = { count: 'Count', sum: 'Sum', mean: 'Mean' };
 
 function makeContainer() {
 	document.body.innerHTML = '<div id="bar"></div>';
@@ -35,7 +38,8 @@ function makeContainer() {
 
 function render(options, rows = ROWS) {
 	const container = makeContainer();
-	const result = renderBarChart(container, rows, 'region', { ...BASE, ...options });
+	const labels = { measure: MEASURE_LABELS[options.measureMode ?? 'count'] };
+	const result = renderBarChart(container, rows, 'region', { ...BASE, labels, ...options });
 	const svg = container.querySelector('svg');
 	return { html: svg?.outerHTML ?? container.innerHTML, result };
 }

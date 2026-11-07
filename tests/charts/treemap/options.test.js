@@ -52,9 +52,9 @@ describe('normalizeTreemapOptions', () => {
 	});
 
 	it('passes through caller-supplied labels and falls back per-key', () => {
-		const o = normalizeTreemapOptions({ labels: { category: 'Região', sum: 'Soma' } });
+		const o = normalizeTreemapOptions({ labels: { category: 'Região', measure: 'Soma' } });
 		expect(o.labels.category).toBe('Região');
-		expect(o.labels.sum).toBe('Soma');
-		expect(o.labels.count).toBe('Count');
+		expect(o.labels.measure).toBe('Soma');
+		expect(o.labels.percentage).toBe('Percentage');
 	});
 });

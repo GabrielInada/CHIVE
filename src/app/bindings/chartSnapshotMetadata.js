@@ -9,10 +9,24 @@
 import { t } from '../../services/i18nService.js';
 import { getActiveDataset } from '../../state/appState.js';
 import { CHART_CONTAINERS } from '../../charts/workspaceDomIds.js';
+import { measureOptionLabelKey, measureUsesValueColumn } from '../../charts/shared/measure.js';
 
 const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
 	Object.entries(CHART_CONTAINERS).map(([type, id]) => [id, type])
 );
+
+/**
+ * The measure part of a bar, pie, treemap or bubble summary: the measure
+ * label's long form and, for sum and mean, the value column it reads.
+ *
+ * @param {{ measureMode?: string, valueColumn?: string | null }} config
+ * @returns {string}
+ */
+function measureSummary({ measureMode, valueColumn }) {
+	const measure = ` · ${t(measureOptionLabelKey(measureMode))}`;
+	if (!measureUsesValueColumn(measureMode)) return measure;
+	return `${measure} · ${t('chive-chart-control-value-column')}: ${valueColumn || '-'}`;
+}
 
 /**
  * Map from `ChartTypeKey` → builder function that derives the snapshot
@@ -32,10 +46,11 @@ const CONTAINER_ID_TO_CHART_TYPE = Object.fromEntries(
  */
 const CHART_SNAPSHOT_BUILDERS = {
 	bar: (config) => {
-		const category = config.bar?.category || '-';
+		const bar = config.bar || {};
+		const category = bar.category || '-';
 		return {
 			type: 'bar',
-			summary: `${t('chive-chart-control-bar-category')}: ${category}`,
+			summary: `${t('chive-chart-control-bar-category')}: ${category}${measureSummary(bar)}`,
 		};
 	},
 
@@ -50,11 +65,7 @@ const CHART_SNAPSHOT_BUILDERS = {
 
 	pie: (config) => {
 		const pie = config.pie || {};
-		const measureLabel = t(`chive-chart-control-pie-measure-${pie.measureMode}`);
 		const category = pie.category || '-';
-		const valuePart = pie.measureMode === 'count'
-			? ''
-			: ` · ${t('chive-chart-control-pie-value-column')}: ${pie.valueColumn || '-'}`;
 		const padPart = ` · ${t('chive-chart-control-pie-pad-angle')}: ${Number(pie.padAngle || 0)}deg`;
 		return {
 			type: 'pie',
@@ -64,17 +75,13 @@ const CHART_SNAPSHOT_BUILDERS = {
 			outerRadius: pie.outerRadius,
 			padAngle: Number(pie.padAngle || 0),
 			labelPosition: pie.labelPosition,
-			summary: `${t('chive-chart-control-pie-category')}: ${category} · ${measureLabel}${valuePart}${padPart}`,
+			summary: `${t('chive-chart-control-pie-category')}: ${category}${measureSummary(pie)}${padPart}`,
 		};
 	},
 
 	bubble: (config) => {
 		const bubble = config.bubble || {};
-		const measureLabel = t(`chive-chart-control-bubble-measure-${bubble.measureMode}`);
 		const category = bubble.category || '-';
-		const valuePart = bubble.measureMode === 'count'
-			? ''
-			: ` · ${t('chive-chart-control-bubble-value-column')}: ${bubble.valueColumn || '-'}`;
 		const groupPart = bubble.groupColumn
 			? ` · ${t('chive-chart-control-bubble-group')}: ${bubble.groupColumn}`
 			: '';
@@ -86,7 +93,7 @@ const CHART_SNAPSHOT_BUILDERS = {
 			valueColumn: bubble.valueColumn || null,
 			groupColumn: bubble.groupColumn || null,
 			topN: bubble.topN,
-			summary: `${t('chive-chart-control-bubble-category')}: ${category} · ${measureLabel}${valuePart}${groupPart}${topnPart}`,
+			summary: `${t('chive-chart-control-bubble-category')}: ${category}${measureSummary(bubble)}${groupPart}${topnPart}`,
 		};
 	},
 
@@ -105,19 +112,14 @@ const CHART_SNAPSHOT_BUILDERS = {
 
 	treemap: (config) => {
 		const treemap = config.treemap || {};
-		// The treemap's measure select shows the bar's option labels.
-		const measureLabel = t(`chive-chart-control-bar-measure-${treemap.measureMode}`);
 		const category = treemap.category || '-';
-		const valuePart = treemap.measureMode === 'count'
-			? ''
-			: ` · ${t('chive-chart-control-treemap-value-column')}: ${treemap.valueColumn || '-'}`;
 		return {
 			type: 'treemap',
 			category,
 			measureMode: treemap.measureMode,
 			valueColumn: treemap.valueColumn || null,
 			topN: treemap.topN,
-			summary: `${t('chive-chart-control-treemap-category')}: ${category} · ${measureLabel}${valuePart}`,
+			summary: `${t('chive-chart-control-treemap-category')}: ${category}${measureSummary(treemap)}`,
 		};
 	},
 

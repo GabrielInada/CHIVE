@@ -9,6 +9,7 @@
 
 import { t, getLocale } from '../../services/i18nService.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
+import { measureLabelKey } from '../shared/measure.js';
 import { renderBarChart } from './renderers/svg.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
@@ -28,13 +29,6 @@ export function renderBarInto(
 	config = {},
 	filterCallbacks = EMPTY_FILTER_CALLBACKS,
 ) {
-	const { measureMode } = config;
-	const yAxisLabel = measureMode === 'mean'
-		? t('chive-tooltip-mean')
-		: measureMode === 'sum'
-			? t('chive-tooltip-sum')
-			: t('chive-tooltip-count');
-
 	const result = renderBarChart(container, rows, config.category, {
 		customTitle: config.customTitle,
 		chartHeight: config.chartHeight,
@@ -46,21 +40,18 @@ export function renderBarInto(
 		gradientMaxColor: config.gradientMaxColor,
 		gradientDistribution: config.gradientDistribution,
 		manualThresholdPct: config.manualThresholdPct,
-		measureMode,
+		measureMode: config.measureMode,
 		valueColumn: config.valueColumn,
 		showXAxisLabel: config.showXAxisLabel,
 		showYAxisLabel: config.showYAxisLabel,
 		axisLabels: {
 			x: config.category || t('chive-chart-control-bar-category'),
-			y: yAxisLabel,
 		},
 		locale: getLocale(),
 		labels: {
 			close: t('chive-tooltip-close'),
 			category: t('chive-chart-control-bar-category'),
-			count: t('chive-tooltip-count'),
-			sum: t('chive-tooltip-sum'),
-			mean: t('chive-tooltip-mean'),
+			measure: t(measureLabelKey(config.measureMode)),
 			percentage: t('chive-tooltip-percentage'),
 			missing: t('chive-chart-filter-missing'),
 		},

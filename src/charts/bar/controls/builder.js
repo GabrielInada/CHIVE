@@ -24,6 +24,7 @@ import {
 	findAppliedColorPreset,
 } from '../../shared/controls/factories.js';
 import { groupControls } from '../../shared/controls/grouping.js';
+import { measureOptionLabelKey } from '../../shared/measure.js';
 
 /**
  * Build the bar-chart control sections (Data, Display, Styling, Advanced).
@@ -86,11 +87,11 @@ function buildDataControls(config, categoryOptions, numericOptions, isDisabled) 
 	// Measure mode select
 	const measureDiv = createSelectControl(
 		'viz-select-bar-measure',
-		t('chive-chart-control-bar-measure'),
+		t('chive-chart-control-measure'),
 		[
-			{ value: 'count', label: t('chive-chart-control-bar-measure-count') },
-			{ value: 'sum', label: t('chive-chart-control-bar-measure-sum') },
-			{ value: 'mean', label: t('chive-chart-control-bar-measure-mean') },
+			{ value: 'count', label: t(measureOptionLabelKey('count')) },
+			{ value: 'sum', label: t(measureOptionLabelKey('sum')) },
+			{ value: 'mean', label: t(measureOptionLabelKey('mean')) },
 		],
 		measureMode,
 		isDisabled
@@ -100,7 +101,7 @@ function buildDataControls(config, categoryOptions, numericOptions, isDisabled) 
 	// Value column select (for sum/mean)
 	const valueColDiv = createSelectControl(
 		'viz-select-bar-value-column',
-		t('chive-chart-control-bar-value-column'),
+		t('chive-chart-control-value-column'),
 		[
 			{ value: '', label: t('chive-chart-option-none') },
 			...numericOptions.map(opt => ({ value: opt, label: opt })),
