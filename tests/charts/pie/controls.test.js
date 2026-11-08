@@ -14,6 +14,7 @@ import { buildSliceColor } from '../../../src/charts/pie/color.js';
 import { createPieChartControls } from '../../../src/charts/pie/controls/builder.js';
 import { MISSING_KEY } from '../../../src/domain/datasets/cellValues.js';
 import { setupPieChartControlListeners } from '../../../src/charts/pie/controls/listeners.js';
+import { filterDataset } from '../../../src/domain/filters/datasetFilter.js';
 import { PIE_DEFINITION } from '../../../src/config/charts/definitions/pie.js';
 
 /**
@@ -99,7 +100,7 @@ function lastConfig(writer) {
 /** Rebuild and rewire the controls, as the sidebar does after each commit. */
 function mountControls(dataset, writer) {
 	document.body.innerHTML = '';
-	appendControls(createPieChartControls(dataset, ['region'], ['sales']));
+	appendControls(createPieChartControls(dataset, ['region'], ['sales'], dataset.rows));
 	setupPieChartControlListeners(dataset, dataset.chartConfig.pie, ['sales'], ['region', 'sales'], writer);
 }
 
@@ -125,7 +126,7 @@ describe('pieControls UI structure', () => {
 	// so a future move cannot silently reorder or regroup controls.
 	it('matches the section and control-order structure snapshot', () => {
 		const dataset = createDataset();
-		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales'], dataset.rows);
 
 		const structure = controls.map(section => {
 			const content = section.querySelector('.chart-section-content');
@@ -148,7 +149,7 @@ describe('pieControls UI structure', () => {
 
 	it('offers categorical columns plus an empty (none) option in the category select', () => {
 		const dataset = createDataset();
-		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales'], dataset.rows);
 		appendControls(controls);
 
 		const values = Array.from(document.getElementById('viz-select-pie-category').options).map(o => o.value);
@@ -157,7 +158,7 @@ describe('pieControls UI structure', () => {
 
 	it('renders one per-slice color input per distinct sector value', () => {
 		const dataset = createDataset();
-		const controls = createPieChartControls(dataset, ['region'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], dataset.rows);
 		appendControls(controls);
 
 		const sliceInputs = document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]');
@@ -172,7 +173,8 @@ describe('pieControls UI structure', () => {
 			rules: [{ column: 'region', mode: 'categorical', include: [], exclude: ['v:North'] }],
 			combine: 'AND',
 		};
-		appendControls(createPieChartControls(dataset, ['region'], ['sales']));
+		// The registry hands the builder the rows the chart draws.
+		appendControls(createPieChartControls(dataset, ['region'], ['sales'], filterDataset(dataset).rows));
 
 		const swatch = key => document.querySelector(`input[data-color-grid-control="viz-pie-color-grid"][data-color-item="${key}"]`).value;
 		expect(swatch('North')).toBe('#999999');
@@ -182,7 +184,7 @@ describe('pieControls UI structure', () => {
 
 	it('omits sector color controls when there is no usable category data', () => {
 		const dataset = createDataset({ category: null });
-		const controls = createPieChartControls(dataset, ['region'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], dataset.rows);
 		appendControls(controls);
 
 		expect(document.querySelector('button[data-color-preset-control="viz-pie-color-preset"]')).toBeNull();
@@ -191,7 +193,7 @@ describe('pieControls UI structure', () => {
 		document.body.innerHTML = '';
 		const noRowsDataset = createDataset();
 		noRowsDataset.rows = null;
-		appendControls(createPieChartControls(noRowsDataset, ['region'], ['sales']));
+		appendControls(createPieChartControls(noRowsDataset, ['region'], ['sales'], noRowsDataset.rows));
 		expect(document.querySelector('input[data-color-grid-control="viz-pie-color-grid"]')).toBeNull();
 	});
 
@@ -205,7 +207,7 @@ describe('pieControls UI structure', () => {
 			{ region: 'East', sales: 9 },
 		];
 
-		appendControls(createPieChartControls(dataset, ['region'], ['sales']));
+		appendControls(createPieChartControls(dataset, ['region'], ['sales'], dataset.rows));
 
 		const inputs = Array.from(document.querySelectorAll('input[data-color-grid-control="viz-pie-color-grid"]'));
 		expect(inputs.map(input => input.dataset.colorItem)).toEqual([MISSING_KEY, 'North', 'East']);
@@ -220,7 +222,7 @@ describe('pieControls UI structure', () => {
 			labelPosition: 'inside',
 			customSliceColors: null,
 		});
-		const controls = createPieChartControls(dataset, ['region'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], dataset.rows);
 		appendControls(controls);
 
 		expect(document.getElementById('viz-select-pie-topn').value).toBe('0');
@@ -238,7 +240,7 @@ describe('pieControls listeners', () => {
 
 	it('commits a measureMode change through the facade and switches valueColumn defaults', () => {
 		const dataset = createDataset({ measureMode: 'count', valueColumn: null });
-		const controls = createPieChartControls(dataset, ['region'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], dataset.rows);
 		appendControls(controls);
 
 		const writer = createWriter();
@@ -254,7 +256,7 @@ describe('pieControls listeners', () => {
 
 	it('applies a color preset palette to the per-slice color map', () => {
 		const dataset = createDataset();
-		const controls = createPieChartControls(dataset, ['region'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], dataset.rows);
 		appendControls(controls);
 
 		const writer = createWriter();
@@ -282,7 +284,7 @@ describe('pieControls listeners', () => {
 	// chartConfigAdapter.test.js, which owns which facade each one reaches.
 	it('routes input writes through preview and commits the final value on change', () => {
 		const dataset = createDataset();
-		const controls = createPieChartControls(dataset, ['region'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], dataset.rows);
 		appendControls(controls);
 
 		const writer = createWriter();
@@ -322,7 +324,7 @@ describe('pieControls listeners', () => {
 
 	it('commits selected enums as chosen and coerces the numeric select', () => {
 		const dataset = createDataset();
-		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region', 'team'], ['sales'], dataset.rows);
 		appendControls(controls);
 
 		const writer = createWriter();
@@ -349,7 +351,7 @@ describe('pieControls listeners', () => {
 
 	it('keeps or clears the value column when measure mode changes', () => {
 		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
-		const controls = createPieChartControls(dataset, ['region'], ['sales', 'profit']);
+		const controls = createPieChartControls(dataset, ['region'], ['sales', 'profit'], dataset.rows);
 		appendControls(controls);
 
 		const writer = createWriter();
@@ -368,7 +370,7 @@ describe('pieControls listeners', () => {
 
 		document.body.innerHTML = '';
 		const noNumericDataset = createDataset({ measureMode: 'count', valueColumn: 'old' });
-		appendControls(createPieChartControls(noNumericDataset, ['region'], []));
+		appendControls(createPieChartControls(noNumericDataset, ['region'], [], noNumericDataset.rows));
 		setupPieChartControlListeners(noNumericDataset, noNumericDataset.chartConfig.pie, [], ['region'], writer);
 		selectValue('viz-select-pie-measure', 'sum');
 		expect(lastConfig(writer)).toEqual(expect.objectContaining({ measureMode: 'sum', valueColumn: null }));
@@ -376,7 +378,7 @@ describe('pieControls listeners', () => {
 
 	it('clamps inner and outer radius changes and updates visible slider output', () => {
 		const dataset = createDataset({ innerRadius: 40, outerRadius: 50 });
-		const controls = createPieChartControls(dataset, ['region'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], dataset.rows);
 		appendControls(controls);
 
 		const writer = createWriter();
@@ -403,7 +405,7 @@ describe('pieControls listeners', () => {
 
 	it('resets zoom with and without the zoom slider present', () => {
 		const dataset = createDataset({ zoomScale: 2 });
-		const controls = createPieChartControls(dataset, ['region'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], dataset.rows);
 		appendControls(controls);
 
 		const writer = createWriter();
@@ -424,7 +426,7 @@ describe('pieControls listeners', () => {
 
 	it('ignores unknown presets and color-grid events with no sector token', () => {
 		const dataset = createDataset();
-		const controls = createPieChartControls(dataset, ['region'], ['sales']);
+		const controls = createPieChartControls(dataset, ['region'], ['sales'], dataset.rows);
 		appendControls(controls);
 		const unknownPreset = document.createElement('button');
 		unknownPreset.dataset.colorPresetControl = 'viz-pie-color-preset';

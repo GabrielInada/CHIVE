@@ -8,7 +8,6 @@ const mocks = vi.hoisted(() => ({
 	renderFileList: vi.fn(),
 	renderCharts: vi.fn(),
 	renderChartControlsSidebar: vi.fn(),
-	getNumericColumns: vi.fn(),
 	getActiveDataset: vi.fn(),
 	getActiveDatasetIndex: vi.fn(),
 	getPreviewRows: vi.fn(),
@@ -54,10 +53,6 @@ vi.mock('../../src/features/datasetWorkspace/views/chartsView.js', () => ({
 
 vi.mock('../../src/features/datasetWorkspace/chartControls/chartControlsController.js', () => ({
 	renderChartControlsSidebar: mocks.renderChartControlsSidebar,
-}));
-
-vi.mock('../../src/domain/datasets/columns.js', () => ({
-	getNumericColumns: mocks.getNumericColumns,
 }));
 
 vi.mock('../../src/state/appState.js', () => ({
@@ -134,9 +129,6 @@ beforeEach(() => {
 	vi.restoreAllMocks();
 	vi.resetModules();
 	vi.clearAllMocks();
-	mocks.getNumericColumns.mockImplementation(
-		columns => columns.filter(column => column.type === 'number'),
-	);
 	mocks.getActiveDataset.mockReturnValue(null);
 	mocks.getActiveDatasetIndex.mockReturnValue(-1);
 	mocks.getPreviewRows.mockReturnValue(10);
@@ -172,7 +164,7 @@ describe('renderCoordinator', () => {
 		expect(mocks.syncSidebarToTab).not.toHaveBeenCalled();
 	});
 
-	it('draws live previews from the rows the global filter keeps, hidden columns included', async () => {
+	it('draws live previews from the shown dataset, hidden columns included, with the tooltip filter callback', async () => {
 		const dataset = {
 			...baseDataset,
 			chartConfig: {
@@ -188,47 +180,50 @@ describe('renderCoordinator', () => {
 
 		coordinator.livePreviewRender();
 
-		expect(mocks.renderCharts).toHaveBeenCalledWith(
-			dataset.chartConfig,
-			[{ region: 'North', value: 10 }],
-			[{ name: 'value', type: 'number' }],
-			[{ name: 'value', type: 'number' }],
-		);
+		expect(mocks.renderCharts).toHaveBeenCalledTimes(1);
+		const [shown, onChartConfigChange] = mocks.renderCharts.mock.calls[0];
+		expect(shown.dataset).toBe(dataset);
+		expect(shown.rows).toEqual([{ region: 'North', value: 10 }]);
+		expect(shown.visibleColumns).toEqual([{ name: 'value', type: 'number' }]);
+		expect(shown.columnTypeByName).toEqual({ region: 'text', value: 'number' });
+		// The same callback the full render hands the workspace, so tooltips
+		// pinned during a live preview keep their filter actions.
+		expect(onChartConfigChange).toBe(coordinator.updateDatasetConfig);
 	});
 
-	it('renders the active dataset and bridges workspace and live-preview callbacks', async () => {
+	it('skips a live preview without an active dataset', async () => {
+		const coordinator = await importCoordinator();
+
+		coordinator.livePreviewRender();
+
+		expect(mocks.renderCharts).not.toHaveBeenCalled();
+	});
+
+	it('renders the active dataset from one shown dataset and bridges the workspace callbacks', async () => {
 		setActiveDataset();
 		const coordinator = await importCoordinator();
 
 		coordinator.runFullRefreshNow();
 
-		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledWith(
-			baseDataset.rows,
-			baseDataset.columns,
-			baseDataset.name,
-			baseDataset.sizeLabel,
-			25,
-			expect.any(Function),
-			baseDataset.selectedColumns,
-			expect.any(Function),
-			baseDataset.chartConfig,
-			expect.any(Function),
-		);
-		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledWith(baseDataset);
+		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
+		const [shown, options] = mocks.renderDatasetWorkspace.mock.calls[0];
+		expect(shown.dataset).toBe(baseDataset);
+		expect(shown.rows).toBe(baseDataset.rows);
+		expect(shown.visibleColumns).toEqual([{ name: 'value', type: 'number' }]);
+		expect(options).toEqual({
+			previewRows: 25,
+			onPreviewRowsChange: expect.any(Function),
+			onColumnSelectionChange: coordinator.updateDatasetColumns,
+			onChartConfigChange: coordinator.updateDatasetConfig,
+		});
+		// The controls sidebar reads the value the workspace drew from.
+		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
+		expect(mocks.renderChartControlsSidebar.mock.calls[0][0]).toBe(shown);
 		expect(mocks.initializeLayoutSelector).toHaveBeenCalledTimes(1);
 
-		coordinator.livePreviewRender();
-		expect(mocks.renderCharts).toHaveBeenCalledWith(
-			baseDataset.chartConfig,
-			baseDataset.rows,
-			[{ name: 'value', type: 'number' }],
-			[{ name: 'value', type: 'number' }],
-		);
-
-		const renderArgs = mocks.renderDatasetWorkspace.mock.calls[0];
-		renderArgs[5](50);
-		renderArgs[7](['value']);
-		renderArgs[9]({ activeTab: 'charts' });
+		options.onPreviewRowsChange(50);
+		options.onColumnSelectionChange(['value']);
+		options.onChartConfigChange({ activeTab: 'charts' });
 		expect(mocks.setPreviewRows).toHaveBeenCalledWith(50);
 		expect(mocks.updateActiveDatasetColumns).toHaveBeenCalledWith(['value']);
 		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
@@ -236,7 +231,7 @@ describe('renderCoordinator', () => {
 		mocks.setPreviewRows.mockImplementationOnce(() => {
 			throw new Error('invalid');
 		});
-		expect(() => renderArgs[5](0)).not.toThrow();
+		expect(() => options.onPreviewRowsChange(0)).not.toThrow();
 	});
 
 	it('wires the seven render-affecting state events', async () => {
@@ -309,7 +304,7 @@ describe('renderCoordinator', () => {
 		callbacks[mocks.STATE_EVENTS.PREVIEW_ROWS_CHANGED]();
 		flushFrame();
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
-		expect(mocks.renderDatasetWorkspace.mock.calls[0][4]).toBe(40);
+		expect(mocks.renderDatasetWorkspace.mock.calls[0][1].previewRows).toBe(40);
 		expect(mocks.renderChartControlsSidebar).not.toHaveBeenCalled();
 		expect(mocks.renderCanvasPanel).not.toHaveBeenCalled();
 	});
@@ -325,6 +320,10 @@ describe('renderCoordinator', () => {
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
 		expect(mocks.renderCanvasPanel).not.toHaveBeenCalled();
+		// One shown dataset per flush: the controls read the value the workspace drew from.
+		const [shown] = mocks.renderDatasetWorkspace.mock.calls[0];
+		expect(shown.dataset).toBe(baseDataset);
+		expect(mocks.renderChartControlsSidebar.mock.calls[0][0]).toBe(shown);
 
 		mocks.renderDatasetWorkspace.mockClear();
 		mocks.renderCanvasPanel.mockClear();

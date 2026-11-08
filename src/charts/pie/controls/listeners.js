@@ -40,7 +40,7 @@ import { getPieSectorValues } from './sectorValues.js';
  * @returns {void}
  */
 export function setupPieChartControlListeners(dataset, basePie, numeric, allColumns, writer) {
-	const sectorValues = getPieSectorValues(dataset, dataset.chartConfig.pie);
+	const sectorValues = getPieSectorValues(dataset.rows, dataset.chartConfig.pie);
 
 	setupSelectListeners([
 		{ id: 'viz-select-pie-category', key: 'category' },

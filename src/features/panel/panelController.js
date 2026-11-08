@@ -17,8 +17,7 @@
 
 import { t } from '../../services/i18nService.js';
 import { ok, fail } from '../../utils/result.js';
-import { mergeChartConfigWithDefaults } from '../../domain/charts/chartConfig.js';
-import { filterDataset } from '../../domain/filters/datasetFilter.js';
+import { deriveShownDataset } from '../../domain/datasets/shownDataset.js';
 import {
 	PANEL_LAYOUTS,
 	getLayoutConfig as getPanelLayoutConfig,
@@ -178,11 +177,13 @@ function handleUpdateBlockHeight(blockId, heightPx) {
 
 /**
  * Capture a chart's current state as a snapshot and add it to the panel.
- * Reads the active dataset, merges its `chartConfig` with chart defaults,
- * applies the global filter, structured-clones config/filtered rows/columns,
- * and stores a {@link ChartSnapshot} via the panel facade. Metadata is stored
- * as supplied. The resulting state object is not `Object.freeze`d and remains
- * read-only by facade policy.
+ * Derives the active dataset's shown dataset, the same value Visualizations
+ * draws from, then structured-clones the chart's stored config block, the
+ * rows that pass the global filter and every dataset column, and stores a
+ * {@link ChartSnapshot} via the panel facade. The stored config is canonical
+ * already, so it is captured as it is. Metadata is stored as supplied. The
+ * resulting state object is not `Object.freeze`d and remains read-only by
+ * facade policy.
  *
  * @param {string} containerId - DOM element ID of the chart container (unused inside the function; preserved for caller traceability).
  * @param {string} chartBaseName - Display name for the snapshot.
@@ -200,14 +201,13 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 		const dataset = getActiveDataset();
 		if (!dataset) return fail('no-dataset');
 
-		const mergedConfig = mergeChartConfigWithDefaults(dataset.chartConfig);
-		const filteredRows = filterDataset(dataset).rows;
+		const shown = deriveShownDataset(dataset);
 
 		const chartId = addChartSnapshot({
 			name: chartBaseName,
 			type,
-			config: structuredClone(mergedConfig[type] || {}),
-			dataSnapshot: structuredClone(filteredRows),
+			config: structuredClone(dataset.chartConfig?.[type] || {}),
+			dataSnapshot: structuredClone(shown.rows),
 			columnsSnapshot: structuredClone(dataset.columns || []),
 			metadata,
 			metaSummary: typeof metadata?.summary === 'string' ? metadata.summary : '',

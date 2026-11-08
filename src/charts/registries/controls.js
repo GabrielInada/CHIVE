@@ -109,6 +109,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 			dataset,
 			context.baseCategoricalOrAll,
 			context.numeric,
+			context.rows,
 		),
 		attachListeners: (dataset, context, writer) => setupPieChartControlListeners(
 			dataset,

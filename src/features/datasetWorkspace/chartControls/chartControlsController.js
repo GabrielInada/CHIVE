@@ -18,20 +18,18 @@
  * lose their place when the active chart's config changes.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').ShownDataset} ShownDataset
  * @typedef {import('../../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {import('../../../types.js').ChartControlContext} ChartControlContext
  */
 
 import { t } from '../../../services/i18nService.js';
 import {
-	filterVisibleColumns,
 	getNumericColumnNames,
 	getCategoricalColumnNames,
 	getDateColumnNames,
 } from '../../../domain/datasets/columns.js';
-import { mergeChartConfigWithDefaults } from '../../../domain/charts/chartConfig.js';
 import { setActiveChartType } from '../../../state/appState.js';
-import { CHART_TYPE_KEYS } from '../../../config/charts/definitions.js';
 import { getChartControlAdapter } from '../../../charts/registries/controls.js';
 import { renderChartParamsDOM } from '../views/chartParamsView.js';
 import { openChartTypePickerDialog } from '../dialogs/chartTypePickerDialog.js';
@@ -209,21 +207,21 @@ function restoreSidebarScrollPosition(container, anchor) {
 }
 
 /**
- * Derive the column buckets each per-chart controls file needs. Computed
- * once per call site so the registry entries below stay small.
+ * Derive the column buckets and drawn rows each per-chart controls file
+ * needs, from the shown dataset. Computed once per sidebar render and shared
+ * by the builder, the listeners and the chart picker.
  *
  * @private
- * @param {Dataset} dataset
+ * @param {ShownDataset} shown
  * @returns {ChartControlContext} `baseCategoricalOrAll` falls back to all columns when no categoricals exist.
  */
-function getColumnContext(dataset) {
-	const visibleColumns = filterVisibleColumns(dataset);
+function columnContextOf({ visibleColumns, rows }) {
 	const numeric = getNumericColumnNames(visibleColumns);
 	const categorical = getCategoricalColumnNames(visibleColumns);
 	const dates = getDateColumnNames(visibleColumns);
 	const allColumns = visibleColumns.map(c => c.name);
 	const baseCategoricalOrAll = categorical.length > 0 ? categorical : allColumns;
-	return { numeric, categorical, dates, allColumns, baseCategoricalOrAll };
+	return { numeric, categorical, dates, allColumns, baseCategoricalOrAll, rows };
 }
 
 /**
@@ -247,14 +245,14 @@ function computeActivationDefaults(chartType, dataset, { numeric, categorical, a
 }
 
 /** @private */
-function buildControlsForChart(chartType, dataset) {
+function buildControlsForChart(chartType, dataset, columnContext) {
 	const entry = getChartControlAdapter(chartType);
 	if (!entry) return [];
-	return entry.build(dataset, getColumnContext(dataset));
+	return entry.build(dataset, columnContext);
 }
 
 /** @private */
-function setupListenersForChart(chartType, dataset) {
+function setupListenersForChart(chartType, dataset, columnContext) {
 	const entry = getChartControlAdapter(chartType);
 	if (!entry) return;
 	// The chart package writes through this adapter instead of importing state.
@@ -266,7 +264,7 @@ function setupListenersForChart(chartType, dataset) {
 		onConfigChanged: onChartConfigChangeCallback,
 		requestLiveRender: triggerLiveRender,
 	});
-	entry.attachListeners(dataset, getColumnContext(dataset), writer);
+	entry.attachListeners(dataset, columnContext, writer);
 }
 
 /**
@@ -277,15 +275,16 @@ function setupListenersForChart(chartType, dataset) {
  * @private
  * @param {ChartTypeKey | null} chartType - `null` clears the active chart.
  * @param {Dataset} dataset
+ * @param {ChartControlContext} columnContext - The context the sidebar was rendered with.
  */
-function handleChartTypeSelect(chartType, dataset) {
+function handleChartTypeSelect(chartType, dataset, columnContext) {
 	if (chartType === null) {
 		setActiveChartType(null);
 		onChartConfigChangeCallback?.();
 		return;
 	}
 	const entry = getChartControlAdapter(chartType);
-	const defaults = entry ? entry.computeDefaults(dataset, getColumnContext(dataset)) : {};
+	const defaults = entry ? entry.computeDefaults(dataset, columnContext) : {};
 	setActiveChartType(chartType, { ...defaults, expanded: true });
 	onChartConfigChangeCallback?.();
 }
@@ -305,17 +304,17 @@ export { computeActivationDefaults, handleChartTypeSelect };
  *
  * @private
  */
-function openPickerForDataset(activeChartType, dataset) {
+function openPickerForDataset(activeChartType, dataset, columnContext) {
 	openChartTypePickerDialog({ activeChartType, translate: t }).then(result => {
 		if (result === null) return;
-		handleChartTypeSelect(result.chartType, dataset);
+		handleChartTypeSelect(result.chartType, dataset, columnContext);
 	});
 }
 
 /**
- * Re-render the params pane of the sidebar for the given dataset. Called by
+ * Re-render the params pane of the sidebar from the shown dataset. Called by
  * `app/renderCoordinator.js` after every state change that could affect
- * sidebar contents.
+ * sidebar contents, with the value the render pass derived.
  *
  * Renders:
  *   - Empty state if no dataset or no visible columns.
@@ -324,9 +323,9 @@ function openPickerForDataset(activeChartType, dataset) {
  * Preserves expansion state of collapsible sections and scroll position
  * across re-renders.
  *
- * @param {Dataset | null | undefined} dataset
+ * @param {ShownDataset | null | undefined} shown
  */
-export function renderChartControlsSidebar(dataset) {
+export function renderChartControlsSidebar(shown) {
 	const paramsContainer = document.getElementById('viz-chart-params');
 	if (!paramsContainer) return;
 
@@ -345,23 +344,15 @@ export function renderChartControlsSidebar(dataset) {
 		paramsContainer.appendChild(emptyDiv);
 	};
 
-	if (!dataset) {
+	if (!shown || shown.visibleColumns.length === 0) {
 		emptyState(t('chive-chart-sidebar-empty'));
 		restoreSidebarScrollPosition(paramsContainer, scrollAnchor);
 		return;
 	}
 
-	const visibleColumns = filterVisibleColumns(dataset);
-	if (visibleColumns.length === 0) {
-		emptyState(t('chive-chart-sidebar-empty'));
-		restoreSidebarScrollPosition(paramsContainer, scrollAnchor);
-		return;
-	}
-
-	const config = mergeChartConfigWithDefaults(dataset.chartConfig);
-	const activeChartType = CHART_TYPE_KEYS.find(type => config[type].enabled) || null;
-
-	const controls = activeChartType ? buildControlsForChart(activeChartType, dataset) : [];
+	const { dataset, activeChartType } = shown;
+	const columnContext = columnContextOf(shown);
+	const controls = activeChartType ? buildControlsForChart(activeChartType, dataset, columnContext) : [];
 
 	renderChartParamsDOM({
 		container: paramsContainer,
@@ -370,12 +361,12 @@ export function renderChartControlsSidebar(dataset) {
 		chartDescription: activeChartType ? t(`chive-viz-${activeChartType}-desc`) : '',
 		controls,
 		translate: t,
-		onChartTypeTriggerClick: () => openPickerForDataset(activeChartType, dataset),
+		onChartTypeTriggerClick: () => openPickerForDataset(activeChartType, dataset, columnContext),
 	});
 
 	if (activeChartType) {
 		applyControlSectionExpansionState(paramsContainer, controlSectionState);
-		setupListenersForChart(activeChartType, dataset);
+		setupListenersForChart(activeChartType, dataset, columnContext);
 	}
 
 	restoreSidebarScrollPosition(paramsContainer, scrollAnchor);

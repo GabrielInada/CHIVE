@@ -10,14 +10,13 @@
  *
  * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
  * @typedef {import('../../types.js').ChartInput} ChartInput
- * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
- * @typedef {import('../../types.js').ColumnType} ColumnType
  * @typedef {import('../../types.js').Result} Result
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {(container: HTMLElement, spec: ChartSnapshot) => Result} PanelChartRenderer
  */
 
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
+import { getColumnTypesByName } from '../../domain/datasets/columns.js';
 import { renderBarInto } from '../bar/presentation.js';
 import { renderBubbleInto } from '../bubble/presentation.js';
 import { renderLineInto } from '../line/presentation.js';
@@ -29,23 +28,9 @@ import { renderTinInto } from '../tin/presentation.js';
 import { renderTreemapInto } from '../treemap/presentation.js';
 
 /**
- * Column name to type, from a capture's columns.
- *
- * @param {ColumnSpec[] | null | undefined} columnsSnapshot
- * @returns {Object<string, ColumnType>}
- */
-function columnTypesOf(columnsSnapshot) {
-	if (!Array.isArray(columnsSnapshot)) return {};
-	const columnTypeByName = {};
-	for (const column of columnsSnapshot) {
-		if (column?.name) columnTypeByName[column.name] = column.type;
-	}
-	return columnTypeByName;
-}
-
-/**
  * The chart input for a capture. Missing rows draw as no rows and a missing
- * config as an empty one; column types come from every captured column.
+ * config as an empty one; column types come from every captured column, as
+ * Visualizations takes them from every dataset column.
  *
  * @param {ChartSnapshot} spec
  * @returns {ChartInput}
@@ -54,7 +39,7 @@ function inputOf(spec) {
 	return {
 		rows: Array.isArray(spec.dataSnapshot) ? spec.dataSnapshot : [],
 		config: spec.config || {},
-		columnTypeByName: columnTypesOf(spec.columnsSnapshot),
+		columnTypeByName: getColumnTypesByName(spec.columnsSnapshot),
 	};
 }
 

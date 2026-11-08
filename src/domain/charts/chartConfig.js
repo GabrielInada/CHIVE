@@ -77,8 +77,10 @@ function withAllowedValues(block, allowedValues, defaultBlock) {
  * Each block's enumerated settings, the keys of its chart definition's
  * `allowedValues`, then hold only values the chart offers: any other value
  * becomes the chart's default. The check runs here, not only in
- * {@link canonicalizeChartConfig}, so render, the controls sidebar, Panel
- * captures and Panel rehydration read the same values.
+ * {@link canonicalizeChartConfig}, so Panel rehydration, which merges a saved
+ * chart's block without canonicalizing a whole config, reads the same values
+ * as stored dataset config. Render and Panel captures read the stored config
+ * as it is.
  *
  * @param {*} chartConfig - Saved (possibly partial) chart config, or `null`/`undefined`.
  * @returns {ChartConfig} Merged, fully-populated config.
@@ -88,7 +90,7 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 	// Guard against non-object input: a string/array/number would otherwise spread
 	// into stray index keys instead of being treated as "no saved config". The same
 	// guard runs per chart block below, so a malformed block also falls back to
-	// defaults wherever this function is called (render, capture, hydration, controls).
+	// defaults wherever this function is called (canonicalization, Panel rehydration).
 	const config = asPlainObject(chartConfig);
 	const scatterConfig = asPlainObject(config.scatter);
 

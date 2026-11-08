@@ -10,6 +10,7 @@ import {
   getDateColumns,
   getDateColumnNames,
   getDatasetColumnNames,
+  getColumnTypesByName,
   normalizeColumnNameList,
 } from '../../../src/domain/datasets/columns.js';
 
@@ -40,6 +41,29 @@ describe('columns', () => {
   it('returns date columns and date names', () => {
     expect(getDateColumns(columns).map(c => c.name)).toEqual(['d']);
     expect(getDateColumnNames(columns)).toEqual(['d']);
+  });
+});
+
+describe('getColumnTypesByName', () => {
+  it('maps every column name to its type', () => {
+    expect(getColumnTypesByName([
+      { name: 'a', type: 'number' },
+      { name: 'b', type: 'text' },
+      { name: 'd', type: 'date' },
+    ])).toEqual({ a: 'number', b: 'text', d: 'date' });
+  });
+
+  // Column names are cell text from the file, so a lookup must not reach
+  // Object.prototype: `constructor` is not a column here.
+  it('answers only for the columns it was given', () => {
+    const types = getColumnTypesByName([{ name: '__proto__', type: 'number' }]);
+    expect(types.__proto__).toBe('number');
+    expect(types.constructor).toBeUndefined();
+  });
+
+  it('skips entries without a name and returns {} for a non-array', () => {
+    expect(getColumnTypesByName([{ type: 'number' }, null, { name: 'b', type: 'text' }])).toEqual({ b: 'text' });
+    expect(getColumnTypesByName(undefined)).toEqual({});
   });
 });
 

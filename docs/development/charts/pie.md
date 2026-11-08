@@ -214,8 +214,9 @@ the shared `categoryChartDefaults('pie')`
   less, since a global filter can leave its total above 0. The Other sector is not a
   category, so it has no swatch.
 - Each swatch shows the color the chart draws that category with: `getPieSwatchColors` takes
-  the fills from `computePieSectors` over the globally filtered rows, the same function the
-  renderer draws from. A category the chart does not draw, because the global filter hides
+  the fills from `computePieSectors`, the same function the renderer draws from, over the rows
+  the chart draws. The controls registry hands the builder those rows from the shown dataset
+  (`ChartControlContext.rows`), so the grid and the chart never filter separately. A category the chart does not draw, because the global filter hides
   it, it falls past Top-N or its total is 0 or less, shows its override, or the grid's neutral
   gray when it has none.
 

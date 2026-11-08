@@ -3,9 +3,12 @@
  *
  * Owns full and per-region render scheduling, render-affecting state
  * subscriptions, the application-level view composition, and the callbacks
- * that bridge dataset workspace views to state facades.
+ * that bridge dataset workspace views to state facades. Each render pass
+ * derives the active dataset's shown dataset once and hands that value to the
+ * workspace, the controls sidebar, or live preview.
  *
  * @typedef {import('../types.js').Dataset} Dataset
+ * @typedef {import('../types.js').ShownDataset} ShownDataset
  */
 
 import { renderDatasetWorkspace } from '../features/datasetWorkspace/workspaceView.js';
@@ -13,8 +16,7 @@ import { renderFileList } from '../features/datasetWorkspace/views/fileListView.
 import { renderEmptyState } from '../features/datasetWorkspace/views/emptyWorkspaceView.js';
 import { renderCharts } from '../features/datasetWorkspace/views/chartsView.js';
 import { renderChartControlsSidebar } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
-import { getNumericColumns } from '../domain/datasets/columns.js';
-import { filterDataset } from '../domain/filters/datasetFilter.js';
+import { deriveShownDataset } from '../domain/datasets/shownDataset.js';
 import {
 	getActiveDataset,
 	getActiveDatasetIndex,
@@ -108,11 +110,14 @@ function flushScheduledRender() {
 		if (regions.has(RENDER_REGIONS.list)) {
 			renderDatasetListView(getLoadedDatasets(), getActiveDatasetIndex());
 		}
+		const shown = regions.has(RENDER_REGIONS.workspace) || regions.has(RENDER_REGIONS.controls)
+			? deriveActiveShownDataset()
+			: null;
 		if (regions.has(RENDER_REGIONS.workspace)) {
-			renderActiveDatasetWorkspace(getActiveDataset(), getPreviewRows());
+			renderActiveDatasetWorkspace(shown, getPreviewRows());
 		}
 		if (regions.has(RENDER_REGIONS.controls)) {
-			renderChartControlsView(getActiveDataset());
+			renderChartControlsView(shown);
 		}
 		if (regions.has(RENDER_REGIONS.panel)) {
 			renderPanelWorkspace();
@@ -186,22 +191,25 @@ export function setupStateSubscriptions() {
 }
 
 /**
- * Re-render only active chart visualizations during a live control preview.
+ * The active dataset's shown dataset, derived once per render pass.
+ *
+ * @private
+ * @returns {ShownDataset | null} `null` when no dataset is active.
+ */
+function deriveActiveShownDataset() {
+	const dataset = getActiveDataset();
+	return dataset ? deriveShownDataset(dataset) : null;
+}
+
+/**
+ * Re-render only active chart visualizations during a live control preview,
+ * with the same inputs as the full render, tooltip filter actions included.
  * The controls sidebar and saved panel captures are deliberately untouched.
  */
 export function livePreviewRender() {
-	const dataset = getActiveDataset();
-	if (!dataset || !Array.isArray(dataset.columns)) return;
-
-	const columnNames = dataset.columns.map(column => column.name);
-	const selectedNames = new Set(
-		Array.isArray(dataset.selectedColumns)
-			? dataset.selectedColumns
-			: columnNames,
-	);
-	const visibleColumns = dataset.columns.filter(column => selectedNames.has(column.name));
-	const visibleNumericColumns = getNumericColumns(visibleColumns);
-	renderCharts(dataset.chartConfig, filterDataset(dataset).rows, visibleColumns, visibleNumericColumns);
+	const shown = deriveActiveShownDataset();
+	if (!shown) return;
+	renderCharts(shown, updateDatasetConfig);
 }
 
 /**
@@ -224,32 +232,26 @@ function renderEmptyWorkspace() {
 }
 
 /**
- * @param {Dataset | null} dataset
+ * @param {ShownDataset | null} shown
  * @param {number} previewRows
  */
-function renderActiveDatasetWorkspace(dataset, previewRows) {
-	if (!dataset) return;
-	syncSidebarToTab(dataset.chartConfig?.activeTab || 'preview');
-	renderDatasetWorkspace(
-		dataset.rows,
-		dataset.columns,
-		dataset.name,
-		dataset.sizeLabel,
+function renderActiveDatasetWorkspace(shown, previewRows) {
+	if (!shown) return;
+	syncSidebarToTab(shown.dataset.chartConfig?.activeTab || 'preview');
+	renderDatasetWorkspace(shown, {
 		previewRows,
-		updatePreviewRows,
-		dataset.selectedColumns,
-		updateDatasetColumns,
-		dataset.chartConfig,
-		updateDatasetConfig,
-	);
+		onPreviewRowsChange: updatePreviewRows,
+		onColumnSelectionChange: updateDatasetColumns,
+		onChartConfigChange: updateDatasetConfig,
+	});
 }
 
 /**
- * @param {Dataset | null} dataset
+ * @param {ShownDataset | null} shown
  */
-function renderChartControlsView(dataset) {
-	if (!dataset) return;
-	renderChartControlsSidebar(dataset);
+function renderChartControlsView(shown) {
+	if (!shown) return;
+	renderChartControlsSidebar(shown);
 }
 
 /**
@@ -270,7 +272,6 @@ function renderPanelWorkspace({ withLayoutSelector = true } = {}) {
 function refreshView() {
 	const datasets = getLoadedDatasets();
 	const activeIndex = getActiveDatasetIndex();
-	const dataset = getActiveDataset();
 	const previewRows = getPreviewRows();
 
 	renderDatasetListView(datasets, activeIndex);
@@ -281,8 +282,9 @@ function refreshView() {
 		return;
 	}
 
-	renderActiveDatasetWorkspace(dataset, previewRows);
-	renderChartControlsView(dataset);
+	const shown = deriveActiveShownDataset();
+	renderActiveDatasetWorkspace(shown, previewRows);
+	renderChartControlsView(shown);
 	renderPanelWorkspace();
 }
 

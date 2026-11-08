@@ -217,8 +217,9 @@ keeps the selection, so switching back restores it.
 - **Missing-value bucket.** Missing values do not fragment a categorical series: they
   collapse into one bucket, labeled `N/A` in grouping and `(missing)` in the filter dialog.
 - **Panel snapshots.** Adding a chart to the dashboard panel snapshots the current
-  global-filtered rows and visible columns alongside the chart type and config
-  (`panelController.addChartToPanel`). Later edits to the dataset or filters do not retro-change
+  global-filtered rows and every dataset column alongside the chart type and config
+  (`panelController.addChartToPanel`). A column hidden from the column list keeps its type,
+  so line and scatter axes read the same on the panel as in Visualizations. Later edits to the dataset or filters do not retro-change
   a chart already placed on the panel until it is re-added.
 
 ## Common empty states
