@@ -23,13 +23,11 @@
 
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
 import { categoryChartDefaults } from '../shared/controls/activationDefaults.js';
-import { createBarChartControls } from '../bar/controls/builder.js';
-import { setupBarChartControlListeners } from '../bar/controls/listeners.js';
+import { BAR_CONTROLS } from '../bar/controls/descriptions.js';
 import { createScatter3dControls } from '../scatter3d/controls/builder.js';
 import { setupScatter3dControlListeners } from '../scatter3d/controls/listeners.js';
 import { computeDefaults as computeScatter3dDefaults } from '../scatter3d/controls/activationDefaults.js';
-import { createBubbleChartControls } from '../bubble/controls/builder.js';
-import { setupBubbleChartControlListeners } from '../bubble/controls/listeners.js';
+import { BUBBLE_CONTROLS } from '../bubble/controls/descriptions.js';
 import { createLineChartControls } from '../line/controls/builder.js';
 import { setupLineChartControlListeners } from '../line/controls/listeners.js';
 import { computeDefaults as computeLineDefaults } from '../line/controls/activationDefaults.js';
@@ -39,8 +37,7 @@ import { computeDefaults as computeNetworkDefaults } from '../network/controls/a
 import { createScatterPlotControls } from '../scatter/controls/builder.js';
 import { setupScatterPlotControlListeners } from '../scatter/controls/listeners.js';
 import { computeDefaults as computeScatterDefaults } from '../scatter/controls/activationDefaults.js';
-import { createPieChartControls } from '../pie/controls/builder.js';
-import { setupPieChartControlListeners } from '../pie/controls/listeners.js';
+import { PIE_CONTROLS } from '../pie/controls/descriptions.js';
 import { TREEMAP_CONTROLS } from '../treemap/controls/descriptions.js';
 import { createTinControls } from '../tin/controls/builder.js';
 import { setupTinControlListeners } from '../tin/controls/listeners.js';
@@ -49,19 +46,7 @@ import { computeDefaults as computeTinDefaults } from '../tin/controls/activatio
 /** @type {Readonly<Object<ChartTypeKey, Readonly<ChartControlAdapter>>>} */
 const CONTROL_ADAPTERS = Object.freeze({
 	bar: Object.freeze({
-		build: (dataset, context) => createBarChartControls(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupBarChartControlListeners(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: BAR_CONTROLS,
 		computeDefaults: categoryChartDefaults('bar'),
 	}),
 	line: Object.freeze({
@@ -109,35 +94,11 @@ const CONTROL_ADAPTERS = Object.freeze({
 		computeDefaults: computeScatter3dDefaults,
 	}),
 	pie: Object.freeze({
-		build: (dataset, context) => createPieChartControls(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.rows,
-		),
-		attachListeners: (dataset, context, writer) => setupPieChartControlListeners(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: PIE_CONTROLS,
 		computeDefaults: categoryChartDefaults('pie'),
 	}),
 	bubble: Object.freeze({
-		build: (dataset, context) => createBubbleChartControls(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupBubbleChartControlListeners(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: BUBBLE_CONTROLS,
 		computeDefaults: categoryChartDefaults('bubble'),
 	}),
 	network: Object.freeze({

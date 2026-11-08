@@ -4,10 +4,10 @@
  * Builds a chart's sidebar sections from its control descriptions
  * ({@link ChartControlDescriptions}) and wires each control to the injected
  * {@link ChartConfigWriter} as it creates the control. A description names
- * the setting, the widget, the options and when the control is disabled; this
- * module owns the DOM (through the shared factories), the events, and the
- * value each widget writes. Nothing is looked up by id afterwards, so a
- * control cannot end up without its listener.
+ * the setting, the widget, the options and when the control is shown or
+ * disabled; this module owns the DOM (through the shared factories), the
+ * events, and the value each widget writes. Nothing is looked up in the
+ * document afterwards, so a control cannot end up without its listener.
  *
  * The widget decides how a control writes. A color input previews while the
  * picker is open (`input`), which repaints only the chart, and commits when it
@@ -15,23 +15,29 @@
  * open picker. Every other widget commits on `change`, and a slider only
  * updates its `<output>` on `input`.
  *
+ * A control no widget covers is written by hand: a `custom` description's
+ * `build` creates and wires its elements from the {@link CustomControlScope}.
+ *
  * Shared leaf infrastructure: labels arrive as message keys and go through
  * the injected `translate`, never a service import.
  *
  * @typedef {import('../../../types.js').ChartControlDescriptions} ChartControlDescriptions
  * @typedef {import('../../../types.js').ControlDescription} ControlDescription
+ * @typedef {import('../../../types.js').CustomControlScope} CustomControlScope
  * @typedef {import('../../../types.js').ChartControlContext} ChartControlContext
  * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  * @typedef {import('../../../types.js').Dataset} Dataset
  * @typedef {(key: string, ...params: *[]) => string} Translate
  * @typedef {{
+ *   dataset: Dataset,
  *   config: Object,
  *   readConfig: () => Object,
  *   context: ChartControlContext,
  *   writer: ChartConfigWriter,
  *   translate: Translate,
  *   allowedValues: Object<string, ReadonlyArray<*> | Object>,
- * }} BuildScope
+ *   built: Map<string, HTMLElement>,
+ * }} BuildScope - `built` holds each widget control built so far, by id.
  */
 
 import { normalizeHexColor } from '../../../utils/colorUtils.js';
@@ -56,22 +62,24 @@ import { groupControls } from './grouping.js';
  * @param {ChartConfigWriter} scope.writer
  * @param {Translate} scope.translate
  * @returns {HTMLElement[]} `chart-control-section` elements, in description order.
- * @throws {Error} When a description names an unknown widget, or a select's options are missing, lack a label, or contradict the chart definition.
+ * @throws {Error} When a description names an unknown widget, a select's options are missing, lack a label, or contradict the chart definition, or a custom control asks for a control not built before it.
  */
 export function buildDescribedControls({ definition, sections }, { dataset, context, writer, translate }) {
 	/** @type {BuildScope} */
 	const scope = {
+		dataset,
 		config: dataset.chartConfig[definition.key],
 		readConfig: () => dataset.chartConfig[definition.key],
 		context,
 		writer,
 		translate,
 		allowedValues: definition.allowedValues,
+		built: new Map(),
 	};
 	return groupControls(sections.map(section => ({
 		id: section.id,
 		title: section.titleKey ? translate(section.titleKey) : section.title,
-		controls: section.controls.map(description => buildControl(description, scope)),
+		controls: section.controls.flatMap(description => buildControl(description, scope)),
 		expanded: section.expanded,
 		icon: section.icon,
 	})));
@@ -89,15 +97,45 @@ const WIDGETS = Object.freeze({
 /**
  * @param {ControlDescription} description
  * @param {BuildScope} scope
- * @returns {HTMLElement}
+ * @returns {HTMLElement[]} The control's elements: none while `shownWhen` hides it, and as many as a custom control builds.
  */
 function buildControl(description, scope) {
-	if (!Object.hasOwn(WIDGETS, description.widget)) {
-		throw new Error(`Control "${description.id}" has an unknown widget "${description.widget}".`);
+	const { widget } = description;
+	if (widget !== 'custom' && !Object.hasOwn(WIDGETS, widget)) {
+		throw new Error(`Control "${description.id}" has an unknown widget "${widget}".`);
 	}
+	if (description.shownWhen && !description.shownWhen(scope.config, scope.context)) return [];
 	// Every control is disabled while its chart is off.
 	const disabled = !scope.config.enabled || Boolean(description.disabledWhen?.(scope.config, scope.context));
-	return WIDGETS[description.widget](description, scope, disabled);
+	if (widget === 'custom') return [description.build(customScope(scope, disabled))].flat();
+	const element = WIDGETS[widget](description, scope, disabled);
+	scope.built.set(description.id, element);
+	return [element];
+}
+
+/**
+ * What a custom control's `build` receives: what a chart's builder and its
+ * listeners received, plus its disabled state and the controls built before
+ * it in this pass.
+ *
+ * @param {BuildScope} scope
+ * @param {boolean} disabled
+ * @returns {CustomControlScope}
+ */
+function customScope({ dataset, config, readConfig, context, writer, translate, built }, disabled) {
+	return {
+		dataset,
+		config,
+		readConfig,
+		context,
+		writer,
+		translate,
+		disabled,
+		control: id => {
+			if (!built.has(id)) throw new Error(`No control "${id}" is built before the custom control that needs it.`);
+			return built.get(id);
+		},
+	};
 }
 
 /**
@@ -151,13 +189,19 @@ function enumeratedValues(key, allowedValues) {
  * @returns {Array<{ value: *, label: string }>}
  */
 function selectOptions(description, scope) {
-	const { id, key, columns, options } = description;
+	const { id, key, columns, options, optionLabelParams } = description;
 	const allowed = enumeratedValues(key, scope.allowedValues);
 	if (allowed) {
 		if (columns || options) {
 			throw new Error(`Control "${id}" lists its own options, but the chart definition lists the values of "${key}".`);
 		}
-		return allowed.map(value => ({ value, label: scope.translate(optionLabelKey(description, value)) }));
+		return allowed.map(value => ({
+			value,
+			label: scope.translate(
+				optionLabelKey(description, value),
+				...(optionLabelParams ? optionLabelParams(value, scope.config, scope.translate) : []),
+			),
+		}));
 	}
 	if (columns) {
 		return [
@@ -188,7 +232,9 @@ function buildSelect(description, scope, disabled) {
 		description.id,
 		scope.translate(description.label),
 		selectOptions(description, scope),
-		shownValue(description, scope),
+		// The factory compares values as strings, so an unset setting would
+		// match a column named "null" or "undefined" instead of "None".
+		shownValue(description, scope) ?? '',
 		disabled,
 	);
 	const select = element.querySelector('select');

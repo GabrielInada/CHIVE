@@ -70,20 +70,15 @@ function datasetWith(type, overrides = {}) {
 	return { rows, columns, chartConfig };
 }
 
-// Build a chart's controls into the document and wire them to a writer double,
-// as the controls sidebar does: described controls come back wired, the others
-// attach their listeners once they are in the document.
+// Build a chart's described controls into the document, wired to a writer
+// double, as the controls sidebar does.
 function mount(type, overrides) {
-	document.body.replaceChildren();
 	const dataset = datasetWith(type, overrides);
-	const adapter = getChartControlAdapter(type);
 	const writer = { commit: vi.fn(), preview: vi.fn() };
-	if (adapter.controls) {
-		document.body.append(...buildDescribedControls(adapter.controls, { dataset, context, writer, translate: t }));
-	} else {
-		document.body.append(...adapter.build(dataset, context));
-		adapter.attachListeners(dataset, context, writer);
-	}
+	document.body.replaceChildren(...buildDescribedControls(
+		getChartControlAdapter(type).controls,
+		{ dataset, context, writer, translate: t },
+	));
 	return writer;
 }
 

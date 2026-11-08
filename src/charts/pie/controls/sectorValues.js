@@ -2,13 +2,12 @@
  * Pie sector ordering and swatch colors (package-private).
  *
  * Computes the full aggregated category-key order used by the color controls,
- * and the color each per-slice swatch shows. The order is shared by the
- * builder (per-slice color grid order) and the listeners (palette-preset to
- * per-slice color mapping), so it lives in its own module rather than being
- * owned by either consumer. The swatch colors are the fills of the sectors
- * the chart draws, from `computePieSectors`, over the rows the chart draws,
- * which the controls registry hands the builder. Pure: reads rows + config,
- * touches no DOM.
+ * and the color each per-slice swatch shows. The order is shared by the slice
+ * grid (its order) and the palette (palette-preset to per-slice color
+ * mapping) in `customControls.js`. The swatch colors are the fills of the
+ * sectors the chart draws, from `computePieSectors`, over the rows the chart
+ * draws, which the controls sidebar hands the controls in their context.
+ * Pure: reads rows + config, touches no DOM.
  */
 
 import { aggregateCategories } from '../../shared/categoryAggregation.js';
@@ -25,7 +24,7 @@ import { computePieSectors } from '../data.js';
  * global filter can leave above 0. Slice colors are keyed by category key, so
  * the Other sector, which is not a category, has no entry.
  *
- * @internal Package-private to `controls/`; imported only by the builder and listeners.
+ * @internal Package-private to `controls/`; imported only by `customControls.js`.
  * @param {Array<Object<string, *>>} rows - Every row of the dataset.
  * @param {Object} config - The pie config block.
  * @param {{ missingLabel?: string }} [options] - Localized label of the missing bucket.
@@ -50,7 +49,7 @@ export function getPieSectorValues(rows, config, { missingLabel } = {}) {
  * global filter, past Top-N or with a total of 0 or less) shows its custom
  * color, or the grid's neutral swatch without one.
  *
- * @internal Package-private to `controls/`; imported only by the builder.
+ * @internal Package-private to `controls/`; imported only by `customControls.js`.
  * @param {Array<Object<string, *>>} drawnRows - The rows the chart draws: the dataset's rows under its global filter.
  * @param {Object} config - The pie config block.
  * @returns {Object<string, string>} Hex color by key.

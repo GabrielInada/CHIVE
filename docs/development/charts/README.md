@@ -163,16 +163,18 @@ doc rather than repeated:
   colors still match (`findAppliedColorPreset`), the one its palette buttons mark; [grouping.js](../../../src/charts/shared/controls/grouping.js)
   wraps them in collapsible sections. Neither writes config.
 - **Described controls**: a chart can declare each control once, as data: its config key,
-  widget, label, options, and when it is disabled (the `ControlDescription` typedef in
-  [types.js](../../../src/types.js)). [describedControls.js](../../../src/charts/shared/controls/describedControls.js)
+  widget, label, options, and when it is shown or disabled (the `ControlDescription` typedef
+  in [types.js](../../../src/types.js)). [describedControls.js](../../../src/charts/shared/controls/describedControls.js)
   builds the controls with the factories and wires each one to the `ChartConfigWriter` as it
   creates it, so no listener looks a control up by id. The widget decides how it writes: a
   color input previews on `input` and commits on `change`, every other widget commits on
   `change`. An enumerated setting's select lists exactly the values its definition's
-  `allowedValues` accept, so its description gives only the labels. Treemap declares its
-  controls this way ([descriptions.js](../../../src/charts/treemap/controls/descriptions.js));
-  the other charts still pair a `builder.js` with a `listeners.js` that finds each control by
-  id and writes through the helpers in
+  `allowedValues` accept, so its description gives only the labels. A control no widget
+  covers is a `custom` description whose `build` creates and wires its elements (pie's radius
+  sliders, Reset Zoom button, palette, and slice grid; bubble's nesting levels). Bar, pie,
+  treemap, and bubble declare their controls this way (`controls/descriptions.js` in each
+  package); the other charts still pair a `builder.js` with a `listeners.js` that finds each
+  control by id and writes through the helpers in
   [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
 - **Drawn categories**: bar, pie, treemap, and bubble take the categories they draw from
   `aggregateCategories` in
@@ -191,15 +193,17 @@ doc rather than repeated:
   Any measure other than sum or mean is named as count.
 - **Measure and value column**: bar, pie, treemap, and bubble keep their value column by one
   rule, `valueColumnForMeasure` in [measure.js](../../../src/charts/shared/measure.js), both
-  when the user switches the measure (`setupMeasureListener` for bar, pie, and bubble, the
-  measure description's `toPatch` for treemap) and when the chart is activated
+  when the user switches the measure (the measure description's `toPatch`) and when the
+  chart is activated
   (`categoryChartDefaults` in
   [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js), the
   `computeDefaults` the four share). Count keeps the stored column; sum and mean keep it
   while it is a visible numeric column and otherwise take the first one. The value-column
   select is disabled when the measure reads no value column (`measureUsesValueColumn`), and
-  stores only a visible numeric column (`setupValueColumnListener`, or treemap's `toValue`).
-  Their measure and Top-N selects list the definition's `measureModes` and `topNOptions`.
+  stores only a visible numeric column (its `toValue`). Their measure select lists the
+  definition's `allowedValues.measureMode`, and their Top-N select the chart's `topNOptions`;
+  [categoryControls.js](../../../src/charts/shared/controls/categoryControls.js) describes
+  all three selects for the four charts.
   [dataControls.test.js](../../../tests/charts/registries/dataControls.test.js) checks these
   rules for the four charts through the controls registry.
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's
