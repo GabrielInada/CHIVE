@@ -9,7 +9,9 @@
  * conditionally includes the palette preset and per-slice color picker grid,
  * which appear only when the chart has sectors to color.
  *
- * Slice colors persist as `config.customSliceColors[categoryKey]`.
+ * Slice colors persist as `config.customSliceColors[categoryKey]`. The grid
+ * lists every category over all dataset rows and shows each sector's drawn
+ * color, which comes from the rows the chart draws (`ChartControlContext.rows`).
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
  */
@@ -273,9 +275,10 @@ function buildDisplayControls(dataset, config) {
  * @param {Dataset} dataset
  * @param {Object} config - The pie config block.
  * @param {Array<{ key: string, label: string }>} sectorValues - Source categories in aggregate order.
+ * @param {Array<Object<string, *>>} drawnRows - The rows the chart draws, for the swatch colors.
  * @returns {HTMLElement[]}
  */
-function buildStylingControls(dataset, config, sectorValues) {
+function buildStylingControls(dataset, config, sectorValues, drawnRows) {
 	const stylingControls = [];
 
 	stylingControls.push(createColorInputControl(
@@ -302,7 +305,7 @@ function buildStylingControls(dataset, config, sectorValues) {
 
 	// Per-slice custom color picker grid
 	if (sectorValues.length > 0) {
-		const colorGridElement = updatePieColorPickerGrid(dataset, sectorValues, getPieSwatchColors(dataset, config));
+		const colorGridElement = updatePieColorPickerGrid(dataset, sectorValues, getPieSwatchColors(drawnRows, config));
 		stylingControls.push(colorGridElement);
 	}
 
@@ -319,16 +322,17 @@ function buildStylingControls(dataset, config, sectorValues) {
  * @param {Dataset} dataset
  * @param {string[]} categoryOptions - Categorical (or fallback "all") column names for the category select.
  * @param {string[]} numericOptions - Numeric column names; populates the sum value-column select.
+ * @param {Array<Object<string, *>>} drawnRows - The rows the chart draws: the dataset's rows under its global filter.
  * @returns {HTMLElement[]} Array of `chart-control-section` elements.
  */
-export function createPieChartControls(dataset, categoryOptions, numericOptions) {
+export function createPieChartControls(dataset, categoryOptions, numericOptions, drawnRows) {
 	const config = dataset.chartConfig.pie;
-	const sectorValues = getPieSectorValues(dataset, config, { missingLabel: t('chive-chart-filter-missing') });
+	const sectorValues = getPieSectorValues(dataset.rows, config, { missingLabel: t('chive-chart-filter-missing') });
 
 	return groupControls([
 		{ id: 'data', title: 'Data & Aggregation', controls: buildDataControls(dataset, categoryOptions, numericOptions, config), expanded: true, icon: 'data' },
 		{ id: 'display', title: 'Display', controls: buildDisplayControls(dataset, config), expanded: true, icon: 'display' },
-		{ id: 'styling', title: 'Styling', controls: buildStylingControls(dataset, config, sectorValues), expanded: false, icon: 'styling' },
+		{ id: 'styling', title: 'Styling', controls: buildStylingControls(dataset, config, sectorValues, drawnRows), expanded: false, icon: 'styling' },
 	]);
 }
 

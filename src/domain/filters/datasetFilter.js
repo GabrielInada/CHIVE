@@ -3,10 +3,11 @@ import { applyGlobalFilterRules, resolveGlobalFilterForColumns } from './globalF
 /**
  * CHIVE dataset filtering.
  *
- * Answers which rows a dataset shows right now. The table preview, the stats,
- * the charts, the pie color grid and Panel captures all read this answer, so
- * they cannot disagree about which columns the global filter applies to. The
- * rule logic itself lives in `globalFilter.js`.
+ * Answers which rows a dataset shows right now. The shown dataset
+ * (`domain/datasets/shownDataset.js`) reads this answer, and the table preview,
+ * the stats, the charts, the pie color grid and Panel captures read the shown
+ * dataset, so they cannot disagree about which columns the global filter
+ * applies to. The rule logic itself lives in `globalFilter.js`.
  *
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').GlobalFilter} GlobalFilter

@@ -276,7 +276,8 @@ The render coordinator also has non-bus entries:
 - Locale changes and the supported TIN rendering-setting event call
   `scheduleFullRefresh()`.
 - Continuous chart-control input reaches throttled `livePreviewRender()`, which
-  renders active charts only.
+  renders active charts only, from a shown dataset derived for that frame and
+  with the same tooltip filter callback as a full render.
 - No production caller invokes private `refreshView()` directly.
 
 Hydration ordering matters. On normal boot, `hydrateState` and its
@@ -496,8 +497,9 @@ whole project, so overlapping two produces a result neither asked for.
   removes stale global-filter column references. It replaces an enumerated
   setting whose value is not in its chart definition's `allowedValues` with the
   chart's default; `mergeChartConfigWithDefaults`, which it builds on, applies
-  the same check for render, Panel captures, and Panel rehydration. It does not
-  validate other scalars and does not remove every unknown top-level key.
+  the same check when Panel rehydration merges a saved chart's block. It does
+  not validate other scalars and does not remove every unknown top-level key.
+  Render and Panel captures read the stored config as it is.
 - Persistence normalization, `addDataset`, emitting config writes, and
   `replaceAllState` canonicalize committed dataset config. Hydration does not
   rewrite stored bytes on its own.
@@ -515,14 +517,15 @@ live getters still expose them under the read-only policy. Dataset removal
 preserves these captures and their legacy/per-block slot assignments.
 
 1. `panelController.addChartToPanel` verifies the type against the panel
-   registry, reads the active dataset, merges chart defaults, resolves and
-   applies the global filter, and structured-clones config/data/columns.
+   registry, derives the active dataset's shown dataset, and structured-clones
+   the stored config block, the rows the global filter keeps, and every dataset
+   column.
 2. `addChartSnapshot` normalizes and stores the snapshot, then synchronously
    emits `CHART_ADDED`.
 3. The panel controller's typed subscriber synchronously renders the sidebar
    and canvas.
 4. `panelView.js` builds assigned slots and the slot lifecycle resolves the
-   panel-only adapter through `charts/registries/panel.js`.
+   panel renderer through `charts/registries/panel.js`.
 5. Mounting tears down any previous mount, renders from the snapshot, and adds a
    `ResizeObserver` when that API exists. Teardown disconnects it, cancels its
    scheduled resize callback, stops network simulation, hides the shared

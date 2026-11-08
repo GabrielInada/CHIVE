@@ -4,11 +4,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	filterVisibleColumns: vi.fn(() => [{ name: 'categoria' }, { name: 'valor' }]),
-	getNumericColumnNames: vi.fn(() => ['valor']),
-	getCategoricalColumnNames: vi.fn(() => ['categoria']),
-	getDateColumnNames: vi.fn(() => []),
-	mergeChartConfigWithDefaults: vi.fn(config => ({ bar: { enabled: true, expanded: true }, ...(config || {}) })),
 	onStateChange: vi.fn(),
 	setActiveChartType: vi.fn(),
 	openChartTypePickerDialog: vi.fn(() => Promise.resolve(null)),
@@ -24,13 +19,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../src/services/i18nService.js', () => ({ t: mocks.t }));
-vi.mock('../../../../src/domain/datasets/columns.js', () => ({
-	filterVisibleColumns: mocks.filterVisibleColumns,
-	getNumericColumnNames: mocks.getNumericColumnNames,
-	getCategoricalColumnNames: mocks.getCategoricalColumnNames,
-	getDateColumnNames: mocks.getDateColumnNames,
-}));
-vi.mock('../../../../src/domain/charts/chartConfig.js', () => ({ mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults }));
 vi.mock('../../../../src/state/appState.js', () => ({
 	setActiveChartType: mocks.setActiveChartType,
 	onStateChange: mocks.onStateChange,
@@ -59,9 +47,11 @@ import {
 	initChartControls,
 	renderChartControlsSidebar,
 } from '../../../../src/features/datasetWorkspace/chartControls/chartControlsController.js';
+import { deriveShownDataset } from '../../../../src/domain/datasets/shownDataset.js';
 
 function makeDataset() {
 	return {
+		rows: [{ categoria: 'A', valor: 1 }],
 		columns: [{ name: 'categoria', type: 'text' }, { name: 'valor', type: 'number' }],
 		selectedColumns: ['categoria', 'valor'],
 		chartConfig: { bar: { enabled: true, expanded: true } },
@@ -99,7 +89,7 @@ describe('chartControlsController writer wiring', () => {
 
 		initChartControls(onConfigChanged, liveRender);
 		const dataset = makeDataset();
-		renderChartControlsSidebar(dataset);
+		renderChartControlsSidebar(deriveShownDataset(dataset));
 
 		expect(mocks.createChartConfigWriter).toHaveBeenCalledWith({
 			dataset,
@@ -117,9 +107,30 @@ describe('chartControlsController writer wiring', () => {
 		mocks.createChartConfigWriter.mockReturnValue(writer);
 
 		initChartControls(vi.fn(), vi.fn());
-		renderChartControlsSidebar(makeDataset());
+		renderChartControlsSidebar(deriveShownDataset(makeDataset()));
 
 		expect(mocks.attachListeners).toHaveBeenCalledTimes(1);
 		expect(mocks.attachListeners.mock.calls[0].at(-1)).toBe(writer);
+	});
+
+	it('derives the column context once and hands the same one to the builder and the listeners', () => {
+		mocks.createChartConfigWriter.mockReturnValue({ commit: vi.fn(), preview: vi.fn() });
+		const shown = deriveShownDataset(makeDataset());
+
+		initChartControls(vi.fn(), vi.fn());
+		renderChartControlsSidebar(shown);
+
+		const [builtDataset, context] = mocks.build.mock.calls[0];
+		expect(builtDataset).toBe(shown.dataset);
+		expect(context).toEqual({
+			numeric: ['valor'],
+			categorical: ['categoria'],
+			dates: [],
+			allColumns: ['categoria', 'valor'],
+			baseCategoricalOrAll: ['categoria'],
+			rows: shown.rows,
+		});
+		expect(context.rows).toBe(shown.rows);
+		expect(mocks.attachListeners.mock.calls[0][1]).toBe(context);
 	});
 });

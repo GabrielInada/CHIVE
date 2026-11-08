@@ -2,19 +2,17 @@
  * Top-level dataset workspace view.
  *
  * Composes the active dataset's tabs, preview, statistics, chart rendering,
- * column controls, and global-filter dialog. File-list and empty-state flows
- * are owned by sibling views; chart tooltip filter actions are feature-owned
- * under filters/.
+ * column controls, and global-filter dialog from the shown dataset, which the
+ * render coordinator derives once per render pass. File-list and empty-state
+ * flows are owned by sibling views; chart tooltip filter actions are built by
+ * the charts view.
  *
- * @typedef {import('../../types.js').Dataset} Dataset
- * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
+ * @typedef {import('../../types.js').ShownDataset} ShownDataset
  * @typedef {import('../../types.js').ChartConfig} ChartConfig
  */
 
 import { t, getLocale, translateType } from '../../services/i18nService.js';
-import { mergeChartConfigWithDefaults } from '../../domain/charts/chartConfig.js';
 import { PREVIEW_DEFAULT_ROWS, PREVIEW_MIN_ROWS } from '../../config/limits.js';
-import { getNumericColumns } from '../../domain/datasets/columns.js';
 
 import { renderCharts } from './views/chartsView.js';
 import { updateTabs } from './views/tabsView.js';
@@ -23,53 +21,39 @@ import { renderStats, renderCategoricalStats } from './views/statsView.js';
 import { renderColumnControlsDOM } from './views/columnControlsView.js';
 import { VIEW_IDS, FILE_IDS, BADGE_IDS, WORKSPACE_ACTION_IDS } from './domIds.js';
 import { openGlobalFilterDialog } from './dialogs/globalFilterDialog.js';
-import { createGlobalFilterActions } from './filters/globalFilterActions.js';
-import { filterDataset } from '../../domain/filters/datasetFilter.js';
 
 /**
  * Render the main data-interface for the active dataset: tabs, table
- * preview, stats, charts, and the column-controls strip. Wires the
- * global-filter action handlers passed down into the chart layer's
- * tooltip actions.
+ * preview, stats, charts, and the column-controls strip. The preview, the
+ * stats and the charts all read the shown dataset's rows and visible columns.
  *
  * Side effects: enables the "Next" button, toggles the upload zone to
  * its loaded state, and updates the file-meta tooltip.
  *
- * @param {Array<Object<string, *>>} rows
- * @param {ColumnSpec[]} columns
- * @param {string} fileName
- * @param {string} fileSize
- * @param {number} [previewRows=PREVIEW_DEFAULT_ROWS] - Number of rows to show in the table preview.
- * @param {(rows: number) => void} [onPreviewRowsChange]
- * @param {string[] | null} [selectedColumns] - Visible columns; defaults to all when null.
- * @param {(names: string[]) => void} [onColumnSelectionChange]
- * @param {Partial<ChartConfig> | null} [chartConfig] - Merged with defaults before rendering.
- * @param {(partial: Partial<ChartConfig>) => void} [onChartConfigChange]
+ * @param {ShownDataset} shown
+ * @param {Object} [options]
+ * @param {number} [options.previewRows=PREVIEW_DEFAULT_ROWS] - Number of rows to show in the table preview.
+ * @param {((rows: number) => void) | null} [options.onPreviewRowsChange]
+ * @param {((names: string[]) => void) | null} [options.onColumnSelectionChange]
+ * @param {((partial: Partial<ChartConfig>) => void) | null} [options.onChartConfigChange] - Receives tab, global filter and tooltip filter changes.
  * @returns {void}
  */
-export function renderDatasetWorkspace(
-  rows,
-  columns,
-  fileName,
-  fileSize,
+export function renderDatasetWorkspace(shown, {
   previewRows = PREVIEW_DEFAULT_ROWS,
   onPreviewRowsChange = null,
-  selectedColumns = null,
   onColumnSelectionChange = null,
-  chartConfig = null,
-  onChartConfigChange = null
-) {
+  onChartConfigChange = null,
+} = {}) {
+  const { dataset, rows: filteredRows, filter: safeGlobalFilter, visibleColumns } = shown;
+  const { rows, columns, chartConfig: config } = dataset;
+
   document.getElementById(VIEW_IDS.columnPanel).hidden = false;
   document.getElementById(VIEW_IDS.resultTabs).hidden = false;
   document.getElementById(VIEW_IDS.emptyState).hidden = true;
   document.getElementById(VIEW_IDS.dataState).hidden = false;
 
   const columnNames = columns.map(column => column.name);
-  const selectedNames = new Set(Array.isArray(selectedColumns) ? selectedColumns : columnNames);
-  const visibleColumns = columns.filter(column => selectedNames.has(column.name));
-  const visibleNumericColumns = getNumericColumns(visibleColumns);
-
-  const config = mergeChartConfigWithDefaults(chartConfig);
+  const selectedNames = new Set(visibleColumns.map(column => column.name));
 
   // Detect active filter
   const numericNames = columns.filter(c => c.type === 'number').map(c => c.name);
@@ -99,16 +83,6 @@ export function renderDatasetWorkspace(
     onColumnSelectionChange,
   });
 
-  const allColumnNames = columns.map(column => column.name);
-  const { filter: safeGlobalFilter, rows: filteredRows } = filterDataset({ rows, columns, chartConfig: config });
-
-  const globalFilterActions = createGlobalFilterActions({
-    globalFilter: config.globalFilter,
-    safeGlobalFilter,
-    allColumnNames,
-    onChartConfigChange,
-  });
-
   updateTabs(config.activeTab, onChartConfigChange, config, {
     triggerState: {
       hasDataset: true,
@@ -120,7 +94,7 @@ export function renderDatasetWorkspace(
       if (!onChartConfigChange) return;
       const result = await openGlobalFilterDialog({
         rows,
-        allColumns: allColumnNames,
+        allColumns: columnNames,
         numericColumns: numericNames,
         initialFilter: safeGlobalFilter,
         translate: t,
@@ -156,7 +130,7 @@ export function renderDatasetWorkspace(
   renderTablePreview(filteredRows, visibleColumns, rowLimit);
   renderStats(filteredRows, visibleColumns);
   renderCategoricalStats(filteredRows, visibleColumns);
-  renderCharts(config, filteredRows, visibleColumns, visibleNumericColumns, globalFilterActions);
+  renderCharts(shown, onChartConfigChange);
 
   document.getElementById(WORKSPACE_ACTION_IDS.advanceButton).disabled = false;
   document.getElementById(FILE_IDS.uploadZone).classList.add('loaded');
@@ -164,5 +138,5 @@ export function renderDatasetWorkspace(
   document.querySelector('.upload-text-main').textContent = t('chive-upload-loaded-main');
   document.querySelector('.upload-text-sub').textContent = t('chive-upload-loaded-sub');
   document.getElementById(FILE_IDS.fileSummary).title =
-    `${fileName} · ${rows.length.toLocaleString(getLocale())} rows · ${columns.length} columns · ${fileSize}`;
+    `${dataset.name} · ${rows.length.toLocaleString(getLocale())} rows · ${columns.length} columns · ${dataset.sizeLabel}`;
 }

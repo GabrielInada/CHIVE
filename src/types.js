@@ -81,6 +81,22 @@
  * @property {PrecomputedStats} [precomputedStats] - Worker-computed stats, optional.
  */
 
+/**
+ * What a dataset shows right now, from `deriveShownDataset` in
+ * `domain/datasets/shownDataset.js`. The render coordinator derives it once per
+ * render pass and hands the same value to the table, the statistics, the
+ * charts, live preview and the chart controls; Add to panel derives it once per
+ * capture.
+ *
+ * @typedef {Object} ShownDataset
+ * @property {Dataset} dataset - The dataset itself, a live state reference to treat as read-only. Its `chartConfig` is the stored, canonical config.
+ * @property {Array<Object<string, *>>} rows - The rows that pass the global filter; the dataset's own `rows` array when no rule applies.
+ * @property {GlobalFilter} filter - The global filter rules that apply. A rule whose column the dataset no longer has is dropped.
+ * @property {ColumnSpec[]} visibleColumns - The columns the column list shows, in source order.
+ * @property {Object<string, ColumnType>} columnTypeByName - Every column's type, hidden columns included.
+ * @property {ChartTypeKey | null} activeChartType - The chart drawn: the first enabled chart in canonical order, or `null`.
+ */
+
 // ─── Chart-config domain ────────────────────────────────────────────────
 
 /**
@@ -142,9 +158,9 @@
  */
 
 /**
- * Column-name buckets passed into per-chart `build`/`attachListeners`/
- * `computeDefaults` by the controls registry. Derived from the active
- * dataset's visible columns by `getColumnContext()` in
+ * Column-name buckets and drawn rows passed into per-chart `build`/
+ * `attachListeners`/`computeDefaults` by the controls registry. Derived once
+ * per sidebar render from the {@link ShownDataset} by `columnContextOf()` in
  * `features/datasetWorkspace/chartControls/chartControlsController.js`;
  * implementation lookup lives in `charts/registries/controls.js`.
  *
@@ -157,6 +173,7 @@
  * @property {string[]} dates - Date (`'date'`) column names.
  * @property {string[]} allColumns - All currently visible column names.
  * @property {string[]} baseCategoricalOrAll - `categorical` when non-empty, else `allColumns`.
+ * @property {Array<Object<string, *>>} rows - The rows the chart draws: the dataset's rows under its global filter. The pie color grid reads them.
  */
 
 /**

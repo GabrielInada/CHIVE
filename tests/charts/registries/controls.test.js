@@ -57,7 +57,7 @@ describe('controls registry', () => {
 		['line', 'createLineChartControls', 'setupLineChartControlListeners', ['numeric', 'dates', 'all'], ['numeric', 'dates', 'all']],
 		['scatter', 'createScatterPlotControls', 'setupScatterPlotControlListeners', ['numeric', 'all'], ['numeric', 'all']],
 		['scatter3d', 'createScatter3dControls', 'setupScatter3dControlListeners', ['numeric', 'all'], ['numeric', 'all']],
-		['pie', 'createPieChartControls', 'setupPieChartControlListeners', ['base', 'numeric'], ['base', 'numeric', 'all']],
+		['pie', 'createPieChartControls', 'setupPieChartControlListeners', ['base', 'numeric', 'rows'], ['base', 'numeric', 'all']],
 		['bubble', 'createBubbleChartControls', 'setupBubbleChartControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
 		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners', ['all', 'numeric', 'categorical'], ['all', 'numeric']],
 		['treemap', 'createTreemapControls', 'setupTreemapControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
@@ -71,6 +71,7 @@ describe('controls registry', () => {
 			categorical: ['category'],
 			dates: ['date'],
 			all: ['category', 'value', 'date'],
+			rows: [{ category: 'A', value: 1 }],
 		};
 		const context = {
 			baseCategoricalOrAll: values.base,
@@ -78,6 +79,7 @@ describe('controls registry', () => {
 			categorical: values.categorical,
 			dates: values.dates,
 			allColumns: values.all,
+			rows: values.rows,
 		};
 		const adapter = getChartControlAdapter(type);
 

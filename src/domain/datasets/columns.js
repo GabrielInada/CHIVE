@@ -1,10 +1,12 @@
 /**
  * CHIVE column-classification helpers. Pure functions over `columns`
- * arrays. Used by state facades, render coordination, dataset and panel
- * features, the bubble chart, and persistence snapshots.
+ * arrays. Used by state facades, the shown dataset, dataset and panel
+ * features, the chart controls and the Panel chart registry, the bubble chart,
+ * and persistence snapshots.
  *
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
+ * @typedef {import('../../types.js').ColumnType} ColumnType
  */
 
 /**
@@ -147,4 +149,23 @@ export function getDateColumns(columns) {
  */
 export function getDateColumnNames(columns) {
 	return getDateColumns(columns).map(column => column.name);
+}
+
+/**
+ * Column name to type, for every column given. Charts read it for their axes,
+ * so Visualizations passes every dataset column, hidden ones included, and
+ * Panel every captured column. The map has no prototype: a column name is text
+ * from the file, and a lookup of a name such as `constructor` must not reach
+ * Object.prototype.
+ *
+ * @param {ColumnSpec[] | null | undefined} columns
+ * @returns {Object<string, ColumnType>}
+ */
+export function getColumnTypesByName(columns) {
+	const typeByName = Object.create(null);
+	if (!Array.isArray(columns)) return typeByName;
+	for (const column of columns) {
+		if (column?.name) typeByName[column.name] = column.type;
+	}
+	return typeByName;
 }

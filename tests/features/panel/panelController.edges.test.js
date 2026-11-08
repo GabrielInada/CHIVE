@@ -40,25 +40,6 @@ const mocks = vi.hoisted(() => ({
 			PANEL_BLOCK_BORDER_UPDATED: 'panelBlockBorderUpdated',
 		},
 	},
-	chartConfig: {
-		mergeChartConfigWithDefaults: vi.fn((cfg) => ({
-			bar: { category: 'a', enabled: true },
-			scatter: {},
-			network: {},
-			pie: {},
-			bubble: {},
-			treemap: {},
-			globalFilter: null,
-			...(cfg || {}),
-		})),
-	},
-	globalFilter: {
-		resolveGlobalFilterForColumns: vi.fn(() => null),
-		applyGlobalFilterRules: vi.fn((rows) => rows),
-	},
-	columnHelpers: {
-		getNumericColumnNames: vi.fn(() => ['a']),
-	},
 	i18n: {
 		t: vi.fn((k) => `txt:${k}`),
 		getLocale: vi.fn(() => 'en'),
@@ -66,9 +47,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../src/state/appState.js', () => mocks.appState);
-vi.mock('../../../src/domain/charts/chartConfig.js', () => mocks.chartConfig);
-vi.mock('../../../src/domain/filters/globalFilter.js', () => mocks.globalFilter);
-vi.mock('../../../src/domain/datasets/columns.js', () => mocks.columnHelpers);
 vi.mock('../../../src/services/i18nService.js', () => mocks.i18n);
 
 import { initPanelController, addChartToPanel, removeChartFromPanel, getLayoutConfig, _resetPanelControllerForTesting } from '../../../src/features/panel/panelController.js';
@@ -104,10 +82,6 @@ describe('panelController (branch coverage)', () => {
 			selectedColumns: ['a'],
 			chartConfig: {},
 		});
-		mocks.chartConfig.mergeChartConfigWithDefaults.mockClear();
-		mocks.globalFilter.resolveGlobalFilterForColumns.mockClear();
-		mocks.globalFilter.applyGlobalFilterRules.mockClear();
-		mocks.columnHelpers.getNumericColumnNames.mockClear();
 		mocks.i18n.t.mockClear();
 	});
 
@@ -193,6 +167,35 @@ describe('panelController (branch coverage)', () => {
 			liveConfig.bar.color = '#999999';
 			expect(snap.config.color).toBe('#111111');
 		});
+
+		// The capture takes what Visualizations draws: the shown dataset's rows,
+		// every column, and the config block as stored, neither copied from
+		// defaults nor repaired.
+		it('captures the rows the global filter keeps, every column, and the stored config block', () => {
+			initPanelController();
+			const columns = [{ name: 'region', type: 'text' }, { name: 'sales', type: 'number' }];
+			mocks.appState.getActiveDataset.mockReturnValue({
+				name: 'fixture.csv',
+				rows: [{ region: 'North', sales: 1 }, { region: 'South', sales: 2 }],
+				columns,
+				selectedColumns: ['sales'],
+				chartConfig: {
+					globalFilter: {
+						rules: [{ column: 'region', mode: 'categorical', include: ['v:South'], exclude: [] }],
+						combine: 'AND',
+					},
+					bar: { category: 'region', enabled: true },
+				},
+			});
+
+			const result = addChartToPanel('container', 'Chart', { type: 'bar' });
+
+			expect(result.ok).toBe(true);
+			const snap = mocks.appState.addChartSnapshot.mock.calls[0][0];
+			expect(snap.dataSnapshot).toEqual([{ region: 'South', sales: 2 }]);
+			expect(snap.columnsSnapshot).toEqual(columns);
+			expect(snap.config).toEqual({ category: 'region', enabled: true });
+		});
 	});
 
 	describe('addChartToPanel() error paths', () => {
@@ -226,7 +229,7 @@ describe('panelController (branch coverage)', () => {
 
 		it('catches unexpected exceptions and returns add-error', () => {
 			initPanelController();
-			mocks.chartConfig.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
+			mocks.appState.addChartSnapshot.mockImplementationOnce(() => {
 				throw new Error('boom');
 			});
 
@@ -239,7 +242,7 @@ describe('panelController (branch coverage)', () => {
 		it('calls feedback callback on add-error if provided', () => {
 			const feedbackCb = vi.fn();
 			initPanelController(feedbackCb);
-			mocks.chartConfig.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
+			mocks.appState.addChartSnapshot.mockImplementationOnce(() => {
 				throw new Error('boom');
 			});
 
@@ -250,7 +253,7 @@ describe('panelController (branch coverage)', () => {
 
 		it('does not throw on unhandled error', () => {
 			initPanelController();
-			mocks.chartConfig.mergeChartConfigWithDefaults.mockImplementationOnce(() => {
+			mocks.appState.addChartSnapshot.mockImplementationOnce(() => {
 				throw new Error('Unexpected');
 			});
 

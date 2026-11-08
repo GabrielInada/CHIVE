@@ -142,8 +142,9 @@ For a committed column-selection change:
 3. The data facade validates unique declared names, stores a copied array, and
    emits `STATE_EVENTS.COLUMNS_UPDATED` only when the ordered list changed.
 4. The render coordinator schedules the workspace and controls regions.
-5. A single animation-frame flush reads current state and renders those
-   regions; a synchronous burst is coalesced.
+5. A single animation-frame flush reads current state, derives the active
+   dataset's shown dataset once (`domain/datasets/shownDataset.js`), and renders
+   those regions from it; a synchronous burst is coalesced.
 
 Other render paths are intentionally different:
 
@@ -154,7 +155,7 @@ Other render paths are intentionally different:
 | Panel chart/block events | Panel controller | Synchronous sidebar/canvas/layout-selector renders, depending on the event. |
 | Boot and `chiveDebug.refreshView()` | Render coordinator | Synchronous full refresh through `runFullRefreshNow`. |
 | Locale or rendering-setting browser events | Application initializer + render coordinator | Animation-frame-scheduled full refresh. |
-| Continuous color/height control input | Chart-controls preview bridge | Throttled, charts-only `livePreviewRender`; controls and saved panel captures are untouched. |
+| Continuous color/height control input | Chart-controls preview bridge | Throttled, charts-only `livePreviewRender`, with the same inputs as a full render; controls and saved panel captures are untouched. |
 
 Committed chart configuration is canonicalized at state boundaries:
 persistence normalization, `addDataset`, emitting config writes, and

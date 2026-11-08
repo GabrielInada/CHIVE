@@ -104,8 +104,8 @@ for storage details.
 
 Add useful chart states to the dashboard panel when you want a composed output.
 
-- Adding a chart snapshots the current filtered rows, visible columns, chart
-  type, and chart configuration.
+- Adding a chart snapshots the current filtered rows, every dataset column,
+  the chart type, and the chart configuration.
 - Arrange chart snapshots into panel blocks and slots.
 - Change panel block templates, proportions, height, and borders from the panel
   controls.
