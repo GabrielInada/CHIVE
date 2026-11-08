@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { showPinnedFilterTooltip } from '../../../../src/charts/shared/tooltip/filterActions.js';
+import { togglePinnedFilterTooltip } from '../../../../src/charts/shared/tooltip/filterActions.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 
 const LABELS = {
@@ -27,7 +27,9 @@ function recordingHandlers(calls) {
 }
 
 function pin(filterCallbacks, categories, options = {}) {
-	showPinnedFilterTooltip('Rows: 4', 10, 20, { headerTitle: 'North', filterCallbacks, categories, ...options });
+	const target = document.createElement('button');
+	document.body.appendChild(target);
+	togglePinnedFilterTooltip('Rows: 4', 10, 20, { target, headerTitle: 'North', filterCallbacks, categories, ...options });
 	return document.querySelector('.chart-tooltip');
 }
 
@@ -35,7 +37,7 @@ const actionButtons = () => [...document.querySelectorAll('.chart-tooltip__actio
 const actionLabels = () => actionButtons().map(button => button.textContent);
 const stateBadge = () => document.querySelector('.chart-tooltip__filter-state');
 
-describe('showPinnedFilterTooltip', () => {
+describe('togglePinnedFilterTooltip', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '';
 	});

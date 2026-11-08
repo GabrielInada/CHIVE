@@ -393,8 +393,8 @@ treemap, bubble, network, and scatter:
 - **Hover** shows a tooltip with the category, the measure value, and the percentage of the
   total. The percentage is left out in mean mode, and when a kept sum is below 0, since a
   share of the net total could then pass 100% or go below 0%.
-- **Click pins** a tooltip that stays open. The bar passes `showPinnedFilterTooltip` its
-  category column and the bar's category token, with the `filterCallbacks` bag as
+- **Click pins** a tooltip that stays open. The bar passes `togglePinnedFilterTooltip` its
+  clicked SVG mark, category column and the bar's category token, with the `filterCallbacks` bag as
   Visualizations supplied it. The shared module reads the token's state in the global
   filter and offers the actions that apply: focus on this value ("show only this", left out
   when it would give the same filter as adding the value), then add to the global filter and
@@ -404,7 +404,10 @@ treemap, bubble, network, and scatter:
   `labels.filterActions`, passed separately as `filterActionLabels`; callbacks carry no
   labels. The close button receives `labels.close` as a separate `closeLabel`, so its
   accessible name and hover title are translated in both views.
-  Clicking the same bar again or clicking the SVG background dismisses the pin.
+  The shared tooltip owns the pin, identified by the clicked mark rather than a renderer
+  variable. Clicking the same bar again, the SVG background, the close button or outside
+  the tooltip dismisses it, as does Escape. Hovering any chart leaves a pin intact.
+  Clicking another mark replaces it, including an identical category in another Panel slot.
 
 Panel passes empty `filterCallbacks`. Its bars still show hover and pinned tooltips, with a
 translated close button and no filter actions or filter-state badge.

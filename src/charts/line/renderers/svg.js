@@ -31,6 +31,7 @@ import {
 import {
 	createTooltipLine,
 	hideChartTooltip,
+	hideHoverTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
@@ -208,7 +209,7 @@ export function renderLineChart(container, rows, config = {}, context = {}) {
 				showChartTooltip(buildTooltipContent(point, axisLabels, xKind, locale), event.pageX, event.pageY);
 			})
 			.on('mousemove', event => moveChartTooltip(event.pageX, event.pageY))
-			.on('mouseleave', () => hideChartTooltip());
+			.on('mouseleave', () => hideHoverTooltip());
 	}
 
 	appendBottomAxis(group, {

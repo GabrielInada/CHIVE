@@ -15,10 +15,11 @@ import { hierarchy, select, treemap, treemapSquarify } from '../../../../vendor/
 import {
 	createTooltipLine,
 	hideChartTooltip,
+	hideHoverTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
+import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
@@ -114,8 +115,6 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 		return schemeColors[i % schemeColors.length];
 	};
 
-	let pinnedKey = null;
-
 	const buildTooltipContent = (d, pct) => {
 		const wrapper = document.createElement('div');
 
@@ -149,35 +148,23 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 		.attr('stroke-width', 1)
 		.style('cursor', 'pointer')
 		.on('mouseenter', (event, d) => {
-			if (pinnedKey !== null) return;
 			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
 			showChartTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY);
 		})
 		.on('mousemove', event => {
-			if (pinnedKey !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseleave', () => {
-			if (pinnedKey !== null) return;
-			hideChartTooltip();
+			hideHoverTooltip();
 		})
 		.on('click', (event, d) => {
 			event.stopPropagation();
-			if (pinnedKey === d.data.key) {
-				pinnedKey = null;
-				hideChartTooltip();
-				return;
-			}
-			pinnedKey = d.data.key;
 			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
-			showPinnedFilterTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY, {
+			togglePinnedFilterTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY, {
+				target: event.currentTarget,
 				headerTitle: d.data.label,
 				closeLabel: labels.close,
 				filterActionLabels: labels.filterActions,
-				onDismiss: () => {
-					pinnedKey = null;
-					hideChartTooltip();
-				},
 				filterCallbacks,
 				categories: [{ column: categoryColumn, token: d.data.token }],
 			});
@@ -237,7 +224,6 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 	}
 
 	svg.on('click', () => {
-		pinnedKey = null;
 		hideChartTooltip();
 	});
 

@@ -14,7 +14,7 @@
  */
 
 import { axisBottom, axisLeft } from '../../../../vendor/d3/d3.js';
-import { hideChartTooltip, moveChartTooltip } from '../../shared/tooltip/tooltip.js';
+import { hideChartTooltip, hideHoverTooltip, moveChartTooltip } from '../../shared/tooltip/tooltip.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { ok, fail } from '../../../utils/result.js';
 import {
@@ -124,8 +124,7 @@ export function renderScatterPlot(container, rows, config = {}, context = {}) {
 	});
 	hideChartTooltip();
 
-	let pinnedIndex = null;
-	const { showTooltip, showPinnedTooltip } = createScatterInteractions({
+	const { showTooltip, togglePinnedTooltip } = createScatterInteractions({
 		axisTypes,
 		axisLabels,
 		labels,
@@ -185,7 +184,6 @@ export function renderScatterPlot(container, rows, config = {}, context = {}) {
 		innerHeight,
 		color,
 		labels,
-		isPinned: () => pinnedIndex !== null,
 	});
 
 	const pointLayer = group
@@ -213,35 +211,25 @@ export function renderScatterPlot(container, rows, config = {}, context = {}) {
 	pointLayer
 		.on('mouseover', event => {
 			const point = pointFromEvent(event);
-			if (!point || pinnedIndex !== null) return;
+			if (!point) return;
 			showTooltip(event, point);
 		})
 		.on('mousemove', event => {
-			if (!pointFromEvent(event) || pinnedIndex !== null) return;
+			if (!pointFromEvent(event)) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseout', event => {
-			if (!pointFromEvent(event) || pinnedIndex !== null) return;
-			hideChartTooltip();
+			if (!pointFromEvent(event)) return;
+			hideHoverTooltip();
 		})
 		.on('click', event => {
 			const point = pointFromEvent(event);
 			if (!point) return;
 			event.stopPropagation();
-			if (pinnedIndex === point.index) {
-				pinnedIndex = null;
-				hideChartTooltip();
-				return;
-			}
-			pinnedIndex = point.index;
-			showPinnedTooltip(event, point, () => {
-				pinnedIndex = null;
-				hideChartTooltip();
-			});
+			togglePinnedTooltip(event, point);
 		});
 
 	svg.on('click', () => {
-		pinnedIndex = null;
 		hideChartTooltip();
 	});
 

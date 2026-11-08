@@ -38,7 +38,7 @@ import { TIN_CHART } from '../../../config/charts/definitions/tin.js';
 import { formatNumber, toFiniteNumber } from '../../../utils/formatters.js';
 import { interpolateColor } from '../../../utils/colorUtils.js';
 import { ok, fail } from '../../../utils/result.js';
-import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../../shared/tooltip/tooltip.js';
+import { createTooltipLine, hideChartTooltip, hideHoverTooltip, moveChartTooltip, showChartTooltip } from '../../shared/tooltip/tooltip.js';
 import {
 	appendAxisLabels,
 	appendBottomAxis,
@@ -371,7 +371,7 @@ export function renderTinChart(container, rows, config = {}, context = {}) {
 				showChartTooltip(wrapper, event.pageX, event.pageY);
 			})
 			.on('mousemove', event => moveChartTooltip(event.pageX, event.pageY))
-			.on('mouseleave', () => hideChartTooltip());
+			.on('mouseleave', () => hideHoverTooltip());
 	}
 
 	if (cfg.showZLabels) {
