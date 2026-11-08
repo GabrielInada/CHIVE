@@ -628,19 +628,29 @@
  * @property {(handler: () => void) => void} onCancel
  */
 
-// ─── Join workflow (datasetController.createJoinedDataset) ──────────────
+// ─── Dataset intake (features/datasetWorkspace/workflows/intake.js) ─────
 
 /**
- * Result returned by `datasetController.createJoinedDataset`. Uses `message`
- * rather than `reason` (the generic `Result` shape's failure field), so
- * callers route failures into `showError` directly. On success the new
- * dataset's index in `appState.data.datasets` and the generated name
- * are returned.
+ * One way to add a dataset, as `runIntake` takes it: an uploaded file, a
+ * join or a sample dataset. Every text is already translated.
  *
- * @typedef {(
- *   { ok: true, index: number, datasetName: string }
- *   | { ok: false, reason?: string, message: string }
- * )} JoinDatasetResult
+ * @typedef {Object} IntakeSource
+ * @property {string} name - The new dataset's name. Also fills the parsing stage's progress label.
+ * @property {string} progressLabel - The progress toast's label until the worker reports a stage.
+ * @property {(request: IntakeRequest) => Promise<Result>} ingest - Loads the source's data when it needs to, then runs Ingest in the data worker. Resolves with the worker's result, whose `value` holds the {@link IngestPayload}, or with a failure such as `'cancelled'`.
+ * @property {(rowCount: number) => string} sizeLabel - The new dataset's size label, given its row count.
+ * @property {((rowCount: string, rowLimit: string) => string) | null} rowWarning - The question asked when the rows are over the row limit, with both numbers formatted for the current locale. `null` exempts the source from the row limit.
+ * @property {string} successMessage - The progress toast's text once the dataset is added.
+ * @property {(detail: string, reason: string) => string} failureMessage - Text for the toast and the error notice when the intake fails. `detail` is Ingest's translated explanation of a known parse failure, otherwise empty. `reason` lets a source word its own failures, such as a fetch timeout, and is never shown.
+ */
+
+/**
+ * What `runIntake` passes to `IntakeSource.ingest`.
+ *
+ * @typedef {Object} IntakeRequest
+ * @property {AbortSignal} signal - Aborts when the user cancels from the progress toast.
+ * @property {(progress: IngestProgress) => void} onProgress - Updates the progress toast.
+ * @property {number} [rowLimit] - Present on the first request of a source with a row warning. A source that can cap its rows passes it to Ingest; one that cannot ignores it.
  */
 
 export {};

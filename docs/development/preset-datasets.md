@@ -122,6 +122,11 @@ Unknown ingest failures use the generic sample-loading message. Cancellation
 during either fetching or ingest closes the toast quietly and adds no dataset.
 A missing preset descriptor shows an unnamed error notice without a progress toast.
 
+Samples load through the same intake as uploads and joins
+(`src/features/datasetWorkspace/workflows/intake.js`), which owns the toast,
+cancellation, and failure feedback above. Unlike uploads and joins, samples skip
+the row-limit warning, so keep bundled datasets small.
+
 ## Validation Checklist
 
 - The file is in `src/data/presets/`.

@@ -54,10 +54,9 @@ const INGEST_ERROR_KEYS = {
  * a falsy reason yields the neutral `'ingest-error'`.
  * Callers may supply a localized fallback (or an empty string) to avoid exposing
  * diagnostic ids for unknown reasons. Known parse reasons keep their detail.
+ * The dataset intake passes an empty string and words the failure itself.
  *
- * Never returns `undefined`, and never returns the generic parse-prefix text
- * (`chive-error-parse`) that callers add around it, so the toast cannot read
- * "Could not parse file: Could not parse file".
+ * Never returns `undefined`.
  *
  * @param {string} [reason]
  * @param {string} [fallbackMessage] - Used only when the reason has no translation.

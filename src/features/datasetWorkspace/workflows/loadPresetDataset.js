@@ -1,95 +1,66 @@
 /**
- * Controller-internal preset dataset workflow.
+ * Controller-internal sample dataset workflow.
  *
- * Owns preset source loading, ingest, dataset assembly, progress feedback, and
- * selection through the controller callback supplied by the caller.
+ * Adds a bundled sample through the shared intake with a source that fetches
+ * the sample's file and runs Ingest on it. Dataset selection comes from the
+ * controller, threaded in by the caller.
+ *
+ * @typedef {import('../../../types.js').IntakeSource} IntakeSource
+ * @typedef {import('../../../types.js').Result} Result
  */
 
 import { t } from '../../../services/i18nService.js';
-import { ingestFile, progressLabelForStage, ingestErrorMessage } from '../../../services/dataIngestService.js';
+import { ingestFile } from '../../../services/dataIngestService.js';
 import { loadPresetSource } from '../../../services/presetService.js';
-import { addDataset } from '../../../state/appState.js';
-import { showError, showProgress } from '../../../ui/feedback.js';
-import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
+import { showError } from '../../../ui/feedback.js';
+import { fail } from '../../../utils/result.js';
+import { runIntake } from './intake.js';
 
 /**
- * Resolve and load a preset dataset.
+ * Load a sample dataset and select it.
  *
- * `loadPresetSource` returns a result: `{ ok:false, reason:'preset-fetch-timeout' }`
- * surfaces a dedicated timeout message, `'cancelled'` closes the toast quietly,
- * and every other failure uses localized sample-loading feedback. Known parser
- * failures retain their translated detail; internal reason codes stay out of UI.
+ * Failures name the sample: a fetch timeout explains itself, a known parser
+ * failure keeps its translated detail, and anything else asks to try again.
+ * Internal reason codes stay off the page. A missing descriptor shows an
+ * unnamed error notice and no progress toast.
  *
  * @param {import('../../../types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
  * @param {{ selectDataset: (index: number) => void }} dependencies
- * @returns {Promise<void>}
+ * @returns {Promise<Result>} The intake's result, or `fail('preset-missing')`.
  */
 export async function loadPresetDataset(preset, { selectDataset }) {
 	if (!preset) {
 		showError(t('chive-preset-load-error-generic'));
-		return;
+		return fail('preset-missing');
 	}
+	return runIntake(sampleSource(preset), { selectDataset });
+}
 
-	const presetName = t(preset.nameKey);
-	const progress = showProgress(t('chive-progress-parsing', [presetName]));
-	const abortController = new AbortController();
-	progress.onCancel(() => abortController.abort());
-	const reportFailure = (message = t('chive-preset-load-failed', presetName)) => {
-		progress.fail(message);
-		showError(message);
+/**
+ * @private
+ * @param {import('../../../types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
+ * @returns {IntakeSource}
+ */
+function sampleSource(preset) {
+	const name = t(preset.nameKey);
+	return {
+		name,
+		progressLabel: t('chive-progress-parsing', name),
+		async ingest(request) {
+			const loaded = await loadPresetSource(preset, { signal: request.signal });
+			if (!loaded.ok) return loaded;
+			const { kind, text, dropColumns } = loaded.value;
+			return ingestFile({ kind, text, options: { dropColumns } }, request);
+		},
+		sizeLabel: () => t('chive-preset-generated-size', preset.rows),
+		// Samples ship with CHIVE and are kept small, so the row limit does not apply.
+		rowWarning: null,
+		successMessage: t('chive-preset-load-success', name),
+		failureMessage: (detail, reason) => {
+			if (reason === 'preset-fetch-timeout') return t('chive-preset-fetch-timeout', name);
+			return detail
+				? t('chive-preset-load-failed-detail', name, detail)
+				: t('chive-preset-load-failed', name);
+		},
 	};
-
-	try {
-		const result = await loadPresetSource(preset, { signal: abortController.signal });
-
-		if (!result.ok) {
-			if (result.reason === 'cancelled') {
-				progress.close();
-			} else if (result.reason === 'preset-fetch-timeout') {
-				reportFailure(t('chive-preset-fetch-timeout', [presetName]));
-			} else {
-				reportFailure();
-			}
-			return;
-		}
-
-		const source = result.value;
-		const ingestResult = await ingestFile(
-			{ kind: source.kind, text: source.text, options: { dropColumns: source.dropColumns } },
-			{
-				signal: abortController.signal,
-				onProgress: ({ stage, percent }) => {
-					progress.update(percent, progressLabelForStage(stage, presetName));
-				},
-			},
-		);
-
-		if (!ingestResult.ok) {
-			if (ingestResult.reason === 'cancelled') progress.close();
-			else {
-				const detail = ingestErrorMessage(ingestResult.reason, '');
-				reportFailure(detail ? t('chive-preset-load-failed-detail', presetName, detail) : undefined);
-			}
-			return;
-		}
-
-		const { rows, columns, precomputedStats } = ingestResult.value;
-
-		const dataset = {
-			name: presetName,
-			sizeLabel: t('chive-preset-generated-size', [preset.rows]),
-			rows,
-			columns,
-			selectedColumns: columns.map(c => c.name),
-			chartConfig: createDefaultChartConfig(),
-			precomputedStats,
-		};
-
-		const index = addDataset(dataset);
-		selectDataset(index);
-		progress.succeed(t('chive-preset-load-success', [presetName]));
-	} catch {
-		if (abortController.signal.aborted) progress.close();
-		else reportFailure();
-	}
 }

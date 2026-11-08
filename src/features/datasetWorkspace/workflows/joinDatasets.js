@@ -1,19 +1,20 @@
 /**
- * Controller-internal dataset join workflow.
+ * Controller-internal join workflow.
  *
- * Owns join validation, the join's ingest in the data worker, naming, and
- * insertion into state. The controller remains the public feature surface.
+ * Validates the join, then adds it through the shared intake with a source
+ * that runs the join and Ingest in the data worker.
  *
- * @typedef {import('../../../types.js').JoinDatasetResult} JoinDatasetResult
+ * @typedef {import('../../../types.js').IntakeSource} IntakeSource
  * @typedef {import('../../../types.js').JoinType} JoinType
+ * @typedef {import('../../../types.js').Result} Result
  */
 
-import { t, getLocale } from '../../../services/i18nService.js';
+import { t } from '../../../services/i18nService.js';
 import { joinDatasetsInWorker } from '../../../services/dataIngestService.js';
-import { addDataset, getAllDatasets } from '../../../state/appState.js';
-import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
-import { ROW_LIMIT } from '../../../config/limits.js';
+import { getAllDatasets } from '../../../state/appState.js';
+import { showError } from '../../../ui/feedback.js';
 import { joinValidationMessageKey, validateJoinSpec } from '../joinValidation.js';
+import { runIntake } from './intake.js';
 
 /**
  * Build a human-readable name for a joined dataset:
@@ -47,13 +48,9 @@ function normalizeJoinType(value) {
 }
 
 /**
- * Build a new dataset by joining two existing datasets. Reads the
- * datasets by index from app state, runs the join and normalization pipeline
- * in the data worker, and adds the complete new dataset after any over-limit
- * warning is approved.
- *
- * Failure messages are translated i18n keys (`'chive-join-error-*'`)
- * suitable for piping straight into `showError`.
+ * Join two loaded datasets into a new dataset and select it. An invalid spec
+ * shows its validation message in an error notice before any work starts;
+ * everything after that is the intake's.
  *
  * @param {Object} [spec]
  * @param {number} spec.leftIndex - Index into `appState.data.datasets`.
@@ -64,43 +61,39 @@ function normalizeJoinType(value) {
  * @param {string[]} [spec.rightColumns] - Columns from right to include; defaults to all.
  * @param {JoinType} [spec.joinType='inner'] - Unknown values silently fall back to `'inner'`.
  * @param {Object} [dependencies]
- * @param {(message: string) => boolean | Promise<boolean>} [dependencies.confirm]
- * @param {AbortSignal} [dependencies.signal]
- * @param {(progress: import('../../../types.js').IngestProgress) => void} [dependencies.onProgress]
- * @returns {Promise<JoinDatasetResult>} On success: `{ ok: true, index, datasetName }`. On failure: `{ ok: false, message }`.
+ * @param {(message: string) => boolean | Promise<boolean>} [dependencies.confirm] - Answers the row warning. Without it, an over-limit join is declined.
+ * @param {(index: number) => void} [dependencies.selectDataset]
+ * @returns {Promise<Result>} The intake's result, or `fail(reason)` with the validation reason.
  * @fires STATE_EVENTS.DATASET_ADDED - On success.
  */
-export async function createJoinedDataset(spec = {}, dependencies = {}) {
-	const {
-		confirm = () => false,
-		signal,
-		onProgress,
-	} = dependencies;
-	const datasets = getAllDatasets();
-	const validation = validateJoinSpec(datasets, spec);
+export async function createJoinedDataset(spec = {}, { confirm, selectDataset } = {}) {
+	const validation = validateJoinSpec(getAllDatasets(), spec);
 	if (!validation.ok) {
-		return {
-			ok: false,
-			reason: validation.reason,
-			message: t(joinValidationMessageKey(validation.reason)),
-		};
+		showError(t(joinValidationMessageKey(validation.reason)));
+		return validation;
 	}
-	const {
-		leftDataset,
-		rightDataset,
-		leftKeys,
-		rightKeys,
-		leftColumns,
-		rightColumns,
-	} = validation;
+	return runIntake(joinSource(validation, normalizeJoinType(spec.joinType)), { confirm, selectDataset });
+}
 
-	try {
-		const result = await joinDatasetsInWorker({
+/**
+ * @private
+ * @param {Object} validation - A valid result of `validateJoinSpec`.
+ * @param {JoinType} joinType
+ * @returns {IntakeSource}
+ */
+function joinSource({ leftDataset, rightDataset, leftKeys, rightKeys, leftColumns, rightColumns }, joinType) {
+	const name = buildJoinDatasetName(leftDataset.name, rightDataset.name);
+	return {
+		name,
+		progressLabel: t('chive-progress-joining'),
+		// No row limit here: a capped first pass would run the join twice once
+		// approved, so the intake checks the complete result instead.
+		ingest: ({ signal, onProgress }) => joinDatasetsInWorker({
 			leftRows: leftDataset.rows,
 			rightRows: rightDataset.rows,
 			leftKeys,
 			rightKeys,
-			joinType: normalizeJoinType(spec.joinType),
+			joinType,
 			leftColumns,
 			rightColumns,
 			leftColumnSpecs: leftDataset.columns,
@@ -111,53 +104,10 @@ export async function createJoinedDataset(spec = {}, dependencies = {}) {
 				trim: true,
 				caseSensitive: false,
 			},
-		}, {
-			signal,
-			onProgress,
-		});
-
-		if (!result.ok) {
-			return {
-				ok: false,
-				reason: result.reason,
-				message: result.reason === 'cancelled'
-					? t('chive-error-cancelled')
-					: t('chive-join-error-generic'),
-			};
-		}
-
-		const { rows, columns, precomputedStats } = result.value;
-
-		if (rows.length > ROW_LIMIT) {
-			const locale = getLocale();
-			const approved = await confirm(t('chive-warn-large-join', [
-				rows.length.toLocaleString(locale),
-				ROW_LIMIT.toLocaleString(locale),
-			]));
-			if (!approved) {
-				return {
-					ok: false,
-					reason: 'cancelled',
-					message: t('chive-error-cancelled'),
-				};
-			}
-		}
-
-		const datasetName = buildJoinDatasetName(leftDataset.name, rightDataset.name);
-		const dataset = {
-			name: datasetName,
-			sizeLabel: t('chive-join-generated-size', [rows.length]),
-			rows,
-			columns,
-			selectedColumns: columns.map(column => column.name),
-			chartConfig: createDefaultChartConfig(),
-			precomputedStats,
-		};
-
-		const index = addDataset(dataset);
-
-		return { ok: true, index, datasetName };
-	} catch {
-		return { ok: false, reason: 'worker-error', message: t('chive-join-error-generic') };
-	}
+		}, { signal, onProgress }),
+		sizeLabel: rowCount => t('chive-join-generated-size', rowCount),
+		rowWarning: (rowCount, rowLimit) => t('chive-warn-large-join', rowCount, rowLimit),
+		successMessage: t('chive-join-success', name),
+		failureMessage: () => t('chive-join-failed', leftDataset.name, rightDataset.name),
+	};
 }
