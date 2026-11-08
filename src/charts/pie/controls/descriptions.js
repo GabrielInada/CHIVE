@@ -23,7 +23,7 @@ export const PIE_CONTROLS = Object.freeze({
 	sections: Object.freeze([
 		{
 			id: 'data',
-			title: 'Data & Aggregation',
+			titleKey: 'chive-chart-control-section-data-aggregation',
 			expanded: true,
 			icon: 'data',
 			controls: [
@@ -55,7 +55,7 @@ export const PIE_CONTROLS = Object.freeze({
 		},
 		{
 			id: 'display',
-			title: 'Display',
+			titleKey: 'chive-chart-control-section-display',
 			expanded: true,
 			icon: 'display',
 			controls: [
@@ -124,7 +124,7 @@ export const PIE_CONTROLS = Object.freeze({
 		},
 		{
 			id: 'styling',
-			title: 'Styling',
+			titleKey: 'chive-chart-control-section-styling',
 			expanded: false,
 			icon: 'styling',
 			controls: [

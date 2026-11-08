@@ -26,7 +26,7 @@ export const TIN_CONTROLS = Object.freeze({
 	sections: Object.freeze([
 		{
 			id: 'data',
-			title: 'Data',
+			titleKey: 'chive-chart-control-section-data',
 			expanded: true,
 			icon: 'data',
 			controls: [
@@ -37,7 +37,7 @@ export const TIN_CONTROLS = Object.freeze({
 		},
 		{
 			id: 'display',
-			title: 'Display',
+			titleKey: 'chive-chart-control-section-display',
 			expanded: true,
 			icon: 'display',
 			controls: [
@@ -63,7 +63,7 @@ export const TIN_CONTROLS = Object.freeze({
 		},
 		{
 			id: 'surface',
-			title: 'Surface',
+			titleKey: 'chive-chart-control-section-surface',
 			expanded: false,
 			icon: 'styling',
 			controls: [
@@ -136,7 +136,7 @@ export const TIN_CONTROLS = Object.freeze({
 		},
 		{
 			id: 'overlays',
-			title: 'Overlays',
+			titleKey: 'chive-chart-control-section-overlays',
 			expanded: false,
 			icon: 'advanced',
 			// Each overlay's settings are disabled while the overlay is off.

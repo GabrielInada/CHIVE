@@ -161,11 +161,16 @@ describe('scatterControls UI structure', () => {
 		expect(byMode).toMatchSnapshot();
 	});
 
-	it('translates the regression section title', () => {
+	it('translates every section title', () => {
 		const controls = buildControls(createDataset(), createWriter(), createContext(), key => `[${key}]`);
 
 		expect(controls.map(section => section.querySelector('.chart-section-title').textContent.trim()))
-			.toEqual(['Data & Aggregation', 'Display', '[chive-chart-control-scatter-regression-section]', 'Styling']);
+			.toEqual([
+				'[chive-chart-control-section-data-aggregation]',
+				'[chive-chart-control-section-display]',
+				'[chive-chart-control-scatter-regression-section]',
+				'[chive-chart-control-section-styling]',
+			]);
 	});
 });
 
