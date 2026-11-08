@@ -2,9 +2,8 @@
  * CHIVE chart-control grouping utility.
  *
  * Wraps related controls in a collapsible section. Used by
- * `describedControls.js` and scatter's control builder
- * (`charts/scatter/controls/builder.js`) to group "Data", "Display",
- * "Styling", etc. and keep the sidebar scannable.
+ * `describedControls.js` to group "Data", "Display", "Styling", etc. and keep
+ * the sidebar scannable.
  *
  * Section expansion state is preserved across sidebar re-renders by
  * {@link captureControlSectionExpansionState} and

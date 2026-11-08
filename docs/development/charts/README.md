@@ -70,8 +70,7 @@ the shared keyed maps without registering renderers or controls. Follow the
 when adding a type.
 
 The three implementation registries intentionally stay separate from these
-definitions and from one another. Controls need control descriptions (or,
-for scatter, not yet described, builder and listener adapters) and
+definitions and from one another. Controls need control descriptions and
 activation defaults; the dataset workspace dispatches section
 renderers; and the panel resolves snapshot renderers. Keeping one registry per
 surface prevents each integration path from importing unrelated
@@ -179,10 +178,9 @@ doc rather than repeated:
   [axisControls.js](../../../src/charts/shared/controls/axisControls.js) for the numeric axis
   selects of the 3D scatter and TIN, and
   [zoomControls.js](../../../src/charts/shared/controls/zoomControls.js) for the Reset Zoom
-  button of pie and network. Every chart but scatter declares its controls this way
-  (`controls/descriptions.js` in each package); scatter still pairs a `builder.js` with a
-  `listeners.js` that finds each control by id and writes through the helpers in
-  [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
+  button of pie and network. A key `block.setting` names a setting inside a block of the
+  config, such as scatter's `regression.mode`. Every chart declares its controls this way, in
+  its package's `controls/descriptions.js`.
 - **Drawn categories**: bar, pie, treemap, and bubble take the categories they draw from
   `aggregateCategories` in
   [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js). It groups and

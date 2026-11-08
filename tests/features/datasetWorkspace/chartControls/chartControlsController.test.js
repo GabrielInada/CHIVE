@@ -7,8 +7,6 @@ const mocks = vi.hoisted(() => ({
 	onStateChange: vi.fn(),
 	setActiveChartType: vi.fn(),
 	openChartTypePickerDialog: vi.fn(() => Promise.resolve(null)),
-	createScatterPlotControls: vi.fn(() => []),
-	setupScatterPlotControlListeners: vi.fn(),
 }));
 
 vi.mock('../../../../src/services/i18nService.js', () => ({
@@ -21,12 +19,6 @@ vi.mock('../../../../src/state/appState.js', () => ({
 	setActiveChartType: mocks.setActiveChartType,
 }));
 
-vi.mock('../../../../src/charts/scatter/controls/builder.js', () => ({
-	createScatterPlotControls: mocks.createScatterPlotControls,
-}));
-vi.mock('../../../../src/charts/scatter/controls/listeners.js', () => ({
-	setupScatterPlotControlListeners: mocks.setupScatterPlotControlListeners,
-}));
 
 vi.mock('../../../../src/charts/previews.js', () => ({
 	CHART_PREVIEWS: {
@@ -113,8 +105,7 @@ describe('renderChartControlsSidebar', () => {
 
 	it('renders only the active chart\'s controls in the params pane', () => {
 		renderChartControlsSidebar(shownFor('scatter'));
-		expect(mocks.createScatterPlotControls).toHaveBeenCalledTimes(1);
-		expect(mocks.setupScatterPlotControlListeners).toHaveBeenCalledTimes(1);
+		expect(document.querySelector('#viz-select-x')).not.toBeNull();
 		expect(document.querySelector('#viz-select-bar')).toBeNull();
 		expect(document.querySelector('#viz-select-line-x')).toBeNull();
 	});
@@ -125,6 +116,7 @@ describe('renderChartControlsSidebar', () => {
 		['pie', ['data', 'display', 'styling'], '#viz-btn-pie-reset-zoom', false],
 		['bubble', ['data', 'display', 'styling'], '#viz-select-bubble-nesting-level-0', true],
 		['line', ['data', 'styling', 'display'], '#viz-select-line-x', false],
+		['scatter', ['data', 'display', 'analytics', 'styling'], '#viz-toggle-scatter-regression-enabled', true],
 		['network', ['data', 'display', 'styling', 'advanced'], '#viz-btn-network-reset-zoom', true],
 		['scatter3d', ['data', 'display', 'styling'], '#viz-select-scatter3d-z', false],
 		['tin', ['data', 'display', 'surface', 'overlays'], '#viz-input-tin-threshold-value', true],
@@ -137,7 +129,6 @@ describe('renderChartControlsSidebar', () => {
 		expect(params.querySelector(control)).not.toBeNull();
 		expect(params.querySelector(`[data-color-preset-control="viz-${chartType}-color-preset"]`) !== null)
 			.toBe(palette);
-		expect(mocks.createScatterPlotControls).not.toHaveBeenCalled();
 	});
 
 	it('hands the pie controls the rows the chart draws, under the global filter', () => {
@@ -167,7 +158,6 @@ describe('renderChartControlsSidebar', () => {
 		const empty = document.querySelector('#viz-chart-params .viz-params-empty');
 		expect(empty).not.toBeNull();
 		expect(document.querySelector('#viz-chart-params .chart-control-section')).toBeNull();
-		expect(mocks.createScatterPlotControls).not.toHaveBeenCalled();
 	});
 
 	it('shows global empty-state when no dataset is provided', () => {

@@ -876,9 +876,7 @@ The live preview is what makes a color drag feel responsive without rebuilding t
 whole sidebar (which would steal focus from the open picker).
 
 Two events are wired on each color input (the `color` widget in
-[describedControls.js](../../../src/charts/shared/controls/describedControls.js), and
-`setupColorInputListener` in
-[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js) for scatter):
+[describedControls.js](../../../src/charts/shared/controls/describedControls.js)):
 
 - **`input`** (fires continuously while the picker is open): writes the new color
   through `normalizeActiveDatasetConfig` — a **non-emitting** facade that updates

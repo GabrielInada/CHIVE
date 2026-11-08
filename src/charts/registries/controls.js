@@ -1,24 +1,20 @@
 /**
  * Chart controls integration registry.
  *
- * Each entry hands one chart's controls package to the controls sidebar. A
- * chart that describes its controls supplies the descriptions, which the
- * sidebar builds and wires through `charts/shared/controls/describedControls.js`;
- * scatter still pairs a builder with a listener setup. This registry
- * owns controls wiring only; it does not import presentation flows, the other
- * registries, state, or services.
+ * Each entry hands one chart's control descriptions and activation defaults
+ * to the controls sidebar, which builds and wires the controls through
+ * `charts/shared/controls/describedControls.js`. This registry owns controls
+ * wiring only; it does not import presentation flows, the other registries,
+ * state, or services.
  *
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
- * @typedef {import('../../types.js').ChartConfigWriter} ChartConfigWriter
  * @typedef {import('../../types.js').ChartControlDescriptions} ChartControlDescriptions
  * @typedef {{
- *   controls?: ChartControlDescriptions,
- *   build?: (dataset: Dataset, context: ChartControlContext) => HTMLElement[],
- *   attachListeners?: (dataset: Dataset, context: ChartControlContext, writer: ChartConfigWriter) => void,
+ *   controls: ChartControlDescriptions,
  *   computeDefaults: (dataset: Dataset, context: ChartControlContext) => Object
- * }} ChartControlAdapter - `controls` for a chart that describes its controls, otherwise `build` and `attachListeners`.
+ * }} ChartControlAdapter
  */
 
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
@@ -31,8 +27,7 @@ import { LINE_CONTROLS } from '../line/controls/descriptions.js';
 import { computeDefaults as computeLineDefaults } from '../line/controls/activationDefaults.js';
 import { NETWORK_CONTROLS } from '../network/controls/descriptions.js';
 import { computeDefaults as computeNetworkDefaults } from '../network/controls/activationDefaults.js';
-import { createScatterPlotControls } from '../scatter/controls/builder.js';
-import { setupScatterPlotControlListeners } from '../scatter/controls/listeners.js';
+import { SCATTER_CONTROLS } from '../scatter/controls/descriptions.js';
 import { computeDefaults as computeScatterDefaults } from '../scatter/controls/activationDefaults.js';
 import { PIE_CONTROLS } from '../pie/controls/descriptions.js';
 import { TREEMAP_CONTROLS } from '../treemap/controls/descriptions.js';
@@ -50,17 +45,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 		computeDefaults: computeLineDefaults,
 	}),
 	scatter: Object.freeze({
-		build: (dataset, context) => createScatterPlotControls(
-			dataset,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupScatterPlotControlListeners(
-			dataset,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: SCATTER_CONTROLS,
 		computeDefaults: computeScatterDefaults,
 	}),
 	scatter3d: Object.freeze({

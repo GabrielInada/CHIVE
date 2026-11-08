@@ -9,6 +9,10 @@
  * events, and the value each widget writes. Nothing is looked up in the
  * document afterwards, so a control cannot end up without its listener.
  *
+ * A setting key with a dot names a setting inside a block of the chart's
+ * config, such as scatter's `regression.mode`: the control shows that setting
+ * and writes the whole block with it changed.
+ *
  * The widget decides how a control writes. A color input previews while the
  * picker is open (`input`), which repaints only the chart, and commits when it
  * closes (`change`); committing on `input` would rebuild the sidebar under the
@@ -150,7 +154,40 @@ function customScope({ dataset, config, readConfig, context, writer, translate, 
  * @returns {*}
  */
 function shownValue(description, scope) {
-	return description.value ? description.value(scope.config) : scope.config[description.key];
+	return description.value ? description.value(scope.config) : settingIn(scope.config, description.key);
+}
+
+/**
+ * @param {Object} config
+ * @param {string} key - A setting, or `block.setting` for one inside a block.
+ * @returns {*} The setting's value; `undefined` when its block is missing.
+ */
+function settingIn(config, key) {
+	const [block, setting] = splitKey(key);
+	return setting === undefined ? config[block] : config[block]?.[setting];
+}
+
+/**
+ * The patch that stores `value` in a setting. A setting inside a block writes
+ * the block as it is in `config`, with the setting changed.
+ *
+ * @param {Object} config - The config of the moment the patch is written.
+ * @param {string} key
+ * @param {*} value
+ * @returns {Object}
+ */
+function settingPatch(config, key, value) {
+	const [block, setting] = splitKey(key);
+	return setting === undefined ? { [block]: value } : { [block]: { ...(config[block] || {}), [setting]: value } };
+}
+
+/**
+ * @param {string} key
+ * @returns {[string, string | undefined]} The block and the setting inside it, or the key alone.
+ */
+function splitKey(key) {
+	const dot = key.indexOf('.');
+	return dot === -1 ? [key, undefined] : [key.slice(0, dot), key.slice(dot + 1)];
 }
 
 /**
@@ -165,20 +202,24 @@ function shownValue(description, scope) {
 function write(description, scope, method, widgetValue) {
 	const current = { config: scope.readConfig(), context: scope.context };
 	const value = description.toValue ? description.toValue(widgetValue, current) : widgetValue;
-	const patch = description.toPatch ? description.toPatch(value, current) : { [description.key]: value };
+	const patch = description.toPatch ? description.toPatch(value, current) : settingPatch(current.config, description.key, value);
 	scope.writer[method](patch);
 }
 
 /**
  * The values a chart definition lists for an enumerated setting, or `null`
- * when the setting is not enumerated.
+ * when the setting is not enumerated. The definition lists a setting inside a
+ * block under the block's name.
  *
- * @param {string} key
+ * @param {string} key - A setting, or `block.setting`.
  * @param {Object<string, ReadonlyArray<*> | Object>} allowedValues
  * @returns {ReadonlyArray<*> | null}
  */
 function enumeratedValues(key, allowedValues) {
-	return Object.hasOwn(allowedValues, key) && Array.isArray(allowedValues[key]) ? allowedValues[key] : null;
+	const [block, setting] = splitKey(key);
+	const listed = Object.hasOwn(allowedValues, block) ? allowedValues[block] : null;
+	if (setting === undefined) return Array.isArray(listed) ? listed : null;
+	return listed && !Array.isArray(listed) && Object.hasOwn(listed, setting) && Array.isArray(listed[setting]) ? listed[setting] : null;
 }
 
 /**
@@ -203,7 +244,7 @@ function selectOptions(description, scope) {
 	if (columns) {
 		return [
 			{ value: '', label: scope.translate('chive-chart-option-none') },
-			...columns(scope.context).map(column => ({ value: column, label: column })),
+			...columns(scope.context, scope.config).map(column => ({ value: column, label: column })),
 		];
 	}
 	if (options) return options(scope.context, scope.translate);

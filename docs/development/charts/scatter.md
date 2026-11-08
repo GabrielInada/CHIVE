@@ -30,8 +30,9 @@ Key files (the per-chart package under [src/charts/scatter/](../../../src/charts
 - Regression render layer (band / line / annotation): [regressionLayer.js](../../../src/charts/scatter/regressionLayer.js)
 - Axis helpers (type inference, jitter, margins, aggregation): [axisHelpers.js](../../../src/charts/scatter/axisHelpers.js)
 - Regression math (OLS + CI band): [regression.js](../../../src/charts/scatter/regression.js)
-- Sidebar controls: [controls/builder.js](../../../src/charts/scatter/controls/builder.js),
-  [controls/listeners.js](../../../src/charts/scatter/controls/listeners.js),
+- Sidebar controls: [controls/descriptions.js](../../../src/charts/scatter/controls/descriptions.js),
+  built and wired by the shared
+  [describedControls.js](../../../src/charts/shared/controls/describedControls.js), and
   [controls/activationDefaults.js](../../../src/charts/scatter/controls/activationDefaults.js)
 - Shared presentation flow: [presentation.js](../../../src/charts/scatter/presentation.js)
 - Chart definition and constants: [scatter.js](../../../src/config/charts/definitions/scatter.js) (`SCATTER_DEFINITION`, `SCATTER_PLOT`)
@@ -266,12 +267,14 @@ bottom:44, left:52 } }` (grown adaptively for categorical axes, section 7.4);
 
 ## 5. The control sidebar
 
-The controls package ([builder.js](../../../src/charts/scatter/controls/builder.js),
-[listeners.js](../../../src/charts/scatter/controls/listeners.js),
-[activationDefaults.js](../../../src/charts/scatter/controls/activationDefaults.js)) is the largest control
-surface because of the axis/scale cross-constraints, the size and color field mappings, and
-the regression section. It exposes the standard three adapters
-(`createScatterPlotControls`, `setupScatterPlotControlListeners`, `computeDefaults`).
+The package's [descriptions.js](../../../src/charts/scatter/controls/descriptions.js) declares
+every control once, as data (`SCATTER_CONTROLS`), and the controls sidebar builds them through
+the shared [describedControls.js](../../../src/charts/shared/controls/describedControls.js),
+which wires each control to the `ChartConfigWriter` as it creates it. It is the largest
+control surface because of the axis/scale cross-constraints, the size and color field
+mappings, and the regression section.
+[activationDefaults.js](../../../src/charts/scatter/controls/activationDefaults.js) supplies
+`computeDefaults`.
 
 ### 5.1 The four sections
 
@@ -299,24 +302,31 @@ the regression section. It exposes the standard three adapters
   unless regression is enabled and the dataset has categorical columns; the CI/equation/R²
   toggles are disabled unless regression is enabled.
 
-### 5.3 Listener wiring and cross-constraints
+Here "categorical" means every visible column that is not numeric, dates included.
 
-Most controls use the shared helpers in
-[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js). The
-interesting custom listeners encode the cross-constraints:
+### 5.3 Writes and cross-constraints
+
+Each widget writes the way the shared builder defines it: the selects, the title, the sliders,
+and the toggles commit on `change`, and the color inputs preview on `input` and commit on
+`change`. The regression settings are keyed `regression.enabled`, `regression.mode` and so on:
+each writes the `regression` block of the moment with that setting changed. The enumerated
+selects list `SCATTER_DEFINITION.allowedValues`, the regression mode its nested
+`regression.mode`, and the radius and opacity selects `SCATTER_PLOT.radiusOptions` and
+`opacityOptions`, stored as numbers. The color-scheme select shows each palette's own name.
+The descriptions' `toPatch` functions encode the cross-constraints:
 
 - **Axis selects**: picking a non-numeric column for an axis forces that axis's scale back to
   `'linear'` (so a categorical axis can never be left on log).
-- **Color mode**: switching mode re-chooses a sensible `colorField` (first categorical for
-  category mode, first numeric for numeric mode, `null` for uniform) and stamps
-  `colorFieldType`; switching away from category resets the regression mode to overall.
-- **Uniform color input**: has its own live-preview handler that also forces
-  `colorMode: 'uniform'` and clears `colorField` (picking a single color implies uniform
-  mode). It previews through `previewChartConfigPatch` on `input` (non-emitting write plus
-  live repaint) and commits through `commitChartConfigPatch` on `change`.
-- **Regression mode → perCategory**: if the user asks for per-category fits while not already
-  in category color mode, the listener switches color to category on the first categorical
-  column so the split is meaningful.
+- **Color mode**: switching mode keeps the `colorField` when the new mode can use it and
+  otherwise takes the first categorical column for category mode, the first numeric one for
+  numeric mode, and `null` for uniform; it stamps `colorFieldType`, and switching away from
+  category resets the regression mode to overall.
+- **Uniform color input**: its patch also sets `colorMode: 'uniform'` and clears `colorField`
+  (picking a single color implies uniform mode), in the `input` preview as in the `change`
+  commit.
+- **Regression mode → perCategory**: if the user asks for per-category fits while nothing
+  colors the points by a category field, the patch switches color to category on the first
+  categorical column so the split is meaningful.
 - **Color presets**: each palette button writes `color` and `gradientMinColor` from palette
   index 0 and `gradientMaxColor` from the last (`SCATTER_PLOT.presetColorKeys`), plus the
   name into `colorScheme`. While a category field colors the points, the buttons mark the
@@ -542,8 +552,9 @@ Package tests live under [tests/charts/scatter/](../../../tests/charts/scatter):
   renderer's color options.
 - [renderers/svg.axes.test.js](../../../tests/charts/scatter/renderers/svg.axes.test.js)
   covers axis rendering behavior.
-- [controls.test.js](../../../tests/charts/scatter/controls.test.js) covers
-  the control building and the axis/scale and color-mode cross-constraints.
+- [controls.test.js](../../../tests/charts/scatter/controls.test.js) builds the
+  controls from their descriptions and covers the options read from the definition, the
+  enable rules, and the axis/scale, color-mode and regression cross-constraints.
 - [presentation.test.js](../../../tests/charts/scatter/presentation.test.js) covers the
   sampling notice: past the point budget the chart draws a sample until the user approves
   every point, and the approval holds for the container's later renders.
