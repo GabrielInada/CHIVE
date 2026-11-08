@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { showPinnedFilterTooltip } from '../../../../src/charts/shared/tooltip/filterActions.js';
+import { togglePinnedFilterTooltip } from '../../../../src/charts/shared/tooltip/filterActions.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
 
 const LABELS = {
@@ -27,7 +27,9 @@ function recordingHandlers(calls) {
 }
 
 function pin(filterCallbacks, categories, options = {}) {
-	showPinnedFilterTooltip('Rows: 4', 10, 20, { headerTitle: 'North', filterCallbacks, categories, ...options });
+	const target = document.createElement('button');
+	document.body.appendChild(target);
+	togglePinnedFilterTooltip('Rows: 4', 10, 20, { target, headerTitle: 'North', filterCallbacks, categories, ...options });
 	return document.querySelector('.chart-tooltip');
 }
 
@@ -35,7 +37,7 @@ const actionButtons = () => [...document.querySelectorAll('.chart-tooltip__actio
 const actionLabels = () => actionButtons().map(button => button.textContent);
 const stateBadge = () => document.querySelector('.chart-tooltip__filter-state');
 
-describe('showPinnedFilterTooltip', () => {
+describe('togglePinnedFilterTooltip', () => {
 	beforeEach(() => {
 		document.body.innerHTML = '';
 	});
@@ -46,10 +48,7 @@ describe('showPinnedFilterTooltip', () => {
 
 	it('offers Show only this, Add to filter and Hide this for a category the filter does not name', () => {
 		const calls = [];
-		const tooltip = pin(
-			{ ...recordingHandlers(calls), getTokenFilterState: () => null, filterActionLabels: LABELS },
-			[NORTH],
-		);
+		const tooltip = pin({ ...recordingHandlers(calls), getTokenFilterState: () => null }, [NORTH], { filterActionLabels: LABELS });
 
 		expect(tooltip.classList.contains('chart-tooltip--fixado')).toBe(true);
 		expect(tooltip.querySelector('.chart-tooltip__header-title').textContent).toBe('North');
@@ -72,7 +71,7 @@ describe('showPinnedFilterTooltip', () => {
 		['excluded', ['Only', 'Restore'], 'bringBack', 'Dropped'],
 	])('offers the actions and the badge of an %s category', (state, labels, action, badgeText) => {
 		const calls = [];
-		pin({ ...recordingHandlers(calls), getTokenFilterState: () => state, filterActionLabels: LABELS }, [NORTH]);
+		pin({ ...recordingHandlers(calls), getTokenFilterState: () => state }, [NORTH], { filterActionLabels: LABELS });
 
 		expect(actionLabels()).toEqual(labels);
 		expect(stateBadge().classList.contains(`chart-tooltip__filter-state--${state}`)).toBe(true);
@@ -84,7 +83,7 @@ describe('showPinnedFilterTooltip', () => {
 	it('leaves out Show only this when it would give the same filter as adding the category', () => {
 		const getTokenFilterState = vi.fn(() => null);
 		const isShowOnlyThisRedundant = vi.fn(() => true);
-		pin({ ...recordingHandlers([]), getTokenFilterState, isShowOnlyThisRedundant, filterActionLabels: LABELS }, [NORTH]);
+		pin({ ...recordingHandlers([]), getTokenFilterState, isShowOnlyThisRedundant }, [NORTH], { filterActionLabels: LABELS });
 
 		expect(getTokenFilterState).toHaveBeenCalledWith('region', 'v:North');
 		expect(isShowOnlyThisRedundant).toHaveBeenCalledWith('region', 'v:North');
@@ -93,7 +92,7 @@ describe('showPinnedFilterTooltip', () => {
 
 	it('falls back to the English label when a label is missing or empty', () => {
 		const handlers = recordingHandlers([]);
-		pin({ ...handlers, getTokenFilterState: () => null, filterActionLabels: { focus: '' } }, [NORTH], { onDismiss: () => {} });
+		pin({ ...handlers, getTokenFilterState: () => null }, [NORTH], { ...{ onDismiss: () => {} }, filterActionLabels: { focus: '' } });
 		expect(actionLabels()).toEqual(['Show only this', 'Add to filter', 'Hide this']);
 		expect(document.querySelector('.chart-tooltip__close').getAttribute('aria-label')).toBe('Close');
 
@@ -137,14 +136,10 @@ describe('showPinnedFilterTooltip', () => {
 
 	it('shows the actions of two categories under their headings, without a badge', () => {
 		const calls = [];
-		pin({
-			...recordingHandlers(calls),
-			getTokenFilterState: column => (column === 'source' ? 'included' : null),
-			filterActionLabels: LABELS,
-		}, [
+		pin({ ...recordingHandlers(calls), getTokenFilterState: column => (column === 'source' ? 'included' : null) }, [
 			{ column: 'source', token: 'v:A', heading: 'Filter source (source)' },
 			{ column: 'target', token: 'v:A', heading: 'Filter target (target)' },
-		]);
+		], { filterActionLabels: LABELS });
 
 		const groups = [...document.querySelectorAll('.chart-tooltip__action-set-wrap')];
 		expect(groups.map(group => group.querySelector('.chart-tooltip__action-set-label').textContent))

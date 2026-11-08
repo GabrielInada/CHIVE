@@ -38,6 +38,37 @@ beforeEach(() => {
 });
 
 describe('scatter presentation past the point budget', () => {
+	it('draws stored size, color and regression settings', () => {
+		const container = mount();
+		const result = renderScatterInto(container, {
+			rows: [{ a: 1, b: 3 }, { a: 2, b: 5 }, { a: 3, b: 7 }, { a: 4, b: 9 }],
+			config: Object.freeze({
+				...CHART_DEFINITIONS.scatter.createDefaultConfig(),
+				x: 'a', y: 'b', radius: 7, opacity: 0.4, color: '#123456',
+				chartHeight: 300, customTitle: 'Trend', showXAxisLabel: false,
+				regression: { enabled: true, mode: 'overall', showLine: true, showCI: false, showEquation: true },
+			}),
+			columnTypeByName: { a: 'number', b: 'number' },
+		});
+		expect(result.ok).toBe(true);
+		const point = container.querySelector('.scatter-point');
+		expect(point.getAttribute('r')).toBe('7');
+		expect(point.getAttribute('fill')).toBe('#123456');
+		expect(point.getAttribute('opacity')).toBe('0.4');
+		expect(container.querySelector('svg').getAttribute('height')).toBe('300');
+		expect(container.textContent).toContain('Trend');
+		expect(container.querySelector('.scatter-regression-line')).not.toBeNull();
+	});
+
+	it('does not treat stored config as render-budget approval', () => {
+		const container = mount();
+		const result = renderScatterInto(container, {
+			...input, config: { ...input.config, allowFullRender: true },
+		});
+		expect(result).toMatchObject({ ok: true, sampled: true });
+		expect(container.querySelector('.chart-render-budget-notice')).not.toBeNull();
+	});
+
 	it('draws a sample until the notice is approved, and the approval holds for later renders', () => {
 		const container = mount();
 

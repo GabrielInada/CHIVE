@@ -81,6 +81,22 @@
  * @property {PrecomputedStats} [precomputedStats] - Worker-computed stats, optional.
  */
 
+/**
+ * What a dataset shows right now, from `deriveShownDataset` in
+ * `domain/datasets/shownDataset.js`. The render coordinator derives it once per
+ * render pass and hands the same value to the table, the statistics, the
+ * charts, live preview and the chart controls; Add to panel derives it once per
+ * capture.
+ *
+ * @typedef {Object} ShownDataset
+ * @property {Dataset} dataset - The dataset itself, a live state reference to treat as read-only. Its `chartConfig` is the stored, canonical config.
+ * @property {Array<Object<string, *>>} rows - The rows that pass the global filter; the dataset's own `rows` array when no rule applies.
+ * @property {GlobalFilter} filter - The global filter rules that apply. A rule whose column the dataset no longer has is dropped.
+ * @property {ColumnSpec[]} visibleColumns - The columns the column list shows, in source order.
+ * @property {Object<string, ColumnType>} columnTypeByName - Every column's type, hidden columns included.
+ * @property {ChartTypeKey | null} activeChartType - The chart drawn: the first enabled chart in canonical order, or `null`.
+ */
+
 // ─── Chart-config domain ────────────────────────────────────────────────
 
 /**
@@ -142,9 +158,10 @@
  */
 
 /**
- * Column-name buckets passed into per-chart `build`/`attachListeners`/
- * `computeDefaults` by the controls registry. Derived from the active
- * dataset's visible columns by `getColumnContext()` in
+ * Column-name buckets and drawn rows a chart's controls are built from: the
+ * functions of its {@link ControlDescription}s and its `computeDefaults`.
+ * Derived once per sidebar render from the {@link ShownDataset} by
+ * `columnContextOf()` in
  * `features/datasetWorkspace/chartControls/chartControlsController.js`;
  * implementation lookup lives in `charts/registries/controls.js`.
  *
@@ -157,13 +174,15 @@
  * @property {string[]} dates - Date (`'date'`) column names.
  * @property {string[]} allColumns - All currently visible column names.
  * @property {string[]} baseCategoricalOrAll - `categorical` when non-empty, else `allColumns`.
+ * @property {Array<Object<string, *>>} rows - The rows the chart draws: the dataset's rows under its global filter. The pie color grid reads them.
  */
 
 /**
- * The write surface a chart package's control listeners use to change their
- * own config block. Built per chart type by `createChartConfigWriter` in
- * `features/datasetWorkspace/chartControls/chartConfigAdapter.js` and passed in
- * by the controls registry, so chart packages never import state themselves.
+ * The write surface a chart's controls use to change their own config block.
+ * Built per chart type by `createChartConfigWriter` in
+ * `features/datasetWorkspace/chartControls/chartConfigAdapter.js` and handed to
+ * the controls by the controls sidebar, so chart packages never import state
+ * themselves.
  *
  * The two methods are not interchangeable:
  *
@@ -179,6 +198,79 @@
  * @typedef {Object} ChartConfigWriter
  * @property {(patch: Object) => void} commit - Merge a patch and emit. Does not live-render.
  * @property {(patch: Object | ((currentConfig: Object) => Object)) => void} preview - Merge a patch without emitting, then live-render. Accepts a function of the current config for nested updates.
+ */
+
+/**
+ * A chart's sidebar controls, declared as data. `buildDescribedControls` in
+ * `charts/shared/controls/describedControls.js` builds them and wires each one
+ * to the {@link ChartConfigWriter}; the controls registry hands them to the
+ * controls sidebar.
+ *
+ * @typedef {Object} ChartControlDescriptions
+ * @property {{ key: ChartTypeKey, allowedValues: Object<string, ReadonlyArray<*> | Object> }} definition - The chart's definition (`config/charts/definitions/<type>.js`). Its key names the config block the controls write, and its `allowedValues` are the options of every enumerated select.
+ * @property {ReadonlyArray<ControlSection>} sections - In sidebar order.
+ */
+
+/**
+ * A collapsible group of controls in the chart sidebar.
+ *
+ * @typedef {Object} ControlSection
+ * @property {string} id - Unique within the chart; a section keeps its expansion across sidebar rebuilds by it.
+ * @property {string} [titleKey] - Message key of the title.
+ * @property {string} [title] - Literal title, for a section whose title has no message key yet.
+ * @property {boolean} [expanded=true] - Initial expansion.
+ * @property {string} [icon] - Header icon; see `createSvgIcon`.
+ * @property {ControlDescription[]} controls - In section order.
+ */
+
+/**
+ * One chart control: the setting it shows and writes, its widget, its options,
+ * and when it is shown or disabled. Every control is also disabled while its
+ * chart is off. The widget decides how the control writes: a color input
+ * previews through {@link ChartConfigWriter} `preview` while the picker is open
+ * and commits on `change`; every other widget commits on `change`. A `custom`
+ * control is written by hand: its `build` creates and wires its elements.
+ *
+ * @typedef {Object} ControlDescription
+ * @property {'select' | 'slider' | 'number' | 'checkbox' | 'text' | 'color' | 'palette' | 'custom'} widget
+ * @property {string} [id] - DOM id. Keep it stable: the sidebar restores focus and scroll by it. A custom control names the element it builds, if it builds one.
+ * @property {string} [key] - The setting the control shows and writes. `block.setting` names a setting inside a block, such as `regression.mode`: the control shows it and writes the block with it changed. A palette writes `colorScheme`; a custom control names the setting it writes, if it writes one.
+ * @property {string} [label] - Message key of the label. A custom control translates its own.
+ * @property {(config: Object, context: ChartControlContext) => boolean} [shownWhen] - When the control is built at all; the others are always built.
+ * @property {(config: Object, context: ChartControlContext) => boolean} [disabledWhen] - When the control is disabled although its chart is on.
+ * @property {(config: Object) => *} [value] - The value shown, when it is not the setting itself. A slider and a number input show it as a number.
+ * @property {(value: *, current: { config: Object, context: ChartControlContext }) => *} [toValue] - The value to store for the widget's value. `current.config` is the config when the event fires.
+ * @property {(value: *, current: { config: Object, context: ChartControlContext }) => Object} [toPatch] - The patch to write, for a control that writes more than its own setting. Receives the value `toValue` returned.
+ * @property {(context: ChartControlContext, config: Object) => string[]} [columns] - Select: offer "None" and these columns. `config` is the config the control is built from.
+ * @property {(context: ChartControlContext, translate: (key: string, ...params: *[]) => string) => Array<{ value: *, label: string }>} [options] - Select: a fixed option list, for a setting the chart definition does not enumerate.
+ * @property {Object<string, string> | ((value: *) => string)} [optionLabels] - Select of an enumerated setting: the message key of each value the chart definition lists.
+ * @property {(value: *, config: Object, translate: (key: string, ...params: *[]) => string) => *[]} [optionLabelParams] - Select of an enumerated setting: the parameters (`$1`, `$2`…) of a value's label, for a label that names another setting.
+ * @property {(value: *, translate: (key: string, ...params: *[]) => string) => string} [optionText] - Select of an enumerated setting: the label of each value as text, in place of `optionLabels`, for labels that are not all messages (a ramp's own name).
+ * @property {number} [min] - Slider; number input, optional.
+ * @property {number} [max] - Slider; number input, optional.
+ * @property {number | 'any'} [step] - Slider; number input, optional, where `'any'` allows any decimal.
+ * @property {number} [maxLength=80] - Text.
+ * @property {string | number} [fallback] - Color: shown and written in place of an invalid color. Number input: shown while the setting is not a finite number, and written in place of a typed value that is not one.
+ * @property {Object<string, number>} [colorKeys] - Palette: config key to the palette position a palette button copies into it; negative positions count from the end.
+ * @property {Object<string, string>} [fallbacks] - Palette: per copied key, written in place of an invalid palette color.
+ * @property {(config: Object) => (string | null)} [marked] - Palette: the preset whose button is marked, the one the chart is drawn with. Defaults to the preset whose colors `colorKeys` still hold.
+ * @property {(scope: CustomControlScope) => (HTMLElement | HTMLElement[])} [build] - Custom: build the control's elements, none to show nothing, each already wired.
+ */
+
+/**
+ * What a custom control's `build` receives: what a chart's builder and its
+ * listeners received, plus its disabled state and the controls built before
+ * it in the same pass.
+ *
+ * @typedef {Object} CustomControlScope
+ * @property {Dataset} dataset
+ * @property {Object} config - The chart's config block when the control is built.
+ * @property {() => Object} readConfig - The chart's config block now; listeners read it when their event fires.
+ * @property {ChartControlContext} context
+ * @property {ChartConfigWriter} writer
+ * @property {(key: string, ...params: *[]) => string} translate
+ * @property {boolean} disabled - The chart is off, or the description's `disabledWhen` holds.
+ * @property {(id: string) => HTMLElement} control - The element of the widget control with that id, built earlier in this pass. Throws when there is none.
  */
 
 // ─── Panel domain ───────────────────────────────────────────────────────
@@ -611,19 +703,29 @@
  * @property {(handler: () => void) => void} onCancel
  */
 
-// ─── Join workflow (datasetController.createJoinedDataset) ──────────────
+// ─── Dataset intake (features/datasetWorkspace/workflows/intake.js) ─────
 
 /**
- * Result returned by `datasetController.createJoinedDataset`. Uses `message`
- * rather than `reason` (the generic `Result` shape's failure field), so
- * callers route failures into `showError` directly. On success the new
- * dataset's index in `appState.data.datasets` and the generated name
- * are returned.
+ * One way to add a dataset, as `runIntake` takes it: an uploaded file, a
+ * join or a sample dataset. Every text is already translated.
  *
- * @typedef {(
- *   { ok: true, index: number, datasetName: string }
- *   | { ok: false, reason?: string, message: string }
- * )} JoinDatasetResult
+ * @typedef {Object} IntakeSource
+ * @property {string} name - The new dataset's name. Also fills the parsing stage's progress label.
+ * @property {string} progressLabel - The progress toast's label until the worker reports a stage.
+ * @property {(request: IntakeRequest) => Promise<Result>} ingest - Loads the source's data when it needs to, then runs Ingest in the data worker. Resolves with the worker's result, whose `value` holds the {@link IngestPayload}, or with a failure such as `'cancelled'`.
+ * @property {(rowCount: number) => string} sizeLabel - The new dataset's size label, given its row count.
+ * @property {((rowCount: string, rowLimit: string) => string) | null} rowWarning - The question asked when the rows are over the row limit, with both numbers formatted for the current locale. `null` exempts the source from the row limit.
+ * @property {string} successMessage - The progress toast's text once the dataset is added.
+ * @property {(detail: string, reason: string) => string} failureMessage - Text for the toast and the error notice when the intake fails. `detail` is Ingest's translated explanation of a known parse failure, otherwise empty. `reason` lets a source word its own failures, such as a fetch timeout, and is never shown.
+ */
+
+/**
+ * What `runIntake` passes to `IntakeSource.ingest`.
+ *
+ * @typedef {Object} IntakeRequest
+ * @property {AbortSignal} signal - Aborts when the user cancels from the progress toast.
+ * @property {(progress: IngestProgress) => void} onProgress - Updates the progress toast.
+ * @property {number} [rowLimit] - Present on the first request of a source with a row warning. A source that can cap its rows passes it to Ingest; one that cannot ignores it.
  */
 
 export {};

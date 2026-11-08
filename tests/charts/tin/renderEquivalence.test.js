@@ -13,6 +13,7 @@
  * chartHeight, fixed input rows, and the pinned vendored d3.
  */
 
+import { renderContext } from '../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderTinChart } from '../../../src/charts/tin/renderers/svg.js';
 import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
@@ -40,7 +41,16 @@ function makeContainer() {
 
 function render(options) {
 	const container = makeContainer();
-	const result = renderTinChart(container, ROWS, 'x', 'y', 'z', { ...BASE, ...options });
+	const result = renderTinChart(container, ROWS, {
+		x: 'x',
+		y: 'y',
+		z: 'z',
+		...BASE,
+		...options,
+	}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
+		...BASE,
+		...options,
+	}));
 	return { html: container.querySelector('svg').outerHTML, result };
 }
 

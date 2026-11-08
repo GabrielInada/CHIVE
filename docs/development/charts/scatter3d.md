@@ -100,12 +100,17 @@ clamps, rotate/zoom speeds, keyboard steps).
 ## 5. The control sidebar
 
 [controls/](../../../src/charts/scatter3d/controls) mirrors
-`charts/tin/controls/`: `builder.js` (Data: X/Y/Z numeric selects;
-Display: title, point size, opacity; Styling: color), `listeners.js` (via
-the shared `listenerBindings.js`, which remains the config-write
-adapter; selects clamp to the numeric column list), and `activationDefaults.js`
-(first three distinct numeric columns via the tin `pickPreferred`
-semantics, preserving still-valid user picks). The registry entry lives in
+`charts/tin/controls/`: `descriptions.js` declares each control once
+(Data: X/Y/Z numeric selects; Display: title, point size, opacity;
+Styling: color), and the controls sidebar builds them through the shared
+[describedControls.js](../../../src/charts/shared/controls/describedControls.js),
+which wires each control to the `ChartConfigWriter` as it creates it. The
+X/Y/Z selects are the axis description the 3D scatter shares with the TIN
+([axisControls.js](../../../src/charts/shared/controls/axisControls.js)):
+they offer the numeric columns and store `null` for any other choice.
+`activationDefaults.js` picks the first three distinct numeric columns via
+the tin `pickPreferred` semantics, preserving still-valid user picks. The
+registry entry lives in
 [charts/registries/controls.js](../../../src/charts/registries/controls.js),
 which `chartControlsController.js` consumes.
 
@@ -116,8 +121,8 @@ which `chartControlsController.js` consumes.
 `chartsView.js` passes the chart input to the
 [workspace registry](../../../src/charts/registries/workspace.js), which owns the
 static block's visibility and the container's min height and hands the input to
-[presentation.js](../../../src/charts/scatter3d/presentation.js): build the
-renderer options with the localized `labels`, map fail reasons onto i18n
+[presentation.js](../../../src/charts/scatter3d/presentation.js): pass config unchanged
+and localized `labels` in a separate context, map fail reasons onto i18n
 keys (`no-valid-points` and `webgl-unavailable` have their own keys;
 `render-error` and bare failures use the generic one), then apply the
 post-render extras that need the ok payload: the accurate aria-label
@@ -139,8 +144,9 @@ that case.
 
 ## 7. Inside the renderer
 
-[renderers/three.js](../../../src/charts/scatter3d/renderers/three.js), in
-order:
+[renderers/three.js](../../../src/charts/scatter3d/renderers/three.js) exposes
+`renderScatter3dChart(container, rows, config, context)`. It reads column bindings
+from config and normalizes visual settings once through `normalizeScatter3dOptions`, in order:
 
 1. Guards: missing container/columns -> `fail()`; no valid points ->
    `fail('no-valid-points')`.
@@ -177,7 +183,7 @@ order:
    `{ renderedCount, validCount, totalCount, truncated }`.
 
 The renderer is i18n-free by lint: all localized strings arrive through
-`options.labels`. `customTitle` is user text, rendered as an HTML heading
+`context.labels`. `customTitle` is user text, rendered as an HTML heading
 above the canvas (`.chart-canvas-title`).
 
 ## 8. The color / scale system

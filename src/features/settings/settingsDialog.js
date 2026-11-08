@@ -237,10 +237,10 @@ export function openSettingsDialog({
 			? 'chive-settings-storage-persistent'
 			: 'chive-settings-storage-best-effort');
 		if (result.quota > 0) {
-			storageUsage.textContent = t('chive-settings-storage-usage', [
+			storageUsage.textContent = t('chive-settings-storage-usage',
 				formatFileSize(result.usage || 0),
 				formatFileSize(result.quota),
-			]);
+			);
 			storageUsage.hidden = false;
 		}
 		persistButton.hidden = Boolean(result.persisted);

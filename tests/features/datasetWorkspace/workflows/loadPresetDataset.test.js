@@ -8,6 +8,11 @@ import { getAllDatasets, replaceAllState } from '../../../../src/state/appState.
 import { clearAllFeedback } from '../../../../src/ui/feedback.js';
 import { runIngest } from '../../../../src/workers/dataIngestWorker.js';
 
+vi.mock('../../../../src/config/limits.js', async importOriginal => ({
+	...(await importOriginal()),
+	ROW_LIMIT: 1,
+}));
+
 const preset = { nameKey: 'chive-preset-iris-name', rows: 1, dataUrl: '/iris.csv', dataFormat: 'csv' };
 const namedFailure = {
 	en: 'Could not load sample dataset "Iris". Please try again.',
@@ -129,6 +134,12 @@ describe.each(['en', 'pt-BR'])('sample loading feedback in %s', language => {
 		expect(document.querySelector('#toast-progress')).toBeNull();
 		expect(getAllDatasets()).toEqual([]);
 		expect(selectDataset).not.toHaveBeenCalled();
+	});
+	it('adds a sample above the row limit without asking', async () => {
+		fetchSource.mockResolvedValue({ ok: true, text: async () => 'value\n1\n2\n' });
+		await loadPresetDataset(preset, { selectDataset });
+		expect(getAllDatasets()[0].rows).toEqual([{ value: 1 }, { value: 2 }]);
+		expect(selectDataset).toHaveBeenCalledWith(0);
 	});
 	it('still adds and selects a successfully ingested sample', async () => {
 		await loadPresetDataset(preset, { selectDataset });

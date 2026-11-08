@@ -1,101 +1,42 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const mocks = vi.hoisted(() => ({
-	createBarChartControls: vi.fn(() => []),
-	setupBarChartControlListeners: vi.fn(),
-	createBubbleChartControls: vi.fn(() => []),
-	setupBubbleChartControlListeners: vi.fn(),
-	createNetworkGraphControls: vi.fn(() => []),
-	setupNetworkGraphControlListeners: vi.fn(),
-	createScatterPlotControls: vi.fn(() => []),
-	setupScatterPlotControlListeners: vi.fn(),
-	createPieChartControls: vi.fn(() => []),
-	setupPieChartControlListeners: vi.fn(),
-	createTreemapControls: vi.fn(() => []),
-	setupTreemapControlListeners: vi.fn(),
-	createLineChartControls: vi.fn(() => []),
-	setupLineChartControlListeners: vi.fn(),
-	createTinControls: vi.fn(() => []),
-	setupTinControlListeners: vi.fn(),
-	createScatter3dControls: vi.fn(() => []),
-	setupScatter3dControlListeners: vi.fn(),
-}));
-
-vi.mock('../../../src/charts/bar/controls/builder.js', () => ({ createBarChartControls: mocks.createBarChartControls }));
-vi.mock('../../../src/charts/bar/controls/listeners.js', () => ({ setupBarChartControlListeners: mocks.setupBarChartControlListeners }));
-vi.mock('../../../src/charts/bubble/controls/builder.js', () => ({ createBubbleChartControls: mocks.createBubbleChartControls }));
-vi.mock('../../../src/charts/bubble/controls/listeners.js', () => ({ setupBubbleChartControlListeners: mocks.setupBubbleChartControlListeners }));
-vi.mock('../../../src/charts/network/controls/builder.js', () => ({ createNetworkGraphControls: mocks.createNetworkGraphControls }));
-vi.mock('../../../src/charts/network/controls/listeners.js', () => ({ setupNetworkGraphControlListeners: mocks.setupNetworkGraphControlListeners }));
-vi.mock('../../../src/charts/scatter/controls/builder.js', () => ({ createScatterPlotControls: mocks.createScatterPlotControls }));
-vi.mock('../../../src/charts/scatter/controls/listeners.js', () => ({ setupScatterPlotControlListeners: mocks.setupScatterPlotControlListeners }));
-vi.mock('../../../src/charts/pie/controls/builder.js', () => ({ createPieChartControls: mocks.createPieChartControls }));
-vi.mock('../../../src/charts/pie/controls/listeners.js', () => ({ setupPieChartControlListeners: mocks.setupPieChartControlListeners }));
-vi.mock('../../../src/charts/treemap/controls/builder.js', () => ({ createTreemapControls: mocks.createTreemapControls }));
-vi.mock('../../../src/charts/treemap/controls/listeners.js', () => ({ setupTreemapControlListeners: mocks.setupTreemapControlListeners }));
-vi.mock('../../../src/charts/line/controls/builder.js', () => ({ createLineChartControls: mocks.createLineChartControls }));
-vi.mock('../../../src/charts/line/controls/listeners.js', () => ({ setupLineChartControlListeners: mocks.setupLineChartControlListeners }));
-vi.mock('../../../src/charts/tin/controls/builder.js', () => ({ createTinControls: mocks.createTinControls }));
-vi.mock('../../../src/charts/tin/controls/listeners.js', () => ({ setupTinControlListeners: mocks.setupTinControlListeners }));
-vi.mock('../../../src/charts/scatter3d/controls/builder.js', () => ({ createScatter3dControls: mocks.createScatter3dControls }));
-vi.mock('../../../src/charts/scatter3d/controls/listeners.js', () => ({ setupScatter3dControlListeners: mocks.setupScatter3dControlListeners }));
-
-import { getChartControlAdapter } from '../../../src/charts/registries/controls.js';
+import { describe, expect, it } from 'vitest';
+import { BAR_CONTROLS } from '../../../src/charts/bar/controls/descriptions.js';
+import { BUBBLE_CONTROLS } from '../../../src/charts/bubble/controls/descriptions.js';
+import { LINE_CONTROLS } from '../../../src/charts/line/controls/descriptions.js';
+import { NETWORK_CONTROLS } from '../../../src/charts/network/controls/descriptions.js';
+import { PIE_CONTROLS } from '../../../src/charts/pie/controls/descriptions.js';
+import { SUPPORTED_CONTROL_CHART_TYPES, getChartControlAdapter } from '../../../src/charts/registries/controls.js';
+import { SCATTER_CONTROLS } from '../../../src/charts/scatter/controls/descriptions.js';
+import { SCATTER3D_CONTROLS } from '../../../src/charts/scatter3d/controls/descriptions.js';
+import { TIN_CONTROLS } from '../../../src/charts/tin/controls/descriptions.js';
+import { TREEMAP_CONTROLS } from '../../../src/charts/treemap/controls/descriptions.js';
+import { CHART_TYPE_KEYS } from '../../../src/config/charts/definitions.js';
 
 describe('controls registry', () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
-
 	it('returns null for unknown and inherited keys', () => {
 		expect(getChartControlAdapter('histogram')).toBeNull();
 		expect(getChartControlAdapter('__proto__')).toBeNull();
 	});
 
+	it('has an adapter for every chart type', () => {
+		expect(SUPPORTED_CONTROL_CHART_TYPES).toEqual(CHART_TYPE_KEYS);
+	});
+
 	it.each([
-		['bar', 'createBarChartControls', 'setupBarChartControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
-		['line', 'createLineChartControls', 'setupLineChartControlListeners', ['numeric', 'dates', 'all'], ['numeric', 'dates', 'all']],
-		['scatter', 'createScatterPlotControls', 'setupScatterPlotControlListeners', ['numeric', 'all'], ['numeric', 'all']],
-		['scatter3d', 'createScatter3dControls', 'setupScatter3dControlListeners', ['numeric', 'all'], ['numeric', 'all']],
-		['pie', 'createPieChartControls', 'setupPieChartControlListeners', ['base', 'numeric'], ['base', 'numeric', 'all']],
-		['bubble', 'createBubbleChartControls', 'setupBubbleChartControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
-		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners', ['all', 'numeric', 'categorical'], ['all', 'numeric']],
-		['treemap', 'createTreemapControls', 'setupTreemapControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
-		['tin', 'createTinControls', 'setupTinControlListeners', ['numeric', 'all'], ['numeric', 'all']],
-	])('preserves the %s controls adapter signatures and forwards the writer', (type, buildMock, listenerMock, buildKeys, listenerKeys) => {
-		const dataset = { chartConfig: {} };
-		const writer = { commit: vi.fn(), preview: vi.fn() };
-		const values = {
-			base: ['category'],
-			numeric: ['value'],
-			categorical: ['category'],
-			dates: ['date'],
-			all: ['category', 'value', 'date'],
-		};
-		const context = {
-			baseCategoricalOrAll: values.base,
-			numeric: values.numeric,
-			categorical: values.categorical,
-			dates: values.dates,
-			allColumns: values.all,
-		};
+		['bar', BAR_CONTROLS],
+		['line', LINE_CONTROLS],
+		['scatter', SCATTER_CONTROLS],
+		['scatter3d', SCATTER3D_CONTROLS],
+		['pie', PIE_CONTROLS],
+		['bubble', BUBBLE_CONTROLS],
+		['network', NETWORK_CONTROLS],
+		['treemap', TREEMAP_CONTROLS],
+		['tin', TIN_CONTROLS],
+	])('hands over the %s control descriptions and activation defaults, and nothing else', (type, descriptions) => {
 		const adapter = getChartControlAdapter(type);
 
-		adapter.build(dataset, context);
-		adapter.attachListeners(dataset, context, writer);
-
-		expect(mocks[buildMock]).toHaveBeenCalledWith(
-			dataset,
-			...buildKeys.map(key => values[key]),
-		);
-		// The writer arrives last and is the exact instance the caller passed, so
-		// every package writes through the same adapter rather than importing
-		// state for itself.
-		expect(mocks[listenerMock]).toHaveBeenCalledWith(
-			dataset,
-			...listenerKeys.map(key => values[key]),
-			writer,
-		);
-		expect(mocks[listenerMock].mock.calls[0].at(-1)).toBe(writer);
+		expect(Object.keys(adapter)).toEqual(['controls', 'computeDefaults']);
+		expect(adapter.controls).toBe(descriptions);
+		expect(descriptions.definition.key).toBe(type);
+		expect(typeof adapter.computeDefaults).toBe('function');
 	});
 });

@@ -1,21 +1,13 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const mocks = vi.hoisted(() => ({
-	t: vi.fn(key => key),
-}));
-
-vi.mock('../../../src/services/i18nService.js', () => ({
-	t: mocks.t,
-}));
-
-import { createBarChartControls } from '../../../src/charts/bar/controls/builder.js';
-import { setupBarChartControlListeners } from '../../../src/charts/bar/controls/listeners.js';
+import { BAR_CONTROLS } from '../../../src/charts/bar/controls/descriptions.js';
+import { buildDescribedControls } from '../../../src/charts/shared/controls/describedControls.js';
+import { COLOR_PRESETS } from '../../../src/charts/shared/controls/factories.js';
 import { BAR_DEFINITION } from '../../../src/config/charts/definitions/bar.js';
 
 /**
- * Writer test double. The listeners' contract is that they hand the right
+ * Writer test double. The controls' contract is that they hand the right
  * patch to the writer; merging it into state, firing onConfigChanged, and
  * live-rendering are the adapter's contract and are covered by
  * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
@@ -52,19 +44,46 @@ function createDataset(overrides = {}) {
 	};
 }
 
-function appendControls(controls) {
-	controls.forEach(control => document.body.appendChild(control));
+function createContext({ categories = ['region'], numeric = ['sales'] } = {}) {
+	return {
+		baseCategoricalOrAll: categories,
+		categorical: categories,
+		numeric,
+		allColumns: [...categories, ...numeric],
+		dates: [],
+		rows: [],
+	};
 }
 
-/** Rebuild and rewire the controls, as the sidebar does after each commit. */
-function mountControls(dataset, writer) {
-	document.body.innerHTML = '';
-	appendControls(createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']));
-	setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
+function buildControls(dataset, writer = createWriter(), context = createContext(), translate = key => key) {
+	return buildDescribedControls(BAR_CONTROLS, { dataset, context, writer, translate });
+}
+
+/** Build the controls into the document, as the sidebar does after each commit. */
+function mountControls(dataset, writer = createWriter(), context = createContext(), translate = undefined) {
+	document.body.replaceChildren(...buildControls(dataset, writer, context, translate));
+	return writer;
+}
+
+function selectValue(id, value) {
+	const select = document.getElementById(id);
+	if (![...select.options].some(option => option.value === value)) {
+		select.append(new Option(value, value));
+	}
+	select.value = value;
+	select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function lastConfig(writer) {
+	return writer.commit.mock.calls.at(-1)[0];
 }
 
 function applyLastCommit(dataset, writer) {
-	Object.assign(dataset.chartConfig.bar, writer.commit.mock.calls.at(-1)[0]);
+	Object.assign(dataset.chartConfig.bar, lastConfig(writer));
+}
+
+function presetButton(name) {
+	return document.querySelector(`button[data-color-preset-control="viz-bar-color-preset"][data-preset-name="${name}"]`);
 }
 
 function markedPresets() {
@@ -73,20 +92,18 @@ function markedPresets() {
 		.map(button => button.dataset.presetName);
 }
 
-describe('bar controls package surface', () => {
-	it('keeps builder and listeners in explicit modules', async () => {
-		const [builder, listeners] = await Promise.all([
-			import('../../../src/charts/bar/controls/builder.js'),
-			import('../../../src/charts/bar/controls/listeners.js'),
-		]);
-		expect(Object.keys(builder)).toEqual(['createBarChartControls']);
-		expect(Object.keys(listeners)).toEqual(['setupBarChartControlListeners']);
+const optionValues = id => Array.from(document.getElementById(id).options, option => option.value);
+
+describe('bar controls module boundaries', () => {
+	it('declares its controls as descriptions, with no builder or listener module', async () => {
+		const descriptions = await import('../../../src/charts/bar/controls/descriptions.js');
+		expect(Object.keys(descriptions)).toEqual(['BAR_CONTROLS']);
+		expect(BAR_CONTROLS.definition).toBe(BAR_DEFINITION);
 	});
 });
 
 describe('barControls section structure', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
@@ -116,13 +133,8 @@ describe('barControls section structure', () => {
 		const byMode = {};
 		for (const colorMode of ['uniform', 'gradient', 'gradient-manual']) {
 			const dataset = createDataset({ colorMode });
-			const controls = createBarChartControls(
-				dataset,
-				['region', 'team'],
-				['sales'],
-				['region', 'team', 'sales'],
-			);
-			byMode[colorMode] = extractStructure(controls);
+			const context = createContext({ categories: ['region', 'team'] });
+			byMode[colorMode] = extractStructure(buildControls(dataset, createWriter(), context));
 		}
 
 		expect(byMode).toMatchSnapshot();
@@ -131,191 +143,218 @@ describe('barControls section structure', () => {
 
 describe('barControls UI structure', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('offers categorical columns plus an empty (none) option in the category select', () => {
-		const dataset = createDataset();
-		const controls = createBarChartControls(dataset, ['region', 'team'], ['sales'], ['region', 'team', 'sales']);
-		appendControls(controls);
+		mountControls(createDataset(), createWriter(), createContext({ categories: ['region', 'team'] }));
 
-		const values = Array.from(document.getElementById('viz-select-bar').options).map(o => o.value);
-		expect(values).toEqual(['', 'region', 'team']);
+		expect(optionValues('viz-select-bar')).toEqual(['', 'region', 'team']);
 	});
 
-	it('disables the gradient color pickers when colorMode is uniform', () => {
-		const uniformDataset = createDataset({ colorMode: 'uniform' });
-		const uniformControls = createBarChartControls(uniformDataset, ['region'], ['sales'], ['region', 'sales']);
-		appendControls(uniformControls);
+	it('offers the sorts, measures, color modes and gradient distributions the bar definition lists', () => {
+		mountControls(createDataset({ colorMode: 'gradient' }));
+
+		expect(optionValues('viz-select-bar-sort')).toEqual(BAR_DEFINITION.allowedValues.sort);
+		expect(optionValues('viz-select-bar-measure')).toEqual(BAR_DEFINITION.allowedValues.measureMode);
+		expect(optionValues('viz-select-bar-color-mode')).toEqual(BAR_DEFINITION.allowedValues.colorMode);
+		expect(optionValues('viz-select-bar-gradient-distribution')).toEqual(BAR_DEFINITION.allowedValues.gradientDistribution);
+	});
+
+	it('names the measure in the labels of the orders that sort by it', () => {
+		const translate = (key, ...params) => [key, ...params].join('|');
+		mountControls(createDataset({ measureMode: 'sum' }), createWriter(), createContext(), translate);
+
+		expect(Array.from(document.getElementById('viz-select-bar-sort').options, option => option.textContent)).toEqual([
+			'chive-chart-sort-measure-desc|chive-tooltip-sum',
+			'chive-chart-sort-measure-asc|chive-tooltip-sum',
+			'chive-chart-sort-label-asc',
+			'chive-chart-sort-label-desc',
+		]);
+	});
+
+	it('disables the gradient color pickers when colorMode is uniform, and the bar color otherwise', () => {
+		mountControls(createDataset({ colorMode: 'uniform' }));
+		expect(document.getElementById('viz-input-bar-color').disabled).toBe(false);
 		expect(document.getElementById('viz-input-bar-gradient-min').disabled).toBe(true);
 		expect(document.getElementById('viz-input-bar-gradient-max').disabled).toBe(true);
 
-		document.body.innerHTML = '';
-		const gradientDataset = createDataset({ colorMode: 'gradient' });
-		const gradientControls = createBarChartControls(gradientDataset, ['region'], ['sales'], ['region', 'sales']);
-		appendControls(gradientControls);
+		mountControls(createDataset({ colorMode: 'gradient' }));
+		expect(document.getElementById('viz-input-bar-color').disabled).toBe(true);
 		expect(document.getElementById('viz-input-bar-gradient-min').disabled).toBe(false);
 		expect(document.getElementById('viz-input-bar-gradient-max').disabled).toBe(false);
 	});
 
-	it('renders the gradient-distribution sub-toggle only for colorMode=gradient', () => {
-		const cases = [
-			{ mode: 'uniform', expectPresent: false },
-			{ mode: 'gradient', expectPresent: true },
-			{ mode: 'gradient-manual', expectPresent: false },
-		];
-		cases.forEach(({ mode, expectPresent }) => {
-			document.body.innerHTML = '';
-			const dataset = createDataset({ colorMode: mode });
-			const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
-			appendControls(controls);
-			const element = document.getElementById('viz-select-bar-gradient-distribution');
-			if (expectPresent) {
-				expect(element).not.toBeNull();
-			} else {
-				expect(element).toBeNull();
-			}
-		});
+	it.each([
+		['uniform', false, false],
+		['gradient', true, false],
+		['gradient-manual', false, true],
+	])('in colorMode %s, shows the gradient distribution: %s, the manual threshold: %s', (colorMode, distribution, threshold) => {
+		mountControls(createDataset({ colorMode }));
+
+		expect(document.getElementById('viz-select-bar-gradient-distribution') !== null).toBe(distribution);
+		expect(document.getElementById('viz-slider-bar-threshold') !== null).toBe(threshold);
 	});
 
-	it('renders the manual-threshold slider only for colorMode=gradient-manual', () => {
-		const cases = [
-			{ mode: 'uniform', expectPresent: false },
-			{ mode: 'gradient', expectPresent: false },
-			{ mode: 'gradient-manual', expectPresent: true },
-		];
-		cases.forEach(({ mode, expectPresent }) => {
-			document.body.innerHTML = '';
-			const dataset = createDataset({ colorMode: mode });
-			const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
-			appendControls(controls);
-			const element = document.getElementById('viz-slider-bar-threshold');
-			if (expectPresent) {
-				expect(element).not.toBeNull();
-			} else {
-				expect(element).toBeNull();
-			}
-		});
+	it('shows the default threshold for a threshold of 0 or none', () => {
+		mountControls(createDataset({ colorMode: 'gradient-manual', manualThresholdPct: 0 }));
+		expect(document.getElementById('viz-slider-bar-threshold').value).toBe('50');
+
+		mountControls(createDataset({ colorMode: 'gradient-manual', manualThresholdPct: 35 }));
+		expect(document.getElementById('viz-slider-bar-threshold').value).toBe('35');
+	});
+
+	it('disables every control while the chart is off', () => {
+		mountControls(createDataset({ enabled: false, colorMode: 'gradient' }));
+
+		const states = [...document.querySelectorAll('select, input, button[data-preset-name]')].map(element => element.disabled);
+		expect(states.length).toBeGreaterThan(0);
+		expect(states.every(Boolean)).toBe(true);
 	});
 });
 
-describe('barControls listeners', () => {
+describe('barControls writes', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
-	it('commits a measureMode change through the facade and switches valueColumn defaults', () => {
-		// count → sum: preserves a valid valueColumn
-		const dataset = createDataset({ measureMode: 'count', valueColumn: 'sales' });
-		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
-		appendControls(controls);
+	it('commits a measureMode change and keeps a valid valueColumn', () => {
+		const writer = mountControls(createDataset({ measureMode: 'count', valueColumn: 'sales' }));
 
-		const writer = createWriter();
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
+		selectValue('viz-select-bar-measure', 'sum');
 
-		const measureSelect = document.getElementById('viz-select-bar-measure');
-		measureSelect.value = 'sum';
-		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }));
+		expect(writer.commit).toHaveBeenCalledWith({ measureMode: 'sum', valueColumn: 'sales' });
 		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('keeps valueColumn when measureMode switches to count', () => {
-		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
-		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
-		appendControls(controls);
+		const writer = mountControls(createDataset({ measureMode: 'sum', valueColumn: 'sales' }));
 
-		const writer = createWriter();
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
+		selectValue('viz-select-bar-measure', 'count');
 
-		const measureSelect = document.getElementById('viz-select-bar-measure');
-		measureSelect.value = 'count';
-		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'count', valueColumn: 'sales' }));
+		expect(writer.commit).toHaveBeenCalledWith({ measureMode: 'count', valueColumn: 'sales' });
 	});
 
 	it('takes the first numeric column when switching to mean without a usable valueColumn', () => {
-		const dataset = createDataset({ measureMode: 'count', valueColumn: 'hidden' });
-		appendControls(createBarChartControls(dataset, ['region'], ['sales', 'profit'], ['region', 'sales', 'profit']));
+		const writer = mountControls(
+			createDataset({ measureMode: 'count', valueColumn: 'hidden' }),
+			createWriter(),
+			createContext({ numeric: ['sales', 'profit'] }),
+		);
 
-		const writer = createWriter();
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales', 'profit'], ['region', 'sales', 'profit'], writer);
-
-		const measureSelect = document.getElementById('viz-select-bar-measure');
-		measureSelect.value = 'mean';
-		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
+		selectValue('viz-select-bar-measure', 'mean');
 
 		expect(writer.commit).toHaveBeenCalledWith({ measureMode: 'mean', valueColumn: 'sales' });
 	});
 
-	// The commit canonicalizes the chart's config, which replaces a color mode
-	// the bar does not offer.
-	it('commits a forged color mode as chosen', () => {
-		const dataset = createDataset({ colorMode: 'uniform' });
-		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
-		appendControls(controls);
+	it('commits the category as chosen, the empty string for none', () => {
+		const writer = mountControls(createDataset(), createWriter(), createContext({ categories: ['region', 'team'] }));
 
-		const writer = createWriter();
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
+		selectValue('viz-select-bar', 'team');
+		expect(lastConfig(writer)).toEqual({ category: 'team' });
+		selectValue('viz-select-bar', '');
+		expect(lastConfig(writer)).toEqual({ category: '' });
+	});
 
-		const select = document.getElementById('viz-select-bar-color-mode');
-		// jsdom select rejects values not in the option set, so add a sentinel option first.
-		const opt = document.createElement('option');
-		opt.value = 'gibberish';
-		select.appendChild(opt);
-		select.value = 'gibberish';
-		select.dispatchEvent(new Event('change', { bubbles: true }));
+	// The commit canonicalizes the chart's config, which replaces a sort, color
+	// mode or gradient distribution the bar does not offer.
+	it('commits forged enumerated selections as chosen', () => {
+		const writer = mountControls(createDataset({ colorMode: 'gradient' }));
 
-		expect(writer.commit).toHaveBeenCalledWith({ colorMode: 'gibberish' });
+		selectValue('viz-select-bar-color-mode', 'gibberish');
+		expect(lastConfig(writer)).toEqual({ colorMode: 'gibberish' });
+		selectValue('viz-select-bar-sort', 'sideways');
+		expect(lastConfig(writer)).toEqual({ sort: 'sideways' });
+		selectValue('viz-select-bar-gradient-distribution', 'rank');
+		expect(lastConfig(writer)).toEqual({ gradientDistribution: 'rank' });
 	});
 
 	it('transforms Top N from string to number', () => {
-		const dataset = createDataset({ topN: 0 });
-		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
-		appendControls(controls);
+		const writer = mountControls(createDataset({ topN: 0 }));
 
-		const writer = createWriter();
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
-
-		const topnSelect = document.getElementById('viz-select-bar-topn');
-		topnSelect.value = '20';
-		topnSelect.dispatchEvent(new Event('change', { bubbles: true }));
+		selectValue('viz-select-bar-topn', '20');
 
 		expect(writer.commit).toHaveBeenCalledTimes(1);
-		const call = writer.commit.mock.calls[0][0];
-		expect(call.topN).toBe(20);
-		expect(typeof call.topN).toBe('number');
+		expect(lastConfig(writer)).toEqual({ topN: 20 });
 	});
 
-	it('toggles the X-axis label checkbox through the facade', () => {
-		const dataset = createDataset({ showXAxisLabel: true });
-		const controls = createBarChartControls(dataset, ['region'], ['sales'], ['region', 'sales']);
-		appendControls(controls);
+	it('commits the title trimmed and the axis-label toggles', () => {
+		const writer = mountControls(createDataset({ showXAxisLabel: true }));
 
-		const writer = createWriter();
-		setupBarChartControlListeners(dataset, dataset.chartConfig.bar, ['sales'], ['region', 'sales'], writer);
+		const title = document.getElementById('viz-input-bar-title');
+		title.value = '  Sales by region  ';
+		title.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig(writer)).toEqual({ customTitle: 'Sales by region' });
 
-		const checkbox = document.getElementById('viz-toggle-bar-x-label');
-		checkbox.checked = false;
-		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+		document.getElementById('viz-toggle-bar-x-label').click();
+		expect(lastConfig(writer)).toEqual({ showXAxisLabel: false });
+		document.getElementById('viz-toggle-bar-y-label').click();
+		expect(lastConfig(writer)).toEqual({ showYAxisLabel: false });
+	});
 
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ showXAxisLabel: false }));
+	it('previews a bar color while the picker is open and commits it when it closes', () => {
+		const writer = mountControls(createDataset({ colorMode: 'uniform' }));
+		const input = document.getElementById('viz-input-bar-color');
+
+		input.value = '#123456';
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(writer.preview).toHaveBeenCalledWith({ color: '#123456' });
+		expect(writer.commit).not.toHaveBeenCalled();
+
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(writer.commit).toHaveBeenCalledWith({ color: '#123456' });
+	});
+
+	it('writes the gradient colors, and the white fallback for an invalid light end', () => {
+		const writer = mountControls(createDataset({ colorMode: 'gradient' }));
+
+		const min = document.getElementById('viz-input-bar-gradient-min');
+		min.value = '#abcdef';
+		min.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig(writer)).toEqual({ gradientMinColor: '#abcdef' });
+
+		const max = document.getElementById('viz-input-bar-gradient-max');
+		max.type = 'text';
+		max.value = 'not-a-color';
+		max.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(writer.preview).toHaveBeenLastCalledWith({ gradientMaxColor: '#ffffff' });
+	});
+
+	it('follows the threshold drag in its output and commits a number on release', () => {
+		const writer = mountControls(createDataset({ colorMode: 'gradient-manual' }));
+		const slider = document.getElementById('viz-slider-bar-threshold');
+
+		slider.value = '65';
+		slider.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(slider.parentElement.querySelector('output').textContent).toBe('65');
+		expect(writer.commit).not.toHaveBeenCalled();
+
+		slider.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig(writer)).toEqual({ manualThresholdPct: 65 });
+	});
+
+	it('copies a palette into the bar and gradient colors', () => {
+		const writer = mountControls(createDataset());
+
+		presetButton('Bold').click();
+
+		expect(writer.commit).toHaveBeenCalledWith({
+			colorScheme: 'Bold',
+			color: COLOR_PRESETS.Bold[0],
+			gradientMinColor: COLOR_PRESETS.Bold[0],
+			gradientMaxColor: COLOR_PRESETS.Bold.at(-1),
+		});
 	});
 });
 
 describe('barControls color palette mark', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('marks no palette on a new chart', () => {
 		const { color, colorScheme, gradientMinColor, gradientMaxColor } = BAR_DEFINITION.createDefaultConfig();
-		mountControls(createDataset({ color, colorScheme, gradientMinColor, gradientMaxColor }), createWriter());
+		mountControls(createDataset({ color, colorScheme, gradientMinColor, gradientMaxColor }));
 
 		expect(markedPresets()).toEqual([]);
 	});
@@ -325,7 +364,7 @@ describe('barControls color palette mark', () => {
 		const writer = createWriter();
 		mountControls(dataset, writer);
 
-		document.querySelector('button[data-color-preset-control="viz-bar-color-preset"][data-preset-name="Colorblind-Safe"]').click();
+		presetButton('Colorblind-Safe').click();
 		applyLastCommit(dataset, writer);
 		mountControls(dataset, writer);
 		expect(markedPresets()).toEqual(['Colorblind-Safe']);

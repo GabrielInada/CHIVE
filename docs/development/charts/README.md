@@ -70,8 +70,8 @@ the shared keyed maps without registering renderers or controls. Follow the
 when adding a type.
 
 The three implementation registries intentionally stay separate from these
-definitions and from one another. Controls need builder, listener, and
-activation-default adapters; the dataset workspace dispatches section
+definitions and from one another. Controls need control descriptions and
+activation defaults; the dataset workspace dispatches section
 renderers; and the panel resolves snapshot renderers. Keeping one registry per
 surface prevents each integration path from importing unrelated
 implementations and keeps capability differences local to their surface
@@ -117,34 +117,70 @@ doc rather than repeated:
   [workspace registry](../../../src/charts/registries/workspace.js) owns the section
   routine for every chart: block visibility, and a minimum height equal to the height
   the chart is drawn at ([chartHeight.js](../../../src/charts/shared/chartHeight.js)). Each package's
-  `presentation.js` maps config and labels and renders localized empty states via
+  `presentation.js` passes stored config unchanged, supplies localized labels and
+  runtime context, and renders localized empty states via
   `showChartMessage` from
   [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).
   Workspace charts, saved Panel previews, and layout slots therefore show the
   same failure message, including after resize or reopening an existing project.
   Add to panel also accepts charts displaying an empty state; captures keep their
   frozen rows and config, and the presentation flow returns the renderer result.
+- **Renderer inputs**: every chart renderer takes `(container, rows, config, context)`.
+  Column bindings and visual settings stay in stored `config`; each package's
+  `options.js` normalizes its numeric bounds, colors and defaults once. Enumerated
+  settings have already been canonicalized against the chart definition. `context`
+  carries presentation-owned labels, locale, column types, callbacks and transient
+  render approval or application settings. Normalizers do not translate or supply
+  English label defaults. Real-render presentation tests exercise the stored settings
+  and translated output; renderer equivalence tests retain the existing SVG snapshots.
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
   `buildRankMap`, `isValidHexColor`); pie's `buildSliceColor` lives in its package
   ([color.js](../../../src/charts/pie/color.js)).
 - **SVG scaffold**: [scaffold.js](../../../src/charts/shared/svg/scaffold.js) owns the
   shared title, SVG/group setup, axes, and axis-label builders used by SVG charts.
 - **Tooltips and click-to-filter**: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js)
-  owns the tooltip overlay, and
+  owns the tooltip overlay, pin identity and dismissal, and
   [filterActions.js](../../../src/charts/shared/tooltip/filterActions.js)
-  (`showPinnedFilterTooltip`) pins a tooltip with the global-filter actions for the column and
+  (`togglePinnedFilterTooltip`) toggles a tooltip with the global-filter actions for the column and
   category token a chart names. The categorical filter-action subsystem is documented in
   detail in the bar chart's [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter,
-  and network. Each chart's presentation flow supplies `labels.close`; the renderer passes
-  it as `closeLabel` independently of the filter callbacks, so Panel tooltips also use the
-  current interface language for the close button's accessible name and hover title.
+  and network. Presentations use [labels.js](../../../src/charts/shared/tooltip/labels.js)
+  with their translator to supply `labels.close`, `labels.missing`, and
+  `labels.filterActions`. Renderers pass `closeLabel` and `filterActionLabels` separately
+  from filter callbacks. Action buttons, state badges, network headings, and the close
+  button therefore use the current interface language wherever the chart is drawn. Renderers
+  pass the clicked SVG mark as `target`; its DOM identity distinguishes categories, bubble
+  hierarchy nodes and scatter points across chart instances and Panel slots. Hover show/move
+  and `hideHoverTooltip` leave a pin intact; explicit `hideChartTooltip` clears it on background
+  clicks or render cleanup. Network supplies an anchor closure over the clicked node datum.
+  The shared [pinning tests](../../../tests/charts/shared/tooltip/pinning.test.js) cover toggle,
+  replacement, dismissal and anchor cleanup; [chart wiring tests](../../../tests/charts/shared/tooltip/chartPinning.test.js)
+  exercise the real renderers in separate Panel slots.
 - **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
-  builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets), the
+  builds the labeled sidebar widgets (selects, sliders, number and color inputs, palette presets), the
   options of a Top-N select (`topNSelectOptions`), and finds the palette preset a chart's
   colors still match (`findAppliedColorPreset`), the one its palette buttons mark; [grouping.js](../../../src/charts/shared/controls/grouping.js)
-  wraps them in collapsible sections. Neither writes config; the config writes are wired by
-  the listener helpers in
-  [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
+  wraps them in collapsible sections. Neither writes config.
+- **Described controls**: a chart can declare each control once, as data: its config key,
+  widget, label, options, and when it is shown or disabled (the `ControlDescription` typedef
+  in [types.js](../../../src/types.js)). [describedControls.js](../../../src/charts/shared/controls/describedControls.js)
+  builds the controls with the factories and wires each one to the `ChartConfigWriter` as it
+  creates it, so no listener looks a control up by id. The widget decides how it writes: a
+  color input previews on `input` and commits on `change`, every other widget commits on
+  `change`. An enumerated setting's select lists exactly the values its definition's
+  `allowedValues` accept, so its description gives only the labels: message keys, or
+  `optionText` for labels that are not messages (TIN's ramp names). A control no widget
+  covers is a `custom` description whose `build` creates and wires its elements (pie's radius
+  sliders, palette, and slice grid; bubble's nesting levels). Descriptions that charts share
+  live beside the builder:
+  [categoryControls.js](../../../src/charts/shared/controls/categoryControls.js) for the
+  category charts' measure, value-column, and Top-N selects,
+  [axisControls.js](../../../src/charts/shared/controls/axisControls.js) for the numeric axis
+  selects of the 3D scatter and TIN, and
+  [zoomControls.js](../../../src/charts/shared/controls/zoomControls.js) for the Reset Zoom
+  button of pie and network. A key `block.setting` names a setting inside a block of the
+  config, such as scatter's `regression.mode`. Every chart declares its controls this way, in
+  its package's `controls/descriptions.js`.
 - **Drawn categories**: bar, pie, treemap, and bubble take the categories they draw from
   `aggregateCategories` in
   [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js). It groups and
@@ -162,14 +198,17 @@ doc rather than repeated:
   Any measure other than sum or mean is named as count.
 - **Measure and value column**: bar, pie, treemap, and bubble keep their value column by one
   rule, `valueColumnForMeasure` in [measure.js](../../../src/charts/shared/measure.js), both
-  when the user switches the measure (`setupMeasureListener`) and when the chart is activated
+  when the user switches the measure (the measure description's `toPatch`) and when the
+  chart is activated
   (`categoryChartDefaults` in
   [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js), the
   `computeDefaults` the four share). Count keeps the stored column; sum and mean keep it
   while it is a visible numeric column and otherwise take the first one. The value-column
   select is disabled when the measure reads no value column (`measureUsesValueColumn`), and
-  `setupValueColumnListener` stores only a visible numeric column. Their measure and Top-N
-  selects list the definition's `measureModes` and `topNOptions`.
+  stores only a visible numeric column (its `toValue`). Their measure select lists the
+  definition's `allowedValues.measureMode`, and their Top-N select the chart's `topNOptions`;
+  [categoryControls.js](../../../src/charts/shared/controls/categoryControls.js) describes
+  all three selects for the four charts.
   [dataControls.test.js](../../../tests/charts/registries/dataControls.test.js) checks these
   rules for the four charts through the controls registry.
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's

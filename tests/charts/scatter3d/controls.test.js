@@ -1,22 +1,14 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const mocks = vi.hoisted(() => ({
-	t: vi.fn(key => key),
-}));
-
-vi.mock('../../../src/services/i18nService.js', () => ({
-	t: mocks.t,
-}));
-
-import { createScatter3dControls } from '../../../src/charts/scatter3d/controls/builder.js';
-import { setupScatter3dControlListeners } from '../../../src/charts/scatter3d/controls/listeners.js';
+import { SCATTER3D_CONTROLS } from '../../../src/charts/scatter3d/controls/descriptions.js';
 import { computeDefaults } from '../../../src/charts/scatter3d/controls/activationDefaults.js';
-import { SCATTER3D_CHART } from '../../../src/config/charts/definitions/scatter3d.js';
+import { buildDescribedControls } from '../../../src/charts/shared/controls/describedControls.js';
+import { CHART_COLORS } from '../../../src/config/charts/definitions.js';
+import { SCATTER3D_CHART, SCATTER3D_DEFINITION } from '../../../src/config/charts/definitions/scatter3d.js';
 
 /**
- * Writer test double. The listeners' contract is that they hand the right
+ * Writer test double. The controls' contract is that they hand the right
  * patch to the writer; merging it into state, firing onConfigChanged, and
  * live-rendering are the adapter's contract and are covered by
  * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
@@ -45,8 +37,26 @@ function createDataset(overrides = {}) {
 	};
 }
 
-function appendControls(controls) {
-	controls.forEach(control => document.body.appendChild(control));
+function createContext({ numeric = ['width', 'height', 'depth'], categorical = ['name'] } = {}) {
+	const allColumns = [...categorical, ...numeric];
+	return {
+		allColumns,
+		numeric,
+		categorical,
+		baseCategoricalOrAll: categorical.length > 0 ? categorical : allColumns,
+		dates: [],
+		rows: [],
+	};
+}
+
+function buildControls(dataset, writer = createWriter(), context = createContext()) {
+	return buildDescribedControls(SCATTER3D_CONTROLS, { dataset, context, writer, translate: key => key });
+}
+
+/** Build the controls into the document, as the sidebar does after each commit. */
+function mountControls(dataset, writer = createWriter(), context = createContext()) {
+	document.body.replaceChildren(...buildControls(dataset, writer, context));
+	return writer;
 }
 
 function changeSelect(id, value) {
@@ -58,24 +68,37 @@ function changeSelect(id, value) {
 	select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function lastScatter3dConfig(writer) {
+function lastConfig(writer) {
 	return writer.commit.mock.calls.at(-1)[0];
 }
 
-describe('scatter3d controls builder', () => {
+describe('scatter3d controls module boundaries', () => {
+	it('declares its controls as descriptions, with no builder or listener module', async () => {
+		const [descriptions, defaults] = await Promise.all([
+			import('../../../src/charts/scatter3d/controls/descriptions.js'),
+			import('../../../src/charts/scatter3d/controls/activationDefaults.js'),
+		]);
+		expect(Object.keys(descriptions)).toEqual(['SCATTER3D_CONTROLS']);
+		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
+		expect(SCATTER3D_CONTROLS.definition).toBe(SCATTER3D_DEFINITION);
+	});
+});
+
+describe('scatter3d controls', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('builds the Data, Display, and Styling sections', () => {
-		const controls = createScatter3dControls(createDataset(), ['width', 'height', 'depth']);
+		const controls = buildControls(createDataset());
 
 		expect(controls.map(section => section.dataset.section)).toEqual(['data', 'display', 'styling']);
+		expect(controls.map(section => section.querySelector('.chart-section-header').getAttribute('aria-expanded')))
+			.toEqual(['true', 'true', 'false']);
 	});
 
 	it('offers only numeric columns plus the none option for x/y/z', () => {
-		appendControls(createScatter3dControls(createDataset(), ['width', 'height', 'depth']));
+		mountControls(createDataset());
 
 		for (const axis of ['x', 'y', 'z']) {
 			const values = Array.from(document.getElementById(`viz-select-scatter3d-${axis}`).options).map(o => o.value);
@@ -83,58 +106,99 @@ describe('scatter3d controls builder', () => {
 		}
 	});
 
-	it('reflects the config values and disables everything when the chart is off', () => {
-		const dataset = createDataset({ enabled: false, pointSize: 0.08, opacity: 0.4, color: '#112233' });
-		appendControls(createScatter3dControls(dataset, ['width', 'height', 'depth']));
+	it('shows "None" for any falsy axis, even beside columns named "0" and "false"', () => {
+		mountControls(
+			createDataset({ x: 0, y: false, z: 'depth' }),
+			createWriter(),
+			createContext({ numeric: ['0', 'false', 'depth'] }),
+		);
 
-		expect(document.getElementById('viz-select-scatter3d-x').disabled).toBe(true);
-		expect(document.getElementById('viz-slider-scatter3d-point-size').disabled).toBe(true);
+		expect(document.getElementById('viz-select-scatter3d-x').selectedIndex).toBe(0);
+		expect(document.getElementById('viz-select-scatter3d-y').selectedIndex).toBe(0);
+		expect(document.getElementById('viz-select-scatter3d-z').value).toBe('depth');
+	});
+
+	it('reflects the config values and disables everything when the chart is off', () => {
+		mountControls(createDataset({ enabled: false, pointSize: 0.08, opacity: 0.4, color: '#112233' }));
+
+		const states = [...document.querySelectorAll('select, input')].map(element => element.disabled);
+		expect(states).toHaveLength(7);
+		expect(states.every(Boolean)).toBe(true);
 		expect(document.getElementById('viz-slider-scatter3d-point-size').value).toBe('0.08');
 		expect(document.getElementById('viz-slider-scatter3d-opacity').value).toBe('0.4');
 		expect(document.getElementById('viz-input-scatter3d-color').value).toBe('#112233');
 	});
+
+	it('shows the default point size and opacity while they are unset, and a value of 0 as 0', () => {
+		const output = id => document.getElementById(id).parentElement.querySelector('output').textContent;
+
+		mountControls(createDataset({ pointSize: null, opacity: undefined }));
+		expect(output('viz-slider-scatter3d-point-size')).toBe(String(SCATTER3D_CHART.defaultPointSize));
+		expect(output('viz-slider-scatter3d-opacity')).toBe(String(SCATTER3D_CHART.defaultOpacity));
+
+		mountControls(createDataset({ pointSize: 0, opacity: 0 }));
+		expect(output('viz-slider-scatter3d-point-size')).toBe('0');
+		expect(output('viz-slider-scatter3d-opacity')).toBe('0');
+	});
+
+	it('gives the point size and opacity sliders their ranges', () => {
+		mountControls(createDataset());
+
+		const range = id => ['min', 'max', 'step'].map(attribute => document.getElementById(id)[attribute]);
+		expect(range('viz-slider-scatter3d-point-size'))
+			.toEqual([String(SCATTER3D_CHART.minPointSize), String(SCATTER3D_CHART.maxPointSize), '0.005']);
+		expect(range('viz-slider-scatter3d-opacity'))
+			.toEqual([String(SCATTER3D_CHART.minOpacity), String(SCATTER3D_CHART.maxOpacity), '0.05']);
+	});
 });
 
-describe('scatter3d control listeners', () => {
+describe('scatter3d control writes', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
-	function mountAndWire(dataset, numericOptions = ['width', 'height', 'depth']) {
-		appendControls(createScatter3dControls(dataset, numericOptions));
-		const writer = createWriter();
-		setupScatter3dControlListeners(dataset, numericOptions, [], writer);
-		return writer;
-	}
-
-	it('writes axis picks through the config-write adapter, clamped to numeric options', () => {
-		const writer = mountAndWire(createDataset());
+	it('writes axis picks clamped to the numeric columns, null for none or a forged option', () => {
+		const writer = mountControls(createDataset());
 
 		changeSelect('viz-select-scatter3d-x', 'depth');
-		expect(lastScatter3dConfig(writer)).toMatchObject({ x: 'depth' });
+		expect(lastConfig(writer)).toEqual({ x: 'depth' });
 
 		changeSelect('viz-select-scatter3d-y', 'not-a-column');
-		expect(lastScatter3dConfig(writer)).toMatchObject({ y: null });
+		expect(lastConfig(writer)).toEqual({ y: null });
+
+		changeSelect('viz-select-scatter3d-z', '');
+		expect(lastConfig(writer)).toEqual({ z: null });
 	});
 
 	it('writes point size, opacity, title, and color', () => {
-		const writer = mountAndWire(createDataset());
+		const writer = mountControls(createDataset());
 
 		const size = document.getElementById('viz-slider-scatter3d-point-size');
 		size.value = '0.05';
 		size.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastScatter3dConfig(writer)).toMatchObject({ pointSize: 0.05 });
+		expect(lastConfig(writer)).toEqual({ pointSize: 0.05 });
 
 		const opacity = document.getElementById('viz-slider-scatter3d-opacity');
 		opacity.value = '0.35';
 		opacity.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastScatter3dConfig(writer)).toMatchObject({ opacity: 0.35 });
+		expect(lastConfig(writer)).toEqual({ opacity: 0.35 });
 
 		const title = document.getElementById('viz-input-scatter3d-title');
-		title.value = 'Cloud';
+		title.value = '  Cloud  ';
 		title.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(lastScatter3dConfig(writer)).toMatchObject({ customTitle: 'Cloud' });
+		expect(lastConfig(writer)).toEqual({ customTitle: 'Cloud' });
+
+		const color = document.getElementById('viz-input-scatter3d-color');
+		color.value = '#abcdef';
+		color.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(writer.preview).toHaveBeenCalledWith({ color: '#abcdef' });
+		color.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig(writer)).toEqual({ color: '#abcdef' });
+
+		color.type = 'text';
+		color.value = 'not-a-color';
+		color.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig(writer)).toEqual({ color: CHART_COLORS.scatter3d });
 	});
 });
 

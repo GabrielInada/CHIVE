@@ -1,9 +1,9 @@
 /**
- * Bubble-chart controls: shared nesting-column resolution.
+ * Bubble-chart controls: nesting-column resolution.
  *
- * Package-private helpers shared by the bubble builder (via `createNestingControls`)
- * and the bubble listeners. They are documented `@internal`; JavaScript does not
- * enforce module privacy.
+ * Package-private helpers of the nesting levels in `customControls.js`, which
+ * build the level selects with them and check each write against them. They
+ * are documented `@internal`; JavaScript does not enforce module privacy.
  */
 
 import { BUBBLE_CHART } from '../../../config/charts/definitions/bubble.js';
@@ -28,11 +28,10 @@ export function resolveNestingColumnsFromConfig(config, allowed = null) {
 }
 
 /**
- * Single source of truth for how many nesting-level selectors exist, used by both
- * the builder (render count) and the listeners (wiring count) so they cannot drift.
- * Flat mode is always a single level. Grouped mode shows the filled levels plus one
- * trailing empty selector only while another level can still be added, bounded by
- * the shared depth cap and the number of eligible columns.
+ * How many nesting-level selects to build at most. Flat mode is always a single
+ * level. Grouped mode shows the filled levels plus one trailing empty select only
+ * while another level can still be added, bounded by the shared depth cap and the
+ * number of eligible columns.
  *
  * @internal
  * @param {Object} config - The bubble chart config block.

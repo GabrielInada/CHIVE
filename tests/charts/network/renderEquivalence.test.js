@@ -12,6 +12,7 @@
  * tick handler, so they are intentionally not asserted.
  */
 
+import { renderContext } from '../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderNetworkGraph } from '../../../src/charts/network/renderers/svg.js';
 import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
@@ -54,7 +55,15 @@ function structure(container) {
 
 function render(options, rows = ROWS) {
 	const container = makeContainer();
-	const result = renderNetworkGraph(container, rows, 'src', 'dst', { ...BASE, ...options });
+	const result = renderNetworkGraph(container, rows, {
+		source: 'src',
+		target: 'dst',
+		...BASE,
+		...options,
+	}, renderContext({ source: 'src', target: 'dst' }, {
+		...BASE,
+		...options,
+	}));
 	return { result, structure: structure(container) };
 }
 

@@ -1,33 +1,13 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { getChartControlAdapter } from '../../src/charts/registries/controls.js';
+import { buildDescribedControls } from '../../src/charts/shared/controls/describedControls.js';
 import { CHART_DEFINITIONS } from '../../src/config/charts/definitions.js';
 import { createDefaultChartConfig } from '../../src/config/charts/defaults.js';
 
-vi.mock('../../src/services/i18nService.js', () => ({ t: key => key }));
-
-// IDs are the public contract between each builder and its listeners. Every
-// offered enum must survive canonicalization, including conditional selects.
-const SELECTS = {
-	bar: { sort: 'sort', measureMode: 'measure', colorMode: 'color-mode', gradientDistribution: 'gradient-distribution' },
-	bubble: { measureMode: 'measure', labelMode: 'label-mode', nestingMode: 'nesting-mode' },
-	line: { curve: 'curve', missingMode: 'missing', aggregateMode: 'aggregate' },
-	network: { edgeColorMode: 'edge-color-mode' },
-	pie: { measureMode: 'measure', topNMode: 'topn-mode', labelPosition: 'label-position' },
-	scatter: {
-		xScale: 'xscale',
-		yScale: 'yscale',
-		sizeMode: 'size-mode',
-		categoricalPairMode: 'categorical-mode',
-		colorMode: 'color-mode',
-		gradientDistribution: 'gradient-distribution',
-		colorScheme: 'color-scheme',
-		'regression.mode': 'regression-mode',
-	},
-	tin: { fillMode: 'fill-mode', colorRamp: 'color-ramp', gradientDistribution: 'gradient-distribution', isolineMode: 'isoline-mode' },
-	treemap: { measureMode: 'measure', colorMode: 'color-mode' },
-};
+// Every offered enum must survive canonicalization, including conditional
+// selects. Each chart's control for a setting carries its own id.
 
 function listedSettings(values, prefix = '') {
 	return Object.entries(values).flatMap(([key, offered]) => {
@@ -52,8 +32,31 @@ function buildControls(type, overrides = {}) {
 		dates: [],
 	};
 	const root = document.createElement('div');
-	root.append(...getChartControlAdapter(type).build(dataset, context));
+	root.append(...buildDescribedControls(getChartControlAdapter(type).controls, {
+		dataset,
+		context,
+		writer: { commit() {}, preview() {} },
+		translate: key => key,
+	}));
 	return root;
+}
+
+/** The control a chart declares for `setting`. */
+function declaredControl(type, setting) {
+	return getChartControlAdapter(type).controls.sections
+		.flatMap(section => section.controls)
+		.find(control => control.key === setting);
+}
+
+function offeredBy(root, type, setting) {
+	const control = declaredControl(type, setting);
+	expect(control, `${type}.${setting} needs a declared control`).toBeDefined();
+	// A palette, described or written by hand, names its buttons by its id.
+	const presets = root.querySelectorAll(`[data-color-preset-control="${control.id}"]`);
+	if (presets.length > 0) return Array.from(presets, button => button.dataset.presetName);
+	const select = root.querySelector(`#${control.id}`);
+	expect(select, `${type}.${setting} is not shown by default`).not.toBeNull();
+	return Array.from(select.options, option => option.value);
 }
 
 describe('enumerated chart controls', () => {
@@ -62,16 +65,7 @@ describe('enumerated chart controls', () => {
 			it(`${type}.${setting} offers exactly the values its definition accepts`, () => {
 				const colorMode = type === 'bar' ? 'gradient' : setting === 'colorScheme' ? 'category' : 'numeric';
 				const root = buildControls(type, ['bar', 'scatter'].includes(type) ? { colorMode } : {});
-				if (setting === 'colorScheme' && type !== 'scatter') {
-					const buttons = root.querySelectorAll(`[data-color-preset-control="viz-${type}-color-preset"]`);
-					expect(Array.from(buttons, button => button.dataset.presetName)).toEqual(offered);
-				} else {
-					const suffix = SELECTS[type]?.[setting];
-					expect(suffix, `${type}.${setting} needs a control assertion`).toBeDefined();
-					const select = root.querySelector(`#viz-select-${type}-${suffix}`);
-					expect(select).not.toBeNull();
-					expect(Array.from(select.options, option => option.value)).toEqual(offered);
-				}
+				expect(offeredBy(root, type, setting)).toEqual(offered);
 			});
 		}
 	}

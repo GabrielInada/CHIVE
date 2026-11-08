@@ -3,9 +3,9 @@
  *
  * DOM-only helpers that build the per-control widgets used by every
  * chart controls package (`charts/bar/controls/`, `charts/pie/controls/`, ...). Each
- * factory returns a `<div>` containing a label plus the input element;
- * listeners are wired separately via the shared chart-control listener
- * bindings in `charts/shared/controls/listenerBindings.js`.
+ * factory returns a `<div>` containing a label plus the input element.
+ * `describedControls.js` wires each control as it builds it, and a chart's
+ * hand-written controls wire their own.
  *
  * Shared leaf infrastructure: localized strings arrive as arguments
  * (label text, the palette `translate` callback), never via service
@@ -114,8 +114,8 @@ export function createNumberInputControl(id, labelText, value, { min, max, step,
 
 /**
  * Build a labeled range slider with a live-value `<output>` element.
- * The output mirrors the slider value; sync wiring happens in
- * `listenerBindings.js#setupSliderListener`.
+ * The output shows the value the slider is built with; the code that wires
+ * the slider updates it on `input`.
  *
  * @param {string} id
  * @param {string} labelText
@@ -257,8 +257,8 @@ export { hexToRgb, rgbToHex, interpolateColor, normalizeHexColor } from '../../.
 /**
  * Find the preset whose colors are still in place, for charts whose preset
  * buttons copy palette colors into their own color keys. `colorKeys` maps each
- * key a button writes to the palette position it takes, the same map the chart
- * passes to `setupColorPresetListeners`. Negative positions count from the end;
+ * key a button writes to the palette position it takes, the same map a palette
+ * description's `colorKeys` holds. Negative positions count from the end;
  * positions past the end wrap, the way the pie repeats a palette over its
  * slices. A preset matches only while every one of those keys still holds its
  * color, so editing any of them clears the match.
@@ -299,13 +299,13 @@ function localizedPaletteName(paletteId, translate) {
 }
 
 /**
- * Build a row of palette-preset buttons. Buttons share
- * `data-color-preset-control={id}` so the listener helper
- * `setupColorPresetListeners` can wire them in batch.
+ * Build a row of palette-preset buttons. A button click calls `onSelect`.
+ * Buttons share `data-color-preset-control={id}`, which names the control
+ * they belong to.
  *
  * Palette names and the help line resolve through the caller-supplied
  * `translate` callback, which keeps this factory free of service imports.
- * Builders pass the app's `t`; when omitted, raw palette ids and message
+ * Callers pass the app's `t`; when omitted, raw palette ids and message
  * keys render.
  *
  * @param {string} id

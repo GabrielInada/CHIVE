@@ -15,10 +15,11 @@ import { arc, pie, select, zoom, zoomIdentity } from '../../../../vendor/d3/d3.j
 import {
 	createTooltipLine,
 	hideChartTooltip,
+	hideHoverTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
+import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
@@ -33,26 +34,27 @@ import { computePieSectors } from '../data.js';
  * as it does with `'no-positive-value'` when no category has a value
  * above 0.
  *
- * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
+ * Common config keys: `measureMode` ('count' | 'sum'), `valueColumn`,
  * `topN`, `topNMode` ('other' | 'truncate'), `innerRadius`/`outerRadius`,
  * `padAngle`, `zoomScale`, `showCategoryLabel`/`showValueLabel`/
  * `showLegend`, `labelPosition` ('inside' | 'outside'), `color`,
  * `customSliceColors` (overrides by category key), `customTitle`,
- * `chartHeight`, `locale`, and the localized `labels` bag, whose `measure`
- * names the measure in the tooltip.
+ * and `chartHeight`. The separate context supplies locale, filter callbacks
+ * and localized labels; `labels.measure` names the measure in the tooltip.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} categoryColumn - Categorical column name (required).
- * @param {Object} [options={}] - Render options bag.
+ * @param {Object} config - Stored chart config, normalized once inside the renderer.
+ * @param {Object} context - Localized labels, locale, and runtime callbacks from presentation.
  * @returns {Result}
  */
-export function renderPieChart(container, rows, categoryColumn, options = {}) {
+export function renderPieChart(container, rows, config = {}, context = {}) {
+	const { category: categoryColumn } = config;
+	const { labels = {}, locale, filterCallbacks } = context;
 	if (!container || !categoryColumn) return fail();
 
+	const normalized = normalizePieOptions(config);
 	const {
-		locale,
-		labels,
 		rawInner,
 		rawOuter,
 		showCategoryLabel,
@@ -63,9 +65,9 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		chartHeight,
 		padAngleRad,
 		zoomScale,
-	} = normalizePieOptions(options);
+	} = normalized;
 
-	const drawn = computePieSectors(rows, categoryColumn, options);
+	const drawn = computePieSectors(rows, categoryColumn, normalized, labels);
 	if (!drawn.ok) return fail(drawn.reason);
 	const { sectors, total } = drawn;
 
@@ -118,8 +120,6 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		.innerRadius(innerRadius + (outerRadius - innerRadius) * 0.62)
 		.outerRadius(innerRadius + (outerRadius - innerRadius) * 0.62);
 
-	let pinnedCategory = null;
-
 	const buildTooltipContent = item => {
 		const percentage = total > 0 ? ((item.value / total) * 100) : 0;
 		const wrapper = document.createElement('div');
@@ -133,13 +133,14 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		showChartTooltip(buildTooltipContent(item), event.pageX, event.pageY);
 	};
 
-	const showPinnedTooltip = (event, item, onDismiss) => {
+	const togglePinnedTooltip = (event, item) => {
 		// The Other sector has no category token, so it offers no filter actions.
-		showPinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
+		togglePinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
+			target: event.currentTarget,
 			headerTitle: item.label,
 			closeLabel: labels.close,
-			onDismiss,
-			filterCallbacks: options.filterCallbacks,
+			filterActionLabels: labels.filterActions,
+			filterCallbacks,
 			categories: [{ column: categoryColumn, token: item.token }],
 		});
 	};
@@ -154,33 +155,20 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		.attr('stroke', '#fff')
 		.attr('stroke-width', 1)
 		.on('mouseenter', (event, item) => {
-			if (pinnedCategory !== null) return;
 			showTooltip(event, item.data);
 		})
 		.on('mousemove', event => {
-			if (pinnedCategory !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseleave', () => {
-			if (pinnedCategory !== null) return;
-			hideChartTooltip();
+			hideHoverTooltip();
 		})
 		.on('click', (event, item) => {
 			event.stopPropagation();
-			if (pinnedCategory === item.data.key) {
-				pinnedCategory = null;
-				hideChartTooltip();
-				return;
-			}
-			pinnedCategory = item.data.key;
-			showPinnedTooltip(event, item.data, () => {
-				pinnedCategory = null;
-				hideChartTooltip();
-			});
+			togglePinnedTooltip(event, item.data);
 		});
 
 	svg.on('click', () => {
-		pinnedCategory = null;
 		hideChartTooltip();
 	});
 

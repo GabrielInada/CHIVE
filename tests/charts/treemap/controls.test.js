@@ -1,21 +1,12 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const mocks = vi.hoisted(() => ({
-	t: vi.fn(key => key),
-}));
-
-vi.mock('../../../src/services/i18nService.js', () => ({
-	t: mocks.t,
-}));
-
-import { createTreemapControls } from '../../../src/charts/treemap/controls/builder.js';
-import { setupTreemapControlListeners } from '../../../src/charts/treemap/controls/listeners.js';
+import { buildDescribedControls } from '../../../src/charts/shared/controls/describedControls.js';
+import { TREEMAP_CONTROLS } from '../../../src/charts/treemap/controls/descriptions.js';
 import { TREEMAP_DEFINITION } from '../../../src/config/charts/definitions/treemap.js';
 
 /**
- * Writer test double. The listeners' contract is that they hand the right
+ * Writer test double. The controls' contract is that they hand the right
  * patch to the writer; merging it into state, firing onConfigChanged, and
  * live-rendering are the adapter's contract and are covered by
  * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
@@ -48,8 +39,25 @@ function createDataset(overrides = {}) {
 	};
 }
 
-function appendControls(controls) {
-	controls.forEach(control => document.body.appendChild(control));
+function createContext({ categories = ['region'], numeric = ['sales'], allColumns = [] } = {}) {
+	return {
+		baseCategoricalOrAll: categories,
+		categorical: categories,
+		numeric,
+		allColumns,
+		dates: [],
+		rows: [],
+	};
+}
+
+function buildControls(dataset, writer = createWriter(), context = createContext()) {
+	return buildDescribedControls(TREEMAP_CONTROLS, { dataset, context, writer, translate: key => key });
+}
+
+/** Build the controls into the document, as the sidebar does after each commit. */
+function mountControls(dataset, writer = createWriter(), context = createContext()) {
+	document.body.replaceChildren(...buildControls(dataset, writer, context));
+	return writer;
 }
 
 function selectValue(id, value) {
@@ -67,15 +75,12 @@ function lastConfig(writer) {
 	return writer.commit.mock.calls.at(-1)[0];
 }
 
-/** Rebuild and rewire the controls, as the sidebar does after each commit. */
-function mountControls(dataset, writer) {
-	document.body.innerHTML = '';
-	appendControls(createTreemapControls(dataset, ['region'], ['sales'], []));
-	setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
-}
-
 function applyLastCommit(dataset, writer) {
 	Object.assign(dataset.chartConfig.treemap, lastConfig(writer));
+}
+
+function presetButton(name) {
+	return document.querySelector(`button[data-color-preset-control="viz-treemap-color-preset"][data-preset-name="${name}"]`);
 }
 
 function markedPresets() {
@@ -108,19 +113,15 @@ function extractStructure(controls) {
 }
 
 describe('treemap controls module boundaries', () => {
-	it('keeps builder and listener exports in dedicated modules', async () => {
-		const [builder, listeners] = await Promise.all([
-			import('../../../src/charts/treemap/controls/builder.js'),
-			import('../../../src/charts/treemap/controls/listeners.js'),
-		]);
-		expect(Object.keys(builder)).toEqual(['createTreemapControls']);
-		expect(Object.keys(listeners)).toEqual(['setupTreemapControlListeners']);
+	it('declares its controls as descriptions, with no builder or listener module', async () => {
+		const descriptions = await import('../../../src/charts/treemap/controls/descriptions.js');
+		expect(Object.keys(descriptions)).toEqual(['TREEMAP_CONTROLS']);
+		expect(TREEMAP_CONTROLS.definition).toBe(TREEMAP_DEFINITION);
 	});
 });
 
 describe('treemapControls section structure', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
@@ -132,8 +133,8 @@ describe('treemapControls section structure', () => {
 		for (const measureMode of ['count', 'sum']) {
 			for (const colorMode of ['scheme', 'uniform']) {
 				const dataset = createDataset({ measureMode, colorMode, valueColumn: 'sales' });
-				const controls = createTreemapControls(dataset, ['region', 'team'], ['sales'], ['region', 'team', 'sales']);
-				byMode[`${measureMode}-${colorMode}`] = extractStructure(controls);
+				const context = createContext({ categories: ['region', 'team'], allColumns: ['region', 'team', 'sales'] });
+				byMode[`${measureMode}-${colorMode}`] = extractStructure(buildControls(dataset, createWriter(), context));
 			}
 		}
 
@@ -143,148 +144,105 @@ describe('treemapControls section structure', () => {
 
 describe('treemapControls UI structure', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('prepends a none option to the category select', () => {
-		const dataset = createDataset();
-		const controls = createTreemapControls(dataset, ['region', 'team'], ['sales'], ['region', 'team', 'sales']);
-		appendControls(controls);
+		mountControls(createDataset(), createWriter(), createContext({ categories: ['region', 'team'] }));
 
 		const values = Array.from(document.getElementById('viz-select-treemap-category').options).map(o => o.value);
 		expect(values).toEqual(['', 'region', 'team']);
 	});
 
+	it('offers the color modes and measures the treemap definition lists', () => {
+		mountControls(createDataset());
+
+		const values = id => Array.from(document.getElementById(id).options).map(o => o.value);
+		expect(values('viz-select-treemap-color-mode')).toEqual(TREEMAP_DEFINITION.allowedValues.colorMode);
+		expect(values('viz-select-treemap-measure')).toEqual(TREEMAP_DEFINITION.allowedValues.measureMode);
+	});
+
 	it('disables the uniform-color input when colorMode is scheme', () => {
-		const schemeDataset = createDataset({ colorMode: 'scheme' });
-		const schemeControls = createTreemapControls(schemeDataset, ['region'], ['sales'], []);
-		appendControls(schemeControls);
+		mountControls(createDataset({ colorMode: 'scheme' }));
 		expect(document.getElementById('viz-input-treemap-color').disabled).toBe(true);
 
-		document.body.innerHTML = '';
-		const uniformDataset = createDataset({ colorMode: 'uniform' });
-		const uniformControls = createTreemapControls(uniformDataset, ['region'], ['sales'], []);
-		appendControls(uniformControls);
+		mountControls(createDataset({ colorMode: 'uniform' }));
 		expect(document.getElementById('viz-input-treemap-color').disabled).toBe(false);
 	});
 
 	it('renders fallback values and disabled controls for invalid config', () => {
-		const dataset = createDataset({
+		mountControls(createDataset({
 			enabled: false,
 			valueColumn: 'old',
 			padding: 0,
 			colorMode: '',
 			colorScheme: '',
-		});
-		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
-		appendControls(controls);
+		}));
 
 		expect(document.getElementById('viz-select-treemap-value-column').value).toBe('');
 		expect(document.getElementById('viz-slider-treemap-padding').value).toBe('2');
 		expect(document.getElementById('viz-select-treemap-color-mode').value).toBe('scheme');
 		expect(document.getElementById('viz-select-treemap-category').disabled).toBe(true);
-		expect(document.querySelector('button[data-color-preset-control="viz-treemap-color-preset"][data-preset-name="Bold"]').disabled).toBe(true);
+		expect(presetButton('Bold').disabled).toBe(true);
 	});
 });
 
-describe('treemapControls listeners', () => {
+describe('treemapControls writes', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('keeps valueColumn when measure flips back to count', () => {
-		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
-		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
-		appendControls(controls);
+		const writer = mountControls(createDataset({ measureMode: 'sum', valueColumn: 'sales' }));
 
-		const writer = createWriter();
-		setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
+		selectValue('viz-select-treemap-measure', 'count');
 
-		const measure = document.getElementById('viz-select-treemap-measure');
-		measure.value = 'count';
-		measure.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'count', valueColumn: 'sales' }));
+		expect(writer.commit).toHaveBeenCalledWith({ measureMode: 'count', valueColumn: 'sales' });
 		expect(writer.commit).toHaveBeenCalledTimes(1);
 	});
 
 	it('takes the first numeric column when switching to sum without a valueColumn', () => {
-		const dataset = createDataset({ measureMode: 'count', valueColumn: null });
-		appendControls(createTreemapControls(dataset, ['region'], ['sales', 'profit'], []));
+		const writer = mountControls(
+			createDataset({ measureMode: 'count', valueColumn: null }),
+			createWriter(),
+			createContext({ numeric: ['sales', 'profit'] }),
+		);
 
-		const writer = createWriter();
-		setupTreemapControlListeners(dataset, ['region'], ['sales', 'profit'], [], writer);
-
-		const measure = document.getElementById('viz-select-treemap-measure');
-		measure.value = 'sum';
-		measure.dispatchEvent(new Event('change', { bubbles: true }));
+		selectValue('viz-select-treemap-measure', 'sum');
 
 		expect(writer.commit).toHaveBeenCalledWith({ measureMode: 'sum', valueColumn: 'sales' });
 	});
 
-	it('resolves the callback from the 4-arg overload (callback in slot 4)', () => {
-		// The 5-arg form (dataset, baseCat, numericOptions, allColumns, callback)
-		// is covered by the tests above; the existing slot-4 test only checks the
-		// no-controls no-throw path. This mounts controls and dispatches a change
-		// so the legacy callback-in-slot-4 overload is proven to commit + notify.
-		const dataset = createDataset();
-		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
-		appendControls(controls);
+	it('keeps a valid valueColumn when measure switches to sum', () => {
+		const writer = mountControls(createDataset({ measureMode: 'count', valueColumn: 'sales' }));
 
-		const writer = createWriter();
-		setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
+		selectValue('viz-select-treemap-measure', 'sum');
 
-		const topN = document.getElementById('viz-select-treemap-topn');
-		topN.value = '20';
-		topN.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ topN: 20 }));
-		expect(writer.commit).toHaveBeenCalledTimes(1);
+		expect(writer.commit).toHaveBeenCalledWith({ measureMode: 'sum', valueColumn: 'sales' });
 	});
 
-	it('keeps a valid valueColumn when measure switches to sum', () => {
+	it('picks the value column from the config when the measure changes, not the config it was built from', () => {
 		const dataset = createDataset({ measureMode: 'count', valueColumn: 'sales' });
-		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
-		appendControls(controls);
+		const writer = mountControls(dataset, createWriter(), createContext({ numeric: ['sales', 'profit'] }));
 
-		const writer = createWriter();
-		setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
+		dataset.chartConfig = { treemap: { ...dataset.chartConfig.treemap, valueColumn: 'profit' } };
+		selectValue('viz-select-treemap-measure', 'sum');
 
-		const measure = document.getElementById('viz-select-treemap-measure');
-		measure.value = 'sum';
-		measure.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ measureMode: 'sum', valueColumn: 'sales' }));
+		expect(writer.commit).toHaveBeenCalledWith({ measureMode: 'sum', valueColumn: 'profit' });
 	});
 
 	it('commits topN change with a coerced number value', () => {
-		const dataset = createDataset();
-		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
-		appendControls(controls);
+		const writer = mountControls(createDataset());
 
-		const writer = createWriter();
-		setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
+		selectValue('viz-select-treemap-topn', '20');
 
-		const select = document.getElementById('viz-select-treemap-topn');
-		select.value = '20';
-		select.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ topN: 20 }));
+		expect(writer.commit).toHaveBeenCalledWith({ topN: 20 });
 	});
 
 	it('color preset button commits both colorScheme and the first palette color', () => {
-		const dataset = createDataset();
-		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
-		appendControls(controls);
+		const writer = mountControls(createDataset());
 
-		const writer = createWriter();
-		setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
-
-		const bold = document.querySelector('button[data-color-preset-control="viz-treemap-color-preset"][data-preset-name="Bold"]');
-		expect(bold).not.toBeNull();
-		bold.click();
+		presetButton('Bold').click();
 
 		expect(writer.commit).toHaveBeenCalledTimes(1);
 		const call = writer.commit.mock.calls[0][0];
@@ -292,21 +250,21 @@ describe('treemapControls listeners', () => {
 		expect(call.color).toMatch(/^#[0-9a-fA-F]{6}$/);
 	});
 
-	it('skips listener setup when controls are absent', () => {
-		const dataset = createDataset();
+	it('previews the uniform color while the picker is open and commits it when it closes', () => {
+		const writer = mountControls(createDataset({ colorMode: 'uniform' }));
+		const input = document.getElementById('viz-input-treemap-color');
 
-		const writer = createWriter();
-		expect(() => setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer)).not.toThrow();
+		input.value = '#123456';
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(writer.preview).toHaveBeenCalledWith({ color: '#123456' });
 		expect(writer.commit).not.toHaveBeenCalled();
+
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(writer.commit).toHaveBeenCalledWith({ color: '#123456' });
 	});
 
 	it('commits category, value, title, padding, and toggle changes', () => {
-		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'sales' });
-		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
-		appendControls(controls);
-
-		const writer = createWriter();
-		setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
+		const writer = mountControls(createDataset({ measureMode: 'sum', valueColumn: 'sales' }));
 
 		selectValue('viz-select-treemap-category', '');
 		expect(lastConfig(writer).category).toBeNull();
@@ -340,12 +298,7 @@ describe('treemapControls listeners', () => {
 	});
 
 	it('commits forged measure and color-mode selections as chosen', () => {
-		const dataset = createDataset({ measureMode: 'sum', valueColumn: 'old' });
-		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
-		appendControls(controls);
-
-		const writer = createWriter();
-		setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
+		const writer = mountControls(createDataset({ measureMode: 'sum', valueColumn: 'old' }));
 
 		// The commit canonicalizes the config, which stores a measure the
 		// treemap does not offer as count. Like count, it keeps the value column.
@@ -362,33 +315,16 @@ describe('treemapControls listeners', () => {
 		// The commit canonicalizes the color mode too.
 		expect(lastConfig(writer).colorMode).toBe('unexpected');
 	});
-
-	it('ignores unknown color presets', () => {
-		const dataset = createDataset();
-		const controls = createTreemapControls(dataset, ['region'], ['sales'], []);
-		appendControls(controls);
-		const missing = document.createElement('button');
-		missing.dataset.colorPresetControl = 'viz-treemap-color-preset';
-		missing.dataset.presetName = 'Missing';
-		document.body.appendChild(missing);
-
-		const writer = createWriter();
-		setupTreemapControlListeners(dataset, ['region'], ['sales'], [], writer);
-		missing.click();
-
-		expect(writer.commit).not.toHaveBeenCalled();
-	});
 });
 
 describe('treemapControls color palette mark', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('marks the stored palette in scheme mode, which is the one the treemap draws', () => {
 		const { colorMode, colorScheme } = TREEMAP_DEFINITION.createDefaultConfig();
-		mountControls(createDataset({ colorMode, colorScheme }), createWriter());
+		mountControls(createDataset({ colorMode, colorScheme }));
 
 		expect(markedPresets()).toEqual([colorScheme]);
 	});
@@ -400,7 +336,7 @@ describe('treemapControls color palette mark', () => {
 		mountControls(dataset, writer);
 		expect(markedPresets()).toEqual([]);
 
-		document.querySelector('button[data-color-preset-control="viz-treemap-color-preset"][data-preset-name="Pastel"]').click();
+		presetButton('Pastel').click();
 		applyLastCommit(dataset, writer);
 		mountControls(dataset, writer);
 		expect(markedPresets()).toEqual(['Pastel']);

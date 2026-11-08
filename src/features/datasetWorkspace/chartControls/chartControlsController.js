@@ -6,10 +6,11 @@
  *   - Params pane (bottom), controls for the currently active chart.
  *   - Centralized activation defaults (column selection on chart switch).
  *
- * Each chart type owns its chart-specific controls, either in a per-chart
- * package (`charts/bar/`, `charts/scatter3d/`) or in a legacy controls module
- * (legacy controls modules and `charts/<type>/controls/`). The controls surface is wired by
- * `charts/registries/controls.js`; this manager renders the sidebar shell.
+ * Each chart type describes its controls in its package
+ * (`charts/<type>/controls/`), looked up through `charts/registries/controls.js`,
+ * and `charts/shared/controls/describedControls.js` builds and wires them in
+ * one pass. This manager renders the sidebar shell and creates the writer the
+ * controls write through.
  *
  * Sidebar scroll-position preservation deserves a note: re-rendering
  * replaces the entire params DOM, so on every render we capture an
@@ -18,21 +19,21 @@
  * lose their place when the active chart's config changes.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').ShownDataset} ShownDataset
  * @typedef {import('../../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {import('../../../types.js').ChartControlContext} ChartControlContext
+ * @typedef {import('../../../charts/registries/controls.js').ChartControlAdapter} ChartControlAdapter
  */
 
 import { t } from '../../../services/i18nService.js';
 import {
-	filterVisibleColumns,
 	getNumericColumnNames,
 	getCategoricalColumnNames,
 	getDateColumnNames,
 } from '../../../domain/datasets/columns.js';
-import { mergeChartConfigWithDefaults } from '../../../domain/charts/chartConfig.js';
 import { setActiveChartType } from '../../../state/appState.js';
-import { CHART_TYPE_KEYS } from '../../../config/charts/definitions.js';
 import { getChartControlAdapter } from '../../../charts/registries/controls.js';
+import { buildDescribedControls } from '../../../charts/shared/controls/describedControls.js';
 import { renderChartParamsDOM } from '../views/chartParamsView.js';
 import { openChartTypePickerDialog } from '../dialogs/chartTypePickerDialog.js';
 
@@ -209,21 +210,21 @@ function restoreSidebarScrollPosition(container, anchor) {
 }
 
 /**
- * Derive the column buckets each per-chart controls file needs. Computed
- * once per call site so the registry entries below stay small.
+ * Derive the column buckets and drawn rows each per-chart controls file
+ * needs, from the shown dataset. Computed once per sidebar render and shared
+ * by the builder, the listeners and the chart picker.
  *
  * @private
- * @param {Dataset} dataset
+ * @param {ShownDataset} shown
  * @returns {ChartControlContext} `baseCategoricalOrAll` falls back to all columns when no categoricals exist.
  */
-function getColumnContext(dataset) {
-	const visibleColumns = filterVisibleColumns(dataset);
+function columnContextOf({ visibleColumns, rows }) {
 	const numeric = getNumericColumnNames(visibleColumns);
 	const categorical = getCategoricalColumnNames(visibleColumns);
 	const dates = getDateColumnNames(visibleColumns);
 	const allColumns = visibleColumns.map(c => c.name);
 	const baseCategoricalOrAll = categorical.length > 0 ? categorical : allColumns;
-	return { numeric, categorical, dates, allColumns, baseCategoricalOrAll };
+	return { numeric, categorical, dates, allColumns, baseCategoricalOrAll, rows };
 }
 
 /**
@@ -246,17 +247,19 @@ function computeActivationDefaults(chartType, dataset, { numeric, categorical, a
 	return entry.computeDefaults(dataset, { numeric, categorical, allColumns, dates, baseCategoricalOrAll });
 }
 
-/** @private */
-function buildControlsForChart(chartType, dataset) {
-	const entry = getChartControlAdapter(chartType);
+/**
+ * Build the active chart's controls, each already wired to the writer they
+ * write through.
+ *
+ * @private
+ * @param {Readonly<ChartControlAdapter> | null} entry
+ * @param {ChartTypeKey} chartType
+ * @param {Dataset} dataset
+ * @param {ChartControlContext} columnContext
+ * @returns {HTMLElement[]}
+ */
+function buildControlsForChart(entry, chartType, dataset, columnContext) {
 	if (!entry) return [];
-	return entry.build(dataset, getColumnContext(dataset));
-}
-
-/** @private */
-function setupListenersForChart(chartType, dataset) {
-	const entry = getChartControlAdapter(chartType);
-	if (!entry) return;
 	// The chart package writes through this adapter instead of importing state.
 	// requestLiveRender is the bridge's trigger, not the raw callback, so the
 	// registered live-render callback stays replaceable and disable-able.
@@ -266,7 +269,7 @@ function setupListenersForChart(chartType, dataset) {
 		onConfigChanged: onChartConfigChangeCallback,
 		requestLiveRender: triggerLiveRender,
 	});
-	entry.attachListeners(dataset, getColumnContext(dataset), writer);
+	return buildDescribedControls(entry.controls, { dataset, context: columnContext, writer, translate: t });
 }
 
 /**
@@ -277,15 +280,16 @@ function setupListenersForChart(chartType, dataset) {
  * @private
  * @param {ChartTypeKey | null} chartType - `null` clears the active chart.
  * @param {Dataset} dataset
+ * @param {ChartControlContext} columnContext - The context the sidebar was rendered with.
  */
-function handleChartTypeSelect(chartType, dataset) {
+function handleChartTypeSelect(chartType, dataset, columnContext) {
 	if (chartType === null) {
 		setActiveChartType(null);
 		onChartConfigChangeCallback?.();
 		return;
 	}
 	const entry = getChartControlAdapter(chartType);
-	const defaults = entry ? entry.computeDefaults(dataset, getColumnContext(dataset)) : {};
+	const defaults = entry ? entry.computeDefaults(dataset, columnContext) : {};
 	setActiveChartType(chartType, { ...defaults, expanded: true });
 	onChartConfigChangeCallback?.();
 }
@@ -305,17 +309,17 @@ export { computeActivationDefaults, handleChartTypeSelect };
  *
  * @private
  */
-function openPickerForDataset(activeChartType, dataset) {
+function openPickerForDataset(activeChartType, dataset, columnContext) {
 	openChartTypePickerDialog({ activeChartType, translate: t }).then(result => {
 		if (result === null) return;
-		handleChartTypeSelect(result.chartType, dataset);
+		handleChartTypeSelect(result.chartType, dataset, columnContext);
 	});
 }
 
 /**
- * Re-render the params pane of the sidebar for the given dataset. Called by
+ * Re-render the params pane of the sidebar from the shown dataset. Called by
  * `app/renderCoordinator.js` after every state change that could affect
- * sidebar contents.
+ * sidebar contents, with the value the render pass derived.
  *
  * Renders:
  *   - Empty state if no dataset or no visible columns.
@@ -324,9 +328,9 @@ function openPickerForDataset(activeChartType, dataset) {
  * Preserves expansion state of collapsible sections and scroll position
  * across re-renders.
  *
- * @param {Dataset | null | undefined} dataset
+ * @param {ShownDataset | null | undefined} shown
  */
-export function renderChartControlsSidebar(dataset) {
+export function renderChartControlsSidebar(shown) {
 	const paramsContainer = document.getElementById('viz-chart-params');
 	if (!paramsContainer) return;
 
@@ -345,23 +349,16 @@ export function renderChartControlsSidebar(dataset) {
 		paramsContainer.appendChild(emptyDiv);
 	};
 
-	if (!dataset) {
+	if (!shown || shown.visibleColumns.length === 0) {
 		emptyState(t('chive-chart-sidebar-empty'));
 		restoreSidebarScrollPosition(paramsContainer, scrollAnchor);
 		return;
 	}
 
-	const visibleColumns = filterVisibleColumns(dataset);
-	if (visibleColumns.length === 0) {
-		emptyState(t('chive-chart-sidebar-empty'));
-		restoreSidebarScrollPosition(paramsContainer, scrollAnchor);
-		return;
-	}
-
-	const config = mergeChartConfigWithDefaults(dataset.chartConfig);
-	const activeChartType = CHART_TYPE_KEYS.find(type => config[type].enabled) || null;
-
-	const controls = activeChartType ? buildControlsForChart(activeChartType, dataset) : [];
+	const { dataset, activeChartType } = shown;
+	const columnContext = columnContextOf(shown);
+	const entry = activeChartType ? getChartControlAdapter(activeChartType) : null;
+	const controls = buildControlsForChart(entry, activeChartType, dataset, columnContext);
 
 	renderChartParamsDOM({
 		container: paramsContainer,
@@ -370,12 +367,11 @@ export function renderChartControlsSidebar(dataset) {
 		chartDescription: activeChartType ? t(`chive-viz-${activeChartType}-desc`) : '',
 		controls,
 		translate: t,
-		onChartTypeTriggerClick: () => openPickerForDataset(activeChartType, dataset),
+		onChartTypeTriggerClick: () => openPickerForDataset(activeChartType, dataset, columnContext),
 	});
 
 	if (activeChartType) {
 		applyControlSectionExpansionState(paramsContainer, controlSectionState);
-		setupListenersForChart(activeChartType, dataset);
 	}
 
 	restoreSidebarScrollPosition(paramsContainer, scrollAnchor);

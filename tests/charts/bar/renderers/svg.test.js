@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderBarChart } from '../../../../src/charts/bar/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
@@ -29,12 +30,14 @@ describe('renderBarChart scaffold', () => {
 			{ category: 'C' },
 		];
 
-		const result = renderBarChart(container, rows, 'category', {
+		const result = renderBarChart(container, rows, {
+			category: 'category',
 			topN: 2,
 			customTitle: 'Top categories',
-			axisLabels: { x: 'Category label', y: 'Count label' },
 			chartHeight: 260,
-		});
+		}, renderContext({ category: 'category' }, {
+			axisLabels: { x: 'Category label', y: 'Count label' },
+		}));
 
 		expect(result.ok).toBe(true);
 		const svg = container.querySelector('svg');
@@ -50,7 +53,9 @@ describe('renderBarChart scaffold', () => {
 
 	it('does not apply the title offset when no custom title is set', () => {
 		const container = document.getElementById('bar');
-		const result = renderBarChart(container, [{ category: 'A' }], 'category');
+		const result = renderBarChart(container, [{ category: 'A' }], {
+			category: 'category',
+		}, renderContext({ category: 'category' }));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelector('svg > g').getAttribute('transform')).toBe('translate(52,12)');
@@ -74,9 +79,10 @@ describe('renderBarChart behavior', () => {
 			{ categoria: 'A' },
 		];
 
-		const result = renderBarChart(container, rows, 'categoria', {
+		const result = renderBarChart(container, rows, {
+			category: 'categoria',
 			color: '#112233',
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		expect(result.ok).toBe(true);
 		const rect = container.querySelector('rect');
@@ -88,9 +94,10 @@ describe('renderBarChart behavior', () => {
 		const container = document.getElementById('bar');
 		const rows = [{ categoria: 'A' }];
 
-		renderBarChart(container, rows, 'categoria', {
+		renderBarChart(container, rows, {
+			category: 'categoria',
 			color: 'invalid-color',
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		const rect = container.querySelector('rect');
 		expect(rect.getAttribute('fill')).toBe(CHART_COLORS.bar);
@@ -104,16 +111,18 @@ describe('renderBarChart behavior', () => {
 			{ categoria: 'B', valor: 30 },
 		];
 
-		const sumResult = renderBarChart(container, rows, 'categoria', {
+		const sumResult = renderBarChart(container, rows, {
+			category: 'categoria',
 			measureMode: 'sum',
 			valueColumn: 'valor',
-		});
+		}, renderContext({ category: 'categoria' }));
 		expect(sumResult.ok).toBe(true);
 
-		const meanResult = renderBarChart(container, rows, 'categoria', {
+		const meanResult = renderBarChart(container, rows, {
+			category: 'categoria',
 			measureMode: 'mean',
 			valueColumn: 'valor',
-		});
+		}, renderContext({ category: 'categoria' }));
 		expect(meanResult.ok).toBe(true);
 	});
 
@@ -126,12 +135,14 @@ describe('renderBarChart behavior', () => {
 			{ categoria: 'B' },
 		];
 
-		const result = renderBarChart(container, rows, 'categoria', {
+		const result = renderBarChart(container, rows, {
+			category: 'categoria',
+		}, renderContext({ category: 'categoria' }, {
 			filterCallbacks: {
 				onFocusGlobalFilter: (column, token) => calls.focus.push([column, token]),
 				onAddToGlobalFilter: (column, token) => calls.add.push([column, token]),
 			},
-		});
+		}));
 
 		expect(result.ok).toBe(true);
 
@@ -156,17 +167,19 @@ describe('renderBarChart behavior', () => {
 			{ categoria: 'B', valor: 'y' },
 		];
 
-		const noColumnResult = renderBarChart(container, rows, 'categoria', {
+		const noColumnResult = renderBarChart(container, rows, {
+			category: 'categoria',
 			measureMode: 'sum',
 			valueColumn: 'inexistente',
-		});
+		}, renderContext({ category: 'categoria' }));
 		expect(noColumnResult.ok).toBe(false);
 		expect(noColumnResult.reason).toBe('no-value-column');
 
-		const noNumericResult = renderBarChart(container, rows, 'categoria', {
+		const noNumericResult = renderBarChart(container, rows, {
+			category: 'categoria',
 			measureMode: 'sum',
 			valueColumn: 'valor',
-		});
+		}, renderContext({ category: 'categoria' }));
 		expect(noNumericResult.ok).toBe(false);
 		expect(noNumericResult.reason).toBe('no-numeric');
 	});
@@ -181,7 +194,8 @@ describe('renderBarChart behavior', () => {
 			{ categoria: null, valor: 2 },
 		];
 
-		let result = renderBarChart(container, rows, 'categoria', {
+		let result = renderBarChart(container, rows, {
+			category: 'categoria',
 			sort: 'label-asc',
 			topN: 3,
 			colorMode: 'gradient',
@@ -192,42 +206,51 @@ describe('renderBarChart behavior', () => {
 			showXAxisLabel: false,
 			showYAxisLabel: false,
 			chartHeight: 999,
-		});
+		}, renderContext({ category: 'categoria' }));
 		expect(result.ok).toBe(true);
 		expect(container.textContent).toContain('Ranked Bars');
 		expect(container.querySelectorAll('rect').length).toBe(3);
 		expect(container.textContent).not.toContain('categoria');
 
-		result = renderBarChart(container, rows, 'categoria', {
+		result = renderBarChart(container, rows, {
+			category: 'categoria',
 			sort: 'label-desc',
 			colorMode: 'gradient-manual',
 			manualThresholdPct: -50,
 			gradientMinColor: '#111111',
 			gradientMaxColor: '#eeeeee',
-		});
+		}, renderContext({ category: 'categoria' }));
 		expect(result.ok).toBe(true);
 		expect(Array.from(container.querySelectorAll('rect')).some(rect => rect.getAttribute('fill') === '#111111')).toBe(true);
 
-		result = renderBarChart(container, rows, 'categoria', {
+		result = renderBarChart(container, rows, {
+			category: 'categoria',
 			sort: 'count-asc',
 			colorMode: 'gradient-manual',
 			manualThresholdPct: 150,
 			gradientMinColor: '#111111',
 			gradientMaxColor: '#eeeeee',
-		});
+		}, renderContext({ category: 'categoria' }));
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('rect').length).toBeGreaterThan(0);
 	});
 
 	it('covers bar chart invalid arguments, empty rows, invalid measure mode, and pinned toggle interactions', () => {
 		const container = document.getElementById('bar');
-		expect(renderBarChart(null, [], 'categoria').ok).toBe(false);
-		expect(renderBarChart(container, [], '').ok).toBe(false);
-		expect(renderBarChart(container, [], 'categoria').ok).toBe(false);
+		expect(renderBarChart(null, [], {
+			category: 'categoria',
+		}, renderContext({ category: 'categoria' })).ok).toBe(false);
+		expect(renderBarChart(container, [], {
+			category: '',
+		}, renderContext({ category: '' })).ok).toBe(false);
+		expect(renderBarChart(container, [], {
+			category: 'categoria',
+		}, renderContext({ category: 'categoria' })).ok).toBe(false);
 
-		const result = renderBarChart(container, [{ categoria: 'A' }], 'categoria', {
+		const result = renderBarChart(container, [{ categoria: 'A' }], {
+			category: 'categoria',
 			measureMode: 'not-real',
-		});
+		}, renderContext({ category: 'categoria' }));
 		expect(result.ok).toBe(true);
 		const firstBar = container.querySelector('rect');
 		firstBar.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 1, pageY: 1 }));
@@ -249,14 +272,16 @@ describe('renderBarChart behavior', () => {
 			{ categoria: 'B' },
 		];
 
-		renderBarChart(barContainer, barData, 'categoria', {
+		renderBarChart(barContainer, barData, {
+			category: 'categoria',
 			showXAxisLabel: true,
 			showYAxisLabel: false,
+		}, renderContext({ category: 'categoria' }, {
 			axisLabels: {
 				x: 'Bar Axis X Custom',
 				y: 'Bar Axis Y Custom',
 			},
-		});
+		}));
 		expect(barContainer.textContent).toContain('Bar Axis X Custom');
 		expect(barContainer.textContent).not.toContain('Bar Axis Y Custom');
 	});
@@ -299,7 +324,11 @@ describe('renderBarChart with totals at or below 0', () => {
 	it.each(['sum', 'mean'])('draws a total below 0 down from 0 and the others up from it in %s mode', measureMode => {
 		const container = document.getElementById('bar');
 
-		const result = renderBarChart(container, MIXED_ROWS, 'team', { measureMode, valueColumn: 'profit' });
+		const result = renderBarChart(container, MIXED_ROWS, {
+			category: 'team',
+			measureMode,
+			valueColumn: 'profit',
+		}, renderContext({ category: 'team' }));
 
 		expect(result.ok).toBe(true);
 		const [a, c, b] = bars(container);
@@ -314,7 +343,12 @@ describe('renderBarChart with totals at or below 0', () => {
 	it('hangs every bar from 0 at the top of the plot when every total is below 0', () => {
 		const container = document.getElementById('bar');
 
-		renderBarChart(container, NEGATIVE_ROWS, 'team', SUM);
+		renderBarChart(container, NEGATIVE_ROWS, {
+			category: 'team',
+			...SUM,
+		}, renderContext({ category: 'team' }, {
+			...SUM,
+		}));
 
 		const [b, a] = bars(container);
 		expect([b.key, a.key]).toEqual(['B', 'A']);
@@ -326,7 +360,12 @@ describe('renderBarChart with totals at or below 0', () => {
 	it('hangs a total below 0 from the top of the plot when the largest total is 0', () => {
 		const container = document.getElementById('bar');
 
-		renderBarChart(container, [{ team: 'A', profit: 0 }, { team: 'B', profit: -3 }], 'team', SUM);
+		renderBarChart(container, [{ team: 'A', profit: 0 }, { team: 'B', profit: -3 }], {
+			category: 'team',
+			...SUM,
+		}, renderContext({ category: 'team' }, {
+			...SUM,
+		}));
 
 		expect(bars(container)).toEqual([
 			{ key: 'A', y: 0, height: 0 },
@@ -337,7 +376,12 @@ describe('renderBarChart with totals at or below 0', () => {
 	it('keeps a readable axis and draws every bar at 0 when every total is 0', () => {
 		const container = document.getElementById('bar');
 
-		renderBarChart(container, [{ team: 'A', profit: 0 }, { team: 'B', profit: 0 }], 'team', SUM);
+		renderBarChart(container, [{ team: 'A', profit: 0 }, { team: 'B', profit: 0 }], {
+			category: 'team',
+			...SUM,
+		}, renderContext({ category: 'team' }, {
+			...SUM,
+		}));
 
 		expect(bars(container)).toEqual([
 			{ key: 'A', y: PLOT_HEIGHT, height: 0 },
@@ -349,7 +393,12 @@ describe('renderBarChart with totals at or below 0', () => {
 	it('draws a line at 0 across the plot when a total is below 0', () => {
 		const container = document.getElementById('bar');
 
-		renderBarChart(container, MIXED_ROWS, 'team', SUM);
+		renderBarChart(container, MIXED_ROWS, {
+			category: 'team',
+			...SUM,
+		}, renderContext({ category: 'team' }, {
+			...SUM,
+		}));
 
 		const [a] = bars(container);
 		const line = container.querySelector('.bar-zero-line');
@@ -362,10 +411,17 @@ describe('renderBarChart with totals at or below 0', () => {
 	it('draws no separate line at 0 when 0 is at the bottom of the plot', () => {
 		const container = document.getElementById('bar');
 
-		renderBarChart(container, [{ team: 'A' }, { team: 'A' }, { team: 'B' }], 'team');
+		renderBarChart(container, [{ team: 'A' }, { team: 'A' }, { team: 'B' }], {
+			category: 'team',
+		}, renderContext({ category: 'team' }));
 		expect(container.querySelector('.bar-zero-line')).toBeNull();
 
-		renderBarChart(container, [{ team: 'A', profit: 0 }, { team: 'B', profit: 0 }], 'team', SUM);
+		renderBarChart(container, [{ team: 'A', profit: 0 }, { team: 'B', profit: 0 }], {
+			category: 'team',
+			...SUM,
+		}, renderContext({ category: 'team' }, {
+			...SUM,
+		}));
 		expect(container.querySelector('.bar-zero-line')).toBeNull();
 	});
 
@@ -375,7 +431,12 @@ describe('renderBarChart with totals at or below 0', () => {
 	])('leaves the percentage out of the tooltip when %s below 0', (_, rows) => {
 		const container = document.getElementById('bar');
 
-		renderBarChart(container, rows, 'team', SUM);
+		renderBarChart(container, rows, {
+			category: 'team',
+			...SUM,
+		}, renderContext({ category: 'team' }, {
+			...SUM,
+		}));
 
 		for (const rect of container.querySelectorAll('rect')) {
 			const text = tooltipText(rect);
@@ -392,7 +453,12 @@ describe('renderBarChart with totals at or below 0', () => {
 			{ team: 'C', profit: 3 },
 		];
 
-		renderBarChart(container, rows, 'team', SUM);
+		renderBarChart(container, rows, {
+			category: 'team',
+			...SUM,
+		}, renderContext({ category: 'team' }, {
+			...SUM,
+		}));
 
 		const text = tooltipText(container.querySelector('rect'));
 		expect(text).toContain('Percentage');

@@ -4,16 +4,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	t: vi.fn(key => key),
-	filterVisibleColumns: vi.fn(() => [{ name: 'categoria' }, { name: 'valor' }]),
-	getNumericColumnNames: vi.fn(() => ['valor']),
-	getCategoricalColumnNames: vi.fn(() => ['categoria']),
-	getDateColumnNames: vi.fn(() => []),
-	mergeChartConfigWithDefaults: vi.fn(config => ({ bar: { enabled: true, expanded: true }, ...(config || {}) })),
 	onStateChange: vi.fn(),
 	setActiveChartType: vi.fn(),
 	openChartTypePickerDialog: vi.fn(() => Promise.resolve(null)),
-	attachListeners: vi.fn(),
-	build: vi.fn(() => []),
+	columns: vi.fn(context => context.allColumns),
 	computeDefaults: vi.fn(() => ({})),
 	getChartControlAdapter: vi.fn(),
 	createChartConfigWriter: vi.fn(),
@@ -24,13 +18,6 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../src/services/i18nService.js', () => ({ t: mocks.t }));
-vi.mock('../../../../src/domain/datasets/columns.js', () => ({
-	filterVisibleColumns: mocks.filterVisibleColumns,
-	getNumericColumnNames: mocks.getNumericColumnNames,
-	getCategoricalColumnNames: mocks.getCategoricalColumnNames,
-	getDateColumnNames: mocks.getDateColumnNames,
-}));
-vi.mock('../../../../src/domain/charts/chartConfig.js', () => ({ mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults }));
 vi.mock('../../../../src/state/appState.js', () => ({
 	setActiveChartType: mocks.setActiveChartType,
 	onStateChange: mocks.onStateChange,
@@ -59,9 +46,11 @@ import {
 	initChartControls,
 	renderChartControlsSidebar,
 } from '../../../../src/features/datasetWorkspace/chartControls/chartControlsController.js';
+import { deriveShownDataset } from '../../../../src/domain/datasets/shownDataset.js';
 
 function makeDataset() {
 	return {
+		rows: [{ categoria: 'A', valor: 1 }],
 		columns: [{ name: 'categoria', type: 'text' }, { name: 'valor', type: 'number' }],
 		selectedColumns: ['categoria', 'valor'],
 		chartConfig: { bar: { enabled: true, expanded: true } },
@@ -73,8 +62,14 @@ describe('chartControlsController writer wiring', () => {
 		vi.clearAllMocks();
 		document.body.innerHTML = '<div id="viz-chart-params"></div><div id="sidebar-panel-viz"></div>';
 		mocks.getChartControlAdapter.mockReturnValue({
-			build: mocks.build,
-			attachListeners: mocks.attachListeners,
+			controls: {
+				definition: { key: 'bar', allowedValues: {} },
+				sections: [{
+					id: 'data',
+					title: 'Data',
+					controls: [{ widget: 'select', id: 'demo-category', key: 'category', label: 'chive-demo-category', columns: mocks.columns }],
+				}],
+			},
 			computeDefaults: mocks.computeDefaults,
 		});
 	});
@@ -99,7 +94,7 @@ describe('chartControlsController writer wiring', () => {
 
 		initChartControls(onConfigChanged, liveRender);
 		const dataset = makeDataset();
-		renderChartControlsSidebar(dataset);
+		renderChartControlsSidebar(deriveShownDataset(dataset));
 
 		expect(mocks.createChartConfigWriter).toHaveBeenCalledWith({
 			dataset,
@@ -112,14 +107,33 @@ describe('chartControlsController writer wiring', () => {
 		expect(mocks.createChartConfigWriter.mock.calls[0][0].requestLiveRender).not.toBe(liveRender);
 	});
 
-	it('passes the exact writer instance to the chart package adapter', () => {
+	it('builds the described controls from the column context it derives, wired to the exact writer', () => {
 		const writer = { commit: vi.fn(), preview: vi.fn() };
 		mocks.createChartConfigWriter.mockReturnValue(writer);
+		const shown = deriveShownDataset(makeDataset());
 
 		initChartControls(vi.fn(), vi.fn());
-		renderChartControlsSidebar(makeDataset());
+		renderChartControlsSidebar(shown);
 
-		expect(mocks.attachListeners).toHaveBeenCalledTimes(1);
-		expect(mocks.attachListeners.mock.calls[0].at(-1)).toBe(writer);
+		expect(mocks.columns).toHaveBeenCalledTimes(1);
+		const [context, config] = mocks.columns.mock.calls[0];
+		expect(context).toEqual({
+			numeric: ['valor'],
+			categorical: ['categoria'],
+			dates: [],
+			allColumns: ['categoria', 'valor'],
+			baseCategoricalOrAll: ['categoria'],
+			rows: shown.rows,
+		});
+		expect(context.rows).toBe(shown.rows);
+		expect(config).toBe(shown.dataset.chartConfig.bar);
+		expect(mocks.t).toHaveBeenCalledWith('chive-demo-category');
+
+		// The params view is mocked: take the sections the controller handed it.
+		const [section] = mocks.renderChartParamsDOM.mock.calls[0][0].controls;
+		const select = section.querySelector('#demo-category');
+		select.value = 'valor';
+		select.dispatchEvent(new Event('change'));
+		expect(writer.commit).toHaveBeenCalledWith({ category: 'valor' });
 	});
 });

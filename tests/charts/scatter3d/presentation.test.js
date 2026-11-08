@@ -75,9 +75,10 @@ describe('3D scatter presentation', () => {
 		renderScatter3dInto(mount(), { rows, config });
 		await rendered();
 
-		const [, calledRows, x, y, z, options] = three.renderScatter3dChart.mock.calls[0];
-		expect([calledRows, x, y, z]).toEqual([rows, 'a', 'b', 'c']);
-		expect(options.labels).toEqual({
+		const [, calledRows, calledConfig, context] = three.renderScatter3dChart.mock.calls[0];
+		expect(calledRows).toBe(rows);
+		expect(calledConfig).toBe(config);
+		expect(context.labels).toEqual({
 			controlsInstructions: ptBR['chive-chart-scatter3d-controls-instructions'],
 			contextLost: ptBR['chive-chart-scatter3d-context-lost'],
 			contextRestored: ptBR['chive-chart-scatter3d-context-restored'],

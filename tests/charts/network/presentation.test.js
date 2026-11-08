@@ -40,6 +40,28 @@ afterEach(() => {
 });
 
 describe('network presentation past the render budget', () => {
+	it('reads source, target, weight and group from stored config with configured styling', () => {
+		const container = mount();
+		const result = renderNetworkInto(container, {
+			rows: [{ from: 'A', to: 'B', amount: 9, kind: 'North' }],
+			config: Object.freeze({
+				...CHART_DEFINITIONS.network.createDefaultConfig(),
+				source: 'from', target: 'to', weight: 'amount', group: 'kind',
+				customTitle: 'Connections', chartHeight: 300, nodeRadius: 11,
+				showNodeLabels: true, sourceNodeColor: '#123456', targetNodeColor: '#654321',
+			}),
+		});
+		expect(result.ok).toBe(true);
+		expect(container.querySelector('.network-link').getAttribute('stroke-width')).toBe('3');
+		const nodes = [...container.querySelectorAll('.network-node')];
+		expect(nodes.map(node => node.getAttribute('r'))).toEqual(['11', '11']);
+		expect(nodes.map(node => node.getAttribute('fill'))).toEqual(['#123456', '#654321']);
+		expect(nodes.map(node => node.__data__.group)).toEqual(['North', 'North']);
+		expect(container.querySelector('svg').getAttribute('height')).toBe('300');
+		expect(container.textContent).toContain('Connections');
+		expect(container.querySelector('.network-labels').textContent).toContain('A');
+	});
+
 	it('draws nothing until the notice is approved, then draws the whole graph', () => {
 		const container = mount();
 

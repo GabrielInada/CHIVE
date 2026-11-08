@@ -16,10 +16,12 @@ Key files:
 
 - SVG renderer: [svg.js](../../../src/charts/bubble/renderers/svg.js)
 - Data and hierarchy helpers: [data.js](../../../src/charts/bubble/data.js)
-- Sidebar controls: [builder.js](../../../src/charts/bubble/controls/builder.js),
-  [listeners.js](../../../src/charts/bubble/controls/listeners.js), and
-  [nestingColumns.js](../../../src/charts/bubble/controls/nestingColumns.js); the activation
-  defaults come from the shared
+- Sidebar controls: [descriptions.js](../../../src/charts/bubble/controls/descriptions.js),
+  built and wired by the shared
+  [describedControls.js](../../../src/charts/shared/controls/describedControls.js), with the
+  nesting levels in [customControls.js](../../../src/charts/bubble/controls/customControls.js)
+  and [nestingColumns.js](../../../src/charts/bubble/controls/nestingColumns.js); the
+  activation defaults come from the shared
   [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
 - Chart definition and constants: [bubble.js](../../../src/config/charts/definitions/bubble.js) (`BUBBLE_DEFINITION`, `BUBBLE_CHART`) and [shared.js](../../../src/config/charts/shared.js) (`CHART_COLOR_PALETTES`)
 - Per-dataset config defaults: [bubble.js](../../../src/config/charts/definitions/bubble.js) (the definition's fresh `bubble` factory)
@@ -172,9 +174,15 @@ ordinal color palettes (Tableau10, Pastel, Bold, Colorblind-Safe).
 
 ## 5. The control sidebar
 
-The package's [controls directory](../../../src/charts/bubble/controls/) keeps the standard
-`createBubbleChartControls` and `setupBubbleChartControlListeners` roles in separate modules,
-with progressive nesting rules in `nestingColumns.js`; `computeDefaults` is the shared
+The package's [descriptions.js](../../../src/charts/bubble/controls/descriptions.js) declares
+every control once, as data (`BUBBLE_CONTROLS`), and the controls sidebar builds them through
+the shared [describedControls.js](../../../src/charts/shared/controls/describedControls.js),
+which wires each control to the `ChartConfigWriter` as it creates it. The measure,
+value-column, and Top-N selects are the shared descriptions in
+[categoryControls.js](../../../src/charts/shared/controls/categoryControls.js). The
+progressive nesting selects, which no shared widget covers, are a `custom` description whose
+`build` is in [customControls.js](../../../src/charts/bubble/controls/customControls.js), with
+the nesting rules in `nestingColumns.js`. `computeDefaults` is the shared
 `categoryChartDefaults('bubble')`
 ([activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)).
 
@@ -182,34 +190,35 @@ with progressive nesting rules in `nestingColumns.js`; `computeDefaults` is the 
 
 1. **Data** (expanded): root category select, nesting mode (flat/grouped), measure
    (count/sum/mean), value column, the **progressive nesting selects**, and Top-N. The
-   measure and Top-N selects list `BUBBLE_CHART.measureModes` and `BUBBLE_CHART.topNOptions`.
+   nesting-mode, measure, and label-mode selects list the definition's `allowedValues`, and
+   the Top-N select `BUBBLE_CHART.topNOptions`.
 2. **Display** (expanded): title, label mode (all/hover/auto).
 3. **Styling** (collapsed): padding slider, color-preset palette.
 
 ### 5.2 Progressive nesting controls
 
-`createNestingControls` renders one select per filled nesting level plus one trailing empty
+`buildNestingLevels` renders one select per filled nesting level plus one trailing empty
 select to add the next level. Each level's options exclude the columns already used at other
 levels and the root category column. Picking a value on a level appends the next empty level;
 choosing the empty option truncates that level and everything below it. The nesting selects
-are disabled unless `nestingMode === 'grouped'`.
+are disabled unless `nestingMode === 'grouped'` (the description's `disabledWhen`). A level
+change reads the nesting of the moment it changes and keeps only visible columns other than
+the category, so a forged option cannot store a column the user cannot see.
 
 ### 5.3 Enable/disable and cross-constraints
 
 - Everything is disabled when `!config.enabled`.
 - The value-column select is disabled in `count` mode.
 - Nesting selects are disabled in flat mode.
-- The measure uses the shared `setupMeasureListener`, which applies the value-column rule
-  bar, pie, treemap, and bubble share (`valueColumnForMeasure` in
-  [measure.js](../../../src/charts/shared/measure.js)):
+- The measure's `toPatch` applies the value-column rule bar, pie, treemap, and bubble share
+  (`valueColumnForMeasure` in [measure.js](../../../src/charts/shared/measure.js)):
   switching to count keeps `valueColumn`, so switching back restores it, and switching to
   sum/mean keeps it while it is a numeric option and otherwise takes the first numeric
-  column. The value column goes through the shared `setupValueColumnListener`, which stores
-  only a visible numeric column. The nesting listeners keep `nestingColumns` and the legacy
-  `groupColumn` mirror in sync.
+  column. The value-column select stores only a visible numeric column. A nesting level
+  writes `nestingColumns` and the legacy `groupColumn` mirror together.
 
 `computeDefaults` picks the root category, and the value column by the same rule as the
-measure listener.
+measure select.
 
 ---
 
@@ -221,7 +230,8 @@ The [workspace registry](../../../src/charts/registries/workspace.js) resolves t
 block/container, hides+clears when disabled, sets the min-height to the height the chart is
 drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to
 `renderBubbleInto` in [presentation.js](../../../src/charts/bubble/presentation.js), which
-maps config and calls `renderBubbleChart`. The presentation flow shows distinct messages on both surfaces:
+passes config unchanged with localized labels and callbacks in a separate context to
+`renderBubbleChart`. The presentation flow shows distinct messages on both surfaces:
 `no-value-column`/`no-numeric` to `chive-chart-empty-bubble-numeric`,
 `no-positive-value` to `chive-chart-empty-no-positive-sum`,
 `no-nesting-columns`/`no-group-column` to `chive-chart-empty-bubble-nesting-required`, else
@@ -237,7 +247,9 @@ flow without `filterCallbacks` (no click-to-filter in panels).
 
 ## 7. Inside `renderBubbleChart`
 
-`renderBubbleChart(container, rows, categoryColumn, options = {})` returns a `Result`.
+`renderBubbleChart(container, rows, config, context)` returns a `Result`, reads
+`config.category`, and normalizes visual settings once through `normalizeBubbleOptions`
+in [options.js](../../../src/charts/bubble/options.js).
 
 ### 7.1 Guard, options, and the nesting guard
 
@@ -367,8 +379,8 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 - [data.test.js](../../../tests/charts/bubble/data.test.js)
   covers the pure helpers: aggregation, multi-level tree building, ancestor/descendant walks
   (no DOM).
-- [controls.test.js](../../../tests/charts/bubble/controls.test.js) covers the
-  progressive nesting controls and the measure/value cross-constraint.
+- [controls.test.js](../../../tests/charts/bubble/controls.test.js) covers the controls the
+  descriptions build, the progressive nesting levels, and the measure/value cross-constraint.
 - [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
   checks through the workspace registry, for every chart, block visibility, the min height,
   the dispose contract, and the inputs each chart draws from.

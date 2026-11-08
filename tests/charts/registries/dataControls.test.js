@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../../../src/i18n/en.json';
 import ptBR from '../../../src/i18n/pt-BR.json';
 import { getChartControlAdapter } from '../../../src/charts/registries/controls.js';
+import { buildDescribedControls } from '../../../src/charts/shared/controls/describedControls.js';
 import { createDefaultChartConfig } from '../../../src/config/charts/defaults.js';
+import { t } from '../../../src/services/i18nService.js';
 
 const locale = vi.hoisted(() => ({ value: 'en' }));
 const messages = { en, 'pt-BR': ptBR };
@@ -68,14 +70,15 @@ function datasetWith(type, overrides = {}) {
 	return { rows, columns, chartConfig };
 }
 
-// Build a chart's controls into the document and wire them to a writer double.
+// Build a chart's described controls into the document, wired to a writer
+// double, as the controls sidebar does.
 function mount(type, overrides) {
-	document.body.replaceChildren();
 	const dataset = datasetWith(type, overrides);
-	const adapter = getChartControlAdapter(type);
-	document.body.append(...adapter.build(dataset, context));
 	const writer = { commit: vi.fn(), preview: vi.fn() };
-	adapter.attachListeners(dataset, context, writer);
+	document.body.replaceChildren(...buildDescribedControls(
+		getChartControlAdapter(type).controls,
+		{ dataset, context, writer, translate: t },
+	));
 	return writer;
 }
 

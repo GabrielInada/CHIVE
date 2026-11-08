@@ -4,7 +4,7 @@ import { CHART_COLORS } from '../../../src/config/charts/definitions.js';
 import { TREEMAP_CHART } from '../../../src/config/charts/definitions/treemap.js';
 
 describe('normalizeTreemapOptions', () => {
-	it('applies non-enumerated defaults for an empty options bag', () => {
+	it('applies non-enumerated defaults for an empty config', () => {
 		const o = normalizeTreemapOptions({});
 		expect(o.valueColumn).toBeNull();
 		expect(o.topN).toBe(TREEMAP_CHART.defaultTopN);
@@ -16,7 +16,6 @@ describe('normalizeTreemapOptions', () => {
 		expect(o.colorMode).toBeUndefined();
 		expect(o.colorScheme).toBeUndefined();
 		expect(o.uniformColor).toBe(CHART_COLORS.treemap);
-		expect(o.locale).toBeUndefined();
 	});
 
 	// Chart config canonicalization checks enumerated settings against the chart's
@@ -49,12 +48,5 @@ describe('normalizeTreemapOptions', () => {
 		expect(normalizeTreemapOptions({ showLabels: false, showValues: false }))
 			.toMatchObject({ showLabels: false, showValues: false });
 		expect(normalizeTreemapOptions({ showLabels: 0 }).showLabels).toBe(true);
-	});
-
-	it('passes through caller-supplied labels and falls back per-key', () => {
-		const o = normalizeTreemapOptions({ labels: { category: 'Região', measure: 'Soma' } });
-		expect(o.labels.category).toBe('Região');
-		expect(o.labels.measure).toBe('Soma');
-		expect(o.labels.percentage).toBe('Percentage');
 	});
 });

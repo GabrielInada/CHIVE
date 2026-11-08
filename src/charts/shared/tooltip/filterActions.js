@@ -16,7 +16,6 @@
  * @property {(column: string, token: string) => void} [onBringBackGlobalFilter]
  * @property {(column: string, token: string) => 'included'|'excluded'|null} [getTokenFilterState]
  * @property {(column: string, token: string) => boolean} [isShowOnlyThisRedundant]
- * @property {Object<string, string>} [filterActionLabels] - Localized labels by name. This module reads focus, add, exclude, remove, bringBack, stateIncluded and stateExcluded; a missing one falls back to its English default.
  *
  * @typedef {Object} FilterCategory
  * @property {?string} column - Dataset column the category belongs to.
@@ -25,7 +24,7 @@
  */
 
 import { createFilterStateBadge, createNamedActionGroup } from './content.js';
-import { showPinnedChartTooltip } from './tooltip.js';
+import { togglePinnedChartTooltip } from './tooltip.js';
 
 const DEFAULT_ACTION_LABELS = Object.freeze({
 	focus: 'Show only this',
@@ -44,10 +43,10 @@ const DEFAULT_ACTION_LABELS = Object.freeze({
  * @param {string} token
  * @param {'included'|'excluded'|null} state
  * @param {FilterCallbacks} callbacks
+ * @param {Object<string, string>} labels
  * @returns {Array<{ label: string, variant?: string, onClick: () => void }>}
  */
-function buildCategoryActions(column, token, state, callbacks) {
-	const labels = callbacks.filterActionLabels || {};
+function buildCategoryActions(column, token, state, callbacks, labels) {
 	const label = name => labels[name] || DEFAULT_ACTION_LABELS[name];
 	const actions = [];
 	const offer = (callback, name, variant) => {
@@ -70,8 +69,8 @@ function buildCategoryActions(column, token, state, callbacks) {
 }
 
 /**
- * Show a pinned tooltip with the global-filter actions for the categories it
- * is about.
+ * Toggle a pinned tooltip with the global-filter actions for the categories
+ * it is about. The shared tooltip owns pin identity and dismissal.
  *
  * Each category offers "Show only this", unless `isShowOnlyThisRedundant`
  * says it would give the same filter as adding the category, and then by its
@@ -86,25 +85,29 @@ function buildCategoryActions(column, token, state, callbacks) {
  * @param {Node|string} content - Tooltip body.
  * @param {number} x - Page X coordinate.
  * @param {number} y - Page Y coordinate.
- * @param {Object} [options]
+ * @param {Object} options
+ * @param {Element} options.target - The clicked chart mark (not a delegated event's container).
  * @param {string} [options.headerTitle]
  * @param {string} [options.closeLabel] - Localized close label, independent of filter callbacks.
  * @param {() => void} [options.onDismiss]
  * @param {() => { x: number, y: number }} [options.anchor] - See `pinTooltip`.
  * @param {FilterCallbacks} [options.filterCallbacks] - The chart's filter callbacks, as it received them.
+ * @param {Object<string, string>} [options.filterActionLabels] - Localized labels from chart presentation.
  * @param {FilterCategory[]} [options.categories]
  * @returns {void}
  */
-export function showPinnedFilterTooltip(content, x, y, {
+export function togglePinnedFilterTooltip(content, x, y, {
+	target,
 	headerTitle,
 	closeLabel,
 	onDismiss,
 	anchor,
 	filterCallbacks,
+	filterActionLabels = {},
 	categories = [],
 } = {}) {
 	const callbacks = filterCallbacks || {};
-	const labels = callbacks.filterActionLabels || {};
+	const labels = filterActionLabels;
 	const named = categories
 		.filter(category => category?.column && category.token)
 		.map(category => ({
@@ -115,7 +118,7 @@ export function showPinnedFilterTooltip(content, x, y, {
 		}));
 	const actionSets = [];
 	for (const { column, token, state, heading } of named) {
-		const actions = buildCategoryActions(column, token, state, callbacks);
+		const actions = buildCategoryActions(column, token, state, callbacks, labels);
 		if (actions.length > 0) actionSets.push(createNamedActionGroup(actions, heading));
 	}
 	const stateBadge = named.length === 1
@@ -125,7 +128,8 @@ export function showPinnedFilterTooltip(content, x, y, {
 			excludedLabel: labels.stateExcluded,
 		})
 		: null;
-	showPinnedChartTooltip(content, x, y, {
+	togglePinnedChartTooltip(content, x, y, {
+		target,
 		headerTitle,
 		closeLabel,
 		onDismiss,

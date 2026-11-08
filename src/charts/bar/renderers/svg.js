@@ -14,10 +14,11 @@ import { axisBottom, axisLeft, max, min, scaleBand, scaleLinear } from '../../..
 import {
 	createTooltipLine,
 	hideChartTooltip,
+	hideHoverTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
+import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { BAR_CHART } from '../../../config/charts/definitions/bar.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { formatNumber } from '../../../utils/formatters.js';
@@ -46,27 +47,27 @@ import { createBarColorAccessor } from '../color.js';
  * `topN`, `measureMode`
  * ('count' | 'sum' | 'mean'), `valueColumn`, `colorMode`
  * ('uniform' | 'gradient' | 'gradient-manual'), color stops, axis label
- * toggles, `customTitle`, `chartHeight`, `locale`, and the localized
- * `labels`/`axisLabels` bags. `labels.measure` names the measure in the
- * tooltip and, unless `axisLabels.y` is given, on the y axis.
+ * toggles, `customTitle`, and `chartHeight` live in config. Presentation supplies
+ * `context.labels.measure` for the tooltip and `context.axisLabels.y` for the
+ * y axis, alongside locale and filter callbacks.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} categoryColumn - Categorical column name (required).
- * @param {Object} [options={}] - Render options bag.
+ * @param {Object} config - Stored chart config, normalized once inside the renderer.
+ * @param {Object} context - Localized labels, locale, and runtime callbacks from presentation.
  * @returns {Result}
  */
-export function renderBarChart(container, rows, categoryColumn, options = {}) {
+export function renderBarChart(container, rows, config = {}, context = {}) {
+	const { category: categoryColumn } = config;
+	const { labels = {}, axisLabels = {}, locale, filterCallbacks } = context;
 	if (!container || !categoryColumn) return fail();
 	const {
 		sort,
 		topN,
 		showXAxisLabel,
 		showYAxisLabel,
-		labels,
 		measureMode,
 		valueColumn,
-		axisLabels,
 		color,
 		colorMode,
 		gradientMinColor,
@@ -75,8 +76,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		gradientDistribution,
 		customTitle,
 		chartHeight,
-		locale,
-	} = normalizeBarOptions(options, categoryColumn);
+	} = normalizeBarOptions(config);
 
 	const aggregated = aggregateCategories(rows, categoryColumn, {
 		measureMode, valueColumn, sort, topN, missingLabel: labels.missing,
@@ -95,7 +95,6 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 	});
 	hideChartTooltip();
 
-	let pinnedCategory = null;
 	// WHY: with a total below 0, a share of the net total can pass 100% or go
 	// below 0%, so the tooltip leaves it out, as it does for a mean.
 	const showsShare = measureMode !== 'mean' && entries.every(item => item.value >= 0);
@@ -117,12 +116,13 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		showChartTooltip(buildTooltipContent(item), event.pageX, event.pageY);
 	};
 
-	const showPinnedTooltip = (event, item, onDismiss) => {
-		showPinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
+	const togglePinnedTooltip = (event, item) => {
+		togglePinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
+			target: event.currentTarget,
 			headerTitle: item.label,
 			closeLabel: labels.close,
-			onDismiss,
-			filterCallbacks: options.filterCallbacks,
+			filterActionLabels: labels.filterActions,
+			filterCallbacks,
 			categories: [{ column: categoryColumn, token: item.token }],
 		});
 	};
@@ -166,33 +166,20 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		.attr('rx', 3)
 		.attr('fill', item => getBarColor(item))
 		.on('mouseenter', (event, item) => {
-			if (pinnedCategory !== null) return;
 			showTooltip(event, item);
 		})
 		.on('mousemove', event => {
-			if (pinnedCategory !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseleave', () => {
-			if (pinnedCategory !== null) return;
-			hideChartTooltip();
+			hideHoverTooltip();
 		})
 		.on('click', (event, item) => {
 			event.stopPropagation();
-			if (pinnedCategory === item.key) {
-				pinnedCategory = null;
-				hideChartTooltip();
-				return;
-			}
-			pinnedCategory = item.key;
-			showPinnedTooltip(event, item, () => {
-				pinnedCategory = null;
-				hideChartTooltip();
-			});
+			togglePinnedTooltip(event, item);
 		});
 
 	svg.on('click', () => {
-		pinnedCategory = null;
 		hideChartTooltip();
 	});
 

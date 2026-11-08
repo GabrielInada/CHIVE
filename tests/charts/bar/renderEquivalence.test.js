@@ -10,6 +10,7 @@
  * pinned `clientWidth`, a fixed `chartHeight`, and fixed rows.
  */
 
+import { renderContext } from '../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderBarChart } from '../../../src/charts/bar/renderers/svg.js';
 import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
@@ -39,7 +40,15 @@ function makeContainer() {
 function render(options, rows = ROWS) {
 	const container = makeContainer();
 	const labels = { measure: MEASURE_LABELS[options.measureMode ?? 'count'] };
-	const result = renderBarChart(container, rows, 'region', { ...BASE, labels, ...options });
+	const result = renderBarChart(container, rows, {
+		category: 'region',
+		...BASE,
+		...options,
+	}, renderContext({ category: 'region' }, {
+		...BASE,
+		labels,
+		...options,
+	}));
 	const svg = container.querySelector('svg');
 	return { html: svg?.outerHTML ?? container.innerHTML, result };
 }

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderBubbleChart } from '../../../../src/charts/bubble/renderers/svg.js';
 
@@ -19,11 +20,14 @@ describe('bubble chart multi-level nesting', () => {
 			{ categoria: 'C', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
@@ -39,11 +43,14 @@ describe('bubble chart multi-level nesting', () => {
 			{ categoria: 'D', regiao: 'Sul', estado: 'RS' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao', 'estado'],
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		// Depth 1: Norte, Sul = 2 parents
@@ -67,11 +74,14 @@ describe('bubble chart multi-level nesting', () => {
 			{ categoria: 'C', continente: 'Europa', pais: 'Portugal', regiao: 'Lisboa' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['continente', 'pais', 'regiao'],
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		const depth1 = container.querySelectorAll('g.bubble-parent[data-depth="1"]');
@@ -90,11 +100,14 @@ describe('bubble chart multi-level nesting', () => {
 			{ categoria: 'B', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
@@ -107,12 +120,15 @@ describe('bubble chart multi-level nesting', () => {
 			{ categoria: 'B', regiao: 'Sul', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao'],
 			groupColumn: 'grupo',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		// Should group by 'regiao', not 'grupo'
@@ -127,11 +143,14 @@ describe('bubble chart multi-level nesting', () => {
 			{ categoria: 'B', grupo: 'X' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		// Two groups: the missing bucket and 'X'
@@ -144,12 +163,15 @@ describe('bubble chart multi-level nesting', () => {
 			{ categoria: 'A', grupo: 'X' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
 			zoomTransitionDuration: 0,
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-parent').length).toBe(1);
@@ -162,11 +184,14 @@ describe('bubble chart multi-level nesting', () => {
 			{ categoria: 'A' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: [],
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-nesting-columns');
@@ -181,11 +206,14 @@ describe('bubble chart multi-level nesting', () => {
 
 		for (const badGroup of [{}, 1, true]) {
 			container.innerHTML = '';
-			const result = renderBubbleChart(container, rows, 'categoria', {
+			const result = renderBubbleChart(container, rows, {
+				category: 'categoria',
 				...BASE_OPTIONS,
 				nestingMode: 'grouped',
 				groupColumn: badGroup,
-			});
+			}, renderContext({ category: 'categoria' }, {
+				...BASE_OPTIONS,
+			}));
 			expect(result.ok).toBe(false);
 			expect(result.reason).toBe('no-nesting-columns');
 			expect(container.querySelectorAll('g.bubble-node').length).toBe(0);
@@ -193,11 +221,14 @@ describe('bubble chart multi-level nesting', () => {
 
 		// A valid string groupColumn in the same setup still resolves and renders grouped.
 		container.innerHTML = '';
-		const ok = renderBubbleChart(container, rows, 'categoria', {
+		const ok = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(ok.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
 	});
@@ -209,11 +240,14 @@ describe('bubble chart multi-level nesting', () => {
 			{ categoria: 'B', regiao: 'Sul', estado: 'RS' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao', 'estado'],
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		const allParents = container.querySelectorAll('g.bubble-parent');

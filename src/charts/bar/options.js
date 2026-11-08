@@ -1,7 +1,7 @@
 /**
  * Bar-chart option normalization.
  *
- * Turns the raw render options bag into a validated config object with every
+ * Turns the stored chart config into a validated config object with every
  * default and bound applied exactly once. Mirrors the renderer's historical
  * semantics verbatim. Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
@@ -11,58 +11,43 @@ import { CHART_DIMENSIONS, CHART_COLORS } from '../../config/charts/definitions.
 import { isValidHexColor } from '../../utils/colorUtils.js';
 
 /**
- * Normalize the bar render options.
+ * Normalize the bar render config.
  *
- * @param {Object} options - Raw render options.
- * @param {string} categoryColumn - Category column name (for the default x label).
+ * @param {Object} config - Stored chart config.
  * @returns {Object} Validated config locals.
  */
-export function normalizeBarOptions(options, categoryColumn) {
+export function normalizeBarOptions(config) {
 	// Read as given: chart config canonicalization checks the enumerated
 	// settings against the chart's definition.
-	const { sort, measureMode, colorMode, gradientDistribution } = options;
-	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : BAR_CHART.defaultTopN;
-	const showXAxisLabel = options.showXAxisLabel !== false;
-	const showYAxisLabel = options.showYAxisLabel !== false;
-	const labels = {
-		close: options.labels?.close,
-		category: options.labels?.category || 'Category',
-		measure: options.labels?.measure || 'Value',
-		percentage: options.labels?.percentage || 'Percentage',
-		missing: options.labels?.missing || '(missing)',
-	};
-	const valueColumn = options.valueColumn || null;
-	const axisLabels = {
-		x: options.axisLabels?.x || categoryColumn,
-		y: options.axisLabels?.y || labels.measure,
-	};
-	const color = isValidHexColor(String(options.color || '').trim())
-		? String(options.color).trim()
+	const { sort, measureMode, colorMode, gradientDistribution } = config;
+	const topN = Number.isFinite(Number(config.topN)) ? Number(config.topN) : BAR_CHART.defaultTopN;
+	const showXAxisLabel = config.showXAxisLabel !== false;
+	const showYAxisLabel = config.showYAxisLabel !== false;
+	const valueColumn = config.valueColumn || null;
+	const color = isValidHexColor(String(config.color || '').trim())
+		? String(config.color).trim()
 		: CHART_COLORS.bar;
-	const gradientMinColor = isValidHexColor(String(options.gradientMinColor || '').trim())
-		? String(options.gradientMinColor).trim()
+	const gradientMinColor = isValidHexColor(String(config.gradientMinColor || '').trim())
+		? String(config.gradientMinColor).trim()
 		: color;
-	const gradientMaxColor = isValidHexColor(String(options.gradientMaxColor || '').trim())
-		? String(options.gradientMaxColor).trim()
+	const gradientMaxColor = isValidHexColor(String(config.gradientMaxColor || '').trim())
+		? String(config.gradientMaxColor).trim()
 		: '#ffffff';
-	const manualThresholdPct = Number.isFinite(Number(options.manualThresholdPct))
-		? Math.max(0, Math.min(100, Number(options.manualThresholdPct)))
+	const manualThresholdPct = Number.isFinite(Number(config.manualThresholdPct))
+		? Math.max(0, Math.min(100, Number(config.manualThresholdPct)))
 		: 50;
-	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(options.chartHeight))
-		? Math.max(220, Math.min(720, Number(options.chartHeight)))
+	const customTitle = String(config.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(config.chartHeight))
+		? Math.max(220, Math.min(720, Number(config.chartHeight)))
 		: CHART_DIMENSIONS.bar.height;
-	const locale = options.locale || undefined;
 
 	return {
 		sort,
 		topN,
 		showXAxisLabel,
 		showYAxisLabel,
-		labels,
 		measureMode,
 		valueColumn,
-		axisLabels,
 		color,
 		colorMode,
 		gradientMinColor,
@@ -71,6 +56,5 @@ export function normalizeBarOptions(options, categoryColumn) {
 		gradientDistribution,
 		customTitle,
 		chartHeight,
-		locale,
 	};
 }

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Lightweight fakes for the vendored three module: jsdom has no WebGL, so
@@ -107,8 +108,13 @@ function makeContainer() {
 }
 
 function render(container, options = {}) {
-	return renderScatter3dChart(container, rows, 'a', 'b', 'c', {
+	return renderScatter3dChart(container, rows, {
+		x: 'a',
+		y: 'b',
+		z: 'c',
 		chartHeight: 460,
+		...options,
+	}, renderContext({ x: 'a', y: 'b', z: 'c' }, {
 		labels: {
 			ariaLabel: 'label text',
 			controlsInstructions: 'controls text',
@@ -116,7 +122,7 @@ function render(container, options = {}) {
 			contextRestored: 'context restored',
 		},
 		...options,
-	});
+	}));
 }
 
 describe('renderScatter3dChart', () => {
@@ -151,12 +157,20 @@ describe('renderScatter3dChart', () => {
 	it('fails without a container or complete column selection', () => {
 		expect(render(null).ok).toBe(false);
 		const container = makeContainer();
-		expect(renderScatter3dChart(container, rows, 'a', null, 'c', {}).ok).toBe(false);
+		expect(renderScatter3dChart(container, rows, {
+			x: 'a',
+			y: null,
+			z: 'c',
+		}, renderContext({ x: 'a', y: null, z: 'c' })).ok).toBe(false);
 	});
 
 	it('fails with no-valid-points when no row survives coercion', () => {
 		const container = makeContainer();
-		const result = renderScatter3dChart(container, [{ a: 'x', b: 'y', c: 'z' }], 'a', 'b', 'c', {});
+		const result = renderScatter3dChart(container, [{ a: 'x', b: 'y', c: 'z' }], {
+			x: 'a',
+			y: 'b',
+			z: 'c',
+		}, renderContext({ x: 'a', y: 'b', z: 'c' }));
 		expect(result).toEqual({ ok: false, reason: 'no-valid-points' });
 	});
 

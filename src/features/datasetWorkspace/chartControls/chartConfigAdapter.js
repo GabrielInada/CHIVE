@@ -1,11 +1,11 @@
 /**
  * CHIVE chart-config write adapter.
  *
- * Builds the {@link ChartConfigWriter} that a chart package's control listeners
- * write through. This is the only place chart-control writes touch state: the
- * chart packages receive the writer as an argument from the controls registry
- * and never import `state/` themselves, which is what lets the chart-package
- * lint boundary ban state outright.
+ * Builds the {@link ChartConfigWriter} that a chart's controls write through.
+ * This is the only place chart-control writes touch state: the controls
+ * sidebar hands the writer to the chart's controls, so chart packages never
+ * import `state/` themselves, which is what lets the chart-package lint
+ * boundary ban state outright.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
  * @typedef {import('../../../types.js').ChartTypeKey} ChartTypeKey

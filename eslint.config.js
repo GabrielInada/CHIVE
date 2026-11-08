@@ -5,7 +5,7 @@ const STATELESS_RENDERER_MESSAGE =
 	'Renderers and DOM builders (dataset workspace and panel feature views/dialogs, and the settings dialog) do not ' +
 	'call write facades (docs/development/architecture.md Layers section). Only read-only facade members ' +
 	'are importable here. Route writes through feature controllers, ' +
-	'chart-control listeners, or event-handler modules.';
+	'chart controls (through their ChartConfigWriter), or event-handler modules.';
 
 // Renderer-safe read surface that renderers may import from appState.js.
 // Add a new read here only when renderers should use it; reads meant for
@@ -437,7 +437,7 @@ export default [
 	// mechanics, and renderers draw from explicit inputs only.
 	// None of them may reach app/, state/, features/, components/, ui/, or
 	// services/ (package-local and charts/shared modules, config, domain, utils,
-	// and vendor modules only). Localized strings arrive through options.labels; state
+	// and vendor modules only). Localized strings arrive through context.labels; state
 	// never enters a renderer.
 	{
 		files: [
@@ -459,7 +459,7 @@ export default [
 				paths: BARE_IMPORT_BANS,
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**', '**/ui/**'],
-					message: 'Chart package leaf files import only package-local or charts/shared modules, config, domain, utils, and vendor modules. Localized strings arrive via options.labels; state stays with the surfaces that build the chart input.',
+					message: 'Chart package leaf files import only package-local or charts/shared modules, config, domain, utils, and vendor modules. Localized strings arrive via context.labels; state stays with the surfaces that build the chart input.',
 				}],
 			}],
 		},
@@ -468,7 +468,7 @@ export default [
 	// (B3a) Shared chart rendering infrastructure is reusable leaf code. It
 	// may import vendor, config, utils, or other charts/shared modules, but it
 	// never reaches application state, components, feature modules, or services.
-	// listenerBindings.js is the reason state/ is banned by name: it wires
+	// describedControls.js is the reason state/ is banned by name: it wires
 	// controls to config writes, but only through an injected writer, so the
 	// write adapter itself stays in the dataset-workspace feature.
 	{
@@ -553,47 +553,46 @@ export default [
 		},
 	},
 
-	// (B4) Per-chart package integration files: presentation flows receive
-	// the chart input and callbacks, never state; controls write through an injected
-	// ChartConfigWriter, whose adapter lives in the dataset-workspace feature.
-	// No panel internals and no workspace components. The container lifecycle
-	// lives in charts/shared/containerLifecycle.js so each rendering surface can
-	// share the chart-owned dispose contract.
-	// services/ is deliberately NOT banned here: builders and presentation
-	// flows legitimately import i18nService for their labels. That is the
-	// line between (B3) leaf files, which take strings via options.labels, and
-	// these integration files. Listeners are stricter still, see (B4a).
+	// (B4) Per-chart presentation flows receive the chart input and callbacks,
+	// never state. No panel internals and no workspace components. The
+	// container lifecycle lives in charts/shared/containerLifecycle.js so each
+	// rendering surface can share the chart-owned dispose contract.
+	// services/ is deliberately NOT banned here: presentation flows
+	// legitimately import i18nService for their labels and empty states. That
+	// is the line between (B3) leaf files, which take strings via
+	// options.labels, and these integration files. Controls are stricter, see
+	// (B4a).
 	{
-		files: [
-			'src/charts/*/presentation.js',
-			'src/charts/*/controls/**/*.js',
-		],
+		files: ['src/charts/*/presentation.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/ui/**'],
-					message: 'Chart package integration files do not import app modules, state, panel internals, ui/ mechanics, or workspace components. Receive props/callbacks; controls write only through the injected ChartConfigWriter.',
+					message: 'Chart presentation flows do not import app modules, state, panel internals, ui/ mechanics, or workspace components. Receive the chart input and callbacks.',
 				}],
 			}],
 		},
 	},
 
-	// (B4a) Control listeners are the strictest chart-package files: after the
-	// writer injection they need no services at all, so i18n is banned here even
-	// though (B4) allows it for builders and presentation. Placed AFTER (B4)
-	// deliberately: per the (A) note, this config REPLACES (B4)'s for these files
-	// rather than merging, so it must restate BARE_IMPORT_BANS and the full
-	// pattern group. Omitting `paths` would silently hand listeners back the
-	// right to use bare `d3`/`three` specifiers and break raw-static hosting.
+	// (B4a) Chart controls are declared as data: the shared builder in
+	// charts/shared/controls/describedControls.js translates their labels with
+	// an injected translate and wires them to an injected ChartConfigWriter,
+	// whose adapter lives in the dataset-workspace feature. So controls need no
+	// services at all, and i18n is banned here although (B4) allows it for
+	// presentation. This block restates BARE_IMPORT_BANS and the full pattern
+	// group, since a block that matches a file replaces the rule rather than
+	// merging, per the (A) note. Omitting `paths` would silently hand controls
+	// back the right to use bare `d3`/`three` specifiers and break raw-static
+	// hosting.
 	{
-		files: ['src/charts/*/controls/listeners.js'],
+		files: ['src/charts/*/controls/**/*.js'],
 		rules: {
 			'no-restricted-imports': ['error', {
 				paths: BARE_IMPORT_BANS,
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**', '**/ui/**'],
-					message: 'Chart control listeners are pure input mechanics: they read the DOM and write through the injected ChartConfigWriter. Import only package-local modules, charts/shared bindings, config, domain, utils, and vendor modules. Labels belong to the builder.',
+					message: 'Chart controls are data: labels are message keys the shared builder translates, and writes go through the injected ChartConfigWriter. Import only package-local modules, charts/shared, config, domain, utils, and vendor modules.',
 				}],
 			}],
 		},

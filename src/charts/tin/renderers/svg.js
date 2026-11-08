@@ -38,7 +38,7 @@ import { TIN_CHART } from '../../../config/charts/definitions/tin.js';
 import { formatNumber, toFiniteNumber } from '../../../utils/formatters.js';
 import { interpolateColor } from '../../../utils/colorUtils.js';
 import { ok, fail } from '../../../utils/result.js';
-import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../../shared/tooltip/tooltip.js';
+import { createTooltipLine, hideChartTooltip, hideHoverTooltip, moveChartTooltip, showChartTooltip } from '../../shared/tooltip/tooltip.js';
 import {
 	appendAxisLabels,
 	appendBottomAxis,
@@ -60,28 +60,27 @@ import { createIsolineHoverHandlers } from '../interaction.js';
  * or `fail()` when required arguments are missing or no triangulation can
  * be built from the data.
  *
- * Common option keys: `fillMode` ('smooth' | 'flat'), `colorRenderingMode`
- * ('optimized' | 'full-ramp'), `subdivisionDepth`,
+ * Common config keys: `fillMode` ('smooth' | 'flat'), `subdivisionDepth`,
  * `gradientMinColor`/`gradientMaxColor`, `gradientDistribution` ('value' |
  * 'rank'), `colorRamp` (one of `TIN_COLOR_RAMPS`), `showEdges`/`edgeColor`,
  * `showPoints`/`pointRadius`, `showZLabels`, `showHull`/`hullColor`,
  * `showIsolines`/`isolineMode` ('count' | 'step')/`isolineCount`/`isolineStep`,
  * `colorIsolinesByZ`, `showThreshold`/`thresholdValue`, axis-label toggles,
- * `customTitle`, `chartHeight`, `locale`.
+ * `customTitle`, and `chartHeight`. Context supplies locale, axis labels and
+ * `colorRenderingMode` ('optimized' | 'full-ramp').
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} xColumn - Numeric X column.
- * @param {string} yColumn - Numeric Y column.
- * @param {string} zColumn - Numeric Z column (the surface height).
- * @param {Object} [options={}] - Render options bag.
+ * @param {Object} config - Stored chart config, normalized once inside the renderer.
+ * @param {Object} context - Localized labels, locale, and runtime callbacks from presentation.
  * @returns {Result}
  */
-export function renderTinChart(container, rows, xColumn, yColumn, zColumn, options = {}) {
+export function renderTinChart(container, rows, config = {}, context = {}) {
+	const { x: xColumn, y: yColumn, z: zColumn } = config;
+	const { axisLabels = {}, locale, colorRenderingMode = 'optimized' } = context;
 	if (!container || !xColumn || !yColumn || !zColumn) return fail();
 
-	const cfg = normalizeTinOptions(options, xColumn, yColumn, zColumn);
-	const { axisLabels, locale } = cfg;
+	const cfg = normalizeTinOptions(config);
 
 	const hasCoordinate = value => Number.isFinite(toFiniteNumber(value));
 	const points = (Array.isArray(rows) ? rows : [])
@@ -167,7 +166,7 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 	// leaf into a fixed bucket array; full-ramp groups leaves by their exact
 	// colorAt(meanZ) CSS color, in first-leaf encounter order (Map insertion
 	// order), so the output stays deterministic in both modes.
-	const fullRamp = cfg.colorRenderingMode === 'full-ramp';
+	const fullRamp = colorRenderingMode === 'full-ramp';
 	const bucketFragments = fullRamp ? null : Array.from({ length: bucketCount }, () => []);
 	/** @type {Map<string, string[]> | null} */
 	const colorFragments = fullRamp ? new Map() : null;
@@ -372,7 +371,7 @@ export function renderTinChart(container, rows, xColumn, yColumn, zColumn, optio
 				showChartTooltip(wrapper, event.pageX, event.pageY);
 			})
 			.on('mousemove', event => moveChartTooltip(event.pageX, event.pageY))
-			.on('mouseleave', () => hideChartTooltip());
+			.on('mouseleave', () => hideHoverTooltip());
 	}
 
 	if (cfg.showZLabels) {

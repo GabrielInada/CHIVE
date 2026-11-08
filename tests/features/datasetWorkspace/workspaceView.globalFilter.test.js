@@ -6,9 +6,7 @@ const mocks = vi.hoisted(() => ({
 	t: vi.fn((key, ...args) => (args.length ? `${key}:${args.join(',')}` : key)),
 	getLocale: vi.fn(() => 'en'),
 	translateType: vi.fn(type => type),
-	mergeChartConfigWithDefaults: vi.fn(config => config),
 	renderCharts: vi.fn(),
-	getNumericColumns: vi.fn(columns => columns.filter(column => column.type === 'number')),
 	updateTabs: vi.fn(),
 	renderTablePreview: vi.fn(),
 	renderStats: vi.fn(),
@@ -23,16 +21,8 @@ vi.mock('../../../src/services/i18nService.js', () => ({
 	translateType: mocks.translateType,
 }));
 
-vi.mock('../../../src/domain/charts/chartConfig.js', () => ({
-	mergeChartConfigWithDefaults: mocks.mergeChartConfigWithDefaults,
-}));
-
 vi.mock('../../../src/features/datasetWorkspace/views/chartsView.js', () => ({
 	renderCharts: mocks.renderCharts,
-}));
-
-vi.mock('../../../src/domain/datasets/columns.js', () => ({
-	getNumericColumns: mocks.getNumericColumns,
 }));
 
 vi.mock('../../../src/features/datasetWorkspace/views/tabsView.js', () => ({
@@ -57,6 +47,27 @@ vi.mock('../../../src/features/datasetWorkspace/dialogs/globalFilterDialog.js', 
 }));
 
 import { renderDatasetWorkspace } from '../../../src/features/datasetWorkspace/workspaceView.js';
+import { deriveShownDataset } from '../../../src/domain/datasets/shownDataset.js';
+
+const ROWS = [{ region: 'A', value: 1 }, { region: 'B', value: 2 }];
+const COLUMNS = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+
+function makeDataset({ rows = ROWS, columns = COLUMNS, selectedColumns, chartConfig } = {}) {
+	return {
+		name: 'data.csv',
+		sizeLabel: '2 KB',
+		rows,
+		columns,
+		selectedColumns: selectedColumns ?? columns.map(column => column.name),
+		chartConfig: { activeTab: 'preview', globalFilter: { rules: [] }, ...chartConfig },
+	};
+}
+
+function render(dataset, options = {}) {
+	const shown = deriveShownDataset(dataset);
+	renderDatasetWorkspace(shown, { previewRows: 10, onChartConfigChange: vi.fn(), ...options });
+	return shown;
+}
 
 function setupDom() {
 	document.body.innerHTML = `
@@ -80,27 +91,21 @@ function setupDom() {
 describe('renderDatasetWorkspace global filter behavior', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mocks.mergeChartConfigWithDefaults.mockImplementation(config => config);
 		setupDom();
 	});
 
 	it('gives the preview, the stats and the charts the same filtered rows', () => {
-		const rows = [{ region: 'A', value: 1 }, { region: 'B', value: 2 }];
-		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
-		const config = {
-			activeTab: 'preview',
-			globalFilter: {
-				rules: [{ column: 'region', mode: 'categorical', include: ['v:A'], exclude: [] }],
+		const shown = render(makeDataset({
+			chartConfig: {
+				globalFilter: { rules: [{ column: 'region', mode: 'categorical', include: ['v:A'], exclude: [] }] },
 			},
-		};
-
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, config, vi.fn());
+		}));
 
 		const filtered = [{ region: 'A', value: 1 }];
-		expect(mocks.renderTablePreview).toHaveBeenCalledWith(filtered, columns, 10);
-		expect(mocks.renderStats).toHaveBeenCalledWith(filtered, columns);
-		expect(mocks.renderCategoricalStats).toHaveBeenCalledWith(filtered, columns);
-		expect(mocks.renderCharts.mock.calls[0][1]).toEqual(filtered);
+		expect(shown.rows).toEqual(filtered);
+		expect(mocks.renderTablePreview).toHaveBeenCalledWith(shown.rows, COLUMNS, 10);
+		expect(mocks.renderStats).toHaveBeenCalledWith(shown.rows, COLUMNS);
+		expect(mocks.renderCategoricalStats).toHaveBeenCalledWith(shown.rows, COLUMNS);
 		const triggerState = mocks.updateTabs.mock.calls[0][3].triggerState;
 		expect(triggerState).toEqual(expect.objectContaining({
 			hasDataset: true,
@@ -114,36 +119,33 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 		expect(document.getElementById('badge-rows').textContent).toBe('chive-badge-preview:1,1,2,2');
 	});
 
+	it('hands the charts the shown dataset and the config-change callback', () => {
+		const onChartConfigChange = vi.fn();
+		const shown = render(makeDataset({ chartConfig: { activeTab: 'charts' } }), { onChartConfigChange });
+
+		expect(mocks.renderCharts).toHaveBeenCalledWith(shown, onChartConfigChange);
+	});
+
 	it('keeps applying a rule while the column list hides its column', () => {
-		const rows = [{ region: 'A', value: 1 }, { region: 'B', value: 2 }];
-		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
-		const config = {
-			activeTab: 'charts',
-			globalFilter: {
-				rules: [{ column: 'region', mode: 'categorical', include: ['v:A'], exclude: [] }],
+		const shown = render(makeDataset({
+			selectedColumns: ['value'],
+			chartConfig: {
+				activeTab: 'charts',
+				globalFilter: { rules: [{ column: 'region', mode: 'categorical', include: ['v:A'], exclude: [] }] },
 			},
-		};
+		}));
 
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, ['value'], null, config, vi.fn());
-
-		const filtered = [{ region: 'A', value: 1 }];
-		const visible = [{ name: 'value', type: 'number' }];
-		expect(mocks.renderTablePreview).toHaveBeenCalledWith(filtered, visible, 10);
-		expect(mocks.renderCharts).toHaveBeenCalledWith(config, filtered, visible, visible, expect.any(Object));
+		expect(mocks.renderTablePreview).toHaveBeenCalledWith([{ region: 'A', value: 1 }], [{ name: 'value', type: 'number' }], 10);
+		expect(mocks.renderCharts.mock.calls[0][0]).toBe(shown);
 	});
 
 	it('wires preview-row changes and ignores invalid row counts', () => {
 		const onPreviewRowsChange = vi.fn();
-		const rows = [{ region: 'A', value: 1 }];
-		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
 		const select = document.getElementById('select-preview-rows');
 		select.appendChild(new Option('25', '25'));
 		select.appendChild(new Option('0', '0'));
 
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, onPreviewRowsChange, null, null, {
-			activeTab: 'preview',
-			globalFilter: { rules: [] },
-		}, vi.fn());
+		render(makeDataset(), { onPreviewRowsChange });
 
 		select.value = '25';
 		select.dispatchEvent(new Event('change'));
@@ -154,57 +156,18 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 		expect(onPreviewRowsChange).toHaveBeenCalledWith(25);
 	});
 
-	it('forwards chart tooltip global-filter callbacks to chart config changes', () => {
-		const onChartConfigChange = vi.fn();
-		const rows = [{ region: 'A', value: 1 }, { region: 'B', value: 2 }];
-		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
-		const config = {
-			activeTab: 'charts',
-			globalFilter: {
-				rules: [{ column: 'region', mode: 'categorical', include: ['v:A'], exclude: ['v:B'] }],
-			},
-		};
-
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, config, onChartConfigChange);
-
-		const callbacks = mocks.renderCharts.mock.calls[0][4];
-		callbacks.onAddToGlobalFilter('region', 'v:C');
-		callbacks.onFocusGlobalFilter('region', 'v:C');
-		callbacks.onExcludeGlobalFilter('region', 'v:C');
-		callbacks.onRemoveFromGlobalFilter('region', 'v:A');
-		callbacks.onBringBackGlobalFilter('region', 'v:B');
-		callbacks.onAddToGlobalFilter('missing', 'v:x');
-		callbacks.onAddToGlobalFilter('region', 42);
-
-		expect(onChartConfigChange).toHaveBeenCalledTimes(5);
-		expect(onChartConfigChange.mock.calls[0][0].globalFilter.rules[0].include).toContain('v:C');
-		expect(onChartConfigChange.mock.calls[1][0].globalFilter.rules[0]).toEqual(expect.objectContaining({
-			column: 'region',
-			include: ['v:C'],
-		}));
-		expect(onChartConfigChange.mock.calls[2][0].globalFilter.rules[0].exclude).toContain('v:C');
-		expect(onChartConfigChange.mock.calls[3][0].globalFilter.rules[0].include).not.toContain('v:A');
-		expect(onChartConfigChange.mock.calls[4][0].globalFilter.rules[0].exclude).not.toContain('v:B');
-		expect(callbacks.getTokenFilterState('region', 'v:A')).toBe('included');
-		expect(callbacks.isShowOnlyThisRedundant('region', 'v:A')).toBe(false);
-	});
-
 	it('opens the global-filter dialog and applies returned filters', async () => {
 		const onChartConfigChange = vi.fn();
-		const rows = [{ region: 'A', value: 1 }];
-		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+		const dataset = makeDataset({ rows: [{ region: 'A', value: 1 }] });
 		const nextFilter = { combine: 'AND', rules: [{ column: 'region', mode: 'categorical', include: ['v:A'] }] };
 		mocks.openGlobalFilterDialog.mockResolvedValueOnce({ action: 'apply', filter: nextFilter });
 
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
-			activeTab: 'preview',
-			globalFilter: { rules: [] },
-		}, onChartConfigChange);
+		render(dataset, { onChartConfigChange });
 
 		await mocks.updateTabs.mock.calls[0][3].onGlobalFilterOpen();
 
 		expect(mocks.openGlobalFilterDialog).toHaveBeenCalledWith(expect.objectContaining({
-			rows,
+			rows: dataset.rows,
 			allColumns: ['region', 'value'],
 			numericColumns: ['value'],
 			initialFilter: expect.objectContaining({ rules: [] }),
@@ -228,13 +191,8 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 		},
 	])('derives $label locally without writing config back during render', ({ globalFilter, expectedRules, expectedPreviewRows }) => {
 		const onChartConfigChange = vi.fn();
-		const rows = [{ region: 'A', value: 1 }, { region: 'B', value: 2 }];
-		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
 
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
-			activeTab: 'preview',
-			globalFilter,
-		}, onChartConfigChange);
+		render(makeDataset({ chartConfig: { globalFilter } }), { onChartConfigChange });
 
 		// Checked before any dialog/token callback runs: those still write config
 		// legitimately, but the render itself must not.
@@ -253,84 +211,50 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 			{ name: 'score', type: 'number' },
 		];
 
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, ['value', 'score'], null, {
-			activeTab: 'preview',
-			globalFilter: { rules: [] },
-		}, vi.fn());
+		render(makeDataset({ rows, columns, selectedColumns: ['value', 'score'] }));
 		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].activeFilter).toBe('numeric');
 
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, ['region', 'category'], null, {
-			activeTab: 'preview',
-			globalFilter: { rules: [] },
-		}, vi.fn());
+		render(makeDataset({ rows, columns, selectedColumns: ['region', 'category'] }));
 		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].activeFilter).toBe('text');
 
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, ['region', 'value'], null, {
-			activeTab: 'preview',
-			globalFilter: { rules: [] },
-		}, vi.fn());
+		render(makeDataset({ rows, columns, selectedColumns: ['region', 'value'] }));
 		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].activeFilter).toBeNull();
+
+		render(makeDataset({ rows, columns }));
+		expect(mocks.renderColumnControlsDOM.mock.calls.at(-1)[0].activeFilter).toBe('all');
 	});
 
 	it('handles missing preview selector, invalid preview row defaults, and no change callback', () => {
 		document.getElementById('select-preview-rows').remove();
-		const rows = [{ region: 'A', value: 1 }];
-		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+		const dataset = makeDataset({ rows: [{ region: 'A', value: 1 }] });
 
-		expect(() => renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', -5, null, null, null, {
-			activeTab: 'preview',
-			globalFilter: { rules: [] },
-		}, vi.fn())).not.toThrow();
+		expect(() => render(dataset, { previewRows: -5 })).not.toThrow();
 
-		expect(mocks.renderTablePreview).toHaveBeenCalledWith(rows, columns, 10);
+		expect(mocks.renderTablePreview).toHaveBeenCalledWith(dataset.rows, COLUMNS, 10);
 	});
 
-	it('ignores invalid global-filter callback payloads for every chart action', () => {
-		const onChartConfigChange = vi.fn();
-		const rows = [{ region: 'A', value: 1 }];
-		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+	it('writes the file summary from the dataset', () => {
+		render(makeDataset());
 
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
-			activeTab: 'charts',
-			globalFilter: { rules: [] },
-		}, onChartConfigChange);
-
-		const callbacks = mocks.renderCharts.mock.calls[0][4];
-		callbacks.onAddToGlobalFilter('missing', 'v:A');
-		callbacks.onFocusGlobalFilter('region', 42);
-		callbacks.onExcludeGlobalFilter(42, 'v:A');
-		callbacks.onRemoveFromGlobalFilter('missing', 'v:A');
-		callbacks.onBringBackGlobalFilter('region', 42);
-
-		expect(onChartConfigChange).not.toHaveBeenCalled();
+		expect(document.getElementById('file-summary-text').title).toBe('data.csv · 2 rows · 2 columns · 2 KB');
 	});
 
 	it('handles global-filter dialog clear, cancel, and disabled callback paths', async () => {
 		const onChartConfigChange = vi.fn();
-		const rows = [{ region: 'A', value: 1 }];
-		const columns = [{ name: 'region', type: 'text' }, { name: 'value', type: 'number' }];
+		const dataset = makeDataset({ rows: [{ region: 'A', value: 1 }] });
 		const cleared = { combine: 'AND', rules: [] };
 
 		mocks.openGlobalFilterDialog.mockResolvedValueOnce({ action: 'clear', filter: cleared });
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
-			activeTab: 'preview',
-			globalFilter: { rules: [] },
-		}, onChartConfigChange);
+		render(dataset, { onChartConfigChange });
 		await mocks.updateTabs.mock.calls.at(-1)[3].onGlobalFilterOpen();
 		expect(onChartConfigChange).toHaveBeenCalledWith({ globalFilter: cleared });
 
 		mocks.openGlobalFilterDialog.mockResolvedValueOnce(null);
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
-			activeTab: 'preview',
-			globalFilter: { rules: [] },
-		}, onChartConfigChange);
+		render(dataset, { onChartConfigChange });
 		await mocks.updateTabs.mock.calls.at(-1)[3].onGlobalFilterOpen();
 		expect(onChartConfigChange).toHaveBeenCalledTimes(1);
 
-		renderDatasetWorkspace(rows, columns, 'data.csv', '2 KB', 10, null, null, null, {
-			activeTab: 'preview',
-			globalFilter: { rules: [] },
-		}, null);
+		render(dataset, { onChartConfigChange: null });
 		await mocks.updateTabs.mock.calls.at(-1)[3].onGlobalFilterOpen();
 		expect(mocks.openGlobalFilterDialog).toHaveBeenCalledTimes(2);
 	});

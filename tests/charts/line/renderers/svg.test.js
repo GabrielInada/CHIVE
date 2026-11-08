@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderLineChart } from '../../../../src/charts/line/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
@@ -23,11 +24,15 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 20 },
 			{ x: 3, y: 15 },
 		];
-		const result = renderLineChart(container, rows, 'x', 'y', {
+		const result = renderLineChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			missingMode: 'connect',
+		}, renderContext({ x: 'x', y: 'y' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
-			missingMode: 'connect',
-		});
+		}));
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('path.line-path-main').length).toBe(1);
 		expect(container.querySelectorAll('path.line-path-ghost').length).toBe(0);
@@ -40,10 +45,14 @@ describe('renderLineChart', () => {
 			{ d: new Date('2024-02-01'), y: 2 },
 			{ d: new Date('2024-03-01'), y: 3 },
 		];
-		const result = renderLineChart(container, rows, 'd', 'y', {
+		const result = renderLineChart(container, rows, {
+			x: 'd',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'd', y: 'y' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'date', y: 'number' },
-		});
+		}));
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('svg').length).toBe(1);
 	});
@@ -54,10 +63,14 @@ describe('renderLineChart', () => {
 			{ x: 1, y: null },
 			{ x: 2, y: 'oops' },
 		];
-		const result = renderLineChart(container, rows, 'x', 'y', {
+		const result = renderLineChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
-		});
+		}));
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-numeric');
 	});
@@ -69,11 +82,15 @@ describe('renderLineChart', () => {
 			{ x: 2, y: NaN },
 			{ x: 3, y: 30 },
 		];
-		const result = renderLineChart(container, rows, 'x', 'y', {
+		const result = renderLineChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			missingMode: 'interpolate',
+		}, renderContext({ x: 'x', y: 'y' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
-			missingMode: 'interpolate',
-		});
+		}));
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('path.line-path-main').length).toBe(1);
 		expect(container.querySelectorAll('path.line-path-ghost').length).toBe(1);
@@ -85,11 +102,15 @@ describe('renderLineChart', () => {
 			{ x: 1, y: 10 },
 			{ x: 2, y: 20 },
 		];
-		const result = renderLineChart(container, rows, 'x', 'y', {
+		const result = renderLineChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			showPoints: true,
+		}, renderContext({ x: 'x', y: 'y' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
-			showPoints: true,
-		});
+		}));
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('circle.line-point').length).toBe(2);
 	});
@@ -101,21 +122,43 @@ describe('renderLineChart', () => {
 			{ x: 1, y: 20 },
 			{ x: 2, y: 30 },
 		];
-		const result = renderLineChart(container, rows, 'x', 'y', {
+		const result = renderLineChart(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
-			axisTypes: { x: 'number', y: 'number' },
 			aggregateMode: 'mean',
 			showPoints: true,
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			axisTypes: { x: 'number', y: 'number' },
+		}));
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('circle.line-point').length).toBe(2);
 	});
 
 	it('returns invalid-args without container or column names', () => {
 		const container = document.getElementById('line');
-		expect(renderLineChart(null, [{ x: 1, y: 1 }], 'x', 'y', BASE_OPTIONS).ok).toBe(false);
-		expect(renderLineChart(container, [{ x: 1, y: 1 }], null, 'y', BASE_OPTIONS).ok).toBe(false);
-		expect(renderLineChart(container, [{ x: 1, y: 1 }], 'x', null, BASE_OPTIONS).ok).toBe(false);
+		expect(renderLineChart(null, [{ x: 1, y: 1 }], {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		})).ok).toBe(false);
+		expect(renderLineChart(container, [{ x: 1, y: 1 }], {
+			x: null,
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: null, y: 'y' }, {
+			...BASE_OPTIONS,
+		})).ok).toBe(false);
+		expect(renderLineChart(container, [{ x: 1, y: 1 }], {
+			x: 'x',
+			y: null,
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: null }, {
+			...BASE_OPTIONS,
+		})).ok).toBe(false);
 	});
 
 	it('honors custom title and axis labels', () => {
@@ -124,12 +167,16 @@ describe('renderLineChart', () => {
 			{ x: 1, y: 10 },
 			{ x: 2, y: 20 },
 		];
-		renderLineChart(container, rows, 'x', 'y', {
+		renderLineChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			customTitle: 'Trend',
+		}, renderContext({ x: 'x', y: 'y' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'number', y: 'number' },
-			customTitle: 'Trend',
 			axisLabels: { x: 'Day', y: 'Visits' },
-		});
+		}));
 		expect(container.textContent).toContain('Trend');
 		expect(container.textContent).toContain('Day');
 		expect(container.textContent).toContain('Visits');
@@ -138,15 +185,29 @@ describe('renderLineChart', () => {
 	it('returns failure for empty rows and for rows without usable X values', () => {
 		const container = document.getElementById('line');
 
-		expect(renderLineChart(container, [], 'x', 'y', BASE_OPTIONS).ok).toBe(false);
-		expect(renderLineChart(container, [{ x: '', y: 1 }, { x: null, y: 2 }], 'x', 'y', {
+		expect(renderLineChart(container, [], {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		})).ok).toBe(false);
+		expect(renderLineChart(container, [{ x: '', y: 1 }, { x: null, y: 2 }], {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'number' },
-		})).toEqual({ ok: false, reason: 'no-x-values' });
-		expect(renderLineChart(container, [{ d: 'not-a-date', y: 1 }], 'd', 'y', {
+		}))).toEqual({ ok: false, reason: 'no-x-values' });
+		expect(renderLineChart(container, [{ d: 'not-a-date', y: 1 }], {
+			x: 'd',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'd', y: 'y' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'date' },
-		})).toEqual({ ok: false, reason: 'no-x-values' });
+		}))).toEqual({ ok: false, reason: 'no-x-values' });
 	});
 
 	it('renders categorical axes, skips null categories, preserves order when sortX is false, and hides labels', () => {
@@ -158,13 +219,17 @@ describe('renderLineChart', () => {
 			{ bucket: 'Beta', y: 3 },
 		];
 
-		const result = renderLineChart(container, rows, 'bucket', 'y', {
+		const result = renderLineChart(container, rows, {
+			x: 'bucket',
+			y: 'y',
 			...BASE_OPTIONS,
 			sortX: false,
 			showXAxisLabel: false,
 			showYAxisLabel: false,
 			missingMode: 'gap',
-		});
+		}, renderContext({ x: 'bucket', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelector('svg')).not.toBeNull();
@@ -182,10 +247,14 @@ describe('renderLineChart', () => {
 			{ bucket: 'Gamma category', y: 2 },
 		];
 
-		const result = renderLineChart(container, rows, 'bucket', 'y', {
+		const result = renderLineChart(container, rows, {
+			x: 'bucket',
+			y: 'y',
 			...BASE_OPTIONS,
 			sortX: false,
-		});
+		}, renderContext({ x: 'bucket', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		const rotatedTicks = Array.from(container.querySelectorAll('.tick text'))
@@ -211,22 +280,30 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 30 },
 		];
 
-		const sum = renderLineChart(container, rows, 'x', 'y', {
+		const sum = renderLineChart(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
-			axisTypes: { x: 'numeric' },
 			aggregateMode: 'sum',
 			showPoints: true,
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			axisTypes: { x: 'numeric' },
+		}));
 		expect(sum.ok).toBe(true);
 		expect(container.querySelectorAll('circle.line-point')).toHaveLength(2);
 
 		container.innerHTML = '';
-		const count = renderLineChart(container, rows, 'x', 'y', {
+		const count = renderLineChart(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
-			axisTypes: { x: 'numeric' },
 			aggregateMode: 'count',
 			showPoints: true,
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			axisTypes: { x: 'numeric' },
+		}));
 		expect(count.ok).toBe(true);
 		expect(container.querySelectorAll('circle.line-point')).toHaveLength(2);
 	});
@@ -238,15 +315,19 @@ describe('renderLineChart', () => {
 			{ x: 5, y: 10 },
 		];
 
-		const result = renderLineChart(container, rows, 'x', 'y', {
+		const result = renderLineChart(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
-			axisTypes: { x: 'unknown' },
 			strokeWidth: 'bad',
 			color: 'bad',
 			ghostStrokeColor: 'bad',
 			chartHeight: 'bad',
 			showPoints: true,
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			axisTypes: { x: 'unknown' },
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelector('path.line-path-main').getAttribute('stroke')).toBe('#4e79a7');
@@ -261,16 +342,20 @@ describe('renderLineChart', () => {
 			{ x: 2, y: 20 },
 		];
 
-		const result = renderLineChart(container, rows, 'x', 'y', {
+		const result = renderLineChart(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
-			axisTypes: { x: 'number' },
 			strokeWidth: 99,
 			chartHeight: 1000,
 			color: '#123456',
 			showPoints: true,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			axisTypes: { x: 'number' },
 			axisLabels: { x: 'Day', y: 'Visits' },
 			locale: 'en-US',
-		});
+		}));
 
 		expect(result.ok).toBe(true);
 		const svg = container.querySelector('svg');
@@ -292,12 +377,16 @@ describe('renderLineChart', () => {
 		renderLineChart(container, [
 			{ d: '2024-01-01', y: 10 },
 			{ d: '2024-02-01', y: 20 },
-		], 'd', 'y', {
+		], {
+			x: 'd',
+			y: 'y',
+			...BASE_OPTIONS,
+			showPoints: true,
+		}, renderContext({ x: 'd', y: 'y' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'date' },
-			showPoints: true,
 			axisLabels: { x: 'When', y: 'Total' },
-		});
+		}));
 
 		const point = container.querySelector('circle.line-point');
 		point.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true, pageX: 20, pageY: 30 }));

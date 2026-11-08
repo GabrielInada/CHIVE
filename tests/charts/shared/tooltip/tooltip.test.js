@@ -10,9 +10,7 @@ describe('tooltip', () => {
 	let unpinTooltip;
 	let repositionPinnedTooltip;
 	let isTooltipPinned;
-	let createTooltipFilterAction;
 	let createTooltipActionGroup;
-	let createTooltipExcludeAction;
 	let createTooltipLine;
 	let createNamedActionGroup;
 	let showPinnedChartTooltip;
@@ -43,9 +41,7 @@ describe('tooltip', () => {
 		unpinTooltip = mod.unpinTooltip;
 		repositionPinnedTooltip = mod.repositionPinnedTooltip;
 		isTooltipPinned = mod.isTooltipPinned;
-		createTooltipFilterAction = mod.createTooltipFilterAction;
 		createTooltipActionGroup = mod.createTooltipActionGroup;
-		createTooltipExcludeAction = mod.createTooltipExcludeAction;
 		createTooltipLine = mod.createTooltipLine;
 		createNamedActionGroup = mod.createNamedActionGroup;
 		showPinnedChartTooltip = mod.showPinnedChartTooltip;
@@ -59,6 +55,8 @@ describe('tooltip', () => {
 	}
 
 	afterEach(() => {
+		hideChartTooltip();
+		vi.unstubAllGlobals();
 		Object.defineProperty(window, 'innerWidth', { value: originalInnerWidth, configurable: true });
 		Object.defineProperty(window, 'innerHeight', { value: originalInnerHeight, configurable: true });
 	});
@@ -78,16 +76,16 @@ describe('tooltip', () => {
 			'createFilterStateBadge',
 			'createNamedActionGroup',
 			'createTooltipActionGroup',
-			'createTooltipExcludeAction',
-			'createTooltipFilterAction',
 			'createTooltipLine',
 			'hideChartTooltip',
+			'hideHoverTooltip',
 			'isTooltipPinned',
 			'moveChartTooltip',
 			'pinTooltip',
 			'repositionPinnedTooltip',
 			'showChartTooltip',
 			'showPinnedChartTooltip',
+			'togglePinnedChartTooltip',
 			'unpinTooltip',
 		]);
 	});
@@ -276,25 +274,6 @@ describe('tooltip', () => {
 		expect(onDismiss).not.toHaveBeenCalled();
 	});
 
-	it('createTooltipFilterAction returns a button that invokes the supplied onClick', () => {
-		const calls = [];
-		const button = createTooltipFilterAction({
-			label: 'Add',
-			onClick: () => calls.push('clicked'),
-		});
-		expect(button.tagName).toBe('BUTTON');
-		expect(button.textContent).toBe('Add');
-		expect(button.className).toBe('chart-tooltip__action');
-
-		button.click();
-		expect(calls).toEqual(['clicked']);
-	});
-
-	it('createTooltipFilterAction is safe when no onClick is provided', () => {
-		const button = createTooltipFilterAction({ label: 'Add' });
-		expect(() => button.click()).not.toThrow();
-	});
-
 	it('createTooltipActionGroup renders multiple keyboard-focusable actions', () => {
 		const calls = [];
 		const group = createTooltipActionGroup([
@@ -309,12 +288,6 @@ describe('tooltip', () => {
 		group.querySelectorAll('button')[0].click();
 		group.querySelectorAll('button')[1].click();
 		expect(calls).toEqual(['focus', 'add']);
-	});
-
-	it('createTooltipExcludeAction returns a danger-variant button', () => {
-		const button = createTooltipExcludeAction({ label: 'Hide', onClick: () => {} });
-		expect(button.className).toContain('chart-tooltip__action');
-		expect(button.className).toContain('chart-tooltip__action--danger');
 	});
 
 	it('createTooltipActionGroup renders disabled buttons that do not invoke onClick', () => {
@@ -375,7 +348,7 @@ describe('tooltip', () => {
 	it('composes pinned shells for string, empty, and mixed action-set content', () => {
 		showPinnedChartTooltip('plain text', 10, 20);
 		let tooltip = document.querySelector('.chart-tooltip');
-		expect(tooltip.querySelector('.chart-tooltip__header')).toBeNull();
+		expect(tooltip.querySelector('.chart-tooltip__close')).not.toBeNull();
 		expect(tooltip.textContent).toContain('plain text');
 
 		const nodeGroup = createTooltipActionGroup([{ label: 'Do it', onClick: () => {} }]);
@@ -440,7 +413,8 @@ describe('tooltip', () => {
 	});
 
 	it('leaves Tab alone when a pinned tooltip has no focusable actions', () => {
-		showPinnedChartTooltip('No buttons', 100, 100, { headerTitle: 'Read-only' });
+		showChartTooltip('No buttons', 100, 100);
+		pinTooltip(null);
 
 		expect(() => document.dispatchEvent(new KeyboardEvent('keydown', {
 			key: 'Tab',

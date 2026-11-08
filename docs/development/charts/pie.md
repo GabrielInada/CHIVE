@@ -16,9 +16,13 @@ see [Architecture reference](../architecture-reference.md).
 Key files:
 
 - Renderer: [renderers/svg.js](../../../src/charts/pie/renderers/svg.js)
-- Sidebar controls: [builder.js](../../../src/charts/pie/controls/builder.js) and
-  [listeners.js](../../../src/charts/pie/controls/listeners.js); the activation defaults come
-  from the shared [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
+- Sidebar controls: [descriptions.js](../../../src/charts/pie/controls/descriptions.js), built
+  and wired by the shared
+  [describedControls.js](../../../src/charts/shared/controls/describedControls.js), with the
+  controls no shared widget covers in
+  [customControls.js](../../../src/charts/pie/controls/customControls.js); the activation
+  defaults come from the shared
+  [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
 - Sectors and options: [data.js](../../../src/charts/pie/data.js) (`computePieSectors`, the
   sectors as drawn) and [options.js](../../../src/charts/pie/options.js)
 - Chart definition and constants: [pie.js](../../../src/config/charts/definitions/pie.js) (`PIE_DEFINITION`, `PIE_CHART`)
@@ -184,18 +188,26 @@ uses these values as given. The unused `colorMode` key is not checked.
 
 ## 5. The control sidebar
 
-The controls package separates
-[`createPieChartControls`](../../../src/charts/pie/controls/builder.js) and
-[`setupPieChartControlListeners`](../../../src/charts/pie/controls/listeners.js) by role. The
-controls registry imports those two entry points directly and takes `computeDefaults` from
-the shared `categoryChartDefaults('pie')`
+The package's [descriptions.js](../../../src/charts/pie/controls/descriptions.js) declares
+every control once, as data (`PIE_CONTROLS`), and the controls sidebar builds them through the
+shared [describedControls.js](../../../src/charts/shared/controls/describedControls.js), which
+wires each control to the `ChartConfigWriter` as it creates it. The measure, value-column, and
+Top-N selects are the shared descriptions in
+[categoryControls.js](../../../src/charts/shared/controls/categoryControls.js), and the Reset
+Zoom button is the reset-zoom description pie shares with network, in
+[zoomControls.js](../../../src/charts/shared/controls/zoomControls.js). Three controls no
+shared widget covers are `custom` descriptions whose `build`, in
+[customControls.js](../../../src/charts/pie/controls/customControls.js), creates and wires
+them: the radius slider pair, the palette presets, and the per-slice color grid.
+`computeDefaults` is the shared `categoryChartDefaults('pie')`
 ([activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)).
 
 ### 5.1 The three sections
 
 1. **Data & aggregation** (expanded): category select, measure (count/sum), value-column
-   select, Top-N select, Top-N mode (other/truncate). The measure and Top-N selects list
-   `PIE_CHART.measureModes` and `PIE_CHART.topNOptions`.
+   select, Top-N select, Top-N mode (other/truncate). The measure, Top-N mode, and
+   label-position selects list the definition's `allowedValues`, and the Top-N select
+   `PIE_CHART.topNOptions`.
 2. **Display** (expanded): inner/outer radius sliders, pad-angle slider, zoom slider,
    category/value label toggles, legend toggle, title, label-position select, and a Reset
    Zoom button.
@@ -214,26 +226,31 @@ the shared `categoryChartDefaults('pie')`
   less, since a global filter can leave its total above 0. The Other sector is not a
   category, so it has no swatch.
 - Each swatch shows the color the chart draws that category with: `getPieSwatchColors` takes
-  the fills from `computePieSectors` over the globally filtered rows, the same function the
-  renderer draws from. A category the chart does not draw, because the global filter hides
+  the fills from `computePieSectors`, the same function the renderer draws from, over the rows
+  the chart draws. The controls sidebar hands the controls those rows from the shown dataset
+  (`ChartControlContext.rows`), so the grid and the chart never filter separately. A category the chart does not draw, because the global filter hides
   it, it falls past Top-N or its total is 0 or less, shows its override, or the grid's neutral
   gray when it has none.
 
-### 5.3 Listener wiring and cross-constraints
+### 5.3 Writes and cross-constraints
 
-Beyond the shared select/checkbox/text/color helpers, the pie has several custom listeners:
+Each described widget writes the way the shared builder defines it: selects, the text input,
+the sliders, and the toggles commit on `change`, and the base color input previews on `input`
+and commits on `change`. Beyond those:
 
-- **Measure**: the shared `setupMeasureListener` applies the value-column rule bar, pie,
-  treemap, and bubble share (`valueColumnForMeasure` in
-  [measure.js](../../../src/charts/shared/measure.js)):
-  switching to count keeps `valueColumn`, so switching back restores it, and switching to sum
-  keeps it while it is a numeric option and otherwise takes the first numeric column.
-  `computeDefaults` picks the value column by the same rule.
-- **Value column**: the shared `setupValueColumnListener` stores the chosen column only while
-  it is a visible numeric column, and `null` otherwise.
+- **Measure**: its `toPatch` applies the value-column rule bar, pie, treemap, and bubble share
+  (`valueColumnForMeasure` in [measure.js](../../../src/charts/shared/measure.js)) to the
+  config of the moment it changes: switching to count keeps `valueColumn`, so switching back
+  restores it, and switching to sum keeps it while it is a numeric option and otherwise takes
+  the first numeric column. `computeDefaults` picks the value column by the same rule.
+- **Value column**: stores the chosen column only while it is a visible numeric column, and
+  `null` otherwise.
 - **Inner/outer radius**: cross-constrained so the inner radius is always kept at least 8px
-  below the outer (adjusting one can clamp the other).
-- **Reset Zoom**: resets both the zoom slider DOM and `zoomScale` to the default.
+  below the outer (adjusting one can clamp the other). The two sliders are one custom
+  control, so each reads the other's position directly.
+- **Reset Zoom**: resets both the zoom slider and `zoomScale` to the default. The button
+  reaches the zoom slider through its build scope's `control(id)`, which only finds a control
+  built before it and throws otherwise.
 - **Palette presets**: map an N-color palette across the N sectors by writing
   `customSliceColors` for each (not a single gradient). A palette stays marked only while
   every sector keeps the color its button gave it.
@@ -250,8 +267,8 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
 The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
 block/container, hides+clears when disabled, sets the min-height to the height the chart is
 drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to `renderPieInto`
-in the shared presentation flow, which maps config (with localized labels including the
-`Other` label) and calls the renderer.
+in the shared presentation flow, which passes config unchanged and supplies localized
+labels (including `Other`) and runtime callbacks in the renderer context.
 On failure the presentation flow shows `chive-chart-empty-pie-sum` for `no-value-column` and `no-numeric`,
 `chive-chart-empty-no-positive-sum` for `no-positive-value`, else `chive-chart-empty-pie`.
 
@@ -267,7 +284,7 @@ message as the workspace, including saved previews and resized layout slots.
 ## 7. Inside `renderPieChart`
 
 [`renderPieChart`](../../../src/charts/pie/renderers/svg.js)
-`(container, rows, categoryColumn, options = {})` returns a `Result`.
+`(container, rows, config, context)` returns a `Result` and reads `config.category`.
 
 ### 7.1 Guard, options, aggregation
 
@@ -276,8 +293,9 @@ radii/pad-angle/zoom clamped to `PIE_CHART` bounds, height to 220 to 720, title 
 
 `computePieSectors` in [data.js](../../../src/charts/pie/data.js) then returns the sectors
 the renderer draws, in drawn order, each `{ key, label, token, value, color, isOther }`, plus
-their `total`. It reads the options through `normalizePieOptions` itself, so the saved config
-the color controls pass and the renderer's options bag give the same sectors. The shared
+their `total`. It accepts normalized options and separate labels: the renderer and the
+color controls each call `normalizePieOptions(config)` once before computing sectors, so
+both paths use the same bounds and colors without repeated normalization. The shared
 `aggregateCategories`
 ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)) aggregates
 count or sum per category; the measure is read as given, since chart config canonicalization
@@ -316,7 +334,7 @@ distinguishable. Each wedge has a white stroke. Hover shows a category/value/per
 tooltip; click pins the shared categorical filter-action tooltip (the bar doc's
 [section 7.6](bar.md)), except for a sector with no category token, which only the `Other`
 slice lacks: it pins a plain tooltip with no filter actions (it is an aggregate, not a real
-category). The pin is tracked by sector key, so clicking the pinned wedge again unpins
+category). The shared tooltip tracks the clicked wedge element, so clicking it again unpins
 it and clicking another wedge moves the pin.
 
 ### 7.5 Zoom, labels, and legend
@@ -431,8 +449,8 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   sequence (8% steps up to 9 slices, the alternating spread past 9) and its fallback.
 - [sectorValues.test.js](../../../tests/charts/pie/sectorValues.test.js) covers the color-grid
   category order and the swatch colors under a global filter and Top-N.
-- [controls.test.js](../../../tests/charts/pie/controls.test.js) covers control building, the
-  radius cross-constraint, and the per-slice color logic.
+- [controls.test.js](../../../tests/charts/pie/controls.test.js) covers the controls the
+  descriptions build, the radius cross-constraint, and the per-slice color logic.
 - [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
   checks through the workspace registry, for every chart, block visibility, the min height,
   the dispose contract, and the inputs each chart draws from.

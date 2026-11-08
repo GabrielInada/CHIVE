@@ -383,19 +383,18 @@ missing fields fall back to default).
 
 ## 5. The control sidebar
 
-The package's [controls directory](../../../src/charts/tin/controls/) builds the
-right-sidebar control group and wires every input to a config write. Its three
-role modules are registered in the
-[controls registry](../../../src/charts/registries/controls.js) under the
-`tin` entry and consumed by `chartControlsController.js`:
-
-- `createTinControls(dataset, numericOptions, allColumns)` builds the DOM.
-- `setupTinControlListeners(dataset, numericOptions, allColumns, onConfigChanged)` wires events.
-- `computeDefaults(dataset, ctx)` picks the first three distinct numeric columns for x/y/z when the chart is first enabled.
+The package's [descriptions.js](../../../src/charts/tin/controls/descriptions.js) declares
+every control once, as data (`TIN_CONTROLS`), and the controls sidebar builds them through the
+shared [describedControls.js](../../../src/charts/shared/controls/describedControls.js), which
+wires each control to the `ChartConfigWriter` as it creates it. The
+[controls registry](../../../src/charts/registries/controls.js) hands the descriptions to
+`chartControlsController.js` under the `tin` entry, with `computeDefaults`
+([activationDefaults.js](../../../src/charts/tin/controls/activationDefaults.js)), which picks
+the first three distinct numeric columns for x/y/z when the chart is first enabled.
 
 ### 5.1 The four sections
 
-`createTinControls` groups controls (via `groupControls`) into:
+The descriptions group the controls into:
 
 1. **Data** (expanded): the x, y, z column selects. Options are the numeric columns
    plus a "none" entry. The selects are numeric-only by design.
@@ -411,7 +410,7 @@ role modules are registered in the
 ### 5.2 Enable/disable cascade
 
 Controls disable themselves based on dependent state so the UI never offers a knob
-that does nothing. The pattern is a boolean passed as the `disabled` argument:
+that does nothing. Each such control's description has a `disabledWhen`:
 
 - Everything is disabled when `!config.enabled`.
 - The subdivision slider is also disabled when `fillMode === 'flat'` (flat mode has
@@ -425,29 +424,34 @@ that does nothing. The pattern is a boolean passed as the `disabled` argument:
   `showIsolineLabels`.
 - The threshold value/color/width are disabled unless `showThreshold`.
 
-### 5.3 Listener wiring and value clamping
+### 5.3 Writes and value clamping
 
-`setupTinControlListeners` uses the shared helpers in
-[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js):
+Each widget writes the way the shared builder defines it:
 
-- **Selects** (`setupSelectListeners`): x/y/z transform to `null` if the chosen
-  value is no longer a numeric column; `gradientDistribution`, `fillMode`,
-  `isolineMode`, and `colorRamp` are committed as chosen. Chart config canonicalization
-  checks them and `colorScheme` against `TIN_DEFINITION.allowedValues`.
-- **Checkboxes** (`setupCheckboxListeners`): store the boolean `checked` state.
-- **Sliders** (`setupSliderListener`): update the inline `<output>` on every
-  `input` (live tick display) but only write config on `change` (release).
-- **Number inputs** (`setupNumberInputListener`): write the parsed float on
-  `change`, falling back to the supplied default for garbage.
-- **Color inputs** (`setupColorInputListener`): the live-preview path, see section 10.
-- **Color presets** (`setupColorPresetListeners`): each palette button writes
-  `gradientMinColor` from palette index 0 and `gradientMaxColor` from index −1
-  (last), plus the palette name into `colorScheme`. A palette is marked only while
-  the ramp is `custom` and both gradient colors still hold it.
+- **Selects**: x/y/z are the axis description the TIN shares with the 3D scatter
+  ([axisControls.js](../../../src/charts/shared/controls/axisControls.js)); they store
+  `null` when the chosen value is not a numeric column. `fillMode`, `colorRamp`,
+  `gradientDistribution`, and `isolineMode` list `TIN_DEFINITION.allowedValues` and are
+  committed as chosen; chart config canonicalization checks them and `colorScheme` against
+  the same lists. A named ramp's option shows the ramp's own name (its `optionText`); only
+  the two-color ramp has a message.
+- **Checkboxes**: store the boolean `checked` state.
+- **Sliders**: update the inline `<output>` on every `input` (live tick display) but
+  only write config on `change` (release).
+- **Number inputs** (isoline step, threshold value): write the parsed float on
+  `change`, and the default for a value that is not a number. The isoline step shows
+  its default while the stored step is not positive, the threshold while the stored
+  value is not a finite number.
+- **Color inputs**: the live-preview path, see section 10.
+- **Palette**: each palette button writes `gradientMinColor` from palette index 0 and
+  `gradientMaxColor` from index −1 (last), plus the palette name into `colorScheme`.
+  A palette is marked only while the ramp is `custom` and both gradient colors still
+  hold it.
 
-Every write goes through `makeUpdater`, which merges the partial into
-`chartConfig.tin` and fires `onConfigChanged`. The renderer never reads the DOM
-controls; it only reads config that the listeners have written.
+Every write goes through the injected `ChartConfigWriter`: `commit` merges the patch
+into `chartConfig.tin` and emits, and `preview` merges it without emitting and
+repaints the chart. The renderer never reads the DOM controls; it only reads config
+that the controls have written.
 
 ---
 
@@ -468,10 +472,10 @@ same section routine for every chart:
    clamped to the definition's `heightLimits`, or the default height when it is not a
    number ([chartHeight.js](../../../src/charts/shared/chartHeight.js)).
 4. Hands the chart input to `renderTinInto` in
-   [presentation.js](../../../src/charts/tin/presentation.js), which maps every
-   `config.*` key into the renderer's options bag, including localized axis labels and
-   the current locale, and calls
-   `renderTinChart(container, rows, config.x, config.y, config.z, options)`.
+   [presentation.js](../../../src/charts/tin/presentation.js), which passes config
+   unchanged, supplies localized axis labels, locale and the application setting
+   `colorRenderingMode` in a separate context, and calls
+   `renderTinChart(container, rows, config, context)`.
 
 The presentation flow shows a localized empty-state message on either surface
 (`insufficient-points` gets a specific message; anything else a generic one).
@@ -493,7 +497,8 @@ lets the live preview skip re-rendering the panel (section 9.4 / 10).
 
 ## 7. Inside `renderTinChart`
 
-`renderTinChart(container, rows, xColumn, yColumn, zColumn, options = {})` is the
+`renderTinChart(container, rows, config, context)` reads `config.x`, `config.y` and
+`config.z` and normalizes visual settings once through `normalizeTinOptions`. It is the
 heart of the system. It returns a `Result`: `ok({ triangles, polygons })` on
 success or `fail(reason)` when it cannot draw. Here is the full pipeline in order.
 The mathematical justification for each step lives in section 2; this section is the
@@ -504,7 +509,7 @@ mechanics.
 - Returns `fail()` immediately if the container or any of the three column names is
   missing.
 - Reads `fillMode`, `colorRamp`, `gradientDistribution`, and `isolineMode` as given
-  after chart config canonicalization. The renderer-only `colorRenderingMode` still
+  after chart config canonicalization. The runtime `context.colorRenderingMode` still
   defaults to `'optimized'` unless it is `'full-ramp'`. Colors run through
   `normalizeColor` (valid `#RRGGBB` or fallback); numeric options are range-clamped;
   `chartHeight` is clamped to 220–900; isoline count/width/label size and threshold
@@ -870,8 +875,8 @@ config edits.
 The live preview is what makes a color drag feel responsive without rebuilding the
 whole sidebar (which would steal focus from the open picker).
 
-Two events are wired on each color input (`setupColorInputListener` in
-[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js)):
+Two events are wired on each color input (the `color` widget in
+[describedControls.js](../../../src/charts/shared/controls/describedControls.js)):
 
 - **`input`** (fires continuously while the picker is open): writes the new color
   through `normalizeActiveDatasetConfig` — a **non-emitting** facade that updates

@@ -1,183 +1,75 @@
 /**
  * Chart controls integration registry.
  *
- * Each entry adapts one chart's controls package to the shared manager
- * contract. This registry owns controls wiring only; it does not import
- * presentation flows, the other registries, state, or services.
+ * Each entry hands one chart's control descriptions and activation defaults
+ * to the controls sidebar, which builds and wires the controls through
+ * `charts/shared/controls/describedControls.js`. This registry owns controls
+ * wiring only; it does not import presentation flows, the other registries,
+ * state, or services.
  *
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
- * @typedef {import('../../types.js').ChartConfigWriter} ChartConfigWriter
+ * @typedef {import('../../types.js').ChartControlDescriptions} ChartControlDescriptions
  * @typedef {{
- *   build: (dataset: Dataset, context: ChartControlContext) => HTMLElement[],
- *   attachListeners: (dataset: Dataset, context: ChartControlContext, writer: ChartConfigWriter) => void,
+ *   controls: ChartControlDescriptions,
  *   computeDefaults: (dataset: Dataset, context: ChartControlContext) => Object
  * }} ChartControlAdapter
  */
 
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
 import { categoryChartDefaults } from '../shared/controls/activationDefaults.js';
-import { createBarChartControls } from '../bar/controls/builder.js';
-import { setupBarChartControlListeners } from '../bar/controls/listeners.js';
-import { createScatter3dControls } from '../scatter3d/controls/builder.js';
-import { setupScatter3dControlListeners } from '../scatter3d/controls/listeners.js';
+import { BAR_CONTROLS } from '../bar/controls/descriptions.js';
+import { SCATTER3D_CONTROLS } from '../scatter3d/controls/descriptions.js';
 import { computeDefaults as computeScatter3dDefaults } from '../scatter3d/controls/activationDefaults.js';
-import { createBubbleChartControls } from '../bubble/controls/builder.js';
-import { setupBubbleChartControlListeners } from '../bubble/controls/listeners.js';
-import { createLineChartControls } from '../line/controls/builder.js';
-import { setupLineChartControlListeners } from '../line/controls/listeners.js';
+import { BUBBLE_CONTROLS } from '../bubble/controls/descriptions.js';
+import { LINE_CONTROLS } from '../line/controls/descriptions.js';
 import { computeDefaults as computeLineDefaults } from '../line/controls/activationDefaults.js';
-import { createNetworkGraphControls } from '../network/controls/builder.js';
-import { setupNetworkGraphControlListeners } from '../network/controls/listeners.js';
+import { NETWORK_CONTROLS } from '../network/controls/descriptions.js';
 import { computeDefaults as computeNetworkDefaults } from '../network/controls/activationDefaults.js';
-import { createScatterPlotControls } from '../scatter/controls/builder.js';
-import { setupScatterPlotControlListeners } from '../scatter/controls/listeners.js';
+import { SCATTER_CONTROLS } from '../scatter/controls/descriptions.js';
 import { computeDefaults as computeScatterDefaults } from '../scatter/controls/activationDefaults.js';
-import { createPieChartControls } from '../pie/controls/builder.js';
-import { setupPieChartControlListeners } from '../pie/controls/listeners.js';
-import { createTreemapControls } from '../treemap/controls/builder.js';
-import { setupTreemapControlListeners } from '../treemap/controls/listeners.js';
-import { createTinControls } from '../tin/controls/builder.js';
-import { setupTinControlListeners } from '../tin/controls/listeners.js';
+import { PIE_CONTROLS } from '../pie/controls/descriptions.js';
+import { TREEMAP_CONTROLS } from '../treemap/controls/descriptions.js';
+import { TIN_CONTROLS } from '../tin/controls/descriptions.js';
 import { computeDefaults as computeTinDefaults } from '../tin/controls/activationDefaults.js';
 
 /** @type {Readonly<Object<ChartTypeKey, Readonly<ChartControlAdapter>>>} */
 const CONTROL_ADAPTERS = Object.freeze({
 	bar: Object.freeze({
-		build: (dataset, context) => createBarChartControls(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupBarChartControlListeners(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: BAR_CONTROLS,
 		computeDefaults: categoryChartDefaults('bar'),
 	}),
 	line: Object.freeze({
-		build: (dataset, context) => createLineChartControls(
-			dataset,
-			context.numeric,
-			context.dates,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupLineChartControlListeners(
-			dataset,
-			context.numeric,
-			context.dates,
-			context.allColumns,
-			writer,
-		),
+		controls: LINE_CONTROLS,
 		computeDefaults: computeLineDefaults,
 	}),
 	scatter: Object.freeze({
-		build: (dataset, context) => createScatterPlotControls(
-			dataset,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupScatterPlotControlListeners(
-			dataset,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: SCATTER_CONTROLS,
 		computeDefaults: computeScatterDefaults,
 	}),
 	scatter3d: Object.freeze({
-		build: (dataset, context) => createScatter3dControls(
-			dataset,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupScatter3dControlListeners(
-			dataset,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: SCATTER3D_CONTROLS,
 		computeDefaults: computeScatter3dDefaults,
 	}),
 	pie: Object.freeze({
-		build: (dataset, context) => createPieChartControls(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-		),
-		attachListeners: (dataset, context, writer) => setupPieChartControlListeners(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: PIE_CONTROLS,
 		computeDefaults: categoryChartDefaults('pie'),
 	}),
 	bubble: Object.freeze({
-		build: (dataset, context) => createBubbleChartControls(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupBubbleChartControlListeners(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: BUBBLE_CONTROLS,
 		computeDefaults: categoryChartDefaults('bubble'),
 	}),
 	network: Object.freeze({
-		build: (dataset, context) => createNetworkGraphControls(
-			dataset,
-			context.allColumns,
-			context.numeric,
-			context.categorical,
-		),
-		attachListeners: (dataset, context, writer) => setupNetworkGraphControlListeners(
-			dataset,
-			context.allColumns,
-			context.numeric,
-			writer,
-		),
+		controls: NETWORK_CONTROLS,
 		computeDefaults: computeNetworkDefaults,
 	}),
 	treemap: Object.freeze({
-		build: (dataset, context) => createTreemapControls(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupTreemapControlListeners(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: TREEMAP_CONTROLS,
 		computeDefaults: categoryChartDefaults('treemap'),
 	}),
 	tin: Object.freeze({
-		build: (dataset, context) => createTinControls(
-			dataset,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupTinControlListeners(
-			dataset,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: TIN_CONTROLS,
 		computeDefaults: computeTinDefaults,
 	}),
 });

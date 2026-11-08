@@ -2,16 +2,17 @@
  * CHIVE dataset controller.
  *
  * Public owner for dataset-workspace initialization, dataset selection and
- * removal, file-input DOM binding, and workflow feedback routing. Upload,
- * join, and preset loading are delegated to controller-internal workflows.
+ * removal, and file-input DOM binding. Upload, join and sample datasets are
+ * added by controller-internal workflows, which share one intake
+ * (`workflows/intake.js`) for progress, cancel and failure feedback.
  *
  * @typedef {import('../../types.js').Dataset} Dataset
+ * @typedef {import('../../types.js').Result} Result
  */
 
 import { t } from '../../services/i18nService.js';
-import { progressLabelForStage } from '../../services/dataIngestService.js';
 import { removeDataset, setActiveDataset, getAllDatasets } from '../../state/appState.js';
-import { showError, showFeedback, showProgress } from '../../ui/feedback.js';
+import { showError } from '../../ui/feedback.js';
 import { openConfirmDialog } from '../../ui/confirmDialog.js';
 import { FILE_IDS } from './domIds.js';
 import { uploadDatasetFiles } from './workflows/uploadDataset.js';
@@ -150,37 +151,15 @@ export function setupFileInputListeners() {
 }
 
 /**
- * Handle a join request from the dataset-list UI. Delegates to
- * {@link createJoinedDataset}; on success, activates the new dataset and shows a
- * success toast. Failures surface as error toasts with the translated message.
+ * Handle a join request from the dataset-list UI. The join workflow reports
+ * its own progress, failures and success, and selects the new dataset.
  * Re-render is driven by the `DATASET_ADDED` / `ACTIVE_DATASET` emits.
  *
  * @param {Object} spec - Forwarded to `createJoinedDataset`.
+ * @returns {Promise<Result>}
  */
 export async function handleJoinDatasetRequest(spec) {
-	const progress = showProgress(t('chive-progress-joining'));
-	const abortController = new AbortController();
-	progress.onCancel(() => abortController.abort());
-	const result = await createJoinedDataset(spec, {
-		confirm: confirmFn,
-		signal: abortController.signal,
-		onProgress: ({ stage, percent }) => {
-			progress.update(percent, progressLabelForStage(stage, ''));
-		},
-	});
-	if (!result?.ok) {
-		if (result?.reason === 'cancelled') {
-			progress.close();
-		} else {
-			progress.fail(result?.message || t('chive-join-error-generic'));
-		}
-		showError(result?.message || t('chive-join-error-generic'));
-		return;
-	}
-
-	progress.close();
-	selectDataset(result.index);
-	showFeedback(t('chive-join-success', [result.datasetName]));
+	return createJoinedDataset(spec, { confirm: confirmFn, selectDataset });
 }
 
 /**
@@ -189,10 +168,8 @@ export async function handleJoinDatasetRequest(spec) {
  * to avoid a circular dependency.
  *
  * @param {import('../../types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
- * @returns {Promise<void>}
+ * @returns {Promise<Result>}
  */
 export async function handlePresetDatasetRequest(preset) {
 	return loadPresetDataset(preset, { selectDataset });
 }
-
-export { createJoinedDataset } from './workflows/joinDatasets.js';

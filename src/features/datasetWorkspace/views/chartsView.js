@@ -1,66 +1,44 @@
 /**
  * Charts-tab controller.
  *
- * Decides which chart section to render (single-chart-at-a-time) and hands
- * every chart its input through the workspace registry, which shows or hides
- * each section.
+ * Draws the charts tab from the shown dataset: it decides which chart section
+ * renders (single-chart-at-a-time), builds the global filter actions the
+ * pinned tooltips offer, and hands every chart its input through the workspace
+ * registry, which shows or hides each section. The full render and live
+ * preview both call it, so they hand the charts the same inputs.
  * When the active tab is not `'charts'` (or no chart type is enabled), clears
  * every container and shows the empty state.
  *
- * @typedef {import('../../types.js').ChartConfig} ChartConfig
- * @typedef {import('../../types.js').ColumnSpec} ColumnSpec
+ * @typedef {import('../../../types.js').ChartConfig} ChartConfig
+ * @typedef {import('../../../types.js').ShownDataset} ShownDataset
  */
 
 import { t } from '../../../services/i18nService.js';
-import { mergeChartConfigWithDefaults } from '../../../domain/charts/chartConfig.js';
+import { getNumericColumns } from '../../../domain/datasets/columns.js';
 import { CHART_TYPE_KEYS } from '../../../config/charts/definitions.js';
 import { clearChartContainer } from '../../../charts/shared/containerLifecycle.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../charts/workspaceDomIds.js';
 import { renderWorkspaceChart } from '../../../charts/registries/workspace.js';
 import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
+import { createGlobalFilterActions } from '../filters/globalFilterActions.js';
 
 /**
- * Render the active chart into its container. Single-chart-at-a-time: if
- * the config has multiple enabled flags (legacy), the first one in
- * canonical order wins, the rest are coerced to disabled before render.
+ * Render the shown dataset's active chart into its container. Only the active
+ * chart draws: a legacy config with more than one chart enabled draws the
+ * first in canonical order, and the others render as disabled. The stored
+ * config is read, never changed.
  *
- * The `options` callbacks reach the charts' pinned tooltips as they are, with
- * the localized action labels added; the tooltips offer an action only when
- * its callback is a function.
+ * The pinned tooltips offer an action only when it has a callback, so
+ * without `onChartConfigChange` they offer lookups but no filter actions.
+ * Presentation supplies the text.
  *
- * @param {Partial<ChartConfig>} config
- * @param {Array<Object<string, *>>} rows - Rows to draw, already narrowed by the global filter (see `filterDataset`).
- * @param {ColumnSpec[]} visibleColumns
- * @param {ColumnSpec[]} visibleNumericColumns
- * @param {Object} [options]
- * @param {(column: string, token: string) => void} [options.onAddToGlobalFilter]
- * @param {(column: string, token: string) => void} [options.onFocusGlobalFilter]
- * @param {(column: string, token: string) => void} [options.onExcludeGlobalFilter]
- * @param {(column: string, token: string) => void} [options.onRemoveFromGlobalFilter]
- * @param {(column: string, token: string) => void} [options.onBringBackGlobalFilter]
- * @param {(column: string, token: string) => 'included' | 'excluded' | null} [options.getTokenFilterState]
- * @param {(column: string, token: string) => boolean} [options.isShowOnlyThisRedundant]
+ * @param {ShownDataset} shown
+ * @param {((partial: Partial<ChartConfig>) => void) | null} [onChartConfigChange] - Receives the global filter a tooltip action produces.
  * @returns {void}
  */
-export function renderCharts(config, rows, visibleColumns, visibleNumericColumns, options = {}) {
-	const filterCallbacks = {
-		...options,
-		filterActionLabels: {
-			focus: t('chive-tooltip-show-only-this'),
-			add: t('chive-tooltip-add-to-filter'),
-			exclude: t('chive-tooltip-exclude'),
-			remove: t('chive-tooltip-remove-from-filter'),
-			bringBack: t('chive-tooltip-bring-back'),
-			stateIncluded: t('chive-tooltip-state-included'),
-			stateExcluded: t('chive-tooltip-state-excluded'),
-			filterBySource: t('chive-tooltip-filter-by-source'),
-			filterByTarget: t('chive-tooltip-filter-by-target'),
-		},
-	};
-	const chartConfig = mergeChartConfigWithDefaults(config);
-	const columnTypeByName = Array.isArray(visibleColumns)
-		? Object.fromEntries(visibleColumns.map(column => [column?.name, column?.type]))
-		: {};
+export function renderCharts(shown, onChartConfigChange = null) {
+	const { dataset, rows, filter, visibleColumns, columnTypeByName, activeChartType } = shown;
+	const chartConfig = dataset.chartConfig;
 	const chartsGrid = document.getElementById(VIEW_IDS.chartsGrid);
 	const emptyState = document.getElementById(VIEW_IDS.chartsEmptyState);
 	const chartBlocks = CHART_TYPE_KEYS
@@ -75,7 +53,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 	document.getElementById(BADGE_IDS.charts).textContent = t(
 		'chive-charts-badge',
 		visibleColumns.length,
-		visibleNumericColumns.length
+		getNumericColumns(visibleColumns).length
 	);
 
 	if (chartConfig.activeTab !== 'charts') {
@@ -88,7 +66,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		return;
 	}
 
-	if (!CHART_TYPE_KEYS.some(type => chartConfig[type].enabled)) {
+	if (!activeChartType) {
 		chartsGrid.hidden = true;
 		emptyState.hidden = false;
 		emptyState.textContent = t('chive-chart-empty-none');
@@ -99,21 +77,20 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 		return;
 	}
 
-	// Single-chart-at-a-time: only the first enabled type renders. Legacy
-	// configs with multiple enabled flags converge to one on the next toggle.
-	const activeChartType = CHART_TYPE_KEYS.find(type => chartConfig[type].enabled) || null;
-	CHART_TYPE_KEYS.forEach(type => {
-		if (type !== activeChartType) {
-			chartConfig[type] = { ...chartConfig[type], enabled: false };
-		}
-	});
-
 	chartsGrid.hidden = false;
 	emptyState.hidden = true;
 
+	const filterCallbacks = createGlobalFilterActions({
+		globalFilter: chartConfig.globalFilter,
+		safeGlobalFilter: filter,
+		allColumnNames: dataset.columns.map(column => column.name),
+		onChartConfigChange,
+	});
+
 	for (const type of CHART_TYPE_KEYS) {
+		const config = chartConfig[type];
 		renderWorkspaceChart(type, {
-			config: chartConfig[type],
+			config: type === activeChartType || !config.enabled ? config : { ...config, enabled: false },
 			rows,
 			columnTypeByName,
 			filterCallbacks,

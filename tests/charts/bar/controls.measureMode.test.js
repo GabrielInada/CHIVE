@@ -1,20 +1,11 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const mocks = vi.hoisted(() => ({
-	t: vi.fn(key => key),
-}));
-
-vi.mock('../../../src/services/i18nService.js', () => ({
-	t: mocks.t,
-}));
-
-import { createBarChartControls } from '../../../src/charts/bar/controls/builder.js';
-import { setupBarChartControlListeners } from '../../../src/charts/bar/controls/listeners.js';
+import { BAR_CONTROLS } from '../../../src/charts/bar/controls/descriptions.js';
+import { buildDescribedControls } from '../../../src/charts/shared/controls/describedControls.js';
 
 /**
- * Writer test double. The listeners' contract is that they hand the right
+ * Writer test double. The controls' contract is that they hand the right
  * patch to the writer; merging it into state, firing onConfigChanged, and
  * live-rendering are the adapter's contract and are covered by
  * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
@@ -49,45 +40,42 @@ function createDataset(measureMode = 'count', valueColumn = null) {
 	};
 }
 
+const CONTEXT = {
+	baseCategoricalOrAll: ['categoria'],
+	categorical: ['categoria'],
+	numeric: ['valor', 'peso'],
+	allColumns: ['categoria', 'valor', 'peso'],
+	dates: [],
+	rows: [],
+};
+
 describe('barControls measure mode', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('emits measure/value updates and keeps the value column when switching back to count', () => {
 		const dataset = createDataset('count', null);
-		const controls = createBarChartControls(dataset, ['categoria'], ['valor', 'peso']);
-		controls.forEach(control => document.body.appendChild(control));
-
 		const writer = createWriter();
-		setupBarChartControlListeners(dataset, ['categoria'], ['valor', 'peso'], [], writer);
+		document.body.replaceChildren(...buildDescribedControls(BAR_CONTROLS, { dataset, context: CONTEXT, writer, translate: key => key }));
 
 		const measureSelect = document.getElementById('viz-select-bar-measure');
 		const valueSelect = document.getElementById('viz-select-bar-value-column');
 
 		measureSelect.value = 'sum';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
-				measureMode: 'sum',
-				valueColumn: 'valor',
-			}));
+		expect(writer.commit).toHaveBeenLastCalledWith({ measureMode: 'sum', valueColumn: 'valor' });
 
 		dataset.chartConfig.bar.measureMode = 'sum';
 		dataset.chartConfig.bar.valueColumn = 'valor';
 		valueSelect.value = 'peso';
 		valueSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
-				valueColumn: 'peso',
-			}));
+		expect(writer.commit).toHaveBeenLastCalledWith({ valueColumn: 'peso' });
 
 		dataset.chartConfig.bar.valueColumn = 'peso';
 		measureSelect.value = 'count';
 		measureSelect.dispatchEvent(new Event('change', { bubbles: true }));
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({
-				measureMode: 'count',
-				valueColumn: 'peso',
-			}));
+		expect(writer.commit).toHaveBeenLastCalledWith({ measureMode: 'count', valueColumn: 'peso' });
 
 		dataset.chartConfig.bar.measureMode = 'count';
 		measureSelect.value = 'mean';

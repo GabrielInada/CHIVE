@@ -1,25 +1,14 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const mocks = vi.hoisted(() => ({
-	t: vi.fn(key => key),
-}));
-
-vi.mock('../../../src/services/i18nService.js', () => ({
-	t: mocks.t,
-}));
-
-import {
-	createTinControls,
-} from '../../../src/charts/tin/controls/builder.js';
-import { setupTinControlListeners } from '../../../src/charts/tin/controls/listeners.js';
+import { TIN_CONTROLS } from '../../../src/charts/tin/controls/descriptions.js';
 import { computeDefaults } from '../../../src/charts/tin/controls/activationDefaults.js';
+import { buildDescribedControls } from '../../../src/charts/shared/controls/describedControls.js';
 import { COLOR_PRESETS } from '../../../src/charts/shared/controls/factories.js';
-import { TIN_DEFINITION } from '../../../src/config/charts/definitions/tin.js';
+import { TIN_CHART, TIN_DEFINITION } from '../../../src/config/charts/definitions/tin.js';
 
 /**
- * Writer test double. The listeners' contract is that they hand the right
+ * Writer test double. The controls' contract is that they hand the right
  * patch to the writer; merging it into state, firing onConfigChanged, and
  * live-rendering are the adapter's contract and are covered by
  * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
@@ -29,15 +18,14 @@ function createWriter() {
 }
 
 describe('TIN controls module boundaries', () => {
-	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
-		const [builder, listeners, defaults] = await Promise.all([
-			import('../../../src/charts/tin/controls/builder.js'),
-			import('../../../src/charts/tin/controls/listeners.js'),
+	it('declares its controls as descriptions, with no builder or listener module', async () => {
+		const [descriptions, defaults] = await Promise.all([
+			import('../../../src/charts/tin/controls/descriptions.js'),
 			import('../../../src/charts/tin/controls/activationDefaults.js'),
 		]);
-		expect(Object.keys(builder)).toEqual(['createTinControls']);
-		expect(Object.keys(listeners)).toEqual(['setupTinControlListeners']);
+		expect(Object.keys(descriptions)).toEqual(['TIN_CONTROLS']);
 		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
+		expect(TIN_CONTROLS.definition).toBe(TIN_DEFINITION);
 	});
 });
 
@@ -90,8 +78,26 @@ function createDataset(overrides = {}) {
 	};
 }
 
-function appendControls(controls) {
-	controls.forEach(control => document.body.appendChild(control));
+function createContext({ numeric = ['lon', 'lat', 'elev'], categorical = ['name'] } = {}) {
+	const allColumns = [...numeric, ...categorical];
+	return {
+		allColumns,
+		numeric,
+		categorical,
+		baseCategoricalOrAll: categorical.length > 0 ? categorical : allColumns,
+		dates: [],
+		rows: [],
+	};
+}
+
+function buildControls(dataset, writer = createWriter(), context = createContext(), translate = key => key) {
+	return buildDescribedControls(TIN_CONTROLS, { dataset, context, writer, translate });
+}
+
+/** Build the controls into the document, as the sidebar does after each commit. */
+function mountControls(dataset, writer = createWriter(), context = createContext(), translate = undefined) {
+	document.body.replaceChildren(...buildControls(dataset, writer, context, translate));
+	return writer;
 }
 
 function changeSelect(id, value) {
@@ -103,19 +109,22 @@ function changeSelect(id, value) {
 	select.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function lastTinConfig(writer) {
+function changeInput(id, value) {
+	const input = document.getElementById(id);
+	input.value = value;
+	input.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function lastConfig(writer) {
 	return writer.commit.mock.calls.at(-1)[0];
 }
 
-/** Rebuild and rewire the controls, as the sidebar does after each commit. */
-function mountControls(dataset, writer) {
-	document.body.innerHTML = '';
-	appendControls(createTinControls(dataset, ['lon', 'lat', 'elev'], []));
-	setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
+function applyLastCommit(dataset, writer) {
+	Object.assign(dataset.chartConfig.tin, lastConfig(writer));
 }
 
-function applyLastCommit(dataset, writer) {
-	Object.assign(dataset.chartConfig.tin, lastTinConfig(writer));
+function presetButton(name) {
+	return document.querySelector(`button[data-color-preset-control="viz-tin-color-preset"][data-preset-name="${name}"]`);
 }
 
 function markedPresets() {
@@ -124,15 +133,16 @@ function markedPresets() {
 		.map(button => button.dataset.presetName);
 }
 
+const byId = id => document.getElementById(id);
+const optionValues = id => Array.from(byId(id).options, option => option.value);
+
 describe('tinControls UI structure', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('matches the section and control-order structure snapshot', () => {
-		const dataset = createDataset();
-		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], ['lon', 'lat', 'elev', 'name']);
+		const controls = buildControls(createDataset());
 
 		const structure = controls.map(section => {
 			const content = section.querySelector('.chart-section-content');
@@ -154,53 +164,152 @@ describe('tinControls UI structure', () => {
 	});
 
 	it('offers only numeric columns plus the none option for x/y/z', () => {
-		const dataset = createDataset();
-		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], ['lon', 'lat', 'elev', 'name']);
-		appendControls(controls);
+		mountControls(createDataset());
 
-		const xValues = Array.from(document.getElementById('viz-select-tin-x').options).map(o => o.value);
-		expect(xValues).toEqual(['', 'lon', 'lat', 'elev']);
+		for (const axis of ['x', 'y', 'z']) {
+			expect(optionValues(`viz-select-tin-${axis}`)).toEqual(['', 'lon', 'lat', 'elev']);
+		}
+	});
+
+	it('offers the fill modes, ramps, distributions and isoline modes the TIN definition lists', () => {
+		mountControls(createDataset());
+
+		expect(optionValues('viz-select-tin-fill-mode')).toEqual(TIN_DEFINITION.allowedValues.fillMode);
+		expect(optionValues('viz-select-tin-color-ramp')).toEqual(TIN_DEFINITION.allowedValues.colorRamp);
+		expect(optionValues('viz-select-tin-gradient-distribution')).toEqual(TIN_DEFINITION.allowedValues.gradientDistribution);
+		expect(optionValues('viz-select-tin-isoline-mode')).toEqual(TIN_DEFINITION.allowedValues.isolineMode);
+	});
+
+	it('names each named ramp by itself and translates only the two-color ramp', () => {
+		const translate = key => `[${key}]`;
+		mountControls(createDataset(), createWriter(), createContext(), translate);
+
+		expect(Array.from(byId('viz-select-tin-color-ramp').options, option => option.textContent)).toEqual([
+			'[chive-chart-color-ramp-custom]',
+			'Viridis',
+			'Plasma',
+			'Magma',
+			'Inferno',
+			'Turbo',
+			'Terrain',
+			'Grays',
+		]);
+	});
+
+	it('shows "None" for any falsy axis, even beside columns named "0" and "false"', () => {
+		mountControls(createDataset({ x: 0, y: false, z: 'elev' }), createWriter(), createContext({ numeric: ['0', 'false', 'elev'] }));
+
+		expect(byId('viz-select-tin-x').selectedIndex).toBe(0);
+		expect(byId('viz-select-tin-y').selectedIndex).toBe(0);
+		expect(byId('viz-select-tin-z').value).toBe('elev');
 	});
 
 	it('disables the subdivision slider when fillMode is flat', () => {
-		const flatDataset = createDataset({ fillMode: 'flat' });
-		const flatControls = createTinControls(flatDataset, ['lon', 'lat', 'elev'], []);
-		appendControls(flatControls);
-		expect(document.getElementById('viz-slider-tin-subdivision').disabled).toBe(true);
+		mountControls(createDataset({ fillMode: 'flat' }));
+		expect(byId('viz-slider-tin-subdivision').disabled).toBe(true);
 
-		document.body.innerHTML = '';
-		const smoothDataset = createDataset({ fillMode: 'smooth' });
-		const smoothControls = createTinControls(smoothDataset, ['lon', 'lat', 'elev'], []);
-		appendControls(smoothControls);
-		expect(document.getElementById('viz-slider-tin-subdivision').disabled).toBe(false);
+		mountControls(createDataset({ fillMode: 'smooth' }));
+		expect(byId('viz-slider-tin-subdivision').disabled).toBe(false);
 	});
 
-	it('disables the custom-gradient color inputs when colorRamp is a named preset', () => {
-		const namedDataset = createDataset({ colorRamp: 'viridis' });
-		const namedControls = createTinControls(namedDataset, ['lon', 'lat', 'elev'], []);
-		appendControls(namedControls);
-		expect(document.getElementById('viz-input-tin-gradient-min').disabled).toBe(true);
-		expect(document.getElementById('viz-input-tin-gradient-max').disabled).toBe(true);
+	it('disables the custom-ramp gradient colors and palette while a named ramp draws the surface', () => {
+		mountControls(createDataset({ colorRamp: 'viridis' }));
+		expect(byId('viz-input-tin-gradient-min').disabled).toBe(true);
+		expect(byId('viz-input-tin-gradient-max').disabled).toBe(true);
+		expect(presetButton('Bold').disabled).toBe(true);
 
-		document.body.innerHTML = '';
-		const customDataset = createDataset({ colorRamp: 'custom' });
-		const customControls = createTinControls(customDataset, ['lon', 'lat', 'elev'], []);
-		appendControls(customControls);
-		expect(document.getElementById('viz-input-tin-gradient-min').disabled).toBe(false);
-		expect(document.getElementById('viz-input-tin-gradient-max').disabled).toBe(false);
+		mountControls(createDataset({ colorRamp: 'custom' }));
+		expect(byId('viz-input-tin-gradient-min').disabled).toBe(false);
+		expect(byId('viz-input-tin-gradient-max').disabled).toBe(false);
+		expect(presetButton('Bold').disabled).toBe(false);
 	});
 
-	it('disables isoline subordinate controls when isolines are off', () => {
-		const offDataset = createDataset({ showIsolines: false });
-		const offControls = createTinControls(offDataset, ['lon', 'lat', 'elev'], []);
-		appendControls(offControls);
-		expect(document.getElementById('viz-select-tin-isoline-mode').disabled).toBe(true);
-		expect(document.getElementById('viz-slider-tin-isoline-count').disabled).toBe(true);
-		expect(document.getElementById('viz-slider-tin-isoline-width').disabled).toBe(true);
+	it('disables each overlay setting while its overlay is off', () => {
+		mountControls(createDataset({ showEdges: false, showPoints: false, showHull: false, showIsolines: false, showThreshold: false }));
+
+		for (const id of [
+			'viz-input-tin-edge-color',
+			'viz-slider-tin-point-radius',
+			'viz-input-tin-hull-color',
+			'viz-select-tin-isoline-mode',
+			'viz-slider-tin-isoline-count',
+			'viz-input-tin-isoline-step',
+			'viz-input-tin-isoline-color',
+			'viz-slider-tin-isoline-width',
+			'viz-toggle-tin-color-isolines-by-z',
+			'viz-input-tin-isoline-min-color',
+			'viz-input-tin-isoline-max-color',
+			'viz-toggle-tin-isoline-labels',
+			'viz-slider-tin-isoline-label-size',
+			'viz-input-tin-isoline-label-color',
+			'viz-input-tin-threshold-value',
+			'viz-input-tin-threshold-color',
+			'viz-slider-tin-threshold-width',
+		]) {
+			expect(byId(id).disabled, id).toBe(true);
+		}
+	});
+
+	it.each([
+		[{ isolineMode: 'count', colorIsolinesByZ: false, showIsolineLabels: false }, { count: false, step: true, color: false, minMax: true, label: true }],
+		[{ isolineMode: 'step', colorIsolinesByZ: true, showIsolineLabels: true }, { count: true, step: false, color: true, minMax: false, label: false }],
+	])('with isolines on and %o, disables %o', (overrides, disabled) => {
+		mountControls(createDataset({ showIsolines: true, ...overrides }));
+
+		expect(byId('viz-slider-tin-isoline-count').disabled).toBe(disabled.count);
+		expect(byId('viz-input-tin-isoline-step').disabled).toBe(disabled.step);
+		expect(byId('viz-input-tin-isoline-color').disabled).toBe(disabled.color);
+		expect(byId('viz-input-tin-isoline-min-color').disabled).toBe(disabled.minMax);
+		expect(byId('viz-input-tin-isoline-max-color').disabled).toBe(disabled.minMax);
+		expect(byId('viz-slider-tin-isoline-label-size').disabled).toBe(disabled.label);
+		expect(byId('viz-input-tin-isoline-label-color').disabled).toBe(disabled.label);
+	});
+
+	it('shows the default isoline step for one that is not positive, and the default threshold for one that is not a number', () => {
+		mountControls(createDataset({ isolineStep: 2.5, thresholdValue: '-3' }));
+		expect(byId('viz-input-tin-isoline-step').value).toBe('2.5');
+		expect(byId('viz-input-tin-threshold-value').value).toBe('-3');
+
+		for (const isolineStep of [0, -2, 'bad', 'Infinity', null]) {
+			mountControls(createDataset({ isolineStep }));
+			expect(byId('viz-input-tin-isoline-step').value, String(isolineStep)).toBe(String(TIN_CHART.defaultIsolineStep));
+		}
+		for (const thresholdValue of ['bad', 'Infinity', undefined]) {
+			mountControls(createDataset({ thresholdValue }));
+			expect(byId('viz-input-tin-threshold-value').value, String(thresholdValue)).toBe(String(TIN_CHART.defaultThresholdValue));
+		}
+	});
+
+	it.each([
+		['viz-slider-tin-subdivision', TIN_CHART.minSubdivisionDepth, TIN_CHART.maxSubdivisionDepth, 1],
+		['viz-slider-tin-point-radius', 1, 8, 1],
+		['viz-slider-tin-isoline-count', TIN_CHART.minIsolineCount, TIN_CHART.maxIsolineCount, 1],
+		['viz-slider-tin-isoline-width', TIN_CHART.minIsolineWidth, TIN_CHART.maxIsolineWidth, 0.1],
+		['viz-slider-tin-isoline-label-size', TIN_CHART.minIsolineLabelSize, TIN_CHART.maxIsolineLabelSize, 1],
+		['viz-slider-tin-threshold-width', TIN_CHART.minThresholdWidth, TIN_CHART.maxThresholdWidth, 0.1],
+	])('gives %s the range min %s, max %s, step %s', (id, min, max, step) => {
+		mountControls(createDataset());
+
+		expect([byId(id).min, byId(id).max, byId(id).step]).toEqual([min, max, step].map(String));
+	});
+
+	it('shows the default point radius for a radius of 0', () => {
+		mountControls(createDataset({ pointRadius: 0 }));
+
+		expect(byId('viz-slider-tin-point-radius').value).toBe(String(TIN_CHART.defaultPointRadius));
+	});
+
+	it('lets the isoline step take any positive decimal and the threshold any decimal', () => {
+		mountControls(createDataset());
+
+		expect(byId('viz-input-tin-isoline-step').min).toBe('0');
+		expect(byId('viz-input-tin-isoline-step').step).toBe('any');
+		expect(byId('viz-input-tin-threshold-value').hasAttribute('min')).toBe(false);
+		expect(byId('viz-input-tin-threshold-value').step).toBe('any');
 	});
 
 	it('falls back invalid options and disables all controls when chart is off', () => {
-		const dataset = createDataset({
+		mountControls(createDataset({
 			enabled: false,
 			x: null,
 			y: null,
@@ -221,157 +330,153 @@ describe('tinControls UI structure', () => {
 			showIsolineLabels: true,
 			showThreshold: true,
 			thresholdValue: 'bad',
-		});
+		}));
 
-		appendControls(createTinControls(dataset, ['lon', 'lat', 'elev'], []));
-
-		expect(document.getElementById('viz-select-tin-x').value).toBe('');
-		expect(document.getElementById('viz-select-tin-fill-mode').value).toBe('smooth');
-		expect(document.getElementById('viz-select-tin-color-ramp').value).toBe('custom');
+		expect(byId('viz-select-tin-x').value).toBe('');
+		expect(byId('viz-select-tin-fill-mode').value).toBe('smooth');
+		expect(byId('viz-select-tin-color-ramp').value).toBe('custom');
 		// An empty colorScheme falls back to no palette: the gradient colors are not a palette's.
 		expect(markedPresets()).toEqual([]);
-		expect(document.getElementById('viz-select-tin-gradient-distribution').value).toBe('value');
-		expect(document.getElementById('viz-slider-tin-subdivision').disabled).toBe(true);
-		expect(document.getElementById('viz-input-tin-edge-color').disabled).toBe(true);
-		expect(document.getElementById('viz-slider-tin-point-radius').disabled).toBe(true);
-		expect(document.getElementById('viz-input-tin-hull-color').disabled).toBe(true);
-		expect(document.getElementById('viz-input-tin-isoline-color').disabled).toBe(true);
-		expect(document.getElementById('viz-input-tin-isoline-min-color').disabled).toBe(true);
-		expect(document.getElementById('viz-slider-tin-isoline-label-size').disabled).toBe(true);
-		expect(document.getElementById('viz-input-tin-threshold-value').disabled).toBe(true);
+		expect(byId('viz-select-tin-gradient-distribution').value).toBe('value');
+		expect(byId('viz-slider-tin-subdivision').value).toBe(String(TIN_CHART.defaultSubdivisionDepth));
+		const states = [...document.querySelectorAll('.chart-section-content :is(select, input, button)')].map(element => element.disabled);
+		// 35 selects and inputs, and the palette buttons.
+		expect(states).toHaveLength(35 + Object.keys(COLOR_PRESETS).length);
+		expect(states.every(Boolean)).toBe(true);
 	});
 });
 
-describe('tinControls listeners', () => {
+describe('tinControls writes', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
-	it('coerces the fillMode select to smooth or flat through the transform', () => {
-		const dataset = createDataset();
-		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], []);
-		appendControls(controls);
+	it('writes the fill mode, color ramp and isoline mode', () => {
+		const writer = mountControls(createDataset({ showIsolines: true }));
 
-		const writer = createWriter();
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
-
-		const select = document.getElementById('viz-select-tin-fill-mode');
-		select.value = 'flat';
-		select.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ fillMode: 'flat' }));
-		expect(writer.commit).toHaveBeenCalledTimes(1);
+		changeSelect('viz-select-tin-fill-mode', 'flat');
+		expect(lastConfig(writer)).toEqual({ fillMode: 'flat' });
+		changeSelect('viz-select-tin-color-ramp', 'viridis');
+		expect(lastConfig(writer)).toEqual({ colorRamp: 'viridis' });
+		changeSelect('viz-select-tin-isoline-mode', 'step');
+		expect(lastConfig(writer)).toEqual({ isolineMode: 'step' });
+		expect(writer.commit).toHaveBeenCalledTimes(3);
 	});
 
-	it('rejects a non-numeric x column by transforming the value to null', () => {
-		const dataset = createDataset();
-		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], []);
-		appendControls(controls);
+	it('writes axis picks clamped to the numeric columns, null for none or a forged option', () => {
+		const writer = mountControls(createDataset());
 
-		const writer = createWriter();
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
-
-		const select = document.getElementById('viz-select-tin-x');
-		select.value = '';
-		select.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ x: null }));
-	});
-
-	it('commits a recognized colorRamp preset through the facade', () => {
-		const dataset = createDataset({ colorRamp: 'custom' });
-		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], []);
-		appendControls(controls);
-
-		const writer = createWriter();
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
-
-		const select = document.getElementById('viz-select-tin-color-ramp');
-		select.value = 'viridis';
-		select.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ colorRamp: 'viridis' }));
-	});
-
-	it('color preset button maps the palette extremes to gradient min and max', () => {
-		const dataset = createDataset();
-		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], []);
-		appendControls(controls);
-
-		const writer = createWriter();
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
-
-		const bold = document.querySelector('button[data-color-preset-control="viz-tin-color-preset"][data-preset-name="Bold"]');
-		expect(bold).not.toBeNull();
-		bold.click();
-
-		expect(writer.commit).toHaveBeenCalledTimes(1);
-		const call = writer.commit.mock.calls[0][0];
-		expect(call.colorScheme).toBe('Bold');
-		expect(call.gradientMinColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-		expect(call.gradientMaxColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-		expect(call.gradientMinColor).not.toBe(call.gradientMaxColor);
-	});
-
-	it('toggling showIsolines commits the boolean through the facade', () => {
-		const dataset = createDataset({ showIsolines: false });
-		const controls = createTinControls(dataset, ['lon', 'lat', 'elev'], []);
-		appendControls(controls);
-
-		const writer = createWriter();
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
-
-		const toggle = document.getElementById('viz-toggle-tin-isolines');
-		toggle.checked = true;
-		toggle.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ showIsolines: true }));
-	});
-
-	it('commits forged enums as chosen and checks column selections', () => {
-		const dataset = createDataset();
-		appendControls(createTinControls(dataset, ['lon', 'lat', 'elev'], []));
-		const writer = createWriter();
-		setupTinControlListeners(dataset, ['lon', 'lat', 'elev'], [], writer);
-
+		changeSelect('viz-select-tin-x', '');
+		expect(lastConfig(writer)).toEqual({ x: null });
 		changeSelect('viz-select-tin-y', 'not-numeric');
-		expect(lastTinConfig(writer).y).toBeNull();
-
+		expect(lastConfig(writer)).toEqual({ y: null });
 		changeSelect('viz-select-tin-z', 'elev');
-		expect(lastTinConfig(writer).z).toBe('elev');
+		expect(lastConfig(writer)).toEqual({ z: 'elev' });
+	});
+
+	// The commit canonicalizes forged enumerated values.
+	it('commits forged enumerated selections as chosen', () => {
+		const writer = mountControls(createDataset());
 
 		changeSelect('viz-select-tin-gradient-distribution', 'bogus');
-		// The commit canonicalizes forged enumerated values.
-		expect(lastTinConfig(writer).gradientDistribution).toBe('bogus');
-
+		expect(lastConfig(writer)).toEqual({ gradientDistribution: 'bogus' });
 		changeSelect('viz-select-tin-fill-mode', 'bogus');
-		expect(lastTinConfig(writer).fillMode).toBe('bogus');
-
+		expect(lastConfig(writer)).toEqual({ fillMode: 'bogus' });
 		changeSelect('viz-select-tin-isoline-mode', 'bogus');
-		expect(lastTinConfig(writer).isolineMode).toBe('bogus');
-
+		expect(lastConfig(writer)).toEqual({ isolineMode: 'bogus' });
 		changeSelect('viz-select-tin-color-ramp', 'bogus');
-		expect(lastTinConfig(writer).colorRamp).toBe('bogus');
+		expect(lastConfig(writer)).toEqual({ colorRamp: 'bogus' });
 	});
 
-	it('still wires listeners when controls are absent', () => {
-		const dataset = createDataset();
-		const writer = createWriter();
-		expect(() => setupTinControlListeners(dataset, ['lon'], [], writer)).not.toThrow();
+	it('copies a palette\'s extremes into the gradient colors', () => {
+		const writer = mountControls(createDataset());
+
+		presetButton('Bold').click();
+
+		expect(writer.commit).toHaveBeenCalledTimes(1);
+		expect(lastConfig(writer)).toEqual({
+			colorScheme: 'Bold',
+			gradientMinColor: COLOR_PRESETS.Bold[0],
+			gradientMaxColor: COLOR_PRESETS.Bold.at(-1),
+		});
+	});
+
+	it.each([
+		['viz-toggle-tin-x-label', 'showXAxisLabel', false],
+		['viz-toggle-tin-edges', 'showEdges', false],
+		['viz-toggle-tin-hull', 'showHull', true],
+		['viz-toggle-tin-isolines', 'showIsolines', true],
+		['viz-toggle-tin-threshold', 'showThreshold', true],
+	])('commits %s as %s', (id, key, checked) => {
+		const writer = mountControls(createDataset({ showIsolines: false }));
+
+		byId(id).click();
+
+		expect(writer.commit).toHaveBeenCalledWith({ [key]: checked });
+	});
+
+	it('commits a typed isoline step or threshold as a number, and the default for one that is not a number', () => {
+		const writer = mountControls(createDataset({ showIsolines: true, isolineMode: 'step', showThreshold: true }));
+
+		changeInput('viz-input-tin-isoline-step', '2.5');
+		expect(lastConfig(writer)).toEqual({ isolineStep: 2.5 });
+		changeInput('viz-input-tin-isoline-step', '');
+		expect(lastConfig(writer)).toEqual({ isolineStep: TIN_CHART.defaultIsolineStep });
+		changeInput('viz-input-tin-threshold-value', '-7.25');
+		expect(lastConfig(writer)).toEqual({ thresholdValue: -7.25 });
+		changeInput('viz-input-tin-threshold-value', 'abc');
+		expect(lastConfig(writer)).toEqual({ thresholdValue: TIN_CHART.defaultThresholdValue });
+	});
+
+	it('writes no isoline step while it is typed', () => {
+		const writer = mountControls(createDataset({ showIsolines: true, isolineMode: 'step' }));
+		const input = byId('viz-input-tin-isoline-step');
+
+		input.value = '3';
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+
 		expect(writer.commit).not.toHaveBeenCalled();
+		expect(writer.preview).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		['viz-slider-tin-subdivision', 'subdivisionDepth', '2', 2],
+		['viz-slider-tin-point-radius', 'pointRadius', '6', 6],
+		['viz-slider-tin-isoline-count', 'isolineCount', '12', 12],
+		['viz-slider-tin-isoline-width', 'isolineWidth', '1.7', 1.7],
+		['viz-slider-tin-isoline-label-size', 'isolineLabelSize', '13', 13],
+		['viz-slider-tin-threshold-width', 'thresholdWidth', '3.3', 3.3],
+	])('commits the %s slider as a number', (id, key, value, stored) => {
+		const writer = mountControls(createDataset());
+
+		changeInput(id, value);
+
+		expect(writer.commit).toHaveBeenCalledWith({ [key]: stored });
+	});
+
+	it('previews an overlay color while the picker is open and commits its fallback for an invalid one', () => {
+		const writer = mountControls(createDataset({ showThreshold: true }));
+		const input = byId('viz-input-tin-threshold-color');
+
+		input.value = '#123456';
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(writer.preview).toHaveBeenCalledWith({ thresholdColor: '#123456' });
+
+		input.type = 'text';
+		input.value = 'not-a-color';
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig(writer)).toEqual({ thresholdColor: TIN_CHART.defaultThresholdColor });
 	});
 });
 
 describe('tinControls color palette mark', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('marks no palette on a new chart', () => {
 		const { colorRamp, colorScheme, gradientMinColor, gradientMaxColor } = TIN_DEFINITION.createDefaultConfig();
-		mountControls(createDataset({ colorRamp, colorScheme, gradientMinColor, gradientMaxColor }), createWriter());
+		mountControls(createDataset({ colorRamp, colorScheme, gradientMinColor, gradientMaxColor }));
 
 		expect(markedPresets()).toEqual([]);
 	});
@@ -381,12 +486,12 @@ describe('tinControls color palette mark', () => {
 		const writer = createWriter();
 		mountControls(dataset, writer);
 
-		document.querySelector('button[data-color-preset-control="viz-tin-color-preset"][data-preset-name="Bold"]').click();
+		presetButton('Bold').click();
 		applyLastCommit(dataset, writer);
 		mountControls(dataset, writer);
 		expect(markedPresets()).toEqual(['Bold']);
 
-		const maxInput = document.getElementById('viz-input-tin-gradient-max');
+		const maxInput = byId('viz-input-tin-gradient-max');
 		maxInput.value = '#ffffff';
 		maxInput.dispatchEvent(new Event('change'));
 		applyLastCommit(dataset, writer);
@@ -399,7 +504,7 @@ describe('tinControls color palette mark', () => {
 			colorRamp: 'viridis',
 			gradientMinColor: COLOR_PRESETS.Bold[0],
 			gradientMaxColor: COLOR_PRESETS.Bold.at(-1),
-		}), createWriter());
+		}));
 
 		expect(markedPresets()).toEqual([]);
 	});

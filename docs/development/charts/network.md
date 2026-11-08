@@ -20,8 +20,9 @@ Key files (the `src/charts/network/` package):
 - Renderer: [renderers/svg.js](../../../src/charts/network/renderers/svg.js)
 - Graph model derivation: [data.js](../../../src/charts/network/data.js)
 - Shared presentation flow: [presentation.js](../../../src/charts/network/presentation.js)
-- Sidebar controls: [controls/builder.js](../../../src/charts/network/controls/builder.js),
-  [controls/listeners.js](../../../src/charts/network/controls/listeners.js),
+- Sidebar controls: [controls/descriptions.js](../../../src/charts/network/controls/descriptions.js),
+  built and wired by the shared
+  [describedControls.js](../../../src/charts/shared/controls/describedControls.js), and
   [controls/activationDefaults.js](../../../src/charts/network/controls/activationDefaults.js)
 - Chart definition and constants: [network.js](../../../src/config/charts/definitions/network.js) (`NETWORK_DEFINITION`, `NETWORK_GRAPH`)
 - Per-dataset config defaults: [network.js](../../../src/config/charts/definitions/network.js) (the definition's fresh `network` factory)
@@ -180,9 +181,12 @@ alpha-decay clamp (`minAlphaDecay: 0.01`, `maxAlphaDecay: 0.2`).
 
 ## 5. The control sidebar
 
-The controls trio under [controls/](../../../src/charts/network/controls) builds four sections
-via the standard `createNetworkGraphControls` (builder.js) /
-`setupNetworkGraphControlListeners` (listeners.js) / `computeDefaults` (activationDefaults.js) exports.
+The package's [descriptions.js](../../../src/charts/network/controls/descriptions.js) declares
+every control once, as data (`NETWORK_CONTROLS`), and the controls sidebar builds them through
+the shared [describedControls.js](../../../src/charts/shared/controls/describedControls.js),
+which wires each control to the `ChartConfigWriter` as it creates it.
+[activationDefaults.js](../../../src/charts/network/controls/activationDefaults.js) supplies
+`computeDefaults`.
 
 ### 5.1 The four sections
 
@@ -193,13 +197,17 @@ via the standard `createNetworkGraphControls` (builder.js) /
    mode (gradient/uniform), and the color-preset palette.
 4. **Advanced** (collapsed): the physics knobs, charge strength and alpha decay.
 
-### 5.2 Enable/disable and wiring
+### 5.2 Enable/disable and writes
 
-Everything is disabled when `!config.enabled`. The selects, checkboxes, sliders, color inputs,
-title, and presets use the shared helpers. Two custom pieces: the Reset Zoom button resets the
-zoom slider DOM and commits `zoomScale` back to its default through the shared
-`commitChartConfigPatch` adapter (the package never writes state directly); the color-preset
-buttons map `sourceNodeColor` to palette index 0 and `targetNodeColor` to index 1
+Everything is disabled when `!config.enabled`. Each widget writes the way the shared builder
+defines it: the selects, the title, the sliders, and the toggles commit on `change`, and the
+node color inputs preview on `input` and commit on `change`. The source and target selects
+store the chosen column, the empty string for "None"; weight and group store `null` for
+"None". The edge color mode lists `NETWORK_DEFINITION.allowedValues.edgeColorMode`. The Reset
+Zoom button is the reset-zoom description network shares with pie
+([zoomControls.js](../../../src/charts/shared/controls/zoomControls.js)): it puts the zoom
+slider back and commits `zoomScale` at its default. The palette buttons copy palette position
+0 into `sourceNodeColor` and position 1 into `targetNodeColor`
 (`NETWORK_GRAPH.presetColorKeys`), and a palette is marked only while both still hold its
 colors.
 `computeDefaults` picks the first two visible columns as source and target.
@@ -217,9 +225,9 @@ The [workspace registry](../../../src/charts/registries/workspace.js) resolves t
 block/container, hides+clears when disabled, sets the min-height to the height the chart is
 drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to
 `renderNetworkInto` in [presentation.js](../../../src/charts/network/presentation.js),
-which maps config into the options bag (note `weight`/`group` map to
-`weightColumn`/`groupColumn`, and the source/target column names are also passed as
-`sourceColumn`/`targetColumn` for the filter tooltips) and calls `renderNetworkGraph`. Any
+which passes config unchanged and supplies localized text, callbacks and render-budget
+approval in a separate context to `renderNetworkGraph`. Its options module reads the stored
+`weight` and `group` keys; filter tooltips use `config.source` and `config.target`. Any
 ordinary failure shows the single `chive-chart-empty-network` message through the
 presentation flow, in both the workspace and Panel. The render-budget approval notice
 keeps its own existing handling.
@@ -234,13 +242,15 @@ the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same
 
 ## 7. Inside `renderNetworkGraph`
 
-`renderNetworkGraph(container, rows, sourceColumn, targetColumn, options = {})` returns a
+`renderNetworkGraph(container, rows, config, context)` reads `config.source` and
+`config.target` and returns a
 result. The pipeline:
 
 ### 7.1 Guard, options, and graph construction
 
 Returns `fail()` if the container or either endpoint column is missing. Options are clamped to
-safe locals (forces and zoom to their `NETWORK_GRAPH` bounds; colors validated; height to 220
+safe locals by `normalizeNetworkOptions(config)` in [options.js](../../../src/charts/network/options.js)
+(forces and zoom to their `NETWORK_GRAPH` bounds; colors validated; height to 220
 to 720; title to 80 chars). `buildNetworkData` scans the rows into a node `Map` (keyed by id,
 remembering the first group seen) and a links array (each with a positive weight, defaulting
 to 1). If no nodes or links survive, `fail('insufficient-data')`.
@@ -352,8 +362,9 @@ All under [tests/charts/network/](../../../tests/charts/network):
 - [data.test.js](../../../tests/charts/network/data.test.js) covers `buildNetworkData`, and
   [renderEquivalence.test.js](../../../tests/charts/network/renderEquivalence.test.js) pins
   the stable rendered structure across option combinations.
-- [controls.test.js](../../../tests/charts/network/controls.test.js) covers control building,
-  the reset-zoom and preset listeners, and the module boundaries.
+- [controls.test.js](../../../tests/charts/network/controls.test.js) builds the controls from
+  their descriptions and covers the column selects, the slider writes, Reset Zoom, the palette,
+  and the module boundaries.
 - [presentation.test.js](../../../tests/charts/network/presentation.test.js) covers the
   render-budget notice: an over-budget graph draws nothing until the user approves it.
 - [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js) and

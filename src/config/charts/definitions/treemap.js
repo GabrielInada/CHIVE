@@ -11,7 +11,6 @@ export const TREEMAP_CHART = {
   defaultMeasureMode: 'count',
   topNOptions: [0, 10, 20, 50],
   defaultTopN: 20,
-  paddingOptions: [1, 2, 4],
   defaultPadding: 2,
 	colorModes: ['scheme', 'uniform'],
   // Config key -> palette position for the color palette buttons.

@@ -6,15 +6,16 @@
  * modes:
  *
  * - **Hover**, `showChartTooltip` + `moveChartTooltip` track the cursor.
- * - **Pinned**, `showPinnedChartTooltip` (or `pinTooltip` after a hover)
+ * - **Pinned**, `togglePinnedChartTooltip` identifies the clicked chart mark;
+ *   `showPinnedChartTooltip` (or `pinTooltip` after a hover)
  *   sticks the tooltip in place, traps Tab focus, and listens for Escape /
  *   outside-click to dismiss.
  *
  * The pinned shell renders a header with optional title + close button,
  * the chart-provided content, an optional filter-state badge, and grouped
  * action buttons. Charts that offer global-filter actions pin through
- * `showPinnedFilterTooltip` in `filterActions.js`, which builds the badge and
- * the actions and calls {@link showPinnedChartTooltip}.
+ * `togglePinnedFilterTooltip` in `filterActions.js`, which builds the badge and
+ * the actions and calls {@link togglePinnedChartTooltip}.
  *
  * This module owns the overlay singleton and its lifecycle. The DOM builders
  * live in `content.js` (re-exported below so the public surface stays a
@@ -37,8 +38,6 @@ export {
 	createFilterStateBadge,
 	createNamedActionGroup,
 	createTooltipActionGroup,
-	createTooltipExcludeAction,
-	createTooltipFilterAction,
 	createTooltipLine,
 } from './content.js';
 
@@ -46,6 +45,7 @@ const TOOLTIP_OFFSET = 12;
 const VIEWPORT_PADDING = 8;
 
 let tooltipEl;
+let pinnedTarget = null;
 let pinnedAnchor = null;
 let pinnedDismissHandler = null;
 let pinnedKeydownHandler = null;
@@ -71,6 +71,7 @@ function onViewportResize() {
  */
 function ensureTooltip() {
 	if (tooltipEl && tooltipEl.isConnected) return tooltipEl;
+	if (tooltipEl) hideChartTooltip();
 
 	tooltipEl = document.createElement('div');
 	tooltipEl.className = BASE_CLASS;
@@ -88,6 +89,7 @@ function ensureTooltip() {
 /** @private */
 function clearPinState(el) {
 	el.classList.remove(PINNED_CLASS);
+	pinnedTarget = null;
 	pinnedAnchor = null;
 	if (pinnedKeydownHandler) {
 		document.removeEventListener('keydown', pinnedKeydownHandler, true);
@@ -109,12 +111,12 @@ function clearPinState(el) {
 export function hideChartTooltip() {
 	if (!tooltipEl) return;
 	clearPinState(tooltipEl);
+	if (positionFrame !== null) {
+		window.cancelAnimationFrame(positionFrame);
+		positionFrame = null;
+	}
 	if (tooltipEl.isConnected) {
 		tooltipEl.hidden = true;
-		if (positionFrame !== null) {
-			window.cancelAnimationFrame(positionFrame);
-			positionFrame = null;
-		}
 	} else {
 		// Node was removed by a full-page re-render; drop the ref so the next
 		// ensureTooltip() recreates and re-attaches it.
@@ -122,10 +124,15 @@ export function hideChartTooltip() {
 	}
 }
 
+/** Hide hover content without dismissing a pin, including one in another chart. */
+export function hideHoverTooltip() {
+	if (!isTooltipPinned()) hideChartTooltip();
+}
+
 /**
  * Show the tooltip with `content` at viewport coordinates `(x, y)`. The
  * content may be a DOM Node (replaces children) or a string
- * (`textContent`).
+ * (`textContent`). Hover never replaces a pinned tooltip.
  *
  * @param {Node | string} content
  * @param {number} x
@@ -133,6 +140,11 @@ export function hideChartTooltip() {
  * @returns {void}
  */
 export function showChartTooltip(content, x, y) {
+	if (isTooltipPinned()) return;
+	showTooltip(content, x, y);
+}
+
+function showTooltip(content, x, y) {
 	const el = ensureTooltip();
 	if (content instanceof Node) {
 		el.replaceChildren(content);
@@ -141,20 +153,25 @@ export function showChartTooltip(content, x, y) {
 	}
 	measurementDirty = true;
 	el.hidden = false;
-	moveChartTooltip(x, y);
+	setTooltipPosition(x, y);
 }
 
 /**
- * Reposition the (already-shown) tooltip to viewport `(x, y)` with
+ * Reposition the (already-shown) hover tooltip to viewport `(x, y)` with
  * automatic viewport clamping: flips to the opposite side when it would
  * overflow right/bottom, then clamps to viewport padding so the tooltip
- * is always fully visible.
+ * is always fully visible. Pins move only through `repositionPinnedTooltip`.
  *
  * @param {number} x
  * @param {number} y
  * @returns {void}
  */
 export function moveChartTooltip(x, y) {
+	if (isTooltipPinned()) return;
+	setTooltipPosition(x, y);
+}
+
+function setTooltipPosition(x, y) {
 	ensureTooltip();
 	latestPosition = { x, y };
 	schedulePositionWrite();
@@ -208,20 +225,15 @@ function getFocusableActions() {
 }
 
 /**
- * Invoke the registered dismiss handler if any; otherwise hide the
- * tooltip outright. The handler is cleared before invocation to prevent
- * recursive dismissal.
+ * Hide the tooltip before notifying a dismiss handler, so callers never
+ * have to synchronize pin state or remove document listeners.
  *
  * @private
  */
 function dismissPinned() {
-	if (typeof pinnedDismissHandler === 'function') {
-		const fn = pinnedDismissHandler;
-		pinnedDismissHandler = null;
-		fn();
-		return;
-	}
+	const onDismiss = pinnedDismissHandler;
 	hideChartTooltip();
+	if (typeof onDismiss === 'function') onDismiss();
 }
 
 /**
@@ -260,6 +272,9 @@ function attachPinnedListeners() {
 	pinnedDocClickHandler = (event) => {
 		if (!tooltipEl) return;
 		if (tooltipEl.contains(event.target)) return;
+		// Let the mark's click toggle its pin. Clearing on mousedown would
+		// make that click reopen it; a network-node drag also keeps its anchor.
+		if (pinnedTarget?.contains(event.target)) return;
 		dismissPinned();
 	};
 	document.addEventListener('mousedown', pinnedDocClickHandler, true);
@@ -272,19 +287,18 @@ function attachPinnedListeners() {
  *
  * @param {(() => { x: number, y: number }) | null} anchor - Returns the desired pinned coordinates; used by {@link repositionPinnedTooltip} when the chart re-flows.
  * @param {Object} [options]
- * @param {() => void} [options.onDismiss] - Replaces the default `hideChartTooltip` dismissal.
+ * @param {Element} [options.target] - The chart mark that owns this pin, unique across Panel slots.
+ * @param {() => void} [options.onDismiss] - Notified after dismissal.
  * @param {boolean} [options.autoFocus=true] - Set to `false` to keep current focus.
  * @returns {void}
  */
 export function pinTooltip(anchor, options = {}) {
 	const el = ensureTooltip();
+	clearPinState(el);
 	el.classList.add(PINNED_CLASS);
+	pinnedTarget = options.target || null;
 	pinnedAnchor = typeof anchor === 'function' ? anchor : null;
 
-	if (pinnedKeydownHandler) document.removeEventListener('keydown', pinnedKeydownHandler, true);
-	if (pinnedDocClickHandler) document.removeEventListener('mousedown', pinnedDocClickHandler, true);
-	pinnedKeydownHandler = null;
-	pinnedDocClickHandler = null;
 	pinnedDismissHandler = typeof options.onDismiss === 'function' ? options.onDismiss : null;
 
 	attachPinnedListeners();
@@ -317,10 +331,10 @@ export function unpinTooltip() {
  * @returns {void}
  */
 export function repositionPinnedTooltip() {
-	if (!pinnedAnchor) return;
+	if (!isTooltipPinned() || !pinnedAnchor) return;
 	const point = pinnedAnchor();
 	if (!point || typeof point.x !== 'number' || typeof point.y !== 'number') return;
-	moveChartTooltip(point.x, point.y);
+	setTooltipPosition(point.x, point.y);
 }
 
 /**
@@ -329,19 +343,44 @@ export function repositionPinnedTooltip() {
  * @returns {boolean}
  */
 export function isTooltipPinned() {
+	if (tooltipEl && (!tooltipEl.isConnected || (pinnedTarget && !pinnedTarget.isConnected))) {
+		hideChartTooltip();
+	}
 	return !!tooltipEl && tooltipEl.classList.contains(PINNED_CLASS);
 }
 
 /**
+ * Toggle the pin for `options.target`, the clicked SVG mark. Its DOM identity
+ * distinguishes categories, hierarchy nodes and point indices across charts
+ * and Panel slots without a second copy of pin state in each renderer.
+ * A different mark replaces the current pin.
+ *
+ * @param {Node | string} content
+ * @param {number} x
+ * @param {number} y
+ * @param {Object} options - Pinned shell options.
+ * @param {Element} options.target - The clicked chart mark.
+ * @returns {void}
+ */
+export function togglePinnedChartTooltip(content, x, y, options) {
+	if (isTooltipPinned() && pinnedTarget === options.target) {
+		dismissPinned();
+		return;
+	}
+	showPinnedChartTooltip(content, x, y, options);
+}
+
+/**
  * Show a pinned tooltip at `(x, y)`: builds the shell + applies pin state
- * in one call. Most charts call this directly after a click rather than
- * combining `showChartTooltip` + `pinTooltip`.
+ * in one call. Click-to-toggle callers use `togglePinnedChartTooltip`, which
+ * delegates here when a different mark is clicked.
  *
  * @param {Node | string} content
  * @param {number} x
  * @param {number} y
  * @param {Object} [options]
  * @param {string} [options.headerTitle]
+ * @param {Element} [options.target]
  * @param {() => void} [options.onDismiss]
  * @param {() => { x: number, y: number }} [options.anchor]
  * @param {Array<Node>} [options.actionSets]
@@ -357,6 +396,7 @@ export function showPinnedChartTooltip(content, x, y, options = {}) {
 		actionSets,
 		stateBadge,
 		closeLabel,
+		target,
 	} = options;
 	const shell = buildPinnedShell({
 		headerTitle,
@@ -364,8 +404,8 @@ export function showPinnedChartTooltip(content, x, y, options = {}) {
 		actionSets,
 		stateBadge,
 		closeLabel,
-		onDismiss,
+		onDismiss: dismissPinned,
 	});
-	showChartTooltip(shell, x, y);
-	pinTooltip(anchor || null, { onDismiss });
+	showTooltip(shell, x, y);
+	pinTooltip(anchor || null, { onDismiss, target });
 }

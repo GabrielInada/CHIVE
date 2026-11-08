@@ -112,7 +112,7 @@ const FORBIDDEN_IMPORTS = [
 	['src/charts/registries/workspace.js', "import '../../ui/feedback.js';", 'workspace registry bans ui/'],
 	['src/charts/registries/panel.js', "import '../../ui/feedback.js';", 'panel registry bans ui/'],
 	['src/charts/bar/presentation.js', "import '../../ui/feedback.js';", 'chart integration files ban ui/'],
-	['src/charts/bar/controls/listeners.js', "import '../../../ui/feedback.js';", 'control listeners ban ui/'],
+	['src/charts/scatter/controls/descriptions.js', "import '../../../services/i18nService.js';", 'chart controls ban services/'],
 	['src/features/datasetWorkspace/datasetController.js', "import 'd3';", 'features block restated BARE_IMPORT_BANS'],
 	['src/ui/feedback.js', "import 'd3';", 'ui block restated BARE_IMPORT_BANS'],
 	['src/features/settings/settingsDialog.js', "import 'd3';", 'B2d restated BARE_IMPORT_BANS'],
@@ -140,7 +140,8 @@ const ALLOWED_IMPORTS = [
 	['src/domain/charts/chartConfig.js', "import '../../config/charts/defaults.js';", 'domain may use config defaults'],
 	['src/state/dataStateFacade.js', "import '../config/charts/definitions.js';", 'state may use chart definitions'],
 	['src/charts/pie/data.js', "import '../../domain/filters/chartFilter.js';", 'chart leaves may use domain filter rules'],
-	['src/charts/bubble/controls/listeners.js', "import '../../../domain/datasets/columns.js';", 'control listeners may use domain dataset rules'],
+	['src/charts/bar/presentation.js', "import '../../services/i18nService.js';", 'presentation flows may use i18n'],
+	['src/charts/bubble/controls/customControls.js', "import '../../../domain/datasets/columns.js';", 'chart controls may use domain dataset rules'],
 	['src/features/panel/slots/lifecycle.js', "import '../../../charts/shared/containerLifecycle.js';", 'features may use shared chart infrastructure'],
 	['src/app/bindings/projectTransfer.js', "import '../../services/downloads/bytes.js';", 'app may use browser-effecting services'],
 ];

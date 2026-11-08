@@ -13,6 +13,7 @@
  * fixed rows, and fixed ISO date strings for the date x-kind.
  */
 
+import { renderContext } from '../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderLineChart } from '../../../src/charts/line/renderers/svg.js';
 import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
@@ -38,7 +39,15 @@ function makeContainer() {
 
 function render(options, rows = ROWS_NUM) {
 	const container = makeContainer();
-	const result = renderLineChart(container, rows, 'x', 'y', { ...BASE, ...options });
+	const result = renderLineChart(container, rows, {
+		x: 'x',
+		y: 'y',
+		...BASE,
+		...options,
+	}, renderContext({ x: 'x', y: 'y' }, {
+		...BASE,
+		...options,
+	}));
 	const svg = container.querySelector('svg');
 	return { html: svg?.outerHTML ?? container.innerHTML, result };
 }

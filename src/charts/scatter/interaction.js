@@ -3,9 +3,8 @@
  *
  * Builds the hover-tooltip content and the click-to-pin tooltip, which offers
  * the shared global-filter actions for each categorical axis. The
- * pinned-state bookkeeping (`pinnedIndex`) and circle event wiring stay in
- * the renderer; these closures are stateless with respect to it. DOM is built
- * with `textContent`/`appendChild` and the shared tooltip builders, never with
+ * shared tooltip owns pin identity; the renderer only wires circle events.
+ * DOM is built with `textContent`/`appendChild` and the shared tooltip builders, never with
  * string markup. Used by `renderers/svg.js`.
  */
 
@@ -13,7 +12,7 @@ import {
 	createTooltipLine,
 	showChartTooltip,
 } from '../shared/tooltip/tooltip.js';
-import { showPinnedFilterTooltip } from '../shared/tooltip/filterActions.js';
+import { togglePinnedFilterTooltip } from '../shared/tooltip/filterActions.js';
 import { formatNumber } from '../../utils/formatters.js';
 import { AXIS_TYPE_VALUES } from './axisHelpers.js';
 
@@ -27,9 +26,9 @@ import { AXIS_TYPE_VALUES } from './axisHelpers.js';
  * @param {string|undefined} params.locale - Number-format locale.
  * @param {(key: string) => string} params.categoryLabel - Text shown for a category key.
  * @param {Object} params.filterCallbacks - Click-to-filter callback bag.
- * @param {?string} params.xFilterColumn - X filter column name (from the options bag).
- * @param {?string} params.yFilterColumn - Y filter column name (from the options bag).
- * @returns {{ showTooltip: (event: Object, point: Object) => void, showPinnedTooltip: (event: Object, point: Object, onDismiss: Function) => void }}
+ * @param {?string} params.xFilterColumn - X filter column name (from stored config).
+ * @param {?string} params.yFilterColumn - Y filter column name (from stored config).
+ * @returns {{ showTooltip: (event: Object, point: Object) => void, togglePinnedTooltip: (event: Object, point: Object) => void }}
  */
 export function createScatterInteractions({
 	axisTypes,
@@ -66,7 +65,7 @@ export function createScatterInteractions({
 		showChartTooltip(buildTooltipContent(point), event.pageX, event.pageY);
 	};
 
-	const showPinnedTooltip = (event, point, onDismiss) => {
+	const togglePinnedTooltip = (event, point) => {
 		const categories = [];
 		if (axisTypes.x === AXIS_TYPE_VALUES.categorical) {
 			categories.push({ column: xFilterColumn, token: point.xCategoryToken, heading: `${axisLabels.x}` });
@@ -81,14 +80,15 @@ export function createScatterInteractions({
 				? categoryLabel(point.yCategory)
 				: '';
 
-		showPinnedFilterTooltip(buildTooltipContent(point), event.pageX, event.pageY, {
+		togglePinnedFilterTooltip(buildTooltipContent(point), event.pageX, event.pageY, {
 			headerTitle,
 			closeLabel: labels.close,
-			onDismiss,
+			filterActionLabels: labels.filterActions,
+			target: event.target,
 			filterCallbacks,
 			categories,
 		});
 	};
 
-	return { showTooltip, showPinnedTooltip };
+	return { showTooltip, togglePinnedTooltip };
 }

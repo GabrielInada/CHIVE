@@ -13,6 +13,11 @@ each column gets its type and decimal separator, and every cell its canonical
 form.
 _Avoid_: process, normalize, import
 
+**Intake**:
+Adding a new dataset from a file, a join or a sample dataset: Ingest, plus the
+progress toast, cancel, row-limit question and failure messages around it.
+_Avoid_: upload flow, loading workflow
+
 **Decimal separator**:
 The character, dot or comma, that a column's text numbers put before their
 fraction. Each column has its own, fixed at ingest.

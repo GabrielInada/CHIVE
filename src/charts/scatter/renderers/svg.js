@@ -14,7 +14,7 @@
  */
 
 import { axisBottom, axisLeft } from '../../../../vendor/d3/d3.js';
-import { hideChartTooltip, moveChartTooltip } from '../../shared/tooltip/tooltip.js';
+import { hideChartTooltip, hideHoverTooltip, moveChartTooltip } from '../../shared/tooltip/tooltip.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { ok, fail } from '../../../utils/result.js';
 import {
@@ -42,21 +42,23 @@ import { createScatterInteractions } from '../interaction.js';
  * Render a scatter plot into `container`. Returns `ok()` on success, or
  * `fail()` when required arguments are missing or no points resolve.
  *
- * Common option keys: `xScale`/`yScale` ('linear' | 'log'), `radius`,
+ * Common config keys: `xScale`/`yScale` ('linear' | 'log'), `radius`,
  * `opacity`, `sizeMode` ('uniform' | 'numeric'), `sizeField`,
  * `categoricalPairMode` ('jitter' | 'aggregate'), `colorField`,
- * `regressionEnabled` (with `showCIBand`, `regressionLineColor`, …),
- * axis-label toggles, palette/color inputs, `customTitle`, `chartHeight`,
- * `locale`.
+ * `regression` (with `enabled`, `showCI`, `lineColor`, …),
+ * axis-label toggles, palette/color inputs, `customTitle`, and `chartHeight`.
+ * The separate context supplies locale,
+ * localized labels, column types, filter callbacks and render-budget approval.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} xColumn - X-axis column name.
- * @param {string} yColumn - Y-axis column name.
- * @param {Object} [options={}] - Render options bag.
+ * @param {Object} config - Stored chart config, normalized once inside the renderer.
+ * @param {Object} context - Localized labels, locale, and runtime callbacks from presentation.
  * @returns {Result}
  */
-export function renderScatterPlot(container, rows, xColumn, yColumn, options = {}) {
+export function renderScatterPlot(container, rows, config = {}, context = {}) {
+	const { x: xColumn, y: yColumn } = config;
+	const { labels = {}, axisLabels = {}, axisTypes: configuredAxisTypes = {}, locale, filterCallbacks, allowFullRender = false } = context;
 	if (!container || !xColumn || !yColumn) return fail();
 	const {
 		xScaleType,
@@ -79,14 +81,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		customTitle,
 		chartHeight,
 		categoricalPairMode,
-		labels,
-		axisLabels,
-		locale,
-		configuredAxisTypes,
-		xFilterColumn,
-		yFilterColumn,
-		allowFullRender,
-	} = normalizeScatterOptions(options, xColumn, yColumn);
+	} = normalizeScatterOptions(config);
 
 	const {
 		points,
@@ -108,7 +103,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		yScaleType,
 		categoricalPairMode,
 		configuredAxisTypes,
-		renderAll: allowFullRender,
+		renderAll: allowFullRender === true,
 		missingLabel: labels.missing,
 	});
 
@@ -129,16 +124,15 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 	});
 	hideChartTooltip();
 
-	let pinnedIndex = null;
-	const { showTooltip, showPinnedTooltip } = createScatterInteractions({
+	const { showTooltip, togglePinnedTooltip } = createScatterInteractions({
 		axisTypes,
 		axisLabels,
 		labels,
 		locale,
 		categoryLabel,
-		filterCallbacks: options.filterCallbacks || {},
-		xFilterColumn,
-		yFilterColumn,
+		filterCallbacks,
+		xFilterColumn: xColumn,
+		yFilterColumn: yColumn,
 	});
 
 	const { xScale, yScale, getPointX, getPointY } = buildScatterScales({
@@ -173,7 +167,7 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 	});
 
 	const regressionRender = renderRegressionLayer({
-		options,
+		options: config,
 		points,
 		axisTypes,
 		effectiveXScaleType,
@@ -190,7 +184,6 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 		innerHeight,
 		color,
 		labels,
-		isPinned: () => pinnedIndex !== null,
 	});
 
 	const pointLayer = group
@@ -218,35 +211,25 @@ export function renderScatterPlot(container, rows, xColumn, yColumn, options = {
 	pointLayer
 		.on('mouseover', event => {
 			const point = pointFromEvent(event);
-			if (!point || pinnedIndex !== null) return;
+			if (!point) return;
 			showTooltip(event, point);
 		})
 		.on('mousemove', event => {
-			if (!pointFromEvent(event) || pinnedIndex !== null) return;
+			if (!pointFromEvent(event)) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseout', event => {
-			if (!pointFromEvent(event) || pinnedIndex !== null) return;
-			hideChartTooltip();
+			if (!pointFromEvent(event)) return;
+			hideHoverTooltip();
 		})
 		.on('click', event => {
 			const point = pointFromEvent(event);
 			if (!point) return;
 			event.stopPropagation();
-			if (pinnedIndex === point.index) {
-				pinnedIndex = null;
-				hideChartTooltip();
-				return;
-			}
-			pinnedIndex = point.index;
-			showPinnedTooltip(event, point, () => {
-				pinnedIndex = null;
-				hideChartTooltip();
-			});
+			togglePinnedTooltip(event, point);
 		});
 
 	svg.on('click', () => {
-		pinnedIndex = null;
 		hideChartTooltip();
 	});
 

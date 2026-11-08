@@ -15,10 +15,11 @@ import { hierarchy, select, treemap, treemapSquarify } from '../../../../vendor/
 import {
 	createTooltipLine,
 	hideChartTooltip,
+	hideHoverTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
+import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
@@ -35,19 +36,21 @@ function truncate(text, maxLen) {
  * Render a treemap into `container`. This renderer returns a plain Result
  * object rather than using the shared `ok()`/`fail()` factories.
  *
- * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
+ * Common config keys: `measureMode` ('count' | 'sum' | 'mean'), `valueColumn`,
  * `topN`, `padding`, `showLabels`/`showValues`, `colorMode` ('scheme' |
- * 'uniform'), `colorScheme`, `color`, `customTitle`, `chartHeight`,
- * `locale`, and the localized `labels` bag, whose `measure` names the
- * measure in the tooltip.
+ * 'uniform'), `colorScheme`, `color`, `customTitle`, and `chartHeight`.
+ * The separate context supplies locale, filter callbacks and localized labels;
+ * `labels.measure` names the measure in the tooltip.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} categoryColumn - Categorical column name (required).
- * @param {Object} [options={}] - Render options bag.
+ * @param {Object} config - Stored chart config, normalized once inside the renderer.
+ * @param {Object} context - Localized labels, locale, and runtime callbacks from presentation.
  * @returns {Result}
  */
-export function renderTreemap(container, rows, categoryColumn, options = {}) {
+export function renderTreemap(container, rows, config = {}, context = {}) {
+	const { category: categoryColumn } = config;
+	const { labels = {}, locale, filterCallbacks } = context;
 	if (!container || !categoryColumn) return { ok: false };
 
 	const {
@@ -62,9 +65,7 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 		colorMode,
 		colorScheme,
 		uniformColor,
-		locale,
-		labels,
-	} = normalizeTreemapOptions(options);
+	} = normalizeTreemapOptions(config);
 
 	const aggregated = aggregateCategories(rows, categoryColumn, {
 		measureMode, valueColumn, positiveOnly: true, topN, missingLabel: labels.missing,
@@ -114,8 +115,6 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 		return schemeColors[i % schemeColors.length];
 	};
 
-	let pinnedKey = null;
-
 	const buildTooltipContent = (d, pct) => {
 		const wrapper = document.createElement('div');
 
@@ -149,35 +148,24 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 		.attr('stroke-width', 1)
 		.style('cursor', 'pointer')
 		.on('mouseenter', (event, d) => {
-			if (pinnedKey !== null) return;
 			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
 			showChartTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY);
 		})
 		.on('mousemove', event => {
-			if (pinnedKey !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseleave', () => {
-			if (pinnedKey !== null) return;
-			hideChartTooltip();
+			hideHoverTooltip();
 		})
 		.on('click', (event, d) => {
 			event.stopPropagation();
-			if (pinnedKey === d.data.key) {
-				pinnedKey = null;
-				hideChartTooltip();
-				return;
-			}
-			pinnedKey = d.data.key;
 			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
-			showPinnedFilterTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY, {
+			togglePinnedFilterTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY, {
+				target: event.currentTarget,
 				headerTitle: d.data.label,
 				closeLabel: labels.close,
-				onDismiss: () => {
-					pinnedKey = null;
-					hideChartTooltip();
-				},
-				filterCallbacks: options.filterCallbacks,
+				filterActionLabels: labels.filterActions,
+				filterCallbacks,
 				categories: [{ column: categoryColumn, token: d.data.token }],
 			});
 		});
@@ -236,7 +224,6 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 	}
 
 	svg.on('click', () => {
-		pinnedKey = null;
 		hideChartTooltip();
 	});
 
