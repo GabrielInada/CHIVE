@@ -76,26 +76,28 @@ function truncateCategoryTick(value, maxLength = 18) {
  * `fail()` when required arguments are missing or the data resolves to
  * fewer than two finite points.
  *
- * Common option keys: `curve` (one of `LINE_CHART.curveOptions`), `missingMode`
+ * Common config keys: `curve` (one of `LINE_CHART.curveOptions`), `missingMode`
  * (one of `LINE_CHART.missingModes`), `aggregateMode` (one of
  * `LINE_CHART.aggregateModes`), `sortX`, `showPoints`, `strokeWidth`, `color`,
- * `ghostStrokeColor`, axis-label toggles, `customTitle`, `chartHeight`, `locale`.
+ * `ghostStrokeColor`, axis-label toggles, `customTitle`, and `chartHeight`.
+ * The separate context supplies locale, axis labels and column types.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} xColumn - X-axis column name (any type).
- * @param {string} yColumn - Y-axis column name (numeric).
- * @param {Object} [options={}] - Render options bag.
+ * @param {Object} config - Stored chart config, normalized once inside the renderer.
+ * @param {Object} context - Localized labels, locale, and runtime callbacks from presentation.
  * @returns {Result}
  */
-export function renderLineChart(container, rows, xColumn, yColumn, options = {}) {
+export function renderLineChart(container, rows, config = {}, context = {}) {
+	const { x: xColumn, y: yColumn } = config;
+	const { axisLabels = {}, axisTypes = {}, locale } = context;
 	if (!container || !xColumn || !yColumn) return fail('invalid-args');
 	if (!Array.isArray(rows) || rows.length === 0) return fail();
 
-	const xKind = resolveXAxisKind(options.axisTypes?.x);
+	const xKind = resolveXAxisKind(axisTypes.x);
 	// Read as given: chart config canonicalization checks the curve against the
 	// chart's definition.
-	const curve = CURVE_BY_KEY[options.curve];
+	const curve = CURVE_BY_KEY[config.curve];
 	const {
 		missingMode,
 		strokeWidth,
@@ -108,9 +110,7 @@ export function renderLineChart(container, rows, xColumn, yColumn, options = {})
 		showYAxisLabel,
 		customTitle,
 		chartHeight,
-		axisLabels,
-		locale,
-	} = normalizeLineOptions(options, xColumn, yColumn);
+	} = normalizeLineOptions(config);
 
 	let points = buildPoints(rows, xColumn, yColumn, xKind);
 	if (points.length === 0) return fail('no-x-values');

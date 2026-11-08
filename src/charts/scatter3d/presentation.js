@@ -53,12 +53,7 @@ export function renderScatter3dInto(container, { rows, config }) {
 		.then(({ renderScatter3dChart }) => {
 			if (container[RENDER_TOKEN] !== token || !container.isConnected) return;
 			loading = false;
-			const result = renderScatter3dChart(container, rows, config.x, config.y, config.z, {
-				customTitle: config.customTitle,
-				chartHeight: config.chartHeight,
-				pointSize: config.pointSize,
-				opacity: config.opacity,
-				color: config.color,
+			const result = renderScatter3dChart(container, rows, config, {
 				labels: {
 					controlsInstructions: t('chive-chart-scatter3d-controls-instructions'),
 					contextLost: t('chive-chart-scatter3d-context-lost'),

@@ -14,6 +14,7 @@
 
 import { filterDataset } from '../../../domain/filters/datasetFilter.js';
 import { aggregateCategories } from '../../shared/categoryAggregation.js';
+import { normalizePieOptions } from '../options.js';
 import { computePieSectors } from '../data.js';
 
 /**
@@ -62,7 +63,7 @@ export function getPieSwatchColors(dataset, config) {
 	// WHY: shades follow the drawn order, so a global filter that hides a
 	// larger sector moves the others up a shade. Take the rows the chart
 	// draws, which come from the same filterDataset call.
-	const drawn = computePieSectors(filterDataset(dataset).rows, config.category, config);
+	const drawn = computePieSectors(filterDataset(dataset).rows, config.category, normalizePieOptions(config));
 	const fills = drawn.ok ? drawn.sectors.map(({ key, color }) => [key, color]) : [];
 	return { ...config.customSliceColors, ...Object.fromEntries(fills) };
 }

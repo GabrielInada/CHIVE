@@ -437,7 +437,7 @@ export default [
 	// mechanics, and renderers draw from explicit inputs only.
 	// None of them may reach app/, state/, features/, components/, ui/, or
 	// services/ (package-local and charts/shared modules, config, domain, utils,
-	// and vendor modules only). Localized strings arrive through options.labels; state
+	// and vendor modules only). Localized strings arrive through context.labels; state
 	// never enters a renderer.
 	{
 		files: [
@@ -459,7 +459,7 @@ export default [
 				paths: BARE_IMPORT_BANS,
 				patterns: [NON_RELATIVE_SPECIFIER_BAN, {
 					group: ['**/app/**', '**/state/**', '**/features/**', '**/components/**', '**/services/**', '**/ui/**'],
-					message: 'Chart package leaf files import only package-local or charts/shared modules, config, domain, utils, and vendor modules. Localized strings arrive via options.labels; state stays with the surfaces that build the chart input.',
+					message: 'Chart package leaf files import only package-local or charts/shared modules, config, domain, utils, and vendor modules. Localized strings arrive via context.labels; state stays with the surfaces that build the chart input.',
 				}],
 			}],
 		},

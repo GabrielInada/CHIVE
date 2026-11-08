@@ -46,27 +46,27 @@ import { createBarColorAccessor } from '../color.js';
  * `topN`, `measureMode`
  * ('count' | 'sum' | 'mean'), `valueColumn`, `colorMode`
  * ('uniform' | 'gradient' | 'gradient-manual'), color stops, axis label
- * toggles, `customTitle`, `chartHeight`, `locale`, and the localized
- * `labels`/`axisLabels` bags. `labels.measure` names the measure in the
- * tooltip and, unless `axisLabels.y` is given, on the y axis.
+ * toggles, `customTitle`, and `chartHeight` live in config. Presentation supplies
+ * `context.labels.measure` for the tooltip and `context.axisLabels.y` for the
+ * y axis, alongside locale and filter callbacks.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} categoryColumn - Categorical column name (required).
- * @param {Object} [options={}] - Render options bag.
+ * @param {Object} config - Stored chart config, normalized once inside the renderer.
+ * @param {Object} context - Localized labels, locale, and runtime callbacks from presentation.
  * @returns {Result}
  */
-export function renderBarChart(container, rows, categoryColumn, options = {}) {
+export function renderBarChart(container, rows, config = {}, context = {}) {
+	const { category: categoryColumn } = config;
+	const { labels = {}, axisLabels = {}, locale, filterCallbacks } = context;
 	if (!container || !categoryColumn) return fail();
 	const {
 		sort,
 		topN,
 		showXAxisLabel,
 		showYAxisLabel,
-		labels,
 		measureMode,
 		valueColumn,
-		axisLabels,
 		color,
 		colorMode,
 		gradientMinColor,
@@ -75,8 +75,7 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		gradientDistribution,
 		customTitle,
 		chartHeight,
-		locale,
-	} = normalizeBarOptions(options, categoryColumn);
+	} = normalizeBarOptions(config);
 
 	const aggregated = aggregateCategories(rows, categoryColumn, {
 		measureMode, valueColumn, sort, topN, missingLabel: labels.missing,
@@ -121,8 +120,9 @@ export function renderBarChart(container, rows, categoryColumn, options = {}) {
 		showPinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
 			headerTitle: item.label,
 			closeLabel: labels.close,
+			filterActionLabels: labels.filterActions,
 			onDismiss,
-			filterCallbacks: options.filterCallbacks,
+			filterCallbacks,
 			categories: [{ column: categoryColumn, token: item.token }],
 		});
 	};

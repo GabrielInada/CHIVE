@@ -1,3 +1,4 @@
+import { normalizePieOptions } from '../../../src/charts/pie/options.js';
 import { describe, expect, it } from 'vitest';
 import { buildSliceColor } from '../../../src/charts/pie/color.js';
 import { OTHER_SECTOR_KEY, computePieSectors } from '../../../src/charts/pie/data.js';
@@ -6,7 +7,8 @@ import { PIE_CHART } from '../../../src/config/charts/definitions/pie.js';
 import { MISSING_KEY, MISSING_TOKEN } from '../../../src/domain/datasets/cellValues.js';
 
 const BASE = '#888888';
-const countOptions = { measureMode: 'count', topN: 0, topNMode: 'other', color: BASE, labels: { other: 'Other' } };
+const countOptions = { measureMode: 'count', topN: 0, topNMode: 'other', color: BASE };
+const labels = { other: 'Other', missing: '(missing)' };
 const sumOptions = { ...countOptions, measureMode: 'sum', valueColumn: 'v' };
 const values = sectors => sectors.map(({ key, value }) => [key, value]);
 const fills = sectors => sectors.map(({ key, color }) => [key, color]);
@@ -19,7 +21,7 @@ const twelveCategories = Array.from({ length: 12 }, (_, index) => Array.from(
 describe('computePieSectors', () => {
 	it('sums categories through the shared category aggregation', () => {
 		const rows = [{ c: 'A', v: 10 }, { c: 'A', v: 20 }, { c: null, v: 5 }];
-		const result = computePieSectors(rows, 'c', { ...sumOptions, labels: { missing: '(sem valor)' } });
+		const result = computePieSectors(rows, 'c', normalizePieOptions(sumOptions), { missing: '(sem valor)' });
 		expect(result.sectors.map(({ key, label, token, value }) => [key, label, token, value])).toEqual([
 			['A', 'A', 'v:A', 30],
 			[MISSING_KEY, '(sem valor)', MISSING_TOKEN, 5],
@@ -29,14 +31,14 @@ describe('computePieSectors', () => {
 
 	it('truncate mode drops the tail past Top-N', () => {
 		const rows = ['A', 'A', 'A', 'B', 'B', 'C'].map(c => ({ c }));
-		const result = computePieSectors(rows, 'c', { ...countOptions, topN: 2, topNMode: 'truncate' });
+		const result = computePieSectors(rows, 'c', normalizePieOptions({ ...countOptions, topN: 2, topNMode: 'truncate' }), labels);
 		expect(values(result.sectors)).toEqual([['A', 3], ['B', 2]]);
 		expect(result.total).toBe(5);
 	});
 
 	it('other mode folds the tail into the Other sector, drawn last', () => {
 		const rows = ['A', 'A', 'A', 'B', 'B', 'C', 'D'].map(c => ({ c }));
-		const result = computePieSectors(rows, 'c', { ...countOptions, topN: 2, labels: { other: 'Outros' } });
+		const result = computePieSectors(rows, 'c', normalizePieOptions({ ...countOptions, topN: 2 }), { other: 'Outros' });
 		expect(result.sectors.at(-1)).toEqual({
 			key: OTHER_SECTOR_KEY,
 			label: 'Outros',
@@ -52,7 +54,7 @@ describe('computePieSectors', () => {
 
 	it('keeps a real category spelled like the Other label apart from the Other sector', () => {
 		const rows = ['Other', 'Other', 'Other', 'A', 'A', 'B', 'C'].map(c => ({ c }));
-		const { sectors } = computePieSectors(rows, 'c', { ...countOptions, topN: 2 });
+		const { sectors } = computePieSectors(rows, 'c', normalizePieOptions({ ...countOptions, topN: 2 }), labels);
 		expect(sectors.map(({ key, token, isOther }) => [key, token, isOther])).toEqual([
 			['Other', 'v:Other', false],
 			['A', 'v:A', false],
@@ -65,20 +67,20 @@ describe('computePieSectors', () => {
 		// T01 to T10 sum to 20 down to 11, T11 to 4 and T12 to -6.
 		const rows = [20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 4, -6]
 			.map((v, index) => ({ c: `T${String(index + 1).padStart(2, '0')}`, v }));
-		const result = computePieSectors(rows, 'c', { ...sumOptions, topN: 10 });
+		const result = computePieSectors(rows, 'c', normalizePieOptions({ ...sumOptions, topN: 10 }), labels);
 		expect(values(result.sectors).at(-1)).toEqual([OTHER_SECTOR_KEY, 4]);
 		expect(result.total).toBe(159);
 	});
 
 	it('makes no Other sector when only totals at or below 0 are past Top-N', () => {
 		const rows = [{ c: 'A', v: 5 }, { c: 'B', v: -3 }, { c: 'C', v: 2 }];
-		const result = computePieSectors(rows, 'c', { ...sumOptions, topN: 2 });
+		const result = computePieSectors(rows, 'c', normalizePieOptions({ ...sumOptions, topN: 2 }), labels);
 		expect(values(result.sectors)).toEqual([['A', 5], ['C', 2]]);
 	});
 
 	it('fills a category with its custom color, else the shade for its place in the drawn order', () => {
 		const rows = ['A', 'A', 'A', 'B', 'B', 'C'].map(c => ({ c }));
-		const result = computePieSectors(rows, 'c', { ...countOptions, customSliceColors: { B: '#123456' } });
+		const result = computePieSectors(rows, 'c', normalizePieOptions({ ...countOptions, customSliceColors: { B: '#123456' } }), labels);
 		expect(fills(result.sectors)).toEqual([
 			['A', BASE],
 			['B', '#123456'],
@@ -90,14 +92,14 @@ describe('computePieSectors', () => {
 	// up a shade, and the chart and the color grid both see it here.
 	it('shades the categories in the order they are drawn', () => {
 		const rows = ['B', 'B', 'C'].map(c => ({ c }));
-		expect(fills(computePieSectors(rows, 'c', countOptions).sectors)).toEqual([
+		expect(fills(computePieSectors(rows, 'c', normalizePieOptions(countOptions), labels).sectors)).toEqual([
 			['B', BASE],
 			['C', buildSliceColor(BASE, 1)],
 		]);
 	});
 
 	it('spreads the shades over the category sectors past 9, leaving out the Other sector', () => {
-		const result = computePieSectors(twelveCategories, 'c', { ...countOptions, topN: 10, customSliceColors: { C04: '#123456' } });
+		const result = computePieSectors(twelveCategories, 'c', normalizePieOptions({ ...countOptions, topN: 10, customSliceColors: { C04: '#123456' } }), labels);
 		const categorySectors = result.sectors.filter(sector => !sector.isOther);
 		expect(categorySectors).toHaveLength(10);
 		expect(new Set(result.sectors.map(sector => sector.color)).size).toBe(11);
@@ -109,14 +111,14 @@ describe('computePieSectors', () => {
 	it('gives the Other sector its fixed color even with a custom color under its key', () => {
 		const rows = ['A', 'A', 'B', 'C'].map(c => ({ c }));
 		const options = { ...countOptions, topN: 1, customSliceColors: { [OTHER_SECTOR_KEY]: '#ff0000' } };
-		expect(computePieSectors(rows, 'c', options).sectors.at(-1).color).toBe(PIE_CHART.otherSliceColor);
+		expect(computePieSectors(rows, 'c', normalizePieOptions(options), labels).sectors.at(-1).color).toBe(PIE_CHART.otherSliceColor);
 	});
 
 	// Category keys are cell text, so a category can share its name with a
 	// member of Object.prototype.
 	it('fills a category named like an Object.prototype member as any other category', () => {
 		const rows = ['constructor', 'constructor', 'constructor', 'toString', 'toString', '__proto__'].map(c => ({ c }));
-		expect(fills(computePieSectors(rows, 'c', countOptions).sectors)).toEqual([
+		expect(fills(computePieSectors(rows, 'c', normalizePieOptions(countOptions), labels).sectors)).toEqual([
 			['constructor', BASE],
 			['toString', buildSliceColor(BASE, 1)],
 			['__proto__', buildSliceColor(BASE, 2)],
@@ -124,18 +126,17 @@ describe('computePieSectors', () => {
 
 		// A computed key, so the object holds `__proto__` as its own key.
 		const customSliceColors = { toString: '#123456', ['__proto__']: '#abcdef' };
-		expect(fills(computePieSectors(rows, 'c', { ...countOptions, customSliceColors }).sectors)).toEqual([
+		expect(fills(computePieSectors(rows, 'c', normalizePieOptions({ ...countOptions, customSliceColors }), { other: 'Other', missing: '(missing)' }).sectors)).toEqual([
 			['constructor', BASE],
 			['toString', '#123456'],
 			['__proto__', '#abcdef'],
 		]);
 	});
 
-	// The color grid passes the saved config and the renderer its options bag,
-	// so both have to read to the same sectors.
-	it('reads the saved config as the renderer reads its options', () => {
+	// Legacy saved values are normalized before either caller computes sectors.
+	it('normalizes legacy saved values before computing sectors', () => {
 		const savedConfig = { category: 'c', measureMode: 'count', topN: '2', topNMode: 'other', color: 'not-a-color', customSliceColors: null };
 		const renderOptions = { measureMode: 'count', topN: 2, topNMode: 'other', color: CHART_COLORS.pie, customSliceColors: {} };
-		expect(computePieSectors(twelveCategories, 'c', savedConfig)).toEqual(computePieSectors(twelveCategories, 'c', renderOptions));
+		expect(computePieSectors(twelveCategories, 'c', normalizePieOptions(savedConfig), savedConfig.labels ?? { other: 'Other', missing: '(missing)' })).toEqual(computePieSectors(twelveCategories, 'c', normalizePieOptions(renderOptions), renderOptions.labels ?? { other: 'Other', missing: '(missing)' }));
 	});
 });

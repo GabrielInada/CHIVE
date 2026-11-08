@@ -27,8 +27,8 @@ import { AXIS_TYPE_VALUES } from './axisHelpers.js';
  * @param {string|undefined} params.locale - Number-format locale.
  * @param {(key: string) => string} params.categoryLabel - Text shown for a category key.
  * @param {Object} params.filterCallbacks - Click-to-filter callback bag.
- * @param {?string} params.xFilterColumn - X filter column name (from the options bag).
- * @param {?string} params.yFilterColumn - Y filter column name (from the options bag).
+ * @param {?string} params.xFilterColumn - X filter column name (from stored config).
+ * @param {?string} params.yFilterColumn - Y filter column name (from stored config).
  * @returns {{ showTooltip: (event: Object, point: Object) => void, showPinnedTooltip: (event: Object, point: Object, onDismiss: Function) => void }}
  */
 export function createScatterInteractions({
@@ -84,6 +84,7 @@ export function createScatterInteractions({
 		showPinnedFilterTooltip(buildTooltipContent(point), event.pageX, event.pageY, {
 			headerTitle,
 			closeLabel: labels.close,
+			filterActionLabels: labels.filterActions,
 			onDismiss,
 			filterCallbacks,
 			categories,

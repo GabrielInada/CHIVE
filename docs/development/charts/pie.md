@@ -250,8 +250,8 @@ Beyond the shared select/checkbox/text/color helpers, the pie has several custom
 The [workspace registry](../../../src/charts/registries/workspace.js) resolves the
 block/container, hides+clears when disabled, sets the min-height to the height the chart is
 drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to `renderPieInto`
-in the shared presentation flow, which maps config (with localized labels including the
-`Other` label) and calls the renderer.
+in the shared presentation flow, which passes config unchanged and supplies localized
+labels (including `Other`) and runtime callbacks in the renderer context.
 On failure the presentation flow shows `chive-chart-empty-pie-sum` for `no-value-column` and `no-numeric`,
 `chive-chart-empty-no-positive-sum` for `no-positive-value`, else `chive-chart-empty-pie`.
 
@@ -267,7 +267,7 @@ message as the workspace, including saved previews and resized layout slots.
 ## 7. Inside `renderPieChart`
 
 [`renderPieChart`](../../../src/charts/pie/renderers/svg.js)
-`(container, rows, categoryColumn, options = {})` returns a `Result`.
+`(container, rows, config, context)` returns a `Result` and reads `config.category`.
 
 ### 7.1 Guard, options, aggregation
 
@@ -276,8 +276,9 @@ radii/pad-angle/zoom clamped to `PIE_CHART` bounds, height to 220 to 720, title 
 
 `computePieSectors` in [data.js](../../../src/charts/pie/data.js) then returns the sectors
 the renderer draws, in drawn order, each `{ key, label, token, value, color, isOther }`, plus
-their `total`. It reads the options through `normalizePieOptions` itself, so the saved config
-the color controls pass and the renderer's options bag give the same sectors. The shared
+their `total`. It accepts normalized options and separate labels: the renderer and the
+color controls each call `normalizePieOptions(config)` once before computing sectors, so
+both paths use the same bounds and colors without repeated normalization. The shared
 `aggregateCategories`
 ([categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)) aggregates
 count or sum per category; the measure is read as given, since chart config canonicalization

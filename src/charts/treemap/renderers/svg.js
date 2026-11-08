@@ -35,19 +35,21 @@ function truncate(text, maxLen) {
  * Render a treemap into `container`. This renderer returns a plain Result
  * object rather than using the shared `ok()`/`fail()` factories.
  *
- * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
+ * Common config keys: `measureMode` ('count' | 'sum' | 'mean'), `valueColumn`,
  * `topN`, `padding`, `showLabels`/`showValues`, `colorMode` ('scheme' |
- * 'uniform'), `colorScheme`, `color`, `customTitle`, `chartHeight`,
- * `locale`, and the localized `labels` bag, whose `measure` names the
- * measure in the tooltip.
+ * 'uniform'), `colorScheme`, `color`, `customTitle`, and `chartHeight`.
+ * The separate context supplies locale, filter callbacks and localized labels;
+ * `labels.measure` names the measure in the tooltip.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} categoryColumn - Categorical column name (required).
- * @param {Object} [options={}] - Render options bag.
+ * @param {Object} config - Stored chart config, normalized once inside the renderer.
+ * @param {Object} context - Localized labels, locale, and runtime callbacks from presentation.
  * @returns {Result}
  */
-export function renderTreemap(container, rows, categoryColumn, options = {}) {
+export function renderTreemap(container, rows, config = {}, context = {}) {
+	const { category: categoryColumn } = config;
+	const { labels = {}, locale, filterCallbacks } = context;
 	if (!container || !categoryColumn) return { ok: false };
 
 	const {
@@ -62,9 +64,7 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 		colorMode,
 		colorScheme,
 		uniformColor,
-		locale,
-		labels,
-	} = normalizeTreemapOptions(options);
+	} = normalizeTreemapOptions(config);
 
 	const aggregated = aggregateCategories(rows, categoryColumn, {
 		measureMode, valueColumn, positiveOnly: true, topN, missingLabel: labels.missing,
@@ -173,11 +173,12 @@ export function renderTreemap(container, rows, categoryColumn, options = {}) {
 			showPinnedFilterTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY, {
 				headerTitle: d.data.label,
 				closeLabel: labels.close,
+				filterActionLabels: labels.filterActions,
 				onDismiss: () => {
 					pinnedKey = null;
 					hideChartTooltip();
 				},
-				filterCallbacks: options.filterCallbacks,
+				filterCallbacks,
 				categories: [{ column: categoryColumn, token: d.data.token }],
 			});
 		});

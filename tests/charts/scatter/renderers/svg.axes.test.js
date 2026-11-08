@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderScatterPlot } from '../../../../src/charts/scatter/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
@@ -21,9 +22,12 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ group: null, value: 30 },
 		];
 
-		const result = renderScatterPlot(container, rows, 'group', 'value', {
+		const result = renderScatterPlot(container, rows, {
+			x: 'group',
+			y: 'value',
+		}, renderContext({ x: 'group', y: 'value' }, {
 			axisTypes: { x: 'text', y: 'number' },
-		});
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('circle')).toHaveLength(3);
@@ -36,10 +40,13 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ group: null, value: 20 },
 		];
 
-		renderScatterPlot(container, rows, 'group', 'value', {
+		renderScatterPlot(container, rows, {
+			x: 'group',
+			y: 'value',
+		}, renderContext({ x: 'group', y: 'value' }, {
 			axisTypes: { x: 'text', y: 'number' },
 			labels: { missing: '(sem valor)' },
-		});
+		}));
 
 		const ticks = Array.from(container.querySelectorAll('.tick text')).map(text => text.textContent);
 		expect(ticks).toContain('N/A');
@@ -54,11 +61,14 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ group: 'A', value: 5 },
 		];
 
-		const result = renderScatterPlot(container, rows, 'group', 'value', {
+		const result = renderScatterPlot(container, rows, {
+			x: 'group',
+			y: 'value',
 			xScale: 'log',
 			yScale: 'linear',
+		}, renderContext({ x: 'group', y: 'value' }, {
 			axisTypes: { x: 'text', y: 'number' },
-		});
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('circle')).toHaveLength(2);
@@ -72,9 +82,12 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ group: 'A', value: 10 },
 		];
 
-		const result = renderScatterPlot(container, rows, 'group', 'value', {
+		const result = renderScatterPlot(container, rows, {
+			x: 'group',
+			y: 'value',
+		}, renderContext({ x: 'group', y: 'value' }, {
 			axisTypes: { x: 'text', y: 'number' },
-		});
+		}));
 
 		expect(result.ok).toBe(true);
 		const xValues = Array.from(container.querySelectorAll('circle'))
@@ -92,10 +105,13 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ x: 'A', y: 'South' },
 		];
 
-		const result = renderScatterPlot(container, rows, 'x', 'y', {
-			axisTypes: { x: 'text', y: 'text' },
+		const result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			categoricalPairMode: 'aggregate',
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			axisTypes: { x: 'text', y: 'text' },
+		}));
 
 		expect(result.ok).toBe(true);
 		const circles = Array.from(container.querySelectorAll('circle'));
@@ -113,9 +129,12 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ x: 'B', y: longYLabel },
 		];
 
-		const result = renderScatterPlot(container, rows, 'x', 'y', {
+		const result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
+		}, renderContext({ x: 'x', y: 'y' }, {
 			axisTypes: { x: 'text', y: 'text' },
-		});
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.textContent).toContain(longYLabel);
@@ -128,11 +147,14 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ x: -2, y: 2 },
 		];
 
-		const result = renderScatterPlot(container, rows, 'x', 'y', {
+		const result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			xScale: 'log',
 			yScale: 'linear',
+		}, renderContext({ x: 'x', y: 'y' }, {
 			axisTypes: { x: 'number', y: 'number' },
-		});
+		}));
 
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('log-no-positive');
@@ -142,10 +164,13 @@ describe('scatterPlot mixed axis behavior', () => {
 		const container = document.getElementById('scatter');
 		const rows = [{ height_cm: 170, weight_kg: 65 }];
 
-		renderScatterPlot(container, rows, 'height_cm', 'weight_kg', {
+		renderScatterPlot(container, rows, {
+			x: 'height_cm',
+			y: 'weight_kg',
+		}, renderContext({ x: 'height_cm', y: 'weight_kg' }, {
 			axisTypes: { x: 'number', y: 'number' },
 			labels: { eixoX: 'X', eixoY: 'Y', indice: 'Row', count: 'Count' },
-		});
+		}));
 
 		const circle = container.querySelector('circle');
 		circle.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
@@ -160,10 +185,13 @@ describe('scatterPlot mixed axis behavior', () => {
 		const container = document.getElementById('scatter');
 		const rows = [{ a: 1, b: 2 }];
 
-		renderScatterPlot(container, rows, 'a', 'b', {
+		renderScatterPlot(container, rows, {
+			x: 'a',
+			y: 'b',
+		}, renderContext({ x: 'a', y: 'b' }, {
 			axisTypes: { x: 'number', y: 'number' },
 			axisLabels: { x: 'Altura', y: 'Peso' },
-		});
+		}));
 
 		const circle = container.querySelector('circle');
 		circle.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
@@ -180,13 +208,16 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ x: 3, y: 30, z: 10 },
 		];
 
-		const result = renderScatterPlot(container, rows, 'x', 'y', {
-			axisTypes: { x: 'number', y: 'number' },
+		const result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			sizeMode: 'numeric',
 			sizeField: 'z',
 			sizeMin: 2,
 			sizeMax: 20,
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			axisTypes: { x: 'number', y: 'number' },
+		}));
 
 		expect(result.ok).toBe(true);
 		const radii = Array.from(container.querySelectorAll('circle'))
@@ -206,12 +237,15 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ x: 3, y: 30, z: 10 },
 		];
 
-		const result = renderScatterPlot(container, rows, 'x', 'y', {
-			axisTypes: { x: 'number', y: 'number' },
+		const result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			sizeMode: 'uniform',
 			sizeField: 'z',
 			radius: 4,
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			axisTypes: { x: 'number', y: 'number' },
+		}));
 
 		expect(result.ok).toBe(true);
 		const radii = Array.from(container.querySelectorAll('circle'))
@@ -228,7 +262,10 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ kind: 'virginica', score: 3 },
 		];
 
-		const result = renderScatterPlot(container, rows, 'kind', 'score');
+		const result = renderScatterPlot(container, rows, {
+			x: 'kind',
+			y: 'score',
+		}, renderContext({ x: 'kind', y: 'score' }));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('circle')).toHaveLength(3);
@@ -242,14 +279,17 @@ describe('scatterPlot mixed axis behavior', () => {
 			{ x: 5, y: 6 },
 		];
 
-		renderScatterPlot(scatterContainer, scatterData, 'x', 'y', {
+		renderScatterPlot(scatterContainer, scatterData, {
+			x: 'x',
+			y: 'y',
 			showXAxisLabel: false,
 			showYAxisLabel: true,
+		}, renderContext({ x: 'x', y: 'y' }, {
 			axisLabels: {
 				x: 'Scatter Axis X Custom',
 				y: 'Scatter Axis Y Custom',
 			},
-		});
+		}));
 		expect(scatterContainer.textContent).not.toContain('Scatter Axis X Custom');
 		expect(scatterContainer.textContent).toContain('Scatter Axis Y Custom');
 	});

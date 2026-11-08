@@ -1,13 +1,15 @@
 /**
  * Shared bar-chart presentation flow.
  *
- * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Workspace and Panel pass stored config unchanged to the same renderer,
+ * alongside presentation-owned text and runtime context. This flow also shows
+ * localized empty states on both surfaces.
  * Localized labels stay here so the renderer remains
  * stateless and i18n-free.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { tooltipLabels } from '../shared/tooltip/labels.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
 import { measureLabelKey } from '../shared/measure.js';
 import { renderBarChart } from './renderers/svg.js';
@@ -22,31 +24,18 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
  * @returns {import('../../types.js').Result}
  */
 export function renderBarInto(container, { rows, config, filterCallbacks = EMPTY_FILTER_CALLBACKS }) {
-	const result = renderBarChart(container, rows, config.category, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
-		sort: config.sort,
-		topN: config.topN,
-		color: config.color,
-		colorMode: config.colorMode,
-		gradientMinColor: config.gradientMinColor,
-		gradientMaxColor: config.gradientMaxColor,
-		gradientDistribution: config.gradientDistribution,
-		manualThresholdPct: config.manualThresholdPct,
-		measureMode: config.measureMode,
-		valueColumn: config.valueColumn,
-		showXAxisLabel: config.showXAxisLabel,
-		showYAxisLabel: config.showYAxisLabel,
+	const measureLabel = t(measureLabelKey(config.measureMode));
+	const result = renderBarChart(container, rows, config, {
 		axisLabels: {
 			x: config.category || t('chive-chart-control-bar-category'),
+			y: measureLabel,
 		},
 		locale: getLocale(),
 		labels: {
-			close: t('chive-tooltip-close'),
+			...tooltipLabels(t),
 			category: t('chive-chart-control-bar-category'),
-			measure: t(measureLabelKey(config.measureMode)),
+			measure: measureLabel,
 			percentage: t('chive-tooltip-percentage'),
-			missing: t('chive-chart-filter-missing'),
 		},
 		filterCallbacks,
 	});

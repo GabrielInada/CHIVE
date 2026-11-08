@@ -221,7 +221,8 @@ The [workspace registry](../../../src/charts/registries/workspace.js) resolves t
 block/container, hides+clears when disabled, sets the min-height to the height the chart is
 drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to
 `renderBubbleInto` in [presentation.js](../../../src/charts/bubble/presentation.js), which
-maps config and calls `renderBubbleChart`. The presentation flow shows distinct messages on both surfaces:
+passes config unchanged with localized labels and callbacks in a separate context to
+`renderBubbleChart`. The presentation flow shows distinct messages on both surfaces:
 `no-value-column`/`no-numeric` to `chive-chart-empty-bubble-numeric`,
 `no-positive-value` to `chive-chart-empty-no-positive-sum`,
 `no-nesting-columns`/`no-group-column` to `chive-chart-empty-bubble-nesting-required`, else
@@ -237,7 +238,9 @@ flow without `filterCallbacks` (no click-to-filter in panels).
 
 ## 7. Inside `renderBubbleChart`
 
-`renderBubbleChart(container, rows, categoryColumn, options = {})` returns a `Result`.
+`renderBubbleChart(container, rows, config, context)` returns a `Result`, reads
+`config.category`, and normalizes visual settings once through `normalizeBubbleOptions`
+in [options.js](../../../src/charts/bubble/options.js).
 
 ### 7.1 Guard, options, and the nesting guard
 

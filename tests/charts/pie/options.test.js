@@ -4,7 +4,7 @@ import { CHART_COLORS, CHART_DIMENSIONS } from '../../../src/config/charts/defin
 import { PIE_CHART } from '../../../src/config/charts/definitions/pie.js';
 
 describe('normalizePieOptions', () => {
-	it('applies defaults for an empty options bag', () => {
+	it('applies defaults for an empty config', () => {
 		const o = normalizePieOptions({});
 		expect(o.color).toBe(CHART_COLORS.pie);
 		expect(o.valueColumn).toBeNull();
@@ -51,12 +51,5 @@ describe('normalizePieOptions', () => {
 		expect(normalizePieOptions({ zoomScale: 9999 }).zoomScale).toBe(PIE_CHART.maxZoomScale);
 		expect(normalizePieOptions({ zoomScale: -9999 }).zoomScale).toBe(PIE_CHART.minZoomScale);
 		expect(normalizePieOptions({ customTitle: 'p'.repeat(120) }).customTitle).toHaveLength(80);
-	});
-
-	it('passes through caller-supplied labels including the Other label', () => {
-		const o = normalizePieOptions({ labels: { other: 'Outros', category: 'Região' } });
-		expect(o.labels.other).toBe('Outros');
-		expect(o.labels.category).toBe('Região');
-		expect(o.labels.measure).toBe('Value');
 	});
 });

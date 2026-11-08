@@ -336,8 +336,9 @@ The [workspace registry](../../../src/charts/registries/workspace.js) resolves t
 block/container, hides+clears when disabled, sets the container min-height to the height
 the chart is drawn at, and hands the chart input (`rows`, `config`, `columnTypeByName`,
 `filterCallbacks`) to `renderScatterInto` ([presentation.js](../../../src/charts/scatter/presentation.js)),
-which maps config into the options bag (including `axisTypes` taken from `columnTypeByName`
-so detection is consistent) and calls `renderScatterPlot`. On failure the presentation flow shows
+which passes config unchanged and supplies a separate context with localized text,
+`axisTypes` from `columnTypeByName`, callbacks and render-budget approval to
+`renderScatterPlot`. On failure the presentation flow shows
 `chive-chart-empty-scatter-log` for `log-no-positive`, else `chive-chart-empty-scatter`,
 in both the workspace and Panel. Sampling notices keep their existing approval flow.
 
@@ -352,7 +353,8 @@ the snapshot (`spec.dataSnapshot`, `spec.config`, and column types from every co
 
 ## 7. Inside `renderScatterPlot`
 
-`renderScatterPlot(container, rows, xColumn, yColumn, options = {})` returns a `Result`. The
+`renderScatterPlot(container, rows, config, context)` reads `config.x` and `config.y`
+and returns a `Result`. The
 function is an **orchestrator**: each pipeline phase below lives in its own peer module and
 is wired together here. The mapping:
 

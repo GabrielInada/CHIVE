@@ -1,7 +1,7 @@
 /**
  * Line-chart option normalization.
  *
- * Turns the raw render options bag into a validated config object with every
+ * Turns the stored chart config into a validated config object with every
  * default and bound applied exactly once. Mirrors the renderer's historical
  * semantics verbatim. The x-axis kind (data-derived) and the d3 curve lookup
  * stay in `renderers/svg.js`. Pure: no DOM, no d3. Used by `renderers/svg.js`.
@@ -18,35 +18,28 @@ function normalizeHex(value, fallback) {
 }
 
 /**
- * Normalize the line render options.
+ * Normalize the line render config.
  *
- * @param {Object} options - Raw render options.
- * @param {string} xColumn - X data column (for the default x label).
- * @param {string} yColumn - Y data column (for the default y label).
+ * @param {Object} config - Stored chart config.
  * @returns {Object} Validated config locals.
  */
-export function normalizeLineOptions(options, xColumn, yColumn) {
+export function normalizeLineOptions(config) {
 	// Read as given: chart config canonicalization checks the enumerated
 	// settings against the chart's definition.
-	const { missingMode, aggregateMode } = options;
-	const strokeWidth = Number.isFinite(Number(options.strokeWidth))
-		? Math.max(0.5, Math.min(8, Number(options.strokeWidth)))
+	const { missingMode, aggregateMode } = config;
+	const strokeWidth = Number.isFinite(Number(config.strokeWidth))
+		? Math.max(0.5, Math.min(8, Number(config.strokeWidth)))
 		: LINE_CHART.defaultStrokeWidth;
-	const color = normalizeHex(options.color, CHART_COLORS.line);
-	const ghostColor = normalizeHex(options.ghostStrokeColor, LINE_CHART.defaultGhostStrokeColor);
-	const showPoints = options.showPoints === true;
-	const sortX = options.sortX !== false;
-	const showXAxisLabel = options.showXAxisLabel !== false;
-	const showYAxisLabel = options.showYAxisLabel !== false;
-	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(options.chartHeight))
-		? Math.max(220, Math.min(720, Number(options.chartHeight)))
+	const color = normalizeHex(config.color, CHART_COLORS.line);
+	const ghostColor = normalizeHex(config.ghostStrokeColor, LINE_CHART.defaultGhostStrokeColor);
+	const showPoints = config.showPoints === true;
+	const sortX = config.sortX !== false;
+	const showXAxisLabel = config.showXAxisLabel !== false;
+	const showYAxisLabel = config.showYAxisLabel !== false;
+	const customTitle = String(config.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(config.chartHeight))
+		? Math.max(220, Math.min(720, Number(config.chartHeight)))
 		: CHART_DIMENSIONS.line.height;
-	const axisLabels = {
-		x: options.axisLabels?.x || xColumn,
-		y: options.axisLabels?.y || yColumn,
-	};
-	const locale = options.locale || undefined;
 
 	return {
 		missingMode,
@@ -60,7 +53,5 @@ export function normalizeLineOptions(options, xColumn, yColumn) {
 		showYAxisLabel,
 		customTitle,
 		chartHeight,
-		axisLabels,
-		locale,
 	};
 }

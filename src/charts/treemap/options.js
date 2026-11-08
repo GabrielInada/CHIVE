@@ -1,7 +1,7 @@
 /**
  * Treemap option normalization.
  *
- * Turns the raw render options bag into a validated config object with every
+ * Turns the stored chart config into a validated config object with every
  * default and bound applied exactly once. Mirrors the renderer's historical
  * semantics verbatim. Pure: no DOM, no d3. Used by `renderers/svg.js`.
  */
@@ -12,35 +12,27 @@ import { clamp } from '../../utils/formatters.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 
 /**
- * Normalize the treemap render options.
+ * Normalize the treemap render config.
  *
- * @param {Object} options - Raw render options.
+ * @param {Object} config - Stored chart config.
  * @returns {Object} Validated config locals.
  */
-export function normalizeTreemapOptions(options) {
+export function normalizeTreemapOptions(config) {
 	// Read as given: chart config canonicalization checks the enumerated
 	// settings against the chart's definition.
-	const { measureMode, colorMode, colorScheme } = options;
-	const valueColumn = options.valueColumn || null;
-	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : TREEMAP_CHART.defaultTopN;
-	const padding = Number.isFinite(Number(options.padding)) ? clamp(Number(options.padding), 1, 6) : TREEMAP_CHART.defaultPadding;
-	const showLabels = options.showLabels !== false;
-	const showValues = options.showValues !== false;
-	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(options.chartHeight))
-		? clamp(Number(options.chartHeight), 220, 720)
+	const { measureMode, colorMode, colorScheme } = config;
+	const valueColumn = config.valueColumn || null;
+	const topN = Number.isFinite(Number(config.topN)) ? Number(config.topN) : TREEMAP_CHART.defaultTopN;
+	const padding = Number.isFinite(Number(config.padding)) ? clamp(Number(config.padding), 1, 6) : TREEMAP_CHART.defaultPadding;
+	const showLabels = config.showLabels !== false;
+	const showValues = config.showValues !== false;
+	const customTitle = String(config.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(config.chartHeight))
+		? clamp(Number(config.chartHeight), 220, 720)
 		: 380;
-	const uniformColor = isValidHexColor(String(options.color || '').trim())
-		? String(options.color).trim()
+	const uniformColor = isValidHexColor(String(config.color || '').trim())
+		? String(config.color).trim()
 		: CHART_COLORS.treemap;
-	const locale = options.locale || undefined;
-	const labels = {
-		close: options.labels?.close,
-		category: options.labels?.category || 'Category',
-		measure: options.labels?.measure || 'Value',
-		percentage: options.labels?.percentage || 'Percentage',
-		missing: options.labels?.missing || '(missing)',
-	};
 
 	return {
 		measureMode,
@@ -54,7 +46,5 @@ export function normalizeTreemapOptions(options) {
 		colorMode,
 		colorScheme,
 		uniformColor,
-		locale,
-		labels,
 	};
 }

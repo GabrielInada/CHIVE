@@ -217,9 +217,9 @@ The [workspace registry](../../../src/charts/registries/workspace.js) resolves t
 block/container, hides+clears when disabled, sets the min-height to the height the chart is
 drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to
 `renderNetworkInto` in [presentation.js](../../../src/charts/network/presentation.js),
-which maps config into the options bag (note `weight`/`group` map to
-`weightColumn`/`groupColumn`, and the source/target column names are also passed as
-`sourceColumn`/`targetColumn` for the filter tooltips) and calls `renderNetworkGraph`. Any
+which passes config unchanged and supplies localized text, callbacks and render-budget
+approval in a separate context to `renderNetworkGraph`. Its options module reads the stored
+`weight` and `group` keys; filter tooltips use `config.source` and `config.target`. Any
 ordinary failure shows the single `chive-chart-empty-network` message through the
 presentation flow, in both the workspace and Panel. The render-budget approval notice
 keeps its own existing handling.
@@ -234,13 +234,15 @@ the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same
 
 ## 7. Inside `renderNetworkGraph`
 
-`renderNetworkGraph(container, rows, sourceColumn, targetColumn, options = {})` returns a
+`renderNetworkGraph(container, rows, config, context)` reads `config.source` and
+`config.target` and returns a
 result. The pipeline:
 
 ### 7.1 Guard, options, and graph construction
 
 Returns `fail()` if the container or either endpoint column is missing. Options are clamped to
-safe locals (forces and zoom to their `NETWORK_GRAPH` bounds; colors validated; height to 220
+safe locals by `normalizeNetworkOptions(config)` in [options.js](../../../src/charts/network/options.js)
+(forces and zoom to their `NETWORK_GRAPH` bounds; colors validated; height to 220
 to 720; title to 80 chars). `buildNetworkData` scans the rows into a node `Map` (keyed by id,
 remembering the first group seen) and a links array (each with a positive weight, defaulting
 to 1). If no nodes or links survive, `fail('insufficient-data')`.

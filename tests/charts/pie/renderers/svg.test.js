@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderPieChart } from '../../../../src/charts/pie/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
@@ -22,11 +23,12 @@ describe('renderPieChart behavior', () => {
 			{ categoria: 'C' },
 		];
 
-		const result = renderPieChart(container, rows, 'categoria', {
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
 			color: '#336699',
 			innerRadius: 24,
 			outerRadius: 80,
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		expect(result.ok).toBe(true);
 		const slices = container.querySelectorAll('path');
@@ -42,7 +44,10 @@ describe('renderPieChart behavior', () => {
 			() => ({ categoria: `C${String(index + 1).padStart(2, '0')}` }),
 		)).flat();
 
-		renderPieChart(container, rows, 'categoria', { color: '#5f7c33' });
+		renderPieChart(container, rows, {
+			category: 'categoria',
+			color: '#5f7c33',
+		}, renderContext({ category: 'categoria' }));
 
 		const fills = Array.from(container.querySelectorAll('path'), path => path.getAttribute('fill'));
 		expect(fills).toHaveLength(12);
@@ -58,13 +63,14 @@ describe('renderPieChart behavior', () => {
 			{ categoria: 'C', valor: 3 },
 		];
 
-		const result = renderPieChart(container, rows, 'categoria', {
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
 			measureMode: 'sum',
 			valueColumn: 'valor',
 			showLegend: true,
 			labelPosition: 'outside',
 			padAngle: 4,
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('polyline').length).toBeGreaterThan(0);
@@ -79,9 +85,10 @@ describe('renderPieChart behavior', () => {
 			{ categoria: 'A' },
 		];
 
-		const result = renderPieChart(container, rows, 'categoria', {
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
 			zoomScale: 1.8,
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		expect(result.ok).toBe(true);
 		const svg = container.querySelector('svg');
@@ -98,10 +105,11 @@ describe('renderPieChart behavior', () => {
 		rows.push({ categoria: 'TinyA' });
 		rows.push({ categoria: 'TinyB' });
 
-		const result = renderPieChart(container, rows, 'categoria', {
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
 			labelPosition: 'outside',
 			showLegend: true,
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		expect(result.ok).toBe(true);
 		const outsideLabels = Array.from(container.querySelectorAll('text.pie-outside-label')).map(node => node.textContent);
@@ -116,12 +124,14 @@ describe('renderPieChart behavior', () => {
 		const rows = [];
 		['A', 'A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'D', 'E', 'F'].forEach(c => rows.push({ categoria: c }));
 
-		const result = renderPieChart(container, rows, 'categoria', {
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
 			topN: 2,
 			topNMode: 'other',
 			showLegend: true,
+		}, renderContext({ category: 'categoria' }, {
 			labels: { other: 'Outros' },
-		});
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.textContent).toContain('A (4)');
@@ -136,11 +146,12 @@ describe('renderPieChart behavior', () => {
 		const rows = [];
 		['A', 'A', 'A', 'A', 'B', 'B', 'B', 'C', 'C', 'D', 'E', 'F'].forEach(c => rows.push({ categoria: c }));
 
-		const result = renderPieChart(container, rows, 'categoria', {
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
 			topN: 2,
 			topNMode: 'truncate',
 			showLegend: true,
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		expect(result.ok).toBe(true);
 		const slices = container.querySelectorAll('path');
@@ -160,7 +171,10 @@ describe('renderPieChart behavior', () => {
 			{ categoria: 'D' },
 		];
 
-		const result = renderPieChart(container, rows, 'categoria', { topN: 0 });
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
+			topN: 0,
+		}, renderContext({ category: 'categoria' }));
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('path').length).toBe(4);
 	});
@@ -172,10 +186,11 @@ describe('renderPieChart behavior', () => {
 			{ categoria: 'B', valor: 'y' },
 		];
 
-		const result = renderPieChart(container, rows, 'categoria', {
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
 			measureMode: 'sum',
 			valueColumn: 'valor',
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-numeric');
@@ -193,11 +208,12 @@ describe('renderPieChart behavior', () => {
 			return document.querySelector('.chart-tooltip').textContent;
 		};
 
-		const result = renderPieChart(container, rows, 'categoria', {
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
 			measureMode: 'sum',
 			valueColumn: 'valor',
 			showLegend: true,
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		expect(result.ok).toBe(true);
 		const slices = Array.from(container.querySelectorAll('path'));
@@ -214,10 +230,11 @@ describe('renderPieChart behavior', () => {
 			{ categoria: 'B', valor: -3 },
 		];
 
-		const result = renderPieChart(container, rows, 'categoria', {
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
 			measureMode: 'sum',
 			valueColumn: 'valor',
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-positive-value');
@@ -226,14 +243,19 @@ describe('renderPieChart behavior', () => {
 
 	it('covers pie invalid args, hidden labels/legend, custom slice colors, and invalid radius options', () => {
 		const container = document.getElementById('pie');
-		expect(renderPieChart(null, [], 'categoria').ok).toBe(false);
-		expect(renderPieChart(container, [], '').ok).toBe(false);
+		expect(renderPieChart(null, [], {
+			category: 'categoria',
+		}, renderContext({ category: 'categoria' })).ok).toBe(false);
+		expect(renderPieChart(container, [], {
+			category: '',
+		}, renderContext({ category: '' })).ok).toBe(false);
 
 		const result = renderPieChart(container, [
 			{ categoria: 'A' },
 			{ categoria: 'B' },
 			{ categoria: 'A' },
-		], 'categoria', {
+		], {
+			category: 'categoria',
 			color: 'bad-color',
 			customSliceColors: { A: '#123456' },
 			showCategoryLabel: false,
@@ -245,7 +267,7 @@ describe('renderPieChart behavior', () => {
 			padAngle: Number.NaN,
 			zoomScale: 99,
 			chartHeight: 100,
-		});
+		}, renderContext({ category: 'categoria' }));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelector('path')?.getAttribute('fill')).toBe('#123456');
@@ -256,7 +278,13 @@ describe('renderPieChart behavior', () => {
 	it('pins the Other sector after a real category spelled the same way', () => {
 		const container = document.getElementById('pie');
 		const rows = ['Other', 'Other', 'Other', 'A', 'A', 'B', 'C'].map(categoria => ({ categoria }));
-		renderPieChart(container, rows, 'categoria', { topN: 2, topNMode: 'other', labels: { other: 'Other' } });
+		renderPieChart(container, rows, {
+			category: 'categoria',
+			topN: 2,
+			topNMode: 'other',
+		}, renderContext({ category: 'categoria' }, {
+			labels: { other: 'Other' },
+		}));
 		const slices = Array.from(container.querySelectorAll('path'));
 		const realOther = slices.find(path => path.__data__.data.key === 'Other');
 		const otherSector = slices.find(path => path.__data__.data.isOther);
@@ -276,14 +304,16 @@ describe('renderPieChart behavior', () => {
 		const container = document.getElementById('pie');
 		const rows = ['A', 'A', 'B', 'C', 'D'].map(categoria => ({ categoria }));
 		const calls = [];
-		const result = renderPieChart(container, rows, 'categoria', {
+		const result = renderPieChart(container, rows, {
+			category: 'categoria',
 			topN: 1,
 			topNMode: 'other',
+		}, renderContext({ category: 'categoria' }, {
 			labels: { other: 'Other' },
 			filterCallbacks: {
 				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 			},
-		});
+		}));
 		expect(result.ok).toBe(true);
 		const sectors = Array.from(container.querySelectorAll('path')).filter(path => path.__data__?.data);
 

@@ -291,8 +291,8 @@ same section routine for every chart:
    clamped to the definition's `heightLimits`, or the default height when it is not a
    number ([chartHeight.js](../../../src/charts/shared/chartHeight.js)).
 4. Hands the chart input to `renderBarInto` in
-   [presentation.js](../../../src/charts/bar/presentation.js), which maps options and
-   localized labels and calls `renderBarChart(container, rows, config.category, options)`.
+   [presentation.js](../../../src/charts/bar/presentation.js), which supplies localized
+   text and calls `renderBarChart(container, rows, config, context)` with config unchanged.
 
 The presentation flow shows a localized empty state on either surface: `no-numeric` /
 `no-value-column` map to `chive-chart-empty-bar-numeric`, anything else to
@@ -320,12 +320,15 @@ flow uses a frozen empty default, so panel tooltips do **not** offer click-to-fi
 
 ## 7. Inside `renderBarChart`
 
-`renderBarChart(container, rows, categoryColumn, options = {})` returns a `Result`: `ok()`
+`renderBarChart(container, rows, config, context)` returns a `Result`: `ok()`
 on success or `fail(reason)` when it cannot draw. The pipeline in order:
 
 ### 7.1 Guard and option parsing
 
-- Returns `fail()` immediately if the container or `categoryColumn` is missing.
+- Returns `fail()` immediately if the container or `config.category` is missing.
+- `normalizeBarOptions(config)` owns bounds and defaults; `context` supplies labels,
+  locale and filter callbacks. The presentation resolves both axis labels, including
+  the translated measure on the y axis.
 - Reads the enumerated options as given, after chart config canonicalization. `topN` falls
   back to the `BAR_CHART` default; colors run through `isValidHexColor` (valid `#RRGGBB` or
   fallback); `manualThresholdPct` is clamped to 0 to 100;
@@ -397,9 +400,10 @@ treemap, bubble, network, and scatter:
   when it would give the same filter as adding the value), then add to the global filter and
   exclude ("hide this") for a value the filter does not name, remove from the filter for an
   included value, or bring back an excluded one. An included or excluded value also gets a
-  filter-state badge. Each filter-action label falls back to its English default when the bag
-  lacks it. The close button receives `labels.close` from the shared presentation flow as a
-  separate `closeLabel`, so its accessible name and hover title are translated in both views.
+  filter-state badge. Presentation supplies the translated action and badge text as
+  `labels.filterActions`, passed separately as `filterActionLabels`; callbacks carry no
+  labels. The close button receives `labels.close` as a separate `closeLabel`, so its
+  accessible name and hover title are translated in both views.
   Clicking the same bar again or clicking the SVG background dismisses the pin.
 
 Panel passes empty `filterCallbacks`. Its bars still show hover and pinned tooltips, with a

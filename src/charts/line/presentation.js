@@ -1,8 +1,9 @@
 /**
  * Shared line-chart presentation flow.
  *
- * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Workspace and Panel pass stored config unchanged to the same renderer,
+ * alongside presentation-owned text and runtime context. This flow also shows
+ * localized empty states on both surfaces.
  * Localized labels stay here so the renderer remains
  * stateless and i18n-free. The x-axis column type is forwarded so the
  * renderer can decide between numeric, point, and time scales.
@@ -22,19 +23,7 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
  * @returns {import('../../types.js').Result}
  */
 export function renderLineInto(container, { rows, config, columnTypeByName = {}, filterCallbacks = EMPTY_FILTER_CALLBACKS }) {
-	const result = renderLineChart(container, rows, config.x, config.y, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
-		curve: config.curve,
-		missingMode: config.missingMode,
-		strokeWidth: config.strokeWidth,
-		color: config.color,
-		ghostStrokeColor: config.ghostStrokeColor,
-		showPoints: config.showPoints,
-		sortX: config.sortX,
-		aggregateMode: config.aggregateMode,
-		showXAxisLabel: config.showXAxisLabel,
-		showYAxisLabel: config.showYAxisLabel,
+	const result = renderLineChart(container, rows, config, {
 		axisLabels: {
 			x: config.x || t('chive-chart-control-line-x'),
 			y: config.y || t('chive-chart-control-line-y'),

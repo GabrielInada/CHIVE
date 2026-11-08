@@ -152,7 +152,7 @@ describe('renderCharts orchestration', () => {
 		expect(badge.textContent).toBe('chive-charts-badge:3,1');
 	});
 
-	it('passes the filter callbacks on as they are, with the localized action labels', () => {
+	it('passes the filter callbacks on as they are', () => {
 		setupDom();
 		const config = makeConfig();
 		config.bar.enabled = true;
@@ -168,14 +168,7 @@ describe('renderCharts orchestration', () => {
 
 		renderCharts(config, [], [], [], callbacks);
 
-		const { filterActionLabels, ...passed } = inputsByType().bar.filterCallbacks;
-		expect(passed).toEqual(callbacks);
-		Object.entries(callbacks).forEach(([name, callback]) => expect(passed[name]).toBe(callback));
-		expect(filterActionLabels).toMatchObject({
-			focus: 'chive-tooltip-show-only-this',
-			add: 'chive-tooltip-add-to-filter',
-			filterBySource: 'chive-tooltip-filter-by-source',
-		});
+		expect(inputsByType().bar.filterCallbacks).toBe(callbacks);
 	});
 
 	it('draws the rows it is given in each section, without filtering them again', () => {

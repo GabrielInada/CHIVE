@@ -173,6 +173,14 @@ ownership rather than file history, according to these rules:
   `charts/treemap/`, `charts/bubble/`, `charts/line/`, `charts/scatter/`,
   `charts/network/`, and `charts/tin/` are the completed migrations from the
   legacy SVG directories.
+- Presentations pass stored config unchanged to `(container, rows, config, context)`
+  renderers. Every chart's `options.js` owns visual-setting bounds and defaults;
+  presentation owns locale, labels, column types and transient runtime inputs.
+  `charts/shared/tooltip/labels.js` builds translated tooltip text from an injected
+  translator; filter callbacks carry only actions and state queries. Real-render
+  `presentation.test.js` suites and `registries/presentationLabels.test.js` cover
+  settings and text across these boundaries; scatter3d also has
+  `presentationRendering.test.js` with only WebGL mocked.
 - Chart integration stays split by surface. `charts/registries/controls.js`,
   `workspace.js`, and `panel.js` each import only their own adapters and expose
   canonical-order support lists; no universal chart registry joins those
