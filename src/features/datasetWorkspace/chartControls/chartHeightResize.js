@@ -7,17 +7,20 @@
  * chartControls layer because the drag writes chart config; renderers
  * (`components/`) must stay stateless.
  *
- * While a drag runs, writes go through the non-emitting facade path plus
- * the throttled live render, exactly like the color-picker `input` path;
- * the emitting commit happens once on release so CONFIG_UPDATED, the
- * sidebar refresh, and auto-save fire with the final height.
+ * The height goes through the chart's ChartConfigWriter, as the chart's
+ * controls write theirs. While a drag runs, `preview` stores the height
+ * without emitting and repaints the chart through the throttled live render,
+ * exactly like a color picker's `input`; `commit` runs once on release so
+ * CONFIG_UPDATED, the sidebar refresh, and auto-save fire with the final
+ * height.
  *
  * @typedef {import('../../../types.js').ChartTypeKey} ChartTypeKey
  */
 
 import { CHART_BLOCKS, CHART_CONTAINERS } from '../../../charts/workspaceDomIds.js';
 import { CHART_HEIGHT_LIMITS } from '../../../config/charts/definitions.js';
-import { getActiveDataset, normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../../../state/appState.js';
+import { getActiveDataset } from '../../../state/appState.js';
+import { createChartConfigWriter } from './chartConfigAdapter.js';
 import { triggerLiveRender } from './livePreviewBridge.js';
 import { t } from '../../../services/i18nService.js';
 import { clamp } from '../../../utils/formatters.js';
@@ -77,8 +80,9 @@ function readChartHeight(chartKey, container) {
 }
 
 /**
- * Emitting write of the final height. Same cost and effects as the old
- * slider's `change`: CONFIG_UPDATED, sidebar refresh, auto-save dirty.
+ * Commit a height from the keyboard, clamped to the chart's limits. Same cost
+ * and effects as a control's `change`: CONFIG_UPDATED, sidebar refresh,
+ * auto-save dirty.
  *
  * @private
  */
@@ -86,10 +90,7 @@ function commitChartHeight(chartKey, heightPx) {
 	const dataset = getActiveDataset();
 	if (!dataset) return;
 	const { min, max } = CHART_HEIGHT_LIMITS[chartKey];
-	const next = Math.round(clamp(heightPx, min, max));
-	updateActiveDatasetConfig({
-		[chartKey]: { ...dataset.chartConfig[chartKey], chartHeight: next },
-	});
+	createChartConfigWriter({ dataset, chartKey }).commit({ chartHeight: Math.round(clamp(heightPx, min, max)) });
 }
 
 /**
@@ -102,7 +103,10 @@ function commitChartHeight(chartKey, heightPx) {
  */
 function startChartHeightDrag(chartKey, block, container, startClientY) {
 	const startY = Number(startClientY);
-	if (!Number.isFinite(startY)) return;
+	const dataset = getActiveDataset();
+	// The chart blocks only show while a dataset is open.
+	if (!Number.isFinite(startY) || !dataset) return;
+	const writer = createChartConfigWriter({ dataset, chartKey, requestLiveRender: triggerLiveRender });
 	const { min, max } = CHART_HEIGHT_LIMITS[chartKey];
 	const startHeight = readChartHeight(chartKey, container);
 	block.classList.add('is-resizing');
@@ -112,13 +116,9 @@ function startChartHeightDrag(chartKey, block, container, startClientY) {
 		const next = Math.round(clamp(startHeight + (event.clientY - startY), min, max));
 		if (next === lastHeight) return;
 		lastHeight = next;
-		normalizeActiveDatasetConfig(prev => ({
-			...prev,
-			[chartKey]: { ...prev[chartKey], chartHeight: next },
-		}));
 		// Direct write so the box tracks the cursor between throttled renders.
 		container.style.minHeight = `${next}px`;
-		triggerLiveRender();
+		writer.preview({ chartHeight: next });
 	};
 
 	const onUp = () => {
@@ -127,7 +127,7 @@ function startChartHeightDrag(chartKey, block, container, startClientY) {
 		window.removeEventListener('pointercancel', onUp);
 		block.classList.remove('is-resizing');
 		if (lastHeight !== null && lastHeight !== startHeight) {
-			commitChartHeight(chartKey, lastHeight);
+			writer.commit({ chartHeight: lastHeight });
 		}
 	};
 

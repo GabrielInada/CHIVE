@@ -80,8 +80,8 @@ focused getters (excluding persistence-only `getPersistenceSnapshot`),
 `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing
 any write function from those directories is an error. If you need a write from
 a renderer or DOM builder, route it through a feature controller (`panelController.js`,
-a chart-controls listener, or an `app/bindings/` workflow module), all outside the
-linted scope.
+the `ChartConfigWriter` a chart's controls write through, or an `app/bindings/`
+workflow module), all outside the linted scope.
 When a new renderer-safe read is added, update `APP_STATE_READS` in
 `eslint.config.js`; reads meant for persistence, debug, or internal use are
 not added there (`getPersistenceSnapshot` is the precedent).

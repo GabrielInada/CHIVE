@@ -7,8 +7,7 @@ const mocks = vi.hoisted(() => ({
 	onStateChange: vi.fn(),
 	setActiveChartType: vi.fn(),
 	openChartTypePickerDialog: vi.fn(() => Promise.resolve(null)),
-	attachListeners: vi.fn(),
-	build: vi.fn(() => []),
+	columns: vi.fn(context => context.allColumns),
 	computeDefaults: vi.fn(() => ({})),
 	getChartControlAdapter: vi.fn(),
 	createChartConfigWriter: vi.fn(),
@@ -63,8 +62,14 @@ describe('chartControlsController writer wiring', () => {
 		vi.clearAllMocks();
 		document.body.innerHTML = '<div id="viz-chart-params"></div><div id="sidebar-panel-viz"></div>';
 		mocks.getChartControlAdapter.mockReturnValue({
-			build: mocks.build,
-			attachListeners: mocks.attachListeners,
+			controls: {
+				definition: { key: 'bar', allowedValues: {} },
+				sections: [{
+					id: 'data',
+					title: 'Data',
+					controls: [{ widget: 'select', id: 'demo-category', key: 'category', label: 'chive-demo-category', columns: mocks.columns }],
+				}],
+			},
 			computeDefaults: mocks.computeDefaults,
 		});
 	});
@@ -102,26 +107,16 @@ describe('chartControlsController writer wiring', () => {
 		expect(mocks.createChartConfigWriter.mock.calls[0][0].requestLiveRender).not.toBe(liveRender);
 	});
 
-	it('passes the exact writer instance to the chart package adapter', () => {
+	it('builds the described controls from the column context it derives, wired to the exact writer', () => {
 		const writer = { commit: vi.fn(), preview: vi.fn() };
 		mocks.createChartConfigWriter.mockReturnValue(writer);
-
-		initChartControls(vi.fn(), vi.fn());
-		renderChartControlsSidebar(deriveShownDataset(makeDataset()));
-
-		expect(mocks.attachListeners).toHaveBeenCalledTimes(1);
-		expect(mocks.attachListeners.mock.calls[0].at(-1)).toBe(writer);
-	});
-
-	it('derives the column context once and hands the same one to the builder and the listeners', () => {
-		mocks.createChartConfigWriter.mockReturnValue({ commit: vi.fn(), preview: vi.fn() });
 		const shown = deriveShownDataset(makeDataset());
 
 		initChartControls(vi.fn(), vi.fn());
 		renderChartControlsSidebar(shown);
 
-		const [builtDataset, context] = mocks.build.mock.calls[0];
-		expect(builtDataset).toBe(shown.dataset);
+		expect(mocks.columns).toHaveBeenCalledTimes(1);
+		const [context, config] = mocks.columns.mock.calls[0];
 		expect(context).toEqual({
 			numeric: ['valor'],
 			categorical: ['categoria'],
@@ -131,38 +126,7 @@ describe('chartControlsController writer wiring', () => {
 			rows: shown.rows,
 		});
 		expect(context.rows).toBe(shown.rows);
-		expect(mocks.attachListeners.mock.calls[0][1]).toBe(context);
-	});
-
-	it('builds described controls already wired to the writer, from the column context as it is', () => {
-		const writer = { commit: vi.fn(), preview: vi.fn() };
-		mocks.createChartConfigWriter.mockReturnValue(writer);
-		const columns = vi.fn(context => context.allColumns);
-		mocks.getChartControlAdapter.mockReturnValue({
-			controls: {
-				definition: { key: 'bar', allowedValues: {} },
-				sections: [{
-					id: 'data',
-					title: 'Data',
-					controls: [{ widget: 'select', id: 'demo-category', key: 'category', label: 'chive-demo-category', columns }],
-				}],
-			},
-			computeDefaults: mocks.computeDefaults,
-		});
-		const shown = deriveShownDataset(makeDataset());
-
-		initChartControls(vi.fn(), vi.fn());
-		renderChartControlsSidebar(shown);
-
-		expect(columns).toHaveBeenCalledTimes(1);
-		expect(columns.mock.calls[0][0]).toEqual({
-			numeric: ['valor'],
-			categorical: ['categoria'],
-			dates: [],
-			allColumns: ['categoria', 'valor'],
-			baseCategoricalOrAll: ['categoria'],
-			rows: shown.rows,
-		});
+		expect(config).toBe(shown.dataset.chartConfig.bar);
 		expect(mocks.t).toHaveBeenCalledWith('chive-demo-category');
 
 		// The params view is mocked: take the sections the controller handed it.
@@ -171,7 +135,5 @@ describe('chartControlsController writer wiring', () => {
 		select.value = 'valor';
 		select.dispatchEvent(new Event('change'));
 		expect(writer.commit).toHaveBeenCalledWith({ category: 'valor' });
-		expect(mocks.build).not.toHaveBeenCalled();
-		expect(mocks.attachListeners).not.toHaveBeenCalled();
 	});
 });

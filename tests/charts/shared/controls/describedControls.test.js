@@ -242,6 +242,54 @@ describe('described select', () => {
 		]);
 		expect(optionLabelParams).toHaveBeenCalledWith('by-measure', expect.objectContaining({ measure: 'sum' }), translate);
 	});
+
+	it('hands the columns function the config the control is built from', () => {
+		const columns = vi.fn((context, config) => (config.mode === 'category' ? context.categorical : context.numeric));
+		const description = { widget: 'select', id: 'demo-field', key: 'field', label: 'chive-field', columns };
+		const valuesOf = select => optionsOf(select).map(([value]) => value);
+
+		expect(valuesOf(build(chartWith([description]), { mode: 'category' }).get('demo-field'))).toEqual(['', 'region', 'team']);
+		expect(valuesOf(build(chartWith([description]), { mode: 'numeric' }).get('demo-field'))).toEqual(['', 'sales', 'profit']);
+		expect(columns).toHaveBeenLastCalledWith(CONTEXT, expect.objectContaining({ mode: 'numeric' }));
+	});
+});
+
+describe('described setting inside a block', () => {
+	const band = { widget: 'checkbox', id: 'demo-band', key: 'regression.showCI', label: 'chive-band' };
+
+	it('shows the setting, and writes the block of the moment with the setting changed', () => {
+		const { get, writer, dataset } = build(chartWith([band]), { regression: { showCI: true, lineWidth: 2 } });
+		expect(get('demo-band').checked).toBe(true);
+
+		dataset.chartConfig = { demo: { ...dataset.chartConfig.demo, regression: { showCI: true, lineWidth: 3 } } };
+		toggle(get('demo-band'));
+
+		expect(writer.commit).toHaveBeenCalledWith({ regression: { showCI: false, lineWidth: 3 } });
+	});
+
+	it('writes a block of its own when the config has none', () => {
+		const { get, writer } = build(chartWith([band]), { regression: null });
+		expect(get('demo-band').checked).toBe(false);
+
+		toggle(get('demo-band'));
+
+		expect(writer.commit).toHaveBeenCalledWith({ regression: { showCI: true } });
+	});
+
+	it('lists the values the definition lists for the setting under the block', () => {
+		const { get, writer } = build(chartWith([{
+			widget: 'select',
+			id: 'demo-mode',
+			key: 'regression.mode',
+			label: 'chive-mode',
+			optionLabels: { overall: 'chive-overall', perCategory: 'chive-per-category' },
+		}], { regression: { mode: ['overall', 'perCategory'] } }), { regression: { mode: 'perCategory', enabled: true } });
+
+		expect(optionsOf(get('demo-mode'))).toEqual([['overall', 't(chive-overall)'], ['perCategory', 't(chive-per-category)']]);
+		expect(get('demo-mode').value).toBe('perCategory');
+		fire(get('demo-mode'), 'change', 'overall');
+		expect(writer.commit).toHaveBeenCalledWith({ regression: { mode: 'overall', enabled: true } });
+	});
 });
 
 describe('described control visibility', () => {

@@ -1,28 +1,13 @@
 // @vitest-environment jsdom
 
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { getChartControlAdapter } from '../../src/charts/registries/controls.js';
 import { buildDescribedControls } from '../../src/charts/shared/controls/describedControls.js';
 import { CHART_DEFINITIONS } from '../../src/config/charts/definitions.js';
 import { createDefaultChartConfig } from '../../src/config/charts/defaults.js';
 
-vi.mock('../../src/services/i18nService.js', () => ({ t: key => key }));
-
 // Every offered enum must survive canonicalization, including conditional
-// selects. A described chart's control carries its own id; scatter, which
-// still pairs a builder with listeners, names each select's id suffix here.
-const SELECTS = {
-	scatter: {
-		xScale: 'xscale',
-		yScale: 'yscale',
-		sizeMode: 'size-mode',
-		categoricalPairMode: 'categorical-mode',
-		colorMode: 'color-mode',
-		gradientDistribution: 'gradient-distribution',
-		colorScheme: 'color-scheme',
-		'regression.mode': 'regression-mode',
-	},
-};
+// selects. Each chart's control for a setting carries its own id.
 
 function listedSettings(values, prefix = '') {
 	return Object.entries(values).flatMap(([key, offered]) => {
@@ -46,35 +31,31 @@ function buildControls(type, overrides = {}) {
 		baseCategoricalOrAll: ['group'],
 		dates: [],
 	};
-	const adapter = getChartControlAdapter(type);
 	const root = document.createElement('div');
-	root.append(...(adapter.controls
-		? buildDescribedControls(adapter.controls, { dataset, context, writer: { commit() {}, preview() {} }, translate: key => key })
-		: adapter.build(dataset, context)));
+	root.append(...buildDescribedControls(getChartControlAdapter(type).controls, {
+		dataset,
+		context,
+		writer: { commit() {}, preview() {} },
+		translate: key => key,
+	}));
 	return root;
 }
 
-/** The control a described chart declares for `setting`. */
-function describedControl(controls, setting) {
-	return controls.sections.flatMap(section => section.controls).find(control => control.key === setting);
+/** The control a chart declares for `setting`. */
+function declaredControl(type, setting) {
+	return getChartControlAdapter(type).controls.sections
+		.flatMap(section => section.controls)
+		.find(control => control.key === setting);
 }
 
 function offeredBy(root, type, setting) {
-	const { controls } = getChartControlAdapter(type);
-	if (controls) {
-		const control = describedControl(controls, setting);
-		expect(control, `${type}.${setting} needs a declared control`).toBeDefined();
-		// A palette, described or written by hand, names its buttons by its id.
-		const presets = root.querySelectorAll(`[data-color-preset-control="${control.id}"]`);
-		if (presets.length > 0) return Array.from(presets, button => button.dataset.presetName);
-		const select = root.querySelector(`#${control.id}`);
-		expect(select, `${type}.${setting} is not shown by default`).not.toBeNull();
-		return Array.from(select.options, option => option.value);
-	}
-	const suffix = SELECTS[type]?.[setting];
-	expect(suffix, `${type}.${setting} needs a control assertion`).toBeDefined();
-	const select = root.querySelector(`#viz-select-${type}-${suffix}`);
-	expect(select).not.toBeNull();
+	const control = declaredControl(type, setting);
+	expect(control, `${type}.${setting} needs a declared control`).toBeDefined();
+	// A palette, described or written by hand, names its buttons by its id.
+	const presets = root.querySelectorAll(`[data-color-preset-control="${control.id}"]`);
+	if (presets.length > 0) return Array.from(presets, button => button.dataset.presetName);
+	const select = root.querySelector(`#${control.id}`);
+	expect(select, `${type}.${setting} is not shown by default`).not.toBeNull();
 	return Array.from(select.options, option => option.value);
 }
 
