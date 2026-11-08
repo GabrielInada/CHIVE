@@ -92,7 +92,7 @@ Before opening a PR, check that:
 - **DOM IDs:** Centralize IDs only when multiple modules consume them or static HTML defines the contract. Put shared contracts in the owner's `domIds.js` (`src/charts/workspaceDomIds.js` for chart workspace blocks). A single-module HTML contract may stay as an exported constant in its owner module; other single-use selectors stay literal-local. Update `tests/staticHtml/parity.test.js`
 - **Color utilities:** Use shared functions from `src/utils/colorUtils.js`; never duplicate hex/rgb conversion logic
 - **Chart control listeners:** Use helpers from `src/charts/shared/controls/listenerBindings.js` for common patterns (select, checkbox, slider, etc.); only write inline listeners when cross-dependency logic is needed. Chart packages never import state: they receive a `ChartConfigWriter` and call `writer.commit(patch)`, or `writer.preview(patch)` for continuous input like a color picker drag
-- **Dataset upload, join, and preset flows:** Keep orchestration in `src/features/datasetWorkspace/datasetController.js`; views and dialogs remain callback-driven and do not write durable state directly
+- **Dataset upload, join, and preset flows:** `src/features/datasetWorkspace/datasetController.js` stays the public entry point, and every flow adds its dataset through the shared intake in `src/features/datasetWorkspace/workflows/intake.js`; views and dialogs remain callback-driven and do not write durable state directly
 - **No TypeScript:** plain JS with ES modules. ESLint exists, but its config is intentionally narrow and architecture-focused.
 
 ## Translations and presets
