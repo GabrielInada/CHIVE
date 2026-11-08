@@ -28,11 +28,12 @@ import {
 import {
 	createTooltipLine,
 	hideChartTooltip,
+	hideHoverTooltip,
 	moveChartTooltip,
 	repositionPinnedTooltip,
 	showChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
+import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { NETWORK_GRAPH } from '../../../config/charts/definitions/network.js';
@@ -148,8 +149,6 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 
 	container[SIMULATION_KEY] = simulation;
 
-	let pinnedNodeDatum = null;
-
 	const buildNodeTooltipContent = (nodeData) => {
 		const content = document.createElement('div');
 		content.appendChild(createTooltipLine(labels.node, nodeData.id));
@@ -205,25 +204,16 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		showChartTooltip(content, event.pageX, event.pageY);
 	};
 	const togglePinnedNode = (event, nodeData) => {
-		if (pinnedNodeDatum && pinnedNodeDatum.id === nodeData.id) {
-			pinnedNodeDatum = null;
-			hideChartTooltip();
-			return;
-		}
-		pinnedNodeDatum = nodeData;
 		const anchorPoint = nodeScreenPoint(nodeData);
 		const startX = anchorPoint ? anchorPoint.x : event.pageX;
 		const startY = anchorPoint ? anchorPoint.y : event.pageY;
 
-		showPinnedFilterTooltip(buildNodeTooltipContent(nodeData), startX, startY, {
+		togglePinnedFilterTooltip(buildNodeTooltipContent(nodeData), startX, startY, {
+			target: event.target,
 			headerTitle: String(nodeData.id),
 			closeLabel: labels.close,
 			filterActionLabels: labels.filterActions,
-			onDismiss: () => {
-				pinnedNodeDatum = null;
-				hideChartTooltip();
-			},
-			anchor: () => nodeScreenPoint(pinnedNodeDatum),
+			anchor: () => nodeScreenPoint(nodeData),
 			filterCallbacks,
 			categories: nodeFilterCategories(nodeData),
 		});
@@ -267,7 +257,6 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 
 	svg
 		.on('mouseover.chart-interaction', event => {
-			if (pinnedNodeDatum !== null) return;
 			const nodeData = delegatedDatum(event, '.network-node');
 			if (nodeData) {
 				showNodeTooltip(event, nodeData);
@@ -277,16 +266,14 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 			if (linkData) showLinkTooltip(event, linkData);
 		})
 		.on('mousemove.chart-interaction', event => {
-			if (pinnedNodeDatum !== null) return;
 			const hasInteractiveTarget = delegatedDatum(event, '.network-node')
 				|| delegatedDatum(event, '.network-link');
 			if (hasInteractiveTarget) moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseout.chart-interaction', event => {
-			if (pinnedNodeDatum !== null) return;
 			const hasInteractiveTarget = delegatedDatum(event, '.network-node')
 				|| delegatedDatum(event, '.network-link');
-			if (hasInteractiveTarget) hideChartTooltip();
+			if (hasInteractiveTarget) hideHoverTooltip();
 		})
 		.on('click.chart-interaction', event => {
 			const nodeData = delegatedDatum(event, '.network-node');
@@ -295,7 +282,6 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 				togglePinnedNode(event, nodeData);
 				return;
 			}
-			pinnedNodeDatum = null;
 			hideChartTooltip();
 		});
 

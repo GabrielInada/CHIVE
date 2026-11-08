@@ -43,26 +43,6 @@ export function createTooltipLine(label, value) {
 	return row;
 }
 
-/**
- * Build a primary (default-style) filter action button.
- *
- * @param {{ label: string, onClick: () => void }} args
- * @returns {HTMLButtonElement}
- */
-export function createTooltipFilterAction({ label, onClick }) {
-	return createTooltipAction({ label, onClick });
-}
-
-/**
- * Build a danger-style exclude action button.
- *
- * @param {{ label: string, onClick: () => void }} args
- * @returns {HTMLButtonElement}
- */
-export function createTooltipExcludeAction({ label, onClick }) {
-	return createTooltipAction({ label, onClick, variant: 'danger' });
-}
-
 /** @private */
 function createTooltipAction({ label, onClick, title, variant, disabled, ariaLabel }) {
 	const action = document.createElement('button');

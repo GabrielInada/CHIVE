@@ -317,7 +317,7 @@ distinguishable. Each wedge has a white stroke. Hover shows a category/value/per
 tooltip; click pins the shared categorical filter-action tooltip (the bar doc's
 [section 7.6](bar.md)), except for a sector with no category token, which only the `Other`
 slice lacks: it pins a plain tooltip with no filter actions (it is an aggregate, not a real
-category). The pin is tracked by sector key, so clicking the pinned wedge again unpins
+category). The shared tooltip tracks the clicked wedge element, so clicking it again unpins
 it and clicking another wedge moves the pin.
 
 ### 7.5 Zoom, labels, and legend

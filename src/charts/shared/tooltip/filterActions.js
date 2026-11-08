@@ -24,7 +24,7 @@
  */
 
 import { createFilterStateBadge, createNamedActionGroup } from './content.js';
-import { showPinnedChartTooltip } from './tooltip.js';
+import { togglePinnedChartTooltip } from './tooltip.js';
 
 const DEFAULT_ACTION_LABELS = Object.freeze({
 	focus: 'Show only this',
@@ -69,8 +69,8 @@ function buildCategoryActions(column, token, state, callbacks, labels) {
 }
 
 /**
- * Show a pinned tooltip with the global-filter actions for the categories it
- * is about.
+ * Toggle a pinned tooltip with the global-filter actions for the categories
+ * it is about. The shared tooltip owns pin identity and dismissal.
  *
  * Each category offers "Show only this", unless `isShowOnlyThisRedundant`
  * says it would give the same filter as adding the category, and then by its
@@ -85,7 +85,8 @@ function buildCategoryActions(column, token, state, callbacks, labels) {
  * @param {Node|string} content - Tooltip body.
  * @param {number} x - Page X coordinate.
  * @param {number} y - Page Y coordinate.
- * @param {Object} [options]
+ * @param {Object} options
+ * @param {Element} options.target - The clicked chart mark (not a delegated event's container).
  * @param {string} [options.headerTitle]
  * @param {string} [options.closeLabel] - Localized close label, independent of filter callbacks.
  * @param {() => void} [options.onDismiss]
@@ -95,7 +96,8 @@ function buildCategoryActions(column, token, state, callbacks, labels) {
  * @param {FilterCategory[]} [options.categories]
  * @returns {void}
  */
-export function showPinnedFilterTooltip(content, x, y, {
+export function togglePinnedFilterTooltip(content, x, y, {
+	target,
 	headerTitle,
 	closeLabel,
 	onDismiss,
@@ -126,7 +128,8 @@ export function showPinnedFilterTooltip(content, x, y, {
 			excludedLabel: labels.stateExcluded,
 		})
 		: null;
-	showPinnedChartTooltip(content, x, y, {
+	togglePinnedChartTooltip(content, x, y, {
+		target,
 		headerTitle,
 		closeLabel,
 		onDismiss,

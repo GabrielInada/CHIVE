@@ -14,10 +14,11 @@ import { axisBottom, axisLeft, max, min, scaleBand, scaleLinear } from '../../..
 import {
 	createTooltipLine,
 	hideChartTooltip,
+	hideHoverTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
-import { showPinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
+import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { BAR_CHART } from '../../../config/charts/definitions/bar.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { formatNumber } from '../../../utils/formatters.js';
@@ -94,7 +95,6 @@ export function renderBarChart(container, rows, config = {}, context = {}) {
 	});
 	hideChartTooltip();
 
-	let pinnedCategory = null;
 	// WHY: with a total below 0, a share of the net total can pass 100% or go
 	// below 0%, so the tooltip leaves it out, as it does for a mean.
 	const showsShare = measureMode !== 'mean' && entries.every(item => item.value >= 0);
@@ -116,12 +116,12 @@ export function renderBarChart(container, rows, config = {}, context = {}) {
 		showChartTooltip(buildTooltipContent(item), event.pageX, event.pageY);
 	};
 
-	const showPinnedTooltip = (event, item, onDismiss) => {
-		showPinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
+	const togglePinnedTooltip = (event, item) => {
+		togglePinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
+			target: event.currentTarget,
 			headerTitle: item.label,
 			closeLabel: labels.close,
 			filterActionLabels: labels.filterActions,
-			onDismiss,
 			filterCallbacks,
 			categories: [{ column: categoryColumn, token: item.token }],
 		});
@@ -166,33 +166,20 @@ export function renderBarChart(container, rows, config = {}, context = {}) {
 		.attr('rx', 3)
 		.attr('fill', item => getBarColor(item))
 		.on('mouseenter', (event, item) => {
-			if (pinnedCategory !== null) return;
 			showTooltip(event, item);
 		})
 		.on('mousemove', event => {
-			if (pinnedCategory !== null) return;
 			moveChartTooltip(event.pageX, event.pageY);
 		})
 		.on('mouseleave', () => {
-			if (pinnedCategory !== null) return;
-			hideChartTooltip();
+			hideHoverTooltip();
 		})
 		.on('click', (event, item) => {
 			event.stopPropagation();
-			if (pinnedCategory === item.key) {
-				pinnedCategory = null;
-				hideChartTooltip();
-				return;
-			}
-			pinnedCategory = item.key;
-			showPinnedTooltip(event, item, () => {
-				pinnedCategory = null;
-				hideChartTooltip();
-			});
+			togglePinnedTooltip(event, item);
 		});
 
 	svg.on('click', () => {
-		pinnedCategory = null;
 		hideChartTooltip();
 	});
 

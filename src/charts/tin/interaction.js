@@ -7,7 +7,7 @@
  * the returned function to each hit group. Used by `renderers/svg.js`.
  */
 
-import { createTooltipLine, hideChartTooltip, moveChartTooltip, showChartTooltip } from '../shared/tooltip/tooltip.js';
+import { createTooltipLine, hideHoverTooltip, moveChartTooltip, showChartTooltip } from '../shared/tooltip/tooltip.js';
 import { formatNumber } from '../../utils/formatters.js';
 
 /**
@@ -37,7 +37,7 @@ export function createIsolineHoverHandlers({ axisLabels, locale }) {
 			})
 			.on('pointerout', event => {
 				if (event.target?.classList?.contains?.('tin-isoline-hit')) {
-					hideChartTooltip();
+					hideHoverTooltip();
 				}
 			});
 	};

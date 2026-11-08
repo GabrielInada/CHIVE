@@ -369,8 +369,10 @@ is wired together here. The mapping:
 
 The SVG/axis scaffolding (container reset, sized svg, title, translated group, bottom/left
 axes, axis labels) comes from the shared [scaffold.js](../../../src/charts/shared/svg/scaffold.js).
-The orchestrator owns only the layout math, the circle draw and its event wiring (the
-`pinnedIndex` state), and the order in which the phases run. That order is load-bearing: the
+The orchestrator owns only the layout math, the circle draw and its event wiring,
+and the order in which the phases run. The shared tooltip owns the pinned point's identity
+using its circle element; neither the renderer nor regression layer keeps pin state.
+The phase order is load-bearing: the
 regression **layer** is drawn before the circles (so it sits behind them) and the regression
 **annotation** after the axes (see the DOM diagram in section 14).
 

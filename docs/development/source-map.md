@@ -176,6 +176,9 @@ ownership rather than file history, according to these rules:
 - Presentations pass stored config unchanged to `(container, rows, config, context)`
   renderers. Every chart's `options.js` owns visual-setting bounds and defaults;
   presentation owns locale, labels, column types and transient runtime inputs.
+  `charts/shared/tooltip/tooltip.js` owns the pinned chart mark, hover suppression and
+  dismissal across chart instances; renderers pass the clicked SVG element and keep no
+  pin state. `filterActions.js` adds category actions through `togglePinnedFilterTooltip`.
   `charts/shared/tooltip/labels.js` builds translated tooltip text from an injected
   translator; filter callbacks carry only actions and state queries. Real-render
   `presentation.test.js` suites and `registries/presentationLabels.test.js` cover

@@ -139,16 +139,23 @@ doc rather than repeated:
 - **SVG scaffold**: [scaffold.js](../../../src/charts/shared/svg/scaffold.js) owns the
   shared title, SVG/group setup, axes, and axis-label builders used by SVG charts.
 - **Tooltips and click-to-filter**: [tooltip.js](../../../src/charts/shared/tooltip/tooltip.js)
-  owns the tooltip overlay, and
+  owns the tooltip overlay, pin identity and dismissal, and
   [filterActions.js](../../../src/charts/shared/tooltip/filterActions.js)
-  (`showPinnedFilterTooltip`) pins a tooltip with the global-filter actions for the column and
+  (`togglePinnedFilterTooltip`) toggles a tooltip with the global-filter actions for the column and
   category token a chart names. The categorical filter-action subsystem is documented in
   detail in the bar chart's [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter,
   and network. Presentations use [labels.js](../../../src/charts/shared/tooltip/labels.js)
   with their translator to supply `labels.close`, `labels.missing`, and
   `labels.filterActions`. Renderers pass `closeLabel` and `filterActionLabels` separately
   from filter callbacks. Action buttons, state badges, network headings, and the close
-  button therefore use the current interface language wherever the chart is drawn.
+  button therefore use the current interface language wherever the chart is drawn. Renderers
+  pass the clicked SVG mark as `target`; its DOM identity distinguishes categories, bubble
+  hierarchy nodes and scatter points across chart instances and Panel slots. Hover show/move
+  and `hideHoverTooltip` leave a pin intact; explicit `hideChartTooltip` clears it on background
+  clicks or render cleanup. Network supplies an anchor closure over the clicked node datum.
+  The shared [pinning tests](../../../tests/charts/shared/tooltip/pinning.test.js) cover toggle,
+  replacement, dismissal and anchor cleanup; [chart wiring tests](../../../tests/charts/shared/tooltip/chartPinning.test.js)
+  exercise the real renderers in separate Panel slots.
 - **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
   builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets), the
   options of a Top-N select (`topNSelectOptions`), and finds the palette preset a chart's

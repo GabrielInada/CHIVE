@@ -12,7 +12,7 @@
 import { area as d3area, line as d3line } from '../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
-	hideChartTooltip,
+	hideHoverTooltip,
 	moveChartTooltip,
 	showChartTooltip,
 } from '../shared/tooltip/tooltip.js';
@@ -51,7 +51,6 @@ export function renderRegressionLayer({
 	innerWidth,
 	innerHeight,
 	labels,
-	isPinned,
 }) {
 	const config = options.regression;
 	if (!config || config.enabled !== true) return null;
@@ -159,16 +158,13 @@ export function renderRegressionLayer({
 
 		lineSelection
 			.on('mouseenter', (event, d) => {
-				if (isPinned()) return;
 				showRegressionTooltip(event, d, effectiveMode, labels, categoryLabel);
 			})
 			.on('mousemove', event => {
-				if (isPinned()) return;
 				moveChartTooltip(event.pageX, event.pageY);
 			})
 			.on('mouseleave', () => {
-				if (isPinned()) return;
-				hideChartTooltip();
+				hideHoverTooltip();
 			});
 	}
 
