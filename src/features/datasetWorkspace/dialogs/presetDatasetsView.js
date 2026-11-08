@@ -32,7 +32,7 @@ function buildPresetCard(entry, translate) {
 
 	const meta = document.createElement('div');
 	meta.className = 'preset-card-meta';
-	meta.textContent = translate('chive-preset-card-meta', [entry.rows, entry.columns]);
+	meta.textContent = translate('chive-preset-card-meta', entry.rows, entry.columns);
 	card.appendChild(meta);
 
 	if (entry.sourceLabel || entry.sourceUrl) {
