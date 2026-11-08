@@ -70,8 +70,9 @@ the shared keyed maps without registering renderers or controls. Follow the
 when adding a type.
 
 The three implementation registries intentionally stay separate from these
-definitions and from one another. Controls need builder, listener, and
-activation-default adapters; the dataset workspace dispatches section
+definitions and from one another. Controls need control descriptions (or,
+for the charts not yet described, builder and listener adapters) and
+activation defaults; the dataset workspace dispatches section
 renderers; and the panel resolves snapshot renderers. Keeping one registry per
 surface prevents each integration path from importing unrelated
 implementations and keeps capability differences local to their surface
@@ -160,8 +161,18 @@ doc rather than repeated:
   builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets), the
   options of a Top-N select (`topNSelectOptions`), and finds the palette preset a chart's
   colors still match (`findAppliedColorPreset`), the one its palette buttons mark; [grouping.js](../../../src/charts/shared/controls/grouping.js)
-  wraps them in collapsible sections. Neither writes config; the config writes are wired by
-  the listener helpers in
+  wraps them in collapsible sections. Neither writes config.
+- **Described controls**: a chart can declare each control once, as data: its config key,
+  widget, label, options, and when it is disabled (the `ControlDescription` typedef in
+  [types.js](../../../src/types.js)). [describedControls.js](../../../src/charts/shared/controls/describedControls.js)
+  builds the controls with the factories and wires each one to the `ChartConfigWriter` as it
+  creates it, so no listener looks a control up by id. The widget decides how it writes: a
+  color input previews on `input` and commits on `change`, every other widget commits on
+  `change`. An enumerated setting's select lists exactly the values its definition's
+  `allowedValues` accept, so its description gives only the labels. Treemap declares its
+  controls this way ([descriptions.js](../../../src/charts/treemap/controls/descriptions.js));
+  the other charts still pair a `builder.js` with a `listeners.js` that finds each control by
+  id and writes through the helpers in
   [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
 - **Drawn categories**: bar, pie, treemap, and bubble take the categories they draw from
   `aggregateCategories` in
@@ -180,14 +191,15 @@ doc rather than repeated:
   Any measure other than sum or mean is named as count.
 - **Measure and value column**: bar, pie, treemap, and bubble keep their value column by one
   rule, `valueColumnForMeasure` in [measure.js](../../../src/charts/shared/measure.js), both
-  when the user switches the measure (`setupMeasureListener`) and when the chart is activated
+  when the user switches the measure (`setupMeasureListener` for bar, pie, and bubble, the
+  measure description's `toPatch` for treemap) and when the chart is activated
   (`categoryChartDefaults` in
   [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js), the
   `computeDefaults` the four share). Count keeps the stored column; sum and mean keep it
   while it is a visible numeric column and otherwise take the first one. The value-column
   select is disabled when the measure reads no value column (`measureUsesValueColumn`), and
-  `setupValueColumnListener` stores only a visible numeric column. Their measure and Top-N
-  selects list the definition's `measureModes` and `topNOptions`.
+  stores only a visible numeric column (`setupValueColumnListener`, or treemap's `toValue`).
+  Their measure and Top-N selects list the definition's `measureModes` and `topNOptions`.
   [dataControls.test.js](../../../tests/charts/registries/dataControls.test.js) checks these
   rules for the four charts through the controls registry.
 - **Live preview throttle**: the color-picker live path is documented in the TIN chart's

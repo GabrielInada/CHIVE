@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../../../src/i18n/en.json';
 import ptBR from '../../../src/i18n/pt-BR.json';
 import { getChartControlAdapter } from '../../../src/charts/registries/controls.js';
+import { buildDescribedControls } from '../../../src/charts/shared/controls/describedControls.js';
 import { createDefaultChartConfig } from '../../../src/config/charts/defaults.js';
+import { t } from '../../../src/services/i18nService.js';
 
 const locale = vi.hoisted(() => ({ value: 'en' }));
 const messages = { en, 'pt-BR': ptBR };
@@ -68,14 +70,20 @@ function datasetWith(type, overrides = {}) {
 	return { rows, columns, chartConfig };
 }
 
-// Build a chart's controls into the document and wire them to a writer double.
+// Build a chart's controls into the document and wire them to a writer double,
+// as the controls sidebar does: described controls come back wired, the others
+// attach their listeners once they are in the document.
 function mount(type, overrides) {
 	document.body.replaceChildren();
 	const dataset = datasetWith(type, overrides);
 	const adapter = getChartControlAdapter(type);
-	document.body.append(...adapter.build(dataset, context));
 	const writer = { commit: vi.fn(), preview: vi.fn() };
-	adapter.attachListeners(dataset, context, writer);
+	if (adapter.controls) {
+		document.body.append(...buildDescribedControls(adapter.controls, { dataset, context, writer, translate: t }));
+	} else {
+		document.body.append(...adapter.build(dataset, context));
+		adapter.attachListeners(dataset, context, writer);
+	}
 	return writer;
 }
 

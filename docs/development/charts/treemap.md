@@ -18,9 +18,11 @@ Key files:
 - Option helpers: [options.js](../../../src/charts/treemap/options.js); the categories it
   draws come from the shared
   [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)
-- Sidebar controls: [builder.js](../../../src/charts/treemap/controls/builder.js) and
-  [listeners.js](../../../src/charts/treemap/controls/listeners.js); the activation defaults
-  come from the shared [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
+- Sidebar controls: [descriptions.js](../../../src/charts/treemap/controls/descriptions.js),
+  built and wired by the shared
+  [describedControls.js](../../../src/charts/shared/controls/describedControls.js); the
+  activation defaults come from the shared
+  [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
 - Chart definition and constants: [treemap.js](../../../src/config/charts/definitions/treemap.js) (`TREEMAP_DEFINITION`, `TREEMAP_CHART`)
 - Per-dataset config defaults: [treemap.js](../../../src/config/charts/definitions/treemap.js) (the definition's fresh `treemap` factory)
 - Shared presentation flow: [presentation.js](../../../src/charts/treemap/presentation.js)
@@ -162,37 +164,47 @@ Bold.
 
 ## 5. The control sidebar
 
-The package's [controls directory](../../../src/charts/treemap/controls/) exposes the standard
-`createTreemapControls` and `setupTreemapControlListeners` roles through separate modules;
-`computeDefaults` is the shared `categoryChartDefaults('treemap')`
+The package's [descriptions.js](../../../src/charts/treemap/controls/descriptions.js) declares
+every control once, as data: its config key, widget, label, options, and when it is disabled
+(`TREEMAP_CONTROLS`). The controls registry hands those descriptions to the controls sidebar,
+which builds them through the shared
+[describedControls.js](../../../src/charts/shared/controls/describedControls.js): each control
+is created with the shared factories and wired to the `ChartConfigWriter` in the same pass, so
+no listener looks a control up by id. `computeDefaults` is the shared
+`categoryChartDefaults('treemap')`
 ([activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)).
 
 ### 5.1 The four sections
 
 1. **Data** (expanded): category select, measure (count/sum), value-column select, Top-N.
-   The measure and Top-N selects list `TREEMAP_CHART.measureModes` and
+   The measure select lists the definition's `allowedValues.measureMode`, and the Top-N select
    `TREEMAP_CHART.topNOptions`.
-2. **Display** (expanded): title, padding slider, show-labels toggle, show-values toggle.
-3. **Styling** (collapsed): color-mode select (scheme/uniform) and the uniform color input.
+2. **Display** (expanded): title, padding slider (1 to 6), show-labels toggle, show-values
+   toggle.
+3. **Styling** (collapsed): color-mode select, which lists the definition's
+   `allowedValues.colorMode` (scheme/uniform), and the uniform color input.
 4. **Advanced** (collapsed): the color-preset palette buttons.
+
+An enumerated setting's select always lists exactly the values its definition accepts: its
+description supplies only the labels, and the shared builder rejects one that lists its own
+options.
 
 ### 5.2 Enable/disable and wiring
 
 Everything is disabled when `!config.enabled`; the value-column select is disabled in `count`
-mode; the uniform color input is disabled unless `colorMode === 'uniform'`. Standard select,
-text, slider, checkbox, color, and preset controls use the shared chart-control listener
-adapters. The measure uses the shared `setupMeasureListener`, which applies the value-column
-rule bar, pie, treemap, and bubble share (`valueColumnForMeasure` in
-[measure.js](../../../src/charts/shared/measure.js)):
-switching to count keeps `valueColumn`, so switching back to sum restores it, and switching to
-sum keeps it while it is a numeric option and otherwise takes the first numeric column. The
-value-column change goes through the shared `setupValueColumnListener`, which stores only a
-visible numeric column.
-The color presets set the uniform `color` to the palette's first
-swatch. In scheme mode the palette buttons mark the stored `colorScheme`, which is what the
+mode (`disabledWhen`); the uniform color input is disabled unless `colorMode === 'uniform'`.
+Each widget writes the way the shared builder defines it: selects, the text input, the slider,
+and the toggles commit on `change`, and the color input previews on `input` and commits on
+`change`. The category stores `null` for "None" and Top-N stores a number (`toValue`). The
+measure writes through its `toPatch`, which applies the value-column rule bar, pie, treemap,
+and bubble share (`valueColumnForMeasure` in [measure.js](../../../src/charts/shared/measure.js))
+to the config of the moment it changes: switching to count keeps `valueColumn`, so switching
+back to sum restores it, and switching to sum keeps it while it is a numeric option and
+otherwise takes the first numeric column. The value-column select stores only a visible
+numeric column. The color presets set the uniform `color` to the palette's first swatch. In scheme mode the palette buttons mark the stored `colorScheme`, which is what the
 renderer draws; in uniform mode they mark a palette only while `color` still holds its first
 swatch. `computeDefaults` picks the category column, and the value column by the same rule as
-the measure listener.
+the measure select.
 
 ---
 
@@ -324,7 +336,9 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 ## 13. Tests
 
 - [controls.test.js](../../../tests/charts/treemap/controls.test.js) covers
-  control building and the measure/value and color-mode logic.
+  the controls the descriptions build and the patches they write, including the measure/value
+  and color-mode logic; [describedControls.test.js](../../../tests/charts/shared/controls/describedControls.test.js)
+  covers each widget of the shared builder.
 - [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
   checks through the workspace registry, for every chart, block visibility, the min height,
   the dispose contract, and the inputs each chart draws from.
@@ -359,7 +373,7 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
 ```
 
 **Tuning knobs** ([treemap.js](../../../src/config/charts/definitions/treemap.js) `TREEMAP_CHART`): `defaultTopN`,
-`paddingOptions`, `measureModes`.
+`defaultPadding`, `measureModes`.
 
 **Foundations → implementation map:**
 

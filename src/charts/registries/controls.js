@@ -1,19 +1,24 @@
 /**
  * Chart controls integration registry.
  *
- * Each entry adapts one chart's controls package to the shared manager
- * contract. This registry owns controls wiring only; it does not import
- * presentation flows, the other registries, state, or services.
+ * Each entry hands one chart's controls package to the controls sidebar. A
+ * chart that describes its controls supplies the descriptions, which the
+ * sidebar builds and wires through `charts/shared/controls/describedControls.js`;
+ * the other charts still pair a builder with a listener setup. This registry
+ * owns controls wiring only; it does not import presentation flows, the other
+ * registries, state, or services.
  *
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {import('../../types.js').Dataset} Dataset
  * @typedef {import('../../types.js').ChartControlContext} ChartControlContext
  * @typedef {import('../../types.js').ChartConfigWriter} ChartConfigWriter
+ * @typedef {import('../../types.js').ChartControlDescriptions} ChartControlDescriptions
  * @typedef {{
- *   build: (dataset: Dataset, context: ChartControlContext) => HTMLElement[],
- *   attachListeners: (dataset: Dataset, context: ChartControlContext, writer: ChartConfigWriter) => void,
+ *   controls?: ChartControlDescriptions,
+ *   build?: (dataset: Dataset, context: ChartControlContext) => HTMLElement[],
+ *   attachListeners?: (dataset: Dataset, context: ChartControlContext, writer: ChartConfigWriter) => void,
  *   computeDefaults: (dataset: Dataset, context: ChartControlContext) => Object
- * }} ChartControlAdapter
+ * }} ChartControlAdapter - `controls` for a chart that describes its controls, otherwise `build` and `attachListeners`.
  */
 
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
@@ -36,8 +41,7 @@ import { setupScatterPlotControlListeners } from '../scatter/controls/listeners.
 import { computeDefaults as computeScatterDefaults } from '../scatter/controls/activationDefaults.js';
 import { createPieChartControls } from '../pie/controls/builder.js';
 import { setupPieChartControlListeners } from '../pie/controls/listeners.js';
-import { createTreemapControls } from '../treemap/controls/builder.js';
-import { setupTreemapControlListeners } from '../treemap/controls/listeners.js';
+import { TREEMAP_CONTROLS } from '../treemap/controls/descriptions.js';
 import { createTinControls } from '../tin/controls/builder.js';
 import { setupTinControlListeners } from '../tin/controls/listeners.js';
 import { computeDefaults as computeTinDefaults } from '../tin/controls/activationDefaults.js';
@@ -152,19 +156,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 		computeDefaults: computeNetworkDefaults,
 	}),
 	treemap: Object.freeze({
-		build: (dataset, context) => createTreemapControls(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupTreemapControlListeners(
-			dataset,
-			context.baseCategoricalOrAll,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: TREEMAP_CONTROLS,
 		computeDefaults: categoryChartDefaults('treemap'),
 	}),
 	tin: Object.freeze({

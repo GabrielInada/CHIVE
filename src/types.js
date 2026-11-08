@@ -158,9 +158,10 @@
  */
 
 /**
- * Column-name buckets and drawn rows passed into per-chart `build`/
- * `attachListeners`/`computeDefaults` by the controls registry. Derived once
- * per sidebar render from the {@link ShownDataset} by `columnContextOf()` in
+ * Column-name buckets and drawn rows a chart's controls are built from: the
+ * functions of its {@link ControlDescription}s, or its `build`/
+ * `attachListeners`, and its `computeDefaults`. Derived once per sidebar
+ * render from the {@link ShownDataset} by `columnContextOf()` in
  * `features/datasetWorkspace/chartControls/chartControlsController.js`;
  * implementation lookup lives in `charts/registries/controls.js`.
  *
@@ -177,10 +178,11 @@
  */
 
 /**
- * The write surface a chart package's control listeners use to change their
- * own config block. Built per chart type by `createChartConfigWriter` in
- * `features/datasetWorkspace/chartControls/chartConfigAdapter.js` and passed in
- * by the controls registry, so chart packages never import state themselves.
+ * The write surface a chart's controls use to change their own config block.
+ * Built per chart type by `createChartConfigWriter` in
+ * `features/datasetWorkspace/chartControls/chartConfigAdapter.js` and handed to
+ * the controls by the controls sidebar, so chart packages never import state
+ * themselves.
  *
  * The two methods are not interchangeable:
  *
@@ -196,6 +198,58 @@
  * @typedef {Object} ChartConfigWriter
  * @property {(patch: Object) => void} commit - Merge a patch and emit. Does not live-render.
  * @property {(patch: Object | ((currentConfig: Object) => Object)) => void} preview - Merge a patch without emitting, then live-render. Accepts a function of the current config for nested updates.
+ */
+
+/**
+ * A chart's sidebar controls, declared as data. `buildDescribedControls` in
+ * `charts/shared/controls/describedControls.js` builds them and wires each one
+ * to the {@link ChartConfigWriter}; the controls registry hands them to the
+ * controls sidebar.
+ *
+ * @typedef {Object} ChartControlDescriptions
+ * @property {{ key: ChartTypeKey, allowedValues: Object<string, ReadonlyArray<*> | Object> }} definition - The chart's definition (`config/charts/definitions/<type>.js`). Its key names the config block the controls write, and its `allowedValues` are the options of every enumerated select.
+ * @property {ReadonlyArray<ControlSection>} sections - In sidebar order.
+ */
+
+/**
+ * A collapsible group of controls in the chart sidebar.
+ *
+ * @typedef {Object} ControlSection
+ * @property {string} id - Unique within the chart; a section keeps its expansion across sidebar rebuilds by it.
+ * @property {string} [titleKey] - Message key of the title.
+ * @property {string} [title] - Literal title, for a section whose title has no message key yet.
+ * @property {boolean} [expanded=true] - Initial expansion.
+ * @property {string} [icon] - Header icon; see `createSvgIcon`.
+ * @property {ControlDescription[]} controls - In section order.
+ */
+
+/**
+ * One chart control: the setting it shows and writes, its widget, its options,
+ * and when it is disabled. Every control is also disabled while its chart is
+ * off. The widget decides how the control writes: a color input previews
+ * through {@link ChartConfigWriter} `preview` while the picker is open and
+ * commits on `change`; every other widget commits on `change`.
+ *
+ * @typedef {Object} ControlDescription
+ * @property {'select' | 'slider' | 'checkbox' | 'text' | 'color' | 'palette'} widget
+ * @property {string} id - DOM id. Keep it stable: the sidebar restores focus and scroll by it.
+ * @property {string} key - The setting the control shows and writes. A palette writes `colorScheme`.
+ * @property {string} label - Message key of the label.
+ * @property {(config: Object, context: ChartControlContext) => boolean} [disabledWhen] - When the control is disabled although its chart is on.
+ * @property {(config: Object) => *} [value] - The value shown, when it is not the setting itself.
+ * @property {(value: *, current: { config: Object, context: ChartControlContext }) => *} [toValue] - The value to store for the widget's value. `current.config` is the config when the event fires.
+ * @property {(value: *, current: { config: Object, context: ChartControlContext }) => Object} [toPatch] - The patch to write, for a control that writes more than its own setting. Receives the value `toValue` returned.
+ * @property {(context: ChartControlContext) => string[]} [columns] - Select: offer "None" and these columns.
+ * @property {(context: ChartControlContext, translate: (key: string, ...params: *[]) => string) => Array<{ value: *, label: string }>} [options] - Select: a fixed option list, for a setting the chart definition does not enumerate.
+ * @property {Object<string, string> | ((value: *) => string)} [optionLabels] - Select of an enumerated setting: the message key of each value the chart definition lists.
+ * @property {number} [min] - Slider.
+ * @property {number} [max] - Slider.
+ * @property {number} [step] - Slider.
+ * @property {number} [maxLength=80] - Text.
+ * @property {string} [fallback] - Color: shown and written in place of an invalid color.
+ * @property {Object<string, number>} [colorKeys] - Palette: config key to the palette position a palette button copies into it; negative positions count from the end.
+ * @property {Object<string, string>} [fallbacks] - Palette: per copied key, written in place of an invalid palette color.
+ * @property {(config: Object) => (string | null)} [marked] - Palette: the preset whose button is marked, the one the chart is drawn with. Defaults to the preset whose colors `colorKeys` still hold.
  */
 
 // ─── Panel domain ───────────────────────────────────────────────────────
