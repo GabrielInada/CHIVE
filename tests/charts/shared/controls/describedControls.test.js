@@ -193,6 +193,101 @@ describe('described select', () => {
 
 		expect(get('demo-limit').value).toBe('10');
 	});
+
+	it('shows "None" for an unset setting, even next to columns named "null" and "undefined"', () => {
+		const description = { widget: 'select', id: 'demo-category', key: 'category', label: 'chive-category', columns: context => context.categorical };
+		const context = { ...CONTEXT, categorical: ['null', 'undefined'] };
+
+		expect(build(chartWith([description]), { category: null }, context).get('demo-category').value).toBe('');
+		expect(build(chartWith([description]), {}, context).get('demo-category').value).toBe('');
+		expect(build(chartWith([description]), { category: 'null' }, context).get('demo-category').value).toBe('null');
+	});
+
+	it('fills each option label with the parameters optionLabelParams gives for its value', () => {
+		const optionLabelParams = vi.fn((value, config, translateParam) => (value === 'by-measure' ? [translateParam(`chive-measure-${config.measure}`)] : []));
+		const { get } = build(chartWith([{
+			widget: 'select',
+			id: 'demo-sort',
+			key: 'sort',
+			label: 'chive-sort',
+			optionLabels: { 'by-measure': 'chive-sort-measure', 'by-name': 'chive-sort-name' },
+			optionLabelParams,
+		}], { sort: ['by-measure', 'by-name'] }), { measure: 'sum' });
+
+		expect(optionsOf(get('demo-sort'))).toEqual([
+			['by-measure', 't(chive-sort-measure, t(chive-measure-sum))'],
+			['by-name', 't(chive-sort-name)'],
+		]);
+		expect(optionLabelParams).toHaveBeenCalledWith('by-measure', expect.objectContaining({ measure: 'sum' }), translate);
+	});
+});
+
+describe('described control visibility', () => {
+	it('builds a control only while shownWhen holds for the config and context', () => {
+		const shownWhen = vi.fn(config => config.colorMode === 'gradient');
+		const controls = [
+			{ widget: 'checkbox', id: 'demo-always', key: 'a', label: 'chive-a' },
+			{ widget: 'select', id: 'demo-distribution', key: 'distribution', label: 'chive-b', options: () => [{ value: 'rank', label: 'Rank' }], shownWhen },
+			{ widget: 'custom', build: () => document.createElement('hr'), shownWhen },
+		];
+
+		const hidden = build(chartWith(controls), { colorMode: 'uniform' });
+		expect(shownWhen).toHaveBeenCalledWith(expect.objectContaining({ colorMode: 'uniform' }), CONTEXT);
+		expect([...hidden.root.querySelector('.chart-section-content').children].map(control => control.querySelector('input')?.id ?? control.tagName))
+			.toEqual(['demo-always']);
+
+		const shown = build(chartWith(controls), { colorMode: 'gradient' });
+		expect(shown.get('demo-distribution')).not.toBeNull();
+		expect(shown.root.querySelector('hr')).not.toBeNull();
+	});
+});
+
+describe('described custom control', () => {
+	const contentOf = root => [...root.querySelector('.chart-section-content').children];
+
+	it('places what build returns, in description order: one element, several, or none', () => {
+		const element = tag => document.createElement(tag);
+		const { root } = build(chartWith([
+			{ widget: 'custom', build: () => element('hr') },
+			{ widget: 'checkbox', id: 'demo-between', key: 'a', label: 'chive-a' },
+			{ widget: 'custom', build: () => [element('em'), element('strong')] },
+			{ widget: 'custom', build: () => [] },
+		]));
+
+		expect(contentOf(root).map(control => control.tagName)).toEqual(['HR', 'DIV', 'EM', 'STRONG']);
+	});
+
+	it('hands build the dataset, the config then and now, the context, the writer, translate, and its disabled state', () => {
+		const buildCustom = vi.fn(() => []);
+		const disabledWhen = config => config.mode !== 'grouped';
+		const { dataset, writer } = build(chartWith([{ widget: 'custom', build: buildCustom, disabledWhen }]), { mode: 'grouped', size: 2 });
+		const scope = buildCustom.mock.calls[0][0];
+
+		expect(scope).toEqual(expect.objectContaining({ dataset, context: CONTEXT, writer, translate, disabled: false }));
+		expect(scope.config).toBe(dataset.chartConfig.demo);
+		dataset.chartConfig = { demo: { ...dataset.chartConfig.demo, size: 3 } };
+		expect(scope.readConfig()).toEqual(expect.objectContaining({ size: 3 }));
+		expect(scope.config.size).toBe(2);
+
+		build(chartWith([{ widget: 'custom', build: buildCustom, disabledWhen }]), { mode: 'flat' });
+		expect(buildCustom.mock.calls[1][0].disabled).toBe(true);
+		build(chartWith([{ widget: 'custom', build: buildCustom }]), { enabled: false });
+		expect(buildCustom.mock.calls[2][0].disabled).toBe(true);
+	});
+
+	it('reaches a control built before it in the pass, and rejects one that is not', () => {
+		let reached = null;
+		const { get } = build(chartWith([
+			{ widget: 'slider', id: 'demo-zoom', key: 'zoom', label: 'chive-zoom', min: 1, max: 4, step: 1 },
+			{ widget: 'custom', build: ({ control }) => { reached = control('demo-zoom'); return []; } },
+		]));
+		expect(reached).toBe(get('demo-zoom').closest('.chart-controle'));
+
+		expect(() => build(chartWith([
+			{ widget: 'custom', build: ({ control }) => control('demo-zoom') },
+			{ widget: 'slider', id: 'demo-zoom', key: 'zoom', label: 'chive-zoom', min: 1, max: 4, step: 1 },
+		]))).toThrow('No control "demo-zoom" is built before the custom control that needs it.');
+	});
 });
 
 describe('described slider', () => {

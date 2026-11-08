@@ -7,16 +7,10 @@ const mocks = vi.hoisted(() => ({
 	onStateChange: vi.fn(),
 	setActiveChartType: vi.fn(),
 	openChartTypePickerDialog: vi.fn(() => Promise.resolve(null)),
-	createBarChartControls: vi.fn(() => []),
-	setupBarChartControlListeners: vi.fn(),
-	createBubbleChartControls: vi.fn(() => []),
-	setupBubbleChartControlListeners: vi.fn(),
 	createNetworkGraphControls: vi.fn(() => []),
 	setupNetworkGraphControlListeners: vi.fn(),
 	createScatterPlotControls: vi.fn(() => []),
 	setupScatterPlotControlListeners: vi.fn(),
-	createPieChartControls: vi.fn(() => []),
-	setupPieChartControlListeners: vi.fn(),
 	createLineChartControls: vi.fn(() => []),
 	setupLineChartControlListeners: vi.fn(),
 	createTinControls: vi.fn(() => []),
@@ -35,20 +29,6 @@ vi.mock('../../../../src/state/appState.js', () => ({
 	setActiveChartType: mocks.setActiveChartType,
 }));
 
-vi.mock('../../../../src/charts/bar/controls/builder.js', () => ({
-	createBarChartControls: mocks.createBarChartControls,
-}));
-vi.mock('../../../../src/charts/bar/controls/listeners.js', () => ({
-	setupBarChartControlListeners: mocks.setupBarChartControlListeners,
-}));
-
-vi.mock('../../../../src/charts/bubble/controls/builder.js', () => ({
-	createBubbleChartControls: mocks.createBubbleChartControls,
-}));
-vi.mock('../../../../src/charts/bubble/controls/listeners.js', () => ({
-	setupBubbleChartControlListeners: mocks.setupBubbleChartControlListeners,
-}));
-
 vi.mock('../../../../src/charts/network/controls/builder.js', () => ({
 	createNetworkGraphControls: mocks.createNetworkGraphControls,
 }));
@@ -61,13 +41,6 @@ vi.mock('../../../../src/charts/scatter/controls/builder.js', () => ({
 }));
 vi.mock('../../../../src/charts/scatter/controls/listeners.js', () => ({
 	setupScatterPlotControlListeners: mocks.setupScatterPlotControlListeners,
-}));
-
-vi.mock('../../../../src/charts/pie/controls/builder.js', () => ({
-	createPieChartControls: mocks.createPieChartControls,
-}));
-vi.mock('../../../../src/charts/pie/controls/listeners.js', () => ({
-	setupPieChartControlListeners: mocks.setupPieChartControlListeners,
 }));
 
 vi.mock('../../../../src/charts/line/controls/builder.js', () => ({
@@ -177,14 +150,13 @@ describe('renderChartControlsSidebar', () => {
 	it('renders only the active chart\'s controls in the params pane', () => {
 		renderChartControlsSidebar(shownFor('scatter'));
 		expect(mocks.createScatterPlotControls).toHaveBeenCalledTimes(1);
-		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
+		expect(mocks.createLineChartControls).not.toHaveBeenCalled();
 		expect(mocks.setupScatterPlotControlListeners).toHaveBeenCalledTimes(1);
-		expect(mocks.setupBarChartControlListeners).not.toHaveBeenCalled();
+		expect(mocks.setupLineChartControlListeners).not.toHaveBeenCalled();
+		expect(document.querySelector('#viz-select-bar')).toBeNull();
 	});
 
 	it.each([
-		['pie', 'createPieChartControls', 'setupPieChartControlListeners'],
-		['bubble', 'createBubbleChartControls', 'setupBubbleChartControlListeners'],
 		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners'],
 		['line', 'createLineChartControls', 'setupLineChartControlListeners'],
 		['tin', 'createTinControls', 'setupTinControlListeners'],
@@ -196,39 +168,50 @@ describe('renderChartControlsSidebar', () => {
 		expect(mocks[listenerMock]).toHaveBeenCalledTimes(1);
 	});
 
-	it('builds the treemap controls from its descriptions', () => {
-		renderChartControlsSidebar(shownFor('treemap'));
+	it.each([
+		['treemap', ['data', 'display', 'styling', 'advanced'], '#viz-select-treemap-category'],
+		['bar', ['data', 'display', 'styling', 'advanced'], '#viz-select-bar-sort'],
+		['pie', ['data', 'display', 'styling'], '#viz-btn-pie-reset-zoom'],
+		['bubble', ['data', 'display', 'styling'], '#viz-select-bubble-nesting-level-0'],
+	])('builds the %s controls from its descriptions', (chartType, sections, control) => {
+		renderChartControlsSidebar(shownFor(chartType));
 
 		const params = document.getElementById('viz-chart-params');
 		expect([...params.querySelectorAll('.chart-control-section')].map(section => section.dataset.section))
-			.toEqual(['data', 'display', 'styling', 'advanced']);
-		expect(params.querySelector('#viz-select-treemap-category')).not.toBeNull();
-		expect(params.querySelector('[data-color-preset-control="viz-treemap-color-preset"]')).not.toBeNull();
-		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
+			.toEqual(sections);
+		expect(params.querySelector(control)).not.toBeNull();
+		expect(params.querySelector(`[data-color-preset-control="viz-${chartType}-color-preset"]`) !== null)
+			.toBe(chartType !== 'pie');
+		expect(mocks.createLineChartControls).not.toHaveBeenCalled();
 	});
 
 	it('hands the pie controls the rows the chart draws, under the global filter', () => {
 		const shown = deriveShownDataset({
 			rows: [{ categoria: 'A', valor: 1 }, { categoria: 'B', valor: 2 }],
 			columns: COLUMNS,
-			selectedColumns: ['valor'],
+			selectedColumns: ['categoria', 'valor'],
 			chartConfig: {
 				...configWithActive('pie'),
+				pie: { enabled: true, category: 'categoria', color: '#4e79a7', customSliceColors: {} },
 				globalFilter: { rules: [{ column: 'categoria', mode: 'categorical', include: ['v:B'], exclude: [] }], combine: 'AND' },
 			},
 		});
 
 		renderChartControlsSidebar(shown);
 
+		// The slice grid lists every category and shows the color the chart draws
+		// each with; the filter hides A, so only B is drawn.
 		expect(shown.rows).toEqual([{ categoria: 'B', valor: 2 }]);
-		expect(mocks.createPieChartControls).toHaveBeenCalledWith(shown.dataset, ['valor'], ['valor'], shown.rows);
+		const swatch = key => document.querySelector(`input[data-color-grid-control="viz-pie-color-grid"][data-color-item="${key}"]`).value;
+		expect(swatch('A')).toBe('#999999');
+		expect(swatch('B')).toBe('#4e79a7');
 	});
 
 	it('shows the params empty-state placeholder when no chart is active', () => {
 		renderChartControlsSidebar(shownFor());
 		const empty = document.querySelector('#viz-chart-params .viz-params-empty');
 		expect(empty).not.toBeNull();
-		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
+		expect(document.querySelector('#viz-chart-params .chart-control-section')).toBeNull();
 		expect(mocks.createScatterPlotControls).not.toHaveBeenCalled();
 	});
 
@@ -245,7 +228,7 @@ describe('renderChartControlsSidebar', () => {
 		const empty = document.querySelector('#viz-chart-params .table-no-columns');
 		expect(empty).not.toBeNull();
 		expect(empty?.textContent).toBe('chive-chart-sidebar-empty');
-		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
+		expect(document.querySelector('#viz-chart-params .chart-control-section')).toBeNull();
 	});
 
 	it('clicking the trigger opens the picker with current activeChartType', () => {
@@ -288,27 +271,10 @@ describe('renderChartControlsSidebar', () => {
 	});
 
 	it('preserves expanded state of control sections across rerenders', () => {
-
-		mocks.createBarChartControls.mockImplementation(() => {
-			const section = document.createElement('div');
-			section.className = 'chart-control-section';
-			section.dataset.section = 'styling';
-			const header = document.createElement('button');
-			header.className = 'chart-section-header';
-			header.setAttribute('aria-expanded', 'false');
-			const toggleIcon = document.createElement('span');
-			toggleIcon.className = 'chart-section-toggle';
-			toggleIcon.textContent = '▶';
-			header.appendChild(toggleIcon);
-			const content = document.createElement('div');
-			content.className = 'chart-section-content';
-			content.hidden = true;
-			section.appendChild(header);
-			section.appendChild(content);
-			return [section];
-		});
-
+		// The bar's styling section starts collapsed.
 		renderChartControlsSidebar(shownFor('bar'));
+		expect(document.querySelector('.chart-control-section[data-section="styling"] .chart-section-header').getAttribute('aria-expanded'))
+			.toBe('false');
 
 		const header = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-header');
 		const content = document.querySelector('.chart-control-section[data-section="styling"] .chart-section-content');

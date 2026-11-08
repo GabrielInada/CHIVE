@@ -34,7 +34,11 @@ Key files:
 - Options and color logic: [options.js](../../../src/charts/bar/options.js) and
   [color.js](../../../src/charts/bar/color.js); the categories it draws come from the shared
   [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js)
-- Sidebar controls: [controls/](../../../src/charts/bar/controls)
+- Sidebar controls: [descriptions.js](../../../src/charts/bar/controls/descriptions.js),
+  built and wired by the shared
+  [describedControls.js](../../../src/charts/shared/controls/describedControls.js); the
+  activation defaults come from the shared
+  [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)
 - Chart definition and constants: [bar.js](../../../src/config/charts/definitions/bar.js) (`BAR_DEFINITION`, `BAR_CHART`)
 - Per-dataset config defaults: [bar.js](../../../src/config/charts/definitions/bar.js) (the definition's fresh `bar` factory)
 - Shared presentation mapping: [presentation.js](../../../src/charts/bar/presentation.js)
@@ -207,30 +211,34 @@ controls, presentation flow, and renderer read the stored values as given.
 
 ## 5. The control sidebar
 
-[controls/](../../../src/charts/bar/controls) owns the right-sidebar control
-group and its config writes. The
-[controls registry](../../../src/charts/registries/controls.js) imports two
-explicit package modules and the activation defaults bar shares with pie, treemap, and
-bubble; `chartControlsController.js` consumes the normalized registry entry:
-
-- `createBarChartControls(dataset, categoryOptions, numericOptions, allColumns)` builds the DOM.
-- `setupBarChartControlListeners(dataset, baseBar, numericOptions, …, onConfigChanged)` wires events.
-- `computeDefaults(dataset, ctx)`, which is `categoryChartDefaults('bar')` from
-  [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js), picks the category column when the chart is first enabled (keeps the current one if it is still a visible categorical column, else the first available), and the value column by the same rule as the measure listener (section 5.3).
+The package's [descriptions.js](../../../src/charts/bar/controls/descriptions.js) declares
+every control once, as data: its config key, widget, label, options, and when it is shown or
+disabled (`BAR_CONTROLS`). The [controls registry](../../../src/charts/registries/controls.js)
+hands those descriptions to the controls sidebar, which builds them through the shared
+[describedControls.js](../../../src/charts/shared/controls/describedControls.js): each control
+is created with the shared factories and wired to the `ChartConfigWriter` in the same pass, so
+no listener looks a control up by id. The measure, value-column, and Top-N selects are the
+shared descriptions in
+[categoryControls.js](../../../src/charts/shared/controls/categoryControls.js), which bar
+shares with pie, treemap, and bubble. `computeDefaults`, which is `categoryChartDefaults('bar')`
+from [activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js), picks
+the category column when the chart is first enabled (keeps the current one if it is still a
+visible categorical column, else the first available), and the value column by the same rule
+as the measure select (section 5.3).
 
 ### 5.1 The four sections
 
-`createBarChartControls` groups controls (via `groupControls`) into:
-
 1. **Data & aggregation** (expanded): category select, measure-mode select (count / sum /
-   mean), value-column select, sort select, Top-N select. The measure and Top-N selects list
-   `BAR_CHART.measureModes` and `BAR_CHART.topNOptions`. The two value orders of the sort
-   select name the measure with its short label ("Sum (high → low)"); their stored values
-   stay `count-desc` and `count-asc`.
+   mean), value-column select, sort select, Top-N select. The measure and sort selects list
+   the definition's `allowedValues.measureMode` and `allowedValues.sort`, and the Top-N select
+   `BAR_CHART.topNOptions`. The two value orders of the sort select name the measure with its
+   short label ("Sum (high → low)", the description's `optionLabelParams`); their stored
+   values stay `count-desc` and `count-asc`.
 2. **Display** (expanded): custom title text, x/y axis-label toggles.
 3. **Styling** (collapsed): color-mode select, the uniform color input, the gradient
    min/max color inputs, and (conditionally) the gradient-distribution select or the
-   manual-threshold slider.
+   manual-threshold slider. The color-mode and gradient-distribution selects list the
+   definition's `allowedValues`.
 4. **Advanced** (collapsed): the color-preset palette buttons.
 
 ### 5.2 Enable/disable cascade
@@ -244,34 +252,32 @@ nothing:
   in `count` mode.
 - The uniform color input is disabled unless `colorMode === 'uniform'`; the gradient min/max
   inputs are disabled when `colorMode === 'uniform'`.
-- The gradient-distribution select renders only in `gradient` mode; the manual-threshold
-  slider renders only in `gradient-manual` mode.
+- The gradient-distribution select is built only in `gradient` mode and the manual-threshold
+  slider only in `gradient-manual` mode (`shownWhen`).
 
-### 5.3 Listener wiring
+### 5.3 Writes
 
-`setupBarChartControlListeners` uses the shared adapters in
-[listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js)
-(`setupSelectListeners`, `setupMeasureListener`, `setupValueColumnListener`,
-`setupCheckboxListeners`, `setupTextInputListener`, `setupSliderListener`,
-`setupColorInputListener`, `setupColorPresetListeners`, and `commitChartConfigPatch`). Two
-controls tie the measure to the value column:
+Each widget writes the way the shared builder defines it: selects, the text input, the slider,
+and the toggles commit on `change`, and the color inputs preview on `input` and commit on
+`change`. The category stores the chosen column, the empty string for "None", and Top-N stores
+a number. Two controls tie the measure to the value column:
 
-- **Measure mode**: `setupMeasureListener` commits the chosen measure with the value column
-  that the rule shared by bar, pie, treemap, and bubble keeps (`valueColumnForMeasure` in
-  [measure.js](../../../src/charts/shared/measure.js)):
-  switching to `count` keeps `valueColumn`, so switching back to sum or mean restores it;
-  switching to sum/mean keeps it while it is a numeric option and otherwise takes the first
+- **Measure mode**: its `toPatch` commits the chosen measure with the value column that the
+  rule shared by bar, pie, treemap, and bubble keeps (`valueColumnForMeasure` in
+  [measure.js](../../../src/charts/shared/measure.js)), read from the config of the moment it
+  changes: switching to `count` keeps `valueColumn`, so switching back to sum or mean restores
+  it; switching to sum/mean keeps it while it is a numeric option and otherwise takes the first
   numeric column. The commit canonicalizes the config, which checks the measure itself.
-- **Value column**: the shared `setupValueColumnListener` stores the chosen column only while
-  it is one of `numericOptions`, and `null` otherwise.
+- **Value column**: stores the chosen column only while it is a visible numeric column, and
+  `null` otherwise.
 
 The color-preset buttons write `gradientMinColor` from palette index 0, `gradientMaxColor`
-from the last index, and `color` from index 0, plus the palette name into `colorScheme`.
-The builder reads the same mapping (`BAR_CHART.presetColorKeys`) and marks a palette only
-while all three colors still hold it, so a new chart marks none and editing a color clears
-the mark; nothing draws from `colorScheme`.
-Every write merges a partial into `chartConfig.bar` and fires `onConfigChanged`. The
-renderer never reads the DOM controls; it only reads config the listeners have written.
+from the last index, and `color` from index 0, plus the palette name into `colorScheme`
+(the palette description's `colorKeys`, `BAR_CHART.presetColorKeys`). A palette is marked
+only while all three colors still hold it, so a new chart marks none and editing a color
+clears the mark; nothing draws from `colorScheme`.
+Every commit merges a partial into `chartConfig.bar` through the writer. The renderer never
+reads the DOM controls; it only reads config the controls have written.
 
 ---
 
@@ -524,7 +530,11 @@ The empty-state strings live in [en.json](../../../src/i18n/en.json) (keys
   the dispose contract, and the inputs each chart draws from.
 - [controls.test.js](../../../tests/charts/bar/controls.test.js) and
   [controls.measureMode.test.js](../../../tests/charts/bar/controls.measureMode.test.js)
-  cover control construction and config writes.
+  cover the controls the descriptions build and the patches they write;
+  [describedControls.test.js](../../../tests/charts/shared/controls/describedControls.test.js)
+  covers each widget of the shared builder, and
+  [categoryControls.test.js](../../../tests/charts/shared/controls/categoryControls.test.js)
+  the measure, value-column, and Top-N descriptions.
   [dataControls.test.js](../../../tests/charts/registries/dataControls.test.js) checks the
   data controls bar shares with pie, treemap, and bubble through the controls registry, and
   the sort options that name the measure.

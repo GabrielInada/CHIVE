@@ -12,11 +12,8 @@ vi.mock('../../src/services/i18nService.js', () => ({ t: key => key }));
 // selects. A described chart's control carries its own id; the charts that
 // still pair a builder with listeners name each select's id suffix here.
 const SELECTS = {
-	bar: { sort: 'sort', measureMode: 'measure', colorMode: 'color-mode', gradientDistribution: 'gradient-distribution' },
-	bubble: { measureMode: 'measure', labelMode: 'label-mode', nestingMode: 'nesting-mode' },
 	line: { curve: 'curve', missingMode: 'missing', aggregateMode: 'aggregate' },
 	network: { edgeColorMode: 'edge-color-mode' },
-	pie: { measureMode: 'measure', topNMode: 'topn-mode', labelPosition: 'label-position' },
 	scatter: {
 		xScale: 'xscale',
 		yScale: 'yscale',
@@ -70,9 +67,9 @@ function offeredBy(root, type, setting) {
 	if (controls) {
 		const control = describedControl(controls, setting);
 		expect(control, `${type}.${setting} needs a declared control`).toBeDefined();
-		if (control.widget === 'palette') {
-			return Array.from(root.querySelectorAll(`[data-color-preset-control="${control.id}"]`), button => button.dataset.presetName);
-		}
+		// A palette, described or written by hand, names its buttons by its id.
+		const presets = root.querySelectorAll(`[data-color-preset-control="${control.id}"]`);
+		if (presets.length > 0) return Array.from(presets, button => button.dataset.presetName);
 		const select = root.querySelector(`#${control.id}`);
 		expect(select, `${type}.${setting} is not shown by default`).not.toBeNull();
 		return Array.from(select.options, option => option.value);

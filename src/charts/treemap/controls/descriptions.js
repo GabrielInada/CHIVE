@@ -11,8 +11,8 @@
 
 import { CHART_COLORS } from '../../../config/charts/definitions.js';
 import { TREEMAP_CHART, TREEMAP_DEFINITION } from '../../../config/charts/definitions/treemap.js';
-import { findAppliedColorPreset, topNSelectOptions } from '../../shared/controls/factories.js';
-import { measureOptionLabelKey, measureUsesValueColumn, valueColumnForMeasure } from '../../shared/measure.js';
+import { measureControl, topNControl, valueColumnControl } from '../../shared/controls/categoryControls.js';
+import { findAppliedColorPreset } from '../../shared/controls/factories.js';
 
 /** @type {ChartControlDescriptions} */
 export const TREEMAP_CONTROLS = Object.freeze({
@@ -32,37 +32,9 @@ export const TREEMAP_CONTROLS = Object.freeze({
 					columns: context => context.baseCategoricalOrAll,
 					toValue: value => value || null,
 				},
-				{
-					widget: 'select',
-					id: 'viz-select-treemap-measure',
-					key: 'measureMode',
-					label: 'chive-chart-control-measure',
-					optionLabels: measureOptionLabelKey,
-					// The rule bar, pie, treemap and bubble share: count keeps the stored
-					// value column, so switching back to sum restores it.
-					toPatch: (measureMode, { config, context }) => ({
-						measureMode,
-						valueColumn: valueColumnForMeasure(measureMode, config.valueColumn, context.numeric),
-					}),
-				},
-				{
-					widget: 'select',
-					id: 'viz-select-treemap-value-column',
-					key: 'valueColumn',
-					label: 'chive-chart-control-value-column',
-					columns: context => context.numeric,
-					disabledWhen: config => !measureUsesValueColumn(config.measureMode),
-					// A forged option cannot store a column the measure cannot read.
-					toValue: (value, { context }) => (context.numeric.includes(value) ? value : null),
-				},
-				{
-					widget: 'select',
-					id: 'viz-select-treemap-topn',
-					key: 'topN',
-					label: 'chive-chart-control-bar-topn',
-					options: (context, translate) => topNSelectOptions(TREEMAP_CHART.topNOptions, translate('chive-chart-topn-all')),
-					toValue: Number,
-				},
+				measureControl('viz-select-treemap-measure'),
+				valueColumnControl('viz-select-treemap-value-column'),
+				topNControl({ id: 'viz-select-treemap-topn', label: 'chive-chart-control-bar-topn', topNOptions: TREEMAP_CHART.topNOptions }),
 			],
 		},
 		{

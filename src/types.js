@@ -225,16 +225,18 @@
 
 /**
  * One chart control: the setting it shows and writes, its widget, its options,
- * and when it is disabled. Every control is also disabled while its chart is
- * off. The widget decides how the control writes: a color input previews
- * through {@link ChartConfigWriter} `preview` while the picker is open and
- * commits on `change`; every other widget commits on `change`.
+ * and when it is shown or disabled. Every control is also disabled while its
+ * chart is off. The widget decides how the control writes: a color input
+ * previews through {@link ChartConfigWriter} `preview` while the picker is open
+ * and commits on `change`; every other widget commits on `change`. A `custom`
+ * control is written by hand: its `build` creates and wires its elements.
  *
  * @typedef {Object} ControlDescription
- * @property {'select' | 'slider' | 'checkbox' | 'text' | 'color' | 'palette'} widget
- * @property {string} id - DOM id. Keep it stable: the sidebar restores focus and scroll by it.
- * @property {string} key - The setting the control shows and writes. A palette writes `colorScheme`.
- * @property {string} label - Message key of the label.
+ * @property {'select' | 'slider' | 'checkbox' | 'text' | 'color' | 'palette' | 'custom'} widget
+ * @property {string} [id] - DOM id. Keep it stable: the sidebar restores focus and scroll by it. A custom control names the element it builds, if it builds one.
+ * @property {string} [key] - The setting the control shows and writes. A palette writes `colorScheme`; a custom control names the setting it writes, if it writes one.
+ * @property {string} [label] - Message key of the label. A custom control translates its own.
+ * @property {(config: Object, context: ChartControlContext) => boolean} [shownWhen] - When the control is built at all; the others are always built.
  * @property {(config: Object, context: ChartControlContext) => boolean} [disabledWhen] - When the control is disabled although its chart is on.
  * @property {(config: Object) => *} [value] - The value shown, when it is not the setting itself.
  * @property {(value: *, current: { config: Object, context: ChartControlContext }) => *} [toValue] - The value to store for the widget's value. `current.config` is the config when the event fires.
@@ -242,6 +244,7 @@
  * @property {(context: ChartControlContext) => string[]} [columns] - Select: offer "None" and these columns.
  * @property {(context: ChartControlContext, translate: (key: string, ...params: *[]) => string) => Array<{ value: *, label: string }>} [options] - Select: a fixed option list, for a setting the chart definition does not enumerate.
  * @property {Object<string, string> | ((value: *) => string)} [optionLabels] - Select of an enumerated setting: the message key of each value the chart definition lists.
+ * @property {(value: *, config: Object, translate: (key: string, ...params: *[]) => string) => *[]} [optionLabelParams] - Select of an enumerated setting: the parameters (`$1`, `$2`…) of a value's label, for a label that names another setting.
  * @property {number} [min] - Slider.
  * @property {number} [max] - Slider.
  * @property {number} [step] - Slider.
@@ -250,6 +253,23 @@
  * @property {Object<string, number>} [colorKeys] - Palette: config key to the palette position a palette button copies into it; negative positions count from the end.
  * @property {Object<string, string>} [fallbacks] - Palette: per copied key, written in place of an invalid palette color.
  * @property {(config: Object) => (string | null)} [marked] - Palette: the preset whose button is marked, the one the chart is drawn with. Defaults to the preset whose colors `colorKeys` still hold.
+ * @property {(scope: CustomControlScope) => (HTMLElement | HTMLElement[])} [build] - Custom: build the control's elements, none to show nothing, each already wired.
+ */
+
+/**
+ * What a custom control's `build` receives: what a chart's builder and its
+ * listeners received, plus its disabled state and the controls built before
+ * it in the same pass.
+ *
+ * @typedef {Object} CustomControlScope
+ * @property {Dataset} dataset
+ * @property {Object} config - The chart's config block when the control is built.
+ * @property {() => Object} readConfig - The chart's config block now; listeners read it when their event fires.
+ * @property {ChartControlContext} context
+ * @property {ChartConfigWriter} writer
+ * @property {(key: string, ...params: *[]) => string} translate
+ * @property {boolean} disabled - The chart is off, or the description's `disabledWhen` holds.
+ * @property {(id: string) => HTMLElement} control - The element of the widget control with that id, built earlier in this pass. Throws when there is none.
  */
 
 // ─── Panel domain ───────────────────────────────────────────────────────
