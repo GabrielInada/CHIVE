@@ -4,7 +4,7 @@
  * Each entry hands one chart's controls package to the controls sidebar. A
  * chart that describes its controls supplies the descriptions, which the
  * sidebar builds and wires through `charts/shared/controls/describedControls.js`;
- * the other charts still pair a builder with a listener setup. This registry
+ * scatter still pairs a builder with a listener setup. This registry
  * owns controls wiring only; it does not import presentation flows, the other
  * registries, state, or services.
  *
@@ -24,23 +24,19 @@
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
 import { categoryChartDefaults } from '../shared/controls/activationDefaults.js';
 import { BAR_CONTROLS } from '../bar/controls/descriptions.js';
-import { createScatter3dControls } from '../scatter3d/controls/builder.js';
-import { setupScatter3dControlListeners } from '../scatter3d/controls/listeners.js';
+import { SCATTER3D_CONTROLS } from '../scatter3d/controls/descriptions.js';
 import { computeDefaults as computeScatter3dDefaults } from '../scatter3d/controls/activationDefaults.js';
 import { BUBBLE_CONTROLS } from '../bubble/controls/descriptions.js';
-import { createLineChartControls } from '../line/controls/builder.js';
-import { setupLineChartControlListeners } from '../line/controls/listeners.js';
+import { LINE_CONTROLS } from '../line/controls/descriptions.js';
 import { computeDefaults as computeLineDefaults } from '../line/controls/activationDefaults.js';
-import { createNetworkGraphControls } from '../network/controls/builder.js';
-import { setupNetworkGraphControlListeners } from '../network/controls/listeners.js';
+import { NETWORK_CONTROLS } from '../network/controls/descriptions.js';
 import { computeDefaults as computeNetworkDefaults } from '../network/controls/activationDefaults.js';
 import { createScatterPlotControls } from '../scatter/controls/builder.js';
 import { setupScatterPlotControlListeners } from '../scatter/controls/listeners.js';
 import { computeDefaults as computeScatterDefaults } from '../scatter/controls/activationDefaults.js';
 import { PIE_CONTROLS } from '../pie/controls/descriptions.js';
 import { TREEMAP_CONTROLS } from '../treemap/controls/descriptions.js';
-import { createTinControls } from '../tin/controls/builder.js';
-import { setupTinControlListeners } from '../tin/controls/listeners.js';
+import { TIN_CONTROLS } from '../tin/controls/descriptions.js';
 import { computeDefaults as computeTinDefaults } from '../tin/controls/activationDefaults.js';
 
 /** @type {Readonly<Object<ChartTypeKey, Readonly<ChartControlAdapter>>>} */
@@ -50,19 +46,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 		computeDefaults: categoryChartDefaults('bar'),
 	}),
 	line: Object.freeze({
-		build: (dataset, context) => createLineChartControls(
-			dataset,
-			context.numeric,
-			context.dates,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupLineChartControlListeners(
-			dataset,
-			context.numeric,
-			context.dates,
-			context.allColumns,
-			writer,
-		),
+		controls: LINE_CONTROLS,
 		computeDefaults: computeLineDefaults,
 	}),
 	scatter: Object.freeze({
@@ -80,17 +64,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 		computeDefaults: computeScatterDefaults,
 	}),
 	scatter3d: Object.freeze({
-		build: (dataset, context) => createScatter3dControls(
-			dataset,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupScatter3dControlListeners(
-			dataset,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: SCATTER3D_CONTROLS,
 		computeDefaults: computeScatter3dDefaults,
 	}),
 	pie: Object.freeze({
@@ -102,18 +76,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 		computeDefaults: categoryChartDefaults('bubble'),
 	}),
 	network: Object.freeze({
-		build: (dataset, context) => createNetworkGraphControls(
-			dataset,
-			context.allColumns,
-			context.numeric,
-			context.categorical,
-		),
-		attachListeners: (dataset, context, writer) => setupNetworkGraphControlListeners(
-			dataset,
-			context.allColumns,
-			context.numeric,
-			writer,
-		),
+		controls: NETWORK_CONTROLS,
 		computeDefaults: computeNetworkDefaults,
 	}),
 	treemap: Object.freeze({
@@ -121,17 +84,7 @@ const CONTROL_ADAPTERS = Object.freeze({
 		computeDefaults: categoryChartDefaults('treemap'),
 	}),
 	tin: Object.freeze({
-		build: (dataset, context) => createTinControls(
-			dataset,
-			context.numeric,
-			context.allColumns,
-		),
-		attachListeners: (dataset, context, writer) => setupTinControlListeners(
-			dataset,
-			context.numeric,
-			context.allColumns,
-			writer,
-		),
+		controls: TIN_CONTROLS,
 		computeDefaults: computeTinDefaults,
 	}),
 });

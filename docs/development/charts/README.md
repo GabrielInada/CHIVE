@@ -71,7 +71,7 @@ when adding a type.
 
 The three implementation registries intentionally stay separate from these
 definitions and from one another. Controls need control descriptions (or,
-for the charts not yet described, builder and listener adapters) and
+for scatter, not yet described, builder and listener adapters) and
 activation defaults; the dataset workspace dispatches section
 renderers; and the panel resolves snapshot renderers. Keeping one registry per
 surface prevents each integration path from importing unrelated
@@ -158,7 +158,7 @@ doc rather than repeated:
   replacement, dismissal and anchor cleanup; [chart wiring tests](../../../tests/charts/shared/tooltip/chartPinning.test.js)
   exercise the real renderers in separate Panel slots.
 - **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
-  builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets), the
+  builds the labeled sidebar widgets (selects, sliders, number and color inputs, palette presets), the
   options of a Top-N select (`topNSelectOptions`), and finds the palette preset a chart's
   colors still match (`findAppliedColorPreset`), the one its palette buttons mark; [grouping.js](../../../src/charts/shared/controls/grouping.js)
   wraps them in collapsible sections. Neither writes config.
@@ -169,12 +169,19 @@ doc rather than repeated:
   creates it, so no listener looks a control up by id. The widget decides how it writes: a
   color input previews on `input` and commits on `change`, every other widget commits on
   `change`. An enumerated setting's select lists exactly the values its definition's
-  `allowedValues` accept, so its description gives only the labels. A control no widget
+  `allowedValues` accept, so its description gives only the labels: message keys, or
+  `optionText` for labels that are not messages (TIN's ramp names). A control no widget
   covers is a `custom` description whose `build` creates and wires its elements (pie's radius
-  sliders, Reset Zoom button, palette, and slice grid; bubble's nesting levels). Bar, pie,
-  treemap, and bubble declare their controls this way (`controls/descriptions.js` in each
-  package); the other charts still pair a `builder.js` with a `listeners.js` that finds each
-  control by id and writes through the helpers in
+  sliders, palette, and slice grid; bubble's nesting levels). Descriptions that charts share
+  live beside the builder:
+  [categoryControls.js](../../../src/charts/shared/controls/categoryControls.js) for the
+  category charts' measure, value-column, and Top-N selects,
+  [axisControls.js](../../../src/charts/shared/controls/axisControls.js) for the numeric axis
+  selects of the 3D scatter and TIN, and
+  [zoomControls.js](../../../src/charts/shared/controls/zoomControls.js) for the Reset Zoom
+  button of pie and network. Every chart but scatter declares its controls this way
+  (`controls/descriptions.js` in each package); scatter still pairs a `builder.js` with a
+  `listeners.js` that finds each control by id and writes through the helpers in
   [listenerBindings.js](../../../src/charts/shared/controls/listenerBindings.js).
 - **Drawn categories**: bar, pie, treemap, and bubble take the categories they draw from
   `aggregateCategories` in

@@ -2,7 +2,6 @@
  * Pie controls written by hand, for the ones no shared widget covers:
  *
  * - the radius sliders, which keep the inner radius below the outer one;
- * - the reset-zoom button, which also puts the zoom slider back;
  * - the palette, which colors the sectors in order, repeating the palette;
  * - the slice grid, one color picker per sector.
  *
@@ -90,34 +89,6 @@ export function buildRadiusSliders({ config, readConfig, writer, translate, disa
 	});
 
 	return [innerControl, outerControl];
-}
-
-/**
- * The reset-zoom button. A click puts the zoom slider back to the default
- * zoom and commits it.
- *
- * @param {CustomControlScope} scope
- * @returns {HTMLElement}
- */
-export function buildResetZoomButton({ writer, translate, disabled, control }) {
-	const zoomSlider = control('viz-slider-pie-zoom').querySelector('input');
-
-	const wrapper = document.createElement('div');
-	wrapper.className = 'chart-controle';
-	const button = document.createElement('button');
-	button.type = 'button';
-	button.id = 'viz-btn-pie-reset-zoom';
-	button.className = 'chart-control-btn';
-	button.textContent = translate('chive-chart-control-pie-reset-zoom');
-	button.disabled = disabled;
-	wrapper.appendChild(button);
-
-	button.addEventListener('click', () => {
-		zoomSlider.value = String(PIE_CHART.defaultZoomScale);
-		syncSliderOutput(zoomSlider);
-		writer.commit({ zoomScale: PIE_CHART.defaultZoomScale });
-	});
-	return wrapper;
 }
 
 /**

@@ -100,12 +100,17 @@ clamps, rotate/zoom speeds, keyboard steps).
 ## 5. The control sidebar
 
 [controls/](../../../src/charts/scatter3d/controls) mirrors
-`charts/tin/controls/`: `builder.js` (Data: X/Y/Z numeric selects;
-Display: title, point size, opacity; Styling: color), `listeners.js` (via
-the shared `listenerBindings.js`, which remains the config-write
-adapter; selects clamp to the numeric column list), and `activationDefaults.js`
-(first three distinct numeric columns via the tin `pickPreferred`
-semantics, preserving still-valid user picks). The registry entry lives in
+`charts/tin/controls/`: `descriptions.js` declares each control once
+(Data: X/Y/Z numeric selects; Display: title, point size, opacity;
+Styling: color), and the controls sidebar builds them through the shared
+[describedControls.js](../../../src/charts/shared/controls/describedControls.js),
+which wires each control to the `ChartConfigWriter` as it creates it. The
+X/Y/Z selects are the axis description the 3D scatter shares with the TIN
+([axisControls.js](../../../src/charts/shared/controls/axisControls.js)):
+they offer the numeric columns and store `null` for any other choice.
+`activationDefaults.js` picks the first three distinct numeric columns via
+the tin `pickPreferred` semantics, preserving still-valid user picks. The
+registry entry lives in
 [charts/registries/controls.js](../../../src/charts/registries/controls.js),
 which `chartControlsController.js` consumes.
 

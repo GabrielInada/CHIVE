@@ -6,7 +6,7 @@
  * factory returns a `<div>` containing a label plus the input element. A
  * chart that describes its controls gets them wired as they are built, by
  * `describedControls.js`; the listener bindings in `listenerBindings.js` wire
- * the other charts' controls afterwards.
+ * scatter's controls afterwards.
  *
  * Shared leaf infrastructure: localized strings arrive as arguments
  * (label text, the palette `translate` callback), never via service
@@ -303,7 +303,7 @@ function localizedPaletteName(paletteId, translate) {
 /**
  * Build a row of palette-preset buttons. A button click calls `onSelect`.
  * Buttons share `data-color-preset-control={id}`, by which
- * `setupColorPresetListeners` wires them for the charts that pair a builder
+ * `setupColorPresetListeners` wires them for scatter, which pairs a builder
  * with listeners.
  *
  * Palette names and the help line resolve through the caller-supplied

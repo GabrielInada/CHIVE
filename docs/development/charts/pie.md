@@ -193,11 +193,13 @@ every control once, as data (`PIE_CONTROLS`), and the controls sidebar builds th
 shared [describedControls.js](../../../src/charts/shared/controls/describedControls.js), which
 wires each control to the `ChartConfigWriter` as it creates it. The measure, value-column, and
 Top-N selects are the shared descriptions in
-[categoryControls.js](../../../src/charts/shared/controls/categoryControls.js). Four controls
-no shared widget covers are `custom` descriptions whose `build`, in
+[categoryControls.js](../../../src/charts/shared/controls/categoryControls.js), and the Reset
+Zoom button is the reset-zoom description pie shares with network, in
+[zoomControls.js](../../../src/charts/shared/controls/zoomControls.js). Three controls no
+shared widget covers are `custom` descriptions whose `build`, in
 [customControls.js](../../../src/charts/pie/controls/customControls.js), creates and wires
-them: the radius slider pair, the Reset Zoom button, the palette presets, and the per-slice
-color grid. `computeDefaults` is the shared `categoryChartDefaults('pie')`
+them: the radius slider pair, the palette presets, and the per-slice color grid.
+`computeDefaults` is the shared `categoryChartDefaults('pie')`
 ([activationDefaults.js](../../../src/charts/shared/controls/activationDefaults.js)).
 
 ### 5.1 The three sections

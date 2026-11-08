@@ -142,7 +142,7 @@ export const BAR_CONTROLS = Object.freeze({
 					min: 0,
 					max: 100,
 					step: 5,
-					value: config => Number(config.manualThresholdPct || 50),
+					value: config => config.manualThresholdPct || 50,
 					shownWhen: config => config.colorMode === 'gradient-manual',
 				},
 			],

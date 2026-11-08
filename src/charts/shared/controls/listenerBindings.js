@@ -3,8 +3,8 @@
  *
  * Wires DOM elements built by the shared control factories
  * (`charts/shared/controls/factories.js`) to a {@link ChartConfigWriter}, for
- * the charts that pair a builder with listeners. A chart that describes its
- * controls is wired by `describedControls.js` instead.
+ * scatter, the one chart that still pairs a builder with listeners. A chart
+ * that describes its controls is wired by `describedControls.js` instead.
  *
  * These helpers are pure input mechanics: they read DOM values, normalize them,
  * and hand the result to the injected writer. They hold no state knowledge and
@@ -105,25 +105,6 @@ export function setupColorInputListener(elementId, configKey, defaultColor, writ
 }
 
 /**
- * Wire a `change` listener on a free numeric input. Falls back to
- * `defaultValue` when the parsed value is not finite (covers empty
- * strings and arbitrary garbage).
- *
- * @param {string} elementId
- * @param {string} configKey
- * @param {number} defaultValue
- * @param {ChartConfigWriter} writer
- */
-export function setupNumberInputListener(elementId, configKey, defaultValue, writer) {
-	const el = document.getElementById(elementId);
-	if (!el) return;
-	el.addEventListener('change', () => {
-		const parsed = parseFloat(el.value);
-		writer.commit({ [configKey]: Number.isFinite(parsed) ? parsed : defaultValue });
-	});
-}
-
-/**
  * Wire a slider input. The slider's sibling `<output>` element gets
  * synced on every `input` event (for live tick display); the config
  * write goes through on `change` (when the user releases the slider).
@@ -144,18 +125,6 @@ export function setupSliderListener(elementId, configKey, writer) {
 	el.addEventListener('input', syncOutput);
 	el.addEventListener('change', () => {
 		writer.commit({ [configKey]: Number(el.value) });
-	});
-}
-
-/**
- * Wire `change`/`input` listeners on a batch of sliders.
- *
- * @param {Array<{ id: string, key: string }>} controls
- * @param {ChartConfigWriter} writer
- */
-export function setupSliderListeners(controls, writer) {
-	controls.forEach(({ id, key }) => {
-		setupSliderListener(id, key, writer);
 	});
 }
 

@@ -9,8 +9,8 @@
  * Each chart type owns its controls in its package (`charts/<type>/controls/`),
  * looked up through `charts/registries/controls.js`. A chart that describes its
  * controls gets them built and wired in one pass by
- * `charts/shared/controls/describedControls.js`; the other charts still build
- * theirs and attach listeners afterwards. This manager renders the sidebar
+ * `charts/shared/controls/describedControls.js`; scatter still builds its
+ * controls and attaches listeners afterwards. This manager renders the sidebar
  * shell and creates the writer the controls write through.
  *
  * Sidebar scroll-position preservation deserves a note: re-rendering
@@ -251,8 +251,8 @@ function computeActivationDefaults(chartType, dataset, { numeric, categorical, a
 
 /**
  * Build the active chart's controls and the writer they write through.
- * Described controls come back wired; a chart that still pairs a builder with
- * listeners gets them attached once its controls are in the document.
+ * Described controls come back wired; scatter, which still pairs a builder
+ * with listeners, gets them attached once its controls are in the document.
  *
  * @private
  * @param {Readonly<ChartControlAdapter> | null} entry

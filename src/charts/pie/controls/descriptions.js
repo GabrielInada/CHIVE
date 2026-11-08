@@ -14,7 +14,8 @@
 import { CHART_COLORS } from '../../../config/charts/definitions.js';
 import { PIE_CHART, PIE_DEFINITION } from '../../../config/charts/definitions/pie.js';
 import { measureControl, topNControl, valueColumnControl } from '../../shared/controls/categoryControls.js';
-import { buildRadiusSliders, buildResetZoomButton, buildSliceColorGrid, buildSlicePalette } from './customControls.js';
+import { resetZoomControl } from '../../shared/controls/zoomControls.js';
+import { buildRadiusSliders, buildSliceColorGrid, buildSlicePalette } from './customControls.js';
 
 /** @type {ChartControlDescriptions} */
 export const PIE_CONTROLS = Object.freeze({
@@ -69,7 +70,6 @@ export const PIE_CONTROLS = Object.freeze({
 					min: PIE_CHART.minPadAngle,
 					max: PIE_CHART.maxPadAngle,
 					step: 0.5,
-					value: config => Number(config.padAngle),
 				},
 				{
 					widget: 'slider',
@@ -79,7 +79,6 @@ export const PIE_CONTROLS = Object.freeze({
 					min: PIE_CHART.minZoomScale,
 					max: PIE_CHART.maxZoomScale,
 					step: 0.05,
-					value: config => Number(config.zoomScale),
 				},
 				{
 					widget: 'checkbox',
@@ -115,7 +114,12 @@ export const PIE_CONTROLS = Object.freeze({
 						outside: 'chive-chart-control-pie-label-position-outside',
 					},
 				},
-				{ widget: 'custom', id: 'viz-btn-pie-reset-zoom', key: 'zoomScale', build: buildResetZoomButton },
+				resetZoomControl({
+					id: 'viz-btn-pie-reset-zoom',
+					label: 'chive-chart-control-pie-reset-zoom',
+					sliderId: 'viz-slider-pie-zoom',
+					zoomScale: PIE_CHART.defaultZoomScale,
+				}),
 			],
 		},
 		{

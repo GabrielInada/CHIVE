@@ -7,16 +7,8 @@ const mocks = vi.hoisted(() => ({
 	onStateChange: vi.fn(),
 	setActiveChartType: vi.fn(),
 	openChartTypePickerDialog: vi.fn(() => Promise.resolve(null)),
-	createNetworkGraphControls: vi.fn(() => []),
-	setupNetworkGraphControlListeners: vi.fn(),
 	createScatterPlotControls: vi.fn(() => []),
 	setupScatterPlotControlListeners: vi.fn(),
-	createLineChartControls: vi.fn(() => []),
-	setupLineChartControlListeners: vi.fn(),
-	createTinControls: vi.fn(() => []),
-	setupTinControlListeners: vi.fn(),
-	createScatter3dControls: vi.fn(() => []),
-	setupScatter3dControlListeners: vi.fn(),
 }));
 
 vi.mock('../../../../src/services/i18nService.js', () => ({
@@ -29,39 +21,11 @@ vi.mock('../../../../src/state/appState.js', () => ({
 	setActiveChartType: mocks.setActiveChartType,
 }));
 
-vi.mock('../../../../src/charts/network/controls/builder.js', () => ({
-	createNetworkGraphControls: mocks.createNetworkGraphControls,
-}));
-vi.mock('../../../../src/charts/network/controls/listeners.js', () => ({
-	setupNetworkGraphControlListeners: mocks.setupNetworkGraphControlListeners,
-}));
-
 vi.mock('../../../../src/charts/scatter/controls/builder.js', () => ({
 	createScatterPlotControls: mocks.createScatterPlotControls,
 }));
 vi.mock('../../../../src/charts/scatter/controls/listeners.js', () => ({
 	setupScatterPlotControlListeners: mocks.setupScatterPlotControlListeners,
-}));
-
-vi.mock('../../../../src/charts/line/controls/builder.js', () => ({
-	createLineChartControls: mocks.createLineChartControls,
-}));
-vi.mock('../../../../src/charts/line/controls/listeners.js', () => ({
-	setupLineChartControlListeners: mocks.setupLineChartControlListeners,
-}));
-
-vi.mock('../../../../src/charts/tin/controls/builder.js', () => ({
-	createTinControls: mocks.createTinControls,
-}));
-vi.mock('../../../../src/charts/tin/controls/listeners.js', () => ({
-	setupTinControlListeners: mocks.setupTinControlListeners,
-}));
-
-vi.mock('../../../../src/charts/scatter3d/controls/builder.js', () => ({
-	createScatter3dControls: mocks.createScatter3dControls,
-}));
-vi.mock('../../../../src/charts/scatter3d/controls/listeners.js', () => ({
-	setupScatter3dControlListeners: mocks.setupScatter3dControlListeners,
 }));
 
 vi.mock('../../../../src/charts/previews.js', () => ({
@@ -150,30 +114,21 @@ describe('renderChartControlsSidebar', () => {
 	it('renders only the active chart\'s controls in the params pane', () => {
 		renderChartControlsSidebar(shownFor('scatter'));
 		expect(mocks.createScatterPlotControls).toHaveBeenCalledTimes(1);
-		expect(mocks.createLineChartControls).not.toHaveBeenCalled();
 		expect(mocks.setupScatterPlotControlListeners).toHaveBeenCalledTimes(1);
-		expect(mocks.setupLineChartControlListeners).not.toHaveBeenCalled();
 		expect(document.querySelector('#viz-select-bar')).toBeNull();
+		expect(document.querySelector('#viz-select-line-x')).toBeNull();
 	});
 
 	it.each([
-		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners'],
-		['line', 'createLineChartControls', 'setupLineChartControlListeners'],
-		['tin', 'createTinControls', 'setupTinControlListeners'],
-		['scatter3d', 'createScatter3dControls', 'setupScatter3dControlListeners'],
-	])('renders and wires %s controls through the registry', (chartType, buildMock, listenerMock) => {
-		renderChartControlsSidebar(shownFor(chartType));
-
-		expect(mocks[buildMock]).toHaveBeenCalledTimes(1);
-		expect(mocks[listenerMock]).toHaveBeenCalledTimes(1);
-	});
-
-	it.each([
-		['treemap', ['data', 'display', 'styling', 'advanced'], '#viz-select-treemap-category'],
-		['bar', ['data', 'display', 'styling', 'advanced'], '#viz-select-bar-sort'],
-		['pie', ['data', 'display', 'styling'], '#viz-btn-pie-reset-zoom'],
-		['bubble', ['data', 'display', 'styling'], '#viz-select-bubble-nesting-level-0'],
-	])('builds the %s controls from its descriptions', (chartType, sections, control) => {
+		['treemap', ['data', 'display', 'styling', 'advanced'], '#viz-select-treemap-category', true],
+		['bar', ['data', 'display', 'styling', 'advanced'], '#viz-select-bar-sort', true],
+		['pie', ['data', 'display', 'styling'], '#viz-btn-pie-reset-zoom', false],
+		['bubble', ['data', 'display', 'styling'], '#viz-select-bubble-nesting-level-0', true],
+		['line', ['data', 'styling', 'display'], '#viz-select-line-x', false],
+		['network', ['data', 'display', 'styling', 'advanced'], '#viz-btn-network-reset-zoom', true],
+		['scatter3d', ['data', 'display', 'styling'], '#viz-select-scatter3d-z', false],
+		['tin', ['data', 'display', 'surface', 'overlays'], '#viz-input-tin-threshold-value', true],
+	])('builds the %s controls from its descriptions', (chartType, sections, control, palette) => {
 		renderChartControlsSidebar(shownFor(chartType));
 
 		const params = document.getElementById('viz-chart-params');
@@ -181,8 +136,8 @@ describe('renderChartControlsSidebar', () => {
 			.toEqual(sections);
 		expect(params.querySelector(control)).not.toBeNull();
 		expect(params.querySelector(`[data-color-preset-control="viz-${chartType}-color-preset"]`) !== null)
-			.toBe(chartType !== 'pie');
-		expect(mocks.createLineChartControls).not.toHaveBeenCalled();
+			.toBe(palette);
+		expect(mocks.createScatterPlotControls).not.toHaveBeenCalled();
 	});
 
 	it('hands the pie controls the rows the chart draws, under the global filter', () => {
