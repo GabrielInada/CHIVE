@@ -468,10 +468,10 @@ same section routine for every chart:
    clamped to the definition's `heightLimits`, or the default height when it is not a
    number ([chartHeight.js](../../../src/charts/shared/chartHeight.js)).
 4. Hands the chart input to `renderTinInto` in
-   [presentation.js](../../../src/charts/tin/presentation.js), which maps every
-   `config.*` key into the renderer's options bag, including localized axis labels and
-   the current locale, and calls
-   `renderTinChart(container, rows, config.x, config.y, config.z, options)`.
+   [presentation.js](../../../src/charts/tin/presentation.js), which passes config
+   unchanged, supplies localized axis labels, locale and the application setting
+   `colorRenderingMode` in a separate context, and calls
+   `renderTinChart(container, rows, config, context)`.
 
 The presentation flow shows a localized empty-state message on either surface
 (`insufficient-points` gets a specific message; anything else a generic one).
@@ -493,7 +493,8 @@ lets the live preview skip re-rendering the panel (section 9.4 / 10).
 
 ## 7. Inside `renderTinChart`
 
-`renderTinChart(container, rows, xColumn, yColumn, zColumn, options = {})` is the
+`renderTinChart(container, rows, config, context)` reads `config.x`, `config.y` and
+`config.z` and normalizes visual settings once through `normalizeTinOptions`. It is the
 heart of the system. It returns a `Result`: `ok({ triangles, polygons })` on
 success or `fail(reason)` when it cannot draw. Here is the full pipeline in order.
 The mathematical justification for each step lives in section 2; this section is the
@@ -504,7 +505,7 @@ mechanics.
 - Returns `fail()` immediately if the container or any of the three column names is
   missing.
 - Reads `fillMode`, `colorRamp`, `gradientDistribution`, and `isolineMode` as given
-  after chart config canonicalization. The renderer-only `colorRenderingMode` still
+  after chart config canonicalization. The runtime `context.colorRenderingMode` still
   defaults to `'optimized'` unless it is `'full-ramp'`. Colors run through
   `normalizeColor` (valid `#RRGGBB` or fallback); numeric options are range-clamped;
   `chartHeight` is clamped to 220–900; isoline count/width/label size and threshold

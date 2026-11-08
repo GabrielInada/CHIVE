@@ -117,13 +117,22 @@ doc rather than repeated:
   [workspace registry](../../../src/charts/registries/workspace.js) owns the section
   routine for every chart: block visibility, and a minimum height equal to the height
   the chart is drawn at ([chartHeight.js](../../../src/charts/shared/chartHeight.js)). Each package's
-  `presentation.js` maps config and labels and renders localized empty states via
+  `presentation.js` passes stored config unchanged, supplies localized labels and
+  runtime context, and renders localized empty states via
   `showChartMessage` from
   [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).
   Workspace charts, saved Panel previews, and layout slots therefore show the
   same failure message, including after resize or reopening an existing project.
   Add to panel also accepts charts displaying an empty state; captures keep their
   frozen rows and config, and the presentation flow returns the renderer result.
+- **Renderer inputs**: every chart renderer takes `(container, rows, config, context)`.
+  Column bindings and visual settings stay in stored `config`; each package's
+  `options.js` normalizes its numeric bounds, colors and defaults once. Enumerated
+  settings have already been canonicalized against the chart definition. `context`
+  carries presentation-owned labels, locale, column types, callbacks and transient
+  render approval or application settings. Normalizers do not translate or supply
+  English label defaults. Real-render presentation tests exercise the stored settings
+  and translated output; renderer equivalence tests retain the existing SVG snapshots.
 - **Color utilities**: [colorUtils.js](../../../src/utils/colorUtils.js) (`interpolateColor`,
   `buildRankMap`, `isValidHexColor`); pie's `buildSliceColor` lives in its package
   ([color.js](../../../src/charts/pie/color.js)).
@@ -135,9 +144,11 @@ doc rather than repeated:
   (`showPinnedFilterTooltip`) pins a tooltip with the global-filter actions for the column and
   category token a chart names. The categorical filter-action subsystem is documented in
   detail in the bar chart's [section 7.6](bar.md) and reused by pie, treemap, bubble, scatter,
-  and network. Each chart's presentation flow supplies `labels.close`; the renderer passes
-  it as `closeLabel` independently of the filter callbacks, so Panel tooltips also use the
-  current interface language for the close button's accessible name and hover title.
+  and network. Presentations use [labels.js](../../../src/charts/shared/tooltip/labels.js)
+  with their translator to supply `labels.close`, `labels.missing`, and
+  `labels.filterActions`. Renderers pass `closeLabel` and `filterActionLabels` separately
+  from filter callbacks. Action buttons, state badges, network headings, and the close
+  button therefore use the current interface language wherever the chart is drawn.
 - **Control factories and grouping**: [factories.js](../../../src/charts/shared/controls/factories.js)
   builds the labeled sidebar widgets (selects, sliders, color inputs, palette presets), the
   options of a Top-N select (`topNSelectOptions`), and finds the palette preset a chart's

@@ -217,8 +217,9 @@ The [workspace registry](../../../src/charts/registries/workspace.js) resolves t
 block/container, hides+clears when disabled, sets the min-height to the height the chart is
 drawn at, and hands the chart input (`rows`, `config`, `columnTypeByName`, `filterCallbacks`)
 to `renderLineInto` in [presentation.js](../../../src/charts/line/presentation.js), which
-maps config (forwarding `axisTypes.x` from `columnTypeByName` so the renderer picks the
-right X scale) and calls `renderLineChart`. On failure the presentation flow maps the reason to a message on both surfaces:
+passes config unchanged and supplies labels, locale and `axisTypes.x` from
+`columnTypeByName` in a separate context so the renderer picks the right X scale.
+It calls `renderLineChart`. On failure the presentation flow maps the reason to a message on both surfaces:
 `no-numeric` to `chive-chart-empty-line-numeric`, `no-x-values` to `chive-chart-empty-line-x`,
 anything else to `chive-chart-empty-line`.
 
@@ -233,7 +234,8 @@ click-to-filter tooltips, so the missing filter callbacks are moot here.)
 
 ## 7. Inside `renderLineChart`
 
-`renderLineChart(container, rows, xColumn, yColumn, options = {})` returns a `Result`. The
+`renderLineChart(container, rows, config, context)` reads `config.x` and `config.y`,
+normalizes visual settings once through `normalizeLineOptions`, and returns a `Result`. The
 pipeline:
 
 ### 7.1 Guard and option parsing

@@ -37,9 +37,10 @@ import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { NETWORK_GRAPH } from '../../../config/charts/definitions/network.js';
 import { formatNumber } from '../../../utils/formatters.js';
-import { interpolateColor, isValidHexColor } from '../../../utils/colorUtils.js';
+import { interpolateColor } from '../../../utils/colorUtils.js';
 import { fail } from '../../../utils/result.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
+import { normalizeNetworkOptions } from '../options.js';
 import { buildNetworkData } from '../data.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
@@ -60,57 +61,29 @@ function stopPreviousSimulation(container) {
  * `fail()` when required arguments are missing or no edges resolve from
  * the data.
  *
- * Common option keys: `weight` (numeric column for edge thickness), `group`
+ * Common config keys: `weight` (numeric column for edge thickness), `group`
  * (categorical column for node coloring), `nodeRadius`, `linkDistance`,
  * `chargeStrength`, `linkOpacity`, `zoomScale`, `alphaDecay`,
  * `showNodeLabels`, `showLegend`, color and palette inputs, axis-style
- * inputs, `customTitle`, `chartHeight`, `locale`.
+ * inputs, `customTitle`, and `chartHeight`. The context supplies locale,
+ * localized labels, filter callbacks and render-budget approval.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows (one row per edge).
- * @param {string} sourceColumn - Column holding the source node identifier.
- * @param {string} targetColumn - Column holding the target node identifier.
- * @param {Object} [options={}] - Render options bag.
+ * @param {Object} config - Stored chart config, normalized once inside the renderer.
+ * @param {Object} context - Localized labels, locale, and runtime callbacks from presentation.
  * @returns {Result}
  */
-export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, options = {}) {
+export function renderNetworkGraph(container, rows, config = {}, context = {}) {
+	const { source: sourceColumn, target: targetColumn } = config;
+	const { labels = {}, locale, filterCallbacks, allowFullRender = false } = context;
 	if (!container || !sourceColumn || !targetColumn) return fail();
 
-	const weightColumn = options.weightColumn || null;
-	const groupColumn = options.groupColumn || null;
-	const nodeRadius = Number.isFinite(Number(options.nodeRadius)) ? Number(options.nodeRadius) : 5;
-	const linkOpacity = Number.isFinite(Number(options.linkOpacity)) ? Number(options.linkOpacity) : 0.45;
-	const chargeStrength = Number.isFinite(Number(options.chargeStrength)) ? Number(options.chargeStrength) : -80;
-	const linkDistance = Number.isFinite(Number(options.linkDistance)) ? Number(options.linkDistance) : 46;
-	const zoomScale = Number.isFinite(Number(options.zoomScale))
-		? Number(options.zoomScale)
-		: NETWORK_GRAPH.defaultZoomScale;
-	const alphaDecay = Number.isFinite(Number(options.alphaDecay))
-		? Number(options.alphaDecay)
-		: NETWORK_GRAPH.defaultAlphaDecay;
-	const showLegend = options.showLegend !== false;
-	const showNodeLabels = options.showNodeLabels === true;
-	const sourceNodeColor = isValidHexColor(String(options.sourceNodeColor || '').trim())
-		? String(options.sourceNodeColor).trim()
-		: '#e3743d';
-	const targetNodeColor = isValidHexColor(String(options.targetNodeColor || '').trim())
-		? String(options.targetNodeColor).trim()
-		: '#6b94c9';
-	// Read as given: chart config canonicalization checks the edge color mode
-	// against the chart's definition.
-	const { edgeColorMode } = options;
-	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(options.chartHeight))
-		? Math.max(220, Math.min(720, Number(options.chartHeight)))
-		: 420;
-	const locale = options.locale || undefined;
-	const labels = {
-		close: options.labels?.close,
-		node: options.labels?.node || 'Node',
-		linkWeight: options.labels?.linkWeight || 'Weight',
-		source: options.labels?.source || 'Source',
-		target: options.labels?.target || 'Target',
-	};
+	const {
+		weightColumn, groupColumn, nodeRadius, linkOpacity, chargeStrength, linkDistance,
+		zoomScale, alphaDecay, showLegend, showNodeLabels, sourceNodeColor, targetNodeColor,
+		edgeColorMode, customTitle, chartHeight,
+	} = normalizeNetworkOptions(config);
 
 	const network = buildNetworkData(rows, sourceColumn, targetColumn, weightColumn, groupColumn);
 	if (network.nodes.length === 0 || network.links.length === 0) {
@@ -118,7 +91,7 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 	}
 	const exceedsRenderBudget = network.nodes.length > NETWORK_GRAPH.maxNodes
 		|| network.links.length > NETWORK_GRAPH.maxLinks;
-	if (exceedsRenderBudget && options.allowFullRender !== true) {
+	if (exceedsRenderBudget && allowFullRender !== true) {
 		stopPreviousSimulation(container);
 		container.replaceChildren();
 		hideChartTooltip();
@@ -176,7 +149,6 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 	container[SIMULATION_KEY] = simulation;
 
 	let pinnedNodeDatum = null;
-	const filterLabels = options.filterCallbacks?.filterActionLabels || {};
 
 	const buildNodeTooltipContent = (nodeData) => {
 		const content = document.createElement('div');
@@ -192,8 +164,8 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 			return [{ column: sourceColumn, token, heading: sourceColumn }];
 		}
 		return [
-			{ column: sourceColumn, token, heading: `${filterLabels.filterBySource || 'Filter source'} (${sourceColumn})` },
-			{ column: targetColumn, token, heading: `${filterLabels.filterByTarget || 'Filter target'} (${targetColumn})` },
+			{ column: sourceColumn, token, heading: `${labels.filterActions?.filterBySource} (${sourceColumn})` },
+			{ column: targetColumn, token, heading: `${labels.filterActions?.filterByTarget} (${targetColumn})` },
 		];
 	};
 	const showNodeTooltip = (event, nodeData) => {
@@ -246,12 +218,13 @@ export function renderNetworkGraph(container, rows, sourceColumn, targetColumn, 
 		showPinnedFilterTooltip(buildNodeTooltipContent(nodeData), startX, startY, {
 			headerTitle: String(nodeData.id),
 			closeLabel: labels.close,
+			filterActionLabels: labels.filterActions,
 			onDismiss: () => {
 				pinnedNodeDatum = null;
 				hideChartTooltip();
 			},
 			anchor: () => nodeScreenPoint(pinnedNodeDatum),
-			filterCallbacks: options.filterCallbacks,
+			filterCallbacks,
 			categories: nodeFilterCategories(nodeData),
 		});
 	};

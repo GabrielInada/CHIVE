@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderScatterPlot } from '../../../../src/charts/scatter/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
@@ -54,15 +55,39 @@ describe('renderScatterPlot rendering', () => {
 
 	it('fails when container or a column is missing', () => {
 		const container = document.getElementById('scatter');
-		expect(renderScatterPlot(null, NUMERIC_ROWS, 'x', 'y', BASE_OPTIONS).ok).toBe(false);
-		expect(renderScatterPlot(container, NUMERIC_ROWS, null, 'y', BASE_OPTIONS).ok).toBe(false);
-		expect(renderScatterPlot(container, NUMERIC_ROWS, 'x', null, BASE_OPTIONS).ok).toBe(false);
+		expect(renderScatterPlot(null, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		})).ok).toBe(false);
+		expect(renderScatterPlot(container, NUMERIC_ROWS, {
+			x: null,
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: null, y: 'y' }, {
+			...BASE_OPTIONS,
+		})).ok).toBe(false);
+		expect(renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: null,
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: null }, {
+			...BASE_OPTIONS,
+		})).ok).toBe(false);
 	});
 
 	it('renders one circle per finite row and filters non-finite values', () => {
 		const container = document.getElementById('scatter');
 		const rows = [...NUMERIC_ROWS, { x: 6, y: 'not-a-number' }];
-		const result = renderScatterPlot(container, rows, 'x', 'y', BASE_OPTIONS);
+		const result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(result.ok).toBe(true);
 		expect(circles(container).length).toBe(NUMERIC_ROWS.length);
 	});
@@ -71,7 +96,13 @@ describe('renderScatterPlot rendering', () => {
 		const container = document.getElementById('scatter');
 		const rows = Array.from({ length: 5005 }, (_, index) => ({ x: index, y: index * 2 }));
 
-		const sampled = renderScatterPlot(container, rows, 'x', 'y', BASE_OPTIONS);
+		const sampled = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(sampled).toMatchObject({
 			ok: true,
 			renderedCount: 5000,
@@ -80,7 +111,14 @@ describe('renderScatterPlot rendering', () => {
 		});
 		expect(circles(container)).toHaveLength(5000);
 
-		const full = renderScatterPlot(container, rows, 'x', 'y', { ...BASE_OPTIONS, allowFullRender: true });
+		const full = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			allowFullRender: true,
+		}));
 		expect(full).toMatchObject({
 			ok: true,
 			renderedCount: 5005,
@@ -92,7 +130,15 @@ describe('renderScatterPlot rendering', () => {
 
 	it('applies uniform radius and opacity', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', { ...BASE_OPTIONS, radius: 7, opacity: 0.5 });
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			radius: 7,
+			opacity: 0.5,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(radii(container).every(r => r === 7)).toBe(true);
 		expect(circles(container).every(c => c.getAttribute('opacity') === '0.5')).toBe(true);
 	});
@@ -104,10 +150,17 @@ describe('renderScatterPlot rendering', () => {
 			{ x: 2, y: 2, sz: 5 },
 			{ x: 3, y: 3, sz: 10 },
 		];
-		renderScatterPlot(container, rows, 'x', 'y', {
+		renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
-			sizeMode: 'numeric', sizeField: 'sz', sizeMin: 2, sizeMax: 12,
-		});
+			sizeMode: 'numeric',
+			sizeField: 'sz',
+			sizeMin: 2,
+			sizeMax: 12,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		const r = radii(container);
 		expect(Math.min(...r)).toBeCloseTo(2);
 		expect(Math.max(...r)).toBeCloseTo(12);
@@ -116,20 +169,31 @@ describe('renderScatterPlot rendering', () => {
 
 	it('paints all points with the uniform color by default', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', { ...BASE_OPTIONS, color: '#abcdef' });
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			color: '#abcdef',
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(new Set(fills(container))).toEqual(new Set(['#abcdef']));
 	});
 
 	it('maps a numeric color field across the gradient endpoints', () => {
 		const container = document.getElementById('scatter');
 		const rows = NUMERIC_ROWS.map((row, i) => ({ ...row, val: i }));
-		renderScatterPlot(container, rows, 'x', 'y', {
+		renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
 			colorMode: 'numeric',
 			colorField: 'val',
 			gradientMinColor: '#000000',
 			gradientMaxColor: '#ffffff',
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		const unique = new Set(fills(container));
 		expect(unique.size).toBeGreaterThan(1);
 		// min value -> min color, max value -> max color (interpolateColor uppercases).
@@ -147,12 +211,30 @@ describe('renderScatterPlot rendering', () => {
 		const opts = { colorMode: 'numeric', colorField: 'val', gradientMinColor: '#000000', gradientMaxColor: '#ffffff' };
 
 		const c1 = document.getElementById('scatter');
-		renderScatterPlot(c1, skewed, 'x', 'y', { ...BASE_OPTIONS, ...opts, gradientDistribution: 'value' });
+		renderScatterPlot(c1, skewed, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			...opts,
+			gradientDistribution: 'value',
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			...opts,
+		}));
 		const valueFills = fills(c1).join('|');
 
 		document.body.innerHTML = '<div id="scatter"></div>';
 		const c2 = document.getElementById('scatter');
-		renderScatterPlot(c2, skewed, 'x', 'y', { ...BASE_OPTIONS, ...opts, gradientDistribution: 'rank' });
+		renderScatterPlot(c2, skewed, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			...opts,
+			gradientDistribution: 'rank',
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			...opts,
+		}));
 		const rankFills = fills(c2).join('|');
 
 		expect(rankFills).not.toBe(valueFills);
@@ -165,10 +247,16 @@ describe('renderScatterPlot rendering', () => {
 			{ x: 2, y: 2, grp: 'b' },
 			{ x: 3, y: 3, grp: 'a' },
 		];
-		renderScatterPlot(container, rows, 'x', 'y', {
+		renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
-			colorMode: 'category', colorField: 'grp', colorScheme: 'Bold',
-		});
+			colorMode: 'category',
+			colorField: 'grp',
+			colorScheme: 'Bold',
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		// Bold palette: a -> #FF6B6B, b -> #4ECDC4.
 		expect(new Set(fills(container))).toEqual(new Set(['#FF6B6B', '#4ECDC4']));
 	});
@@ -181,7 +269,9 @@ describe('renderScatterPlot rendering', () => {
 			{ x: 3, y: 3, size: 20, colorValue: 'bad' },
 		];
 
-		let result = renderScatterPlot(container, rows, 'x', 'y', {
+		let result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
 			color: 'bad-color',
 			radius: 'bad',
@@ -196,12 +286,16 @@ describe('renderScatterPlot rendering', () => {
 			gradientMaxColor: 'bad',
 			colorScheme: 'Bold',
 			chartHeight: 999,
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(result.ok).toBe(true);
 		expect(new Set(radii(container)).size).toBe(1);
 		expect(new Set(fills(container)).size).toBe(1);
 
-		result = renderScatterPlot(container, rows, 'x', 'y', {
+		result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
 			sizeMode: 'numeric',
 			sizeField: 'size',
@@ -211,7 +305,9 @@ describe('renderScatterPlot rendering', () => {
 			colorField: 'colorValue',
 			gradientMinColor: '#000000',
 			gradientMaxColor: '#ffffff',
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(result.ok).toBe(true);
 		expect(radii(container).some(radius => radius === 8)).toBe(true);
 		expect(fills(container)).toContain('#000000');
@@ -225,47 +321,75 @@ describe('renderScatterPlot rendering', () => {
 			{ x: 'B', y: 'South', value: 10, group: 'beta' },
 		];
 
-		let result = renderScatterPlot(container, rows, 'x', 'y', {
+		let result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
-			axisTypes: { x: 'text', y: 'text' },
 			categoricalPairMode: 'aggregate',
 			colorMode: 'numeric',
 			colorField: 'value',
 			gradientMinColor: '#000000',
 			gradientMaxColor: '#ffffff',
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			axisTypes: { x: 'text', y: 'text' },
+		}));
 		expect(result.ok).toBe(true);
 		expect(new Set(fills(container)).size).toBe(2);
 
-		result = renderScatterPlot(container, rows, 'x', 'y', {
+		result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
-			axisTypes: { x: 'text', y: 'text' },
 			categoricalPairMode: 'aggregate',
 			colorMode: 'category',
 			colorField: 'group',
 			colorScheme: 'Colorblind-Safe',
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			axisTypes: { x: 'text', y: 'text' },
+		}));
 		expect(result.ok).toBe(true);
 		expect(new Set(fills(container)).size).toBe(2);
 	});
 
 	it('renders a custom title', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', { ...BASE_OPTIONS, customTitle: 'My scatter' });
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			customTitle: 'My scatter',
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(texts(container)).toContain('My scatter');
 	});
 
 	it('renders axis labels only when enabled', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', { ...BASE_OPTIONS, axisLabels: { x: 'XLAB', y: 'YLAB' } });
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			axisLabels: { x: 'XLAB', y: 'YLAB' },
+		}));
 		expect(texts(container)).toEqual(expect.arrayContaining(['XLAB', 'YLAB']));
 
 		document.body.innerHTML = '<div id="scatter"></div>';
 		const c2 = document.getElementById('scatter');
-		renderScatterPlot(c2, NUMERIC_ROWS, 'x', 'y', {
+		renderScatterPlot(c2, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
-			axisLabels: { x: 'XLAB', y: 'YLAB' }, showXAxisLabel: false, showYAxisLabel: false,
-		});
+			showXAxisLabel: false,
+			showYAxisLabel: false,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+			axisLabels: { x: 'XLAB', y: 'YLAB' },
+		}));
 		expect(texts(c2)).not.toContain('XLAB');
 		expect(texts(c2)).not.toContain('YLAB');
 	});
@@ -277,10 +401,14 @@ describe('renderScatterPlot rendering', () => {
 			{ group: 'Southeast territory', value: 2 },
 		];
 
-		renderScatterPlot(container, rows, 'group', 'value', {
+		renderScatterPlot(container, rows, {
+			x: 'group',
+			y: 'value',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'group', y: 'value' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'text', y: 'number' },
-		});
+		}));
 
 		const rotatedTicks = Array.from(container.querySelectorAll('.tick text'))
 			.filter(tick => tick.getAttribute('transform') === 'rotate(-28)');
@@ -304,7 +432,13 @@ describe('renderScatterPlot interaction', () => {
 
 	it('shows a hover tooltip with the point values', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', BASE_OPTIONS);
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		dispatchMouse(circles(container)[0], 'mouseover');
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
@@ -316,7 +450,13 @@ describe('renderScatterPlot interaction', () => {
 
 	it('repositions on mousemove without error', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', BASE_OPTIONS);
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		const circle = circles(container)[0];
 		dispatchMouse(circle, 'mouseover');
 		expect(() => dispatchMouse(circle, 'mousemove')).not.toThrow();
@@ -325,7 +465,13 @@ describe('renderScatterPlot interaction', () => {
 
 	it('pins on click and unpins on a second click', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', BASE_OPTIONS);
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		const circle = circles(container)[0];
 		dispatchMouse(circle, 'click');
 		const tooltip = document.querySelector('.chart-tooltip');
@@ -336,7 +482,13 @@ describe('renderScatterPlot interaction', () => {
 
 	it('delegates point interaction to one parent listener set', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', BASE_OPTIONS);
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(circles(container).every(circle => circle.__on === undefined)).toBe(true);
 		expect(container.querySelector('.scatter-points').__on.map(listener => listener.type).sort())
@@ -356,12 +508,15 @@ describe('renderScatterPlot interaction', () => {
 		const headings = () => Array.from(document.querySelectorAll('.chart-tooltip__action-set-label'))
 			.map(heading => heading.textContent);
 
-		let result = renderScatterPlot(container, rows, 'group', 'value', {
+		let result = renderScatterPlot(container, rows, {
+			x: 'group',
+			y: 'value',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'group', y: 'value' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'text', y: 'number' },
-			xColumn: 'group',
 			filterCallbacks,
-		});
+		}));
 		expect(result.ok).toBe(true);
 		dispatchMouse(circles(container)[0], 'click');
 		expect(headings()).toEqual(['group']);
@@ -369,13 +524,15 @@ describe('renderScatterPlot interaction', () => {
 		expect(calls).toEqual([['group', 'v:A']]);
 
 		calls.length = 0;
-		result = renderScatterPlot(container, rows, 'group', 'segment', {
+		result = renderScatterPlot(container, rows, {
+			x: 'group',
+			y: 'segment',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'group', y: 'segment' }, {
 			...BASE_OPTIONS,
 			axisTypes: { x: 'text', y: 'text' },
-			xColumn: 'group',
-			yColumn: 'segment',
 			filterCallbacks,
-		});
+		}));
 		expect(result.ok).toBe(true);
 		dispatchMouse(circles(container)[0], 'click');
 		expect(headings()).toEqual(['group', 'segment']);
@@ -385,7 +542,13 @@ describe('renderScatterPlot interaction', () => {
 
 	it('clears a pinned tooltip on background click', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', BASE_OPTIONS);
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		dispatchMouse(circles(container)[0], 'click');
 		expect(document.querySelector('.chart-tooltip').hidden).toBe(false);
 		dispatchMouse(container.querySelector('svg'), 'click');
@@ -404,17 +567,27 @@ describe('renderScatterPlot regression overlay', () => {
 
 	it('does not render regression nodes when disabled', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', BASE_OPTIONS);
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(container.querySelector('.scatter-regression-line')).toBeNull();
 		expect(container.querySelector('.scatter-regression-annotation')).toBeNull();
 	});
 
 	it('renders line, band, and annotation when enabled', () => {
 		const container = document.getElementById('scatter');
-		const result = renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', {
+		const result = renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
 			regression: { enabled: true },
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(result.ok).toBe(true);
 		expect(container.querySelector('.scatter-regression-line')).not.toBeNull();
 		expect(container.querySelector('.scatter-regression-band')).not.toBeNull();
@@ -432,7 +605,9 @@ describe('renderScatterPlot regression overlay', () => {
 			{ x: 3, y: 5, group: 'B' },
 		];
 
-		const result = renderScatterPlot(container, rows, 'x', 'y', {
+		const result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
 			colorMode: 'category',
 			colorField: 'group',
@@ -444,7 +619,9 @@ describe('renderScatterPlot regression overlay', () => {
 				bandOpacity: 'bad',
 				overallColor: '',
 			},
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('.scatter-regression-line').length).toBe(2);
@@ -455,7 +632,9 @@ describe('renderScatterPlot regression overlay', () => {
 
 	it('supports regression with hidden line, hidden annotation parts, and pinned-point hover suppression', () => {
 		const container = document.getElementById('scatter');
-		const result = renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', {
+		const result = renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
 			regression: {
 				enabled: true,
@@ -464,7 +643,9 @@ describe('renderScatterPlot regression overlay', () => {
 				showEquation: false,
 				showR2: false,
 			},
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(result.ok).toBe(true);
 		expect(container.querySelector('.scatter-regression-line')).toBeNull();
 		expect(container.querySelector('.scatter-regression-band')).not.toBeNull();
@@ -480,17 +661,28 @@ describe('renderScatterPlot regression overlay', () => {
 
 	it('omits the confidence band when showCI is false', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', {
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
 			regression: { enabled: true, showCI: false },
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(container.querySelector('.scatter-regression-line')).not.toBeNull();
 		expect(container.querySelector('.scatter-regression-band')).toBeNull();
 	});
 
 	it('shows a tooltip with regression stats on line hover', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', { ...BASE_OPTIONS, regression: { enabled: true } });
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			regression: { enabled: true },
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		dispatchMouse(container.querySelector('.scatter-regression-line'), 'mouseenter');
 		const tooltip = document.querySelector('.chart-tooltip');
 		expect(tooltip).not.toBeNull();
@@ -499,18 +691,26 @@ describe('renderScatterPlot regression overlay', () => {
 
 	it('uses valid overall regression colors and rejects invalid ones', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', {
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
 			regression: { enabled: true, overallColor: '#123456' },
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(container.querySelector('.scatter-regression-line').getAttribute('stroke')).toBe('#123456');
 
 		document.body.innerHTML = '<div id="scatter"></div>';
 		const c2 = document.getElementById('scatter');
-		renderScatterPlot(c2, NUMERIC_ROWS, 'x', 'y', {
+		renderScatterPlot(c2, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
 			...BASE_OPTIONS,
 			regression: { enabled: true, overallColor: 'url(#not-allowed)' },
-		});
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(c2.querySelector('.scatter-regression-line').getAttribute('stroke')).toBe('#3f3a33');
 	});
 });
@@ -527,7 +727,14 @@ describe('renderScatterPlot log scale', () => {
 	it('drops non-positive points on a log axis', () => {
 		const container = document.getElementById('scatter');
 		const rows = [{ x: 1, y: 1 }, { x: 2, y: 2 }, { x: 3, y: 0 }, { x: 4, y: 4 }];
-		const result = renderScatterPlot(container, rows, 'x', 'y', { ...BASE_OPTIONS, yScale: 'log' });
+		const result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			yScale: 'log',
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(result.ok).toBe(true);
 		// The y=0 row is removed on a log y-axis.
 		expect(circles(container).length).toBe(3);
@@ -536,7 +743,14 @@ describe('renderScatterPlot log scale', () => {
 	it('fails with log-no-positive when no points survive the log filter', () => {
 		const container = document.getElementById('scatter');
 		const rows = [{ x: 1, y: 0 }, { x: 2, y: -1 }];
-		const result = renderScatterPlot(container, rows, 'x', 'y', { ...BASE_OPTIONS, yScale: 'log' });
+		const result = renderScatterPlot(container, rows, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			yScale: 'log',
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('log-no-positive');
 	});
@@ -558,7 +772,14 @@ describe('renderScatterPlot categorical aggregation', () => {
 			{ cx: 'a', cy: 'p' },
 			{ cx: 'b', cy: 'q' },
 		];
-		const result = renderScatterPlot(container, rows, 'cx', 'cy', { ...BASE_OPTIONS, categoricalPairMode: 'aggregate' });
+		const result = renderScatterPlot(container, rows, {
+			x: 'cx',
+			y: 'cy',
+			...BASE_OPTIONS,
+			categoricalPairMode: 'aggregate',
+		}, renderContext({ x: 'cx', y: 'cy' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(result.ok).toBe(true);
 		// Two distinct (x, y) category pairs -> two bubbles.
 		expect(circles(container).length).toBe(2);
@@ -578,7 +799,14 @@ describe('renderScatterPlot regression DOM stacking', () => {
 
 	it('paints the regression layer behind points and the annotation after the axes', () => {
 		const container = document.getElementById('scatter');
-		renderScatterPlot(container, NUMERIC_ROWS, 'x', 'y', { ...BASE_OPTIONS, regression: { enabled: true } });
+		renderScatterPlot(container, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			regression: { enabled: true },
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 
 		const group = container.querySelector('svg > g');
 		const kids = Array.from(group.children);
@@ -593,12 +821,26 @@ describe('renderScatterPlot regression DOM stacking', () => {
 
 	it('gives each rendered chart a unique regression clip-path id', () => {
 		const c1 = document.getElementById('scatter');
-		renderScatterPlot(c1, NUMERIC_ROWS, 'x', 'y', { ...BASE_OPTIONS, regression: { enabled: true } });
+		renderScatterPlot(c1, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			regression: { enabled: true },
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		const id1 = c1.querySelector('clipPath').id;
 
 		document.body.innerHTML = '<div id="scatter2"></div>';
 		const c2 = document.getElementById('scatter2');
-		renderScatterPlot(c2, NUMERIC_ROWS, 'x', 'y', { ...BASE_OPTIONS, regression: { enabled: true } });
+		renderScatterPlot(c2, NUMERIC_ROWS, {
+			x: 'x',
+			y: 'y',
+			...BASE_OPTIONS,
+			regression: { enabled: true },
+		}, renderContext({ x: 'x', y: 'y' }, {
+			...BASE_OPTIONS,
+		}));
 		const id2 = c2.querySelector('clipPath').id;
 
 		expect(id1).toMatch(/^scatter-clip-/);

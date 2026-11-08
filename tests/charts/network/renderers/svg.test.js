@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { renderNetworkGraph } from '../../../../src/charts/network/renderers/svg.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
@@ -49,10 +50,12 @@ describe('network graph visualization', () => {
 			{ origem: 'A', destino: 'C', peso: 3 },
 		];
 
-		const result = renderNetworkGraph(container, rows, 'origem', 'destino', {
-			weightColumn: 'peso',
+		const result = renderNetworkGraph(container, rows, {
+			source: 'origem',
+			target: 'destino',
+			weight: 'peso',
 			showNodeLabels: true,
-		});
+		}, renderContext({ source: 'origem', target: 'destino' }));
 
 		expect(result.ok).toBe(true);
 		expect(result.nodesCount).toBe(3);
@@ -68,10 +71,13 @@ describe('network graph visualization', () => {
 			{ origem: 'B', destino: 'C' },
 		];
 
-		renderNetworkGraph(container, rows, 'origem', 'destino', {
+		renderNetworkGraph(container, rows, {
+			source: 'origem',
+			target: 'destino',
 			showLegend: true,
+		}, renderContext({ source: 'origem', target: 'destino' }, {
 			labels: { source: 'Origem', target: 'Destino' },
-		});
+		}));
 
 		const legendTexts = Array.from(container.querySelectorAll('.network-legend text'))
 			.map(node => node.textContent);
@@ -88,7 +94,11 @@ describe('network graph visualization', () => {
 			{ origem: 'B', destino: 'C' },
 		];
 
-		renderNetworkGraph(container, rows, 'origem', 'destino', { showLegend: true });
+		renderNetworkGraph(container, rows, {
+			source: 'origem',
+			target: 'destino',
+			showLegend: true,
+		}, renderContext({ source: 'origem', target: 'destino' }));
 
 		const legendTexts = Array.from(container.querySelectorAll('.network-legend text'))
 			.map(node => node.textContent);
@@ -103,7 +113,10 @@ describe('network graph visualization', () => {
 			{ origem: null, destino: undefined },
 		];
 
-		const result = renderNetworkGraph(container, rows, 'origem', 'destino');
+		const result = renderNetworkGraph(container, rows, {
+			source: 'origem',
+			target: 'destino',
+		}, renderContext({ source: 'origem', target: 'destino' }));
 
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('insufficient-data');
@@ -113,7 +126,10 @@ describe('network graph visualization', () => {
 		const container = document.getElementById('network');
 		const rows = Array.from({ length: 2001 }, () => ({ source: 'A', target: 'B' }));
 
-		const result = renderNetworkGraph(container, rows, 'source', 'target');
+		const result = renderNetworkGraph(container, rows, {
+			source: 'source',
+			target: 'target',
+		}, renderContext({ source: 'source', target: 'target' }));
 
 		expect(result).toEqual({
 			ok: false,
@@ -128,9 +144,12 @@ describe('network graph visualization', () => {
 		const container = document.getElementById('network');
 		const rows = Array.from({ length: 2001 }, () => ({ source: 'A', target: 'B' }));
 
-		const result = renderNetworkGraph(container, rows, 'source', 'target', {
+		const result = renderNetworkGraph(container, rows, {
+			source: 'source',
+			target: 'target',
+		}, renderContext({ source: 'source', target: 'target' }, {
 			allowFullRender: true,
-		});
+		}));
 
 		expect(result).toMatchObject({ ok: true, nodesCount: 2, linksCount: 2001 });
 		expect(container.querySelectorAll('.network-link')).toHaveLength(2001);
@@ -143,7 +162,10 @@ describe('network graph visualization', () => {
 			{ origem: 'A', destino: 'B' },
 			{ origem: 'B', destino: 'C' },
 		];
-		renderNetworkGraph(container, rows, 'origem', 'destino');
+		renderNetworkGraph(container, rows, {
+			source: 'origem',
+			target: 'destino',
+		}, renderContext({ source: 'origem', target: 'destino' }));
 		stubScreenCTM(container);
 
 		const firstNode = container.querySelector('circle');
@@ -161,7 +183,10 @@ describe('network graph visualization', () => {
 			{ origem: 'A', destino: 'B' },
 			{ origem: 'B', destino: 'C' },
 		];
-		renderNetworkGraph(container, rows, 'origem', 'destino');
+		renderNetworkGraph(container, rows, {
+			source: 'origem',
+			target: 'destino',
+		}, renderContext({ source: 'origem', target: 'destino' }));
 		stubScreenCTM(container);
 
 		const firstNode = container.querySelector('circle');
@@ -180,7 +205,10 @@ describe('network graph visualization', () => {
 		renderNetworkGraph(container, [
 			{ source: 'A', target: 'B' },
 			{ source: 'B', target: 'C' },
-		], 'source', 'target');
+		], {
+			source: 'source',
+			target: 'target',
+		}, renderContext({ source: 'source', target: 'target' }));
 
 		const tooltipEventTypes = new Set(['mouseover', 'mousemove', 'mouseout', 'click']);
 		const link = container.querySelector('.network-link');
@@ -201,7 +229,10 @@ describe('network graph visualization', () => {
 			{ origem: 'A', destino: 'B' },
 			{ origem: 'B', destino: 'C' },
 		];
-		renderNetworkGraph(container, rows, 'origem', 'destino');
+		renderNetworkGraph(container, rows, {
+			source: 'origem',
+			target: 'destino',
+		}, renderContext({ source: 'origem', target: 'destino' }));
 		stubScreenCTM(container);
 
 		const firstNode = container.querySelector('circle');
@@ -227,9 +258,18 @@ describe('network graph visualization', () => {
 
 	it('covers invalid args, option fallbacks, custom title, uniform edges, and previous simulation cleanup', () => {
 		const container = document.getElementById('network');
-		expect(renderNetworkGraph(null, [], 'source', 'target').ok).toBe(false);
-		expect(renderNetworkGraph(container, [], '', 'target').ok).toBe(false);
-		expect(renderNetworkGraph(container, [], 'source', '').ok).toBe(false);
+		expect(renderNetworkGraph(null, [], {
+			source: 'source',
+			target: 'target',
+		}, renderContext({ source: 'source', target: 'target' })).ok).toBe(false);
+		expect(renderNetworkGraph(container, [], {
+			source: '',
+			target: 'target',
+		}, renderContext({ source: '', target: 'target' })).ok).toBe(false);
+		expect(renderNetworkGraph(container, [], {
+			source: 'source',
+			target: '',
+		}, renderContext({ source: 'source', target: '' })).ok).toBe(false);
 
 		const previousSimulation = { stop: vi.fn() };
 		container.__chive_network_simulation__ = previousSimulation;
@@ -239,9 +279,11 @@ describe('network graph visualization', () => {
 			{ source: 'C', target: 'A', weight: 4, group: 'Group 2' },
 		];
 
-		const result = renderNetworkGraph(container, rows, 'source', 'target', {
-			weightColumn: 'weight',
-			groupColumn: 'group',
+		const result = renderNetworkGraph(container, rows, {
+			source: 'source',
+			target: 'target',
+			weight: 'weight',
+			group: 'group',
 			nodeRadius: 'bad',
 			linkOpacity: 'bad',
 			chargeStrength: 'bad',
@@ -255,7 +297,7 @@ describe('network graph visualization', () => {
 			chartHeight: 999,
 			showLegend: false,
 			showNodeLabels: false,
-		});
+		}, renderContext({ source: 'source', target: 'target' }));
 
 		expect(result.ok).toBe(true);
 		expect(previousSimulation.stop).toHaveBeenCalledTimes(1);
@@ -278,11 +320,14 @@ describe('network graph visualization', () => {
 			{ node: 'A' },
 		];
 
-		const result = renderNetworkGraph(container, rows, 'node', 'node', {
+		const result = renderNetworkGraph(container, rows, {
+			source: 'node',
+			target: 'node',
+		}, renderContext({ source: 'node', target: 'node' }, {
 			filterCallbacks: {
 				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 			},
-		});
+		}));
 		expect(result.ok).toBe(true);
 		stubScreenCTM(container);
 
@@ -302,15 +347,14 @@ describe('network graph visualization', () => {
 			{ source: 'B', target: 'C' },
 		];
 
-		const result = renderNetworkGraph(container, rows, 'source', 'target', {
+		const result = renderNetworkGraph(container, rows, {
+			source: 'source',
+			target: 'target',
+		}, renderContext({ source: 'source', target: 'target' }, {
 			filterCallbacks: {
 				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
-				filterActionLabels: {
-					filterBySource: 'Filter source',
-					filterByTarget: 'Filter target',
-				},
 			},
-		});
+		}));
 		expect(result.ok).toBe(true);
 		stubScreenCTM(container);
 
@@ -327,7 +371,11 @@ describe('network graph visualization', () => {
 		renderNetworkGraph(container, [
 			{ source: 'A', target: 'B', weight: 2 },
 			{ source: 'B', target: 'C', weight: 3 },
-		], 'source', 'target', { weightColumn: 'weight' });
+		], {
+			source: 'source',
+			target: 'target',
+			weight: 'weight',
+		}, renderContext({ source: 'source', target: 'target' }));
 		stubScreenCTM(container);
 
 		const link = container.querySelector('line');

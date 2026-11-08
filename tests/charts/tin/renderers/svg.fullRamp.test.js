@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TIN_CHART } from '../../../../src/config/charts/definitions/tin.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
@@ -32,32 +33,47 @@ describe('renderTinChart full-ramp color rendering mode', () => {
 
 	it('uses colorAt(meanZ) exactly, not the bucket-center color', () => {
 		const container = document.getElementById('tin');
-		const result = renderTinChart(container, SINGLE_TRI_T04, 'x', 'y', 'z', {
+		const result = renderTinChart(container, SINGLE_TRI_T04, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 0,
+			...BW_RAMP,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
 			colorRenderingMode: 'full-ramp',
 			...BW_RAMP,
-		});
+		}));
 		expect(result.ok).toBe(true);
 		expect(pathFills(container)).toEqual(['#666666']);
 
 		document.body.innerHTML = '<div id="tin"></div>';
 		const container2 = document.getElementById('tin');
-		renderTinChart(container2, SINGLE_TRI_T04, 'x', 'y', 'z', {
+		renderTinChart(container2, SINGLE_TRI_T04, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 0,
+			...BW_RAMP,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
 			colorRenderingMode: 'optimized',
 			...BW_RAMP,
-		});
+		}));
 		expect(pathFills(container2)).toEqual(['#676767']);
 	});
 
 	it('groups leaves with equal final CSS colors into one compound path', () => {
 		const container = document.getElementById('tin');
 		const rows = gridRows(6, (i, j) => i * 6 + j);
-		const result = renderTinChart(container, rows, 'x', 'y', 'z', {
+		const result = renderTinChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 2,
+			...BW_RAMP,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
 			colorRenderingMode: 'full-ramp',
 			...BW_RAMP,
-		});
+		}));
 		expect(result.ok).toBe(true);
 		const fills = pathFills(container);
 		// One path per distinct color: no two paths share a fill.
@@ -70,20 +86,30 @@ describe('renderTinChart full-ramp color rendering mode', () => {
 	it('generates identical triangle and leaf counts to optimized at the same depth', () => {
 		const rows = gridRows(6, (i, j) => Math.sin(i) * Math.cos(j) * 10);
 		const container = document.getElementById('tin');
-		const optimized = renderTinChart(container, rows, 'x', 'y', 'z', {
+		const optimized = renderTinChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 2,
+			...BW_RAMP,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
 			colorRenderingMode: 'optimized',
 			...BW_RAMP,
-		});
+		}));
 		const optimizedSubpaths = countSubpaths(container);
 
 		document.body.innerHTML = '<div id="tin"></div>';
 		const container2 = document.getElementById('tin');
-		const fullRamp = renderTinChart(container2, rows, 'x', 'y', 'z', {
+		const fullRamp = renderTinChart(container2, rows, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 2,
+			...BW_RAMP,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
 			colorRenderingMode: 'full-ramp',
 			...BW_RAMP,
-		});
+		}));
 
 		expect(fullRamp.triangles).toBe(optimized.triangles);
 		expect(fullRamp.polygons).toBe(optimized.polygons);
@@ -93,10 +119,14 @@ describe('renderTinChart full-ramp color rendering mode', () => {
 	it('keeps adaptive depth reduction active in full-ramp mode', () => {
 		const container = document.getElementById('tin');
 		const rows = gridRows(26, (i, j) => Math.sin(i) + Math.cos(j));
-		const result = renderTinChart(container, rows, 'x', 'y', 'z', {
+		const result = renderTinChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 4,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
 			colorRenderingMode: 'full-ramp',
-		});
+		}));
 		expect(result.ok).toBe(true);
 		expect(result.polygons).toBeLessThanOrEqual(TIN_CHART.maxSurfaceLeaves);
 		expect(result.polygons).toBeLessThan(result.triangles * Math.pow(4, 4));
@@ -112,11 +142,16 @@ describe('renderTinChart full-ramp color rendering mode', () => {
 			{ x: 0, y: 10, z: 5 },
 			{ x: 5, y: 5, z: 5 },
 		];
-		const result = renderTinChart(container, rows, 'x', 'y', 'z', {
+		const result = renderTinChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 3,
+			...BW_RAMP,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
 			colorRenderingMode: 'full-ramp',
 			...BW_RAMP,
-		});
+		}));
 		expect(result.ok).toBe(true);
 		expect(pathFills(container)).toEqual(['#000000']);
 		expect(countSubpaths(container)).toBe(result.triangles);
@@ -124,15 +159,19 @@ describe('renderTinChart full-ramp color rendering mode', () => {
 
 	it('leaves overlays, axes, legend, and result fields on the shared path', () => {
 		const container = document.getElementById('tin');
-		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+		const result = renderTinChart(container, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 1,
-			colorRenderingMode: 'full-ramp',
 			showIsolines: true,
 			isolineCount: 4,
 			showEdges: true,
 			showPoints: true,
 			showHull: true,
-		});
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
+			colorRenderingMode: 'full-ramp',
+		}));
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('.tin-isolines line:not(.tin-isoline-hit)').length).toBeGreaterThan(0);
 		expect(container.querySelectorAll('.tin-edges line').length).toBeGreaterThan(0);

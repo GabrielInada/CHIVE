@@ -24,8 +24,8 @@ import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
  * the config has multiple enabled flags (legacy), the first one in
  * canonical order wins, the rest are coerced to disabled before render.
  *
- * The `options` callbacks reach the charts' pinned tooltips as they are, with
- * the localized action labels added; the tooltips offer an action only when
+ * The `options` callbacks reach the charts' pinned tooltips as they are, and
+ * presentation supplies the text; the tooltips offer an action only when
  * its callback is a function.
  *
  * @param {Partial<ChartConfig>} config
@@ -43,20 +43,6 @@ import { VIEW_IDS, BADGE_IDS } from '../domIds.js';
  * @returns {void}
  */
 export function renderCharts(config, rows, visibleColumns, visibleNumericColumns, options = {}) {
-	const filterCallbacks = {
-		...options,
-		filterActionLabels: {
-			focus: t('chive-tooltip-show-only-this'),
-			add: t('chive-tooltip-add-to-filter'),
-			exclude: t('chive-tooltip-exclude'),
-			remove: t('chive-tooltip-remove-from-filter'),
-			bringBack: t('chive-tooltip-bring-back'),
-			stateIncluded: t('chive-tooltip-state-included'),
-			stateExcluded: t('chive-tooltip-state-excluded'),
-			filterBySource: t('chive-tooltip-filter-by-source'),
-			filterByTarget: t('chive-tooltip-filter-by-target'),
-		},
-	};
 	const chartConfig = mergeChartConfigWithDefaults(config);
 	const columnTypeByName = Array.isArray(visibleColumns)
 		? Object.fromEntries(visibleColumns.map(column => [column?.name, column?.type]))
@@ -116,7 +102,7 @@ export function renderCharts(config, rows, visibleColumns, visibleNumericColumns
 			config: chartConfig[type],
 			rows,
 			columnTypeByName,
-			filterCallbacks,
+			filterCallbacks: options,
 		});
 	}
 }

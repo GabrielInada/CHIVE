@@ -33,26 +33,27 @@ import { computePieSectors } from '../data.js';
  * as it does with `'no-positive-value'` when no category has a value
  * above 0.
  *
- * Common option keys: `measureMode` ('count' | 'sum'), `valueColumn`,
+ * Common config keys: `measureMode` ('count' | 'sum'), `valueColumn`,
  * `topN`, `topNMode` ('other' | 'truncate'), `innerRadius`/`outerRadius`,
  * `padAngle`, `zoomScale`, `showCategoryLabel`/`showValueLabel`/
  * `showLegend`, `labelPosition` ('inside' | 'outside'), `color`,
  * `customSliceColors` (overrides by category key), `customTitle`,
- * `chartHeight`, `locale`, and the localized `labels` bag, whose `measure`
- * names the measure in the tooltip.
+ * and `chartHeight`. The separate context supplies locale, filter callbacks
+ * and localized labels; `labels.measure` names the measure in the tooltip.
  *
  * @param {HTMLElement} container - Target DOM element. Existing contents are replaced.
  * @param {Array<Object<string, *>>} rows - Source rows.
- * @param {string} categoryColumn - Categorical column name (required).
- * @param {Object} [options={}] - Render options bag.
+ * @param {Object} config - Stored chart config, normalized once inside the renderer.
+ * @param {Object} context - Localized labels, locale, and runtime callbacks from presentation.
  * @returns {Result}
  */
-export function renderPieChart(container, rows, categoryColumn, options = {}) {
+export function renderPieChart(container, rows, config = {}, context = {}) {
+	const { category: categoryColumn } = config;
+	const { labels = {}, locale, filterCallbacks } = context;
 	if (!container || !categoryColumn) return fail();
 
+	const normalized = normalizePieOptions(config);
 	const {
-		locale,
-		labels,
 		rawInner,
 		rawOuter,
 		showCategoryLabel,
@@ -63,9 +64,9 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		chartHeight,
 		padAngleRad,
 		zoomScale,
-	} = normalizePieOptions(options);
+	} = normalized;
 
-	const drawn = computePieSectors(rows, categoryColumn, options);
+	const drawn = computePieSectors(rows, categoryColumn, normalized, labels);
 	if (!drawn.ok) return fail(drawn.reason);
 	const { sectors, total } = drawn;
 
@@ -138,8 +139,9 @@ export function renderPieChart(container, rows, categoryColumn, options = {}) {
 		showPinnedFilterTooltip(buildTooltipContent(item), event.pageX, event.pageY, {
 			headerTitle: item.label,
 			closeLabel: labels.close,
+			filterActionLabels: labels.filterActions,
 			onDismiss,
-			filterCallbacks: options.filterCallbacks,
+			filterCallbacks,
 			categories: [{ column: categoryColumn, token: item.token }],
 		});
 	};

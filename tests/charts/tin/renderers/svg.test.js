@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { TIN_CHART } from '../../../../src/config/charts/definitions/tin.js';
 import { hideChartTooltip } from '../../../../src/charts/shared/tooltip/tooltip.js';
@@ -23,22 +24,47 @@ describe('renderTinChart', () => {
 
 	it('returns failure when container or any column arg is missing', () => {
 		const container = document.getElementById('tin');
-		expect(renderTinChart(null, VALID_ROWS, 'x', 'y', 'z').ok).toBe(false);
-		expect(renderTinChart(container, VALID_ROWS, null, 'y', 'z').ok).toBe(false);
-		expect(renderTinChart(container, VALID_ROWS, 'x', null, 'z').ok).toBe(false);
-		expect(renderTinChart(container, VALID_ROWS, 'x', 'y', null).ok).toBe(false);
+		expect(renderTinChart(null, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+		}, renderContext({ x: 'x', y: 'y', z: 'z' })).ok).toBe(false);
+		expect(renderTinChart(container, VALID_ROWS, {
+			x: null,
+			y: 'y',
+			z: 'z',
+		}, renderContext({ x: null, y: 'y', z: 'z' })).ok).toBe(false);
+		expect(renderTinChart(container, VALID_ROWS, {
+			x: 'x',
+			y: null,
+			z: 'z',
+		}, renderContext({ x: 'x', y: null, z: 'z' })).ok).toBe(false);
+		expect(renderTinChart(container, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: null,
+		}, renderContext({ x: 'x', y: 'y', z: null })).ok).toBe(false);
 	});
 
 	it('returns insufficient-points when fewer than 3 valid rows', () => {
 		const container = document.getElementById('tin');
-		const result = renderTinChart(container, [{ x: 1, y: 2, z: 3 }, { x: 4, y: 5, z: 6 }], 'x', 'y', 'z');
+		const result = renderTinChart(container, [{ x: 1, y: 2, z: 3 }, { x: 4, y: 5, z: 6 }], {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('insufficient-points');
 	});
 
 	it('renders subpath count == triangles * 4^depth at depth 0 and depth 2', () => {
 		const container = document.getElementById('tin');
-		const depth0 = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', { subdivisionDepth: 0 });
+		const depth0 = renderTinChart(container, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			subdivisionDepth: 0,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(depth0.ok).toBe(true);
 		expect(countSubpaths(container)).toBe(depth0.triangles);
 		expect(depth0.polygons).toBe(depth0.triangles * Math.pow(4, 0));
@@ -49,7 +75,12 @@ describe('renderTinChart', () => {
 
 		document.body.innerHTML = '<div id="tin"></div>';
 		const container2 = document.getElementById('tin');
-		const depth2 = renderTinChart(container2, VALID_ROWS, 'x', 'y', 'z', { subdivisionDepth: 2 });
+		const depth2 = renderTinChart(container2, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			subdivisionDepth: 2,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(depth2.ok).toBe(true);
 		expect(countSubpaths(container2)).toBe(depth2.triangles * Math.pow(4, 2));
 		expect(depth2.polygons).toBe(depth2.triangles * Math.pow(4, 2));
@@ -62,10 +93,13 @@ describe('renderTinChart', () => {
 
 	it('renders one subpath per triangle in flat fill mode regardless of subdivisionDepth', () => {
 		const container = document.getElementById('tin');
-		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+		const result = renderTinChart(container, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			fillMode: 'flat',
 			subdivisionDepth: 2,
-		});
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(result.ok).toBe(true);
 		expect(countSubpaths(container)).toBe(result.triangles);
 		expect(result.polygons).toBe(result.triangles);
@@ -74,7 +108,15 @@ describe('renderTinChart', () => {
 	it('merges leaves into at most one path per color bucket', () => {
 		const container = document.getElementById('tin');
 		const rows = gridRows(6, (i, j) => i * 6 + j);
-		const result = renderTinChart(container, rows, 'x', 'y', 'z', { subdivisionDepth: 2, ...BW_RAMP });
+		const result = renderTinChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			subdivisionDepth: 2,
+			...BW_RAMP,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
+			...BW_RAMP,
+		}));
 		expect(result.ok).toBe(true);
 		const fills = pathFills(container);
 		// One path per bucket: distinct bucket-center grays => distinct fills.
@@ -96,12 +138,28 @@ describe('renderTinChart', () => {
 		const opts = { subdivisionDepth: 2, ...BW_RAMP };
 
 		const container = document.getElementById('tin');
-		renderTinChart(container, skewed, 'x', 'y', 'z', { ...opts, gradientDistribution: 'value' });
+		renderTinChart(container, skewed, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			...opts,
+			gradientDistribution: 'value',
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
+			...opts,
+		}));
 		const valueFills = [...new Set(pathFills(container))].sort().join('|');
 
 		document.body.innerHTML = '<div id="tin"></div>';
 		const container2 = document.getElementById('tin');
-		renderTinChart(container2, skewed, 'x', 'y', 'z', { ...opts, gradientDistribution: 'rank' });
+		renderTinChart(container2, skewed, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			...opts,
+			gradientDistribution: 'rank',
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
+			...opts,
+		}));
 		const rankFills = [...new Set(pathFills(container2))].sort().join('|');
 
 		expect(rankFills).not.toBe(valueFills);
@@ -116,7 +174,15 @@ describe('renderTinChart', () => {
 			{ x: 0, y: 10, z: 5 },
 			{ x: 5, y: 5, z: 5 },
 		];
-		const result = renderTinChart(container, rows, 'x', 'y', 'z', { subdivisionDepth: 3, ...BW_RAMP });
+		const result = renderTinChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			subdivisionDepth: 3,
+			...BW_RAMP,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
+			...BW_RAMP,
+		}));
 		expect(result.ok).toBe(true);
 		const paths = container.querySelectorAll('.tin-triangles path');
 		expect(paths.length).toBe(1);
@@ -128,7 +194,12 @@ describe('renderTinChart', () => {
 	it('clamps subdivision depth to keep leaf count under the surface budget', () => {
 		const container = document.getElementById('tin');
 		const rows = gridRows(26, (i, j) => Math.sin(i) + Math.cos(j));
-		const result = renderTinChart(container, rows, 'x', 'y', 'z', { subdivisionDepth: 4 });
+		const result = renderTinChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			subdivisionDepth: 4,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(result.ok).toBe(true);
 		expect(result.polygons).toBeLessThanOrEqual(TIN_CHART.maxSurfaceLeaves);
 		// Budget actually bit: fewer leaves than an unclamped depth-4 render.
@@ -138,13 +209,16 @@ describe('renderTinChart', () => {
 
 	it('respects overlay toggles', () => {
 		const container = document.getElementById('tin');
-		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+		const result = renderTinChart(container, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 0,
 			showEdges: false,
 			showPoints: false,
 			showZLabels: false,
 			showHull: false,
-		});
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(result.ok).toBe(true);
 		expect(container.querySelector('.tin-edges')).toBeNull();
 		expect(container.querySelector('.tin-points')).toBeNull();
@@ -152,13 +226,16 @@ describe('renderTinChart', () => {
 
 		document.body.innerHTML = '<div id="tin"></div>';
 		const container2 = document.getElementById('tin');
-		const result2 = renderTinChart(container2, VALID_ROWS, 'x', 'y', 'z', {
+		const result2 = renderTinChart(container2, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 0,
 			showEdges: true,
 			showPoints: true,
 			showZLabels: true,
 			showHull: true,
-		});
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(result2.ok).toBe(true);
 		expect(container2.querySelectorAll('.tin-edges line').length).toBeGreaterThan(0);
 		expect(container2.querySelectorAll('.tin-points circle').length).toBe(VALID_ROWS.length);
@@ -173,17 +250,26 @@ describe('renderTinChart', () => {
 			{ x: 1, y: null, z: 1 },
 			{ x: 1, y: 1, z: undefined },
 		];
-		const result = renderTinChart(container, rows, 'x', 'y', 'z', { subdivisionDepth: 0, showPoints: true });
+		const result = renderTinChart(container, rows, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			subdivisionDepth: 0,
+			showPoints: true,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('.tin-points circle').length).toBe(VALID_ROWS.length);
 	});
 
 	it('shows tooltip with X/Y/Z values on point hover', () => {
 		const container = document.getElementById('tin');
-		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+		renderTinChart(container, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 0,
 			showPoints: true,
-		});
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		const firstPoint = container.querySelector('.tin-points circle');
 		firstPoint.dispatchEvent(new MouseEvent('mouseenter', { bubbles: true }));
 		const tooltip = document.querySelector('.chart-tooltip');
@@ -201,13 +287,28 @@ describe('renderTinChart', () => {
 			gradientMinColor: '#000000',
 			gradientMaxColor: '#ffffff',
 		};
-		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', customOpts);
+		renderTinChart(container, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			...customOpts,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
+			...customOpts,
+		}));
 		const customStops = Array.from(container.querySelectorAll('.tin-legend rect'))
 			.map(r => r.getAttribute('fill'));
 
 		document.body.innerHTML = '<div id="tin"></div>';
 		const container2 = document.getElementById('tin');
-		renderTinChart(container2, VALID_ROWS, 'x', 'y', 'z', { ...customOpts, colorRamp: 'viridis' });
+		renderTinChart(container2, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			...customOpts,
+			colorRamp: 'viridis',
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }, {
+			...customOpts,
+		}));
 		const viridisStops = Array.from(container2.querySelectorAll('.tin-legend rect'))
 			.map(r => r.getAttribute('fill'));
 
@@ -218,7 +319,12 @@ describe('renderTinChart', () => {
 
 	it('keeps the legend below the reserved chart area', () => {
 		const container = document.getElementById('tin');
-		const result = renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', { subdivisionDepth: 0 });
+		const result = renderTinChart(container, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
+			subdivisionDepth: 0,
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelector('.tin-legend').getAttribute('transform')).toBe('translate(56,402)');
@@ -226,12 +332,15 @@ describe('renderTinChart', () => {
 
 	it('preserves the custom two-color gradient when colorRamp is custom (regression guard)', () => {
 		const container = document.getElementById('tin');
-		renderTinChart(container, VALID_ROWS, 'x', 'y', 'z', {
+		renderTinChart(container, VALID_ROWS, {
+			x: 'x',
+			y: 'y',
+			z: 'z',
 			subdivisionDepth: 0,
 			colorRamp: 'custom',
 			gradientMinColor: '#000000',
 			gradientMaxColor: '#ffffff',
-		});
+		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		// In custom mode the first legend stop is exactly the min color and the
 		// last stop interpolates close to (but not exactly) the max color (12 stops, t at 11/12).
 		const stops = container.querySelectorAll('.tin-legend rect');

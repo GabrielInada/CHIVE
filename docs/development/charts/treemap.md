@@ -204,7 +204,8 @@ The [workspace registry](../../../src/charts/registries/workspace.js) resolves t
 block/container, hides+clears when disabled, sets the min-height to the height the chart is
 drawn at, and hands the chart input (`rows`, `config`, `filterCallbacks`) to
 `renderTreemapInto` in [presentation.js](../../../src/charts/treemap/presentation.js), which
-maps config and calls `renderTreemap`. On failure the presentation flow shows `chive-chart-empty-treemap-numeric` for
+passes config unchanged with localized labels and callbacks in a separate context to
+`renderTreemap`. On failure the presentation flow shows `chive-chart-empty-treemap-numeric` for
 `no-value-column` and `no-numeric`, `chive-chart-empty-no-positive-sum` for
 `no-positive-value`, else `chive-chart-empty-treemap`.
 
@@ -218,7 +219,8 @@ flow without `filterCallbacks` (no click-to-filter in panels).
 
 ## 7. Inside `renderTreemap`
 
-`renderTreemap(container, rows, categoryColumn, options = {})`. Unlike most renderers it does
+`renderTreemap(container, rows, config, context)` reads `config.category` and normalizes
+visual settings once through `normalizeTreemapOptions`. Unlike most renderers it does
 not use the `ok()`/`fail()` factories; it returns a plain `{ ok }` object (with a `reason` on
 the value-column failures and when no value is positive) that the presentation flow inspects
 to show the same message in the workspace and Panel.

@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 
+import { renderContext } from '../../renderContext.js';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { renderBubbleChart } from '../../../../src/charts/bubble/renderers/svg.js';
 
@@ -24,8 +25,18 @@ describe('bubble chart visualization', () => {
 	it('returns failure when container or category column is missing', () => {
 		const rows = [{ categoria: 'A' }];
 
-		expect(renderBubbleChart(null, rows, 'categoria', BASE_OPTIONS)).toEqual({ ok: false });
-		expect(renderBubbleChart(document.getElementById('bubble'), rows, null, BASE_OPTIONS)).toEqual({ ok: false });
+		expect(renderBubbleChart(null, rows, {
+			category: 'categoria',
+			...BASE_OPTIONS,
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}))).toEqual({ ok: false });
+		expect(renderBubbleChart(document.getElementById('bubble'), rows, {
+			category: null,
+			...BASE_OPTIONS,
+		}, renderContext({ category: null }, {
+			...BASE_OPTIONS,
+		}))).toEqual({ ok: false });
 	});
 
 	it('renders packed bubbles and returns ok', () => {
@@ -37,11 +48,14 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'C' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			chartHeight: 700,
 			labelMode: 'auto',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-node > circle').length).toBe(3);
@@ -50,7 +64,12 @@ describe('bubble chart visualization', () => {
 
 	it('keeps the no-title viewport transform at the chart margins', () => {
 		const container = document.getElementById('bubble');
-		const result = renderBubbleChart(container, [{ categoria: 'A' }], 'categoria', BASE_OPTIONS);
+		const result = renderBubbleChart(container, [{ categoria: 'A' }], {
+			category: 'categoria',
+			...BASE_OPTIONS,
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelector('svg > g').getAttribute('transform')).toBe('translate(10,10)');
@@ -65,26 +84,38 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'C', valor: 40 },
 		];
 
-		const countResult = renderBubbleChart(container, rows, 'categoria', { ...BASE_OPTIONS, topN: 2 });
+		const countResult = renderBubbleChart(container, rows, {
+			category: 'categoria',
+			...BASE_OPTIONS,
+			topN: 2,
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(countResult.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-node').length).toBe(2);
 
 		container.innerHTML = '';
-		const sumResult = renderBubbleChart(container, rows, 'categoria', {
+		const sumResult = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			measureMode: 'sum',
 			valueColumn: 'valor',
 			topN: 0,
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(sumResult.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
 
 		container.innerHTML = '';
-		const meanResult = renderBubbleChart(container, rows, 'categoria', {
+		const meanResult = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			measureMode: 'mean',
 			valueColumn: 'valor',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(meanResult.ok).toBe(true);
 	});
 
@@ -95,11 +126,14 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'B', valor: 'y' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			measureMode: 'sum',
 			valueColumn: 'valor',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-numeric');
@@ -113,11 +147,14 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'C', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'flat',
 			groupColumn: 'grupo',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
@@ -133,11 +170,14 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'D', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
@@ -151,10 +191,13 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'B' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-nesting-columns');
@@ -170,12 +213,15 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'E', grupo: 'Z' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 			topN: 3,
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-node').length).toBe(3);
@@ -189,14 +235,17 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'C', grupo: 'Y', valor: 30 },
 		];
 
-		const sumResult = renderBubbleChart(container, rows, 'categoria', {
+		const sumResult = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
 			measureMode: 'sum',
 			valueColumn: 'valor',
 			topN: 0,
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(sumResult.ok).toBe(true);
 		expect(container.querySelectorAll('g.bubble-parent').length).toBe(2);
@@ -211,10 +260,13 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'B' },
 		];
 
-		renderBubbleChart(container, rows, 'categoria', {
+		renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			labelMode: 'all',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		const labels = container.querySelectorAll('text.bubble-leaf-label');
 		expect(labels.length).toBe(2);
@@ -229,11 +281,14 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'C', grupo: 'Y' },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			groupColumn: 'grupo',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(true);
 		const parentGroups = container.querySelectorAll('g.bubble-parent');
@@ -247,7 +302,8 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'B', valor: 20 },
 		];
 
-		const result = renderBubbleChart(container, rows, 'categoria', {
+		const result = renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			measureMode: 'count',
 			topN: 'bad',
@@ -258,8 +314,10 @@ describe('bubble chart visualization', () => {
 			colorScheme: 'Tableau10',
 			customTitle: '  Bubble title  ',
 			chartHeight: 100,
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
 			labels: {},
-		});
+		}));
 
 		expect(result.ok).toBe(true);
 		const svg = container.querySelector('svg');
@@ -272,15 +330,24 @@ describe('bubble chart visualization', () => {
 		const container = document.getElementById('bubble');
 		const rows = Array.from({ length: 12 }, (_, index) => ({ categoria: `Item ${index}` }));
 
-		renderBubbleChart(container, rows, 'categoria', { ...BASE_OPTIONS, labelMode: 'hover' });
+		renderBubbleChart(container, rows, {
+			category: 'categoria',
+			...BASE_OPTIONS,
+			labelMode: 'hover',
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 		expect(container.querySelectorAll('text.bubble-leaf-label')).toHaveLength(0);
 
 		container.innerHTML = '';
-		renderBubbleChart(container, rows, 'categoria', {
+		renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			labelMode: 'all',
 			autoLabelMinRadius: 999,
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 		const outsideLabels = Array.from(container.querySelectorAll('text.bubble-leaf-label'))
 			.filter(label => label.getAttribute('dominant-baseline') === 'hanging');
 		expect(outsideLabels.length).toBeGreaterThan(0);
@@ -289,10 +356,13 @@ describe('bubble chart visualization', () => {
 	it('returns no-value-column when sum mode has no value column', () => {
 		const container = document.getElementById('bubble');
 
-		const result = renderBubbleChart(container, [{ categoria: 'A' }], 'categoria', {
+		const result = renderBubbleChart(container, [{ categoria: 'A' }], {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			measureMode: 'sum',
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		expect(result.ok).toBe(false);
 		expect(result.reason).toBe('no-value-column');
@@ -306,12 +376,15 @@ describe('bubble chart visualization', () => {
 			{ categoria: 'C', grupo: 'Y' },
 		];
 
-		renderBubbleChart(container, rows, 'categoria', {
+		renderBubbleChart(container, rows, {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['grupo'],
 			zoomTransitionDuration: 0,
-		});
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		const parent = container.querySelector('g.bubble-parent');
 		const circle = parent.querySelector('circle');
@@ -339,14 +412,17 @@ describe('bubble chart visualization', () => {
 		renderBubbleChart(container, [
 			{ categoria: 'A', regiao: 'North', estado: 'PA' },
 			{ categoria: 'B', regiao: 'North', estado: 'AM' },
-		], 'categoria', {
+		], {
+			category: 'categoria',
 			...BASE_OPTIONS,
 			nestingMode: 'grouped',
 			nestingColumns: ['regiao', 'estado'],
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
 			filterCallbacks: {
 				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 			},
-		});
+		}));
 
 		container.querySelector('g.bubble-parent[data-depth="1"]').dispatchEvent(mouse('click'));
 		document.querySelector('.chart-tooltip__action').click();
@@ -359,12 +435,15 @@ describe('bubble chart visualization', () => {
 		renderBubbleChart(container, [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'Y' },
-		], 'categoria', {
+		], {
+			category: 'categoria',
+			...BASE_OPTIONS,
+		}, renderContext({ category: 'categoria' }, {
 			...BASE_OPTIONS,
 			filterCallbacks: {
 				onAddToGlobalFilter: (column, token) => calls.push([column, token]),
 			},
-		});
+		}));
 
 		Array.from(container.querySelectorAll('g.bubble-node'))
 			.find(node => node.textContent.includes('B'))
@@ -378,7 +457,12 @@ describe('bubble chart visualization', () => {
 		renderBubbleChart(container, [
 			{ categoria: 'A', grupo: 'X' },
 			{ categoria: 'B', grupo: 'Y' },
-		], 'categoria', BASE_OPTIONS);
+		], {
+			category: 'categoria',
+			...BASE_OPTIONS,
+		}, renderContext({ category: 'categoria' }, {
+			...BASE_OPTIONS,
+		}));
 
 		const leaf = container.querySelector('g.bubble-node');
 		leaf.dispatchEvent(mouse('click'));

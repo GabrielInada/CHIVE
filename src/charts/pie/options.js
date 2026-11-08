@@ -1,7 +1,7 @@
 /**
  * Pie-chart option normalization.
  *
- * Turns the raw render options bag into a validated config object with every
+ * Turns the stored chart config into a validated config object with every
  * layout-independent default and bound applied exactly once. The radius clamps
  * (inner/outer) depend on the rendered geometry and stay in `renderers/svg.js`; the
  * raw inner/outer values are passed through here. Mirrors the renderer's
@@ -15,39 +15,30 @@ import { clamp } from '../../utils/formatters.js';
 import { isValidHexColor } from '../../utils/colorUtils.js';
 
 /**
- * Normalize the pie render options.
+ * Normalize the pie render config.
  *
- * @param {Object} options - Raw render options.
+ * @param {Object} config - Stored chart config.
  * @returns {Object} Validated config locals.
  */
-export function normalizePieOptions(options) {
-	const color = isValidHexColor(String(options.color || '').trim())
-		? String(options.color).trim()
+export function normalizePieOptions(config) {
+	const color = isValidHexColor(String(config.color || '').trim())
+		? String(config.color).trim()
 		: CHART_COLORS.pie;
-	const locale = options.locale || undefined;
-	const customSliceColors = options.customSliceColors || {};
-	const labels = {
-		close: options.labels?.close,
-		category: options.labels?.category || 'Category',
-		measure: options.labels?.measure || 'Value',
-		percentage: options.labels?.percentage || 'Percentage',
-		other: options.labels?.other || 'Other',
-		missing: options.labels?.missing || '(missing)',
-	};
+	const customSliceColors = config.customSliceColors || {};
 	// Read as given: chart config canonicalization checks the enumerated
 	// settings against the chart's definition.
-	const { measureMode, topNMode, labelPosition } = options;
-	const topN = Number.isFinite(Number(options.topN)) ? Number(options.topN) : 0;
-	const rawInner = Number(options.innerRadius);
-	const rawOuter = Number(options.outerRadius);
-	const rawPadAngle = Number(options.padAngle);
-	const valueColumn = options.valueColumn || null;
-	const showCategoryLabel = options.showCategoryLabel !== false;
-	const showValueLabel = options.showValueLabel !== false;
-	const showLegend = options.showLegend !== false;
-	const customTitle = String(options.customTitle || '').trim().slice(0, 80);
-	const chartHeight = Number.isFinite(Number(options.chartHeight))
-		? clamp(Number(options.chartHeight), 220, 720)
+	const { measureMode, topNMode, labelPosition } = config;
+	const topN = Number.isFinite(Number(config.topN)) ? Number(config.topN) : 0;
+	const rawInner = Number(config.innerRadius);
+	const rawOuter = Number(config.outerRadius);
+	const rawPadAngle = Number(config.padAngle);
+	const valueColumn = config.valueColumn || null;
+	const showCategoryLabel = config.showCategoryLabel !== false;
+	const showValueLabel = config.showValueLabel !== false;
+	const showLegend = config.showLegend !== false;
+	const customTitle = String(config.customTitle || '').trim().slice(0, 80);
+	const chartHeight = Number.isFinite(Number(config.chartHeight))
+		? clamp(Number(config.chartHeight), 220, 720)
 		: CHART_DIMENSIONS.pie.height;
 	const padAngleDeg = clamp(
 		Number.isFinite(rawPadAngle) ? rawPadAngle : PIE_CHART.defaultPadAngle,
@@ -56,16 +47,14 @@ export function normalizePieOptions(options) {
 	);
 	const padAngleRad = (padAngleDeg * Math.PI) / 180;
 	const zoomScale = clamp(
-		Number.isFinite(Number(options.zoomScale)) ? Number(options.zoomScale) : PIE_CHART.defaultZoomScale,
+		Number.isFinite(Number(config.zoomScale)) ? Number(config.zoomScale) : PIE_CHART.defaultZoomScale,
 		PIE_CHART.minZoomScale,
 		PIE_CHART.maxZoomScale
 	);
 
 	return {
 		color,
-		locale,
 		customSliceColors,
-		labels,
 		topN,
 		topNMode,
 		rawInner,

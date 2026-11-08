@@ -1,13 +1,15 @@
 /**
  * Shared bubble-chart presentation flow.
  *
- * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Workspace and Panel pass stored config unchanged to the same renderer,
+ * alongside presentation-owned text and runtime context. This flow also shows
+ * localized empty states on both surfaces.
  * Localized labels stay here so the renderer remains
  * stateless and i18n-free.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { tooltipLabels } from '../shared/tooltip/labels.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
 import { measureLabelKey } from '../shared/measure.js';
 import { renderBubbleChart } from './renderers/svg.js';
@@ -22,27 +24,15 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
  * @returns {import('../../types.js').Result}
  */
 export function renderBubbleInto(container, { rows, config, filterCallbacks = EMPTY_FILTER_CALLBACKS }) {
-	const result = renderBubbleChart(container, rows, config.category, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
-		topN: config.topN,
-		measureMode: config.measureMode,
-		valueColumn: config.valueColumn,
-		nestingColumns: config.nestingColumns,
-		groupColumn: config.groupColumn,
-		nestingMode: config.nestingMode,
-		padding: config.padding,
-		labelMode: config.labelMode,
-		colorScheme: config.colorScheme,
+	const result = renderBubbleChart(container, rows, config, {
 		locale: getLocale(),
 		labels: {
-			close: t('chive-tooltip-close'),
+			...tooltipLabels(t),
 			category: t('chive-chart-control-bubble-category'),
 			measure: t(measureLabelKey(config.measureMode)),
 			group: t('chive-chart-control-bubble-group'),
 			children: t('chive-chart-control-bubble-node-children-count'),
 			level: t('chive-chart-control-bubble-node-depth'),
-			missing: t('chive-chart-filter-missing'),
 		},
 		filterCallbacks,
 	});

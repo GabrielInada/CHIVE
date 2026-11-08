@@ -16,7 +16,6 @@
  * @property {(column: string, token: string) => void} [onBringBackGlobalFilter]
  * @property {(column: string, token: string) => 'included'|'excluded'|null} [getTokenFilterState]
  * @property {(column: string, token: string) => boolean} [isShowOnlyThisRedundant]
- * @property {Object<string, string>} [filterActionLabels] - Localized labels by name. This module reads focus, add, exclude, remove, bringBack, stateIncluded and stateExcluded; a missing one falls back to its English default.
  *
  * @typedef {Object} FilterCategory
  * @property {?string} column - Dataset column the category belongs to.
@@ -44,10 +43,10 @@ const DEFAULT_ACTION_LABELS = Object.freeze({
  * @param {string} token
  * @param {'included'|'excluded'|null} state
  * @param {FilterCallbacks} callbacks
+ * @param {Object<string, string>} labels
  * @returns {Array<{ label: string, variant?: string, onClick: () => void }>}
  */
-function buildCategoryActions(column, token, state, callbacks) {
-	const labels = callbacks.filterActionLabels || {};
+function buildCategoryActions(column, token, state, callbacks, labels) {
 	const label = name => labels[name] || DEFAULT_ACTION_LABELS[name];
 	const actions = [];
 	const offer = (callback, name, variant) => {
@@ -92,6 +91,7 @@ function buildCategoryActions(column, token, state, callbacks) {
  * @param {() => void} [options.onDismiss]
  * @param {() => { x: number, y: number }} [options.anchor] - See `pinTooltip`.
  * @param {FilterCallbacks} [options.filterCallbacks] - The chart's filter callbacks, as it received them.
+ * @param {Object<string, string>} [options.filterActionLabels] - Localized labels from chart presentation.
  * @param {FilterCategory[]} [options.categories]
  * @returns {void}
  */
@@ -101,10 +101,11 @@ export function showPinnedFilterTooltip(content, x, y, {
 	onDismiss,
 	anchor,
 	filterCallbacks,
+	filterActionLabels = {},
 	categories = [],
 } = {}) {
 	const callbacks = filterCallbacks || {};
-	const labels = callbacks.filterActionLabels || {};
+	const labels = filterActionLabels;
 	const named = categories
 		.filter(category => category?.column && category.token)
 		.map(category => ({
@@ -115,7 +116,7 @@ export function showPinnedFilterTooltip(content, x, y, {
 		}));
 	const actionSets = [];
 	for (const { column, token, state, heading } of named) {
-		const actions = buildCategoryActions(column, token, state, callbacks);
+		const actions = buildCategoryActions(column, token, state, callbacks, labels);
 		if (actions.length > 0) actionSets.push(createNamedActionGroup(actions, heading));
 	}
 	const stateBadge = named.length === 1

@@ -1,8 +1,9 @@
 /**
  * Shared scatter-plot presentation flow.
  *
- * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Workspace and Panel pass stored config unchanged to the same renderer,
+ * alongside presentation-owned text and runtime context. This flow also shows
+ * localized empty states on both surfaces.
  * Localized labels stay here so the renderer remains
  * stateless and i18n-free. Column types are forwarded per axis so the
  * renderer can honor explicit numeric/categorical axis decisions, and the
@@ -10,6 +11,7 @@
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { tooltipLabels } from '../shared/tooltip/labels.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
 import {
 	appendRenderBudgetNotice,
@@ -30,28 +32,7 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 export function renderScatterInto(container, input) {
 	const { rows, config, columnTypeByName = {}, filterCallbacks = EMPTY_FILTER_CALLBACKS } = input;
 	container.querySelector('.chart-render-budget-notice')?.remove();
-	const result = renderScatterPlot(container, rows, config.x, config.y, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
-		xScale: config.xScale,
-		yScale: config.yScale,
-		radius: config.radius,
-		opacity: config.opacity,
-		sizeMode: config.sizeMode,
-		sizeField: config.sizeField,
-		sizeMin: config.sizeMin,
-		sizeMax: config.sizeMax,
-		color: config.color,
-		colorMode: config.colorMode,
-		colorField: config.colorField,
-		gradientMinColor: config.gradientMinColor,
-		gradientMaxColor: config.gradientMaxColor,
-		gradientDistribution: config.gradientDistribution,
-		colorScheme: config.colorScheme,
-		categoricalPairMode: config.categoricalPairMode,
-		showXAxisLabel: config.showXAxisLabel,
-		showYAxisLabel: config.showYAxisLabel,
-		regression: config.regression,
+	const result = renderScatterPlot(container, rows, config, {
 		axisLabels: {
 			x: config.x || t('chive-chart-control-scatter-x'),
 			y: config.y || t('chive-chart-control-scatter-y'),
@@ -62,7 +43,7 @@ export function renderScatterInto(container, input) {
 		},
 		locale: getLocale(),
 		labels: {
-			close: t('chive-tooltip-close'),
+			...tooltipLabels(t),
 			xAxis: t('chive-chart-control-scatter-x'),
 			yAxis: t('chive-chart-control-scatter-y'),
 			index: t('chive-tooltip-row'),
@@ -72,10 +53,7 @@ export function renderScatterInto(container, input) {
 			regressionR2: t('chive-chart-tooltip-regression-r2'),
 			regressionN: t('chive-chart-tooltip-regression-n'),
 			regressionGroup: t('chive-chart-tooltip-regression-group'),
-			missing: t('chive-chart-filter-missing'),
 		},
-		xColumn: config.x,
-		yColumn: config.y,
 		filterCallbacks,
 		allowFullRender: hasFullRenderApproval(container, 'scatter'),
 	});

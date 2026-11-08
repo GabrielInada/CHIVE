@@ -6,8 +6,8 @@
  * chart's "Z is height" convention), data Y maps to scene depth.
  *
  * Contract with the rest of the app:
- * - Stateless and i18n-free: rows/columns/options in, `Result` out. All
- *   localized strings arrive via `options.labels`; the ok payload carries
+ * - Stateless and i18n-free: rows/config/context in, `Result` out. All
+ *   localized strings arrive via `context.labels`; the ok payload carries
  *   the sampling counts so the caller can render the localized notice.
  * - Dispose-first: entry calls `clearChartContainer`, which runs any
  *   previous mount's dispose hook, so re-renders never stack a second
@@ -38,23 +38,16 @@ let descriptionCounter = 0;
  *
  * @param {HTMLElement} container
  * @param {Array<Object<string, *>>} rows
- * @param {string} x - Numeric column for the X axis.
- * @param {string} y - Numeric column for the Y axis (scene depth).
- * @param {string} z - Numeric column for the Z axis (height).
- * @param {Object} [options]
- * @param {number} [options.chartHeight]
- * @param {number} [options.pointSize]
- * @param {number} [options.opacity]
- * @param {string} [options.color]
- * @param {string} [options.customTitle]
- * @param {{ ariaLabel?: string, controlsInstructions?: string, contextLost?: string, contextRestored?: string }} [options.labels]
- *   Pre-localized accessibility strings; the renderer never imports i18n.
+ * @param {Object} config - Stored chart config.
+ * @param {Object} context - Localized accessibility labels from presentation.
  * @returns {import('../../../types.js').Result}
  *   `ok({ renderedCount, validCount, totalCount, truncated })`, or `fail`
  *   with `'no-valid-points'`, `'webgl-unavailable'`, `'render-error'`, or
  *   no reason for missing arguments.
  */
-export function renderScatter3dChart(container, rows, x, y, z, options = {}) {
+export function renderScatter3dChart(container, rows, config = {}, context = {}) {
+	const { x, y, z } = config;
+	const { labels = {} } = context;
 	if (!container || !x || !y || !z) return fail();
 
 	clearChartContainer(container);
@@ -62,8 +55,7 @@ export function renderScatter3dChart(container, rows, x, y, z, options = {}) {
 	const data = buildScatter3dPoints(rows, x, y, z);
 	if (data.validCount === 0) return fail('no-valid-points');
 
-	const opts = normalizeScatter3dOptions(options);
-	const labels = options.labels || {};
+	const opts = normalizeScatter3dOptions(config);
 	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter3d.width, 320);
 	const height = opts.chartHeight;
 

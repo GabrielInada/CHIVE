@@ -11,6 +11,7 @@
  * and a CSS width is ignored), a fixed `chartHeight`, and fixed rows.
  */
 
+import { renderContext } from '../renderContext.js';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { renderTreemap } from '../../../src/charts/treemap/renderers/svg.js';
 import { hideChartTooltip } from '../../../src/charts/shared/tooltip/tooltip.js';
@@ -37,7 +38,14 @@ function makeContainer() {
 
 function render(options, rows = ROWS) {
 	const container = makeContainer();
-	const result = renderTreemap(container, rows, 'region', { ...BASE, ...options });
+	const result = renderTreemap(container, rows, {
+		category: 'region',
+		...BASE,
+		...options,
+	}, renderContext({ category: 'region' }, {
+		...BASE,
+		...options,
+	}));
 	const svg = container.querySelector('svg');
 	return { html: svg?.outerHTML ?? container.innerHTML, result };
 }

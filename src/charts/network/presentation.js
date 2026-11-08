@@ -1,14 +1,16 @@
 /**
  * Shared network-graph presentation flow.
  *
- * Workspace and panel integrations both map their config into the same SVG
- * renderer contract. This flow also shows localized empty states on both surfaces.
+ * Workspace and Panel pass stored config unchanged to the same renderer,
+ * alongside presentation-owned text and runtime context. This flow also shows
+ * localized empty states on both surfaces.
  * Localized labels stay here so the renderer remains
  * stateless and i18n-free. The source/target column names double as the
  * click-to-filter columns for node tooltips.
  */
 
 import { t, getLocale } from '../../services/i18nService.js';
+import { tooltipLabels } from '../shared/tooltip/labels.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
 import { ok } from '../../utils/result.js';
 import { NETWORK_GRAPH } from '../../config/charts/definitions/network.js';
@@ -31,32 +33,15 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 export function renderNetworkInto(container, input) {
 	const { rows, config, filterCallbacks = EMPTY_FILTER_CALLBACKS } = input;
 	container.querySelector('.chart-render-budget-notice')?.remove();
-	const result = renderNetworkGraph(container, rows, config.source, config.target, {
-		customTitle: config.customTitle,
-		chartHeight: config.chartHeight,
-		weightColumn: config.weight,
-		groupColumn: config.group,
-		nodeRadius: config.nodeRadius,
-		linkDistance: config.linkDistance,
-		chargeStrength: config.chargeStrength,
-		linkOpacity: config.linkOpacity,
-		showNodeLabels: config.showNodeLabels,
-		sourceNodeColor: config.sourceNodeColor,
-		targetNodeColor: config.targetNodeColor,
-		edgeColorMode: config.edgeColorMode,
-		zoomScale: config.zoomScale,
-		alphaDecay: config.alphaDecay,
-		showLegend: config.showLegend,
+	const result = renderNetworkGraph(container, rows, config, {
 		locale: getLocale(),
 		labels: {
-			close: t('chive-tooltip-close'),
+			...tooltipLabels(t),
 			node: t('chive-chart-control-network-source'),
 			linkWeight: t('chive-chart-control-network-weight'),
 			source: config.source || t('chive-chart-control-network-source'),
 			target: config.target || t('chive-chart-control-network-target'),
 		},
-		sourceColumn: config.source,
-		targetColumn: config.target,
 		filterCallbacks,
 		allowFullRender: hasFullRenderApproval(container, 'network'),
 	});

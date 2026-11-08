@@ -15,7 +15,6 @@
 import { PIE_CHART } from '../../config/charts/definitions/pie.js';
 import { aggregateCategories } from '../shared/categoryAggregation.js';
 import { buildSliceColor } from './color.js';
-import { normalizePieOptions } from './options.js';
 
 /**
  * @typedef {{ key: string, label: string, token: string|null, value: number, color: string, isOther: boolean }} PieSector
@@ -36,20 +35,20 @@ export const OTHER_SECTOR_KEY = '__chive_other__';
  * place among the category sectors. A category with a custom color keeps its
  * place, so changing that color never shifts the other shades.
  *
- * Reads `options` through `normalizePieOptions`, so the pie config block and
- * the renderer's options bag give the same sectors. `labels.other` labels the
- * Other sector and `labels.missing` the missing bucket.
+ * Accepts normalized pie config only. The renderer and color controls each
+ * normalize once before this call. Labels are separate presentation inputs.
  *
  * @param {Array<Object<string, *>>} rows - The rows the chart draws, already narrowed by the global filter.
  * @param {string} categoryColumn - Categorical column name.
- * @param {Object} options - The pie config block or the renderer's options bag.
+ * @param {Object} options - Result of normalizePieOptions(config).
+ * @param {{ other?: string, missing?: string }} [labels] - Localized sector labels; optional for color-only callers.
  * @returns {{ ok: false, reason?: string } | { ok: true, sectors: PieSector[], total: number }}
  *   Fails like `aggregateCategories`, including `'no-positive-value'` when no
  *   value is above 0. `total` sums the sectors drawn, the Other sector
  *   included, so a sector's value over it is its share of the circle.
  */
-export function computePieSectors(rows, categoryColumn, options) {
-	const { measureMode, valueColumn, topN, topNMode, color, customSliceColors, labels } = normalizePieOptions(options);
+export function computePieSectors(rows, categoryColumn, options, labels = {}) {
+	const { measureMode, valueColumn, topN, topNMode, color, customSliceColors } = options;
 	const aggregated = aggregateCategories(rows, categoryColumn, {
 		measureMode, valueColumn, missingLabel: labels.missing, positiveOnly: true, topN,
 	});
