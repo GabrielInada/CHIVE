@@ -90,7 +90,7 @@ export const BUBBLE_CONTROLS = Object.freeze({
 					min: 1,
 					max: 10,
 					step: 1,
-					value: config => Number(config.padding ?? BUBBLE_CHART.defaultPadding),
+					value: config => config.padding ?? BUBBLE_CHART.defaultPadding,
 				},
 				{
 					widget: 'palette',

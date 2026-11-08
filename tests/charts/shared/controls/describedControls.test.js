@@ -203,6 +203,28 @@ describe('described select', () => {
 		expect(build(chartWith([description]), { category: 'null' }, context).get('demo-category').value).toBe('null');
 	});
 
+	it('shows the first option for an unset setting, even next to a column with no name', () => {
+		const description = { widget: 'select', id: 'demo-category', key: 'category', label: 'chive-category', columns: context => context.categorical };
+		const context = { ...CONTEXT, categorical: ['region', ''] };
+
+		expect(build(chartWith([description]), { category: null }, context).get('demo-category').selectedIndex).toBe(0);
+		expect(build(chartWith([description]), { category: 'region' }, context).get('demo-category').selectedIndex).toBe(1);
+	});
+
+	it('labels the values of an enumerated setting with the text optionText returns', () => {
+		const optionText = vi.fn((value, translateText) => (value === 'custom' ? translateText('chive-ramp-custom') : value.toUpperCase()));
+		const { get } = build(chartWith([{
+			widget: 'select',
+			id: 'demo-ramp',
+			key: 'ramp',
+			label: 'chive-ramp',
+			optionText,
+		}], { ramp: ['custom', 'viridis'] }));
+
+		expect(optionsOf(get('demo-ramp'))).toEqual([['custom', 't(chive-ramp-custom)'], ['viridis', 'VIRIDIS']]);
+		expect(optionText).toHaveBeenCalledWith('viridis', translate);
+	});
+
 	it('fills each option label with the parameters optionLabelParams gives for its value', () => {
 		const optionLabelParams = vi.fn((value, config, translateParam) => (value === 'by-measure' ? [translateParam(`chive-measure-${config.measure}`)] : []));
 		const { get } = build(chartWith([{
@@ -307,6 +329,44 @@ describe('described slider', () => {
 
 		fire(slider, 'change');
 		expect(writer.commit).toHaveBeenCalledWith({ padding: 5 });
+	});
+
+	it('shows its setting, or value(config), as a number', () => {
+		const slider = { widget: 'slider', id: 'demo-padding', key: 'padding', label: 'chive-padding', min: 1, max: 6, step: 1 };
+		const outputOf = root => root.querySelector('output').textContent;
+
+		expect(outputOf(build(chartWith([slider]), { padding: '03' }).root)).toBe('3');
+		expect(outputOf(build(chartWith([{ ...slider, value: config => config.padding || '4' }]), { padding: 0 }).root)).toBe('4');
+	});
+});
+
+describe('described number input', () => {
+	const number = { widget: 'number', id: 'demo-step', key: 'step', label: 'chive-step', min: 0, step: 'any', fallback: 1 };
+
+	it('shows its setting with its bounds, and commits the typed number when it changes', () => {
+		const { get, writer, root } = build(chartWith([number]), { step: '2.5' });
+		const input = get('demo-step');
+
+		expect(root.querySelector('label').textContent).toBe('t(chive-step)');
+		expect([input.type, input.min, input.max, input.step, input.value]).toEqual(['number', '0', '', 'any', '2.5']);
+
+		fire(input, 'input', '7');
+		expect(writer.commit).not.toHaveBeenCalled();
+		expect(writer.preview).not.toHaveBeenCalled();
+
+		fire(input, 'change', '7.25');
+		expect(writer.commit).toHaveBeenCalledWith({ step: 7.25 });
+	});
+
+	it('shows the fallback for a setting that is not a finite number, and writes it for a typed value that is not a number', () => {
+		for (const step of [undefined, 'bad', 'Infinity']) {
+			expect(build(chartWith([number]), { step }).get('demo-step').value, String(step)).toBe('1');
+		}
+		expect(build(chartWith([{ ...number, value: config => config.step * 2 }]), { step: 3 }).get('demo-step').value).toBe('6');
+
+		const { get, writer } = build(chartWith([number]), { step: 4 });
+		fire(get('demo-step'), 'change', '');
+		expect(writer.commit).toHaveBeenLastCalledWith({ step: 1 });
 	});
 });
 
@@ -458,6 +518,7 @@ describe('described control disabled state', () => {
 	const EVERY_WIDGET = [
 		{ widget: 'select', id: 'demo-select', key: 'category', label: 'chive-a', columns: context => context.categorical },
 		{ widget: 'slider', id: 'demo-slider', key: 'size', label: 'chive-b', min: 0, max: 10, step: 1 },
+		{ widget: 'number', id: 'demo-number', key: 'step', label: 'chive-g', fallback: 1 },
 		{ widget: 'checkbox', id: 'demo-checkbox', key: 'on', label: 'chive-c' },
 		{ widget: 'text', id: 'demo-text', key: 'title', label: 'chive-d' },
 		{ widget: 'color', id: 'demo-color', key: 'color', label: 'chive-e', fallback: '#000000' },

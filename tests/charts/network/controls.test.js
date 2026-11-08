@@ -1,22 +1,14 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const mocks = vi.hoisted(() => ({
-	t: vi.fn(key => key),
-}));
-
-vi.mock('../../../src/services/i18nService.js', () => ({
-	t: mocks.t,
-}));
-
-import { createNetworkGraphControls } from '../../../src/charts/network/controls/builder.js';
-import { setupNetworkGraphControlListeners } from '../../../src/charts/network/controls/listeners.js';
+import { NETWORK_CONTROLS } from '../../../src/charts/network/controls/descriptions.js';
 import { computeDefaults } from '../../../src/charts/network/controls/activationDefaults.js';
-import { NETWORK_DEFINITION } from '../../../src/config/charts/definitions/network.js';
+import { buildDescribedControls } from '../../../src/charts/shared/controls/describedControls.js';
+import { COLOR_PRESETS } from '../../../src/charts/shared/controls/factories.js';
+import { NETWORK_DEFINITION, NETWORK_GRAPH } from '../../../src/config/charts/definitions/network.js';
 
 /**
- * Writer test double. The listeners' contract is that they hand the right
+ * Writer test double. The controls' contract is that they hand the right
  * patch to the writer; merging it into state, firing onConfigChanged, and
  * live-rendering are the adapter's contract and are covered by
  * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
@@ -55,19 +47,46 @@ function createDataset(overrides = {}) {
 	};
 }
 
-function appendControls(controls) {
-	controls.forEach(control => document.body.appendChild(control));
+function createContext({ allColumns = ['from', 'to', 'weight'], numeric = ['weight'], categorical = ['from', 'to'] } = {}) {
+	return {
+		allColumns,
+		numeric,
+		categorical,
+		baseCategoricalOrAll: categorical.length > 0 ? categorical : allColumns,
+		dates: [],
+		rows: [],
+	};
 }
 
-/** Rebuild and rewire the controls, as the sidebar does after each commit. */
-function mountControls(dataset, writer) {
-	document.body.innerHTML = '';
-	appendControls(createNetworkGraphControls(dataset, ['from', 'to'], [], []));
-	setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], writer);
+function buildControls(dataset, writer = createWriter(), context = createContext(), translate = key => key) {
+	return buildDescribedControls(NETWORK_CONTROLS, { dataset, context, writer, translate });
+}
+
+/** Build the controls into the document, as the sidebar does after each commit. */
+function mountControls(dataset, writer = createWriter(), context = createContext()) {
+	document.body.replaceChildren(...buildControls(dataset, writer, context));
+	return writer;
+}
+
+function selectValue(id, value) {
+	const select = document.getElementById(id);
+	if (![...select.options].some(option => option.value === value)) {
+		select.append(new Option(value, value));
+	}
+	select.value = value;
+	select.dispatchEvent(new Event('change', { bubbles: true }));
+}
+
+function lastConfig(writer) {
+	return writer.commit.mock.calls.at(-1)[0];
 }
 
 function applyLastCommit(dataset, writer) {
-	Object.assign(dataset.chartConfig.network, writer.commit.mock.calls.at(-1)[0]);
+	Object.assign(dataset.chartConfig.network, lastConfig(writer));
+}
+
+function presetButton(name) {
+	return document.querySelector(`button[data-color-preset-control="viz-network-color-preset"][data-preset-name="${name}"]`);
 }
 
 function markedPresets() {
@@ -75,6 +94,8 @@ function markedPresets() {
 		.filter(button => button.style.border.startsWith('2px'))
 		.map(button => button.dataset.presetName);
 }
+
+const optionValues = id => Array.from(document.getElementById(id).options, option => option.value);
 
 function extractStructure(controls) {
 	return controls.map(section => {
@@ -100,21 +121,19 @@ function extractStructure(controls) {
 }
 
 describe('network controls module boundaries', () => {
-	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
-		const [builder, listeners, defaults] = await Promise.all([
-			import('../../../src/charts/network/controls/builder.js'),
-			import('../../../src/charts/network/controls/listeners.js'),
+	it('declares its controls as descriptions, with no builder or listener module', async () => {
+		const [descriptions, defaults] = await Promise.all([
+			import('../../../src/charts/network/controls/descriptions.js'),
 			import('../../../src/charts/network/controls/activationDefaults.js'),
 		]);
-		expect(Object.keys(builder)).toEqual(['createNetworkGraphControls']);
-		expect(Object.keys(listeners)).toEqual(['setupNetworkGraphControlListeners']);
+		expect(Object.keys(descriptions)).toEqual(['NETWORK_CONTROLS']);
 		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
+		expect(NETWORK_CONTROLS.definition).toBe(NETWORK_DEFINITION);
 	});
 });
 
 describe('networkControls section structure', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
@@ -123,140 +142,198 @@ describe('networkControls section structure', () => {
 		// only disabled dimension is the global enabled flag, so one enabled
 		// dataset pins the section order, the reset-zoom button slot, and the
 		// color-preset slot.
-		const dataset = createDataset();
-		const controls = createNetworkGraphControls(dataset, ['from', 'to', 'weight'], ['weight'], ['from', 'to']);
-		expect(extractStructure(controls)).toMatchSnapshot();
+		expect(extractStructure(buildControls(createDataset()))).toMatchSnapshot();
 	});
 });
 
 describe('networkControls UI structure', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
-	it('offers every visible column for source/target and only numeric columns for weight', () => {
-		const dataset = createDataset();
-		const controls = createNetworkGraphControls(dataset, ['from', 'to', 'weight'], ['weight'], ['from', 'to']);
-		appendControls(controls);
+	it('offers every visible column for source/target, numeric columns for weight and categorical ones for group', () => {
+		mountControls(createDataset());
 
-		const sourceValues = Array.from(document.getElementById('viz-select-network-source').options).map(o => o.value);
-		const targetValues = Array.from(document.getElementById('viz-select-network-target').options).map(o => o.value);
-		const weightValues = Array.from(document.getElementById('viz-select-network-weight').options).map(o => o.value);
-		const groupValues = Array.from(document.getElementById('viz-select-network-group').options).map(o => o.value);
-
-		expect(sourceValues).toContain('from');
-		expect(sourceValues).toContain('weight');
-		expect(targetValues).toContain('to');
-		expect(weightValues).toContain('weight');
-		expect(weightValues).not.toContain('from');
-		expect(groupValues).toContain('from');
-		expect(groupValues).not.toContain('weight');
+		expect(optionValues('viz-select-network-source')).toEqual(['', 'from', 'to', 'weight']);
+		expect(optionValues('viz-select-network-target')).toEqual(['', 'from', 'to', 'weight']);
+		expect(optionValues('viz-select-network-weight')).toEqual(['', 'weight']);
+		expect(optionValues('viz-select-network-group')).toEqual(['', 'from', 'to']);
 	});
 
-	it('renders the edge-color-mode select with gradient and uniform choices', () => {
-		const dataset = createDataset();
-		const controls = createNetworkGraphControls(dataset, ['from', 'to'], [], []);
-		appendControls(controls);
+	it('offers the edge color modes the network definition lists, each with its label', () => {
+		mountControls(createDataset());
 
-		const mode = document.getElementById('viz-select-network-edge-color-mode');
-		const values = Array.from(mode.options).map(o => o.value);
-		expect(values).toEqual(['gradient', 'uniform']);
+		expect(optionValues('viz-select-network-edge-color-mode')).toEqual(NETWORK_DEFINITION.allowedValues.edgeColorMode);
+		expect(Array.from(document.getElementById('viz-select-network-edge-color-mode').options, option => option.textContent))
+			.toEqual(['chive-chart-color-gradient', 'chive-chart-color-uniform']);
 	});
 
-	it('disables all controls when the chart is disabled', () => {
-		const dataset = createDataset({ enabled: false });
-		const controls = createNetworkGraphControls(dataset, ['from', 'to'], [], []);
-		appendControls(controls);
+	it('shows "None" for unset columns, even beside columns named "null" and "undefined"', () => {
+		mountControls(
+			createDataset({ source: null, target: undefined, weight: undefined, group: null }),
+			createWriter(),
+			createContext({ allColumns: ['null', 'undefined'], numeric: ['undefined'], categorical: ['null'] }),
+		);
 
-		expect(document.getElementById('viz-select-network-source').disabled).toBe(true);
-		expect(document.getElementById('viz-btn-network-reset-zoom').disabled).toBe(true);
+		for (const id of ['viz-select-network-source', 'viz-select-network-target', 'viz-select-network-weight', 'viz-select-network-group']) {
+			expect(document.getElementById(id).selectedIndex).toBe(0);
+		}
+	});
+
+	it('shows each slider setting as a number', () => {
+		mountControls(createDataset({ linkDistance: '80', zoomScale: '2.5', chargeStrength: undefined }));
+
+		const output = id => document.getElementById(id).parentElement.querySelector('output').textContent;
+		expect(output('viz-slider-network-link-distance')).toBe('80');
+		expect(output('viz-slider-network-zoom')).toBe('2.5');
+		expect(output('viz-slider-network-charge')).toBe('NaN');
+	});
+
+	it.each([
+		['viz-slider-network-link-distance', '20', '140', '1'],
+		['viz-slider-network-zoom', String(NETWORK_GRAPH.minZoomScale), String(NETWORK_GRAPH.maxZoomScale), '0.05'],
+		['viz-slider-network-node-radius', '3', '12', '1'],
+		['viz-slider-network-link-opacity', '0.1', '1', '0.05'],
+		['viz-slider-network-charge', '-300', '-20', '10'],
+		['viz-slider-network-alpha-decay', String(NETWORK_GRAPH.minAlphaDecay), String(NETWORK_GRAPH.maxAlphaDecay), '0.01'],
+	])('gives %s the range min %s, max %s, step %s', (id, min, max, step) => {
+		mountControls(createDataset());
+
+		const slider = document.getElementById(id);
+		expect([slider.min, slider.max, slider.step]).toEqual([min, max, step]);
+	});
+
+	it('disables every control while the chart is off', () => {
+		mountControls(createDataset({ enabled: false }));
+
+		const states = [...document.querySelectorAll('.chart-section-content :is(select, input, button)')].map(element => element.disabled);
+		// 16 selects and inputs, the reset-zoom button and the palette buttons.
+		expect(states).toHaveLength(17 + Object.keys(COLOR_PRESETS).length);
+		expect(states.every(Boolean)).toBe(true);
 	});
 });
 
-describe('networkControls listeners', () => {
+describe('networkControls writes', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
-	it('commits source/target changes through the facade', () => {
-		const dataset = createDataset();
-		const controls = createNetworkGraphControls(dataset, ['from', 'to', 'weight'], ['weight'], []);
-		appendControls(controls);
+	it('commits the source and target as chosen, the empty string for none', () => {
+		const writer = mountControls(createDataset());
 
-		const writer = createWriter();
-		setupNetworkGraphControlListeners(dataset, ['from', 'to', 'weight'], ['weight'], writer);
-
-		const target = document.getElementById('viz-select-network-target');
-		target.value = 'weight';
-		target.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ target: 'weight' }));
-		expect(writer.commit).toHaveBeenCalledTimes(1);
+		selectValue('viz-select-network-target', 'weight');
+		expect(lastConfig(writer)).toEqual({ target: 'weight' });
+		selectValue('viz-select-network-source', '');
+		expect(lastConfig(writer)).toEqual({ source: '' });
+		expect(writer.commit).toHaveBeenCalledTimes(2);
 	});
 
-	it('coerces an unknown edgeColorMode to gradient via the transform', () => {
-		const dataset = createDataset();
-		const controls = createNetworkGraphControls(dataset, ['from', 'to'], [], []);
-		appendControls(controls);
+	it('stores null for no weight or group column', () => {
+		const writer = mountControls(createDataset({ weight: 'weight', group: 'from' }));
 
-		const writer = createWriter();
-		setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], writer);
-
-		const select = document.getElementById('viz-select-network-edge-color-mode');
-		select.value = 'uniform';
-		select.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ edgeColorMode: 'uniform' }));
+		selectValue('viz-select-network-weight', '');
+		expect(lastConfig(writer)).toEqual({ weight: null });
+		selectValue('viz-select-network-group', '');
+		expect(lastConfig(writer)).toEqual({ group: null });
+		selectValue('viz-select-network-group', 'to');
+		expect(lastConfig(writer)).toEqual({ group: 'to' });
 	});
 
-	it('reset-zoom button restores defaultZoomScale via the facade', () => {
-		const dataset = createDataset({ zoomScale: 2 });
-		const controls = createNetworkGraphControls(dataset, ['from', 'to'], [], []);
-		appendControls(controls);
+	// The commit canonicalizes the chart's config, which replaces a value the
+	// network does not offer.
+	it('commits the edge color mode as chosen, a forged one included', () => {
+		const writer = mountControls(createDataset());
 
-		const writer = createWriter();
-		setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], writer);
+		selectValue('viz-select-network-edge-color-mode', 'uniform');
+		expect(lastConfig(writer)).toEqual({ edgeColorMode: 'uniform' });
+		selectValue('viz-select-network-edge-color-mode', 'made-up');
+		expect(lastConfig(writer)).toEqual({ edgeColorMode: 'made-up' });
+	});
+
+	it.each([
+		['viz-slider-network-link-distance', 'linkDistance', '90', 90],
+		['viz-slider-network-zoom', 'zoomScale', '2.25', 2.25],
+		['viz-slider-network-node-radius', 'nodeRadius', '9', 9],
+		['viz-slider-network-link-opacity', 'linkOpacity', '0.75', 0.75],
+		['viz-slider-network-charge', 'chargeStrength', '-200', -200],
+		['viz-slider-network-alpha-decay', 'alphaDecay', '0.12', 0.12],
+	])('follows the %s drag in its output and commits a number on release', (id, key, value, stored) => {
+		const writer = mountControls(createDataset());
+		const slider = document.getElementById(id);
+
+		slider.value = value;
+		slider.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(slider.parentElement.querySelector('output').textContent).toBe(value);
+		expect(writer.commit).not.toHaveBeenCalled();
+
+		slider.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(writer.commit).toHaveBeenCalledWith({ [key]: stored });
+	});
+
+	it('puts the zoom slider back to the default zoom and commits it on reset', () => {
+		const writer = mountControls(createDataset({ zoomScale: 2 }));
+		const slider = document.getElementById('viz-slider-network-zoom');
 
 		document.getElementById('viz-btn-network-reset-zoom').click();
 
 		expect(writer.commit).toHaveBeenCalledTimes(1);
-		const call = writer.commit.mock.calls[0][0];
-		expect(call.zoomScale).toBeTypeOf('number');
-		expect(call.zoomScale).not.toBe(2);
+		expect(lastConfig(writer)).toEqual({ zoomScale: NETWORK_GRAPH.defaultZoomScale });
+		expect(slider.value).toBe(String(NETWORK_GRAPH.defaultZoomScale));
+		expect(slider.parentElement.querySelector('output').textContent).toBe(String(NETWORK_GRAPH.defaultZoomScale));
 	});
 
-	it('color preset button maps the palette to source and target node colors', () => {
-		const dataset = createDataset();
-		const controls = createNetworkGraphControls(dataset, ['from', 'to'], [], []);
-		appendControls(controls);
+	it('copies a palette into the source and target node colors', () => {
+		const writer = mountControls(createDataset());
 
-		const writer = createWriter();
-		setupNetworkGraphControlListeners(dataset, ['from', 'to'], [], writer);
-
-		const bold = document.querySelector('button[data-color-preset-control="viz-network-color-preset"][data-preset-name="Bold"]');
-		expect(bold).not.toBeNull();
-		bold.click();
+		presetButton('Bold').click();
 
 		expect(writer.commit).toHaveBeenCalledTimes(1);
-		const call = writer.commit.mock.calls[0][0];
-		expect(call.colorScheme).toBe('Bold');
-		expect(call.sourceNodeColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-		expect(call.targetNodeColor).toMatch(/^#[0-9a-fA-F]{6}$/);
-		expect(call.sourceNodeColor).not.toBe(call.targetNodeColor);
+		expect(lastConfig(writer)).toEqual({
+			colorScheme: 'Bold',
+			sourceNodeColor: COLOR_PRESETS.Bold[0],
+			targetNodeColor: COLOR_PRESETS.Bold[1],
+		});
+	});
+
+	it('previews a node color while the picker is open, and commits it, or its fallback, when it closes', () => {
+		const writer = mountControls(createDataset());
+		const source = document.getElementById('viz-input-network-source-color');
+
+		source.value = '#123456';
+		source.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(writer.preview).toHaveBeenCalledWith({ sourceNodeColor: '#123456' });
+		expect(writer.commit).not.toHaveBeenCalled();
+
+		const target = document.getElementById('viz-input-network-target-color');
+		target.type = 'text';
+		target.value = 'not-a-color';
+		target.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig(writer)).toEqual({ targetNodeColor: '#6b94c9' });
+	});
+
+	it('commits the legend and node-label toggles and the trimmed title', () => {
+		const writer = mountControls(createDataset());
+
+		document.getElementById('viz-toggle-network-show-legend').click();
+		expect(lastConfig(writer)).toEqual({ showLegend: false });
+		document.getElementById('viz-toggle-network-node-labels').click();
+		expect(lastConfig(writer)).toEqual({ showNodeLabels: false });
+
+		const title = document.getElementById('viz-input-network-title');
+		title.value = '  Trade links  ';
+		title.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig(writer)).toEqual({ customTitle: 'Trade links' });
 	});
 });
 
 describe('networkControls color palette mark', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('marks no palette on a new chart', () => {
 		const { colorScheme, sourceNodeColor, targetNodeColor } = NETWORK_DEFINITION.createDefaultConfig();
-		mountControls(createDataset({ colorScheme, sourceNodeColor, targetNodeColor }), createWriter());
+		mountControls(createDataset({ colorScheme, sourceNodeColor, targetNodeColor }));
 
 		expect(markedPresets()).toEqual([]);
 	});
@@ -266,7 +343,7 @@ describe('networkControls color palette mark', () => {
 		const writer = createWriter();
 		mountControls(dataset, writer);
 
-		document.querySelector('button[data-color-preset-control="viz-network-color-preset"][data-preset-name="Pastel"]').click();
+		presetButton('Pastel').click();
 		applyLastCommit(dataset, writer);
 		mountControls(dataset, writer);
 		expect(markedPresets()).toEqual(['Pastel']);

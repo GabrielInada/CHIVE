@@ -1,21 +1,13 @@
 // @vitest-environment jsdom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-
-const mocks = vi.hoisted(() => ({
-	t: vi.fn(key => key),
-}));
-
-vi.mock('../../../src/services/i18nService.js', () => ({
-	t: mocks.t,
-}));
-
-import { createLineChartControls } from '../../../src/charts/line/controls/builder.js';
-import { setupLineChartControlListeners } from '../../../src/charts/line/controls/listeners.js';
+import { LINE_CONTROLS } from '../../../src/charts/line/controls/descriptions.js';
 import { computeDefaults } from '../../../src/charts/line/controls/activationDefaults.js';
+import { buildDescribedControls } from '../../../src/charts/shared/controls/describedControls.js';
+import { LINE_DEFINITION } from '../../../src/config/charts/definitions/line.js';
 
 /**
- * Writer test double. The listeners' contract is that they hand the right
+ * Writer test double. The controls' contract is that they hand the right
  * patch to the writer; merging it into state, firing onConfigChanged, and
  * live-rendering are the adapter's contract and are covered by
  * tests/features/datasetWorkspace/chartControls/chartConfigAdapter.test.js.
@@ -50,16 +42,32 @@ function createDataset(overrides = {}) {
 	};
 }
 
-function appendControls(controls) {
-	controls.forEach(control => document.body.appendChild(control));
+function createContext({ allColumns = ['month', 'visits', 'signups'], numeric = ['visits', 'signups'], dates = ['month'] } = {}) {
+	const categorical = allColumns.filter(column => !numeric.includes(column));
+	return {
+		allColumns,
+		numeric,
+		categorical,
+		baseCategoricalOrAll: categorical.length > 0 ? categorical : allColumns,
+		dates,
+		rows: [],
+	};
+}
+
+function buildControls(dataset, writer = createWriter(), context = createContext(), translate = key => key) {
+	return buildDescribedControls(LINE_CONTROLS, { dataset, context, writer, translate });
+}
+
+/** Build the controls into the document, as the sidebar does after each commit. */
+function mountControls(dataset, writer = createWriter(), context = createContext(), translate = undefined) {
+	document.body.replaceChildren(...buildControls(dataset, writer, context, translate));
+	return writer;
 }
 
 function selectValue(id, value) {
 	const select = document.getElementById(id);
 	if (![...select.options].some(option => option.value === value)) {
-		const option = document.createElement('option');
-		option.value = value;
-		select.appendChild(option);
+		select.append(new Option(value, value));
 	}
 	select.value = value;
 	select.dispatchEvent(new Event('change', { bubbles: true }));
@@ -68,6 +76,9 @@ function selectValue(id, value) {
 function lastConfig(writer) {
 	return writer.commit.mock.calls.at(-1)[0];
 }
+
+const optionValues = id => Array.from(document.getElementById(id).options, option => option.value);
+const optionLabels = id => Array.from(document.getElementById(id).options, option => option.textContent);
 
 function extractStructure(controls) {
 	return controls.map(section => {
@@ -93,21 +104,19 @@ function extractStructure(controls) {
 }
 
 describe('line controls module boundaries', () => {
-	it('keeps builder, listener, and defaults exports in dedicated modules', async () => {
-		const [builder, listeners, defaults] = await Promise.all([
-			import('../../../src/charts/line/controls/builder.js'),
-			import('../../../src/charts/line/controls/listeners.js'),
+	it('declares its controls as descriptions, with no builder or listener module', async () => {
+		const [descriptions, defaults] = await Promise.all([
+			import('../../../src/charts/line/controls/descriptions.js'),
 			import('../../../src/charts/line/controls/activationDefaults.js'),
 		]);
-		expect(Object.keys(builder)).toEqual(['createLineChartControls']);
-		expect(Object.keys(listeners)).toEqual(['setupLineChartControlListeners']);
+		expect(Object.keys(descriptions)).toEqual(['LINE_CONTROLS']);
 		expect(Object.keys(defaults)).toEqual(['computeDefaults']);
+		expect(LINE_CONTROLS.definition).toBe(LINE_DEFINITION);
 	});
 });
 
 describe('lineControls section structure', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
@@ -117,14 +126,7 @@ describe('lineControls section structure', () => {
 		// conditional disabled slot (not just control presence/order).
 		const byMode = {};
 		for (const missingMode of ['interpolate', 'connect']) {
-			const dataset = createDataset({ missingMode });
-			const controls = createLineChartControls(
-				dataset,
-				['visits', 'signups'],
-				['month'],
-				['month', 'visits', 'signups'],
-			);
-			byMode[missingMode] = extractStructure(controls);
+			byMode[missingMode] = extractStructure(buildControls(createDataset({ missingMode })));
 		}
 
 		expect(byMode).toMatchSnapshot();
@@ -133,128 +135,91 @@ describe('lineControls section structure', () => {
 
 describe('lineControls UI structure', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('offers every visible column as X and only numeric columns as Y', () => {
-		const dataset = createDataset();
-		const controls = createLineChartControls(dataset, ['visits', 'signups'], ['month'], ['month', 'visits', 'signups']);
-		appendControls(controls);
+		mountControls(createDataset());
 
-		const xValues = Array.from(document.getElementById('viz-select-line-x').options).map(o => o.value);
-		const yValues = Array.from(document.getElementById('viz-select-line-y').options).map(o => o.value);
+		expect(optionValues('viz-select-line-x')).toEqual(['', 'month', 'visits', 'signups']);
+		expect(optionValues('viz-select-line-y')).toEqual(['', 'visits', 'signups']);
+	});
 
-		expect(xValues).toContain('month');
-		expect(xValues).toContain('visits');
-		expect(yValues).toContain('visits');
-		expect(yValues).not.toContain('month');
+	it('offers the aggregations, curves and missing-value modes the line definition lists, each with its label', () => {
+		mountControls(createDataset());
+
+		expect(optionValues('viz-select-line-aggregate')).toEqual(LINE_DEFINITION.allowedValues.aggregateMode);
+		expect(optionValues('viz-select-line-curve')).toEqual(LINE_DEFINITION.allowedValues.curve);
+		expect(optionValues('viz-select-line-missing')).toEqual(LINE_DEFINITION.allowedValues.missingMode);
+		expect(optionLabels('viz-select-line-aggregate')).toEqual(LINE_DEFINITION.allowedValues.aggregateMode.map(mode => `chive-chart-line-aggregate-${mode}`));
+		expect(optionLabels('viz-select-line-curve')).toEqual(LINE_DEFINITION.allowedValues.curve.map(curve => `chive-chart-line-curve-${curve}`));
+		expect(optionLabels('viz-select-line-missing')).toEqual(LINE_DEFINITION.allowedValues.missingMode.map(mode => `chive-chart-line-missing-${mode}`));
+	});
+
+	it('shows "None" for an unset X or Y, even beside columns named "null" and "undefined"', () => {
+		mountControls(
+			createDataset({ x: null, y: undefined }),
+			createWriter(),
+			createContext({ allColumns: ['null', 'undefined'], numeric: ['undefined'] }),
+		);
+
+		expect(document.getElementById('viz-select-line-x').selectedIndex).toBe(0);
+		expect(document.getElementById('viz-select-line-y').selectedIndex).toBe(0);
 	});
 
 	it('disables the ghost color picker when missing mode is not interpolate', () => {
-		const connectDataset = createDataset({ missingMode: 'connect' });
-		const connectControls = createLineChartControls(connectDataset, ['visits'], ['month'], ['month', 'visits']);
-		appendControls(connectControls);
+		mountControls(createDataset({ missingMode: 'connect' }));
 		expect(document.getElementById('viz-input-line-ghost-color').disabled).toBe(true);
 
-		document.body.innerHTML = '';
-		const interpDataset = createDataset({ missingMode: 'interpolate' });
-		const interpControls = createLineChartControls(interpDataset, ['visits'], ['month'], ['month', 'visits']);
-		appendControls(interpControls);
+		mountControls(createDataset({ missingMode: 'interpolate' }));
 		expect(document.getElementById('viz-input-line-ghost-color').disabled).toBe(false);
 	});
 
-	it('renders disabled controls and default stroke width fallback', () => {
-		const dataset = createDataset({ enabled: false, strokeWidth: 0, showPoints: true });
-		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
-		appendControls(controls);
+	it('shows the default stroke width for a width of 0 and sorts X unless sorting is turned off', () => {
+		mountControls(createDataset({ strokeWidth: 0, showPoints: true, sortX: undefined }));
 
-		expect(document.getElementById('viz-select-line-x').disabled).toBe(true);
 		expect(document.getElementById('viz-slider-line-stroke-width').value).toBe('1.5');
 		expect(document.getElementById('viz-toggle-line-show-points').checked).toBe(true);
+		expect(document.getElementById('viz-toggle-line-sort-x').checked).toBe(true);
+
+		mountControls(createDataset({ sortX: false }));
+		expect(document.getElementById('viz-toggle-line-sort-x').checked).toBe(false);
+	});
+
+	it('gives the stroke width slider its range', () => {
+		mountControls(createDataset());
+
+		const slider = document.getElementById('viz-slider-line-stroke-width');
+		expect([slider.min, slider.max, slider.step]).toEqual(['0.5', '6', '0.5']);
+	});
+
+	it('disables every control while the chart is off', () => {
+		mountControls(createDataset({ enabled: false, missingMode: 'interpolate' }));
+
+		const states = [...document.querySelectorAll('select, input')].map(element => element.disabled);
+		expect(states).toHaveLength(13);
+		expect(states.every(Boolean)).toBe(true);
 	});
 });
 
-describe('lineControls listeners', () => {
+describe('lineControls writes', () => {
 	beforeEach(() => {
-		vi.clearAllMocks();
 		document.body.innerHTML = '';
 	});
 
 	it('updates curve when the user changes the curve select', () => {
-		const dataset = createDataset();
-		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
-		appendControls(controls);
+		const writer = mountControls(createDataset());
 
-		const writer = createWriter();
-		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
+		selectValue('viz-select-line-curve', 'monotone');
 
-		const select = document.getElementById('viz-select-line-curve');
-		select.value = 'monotone';
-		select.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ curve: 'monotone' }));
+		expect(writer.commit).toHaveBeenCalledWith({ curve: 'monotone' });
 		expect(writer.commit).toHaveBeenCalledTimes(1);
-	});
-
-	it('coerces an unknown missingMode to the default value', () => {
-		const dataset = createDataset();
-		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
-		appendControls(controls);
-
-		const writer = createWriter();
-		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
-
-		const select = document.getElementById('viz-select-line-missing');
-		select.value = 'gap';
-		select.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ missingMode: 'gap' }));
-	});
-
-	it('rejects Y values that are not numeric columns', () => {
-		const dataset = createDataset();
-		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
-		appendControls(controls);
-
-		const writer = createWriter();
-		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
-
-		const ySelect = document.getElementById('viz-select-line-y');
-		ySelect.value = '';
-		ySelect.dispatchEvent(new Event('change', { bubbles: true }));
-
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ y: null }));
-	});
-
-	it('updates X/Y selections for valid values and coerces invalid X to null', () => {
-		const dataset = createDataset();
-		const controls = createLineChartControls(dataset, ['visits', 'signups'], ['month'], ['month', 'visits', 'signups']);
-		appendControls(controls);
-
-		const writer = createWriter();
-		setupLineChartControlListeners(dataset, ['visits', 'signups'], ['month'], ['month', 'visits', 'signups'], writer);
-
-		selectValue('viz-select-line-x', 'signups');
-		expect(lastConfig(writer).x).toBe('signups');
-
-		selectValue('viz-select-line-y', 'signups');
-		expect(lastConfig(writer).y).toBe('signups');
-
-		selectValue('viz-select-line-x', 'missing');
-		expect(lastConfig(writer).x).toBeNull();
-		expect(writer.commit).toHaveBeenCalledTimes(3);
 	});
 
 	// The commit canonicalizes the chart's config, which replaces a value the
 	// line chart does not offer.
 	it('commits forged curve, missing, and aggregate options as chosen', () => {
-		const dataset = createDataset();
-		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
-		appendControls(controls);
-
-		const writer = createWriter();
-		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
+		const writer = mountControls(createDataset());
 
 		selectValue('viz-select-line-curve', 'made-up');
 		expect(lastConfig(writer)).toEqual({ curve: 'made-up' });
@@ -266,27 +231,88 @@ describe('lineControls listeners', () => {
 		expect(lastConfig(writer)).toEqual({ aggregateMode: 'made-up' });
 	});
 
-	it('skips listener setup when controls are absent', () => {
-		const dataset = createDataset();
-		const writer = createWriter();
+	it('stores null for a Y that is not a numeric column, "None" included', () => {
+		const writer = mountControls(createDataset());
 
-		expect(() => setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer)).not.toThrow();
-		expect(writer.commit).not.toHaveBeenCalled();
+		selectValue('viz-select-line-y', '');
+		expect(lastConfig(writer)).toEqual({ y: null });
+
+		selectValue('viz-select-line-y', 'month');
+		expect(lastConfig(writer)).toEqual({ y: null });
 	});
 
-	it('toggles sortX through the checkbox', () => {
-		const dataset = createDataset();
-		const controls = createLineChartControls(dataset, ['visits'], ['month'], ['month', 'visits']);
-		appendControls(controls);
+	it('updates X/Y selections for valid values and coerces invalid X to null', () => {
+		const writer = mountControls(createDataset());
 
-		const writer = createWriter();
-		setupLineChartControlListeners(dataset, ['visits'], ['month'], ['month', 'visits'], writer);
+		selectValue('viz-select-line-x', 'signups');
+		expect(lastConfig(writer)).toEqual({ x: 'signups' });
 
-		const checkbox = document.getElementById('viz-toggle-line-sort-x');
-		checkbox.checked = false;
-		checkbox.dispatchEvent(new Event('change', { bubbles: true }));
+		selectValue('viz-select-line-y', 'signups');
+		expect(lastConfig(writer)).toEqual({ y: 'signups' });
 
-		expect(writer.commit).toHaveBeenCalledWith(expect.objectContaining({ sortX: false }));
+		selectValue('viz-select-line-x', 'missing');
+		expect(lastConfig(writer)).toEqual({ x: null });
+		expect(writer.commit).toHaveBeenCalledTimes(3);
+	});
+
+	it('toggles sortX, the points and the axis labels through their checkboxes', () => {
+		const writer = mountControls(createDataset());
+
+		document.getElementById('viz-toggle-line-sort-x').click();
+		expect(lastConfig(writer)).toEqual({ sortX: false });
+		document.getElementById('viz-toggle-line-show-points').click();
+		expect(lastConfig(writer)).toEqual({ showPoints: true });
+		document.getElementById('viz-toggle-line-x-label').click();
+		expect(lastConfig(writer)).toEqual({ showXAxisLabel: false });
+		document.getElementById('viz-toggle-line-y-label').click();
+		expect(lastConfig(writer)).toEqual({ showYAxisLabel: false });
+	});
+
+	it('follows the stroke width drag in its output and commits a number on release', () => {
+		const writer = mountControls(createDataset());
+		const slider = document.getElementById('viz-slider-line-stroke-width');
+
+		slider.value = '3.5';
+		slider.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(slider.parentElement.querySelector('output').textContent).toBe('3.5');
+		expect(writer.commit).not.toHaveBeenCalled();
+
+		slider.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(lastConfig(writer)).toEqual({ strokeWidth: 3.5 });
+	});
+
+	it('previews the line color while the picker is open and commits it when it closes', () => {
+		const writer = mountControls(createDataset());
+		const input = document.getElementById('viz-input-line-color');
+
+		input.value = '#123456';
+		input.dispatchEvent(new Event('input', { bubbles: true }));
+		expect(writer.preview).toHaveBeenCalledWith({ color: '#123456' });
+		expect(writer.commit).not.toHaveBeenCalled();
+
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(writer.commit).toHaveBeenCalledWith({ color: '#123456' });
+	});
+
+	it('writes the default ghost color in place of an invalid one', () => {
+		const writer = mountControls(createDataset({ missingMode: 'interpolate' }));
+		const input = document.getElementById('viz-input-line-ghost-color');
+
+		input.type = 'text';
+		input.value = 'not-a-color';
+		input.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(lastConfig(writer)).toEqual({ ghostStrokeColor: '#cccccc' });
+	});
+
+	it('commits the title trimmed', () => {
+		const writer = mountControls(createDataset());
+		const title = document.getElementById('viz-input-line-title');
+
+		title.value = '  Visits by month  ';
+		title.dispatchEvent(new Event('change', { bubbles: true }));
+
+		expect(lastConfig(writer)).toEqual({ customTitle: 'Visits by month' });
 	});
 });
 

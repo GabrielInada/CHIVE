@@ -232,24 +232,25 @@
  * control is written by hand: its `build` creates and wires its elements.
  *
  * @typedef {Object} ControlDescription
- * @property {'select' | 'slider' | 'checkbox' | 'text' | 'color' | 'palette' | 'custom'} widget
+ * @property {'select' | 'slider' | 'number' | 'checkbox' | 'text' | 'color' | 'palette' | 'custom'} widget
  * @property {string} [id] - DOM id. Keep it stable: the sidebar restores focus and scroll by it. A custom control names the element it builds, if it builds one.
  * @property {string} [key] - The setting the control shows and writes. A palette writes `colorScheme`; a custom control names the setting it writes, if it writes one.
  * @property {string} [label] - Message key of the label. A custom control translates its own.
  * @property {(config: Object, context: ChartControlContext) => boolean} [shownWhen] - When the control is built at all; the others are always built.
  * @property {(config: Object, context: ChartControlContext) => boolean} [disabledWhen] - When the control is disabled although its chart is on.
- * @property {(config: Object) => *} [value] - The value shown, when it is not the setting itself.
+ * @property {(config: Object) => *} [value] - The value shown, when it is not the setting itself. A slider and a number input show it as a number.
  * @property {(value: *, current: { config: Object, context: ChartControlContext }) => *} [toValue] - The value to store for the widget's value. `current.config` is the config when the event fires.
  * @property {(value: *, current: { config: Object, context: ChartControlContext }) => Object} [toPatch] - The patch to write, for a control that writes more than its own setting. Receives the value `toValue` returned.
  * @property {(context: ChartControlContext) => string[]} [columns] - Select: offer "None" and these columns.
  * @property {(context: ChartControlContext, translate: (key: string, ...params: *[]) => string) => Array<{ value: *, label: string }>} [options] - Select: a fixed option list, for a setting the chart definition does not enumerate.
  * @property {Object<string, string> | ((value: *) => string)} [optionLabels] - Select of an enumerated setting: the message key of each value the chart definition lists.
  * @property {(value: *, config: Object, translate: (key: string, ...params: *[]) => string) => *[]} [optionLabelParams] - Select of an enumerated setting: the parameters (`$1`, `$2`…) of a value's label, for a label that names another setting.
- * @property {number} [min] - Slider.
- * @property {number} [max] - Slider.
- * @property {number} [step] - Slider.
+ * @property {(value: *, translate: (key: string, ...params: *[]) => string) => string} [optionText] - Select of an enumerated setting: the label of each value as text, in place of `optionLabels`, for labels that are not all messages (a ramp's own name).
+ * @property {number} [min] - Slider; number input, optional.
+ * @property {number} [max] - Slider; number input, optional.
+ * @property {number | 'any'} [step] - Slider; number input, optional, where `'any'` allows any decimal.
  * @property {number} [maxLength=80] - Text.
- * @property {string} [fallback] - Color: shown and written in place of an invalid color.
+ * @property {string | number} [fallback] - Color: shown and written in place of an invalid color. Number input: shown while the setting is not a finite number, and written in place of a typed value that is not one.
  * @property {Object<string, number>} [colorKeys] - Palette: config key to the palette position a palette button copies into it; negative positions count from the end.
  * @property {Object<string, string>} [fallbacks] - Palette: per copied key, written in place of an invalid palette color.
  * @property {(config: Object) => (string | null)} [marked] - Palette: the preset whose button is marked, the one the chart is drawn with. Defaults to the preset whose colors `colorKeys` still hold.

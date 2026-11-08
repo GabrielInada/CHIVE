@@ -28,7 +28,6 @@ describe('pie controls module boundaries', () => {
 		expect(Object.keys(descriptions)).toEqual(['PIE_CONTROLS']);
 		expect(Object.keys(custom).sort()).toEqual([
 			'buildRadiusSliders',
-			'buildResetZoomButton',
 			'buildSliceColorGrid',
 			'buildSlicePalette',
 		]);

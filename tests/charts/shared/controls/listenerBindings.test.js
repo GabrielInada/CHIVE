@@ -6,10 +6,8 @@ import {
 	setupCheckboxListeners,
 	setupColorInputListener,
 	setupColorPresetListeners,
-	setupNumberInputListener,
 	setupSelectListeners,
 	setupSliderListener,
-	setupSliderListeners,
 	setupTextInputListener,
 } from '../../../../src/charts/shared/controls/listenerBindings.js';
 
@@ -82,7 +80,6 @@ describe('listenerBindings generic listeners', () => {
 			<select id="select-mode"><option value="7">7</option></select>
 			<input id="check-enabled" type="checkbox">
 			<input id="title-input" value="  Chart title  ">
-			<input id="number-input" value="12.5">
 			<label><input id="slider-input" type="range" value="42"><output>0</output></label>
 			<input id="slider-no-output" type="range" value="9">
 			<button data-color-preset-control="bar-colors" data-preset-name="warm" type="button"></button>
@@ -116,26 +113,11 @@ describe('listenerBindings generic listeners', () => {
 		expect(writer.commit).toHaveBeenCalledTimes(3);
 	});
 
-	it('wires number inputs with finite parsing and default fallback', () => {
-		const writer = createWriter();
-		setupNumberInputListener('number-input', 'size', 5, writer);
-		setupNumberInputListener('missing-number', 'size', 5, writer);
-
-		const input = document.getElementById('number-input');
-		input.dispatchEvent(new Event('change'));
-		expect(writer.commit.mock.calls.at(-1)[0].size).toBe(12.5);
-
-		input.value = 'not numeric';
-		input.dispatchEvent(new Event('change'));
-		expect(writer.commit.mock.calls.at(-1)[0].size).toBe(5);
-		expect(writer.commit).toHaveBeenCalledTimes(2);
-	});
-
-	it('wires sliders, syncs sibling outputs, and supports batched sliders', () => {
+	it('wires sliders and syncs sibling outputs', () => {
 		const writer = createWriter();
 		setupSliderListener('slider-input', 'height', writer);
 		setupSliderListener('missing-slider', 'height', writer);
-		setupSliderListeners([{ id: 'slider-no-output', key: 'size' }], writer);
+		setupSliderListener('slider-no-output', 'size', writer);
 
 		const slider = document.getElementById('slider-input');
 		slider.value = '77';

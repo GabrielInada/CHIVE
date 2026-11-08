@@ -9,11 +9,9 @@ import { createDefaultChartConfig } from '../../src/config/charts/defaults.js';
 vi.mock('../../src/services/i18nService.js', () => ({ t: key => key }));
 
 // Every offered enum must survive canonicalization, including conditional
-// selects. A described chart's control carries its own id; the charts that
-// still pair a builder with listeners name each select's id suffix here.
+// selects. A described chart's control carries its own id; scatter, which
+// still pairs a builder with listeners, names each select's id suffix here.
 const SELECTS = {
-	line: { curve: 'curve', missingMode: 'missing', aggregateMode: 'aggregate' },
-	network: { edgeColorMode: 'edge-color-mode' },
 	scatter: {
 		xScale: 'xscale',
 		yScale: 'yscale',
@@ -24,7 +22,6 @@ const SELECTS = {
 		colorScheme: 'color-scheme',
 		'regression.mode': 'regression-mode',
 	},
-	tin: { fillMode: 'fill-mode', colorRamp: 'color-ramp', gradientDistribution: 'gradient-distribution', isolineMode: 'isoline-mode' },
 };
 
 function listedSettings(values, prefix = '') {
@@ -73,9 +70,6 @@ function offeredBy(root, type, setting) {
 		const select = root.querySelector(`#${control.id}`);
 		expect(select, `${type}.${setting} is not shown by default`).not.toBeNull();
 		return Array.from(select.options, option => option.value);
-	}
-	if (setting === 'colorScheme' && type !== 'scatter') {
-		return Array.from(root.querySelectorAll(`[data-color-preset-control="viz-${type}-color-preset"]`), button => button.dataset.presetName);
 	}
 	const suffix = SELECTS[type]?.[setting];
 	expect(suffix, `${type}.${setting} needs a control assertion`).toBeDefined();

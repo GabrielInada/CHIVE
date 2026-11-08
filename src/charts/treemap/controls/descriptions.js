@@ -57,7 +57,7 @@ export const TREEMAP_CONTROLS = Object.freeze({
 					min: 1,
 					max: 6,
 					step: 1,
-					value: config => Number(config.padding || TREEMAP_CHART.defaultPadding),
+					value: config => config.padding || TREEMAP_CHART.defaultPadding,
 				},
 				{
 					widget: 'checkbox',

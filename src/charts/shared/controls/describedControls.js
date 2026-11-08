@@ -13,7 +13,8 @@
  * picker is open (`input`), which repaints only the chart, and commits when it
  * closes (`change`); committing on `input` would rebuild the sidebar under the
  * open picker. Every other widget commits on `change`, and a slider only
- * updates its `<output>` on `input`.
+ * updates its `<output>` on `input`. A slider and a number input show their
+ * setting as a number.
  *
  * A control no widget covers is written by hand: a `custom` description's
  * `build` creates and wires its elements from the {@link CustomControlScope}.
@@ -45,6 +46,7 @@ import {
 	createCheckboxControl,
 	createColorInputControl,
 	createColorPresetControl,
+	createNumberInputControl,
 	createSelectControl,
 	createSliderControl,
 	createTextControl,
@@ -88,6 +90,7 @@ export function buildDescribedControls({ definition, sections }, { dataset, cont
 const WIDGETS = Object.freeze({
 	select: buildSelect,
 	slider: buildSlider,
+	number: buildNumber,
 	checkbox: buildCheckbox,
 	text: buildText,
 	color: buildColor,
@@ -189,19 +192,13 @@ function enumeratedValues(key, allowedValues) {
  * @returns {Array<{ value: *, label: string }>}
  */
 function selectOptions(description, scope) {
-	const { id, key, columns, options, optionLabelParams } = description;
+	const { id, key, columns, options } = description;
 	const allowed = enumeratedValues(key, scope.allowedValues);
 	if (allowed) {
 		if (columns || options) {
 			throw new Error(`Control "${id}" lists its own options, but the chart definition lists the values of "${key}".`);
 		}
-		return allowed.map(value => ({
-			value,
-			label: scope.translate(
-				optionLabelKey(description, value),
-				...(optionLabelParams ? optionLabelParams(value, scope.config, scope.translate) : []),
-			),
-		}));
+		return allowed.map(value => ({ value, label: optionLabel(description, value, scope) }));
 	}
 	if (columns) {
 		return [
@@ -211,6 +208,24 @@ function selectOptions(description, scope) {
 	}
 	if (options) return options(scope.context, scope.translate);
 	throw new Error(`Control "${id}" lists no options for "${key}".`);
+}
+
+/**
+ * The label of a value the chart definition lists: the text `optionText`
+ * returns, or else the value's message key translated with its parameters.
+ *
+ * @param {ControlDescription} description
+ * @param {*} value - A value the chart definition lists.
+ * @param {BuildScope} scope
+ * @returns {string}
+ */
+function optionLabel(description, value, scope) {
+	const { optionText, optionLabelParams } = description;
+	if (optionText) return optionText(value, scope.translate);
+	return scope.translate(
+		optionLabelKey(description, value),
+		...(optionLabelParams ? optionLabelParams(value, scope.config, scope.translate) : []),
+	);
 }
 
 /**
@@ -228,16 +243,19 @@ function optionLabelKey({ id, optionLabels }, value) {
 
 /** @type {(description: ControlDescription, scope: BuildScope, disabled: boolean) => HTMLElement} */
 function buildSelect(description, scope, disabled) {
+	const shown = shownValue(description, scope);
 	const element = createSelectControl(
 		description.id,
 		scope.translate(description.label),
 		selectOptions(description, scope),
-		// The factory compares values as strings, so an unset setting would
-		// match a column named "null" or "undefined" instead of "None".
-		shownValue(description, scope) ?? '',
+		shown,
 		disabled,
 	);
 	const select = element.querySelector('select');
+	// An unset setting shows the first option, "None" in a column select. The
+	// factory compares values as strings, so it would pick a column named
+	// "null" or "undefined".
+	if (shown === null || shown === undefined) select.selectedIndex = 0;
 	select.addEventListener('change', () => write(description, scope, 'commit', select.value));
 	return element;
 }
@@ -245,13 +263,36 @@ function buildSelect(description, scope, disabled) {
 /** @type {(description: ControlDescription, scope: BuildScope, disabled: boolean) => HTMLElement} */
 function buildSlider(description, scope, disabled) {
 	const { id, label, min, max, step } = description;
-	const element = createSliderControl(id, scope.translate(label), shownValue(description, scope), min, max, step, disabled);
+	const element = createSliderControl(id, scope.translate(label), Number(shownValue(description, scope)), min, max, step, disabled);
 	const input = element.querySelector('input');
 	const output = element.querySelector('output');
 	input.addEventListener('input', () => {
 		output.textContent = input.value;
 	});
 	input.addEventListener('change', () => write(description, scope, 'commit', Number(input.value)));
+	return element;
+}
+
+/**
+ * A number input. It shows `fallback` while the setting is not a finite
+ * number, and writes `fallback` in place of a typed value that is not one.
+ *
+ * @type {(description: ControlDescription, scope: BuildScope, disabled: boolean) => HTMLElement}
+ */
+function buildNumber(description, scope, disabled) {
+	const { id, label, min, max, step, fallback } = description;
+	const shown = Number(shownValue(description, scope));
+	const element = createNumberInputControl(
+		id,
+		scope.translate(label),
+		Number.isFinite(shown) ? shown : fallback,
+		{ min, max, step, disabled },
+	);
+	const input = element.querySelector('input');
+	input.addEventListener('change', () => {
+		const typed = parseFloat(input.value);
+		write(description, scope, 'commit', Number.isFinite(typed) ? typed : fallback);
+	});
 	return element;
 }
 

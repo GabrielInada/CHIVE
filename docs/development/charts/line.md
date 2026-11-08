@@ -18,8 +18,9 @@ Key files:
 - Point building and aggregation: [data.js](../../../src/charts/line/data.js)
 - Option normalization: [options.js](../../../src/charts/line/options.js)
 - X-scale construction: [scales.js](../../../src/charts/line/scales.js)
-- Sidebar controls: [builder.js](../../../src/charts/line/controls/builder.js),
-  [listeners.js](../../../src/charts/line/controls/listeners.js), and
+- Sidebar controls: [descriptions.js](../../../src/charts/line/controls/descriptions.js), built
+  and wired by the shared
+  [describedControls.js](../../../src/charts/shared/controls/describedControls.js), and
   [activationDefaults.js](../../../src/charts/line/controls/activationDefaults.js)
 - Chart definition and constants: [line.js](../../../src/config/charts/definitions/line.js) (`LINE_DEFINITION`, `LINE_CHART`)
 - Per-dataset config defaults: [line.js](../../../src/config/charts/definitions/line.js) (the definition's fresh `line` factory)
@@ -181,11 +182,12 @@ default ghost color.
 
 ## 5. The control sidebar
 
-The controls package ([builder.js](../../../src/charts/line/controls/builder.js),
-[listeners.js](../../../src/charts/line/controls/listeners.js),
-[activationDefaults.js](../../../src/charts/line/controls/activationDefaults.js)) builds three sections via the
-standard `createLineChartControls` / `setupLineChartControlListeners` / `computeDefaults`
-adapters.
+The package's [descriptions.js](../../../src/charts/line/controls/descriptions.js) declares
+every control once, as data (`LINE_CONTROLS`), and the controls sidebar builds them through the
+shared [describedControls.js](../../../src/charts/shared/controls/describedControls.js), which
+wires each control to the `ChartConfigWriter` as it creates it.
+[activationDefaults.js](../../../src/charts/line/controls/activationDefaults.js) supplies
+`computeDefaults`.
 
 ### 5.1 The three sections
 
@@ -195,14 +197,15 @@ adapters.
    ghost color, and show-points toggle.
 3. **Display** (collapsed): x/y axis-label toggles, title.
 
-### 5.2 Enable/disable and wiring
+### 5.2 Enable/disable and writes
 
 Everything is disabled when `!config.enabled`; the ghost color input is disabled unless
-`missingMode === 'interpolate'` (it only matters there). The X and Y selects have custom
-listeners that validate against the available columns (X any visible column, Y numeric only);
-curve, missing mode, and aggregate use the shared select helper as chosen, with enum checks
-at chart config canonicalization against `LINE_DEFINITION.allowedValues`;
-both color inputs use `setupColorInputListener` for live preview. `computeDefaults` prefers a
+`missingMode === 'interpolate'` (it only matters there). Each widget writes the way the shared
+builder defines it: the selects, the title, the slider, and the toggles commit on `change`,
+and both color inputs preview on `input` and commit on `change`. The X and Y selects store a
+column only while it is offered (X any visible column, Y a numeric one) and `null` otherwise.
+The aggregate, curve, and missing-mode selects list `LINE_DEFINITION.allowedValues` and store
+the chosen value, which chart config canonicalization checks against them. `computeDefaults` prefers a
 date column for X (then numeric, then first available) and the first numeric column for Y that
 is not also X, which makes a freshly enabled line chart default to a time series when one is
 present.
@@ -348,8 +351,9 @@ Portuguese equivalents in [pt-BR.json](../../../src/i18n/pt-BR.json).
   building, option normalization, and X-scale construction (no DOM).
 - [renderEquivalence.test.js](../../../tests/charts/line/renderEquivalence.test.js) pins
   the rendered SVG markup across an option matrix so structural moves stay byte-identical.
-- [controls.test.js](../../../tests/charts/line/controls.test.js) covers control
-  building and the X/Y validation and ghost-color enable logic.
+- [controls.test.js](../../../tests/charts/line/controls.test.js) builds the controls from
+  their descriptions and covers the X/Y validation, the options read from the definition, and
+  the ghost-color enable logic.
 - [workspaceSections.test.js](../../../tests/charts/registries/workspaceSections.test.js)
   checks through the workspace registry, for every chart, block visibility, the min height,
   the dispose contract, and the inputs each chart draws from.
