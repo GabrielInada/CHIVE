@@ -2,7 +2,9 @@
  * CHIVE chart-control listener bindings.
  *
  * Wires DOM elements built by the shared control factories
- * (`charts/shared/controls/factories.js`) to a {@link ChartConfigWriter}.
+ * (`charts/shared/controls/factories.js`) to a {@link ChartConfigWriter}, for
+ * the charts that pair a builder with listeners. A chart that describes its
+ * controls is wired by `describedControls.js` instead.
  *
  * These helpers are pure input mechanics: they read DOM values, normalize them,
  * and hand the result to the injected writer. They hold no state knowledge and

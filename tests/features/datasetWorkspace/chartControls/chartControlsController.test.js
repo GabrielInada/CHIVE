@@ -17,8 +17,6 @@ const mocks = vi.hoisted(() => ({
 	setupScatterPlotControlListeners: vi.fn(),
 	createPieChartControls: vi.fn(() => []),
 	setupPieChartControlListeners: vi.fn(),
-	createTreemapControls: vi.fn(() => []),
-	setupTreemapControlListeners: vi.fn(),
 	createLineChartControls: vi.fn(() => []),
 	setupLineChartControlListeners: vi.fn(),
 	createTinControls: vi.fn(() => []),
@@ -70,13 +68,6 @@ vi.mock('../../../../src/charts/pie/controls/builder.js', () => ({
 }));
 vi.mock('../../../../src/charts/pie/controls/listeners.js', () => ({
 	setupPieChartControlListeners: mocks.setupPieChartControlListeners,
-}));
-
-vi.mock('../../../../src/charts/treemap/controls/builder.js', () => ({
-	createTreemapControls: mocks.createTreemapControls,
-}));
-vi.mock('../../../../src/charts/treemap/controls/listeners.js', () => ({
-	setupTreemapControlListeners: mocks.setupTreemapControlListeners,
 }));
 
 vi.mock('../../../../src/charts/line/controls/builder.js', () => ({
@@ -195,7 +186,6 @@ describe('renderChartControlsSidebar', () => {
 		['pie', 'createPieChartControls', 'setupPieChartControlListeners'],
 		['bubble', 'createBubbleChartControls', 'setupBubbleChartControlListeners'],
 		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners'],
-		['treemap', 'createTreemapControls', 'setupTreemapControlListeners'],
 		['line', 'createLineChartControls', 'setupLineChartControlListeners'],
 		['tin', 'createTinControls', 'setupTinControlListeners'],
 		['scatter3d', 'createScatter3dControls', 'setupScatter3dControlListeners'],
@@ -204,6 +194,17 @@ describe('renderChartControlsSidebar', () => {
 
 		expect(mocks[buildMock]).toHaveBeenCalledTimes(1);
 		expect(mocks[listenerMock]).toHaveBeenCalledTimes(1);
+	});
+
+	it('builds the treemap controls from its descriptions', () => {
+		renderChartControlsSidebar(shownFor('treemap'));
+
+		const params = document.getElementById('viz-chart-params');
+		expect([...params.querySelectorAll('.chart-control-section')].map(section => section.dataset.section))
+			.toEqual(['data', 'display', 'styling', 'advanced']);
+		expect(params.querySelector('#viz-select-treemap-category')).not.toBeNull();
+		expect(params.querySelector('[data-color-preset-control="viz-treemap-color-preset"]')).not.toBeNull();
+		expect(mocks.createBarChartControls).not.toHaveBeenCalled();
 	});
 
 	it('hands the pie controls the rows the chart draws, under the global filter', () => {

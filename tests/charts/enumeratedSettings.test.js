@@ -2,13 +2,15 @@
 
 import { describe, expect, it, vi } from 'vitest';
 import { getChartControlAdapter } from '../../src/charts/registries/controls.js';
+import { buildDescribedControls } from '../../src/charts/shared/controls/describedControls.js';
 import { CHART_DEFINITIONS } from '../../src/config/charts/definitions.js';
 import { createDefaultChartConfig } from '../../src/config/charts/defaults.js';
 
 vi.mock('../../src/services/i18nService.js', () => ({ t: key => key }));
 
-// IDs are the public contract between each builder and its listeners. Every
-// offered enum must survive canonicalization, including conditional selects.
+// Every offered enum must survive canonicalization, including conditional
+// selects. A described chart's control carries its own id; the charts that
+// still pair a builder with listeners name each select's id suffix here.
 const SELECTS = {
 	bar: { sort: 'sort', measureMode: 'measure', colorMode: 'color-mode', gradientDistribution: 'gradient-distribution' },
 	bubble: { measureMode: 'measure', labelMode: 'label-mode', nestingMode: 'nesting-mode' },
@@ -26,7 +28,6 @@ const SELECTS = {
 		'regression.mode': 'regression-mode',
 	},
 	tin: { fillMode: 'fill-mode', colorRamp: 'color-ramp', gradientDistribution: 'gradient-distribution', isolineMode: 'isoline-mode' },
-	treemap: { measureMode: 'measure', colorMode: 'color-mode' },
 };
 
 function listedSettings(values, prefix = '') {
@@ -51,9 +52,39 @@ function buildControls(type, overrides = {}) {
 		baseCategoricalOrAll: ['group'],
 		dates: [],
 	};
+	const adapter = getChartControlAdapter(type);
 	const root = document.createElement('div');
-	root.append(...getChartControlAdapter(type).build(dataset, context));
+	root.append(...(adapter.controls
+		? buildDescribedControls(adapter.controls, { dataset, context, writer: { commit() {}, preview() {} }, translate: key => key })
+		: adapter.build(dataset, context)));
 	return root;
+}
+
+/** The control a described chart declares for `setting`. */
+function describedControl(controls, setting) {
+	return controls.sections.flatMap(section => section.controls).find(control => control.key === setting);
+}
+
+function offeredBy(root, type, setting) {
+	const { controls } = getChartControlAdapter(type);
+	if (controls) {
+		const control = describedControl(controls, setting);
+		expect(control, `${type}.${setting} needs a declared control`).toBeDefined();
+		if (control.widget === 'palette') {
+			return Array.from(root.querySelectorAll(`[data-color-preset-control="${control.id}"]`), button => button.dataset.presetName);
+		}
+		const select = root.querySelector(`#${control.id}`);
+		expect(select, `${type}.${setting} is not shown by default`).not.toBeNull();
+		return Array.from(select.options, option => option.value);
+	}
+	if (setting === 'colorScheme' && type !== 'scatter') {
+		return Array.from(root.querySelectorAll(`[data-color-preset-control="viz-${type}-color-preset"]`), button => button.dataset.presetName);
+	}
+	const suffix = SELECTS[type]?.[setting];
+	expect(suffix, `${type}.${setting} needs a control assertion`).toBeDefined();
+	const select = root.querySelector(`#viz-select-${type}-${suffix}`);
+	expect(select).not.toBeNull();
+	return Array.from(select.options, option => option.value);
 }
 
 describe('enumerated chart controls', () => {
@@ -62,16 +93,7 @@ describe('enumerated chart controls', () => {
 			it(`${type}.${setting} offers exactly the values its definition accepts`, () => {
 				const colorMode = type === 'bar' ? 'gradient' : setting === 'colorScheme' ? 'category' : 'numeric';
 				const root = buildControls(type, ['bar', 'scatter'].includes(type) ? { colorMode } : {});
-				if (setting === 'colorScheme' && type !== 'scatter') {
-					const buttons = root.querySelectorAll(`[data-color-preset-control="viz-${type}-color-preset"]`);
-					expect(Array.from(buttons, button => button.dataset.presetName)).toEqual(offered);
-				} else {
-					const suffix = SELECTS[type]?.[setting];
-					expect(suffix, `${type}.${setting} needs a control assertion`).toBeDefined();
-					const select = root.querySelector(`#viz-select-${type}-${suffix}`);
-					expect(select).not.toBeNull();
-					expect(Array.from(select.options, option => option.value)).toEqual(offered);
-				}
+				expect(offeredBy(root, type, setting)).toEqual(offered);
 			});
 		}
 	}

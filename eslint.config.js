@@ -468,9 +468,10 @@ export default [
 	// (B3a) Shared chart rendering infrastructure is reusable leaf code. It
 	// may import vendor, config, utils, or other charts/shared modules, but it
 	// never reaches application state, components, feature modules, or services.
-	// listenerBindings.js is the reason state/ is banned by name: it wires
-	// controls to config writes, but only through an injected writer, so the
-	// write adapter itself stays in the dataset-workspace feature.
+	// listenerBindings.js and describedControls.js are the reason state/ is
+	// banned by name: they wire controls to config writes, but only through an
+	// injected writer, so the write adapter itself stays in the dataset-workspace
+	// feature.
 	{
 		files: ['src/charts/shared/**/*.js'],
 		rules: {

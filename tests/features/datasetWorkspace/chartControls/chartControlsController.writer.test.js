@@ -133,4 +133,45 @@ describe('chartControlsController writer wiring', () => {
 		expect(context.rows).toBe(shown.rows);
 		expect(mocks.attachListeners.mock.calls[0][1]).toBe(context);
 	});
+
+	it('builds described controls already wired to the writer, from the column context as it is', () => {
+		const writer = { commit: vi.fn(), preview: vi.fn() };
+		mocks.createChartConfigWriter.mockReturnValue(writer);
+		const columns = vi.fn(context => context.allColumns);
+		mocks.getChartControlAdapter.mockReturnValue({
+			controls: {
+				definition: { key: 'bar', allowedValues: {} },
+				sections: [{
+					id: 'data',
+					title: 'Data',
+					controls: [{ widget: 'select', id: 'demo-category', key: 'category', label: 'chive-demo-category', columns }],
+				}],
+			},
+			computeDefaults: mocks.computeDefaults,
+		});
+		const shown = deriveShownDataset(makeDataset());
+
+		initChartControls(vi.fn(), vi.fn());
+		renderChartControlsSidebar(shown);
+
+		expect(columns).toHaveBeenCalledTimes(1);
+		expect(columns.mock.calls[0][0]).toEqual({
+			numeric: ['valor'],
+			categorical: ['categoria'],
+			dates: [],
+			allColumns: ['categoria', 'valor'],
+			baseCategoricalOrAll: ['categoria'],
+			rows: shown.rows,
+		});
+		expect(mocks.t).toHaveBeenCalledWith('chive-demo-category');
+
+		// The params view is mocked: take the sections the controller handed it.
+		const [section] = mocks.renderChartParamsDOM.mock.calls[0][0].controls;
+		const select = section.querySelector('#demo-category');
+		select.value = 'valor';
+		select.dispatchEvent(new Event('change'));
+		expect(writer.commit).toHaveBeenCalledWith({ category: 'valor' });
+		expect(mocks.build).not.toHaveBeenCalled();
+		expect(mocks.attachListeners).not.toHaveBeenCalled();
+	});
 });

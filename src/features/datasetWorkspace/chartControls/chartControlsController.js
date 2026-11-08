@@ -6,10 +6,12 @@
  *   - Params pane (bottom), controls for the currently active chart.
  *   - Centralized activation defaults (column selection on chart switch).
  *
- * Each chart type owns its chart-specific controls, either in a per-chart
- * package (`charts/bar/`, `charts/scatter3d/`) or in a legacy controls module
- * (legacy controls modules and `charts/<type>/controls/`). The controls surface is wired by
- * `charts/registries/controls.js`; this manager renders the sidebar shell.
+ * Each chart type owns its controls in its package (`charts/<type>/controls/`),
+ * looked up through `charts/registries/controls.js`. A chart that describes its
+ * controls gets them built and wired in one pass by
+ * `charts/shared/controls/describedControls.js`; the other charts still build
+ * theirs and attach listeners afterwards. This manager renders the sidebar
+ * shell and creates the writer the controls write through.
  *
  * Sidebar scroll-position preservation deserves a note: re-rendering
  * replaces the entire params DOM, so on every render we capture an
@@ -21,6 +23,8 @@
  * @typedef {import('../../../types.js').ShownDataset} ShownDataset
  * @typedef {import('../../../types.js').ChartTypeKey} ChartTypeKey
  * @typedef {import('../../../types.js').ChartControlContext} ChartControlContext
+ * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
+ * @typedef {import('../../../charts/registries/controls.js').ChartControlAdapter} ChartControlAdapter
  */
 
 import { t } from '../../../services/i18nService.js';
@@ -31,6 +35,7 @@ import {
 } from '../../../domain/datasets/columns.js';
 import { setActiveChartType } from '../../../state/appState.js';
 import { getChartControlAdapter } from '../../../charts/registries/controls.js';
+import { buildDescribedControls } from '../../../charts/shared/controls/describedControls.js';
 import { renderChartParamsDOM } from '../views/chartParamsView.js';
 import { openChartTypePickerDialog } from '../dialogs/chartTypePickerDialog.js';
 
@@ -244,17 +249,20 @@ function computeActivationDefaults(chartType, dataset, { numeric, categorical, a
 	return entry.computeDefaults(dataset, { numeric, categorical, allColumns, dates, baseCategoricalOrAll });
 }
 
-/** @private */
-function buildControlsForChart(chartType, dataset, columnContext) {
-	const entry = getChartControlAdapter(chartType);
-	if (!entry) return [];
-	return entry.build(dataset, columnContext);
-}
-
-/** @private */
-function setupListenersForChart(chartType, dataset, columnContext) {
-	const entry = getChartControlAdapter(chartType);
-	if (!entry) return;
+/**
+ * Build the active chart's controls and the writer they write through.
+ * Described controls come back wired; a chart that still pairs a builder with
+ * listeners gets them attached once its controls are in the document.
+ *
+ * @private
+ * @param {Readonly<ChartControlAdapter> | null} entry
+ * @param {ChartTypeKey} chartType
+ * @param {Dataset} dataset
+ * @param {ChartControlContext} columnContext
+ * @returns {{ controls: HTMLElement[], writer: ChartConfigWriter | null }}
+ */
+function buildControlsForChart(entry, chartType, dataset, columnContext) {
+	if (!entry) return { controls: [], writer: null };
 	// The chart package writes through this adapter instead of importing state.
 	// requestLiveRender is the bridge's trigger, not the raw callback, so the
 	// registered live-render callback stays replaceable and disable-able.
@@ -264,7 +272,10 @@ function setupListenersForChart(chartType, dataset, columnContext) {
 		onConfigChanged: onChartConfigChangeCallback,
 		requestLiveRender: triggerLiveRender,
 	});
-	entry.attachListeners(dataset, columnContext, writer);
+	const controls = entry.controls
+		? buildDescribedControls(entry.controls, { dataset, context: columnContext, writer, translate: t })
+		: entry.build(dataset, columnContext);
+	return { controls, writer };
 }
 
 /**
@@ -352,7 +363,8 @@ export function renderChartControlsSidebar(shown) {
 
 	const { dataset, activeChartType } = shown;
 	const columnContext = columnContextOf(shown);
-	const controls = activeChartType ? buildControlsForChart(activeChartType, dataset, columnContext) : [];
+	const entry = activeChartType ? getChartControlAdapter(activeChartType) : null;
+	const { controls, writer } = buildControlsForChart(entry, activeChartType, dataset, columnContext);
 
 	renderChartParamsDOM({
 		container: paramsContainer,
@@ -366,7 +378,8 @@ export function renderChartControlsSidebar(shown) {
 
 	if (activeChartType) {
 		applyControlSectionExpansionState(paramsContainer, controlSectionState);
-		setupListenersForChart(activeChartType, dataset, columnContext);
+		// These listeners find their controls by id, so they need the DOM in place.
+		entry?.attachListeners?.(dataset, columnContext, writer);
 	}
 
 	restoreSidebarScrollPosition(paramsContainer, scrollAnchor);

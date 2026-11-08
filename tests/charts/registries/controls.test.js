@@ -11,8 +11,6 @@ const mocks = vi.hoisted(() => ({
 	setupScatterPlotControlListeners: vi.fn(),
 	createPieChartControls: vi.fn(() => []),
 	setupPieChartControlListeners: vi.fn(),
-	createTreemapControls: vi.fn(() => []),
-	setupTreemapControlListeners: vi.fn(),
 	createLineChartControls: vi.fn(() => []),
 	setupLineChartControlListeners: vi.fn(),
 	createTinControls: vi.fn(() => []),
@@ -31,8 +29,6 @@ vi.mock('../../../src/charts/scatter/controls/builder.js', () => ({ createScatte
 vi.mock('../../../src/charts/scatter/controls/listeners.js', () => ({ setupScatterPlotControlListeners: mocks.setupScatterPlotControlListeners }));
 vi.mock('../../../src/charts/pie/controls/builder.js', () => ({ createPieChartControls: mocks.createPieChartControls }));
 vi.mock('../../../src/charts/pie/controls/listeners.js', () => ({ setupPieChartControlListeners: mocks.setupPieChartControlListeners }));
-vi.mock('../../../src/charts/treemap/controls/builder.js', () => ({ createTreemapControls: mocks.createTreemapControls }));
-vi.mock('../../../src/charts/treemap/controls/listeners.js', () => ({ setupTreemapControlListeners: mocks.setupTreemapControlListeners }));
 vi.mock('../../../src/charts/line/controls/builder.js', () => ({ createLineChartControls: mocks.createLineChartControls }));
 vi.mock('../../../src/charts/line/controls/listeners.js', () => ({ setupLineChartControlListeners: mocks.setupLineChartControlListeners }));
 vi.mock('../../../src/charts/tin/controls/builder.js', () => ({ createTinControls: mocks.createTinControls }));
@@ -41,6 +37,7 @@ vi.mock('../../../src/charts/scatter3d/controls/builder.js', () => ({ createScat
 vi.mock('../../../src/charts/scatter3d/controls/listeners.js', () => ({ setupScatter3dControlListeners: mocks.setupScatter3dControlListeners }));
 
 import { getChartControlAdapter } from '../../../src/charts/registries/controls.js';
+import { TREEMAP_CONTROLS } from '../../../src/charts/treemap/controls/descriptions.js';
 
 describe('controls registry', () => {
 	beforeEach(() => {
@@ -60,7 +57,6 @@ describe('controls registry', () => {
 		['pie', 'createPieChartControls', 'setupPieChartControlListeners', ['base', 'numeric', 'rows'], ['base', 'numeric', 'all']],
 		['bubble', 'createBubbleChartControls', 'setupBubbleChartControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
 		['network', 'createNetworkGraphControls', 'setupNetworkGraphControlListeners', ['all', 'numeric', 'categorical'], ['all', 'numeric']],
-		['treemap', 'createTreemapControls', 'setupTreemapControlListeners', ['base', 'numeric', 'all'], ['base', 'numeric', 'all']],
 		['tin', 'createTinControls', 'setupTinControlListeners', ['numeric', 'all'], ['numeric', 'all']],
 	])('preserves the %s controls adapter signatures and forwards the writer', (type, buildMock, listenerMock, buildKeys, listenerKeys) => {
 		const dataset = { chartConfig: {} };
@@ -99,5 +95,14 @@ describe('controls registry', () => {
 			writer,
 		);
 		expect(mocks[listenerMock].mock.calls[0].at(-1)).toBe(writer);
+	});
+
+	it('hands over the treemap control descriptions, with no builder or listener setup to adapt', () => {
+		const adapter = getChartControlAdapter('treemap');
+
+		expect(adapter.controls).toBe(TREEMAP_CONTROLS);
+		expect(adapter.build).toBeUndefined();
+		expect(adapter.attachListeners).toBeUndefined();
+		expect(typeof adapter.computeDefaults).toBe('function');
 	});
 });
