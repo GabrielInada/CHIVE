@@ -10,7 +10,7 @@
  * stored blob whose version is absent or lower is dropped and recomputed,
  * because its numbers were produced by an older, incorrect implementation.
  *
- * Bump this whenever `calculateStatistics` changes which values it counts or
+ * Bump this whenever `calculateNumericStatistics` changes which values it counts or
  * how it aggregates them. Categorical stats carry their own
  * {@link STATS_CATEGORICAL_VERSION}, so they survive a numeric-only bump.
  *

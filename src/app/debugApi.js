@@ -16,7 +16,7 @@ import { getStateSummary } from '../state/stateDebug.js';
 import { getLoadedDatasets } from '../features/datasetWorkspace/datasetController.js';
 import {
 	runFullRefreshNow,
-	updateDatasetColumns,
+	setActiveDatasetColumnSelection,
 	updateDatasetConfig,
 } from './renderCoordinator.js';
 import { showFeedback, showError } from '../ui/feedback.js';
@@ -34,7 +34,7 @@ export function createDebugApi() {
 		getStateSummary,
 		getActiveDataset,
 		getLoadedDatasets,
-		updateDatasetColumns,
+		setActiveDatasetColumnSelection,
 		updateDatasetConfig,
 		switchTab,
 		refreshView: runFullRefreshNow,

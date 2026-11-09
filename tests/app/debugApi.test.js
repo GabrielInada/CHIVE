@@ -12,7 +12,7 @@ const mocks = vi.hoisted(() => ({
 	getStateSummary: vi.fn(),
 	getLoadedDatasets: vi.fn(),
 	runFullRefreshNow: vi.fn(),
-	updateDatasetColumns: vi.fn(),
+	setActiveDatasetColumnSelection: vi.fn(),
 	updateDatasetConfig: vi.fn(),
 	showFeedback: vi.fn(),
 	showError: vi.fn(),
@@ -40,7 +40,7 @@ vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 
 vi.mock('../../src/app/renderCoordinator.js', () => ({
 	runFullRefreshNow: mocks.runFullRefreshNow,
-	updateDatasetColumns: mocks.updateDatasetColumns,
+	setActiveDatasetColumnSelection: mocks.setActiveDatasetColumnSelection,
 	updateDatasetConfig: mocks.updateDatasetConfig,
 }));
 
@@ -66,7 +66,7 @@ describe('debugApi', () => {
 			getStateSummary: mocks.getStateSummary,
 			getActiveDataset: mocks.getActiveDataset,
 			getLoadedDatasets: mocks.getLoadedDatasets,
-			updateDatasetColumns: mocks.updateDatasetColumns,
+			setActiveDatasetColumnSelection: mocks.setActiveDatasetColumnSelection,
 			updateDatasetConfig: mocks.updateDatasetConfig,
 			switchTab: expect.any(Function),
 			refreshView: mocks.runFullRefreshNow,

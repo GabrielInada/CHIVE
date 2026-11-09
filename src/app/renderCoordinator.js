@@ -24,7 +24,7 @@ import {
 	onStateChange,
 	STATE_EVENTS,
 	setPreviewRows,
-	updateActiveDatasetColumns,
+	setActiveDatasetColumnSelection as setStateColumnSelection,
 	updateActiveDatasetConfig,
 } from '../state/appState.js';
 import {
@@ -241,7 +241,7 @@ function renderActiveDatasetWorkspace(shown, previewRows) {
 	renderDatasetWorkspace(shown, {
 		previewRows,
 		onPreviewRowsChange: updatePreviewRows,
-		onColumnSelectionChange: updateDatasetColumns,
+		onColumnSelectionChange: setActiveDatasetColumnSelection,
 		onChartConfigChange: updateDatasetConfig,
 	});
 }
@@ -289,10 +289,10 @@ function refreshView() {
 }
 
 /**
- * @param {string[]} columns
+ * @param {string[]} columnNames
  */
-export function updateDatasetColumns(columns) {
-	updateActiveDatasetColumns(columns);
+export function setActiveDatasetColumnSelection(columnNames) {
+	setStateColumnSelection(columnNames);
 }
 
 /**

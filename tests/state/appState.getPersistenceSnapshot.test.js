@@ -10,7 +10,7 @@ import {
 	removeDataset,
 	replaceAllState,
 	setActiveChartType,
-	updateActiveDatasetColumns,
+	setActiveDatasetColumnSelection,
 	updateActiveDatasetConfig,
 } from '../../src/state/appState.js';
 
@@ -72,7 +72,7 @@ describe('payload immutability invariant (persistence dedup dependency)', () => 
 
 		// Pure metadata edits: chart config + selected columns.
 		updateActiveDatasetConfig({ activeTab: 'viz' });
-		updateActiveDatasetColumns(['x']);
+		setActiveDatasetColumnSelection(['x']);
 		setActiveChartType('bar');
 
 		const after = getPersistenceSnapshot().data.datasets[0].rows;

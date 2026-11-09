@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
 		removeChartSnapshot: vi.fn(),
 		getChartSnapshot: vi.fn(),
 		assignChartToPanelBlockSlot: vi.fn(),
-		validatePanelSlots: vi.fn(),
+		repairPanelSlotReferences: vi.fn(),
 		onStateChange: vi.fn(() => () => {}),
 		STATE_EVENTS: {
 			CHART_ADDED: 'chartAdded',
@@ -365,7 +365,7 @@ describe('panelController (branch coverage)', () => {
 			expect(templateChangeListener).toBeDefined();
 			templateChangeListener?.();
 
-			expect(mocks.appState.validatePanelSlots).toHaveBeenCalled();
+			expect(mocks.appState.repairPanelSlotReferences).toHaveBeenCalled();
 		});
 	});
 });

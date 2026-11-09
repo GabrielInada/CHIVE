@@ -13,7 +13,7 @@ import { restoreIngestWorker, useInProcessIngestWorker, useSilentIngestWorker } 
 
 vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	...(await importOriginal()),
-	ROW_LIMIT: 1000,
+	LARGE_DATASET_WARNING_ROWS: 1000,
 }));
 
 /** A one-column CSV with `count` rows. */

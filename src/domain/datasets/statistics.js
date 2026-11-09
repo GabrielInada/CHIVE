@@ -23,7 +23,7 @@ import { MISSING_KEY, categoryKey } from './cellValues.js';
  * @param {ColumnSpec[]} columns
  * @returns {NumericColumnStats[]}
  */
-export function calculateStatistics(rows, columns) {
+export function calculateNumericStatistics(rows, columns) {
 	return columns
 		.filter(column => column.type === 'number')
 		.map(({ name }) => {

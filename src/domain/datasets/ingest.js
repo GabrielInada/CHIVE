@@ -2,7 +2,7 @@ import { parseCsv, parseJson } from './parse.js';
 import { joinDatasets } from './join.js';
 import { detectDecimalSeparator, detectType } from './typeDetection.js';
 import { toCanonicalCell } from './cellValues.js';
-import { calculateStatistics, calculateCategoricalStatistics } from './statistics.js';
+import { calculateNumericStatistics, calculateCategoricalStatistics } from './statistics.js';
 import { DECIMAL_DETECTION } from '../../config/columnTypeDetection.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../config/statistics.js';
 import { ok, fail } from '../../utils/result.js';
@@ -139,7 +139,7 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 	});
 
 	report('stats', 92);
-	const numeric = calculateStatistics(rows, columns);
+	const numeric = calculateNumericStatistics(rows, columns);
 	report('stats', 96);
 	const categorical = calculateCategoricalStatistics(rows, columns);
 	report('stats', 100);

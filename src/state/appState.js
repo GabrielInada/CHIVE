@@ -251,24 +251,22 @@ export function updateActiveDatasetConfig(updates) {
  * @throws {Error} When an active dataset exists and the list contains duplicates or undeclared/non-string names.
  * @fires STATE_EVENTS.COLUMNS_UPDATED - Only when the ordered list changes.
  */
-export function updateActiveDatasetColumns(columnNames) {
-	return dataState.updateActiveDatasetColumns(columnNames);
+export function setActiveDatasetColumnSelection(columnNames) {
+	return dataState.setActiveDatasetColumnSelection(columnNames);
 }
 
 /**
- * Apply a normalizer to the active dataset's `chartConfig`
- * **without emitting**. Config is canonicalized at the state boundaries
- * (persistence restore, `addDataset`, and the emitting config writes) via
- * `canonicalizeChartConfig`; this escape hatch exists for the intentional
- * non-emitting live-preview writes (color picker, chart-height drag). Emitting
- * here would re-enter the render coordinator's `refreshView` via the
- * CONFIG_UPDATED subscription and loop; use
- * {@link updateActiveDatasetConfig} when an emit is wanted.
+ * Replace the active dataset's `chartConfig` with the result of `updater`
+ * without emitting or canonicalizing. Config is canonicalized at the state
+ * boundaries (persistence restore, `addDataset`, and the emitting config writes)
+ * via `canonicalizeChartConfig`. This escape hatch lets live-preview writes
+ * (color picker, chart-height drag) avoid scheduling a full config-driven refresh.
+ * Use {@link updateActiveDatasetConfig} when an emit is wanted.
  *
- * @param {(config: Object) => Object} normalizer
+ * @param {(config: Object) => Object} updater
  */
-export function normalizeActiveDatasetConfig(normalizer) {
-	return dataState.normalizeActiveDatasetConfig(normalizer);
+export function transformActiveDatasetConfigSilently(updater) {
+	return dataState.transformActiveDatasetConfigSilently(updater);
 }
 
 /**
@@ -345,10 +343,11 @@ export function clearPanel() {
 }
 
 /**
- * Drop slot assignments that point at missing snapshot ids. Does not emit.
+ * Drop slot assignments that point at missing snapshot ids and ensure a default
+ * panel block exists. Does not emit or return a validation report.
  */
-export function validatePanelSlots() {
-	return panelState.validatePanelSlots();
+export function repairPanelSlotReferences() {
+	return panelState.repairPanelSlotReferences();
 }
 
 /**

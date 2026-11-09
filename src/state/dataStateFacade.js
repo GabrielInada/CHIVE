@@ -61,8 +61,8 @@ function generateDatasetId() {
  *   addDataset: (dataset: Dataset) => number,
  *   removeDataset: (index: number) => void,
  *   updateActiveDatasetConfig: (updates: Object) => void,
- *   updateActiveDatasetColumns: (columnNames: string[]) => void,
- *   normalizeActiveDatasetConfig: (normalizer: (config: Object) => Object) => void,
+ *   setActiveDatasetColumnSelection: (columnNames: string[]) => void,
+ *   transformActiveDatasetConfigSilently: (updater: (config: Object) => Object) => void,
  *   setActiveChartType: (chartType: (ChartTypeKey | null), activatedOverrides?: (Object | null)) => void,
  * }}
  */
@@ -197,7 +197,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 * @throws {Error} When an active dataset exists and the value is not an array of unique declared column names.
 	 * @fires STATE_EVENTS.COLUMNS_UPDATED - Only when the selection changes.
 	 */
-	function updateActiveDatasetColumns(columnNames) {
+	function setActiveDatasetColumnSelection(columnNames) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
 
@@ -224,22 +224,21 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	}
 
 	/**
-	 * Apply `normalizer` to `chartConfig` **without emitting**. Config is
-	 * canonicalized at the state boundaries (persistence restore, `addDataset`, and
-	 * the emitting config writes) via `canonicalizeChartConfig`; this escape hatch
-	 * exists for the intentional non-emitting live-preview writes (color picker,
-	 * chart-height drag). Emitting here would re-enter the render coordinator's
-	 * `refreshView` via the CONFIG_UPDATED subscription and loop indefinitely.
+	 * Replace `chartConfig` with the result of `updater` without emitting or
+	 * canonicalizing. Config is canonicalized at the state boundaries (persistence
+	 * restore, `addDataset`, and the emitting config writes) via
+	 * `canonicalizeChartConfig`. This escape hatch lets live-preview writes (color
+	 * picker, chart-height drag) avoid scheduling a full config-driven refresh.
 	 *
 	 * **Do not** add an emit to this function. If you need an emit, use
 	 * {@link updateActiveDatasetConfig} instead.
 	 *
-	 * @param {(config: Object) => Object} normalizer - Receives the current `chartConfig`; returns the replacement.
+	 * @param {(config: Object) => Object} updater - Receives the current `chartConfig`; returns the replacement.
 	 */
-	function normalizeActiveDatasetConfig(normalizer) {
+	function transformActiveDatasetConfigSilently(updater) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
-		dataset.chartConfig = normalizer(dataset.chartConfig);
+		dataset.chartConfig = updater(dataset.chartConfig);
 	}
 
 	/**
@@ -284,8 +283,8 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		addDataset,
 		removeDataset,
 		updateActiveDatasetConfig,
-		updateActiveDatasetColumns,
-		normalizeActiveDatasetConfig,
+		setActiveDatasetColumnSelection,
+		transformActiveDatasetConfigSilently,
 		setActiveChartType,
 	};
 }

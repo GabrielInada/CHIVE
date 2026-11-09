@@ -105,24 +105,24 @@ This is the complete named-export surface of `src/state/appState.js`:
     "getPreviewRows",
     "getState",
     "movePanelBlock",
-    "normalizeActiveDatasetConfig",
     "onStateChange",
     "removeChartSnapshot",
     "removeDataset",
     "removePanelBlock",
+    "repairPanelSlotReferences",
     "replaceAllState",
     "sanitizeChartName",
     "setActiveChartType",
     "setActiveDataset",
+    "setActiveDatasetColumnSelection",
     "setPanelBlockTemplate",
     "setPreviewRows",
     "setSidebarMode",
-    "updateActiveDatasetColumns",
+    "transformActiveDatasetConfigSilently",
     "updateActiveDatasetConfig",
     "updatePanelBlockBorder",
     "updatePanelBlockHeight",
-    "updatePanelBlockProportions",
-    "validatePanelSlots"
+    "updatePanelBlockProportions"
 ]
 ```
 
@@ -140,7 +140,7 @@ This is the complete named-export surface of `src/state/appState.js`:
 | `getPanelBlocks()` | Live blocks array. | Ensures one block exists, using the compatibility layout when synthesis is needed, increments `nextBlockId`, synchronizes `panel.layout`, and emits no event. |
 | `getPreviewRows()` | Primitive stored preview-row value. | No normalization on read. |
 | `sanitizeChartName(name)` | String. | Applies `String(name).slice(0, 100).trim()`. |
-| `validatePanelSlots()` | No return. | Ensures a default block, removes legacy and per-block assignments whose values are not current chart ids, and emits nothing. |
+| `repairPanelSlotReferences()` | No return. | Ensures a default block, removes legacy and per-block assignments whose values are not current chart ids, and emits nothing. |
 | `onStateChange`, `STATE_EVENTS` | Re-exports from `stateEvents.js`. | `onStateChange` returns an unsubscribe function. |
 
 ### Live-Reference Read Policy
@@ -179,8 +179,8 @@ relies on stable array references.
 | `addDataset(dataset)` | Mutates the caller by assigning a missing id and canonical `chartConfig`, pushes it, maybe selects it, emits `DATASET_ADDED`, returns the index. | Throws unless `dataset` is truthy and `dataset.rows` is an array. It does not validate the remaining record shape. |
 | `removeDataset(index)` | Splices a dataset, adjusts selection, preserves detached panel captures and both assignment maps, then emits `DATASET_REMOVED`. | Accepts only an in-range integer; throws before mutation otherwise. |
 | `updateActiveDatasetConfig(updates)` | Canonicalizes current config, shallow-merges a plain-object patch, canonicalizes again, stores it, and emits the raw `updates` argument. | No active dataset means no-op/no event. A non-plain patch is treated as `{}` for mutation but is still emitted verbatim. |
-| `updateActiveDatasetColumns(columnNames)` | Stores a copied list and emits it as `COLUMNS_UPDATED` only when ordered contents change. | No active dataset means no-op/no event, without validating the argument. Otherwise requires an array of distinct strings declared by the active dataset; malformed, duplicate, and unknown names throw before mutation. |
-| `normalizeActiveDatasetConfig(normalizer)` | Replaces config with `normalizer(currentConfig)` and emits nothing. | No active dataset means no-op. The callback and returned shape are not validated; exceptions propagate. Reserved for continuous preview writes. |
+| `setActiveDatasetColumnSelection(columnNames)` | Stores a copied list and emits it as `COLUMNS_UPDATED` only when ordered contents change. | No active dataset means no-op/no event, without validating the argument. Otherwise requires an array of distinct strings declared by the active dataset; malformed, duplicate, and unknown names throw before mutation. |
+| `transformActiveDatasetConfigSilently(updater)` | Replaces config with `updater(currentConfig)` and emits nothing. | No active dataset means no-op. The callback and returned shape are not validated; exceptions propagate. Reserved for continuous preview writes. |
 | `setActiveChartType(chartType, activatedOverrides)` | Enables exactly the selected canonical chart key, or disables every chart for `null`; canonicalizes and emits `{ activeChartType }`. | No active dataset or an unknown non-null key means no-op/no event. Plain-object overrides apply only to a non-null selected type. A valid call emits even if it reproduces the current state. |
 
 ### Panel Facade Methods
@@ -243,7 +243,7 @@ The `Emitters` and `Production subscriptions` cells use
 | `DATASET_ADDED` | `datasetAdded` | `src/state/dataStateFacade.js#addDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | `{ index, dataset }`, where dataset is the stored live record. |
 | `DATASET_REMOVED` | `datasetRemoved` | `src/state/dataStateFacade.js#removeDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw index argument. |
 | `CONFIG_UPDATED` | `configUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetConfig`<br>`src/state/dataStateFacade.js#setActiveChartType` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw update argument, or `{ activeChartType }`. |
-| `COLUMNS_UPDATED` | `columnsUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetColumns` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Copied, validated column-selection array. |
+| `COLUMNS_UPDATED` | `columnsUpdated` | `src/state/dataStateFacade.js#setActiveDatasetColumnSelection` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Copied, validated column-selection array. |
 | `CHART_ADDED` | `chartAdded` | `src/state/panelStateFacade.js#addChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | `{ id, snapshot }`. |
 | `CHART_REMOVED` | `chartRemoved` | `src/state/panelStateFacade.js#removeChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | Normalized non-negative safe-integer chart id. |
 | `PANEL_CLEARED` | `panelCleared` | `src/state/panelStateFacade.js#clearPanel` | `src/features/panel/panelController.js#initPanelController` | `undefined`. |
@@ -503,8 +503,8 @@ whole project, so overlapping two produces a result neither asked for.
 - Persistence normalization, `addDataset`, emitting config writes, and
   `replaceAllState` canonicalize committed dataset config. Hydration does not
   rewrite stored bytes on its own.
-- `normalizeActiveDatasetConfig` is the intentional non-emitting preview escape
-  hatch. `getPanelBlocks` and `validatePanelSlots` also have non-emitting repair
+- `transformActiveDatasetConfigSilently` is the intentional non-emitting preview escape
+  hatch. `getPanelBlocks` and `repairPanelSlotReferences` also have non-emitting repair
   side effects.
 
 ## Panel Lifecycle

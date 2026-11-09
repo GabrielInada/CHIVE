@@ -10,7 +10,7 @@ import { runIngest } from '../../../../src/workers/dataIngestWorker.js';
 
 vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	...(await importOriginal()),
-	ROW_LIMIT: 1,
+	LARGE_DATASET_WARNING_ROWS: 1,
 }));
 
 const preset = { nameKey: 'chive-preset-iris-name', rows: 1, dataUrl: '/iris.csv', dataFormat: 'csv' };

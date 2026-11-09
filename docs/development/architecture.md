@@ -137,8 +137,8 @@ The exact lint coverage and its known aliasing gap are documented in
 For a committed column-selection change:
 
 1. A workspace DOM handler invokes its injected callback.
-2. `renderCoordinator.updateDatasetColumns` calls
-   `updateActiveDatasetColumns` on the public state surface.
+2. `renderCoordinator.setActiveDatasetColumnSelection` calls
+   `setActiveDatasetColumnSelection` on the public state surface.
 3. The data facade validates unique declared names, stores a copied array, and
    emits `STATE_EVENTS.COLUMNS_UPDATED` only when the ordered list changed.
 4. The render coordinator schedules the workspace and controls regions.

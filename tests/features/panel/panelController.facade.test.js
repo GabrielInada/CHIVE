@@ -34,7 +34,7 @@ const mocks = vi.hoisted(() => ({
     assignChartToPanelBlockSlot: vi.fn(),
     updatePanelBlockProportions: vi.fn(),
     updatePanelBlockHeight: vi.fn(),
-    validatePanelSlots: vi.fn(),
+    repairPanelSlotReferences: vi.fn(),
     clearPanel: vi.fn(),
     onStateChange: vi.fn(),
   },
@@ -73,7 +73,6 @@ describe('panelController facade branches', () => {
       config: {},
     });
     mocks.appState.addPanelBlock.mockReturnValue('block-2');
-    mocks.appState.validatePanelSlots.mockReturnValue({ valid: true });
     mocks.appState.onStateChange.mockReturnValue(vi.fn());
     mocks.appState.getChartSnapshot.mockReturnValue({ id: 'chart-1' });
     mocks.svgExporter.exportPanelLayoutSvg.mockReturnValue({ ok: true });

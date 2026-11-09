@@ -11,7 +11,7 @@ import {
 	updatePanelBlockBorderState,
 	updatePanelBlockHeightState,
 	updatePanelBlockProportionsState,
-	validatePanelSlotsState,
+	repairPanelSlotReferencesState,
 } from './panel/mutations.js';
 import {
 	createDefaultProportions,
@@ -148,12 +148,13 @@ export function createPanelStateFacade({
 
 	/**
 	 * Drop any slot assignment that points at a snapshot id which no longer
-	 * exists. Scans both the legacy slot map and every block's slot map.
+	 * exists. Ensures a default block and scans both the legacy slot map and every
+	 * block's slot map.
 	 * Does not emit, callers do not need a reactive signal because the
 	 * cleanup is invisible to downstream renderers.
 	 */
-	function validatePanelSlots() {
-		validatePanelSlotsState(appState, ensureDefaultPanelBlock);
+	function repairPanelSlotReferences() {
+		repairPanelSlotReferencesState(appState, ensureDefaultPanelBlock);
 	}
 
 	/**
@@ -337,7 +338,7 @@ export function createPanelStateFacade({
 		getChartSnapshot,
 		getPanelBlocks,
 		clearPanel,
-		validatePanelSlots,
+		repairPanelSlotReferences,
 		addPanelBlock,
 		removePanelBlock,
 		movePanelBlock,

@@ -17,7 +17,7 @@ import { getLocale } from '../../../services/i18nService.js';
 import { ingestErrorMessage, progressLabelForStage } from '../../../services/dataIngestService.js';
 import { addDataset } from '../../../state/appState.js';
 import { showError, showProgress } from '../../../ui/feedback.js';
-import { ROW_LIMIT } from '../../../config/limits.js';
+import { LARGE_DATASET_WARNING_ROWS } from '../../../config/limits.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
 import { ok, fail } from '../../../utils/result.js';
 
@@ -67,15 +67,15 @@ export async function runIntake(source, { confirm = () => false, selectDataset }
 
 	try {
 		const limited = typeof source.rowWarning === 'function';
-		let result = await source.ingest(limited ? { ...request, rowLimit: ROW_LIMIT } : request);
+		let result = await source.ingest(limited ? { ...request, rowLimit: LARGE_DATASET_WARNING_ROWS } : request);
 		if (result.ok && limited) {
 			const { rows, truncatedFrom } = result.value;
 			const rowCount = truncatedFrom ?? rows.length;
-			if (rowCount > ROW_LIMIT) {
+			if (rowCount > LARGE_DATASET_WARNING_ROWS) {
 				const locale = getLocale();
 				const approved = await confirm(source.rowWarning(
 					rowCount.toLocaleString(locale),
-					ROW_LIMIT.toLocaleString(locale),
+					LARGE_DATASET_WARNING_ROWS.toLocaleString(locale),
 				));
 				if (!approved) return cancelled();
 				if (truncatedFrom) {
