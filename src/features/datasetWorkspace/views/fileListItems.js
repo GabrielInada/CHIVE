@@ -13,7 +13,7 @@
  * @param {(index: number) => void} args.onRemove
  * @param {string} [args.filter=''] - Name substring filter; case-insensitive.
  * @param {number} [args.visibleLimit=15] - Cap on rendered items.
- * @returns {{ total: number, filtered: number, rendered: number, hasMore: boolean }}
+ * @returns {{ total: number, filteredCount: number, renderedCount: number, hasMore: boolean }}
  */
 export function renderFileListDOM({
 	list,
@@ -99,8 +99,8 @@ export function renderFileListDOM({
 
 	return {
 		total: datasets.length,
-		filtered: filteredDatasets.length,
-		rendered: visibleDatasets.length,
+		filteredCount: filteredDatasets.length,
+		renderedCount: visibleDatasets.length,
 		hasMore: filteredDatasets.length > visibleDatasets.length,
 	};
 }

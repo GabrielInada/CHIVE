@@ -26,8 +26,8 @@ const tinSurfaceCsvUrl = new URL('./presets/dataset-tin-surface.csv', import.met
 //   id: 'your-id',
 //   nameKey: 'chive-preset-your-name',
 //   descKey: 'chive-preset-your-desc',
-//   rows: 0,
-//   columns: 0,
+//   rowCount: 0,
+//   columnCount: 0,
 //   tags: ['tag1', 'tag2'],
 //   sourceLabel: 'Data source',
 //   sourceUrl: 'https://example.com/dataset',
@@ -42,7 +42,7 @@ const tinSurfaceCsvUrl = new URL('./presets/dataset-tin-surface.csv', import.met
  * The bundled preset catalog. Entries are rendered in array order in the
  * picker dialog.
  *
- * The `PresetCatalogEntry` typedef notes its fields don't include `rows`/`columns`
+ * The `PresetCatalogEntry` typedef notes its fields don't include `rowCount`/`columnCount`
  * as derived, these are author-asserted metadata used by the picker dialog
  * to show expected dimensions before the user commits to a load.
  *
@@ -53,8 +53,8 @@ export const PRESET_CATALOG = [
     id: 'iris',
     nameKey: 'chive-preset-iris-name',
     descKey: 'chive-preset-iris-desc',
-    rows: 150,
-    columns: 6,
+    rowCount: 150,
+    columnCount: 6,
     tags: ['classification', 'biology'],
     sourceLabel: 'R. Fisher',
     sourceUrl: 'https://en.wikipedia.org/wiki/Iris_flower_data_set',
@@ -66,8 +66,8 @@ export const PRESET_CATALOG = [
     id: 'amazonian-trees',
     nameKey: 'chive-preset-amazonian-trees-name',
     descKey: 'chive-preset-amazonian-trees-desc',
-    rows: 40,
-    columns: 4,
+    rowCount: 40,
+    columnCount: 4,
     tags: ['ecology', 'biology'],
     sourceLabel: 'CHIVE Sample',
     sourceUrl: '',
@@ -79,8 +79,8 @@ export const PRESET_CATALOG = [
     id: 'amazon-multilevel-nesting',
     nameKey: 'chive-preset-amazon-multilevel-nesting-name',
     descKey: 'chive-preset-amazon-multilevel-nesting-desc',
-    rows: 48,
-    columns: 8,
+    rowCount: 48,
+    columnCount: 8,
     tags: ['ecology', 'hierarchy', 'bubble-chart'],
     sourceLabel: 'CHIVE Sample',
     sourceUrl: '',
@@ -92,8 +92,8 @@ export const PRESET_CATALOG = [
     id: 'monthly-visits',
     nameKey: 'chive-preset-monthly-visits-name',
     descKey: 'chive-preset-monthly-visits-desc',
-    rows: 24,
-    columns: 3,
+    rowCount: 24,
+    columnCount: 3,
     tags: ['time-series', 'line-chart'],
     sourceLabel: 'CHIVE Sample',
     sourceUrl: '',
@@ -105,8 +105,8 @@ export const PRESET_CATALOG = [
     id: 'tin-surface',
     nameKey: 'chive-preset-tin-surface-name',
     descKey: 'chive-preset-tin-surface-desc',
-    rows: 600,
-    columns: 3,
+    rowCount: 600,
+    columnCount: 3,
     tags: ['terrain', 'surface', 'tin-chart'],
     sourceLabel: 'CHIVE Sample',
     sourceUrl: '',

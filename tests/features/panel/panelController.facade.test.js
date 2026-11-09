@@ -182,7 +182,7 @@ describe('panelController facade branches', () => {
 
     expect(() => panelController.setupPanelEventListeners()).not.toThrow();
 
-    panelController.initializeLayoutSelector();
+    panelController.renderLayoutSelector();
     expect(mocks.panelView.fillLayoutSelect).toHaveBeenCalled();
 
     panelController.renderSidebarPanel();

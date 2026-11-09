@@ -172,7 +172,8 @@ describe('datasetController', () => {
 
 		expect(getAllDatasets()).toHaveLength(2);
 		expect(getAllDatasets()[1].name).toBe(t('chive-preset-iris-name'));
-		expect(getAllDatasets()[1].rows).toHaveLength(iris.rows);
+		expect(getAllDatasets()[1].rows).toHaveLength(iris.rowCount);
+		expect(getAllDatasets()[1].sizeLabel).toBe(t('chive-preset-generated-size', iris.rowCount));
 		expect(getActiveDatasetIndex()).toBe(1);
 	});
 });

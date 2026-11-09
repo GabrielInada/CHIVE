@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from 'vitest';
-import { renderChartParamsDOM } from '../../../../src/features/datasetWorkspace/views/chartParamsView.js';
+import { renderChartControlsDOM } from '../../../../src/features/datasetWorkspace/views/chartControlsView.js';
 
-describe('renderChartParamsDOM', () => {
+describe('renderChartControlsDOM', () => {
 	it('renders an active chart without optional description or click callback', () => {
 		const container = document.createElement('div');
 		const control = document.createElement('section');
 		control.className = 'chart-control-section';
 
-		renderChartParamsDOM({
+		renderChartControlsDOM({
 			container,
 			activeChartType: 'bar',
 			chartTitle: 'Bar',
@@ -27,7 +27,7 @@ describe('renderChartParamsDOM', () => {
 		const container = document.createElement('div');
 		const onClick = vi.fn();
 
-		renderChartParamsDOM({
+		renderChartControlsDOM({
 			container,
 			activeChartType: null,
 			controls: [],

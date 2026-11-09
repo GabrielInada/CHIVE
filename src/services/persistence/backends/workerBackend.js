@@ -51,7 +51,7 @@ function defaultWorkerFactory() {
 	);
 }
 
-function safeStructuredClone(value) {
+function cloneWithJsonFallback(value) {
 	return typeof globalThis.structuredClone === 'function'
 		? globalThis.structuredClone(value)
 		: JSON.parse(JSON.stringify(value));
@@ -172,7 +172,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		// Strip-then-clone: the envelope already has payloads removed, so this
 		// clone is O(metadata), never O(rows). Cloning `panel` wholesale here
 		// would pull the snapshot arrays back in and reintroduce the jank.
-		const meta = safeStructuredClone({
+		const meta = cloneWithJsonFallback({
 			data: {
 				datasets: metaDatasets,
 				activeIndex: snapshot?.data?.activeIndex ?? -1,
@@ -460,7 +460,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		try {
 			const op = entry.record.op;
 			const stable = op === 'persist' || op === 'export'
-				? safeStructuredClone(rebuildFull(entry.record))
+				? cloneWithJsonFallback(rebuildFull(entry.record))
 				: null;
 			const fb = await getFallbackBackend();
 			if (op === 'persist') {

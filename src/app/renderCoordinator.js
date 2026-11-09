@@ -28,7 +28,7 @@ import {
 	updateActiveDatasetConfig,
 } from '../state/appState.js';
 import {
-	initializeLayoutSelector,
+	renderLayoutSelector,
 	renderSidebarPanel,
 	renderCanvasPanel,
 } from '../features/panel/panelController.js';
@@ -258,7 +258,7 @@ function renderChartControlsView(shown) {
  * @param {{ withLayoutSelector?: boolean }} [options]
  */
 function renderPanelWorkspace({ withLayoutSelector = true } = {}) {
-	if (withLayoutSelector) initializeLayoutSelector();
+	if (withLayoutSelector) renderLayoutSelector();
 	renderSidebarPanel();
 	renderCanvasPanel();
 }

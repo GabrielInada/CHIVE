@@ -24,7 +24,7 @@ import { runIntake } from './intake.js';
  * Internal reason codes stay off the page. A missing descriptor shows an
  * unnamed error notice and no progress toast.
  *
- * @param {import('../../../types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
+ * @param {import('../../../types.js').PresetDescriptor & { nameKey: string, rowCount: number }} preset
  * @param {{ selectDataset: (index: number) => void }} dependencies
  * @returns {Promise<Result>} The intake's result, or `fail('preset-missing')`.
  */
@@ -38,7 +38,7 @@ export async function loadPresetDataset(preset, { selectDataset }) {
 
 /**
  * @private
- * @param {import('../../../types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
+ * @param {import('../../../types.js').PresetDescriptor & { nameKey: string, rowCount: number }} preset
  * @returns {IntakeSource}
  */
 function sampleSource(preset) {
@@ -52,7 +52,7 @@ function sampleSource(preset) {
 			const { kind, text, dropColumns } = loaded.value;
 			return ingestFile({ kind, text, options: { dropColumns } }, request);
 		},
-		sizeLabel: () => t('chive-preset-generated-size', preset.rows),
+		sizeLabel: () => t('chive-preset-generated-size', preset.rowCount),
 		// Samples ship with CHIVE and are kept small, so the row limit does not apply.
 		rowWarning: null,
 		successMessage: t('chive-preset-load-success', name),
