@@ -132,6 +132,6 @@ export function teardownSlot(container) {
  */
 export function teardownAllSlots(rootEl) {
 	if (!rootEl) return;
-	const slots = rootEl.querySelectorAll('.panel-slot-svg, .panel-item-preview');
+	const slots = rootEl.querySelectorAll('.panel-chart-container, .panel-item-preview');
 	slots.forEach(teardownSlot);
 }

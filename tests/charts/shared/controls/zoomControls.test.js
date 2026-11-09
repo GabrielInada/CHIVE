@@ -31,7 +31,7 @@ describe('resetZoomControl', () => {
 
 		expect([button.type, button.className, button.textContent, button.disabled])
 			.toEqual(['button', 'chart-control-btn', 't(chive-reset-zoom)', false]);
-		expect(button.parentElement.className).toBe('chart-controle');
+		expect(button.parentElement.className).toBe('chart-control');
 		expect(build([ZOOM_SLIDER, RESET], { enabled: false }).get('demo-reset-zoom').disabled).toBe(true);
 	});
 

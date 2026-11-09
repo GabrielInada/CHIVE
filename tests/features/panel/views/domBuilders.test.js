@@ -36,7 +36,7 @@ describe('domBuilders createPanelSlotElement', () => {
 		});
 
 		expect(slot.dataset.panelChartId).toBe('7');
-		expect(slot.querySelector('.panel-slot-svg')).toBeTruthy();
+		expect(slot.querySelector('.panel-chart-container')).toBeTruthy();
 
 		slot.querySelector('.panel-slot-clear').click();
 		expect(onClear).toHaveBeenCalled();

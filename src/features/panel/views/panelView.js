@@ -212,9 +212,9 @@ export function renderCanvasPanel(callbacks) {
 	canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]').forEach(slotEl => {
 		const chart = getChartSnapshot(slotEl.dataset.panelChartId);
 		if (!chart) return;
-		const svgContainer = slotEl.querySelector('.panel-slot-svg');
-		if (!svgContainer) return;
-		mountSlot(svgContainer, chart);
+		const chartContainer = slotEl.querySelector('.panel-chart-container');
+		if (!chartContainer) return;
+		mountSlot(chartContainer, chart);
 	});
 }
 

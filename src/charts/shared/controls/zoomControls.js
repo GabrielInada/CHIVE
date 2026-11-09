@@ -30,7 +30,7 @@ export function resetZoomControl({ id, label, sliderId, zoomScale }) {
 			const slider = control(sliderId).querySelector('input');
 
 			const wrapper = document.createElement('div');
-			wrapper.className = 'chart-controle';
+			wrapper.className = 'chart-control';
 			const button = document.createElement('button');
 			button.type = 'button';
 			button.id = id;
