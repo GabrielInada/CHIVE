@@ -358,7 +358,7 @@ export function setupPanelEventListeners() {
  * currently-active layout pre-selected. Pure rendering call; safe to
  * invoke on every state change.
  */
-export function initializeLayoutSelector() {
+export function renderLayoutSelector() {
 	fillLayoutSelect();
 }
 

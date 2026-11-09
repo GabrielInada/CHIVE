@@ -3,7 +3,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { PRESET_CATALOG } from '../../../../src/data/presetCatalog.js';
-import { openPresetDatasetsDialog } from '../../../../src/features/datasetWorkspace/dialogs/presetDatasetsView.js';
+import { openPresetDatasetsDialog } from '../../../../src/features/datasetWorkspace/dialogs/presetDatasetsDialog.js';
 import { setLocale, t as translate } from '../../../../src/services/i18nService.js';
 
 describe('openPresetDatasetsDialog', () => {
@@ -29,8 +29,8 @@ describe('openPresetDatasetsDialog', () => {
 		expect(cards[0].querySelector('.preset-card-name').textContent).toBe(translate(PRESET_CATALOG[0].nameKey));
 		PRESET_CATALOG.forEach((entry, index) => {
 			const expected = locale === 'en'
-				? `${entry.rows} rows · ${entry.columns} columns`
-				: `${entry.rows} linhas · ${entry.columns} colunas`;
+				? `${entry.rowCount} rows · ${entry.columnCount} columns`
+				: `${entry.rowCount} linhas · ${entry.columnCount} colunas`;
 			expect(cards[index].querySelector('.preset-card-meta').textContent).toBe(expected);
 		});
 		expect(cards[0].querySelector('.preset-card-source-link').href)

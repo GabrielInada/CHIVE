@@ -19,11 +19,11 @@ vi.mock('../../../../src/features/datasetWorkspace/views/fileListItems.js', () =
 	renderFileListDOM: mocks.renderFileListDOM,
 }));
 
-vi.mock('../../../../src/features/datasetWorkspace/dialogs/joinBuilderView.js', () => ({
+vi.mock('../../../../src/features/datasetWorkspace/dialogs/joinBuilderDialog.js', () => ({
 	openJoinBuilderDialog: mocks.openJoinBuilderDialog,
 }));
 
-vi.mock('../../../../src/features/datasetWorkspace/dialogs/presetDatasetsView.js', () => ({
+vi.mock('../../../../src/features/datasetWorkspace/dialogs/presetDatasetsDialog.js', () => ({
 	openPresetDatasetsDialog: mocks.openPresetDatasetsDialog,
 }));
 
@@ -46,8 +46,8 @@ describe('renderFileList orchestration', () => {
 			const count = filter ? 1 : datasets.length;
 			return {
 				total: datasets.length,
-				filtered: count,
-				rendered: Math.min(count, visibleLimit),
+				filteredCount: count,
+				renderedCount: Math.min(count, visibleLimit),
 				hasMore: count > visibleLimit,
 			};
 		});
@@ -113,7 +113,7 @@ describe('renderFileList orchestration', () => {
 				<div id="file-list-content"></div>
 			</section>
 		`;
-		mocks.renderFileListDOM.mockReturnValue({ total: 1, filtered: 1, rendered: 1, hasMore: false });
+		mocks.renderFileListDOM.mockReturnValue({ total: 1, filteredCount: 1, renderedCount: 1, hasMore: false });
 
 		renderFileList([
 			{ name: 'Only.csv', rows: [], columns: [], sizeLabel: '0 KB' },
@@ -129,8 +129,8 @@ describe('renderFileList orchestration', () => {
 
 	it('renders show-less pagination and resets visible count when clicked', () => {
 		mocks.renderFileListDOM
-			.mockReturnValueOnce({ total: 20, filtered: 20, rendered: 20, hasMore: false })
-			.mockReturnValueOnce({ total: 20, filtered: 20, rendered: 15, hasMore: true });
+			.mockReturnValueOnce({ total: 20, filteredCount: 20, renderedCount: 20, hasMore: false })
+			.mockReturnValueOnce({ total: 20, filteredCount: 20, renderedCount: 15, hasMore: true });
 
 		renderFileList(Array.from({ length: 20 }, (_, index) => ({
 			name: `Data ${index}.csv`,
@@ -147,7 +147,7 @@ describe('renderFileList orchestration', () => {
 	it('ignores canceled join and preset dialogs and tolerates absent optional callbacks', async () => {
 		mocks.openJoinBuilderDialog.mockResolvedValueOnce(null);
 		mocks.openPresetDatasetsDialog.mockResolvedValueOnce(null);
-		mocks.renderFileListDOM.mockReturnValue({ total: 2, filtered: 2, rendered: 2, hasMore: false });
+		mocks.renderFileListDOM.mockReturnValue({ total: 2, filteredCount: 2, renderedCount: 2, hasMore: false });
 		const onCreateJoin = vi.fn();
 		const onLoadPreset = vi.fn();
 		const datasets = [

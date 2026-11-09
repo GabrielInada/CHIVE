@@ -13,7 +13,7 @@ vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	LARGE_DATASET_WARNING_ROWS: 1,
 }));
 
-const preset = { nameKey: 'chive-preset-iris-name', rows: 1, dataUrl: '/iris.csv', dataFormat: 'csv' };
+const preset = { nameKey: 'chive-preset-iris-name', rowCount: 1, dataUrl: '/iris.csv', dataFormat: 'csv' };
 const namedFailure = {
 	en: 'Could not load sample dataset "Iris". Please try again.',
 	'pt-BR': 'Não foi possível carregar o dataset de exemplo "Iris". Tente novamente.',

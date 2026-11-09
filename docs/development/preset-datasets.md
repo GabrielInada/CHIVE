@@ -59,8 +59,8 @@ Then add an entry to `PRESET_CATALOG`:
 	id: 'example-name',
 	nameKey: 'chive-preset-example-name',
 	descKey: 'chive-preset-example-desc',
-	rows: 42,
-	columns: 5,
+	rowCount: 42,
+	columnCount: 5,
 	tags: ['example', 'line-chart'],
 	sourceLabel: 'Data provider',
 	sourceUrl: 'https://example.com/dataset',
@@ -79,8 +79,8 @@ Entries render in array order in the preset picker dialog.
 | `id` | Yes | Stable lowercase identifier. Do not rename after release unless migration is intentional. |
 | `nameKey` | Yes | i18n key for the preset display name. |
 | `descKey` | Yes | i18n key for the preset description. |
-| `rows` | Yes | Expected row count after parsing and any dropped columns. |
-| `columns` | Yes | Expected column count after parsing and any dropped columns. |
+| `rowCount` | Yes | Expected row count after parsing and any dropped columns. |
+| `columnCount` | Yes | Expected column count after parsing and any dropped columns. |
 | `tags` | Yes | Short category tags for maintainers and future filtering/search. |
 | `sourceLabel` | Yes | Human-readable attribution. Use `CHIVE Sample` for original synthetic examples. |
 | `sourceUrl` | Yes | Original source URL when available; use an empty string for project-created samples with no external source. |
@@ -131,7 +131,7 @@ the row-limit warning, so keep bundled datasets small.
 
 - The file is in `src/data/presets/`.
 - The catalog uses `new URL('./presets/...', import.meta.url).href`.
-- `rows` and `columns` match the loaded dataset after parsing.
+- `rowCount` and `columnCount` match the loaded dataset after parsing.
 - `nameKey` and `descKey` exist in every locale file.
 - Source attribution is accurate and the source link opens in a new tab when
   present.

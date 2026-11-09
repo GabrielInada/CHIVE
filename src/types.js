@@ -668,8 +668,8 @@
  * @property {string} id - Stable identifier (e.g. `'iris'`).
  * @property {string} nameKey - i18n key resolving to the display name.
  * @property {string} descKey - i18n key resolving to the description.
- * @property {number} rows - Expected row count after parse.
- * @property {number} columns - Expected column count after parse.
+ * @property {number} rowCount - Expected row count after parse.
+ * @property {number} columnCount - Expected column count after parse.
  * @property {string[]} tags - Searchable category tags.
  * @property {string} sourceLabel - Human-readable attribution.
  * @property {string} sourceUrl - Link to the original source; may be empty.

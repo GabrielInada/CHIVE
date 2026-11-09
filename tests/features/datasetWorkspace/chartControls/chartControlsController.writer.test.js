@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
 	setLiveRenderCallback: vi.fn(),
 	triggerLiveRender: vi.fn(),
 	ensureChartHeightResizeHandles: vi.fn(),
-	renderChartParamsDOM: vi.fn(),
+	renderChartControlsDOM: vi.fn(),
 }));
 
 vi.mock('../../../../src/services/i18nService.js', () => ({ t: mocks.t }));
@@ -35,8 +35,8 @@ vi.mock('../../../../src/features/datasetWorkspace/chartControls/livePreviewBrid
 vi.mock('../../../../src/features/datasetWorkspace/chartControls/chartHeightResize.js', () => ({
 	ensureChartHeightResizeHandles: mocks.ensureChartHeightResizeHandles,
 }));
-vi.mock('../../../../src/features/datasetWorkspace/views/chartParamsView.js', () => ({
-	renderChartParamsDOM: mocks.renderChartParamsDOM,
+vi.mock('../../../../src/features/datasetWorkspace/views/chartControlsView.js', () => ({
+	renderChartControlsDOM: mocks.renderChartControlsDOM,
 }));
 vi.mock('../../../../src/features/datasetWorkspace/dialogs/chartTypePickerDialog.js', () => ({
 	openChartTypePickerDialog: mocks.openChartTypePickerDialog,
@@ -130,7 +130,7 @@ describe('chartControlsController writer wiring', () => {
 		expect(mocks.t).toHaveBeenCalledWith('chive-demo-category');
 
 		// The params view is mocked: take the sections the controller handed it.
-		const [section] = mocks.renderChartParamsDOM.mock.calls[0][0].controls;
+		const [section] = mocks.renderChartControlsDOM.mock.calls[0][0].controls;
 		const select = section.querySelector('#demo-category');
 		select.value = 'valor';
 		select.dispatchEvent(new Event('change'));

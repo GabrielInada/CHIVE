@@ -10,7 +10,7 @@ vi.mock('../../../../src/ui/feedback.js', () => ({
 	showError: mocks.showError,
 }));
 
-import { openJoinBuilderDialog } from '../../../../src/features/datasetWorkspace/dialogs/joinBuilderView.js';
+import { openJoinBuilderDialog } from '../../../../src/features/datasetWorkspace/dialogs/joinBuilderDialog.js';
 
 const translate = (key, ...args) => (args.length ? `${key}:${args.join(',')}` : key);
 

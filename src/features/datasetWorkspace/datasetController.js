@@ -167,7 +167,7 @@ export async function handleJoinDatasetRequest(spec) {
  * selection stays on this public controller and is threaded into the workflow
  * to avoid a circular dependency.
  *
- * @param {import('../../types.js').PresetDescriptor & { nameKey: string, rows: number }} preset
+ * @param {import('../../types.js').PresetDescriptor & { nameKey: string, rowCount: number }} preset
  * @returns {Promise<Result>}
  */
 export async function handlePresetDatasetRequest(preset) {

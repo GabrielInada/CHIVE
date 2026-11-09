@@ -10,8 +10,8 @@
 
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderFileListDOM } from './fileListItems.js';
-import { openJoinBuilderDialog } from '../dialogs/joinBuilderView.js';
-import { openPresetDatasetsDialog } from '../dialogs/presetDatasetsView.js';
+import { openJoinBuilderDialog } from '../dialogs/joinBuilderDialog.js';
+import { openPresetDatasetsDialog } from '../dialogs/presetDatasetsDialog.js';
 import { VIEW_IDS, FILE_IDS } from '../domIds.js';
 
 const FILE_LIST_PAGE_SIZE = 15;
@@ -130,16 +130,16 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
       visibleLimit: fileListVisibleCount,
     });
 
-    filterStatus.textContent = t('chive-files-filter-status', renderResult.filtered, renderResult.total);
+    filterStatus.textContent = t('chive-files-filter-status', renderResult.filteredCount, renderResult.total);
     pagination.replaceChildren();
 
-    if (renderResult.filtered > FILE_LIST_PAGE_SIZE) {
+    if (renderResult.filteredCount > FILE_LIST_PAGE_SIZE) {
       const toggle = document.createElement('button');
       toggle.type = 'button';
       toggle.className = 'btn-secondary files-pagination-btn';
 
       if (renderResult.hasMore) {
-        toggle.textContent = t('chive-files-show-more', renderResult.filtered - renderResult.rendered);
+        toggle.textContent = t('chive-files-show-more', renderResult.filteredCount - renderResult.renderedCount);
         toggle.addEventListener('click', () => {
           fileListVisibleCount += FILE_LIST_PAGE_SIZE;
           renderList();
