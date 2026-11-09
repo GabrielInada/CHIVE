@@ -24,7 +24,6 @@ const { renderCanvasPanel, exportPanelLayoutSvg } = await import('../../../src/f
 function setupDom() {
   document.body.innerHTML = `
     <div id="panel-layout-canvas"></div>
-    <select id="select-panel-layout"></select>
   `;
 }
 

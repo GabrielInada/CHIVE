@@ -11,7 +11,6 @@ import {
 
 function setupDom() {
   document.body.innerHTML = `
-    <select id="select-panel-layout"></select>
     <input type="checkbox" id="toggle-panel-slot-borders" />
     <input type="color" id="input-panel-slot-border-color" value="#5d645d" />
     <div id="panel-layout-canvas"></div>

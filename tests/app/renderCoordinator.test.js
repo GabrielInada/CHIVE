@@ -24,7 +24,6 @@ const mocks = vi.hoisted(() => ({
 	setPreviewRows: vi.fn(),
 	setActiveDatasetColumnSelection: vi.fn(),
 	updateActiveDatasetConfig: vi.fn(),
-	renderLayoutSelector: vi.fn(),
 	renderSidebarPanel: vi.fn(),
 	renderCanvasPanel: vi.fn(),
 	getLoadedDatasets: vi.fn(),
@@ -67,7 +66,6 @@ vi.mock('../../src/state/appState.js', () => ({
 }));
 
 vi.mock('../../src/features/panel/panelController.js', () => ({
-	renderLayoutSelector: mocks.renderLayoutSelector,
 	renderSidebarPanel: mocks.renderSidebarPanel,
 	renderCanvasPanel: mocks.renderCanvasPanel,
 }));
@@ -158,7 +156,6 @@ describe('renderCoordinator', () => {
 			mocks.handlePresetDatasetRequest,
 		);
 		expect(mocks.renderEmptyState).toHaveBeenCalledTimes(1);
-		expect(mocks.renderLayoutSelector).not.toHaveBeenCalled();
 		expect(mocks.renderSidebarPanel).toHaveBeenCalledTimes(1);
 		expect(mocks.renderCanvasPanel).toHaveBeenCalledTimes(1);
 		expect(mocks.syncSidebarToTab).not.toHaveBeenCalled();
@@ -219,7 +216,6 @@ describe('renderCoordinator', () => {
 		// The controls sidebar reads the value the workspace drew from.
 		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
 		expect(mocks.renderChartControlsSidebar.mock.calls[0][0]).toBe(shown);
-		expect(mocks.renderLayoutSelector).toHaveBeenCalledTimes(1);
 
 		options.onPreviewRowsChange(50);
 		options.onColumnSelectionChange(['value']);
