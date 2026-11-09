@@ -363,8 +363,8 @@ default, or by one of the other value/label orderings of section 2.5, each with 
 `compareCategoryKeys` tiebreaker for stable order; label sorts keep the missing bucket last
 in both directions. It then keeps the first `topN` entries when `topN > 0`. Bar does not ask
 it to leave out values at or below 0, so every category gets a bar (section 7.5). With no
-rows to count, `aggregateCategories` fails and the renderer returns `fail()`. Its `total`
-sums the kept entries, the base of the tooltip percentages.
+rows to count, `aggregateCategories` fails and the renderer returns `fail()`. Its
+`retainedValueTotal` sums the kept entries, the base of the tooltip percentages.
 
 ### 7.4 Layout and scales
 

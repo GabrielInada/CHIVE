@@ -82,7 +82,7 @@ export function renderBarChart(container, rows, config = {}, context = {}) {
 		measureMode, valueColumn, sort, topN, missingLabel: labels.missing,
 	});
 	if (!aggregated.ok) return fail(aggregated.reason);
-	const { entries, total: totalContagem } = aggregated;
+	const { entries, retainedValueTotal } = aggregated;
 
 	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bar.width, 320);
 	const height = chartHeight;
@@ -100,7 +100,7 @@ export function renderBarChart(container, rows, config = {}, context = {}) {
 	const showsShare = measureMode !== 'mean' && entries.every(item => item.value >= 0);
 
 	const buildTooltipContent = item => {
-		const percentage = totalContagem > 0 ? ((item.value / totalContagem) * 100) : 0;
+		const percentage = retainedValueTotal > 0 ? ((item.value / retainedValueTotal) * 100) : 0;
 		const wrapper = document.createElement('div');
 
 		wrapper.appendChild(createTooltipLine(labels.category, item.label));

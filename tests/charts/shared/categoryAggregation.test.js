@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { aggregateCategories } from '../../../src/charts/shared/categoryAggregation.js';
 import { MISSING_KEY, MISSING_TOKEN } from '../../../src/domain/datasets/cellValues.js';
-import { applyChartFilterRows } from '../../../src/domain/filters/chartFilter.js';
+import { applyFilterRuleToRows } from '../../../src/domain/filters/filterRule.js';
 
 const count = { measureMode: 'count', valueColumn: null };
 const sum = { measureMode: 'sum', valueColumn: 'v' };
@@ -47,7 +47,7 @@ describe('aggregateCategories', () => {
 	it('hides exactly the missing rows through the missing bucket token', () => {
 		const rows = [{ c: 'A' }, { c: null }, { c: 'N/A' }, { c: null }];
 		const missing = aggregateCategories(rows, 'c', count).entries.find(entry => entry.key === MISSING_KEY);
-		expect(applyChartFilterRows(rows, { column: 'c', exclude: [missing.token] })).toEqual([{ c: 'A' }, { c: 'N/A' }]);
+		expect(applyFilterRuleToRows(rows, { column: 'c', exclude: [missing.token] })).toEqual([{ c: 'A' }, { c: 'N/A' }]);
 	});
 
 	it('sums the value column and skips missing values', () => {
@@ -135,14 +135,14 @@ describe('the categories a chart draws', () => {
 	])('keeps the first two of a %s with %j and sums what the cut leaves out', (measureMode, options, expected, rest) => {
 		const result = aggregateCategories(mixed, 'c', { ...measures[measureMode], ...options, topN: 2 });
 		expect(pairs(result)).toEqual(expected);
-		expect(result.rest).toBe(rest);
+		expect(result.omittedValueTotal).toBe(rest);
 	});
 
 	it('breaks a tie at the cut by category key, with the missing bucket last', () => {
 		const rows = [{ c: null }, { c: 'Z' }, { c: 'Y' }];
 		const result = aggregateCategories(rows, 'c', { ...count, topN: 2 });
 		expect(pairs(result)).toEqual([['Y', 1], ['Z', 1]]);
-		expect(result.rest).toBe(1);
+		expect(result.omittedValueTotal).toBe(1);
 	});
 
 	it.each([
@@ -153,7 +153,7 @@ describe('the categories a chart draws', () => {
 	])('leaves nothing out with %s', (_label, topN) => {
 		const result = aggregateCategories(mixed, 'c', { ...sum, topN });
 		expect(result.entries).toHaveLength(5);
-		expect(result.rest).toBeNull();
+		expect(result.omittedValueTotal).toBeNull();
 	});
 
 	it.each([
@@ -162,7 +162,7 @@ describe('the categories a chart draws', () => {
 		['sum', { positiveOnly: true, topN: 2 }, 13],
 		['mean', { positiveOnly: true }, 12],
 	])('totals the %s of the categories it keeps with %j, without the rest', (measureMode, options, total) => {
-		expect(aggregateCategories(mixed, 'c', { ...measures[measureMode], ...options }).total).toBe(total);
+		expect(aggregateCategories(mixed, 'c', { ...measures[measureMode], ...options }).retainedValueTotal).toBe(total);
 	});
 
 	it.each([
@@ -173,7 +173,7 @@ describe('the categories a chart draws', () => {
 	])('orders by %s before the cut', (sort, expected, rest) => {
 		const result = aggregateCategories(mixed, 'c', { ...count, sort, topN: 3 });
 		expect(result.entries.map(entry => entry.key)).toEqual(expected);
-		expect(result.rest).toBe(rest);
+		expect(result.omittedValueTotal).toBe(rest);
 	});
 
 	it.each([

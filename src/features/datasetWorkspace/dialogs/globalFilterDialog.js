@@ -14,7 +14,7 @@
 import {
 	FILTER_CATEGORY_LIMIT,
 	getCategoricalFilterOptions,
-} from '../../../domain/filters/chartFilter.js';
+} from '../../../domain/filters/filterRule.js';
 import { createEmptyGlobalFilter } from '../../../domain/filters/globalFilter.js';
 import { showNativeModal } from '../../../ui/nativeDialog.js';
 import {
@@ -46,7 +46,7 @@ function renderNumericRuleBody({ body, rule, rows, translate }) {
 	let domainMax = null;
 	rows.forEach(row => {
 		// A canonical number cell is a number or null. Reading it any other way
-		// than chartFilter does would advertise a bound the filter excludes.
+		// than filterRule does would advertise a bound the filter excludes.
 		const value = row?.[rule.column];
 		if (typeof value !== 'number') return;
 		domainMin = domainMin === null ? value : Math.min(domainMin, value);
@@ -210,8 +210,8 @@ function renderCategoricalRuleBody({ body, rule, rows, translate }) {
 		});
 
 		summary.textContent = options.hasMore
-			? `${translate('chive-chart-filter-showing', options.options.length, options.total)} · ${translate('chive-chart-filter-more', options.total - options.options.length)}`
-			: translate('chive-chart-filter-showing', options.options.length, options.total);
+			? `${translate('chive-chart-filter-showing', options.options.length, options.matchingCategoryCount)} · ${translate('chive-chart-filter-more', options.matchingCategoryCount - options.options.length)}`
+			: translate('chive-chart-filter-showing', options.options.length, options.matchingCategoryCount);
 
 		return options;
 	};
@@ -227,7 +227,7 @@ function renderCategoricalRuleBody({ body, rule, rows, translate }) {
 			limit: Number.MAX_SAFE_INTEGER,
 			missingLabel: translate('chive-chart-filter-missing'),
 		});
-		rule.include = options.allTokens.slice();
+		rule.include = options.matchingTokens.slice();
 		renderList();
 	});
 

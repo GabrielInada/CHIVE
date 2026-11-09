@@ -311,11 +311,11 @@ can be 0 or less. With no category left → `fail('no-positive-value')`.
 ### 7.2 Top-N
 
 When `topN > 0`, `aggregateCategories` keeps the first N categories above 0 and returns
-`rest`, the sum of those the cut leaves out, or null when it leaves none out. In `truncate`
-mode the pie draws the N kept; in `other` mode it folds `rest` into the Other sector, drawn
-last: the reserved key `OTHER_SECTOR_KEY`, the localized Other label, no
-category token, and `isOther: true`. The reserved key keeps a real category spelled like the
-Other label apart from the rollup.
+`omittedValueTotal`, the sum of those the cut leaves out, or null when it leaves none out.
+In `truncate` mode the pie draws the N kept; in `other` mode it folds `omittedValueTotal`
+into the Other sector, drawn last: the reserved key `OTHER_SECTOR_KEY`, the localized Other
+label, no category token, and `isOther: true`. The reserved key keeps a real category spelled
+like the Other label apart from the rollup.
 
 ### 7.3 Geometry
 

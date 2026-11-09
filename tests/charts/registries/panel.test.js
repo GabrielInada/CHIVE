@@ -57,7 +57,7 @@ function drawCanvas(container) {
 	const canvas = document.createElement('canvas');
 	canvas.className = 'chart-canvas-3d';
 	container.append(canvas);
-	return { ok: true, renderedCount: 0, validCount: 0, totalCount: 0, truncated: false };
+	return { ok: true, renderedCount: 0, validCount: 0, totalCount: 0, sampled: false };
 }
 
 function configFor(type, overrides = {}) {

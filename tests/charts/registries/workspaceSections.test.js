@@ -52,7 +52,7 @@ function drawCanvas(container) {
 	const canvas = document.createElement('canvas');
 	canvas.className = 'chart-canvas-3d';
 	container.append(canvas);
-	return { ok: true, renderedCount: 4, validCount: 4, totalCount: 4, truncated: false };
+	return { ok: true, renderedCount: 4, validCount: 4, totalCount: 4, sampled: false };
 }
 
 function mount(type) {

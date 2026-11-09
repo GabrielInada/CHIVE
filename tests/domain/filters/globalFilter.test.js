@@ -14,7 +14,7 @@ import {
 	removeIncludeTokenFromFilter,
 	resolveGlobalFilterForColumns,
 } from '../../../src/domain/filters/globalFilter.js';
-import { getCategoricalFilterOptions } from '../../../src/domain/filters/chartFilter.js';
+import { getCategoricalFilterOptions } from '../../../src/domain/filters/filterRule.js';
 import { MISSING_TOKEN } from '../../../src/domain/datasets/cellValues.js';
 
 describe('globalFilter', () => {

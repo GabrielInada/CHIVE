@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
-  applyChartFilterRows,
-  createDefaultFilterConfig,
+  applyFilterRuleToRows,
+  createDefaultFilterRule,
   getCategoricalFilterOptions,
-  normalizeFilterConfig,
+  normalizeFilterRule,
   toCategoryToken,
-} from '../../../src/domain/filters/chartFilter.js';
+} from '../../../src/domain/filters/filterRule.js';
 import { MISSING_TOKEN } from '../../../src/domain/datasets/cellValues.js';
 
-describe('chartFilter', () => {
+describe('filterRule', () => {
   it('collects categorical options with missing values', () => {
     const rows = [
       { gender: 'M' },
@@ -19,8 +19,8 @@ describe('chartFilter', () => {
     ];
 
     const out = getCategoricalFilterOptions(rows, 'gender', { missingLabel: '(ausente)' });
-    expect(out.total).toBe(3);
-    expect(out.allTokens).toContain(toCategoryToken('F'));
+    expect(out.matchingCategoryCount).toBe(3);
+    expect(out.matchingTokens).toContain(toCategoryToken('F'));
     expect(out.options).toContainEqual({ token: MISSING_TOKEN, label: '(ausente)', count: 2 });
   });
 
@@ -42,7 +42,7 @@ describe('chartFilter', () => {
       { region: null },
     ];
 
-    const filtered = applyChartFilterRows(rows, {
+    const filtered = applyFilterRuleToRows(rows, {
       column: 'region',
       mode: 'categorical',
       include: [toCategoryToken('North'), MISSING_TOKEN],
@@ -59,7 +59,7 @@ describe('chartFilter', () => {
       { age: 30 },
     ];
 
-    const between = applyChartFilterRows(rows, {
+    const between = applyFilterRuleToRows(rows, {
       column: 'age',
       mode: 'numeric',
       operator: 'between',
@@ -67,7 +67,7 @@ describe('chartFilter', () => {
       max: '25',
     }, ['age']);
 
-    const equal = applyChartFilterRows(rows, {
+    const equal = applyFilterRuleToRows(rows, {
       column: 'age',
       mode: 'numeric',
       operator: 'eq',
@@ -85,7 +85,7 @@ describe('chartFilter', () => {
     const rows = [{ v: 5 }, { v: null }, { v: 0 }];
 
     it('does not match missing cells under eq 0, only the genuine zero', () => {
-      const result = applyChartFilterRows(rows, {
+      const result = applyFilterRuleToRows(rows, {
         column: 'v',
         mode: 'numeric',
         operator: 'eq',
@@ -96,7 +96,7 @@ describe('chartFilter', () => {
     });
 
     it('excludes missing cells from lt, gt, and between', () => {
-      const apply = extra => applyChartFilterRows(rows, {
+      const apply = extra => applyFilterRuleToRows(rows, {
         column: 'v',
         mode: 'numeric',
         ...extra,
@@ -108,7 +108,7 @@ describe('chartFilter', () => {
     });
 
     it('treats a blank bound as unusable and leaves the rows alone', () => {
-      const apply = extra => applyChartFilterRows(rows, {
+      const apply = extra => applyFilterRuleToRows(rows, {
         column: 'v',
         mode: 'numeric',
         ...extra,
@@ -122,7 +122,7 @@ describe('chartFilter', () => {
 
   it('returns all rows when filter has no selected column', () => {
     const rows = [{ a: 1 }, { a: 2 }];
-    const filtered = applyChartFilterRows(rows, createDefaultFilterConfig(), ['a']);
+    const filtered = applyFilterRuleToRows(rows, createDefaultFilterRule(), ['a']);
     expect(filtered).toEqual(rows);
   });
 
@@ -140,46 +140,46 @@ describe('chartFilter', () => {
     });
   });
 
-  describe('normalizeFilterConfig', () => {
+  describe('normalizeFilterRule', () => {
     it('returns defaults for null or non-object input', () => {
-      const result = normalizeFilterConfig(null);
+      const result = normalizeFilterRule(null);
       expect(result.column).toBeNull();
       expect(result.mode).toBe('categorical');
       expect(result.operator).toBe('between');
     });
 
     it('sets mode to numeric when column is in numericColumns', () => {
-      const result = normalizeFilterConfig({ column: 'age' }, ['age', 'score']);
+      const result = normalizeFilterRule({ column: 'age' }, ['age', 'score']);
       expect(result.mode).toBe('numeric');
     });
 
     it('sets mode to categorical when column is not numeric', () => {
-      const result = normalizeFilterConfig({ column: 'name' }, ['age']);
+      const result = normalizeFilterRule({ column: 'name' }, ['age']);
       expect(result.mode).toBe('categorical');
     });
 
     it('normalizes invalid operator to between', () => {
-      const result = normalizeFilterConfig({ column: 'x', operator: 'invalid' }, ['x']);
+      const result = normalizeFilterRule({ column: 'x', operator: 'invalid' }, ['x']);
       expect(result.operator).toBe('between');
     });
 
     it('deduplicates include array and converts to strings', () => {
-      const result = normalizeFilterConfig({ column: 'x', include: [1, 1, 'a', 'a'] });
+      const result = normalizeFilterRule({ column: 'x', include: [1, 1, 'a', 'a'] });
       expect(result.include).toEqual(['1', 'a']);
     });
 
     it('defaults include to empty array when not array', () => {
-      const result = normalizeFilterConfig({ column: 'x', include: 'not array' });
+      const result = normalizeFilterRule({ column: 'x', include: 'not array' });
       expect(result.include).toEqual([]);
     });
 
     it('defaults search to empty string when not string', () => {
-      const result = normalizeFilterConfig({ column: 'x', search: 123 });
+      const result = normalizeFilterRule({ column: 'x', search: 123 });
       expect(result.search).toBe('');
     });
 
     it('nullifies empty string column', () => {
-      const result = normalizeFilterConfig({ column: '  ' });
+      const result = normalizeFilterRule({ column: '  ' });
       expect(result.column).toBeNull();
     });
   });
@@ -187,12 +187,12 @@ describe('chartFilter', () => {
   describe('getCategoricalFilterOptions edge cases', () => {
     it('returns empty result for non-array rows', () => {
       const result = getCategoricalFilterOptions(null, 'col');
-      expect(result).toEqual({ options: [], allTokens: [], total: 0, hasMore: false });
+      expect(result).toEqual({ options: [], matchingTokens: [], matchingCategoryCount: 0, hasMore: false });
     });
 
     it('returns empty result for null column name', () => {
       const result = getCategoricalFilterOptions([{ a: 1 }], null);
-      expect(result).toEqual({ options: [], allTokens: [], total: 0, hasMore: false });
+      expect(result).toEqual({ options: [], matchingTokens: [], matchingCategoryCount: 0, hasMore: false });
     });
 
     it('filters options by search text', () => {
@@ -202,10 +202,10 @@ describe('chartFilter', () => {
         { fruit: 'Avocado' },
       ];
       const result = getCategoricalFilterOptions(rows, 'fruit', { search: 'a' });
-      expect(result.total).toBe(3);
+      expect(result.matchingCategoryCount).toBe(3);
 
       const filtered = getCategoricalFilterOptions(rows, 'fruit', { search: 'ban' });
-      expect(filtered.total).toBe(1);
+      expect(filtered.matchingCategoryCount).toBe(1);
       expect(filtered.options[0].label).toBe('Banana');
     });
 
@@ -213,7 +213,7 @@ describe('chartFilter', () => {
       const rows = Array.from({ length: 10 }, (_, i) => ({ cat: `item${i}` }));
       const result = getCategoricalFilterOptions(rows, 'cat', { limit: 3 });
       expect(result.options.length).toBe(3);
-      expect(result.total).toBe(10);
+      expect(result.matchingCategoryCount).toBe(10);
       expect(result.hasMore).toBe(true);
     });
 
@@ -232,7 +232,7 @@ describe('chartFilter', () => {
     });
   });
 
-  describe('applyChartFilterRows numeric operators', () => {
+  describe('applyFilterRuleToRows numeric operators', () => {
     const rows = [
       { score: 10 },
       { score: 20 },
@@ -241,7 +241,7 @@ describe('chartFilter', () => {
     ];
 
     it('filters with lt (less than) operator', () => {
-      const result = applyChartFilterRows(rows, {
+      const result = applyFilterRuleToRows(rows, {
         column: 'score',
         operator: 'lt',
         value: '25',
@@ -250,7 +250,7 @@ describe('chartFilter', () => {
     });
 
     it('filters with gt (greater than) operator', () => {
-      const result = applyChartFilterRows(rows, {
+      const result = applyFilterRuleToRows(rows, {
         column: 'score',
         operator: 'gt',
         value: '25',
@@ -259,7 +259,7 @@ describe('chartFilter', () => {
     });
 
     it('returns all rows when between min/max are invalid', () => {
-      const result = applyChartFilterRows(rows, {
+      const result = applyFilterRuleToRows(rows, {
         column: 'score',
         operator: 'between',
         min: 'abc',
@@ -269,7 +269,7 @@ describe('chartFilter', () => {
     });
 
     it('returns all rows when lt/gt/eq value is invalid', () => {
-      const result = applyChartFilterRows(rows, {
+      const result = applyFilterRuleToRows(rows, {
         column: 'score',
         operator: 'lt',
         value: 'not a number',
@@ -278,11 +278,11 @@ describe('chartFilter', () => {
     });
 
     it('returns empty array for non-array rows input', () => {
-      expect(applyChartFilterRows(null, { column: 'x' }, [])).toEqual([]);
+      expect(applyFilterRuleToRows(null, { column: 'x' }, [])).toEqual([]);
     });
 
     it('returns empty array when categorical include is empty', () => {
-      const result = applyChartFilterRows(rows, {
+      const result = applyFilterRuleToRows(rows, {
         column: 'score',
         mode: 'categorical',
         include: [],
@@ -291,7 +291,7 @@ describe('chartFilter', () => {
     });
 
     it('handles between with min > max by swapping', () => {
-      const result = applyChartFilterRows(rows, {
+      const result = applyFilterRuleToRows(rows, {
         column: 'score',
         operator: 'between',
         min: '30',

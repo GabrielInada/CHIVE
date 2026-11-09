@@ -6,22 +6,22 @@
  */
 
 import {
-	createDefaultFilterConfig,
+	createDefaultFilterRule,
 	getCategoricalFilterOptions,
-} from '../../../domain/filters/chartFilter.js';
+} from '../../../domain/filters/filterRule.js';
 import { normalizeGlobalFilter } from '../../../domain/filters/globalFilter.js';
 
 let nextRuleUid = 1;
 
 /** @private */
 function cloneRule(rule) {
-	return JSON.parse(JSON.stringify(rule || createDefaultFilterConfig()));
+	return JSON.parse(JSON.stringify(rule || createDefaultFilterRule()));
 }
 
 export function createEmptyRuleDraft() {
 	return {
 		_uid: nextRuleUid++,
-		...createDefaultFilterConfig(),
+		...createDefaultFilterRule(),
 	};
 }
 
@@ -81,7 +81,7 @@ export function applyRuleColumnChange(rule, nextColumn, {
 			limit: Number.MAX_SAFE_INTEGER,
 			missingLabel,
 		});
-		rule.include = options.allTokens.slice();
+		rule.include = options.matchingTokens.slice();
 		rule.exclude = [];
 		rule.search = '';
 	}

@@ -81,7 +81,7 @@ describe('openGlobalFilterDialog (multi-rule)', () => {
 	});
 
 	describe('numeric input domain', () => {
-		// The advertised min/max must match what chartFilter would actually
+		// The advertised min/max must match what filterRule would actually
 		// keep. Coerced with plain Number(), a missing cell reads as 0 and the
 		// dialog offers a bound for a row the filter then excludes.
 		const openWith = numericRows => openGlobalFilterDialog({

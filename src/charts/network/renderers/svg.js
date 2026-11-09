@@ -34,7 +34,7 @@ import {
 	showChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
 import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
-import { toCategoryToken } from '../../../domain/filters/chartFilter.js';
+import { toCategoryToken } from '../../../domain/filters/filterRule.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { NETWORK_GRAPH } from '../../../config/charts/definitions/network.js';
 import { formatNumber } from '../../../utils/formatters.js';
