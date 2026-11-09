@@ -28,7 +28,6 @@ import {
 	updateActiveDatasetConfig,
 } from '../state/appState.js';
 import {
-	renderLayoutSelector,
 	renderSidebarPanel,
 	renderCanvasPanel,
 } from '../features/panel/panelController.js';
@@ -254,11 +253,7 @@ function renderChartControlsView(shown) {
 	renderChartControlsSidebar(shown);
 }
 
-/**
- * @param {{ withLayoutSelector?: boolean }} [options]
- */
-function renderPanelWorkspace({ withLayoutSelector = true } = {}) {
-	if (withLayoutSelector) renderLayoutSelector();
+function renderPanelWorkspace() {
 	renderSidebarPanel();
 	renderCanvasPanel();
 }
@@ -278,7 +273,7 @@ function refreshView() {
 
 	if (datasets.length === 0) {
 		renderEmptyWorkspace();
-		renderPanelWorkspace({ withLayoutSelector: false });
+		renderPanelWorkspace();
 		return;
 	}
 

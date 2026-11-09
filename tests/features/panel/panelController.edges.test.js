@@ -66,7 +66,6 @@ describe('panelController (branch coverage)', () => {
 		document.body.innerHTML = `
 			<div id="panel-chart-list"></div>
 			<div id="panel-layout-canvas"></div>
-			<div id="panel-layout-selector"><select id="select-panel-layout"></select></div>
 		`;
 
 		mocks.appState.getPanelCharts.mockClear();
@@ -319,12 +318,6 @@ describe('panelController (branch coverage)', () => {
 		it('handles missing panel-layout-canvas', () => {
 			initPanelController();
 			document.getElementById('panel-layout-canvas')?.remove();
-			expect(() => initPanelController()).not.toThrow();
-		});
-
-		it('handles missing select-panel-layout', () => {
-			initPanelController();
-			document.getElementById('select-panel-layout')?.remove();
 			expect(() => initPanelController()).not.toThrow();
 		});
 	});

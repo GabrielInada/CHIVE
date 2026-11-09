@@ -152,7 +152,7 @@ Other render paths are intentionally different:
 |---|---|---|
 | Dataset add/remove/select or hydration after subscriptions | Render coordinator | One animation-frame-scheduled full refresh. |
 | Column/config/preview-row events | Render coordinator | Animation-frame-scheduled region refreshes. |
-| Panel chart/block events | Panel controller | Synchronous sidebar/canvas/layout-selector renders, depending on the event. |
+| Panel chart/block events | Panel controller | Synchronous sidebar and canvas renders, depending on the event. |
 | Boot and `chiveDebug.refreshView()` | Render coordinator | Synchronous full refresh through `runFullRefreshNow`. |
 | Locale or rendering-setting browser events | Application initializer + render coordinator | Animation-frame-scheduled full refresh. |
 | Continuous color/height control input | Chart-controls preview bridge | Throttled, charts-only `livePreviewRender`, with the same inputs as a full render; controls and saved panel captures are untouched. |
