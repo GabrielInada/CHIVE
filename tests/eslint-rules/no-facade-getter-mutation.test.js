@@ -42,8 +42,8 @@ ruleTester.run('no-facade-getter-mutation', rule, {
 		// Passing the alias to a function is not a direct mutation (out of scope).
 		`${FROM_APPSTATE}\nconst blocks = getPanelBlocks();\nrender(blocks);\nconst first = blocks[0];`,
 
-		// The live-ref persistence snapshot getter, read-only.
-		`import { getPersistenceSnapshot } from '../state/appState.js';\nconst s = getPersistenceSnapshot();\nconst n = s.ui.previewRows;`,
+		// The live-ref persistence state view getter, read-only.
+		`import { getPersistenceStateView } from '../state/appState.js';\nconst s = getPersistenceStateView();\nconst n = s.ui.previewRows;`,
 	],
 
 	invalid: [
@@ -96,9 +96,9 @@ ruleTester.run('no-facade-getter-mutation', rule, {
 			code: `import { getState as gs } from '../state/appState.js';\nconst s = gs();\ns.ui = {};`,
 			errors: [{ messageId: 'facadeMutation' }],
 		},
-		// The live-ref persistence snapshot getter, mutated through an alias.
+		// The live-ref persistence state view getter, mutated through an alias.
 		{
-			code: `import { getPersistenceSnapshot } from '../state/appState.js';\nconst s = getPersistenceSnapshot();\ns.data.datasets.push({});`,
+			code: `import { getPersistenceStateView } from '../state/appState.js';\nconst s = getPersistenceStateView();\ns.data.datasets.push({});`,
 			errors: [{ messageId: 'facadeMutation' }],
 		},
 	],

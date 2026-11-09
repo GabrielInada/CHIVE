@@ -25,7 +25,7 @@ let datasetIdCounter = 0;
  * @param {*} value
  * @returns {boolean}
  */
-function isPlainObject(value) {
+function isNonArrayObject(value) {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -178,7 +178,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		if (!dataset) return;
 		const columnNames = getDatasetColumnNames(dataset);
 		const current = canonicalizeChartConfig(dataset.chartConfig, columnNames);
-		const patch = isPlainObject(updates) ? updates : {};
+		const patch = isNonArrayObject(updates) ? updates : {};
 
 		dataset.chartConfig = canonicalizeChartConfig(
 			{ ...current, ...patch },
@@ -265,10 +265,10 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		const current = canonicalizeChartConfig(dataset.chartConfig, columnNames);
 		const next = { ...current };
 		CHART_TYPE_KEYS.forEach(type => {
-			const previous = isPlainObject(current[type]) ? current[type] : {};
+			const previous = isNonArrayObject(current[type]) ? current[type] : {};
 			next[type] = { ...previous, enabled: type === chartType };
 		});
-		if (chartType && isPlainObject(activatedOverrides)) {
+		if (chartType && isNonArrayObject(activatedOverrides)) {
 			next[chartType] = { ...next[chartType], ...activatedOverrides };
 		}
 		dataset.chartConfig = canonicalizeChartConfig(next, columnNames);

@@ -25,8 +25,8 @@ const mocks = vi.hoisted(() => ({
     onCancel: vi.fn(),
   },
   t: vi.fn(key => `tr:${key}`),
-  getPersistenceSnapshot: vi.fn(() => ({ data: { datasets: [], activeIndex: -1 }, panel: null, ui: {} })),
-  replaceAllState: vi.fn(),
+  getPersistenceStateView: vi.fn(() => ({ data: { datasets: [], activeIndex: -1 }, panel: null, ui: {} })),
+  applyStateSnapshot: vi.fn(),
   getActiveDataset: vi.fn(() => ({
     chartConfig: {
       activeTab: 'preview',
@@ -86,8 +86,8 @@ vi.mock('../../src/app/uiManager.js', () => ({
 
 vi.mock('../../src/state/appState.js', () => ({
   getActiveDataset: mocks.getActiveDataset,
-  getPersistenceSnapshot: mocks.getPersistenceSnapshot,
-  replaceAllState: mocks.replaceAllState,
+  getPersistenceStateView: mocks.getPersistenceStateView,
+  applyStateSnapshot: mocks.applyStateSnapshot,
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 

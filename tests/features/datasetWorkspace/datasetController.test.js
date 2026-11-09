@@ -15,7 +15,7 @@ import { FILE_IDS } from '../../../src/features/datasetWorkspace/domIds.js';
 import { LARGE_FILE_WARNING_BYTES } from '../../../src/config/limits.js';
 import { PRESET_CATALOG } from '../../../src/data/presetCatalog.js';
 import { setLocale, t } from '../../../src/services/i18nService.js';
-import { addDataset, getActiveDatasetIndex, getAllDatasets, replaceAllState } from '../../../src/state/appState.js';
+import { addDataset, applyStateSnapshot, getActiveDatasetIndex, getAllDatasets } from '../../../src/state/appState.js';
 import { clearAllFeedback } from '../../../src/ui/feedback.js';
 import { restoreIngestWorker, useInProcessIngestWorker } from '../../helpers/ingestWorker.js';
 
@@ -44,7 +44,7 @@ describe('datasetController', () => {
 	beforeEach(async () => {
 		vi.useFakeTimers({ toFake: TIMERS_TO_FAKE });
 		document.body.replaceChildren();
-		replaceAllState({ data: { datasets: [], activeIndex: -1 } });
+		applyStateSnapshot({ data: { datasets: [], activeIndex: -1 } });
 		await setLocale('en');
 		useInProcessIngestWorker();
 		confirm = vi.fn(() => true);

@@ -131,7 +131,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	 * NOT frozen here, it is computed at post time against the live
 	 * `sentPayloads` (so an op deferred behind a drain re-evaluates correctly).
 	 *
-	 * @param {Partial<AppState>} snapshot - Live-reference snapshot (getPersistenceSnapshot()).
+	 * @param {Partial<AppState>} snapshot - Live-reference state view (getPersistenceStateView()).
 	 * @returns {{ op: 'persist', meta: Object, refByKey: Map<string, Array<Object>>, presentKeys: Set<string> }}
 	 */
 	function capturePersistRecord(snapshot) {

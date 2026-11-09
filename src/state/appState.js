@@ -145,7 +145,7 @@ export function getState() {
 }
 
 /**
- * Assemble the persistence-shaped snapshot from LIVE references, with no
+ * Assemble the persistence-shaped state view from LIVE references, with no
  * deep clone. This is the save path's read accessor: it lets the worker
  * backend reference-compare dataset rows / chart snapshots to skip
  * re-sending unchanged payloads, and it keeps the heavy JSON clone that
@@ -161,7 +161,7 @@ export function getState() {
  *
  * @returns {AppState} Live-reference view. Do not mutate.
  */
-export function getPersistenceSnapshot() {
+export function getPersistenceStateView() {
 	return {
 		data: {
 			datasets: appState.data.datasets,
@@ -495,10 +495,10 @@ export function getPreviewRows() {
  * @param {Partial<AppState>} [snapshot={}]
  * @fires STATE_EVENTS.STATE_HYDRATED - Single emit per call.
  */
-export function replaceAllState({ data, panel, ui } = {}) {
+export function applyStateSnapshot({ data, panel, ui } = {}) {
 	if (data && typeof data === 'object') {
 		const rawDatasets = Array.isArray(data.datasets) ? data.datasets : [];
-		// Defensive canonicalization: replaceAllState is a public hydration escape
+		// Defensive canonicalization: applyStateSnapshot is a public hydration escape
 		// hatch that can receive unsanitized input. Map to shallow copies with a
 		// canonical chartConfig (no in-place mutation of the caller's objects); leave
 		// non-object entries untouched so a malformed entry cannot throw here.

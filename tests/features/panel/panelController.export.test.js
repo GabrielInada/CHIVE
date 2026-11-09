@@ -64,7 +64,7 @@ function injectLiveSlotSvgs() {
 }
 
 function resetAppStateForTest() {
-  appState.replaceAllState({
+  appState.applyStateSnapshot({
     data: { datasets: [], activeIndex: -1 },
     panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
     ui: { sidebarMode: 'data', previewRows: 10 },

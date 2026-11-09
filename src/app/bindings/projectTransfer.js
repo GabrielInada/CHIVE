@@ -2,9 +2,10 @@
  * CHIVE project transfer workflow.
  *
  * Wires the project menu (open/close) and its export / export-work-only / import
- * actions. Import replaces all state; the shared project-operation lock blocks
- * overlapping export/import runs and keeps them from overlapping a stored-data
- * clear, which would otherwise delete or recreate the other's project.
+ * actions. Import replaces the project's data and panel slices; UI preferences
+ * stay as they are. The shared project-operation lock blocks overlapping
+ * export/import runs and keeps them from overlapping a stored-data clear, which
+ * would otherwise delete or recreate the other's project.
  */
 
 import { t } from '../../services/i18nService.js';
@@ -16,7 +17,7 @@ import {
 } from '../../services/persistence.js';
 import { downloadBytes } from '../../services/downloads/bytes.js';
 import { rehydratePanelChartSpecs } from '../../domain/panel/rehydration.js';
-import { getPersistenceSnapshot, replaceAllState } from '../../state/appState.js';
+import { applyStateSnapshot, getPersistenceStateView } from '../../state/appState.js';
 import { showProgress } from '../../ui/feedback.js';
 import { openConfirmDialog } from '../../ui/confirmDialog.js';
 import { acquireProjectOperation } from './projectOperationLock.js';
@@ -128,7 +129,7 @@ async function handleProjectExport({ workOnly = false } = {}) {
 	const progress = showProgress(t('chive-project-exporting'));
 	try {
 		progress.update(20);
-		const result = await exportProject(getPersistenceSnapshot(), { workOnly });
+		const result = await exportProject(getPersistenceStateView(), { workOnly });
 		if (!result.ok) {
 			progress.fail(t('chive-project-export-error'));
 			return;
@@ -176,7 +177,7 @@ async function handleProjectImport(file, input) {
 			const bytes = new Uint8Array(await file.arrayBuffer());
 			progress.update(55);
 			const result = await importProjectBytes(bytes, {
-				replaceAllState,
+				applyStateSnapshot,
 				transformPanel: rehydratePanelChartSpecs,
 			});
 			if (!result.ok) {

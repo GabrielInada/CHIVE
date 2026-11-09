@@ -14,12 +14,12 @@ import {
 	updateActiveDatasetConfig,
 	setActiveDatasetColumnSelection,
 	onStateChange,
-	replaceAllState,
+	applyStateSnapshot,
 	getState,
 } from '../../src/state/appState.js';
 
 function resetAppStateForTest() {
-	replaceAllState({
+	applyStateSnapshot({
 		data: { datasets: [], activeIndex: -1 },
 		panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
 		ui: { sidebarMode: 'data', previewRows: 10 },
