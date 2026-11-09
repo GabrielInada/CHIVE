@@ -126,7 +126,7 @@ and localized `labels` in a separate context, map fail reasons onto i18n
 keys (`no-valid-points` and `webgl-unavailable` have their own keys;
 `render-error` and bare failures use the generic one), then apply the
 post-render extras that need the ok payload: the accurate aria-label
-(rendered point count) and the sampling notice when `truncated`.
+(rendered point count) and the sampling notice when `sampled`.
 
 While the renderer module loads, the presentation flow shows a loading message and
 stashes a dispose hook on the container. Hiding the chart, or any other
@@ -180,7 +180,7 @@ from config and normalizes visual settings once through `normalizeScatter3dOptio
    [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).
    Only that helper ever runs or deletes the hook; the renderer only
    assigns it. The ok payload carries
-   `{ renderedCount, validCount, totalCount, truncated }`.
+   `{ renderedCount, validCount, totalCount, sampled }`.
 
 The renderer is i18n-free by lint: all localized strings arrive through
 `context.labels`. `customTitle` is user text, rendered as an HTML heading

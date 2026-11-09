@@ -210,7 +210,7 @@ keeps the selection, so switching back restores it.
 
 - **Global filters.** The global filter applies a multi-rule pipeline to the active dataset
   before any chart reads it (`src/domain/filters/datasetFilter.js`, with the pipeline in
-  `globalFilter.js` and single-rule primitives in `chartFilter.js`). A categorical rule includes
+  `globalFilter.js` and single-rule primitives in `filterRule.js`). A categorical rule includes
   or excludes values; a numeric rule filters by range or comparison. Charts always render the
   filtered rows. A rule keeps applying while its column is hidden from the column list, so the
   table, statistics, charts, and panel snapshots always show the same rows.

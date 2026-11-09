@@ -1,10 +1,9 @@
 /**
- * CHIVE chart-level filter primitives.
+ * CHIVE single-rule filter primitives.
  *
- * Single-rule filter configs and the categorical option enumeration that
- * powers the filter dialog. {@link globalFilter} composes these into a
- * multi-rule pipeline; the building blocks here are deliberately scoped to
- * one rule at a time.
+ * Filter rules and the categorical option enumeration that powers the filter
+ * dialog. {@link globalFilter} composes these into a multi-rule pipeline; the
+ * building blocks here are deliberately scoped to one rule at a time.
  *
  * @typedef {import('../../types.js').GlobalFilterRule} GlobalFilterRule
  */
@@ -24,14 +23,14 @@ export const FILTER_CATEGORY_LIMIT = 50;
 const NUMERIC_OPERATORS = new Set(['between', 'lt', 'gt', 'eq']);
 
 /**
- * Build a fresh, empty filter config. All callers that create a new
+ * Build a fresh, empty filter rule. All callers that create a new
  * filter creation, including dialog open, "reset" button, and
  * normalization fallback, go
  * through this so the shape stays canonical.
  *
- * @returns {GlobalFilterRule & { exclude: string[], search: string, value: string, min: string, max: string }} Default config with no column selected.
+ * @returns {GlobalFilterRule & { exclude: string[], search: string, value: string, min: string, max: string }} Default rule with no column selected.
  */
-export function createDefaultFilterConfig() {
+export function createDefaultFilterRule() {
   return {
     column: null,
     mode: 'categorical',
@@ -57,7 +56,7 @@ export function toCategoryToken(value) {
 }
 
 /**
- * Coerce a possibly-malformed filter config into the canonical shape.
+ * Coerce a possibly-malformed filter rule into the canonical shape.
  * Unknown operators fall back to `'between'`; non-string columns collapse
  * to `null`; non-array `include`/`exclude` reset to `[]`. The `mode` field
  * is derived from `numericColumns`. Picking a column that's in the list
@@ -67,8 +66,8 @@ export function toCategoryToken(value) {
  * @param {string[]} [numericColumns=[]] - Column names that should be treated as numeric for mode detection.
  * @returns {GlobalFilterRule & { exclude: string[], search: string, value: string, min: string, max: string }}
  */
-export function normalizeFilterConfig(rawFilter, numericColumns = []) {
-  const base = createDefaultFilterConfig();
+export function normalizeFilterRule(rawFilter, numericColumns = []) {
+  const base = createDefaultFilterRule();
   const filter = rawFilter && typeof rawFilter === 'object' ? rawFilter : {};
   const column = typeof filter.column === 'string' && filter.column.trim().length > 0
     ? filter.column
@@ -102,7 +101,7 @@ export function normalizeFilterConfig(rawFilter, numericColumns = []) {
  * @param {Array<Object<string, *>>} rows - Source rows; non-arrays return empty result.
  * @param {string} columnName - Column to enumerate.
  * @param {{ search?: string, limit?: number, missingLabel?: string }} [options]
- * @returns {{ options: Array<{ token: string, label: string, count: number }>, allTokens: string[], total: number, hasMore: boolean }} `options` is the visible (post-`limit`) list; `allTokens` is the full token list for "select all" semantics.
+ * @returns {{ options: Array<{ token: string, label: string, count: number }>, matchingTokens: string[], matchingCategoryCount: number, hasMore: boolean }} `options` is the visible (post-`limit`) list; `matchingTokens` and `matchingCategoryCount` cover every category that matches `search`, past the limit.
  */
 export function getCategoricalFilterOptions(rows, columnName, options = {}) {
   const {
@@ -112,7 +111,7 @@ export function getCategoricalFilterOptions(rows, columnName, options = {}) {
   } = options;
 
   if (!Array.isArray(rows) || !columnName) {
-    return { options: [], allTokens: [], total: 0, hasMore: false };
+    return { options: [], matchingTokens: [], matchingCategoryCount: 0, hasMore: false };
   }
 
   const counts = new Map();
@@ -122,7 +121,7 @@ export function getCategoricalFilterOptions(rows, columnName, options = {}) {
   });
 
   const normalizedSearch = String(search).trim().toLowerCase();
-  const allOptions = Array.from(counts, ([key, count]) => {
+  const matchingOptions = Array.from(counts, ([key, count]) => {
     const { token, label } = describeCategory(key, { missingLabel });
     return { token, label, count };
   })
@@ -132,13 +131,13 @@ export function getCategoricalFilterOptions(rows, columnName, options = {}) {
       return a.label.localeCompare(b.label);
     });
 
-  const visibleOptions = allOptions.slice(0, Math.max(0, Number(limit) || FILTER_CATEGORY_LIMIT));
+  const visibleOptions = matchingOptions.slice(0, Math.max(0, Number(limit) || FILTER_CATEGORY_LIMIT));
 
   return {
     options: visibleOptions,
-    allTokens: allOptions.map(item => item.token),
-    total: allOptions.length,
-    hasMore: allOptions.length > visibleOptions.length,
+    matchingTokens: matchingOptions.map(item => item.token),
+    matchingCategoryCount: matchingOptions.length,
+    hasMore: matchingOptions.length > visibleOptions.length,
   };
 }
 
@@ -173,14 +172,14 @@ function cellNumber(row, column) {
  * checking call sites.
  *
  * @param {Array<Object<string, *>>} rows
- * @param {Object | null | undefined} rawFilter - Coerced via {@link normalizeFilterConfig} internally.
+ * @param {Object | null | undefined} rawFilter - Coerced via {@link normalizeFilterRule} internally.
  * @param {string[]} [numericColumns=[]]
  * @returns {Array<Object<string, *>>} Filtered rows (a new array).
  */
-export function applyChartFilterRows(rows, rawFilter, numericColumns = []) {
+export function applyFilterRuleToRows(rows, rawFilter, numericColumns = []) {
   if (!Array.isArray(rows)) return [];
 
-  const filter = normalizeFilterConfig(rawFilter, numericColumns);
+  const filter = normalizeFilterRule(rawFilter, numericColumns);
   if (!filter.column) return rows;
 
   if (filter.mode === 'numeric') {
