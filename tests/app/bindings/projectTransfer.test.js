@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
 	downloadBytes: vi.fn(),
 	exportProject: vi.fn(),
-	getPersistenceSnapshot: vi.fn(() => ({ data: { datasets: [], activeIndex: -1 }, panel: null, ui: {} })),
+	getPersistenceStateView: vi.fn(() => ({ data: { datasets: [], activeIndex: -1 }, panel: null, ui: {} })),
 	getProjectImportErrorMessageKey: vi.fn(),
 	importProjectBytes: vi.fn(),
 	openConfirmDialog: vi.fn(),
@@ -16,7 +16,7 @@ const mocks = vi.hoisted(() => ({
 		close: vi.fn(),
 		onCancel: vi.fn(),
 	},
-	replaceAllState: vi.fn(),
+	applyStateSnapshot: vi.fn(),
 	showProgress: vi.fn(),
 	t: vi.fn(key => `tr:${key}`),
 }));
@@ -45,8 +45,8 @@ vi.mock('../../../src/ui/confirmDialog.js', () => ({
 }));
 
 vi.mock('../../../src/state/appState.js', () => ({
-	getPersistenceSnapshot: mocks.getPersistenceSnapshot,
-	replaceAllState: mocks.replaceAllState,
+	getPersistenceStateView: mocks.getPersistenceStateView,
+	applyStateSnapshot: mocks.applyStateSnapshot,
 }));
 
 import { setupProjectTransferListeners } from '../../../src/app/bindings/projectTransfer.js';
@@ -114,7 +114,7 @@ describe('eventHandlers', () => {
 		await Promise.resolve();
 
 		expect(menuPanel.hidden).toBe(true);
-		expect(mocks.exportProject).toHaveBeenCalledWith(mocks.getPersistenceSnapshot(), { workOnly: false });
+		expect(mocks.exportProject).toHaveBeenCalledWith(mocks.getPersistenceStateView(), { workOnly: false });
 		expect(mocks.downloadBytes).toHaveBeenCalledWith(
 			new Uint8Array([1, 2, 3]),
 			'project.chive.sqlite3',
@@ -126,7 +126,7 @@ describe('eventHandlers', () => {
 		document.getElementById('btn-project-export-work-only').click();
 		await Promise.resolve();
 		await Promise.resolve();
-		expect(mocks.exportProject).toHaveBeenLastCalledWith(mocks.getPersistenceSnapshot(), { workOnly: true });
+		expect(mocks.exportProject).toHaveBeenLastCalledWith(mocks.getPersistenceStateView(), { workOnly: true });
 
 		const importButton = document.getElementById('btn-project-import');
 		const importInput = document.getElementById('project-import-input');
@@ -148,7 +148,7 @@ describe('eventHandlers', () => {
 		});
 		expect(mocks.importProjectBytes).toHaveBeenCalledWith(
 			new Uint8Array([9, 8]),
-			expect.objectContaining({ replaceAllState: mocks.replaceAllState }),
+			expect.objectContaining({ applyStateSnapshot: mocks.applyStateSnapshot }),
 		);
 		expect(mocks.progressHandle.succeed).toHaveBeenCalledWith('tr:chive-project-import-success');
 	});

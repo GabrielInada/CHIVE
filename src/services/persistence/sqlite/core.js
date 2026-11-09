@@ -29,7 +29,7 @@ function jsonParse(raw, fallback) {
 	}
 }
 
-function isPlainObject(value) {
+function isNonArrayObject(value) {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -59,11 +59,11 @@ function getFingerprintForDataset(dataset, fingerprintsByDatasetId) {
 }
 
 function buildPanelRecord(panel) {
-	const source = isPlainObject(panel) ? panel : {};
+	const source = isNonArrayObject(panel) ? panel : {};
 	const snapshotPayloads = [];
 	const charts = Array.isArray(source.charts)
 		? source.charts.map(chart => {
-			if (!isPlainObject(chart)) return chart;
+			if (!isNonArrayObject(chart)) return chart;
 			const { dataSnapshot, columnsSnapshot, ...chartDoc } = chart;
 			const chartId = Number(chart.id);
 			if (Number.isInteger(chartId)) {
@@ -81,7 +81,7 @@ function buildPanelRecord(panel) {
 		panelDoc: {
 			blocks: Array.isArray(source.blocks) ? source.blocks : [],
 			charts,
-			slots: isPlainObject(source.slots) ? source.slots : {},
+			slots: isNonArrayObject(source.slots) ? source.slots : {},
 			layout: typeof source.layout === 'string' ? source.layout : 'template-2col',
 			nextBlockId: Number.isInteger(source.nextBlockId) ? source.nextBlockId : 1,
 			nextChartId: Number.isInteger(source.nextChartId) ? source.nextChartId : 0,
@@ -206,7 +206,7 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 					typeof dataset.name === 'string' ? dataset.name : '',
 					jsonStringify(Array.isArray(dataset.columns) ? dataset.columns : [], []),
 					jsonStringify(Array.isArray(dataset.selectedColumns) ? dataset.selectedColumns : [], []),
-					jsonStringify(isPlainObject(dataset.chartConfig) ? dataset.chartConfig : {}, {}),
+					jsonStringify(isNonArrayObject(dataset.chartConfig) ? dataset.chartConfig : {}, {}),
 					dataset.precomputedStats === undefined ? null : jsonStringify(dataset.precomputedStats, null),
 					typeof dataset.sizeLabel === 'string' ? dataset.sizeLabel : null,
 					fingerprint.fingerprint,
@@ -288,7 +288,7 @@ export function readSnapshot(db) {
 
 	const appStateRows = selectRows(db, 'SELECT key, doc FROM app_state');
 	const appStateDocs = Object.fromEntries(appStateRows.map(row => [row.key, jsonParse(row.doc, null)]));
-	const panelDoc = isPlainObject(appStateDocs.panel) ? appStateDocs.panel : null;
+	const panelDoc = isNonArrayObject(appStateDocs.panel) ? appStateDocs.panel : null;
 	const payloadByChartId = new Map(
 		selectRows(db, 'SELECT chart_id, rows_json, columns_json FROM panel_snapshot_payload')
 			.map(row => [Number(row.chart_id), {
@@ -313,7 +313,7 @@ export function readSnapshot(db) {
 		}
 		: null;
 
-	const dataState = isPlainObject(appStateDocs.data_state) ? appStateDocs.data_state : {};
+	const dataState = isNonArrayObject(appStateDocs.data_state) ? appStateDocs.data_state : {};
 	return {
 		cellFormatVersion: readCellFormatVersion(db),
 		data: {

@@ -30,7 +30,7 @@ import {
 	configurePersistenceBackend,
 	enablePersistenceAutoSave,
 } from '../../../src/services/persistence.js';
-import { getPersistenceSnapshot, replaceAllState } from '../../../src/state/appState.js';
+import { applyStateSnapshot, getPersistenceStateView } from '../../../src/state/appState.js';
 import { emitStateChange, STATE_EVENTS } from '../../../src/state/stateEvents.js';
 import { makeBackend } from '../../services/persistence.testSupport.js';
 
@@ -48,7 +48,7 @@ function dataset(id, value) {
 }
 
 function seedProject(datasets) {
-	replaceAllState({ data: { datasets, activeIndex: 0 }, panel: {} });
+	applyStateSnapshot({ data: { datasets, activeIndex: 0 }, panel: {} });
 }
 
 /** Real timers throughout: fake-indexeddb and SQLite need their own scheduling. */
@@ -70,13 +70,13 @@ describe('stored-data clearing, real autosave and real backend', () => {
 		dbName = `chive-clear-integration-${Math.random().toString(36).slice(2)}`;
 		backend = makeBackend({ dbName });
 		configurePersistenceBackend(backend);
-		controller = enablePersistenceAutoSave(getPersistenceSnapshot, { debounceMs: DEBOUNCE_MS });
+		controller = enablePersistenceAutoSave(getPersistenceStateView, { debounceMs: DEBOUNCE_MS });
 	});
 
 	afterEach(async () => {
 		controller.dispose();
 		configurePersistenceBackend(null);
-		replaceAllState({ data: { datasets: [], activeIndex: -1 }, panel: {} });
+		applyStateSnapshot({ data: { datasets: [], activeIndex: -1 }, panel: {} });
 		localStorage.clear();
 		__resetProjectOperationLockForTesting();
 		warnSpy.mockRestore();
@@ -95,7 +95,7 @@ describe('stored-data clearing, real autosave and real backend', () => {
 		await expect(runClear()).resolves.toEqual({ ok: true });
 
 		expect(await backend.hydrate()).toBeNull();
-		expect(getPersistenceSnapshot().data.datasets).toEqual([]);
+		expect(getPersistenceStateView().data.datasets).toEqual([]);
 	});
 
 	it('does not let an in-flight save land after the deletion', async () => {
@@ -155,7 +155,7 @@ describe('stored-data clearing, real autosave and real backend', () => {
 
 		// Nothing was deleted, and the state the other operation owns is intact.
 		expect(await backend.hydrate()).not.toBeNull();
-		expect(getPersistenceSnapshot().data.datasets).toHaveLength(1);
+		expect(getPersistenceStateView().data.datasets).toHaveLength(1);
 	});
 
 	it('reports a blocked deletion rather than claiming the data was removed', async () => {

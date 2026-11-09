@@ -21,7 +21,7 @@ import {
 	addChartSnapshot,
 	removeChartSnapshot,
 	clearPanel,
-	replaceAllState,
+	applyStateSnapshot,
 } from '../../../src/state/appState.js';
 import {
 	initPanelController,
@@ -29,9 +29,9 @@ import {
 } from '../../../src/features/panel/panelController.js';
 
 function resetPanelState() {
-	// replaceAllState only touches the slices it is given; pass an explicit panel
-	// slice (replaceAllState({}) would reset nothing).
-	replaceAllState({ panel: { charts: [], slots: {}, blocks: [], layout: 'template-2col' } });
+	// applyStateSnapshot only touches the slices it is given; pass an explicit panel
+	// slice (applyStateSnapshot({}) would reset nothing).
+	applyStateSnapshot({ panel: { charts: [], slots: {}, blocks: [], layout: 'template-2col' } });
 }
 
 describe('panelController real-bus rendering', () => {

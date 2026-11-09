@@ -69,13 +69,13 @@ flowchart LR
     VIEWS --> REGISTRIES
     REGISTRIES --> CHARTS
     AUTOSAVE --> PERSIST
-    HYDRATE -. "before subscriptions: replaceAllState" .-> API
+    HYDRATE -. "before subscriptions: applyStateSnapshot" .-> API
     API -. "hydration escape: replace slices directly" .-> STATE
     API -. "STATE_HYDRATED" .-> BUS
 ```
 
 The diagram shows ownership, not every import. Ordinary writes pass through a
-domain facade. `replaceAllState` is the deliberate exception: during boot,
+domain facade. `applyStateSnapshot` is the deliberate exception: during boot,
 `applicationInitializer.js` hydrates before the render coordinator, panel
 controller, and autosave subscriptions are installed. Its `STATE_HYDRATED`
 emit therefore has no production subscriber during that boot call; the
@@ -159,7 +159,7 @@ Other render paths are intentionally different:
 
 Committed chart configuration is canonicalized at state boundaries:
 persistence normalization, `addDataset`, emitting config writes, and
-defensively in `replaceAllState`. Canonicalization also replaces an enumerated
+defensively in `applyStateSnapshot`. Canonicalization also replaces an enumerated
 setting that a chart's definition does not offer (its `allowedValues`) with the
 chart's default, so controls, presentation flows, and renderers read those
 settings as stored. Rendering may derive display values but does

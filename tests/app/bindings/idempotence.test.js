@@ -19,8 +19,8 @@ const mocks = vi.hoisted(() => ({
   showFeedback: vi.fn(),
   showProgress: vi.fn(),
   getActiveDataset: vi.fn(() => null),
-  getPersistenceSnapshot: vi.fn(() => ({})),
-  replaceAllState: vi.fn(),
+  getPersistenceStateView: vi.fn(() => ({})),
+  applyStateSnapshot: vi.fn(),
   updateActiveDatasetConfig: vi.fn(),
   exportProject: vi.fn(),
   importProjectBytes: vi.fn(),
@@ -56,8 +56,8 @@ vi.mock('../../../src/app/uiManager.js', () => ({
 }));
 vi.mock('../../../src/state/appState.js', () => ({
   getActiveDataset: mocks.getActiveDataset,
-  getPersistenceSnapshot: mocks.getPersistenceSnapshot,
-  replaceAllState: mocks.replaceAllState,
+  getPersistenceStateView: mocks.getPersistenceStateView,
+  applyStateSnapshot: mocks.applyStateSnapshot,
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 vi.mock('../../../src/ui/nativeDialog.js', () => ({ isAnyDialogOpen: mocks.isAnyDialogOpen }));

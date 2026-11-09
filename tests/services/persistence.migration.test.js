@@ -45,16 +45,16 @@ describe('persistence', () => {
 				nextChartId: 0,
 			},
 		});
-		const replaceAllState = vi.fn();
+		const applyStateSnapshot = vi.fn();
 
-		await hydrateState({ replaceAllState });
+		await hydrateState({ applyStateSnapshot });
 
-		expect(replaceAllState).toHaveBeenCalledTimes(1);
-		expect(replaceAllState.mock.calls[0][0].data.datasets[0].id).toBe('legacy');
+		expect(applyStateSnapshot).toHaveBeenCalledTimes(1);
+		expect(applyStateSnapshot.mock.calls[0][0].data.datasets[0].id).toBe('legacy');
 		expect(localStorage.getItem('chive.migrated')).toBe('1');
 
 		const secondReplace = vi.fn();
-		await hydrateState({ replaceAllState: secondReplace });
+		await hydrateState({ applyStateSnapshot: secondReplace });
 		expect(secondReplace).toHaveBeenCalledTimes(1);
 		expect(secondReplace.mock.calls[0][0].data.datasets[0].id).toBe('legacy');
 	});
@@ -81,11 +81,11 @@ describe('persistence', () => {
 				nextChartId: 0,
 			},
 		});
-		const replaceAllState = vi.fn();
+		const applyStateSnapshot = vi.fn();
 
-		await hydrateState({ replaceAllState });
+		await hydrateState({ applyStateSnapshot });
 
-		const stats = replaceAllState.mock.calls[0][0].data.datasets[0].precomputedStats;
+		const stats = applyStateSnapshot.mock.calls[0][0].data.datasets[0].precomputedStats;
 		expect('numeric' in stats).toBe(false);
 		expect('categorical' in stats).toBe(false);
 	});
@@ -113,12 +113,12 @@ describe('persistence', () => {
 		});
 
 		const migrated = vi.fn();
-		await hydrateState({ replaceAllState: migrated });
+		await hydrateState({ applyStateSnapshot: migrated });
 		const reloaded = vi.fn();
-		await hydrateState({ replaceAllState: reloaded });
+		await hydrateState({ applyStateSnapshot: reloaded });
 
-		for (const replaceAllState of [migrated, reloaded]) {
-			const restored = replaceAllState.mock.calls[0][0];
+		for (const applyStateSnapshot of [migrated, reloaded]) {
+			const restored = applyStateSnapshot.mock.calls[0][0];
 			expect(restored.data.datasets[0].rows).toEqual(canonicalRows);
 			expect(restored.panel.charts[0].dataSnapshot).toEqual(canonicalRows);
 		}
@@ -156,8 +156,8 @@ describe('persistence', () => {
 				columnsSnapshot: columns,
 			}));
 			saved.panel.nextChartId = 2;
-			const replaceAllState = vi.fn();
-			const hooks = { replaceAllState, transformPanel: rehydratePanelChartSpecs };
+			const applyStateSnapshot = vi.fn();
+			const hooks = { applyStateSnapshot, transformPanel: rehydratePanelChartSpecs };
 
 			if (entryPoint === 'project import') {
 				const exported = await exportProject(saved);
@@ -175,8 +175,8 @@ describe('persistence', () => {
 				await hydrateState(hooks);
 			}
 
-			expect(replaceAllState).toHaveBeenCalledTimes(1);
-			const restored = replaceAllState.mock.calls[0][0];
+			expect(applyStateSnapshot).toHaveBeenCalledTimes(1);
+			const restored = applyStateSnapshot.mock.calls[0][0];
 			const dataset = restored.data.datasets[0];
 			expect(dataset.rows).toEqual(rows);
 			expect(dataset.precomputedStats.numeric).toEqual(numeric);
@@ -193,7 +193,7 @@ describe('persistence', () => {
 			// Autosave writes the normalized names; the next reload keeps them.
 			expect((await persistState(restored)).ok).toBe(true);
 			const reloaded = vi.fn();
-			await hydrateState({ replaceAllState: reloaded, transformPanel: rehydratePanelChartSpecs });
+			await hydrateState({ applyStateSnapshot: reloaded, transformPanel: rehydratePanelChartSpecs });
 			// SQLite adds fingerprint metadata on the first save of legacy records.
 			expect(reloaded.mock.calls[0][0].data).toMatchObject(restored.data);
 			expect(reloaded.mock.calls[0][0].data.datasets[0].precomputedStats).not.toHaveProperty('categorical');
@@ -221,10 +221,10 @@ describe('persistence', () => {
 			},
 		}));
 
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
 
-		expect(replaceAllState.mock.calls[0][0].data.datasets[0].precomputedStats)
+		expect(applyStateSnapshot.mock.calls[0][0].data.datasets[0].precomputedStats)
 			.toEqual(precomputedStats);
 	});
 
@@ -240,8 +240,8 @@ describe('persistence', () => {
 		expect(localStorage.getItem('chive-locale')).toBe('en');
 		expect(JSON.parse(localStorage.getItem('chive.settings'))).toEqual({ tinColorRendering: 'full-ramp' });
 		expect(localStorage.getItem('chive.migrated')).toBe('1');
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		expect(replaceAllState).not.toHaveBeenCalled();
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		expect(applyStateSnapshot).not.toHaveBeenCalled();
 	});
 });

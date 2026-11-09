@@ -14,15 +14,15 @@ import { CHART_DEFINITIONS } from '../../config/charts/definitions.js';
 import { normalizeGlobalFilter, createEmptyGlobalFilter, resolveGlobalFilterForColumns } from '../filters/globalFilter.js';
 
 /**
- * Return `value` when it is a plain object, otherwise an empty object. Keeps
- * malformed input (string/array/number/null) from spreading stray keys into a
- * merged config.
+ * Return `value` when it is a non-array object, otherwise an empty object.
+ * Keeps malformed input (string/array/number/null) from spreading stray keys
+ * into a merged config.
  *
  * @private
  * @param {*} value
  * @returns {Object}
  */
-function asPlainObject(value) {
+function nonArrayObjectOrEmpty(value) {
 	return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
@@ -95,8 +95,8 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 	// into stray index keys instead of being treated as "no saved config". The same
 	// guard runs per chart block below, so a malformed block also falls back to
 	// defaults wherever this function is called (canonicalization, Panel rehydration).
-	const config = asPlainObject(chartConfig);
-	const scatterConfig = asPlainObject(config.scatter);
+	const config = nonArrayObjectOrEmpty(chartConfig);
+	const scatterConfig = nonArrayObjectOrEmpty(config.scatter);
 
 	const merged = {
 		...defaults,
@@ -104,30 +104,30 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 		globalFilter: pickGlobalFilter(config),
 		bar: {
 			...defaults.bar,
-			...asPlainObject(config.bar),
+			...nonArrayObjectOrEmpty(config.bar),
 		},
 		scatter: {
 			...defaults.scatter,
 			...scatterConfig,
 			regression: {
 				...defaults.scatter.regression,
-				...asPlainObject(scatterConfig.regression),
+				...nonArrayObjectOrEmpty(scatterConfig.regression),
 			},
 		},
 		network: {
 			...defaults.network,
-			...asPlainObject(config.network),
+			...nonArrayObjectOrEmpty(config.network),
 		},
 		pie: {
 			...defaults.pie,
-			...asPlainObject(config.pie),
+			...nonArrayObjectOrEmpty(config.pie),
 		},
 		treemap: {
 			...defaults.treemap,
-			...asPlainObject(config.treemap),
+			...nonArrayObjectOrEmpty(config.treemap),
 		},
 		bubble: (() => {
-			const merged = { ...defaults.bubble, ...asPlainObject(config.bubble) };
+			const merged = { ...defaults.bubble, ...nonArrayObjectOrEmpty(config.bubble) };
 			if (Array.isArray(merged.nestingColumns) && merged.nestingColumns.length > 0) {
 				// nestingColumns already set, keep it
 			} else if (merged.groupColumn && typeof merged.groupColumn === 'string') {
@@ -139,15 +139,15 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 		})(),
 		line: {
 			...defaults.line,
-			...asPlainObject(config.line),
+			...nonArrayObjectOrEmpty(config.line),
 		},
 		tin: {
 			...defaults.tin,
-			...asPlainObject(config.tin),
+			...nonArrayObjectOrEmpty(config.tin),
 		},
 		scatter3d: {
 			...defaults.scatter3d,
-			...asPlainObject(config.scatter3d),
+			...nonArrayObjectOrEmpty(config.scatter3d),
 		},
 	};
 

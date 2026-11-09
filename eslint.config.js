@@ -9,7 +9,7 @@ const STATELESS_RENDERER_MESSAGE =
 
 // Renderer-safe read surface that renderers may import from appState.js.
 // Add a new read here only when renderers should use it; reads meant for
-// persistence, debug, or internal use (e.g. getPersistenceSnapshot) are
+// persistence, debug, or internal use (e.g. getPersistenceStateView) are
 // deliberately absent. Anything not in this list is treated as a write and
 // blocked.
 const APP_STATE_READS = [
@@ -34,7 +34,7 @@ const APP_STATE_READS = [
 // caught separately by the local `chive/no-facade-getter-mutation` rule. If a
 // new object- or array-returning read facade is added to appState.js, add it
 // here too (and to the local rule's getter list).
-const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState|getPersistenceSnapshot)';
+const FACADE_MUTABLE_GETTERS = '(getActiveDataset|getAllDatasets|getPanelCharts|getChartSnapshot|getPanelBlocks|getState|getPersistenceStateView)';
 
 // Array methods that mutate the receiver in place. Kept in sync with
 // MUTATING_METHODS in eslint-rules/no-facade-getter-mutation.js.

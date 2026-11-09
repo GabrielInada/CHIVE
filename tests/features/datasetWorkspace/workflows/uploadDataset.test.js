@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { uploadDatasetFiles } from '../../../../src/features/datasetWorkspace/workflows/uploadDataset.js';
 import { LARGE_FILE_WARNING_BYTES } from '../../../../src/config/limits.js';
 import { setLocale, t } from '../../../../src/services/i18nService.js';
-import { addDataset, getActiveDatasetIndex, getAllDatasets, replaceAllState } from '../../../../src/state/appState.js';
+import { addDataset, applyStateSnapshot, getActiveDatasetIndex, getAllDatasets } from '../../../../src/state/appState.js';
 import { clearAllFeedback, showError } from '../../../../src/ui/feedback.js';
 import { formatFileSize } from '../../../../src/utils/formatters.js';
 import { restoreIngestWorker, useInProcessIngestWorker, useSilentIngestWorker } from '../../../helpers/ingestWorker.js';
@@ -52,7 +52,7 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 	beforeEach(async () => {
 		vi.useFakeTimers({ toFake: TIMERS_TO_FAKE });
 		document.body.replaceChildren();
-		replaceAllState({ data: { datasets: [], activeIndex: -1 } });
+		applyStateSnapshot({ data: { datasets: [], activeIndex: -1 } });
 		await setLocale(language);
 		workerRequests = useInProcessIngestWorker();
 		confirm = vi.fn(() => true);

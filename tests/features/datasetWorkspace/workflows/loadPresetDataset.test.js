@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadPresetDataset } from '../../../../src/features/datasetWorkspace/workflows/loadPresetDataset.js';
 import { __setIngestWorkerFactoryForTesting } from '../../../../src/services/dataIngestService.js';
 import { setLocale, t } from '../../../../src/services/i18nService.js';
-import { getAllDatasets, replaceAllState } from '../../../../src/state/appState.js';
+import { applyStateSnapshot, getAllDatasets } from '../../../../src/state/appState.js';
 import { clearAllFeedback } from '../../../../src/ui/feedback.js';
 import { runIngest } from '../../../../src/workers/dataIngestWorker.js';
 
@@ -34,7 +34,7 @@ describe.each(['en', 'pt-BR'])('sample loading feedback in %s', language => {
 	beforeEach(async () => {
 		vi.useFakeTimers();
 		document.body.replaceChildren();
-		replaceAllState({ data: { datasets: [], activeDatasetIndex: -1 } });
+		applyStateSnapshot({ data: { datasets: [], activeDatasetIndex: -1 } });
 		await setLocale(language);
 		selectDataset = vi.fn();
 		fetchSource = vi.fn().mockResolvedValue({ ok: true, text: async () => 'value\n1\n' });

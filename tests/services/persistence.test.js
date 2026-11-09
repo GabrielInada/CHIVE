@@ -69,7 +69,7 @@ describe('persistence', () => {
 		await expect(persistState(null)).resolves.toEqual(expect.objectContaining({ ok: false }));
 		await expect(persistState(makeSnapshot())).resolves.toEqual(expect.objectContaining({ ok: false }));
 		await expect(exportProject(makeSnapshot())).resolves.toEqual(expect.objectContaining({ ok: false }));
-		await expect(importProjectBytes(new Uint8Array([1]), { replaceAllState: vi.fn() }))
+		await expect(importProjectBytes(new Uint8Array([1]), { applyStateSnapshot: vi.fn() }))
 			.resolves.toEqual(expect.objectContaining({ ok: false }));
 
 		configurePersistenceBackend({
@@ -81,7 +81,7 @@ describe('persistence', () => {
 		await expect(exportProject(null)).resolves.toEqual(expect.objectContaining({ ok: false }));
 		await expect(exportProject(makeSnapshot())).resolves.toEqual(expect.objectContaining({ ok: false }));
 		await expect(importProjectBytes(new Uint8Array([1]), {})).resolves.toEqual(expect.objectContaining({ ok: false }));
-		await expect(importProjectBytes(new Uint8Array([1]), { replaceAllState: vi.fn() }))
+		await expect(importProjectBytes(new Uint8Array([1]), { applyStateSnapshot: vi.fn() }))
 			.resolves.toEqual(expect.objectContaining({ ok: false }));
 	});
 
@@ -96,9 +96,9 @@ describe('persistence', () => {
 			clear: vi.fn(async () => { throw new Error('clear failed'); }),
 		});
 
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		expect(replaceAllState).not.toHaveBeenCalled();
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		expect(applyStateSnapshot).not.toHaveBeenCalled();
 
 		const persist = await persistState(makeSnapshot());
 		expect(persist.ok).toBe(false);
@@ -108,7 +108,7 @@ describe('persistence', () => {
 		expect(exported.ok).toBe(false);
 		expect(exported.error.message).toBe('export failed');
 
-		const imported = await importProjectBytes(new Uint8Array([1]), { replaceAllState });
+		const imported = await importProjectBytes(new Uint8Array([1]), { applyStateSnapshot });
 		expect(imported.ok).toBe(false);
 		expect(getProjectImportErrorMessageKey(imported.error)).toBe('chive-project-import-invalid-error');
 

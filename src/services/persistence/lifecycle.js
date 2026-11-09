@@ -87,16 +87,16 @@ async function importLegacyStateIfNeeded() {
 
 /**
  * Restore persisted state into appState. No-op on first visit, when storage is
- * unavailable, or when `replaceAllState` is not a function.
+ * unavailable, or when `applyStateSnapshot` is not a function.
  *
  * @param {Object} hooks
- * @param {(snapshot: Partial<AppState>) => void} hooks.replaceAllState
+ * @param {(snapshot: Partial<AppState>) => void} hooks.applyStateSnapshot
  * @param {(panel: Object) => Object} [hooks.transformPanel]
  * @param {(error: unknown) => void} [hooks.onError]
  * @returns {Promise<void>}
  */
-export async function hydrateState({ replaceAllState, transformPanel, onError } = {}) {
-	if (typeof replaceAllState !== 'function') return;
+export async function hydrateState({ applyStateSnapshot, transformPanel, onError } = {}) {
+	if (typeof applyStateSnapshot !== 'function') return;
 
 	let storedSnapshot = null;
 	if (isPersistenceAvailable()) {
@@ -119,7 +119,7 @@ export async function hydrateState({ replaceAllState, transformPanel, onError } 
 	const normalized = normalizeStoredSnapshot(storedSnapshot, { transformPanel });
 	if (!hasHydratableState(normalized, ui)) return;
 
-	replaceAllState({
+	applyStateSnapshot({
 		data: normalized.data,
 		panel: normalized.panel,
 		ui,
@@ -184,18 +184,19 @@ export async function exportProject(snapshot, { workOnly = false } = {}) {
 
 /**
  * Import a full CHIVE SQLite project, persist it as the current browser
- * project, then replace in-memory state. Work-only imports are intentionally
- * rejected in v1 because dataset re-linking semantics are not implemented.
+ * project, then apply it to in-memory state. Work-only imports are
+ * intentionally rejected in v1 because dataset re-linking semantics are not
+ * implemented.
  *
  * @param {Uint8Array | ArrayBuffer} bytes
  * @param {Object} hooks
- * @param {(snapshot: Partial<AppState>) => void} hooks.replaceAllState
+ * @param {(snapshot: Partial<AppState>) => void} hooks.applyStateSnapshot
  * @param {(panel: Object) => Object} [hooks.transformPanel]
  * @returns {Promise<{ ok: boolean, snapshot?: Partial<AppState>, error?: Error }>}
  */
-export async function importProjectBytes(bytes, { replaceAllState, transformPanel } = {}) {
-	if (typeof replaceAllState !== 'function') {
-		return { ok: false, error: new Error('replaceAllState hook is required') };
+export async function importProjectBytes(bytes, { applyStateSnapshot, transformPanel } = {}) {
+	if (typeof applyStateSnapshot !== 'function') {
+		return { ok: false, error: new Error('applyStateSnapshot hook is required') };
 	}
 	if (!isPersistenceAvailable()) {
 		return { ok: false, error: new Error('IndexedDB is unavailable') };
@@ -228,7 +229,7 @@ export async function importProjectBytes(bytes, { replaceAllState, transformPane
 			return { ok: false, error: errorFrom(persistResult.error, 'Project import save failed') };
 		}
 
-		replaceAllState({
+		applyStateSnapshot({
 			data: normalized.data,
 			panel: importPanel,
 		});

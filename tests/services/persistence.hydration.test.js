@@ -27,11 +27,11 @@ describe('persistence', () => {
 		const result = await persistState(makeSnapshot());
 		expect(result.ok).toBe(true);
 
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
 
-		expect(replaceAllState).toHaveBeenCalledTimes(1);
-		const restored = replaceAllState.mock.calls[0][0];
+		expect(applyStateSnapshot).toHaveBeenCalledTimes(1);
+		const restored = applyStateSnapshot.mock.calls[0][0];
 		expect(restored.data.datasets.map(dataset => dataset.id)).toEqual(['ds-1', 'ds-2']);
 		expect(restored.data.activeIndex).toBe(1);
 		expect(restored.panel.charts[0].dataSnapshot).toEqual([{ y: 2 }]);
@@ -63,10 +63,10 @@ describe('persistence', () => {
 			},
 		});
 
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
 
-		const restored = replaceAllState.mock.calls[0][0];
+		const restored = applyStateSnapshot.mock.calls[0][0];
 		expect(restored.data.datasets[0].rows).toEqual(rows);
 		expect(restored.panel.charts[0].dataSnapshot).toEqual(rows);
 	});
@@ -76,41 +76,41 @@ describe('persistence', () => {
 		expect(localStorage.getItem('chive.ui')).toBeNull();
 	});
 
-	it('does not call replaceAllState on first visit', async () => {
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		expect(replaceAllState).not.toHaveBeenCalled();
+	it('does not call applyStateSnapshot on first visit', async () => {
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		expect(applyStateSnapshot).not.toHaveBeenCalled();
 	});
 
 	it('hydrates UI prefs even when no project has been saved', async () => {
 		localStorage.setItem('chive.ui', JSON.stringify({ sidebarMode: 'viz', previewRows: 5 }));
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		expect(replaceAllState).toHaveBeenCalledTimes(1);
-		expect(replaceAllState.mock.calls[0][0].ui).toEqual({ sidebarMode: 'viz', previewRows: 5 });
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		expect(applyStateSnapshot).toHaveBeenCalledTimes(1);
+		expect(applyStateSnapshot.mock.calls[0][0].ui).toEqual({ sidebarMode: 'viz', previewRows: 5 });
 	});
 
 	it('ignores malformed UI prefs and invalid replace hooks during hydrate', async () => {
 		localStorage.setItem('chive.ui', '{bad json');
-		await expect(hydrateState({ replaceAllState: null })).resolves.toBeUndefined();
+		await expect(hydrateState({ applyStateSnapshot: null })).resolves.toBeUndefined();
 
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		expect(replaceAllState).not.toHaveBeenCalled();
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		expect(applyStateSnapshot).not.toHaveBeenCalled();
 	});
 
-	it('applies transformPanel before replaceAllState', async () => {
+	it('applies transformPanel before applyStateSnapshot', async () => {
 		await persistState(makeSnapshot());
 		const transformPanel = vi.fn(panel => ({
 			...panel,
 			charts: panel.charts.map(chart => ({ ...chart, config: { ...chart.config, augmented: true } })),
 		}));
-		const replaceAllState = vi.fn();
+		const applyStateSnapshot = vi.fn();
 
-		await hydrateState({ replaceAllState, transformPanel });
+		await hydrateState({ applyStateSnapshot, transformPanel });
 
 		expect(transformPanel).toHaveBeenCalledTimes(1);
-		expect(replaceAllState.mock.calls[0][0].panel.charts[0].config.augmented).toBe(true);
+		expect(applyStateSnapshot.mock.calls[0][0].panel.charts[0].config.augmented).toBe(true);
 	});
 
 	it('falls back to the raw panel when transformPanel fails or returns null', async () => {
@@ -119,14 +119,14 @@ describe('persistence', () => {
 
 		const replaceAfterThrow = vi.fn();
 		await hydrateState({
-			replaceAllState: replaceAfterThrow,
+			applyStateSnapshot: replaceAfterThrow,
 			transformPanel: () => { throw new Error('transform failed'); },
 		});
 		expect(replaceAfterThrow.mock.calls[0][0].panel.charts).toHaveLength(1);
 
 		const replaceAfterNull = vi.fn();
 		await hydrateState({
-			replaceAllState: replaceAfterNull,
+			applyStateSnapshot: replaceAfterNull,
 			transformPanel: () => null,
 		});
 		expect(replaceAfterNull.mock.calls[0][0].panel.charts).toHaveLength(1);
@@ -157,9 +157,9 @@ describe('persistence', () => {
 			clear: vi.fn(),
 		});
 
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		const snapshot = replaceAllState.mock.calls[0][0];
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		const snapshot = applyStateSnapshot.mock.calls[0][0];
 		expect(snapshot.data.activeIndex).toBe(0);
 		expect(snapshot.data.datasets[0].selectedColumns).toEqual([]);
 		const chartConfig = snapshot.data.datasets[0].chartConfig;
@@ -208,9 +208,9 @@ describe('persistence', () => {
 			clear: vi.fn(),
 		});
 
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		const bubble = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		const bubble = applyStateSnapshot.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
 
 		// type-clean + de-duplicated + declared-only + category-excluded + capped to 8.
 		// (This equality also fails if the implementation spread the raw block AFTER
@@ -224,7 +224,7 @@ describe('persistence', () => {
 		expect(bubble.topN).toBe(20);
 		expect(bubble.category).toBe('categoria');
 		// other chart blocks keep their saved fields and are default-filled by canonicalize.
-		const bar = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bar;
+		const bar = applyStateSnapshot.mock.calls[0][0].data.datasets[0].chartConfig.bar;
 		expect(bar.category).toBe('x');
 		expect(bar.enabled).toBe(false);
 	});
@@ -262,9 +262,9 @@ describe('persistence', () => {
 			clear: vi.fn(),
 		});
 
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		const bubble = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		const bubble = applyStateSnapshot.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
 
 		// The undeclared nesting entries are dropped by sanitize, leaving an empty
 		// array with a valid legacy groupColumn; canonicalize then promotes that group
@@ -306,9 +306,9 @@ describe('persistence', () => {
 			clear: vi.fn(),
 		});
 
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		const bubble = replaceAllState.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		const bubble = applyStateSnapshot.mock.calls[0][0].data.datasets[0].chartConfig.bubble;
 
 		expect(bubble.nestingColumns).toEqual([]);
 		expect(bubble.groupColumn).toBeNull();
@@ -333,12 +333,12 @@ describe('persistence', () => {
 			clear: vi.fn(),
 		});
 		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-		const replaceAllState = vi.fn();
+		const applyStateSnapshot = vi.fn();
 
-		await hydrateState({ replaceAllState });
+		await hydrateState({ applyStateSnapshot });
 
 		expect(warn).toHaveBeenCalledWith(expect.stringContaining('dropped 3 malformed dataset record'));
-		const datasets = replaceAllState.mock.calls[0][0].data.datasets;
+		const datasets = applyStateSnapshot.mock.calls[0][0].data.datasets;
 		expect(datasets).toHaveLength(1);
 		const kept = goodRecord('keep');
 		expect(datasets[0]).toMatchObject({

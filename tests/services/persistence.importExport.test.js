@@ -32,20 +32,20 @@ describe('persistence', () => {
 		expect(exported.fileName).toMatch(/^chive-project-.*\.chive\.sqlite3$/);
 
 		await clearPersistedState();
-		const replaceAllState = vi.fn();
+		const applyStateSnapshot = vi.fn();
 		const transformPanel = vi.fn(panel => ({
 			...panel,
 			charts: panel.charts.map(chart => ({ ...chart, config: { ...chart.config, imported: true } })),
 		}));
-		const imported = await importProjectBytes(exported.bytes, { replaceAllState, transformPanel });
+		const imported = await importProjectBytes(exported.bytes, { applyStateSnapshot, transformPanel });
 
 		expect(imported.ok).toBe(true);
-		expect(replaceAllState).toHaveBeenCalledTimes(1);
-		expect(replaceAllState.mock.calls[0][0].data.datasets.map(dataset => dataset.id)).toEqual(['ds-1', 'ds-2']);
-		expect(replaceAllState.mock.calls[0][0].panel.charts[0].config.imported).toBe(true);
+		expect(applyStateSnapshot).toHaveBeenCalledTimes(1);
+		expect(applyStateSnapshot.mock.calls[0][0].data.datasets.map(dataset => dataset.id)).toEqual(['ds-1', 'ds-2']);
+		expect(applyStateSnapshot.mock.calls[0][0].panel.charts[0].config.imported).toBe(true);
 
 		const hydratedReplace = vi.fn();
-		await hydrateState({ replaceAllState: hydratedReplace });
+		await hydrateState({ applyStateSnapshot: hydratedReplace });
 		expect(hydratedReplace.mock.calls[0][0].data.datasets.map(dataset => dataset.id)).toEqual(['ds-1', 'ds-2']);
 	});
 
@@ -58,11 +58,11 @@ describe('persistence', () => {
 		const dataset = { ...goodRecord('comma'), rows, columns, selectedColumns: ['id', 'population'] };
 		const exported = await exportProject(makeSnapshot({ data: { datasets: [dataset], activeIndex: 0 } }));
 		expect(exported.ok).toBe(true);
-		const imported = await importProjectBytes(exported.bytes, { replaceAllState: vi.fn() });
+		const imported = await importProjectBytes(exported.bytes, { applyStateSnapshot: vi.fn() });
 		expect(imported.ok).toBe(true);
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		const restored = replaceAllState.mock.calls[0][0].data.datasets[0];
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		const restored = applyStateSnapshot.mock.calls[0][0].data.datasets[0];
 		const joined = ingestDataset({
 			kind: 'join',
 			join: {
@@ -83,12 +83,12 @@ describe('persistence', () => {
 		expect(exported.ok).toBe(true);
 		expect(exported.fileName).toContain('-work-only-');
 
-		const replaceAllState = vi.fn();
-		const imported = await importProjectBytes(exported.bytes, { replaceAllState });
+		const applyStateSnapshot = vi.fn();
+		const imported = await importProjectBytes(exported.bytes, { applyStateSnapshot });
 
 		expect(imported.ok).toBe(false);
 		expect(getProjectImportErrorMessageKey(imported.error)).toBe('chive-project-import-work-only-error');
-		expect(replaceAllState).not.toHaveBeenCalled();
+		expect(applyStateSnapshot).not.toHaveBeenCalled();
 	});
 
 	it('runtime import clears the current panel when the file has no panel doc', async () => {
@@ -106,12 +106,12 @@ describe('persistence', () => {
 			persist,
 			clear: vi.fn(),
 		});
-		const replaceAllState = vi.fn();
+		const applyStateSnapshot = vi.fn();
 
-		const imported = await importProjectBytes(new Uint8Array([1]), { replaceAllState });
+		const imported = await importProjectBytes(new Uint8Array([1]), { applyStateSnapshot });
 
 		expect(imported.ok).toBe(true);
-		expect(replaceAllState.mock.calls[0][0].panel).toEqual({
+		expect(applyStateSnapshot.mock.calls[0][0].panel).toEqual({
 			charts: [],
 			slots: {},
 			layout: 'template-2col',
@@ -147,12 +147,12 @@ describe('persistence', () => {
 			persist,
 			clear: vi.fn(),
 		});
-		const replaceAllState = vi.fn();
+		const applyStateSnapshot = vi.fn();
 
-		const imported = await importProjectBytes(new Uint8Array([1]), { replaceAllState });
+		const imported = await importProjectBytes(new Uint8Array([1]), { applyStateSnapshot });
 
 		expect(imported.ok).toBe(true);
-		// importProjectBytes persists BEFORE replaceAllState, so this proves the stored
+		// importProjectBytes persists BEFORE applyStateSnapshot, so this proves the stored
 		// bytes are canonical, not only the in-memory copy: partial bar block is
 		// default-filled and the stale filter (column not in the dataset) is trimmed.
 		const persistedConfig = persist.mock.calls[0][0].data.datasets[0].chartConfig;
