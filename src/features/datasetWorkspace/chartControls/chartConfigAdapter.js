@@ -12,7 +12,7 @@
  * @typedef {import('../../../types.js').ChartConfigWriter} ChartConfigWriter
  */
 
-import { normalizeActiveDatasetConfig, updateActiveDatasetConfig } from '../../../state/appState.js';
+import { transformActiveDatasetConfigSilently, updateActiveDatasetConfig } from '../../../state/appState.js';
 
 /**
  * Create the write surface for one dataset + chart-type pair.
@@ -41,7 +41,7 @@ export function createChartConfigWriter({ dataset, chartKey, onConfigChanged, re
 		},
 
 		preview(partialUpdate) {
-			normalizeActiveDatasetConfig(prev => {
+			transformActiveDatasetConfigSilently(prev => {
 				const currentConfig = prev[chartKey] || {};
 				const patch = typeof partialUpdate === 'function'
 					? partialUpdate(currentConfig)

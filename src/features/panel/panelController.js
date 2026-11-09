@@ -36,7 +36,7 @@ import {
 	assignChartToPanelBlockSlot,
 	updatePanelBlockProportions,
 	updatePanelBlockHeight,
-	validatePanelSlots,
+	repairPanelSlotReferences,
 	clearPanel,
 	onStateChange,
 	STATE_EVENTS,
@@ -271,7 +271,7 @@ export function renderSidebarPanel() {
  * STATE_EVENTS.* subscription, which calls back into this function.
  */
 export function renderCanvasPanel() {
-	validatePanelSlots();
+	repairPanelSlotReferences();
 	renderCanvas({
 		onAddBlock: handleAddBlock,
 		onMoveBlock: handleMoveBlock,

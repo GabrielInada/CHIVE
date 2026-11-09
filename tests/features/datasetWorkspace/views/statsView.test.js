@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-	calculateStatistics: vi.fn(),
+	calculateNumericStatistics: vi.fn(),
 	calculateCategoricalStatistics: vi.fn(),
 	getActiveDataset: vi.fn(),
 	t: vi.fn((key, ...args) => (args.length ? `${key}:${args.join(',')}` : key)),
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../src/domain/datasets/statistics.js', () => ({
-	calculateStatistics: mocks.calculateStatistics,
+	calculateNumericStatistics: mocks.calculateNumericStatistics,
 	calculateCategoricalStatistics: mocks.calculateCategoricalStatistics,
 }));
 
@@ -24,7 +24,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	getLocale: mocks.getLocale,
 }));
 
-import { renderCategoricalStats, renderStats } from '../../../../src/features/datasetWorkspace/views/statsView.js';
+import { renderCategoricalStats, renderNumericStats } from '../../../../src/features/datasetWorkspace/views/statsView.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../../src/config/statistics.js';
 
 const rows = [
@@ -55,7 +55,7 @@ describe('statsView', () => {
 		setupDom();
 		vi.clearAllMocks();
 		mocks.getActiveDataset.mockReturnValue(null);
-		mocks.calculateStatistics.mockReturnValue([]);
+		mocks.calculateNumericStatistics.mockReturnValue([]);
 		mocks.calculateCategoricalStatistics.mockReturnValue([]);
 	});
 
@@ -71,9 +71,9 @@ describe('statsView', () => {
 			},
 		});
 
-		renderStats(rows, visibleColumns);
+		renderNumericStats(rows, visibleColumns);
 
-		expect(mocks.calculateStatistics).not.toHaveBeenCalled();
+		expect(mocks.calculateNumericStatistics).not.toHaveBeenCalled();
 		expect(document.getElementById('card-stats').hidden).toBe(false);
 		expect(document.getElementById('badge-num-columns').textContent).toBe('chive-stats-badge:1');
 		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
@@ -82,16 +82,16 @@ describe('statsView', () => {
 	});
 
 	it('falls back to live numeric calculation and hides the card when no stats exist', () => {
-		mocks.calculateStatistics.mockReturnValueOnce([
+		mocks.calculateNumericStatistics.mockReturnValueOnce([
 			{ name: 'value', n: 2, min: 10, max: 20, mean: 15, median: 15 },
 		]);
 
-		renderStats(rows, visibleColumns);
-		expect(mocks.calculateStatistics).toHaveBeenCalledWith(rows, visibleColumns);
+		renderNumericStats(rows, visibleColumns);
+		expect(mocks.calculateNumericStatistics).toHaveBeenCalledWith(rows, visibleColumns);
 		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
 
-		mocks.calculateStatistics.mockReturnValueOnce([]);
-		renderStats(rows, visibleColumns);
+		mocks.calculateNumericStatistics.mockReturnValueOnce([]);
+		renderNumericStats(rows, visibleColumns);
 		expect(document.getElementById('card-stats').hidden).toBe(true);
 		expect(document.getElementById('container-stats').children.length).toBe(0);
 	});
@@ -110,13 +110,13 @@ describe('statsView', () => {
 			columns: visibleColumns,
 			precomputedStats: { numericVersion, numeric: staleStats },
 		});
-		mocks.calculateStatistics.mockReturnValue([
+		mocks.calculateNumericStatistics.mockReturnValue([
 			{ name: 'value', n: 2, min: 10, max: 20, mean: 15, median: 15 },
 		]);
 
-		renderStats(ownRows, visibleColumns);
+		renderNumericStats(ownRows, visibleColumns);
 
-		expect(mocks.calculateStatistics).toHaveBeenCalledWith(ownRows, visibleColumns);
+		expect(mocks.calculateNumericStatistics).toHaveBeenCalledWith(ownRows, visibleColumns);
 		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
 	});
 
@@ -127,15 +127,15 @@ describe('statsView', () => {
 			columns: visibleColumns,
 			precomputedStats: { numeric: [], categorical: [] },
 		});
-		mocks.calculateStatistics.mockReturnValue([
+		mocks.calculateNumericStatistics.mockReturnValue([
 			{ name: 'value', n: 2, min: 10, max: 20, mean: 15, median: 15 },
 		]);
 
-		renderStats(ownRows, visibleColumns);
-		renderStats(ownRows, visibleColumns);
-		renderStats(ownRows, visibleColumns);
+		renderNumericStats(ownRows, visibleColumns);
+		renderNumericStats(ownRows, visibleColumns);
+		renderNumericStats(ownRows, visibleColumns);
 
-		expect(mocks.calculateStatistics).toHaveBeenCalledTimes(1);
+		expect(mocks.calculateNumericStatistics).toHaveBeenCalledTimes(1);
 		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
 	});
 

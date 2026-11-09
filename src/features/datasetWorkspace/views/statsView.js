@@ -5,7 +5,7 @@
  * datasets or filtered slices.
  */
 
-import { calculateStatistics, calculateCategoricalStatistics } from '../../../domain/datasets/statistics.js';
+import { calculateNumericStatistics, calculateCategoricalStatistics } from '../../../domain/datasets/statistics.js';
 import { getActiveDataset } from '../../../state/appState.js';
 import { t, getLocale } from '../../../services/i18nService.js';
 import { formatNumber } from '../../../utils/formatters.js';
@@ -55,13 +55,13 @@ function getNumericStats(rows, visibleColumns) {
 		// column visibility reuses the same cache entry.
 		let recomputed = recomputedNumericStats.get(rows);
 		if (!recomputed) {
-			recomputed = calculateStatistics(rows, dataset.columns || visibleColumns);
+			recomputed = calculateNumericStatistics(rows, dataset.columns || visibleColumns);
 			recomputedNumericStats.set(rows, recomputed);
 		}
 		return recomputed.filter(stat => visibleNames.has(stat.name));
 	}
 
-	return calculateStatistics(rows, visibleColumns);
+	return calculateNumericStatistics(rows, visibleColumns);
 }
 
 /**
@@ -127,7 +127,7 @@ function truncateText(text, maxLength = 18) {
  * @param {Array<{ name: string, type: string }>} visibleColumns
  * @returns {void}
  */
-export function renderStats(rows, visibleColumns) {
+export function renderNumericStats(rows, visibleColumns) {
 	const stats = getNumericStats(rows, visibleColumns);
 	const cardStats = document.getElementById(VIEW_IDS.statsCard);
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-	canonicalizeDataset,
+	serializeDatasetForFingerprint,
 	computeDatasetFingerprint,
 	DATASET_FINGERPRINT_ALGORITHMS,
 } from '../../../src/domain/datasets/fingerprint.js';
@@ -17,7 +17,7 @@ const dataset = {
 };
 
 describe('fingerprint', () => {
-	it('canonicalizes by stored column order and row values by column name', () => {
+	it('serializes by stored column order and row values by column name', () => {
 		const reorderedKeys = {
 			columns: dataset.columns,
 			rows: [
@@ -25,8 +25,8 @@ describe('fingerprint', () => {
 				{ a: 2, b: 'y' },
 			],
 		};
-		expect(canonicalizeDataset(dataset)).toBe(canonicalizeDataset(reorderedKeys));
-		expect(canonicalizeDataset(dataset)).toContain('"columns":[{"name":"b","type":"text"},{"name":"a","type":"number"}]');
+		expect(serializeDatasetForFingerprint(dataset)).toBe(serializeDatasetForFingerprint(reorderedKeys));
+		expect(serializeDatasetForFingerprint(dataset)).toContain('"columns":[{"name":"b","type":"text"},{"name":"a","type":"number"}]');
 	});
 
 	it('uses SHA-256 when subtle crypto is available', async () => {

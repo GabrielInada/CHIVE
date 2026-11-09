@@ -151,12 +151,12 @@ export function clearPanelState(appState, createPanelBlock) {
 /**
  * Drop slot references that point at chart ids no longer in the panel.
  * Runs over both the legacy panel-level slot map and every per-block slot
- * map. Idempotent.
+ * map, ensuring a default block exists. Idempotent; returns no validation report.
  *
  * @param {AppState} appState
  * @param {() => void} ensureDefaultPanelBlock
  */
-export function validatePanelSlotsState(appState, ensureDefaultPanelBlock) {
+export function repairPanelSlotReferencesState(appState, ensureDefaultPanelBlock) {
 	const validChartIds = new Set(appState.panel.charts.map(c => c.id));
 	Object.keys(appState.panel.slots).forEach(slotId => {
 		const chartId = appState.panel.slots[slotId];

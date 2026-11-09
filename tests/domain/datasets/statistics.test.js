@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { calculateStatistics } from '../../../src/domain/datasets/statistics.js';
+import { calculateNumericStatistics } from '../../../src/domain/datasets/statistics.js';
 
-describe('calculateStatistics edge cases', () => {
+describe('calculateNumericStatistics edge cases', () => {
   it('returns empty array for columns without number type', () => {
-    const stats = calculateStatistics(
+    const stats = calculateNumericStatistics(
       [{ a: 'x' }, { a: 'y' }],
       [{ name: 'a', type: 'text' }],
     );
@@ -13,7 +13,7 @@ describe('calculateStatistics edge cases', () => {
   it('ignores missing cells in statistics calculation', () => {
     // Coerced with plain Number(), a missing cell would count as 0 in
     // `mean`/`median` and take over `min`.
-    const stats = calculateStatistics(
+    const stats = calculateNumericStatistics(
       [{ val: 10 }, { val: null }, { val: 20 }, { val: null }],
       [{ name: 'val', type: 'number' }],
     );
@@ -26,7 +26,7 @@ describe('calculateStatistics edge cases', () => {
   });
 
   it('ignores numeric columns where all values are missing', () => {
-    const stats = calculateStatistics(
+    const stats = calculateNumericStatistics(
       [{ val: null }, { val: null }],
       [{ name: 'val', type: 'number' }],
     );
@@ -34,7 +34,7 @@ describe('calculateStatistics edge cases', () => {
   });
 
   it('reports the real minimum for large-offset survey coordinates with missing rows', () => {
-    const stats = calculateStatistics(
+    const stats = calculateNumericStatistics(
       [
         { x: 784431.551 },
         { x: 784411.896 },
@@ -50,7 +50,7 @@ describe('calculateStatistics edge cases', () => {
   });
 
   it('keeps a genuine zero, which is a measurement and not a missing cell', () => {
-    const stats = calculateStatistics(
+    const stats = calculateNumericStatistics(
       [{ val: 0 }, { val: 10 }, { val: null }],
       [{ name: 'val', type: 'number' }],
     );

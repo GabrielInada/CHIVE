@@ -14,7 +14,7 @@ const TIMERS_TO_FAKE = ['setTimeout', 'clearTimeout', 'setInterval', 'clearInter
 
 vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	...(await importOriginal()),
-	ROW_LIMIT: 2,
+	LARGE_DATASET_WARNING_ROWS: 2,
 }));
 
 const spec = {

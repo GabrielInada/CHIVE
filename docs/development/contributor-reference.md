@@ -220,7 +220,7 @@ npm test
 
 `app/debugApi.js` constructs `window.chiveDebug`, which exposes state getters
 (`getState`, `getStateSummary`, `getActiveDataset`, `getLoadedDatasets`), facade mutators
-(`updateDatasetColumns`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`,
+(`setActiveDatasetColumnSelection`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`,
 `showError`), and state-log helpers (`enableStateLog`, `disableStateLog`,
 `getStateLog`, `clearStateLog`).
 

@@ -2,7 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { uploadDatasetFiles } from '../../../../src/features/datasetWorkspace/workflows/uploadDataset.js';
-import { FILE_SIZE_LIMIT_BYTES } from '../../../../src/config/limits.js';
+import { LARGE_FILE_WARNING_BYTES } from '../../../../src/config/limits.js';
 import { setLocale, t } from '../../../../src/services/i18nService.js';
 import { addDataset, getActiveDatasetIndex, getAllDatasets, replaceAllState } from '../../../../src/state/appState.js';
 import { clearAllFeedback, showError } from '../../../../src/ui/feedback.js';
@@ -14,7 +14,7 @@ const TIMERS_TO_FAKE = ['setTimeout', 'clearTimeout', 'setInterval', 'clearInter
 
 vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	...(await importOriginal()),
-	ROW_LIMIT: 2,
+	LARGE_DATASET_WARNING_ROWS: 2,
 }));
 
 /** A real File; `size` overrides the reported size without a large buffer. */
@@ -98,19 +98,19 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 		expect(getAllDatasets().map(dataset => dataset.name)).toEqual(['good.csv']);
 	});
 
-	it('asks before reading a file above the size limit', async () => {
-		const size = FILE_SIZE_LIMIT_BYTES + 1;
+	it('asks before reading a file above the size warning threshold', async () => {
+		const size = LARGE_FILE_WARNING_BYTES + 1;
 		await uploadDatasetFiles([fileOf('huge.csv', 'v\n1\n', size)], { confirm });
 
 		expect(confirm).toHaveBeenCalledExactlyOnceWith(
-			text.largeFile('huge.csv', formatFileSize(size), formatFileSize(FILE_SIZE_LIMIT_BYTES)),
+			text.largeFile('huge.csv', formatFileSize(size), formatFileSize(LARGE_FILE_WARNING_BYTES)),
 		);
 		expect(getAllDatasets().map(dataset => dataset.name)).toEqual(['huge.csv']);
 	});
 
 	it('stays quiet when the size warning is declined', async () => {
 		confirm.mockReturnValue(false);
-		await uploadDatasetFiles([fileOf('huge.csv', 'v\n1\n', FILE_SIZE_LIMIT_BYTES + 1)], { confirm });
+		await uploadDatasetFiles([fileOf('huge.csv', 'v\n1\n', LARGE_FILE_WARNING_BYTES + 1)], { confirm });
 
 		expect(workerRequests).toEqual([]);
 		expect(document.querySelector('#toast-progress')).toBeNull();
@@ -118,7 +118,7 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 		expect(getAllDatasets()).toEqual([]);
 	});
 
-	it('asks before keeping more rows than the limit and keeps every row it approves', async () => {
+	it('asks above the row warning threshold and keeps every row it approves', async () => {
 		const reads = vi.spyOn(FileReader.prototype, 'readAsText');
 		await uploadDatasetFiles([fileOf('big.csv', 'v\n1\n2\n3\n')], { confirm }, { decimalSeparator: ',' });
 
@@ -194,7 +194,7 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 
 	it('names the file when its size warning cannot open', async () => {
 		confirm.mockImplementation(() => { throw new Error('private-detail'); });
-		await uploadDatasetFiles([fileOf('huge.csv', 'v\n1\n', FILE_SIZE_LIMIT_BYTES + 1), fileOf('next.csv', 'v\n1\n')], { confirm });
+		await uploadDatasetFiles([fileOf('huge.csv', 'v\n1\n', LARGE_FILE_WARNING_BYTES + 1), fileOf('next.csv', 'v\n1\n')], { confirm });
 
 		expect(notices()).toEqual([text.failed('huge.csv')]);
 		expect(document.body.textContent).not.toContain('private-detail');

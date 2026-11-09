@@ -606,7 +606,7 @@
 // ─── Stats (domain/datasets/statistics.js) ──────────────────────────────
 
 /**
- * Output of `calculateStatistics` for one numeric column.
+ * Output of `calculateNumericStatistics` for one numeric column.
  *
  * @typedef {Object} NumericColumnStats
  * @property {string} name

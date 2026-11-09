@@ -12,7 +12,7 @@ import {
 	setupFileInputListeners,
 } from '../../../src/features/datasetWorkspace/datasetController.js';
 import { FILE_IDS } from '../../../src/features/datasetWorkspace/domIds.js';
-import { FILE_SIZE_LIMIT_BYTES } from '../../../src/config/limits.js';
+import { LARGE_FILE_WARNING_BYTES } from '../../../src/config/limits.js';
 import { PRESET_CATALOG } from '../../../src/data/presetCatalog.js';
 import { setLocale, t } from '../../../src/services/i18nService.js';
 import { addDataset, getActiveDatasetIndex, getAllDatasets, replaceAllState } from '../../../src/state/appState.js';
@@ -137,7 +137,7 @@ describe('datasetController', () => {
 	it('asks the injected confirmation instead of opening the large-data dialog', async () => {
 		confirm.mockReturnValue(false);
 		const file = new File(['v\n1\n'], 'huge.csv');
-		Object.defineProperty(file, 'size', { value: FILE_SIZE_LIMIT_BYTES + 1 });
+		Object.defineProperty(file, 'size', { value: LARGE_FILE_WARNING_BYTES + 1 });
 
 		await handleFileUpload([file]);
 

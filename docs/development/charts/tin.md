@@ -632,10 +632,11 @@ Policy, in order:
    (0–4) via `clampDepth`.
 3. **Leaf budget:** while `triangleCount * 4 ** depth > TIN_CHART.maxSurfaceLeaves`,
    decrement depth (floored at 0). This caps total geometry work on very large
-   renders. Uploads are already bounded elsewhere by `FILE_SIZE_LIMIT_BYTES` (15 MB)
-   and `ROW_LIMIT` (200000 rows), but a large allowed dataset can still be expensive
-   to triangulate, subdivide, overlay, and export. The fallback is a coarser surface
-   fill, not input rejection.
+   renders. Uploads above `LARGE_FILE_WARNING_BYTES` (15 MiB) or
+   `LARGE_DATASET_WARNING_ROWS` (200000 rows) prompt for confirmation; users can
+   approve larger inputs. Those thresholds do not bound rendering work. A large
+   dataset can still be expensive to triangulate, subdivide, overlay, and export.
+   The fallback is a coarser surface fill, not input rejection.
 
 ### 7.10 Subdivision and grouped path emission (`appendSubdividedFragments`)
 
@@ -849,11 +850,12 @@ Grouping removes one-element-per-leaf DOM output, with the strongest fixed bound
 Optimized mode. Full ramp can produce more fill paths because it deliberately keeps
 exact colors. The Delaunay triangulation and subdivision CPU still run each render.
 This is a fill/render performance control, **not** a full client-side DoS guard. CHIVE
-has upload-level caps (`FILE_SIZE_LIMIT_BYTES = 15 MB`, `ROW_LIMIT = 200000`), but
-within those caps Delaunay construction, fill grouping, points/edges/z-label overlays,
-isoline segment counts, and panel-export payload size can still be large. Broader
-input-size policy is cross-cutting across chart types and is outside this
-renderer-specific design.
+prompts for confirmation above `LARGE_FILE_WARNING_BYTES` (15 MiB) and
+`LARGE_DATASET_WARNING_ROWS` (200000 rows), and users can approve larger inputs.
+Delaunay construction, fill grouping, points/edges/z-label overlays, isoline
+segment counts, and panel-export payload size can still be large, even below
+those thresholds. Broader input-size policy is cross-cutting across chart types
+and is outside this renderer-specific design.
 
 ### 9.4 The live-preview panel skip
 
@@ -879,7 +881,7 @@ Two events are wired on each color input (the `color` widget in
 [describedControls.js](../../../src/charts/shared/controls/describedControls.js)):
 
 - **`input`** (fires continuously while the picker is open): writes the new color
-  through `normalizeActiveDatasetConfig` — a **non-emitting** facade that updates
+  through `transformActiveDatasetConfigSilently` — a **non-emitting** facade that updates
   state without firing `CONFIG_UPDATED` (which would trigger a config render and
   rebuild the controls sidebar). Then it calls `triggerLiveRender()`.
 - **`change`** (fires when the picker closes): writes through the normal emitting

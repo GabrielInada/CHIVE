@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => ({
 	renderCharts: vi.fn(),
 	updateTabs: vi.fn(),
 	renderTablePreview: vi.fn(),
-	renderStats: vi.fn(),
+	renderNumericStats: vi.fn(),
 	renderCategoricalStats: vi.fn(),
 	renderColumnControlsDOM: vi.fn(),
 	openGlobalFilterDialog: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock('../../../src/features/datasetWorkspace/views/tablePreviewView.js', () =
 }));
 
 vi.mock('../../../src/features/datasetWorkspace/views/statsView.js', () => ({
-	renderStats: mocks.renderStats,
+	renderNumericStats: mocks.renderNumericStats,
 	renderCategoricalStats: mocks.renderCategoricalStats,
 }));
 
@@ -104,7 +104,7 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 		const filtered = [{ region: 'A', value: 1 }];
 		expect(shown.rows).toEqual(filtered);
 		expect(mocks.renderTablePreview).toHaveBeenCalledWith(shown.rows, COLUMNS, 10);
-		expect(mocks.renderStats).toHaveBeenCalledWith(shown.rows, COLUMNS);
+		expect(mocks.renderNumericStats).toHaveBeenCalledWith(shown.rows, COLUMNS);
 		expect(mocks.renderCategoricalStats).toHaveBeenCalledWith(shown.rows, COLUMNS);
 		const triggerState = mocks.updateTabs.mock.calls[0][3].triggerState;
 		expect(triggerState).toEqual(expect.objectContaining({

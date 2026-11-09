@@ -17,7 +17,7 @@ import { PREVIEW_DEFAULT_ROWS, PREVIEW_MIN_ROWS } from '../../config/limits.js';
 import { renderCharts } from './views/chartsView.js';
 import { updateTabs } from './views/tabsView.js';
 import { renderTablePreview } from './views/tablePreviewView.js';
-import { renderStats, renderCategoricalStats } from './views/statsView.js';
+import { renderNumericStats, renderCategoricalStats } from './views/statsView.js';
 import { renderColumnControlsDOM } from './views/columnControlsView.js';
 import { VIEW_IDS, FILE_IDS, BADGE_IDS, WORKSPACE_ACTION_IDS } from './domIds.js';
 import { openGlobalFilterDialog } from './dialogs/globalFilterDialog.js';
@@ -128,7 +128,7 @@ export function renderDatasetWorkspace(shown, {
   );
 
   renderTablePreview(filteredRows, visibleColumns, rowLimit);
-  renderStats(filteredRows, visibleColumns);
+  renderNumericStats(filteredRows, visibleColumns);
   renderCategoricalStats(filteredRows, visibleColumns);
   renderCharts(shown, onChartConfigChange);
 

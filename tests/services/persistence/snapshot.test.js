@@ -42,7 +42,7 @@ describe('persistence snapshot normalization', () => {
 	});
 
 	describe('precomputed stats invalidation', () => {
-		// Numbers produced by an older calculateStatistics can carry a string
+		// Numbers produced by an older calculateNumericStatistics can carry a string
 		// min or a zero-skewed mean, and older categories keyed dates by text
 		// that canonical cells no longer match, so a version mismatch drops the
 		// stale part and statsView recomputes it.

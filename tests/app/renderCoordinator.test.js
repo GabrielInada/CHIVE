@@ -22,7 +22,7 @@ const mocks = vi.hoisted(() => ({
 		PREVIEW_ROWS_CHANGED: 'preview-rows-changed',
 	},
 	setPreviewRows: vi.fn(),
-	updateActiveDatasetColumns: vi.fn(),
+	setActiveDatasetColumnSelection: vi.fn(),
 	updateActiveDatasetConfig: vi.fn(),
 	initializeLayoutSelector: vi.fn(),
 	renderSidebarPanel: vi.fn(),
@@ -62,7 +62,7 @@ vi.mock('../../src/state/appState.js', () => ({
 	onStateChange: mocks.onStateChange,
 	STATE_EVENTS: mocks.STATE_EVENTS,
 	setPreviewRows: mocks.setPreviewRows,
-	updateActiveDatasetColumns: mocks.updateActiveDatasetColumns,
+	setActiveDatasetColumnSelection: mocks.setActiveDatasetColumnSelection,
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
@@ -213,7 +213,7 @@ describe('renderCoordinator', () => {
 		expect(options).toEqual({
 			previewRows: 25,
 			onPreviewRowsChange: expect.any(Function),
-			onColumnSelectionChange: coordinator.updateDatasetColumns,
+			onColumnSelectionChange: coordinator.setActiveDatasetColumnSelection,
 			onChartConfigChange: coordinator.updateDatasetConfig,
 		});
 		// The controls sidebar reads the value the workspace drew from.
@@ -225,7 +225,7 @@ describe('renderCoordinator', () => {
 		options.onColumnSelectionChange(['value']);
 		options.onChartConfigChange({ activeTab: 'charts' });
 		expect(mocks.setPreviewRows).toHaveBeenCalledWith(50);
-		expect(mocks.updateActiveDatasetColumns).toHaveBeenCalledWith(['value']);
+		expect(mocks.setActiveDatasetColumnSelection).toHaveBeenCalledWith(['value']);
 		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
 
 		mocks.setPreviewRows.mockImplementationOnce(() => {

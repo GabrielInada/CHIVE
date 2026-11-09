@@ -101,7 +101,7 @@ describe('dataStateFacade', () => {
 		expect(emitStateChange).not.toHaveBeenCalledWith('configUpdated', expect.anything());
 	});
 
-	it('updateActiveDatasetColumns does nothing without active dataset', () => {
+	it('setActiveDatasetColumnSelection does nothing without active dataset', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
 			data: { datasets: [], activeIndex: -1 },
@@ -110,7 +110,7 @@ describe('dataStateFacade', () => {
 		};
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
-		expect(() => facade.updateActiveDatasetColumns(['a'])).not.toThrow();
+		expect(() => facade.setActiveDatasetColumnSelection(['a'])).not.toThrow();
 	});
 
 	it('stores a copy of valid selected columns and suppresses unchanged writes', () => {
@@ -128,13 +128,13 @@ describe('dataStateFacade', () => {
 		const facade = createDataStateFacade({ appState, emitStateChange });
 		const selection = ['b', 'a'];
 
-		facade.updateActiveDatasetColumns(selection);
+		facade.setActiveDatasetColumnSelection(selection);
 		expect(dataset.selectedColumns).toEqual(['b', 'a']);
 		expect(dataset.selectedColumns).not.toBe(selection);
 		expect(emitStateChange).toHaveBeenCalledWith('columnsUpdated', ['b', 'a']);
 
 		emitStateChange.mockClear();
-		facade.updateActiveDatasetColumns(['b', 'a']);
+		facade.setActiveDatasetColumnSelection(['b', 'a']);
 		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 
@@ -152,10 +152,10 @@ describe('dataStateFacade', () => {
 		};
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
-		expect(() => facade.updateActiveDatasetColumns('a')).toThrow('Invalid selected columns');
-		expect(() => facade.updateActiveDatasetColumns(['missing'])).toThrow('Invalid selected columns');
-		expect(() => facade.updateActiveDatasetColumns(['a', 'a'])).toThrow('Invalid selected columns');
-		expect(() => facade.updateActiveDatasetColumns(['a', null])).toThrow('Invalid selected columns');
+		expect(() => facade.setActiveDatasetColumnSelection('a')).toThrow('Invalid selected columns');
+		expect(() => facade.setActiveDatasetColumnSelection(['missing'])).toThrow('Invalid selected columns');
+		expect(() => facade.setActiveDatasetColumnSelection(['a', 'a'])).toThrow('Invalid selected columns');
+		expect(() => facade.setActiveDatasetColumnSelection(['a', null])).toThrow('Invalid selected columns');
 		expect(dataset.selectedColumns).toEqual(['a']);
 		expect(emitStateChange).not.toHaveBeenCalled();
 	});
@@ -348,7 +348,7 @@ describe('dataStateFacade', () => {
 		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 
-	it('normalizeActiveDatasetConfig writes config without emitting configUpdated', () => {
+	it('transformActiveDatasetConfigSilently writes config without emitting configUpdated', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
 			data: { datasets: [{ rows: [{}], columns: [], chartConfig: { color: 'red' } }], activeIndex: 0 },
@@ -357,13 +357,13 @@ describe('dataStateFacade', () => {
 		};
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
-		facade.normalizeActiveDatasetConfig(prev => ({ ...prev, normalized: true }));
+		facade.transformActiveDatasetConfigSilently(prev => ({ ...prev, color: 'blue' }));
 
-		expect(appState.data.datasets[0].chartConfig).toEqual({ color: 'red', normalized: true });
-		expect(emitStateChange).not.toHaveBeenCalledWith('configUpdated', expect.anything());
+		expect(appState.data.datasets[0].chartConfig).toEqual({ color: 'blue' });
+		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 
-	it('normalizeActiveDatasetConfig is a no-op when no dataset is active', () => {
+	it('transformActiveDatasetConfigSilently is a no-op when no dataset is active', () => {
 		const emitStateChange = vi.fn();
 		const appState = {
 			data: { datasets: [], activeIndex: -1 },
@@ -372,7 +372,7 @@ describe('dataStateFacade', () => {
 		};
 		const facade = createDataStateFacade({ appState, emitStateChange });
 
-		expect(() => facade.normalizeActiveDatasetConfig(() => ({ x: 1 }))).not.toThrow();
+		expect(() => facade.transformActiveDatasetConfigSilently(() => ({ x: 1 }))).not.toThrow();
 		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 
