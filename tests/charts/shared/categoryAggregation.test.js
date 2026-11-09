@@ -166,14 +166,24 @@ describe('the categories a chart draws', () => {
 	});
 
 	it.each([
-		['count-desc', ['C', 'B', 'D'], 2],
-		['count-asc', ['A', 'E', 'B'], 5],
+		['value-desc', ['C', 'B', 'D'], 2],
+		['value-asc', ['A', 'E', 'B'], 5],
 		['label-asc', ['A', 'B', 'C'], 3],
 		['label-desc', ['E', 'D', 'C'], 3],
 	])('orders by %s before the cut', (sort, expected, rest) => {
 		const result = aggregateCategories(mixed, 'c', { ...count, sort, topN: 3 });
 		expect(result.entries.map(entry => entry.key)).toEqual(expected);
 		expect(result.rest).toBe(rest);
+	});
+
+	it.each([
+		['sum', 'value-desc', ['A', 'B', 'C']],
+		['sum', 'value-asc', ['E', 'D', 'C']],
+		['mean', 'value-desc', ['A', 'B', 'C']],
+		['mean', 'value-asc', ['E', 'D', 'C']],
+	])('orders the %s by %s before Top-N, independently of counts', (measureMode, sort, expected) => {
+		const result = aggregateCategories(mixed, 'c', { ...measures[measureMode], sort, topN: 3 });
+		expect(result.entries.map(entry => entry.key)).toEqual(expected);
 	});
 
 	it.each([

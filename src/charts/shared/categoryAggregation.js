@@ -16,11 +16,11 @@ import { compareCategoryKeys } from './categoryOrder.js';
  * @typedef {{ key: string, label: string, token: string, value: number, firstRow: Object<string, *> }} CategoryEntry
  */
 
-// The orders bar offers, by sort mode. The count orders follow the measure
-// despite their names. Ties fall back to the category key, missing bucket last.
+// The orders bar offers, by sort mode. Value orders compare the selected
+// measure. Ties fall back to the category key, missing bucket last.
 const ORDERS = Object.freeze({
-	'count-desc': (a, b) => b.value - a.value || compareCategoryKeys(a.key, b.key),
-	'count-asc': (a, b) => a.value - b.value || compareCategoryKeys(a.key, b.key),
+	'value-desc': (a, b) => b.value - a.value || compareCategoryKeys(a.key, b.key),
+	'value-asc': (a, b) => a.value - b.value || compareCategoryKeys(a.key, b.key),
 	'label-asc': (a, b) => compareCategoryKeys(a.key, b.key),
 	'label-desc': (a, b) => compareCategoryKeys(a.key, b.key, -1),
 });
@@ -81,7 +81,7 @@ export function aggregateCategories(rows, categoryColumn, { measureMode, valueCo
 		entries = entries.filter(entry => entry.value > 0);
 		if (entries.length === 0) return { ok: false, reason: 'no-positive-value' };
 	}
-	entries.sort(Object.hasOwn(ORDERS, sort) ? ORDERS[sort] : ORDERS['count-desc']);
+	entries.sort(Object.hasOwn(ORDERS, sort) ? ORDERS[sort] : ORDERS['value-desc']);
 	const cut = topN > 0 ? entries.splice(topN) : [];
 	return { ok: true, entries, rest: cut.length > 0 ? sumValues(cut) : null, total: sumValues(entries) };
 }

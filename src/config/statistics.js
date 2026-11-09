@@ -26,10 +26,13 @@ export const STATS_NUMERIC_VERSION = 1;
  * checked at the hydration boundary like {@link STATS_NUMERIC_VERSION}.
  *
  * Bump this whenever `calculateCategoricalStatistics` changes which values it
- * counts or how it keys them.
+ * counts, how it keys them, or the shape of its cached results.
  *
  * 1: initial. Older blobs were computed before cells were canonical: a date
  *    column's categories were keyed by the text of a local-time `Date`, which
  *    its canonical cells no longer match.
+ * 2: fraction fields use `missingFraction`, `modeFraction`, and `top5Fraction`
+ *    instead of the misleading `Pct` suffix. Version 1 caches are discarded
+ *    at hydration and recomputed from rows; numeric caches remain valid.
  */
-export const STATS_CATEGORICAL_VERSION = 1;
+export const STATS_CATEGORICAL_VERSION = 2;

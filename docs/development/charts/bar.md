@@ -185,7 +185,7 @@ controls, presentation flow, and renderer read the stored values as given.
 | `category` | Categorical column bound to the x axis | `null` |
 | `measureMode` | `'count'`, `'sum'`, or `'mean'` | `'count'` |
 | `valueColumn` | Numeric column reduced in sum/mean mode | `null` |
-| `sort` | `'count-desc'` / `'count-asc'` / `'label-asc'` / `'label-desc'` | `'count-desc'` |
+| `sort` | `'value-desc'` / `'value-asc'` / `'label-asc'` / `'label-desc'` | `'value-desc'` |
 | `topN` | Keep first N bars after sorting (0 = all) | `10` |
 | `colorMode` | `'uniform'`, `'gradient'`, or `'gradient-manual'` | `'uniform'` |
 | `color` | Uniform-mode bar color | `CHART_COLORS.bar` (`#d4622a`) |
@@ -233,7 +233,9 @@ as the measure select (section 5.3).
    the definition's `allowedValues.measureMode` and `allowedValues.sort`, and the Top-N select
    `BAR_CHART.topNOptions`. The two value orders of the sort select name the measure with its
    short label ("Sum (high → low)", the description's `optionLabelParams`); their stored
-   values stay `count-desc` and `count-asc`.
+   values are `value-desc` and `value-asc`. Saved `count-desc` and `count-asc`
+   values are translated before enum validation in `mergeChartConfigWithDefaults`,
+   for both dataset configurations and Panel captures.
 2. **Display** (expanded): custom title text, x/y axis-label toggles.
 3. **Styling** (collapsed): color-mode select, the uniform color input, the gradient
    min/max color inputs, and (conditionally) the gradient-distribution select or the
@@ -356,8 +358,8 @@ treemap, and bubble share:
 
 ### 7.3 Sort, Top-N, and the empty guard
 
-`aggregateCategories` orders the entries by bar's `sort`: largest first for `count-desc`, the
-default, or by one of the other count/label orderings of section 2.5, each with a
+`aggregateCategories` orders the entries by bar's `sort`: largest first for `value-desc`, the
+default, or by one of the other value/label orderings of section 2.5, each with a
 `compareCategoryKeys` tiebreaker for stable order; label sorts keep the missing bucket last
 in both directions. It then keeps the first `topN` entries when `topN > 0`. Bar does not ask
 it to leave out values at or below 0, so every category gets a bar (section 7.5). With no

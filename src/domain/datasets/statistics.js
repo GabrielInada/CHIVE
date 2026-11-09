@@ -82,13 +82,13 @@ export function calculateCategoricalStatistics(rows, columns) {
 					name,
 					n: 0,
 					missing,
-					missingPct: total > 0 ? missing / total : 0,
+					missingFraction: total > 0 ? missing / total : 0,
 					unique: 0,
 					uniquenessRate: 0,
 					mode: null,
 					modeCount: 0,
-					modePct: 0,
-					top5Pct: 0,
+					modeFraction: 0,
+					top5Fraction: 0,
 					empty: true,
 				};
 			}
@@ -111,13 +111,13 @@ export function calculateCategoricalStatistics(rows, columns) {
 				name,
 				n,
 				missing,
-				missingPct: total > 0 ? missing / total : 0,
+				missingFraction: total > 0 ? missing / total : 0,
 				unique,
 				uniquenessRate: n > 0 ? unique / n : 0,
 				mode,
 				modeCount,
-				modePct: n > 0 ? modeCount / n : 0,
-				top5Pct: n > 0 ? top5Sum / n : 0,
+				modeFraction: n > 0 ? modeCount / n : 0,
+				top5Fraction: n > 0 ? top5Sum / n : 0,
 				empty: false,
 			};
 		});

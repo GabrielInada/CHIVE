@@ -74,6 +74,10 @@ function withAllowedValues(block, allowedValues, defaultBlock) {
  * into a one-element `nestingColumns` array. This preserves pre-multilevel
  * bubble configs across reloads.
  *
+ * Legacy bar sort names `count-desc` and `count-asc` become `value-desc` and
+ * `value-asc` before the allowed-value check, preserving saved sort direction
+ * for count, sum, and mean measures, including Panel captures.
+ *
  * Each block's enumerated settings, the keys of its chart definition's
  * `allowedValues`, then hold only values the chart offers: any other value
  * becomes the chart's default. The check runs here, not only in
@@ -146,6 +150,11 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 			...asPlainObject(config.scatter3d),
 		},
 	};
+
+	// Both dataset configs and saved Panel specs pass through this migration.
+	// Translate before enum validation so an ascending choice cannot fall back.
+	if (merged.bar.sort === 'count-desc') merged.bar.sort = 'value-desc';
+	else if (merged.bar.sort === 'count-asc') merged.bar.sort = 'value-asc';
 
 	for (const { key, allowedValues } of Object.values(CHART_DEFINITIONS)) {
 		merged[key] = withAllowedValues(merged[key], allowedValues, defaults[key]);
