@@ -149,19 +149,19 @@ describe('statsView', () => {
 						name: 'region',
 						n: 2,
 						missing: 0,
-						missingPct: 0,
+						missingFraction: 0,
 						unique: 2,
 						uniquenessRate: 1,
 						mode: 'A very long region name',
 						modeCount: 1,
-						modePct: 0.5,
-						top5Pct: 1,
+						modeFraction: 0.5,
+						top5Fraction: 1,
 					},
 					{
 						name: 'emptyText',
 						empty: true,
 						missing: 2,
-						missingPct: 1,
+						missingFraction: 1,
 					},
 				],
 			},
@@ -179,21 +179,24 @@ describe('statsView', () => {
 		expect(document.querySelectorAll('#container-cat-stats .stat-col').length).toBe(2);
 		expect(document.querySelector('[title="A very long region name"]')).not.toBeNull();
 		expect(document.getElementById('container-cat-stats').textContent).toContain('chive-cat-stat-empty');
+		expect(document.getElementById('container-cat-stats').textContent).toContain('50.0%');
+		expect(document.getElementById('container-cat-stats').textContent).toContain('100.0%');
 	});
 
 	it.each([
 		['a stale version', 0],
+		['version 1 with percentage-named fields', 1],
 		['no version at all', undefined],
 	])('recomputes categorical stats once when the cache carries %s', (_label, categoricalVersion) => {
 		const ownRows = rows.map(row => ({ ...row }));
-		const staleStats = [{ name: 'region', n: 2, missing: 0, unique: 2, mode: 'stale' }];
+		const staleStats = [{ name: 'region', n: 2, missing: 0, missingPct: 0, unique: 2, uniquenessRate: 1, mode: 'stale', modeCount: 1, modePct: 0.5, top5Pct: 1 }];
 		mocks.getActiveDataset.mockReturnValue({
 			rows: ownRows,
 			columns: visibleColumns,
 			precomputedStats: { categoricalVersion, categorical: staleStats },
 		});
 		mocks.calculateCategoricalStatistics.mockReturnValue([
-			{ name: 'region', n: 2, missing: 0, missingPct: 0, unique: 2, uniquenessRate: 1, mode: 'North', modeCount: 1, modePct: 0.5, top5Pct: 1 },
+			{ name: 'region', n: 2, missing: 0, missingFraction: 0, unique: 2, uniquenessRate: 1, mode: 'North', modeCount: 1, modeFraction: 0.5, top5Fraction: 1 },
 		]);
 
 		renderCategoricalStats(ownRows, visibleColumns);
@@ -202,6 +205,9 @@ describe('statsView', () => {
 		expect(mocks.calculateCategoricalStatistics).toHaveBeenCalledTimes(1);
 		expect(mocks.calculateCategoricalStatistics).toHaveBeenCalledWith(ownRows, visibleColumns);
 		expect(document.querySelector('[title="North"]')).not.toBeNull();
+		expect(document.querySelector('[title="stale"]')).toBeNull();
+		expect(document.getElementById('container-cat-stats').textContent).toContain('50.0%');
+		expect(document.getElementById('container-cat-stats').textContent).toContain('100.0%');
 	});
 
 	it('falls back to live categorical calculation and tolerates missing optional DOM nodes', () => {
@@ -210,13 +216,13 @@ describe('statsView', () => {
 				name: 'region',
 				n: 2,
 				missing: 0,
-				missingPct: 0,
+				missingFraction: 0,
 				unique: 2,
 				uniquenessRate: 1,
 				mode: 'North',
 				modeCount: 1,
-				modePct: 0.5,
-				top5Pct: 1,
+				modeFraction: 0.5,
+				top5Fraction: 1,
 			},
 		]);
 

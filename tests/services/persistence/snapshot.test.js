@@ -43,9 +43,9 @@ describe('persistence snapshot normalization', () => {
 
 	describe('precomputed stats invalidation', () => {
 		// Numbers produced by an older calculateNumericStatistics can carry a string
-		// min or a zero-skewed mean, and older categories keyed dates by text
-		// that canonical cells no longer match, so a version mismatch drops the
-		// stale part and statsView recomputes it.
+		// min or a zero-skewed mean. Older categorical caches use legacy field
+		// names or date keys, so a version mismatch drops the stale part and
+		// statsView recomputes it.
 		const CURRENT_STATS = {
 			numericVersion: STATS_NUMERIC_VERSION,
 			categoricalVersion: STATS_CATEGORICAL_VERSION,
@@ -66,6 +66,7 @@ describe('persistence snapshot normalization', () => {
 
 		it.each([
 			['a stale version', 0],
+			['version 1 with percentage-named fields', 1],
 			['no version at all', undefined],
 		])('drops categorical stats carrying %s while keeping numeric', (_label, categoricalVersion) => {
 			const normalized = normalizeStoredSnapshot(snapshotWith({ ...CURRENT_STATS, categoricalVersion }));

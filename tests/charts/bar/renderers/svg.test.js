@@ -225,7 +225,7 @@ describe('renderBarChart behavior', () => {
 
 		result = renderBarChart(container, rows, {
 			category: 'categoria',
-			sort: 'count-asc',
+			sort: 'value-asc',
 			colorMode: 'gradient-manual',
 			manualThresholdPct: 150,
 			gradientMinColor: '#111111',

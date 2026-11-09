@@ -40,6 +40,25 @@ describe('rehydratePanelChartSpecs', () => {
 		expect(config.showXAxisLabel).toBe(true);
 	});
 
+	it.each([
+		['count-desc', 'value-desc'],
+		['count-asc', 'value-asc'],
+	])('migrates the saved Panel sort %s while preserving its capture', (legacySort, sort) => {
+		const config = Object.freeze({ category: 'region', measureMode: 'sum', valueColumn: 'sales', sort: legacySort });
+		const dataSnapshot = [{ region: 'North', sales: 12 }];
+		const columnsSnapshot = [{ name: 'region', type: 'text' }, { name: 'sales', type: 'number' }];
+		const spec = Object.freeze({ id: 'c1', type: 'bar', config, dataSnapshot, columnsSnapshot });
+		const panel = { charts: [spec], slots: { left: 'c1' } };
+		const result = rehydratePanelChartSpecs(panel);
+
+		expect(result.charts[0].config).toMatchObject({ category: 'region', measureMode: 'sum', valueColumn: 'sales', sort });
+		expect(result.charts[0].dataSnapshot).toBe(dataSnapshot);
+		expect(result.charts[0].columnsSnapshot).toBe(columnsSnapshot);
+		expect(result.slots).toEqual(panel.slots);
+		expect(config.sort).toBe(legacySort);
+		expect(rehydratePanelChartSpecs(result)).toEqual(result);
+	});
+
 	it('re-merges a saved scatter3d spec against the new chart defaults', () => {
 		const panel = {
 			id: 'p1',

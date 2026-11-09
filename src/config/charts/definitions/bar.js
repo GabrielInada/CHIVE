@@ -9,8 +9,8 @@ const COLOR = '#d4622a';
 export const BAR_CHART = {
   padding: 0.14,
   ticks: 6,
-  sortOptions: ['count-desc', 'count-asc', 'label-asc', 'label-desc'],
-  defaultSort: 'count-desc',
+  sortOptions: ['value-desc', 'value-asc', 'label-asc', 'label-desc'],
+  defaultSort: 'value-desc',
   topNOptions: [0, 10, 20, 50],
   defaultTopN: 10,
   measureModes: ['count', 'sum', 'mean'],

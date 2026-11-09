@@ -68,7 +68,8 @@ function sanitizeChartConfig(chartConfig, declaredColumnNames) {
 // Cached stats are only trustworthy when they were produced by the current
 // statistics implementation. An older numeric blob may carry a string `min` or
 // a zero-skewed `mean` from when blank cells were counted, and an older
-// categorical blob keyed dates by text the canonical cells no longer match.
+// categorical blob may use legacy fraction fields or date keys the canonical
+// cells no longer match.
 // Drop each stale part and let statsView recompute it.
 function withValidStats(precomputedStats) {
 	if (!isPlainObject(precomputedStats)) return precomputedStats;

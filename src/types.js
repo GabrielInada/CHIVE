@@ -627,13 +627,13 @@
  * @property {string} name
  * @property {number} n - Count of non-missing values.
  * @property {number} missing
- * @property {number} missingPct - 0 to 1 inclusive.
+ * @property {number} missingFraction - `missing / (n + missing)`, from 0 to 1 (0 for no rows).
  * @property {number} unique - Distinct value count.
  * @property {number} uniquenessRate - `unique / n` (0 when `n === 0`).
  * @property {string | null} mode - Most-frequent value as a string; `null` only when `n === 0`. Ties broken by `localeCompare`.
  * @property {number} modeCount
- * @property {number} modePct - `modeCount / n`.
- * @property {number} top5Pct - Sum of the top 5 frequencies divided by `n`.
+ * @property {number} modeFraction - `modeCount / n`, from 0 to 1 (0 when `n === 0`).
+ * @property {number} top5Fraction - Sum of the top 5 frequencies divided by `n`, from 0 to 1 (0 when `n === 0`).
  * @property {boolean} empty - `true` when `n === 0`.
  */
 

@@ -43,7 +43,7 @@ import { createBarColorAccessor } from '../color.js';
  *
  * The full option bag varies; see `BAR_CHART` and `BAR_DEFINITION` in
  * `config/charts/definitions/bar.js` for the field set and defaults.
- * Frequently used keys include `sort` (count-desc/asc, label-asc/desc),
+ * Frequently used keys include `sort` (value-desc/asc, label-asc/desc),
  * `topN`, `measureMode`
  * ('count' | 'sum' | 'mean'), `valueColumn`, `colorMode`
  * ('uniform' | 'gradient' | 'gradient-manual'), color stops, axis label

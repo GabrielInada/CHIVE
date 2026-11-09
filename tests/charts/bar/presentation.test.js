@@ -27,7 +27,7 @@ it('draws stored measure, sort, title and color settings with translated labels'
 	const result = draw([
 		{ team: 'North', sales: 10 }, { team: 'North', sales: 20 }, { team: 'South', sales: 5 },
 	], {
-		measureMode: 'mean', valueColumn: 'sales', topN: 1, sort: 'count-desc',
+		measureMode: 'mean', valueColumn: 'sales', topN: 1, sort: 'value-desc',
 		customTitle: 'Resultados', chartHeight: 300, color: '#123456', showXAxisLabel: false,
 	});
 	expect(result.ok).toBe(true);

@@ -208,7 +208,7 @@ export function renderCategoricalStats(rows, visibleColumns) {
 			column.appendChild(createStatLine(t('chive-cat-stat-non-empty'), '0'));
 			column.appendChild(createStatLine(
 				t('chive-cat-stat-missing'),
-				`${stat.missing.toLocaleString(locale)} (${formatPct(stat.missingPct)})`,
+				`${stat.missing.toLocaleString(locale)} (${formatPct(stat.missingFraction)})`,
 			));
 			const empty = document.createElement('div');
 			empty.className = 'stat-row';
@@ -223,7 +223,7 @@ export function renderCategoricalStats(rows, visibleColumns) {
 		column.appendChild(createStatLine(t('chive-cat-stat-non-empty'), stat.n.toLocaleString(locale)));
 		column.appendChild(createStatLine(
 			t('chive-cat-stat-missing'),
-			`${stat.missing.toLocaleString(locale)} (${formatPct(stat.missingPct)})`,
+			`${stat.missing.toLocaleString(locale)} (${formatPct(stat.missingFraction)})`,
 		));
 		column.appendChild(createStatLine(
 			t('chive-cat-stat-unique'),
@@ -231,11 +231,11 @@ export function renderCategoricalStats(rows, visibleColumns) {
 		));
 		const modeLine = createStatLine(
 			t('chive-cat-stat-mode'),
-			`${truncateText(stat.mode)} · ${stat.modeCount.toLocaleString(locale)} (${formatPct(stat.modePct)})`,
+			`${truncateText(stat.mode)} · ${stat.modeCount.toLocaleString(locale)} (${formatPct(stat.modeFraction)})`,
 		);
 		modeLine.title = String(stat.mode ?? '');
 		column.appendChild(modeLine);
-		column.appendChild(createStatLine(t('chive-cat-stat-top5-pct'), formatPct(stat.top5Pct)));
+		column.appendChild(createStatLine(t('chive-cat-stat-top5-pct'), formatPct(stat.top5Fraction)));
 
 		container.appendChild(column);
 	});

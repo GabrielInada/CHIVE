@@ -496,13 +496,19 @@ whole project, so overlapping two produces a result neither asked for.
 - `canonicalizeChartConfig` fills defaults, migrates known legacy shape, and
   removes stale global-filter column references. It replaces an enumerated
   setting whose value is not in its chart definition's `allowedValues` with the
-  chart's default; `mergeChartConfigWithDefaults`, which it builds on, applies
-  the same check when Panel rehydration merges a saved chart's block. It does
-  not validate other scalars and does not remove every unknown top-level key.
+  chart's default; `mergeChartConfigWithDefaults`, which it builds on, first
+  translates legacy bar sorts `count-desc` / `count-asc` to `value-desc` /
+  `value-asc`, then applies the same check when Panel rehydration merges a saved
+  chart's block. It does not validate other scalars and does not remove every
+  unknown top-level key.
   Render and Panel captures read the stored config as it is.
 - Persistence normalization, `addDataset`, emitting config writes, and
   `replaceAllState` canonicalize committed dataset config. Hydration does not
   rewrite stored bytes on its own.
+- Cached categorical statistics use `missingFraction`, `modeFraction`, and
+  `top5Fraction` for 0–1 values. `STATS_CATEGORICAL_VERSION = 2` invalidates older
+  categorical caches at hydration; the view recomputes them from canonical rows.
+  Numeric caches keep their independent version, and display still uses percentages.
 - `transformActiveDatasetConfigSilently` is the intentional non-emitting preview escape
   hatch. `getPanelBlocks` and `repairPanelSlotReferences` also have non-emitting repair
   side effects.
