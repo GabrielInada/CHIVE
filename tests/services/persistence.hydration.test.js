@@ -22,6 +22,34 @@ describe('persistence', () => {
 		configurePersistenceBackend(null);
 	});
 
+	it.each([
+		['preview', 'preview'],
+		['charts', 'charts'],
+		['panel', 'panel'],
+		[undefined, 'preview'],
+		['unknown', 'preview'],
+		['', 'preview'],
+		[null, 'preview'],
+		[1, 'preview'],
+		[true, 'preview'],
+		[['charts'], 'preview'],
+		[{ tab: 'charts' }, 'preview'],
+	])('hydrates saved activeTab %j as %s', async (activeTab, expectedTab) => {
+		const dataset = {
+			...goodRecord(),
+			chartConfig: activeTab === undefined ? {} : { activeTab },
+		};
+		const saved = await persistState(makeSnapshot({ data: { datasets: [dataset], activeIndex: 0 } }));
+		expect(saved.ok).toBe(true);
+
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+
+		expect(applyStateSnapshot).toHaveBeenCalledTimes(1);
+		const restored = applyStateSnapshot.mock.calls[0][0];
+		expect(restored.data.datasets[0].chartConfig.activeTab).toBe(expectedTab);
+	});
+
 	it('persists project state to SQLite and hydrates UI prefs from localStorage', async () => {
 		localStorage.setItem('chive.ui', JSON.stringify({ sidebarMode: 'panel', previewRows: 25 }));
 		const result = await persistState(makeSnapshot());
