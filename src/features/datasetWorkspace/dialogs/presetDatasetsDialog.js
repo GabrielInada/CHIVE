@@ -2,7 +2,7 @@
  * Preset datasets picker dialog. Modal grid of bundled-preset cards;
  * resolves with the chosen `PresetCatalogEntry` or `null` on cancel.
  *
- * @typedef {import('../../types.js').PresetCatalogEntry} PresetCatalogEntry
+ * @typedef {import('../../../types.js').PresetCatalogEntry} PresetCatalogEntry
  */
 
 import { PRESET_CATALOG } from '../../../data/presetCatalog.js';
