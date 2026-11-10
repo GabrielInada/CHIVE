@@ -279,10 +279,10 @@ export function exportPanelLayoutSvg() {
  * listener each call, so callers should invoke this at most once.
  */
 export function setupPanelEventListeners() {
-	const btnExportar = document.getElementById('btn-export-panel');
+	const exportButton = document.getElementById('btn-export-panel');
 
-	if (btnExportar) {
-		btnExportar.addEventListener('click', () => {
+	if (exportButton) {
+		exportButton.addEventListener('click', () => {
 			const result = exportPanelLayoutSvg();
 			if (!feedbackCallback) return;
 			if (!result.ok) {

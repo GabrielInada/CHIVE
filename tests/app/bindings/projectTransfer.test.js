@@ -115,7 +115,7 @@ describe('eventHandlers', () => {
 		await Promise.resolve();
 
 		expect(menuPanel.hidden).toBe(true);
-		expect(mocks.exportProject).toHaveBeenCalledWith(mocks.getPersistenceStateView(), { workOnly: false });
+		expect(mocks.exportProject).toHaveBeenCalledWith(mocks.getPersistenceStateView(), { omitDataPayloads: false });
 		expect(mocks.downloadBytes).toHaveBeenCalledWith(
 			new Uint8Array([1, 2, 3]),
 			'project.chive.sqlite3',
@@ -127,7 +127,7 @@ describe('eventHandlers', () => {
 		document.getElementById('btn-project-export-work-only').click();
 		await Promise.resolve();
 		await Promise.resolve();
-		expect(mocks.exportProject).toHaveBeenLastCalledWith(mocks.getPersistenceStateView(), { workOnly: true });
+		expect(mocks.exportProject).toHaveBeenLastCalledWith(mocks.getPersistenceStateView(), { omitDataPayloads: true });
 
 		const importButton = document.getElementById('btn-project-import');
 		const importInput = document.getElementById('project-import-input');

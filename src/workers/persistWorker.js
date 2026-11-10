@@ -153,7 +153,8 @@ export function createPersistHandler(backend, post) {
 				return;
 			}
 			if (op === 'export') {
-				const result = await backend.exportBytes(msg.snapshot, { workOnly: Boolean(msg.workOnly) });
+				// The message carries `omitDataPayloads` as `workOnly`; see PersistWorkerRequest.
+				const result = await backend.exportBytes(msg.snapshot, { omitDataPayloads: Boolean(msg.workOnly) });
 				post({ id, ok: true, result });
 				return;
 			}

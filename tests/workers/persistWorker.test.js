@@ -153,10 +153,11 @@ describe('createPersistHandler', () => {
 		const snapshot = { data: { datasets: [] }, panel: null };
 		const bytes = new Uint8Array([1, 2, 3]);
 
+		// The message field keeps its former name; the backend option is omitDataPayloads.
 		await h.handleMessage({ id: 10, op: 'export', snapshot, workOnly: true });
 		await h.handleMessage({ id: 11, op: 'import', bytes });
 
-		expect(backend.exportBytes).toHaveBeenCalledWith(snapshot, { workOnly: true });
+		expect(backend.exportBytes).toHaveBeenCalledWith(snapshot, { omitDataPayloads: true });
 		expect(backend.importBytes).toHaveBeenCalledWith(bytes);
 		expect(posts[0]).toEqual({ id: 10, ok: true, result: new Uint8Array([7, 8]) });
 		expect(posts[1]).toEqual({ id: 11, ok: true, result: imported });

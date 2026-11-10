@@ -12,13 +12,13 @@ export const PROJECT_FILE_MIME = 'application/vnd.chive.project+sqlite3';
  * Build a timestamped download name for an exported project.
  *
  * @internal
- * @param {{ workOnly?: boolean }} [options]
+ * @param {{ omitDataPayloads?: boolean }} [options]
  * @returns {string}
  */
-export function buildProjectFileName({ workOnly = false } = {}) {
+export function buildProjectFileName({ omitDataPayloads = false } = {}) {
 	const stamp = new Date().toISOString()
 		.replace(/\.\d{3}Z$/, 'Z')
 		.replace(/[:]/g, '-');
-	const suffix = workOnly ? '-work-only' : '';
+	const suffix = omitDataPayloads ? '-work-only' : '';
 	return `chive-project${suffix}-${stamp}${PROJECT_FILE_EXTENSION}`;
 }

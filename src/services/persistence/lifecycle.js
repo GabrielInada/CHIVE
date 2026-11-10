@@ -36,7 +36,7 @@ let activeBackend = workerBackend;
 /**
  * Swap the storage backend. Used by tests and future storage strategies.
  *
- * @param {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes?: (snapshot: Partial<AppState>, options?: { workOnly?: boolean }) => Promise<Uint8Array>, importBytes?: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<{ ok: boolean, reason?: string } | void> } | null} backend
+ * @param {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes?: (snapshot: Partial<AppState>, options?: { omitDataPayloads?: boolean }) => Promise<Uint8Array>, importBytes?: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<{ ok: boolean, reason?: string } | void> } | null} backend
  */
 export function configurePersistenceBackend(backend) {
 	activeBackend = backend || workerBackend;
@@ -154,10 +154,10 @@ export async function persistState(snapshot) {
  * Serialize the current project to SQLite bytes.
  *
  * @param {Partial<AppState>} snapshot
- * @param {{ workOnly?: boolean }} [options]
+ * @param {{ omitDataPayloads?: boolean }} [options] - `omitDataPayloads` leaves dataset rows and Panel capture payloads out, producing a work-only project file.
  * @returns {Promise<{ ok: boolean, bytes?: Uint8Array, fileName?: string, error?: Error }>}
  */
-export async function exportProject(snapshot, { workOnly = false } = {}) {
+export async function exportProject(snapshot, { omitDataPayloads = false } = {}) {
 	if (!snapshot || typeof snapshot !== 'object') {
 		return { ok: false, error: new Error('No state snapshot was provided') };
 	}
@@ -169,11 +169,11 @@ export async function exportProject(snapshot, { workOnly = false } = {}) {
 	}
 
 	try {
-		const bytes = await activeBackend.exportBytes(snapshot, { workOnly: Boolean(workOnly) });
+		const bytes = await activeBackend.exportBytes(snapshot, { omitDataPayloads: Boolean(omitDataPayloads) });
 		return {
 			ok: true,
 			bytes,
-			fileName: buildProjectFileName({ workOnly: Boolean(workOnly) }),
+			fileName: buildProjectFileName({ omitDataPayloads: Boolean(omitDataPayloads) }),
 		};
 	} catch (err) {
 		const error = errorFrom(err, 'Project export failed');

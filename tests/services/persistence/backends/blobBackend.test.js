@@ -121,7 +121,7 @@ describe('blobBackend', () => {
 		snapshot.panel.charts[0].dataSnapshot = snapshot.data.datasets[0].rows;
 
 		const fullBytes = await backend.exportBytes(snapshot);
-		const workOnlyBytes = await backend.exportBytes(snapshot, { workOnly: true });
+		const workOnlyBytes = await backend.exportBytes(snapshot, { omitDataPayloads: true });
 		const imported = await backend.importBytes(workOnlyBytes);
 
 		expect(imported.data.datasets[0].id).toBe('ds-1');
@@ -129,6 +129,17 @@ describe('blobBackend', () => {
 		expect(imported.panel.charts[0].dataSnapshot).toEqual([]);
 		expect(imported.panel.charts[0].columnsSnapshot).toEqual([]);
 		expect(workOnlyBytes.byteLength).toBeLessThan(fullBytes.byteLength);
+	});
+
+	it('still omits payloads for the former workOnly option name', async () => {
+		// A page left open across a deploy keeps its old workerBackend, which can
+		// import this module later as its fallback and pass `workOnly`.
+		const backend = nextBackend();
+		const bytes = await backend.exportBytes(makeSnapshot(), { workOnly: true });
+		const imported = await backend.importBytes(bytes);
+
+		expect(imported.data.datasets[0].rows).toBeNull();
+		expect(imported.panel.charts[0].dataSnapshot).toEqual([]);
 	});
 
 	it('rejects invalid or empty import bytes', async () => {

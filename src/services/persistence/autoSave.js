@@ -64,7 +64,7 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 	if (typeof getStateFn !== 'function') return createNoopController();
 
 	let dirty = false;
-	let rev = 0;
+	let revision = 0;
 	let saveInFlight = null;
 	let lastSavedAt = null;
 	let lastError = null;
@@ -86,7 +86,7 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 		if (suspended) return Promise.resolve({ ok: true, skipped: true });
 		if (!dirty) return Promise.resolve({ ok: true, skipped: true });
 
-		const revAtStart = rev;
+		const revisionAtSaveStart = revision;
 		let ok = false;
 		lastError = null;
 
@@ -96,7 +96,7 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 				ok = result.ok;
 				if (result.ok) {
 					lastSavedAt = new Date().toISOString();
-					if (rev === revAtStart) dirty = false;
+					if (revision === revisionAtSaveStart) dirty = false;
 				} else {
 					lastError = errorFrom(result.error);
 					if (typeof onSaveError === 'function') onSaveError(lastError, result);
@@ -163,7 +163,7 @@ export function enablePersistenceAutoSave(getStateFn, { debounceMs = 2000, onSav
 
 		if (!isProjectDirtyEvent(event)) return;
 		dirty = true;
-		rev += 1;
+		revision += 1;
 		lastError = null;
 		scheduleSave();
 	});

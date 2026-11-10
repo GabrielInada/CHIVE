@@ -55,12 +55,12 @@ export function setupProjectTransferListeners() {
 	document.getElementById(PROJECT_TRANSFER_IDS.projectExportButton)
 		?.addEventListener('click', () => {
 			setProjectMenuOpen(false);
-			void handleProjectExport({ workOnly: false });
+			void handleProjectExport({ omitDataPayloads: false });
 		});
 	document.getElementById(PROJECT_TRANSFER_IDS.projectExportWorkOnlyButton)
 		?.addEventListener('click', () => {
 			setProjectMenuOpen(false);
-			void handleProjectExport({ workOnly: true });
+			void handleProjectExport({ omitDataPayloads: true });
 		});
 	document.getElementById(PROJECT_TRANSFER_IDS.projectImportButton)
 		?.addEventListener('click', () => {
@@ -123,13 +123,13 @@ function setProjectMenuOpen(open) {
 /**
  * @private
  */
-async function handleProjectExport({ workOnly = false } = {}) {
+async function handleProjectExport({ omitDataPayloads = false } = {}) {
 	const release = acquireProjectOperation('export');
 	if (!release) return;
 	const progress = showProgress(t('chive-project-exporting'));
 	try {
 		progress.update(20);
-		const result = await exportProject(getPersistenceStateView(), { workOnly });
+		const result = await exportProject(getPersistenceStateView(), { omitDataPayloads });
 		if (!result.ok) {
 			progress.fail(t('chive-project-export-error'));
 			return;
