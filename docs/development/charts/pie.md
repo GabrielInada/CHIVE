@@ -126,7 +126,7 @@ flowchart TB
         PSUB --> PVIEW["panelView"]
         PSTATE -. read through getters .-> PVIEW
         PVIEW -. callback via panelController .-> PFACADE
-        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartSnapshot"]
         MOUNT --> PREG["panel registry"]
     end
 
@@ -275,7 +275,7 @@ On failure the presentation flow shows `chive-chart-empty-pie-sum` for `no-value
 ### 6.2 Panel view
 
 The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
-the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same presentation
+the snapshot (`snapshot.dataSnapshot` and `snapshot.config`) and hands it to the same presentation
 flow without `filterCallbacks` (no click-to-filter in panels). Empty captures show the same localized
 message as the workspace, including saved previews and resized layout slots.
 

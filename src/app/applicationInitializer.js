@@ -13,7 +13,7 @@ import {
 	getPersistenceErrorMessageKey,
 } from '../services/persistence.js';
 import { applyStateSnapshot, getPersistenceStateView } from '../state/appState.js';
-import { rehydratePanelChartSpecs } from '../domain/panel/rehydration.js';
+import { mergePanelSnapshotConfigsWithDefaults } from '../domain/panel/rehydration.js';
 import { throttle } from '../utils/throttle.js';
 import { initChartControls } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
 import { initPanelController } from '../features/panel/panelController.js';
@@ -72,7 +72,7 @@ export async function initializeApplication() {
 	if (isPersistenceAvailable()) {
 		await hydrateState({
 			applyStateSnapshot,
-			transformPanel: rehydratePanelChartSpecs,
+			transformPanel: mergePanelSnapshotConfigsWithDefaults,
 			onError: reportPersistenceLoadError,
 		});
 	}

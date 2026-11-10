@@ -17,7 +17,7 @@ import {
 } from './persistence.testSupport.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../src/config/statistics.js';
 import { calculateCategoricalStatistics } from '../../src/domain/datasets/statistics.js';
-import { rehydratePanelChartSpecs } from '../../src/domain/panel/rehydration.js';
+import { mergePanelSnapshotConfigsWithDefaults } from '../../src/domain/panel/rehydration.js';
 
 describe('persistence', () => {
 	beforeEach(async () => {
@@ -157,7 +157,7 @@ describe('persistence', () => {
 			}));
 			saved.panel.nextChartId = 2;
 			const applyStateSnapshot = vi.fn();
-			const hooks = { applyStateSnapshot, transformPanel: rehydratePanelChartSpecs };
+			const hooks = { applyStateSnapshot, transformPanel: mergePanelSnapshotConfigsWithDefaults };
 
 			if (entryPoint === 'project import') {
 				const exported = await exportProject(saved);
@@ -193,7 +193,7 @@ describe('persistence', () => {
 			// Autosave writes the normalized names; the next reload keeps them.
 			expect((await persistState(restored)).ok).toBe(true);
 			const reloaded = vi.fn();
-			await hydrateState({ applyStateSnapshot: reloaded, transformPanel: rehydratePanelChartSpecs });
+			await hydrateState({ applyStateSnapshot: reloaded, transformPanel: mergePanelSnapshotConfigsWithDefaults });
 			// SQLite adds fingerprint metadata on the first save of legacy records.
 			expect(reloaded.mock.calls[0][0].data).toMatchObject(restored.data);
 			expect(reloaded.mock.calls[0][0].data.datasets[0].precomputedStats).not.toHaveProperty('categorical');

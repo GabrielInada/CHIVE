@@ -62,7 +62,7 @@ flowchart TB
         PSUB --> PVIEW["panelView"]
         PSTATE -. read through getters .-> PVIEW
         PVIEW -. callback via panelController .-> PFACADE
-        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartSnapshot"]
         MOUNT --> PREG["panel registry"]
     end
 
@@ -135,7 +135,7 @@ the same container.
 
 ### 6.2 Panel
 
-[renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
+[renderChartSnapshot.js](../../../src/features/panel/slots/renderChartSnapshot.js)
 validates the request, then the
 [panel registry](../../../src/charts/registries/panel.js) builds the chart input
 from the captured snapshot and hands it to the same presentation flow. Panel slot containers

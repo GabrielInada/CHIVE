@@ -1,18 +1,18 @@
 import { mergeChartConfigWithDefaults } from '../charts/chartConfig.js';
 
 /**
- * Re-merge each persisted chart spec against the current chart defaults so
- * old specs absorb any new chart config keys added since they were saved.
+ * Re-merge each persisted Panel snapshot's config against the current chart
+ * defaults so old snapshots absorb any config keys added since they were saved.
  *
  * @param {Object} panel
  * @returns {Object}
  */
-export function rehydratePanelChartSpecs(panel) {
+export function mergePanelSnapshotConfigsWithDefaults(panel) {
 	if (!panel || !Array.isArray(panel.charts)) return panel;
-	const charts = panel.charts.map(spec => {
-		if (!spec || !spec.type) return spec;
-		const merged = mergeChartConfigWithDefaults({ [spec.type]: spec.config || {} });
-		return { ...spec, config: merged[spec.type] };
+	const charts = panel.charts.map(snapshot => {
+		if (!snapshot || !snapshot.type) return snapshot;
+		const merged = mergeChartConfigWithDefaults({ [snapshot.type]: snapshot.config || {} });
+		return { ...snapshot, config: merged[snapshot.type] };
 	});
 	return { ...panel, charts };
 }

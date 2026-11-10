@@ -49,7 +49,7 @@ const mocks = vi.hoisted(() => ({
 vi.mock('../../../src/state/appState.js', () => mocks.appState);
 vi.mock('../../../src/services/i18nService.js', () => mocks.i18n);
 
-import { initPanelController, addChartToPanel, removeChartFromPanel, getLayoutConfig, _resetPanelControllerForTesting } from '../../../src/features/panel/panelController.js';
+import { initPanelController, addChartToPanel, removeChartFromPanel, _resetPanelControllerForTesting } from '../../../src/features/panel/panelController.js';
 
 /**
  * panelController branch coverage focusing on error paths and rendering conditions.
@@ -273,38 +273,6 @@ describe('panelController (branch coverage)', () => {
 			initPanelController();
 
 			expect(() => removeChartFromPanel('undefined')).not.toThrow();
-		});
-	});
-
-	describe('getLayoutConfig()', () => {
-		it('returns config for valid layout', () => {
-			const config = getLayoutConfig('template-2col');
-
-			expect(config).toBeDefined();
-			expect(config.slots).toContain('slot-1');
-			expect(config.slots).toContain('slot-2');
-		});
-
-		it('defaults to template-2col for invalid layout', () => {
-			const config = getLayoutConfig('invalid');
-
-			expect(config.cssClass).toContain('2col');
-		});
-
-		it('has correct slot counts per layout', () => {
-			expect(getLayoutConfig('template-single').slots.length).toBe(1);
-			expect(getLayoutConfig('template-2col').slots.length).toBe(2);
-			expect(getLayoutConfig('template-hero2').slots.length).toBe(3);
-			expect(getLayoutConfig('template-3col').slots.length).toBe(3);
-			expect(getLayoutConfig('template-1x2').slots.length).toBe(2);
-		});
-
-		it('includes translation key for each layout', () => {
-			const layouts = ['template-single', 'template-2col', 'template-hero2', 'template-3col', 'template-1x2'];
-			layouts.forEach((id) => {
-				const cfg = getLayoutConfig(id);
-				expect(cfg.labelKey).toContain('chive-panel-template');
-			});
 		});
 	});
 

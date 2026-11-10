@@ -12,7 +12,7 @@
  * removing the container from the DOM also frees the entry.
  */
 
-import { renderChartFromSpec } from './renderChartFromSpec.js';
+import { renderChartSnapshot } from './renderChartSnapshot.js';
 import { hideChartTooltip } from '../../../charts/shared/tooltip/tooltip.js';
 import { clearChartContainer } from '../../../charts/shared/containerLifecycle.js';
 
@@ -58,22 +58,22 @@ function stopNetworkSimulation(container) {
 }
 
 /**
- * Mount a chart spec into `container`. Tears down any prior mount first,
- * delegates the actual render to {@link renderChartFromSpec}, then
+ * Mount a chart snapshot into `container`. Tears down any prior mount first,
+ * delegates the actual render to {@link renderChartSnapshot}, then
  * attaches a `ResizeObserver` that re-renders on container resize
  * (debounced via RAF).
  *
  * @param {HTMLElement} container
- * @param {import('../../types.js').ChartSnapshot} spec
+ * @param {import('../../types.js').ChartSnapshot} snapshot
  * @returns {import('../../types.js').Result | undefined} The render result; `undefined` when inputs are missing.
  */
-export function mountSlot(container, spec) {
-	if (!container || !spec) return;
+export function mountSlot(container, snapshot) {
+	if (!container || !snapshot) return;
 	teardownSlot(container);
 
-	const result = renderChartFromSpec(container, spec);
+	const result = renderChartSnapshot(container, snapshot);
 
-	const entry = { spec, observer: null, frame: null };
+	const entry = { snapshot, observer: null, frame: null };
 	if (typeof ResizeObserver === 'function') {
 		const observer = new ResizeObserver(() => {
 			const current = slotState.get(container);
@@ -87,7 +87,7 @@ export function mountSlot(container, spec) {
 				// Dispose-aware clear: a canvas chart's stashed dispose hook must
 				// run before the replacement render creates a fresh context.
 				clearChartContainer(container);
-				renderChartFromSpec(container, current.spec);
+				renderChartSnapshot(container, current.snapshot);
 			});
 		});
 		observer.observe(container);

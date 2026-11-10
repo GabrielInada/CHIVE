@@ -106,7 +106,7 @@ doc rather than repeated:
 
 - **Result envelope**: `ok()` / `fail(reason)` from [result.js](../../../src/utils/result.js).
 - **Render dispatch**: panel snapshots enter through
-  [renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js),
+  [renderChartSnapshot.js](../../../src/features/panel/slots/renderChartSnapshot.js),
   which validates the request and resolves its implementation through the
   [panel registry](../../../src/charts/registries/panel.js). The registry builds the
   chart input from the snapshot (its rows, config and column types) and hands it to the

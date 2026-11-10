@@ -80,17 +80,17 @@ export function createBlockHeader({ blockId, index, totalBlocks, translate, onMo
  * @param {Object} params
  * @param {string} params.blockId
  * @param {string} params.templateId - Initial selection.
- * @param {Object<string, { labelKey: string }>} params.layouts
+ * @param {Object<string, { labelKey: string }>} params.templates
  * @param {(key: string) => string} params.translate
  * @param {(event: Event) => void} params.onTemplateChange
  * @returns {HTMLSelectElement}
  */
-export function createBlockTemplateSelect({ blockId, templateId, layouts, translate, onTemplateChange }) {
+export function createBlockTemplateSelect({ blockId, templateId, templates, translate, onTemplateChange }) {
 	const templateSelect = document.createElement('select');
 	templateSelect.className = 'panel-block-template';
 	templateSelect.dataset.panelBlockTemplate = blockId;
 
-	Object.entries(layouts).forEach(([id, config]) => {
+	Object.entries(templates).forEach(([id, config]) => {
 		const option = document.createElement('option');
 		option.value = id;
 		option.textContent = translate(config.labelKey);
@@ -109,12 +109,12 @@ export function createBlockTemplateSelect({ blockId, templateId, layouts, transl
  * when the picker has no value.
  *
  * @param {Object} params
- * @param {Object<string, { labelKey: string }>} params.layouts
+ * @param {Object<string, { labelKey: string }>} params.templates
  * @param {(key: string) => string} params.translate
  * @param {(templateId: string) => void} params.onAddBlock
  * @returns {HTMLElement}
  */
-export function createAddBlockControls({ layouts, translate, onAddBlock }) {
+export function createAddBlockControls({ templates, translate, onAddBlock }) {
 	const addBlockButton = document.createElement('button');
 	const addTemplateSelect = document.createElement('select');
 	addTemplateSelect.className = 'panel-add-template-select';
@@ -122,7 +122,7 @@ export function createAddBlockControls({ layouts, translate, onAddBlock }) {
 	addTemplateSelect.setAttribute('aria-label', translate('chive-panel-layout-label'));
 	const selectedTemplate = 'template-2col';
 
-	Object.entries(layouts).forEach(([id, config]) => {
+	Object.entries(templates).forEach(([id, config]) => {
 		const option = document.createElement('option');
 		option.value = id;
 		option.textContent = translate(config.labelKey);
