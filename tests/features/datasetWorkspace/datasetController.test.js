@@ -5,7 +5,7 @@ import {
 	getLoadedDatasets,
 	handleFileUpload,
 	handleJoinDatasetRequest,
-	handlePresetDatasetRequest,
+	handleSampleDatasetRequest,
 	initDatasetController,
 	removeDatasetByIndex,
 	selectDataset,
@@ -13,7 +13,7 @@ import {
 } from '../../../src/features/datasetWorkspace/datasetController.js';
 import { FILE_IDS } from '../../../src/features/datasetWorkspace/domIds.js';
 import { LARGE_FILE_WARNING_BYTES } from '../../../src/config/limits.js';
-import { PRESET_CATALOG } from '../../../src/data/presetCatalog.js';
+import { SAMPLE_DATASET_CATALOG } from '../../../src/data/sampleDatasetCatalog.js';
 import { setLocale, t } from '../../../src/services/i18nService.js';
 import { addDataset, applyStateSnapshot, getActiveDatasetIndex, getAllDatasets } from '../../../src/state/appState.js';
 import { clearAllFeedback } from '../../../src/ui/feedback.js';
@@ -164,16 +164,18 @@ describe('datasetController', () => {
 		expect(getActiveDatasetIndex()).toBe(2);
 	});
 
-	it('loads and selects a bundled sample dataset', async () => {
+	it.each(SAMPLE_DATASET_CATALOG)('loads and selects the bundled $id sample dataset', async sampleDataset => {
 		addTextDataset('A.csv');
-		const iris = PRESET_CATALOG.find(entry => entry.id === 'iris');
 
-		await handlePresetDatasetRequest(iris);
+		const result = await handleSampleDatasetRequest(sampleDataset);
 
+		expect(result.ok).toBe(true);
 		expect(getAllDatasets()).toHaveLength(2);
-		expect(getAllDatasets()[1].name).toBe(t('chive-preset-iris-name'));
-		expect(getAllDatasets()[1].rows).toHaveLength(iris.rowCount);
-		expect(getAllDatasets()[1].sizeLabel).toBe(t('chive-preset-generated-size', iris.rowCount));
+		expect(getAllDatasets()[1].name).toBe(t(sampleDataset.nameKey));
+		expect(getAllDatasets()[1].rows).toHaveLength(sampleDataset.rowCount);
+		expect(getAllDatasets()[1].columns).toHaveLength(sampleDataset.columnCount);
+		expect(getAllDatasets()[1].sizeLabel).toBe(t('chive-sample-dataset-generated-size', sampleDataset.rowCount));
 		expect(getActiveDatasetIndex()).toBe(1);
+		expect(notices()).toEqual([]);
 	});
 });

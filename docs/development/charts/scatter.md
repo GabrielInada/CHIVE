@@ -175,7 +175,7 @@ flowchart TB
         CONTROLS["scatter/controls"] --> WRITER["ChartConfigWriter"]
         WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
         DFACADE --> DSTATE[("dataset.chartConfig.scatter")]
-        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DFACADE -- DATASET_CONFIG_UPDATED --> COORD["renderCoordinator"]
         DSTATE -. read through getters .-> COORD
         WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
         PREVIEW --> DSTATE

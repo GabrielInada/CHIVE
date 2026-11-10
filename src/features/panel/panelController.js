@@ -68,8 +68,8 @@ export function initPanelController(feedbackFn = null) {
 	panelControllerInitialized = true;
 
 	// Re-render when state changes
-	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_ADDED, handleChartStateChange));
-	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_REMOVED, handleChartStateChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_SNAPSHOT_ADDED, handleChartStateChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.CHART_SNAPSHOT_REMOVED, handleChartStateChange));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_CLEARED, handlePanelCleared));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_SLOT_ASSIGNED, handleChartStateChange));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_ADDED, handleLayoutChange));
@@ -174,13 +174,12 @@ function handleUpdateBlockHeight(blockId, heightPx) {
  * resulting state object is not `Object.freeze`d and remains read-only by
  * facade policy.
  *
- * @param {string} containerId - DOM element ID of the chart container (unused inside the function; preserved for caller traceability).
- * @param {string} chartBaseName - Display name for the snapshot.
+ * @param {string} title - Display name for the snapshot.
  * @param {Object | null} [metadata] - Chart-specific metadata (must include `type: ChartTypeKey`). When the type is missing or not supported, the call fails with `'unknown-type'`.
  * @returns {Result} On success: `{ ok: true, chartId }` with the new snapshot id. On failure: `{ ok: false, reason }` where reason is `'unknown-type'`, `'no-dataset'`, or `'add-error'`.
- * @fires STATE_EVENTS.CHART_ADDED - On success.
+ * @fires STATE_EVENTS.CHART_SNAPSHOT_ADDED - On success.
  */
-export function addChartToPanel(containerId, chartBaseName, metadata = null) {
+export function addChartToPanel(title, metadata = null) {
 	try {
 		const type = metadata?.type;
 		if (!type || !SUPPORTED_PANEL_CHART_TYPES.includes(type)) {
@@ -193,7 +192,7 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 		const shown = deriveShownDataset(dataset);
 
 		const chartId = addChartSnapshot({
-			name: chartBaseName,
+			name: title,
 			type,
 			config: structuredClone(dataset.chartConfig?.[type] || {}),
 			dataSnapshot: structuredClone(shown.rows),
@@ -202,7 +201,7 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 			metaSummary: typeof metadata?.summary === 'string' ? metadata.summary : '',
 		});
 
-		// Re-render is driven by the CHART_ADDED subscription, not a direct call.
+		// Re-render is driven by the CHART_SNAPSHOT_ADDED subscription, not a direct call.
 		return ok({ chartId });
 	} catch {
 		if (feedbackCallback) {
@@ -214,10 +213,10 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 
 /**
  * Remove a chart snapshot from the panel. Delegates to the panel facade; the
- * CHART_REMOVED subscription re-renders the sidebar + canvas.
+ * CHART_SNAPSHOT_REMOVED subscription re-renders the sidebar + canvas.
  *
  * @param {number | string} chartId
- * @fires STATE_EVENTS.CHART_REMOVED - When a matching snapshot is removed.
+ * @fires STATE_EVENTS.CHART_SNAPSHOT_REMOVED - When a matching snapshot is removed.
  */
 export function removeChartFromPanel(chartId) {
 	removeChartSnapshot(chartId);

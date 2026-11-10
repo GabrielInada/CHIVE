@@ -252,7 +252,7 @@ describe('renderTinChart', () => {
 		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(result.ok).toBe(true);
 		const lines = container.querySelectorAll('.tin-isolines line:not(.tin-isoline-hit)');
-		expect(lines.length).toBeLessThanOrEqual(200 * result.triangles);
+		expect(lines.length).toBeLessThanOrEqual(200 * result.triangleCount);
 	});
 
 	it('does not render a threshold contour when showThreshold is false', () => {

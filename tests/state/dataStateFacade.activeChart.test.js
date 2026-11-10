@@ -116,7 +116,7 @@ describe('dataStateFacade.setActiveChartType', () => {
 		expect(emitStateChange).not.toHaveBeenCalled();
 	});
 
-	it('emits exactly one CONFIG_UPDATED event per call', () => {
+	it('emits exactly one DATASET_CONFIG_UPDATED event per call', () => {
 		const { facade, emitStateChange } = makeFacade();
 		facade.setActiveChartType('scatter');
 		expect(emitStateChange).toHaveBeenCalledTimes(1);

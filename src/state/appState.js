@@ -200,7 +200,7 @@ export function getAllDatasets() {
  *
  * @param {number} index - Zero-based index, or `-1` to deselect.
  * @throws {Error} When `index` is not an integer, is less than `-1`, or is beyond the datasets array.
- * @fires STATE_EVENTS.ACTIVE_DATASET - Only when the index changes.
+ * @fires STATE_EVENTS.ACTIVE_DATASET_CHANGED - Only when the index changes.
  */
 export function setActiveDataset(index) {
 	return dataState.setActiveDataset(index);
@@ -236,7 +236,7 @@ export function removeDataset(index) {
  * No-op when no dataset is active.
  *
  * @param {Object} updates
- * @fires STATE_EVENTS.CONFIG_UPDATED
+ * @fires STATE_EVENTS.DATASET_CONFIG_UPDATED
  */
 export function updateActiveDatasetConfig(updates) {
 	return dataState.updateActiveDatasetConfig(updates);
@@ -249,7 +249,7 @@ export function updateActiveDatasetConfig(updates) {
  *
  * @param {string[]} columnNames
  * @throws {Error} When an active dataset exists and the list contains duplicates or undeclared/non-string names.
- * @fires STATE_EVENTS.COLUMNS_UPDATED - Only when the ordered list changes.
+ * @fires STATE_EVENTS.COLUMN_SELECTION_CHANGED - Only when the ordered list changes.
  */
 export function setActiveDatasetColumnSelection(columnNames) {
 	return dataState.setActiveDatasetColumnSelection(columnNames);
@@ -277,7 +277,7 @@ export function transformActiveDatasetConfigSilently(updater) {
  *
  * @param {ChartTypeKey | null} chartType
  * @param {Object | null} [activatedOverrides]
- * @fires STATE_EVENTS.CONFIG_UPDATED - Single emit per call.
+ * @fires STATE_EVENTS.DATASET_CONFIG_UPDATED - Single emit per call.
  */
 export function setActiveChartType(chartType, activatedOverrides) {
 	return dataState.setActiveChartType(chartType, activatedOverrides);
@@ -297,7 +297,7 @@ export function getPanelCharts() {
  *
  * @param {Partial<ChartSnapshot>} chartSnapshot
  * @returns {number} New snapshot id.
- * @fires STATE_EVENTS.CHART_ADDED
+ * @fires STATE_EVENTS.CHART_SNAPSHOT_ADDED
  */
 export function addChartSnapshot(chartSnapshot) {
 	return panelState.addChartSnapshot(chartSnapshot);
@@ -309,7 +309,7 @@ export function addChartSnapshot(chartSnapshot) {
  *
  * @param {number | string} chartId - Non-negative safe integer or decimal-integer DOM string.
  * @throws {Error} When `chartId` is malformed.
- * @fires STATE_EVENTS.CHART_REMOVED - Only when a matching snapshot is removed.
+ * @fires STATE_EVENTS.CHART_SNAPSHOT_REMOVED - Only when a matching snapshot is removed.
  */
 export function removeChartSnapshot(chartId) {
 	return panelState.removeChartSnapshot(chartId);

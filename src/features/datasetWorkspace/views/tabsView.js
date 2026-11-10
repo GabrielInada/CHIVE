@@ -12,7 +12,7 @@ import { countGlobalFilterRules, isGlobalFilterActive } from '../../../domain/fi
 import { TAB_CONTENT_IDS } from '../domIds.js';
 
 let listenersRegistered = false;
-let currentOnChartConfigChange = null;
+let currentOnDatasetConfigChange = null;
 let currentOnGlobalFilterOpen = null;
 let globalFilterDialogOpen = false;
 
@@ -38,12 +38,12 @@ function getTabElements() {
  * are attached once, and subsequent calls only swap the currently-active
  * callbacks.
  *
- * @param {(partial: Object) => void} onChartConfigChange
+ * @param {(partial: Object) => void} onDatasetConfigChange
  * @param {() => void} [onGlobalFilterOpen]
  * @returns {void}
  */
-export function setupTabListeners(onChartConfigChange, onGlobalFilterOpen) {
-	currentOnChartConfigChange = onChartConfigChange || null;
+export function setupTabListeners(onDatasetConfigChange, onGlobalFilterOpen) {
+	currentOnDatasetConfigChange = onDatasetConfigChange || null;
 	currentOnGlobalFilterOpen = onGlobalFilterOpen || null;
 
 	if (listenersRegistered) return;
@@ -57,8 +57,8 @@ export function setupTabListeners(onChartConfigChange, onGlobalFilterOpen) {
 
 	tabList.addEventListener('click', event => {
 		const tab = event.target.closest('[role="tab"]');
-		if (!tab || !tabList.contains(tab) || !currentOnChartConfigChange) return;
-		currentOnChartConfigChange({ activeTab: tab.dataset.tab });
+		if (!tab || !tabList.contains(tab) || !currentOnDatasetConfigChange) return;
+		currentOnDatasetConfigChange({ activeTab: tab.dataset.tab });
 	});
 
 	tabList.addEventListener('keydown', event => {
@@ -79,9 +79,9 @@ export function setupTabListeners(onChartConfigChange, onGlobalFilterOpen) {
 			return;
 		}
 
-		if ((event.key === 'Enter' || event.key === ' ') && currentOnChartConfigChange) {
+		if ((event.key === 'Enter' || event.key === ' ') && currentOnDatasetConfigChange) {
 			event.preventDefault();
-			currentOnChartConfigChange({ activeTab: currentTab.dataset.tab });
+			currentOnDatasetConfigChange({ activeTab: currentTab.dataset.tab });
 		}
 	});
 
@@ -202,15 +202,14 @@ export function updateGlobalFilterTrigger({
  * data interface.
  *
  * @param {'preview' | 'charts' | 'panel'} activeTab
- * @param {(partial: Object) => void} onChartConfigChange
- * @param {*} _configIgnored - Kept for backward signature compatibility.
+ * @param {(partial: Object) => void} onDatasetConfigChange
  * @param {Object} [options]
  * @param {() => void} [options.onGlobalFilterOpen]
  * @param {{ hasDataset: boolean, globalFilter: Object, filteredCount: number, totalCount: number }} [options.triggerState]
  * @returns {void}
  */
-export function updateTabs(activeTab, onChartConfigChange, _configIgnored, options = {}) {
-	setupTabListeners(onChartConfigChange, options.onGlobalFilterOpen);
+export function updateTabs(activeTab, onDatasetConfigChange, options = {}) {
+	setupTabListeners(onDatasetConfigChange, options.onGlobalFilterOpen);
 	updateTabsUI(activeTab);
 	if (options.triggerState) {
 		updateGlobalFilterTrigger({ activeTab, ...options.triggerState });

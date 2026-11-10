@@ -209,7 +209,7 @@ describe('applyStateSnapshot()', () => {
 	});
 
 	it('addDataset preserves an explicit id when provided', () => {
-		addDataset(makeDataset({ id: 'preset-id' }));
-		expect(getAllDatasets()[0].id).toBe('preset-id');
+		addDataset(makeDataset({ id: 'supplied-id' }));
+		expect(getAllDatasets()[0].id).toBe('supplied-id');
 	});
 });

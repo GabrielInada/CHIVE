@@ -11,7 +11,7 @@
 
 import { t } from '../../../services/i18nService.js';
 import { ingestFile } from '../../../services/dataIngestService.js';
-import { loadPresetSource } from '../../../services/presetService.js';
+import { loadSampleDatasetSource } from '../../../services/sampleDatasetService.js';
 import { showError } from '../../../ui/feedback.js';
 import { fail } from '../../../utils/result.js';
 import { runIntake } from './intake.js';
@@ -24,43 +24,43 @@ import { runIntake } from './intake.js';
  * Internal reason codes stay off the page. A missing descriptor shows an
  * unnamed error notice and no progress toast.
  *
- * @param {import('../../../types.js').PresetDescriptor & { nameKey: string, rowCount: number }} preset
+ * @param {import('../../../types.js').SampleDatasetDescriptor & { nameKey: string, rowCount: number }} sampleDataset
  * @param {{ selectDataset: (index: number) => void }} dependencies
- * @returns {Promise<Result>} The intake's result, or `fail('preset-missing')`.
+ * @returns {Promise<Result>} The intake's result, or `fail('sample-dataset-missing')`.
  */
-export async function loadPresetDataset(preset, { selectDataset }) {
-	if (!preset) {
-		showError(t('chive-preset-load-error-generic'));
-		return fail('preset-missing');
+export async function loadSampleDataset(sampleDataset, { selectDataset }) {
+	if (!sampleDataset) {
+		showError(t('chive-sample-dataset-load-error-generic'));
+		return fail('sample-dataset-missing');
 	}
-	return runIntake(sampleSource(preset), { selectDataset });
+	return runIntake(sampleDatasetSource(sampleDataset), { selectDataset });
 }
 
 /**
  * @private
- * @param {import('../../../types.js').PresetDescriptor & { nameKey: string, rowCount: number }} preset
+ * @param {import('../../../types.js').SampleDatasetDescriptor & { nameKey: string, rowCount: number }} sampleDataset
  * @returns {IntakeSource}
  */
-function sampleSource(preset) {
-	const name = t(preset.nameKey);
+function sampleDatasetSource(sampleDataset) {
+	const name = t(sampleDataset.nameKey);
 	return {
 		name,
 		progressLabel: t('chive-progress-parsing', name),
 		async ingest(request) {
-			const loaded = await loadPresetSource(preset, { signal: request.signal });
+			const loaded = await loadSampleDatasetSource(sampleDataset, { signal: request.signal });
 			if (!loaded.ok) return loaded;
 			const { kind, text, dropColumns } = loaded.value;
 			return ingestFile({ kind, text, options: { dropColumns } }, request);
 		},
-		sizeLabel: () => t('chive-preset-generated-size', preset.rowCount),
+		sizeLabel: () => t('chive-sample-dataset-generated-size', sampleDataset.rowCount),
 		// Samples ship with CHIVE and are kept small, so the row limit does not apply.
 		rowWarning: null,
-		successMessage: t('chive-preset-load-success', name),
+		successMessage: t('chive-sample-dataset-load-success', name),
 		failureMessage: (detail, reason) => {
-			if (reason === 'preset-fetch-timeout') return t('chive-preset-fetch-timeout', name);
+			if (reason === 'sample-dataset-fetch-timeout') return t('chive-sample-dataset-fetch-timeout', name);
 			return detail
-				? t('chive-preset-load-failed-detail', name, detail)
-				: t('chive-preset-load-failed', name);
+				? t('chive-sample-dataset-load-failed-detail', name, detail)
+				: t('chive-sample-dataset-load-failed', name);
 		},
 	};
 }

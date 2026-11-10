@@ -135,8 +135,8 @@ The documented preview endpoint is `https://gabrielinada.github.io/CHIVE/`.
 Deployment availability is operational, but neither endpoint requires CHIVE to
 send uploaded datasets to a remote or server-side application service.
 
-Bundled preset datasets are files served with CHIVE. If you click external
-source links shown for a preset, your browser navigates to that external site
+Bundled sample datasets are files served with CHIVE. If you click external
+source links shown for a sample dataset, your browser navigates to that external site
 separately.
 
 ## Docker Trust Boundary

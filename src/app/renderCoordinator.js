@@ -36,7 +36,7 @@ import {
 	selectDataset,
 	removeDatasetByIndex,
 	handleJoinDatasetRequest,
-	handlePresetDatasetRequest,
+	handleSampleDatasetRequest,
 } from '../features/datasetWorkspace/datasetController.js';
 import { syncSidebarToTab } from './uiManager.js';
 
@@ -164,7 +164,7 @@ function onColumnsUpdated() {
 }
 
 /**
- * @param {{ activeTab?: string } & Object} [patch] - CONFIG_UPDATED payload.
+ * @param {{ activeTab?: string } & Object} [patch] - DATASET_CONFIG_UPDATED payload.
  */
 function onConfigUpdated(patch) {
 	if (patch?.activeTab) syncSidebarToTab(patch.activeTab);
@@ -177,11 +177,11 @@ function onConfigUpdated(patch) {
  * Wire every render-affecting state event to the full or region scheduler.
  */
 export function setupStateSubscriptions() {
-	onStateChange(STATE_EVENTS.ACTIVE_DATASET, scheduleFullRefresh);
+	onStateChange(STATE_EVENTS.ACTIVE_DATASET_CHANGED, scheduleFullRefresh);
 	onStateChange(STATE_EVENTS.DATASET_ADDED, scheduleFullRefresh);
 	onStateChange(STATE_EVENTS.DATASET_REMOVED, scheduleFullRefresh);
-	onStateChange(STATE_EVENTS.COLUMNS_UPDATED, onColumnsUpdated);
-	onStateChange(STATE_EVENTS.CONFIG_UPDATED, onConfigUpdated);
+	onStateChange(STATE_EVENTS.COLUMN_SELECTION_CHANGED, onColumnsUpdated);
+	onStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, onConfigUpdated);
 	onStateChange(STATE_EVENTS.STATE_HYDRATED, scheduleFullRefresh);
 	onStateChange(
 		STATE_EVENTS.PREVIEW_ROWS_CHANGED,
@@ -222,7 +222,7 @@ function renderDatasetListView(datasets, activeIndex) {
 		selectDataset,
 		removeDatasetByIndex,
 		handleJoinDatasetRequest,
-		handlePresetDatasetRequest,
+		handleSampleDatasetRequest,
 	);
 }
 
@@ -241,7 +241,7 @@ function renderActiveDatasetWorkspace(shown, previewRows) {
 		previewRows,
 		onPreviewRowsChange: updatePreviewRows,
 		onColumnSelectionChange: setActiveDatasetColumnSelection,
-		onChartConfigChange: updateDatasetConfig,
+		onDatasetConfigChange: updateDatasetConfig,
 	});
 }
 

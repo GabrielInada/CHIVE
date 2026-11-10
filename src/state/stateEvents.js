@@ -12,23 +12,24 @@
  * Canonical names for every state-change event the app emits.
  *
  * Emitters and subscribers should reference these constants instead of
- * string literals so a typo becomes a static error rather than a silent
- * dropped subscription. Test suites intentionally keep using literals to
- * exercise the wire format independently of this registry.
+ * string literals. The string values are the event format seen outside the
+ * app through `chive-state-changed`; they stay stable independently of the
+ * constant names. Test suites intentionally use literals to exercise that
+ * format independently of this registry.
  *
  * @type {Readonly<Record<string, StateEventType>>}
  */
 export const STATE_EVENTS = Object.freeze({
 	// data domain
-	ACTIVE_DATASET: 'activeDataset',
+	ACTIVE_DATASET_CHANGED: 'activeDataset',
 	DATASET_ADDED: 'datasetAdded',
 	DATASET_REMOVED: 'datasetRemoved',
-	CONFIG_UPDATED: 'configUpdated',
-	COLUMNS_UPDATED: 'columnsUpdated',
+	DATASET_CONFIG_UPDATED: 'configUpdated',
+	COLUMN_SELECTION_CHANGED: 'columnsUpdated',
 
 	// panel domain
-	CHART_ADDED: 'chartAdded',
-	CHART_REMOVED: 'chartRemoved',
+	CHART_SNAPSHOT_ADDED: 'chartAdded',
+	CHART_SNAPSHOT_REMOVED: 'chartRemoved',
 	PANEL_CLEARED: 'panelCleared',
 	PANEL_BLOCK_ADDED: 'panelBlockAdded',
 	PANEL_BLOCK_REMOVED: 'panelBlockRemoved',

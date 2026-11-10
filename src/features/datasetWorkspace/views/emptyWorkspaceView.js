@@ -39,7 +39,7 @@ export function renderEmptyState() {
   if (els.emptyState) els.emptyState.hidden = false;
   if (els.dataState) els.dataState.hidden = true;
   if (els.resultTabs) els.resultTabs.hidden = false;
-  updateTabs('preview', null, null, {
+  updateTabs('preview', null, {
     triggerState: {
       hasDataset: false,
       globalFilter: null,

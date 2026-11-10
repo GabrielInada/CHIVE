@@ -43,7 +43,7 @@ project overview; the sections below point to the deeper guides by reader goal.
 
 - [Chart deep dives](development/charts/README.md): code-level walkthroughs for
   every chart renderer, control surface, panel path, and test set.
-- [Preset dataset guide](development/preset-datasets.md): add bundled sample
+- [Sample dataset guide](development/sample-datasets.md): add bundled sample
   datasets and required catalog/translation metadata.
 - [Translation guide](development/i18n.md): add or update UI strings across
   supported locales.

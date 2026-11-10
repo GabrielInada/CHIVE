@@ -145,7 +145,7 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   errors. Banned forms include bare `d3` / `banana-i18n` imports, `https://esm.sh`
   runtime imports, the `?worker` / `?url` / `?raw` suffixes, and
   `import.meta.glob` / `import.meta.env`. `import.meta.url` stays allowed for
-  workers and preset asset URLs. Browser runtime dependencies should be vendored
+  workers and sample dataset asset URLs. Browser runtime dependencies should be vendored
   into `vendor/` with license files committed, then smoke-tested with a plain
   static server.
 - **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not

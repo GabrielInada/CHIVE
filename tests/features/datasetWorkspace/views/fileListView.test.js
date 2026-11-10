@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
 	getLocale: vi.fn(() => 'en'),
 	renderFileListDOM: vi.fn(),
 	openJoinBuilderDialog: vi.fn(),
-	openPresetDatasetsDialog: vi.fn(),
+	openSampleDatasetsDialog: vi.fn(),
 }));
 
 vi.mock('../../../../src/services/i18nService.js', () => ({
@@ -23,8 +23,8 @@ vi.mock('../../../../src/features/datasetWorkspace/dialogs/joinBuilderDialog.js'
 	openJoinBuilderDialog: mocks.openJoinBuilderDialog,
 }));
 
-vi.mock('../../../../src/features/datasetWorkspace/dialogs/presetDatasetsDialog.js', () => ({
-	openPresetDatasetsDialog: mocks.openPresetDatasetsDialog,
+vi.mock('../../../../src/features/datasetWorkspace/dialogs/sampleDatasetsDialog.js', () => ({
+	openSampleDatasetsDialog: mocks.openSampleDatasetsDialog,
 }));
 
 import { renderFileList } from '../../../../src/features/datasetWorkspace/views/fileListView.js';
@@ -52,11 +52,11 @@ describe('renderFileList orchestration', () => {
 			};
 		});
 		mocks.openJoinBuilderDialog.mockResolvedValue({ leftIndex: 0, rightIndex: 1 });
-		mocks.openPresetDatasetsDialog.mockResolvedValue({ id: 'iris' });
+		mocks.openSampleDatasetsDialog.mockResolvedValue({ id: 'iris' });
 		setupFileListDom();
 	});
 
-	it('renders file tools, paginates, searches, and forwards join/preset choices', async () => {
+	it('renders file tools, paginates, searches, and forwards join/sample dataset choices', async () => {
 		const datasets = Array.from({ length: 20 }, (_, index) => ({
 			name: `Data ${index}.csv`,
 			rows: [{ id: index }],
@@ -66,9 +66,9 @@ describe('renderFileList orchestration', () => {
 		const onSelect = vi.fn();
 		const onRemove = vi.fn();
 		const onCreateJoin = vi.fn();
-		const onLoadPreset = vi.fn();
+		const onLoadSampleDataset = vi.fn();
 
-		renderFileList(datasets, 1, onSelect, onRemove, onCreateJoin, onLoadPreset);
+		renderFileList(datasets, 1, onSelect, onRemove, onCreateJoin, onLoadSampleDataset);
 
 		expect(document.getElementById('file-summary-text').textContent).toBe('chive-files-loaded:20');
 		expect(document.getElementById('file-selected-meta').textContent).toContain('Data 1.csv');
@@ -90,9 +90,9 @@ describe('renderFileList orchestration', () => {
 		await Promise.resolve();
 		expect(onCreateJoin).toHaveBeenCalledWith({ leftIndex: 0, rightIndex: 1 });
 
-		document.getElementById('btn-preset-datasets').click();
+		document.getElementById('btn-sample-datasets').click();
 		await Promise.resolve();
-		expect(onLoadPreset).toHaveBeenCalledWith({ id: 'iris' });
+		expect(onLoadSampleDataset).toHaveBeenCalledWith({ id: 'iris' });
 	});
 
 	it('disables the join action when there are fewer than two datasets', () => {
@@ -144,30 +144,30 @@ describe('renderFileList orchestration', () => {
 		expect(mocks.renderFileListDOM.mock.calls.at(-1)[0].visibleLimit).toBe(15);
 	});
 
-	it('ignores canceled join and preset dialogs and tolerates absent optional callbacks', async () => {
+	it('ignores canceled join and sample dataset dialogs and tolerates absent optional callbacks', async () => {
 		mocks.openJoinBuilderDialog.mockResolvedValueOnce(null);
-		mocks.openPresetDatasetsDialog.mockResolvedValueOnce(null);
+		mocks.openSampleDatasetsDialog.mockResolvedValueOnce(null);
 		mocks.renderFileListDOM.mockReturnValue({ total: 2, filteredCount: 2, renderedCount: 2, hasMore: false });
 		const onCreateJoin = vi.fn();
-		const onLoadPreset = vi.fn();
+		const onLoadSampleDataset = vi.fn();
 		const datasets = [
 			{ name: 'A.csv', rows: [], columns: [], sizeLabel: '1 KB' },
 			{ name: 'B.csv', rows: [], columns: [], sizeLabel: '1 KB' },
 		];
 
-		renderFileList(datasets, 0, vi.fn(), vi.fn(), onCreateJoin, onLoadPreset);
+		renderFileList(datasets, 0, vi.fn(), vi.fn(), onCreateJoin, onLoadSampleDataset);
 		document.getElementById('btn-join-files').click();
-		document.getElementById('btn-preset-datasets').click();
+		document.getElementById('btn-sample-datasets').click();
 		await Promise.resolve();
 
 		expect(onCreateJoin).not.toHaveBeenCalled();
-		expect(onLoadPreset).not.toHaveBeenCalled();
+		expect(onLoadSampleDataset).not.toHaveBeenCalled();
 
 		mocks.openJoinBuilderDialog.mockResolvedValueOnce({ leftIndex: 0, rightIndex: 1 });
-		mocks.openPresetDatasetsDialog.mockResolvedValueOnce({ id: 'sample' });
+		mocks.openSampleDatasetsDialog.mockResolvedValueOnce({ id: 'sample' });
 		renderFileList(datasets, 0, vi.fn(), vi.fn());
 		document.getElementById('btn-join-files').click();
-		document.getElementById('btn-preset-datasets').click();
+		document.getElementById('btn-sample-datasets').click();
 		await Promise.resolve();
 	});
 });

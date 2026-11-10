@@ -23,7 +23,7 @@ import { t } from './i18nService.js';
 
 /**
  * Map a worker progress stage to a localized user-facing label.
- * Caller passes the file (or preset) name so the parsing label can include it.
+ * Caller passes the file (or sample dataset) name so the parsing label can include it.
  *
  * @param {string} stage - One of `'parsing'`, `'decimal-detection'`, `'type-detection'`, `'normalize'`, `'stats'`.
  * @param {string} fileName - Used to interpolate into the `'parsing'` label.

@@ -81,7 +81,7 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 		report('parsing', 30);
 	}
 
-	// Drop unwanted columns before any per-column work (preset use case).
+	// Drop unwanted columns before any per-column work (sample dataset use case).
 	if (Array.isArray(options.dropColumns) && options.dropColumns.length > 0) {
 		const dropSet = new Set(options.dropColumns);
 		rawData = rawData.map(row => {

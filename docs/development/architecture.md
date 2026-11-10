@@ -98,7 +98,7 @@ The bus has three production routing styles:
 | Feature flow owners | Dataset controller and bindings, chart-controls controller, panel controller, settings controller, `uiManager.js` | Translate intent, call public facades/services, and own domain-specific render triggering. |
 | State core | `state/appState.js`, domain facades, panel mutation internals, `stateEvents.js` | Ordinary durable writes enter through the public facade surface. |
 | Presentation | Feature views/dialogs, panel views/slots/export, chart packages and registries | Render from explicit inputs or read-only getters; surface user actions through callbacks. |
-| Browser services | Persistence, ingest worker host, i18n, settings, presets, storage and downloads | Own browser I/O and other effects; persistence internals stay behind `services/persistence.js`. |
+| Browser services | Persistence, ingest worker host, i18n, settings, sample datasets, storage and downloads | Own browser I/O and other effects; persistence internals stay behind `services/persistence.js`. |
 | Pure leaves | `config/`, `utils/`, and `domain/` | Hold static configuration, ownership-neutral helpers, and product rules without DOM effects. |
 | Ownerless UI mechanics | `ui/` | May touch the DOM but is a strict import leaf reusable by higher owners. |
 
@@ -140,7 +140,7 @@ For a committed column-selection change:
 2. `renderCoordinator.setActiveDatasetColumnSelection` calls
    `setActiveDatasetColumnSelection` on the public state surface.
 3. The data facade validates unique declared names, stores a copied array, and
-   emits `STATE_EVENTS.COLUMNS_UPDATED` only when the ordered list changed.
+   emits `STATE_EVENTS.COLUMN_SELECTION_CHANGED` only when the ordered list changed.
 4. The render coordinator schedules the workspace and controls regions.
 5. A single animation-frame flush reads current state, derives the active
    dataset's shown dataset once (`domain/datasets/shownDataset.js`), and renders

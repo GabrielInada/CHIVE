@@ -13,11 +13,11 @@ const mocks = vi.hoisted(() => ({
 	getPreviewRows: vi.fn(),
 	onStateChange: vi.fn(),
 	STATE_EVENTS: {
-		ACTIVE_DATASET: 'active-dataset',
+		ACTIVE_DATASET_CHANGED: 'active-dataset',
 		DATASET_ADDED: 'dataset-added',
 		DATASET_REMOVED: 'dataset-removed',
-		COLUMNS_UPDATED: 'columns-updated',
-		CONFIG_UPDATED: 'config-updated',
+		COLUMN_SELECTION_CHANGED: 'columns-updated',
+		DATASET_CONFIG_UPDATED: 'config-updated',
 		STATE_HYDRATED: 'state-hydrated',
 		PREVIEW_ROWS_CHANGED: 'preview-rows-changed',
 	},
@@ -30,7 +30,7 @@ const mocks = vi.hoisted(() => ({
 	selectDataset: vi.fn(),
 	removeDatasetByIndex: vi.fn(),
 	handleJoinDatasetRequest: vi.fn(),
-	handlePresetDatasetRequest: vi.fn(),
+	handleSampleDatasetRequest: vi.fn(),
 	syncSidebarToTab: vi.fn(),
 }));
 
@@ -75,7 +75,7 @@ vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 	selectDataset: mocks.selectDataset,
 	removeDatasetByIndex: mocks.removeDatasetByIndex,
 	handleJoinDatasetRequest: mocks.handleJoinDatasetRequest,
-	handlePresetDatasetRequest: mocks.handlePresetDatasetRequest,
+	handleSampleDatasetRequest: mocks.handleSampleDatasetRequest,
 }));
 
 vi.mock('../../src/app/uiManager.js', () => ({
@@ -153,7 +153,7 @@ describe('renderCoordinator', () => {
 			mocks.selectDataset,
 			mocks.removeDatasetByIndex,
 			mocks.handleJoinDatasetRequest,
-			mocks.handlePresetDatasetRequest,
+			mocks.handleSampleDatasetRequest,
 		);
 		expect(mocks.renderEmptyState).toHaveBeenCalledTimes(1);
 		expect(mocks.renderSidebarPanel).toHaveBeenCalledTimes(1);
@@ -178,14 +178,14 @@ describe('renderCoordinator', () => {
 		coordinator.livePreviewRender();
 
 		expect(mocks.renderCharts).toHaveBeenCalledTimes(1);
-		const [shown, onChartConfigChange] = mocks.renderCharts.mock.calls[0];
+		const [shown, onDatasetConfigChange] = mocks.renderCharts.mock.calls[0];
 		expect(shown.dataset).toBe(dataset);
 		expect(shown.rows).toEqual([{ region: 'North', value: 10 }]);
 		expect(shown.visibleColumns).toEqual([{ name: 'value', type: 'number' }]);
 		expect(shown.columnTypeByName).toEqual({ region: 'text', value: 'number' });
 		// The same callback the full render hands the workspace, so tooltips
 		// pinned during a live preview keep their filter actions.
-		expect(onChartConfigChange).toBe(coordinator.updateDatasetConfig);
+		expect(onDatasetConfigChange).toBe(coordinator.updateDatasetConfig);
 	});
 
 	it('skips a live preview without an active dataset', async () => {
@@ -211,7 +211,7 @@ describe('renderCoordinator', () => {
 			previewRows: 25,
 			onPreviewRowsChange: expect.any(Function),
 			onColumnSelectionChange: coordinator.setActiveDatasetColumnSelection,
-			onChartConfigChange: coordinator.updateDatasetConfig,
+			onDatasetConfigChange: coordinator.updateDatasetConfig,
 		});
 		// The controls sidebar reads the value the workspace drew from.
 		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
@@ -219,7 +219,7 @@ describe('renderCoordinator', () => {
 
 		options.onPreviewRowsChange(50);
 		options.onColumnSelectionChange(['value']);
-		options.onChartConfigChange({ activeTab: 'charts' });
+		options.onDatasetConfigChange({ activeTab: 'charts' });
 		expect(mocks.setPreviewRows).toHaveBeenCalledWith(50);
 		expect(mocks.setActiveDatasetColumnSelection).toHaveBeenCalledWith(['value']);
 		expect(mocks.updateActiveDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
@@ -237,11 +237,11 @@ describe('renderCoordinator', () => {
 
 		expect(mocks.onStateChange).toHaveBeenCalledTimes(7);
 		expect(mocks.onStateChange.mock.calls.map(([event]) => event)).toEqual([
-			mocks.STATE_EVENTS.ACTIVE_DATASET,
+			mocks.STATE_EVENTS.ACTIVE_DATASET_CHANGED,
 			mocks.STATE_EVENTS.DATASET_ADDED,
 			mocks.STATE_EVENTS.DATASET_REMOVED,
-			mocks.STATE_EVENTS.COLUMNS_UPDATED,
-			mocks.STATE_EVENTS.CONFIG_UPDATED,
+			mocks.STATE_EVENTS.COLUMN_SELECTION_CHANGED,
+			mocks.STATE_EVENTS.DATASET_CONFIG_UPDATED,
 			mocks.STATE_EVENTS.STATE_HYDRATED,
 			mocks.STATE_EVENTS.PREVIEW_ROWS_CHANGED,
 		]);
@@ -253,7 +253,7 @@ describe('renderCoordinator', () => {
 		const callbacks = stateCallbacks();
 
 		callbacks[mocks.STATE_EVENTS.DATASET_ADDED]();
-		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
+		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET_CHANGED]();
 		expect(mocks.renderFileList).not.toHaveBeenCalled();
 
 		flushFrame();
@@ -269,7 +269,7 @@ describe('renderCoordinator', () => {
 		mocks.renderFileList.mockImplementationOnce(() => {
 			throw new Error('render boom');
 		});
-		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
+		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET_CHANGED]();
 		flushFrame();
 		expect(dispatchSpy).toHaveBeenCalledWith(
 			expect.objectContaining({ type: 'chive-internal-error' }),
@@ -287,7 +287,7 @@ describe('renderCoordinator', () => {
 		coordinator.setupStateSubscriptions();
 		const callbacks = stateCallbacks();
 
-		callbacks[mocks.STATE_EVENTS.COLUMNS_UPDATED]();
+		callbacks[mocks.STATE_EVENTS.COLUMN_SELECTION_CHANGED]();
 		flushFrame();
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
@@ -305,13 +305,13 @@ describe('renderCoordinator', () => {
 		expect(mocks.renderCanvasPanel).not.toHaveBeenCalled();
 	});
 
-	it('routes CONFIG_UPDATED by payload and renders the workspace before the panel', async () => {
+	it('routes DATASET_CONFIG_UPDATED by payload and renders the workspace before the panel', async () => {
 		setActiveDataset();
 		const coordinator = await importCoordinator();
 		coordinator.setupStateSubscriptions();
 		const callbacks = stateCallbacks();
 
-		callbacks[mocks.STATE_EVENTS.CONFIG_UPDATED]({ bar: { enabled: true } });
+		callbacks[mocks.STATE_EVENTS.DATASET_CONFIG_UPDATED]({ bar: { enabled: true } });
 		flushFrame();
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
@@ -323,7 +323,7 @@ describe('renderCoordinator', () => {
 
 		mocks.renderDatasetWorkspace.mockClear();
 		mocks.renderCanvasPanel.mockClear();
-		callbacks[mocks.STATE_EVENTS.CONFIG_UPDATED]({ activeTab: 'panel' });
+		callbacks[mocks.STATE_EVENTS.DATASET_CONFIG_UPDATED]({ activeTab: 'panel' });
 		flushFrame();
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 		expect(mocks.renderCanvasPanel).toHaveBeenCalledTimes(1);
@@ -337,16 +337,16 @@ describe('renderCoordinator', () => {
 		coordinator.setupStateSubscriptions();
 		const callbacks = stateCallbacks();
 
-		callbacks[mocks.STATE_EVENTS.COLUMNS_UPDATED]();
-		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
+		callbacks[mocks.STATE_EVENTS.COLUMN_SELECTION_CHANGED]();
+		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET_CHANGED]();
 		flushFrame();
 		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
 
 		mocks.renderFileList.mockClear();
 		mocks.renderDatasetWorkspace.mockClear();
-		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
-		callbacks[mocks.STATE_EVENTS.COLUMNS_UPDATED]();
+		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET_CHANGED]();
+		callbacks[mocks.STATE_EVENTS.COLUMN_SELECTION_CHANGED]();
 		flushFrame();
 		expect(mocks.renderFileList).toHaveBeenCalledTimes(1);
 		expect(mocks.renderDatasetWorkspace).toHaveBeenCalledTimes(1);
@@ -359,9 +359,9 @@ describe('renderCoordinator', () => {
 		const callbacks = stateCallbacks();
 
 		mocks.renderDatasetWorkspace.mockImplementationOnce(() => {
-			callbacks[mocks.STATE_EVENTS.CONFIG_UPDATED]({ globalFilter: { rules: [] } });
+			callbacks[mocks.STATE_EVENTS.DATASET_CONFIG_UPDATED]({ globalFilter: { rules: [] } });
 		});
-		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET]();
+		callbacks[mocks.STATE_EVENTS.ACTIVE_DATASET_CHANGED]();
 		flushFrame();
 		flushFrame();
 

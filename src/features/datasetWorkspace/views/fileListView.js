@@ -1,17 +1,18 @@
 /**
  * Dataset file-list orchestration view.
  *
- * Owns search and pagination state, selected-dataset metadata, and the Join
- * and Preset tool flows. Item rendering stays in fileListItems.js so the flow
- * and DOM-item renderer retain separate test seams.
+ * Owns search and pagination state, selected-dataset metadata, joins, and
+ * sample dataset loading. Item rendering stays in fileListItems.js so the
+ * flow and DOM-item renderer retain separate test seams.
  *
  * @typedef {import('../../../types.js').Dataset} Dataset
+ * @typedef {import('../../../types.js').SampleDatasetCatalogEntry} SampleDatasetCatalogEntry
  */
 
 import { t, getLocale } from '../../../services/i18nService.js';
 import { renderFileListDOM } from './fileListItems.js';
 import { openJoinBuilderDialog } from '../dialogs/joinBuilderDialog.js';
-import { openPresetDatasetsDialog } from '../dialogs/presetDatasetsDialog.js';
+import { openSampleDatasetsDialog } from '../dialogs/sampleDatasetsDialog.js';
 import { VIEW_IDS, FILE_IDS } from '../domIds.js';
 
 const FILE_LIST_PAGE_SIZE = 15;
@@ -20,7 +21,7 @@ let fileListVisibleCount = FILE_LIST_PAGE_SIZE;
 
 /**
  * Render the dataset file list with search, "show more/less" pagination,
- * the active-dataset metadata row, and the Join/Preset tool buttons.
+ * the active-dataset metadata row, and the join and sample dataset buttons.
  *
  * Filter query and visible-count state are module-local, re-rendering
  * resets visible-count when the query changes, but preserves it across
@@ -31,10 +32,10 @@ let fileListVisibleCount = FILE_LIST_PAGE_SIZE;
  * @param {(index: number) => void} onSelect
  * @param {(index: number) => void} onRemove
  * @param {(spec: Object) => void} [onCreateJoin] - Fired with the join-builder dialog's resolved spec.
- * @param {(presetId: string) => void} [onLoadPreset] - Fired with the chosen preset id.
+ * @param {(sampleDataset: SampleDatasetCatalogEntry) => void} [onLoadSampleDataset] - Fired with the chosen catalog entry.
  * @returns {void}
  */
-export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCreateJoin, onLoadPreset) {
+export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCreateJoin, onLoadSampleDataset) {
   const fileInfo = document.getElementById(VIEW_IDS.fileInfo);
   const summary = document.getElementById(FILE_IDS.fileSummary);
   const list = document.getElementById(FILE_IDS.fileListContent);
@@ -191,15 +192,15 @@ export function renderFileList(datasets, activeIndex, onSelect, onRemove, onCrea
   });
   joinActions.appendChild(joinButton);
 
-  const presetButton = document.createElement('button');
-  presetButton.type = 'button';
-  presetButton.className = 'btn-secondary btn-preset-datasets';
-  presetButton.id = 'btn-preset-datasets';
-  presetButton.textContent = t('chive-btn-preset-datasets');
-  presetButton.addEventListener('click', async () => {
-    const selected = await openPresetDatasetsDialog({ translate: t });
+  const sampleDatasetsButton = document.createElement('button');
+  sampleDatasetsButton.type = 'button';
+  sampleDatasetsButton.className = 'btn-secondary btn-sample-datasets';
+  sampleDatasetsButton.id = 'btn-sample-datasets';
+  sampleDatasetsButton.textContent = t('chive-btn-sample-datasets');
+  sampleDatasetsButton.addEventListener('click', async () => {
+    const selected = await openSampleDatasetsDialog({ translate: t });
     if (!selected) return;
-    onLoadPreset?.(selected);
+    onLoadSampleDataset?.(selected);
   });
-  joinActions.appendChild(presetButton);
+  joinActions.appendChild(sampleDatasetsButton);
 }

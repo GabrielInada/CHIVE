@@ -54,7 +54,7 @@
 
 /**
  * Precomputed statistics, cached on the dataset to avoid recomputing on every
- * DATASET_ADDED event. Produced at ingest for uploads, presets, and joins, with
+ * DATASET_ADDED event. Produced at ingest for uploads, sample datasets, and joins, with
  * both versions stamped.
  *
  * `numeric` is dropped at hydrate when `numericVersion` does not match
@@ -79,7 +79,7 @@
  * @property {Array<Object<string, *>>} rows - Parsed rows. Each row's keys match `columns[i].name`.
  * @property {ColumnSpec[]} columns - Detected columns in source order.
  * @property {string[]} selectedColumns - Names of currently visible columns (subset of `columns[].name`).
- * @property {ChartConfig} chartConfig - Per-chart-type configuration.
+ * @property {ChartConfig} chartConfig - Dataset configuration: per-chart settings, active tab, and global filter.
  * @property {PrecomputedStats} [precomputedStats] - Worker-computed stats, optional.
  */
 
@@ -145,6 +145,10 @@
  * `src/config/charts/definitions/<type>.js` for each chart type's full field
  * set.
  *
+ * The `ChartConfig` name follows `Dataset.chartConfig`, which is also a
+ * persistence-worker message field. Both names stay to preserve that format
+ * when a page and its worker are running different code versions.
+ *
  * @typedef {Object} ChartConfig
  * @property {string} activeTab - Active tab id (e.g. `'preview'`, `'charts'`, `'panel'`).
  * @property {GlobalFilter} globalFilter
@@ -190,7 +194,7 @@
  *
  *   - `commit` writes through the emitting facade, so the chart config is
  *     canonicalized (an enumerated value the chart does not offer becomes its
- *     default), `CONFIG_UPDATED` fires, auto-save marks the project dirty, and
+ *     default), `DATASET_CONFIG_UPDATED` fires, auto-save marks the project dirty, and
  *     the controls sidebar refreshes.
  *   - `preview` writes through the non-emitting facade and repaints only the
  *     chart. Use it for continuous input (a color picker's `input` event):
@@ -448,7 +452,7 @@
  * @property {Object} [options]
  * @property {'auto' | '.' | ','} [options.decimalSeparator='auto'] - Explicit string number format, overriding saved column formats, or automatic detection with a dot fallback. Joins retain each source column's saved format in automatic mode. Typed numbers are preserved.
  * @property {number} [options.rowLimit] - Cap the rows after parse or join; surplus rows set `truncatedFrom`. Uploads use this only for a bounded threshold probe, then rerun uncapped after approval.
- * @property {string[]} [options.dropColumns] - Column names to strip before normalization (preset use case).
+ * @property {string[]} [options.dropColumns] - Column names to strip before normalization (sample dataset use case).
  */
 
 /**
@@ -644,12 +648,12 @@
  * @property {boolean} empty - `true` when `n === 0`.
  */
 
-// ─── Preset loading (presetService) ─────────────────────────────────────
+// ─── Sample dataset loading (sampleDatasetService) ─────────────────────────────────────
 
 /**
- * Descriptor for a bundled preset dataset, loaded from `dataUrl`.
+ * Descriptor for a bundled sample dataset, loaded from `dataUrl`.
  *
- * @typedef {Object} PresetDescriptor
+ * @typedef {Object} SampleDatasetDescriptor
  * @property {string} [id]
  * @property {string} [name]
  * @property {string} [dataUrl] - Remote source. Resolved with a 10s timeout.
@@ -658,20 +662,20 @@
  */
 
 /**
- * Fetched preset source, ready for the ingest worker.
+ * Fetched sample dataset source, ready for the ingest worker.
  *
- * @typedef {Object} PresetSource
+ * @typedef {Object} SampleDatasetSource
  * @property {'csv' | 'json'} kind
  * @property {string} text - Raw file contents.
  * @property {string[]} dropColumns
  */
 
 /**
- * One entry in the bundled preset catalog (`data/presetCatalog.js`).
- * Catalog entries are the authoritative metadata used to render the preset
- * picker dialog and resolve a loaded preset via `presetService`.
+ * One entry in the bundled sample dataset catalog (`data/sampleDatasetCatalog.js`).
+ * Catalog entries are the authoritative metadata used to render the sample dataset
+ * picker dialog and resolve a loaded sample dataset via `sampleDatasetService`.
  *
- * @typedef {Object} PresetCatalogEntry
+ * @typedef {Object} SampleDatasetCatalogEntry
  * @property {string} id - Stable identifier (e.g. `'iris'`).
  * @property {string} nameKey - i18n key resolving to the display name.
  * @property {string} descKey - i18n key resolving to the description.
