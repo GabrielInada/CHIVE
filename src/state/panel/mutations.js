@@ -23,7 +23,7 @@
  */
 
 import { isValidHexColor } from '../../utils/colorUtils.js';
-import { PANEL_LAYOUTS } from '../../domain/panel/layoutTemplates.js';
+import { PANEL_TEMPLATES } from '../../domain/panel/layoutTemplates.js';
 
 function isPlainObject(value) {
 	if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
@@ -33,7 +33,7 @@ function isPlainObject(value) {
 
 function getMutableProportionKeys(templateId) {
 	if (templateId === 'template-single') return [];
-	return Object.keys(PANEL_LAYOUTS[templateId]?.defaultProportions || {});
+	return Object.keys(PANEL_TEMPLATES[templateId]?.defaultProportions || {});
 }
 
 /**
@@ -391,7 +391,7 @@ export function setPanelBlockTemplateState(
 	ensureDefaultPanelBlock();
 	const block = appState.panel.blocks.find(item => item.id === blockId);
 	if (!block) return { ok: false, changed: false };
-	if (!Object.hasOwn(PANEL_LAYOUTS, templateId)) {
+	if (!Object.hasOwn(PANEL_TEMPLATES, templateId)) {
 		throw new Error(`Invalid panel template: ${templateId}`);
 	}
 
@@ -442,7 +442,7 @@ export function assignChartToPanelBlockSlotState(
 	ensureDefaultPanelBlock();
 	const block = appState.panel.blocks.find(item => item.id === blockId);
 	if (!block) return { ok: false, changed: false };
-	if (typeof slotId !== 'string' || !PANEL_LAYOUTS[block.templateId]?.slots.includes(slotId)) {
+	if (typeof slotId !== 'string' || !PANEL_TEMPLATES[block.templateId]?.slots.includes(slotId)) {
 		throw new Error(`Invalid panel slot: ${slotId}`);
 	}
 

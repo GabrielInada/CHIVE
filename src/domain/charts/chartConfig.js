@@ -151,7 +151,7 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 		},
 	};
 
-	// Both dataset configs and saved Panel specs pass through this migration.
+	// Both dataset configs and saved Panel snapshots pass through this migration.
 	// Translate before enum validation so an ascending choice cannot fall back.
 	if (merged.bar.sort === 'count-desc') merged.bar.sort = 'value-desc';
 	else if (merged.bar.sort === 'count-asc') merged.bar.sort = 'value-asc';

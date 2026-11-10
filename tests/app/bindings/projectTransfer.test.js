@@ -50,6 +50,7 @@ vi.mock('../../../src/state/appState.js', () => ({
 }));
 
 import { setupProjectTransferListeners } from '../../../src/app/bindings/projectTransfer.js';
+import { mergePanelSnapshotConfigsWithDefaults } from '../../../src/domain/panel/rehydration.js';
 
 function setupDom() {
 	document.body.innerHTML = `
@@ -148,7 +149,10 @@ describe('eventHandlers', () => {
 		});
 		expect(mocks.importProjectBytes).toHaveBeenCalledWith(
 			new Uint8Array([9, 8]),
-			expect.objectContaining({ applyStateSnapshot: mocks.applyStateSnapshot }),
+			expect.objectContaining({
+				applyStateSnapshot: mocks.applyStateSnapshot,
+				transformPanel: mergePanelSnapshotConfigsWithDefaults,
+			}),
 		);
 		expect(mocks.progressHandle.succeed).toHaveBeenCalledWith('tr:chive-project-import-success');
 	});

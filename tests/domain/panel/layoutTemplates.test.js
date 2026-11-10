@@ -1,34 +1,35 @@
 import { describe, it, expect } from 'vitest';
 import {
-	PANEL_LAYOUTS,
-	getLayoutConfig,
+	PANEL_TEMPLATES,
+	getPanelTemplate,
 	getTemplateForBlock,
 	normalizeTemplateId,
 	getTemplateSlots,
 	createDefaultProportions,
 } from '../../../src/domain/panel/layoutTemplates.js';
 
-describe('PANEL_LAYOUTS registry', () => {
-	it('returns expected layout map entries', () => {
-		expect(PANEL_LAYOUTS['template-2col'].slots).toEqual(['slot-1', 'slot-2']);
-		expect(PANEL_LAYOUTS['template-hero2'].slots.length).toBe(3);
+describe('PANEL_TEMPLATES registry', () => {
+	it('returns expected template entries', () => {
+		expect(PANEL_TEMPLATES['template-2col'].slots).toEqual(['slot-1', 'slot-2']);
+		expect(PANEL_TEMPLATES['template-hero2'].slots.length).toBe(3);
 	});
 
 	it('defines every field on every template', () => {
-		Object.values(PANEL_LAYOUTS).forEach(template => {
+		Object.values(PANEL_TEMPLATES).forEach(template => {
 			expect(typeof template.cssClass).toBe('string');
 			expect(Array.isArray(template.slots)).toBe(true);
 			expect(template.slots.length).toBeGreaterThan(0);
 			expect(typeof template.defaultProportions).toBe('object');
 			expect(typeof template.labelKey).toBe('string');
+			expect(template.labelKey).toContain('chive-panel-template');
 		});
 	});
 });
 
-describe('getLayoutConfig', () => {
-	it('returns fallback layout for invalid id', () => {
-		const cfg = getLayoutConfig('invalid-layout');
-		expect(cfg).toBe(PANEL_LAYOUTS['template-2col']);
+describe('getPanelTemplate', () => {
+	it('returns fallback template for invalid id', () => {
+		const cfg = getPanelTemplate('invalid-template');
+		expect(cfg).toBe(PANEL_TEMPLATES['template-2col']);
 	});
 });
 
@@ -74,7 +75,7 @@ describe('getTemplateSlots', () => {
 	});
 
 	it('returns a fresh array, not the registry reference', () => {
-		expect(getTemplateSlots('template-2col')).not.toBe(PANEL_LAYOUTS['template-2col'].slots);
+		expect(getTemplateSlots('template-2col')).not.toBe(PANEL_TEMPLATES['template-2col'].slots);
 	});
 });
 
@@ -92,6 +93,6 @@ describe('createDefaultProportions', () => {
 	});
 
 	it('returns a fresh object, not the registry reference', () => {
-		expect(createDefaultProportions('template-2col')).not.toBe(PANEL_LAYOUTS['template-2col'].defaultProportions);
+		expect(createDefaultProportions('template-2col')).not.toBe(PANEL_TEMPLATES['template-2col'].defaultProportions);
 	});
 });

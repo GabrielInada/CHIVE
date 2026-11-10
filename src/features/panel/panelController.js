@@ -12,13 +12,11 @@
  *
  * @typedef {import('../../types.js').ChartSnapshot} ChartSnapshot
  * @typedef {import('../../types.js').Result} Result
- * @typedef {import('../../types.js').PanelTemplateId} PanelTemplateId
  */
 
 import { t } from '../../services/i18nService.js';
 import { ok, fail } from '../../utils/result.js';
 import { deriveShownDataset } from '../../domain/datasets/shownDataset.js';
-import { getLayoutConfig as getPanelLayoutConfig } from '../../domain/panel/layoutTemplates.js';
 import {
 	getActiveDataset,
 	addChartSnapshot,
@@ -233,16 +231,6 @@ export function removeChartFromPanel(chartId) {
  */
 export function getChartById(chartId) {
 	return getChartSnapshot(chartId);
-}
-
-/**
- * Look up a layout descriptor from `domain/panel/layoutTemplates.js`.
- *
- * @param {PanelTemplateId} layoutId
- * @returns {Object} Layout configuration (template definition, slot list, defaults).
- */
-export function getLayoutConfig(layoutId) {
-	return getPanelLayoutConfig(layoutId);
 }
 
 /**

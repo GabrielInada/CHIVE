@@ -15,7 +15,7 @@
 
 import { t } from '../../../services/i18nService.js';
 import {
-	PANEL_LAYOUTS,
+	PANEL_TEMPLATES,
 	getTemplateForBlock,
 } from '../../../domain/panel/layoutTemplates.js';
 import { normalizeHexColor } from '../layout/resizeMath.js';
@@ -201,7 +201,7 @@ export function renderCanvasPanel(callbacks) {
 	});
 
 	const addControls = createAddBlockControls({
-		layouts: PANEL_LAYOUTS,
+		templates: PANEL_TEMPLATES,
 		translate: t,
 		onAddBlock: callbacks.onAddBlock,
 	});
@@ -245,7 +245,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks }
 	const templateSelect = createBlockTemplateSelect({
 		blockId: block.id,
 		templateId: block.templateId,
-		layouts: PANEL_LAYOUTS,
+		templates: PANEL_TEMPLATES,
 		translate: t,
 		onTemplateChange: e => callbacks.onChangeBlockTemplate(block.id, e.target.value),
 	});

@@ -409,7 +409,7 @@ Normal boot hydration is:
 3. When there is no SQLite project and the migration marker is absent, attempt
    the one-time legacy raw-IndexedDB import.
 4. Validate dataset records, sanitize selected columns, canonicalize chart
-   config in memory, apply the injected panel-spec transform, and read
+   config in memory, apply the injected panel-snapshot transform, and read
    `chive.ui`.
 5. Call `applyStateSnapshot` only when normalized project content or UI prefs are
    hydratable.

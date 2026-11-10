@@ -306,7 +306,7 @@ flowchart TB
         PSUB --> PVIEW["panelView"]
         PSTATE -. read through getters .-> PVIEW
         PVIEW -. callback via panelController .-> PFACADE
-        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartSnapshot"]
         MOUNT --> PREG["panel registry"]
     end
 
@@ -487,9 +487,9 @@ When a chart is added to the panel, `addChartToPanel`
 `config`, `dataSnapshot`, and `columnsSnapshot` are each `structuredClone`d at
 capture time, so those fields are detached from later edits to the active
 dataset. The snapshot is not `Object.freeze`d and live facade getters remain
-read-only by policy. After `renderChartFromSpec` validates the request, the
+read-only by policy. After `renderChartSnapshot` validates the request, the
 [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
-`spec.dataSnapshot` and `spec.config` and hands it to the same presentation flow. This
+`snapshot.dataSnapshot` and `snapshot.config` and hands it to the same presentation flow. This
 detached-capture property is what
 lets the live preview skip re-rendering the panel (section 9.4 / 10).
 

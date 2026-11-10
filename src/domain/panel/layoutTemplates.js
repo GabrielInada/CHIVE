@@ -17,7 +17,7 @@
 /**
  * @type {Object<PanelTemplateId, { cssClass: string, slots: string[], defaultProportions: PanelBlockProportions, labelKey: string }>}
  */
-export const PANEL_LAYOUTS = {
+export const PANEL_TEMPLATES = {
 	'template-single': {
 		cssClass: 'template-single',
 		slots: ['slot-1'],
@@ -50,27 +50,27 @@ export const PANEL_LAYOUTS = {
 	},
 };
 
-const PANEL_TEMPLATE_IDS = Object.keys(PANEL_LAYOUTS);
+const PANEL_TEMPLATE_IDS = Object.keys(PANEL_TEMPLATES);
 
 /**
- * Look up a layout config by id. Unknown ids fall back to `'template-2col'`.
+ * Look up a block template by id. Unknown ids fall back to `'template-2col'`.
  *
- * @param {*} layoutId
+ * @param {*} templateId
  * @returns {{ cssClass: string, slots: string[], defaultProportions: PanelBlockProportions, labelKey: string }}
  */
-export function getLayoutConfig(layoutId) {
-	return PANEL_LAYOUTS[layoutId] || PANEL_LAYOUTS['template-2col'];
+export function getPanelTemplate(templateId) {
+	return PANEL_TEMPLATES[templateId] || PANEL_TEMPLATES['template-2col'];
 }
 
 /**
- * Resolve the layout config for a panel block. Convenience wrapper that
- * pulls `block.templateId` and delegates to {@link getLayoutConfig}.
+ * Resolve the template for a panel block. Convenience wrapper that
+ * pulls `block.templateId` and delegates to {@link getPanelTemplate}.
  *
  * @param {{ templateId?: PanelTemplateId } | null | undefined} block
  * @returns {{ cssClass: string, slots: string[], defaultProportions: PanelBlockProportions, labelKey: string }}
  */
 export function getTemplateForBlock(block) {
-	return getLayoutConfig(block?.templateId);
+	return getPanelTemplate(block?.templateId);
 }
 
 /**
@@ -93,7 +93,7 @@ export function normalizeTemplateId(templateId) {
  * @returns {string[]}
  */
 export function getTemplateSlots(templateId) {
-	return [...getLayoutConfig(templateId).slots];
+	return [...getPanelTemplate(templateId).slots];
 }
 
 /**
@@ -105,6 +105,6 @@ export function getTemplateSlots(templateId) {
  * @returns {PanelBlockProportions}
  */
 export function createDefaultProportions(templateId) {
-	const template = PANEL_LAYOUTS[templateId];
+	const template = PANEL_TEMPLATES[templateId];
 	return template ? { ...template.defaultProportions } : { split: 100 };
 }

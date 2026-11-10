@@ -16,7 +16,7 @@ import {
 import {
 	createDefaultProportions,
 	getTemplateSlots,
-	PANEL_LAYOUTS,
+	PANEL_TEMPLATES,
 } from '../domain/panel/layoutTemplates.js';
 import { clampPercentage } from '../domain/panel/panelBlockModel.js';
 import { STATE_EVENTS } from './stateEvents.js';
@@ -167,7 +167,7 @@ export function createPanelStateFacade({
 	 * @fires STATE_EVENTS.PANEL_BLOCK_ADDED - Emitted only on success.
 	 */
 	function addPanelBlock(templateId = 'template-2col') {
-		if (!Object.hasOwn(PANEL_LAYOUTS, templateId)) {
+		if (!Object.hasOwn(PANEL_TEMPLATES, templateId)) {
 			throw new Error(`Invalid panel template: ${templateId}`);
 		}
 		const block = addPanelBlockState(appState, templateId, ensureDefaultPanelBlock, createPanelBlock, panelBlockLimit);

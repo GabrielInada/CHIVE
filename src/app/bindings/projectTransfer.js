@@ -16,7 +16,7 @@ import {
 	importProjectBytes,
 } from '../../services/persistence.js';
 import { downloadBytes } from '../../services/downloads/bytes.js';
-import { rehydratePanelChartSpecs } from '../../domain/panel/rehydration.js';
+import { mergePanelSnapshotConfigsWithDefaults } from '../../domain/panel/rehydration.js';
 import { applyStateSnapshot, getPersistenceStateView } from '../../state/appState.js';
 import { showProgress } from '../../ui/feedback.js';
 import { openConfirmDialog } from '../../ui/confirmDialog.js';
@@ -178,7 +178,7 @@ async function handleProjectImport(file, input) {
 			progress.update(55);
 			const result = await importProjectBytes(bytes, {
 				applyStateSnapshot,
-				transformPanel: rehydratePanelChartSpecs,
+				transformPanel: mergePanelSnapshotConfigsWithDefaults,
 			});
 			if (!result.ok) {
 				progress.fail(t(getProjectImportErrorMessageKey(result.error)));

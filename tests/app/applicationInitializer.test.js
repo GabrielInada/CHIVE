@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
 	getPersistenceErrorMessageKey: vi.fn(),
 	getPersistenceStateView: vi.fn(),
 	applyStateSnapshot: vi.fn(),
-	rehydratePanelChartSpecs: vi.fn(),
+	mergePanelSnapshotConfigsWithDefaults: vi.fn(),
 	throttle: vi.fn(),
 	initChartControls: vi.fn(),
 	initPanelController: vi.fn(),
@@ -48,7 +48,7 @@ vi.mock('../../src/state/appState.js', () => ({
 }));
 
 vi.mock('../../src/domain/panel/rehydration.js', () => ({
-	rehydratePanelChartSpecs: mocks.rehydratePanelChartSpecs,
+	mergePanelSnapshotConfigsWithDefaults: mocks.mergePanelSnapshotConfigsWithDefaults,
 }));
 
 vi.mock('../../src/utils/throttle.js', () => ({
@@ -143,7 +143,7 @@ describe('application initializer', () => {
 
 		expect(mocks.hydrateState).toHaveBeenCalledWith({
 			applyStateSnapshot: mocks.applyStateSnapshot,
-			transformPanel: mocks.rehydratePanelChartSpecs,
+			transformPanel: mocks.mergePanelSnapshotConfigsWithDefaults,
 			onError: expect.any(Function),
 		});
 		expect(mocks.initChartControls).toHaveBeenCalledWith(null, mocks.throttledPreview);
