@@ -111,7 +111,7 @@ describe('eventHandlers', () => {
 
 		const ignored = appendChartAction({ type: 'bar', action: 'unknown-action' });
 		ignored.click();
-		expect(mocks.addChartToPanel).not.toHaveBeenCalledWith(CHART_CONTAINERS.bar, expect.anything(), expect.anything());
+		expect(mocks.addChartToPanel).not.toHaveBeenCalled();
 
 		document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 		expect(() => setupChartActionListeners()).not.toThrow();
@@ -140,10 +140,10 @@ describe('eventHandlers', () => {
 		const button = appendChartAction({ type, action: 'add-panel', title: `${type} title` });
 		button.click();
 
-		const [containerId, title, metadata] = mocks.addChartToPanel.mock.calls.at(-1);
-		expect(containerId).toBe(CHART_CONTAINERS[type]);
+		const [title, metadata] = mocks.addChartToPanel.mock.calls.at(-1);
 		expect(title).toBe(`${type} title`);
 		expect(metadata).toEqual(expect.objectContaining({ type, ...expected }));
+		expect(mocks.addChartToPanel).toHaveBeenLastCalledWith(title, metadata);
 		expect(mocks.showFeedback).toHaveBeenCalledWith('tr:chive-panel-add-success');
 	});
 
@@ -164,7 +164,7 @@ describe('eventHandlers', () => {
 
 		appendChartAction({ type, action: 'add-panel' }).click();
 
-		expect(mocks.addChartToPanel.mock.calls.at(-1)[2].summary).toBe(summary);
+		expect(mocks.addChartToPanel.mock.calls.at(-1)[1].summary).toBe(summary);
 	});
 
 	it('uses custom chart titles, generic fallback titles, and empty metadata for unresolved chart types', () => {
@@ -174,19 +174,18 @@ describe('eventHandlers', () => {
 		});
 
 		appendChartAction({ type: 'bar', action: 'add-panel', title: 'Fallback Bar' }).click();
-		expect(mocks.addChartToPanel.mock.calls.at(-1)[1]).toBe('Custom Bar');
+		expect(mocks.addChartToPanel.mock.calls.at(-1)[0]).toBe('Custom Bar');
 
 		const unknownButton = appendChartAction({ type: 'unknown', action: 'add-panel', title: '' });
 		unknownButton.closest('.chart-block').querySelector('.chart-title').remove();
 		unknownButton.click();
 		expect(mocks.addChartToPanel.mock.calls.at(-1)).toEqual([
-			'unknown-container',
 			'tr:chive-card-charts',
 			{},
 		]);
 
 		mocks.getActiveDataset.mockReturnValue(null);
 		appendChartAction({ type: 'bar', action: 'add-panel', title: 'No Dataset' }).click();
-		expect(mocks.addChartToPanel.mock.calls.at(-1)[2]).toEqual({});
+		expect(mocks.addChartToPanel.mock.calls.at(-1)[1]).toEqual({});
 	});
 });

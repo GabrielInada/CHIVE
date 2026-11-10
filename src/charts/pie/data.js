@@ -54,8 +54,8 @@ export function computePieSectors(rows, categoryColumn, options, labels = {}) {
 	});
 	if (!aggregated.ok) return aggregated;
 
-	const { entries: categories, rest } = aggregated;
-	const otherValue = topNMode === 'other' ? rest : null;
+	const { entries: categories, omittedValueTotal } = aggregated;
+	const otherValue = topNMode === 'other' ? omittedValueTotal : null;
 
 	// WHY: category keys are cell text, so read only own keys. A category
 	// named `constructor` would otherwise take Object.prototype's function as
@@ -80,5 +80,5 @@ export function computePieSectors(rows, categoryColumn, options, labels = {}) {
 		});
 	}
 
-	return { ok: true, sectors, total: aggregated.total + (otherValue ?? 0) };
+	return { ok: true, sectors, total: aggregated.retainedValueTotal + (otherValue ?? 0) };
 }

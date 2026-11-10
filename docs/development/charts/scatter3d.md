@@ -45,7 +45,7 @@ flowchart TB
         CONTROLS["scatter3d/controls"] --> WRITER["ChartConfigWriter"]
         WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
         DFACADE --> DSTATE[("dataset.chartConfig.scatter3d")]
-        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DFACADE -- DATASET_CONFIG_UPDATED --> COORD["renderCoordinator"]
         DSTATE -. read through getters .-> COORD
         WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
         PREVIEW --> DSTATE
@@ -62,7 +62,7 @@ flowchart TB
         PSUB --> PVIEW["panelView"]
         PSTATE -. read through getters .-> PVIEW
         PVIEW -. callback via panelController .-> PFACADE
-        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartSnapshot"]
         MOUNT --> PREG["panel registry"]
     end
 
@@ -126,7 +126,7 @@ and localized `labels` in a separate context, map fail reasons onto i18n
 keys (`no-valid-points` and `webgl-unavailable` have their own keys;
 `render-error` and bare failures use the generic one), then apply the
 post-render extras that need the ok payload: the accurate aria-label
-(rendered point count) and the sampling notice when `truncated`.
+(rendered point count) and the sampling notice when `sampled`.
 
 While the renderer module loads, the presentation flow shows a loading message and
 stashes a dispose hook on the container. Hiding the chart, or any other
@@ -135,7 +135,7 @@ the same container.
 
 ### 6.2 Panel
 
-[renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
+[renderChartSnapshot.js](../../../src/features/panel/slots/renderChartSnapshot.js)
 validates the request, then the
 [panel registry](../../../src/charts/registries/panel.js) builds the chart input
 from the captured snapshot and hands it to the same presentation flow. Panel slot containers
@@ -180,7 +180,7 @@ from config and normalizes visual settings once through `normalizeScatter3dOptio
    [containerLifecycle.js](../../../src/charts/shared/containerLifecycle.js).
    Only that helper ever runs or deletes the hook; the renderer only
    assigns it. The ok payload carries
-   `{ renderedCount, validCount, totalCount, truncated }`.
+   `{ renderedCount, validCount, totalCount, sampled }`.
 
 The renderer is i18n-free by lint: all localized strings arrive through
 `context.labels`. `customTitle` is user text, rendered as an HTML heading
@@ -263,6 +263,6 @@ the two surfaces. Panel export omission is covered in
   `viz-input-scatter3d-color`.
 - CSS: `.chart-canvas-3d` (canvas layout + `touch-action`),
   `.chart-canvas-title`, `.chart-sampling-notice`, `.visually-hidden`
-  (all in `chart-output.css`); `.panel-slot-svg canvas` in `panel.css`.
+  (all in `chart-output.css`); `.panel-chart-container canvas` in `panel.css`.
 - Tuning knobs: `SCATTER3D_CHART` in `config/charts/definitions/scatter3d.js` (`maxPoints`,
   `maxDevicePixelRatio`, camera speeds/clamps, size/opacity limits).

@@ -9,7 +9,7 @@ import {
 } from '../../../src/charts/bubble/data.js';
 import { BUBBLE_CHART } from '../../../src/config/charts/definitions/bubble.js';
 import { MISSING_KEY, describeCategory } from '../../../src/domain/datasets/cellValues.js';
-import { applyChartFilterRows } from '../../../src/domain/filters/chartFilter.js';
+import { applyFilterRuleToRows } from '../../../src/domain/filters/filterRule.js';
 
 const segment = key => ({ key, ...describeCategory(key) });
 const leaf = (key, value, path) => ({ key, value, nestingPath: path.map(segment) });
@@ -91,7 +91,7 @@ describe('aggregateBubbles', () => {
 		const missingGroup = tree.children.find(node => node.groupKey === MISSING_KEY);
 		expect(missingGroup.groupLabel).toBe('(missing)');
 		expect(missingGroup.children.map(child => child.key)).toEqual(['A', 'C']);
-		expect(applyChartFilterRows(rows, { column: 'g', exclude: [missingGroup.groupToken] })).toEqual([{ cat: 'B', g: 'N/A' }]);
+		expect(applyFilterRuleToRows(rows, { column: 'g', exclude: [missingGroup.groupToken] })).toEqual([{ cat: 'B', g: 'N/A' }]);
 	});
 });
 

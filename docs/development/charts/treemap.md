@@ -86,7 +86,7 @@ flowchart TB
         CONTROLS["treemap/controls"] --> WRITER["ChartConfigWriter"]
         WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
         DFACADE --> DSTATE[("dataset.chartConfig.treemap")]
-        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DFACADE -- DATASET_CONFIG_UPDATED --> COORD["renderCoordinator"]
         DSTATE -. read through getters .-> COORD
         WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
         PREVIEW --> DSTATE
@@ -103,7 +103,7 @@ flowchart TB
         PSUB --> PVIEW["panelView"]
         PSTATE -. read through getters .-> PVIEW
         PVIEW -. callback via panelController .-> PFACADE
-        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartSnapshot"]
         MOUNT --> PREG["panel registry"]
     end
 
@@ -224,7 +224,7 @@ passes config unchanged with localized labels and callbacks in a separate contex
 ### 6.2 Panel view
 
 The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
-the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same presentation
+the snapshot (`snapshot.dataSnapshot` and `snapshot.config`) and hands it to the same presentation
 flow without `filterCallbacks` (no click-to-filter in panels).
 
 ---
@@ -252,8 +252,8 @@ a usable value column returns `{ ok: false, reason: 'no-value-column' }`, and wi
 The renderer asks `aggregateCategories` to leave out values at or below 0 (`positiveOnly`),
 since a tile needs an area, and to keep the first `topN`. Entries arrive sorted descending
 (with a `compareCategoryKeys` tiebreaker, missing last); with no positive value the result is
-`{ ok: false, reason: 'no-positive-value' }`. Its `total` sums the kept tiles, the base of
-the tooltip percentages. A one-level `hierarchy({ root, children: entries })`
+`{ ok: false, reason: 'no-positive-value' }`. Its `retainedValueTotal` sums the kept tiles,
+the base of the tooltip percentages. A one-level `hierarchy({ root, children: entries })`
 `.sum(value)` feeds `treemap().tile(treemapSquarify).size([w, h]).padding(p).round(true)`,
 which assigns each leaf its `(x0, y0, x1, y1)` rectangle (the squarified tiling of section
 2.2). `round(true)` snaps coordinates to whole pixels for crisp edges.

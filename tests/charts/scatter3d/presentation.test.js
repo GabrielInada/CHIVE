@@ -34,7 +34,7 @@ function drawCanvas(payload = {}) {
 		const canvas = document.createElement('canvas');
 		canvas.className = 'chart-canvas-3d';
 		container.append(canvas);
-		return { ok: true, renderedCount: 2, validCount: 2, totalCount: 2, truncated: false, ...payload };
+		return { ok: true, renderedCount: 2, validCount: 2, totalCount: 2, sampled: false, ...payload };
 	};
 }
 
@@ -87,7 +87,7 @@ describe('3D scatter presentation', () => {
 
 	it('notes sampling only when the renderer reports it', async () => {
 		const sampled = mount();
-		three.renderScatter3dChart.mockImplementation(drawCanvas({ truncated: true, renderedCount: 10, validCount: 99 }));
+		three.renderScatter3dChart.mockImplementation(drawCanvas({ sampled: true, renderedCount: 10, validCount: 99 }));
 		renderScatter3dInto(sampled, { rows, config });
 		await rendered();
 		expect(sampled.querySelector('.chart-sampling-notice').textContent).toBe('Showing 10 of 99 points.');

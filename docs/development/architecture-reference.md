@@ -93,6 +93,7 @@ This is the complete named-export surface of `src/state/appState.js`:
     "addChartSnapshot",
     "addDataset",
     "addPanelBlock",
+    "applyStateSnapshot",
     "assignChartToPanelBlockSlot",
     "clearPanel",
     "getActiveDataset",
@@ -101,28 +102,27 @@ This is the complete named-export surface of `src/state/appState.js`:
     "getChartSnapshot",
     "getPanelBlocks",
     "getPanelCharts",
-    "getPersistenceSnapshot",
+    "getPersistenceStateView",
     "getPreviewRows",
     "getState",
     "movePanelBlock",
-    "normalizeActiveDatasetConfig",
     "onStateChange",
     "removeChartSnapshot",
     "removeDataset",
     "removePanelBlock",
-    "replaceAllState",
+    "repairPanelSlotReferences",
     "sanitizeChartName",
     "setActiveChartType",
     "setActiveDataset",
+    "setActiveDatasetColumnSelection",
     "setPanelBlockTemplate",
     "setPreviewRows",
     "setSidebarMode",
-    "updateActiveDatasetColumns",
+    "transformActiveDatasetConfigSilently",
     "updateActiveDatasetConfig",
     "updatePanelBlockBorder",
     "updatePanelBlockHeight",
-    "updatePanelBlockProportions",
-    "validatePanelSlots"
+    "updatePanelBlockProportions"
 ]
 ```
 
@@ -131,7 +131,7 @@ This is the complete named-export surface of `src/state/appState.js`:
 | Method | Return or mutation | Exact edge behavior |
 |---|---|---|
 | `getState()` | Fresh JSON deep clone of all three slices. | Dates and other non-JSON values follow `JSON.stringify`/`JSON.parse` semantics. |
-| `getPersistenceSnapshot()` | Fresh envelope containing live `datasets`, `panel`, and `ui` references. | Avoids cloning large payloads for autosave. Every nested value is read-only to callers. |
+| `getPersistenceStateView()` | Fresh envelope containing live `datasets`, `panel`, and `ui` references. | Avoids cloning large payloads for autosave. Every nested value is read-only to callers. |
 | `getActiveDataset()` | Live selected dataset or `null`. | Returns `null` for `activeIndex === -1` or when the indexed entry is falsy. |
 | `getActiveDatasetIndex()` | Primitive index value. | Returns the stored value; it does not normalize a malformed value. |
 | `getAllDatasets()` | Live datasets array. | No clone or validation. |
@@ -140,7 +140,7 @@ This is the complete named-export surface of `src/state/appState.js`:
 | `getPanelBlocks()` | Live blocks array. | Ensures one block exists, using the compatibility layout when synthesis is needed, increments `nextBlockId`, synchronizes `panel.layout`, and emits no event. |
 | `getPreviewRows()` | Primitive stored preview-row value. | No normalization on read. |
 | `sanitizeChartName(name)` | String. | Applies `String(name).slice(0, 100).trim()`. |
-| `validatePanelSlots()` | No return. | Ensures a default block, removes legacy and per-block assignments whose values are not current chart ids, and emits nothing. |
+| `repairPanelSlotReferences()` | No return. | Ensures a default block, removes legacy and per-block assignments whose values are not current chart ids, and emits nothing. |
 | `onStateChange`, `STATE_EVENTS` | Re-exports from `stateEvents.js`. | `onStateChange` returns an unsubscribe function. |
 
 ### Live-Reference Read Policy
@@ -155,7 +155,7 @@ The lint guards treat these object/array-returning calls as read-only targets:
     "getChartSnapshot",
     "getPanelBlocks",
     "getState",
-    "getPersistenceSnapshot"
+    "getPersistenceStateView"
 ]
 ```
 
@@ -164,7 +164,7 @@ does not damage state, but it is still not a legal state-write path. Keep this
 block aligned with `FACADE_MUTABLE_GETTERS` in `eslint.config.js` and
 `TRACKED_GETTERS` in `eslint-rules/no-facade-getter-mutation.js`. Add a new
 renderer-safe read separately to `APP_STATE_READS`; persistence/debug-only reads
-such as `getPersistenceSnapshot` do not belong there.
+such as `getPersistenceStateView` do not belong there.
 
 Prefer focused primitive selectors when a caller does not need a large live
 object. Do not introduce broad clone getters for datasets, rows, panel charts,
@@ -175,19 +175,19 @@ relies on stable array references.
 
 | Method | Mutation and event | Accepted values and no-ops |
 |---|---|---|
-| `setActiveDataset(index)` | Stores and emits `ACTIVE_DATASET` only when the index changes. | Accepts integer `-1` or an in-range dataset index; throws for every other value. |
+| `setActiveDataset(index)` | Stores and emits `ACTIVE_DATASET_CHANGED` only when the index changes. | Accepts integer `-1` or an in-range dataset index; throws for every other value. |
 | `addDataset(dataset)` | Mutates the caller by assigning a missing id and canonical `chartConfig`, pushes it, maybe selects it, emits `DATASET_ADDED`, returns the index. | Throws unless `dataset` is truthy and `dataset.rows` is an array. It does not validate the remaining record shape. |
 | `removeDataset(index)` | Splices a dataset, adjusts selection, preserves detached panel captures and both assignment maps, then emits `DATASET_REMOVED`. | Accepts only an in-range integer; throws before mutation otherwise. |
-| `updateActiveDatasetConfig(updates)` | Canonicalizes current config, shallow-merges a plain-object patch, canonicalizes again, stores it, and emits the raw `updates` argument. | No active dataset means no-op/no event. A non-plain patch is treated as `{}` for mutation but is still emitted verbatim. |
-| `updateActiveDatasetColumns(columnNames)` | Stores a copied list and emits it as `COLUMNS_UPDATED` only when ordered contents change. | No active dataset means no-op/no event, without validating the argument. Otherwise requires an array of distinct strings declared by the active dataset; malformed, duplicate, and unknown names throw before mutation. |
-| `normalizeActiveDatasetConfig(normalizer)` | Replaces config with `normalizer(currentConfig)` and emits nothing. | No active dataset means no-op. The callback and returned shape are not validated; exceptions propagate. Reserved for continuous preview writes. |
-| `setActiveChartType(chartType, activatedOverrides)` | Enables exactly the selected canonical chart key, or disables every chart for `null`; canonicalizes and emits `{ activeChartType }`. | No active dataset or an unknown non-null key means no-op/no event. Plain-object overrides apply only to a non-null selected type. A valid call emits even if it reproduces the current state. |
+| `updateActiveDatasetConfig(updates)` | Canonicalizes current config, shallow-merges a non-array object patch, canonicalizes again, stores it, and emits the raw `updates` argument. | No active dataset means no-op/no event. A null, array, or primitive patch is treated as `{}` for mutation but is still emitted verbatim. |
+| `setActiveDatasetColumnSelection(columnNames)` | Stores a copied list and emits it as `COLUMN_SELECTION_CHANGED` only when ordered contents change. | No active dataset means no-op/no event, without validating the argument. Otherwise requires an array of distinct strings declared by the active dataset; malformed, duplicate, and unknown names throw before mutation. |
+| `transformActiveDatasetConfigSilently(updater)` | Replaces config with `updater(currentConfig)` and emits nothing. | No active dataset means no-op. The callback and returned shape are not validated; exceptions propagate. Reserved for continuous preview writes. |
+| `setActiveChartType(chartType, activatedOverrides)` | Enables exactly the selected canonical chart key, or disables every chart for `null`; canonicalizes and emits `{ activeChartType }`. | No active dataset or an unknown non-null key means no-op/no event. Non-array object overrides apply only to a non-null selected type. A valid call emits even if it reproduces the current state. |
 
 ### Panel Facade Methods
 
 | Method | Mutation and event | Accepted values and no-ops |
 |---|---|---|
-| `addChartSnapshot(snapshot)` | Allocates `nextChartId`, normalizes snapshot fields, pushes, emits `CHART_ADDED`, and returns id. | Caller id is ignored. Name is stringified/sanitized; `metaSummary` is capped at 180; missing arrays become empty; missing type/config/metadata become `null`; missing `createdAt` gets the current ISO time. A missing snapshot object throws. The facade stores supplied config/data/column/metadata references; the production controller performs the structured clones before calling it. |
+| `addChartSnapshot(snapshot)` | Allocates `nextChartId`, normalizes snapshot fields, pushes, emits `CHART_SNAPSHOT_ADDED`, and returns id. | Caller id is ignored. Name is stringified/sanitized; `metaSummary` is capped at 180; missing arrays become empty; missing type/config/metadata become `null`; missing `createdAt` gets the current ISO time. A missing snapshot object throws. The facade stores supplied config/data/column/metadata references; the production controller performs the structured clones before calling it. |
 | `removeChartSnapshot(chartId)` | Removes the matching chart and legacy/per-block assignments, ensures a block, and emits the normalized id. | Accepts a non-negative safe integer or decimal-integer string. Malformed ids throw; a valid missing id is no-op/no event. |
 | `clearPanel()` | Drops charts and legacy slots, resets both counters, creates one default block, sets `panel.layout`, and emits `PANEL_CLEARED`. | Always mutates and emits. |
 | `addPanelBlock(templateId)` | Ensures a default block, appends one, increments id, emits `PANEL_BLOCK_ADDED`, and returns the block id. | Requires an exact registry template id. Returns `null` with no event at the four-block limit; invalid template ids throw. |
@@ -205,9 +205,9 @@ relies on stable array references.
 |---|---|---|
 | `setSidebarMode(mode)` | Stores and emits `SIDEBAR_MODE_CHANGED`. | Accepts exactly `data`, `viz`, or `panel`; throws otherwise; same value is no-op/no event. |
 | `setPreviewRows(rows)` | Stores and emits `PREVIEW_ROWS_CHANGED` only when the value changes. | Requires an integer from 1 through 1000; every other value throws before mutation. |
-| `replaceAllState({ data, panel, ui })` | Hydrates supplied fields and unconditionally emits one `STATE_HYDRATED`. | Omitted or non-object slices remain unchanged. A supplied data slice defaults invalid collections/indexes, canonicalizes config, and sanitizes selected columns. A supplied panel slice defaults fields, keeps object block entries, canonicalizes block templates, synthesizes from a valid legacy layout when needed, and mirrors `panel.layout`; chart records are not generally validated here. A supplied UI slice overwrites only valid individual fields, including preview rows from 1 through 1000. Calling with no arguments still emits. |
+| `applyStateSnapshot({ data, panel, ui })` | Hydrates supplied fields and unconditionally emits one `STATE_HYDRATED`. | Omitted or non-object slices remain unchanged. A supplied data slice defaults invalid collections/indexes, canonicalizes config, and sanitizes selected columns. A supplied panel slice defaults fields, keeps object block entries, canonicalizes block templates, synthesizes from a valid legacy layout when needed, and mirrors `panel.layout`; chart records are not generally validated here. A supplied UI slice overwrites only valid individual fields, including preview rows from 1 through 1000. Calling with no arguments still emits. |
 
-`replaceAllState` is therefore partial at the slice level, not a reset-to-default
+`applyStateSnapshot` is therefore partial at the slice level, not a reset-to-default
 operation. It is a hydration/import escape hatch rather than an ordinary
 facade. Canonicalization changes hydrated memory only. Because autosave ignores
 `STATE_HYDRATED`, restored bytes are not rewritten merely because
@@ -239,13 +239,13 @@ The `Emitters` and `Production subscriptions` cells use
 
 | Constant | Value | Emitters | Production subscriptions | Payload |
 |---|---|---|---|---|
-| `ACTIVE_DATASET` | `activeDataset` | `src/state/dataStateFacade.js#setActiveDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Stored index argument. |
+| `ACTIVE_DATASET_CHANGED` | `activeDataset` | `src/state/dataStateFacade.js#setActiveDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Stored index argument. |
 | `DATASET_ADDED` | `datasetAdded` | `src/state/dataStateFacade.js#addDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | `{ index, dataset }`, where dataset is the stored live record. |
 | `DATASET_REMOVED` | `datasetRemoved` | `src/state/dataStateFacade.js#removeDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw index argument. |
-| `CONFIG_UPDATED` | `configUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetConfig`<br>`src/state/dataStateFacade.js#setActiveChartType` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw update argument, or `{ activeChartType }`. |
-| `COLUMNS_UPDATED` | `columnsUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetColumns` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Copied, validated column-selection array. |
-| `CHART_ADDED` | `chartAdded` | `src/state/panelStateFacade.js#addChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | `{ id, snapshot }`. |
-| `CHART_REMOVED` | `chartRemoved` | `src/state/panelStateFacade.js#removeChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | Normalized non-negative safe-integer chart id. |
+| `DATASET_CONFIG_UPDATED` | `configUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetConfig`<br>`src/state/dataStateFacade.js#setActiveChartType` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw update argument, or `{ activeChartType }`. |
+| `COLUMN_SELECTION_CHANGED` | `columnsUpdated` | `src/state/dataStateFacade.js#setActiveDatasetColumnSelection` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Copied, validated column-selection array. |
+| `CHART_SNAPSHOT_ADDED` | `chartAdded` | `src/state/panelStateFacade.js#addChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | `{ id, snapshot }`. |
+| `CHART_SNAPSHOT_REMOVED` | `chartRemoved` | `src/state/panelStateFacade.js#removeChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | Normalized non-negative safe-integer chart id. |
 | `PANEL_CLEARED` | `panelCleared` | `src/state/panelStateFacade.js#clearPanel` | `src/features/panel/panelController.js#initPanelController` | `undefined`. |
 | `PANEL_BLOCK_ADDED` | `panelBlockAdded` | `src/state/panelStateFacade.js#addPanelBlock` | `src/features/panel/panelController.js#initPanelController` | New live block. |
 | `PANEL_BLOCK_REMOVED` | `panelBlockRemoved` | `src/state/panelStateFacade.js#removePanelBlock` | `src/features/panel/panelController.js#initPanelController` | Raw block id. |
@@ -257,7 +257,7 @@ The `Emitters` and `Production subscriptions` cells use
 | `PANEL_BLOCK_SLOT_ASSIGNED` | `panelBlockSlotAssigned` | `src/state/panelStateFacade.js#assignChartToPanelBlockSlot` | `src/features/panel/panelController.js#initPanelController` | `{ blockId, slotId, chartId }`; id is numeric or `null`. |
 | `SIDEBAR_MODE_CHANGED` | `sidebarModeChanged` | `src/state/uiStateFacade.js#setSidebarMode` | — | Stored mode. |
 | `PREVIEW_ROWS_CHANGED` | `previewRowsChanged` | `src/state/uiStateFacade.js#setPreviewRows` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Stored rows value. |
-| `STATE_HYDRATED` | `stateHydrated` | `src/state/appState.js#replaceAllState` | `src/app/renderCoordinator.js#setupStateSubscriptions` | `undefined`. |
+| `STATE_HYDRATED` | `stateHydrated` | `src/state/appState.js#applyStateSnapshot` | `src/app/renderCoordinator.js#setupStateSubscriptions` | `undefined`. |
 | `WILDCARD` | `*` | — | `src/services/persistence/autoSave.js#enablePersistenceAutoSave` | Directly emits nothing; callback receives every typed emission as `{ type, data }`. |
 
 ## Subscriber Map
@@ -266,8 +266,8 @@ Production subscriptions are installed in three places:
 
 | Owner | Direct subscriptions | Timing | Render or side effect |
 |---|---|---|---|
-| `app/renderCoordinator.js` | `ACTIVE_DATASET`, `DATASET_ADDED`, `DATASET_REMOVED`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`, `STATE_HYDRATED`, `PREVIEW_ROWS_CHANGED` | Schedules and coalesces work with `requestAnimationFrame`. | Full refresh for dataset selection/add/remove and hydration; workspace + controls for columns/config; panel region additionally when config payload has `activeTab === 'panel'`; workspace for preview rows. |
-| `features/panel/panelController.js` | Eleven chart/block events listed in the event table. | Listener callbacks render synchronously in the emitter's call stack. | Chart add/remove/slot: sidebar + canvas. Layout events: canvas + layout selector. Clear: sidebar + canvas + selector. |
+| `app/renderCoordinator.js` | `ACTIVE_DATASET_CHANGED`, `DATASET_ADDED`, `DATASET_REMOVED`, `COLUMN_SELECTION_CHANGED`, `DATASET_CONFIG_UPDATED`, `STATE_HYDRATED`, `PREVIEW_ROWS_CHANGED` | Schedules and coalesces work with `requestAnimationFrame`. | Full refresh for dataset selection/add/remove and hydration; workspace + controls for columns/config; panel region additionally when config payload has `activeTab === 'panel'`; workspace for preview rows. |
+| `features/panel/panelController.js` | Eleven chart/block events listed in the event table. | Listener callbacks render synchronously in the emitter's call stack. | Chart add/remove/slot: sidebar + canvas. Layout events: canvas. Clear: sidebar + canvas. |
 | `services/persistence/autoSave.js` | `WILDCARD` | UI prefs are attempted immediately; project writes are debounced and asynchronous. | Writes `chive.ui` for the two UI events. Ignores those UI events and `STATE_HYDRATED` for project dirtiness; every other nonempty event type marks the project dirty. |
 
 The render coordinator also has non-bus entries:
@@ -281,9 +281,9 @@ The render coordinator also has non-bus entries:
 - No production caller invokes private `refreshView()` directly.
 
 Hydration ordering matters. On normal boot, `hydrateState` and its
-`replaceAllState` call occur before all three subscription owners are installed,
+`applyStateSnapshot` call occur before all three subscription owners are installed,
 then boot calls `runFullRefreshNow`. A later project import calls
-`replaceAllState` after subscriptions exist, so the coordinator schedules a
+`applyStateSnapshot` after subscriptions exist, so the coordinator schedules a
 full render; the import path has already persisted the imported bytes before
 replacing memory.
 
@@ -409,9 +409,9 @@ Normal boot hydration is:
 3. When there is no SQLite project and the migration marker is absent, attempt
    the one-time legacy raw-IndexedDB import.
 4. Validate dataset records, sanitize selected columns, canonicalize chart
-   config in memory, apply the injected panel-spec transform, and read
+   config in memory, apply the injected panel-snapshot transform, and read
    `chive.ui`.
-5. Call `replaceAllState` only when normalized project content or UI prefs are
+5. Call `applyStateSnapshot` only when normalized project content or UI prefs are
    hydratable.
 
 If the SQLite read throws, `hydrateState` reports the error and returns before
@@ -483,7 +483,7 @@ whole project, so overlapping two produces a result neither asked for.
 ## Mutation Rules
 
 - Ordinary application-state writes go through functions exported by
-  `state/appState.js`; `replaceAllState` is the explicit hydration/import
+  `state/appState.js`; `applyStateSnapshot` is the explicit hydration/import
   exception within that public surface.
 - Treat all live-reference getter results as read-only.
 - Callers of `emitStateChange` and `onStateChange` use `STATE_EVENTS` constants.
@@ -496,15 +496,21 @@ whole project, so overlapping two produces a result neither asked for.
 - `canonicalizeChartConfig` fills defaults, migrates known legacy shape, and
   removes stale global-filter column references. It replaces an enumerated
   setting whose value is not in its chart definition's `allowedValues` with the
-  chart's default; `mergeChartConfigWithDefaults`, which it builds on, applies
-  the same check when Panel rehydration merges a saved chart's block. It does
-  not validate other scalars and does not remove every unknown top-level key.
+  chart's default; `mergeChartConfigWithDefaults`, which it builds on, first
+  translates legacy bar sorts `count-desc` / `count-asc` to `value-desc` /
+  `value-asc`, then applies the same check when Panel rehydration merges a saved
+  chart's block. It does not validate other scalars and does not remove every
+  unknown top-level key.
   Render and Panel captures read the stored config as it is.
 - Persistence normalization, `addDataset`, emitting config writes, and
-  `replaceAllState` canonicalize committed dataset config. Hydration does not
+  `applyStateSnapshot` canonicalize committed dataset config. Hydration does not
   rewrite stored bytes on its own.
-- `normalizeActiveDatasetConfig` is the intentional non-emitting preview escape
-  hatch. `getPanelBlocks` and `validatePanelSlots` also have non-emitting repair
+- Cached categorical statistics use `missingFraction`, `modeFraction`, and
+  `top5Fraction` for 0–1 values. `STATS_CATEGORICAL_VERSION = 2` invalidates older
+  categorical caches at hydration; the view recomputes them from canonical rows.
+  Numeric caches keep their independent version, and display still uses percentages.
+- `transformActiveDatasetConfigSilently` is the intentional non-emitting preview escape
+  hatch. `getPanelBlocks` and `repairPanelSlotReferences` also have non-emitting repair
   side effects.
 
 ## Panel Lifecycle
@@ -521,7 +527,7 @@ preserves these captures and their legacy/per-block slot assignments.
    the stored config block, the rows the global filter keeps, and every dataset
    column.
 2. `addChartSnapshot` normalizes and stores the snapshot, then synchronously
-   emits `CHART_ADDED`.
+   emits `CHART_SNAPSHOT_ADDED`.
 3. The panel controller's typed subscriber synchronously renders the sidebar
    and canvas.
 4. `panelView.js` builds assigned slots and the slot lifecycle resolves the

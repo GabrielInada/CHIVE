@@ -351,7 +351,7 @@ describe('described custom control', () => {
 			{ widget: 'slider', id: 'demo-zoom', key: 'zoom', label: 'chive-zoom', min: 1, max: 4, step: 1 },
 			{ widget: 'custom', build: ({ control }) => { reached = control('demo-zoom'); return []; } },
 		]));
-		expect(reached).toBe(get('demo-zoom').closest('.chart-controle'));
+		expect(reached).toBe(get('demo-zoom').closest('.chart-control'));
 
 		expect(() => build(chartWith([
 			{ widget: 'custom', build: ({ control }) => control('demo-zoom') },

@@ -28,12 +28,12 @@ function normalizeCellValue(value) {
 }
 
 /**
- * Build the canonical text input for dataset fingerprints.
+ * Serialize the canonical dataset representation to JSON for fingerprinting.
  *
  * @param {import('../../types.js').Dataset | Object} dataset
  * @returns {string}
  */
-export function canonicalizeDataset(dataset) {
+export function serializeDatasetForFingerprint(dataset) {
 	const columns = Array.isArray(dataset?.columns)
 		? dataset.columns.map(normalizeColumn)
 		: [];
@@ -72,7 +72,7 @@ async function sha256Hex(text, subtleCrypto) {
  * @returns {Promise<{ fingerprint: string, algorithm: string }>}
  */
 export async function computeDatasetFingerprint(dataset, { subtleCrypto = globalThis.crypto?.subtle } = {}) {
-	const canonical = canonicalizeDataset(dataset);
+	const canonical = serializeDatasetForFingerprint(dataset);
 	if (subtleCrypto && typeof subtleCrypto.digest === 'function') {
 		try {
 			return {

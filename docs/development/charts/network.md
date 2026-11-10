@@ -98,7 +98,7 @@ flowchart TB
         CONTROLS["network/controls"] --> WRITER["ChartConfigWriter"]
         WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
         DFACADE --> DSTATE[("dataset.chartConfig.network")]
-        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DFACADE -- DATASET_CONFIG_UPDATED --> COORD["renderCoordinator"]
         DSTATE -. read through getters .-> COORD
         WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
         PREVIEW --> DSTATE
@@ -115,7 +115,7 @@ flowchart TB
         PSUB --> PVIEW["panelView"]
         PSTATE -. read through getters .-> PVIEW
         PVIEW -. callback via panelController .-> PFACADE
-        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartSnapshot"]
         MOUNT --> PREG["panel registry"]
     end
 
@@ -235,7 +235,7 @@ keeps its own existing handling.
 ### 6.2 Panel view
 
 The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
-the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same
+the snapshot (`snapshot.dataSnapshot` and `snapshot.config`) and hands it to the same
 `renderNetworkInto` flow without `filterCallbacks` (no click-to-filter in panels).
 
 ---

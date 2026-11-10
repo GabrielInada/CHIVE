@@ -142,14 +142,14 @@ describe('tabsView', () => {
 	it('shows global filter trigger on preview and hides it on panel', async () => {
 		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
-		updateTabs('preview', vi.fn(), null, {
+		updateTabs('preview', vi.fn(), {
 			triggerState: { hasDataset: true, globalFilter: { column: null }, filteredCount: 0, totalCount: 0 },
 		});
 
 		const trigger = document.getElementById('btn-global-filter');
 		expect(trigger.hidden).toBe(false);
 
-		updateTabs('panel', vi.fn(), null, {
+		updateTabs('panel', vi.fn(), {
 			triggerState: { hasDataset: true, globalFilter: { column: null }, filteredCount: 0, totalCount: 0 },
 		});
 
@@ -159,7 +159,7 @@ describe('tabsView', () => {
 	it('shows disabled trigger on charts tab with no dataset', async () => {
 		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
-		updateTabs('charts', vi.fn(), null, {
+		updateTabs('charts', vi.fn(), {
 			triggerState: { hasDataset: false, globalFilter: null, filteredCount: 0, totalCount: 0 },
 		});
 
@@ -171,7 +171,7 @@ describe('tabsView', () => {
 	it('renders active indicator with rule count and X/Y when rules exist', async () => {
 		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
-		updateTabs('charts', vi.fn(), null, {
+		updateTabs('charts', vi.fn(), {
 			triggerState: {
 				hasDataset: true,
 				globalFilter: {
@@ -199,7 +199,7 @@ describe('tabsView', () => {
 	it('hides badge when no rules are active on charts tab', async () => {
 		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
-		updateTabs('charts', vi.fn(), null, {
+		updateTabs('charts', vi.fn(), {
 			triggerState: {
 				hasDataset: true,
 				globalFilter: { rules: [] },
@@ -216,7 +216,7 @@ describe('tabsView', () => {
 	it('renders neutral label when there are no rules', async () => {
 		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 
-		updateTabs('charts', vi.fn(), null, {
+		updateTabs('charts', vi.fn(), {
 			triggerState: {
 				hasDataset: true,
 				globalFilter: { rules: [] },
@@ -233,7 +233,7 @@ describe('tabsView', () => {
 		const { updateTabs } = await import('../../../../src/features/datasetWorkspace/views/tabsView.js');
 		const onOpen = vi.fn();
 
-		updateTabs('charts', vi.fn(), null, {
+		updateTabs('charts', vi.fn(), {
 			onGlobalFilterOpen: onOpen,
 			triggerState: {
 				hasDataset: false,
@@ -246,7 +246,7 @@ describe('tabsView', () => {
 		document.getElementById('btn-global-filter').click();
 		expect(onOpen).not.toHaveBeenCalled();
 
-		updateTabs('charts', vi.fn(), null, {
+		updateTabs('charts', vi.fn(), {
 			onGlobalFilterOpen: onOpen,
 			triggerState: {
 				hasDataset: true,
@@ -267,7 +267,7 @@ describe('tabsView', () => {
 			closeDialog = resolve;
 		}));
 
-		updateTabs('preview', vi.fn(), null, {
+		updateTabs('preview', vi.fn(), {
 			onGlobalFilterOpen: onOpen,
 			triggerState: {
 				hasDataset: true,

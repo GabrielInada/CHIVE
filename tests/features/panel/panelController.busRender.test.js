@@ -13,7 +13,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const renderMocks = vi.hoisted(() => ({
 	renderSidebarPanel: vi.fn(),
 	renderCanvasPanel: vi.fn(),
-	fillLayoutSelect: vi.fn(),
 }));
 vi.mock('../../../src/features/panel/views/panelView.js', () => renderMocks);
 
@@ -21,7 +20,7 @@ import {
 	addChartSnapshot,
 	removeChartSnapshot,
 	clearPanel,
-	replaceAllState,
+	applyStateSnapshot,
 } from '../../../src/state/appState.js';
 import {
 	initPanelController,
@@ -29,9 +28,9 @@ import {
 } from '../../../src/features/panel/panelController.js';
 
 function resetPanelState() {
-	// replaceAllState only touches the slices it is given; pass an explicit panel
-	// slice (replaceAllState({}) would reset nothing).
-	replaceAllState({ panel: { charts: [], slots: {}, blocks: [], layout: 'template-2col' } });
+	// applyStateSnapshot only touches the slices it is given; pass an explicit panel
+	// slice (applyStateSnapshot({}) would reset nothing).
+	applyStateSnapshot({ panel: { charts: [], slots: {}, blocks: [], layout: 'template-2col' } });
 }
 
 describe('panelController real-bus rendering', () => {
@@ -67,11 +66,10 @@ describe('panelController real-bus rendering', () => {
 		expect(renderMocks.renderCanvasPanel).toHaveBeenCalledTimes(1);
 	});
 
-	it('renders sidebar + canvas + selector once when the panel is cleared via the facade', () => {
+	it('renders sidebar + canvas once when the panel is cleared via the facade', () => {
 		clearPanel();
 
 		expect(renderMocks.renderSidebarPanel).toHaveBeenCalledTimes(1);
 		expect(renderMocks.renderCanvasPanel).toHaveBeenCalledTimes(1);
-		expect(renderMocks.fillLayoutSelect).toHaveBeenCalledTimes(1);
 	});
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildScatterPoints } from '../../../src/charts/scatter/data.js';
 import { MISSING_KEY, MISSING_TOKEN } from '../../../src/domain/datasets/cellValues.js';
-import { applyChartFilterRows } from '../../../src/domain/filters/chartFilter.js';
+import { applyFilterRuleToRows } from '../../../src/domain/filters/filterRule.js';
 
 const baseArgs = {
 	xColumn: 'x',
@@ -31,7 +31,7 @@ describe('buildScatterPoints', () => {
 		const rows = [{ x: 'A', y: 1 }, { x: null, y: 2 }, { x: 'N/A', y: 3 }, { x: null, y: 4 }];
 		const result = buildScatterPoints({ ...baseArgs, rows, configuredAxisTypes: { x: 'text', y: 'number' } });
 		const { xCategoryToken } = result.points.find(point => point.xCategory === MISSING_KEY);
-		expect(applyChartFilterRows(rows, { column: 'x', exclude: [xCategoryToken] })).toEqual([rows[0], rows[2]]);
+		expect(applyFilterRuleToRows(rows, { column: 'x', exclude: [xCategoryToken] })).toEqual([rows[0], rows[2]]);
 	});
 
 	it('classifies numeric axes and keeps one point per finite row', () => {

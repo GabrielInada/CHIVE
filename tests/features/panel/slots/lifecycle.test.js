@@ -3,10 +3,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const dispatch = vi.hoisted(() => ({
-	renderChartFromSpec: vi.fn(() => ({ ok: true })),
+	renderChartSnapshot: vi.fn(() => ({ ok: true })),
 }));
 
-vi.mock('../../../../src/features/panel/slots/renderChartFromSpec.js', () => dispatch);
+vi.mock('../../../../src/features/panel/slots/renderChartSnapshot.js', () => dispatch);
 
 const tooltipMock = vi.hoisted(() => ({
 	hideChartTooltip: vi.fn(),
@@ -45,7 +45,7 @@ describe('panel slot lifecycle', () => {
 		globalThis.ResizeObserver = FakeResizeObserver;
 		window.requestAnimationFrame = (cb) => { cb(); return 1; };
 		window.cancelAnimationFrame = vi.fn();
-		dispatch.renderChartFromSpec.mockClear();
+		dispatch.renderChartSnapshot.mockClear();
 		tooltipMock.hideChartTooltip.mockClear();
 	});
 
@@ -57,11 +57,11 @@ describe('panel slot lifecycle', () => {
 
 	it('mountSlot renders the chart and attaches a ResizeObserver', () => {
 		const container = document.createElement('div');
-		const spec = { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] };
+		const snapshot = { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] };
 
-		mountSlot(container, spec);
+		mountSlot(container, snapshot);
 
-		expect(dispatch.renderChartFromSpec).toHaveBeenCalledWith(container, spec);
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledWith(container, snapshot);
 		expect(FakeResizeObserver.instances).toHaveLength(1);
 		expect(FakeResizeObserver.instances[0].observed).toContain(container);
 	});
@@ -70,9 +70,9 @@ describe('panel slot lifecycle', () => {
 		const container = document.createElement('div');
 		const stop = vi.fn();
 		container[SIMULATION_KEY] = { stop };
-		const spec = { id: 1, type: 'network', config: {}, dataSnapshot: [], columnsSnapshot: [] };
+		const snapshot = { id: 1, type: 'network', config: {}, dataSnapshot: [], columnsSnapshot: [] };
 
-		mountSlot(container, spec);
+		mountSlot(container, snapshot);
 		container.innerHTML = '<svg></svg>';
 
 		const observer = FakeResizeObserver.instances[0];
@@ -93,12 +93,12 @@ describe('panel slot lifecycle', () => {
 		expect(tooltipMock.hideChartTooltip).toHaveBeenCalled();
 	});
 
-	it('teardownAllSlots cleans every panel-slot-svg under root', () => {
+	it('teardownAllSlots cleans every panel-chart-container under root', () => {
 		const root = document.createElement('div');
 		const a = document.createElement('div');
-		a.className = 'panel-slot-svg';
+		a.className = 'panel-chart-container';
 		const b = document.createElement('div');
-		b.className = 'panel-slot-svg';
+		b.className = 'panel-chart-container';
 		root.appendChild(a);
 		root.appendChild(b);
 
@@ -116,16 +116,16 @@ describe('panel slot lifecycle', () => {
 		expect(FakeResizeObserver.instances.every(o => o.disconnected)).toBe(true);
 	});
 
-	it('the resize callback re-invokes the dispatcher with the original spec', () => {
+	it('the resize callback re-invokes the dispatcher with the original snapshot', () => {
 		const container = document.createElement('div');
-		const spec = { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] };
+		const snapshot = { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] };
 
-		mountSlot(container, spec);
-		dispatch.renderChartFromSpec.mockClear();
+		mountSlot(container, snapshot);
+		dispatch.renderChartSnapshot.mockClear();
 
 		FakeResizeObserver.instances[0].trigger();
 
-		expect(dispatch.renderChartFromSpec).toHaveBeenCalledWith(container, spec);
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledWith(container, snapshot);
 	});
 
 	it('teardownSlot runs a stashed chart dispose hook and removes it', () => {
@@ -144,13 +144,13 @@ describe('panel slot lifecycle', () => {
 
 	it('the resize re-render runs the dispose hook before the replacement render', () => {
 		const container = document.createElement('div');
-		const spec = { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] };
-		mountSlot(container, spec);
-		dispatch.renderChartFromSpec.mockClear();
+		const snapshot = { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] };
+		mountSlot(container, snapshot);
+		dispatch.renderChartSnapshot.mockClear();
 
 		const callOrder = [];
 		container[CHART_DISPOSE_HOOK] = vi.fn(() => callOrder.push('dispose'));
-		dispatch.renderChartFromSpec.mockImplementationOnce(() => {
+		dispatch.renderChartSnapshot.mockImplementationOnce(() => {
 			callOrder.push('render');
 			return { ok: true };
 		});
@@ -163,16 +163,16 @@ describe('panel slot lifecycle', () => {
 
 	it('mountSlot tearing down a previous mount before re-mounting (replace flow)', () => {
 		const container = document.createElement('div');
-		const spec1 = { id: 1, type: 'bar' };
-		const spec2 = { id: 2, type: 'pie' };
+		const snapshot1 = { id: 1, type: 'bar' };
+		const snapshot2 = { id: 2, type: 'pie' };
 
-		mountSlot(container, spec1);
+		mountSlot(container, snapshot1);
 		const firstObserver = FakeResizeObserver.instances[0];
 
-		mountSlot(container, spec2);
+		mountSlot(container, snapshot2);
 
 		expect(firstObserver.disconnected).toBe(true);
 		expect(FakeResizeObserver.instances).toHaveLength(2);
-		expect(dispatch.renderChartFromSpec).toHaveBeenLastCalledWith(container, spec2);
+		expect(dispatch.renderChartSnapshot).toHaveBeenLastCalledWith(container, snapshot2);
 	});
 });

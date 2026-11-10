@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
 	updateActiveDatasetConfig: vi.fn(),
-	normalizeActiveDatasetConfig: vi.fn(),
+	transformActiveDatasetConfigSilently: vi.fn(),
 }));
 
 vi.mock('../../../../src/state/appState.js', () => ({
-	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
+	transformActiveDatasetConfigSilently: mocks.transformActiveDatasetConfigSilently,
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
@@ -72,7 +72,7 @@ describe('createChartConfigWriter preview', () => {
 		// Emitting here would rebuild the controls sidebar mid-drag and steal
 		// focus from an open color picker. That is the whole point of the split.
 		expect(mocks.updateActiveDatasetConfig).not.toHaveBeenCalled();
-		expect(mocks.normalizeActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		expect(mocks.transformActiveDatasetConfigSilently).toHaveBeenCalledTimes(1);
 	});
 
 	it('merges an object patch while preserving sibling chart blocks and fields', () => {
@@ -80,8 +80,8 @@ describe('createChartConfigWriter preview', () => {
 
 		writer.preview({ color: '#ff0000' });
 
-		const normalizer = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
-		const result = normalizer({ bar: { color: '#000000', other: 'keep' }, pie: { enabled: true } });
+		const updater = mocks.transformActiveDatasetConfigSilently.mock.calls[0][0];
+		const result = updater({ bar: { color: '#000000', other: 'keep' }, pie: { enabled: true } });
 		expect(result.bar).toEqual({ color: '#ff0000', other: 'keep' });
 		expect(result.pie).toEqual({ enabled: true });
 	});
@@ -93,8 +93,8 @@ describe('createChartConfigWriter preview', () => {
 			customSliceColors: { ...current.customSliceColors, North: '#ff0000' },
 		}));
 
-		const normalizer = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
-		const result = normalizer({ pie: { enabled: true, customSliceColors: { South: '#00ff00' } } });
+		const updater = mocks.transformActiveDatasetConfigSilently.mock.calls[0][0];
+		const result = updater({ pie: { enabled: true, customSliceColors: { South: '#00ff00' } } });
 		expect(result.pie).toEqual({
 			enabled: true,
 			customSliceColors: { South: '#00ff00', North: '#ff0000' },
@@ -106,8 +106,8 @@ describe('createChartConfigWriter preview', () => {
 
 		writer.preview(current => ({ seen: current }));
 
-		const normalizer = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
-		expect(normalizer({}).bar.seen).toEqual({});
+		const updater = mocks.transformActiveDatasetConfigSilently.mock.calls[0][0];
+		expect(updater({}).bar.seen).toEqual({});
 	});
 
 	it('requests a live render so the chart repaints without an event', () => {
@@ -123,6 +123,6 @@ describe('createChartConfigWriter preview', () => {
 		const writer = createChartConfigWriter({ dataset: makeDataset(), chartKey: 'bar' });
 
 		expect(() => writer.preview({ color: '#ff0000' })).not.toThrow();
-		expect(mocks.normalizeActiveDatasetConfig).toHaveBeenCalledTimes(1);
+		expect(mocks.transformActiveDatasetConfigSilently).toHaveBeenCalledTimes(1);
 	});
 });

@@ -88,7 +88,7 @@ function applyResult(container, config, result) {
 		t('chive-chart-scatter3d-aria-label', config.x, config.y, config.z, String(result.renderedCount)),
 	);
 
-	if (result.truncated) {
+	if (result.sampled) {
 		const notice = document.createElement('div');
 		notice.className = 'chart-sampling-notice';
 		notice.textContent = t(

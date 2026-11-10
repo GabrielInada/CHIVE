@@ -12,7 +12,7 @@
  * @typedef {import('../../types.js').ChartInput} ChartInput
  * @typedef {import('../../types.js').Result} Result
  * @typedef {import('../../types.js').ChartTypeKey} ChartTypeKey
- * @typedef {(container: HTMLElement, spec: ChartSnapshot) => Result} PanelChartRenderer
+ * @typedef {(container: HTMLElement, snapshot: ChartSnapshot) => Result} PanelChartRenderer
  */
 
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
@@ -32,14 +32,14 @@ import { renderTreemapInto } from '../treemap/presentation.js';
  * config as an empty one; column types come from every captured column, as
  * Visualizations takes them from every dataset column.
  *
- * @param {ChartSnapshot} spec
+ * @param {ChartSnapshot} snapshot
  * @returns {ChartInput}
  */
-function inputOf(spec) {
+function inputOf(snapshot) {
 	return {
-		rows: Array.isArray(spec.dataSnapshot) ? spec.dataSnapshot : [],
-		config: spec.config || {},
-		columnTypeByName: getColumnTypesByName(spec.columnsSnapshot),
+		rows: Array.isArray(snapshot.dataSnapshot) ? snapshot.dataSnapshot : [],
+		config: snapshot.config || {},
+		columnTypeByName: getColumnTypesByName(snapshot.columnsSnapshot),
 	};
 }
 
@@ -54,7 +54,7 @@ const PANEL_RENDERERS = Object.freeze(Object.fromEntries(Object.entries({
 	network: renderNetworkInto,
 	treemap: renderTreemapInto,
 	tin: renderTinInto,
-}).map(([type, present]) => [type, (container, spec) => present(container, inputOf(spec))])));
+}).map(([type, present]) => [type, (container, snapshot) => present(container, inputOf(snapshot))])));
 
 /**
  * Chart types with panel renderers, in canonical chart order.

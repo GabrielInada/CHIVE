@@ -106,7 +106,7 @@ doc rather than repeated:
 
 - **Result envelope**: `ok()` / `fail(reason)` from [result.js](../../../src/utils/result.js).
 - **Render dispatch**: panel snapshots enter through
-  [renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js),
+  [renderChartSnapshot.js](../../../src/features/panel/slots/renderChartSnapshot.js),
   which validates the request and resolves its implementation through the
   [panel registry](../../../src/charts/registries/panel.js). The registry builds the
   chart input from the snapshot (its rows, config and column types) and hands it to the
@@ -186,8 +186,8 @@ doc rather than repeated:
   [categoryAggregation.js](../../../src/charts/shared/categoryAggregation.js). It groups and
   measures the rows, leaves out values at or below 0 for pie, treemap, and bubble
   (`positiveOnly`), orders them by bar's sort, and keeps the first `topN`. It also returns
-  `rest`, the sum the cut leaves out, which pie folds into its Other sector, and `total`, the
-  sum of the kept values that tooltip shares are taken of.
+  `omittedValueTotal`, the sum the cut leaves out, which pie folds into its Other sector, and
+  `retainedValueTotal`, the sum of the kept values that tooltip shares are taken of.
 - **Measure label**: bar, pie, treemap, and bubble name their measure through
   [measure.js](../../../src/charts/shared/measure.js), which returns i18n keys. Each
   presentation flow translates the short form (`measureLabelKey`: "Count", "Sum", "Mean")

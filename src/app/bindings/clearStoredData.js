@@ -14,7 +14,7 @@
 
 import { t } from '../../services/i18nService.js';
 import { clearPersistedState } from '../../services/persistence.js';
-import { replaceAllState } from '../../state/appState.js';
+import { applyStateSnapshot } from '../../state/appState.js';
 import { openConfirmDialog } from '../../ui/confirmDialog.js';
 import { acquireProjectOperation } from './projectOperationLock.js';
 
@@ -34,7 +34,7 @@ import { acquireProjectOperation } from './projectOperationLock.js';
  * the workspace and start editing before the deletion completes.
  *
  * The in-memory reset happens first so the workspace empties immediately. It is
- * safe there because `replaceAllState` emits `STATE_HYDRATED`, which auto-save
+ * safe there because `applyStateSnapshot` emits `STATE_HYDRATED`, which auto-save
  * classifies as not dirty, so the reset itself never schedules a write.
  *
  * @param {{ withSavesSuspended?: <T>(operation: () => Promise<T>) => Promise<T> }} [dependencies]
@@ -54,7 +54,7 @@ export async function clearStoredProjectData({ withSavesSuspended } = {}) {
 		if (!confirmed) return { ok: true, cancelled: true };
 
 		try {
-			replaceAllState({ data: { datasets: [], activeIndex: -1 }, panel: {} });
+			applyStateSnapshot({ data: { datasets: [], activeIndex: -1 }, panel: {} });
 
 			const runExclusively = typeof withSavesSuspended === 'function'
 				? withSavesSuspended

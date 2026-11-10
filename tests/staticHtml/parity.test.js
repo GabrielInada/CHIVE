@@ -174,7 +174,7 @@ describe('static HTML contracts', () => {
 			BADGE_IDS,
 			TAB_CONTENT_IDS,
 			WORKSPACE_ACTION_IDS,
-			{ canvas: PANEL_DOM_IDS.canvas },
+			PANEL_DOM_IDS,
 			PROJECT_TRANSFER_IDS,
 		]);
 	});

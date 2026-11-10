@@ -2,6 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+	STATE_EVENTS,
 	onStateChange,
 	emitStateChange,
 	enableStateLog,
@@ -41,6 +42,26 @@ afterEach(() => {
 });
 
 describe('stateEvents', () => {
+	it.each([
+		['ACTIVE_DATASET_CHANGED', 'activeDataset'],
+		['COLUMN_SELECTION_CHANGED', 'columnsUpdated'],
+		['DATASET_CONFIG_UPDATED', 'configUpdated'],
+		['CHART_SNAPSHOT_ADDED', 'chartAdded'],
+		['CHART_SNAPSHOT_REMOVED', 'chartRemoved'],
+	])('keeps the public event string for %s', (name, type) => {
+		const callback = vi.fn();
+		const handler = listenOnWindow('chive-state-changed', vi.fn());
+		const payload = { example: true };
+		subscribe(type, callback);
+
+		expect(STATE_EVENTS[name]).toBe(type);
+		emitStateChange(STATE_EVENTS[name], payload);
+
+		expect(callback).toHaveBeenCalledExactlyOnceWith(payload);
+		expect(handler).toHaveBeenCalledTimes(1);
+		expect(handler.mock.calls[0][0].detail).toEqual({ type, data: payload });
+	});
+
 	it('registers listener and calls it on emit', () => {
 		const cb = vi.fn();
 		subscribe('testEvent', cb);

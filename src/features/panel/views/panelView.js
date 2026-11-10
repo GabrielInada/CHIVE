@@ -15,7 +15,7 @@
 
 import { t } from '../../../services/i18nService.js';
 import {
-	PANEL_LAYOUTS,
+	PANEL_TEMPLATES,
 	getTemplateForBlock,
 } from '../../../domain/panel/layoutTemplates.js';
 import { normalizeHexColor } from '../layout/resizeMath.js';
@@ -201,7 +201,7 @@ export function renderCanvasPanel(callbacks) {
 	});
 
 	const addControls = createAddBlockControls({
-		layouts: PANEL_LAYOUTS,
+		templates: PANEL_TEMPLATES,
 		translate: t,
 		onAddBlock: callbacks.onAddBlock,
 	});
@@ -212,9 +212,9 @@ export function renderCanvasPanel(callbacks) {
 	canvas.querySelectorAll('[data-panel-slot][data-panel-chart-id]').forEach(slotEl => {
 		const chart = getChartSnapshot(slotEl.dataset.panelChartId);
 		if (!chart) return;
-		const svgContainer = slotEl.querySelector('.panel-slot-svg');
-		if (!svgContainer) return;
-		mountSlot(svgContainer, chart);
+		const chartContainer = slotEl.querySelector('.panel-chart-container');
+		if (!chartContainer) return;
+		mountSlot(chartContainer, chart);
 	});
 }
 
@@ -245,7 +245,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks }
 	const templateSelect = createBlockTemplateSelect({
 		blockId: block.id,
 		templateId: block.templateId,
-		layouts: PANEL_LAYOUTS,
+		templates: PANEL_TEMPLATES,
 		translate: t,
 		onTemplateChange: e => callbacks.onChangeBlockTemplate(block.id, e.target.value),
 	});
@@ -349,27 +349,4 @@ function attachBlockResizeListener(blockEl, block, gridDiv, callbacks) {
 		);
 	});
 	blockEl.appendChild(handle);
-}
-
-/**
- * Populate the layout `<select>` (in the panel header) with the available
- * templates, pre-selecting the first block's template. Safe to call on
- * every state change.
- *
- * No-op when the select element is missing.
- */
-export function fillLayoutSelect() {
-	const select = document.getElementById(PANEL_DOM_IDS.layoutSelect);
-	if (!select) return;
-	const blocks = getPanelBlocks();
-	const currentLayout = blocks[0]?.templateId || 'template-2col';
-	select.replaceChildren();
-
-	Object.entries(PANEL_LAYOUTS).forEach(([id, layout]) => {
-		const option = document.createElement('option');
-		option.value = id;
-		option.textContent = t(layout.labelKey);
-		option.selected = id === currentLayout;
-		select.appendChild(option);
-	});
 }

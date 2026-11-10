@@ -25,8 +25,8 @@ const mocks = vi.hoisted(() => ({
     onCancel: vi.fn(),
   },
   t: vi.fn(key => `tr:${key}`),
-  getPersistenceSnapshot: vi.fn(() => ({ data: { datasets: [], activeIndex: -1 }, panel: null, ui: {} })),
-  replaceAllState: vi.fn(),
+  getPersistenceStateView: vi.fn(() => ({ data: { datasets: [], activeIndex: -1 }, panel: null, ui: {} })),
+  applyStateSnapshot: vi.fn(),
   getActiveDataset: vi.fn(() => ({
     chartConfig: {
       activeTab: 'preview',
@@ -86,8 +86,8 @@ vi.mock('../../src/app/uiManager.js', () => ({
 
 vi.mock('../../src/state/appState.js', () => ({
   getActiveDataset: mocks.getActiveDataset,
-  getPersistenceSnapshot: mocks.getPersistenceSnapshot,
-  replaceAllState: mocks.replaceAllState,
+  getPersistenceStateView: mocks.getPersistenceStateView,
+  applyStateSnapshot: mocks.applyStateSnapshot,
   updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
@@ -130,7 +130,7 @@ function setupDom() {
         <button
           class="chart-action-btn"
           data-chart-action="add-panel"
-          data-chart-container="chart-1"
+          data-chart-container="chart-bar-container"
           type="button"
         ></button>
       </div>
@@ -181,7 +181,10 @@ describe('eventHandlers', () => {
     expect(mocks.showError).toHaveBeenCalledWith('tr:chive-chart-download-error');
 
     document.querySelector('[data-chart-action="add-panel"]').click();
-    expect(mocks.addChartToPanel).toHaveBeenCalledWith('chart-1', 'Meu Grafico', expect.any(Object));
+    expect(mocks.addChartToPanel).toHaveBeenCalledWith('Meu Grafico', {
+      type: 'bar',
+      summary: 'tr:chive-chart-control-bar-category: - · tr:chive-chart-control-measure-count',
+    });
     expect(mocks.showFeedback).toHaveBeenCalledWith('tr:chive-panel-add-success');
 
     mocks.addChartToPanel.mockReturnValueOnce({ ok: false });

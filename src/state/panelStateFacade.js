@@ -11,12 +11,12 @@ import {
 	updatePanelBlockBorderState,
 	updatePanelBlockHeightState,
 	updatePanelBlockProportionsState,
-	validatePanelSlotsState,
+	repairPanelSlotReferencesState,
 } from './panel/mutations.js';
 import {
 	createDefaultProportions,
 	getTemplateSlots,
-	PANEL_LAYOUTS,
+	PANEL_TEMPLATES,
 } from '../domain/panel/layoutTemplates.js';
 import { clampPercentage } from '../domain/panel/panelBlockModel.js';
 import { STATE_EVENTS } from './stateEvents.js';
@@ -88,11 +88,11 @@ export function createPanelStateFacade({
 	 *
 	 * @param {Partial<ChartSnapshot>} chartSnapshot - Caller-provided snapshot. `id` is assigned here and ignored if passed in.
 	 * @returns {number} The newly assigned snapshot id.
-	 * @fires STATE_EVENTS.CHART_ADDED
+	 * @fires STATE_EVENTS.CHART_SNAPSHOT_ADDED
 	 */
 	function addChartSnapshot(chartSnapshot) {
 		const { id, snapshot } = addChartSnapshotToState(appState.panel, chartSnapshot, sanitizeChartName);
-		emitStateChange(STATE_EVENTS.CHART_ADDED, { id, snapshot });
+		emitStateChange(STATE_EVENTS.CHART_SNAPSHOT_ADDED, { id, snapshot });
 		return id;
 	}
 
@@ -103,12 +103,12 @@ export function createPanelStateFacade({
 	 *
 	 * @param {number | string} chartId - Non-negative safe integer or decimal-integer DOM string.
 	 * @throws {Error} When `chartId` is malformed.
-	 * @fires STATE_EVENTS.CHART_REMOVED - Emitted only when a matching snapshot is removed.
+	 * @fires STATE_EVENTS.CHART_SNAPSHOT_REMOVED - Emitted only when a matching snapshot is removed.
 	 */
 	function removeChartSnapshot(chartId) {
 		const normalizedId = removeChartSnapshotFromState(appState, chartId, ensureDefaultPanelBlock);
 		if (normalizedId === null) return;
-		emitStateChange(STATE_EVENTS.CHART_REMOVED, normalizedId);
+		emitStateChange(STATE_EVENTS.CHART_SNAPSHOT_REMOVED, normalizedId);
 	}
 
 	/**
@@ -148,12 +148,13 @@ export function createPanelStateFacade({
 
 	/**
 	 * Drop any slot assignment that points at a snapshot id which no longer
-	 * exists. Scans both the legacy slot map and every block's slot map.
+	 * exists. Ensures a default block and scans both the legacy slot map and every
+	 * block's slot map.
 	 * Does not emit, callers do not need a reactive signal because the
 	 * cleanup is invisible to downstream renderers.
 	 */
-	function validatePanelSlots() {
-		validatePanelSlotsState(appState, ensureDefaultPanelBlock);
+	function repairPanelSlotReferences() {
+		repairPanelSlotReferencesState(appState, ensureDefaultPanelBlock);
 	}
 
 	/**
@@ -166,7 +167,7 @@ export function createPanelStateFacade({
 	 * @fires STATE_EVENTS.PANEL_BLOCK_ADDED - Emitted only on success.
 	 */
 	function addPanelBlock(templateId = 'template-2col') {
-		if (!Object.hasOwn(PANEL_LAYOUTS, templateId)) {
+		if (!Object.hasOwn(PANEL_TEMPLATES, templateId)) {
 			throw new Error(`Invalid panel template: ${templateId}`);
 		}
 		const block = addPanelBlockState(appState, templateId, ensureDefaultPanelBlock, createPanelBlock, panelBlockLimit);
@@ -337,7 +338,7 @@ export function createPanelStateFacade({
 		getChartSnapshot,
 		getPanelBlocks,
 		clearPanel,
-		validatePanelSlots,
+		repairPanelSlotReferences,
 		addPanelBlock,
 		removePanelBlock,
 		movePanelBlock,

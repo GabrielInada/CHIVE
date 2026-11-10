@@ -11,7 +11,7 @@ import {
 	movePanelBlock,
 	onStateChange,
 	removePanelBlock,
-	replaceAllState,
+	applyStateSnapshot,
 	setPanelBlockTemplate,
 	STATE_EVENTS,
 } from '../../src/state/appState.js';
@@ -29,20 +29,20 @@ function makeDataset(overrides = {}) {
 }
 
 function resetAppStateForTest() {
-	replaceAllState({
+	applyStateSnapshot({
 		data: { datasets: [], activeIndex: -1 },
 		panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
 		ui: { sidebarMode: 'data', previewRows: 10 },
 	});
 }
 
-describe('replaceAllState()', () => {
+describe('applyStateSnapshot()', () => {
 	beforeEach(() => {
 		resetAppStateForTest();
 	});
 
 	it('replaces datasets, activeIndex, panel, and ui in one shot', () => {
-		replaceAllState({
+		applyStateSnapshot({
 			data: {
 				datasets: [makeDataset({ id: 'a' }), makeDataset({ id: 'b', name: 'b.csv' })],
 				activeIndex: 1,
@@ -78,7 +78,7 @@ describe('replaceAllState()', () => {
 		const listener = vi.fn();
 		onStateChange(STATE_EVENTS.STATE_HYDRATED, listener);
 
-		replaceAllState({
+		applyStateSnapshot({
 			data: { datasets: [], activeIndex: -1 },
 			panel: {},
 			ui: {},
@@ -88,14 +88,14 @@ describe('replaceAllState()', () => {
 	});
 
 	it('clamps an out-of-range activeIndex to -1', () => {
-		replaceAllState({
+		applyStateSnapshot({
 			data: { datasets: [makeDataset()], activeIndex: 99 },
 		});
 		expect(getState().data.activeIndex).toBe(-1);
 	});
 
 	it('canonicalizes each object dataset chartConfig on hydrate', () => {
-		replaceAllState({
+		applyStateSnapshot({
 			data: {
 				datasets: [makeDataset({ chartConfig: { bar: { enabled: true } } })],
 				activeIndex: 0,
@@ -109,7 +109,7 @@ describe('replaceAllState()', () => {
 	});
 
 	it('sanitizes hydrated selected columns against the declared schema', () => {
-		replaceAllState({
+		applyStateSnapshot({
 			data: {
 				datasets: [makeDataset({ selectedColumns: ['x', 'missing', 'x', null] })],
 				activeIndex: 0,
@@ -119,7 +119,7 @@ describe('replaceAllState()', () => {
 	});
 
 	it('trims a stale global filter against the dataset columns on hydrate', () => {
-		replaceAllState({
+		applyStateSnapshot({
 			data: {
 				datasets: [makeDataset({
 					chartConfig: { globalFilter: { rules: [{ column: 'gone', mode: 'categorical', include: ['v:N'] }] } },
@@ -131,7 +131,7 @@ describe('replaceAllState()', () => {
 	});
 
 	it('leaves a non-object dataset entry unchanged without throwing', () => {
-		expect(() => replaceAllState({
+		expect(() => applyStateSnapshot({
 			data: { datasets: [makeDataset({ id: 'ok' }), 'bad', null], activeIndex: 0 },
 		})).not.toThrow();
 		const datasets = getAllDatasets();
@@ -143,19 +143,19 @@ describe('replaceAllState()', () => {
 	});
 
 	it('falls back to a default block when persisted blocks are empty', () => {
-		replaceAllState({ panel: { blocks: [] } });
+		applyStateSnapshot({ panel: { blocks: [] } });
 		expect(getPanelBlocks().length).toBeGreaterThan(0);
 	});
 
 	it('uses a valid legacy layout when hydrating without blocks', () => {
-		replaceAllState({ panel: { layout: 'template-3col', blocks: [], nextBlockId: 4 } });
+		applyStateSnapshot({ panel: { layout: 'template-3col', blocks: [], nextBlockId: 4 } });
 		expect(getPanelBlocks()[0].templateId).toBe('template-3col');
 		expect(getState().panel.layout).toBe('template-3col');
 		expect(getPanelBlocks()[0].id).toBe('block-4');
 	});
 
 	it('mirrors panel.layout through hydration, reorder, removal, and template changes', () => {
-		replaceAllState({
+		applyStateSnapshot({
 			panel: {
 				layout: 'template-hero2',
 				blocks: [
@@ -187,7 +187,7 @@ describe('replaceAllState()', () => {
 		const initialMode = getState().ui.sidebarMode;
 		const initialRows = getState().ui.previewRows;
 
-		replaceAllState({
+		applyStateSnapshot({
 			ui: { sidebarMode: 'not-a-mode', previewRows: 1001 },
 		});
 
@@ -209,7 +209,7 @@ describe('replaceAllState()', () => {
 	});
 
 	it('addDataset preserves an explicit id when provided', () => {
-		addDataset(makeDataset({ id: 'preset-id' }));
-		expect(getAllDatasets()[0].id).toBe('preset-id');
+		addDataset(makeDataset({ id: 'supplied-id' }));
+		expect(getAllDatasets()[0].id).toBe('supplied-id');
 	});
 });

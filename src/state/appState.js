@@ -145,7 +145,7 @@ export function getState() {
 }
 
 /**
- * Assemble the persistence-shaped snapshot from LIVE references, with no
+ * Assemble the persistence-shaped state view from LIVE references, with no
  * deep clone. This is the save path's read accessor: it lets the worker
  * backend reference-compare dataset rows / chart snapshots to skip
  * re-sending unchanged payloads, and it keeps the heavy JSON clone that
@@ -161,7 +161,7 @@ export function getState() {
  *
  * @returns {AppState} Live-reference view. Do not mutate.
  */
-export function getPersistenceSnapshot() {
+export function getPersistenceStateView() {
 	return {
 		data: {
 			datasets: appState.data.datasets,
@@ -200,7 +200,7 @@ export function getAllDatasets() {
  *
  * @param {number} index - Zero-based index, or `-1` to deselect.
  * @throws {Error} When `index` is not an integer, is less than `-1`, or is beyond the datasets array.
- * @fires STATE_EVENTS.ACTIVE_DATASET - Only when the index changes.
+ * @fires STATE_EVENTS.ACTIVE_DATASET_CHANGED - Only when the index changes.
  */
 export function setActiveDataset(index) {
 	return dataState.setActiveDataset(index);
@@ -236,7 +236,7 @@ export function removeDataset(index) {
  * No-op when no dataset is active.
  *
  * @param {Object} updates
- * @fires STATE_EVENTS.CONFIG_UPDATED
+ * @fires STATE_EVENTS.DATASET_CONFIG_UPDATED
  */
 export function updateActiveDatasetConfig(updates) {
 	return dataState.updateActiveDatasetConfig(updates);
@@ -249,26 +249,24 @@ export function updateActiveDatasetConfig(updates) {
  *
  * @param {string[]} columnNames
  * @throws {Error} When an active dataset exists and the list contains duplicates or undeclared/non-string names.
- * @fires STATE_EVENTS.COLUMNS_UPDATED - Only when the ordered list changes.
+ * @fires STATE_EVENTS.COLUMN_SELECTION_CHANGED - Only when the ordered list changes.
  */
-export function updateActiveDatasetColumns(columnNames) {
-	return dataState.updateActiveDatasetColumns(columnNames);
+export function setActiveDatasetColumnSelection(columnNames) {
+	return dataState.setActiveDatasetColumnSelection(columnNames);
 }
 
 /**
- * Apply a normalizer to the active dataset's `chartConfig`
- * **without emitting**. Config is canonicalized at the state boundaries
- * (persistence restore, `addDataset`, and the emitting config writes) via
- * `canonicalizeChartConfig`; this escape hatch exists for the intentional
- * non-emitting live-preview writes (color picker, chart-height drag). Emitting
- * here would re-enter the render coordinator's `refreshView` via the
- * CONFIG_UPDATED subscription and loop; use
- * {@link updateActiveDatasetConfig} when an emit is wanted.
+ * Replace the active dataset's `chartConfig` with the result of `updater`
+ * without emitting or canonicalizing. Config is canonicalized at the state
+ * boundaries (persistence restore, `addDataset`, and the emitting config writes)
+ * via `canonicalizeChartConfig`. This escape hatch lets live-preview writes
+ * (color picker, chart-height drag) avoid scheduling a full config-driven refresh.
+ * Use {@link updateActiveDatasetConfig} when an emit is wanted.
  *
- * @param {(config: Object) => Object} normalizer
+ * @param {(config: Object) => Object} updater
  */
-export function normalizeActiveDatasetConfig(normalizer) {
-	return dataState.normalizeActiveDatasetConfig(normalizer);
+export function transformActiveDatasetConfigSilently(updater) {
+	return dataState.transformActiveDatasetConfigSilently(updater);
 }
 
 /**
@@ -279,7 +277,7 @@ export function normalizeActiveDatasetConfig(normalizer) {
  *
  * @param {ChartTypeKey | null} chartType
  * @param {Object | null} [activatedOverrides]
- * @fires STATE_EVENTS.CONFIG_UPDATED - Single emit per call.
+ * @fires STATE_EVENTS.DATASET_CONFIG_UPDATED - Single emit per call.
  */
 export function setActiveChartType(chartType, activatedOverrides) {
 	return dataState.setActiveChartType(chartType, activatedOverrides);
@@ -299,7 +297,7 @@ export function getPanelCharts() {
  *
  * @param {Partial<ChartSnapshot>} chartSnapshot
  * @returns {number} New snapshot id.
- * @fires STATE_EVENTS.CHART_ADDED
+ * @fires STATE_EVENTS.CHART_SNAPSHOT_ADDED
  */
 export function addChartSnapshot(chartSnapshot) {
 	return panelState.addChartSnapshot(chartSnapshot);
@@ -311,7 +309,7 @@ export function addChartSnapshot(chartSnapshot) {
  *
  * @param {number | string} chartId - Non-negative safe integer or decimal-integer DOM string.
  * @throws {Error} When `chartId` is malformed.
- * @fires STATE_EVENTS.CHART_REMOVED - Only when a matching snapshot is removed.
+ * @fires STATE_EVENTS.CHART_SNAPSHOT_REMOVED - Only when a matching snapshot is removed.
  */
 export function removeChartSnapshot(chartId) {
 	return panelState.removeChartSnapshot(chartId);
@@ -345,10 +343,11 @@ export function clearPanel() {
 }
 
 /**
- * Drop slot assignments that point at missing snapshot ids. Does not emit.
+ * Drop slot assignments that point at missing snapshot ids and ensure a default
+ * panel block exists. Does not emit or return a validation report.
  */
-export function validatePanelSlots() {
-	return panelState.validatePanelSlots();
+export function repairPanelSlotReferences() {
+	return panelState.repairPanelSlotReferences();
 }
 
 /**
@@ -496,10 +495,10 @@ export function getPreviewRows() {
  * @param {Partial<AppState>} [snapshot={}]
  * @fires STATE_EVENTS.STATE_HYDRATED - Single emit per call.
  */
-export function replaceAllState({ data, panel, ui } = {}) {
+export function applyStateSnapshot({ data, panel, ui } = {}) {
 	if (data && typeof data === 'object') {
 		const rawDatasets = Array.isArray(data.datasets) ? data.datasets : [];
-		// Defensive canonicalization: replaceAllState is a public hydration escape
+		// Defensive canonicalization: applyStateSnapshot is a public hydration escape
 		// hatch that can receive unsanitized input. Map to shallow copies with a
 		// canonical chartConfig (no in-place mutation of the caller's objects); leave
 		// non-object entries untouched so a malformed entry cannot throw here.

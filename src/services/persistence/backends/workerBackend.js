@@ -51,7 +51,7 @@ function defaultWorkerFactory() {
 	);
 }
 
-function safeStructuredClone(value) {
+function cloneWithJsonFallback(value) {
 	return typeof globalThis.structuredClone === 'function'
 		? globalThis.structuredClone(value)
 		: JSON.parse(JSON.stringify(value));
@@ -90,7 +90,7 @@ const chartColsKey = id => `chart:${id}:cols`;
  * @param {() => Worker} [options.workerFactory] - Spawns the persist worker (tests inject a mock).
  * @param {() => { persist: Function, hydrate: Function, clear: Function, exportBytes?: Function, importBytes?: Function }} [options.fallbackBackendFactory] - Main-thread fallback (tests inject a unique blobBackend). Its `clear` may report an outcome, which is forwarded unchanged.
  * @param {number} [options.timeoutMs] - Watchdog timeout. Generous by default so a big first save on a slow device does not false-trip.
- * @returns {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes: (snapshot: Partial<AppState>, options?: { workOnly?: boolean }) => Promise<Uint8Array>, importBytes: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<{ ok: boolean, reason?: string } | null> }}
+ * @returns {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes: (snapshot: Partial<AppState>, options?: { omitDataPayloads?: boolean }) => Promise<Uint8Array>, importBytes: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<{ ok: boolean, reason?: string } | null> }}
  */
 export function createWorkerBackend({ workerFactory, fallbackBackendFactory, timeoutMs = DEFAULT_TIMEOUT_MS } = {}) {
 	const spawn = workerFactory || defaultWorkerFactory;
@@ -101,7 +101,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	let workerDisabled = false;    // startup failure → fall back for the session
 	let nextId = 1;
 
-	/** @type {Map<number, { id: number, record: Object, gen: number, resolve: Function, reject: Function, timer: *, retried: boolean, includedKeys: Set<string> }>} */
+	/** @type {Map<number, { id: number, record: Object, workerGeneration: number, resolve: Function, reject: Function, timer: *, retried: boolean, includedKeys: Set<string> }>} */
 	const pending = new Map();      // insertion order = original send order (load-bearing for the drain)
 	let drainPromise = null;        // non-null while a fallback drain is in progress
 
@@ -131,7 +131,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	 * NOT frozen here, it is computed at post time against the live
 	 * `sentPayloads` (so an op deferred behind a drain re-evaluates correctly).
 	 *
-	 * @param {Partial<AppState>} snapshot - Live-reference snapshot (getPersistenceSnapshot()).
+	 * @param {Partial<AppState>} snapshot - Live-reference state view (getPersistenceStateView()).
 	 * @returns {{ op: 'persist', meta: Object, refByKey: Map<string, Array<Object>>, presentKeys: Set<string> }}
 	 */
 	function capturePersistRecord(snapshot) {
@@ -172,7 +172,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		// Strip-then-clone: the envelope already has payloads removed, so this
 		// clone is O(metadata), never O(rows). Cloning `panel` wholesale here
 		// would pull the snapshot arrays back in and reintroduce the jank.
-		const meta = safeStructuredClone({
+		const meta = cloneWithJsonFallback({
 			data: {
 				datasets: metaDatasets,
 				activeIndex: snapshot?.data?.activeIndex ?? -1,
@@ -184,11 +184,11 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		return { op: 'persist', meta, refByKey, presentKeys };
 	}
 
-	function captureExportRecord(snapshot, { workOnly = false } = {}) {
+	function captureExportRecord(snapshot, { omitDataPayloads = false } = {}) {
 		return {
 			...capturePersistRecord(snapshot),
 			op: 'export',
-			workOnly: Boolean(workOnly),
+			omitDataPayloads: Boolean(omitDataPayloads),
 		};
 	}
 
@@ -283,7 +283,8 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			id,
 			op: 'export',
 			snapshot: rebuildFull(record),
-			workOnly: Boolean(record.workOnly),
+			// The wire field keeps the option's former name; see PersistWorkerRequest.
+			workOnly: Boolean(record.omitDataPayloads),
 		};
 	}
 
@@ -309,9 +310,9 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	function ensureWorker() {
 		if (worker) return;
 		const w = spawn();
-		const gen = currentGeneration;
-		w.onmessage = event => handleWorkerMessage(gen, event);
-		w.onerror = event => onWorkerError(gen, event);
+		const workerGeneration = currentGeneration;
+		w.onmessage = event => handleWorkerMessage(workerGeneration, event);
+		w.onerror = event => onWorkerError(workerGeneration, event);
 		worker = w;
 	}
 
@@ -323,8 +324,8 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		pending.delete(entry.id);
 	}
 
-	function handleWorkerMessage(gen, event) {
-		if (gen !== currentGeneration) return;          // stale worker, ignore
+	function handleWorkerMessage(workerGeneration, event) {
+		if (workerGeneration !== currentGeneration) return; // stale worker, ignore
 		const msg = event?.data || {};
 		const entry = pending.get(msg.id);
 		if (!entry) return;                             // already settled / unknown id
@@ -375,23 +376,23 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		if (entry.timer) clearTimeout(entry.timer);
 		const { message, includedKeys } = buildPersistMessage(entry.record, entry.id, true);
 		entry.includedKeys = includedKeys;             // full retry includes every present key
-		entry.timer = setTimeout(() => onWatchdog(entry.id, entry.gen), timeoutMs);
+		entry.timer = setTimeout(() => onWatchdog(entry.id, entry.workerGeneration), timeoutMs);
 		try {
 			worker.postMessage(message);
 		} catch {
 			// Keep the entry pending so the reset drains it via the fallback.
-			resetAndDrain(entry.gen, !workerProven);
+			resetAndDrain(entry.workerGeneration, !workerProven);
 		}
 	}
 
-	function onWatchdog(id, gen) {
-		if (gen !== currentGeneration) return;
+	function onWatchdog(id, workerGeneration) {
+		if (workerGeneration !== currentGeneration) return;
 		if (!pending.has(id)) return;
-		resetAndDrain(gen, false);                      // a timeout never disables (may just be slow)
+		resetAndDrain(workerGeneration, false);         // a timeout never disables (may just be slow)
 	}
 
-	function onWorkerError(gen, event) {
-		if (gen !== currentGeneration) return;
+	function onWorkerError(workerGeneration, event) {
+		if (workerGeneration !== currentGeneration) return;
 		if (event && typeof event.preventDefault === 'function') event.preventDefault();
 		// Log the worker transport failure immediately, including the full
 		// ErrorEvent (error/stack + filename/lineno/colno). Pending operation
@@ -404,7 +405,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			lineno: event?.lineno,
 			colno: event?.colno,
 		});
-		resetAndDrain(gen, !workerProven);              // startup onerror disables; post-success only resets
+		resetAndDrain(workerGeneration, !workerProven); // startup onerror disables; post-success only resets
 	}
 
 	/**
@@ -413,12 +414,12 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	 * idempotent: a watchdog and an onerror for the same dead generation drain
 	 * once.
 	 *
-	 * @param {number} gen
+	 * @param {number} workerGeneration
 	 * @param {boolean} disable - Disable worker mode for the session (startup failure).
 	 * @returns {Promise<void>}
 	 */
-	function resetAndDrain(gen, disable) {
-		if (gen !== currentGeneration) return drainPromise || Promise.resolve();
+	function resetAndDrain(workerGeneration, disable) {
+		if (workerGeneration !== currentGeneration) return drainPromise || Promise.resolve();
 
 		// Snapshot pending FIRST (in insertion order) before clearing, else the
 		// records needed for fallback are lost.
@@ -460,7 +461,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		try {
 			const op = entry.record.op;
 			const stable = op === 'persist' || op === 'export'
-				? safeStructuredClone(rebuildFull(entry.record))
+				? cloneWithJsonFallback(rebuildFull(entry.record))
 				: null;
 			const fb = await getFallbackBackend();
 			if (op === 'persist') {
@@ -470,7 +471,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 				const result = await fb.hydrate();
 				entry.resolve(result ?? null);
 			} else if (op === 'export') {
-				const result = await fb.exportBytes(stable, { workOnly: Boolean(entry.record.workOnly) });
+				const result = await fb.exportBytes(stable, { omitDataPayloads: Boolean(entry.record.omitDataPayloads) });
 				entry.resolve(result);
 			} else if (op === 'import') {
 				const result = await fb.importBytes(entry.record.bytes);
@@ -505,11 +506,11 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		}
 
 		return new Promise((resolve, reject) => {
-			const entry = { id: nextId++, record, gen: currentGeneration, resolve, reject, timer: null, retried: false, includedKeys: null };
+			const entry = { id: nextId++, record, workerGeneration: currentGeneration, resolve, reject, timer: null, retried: false, includedKeys: null };
 
 			try {
 				ensureWorker();                           // sync `new Worker()` may throw
-				entry.gen = currentGeneration;
+				entry.workerGeneration = currentGeneration;
 			} catch {
 				// Startup spawn failure: complete this op on the fallback and disable
 				// the (unproven) worker for the session.
@@ -521,7 +522,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			// Register + arm BEFORE posting so a worker that replies synchronously
 			// (e.g. a test mock) still finds a pending entry.
 			pending.set(entry.id, entry);
-			entry.timer = setTimeout(() => onWatchdog(entry.id, entry.gen), timeoutMs);
+			entry.timer = setTimeout(() => onWatchdog(entry.id, entry.workerGeneration), timeoutMs);
 
 			let message;
 			if (record.op === 'persist') {
@@ -541,7 +542,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			} catch {
 				// Sync postMessage throw: the entry is pending, so the reset drains it
 				// via the fallback (settling this op's original promise).
-				resetAndDrain(entry.gen, !workerProven);
+				resetAndDrain(entry.workerGeneration, !workerProven);
 			}
 		});
 	}

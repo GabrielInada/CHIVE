@@ -34,7 +34,7 @@ import {
 import { setActiveChartType } from '../../../state/appState.js';
 import { getChartControlAdapter } from '../../../charts/registries/controls.js';
 import { buildDescribedControls } from '../../../charts/shared/controls/describedControls.js';
-import { renderChartParamsDOM } from '../views/chartParamsView.js';
+import { renderChartControlsDOM } from '../views/chartControlsView.js';
 import { openChartTypePickerDialog } from '../dialogs/chartTypePickerDialog.js';
 
 import { setLiveRenderCallback, triggerLiveRender } from './livePreviewBridge.js';
@@ -360,7 +360,7 @@ export function renderChartControlsSidebar(shown) {
 	const entry = activeChartType ? getChartControlAdapter(activeChartType) : null;
 	const controls = buildControlsForChart(entry, activeChartType, dataset, columnContext);
 
-	renderChartParamsDOM({
+	renderChartControlsDOM({
 		container: paramsContainer,
 		activeChartType,
 		chartTitle: activeChartType ? t(`chive-chart-toggle-${activeChartType}`) : '',

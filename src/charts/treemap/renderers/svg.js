@@ -71,7 +71,7 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 		measureMode, valueColumn, positiveOnly: true, topN, missingLabel: labels.missing,
 	});
 	if (!aggregated.ok) return aggregated;
-	const { entries, total } = aggregated;
+	const { entries, retainedValueTotal } = aggregated;
 
 	container.replaceChildren();
 	hideChartTooltip();
@@ -148,7 +148,7 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 		.attr('stroke-width', 1)
 		.style('cursor', 'pointer')
 		.on('mouseenter', (event, d) => {
-			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
+			const pct = retainedValueTotal > 0 ? (d.data.value / retainedValueTotal) * 100 : 0;
 			showChartTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY);
 		})
 		.on('mousemove', event => {
@@ -159,7 +159,7 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 		})
 		.on('click', (event, d) => {
 			event.stopPropagation();
-			const pct = total > 0 ? (d.data.value / total) * 100 : 0;
+			const pct = retainedValueTotal > 0 ? (d.data.value / retainedValueTotal) * 100 : 0;
 			togglePinnedFilterTooltip(buildTooltipContent(d, pct), event.pageX, event.pageY, {
 				target: event.currentTarget,
 				headerTitle: d.data.label,

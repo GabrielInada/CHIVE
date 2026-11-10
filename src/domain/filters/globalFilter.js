@@ -14,10 +14,10 @@
  */
 
 import {
-	applyChartFilterRows,
-	createDefaultFilterConfig,
-	normalizeFilterConfig,
-} from './chartFilter.js';
+	applyFilterRuleToRows,
+	createDefaultFilterRule,
+	normalizeFilterRule,
+} from './filterRule.js';
 
 /**
  * Create a fresh, empty global filter.
@@ -75,7 +75,7 @@ function ruleHasColumn(rule) {
  *   3. Anything else, collapses to an empty filter.
  *
  * Rules without a column are filtered out; remaining rules are individually
- * normalized via {@link normalizeFilterConfig}.
+ * normalized via {@link normalizeFilterRule}.
  *
  * @param {*} rawFilter
  * @param {string[]} [numericColumns=[]] - Columns to treat as numeric when normalizing rule modes.
@@ -91,14 +91,14 @@ export function normalizeGlobalFilter(rawFilter, numericColumns = []) {
 		if (!ruleHasColumn(rawFilter)) {
 			return base;
 		}
-		base.rules.push(normalizeFilterConfig(rawFilter, numericColumns));
+		base.rules.push(normalizeFilterRule(rawFilter, numericColumns));
 		return base;
 	}
 
 	const rules = Array.isArray(rawFilter.rules) ? rawFilter.rules : [];
 	const normalized = rules
 		.filter(rule => ruleHasColumn(rule))
-		.map(rule => normalizeFilterConfig(rule, numericColumns));
+		.map(rule => normalizeFilterRule(rule, numericColumns));
 
 	return {
 		rules: normalized,
@@ -174,7 +174,7 @@ export function applyGlobalFilterRules(rows, rawFilter, numericColumns = []) {
 	if (normalized.rules.length === 0) return rows;
 
 	return normalized.rules.reduce((acc, rule) => {
-		return applyChartFilterRows(acc, rule, numericColumns);
+		return applyFilterRuleToRows(acc, rule, numericColumns);
 	}, rows);
 }
 
@@ -260,7 +260,7 @@ export function excludeTokenFromFilter(rawFilter, column, token) {
  * Remove `token` from the include set on the matching categorical rule.
  * When the rule's include AND exclude sets both become empty, the rule
  * itself is dropped from the filter (since an empty active rule would
- * filter out all rows, see {@link applyChartFilterRows}).
+ * filter out all rows, see {@link applyFilterRuleToRows}).
  *
  * @param {*} rawFilter
  * @param {string} column
@@ -400,6 +400,6 @@ export function createDefaultGlobalFilter() {
 
 /**
  * Re-export to keep downstream callers that pull a single-rule default
- * working without reaching into `chartFilter.js` directly.
+ * working without reaching into `filterRule.js` directly.
  */
-export { createDefaultFilterConfig };
+export { createDefaultFilterRule };

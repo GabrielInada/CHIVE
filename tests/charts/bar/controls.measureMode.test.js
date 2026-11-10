@@ -23,7 +23,7 @@ function createDataset(measureMode = 'count', valueColumn = null) {
 				expanded: true,
 				customTitle: '',
 				chartHeight: 320,
-				sort: 'count-desc',
+				sort: 'value-desc',
 				topN: 10,
 				color: '#d4622a',
 				colorMode: 'uniform',

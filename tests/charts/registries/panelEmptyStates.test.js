@@ -59,7 +59,7 @@ describe.each(['en', 'pt-BR'])('workspace and Panel empty states in %s', languag
 
 		const spec = { id: 1, type, config, dataSnapshot, columnsSnapshot };
 		const before = structuredClone(spec);
-		for (const className of ['panel-item-preview', 'panel-slot-svg']) {
+		for (const className of ['panel-item-preview', 'panel-chart-container']) {
 			const panel = document.createElement('div');
 			panel.className = className;
 			document.body.append(panel);
@@ -88,7 +88,7 @@ describe.each(['en', 'pt-BR'])('workspace and Panel empty states in %s', languag
 		vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => { frame = callback; return 1; });
 		vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
 		const panel = document.createElement('div');
-		panel.className = 'panel-slot-svg';
+		panel.className = 'panel-chart-container';
 		document.body.append(panel);
 		const spec = {
 			id: 1, type: 'pie', columnsSnapshot, dataSnapshot: rows,

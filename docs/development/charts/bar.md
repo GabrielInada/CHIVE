@@ -126,7 +126,7 @@ flowchart TB
         CONTROLS["bar/controls"] --> WRITER["ChartConfigWriter"]
         WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
         DFACADE --> DSTATE[("dataset.chartConfig.bar")]
-        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DFACADE -- DATASET_CONFIG_UPDATED --> COORD["renderCoordinator"]
         DSTATE -. read through getters .-> COORD
         WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
         PREVIEW --> DSTATE
@@ -143,7 +143,7 @@ flowchart TB
         PSUB --> PVIEW["panelView"]
         PSTATE -. read through getters .-> PVIEW
         PVIEW -. callback via panelController .-> PFACADE
-        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartSnapshot"]
         MOUNT --> PREG["panel registry"]
     end
 
@@ -185,7 +185,7 @@ controls, presentation flow, and renderer read the stored values as given.
 | `category` | Categorical column bound to the x axis | `null` |
 | `measureMode` | `'count'`, `'sum'`, or `'mean'` | `'count'` |
 | `valueColumn` | Numeric column reduced in sum/mean mode | `null` |
-| `sort` | `'count-desc'` / `'count-asc'` / `'label-asc'` / `'label-desc'` | `'count-desc'` |
+| `sort` | `'value-desc'` / `'value-asc'` / `'label-asc'` / `'label-desc'` | `'value-desc'` |
 | `topN` | Keep first N bars after sorting (0 = all) | `10` |
 | `colorMode` | `'uniform'`, `'gradient'`, or `'gradient-manual'` | `'uniform'` |
 | `color` | Uniform-mode bar color | `CHART_COLORS.bar` (`#d4622a`) |
@@ -233,7 +233,9 @@ as the measure select (section 5.3).
    the definition's `allowedValues.measureMode` and `allowedValues.sort`, and the Top-N select
    `BAR_CHART.topNOptions`. The two value orders of the sort select name the measure with its
    short label ("Sum (high → low)", the description's `optionLabelParams`); their stored
-   values stay `count-desc` and `count-asc`.
+   values are `value-desc` and `value-asc`. Saved `count-desc` and `count-asc`
+   values are translated before enum validation in `mergeChartConfigWithDefaults`,
+   for both dataset configurations and Panel captures.
 2. **Display** (expanded): custom title text, x/y axis-label toggles.
 3. **Styling** (collapsed): color-mode select, the uniform color input, the gradient
    min/max color inputs, and (conditionally) the gradient-distribution select or the
@@ -313,10 +315,10 @@ already saved in Panel keep their stored text.
 
 ### 6.2 Panel view
 
-[renderChartFromSpec.js](../../../src/features/panel/slots/renderChartFromSpec.js)
+[renderChartSnapshot.js](../../../src/features/panel/slots/renderChartSnapshot.js)
 validates the request, then the
 [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
-the snapshot (`spec.dataSnapshot` and `spec.config`) and hands it to the same
+the snapshot (`snapshot.dataSnapshot` and `snapshot.config`) and hands it to the same
 presentation flow and renderer.
 The one difference is that panel charts omit `filterCallbacks`; the shared presentation
 flow uses a frozen empty default, so panel tooltips do **not** offer click-to-filter actions
@@ -356,13 +358,13 @@ treemap, and bubble share:
 
 ### 7.3 Sort, Top-N, and the empty guard
 
-`aggregateCategories` orders the entries by bar's `sort`: largest first for `count-desc`, the
-default, or by one of the other count/label orderings of section 2.5, each with a
+`aggregateCategories` orders the entries by bar's `sort`: largest first for `value-desc`, the
+default, or by one of the other value/label orderings of section 2.5, each with a
 `compareCategoryKeys` tiebreaker for stable order; label sorts keep the missing bucket last
 in both directions. It then keeps the first `topN` entries when `topN > 0`. Bar does not ask
 it to leave out values at or below 0, so every category gets a bar (section 7.5). With no
-rows to count, `aggregateCategories` fails and the renderer returns `fail()`. Its `total`
-sums the kept entries, the base of the tooltip percentages.
+rows to count, `aggregateCategories` fails and the renderer returns `fail()`. Its
+`retainedValueTotal` sums the kept entries, the base of the tooltip percentages.
 
 ### 7.4 Layout and scales
 

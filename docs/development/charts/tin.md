@@ -30,7 +30,7 @@ tests:
 - Browser-local rendering setting: [settingsService.js](../../../src/services/settingsService.js)
   and [settings.js](../../../src/config/settings.js)
 - Per-dataset config defaults: [tin.js](../../../src/config/charts/definitions/tin.js)
-- Bundled preset catalog: [presetCatalog.js](../../../src/data/presetCatalog.js)
+- Bundled sample dataset catalog: [sampleDatasetCatalog.js](../../../src/data/sampleDatasetCatalog.js)
 - Renderer tests: [base](../../../tests/charts/tin/renderers/svg.test.js),
   [isolines](../../../tests/charts/tin/renderers/svg.isolines.test.js), and
   [full-ramp color mode](../../../tests/charts/tin/renderers/svg.fullRamp.test.js)
@@ -289,7 +289,7 @@ flowchart TB
         CONTROLS["tin/controls"] --> WRITER["ChartConfigWriter"]
         WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
         DFACADE --> DSTATE[("dataset.chartConfig.tin")]
-        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DFACADE -- DATASET_CONFIG_UPDATED --> COORD["renderCoordinator"]
         DSTATE -. read through getters .-> COORD
         WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
         PREVIEW --> DSTATE
@@ -306,7 +306,7 @@ flowchart TB
         PSUB --> PVIEW["panelView"]
         PSTATE -. read through getters .-> PVIEW
         PVIEW -. callback via panelController .-> PFACADE
-        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartSnapshot"]
         MOUNT --> PREG["panel registry"]
     end
 
@@ -487,9 +487,9 @@ When a chart is added to the panel, `addChartToPanel`
 `config`, `dataSnapshot`, and `columnsSnapshot` are each `structuredClone`d at
 capture time, so those fields are detached from later edits to the active
 dataset. The snapshot is not `Object.freeze`d and live facade getters remain
-read-only by policy. After `renderChartFromSpec` validates the request, the
+read-only by policy. After `renderChartSnapshot` validates the request, the
 [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
-`spec.dataSnapshot` and `spec.config` and hands it to the same presentation flow. This
+`snapshot.dataSnapshot` and `snapshot.config` and hands it to the same presentation flow. This
 detached-capture property is what
 lets the live preview skip re-rendering the panel (section 9.4 / 10).
 
@@ -499,7 +499,7 @@ lets the live preview skip re-rendering the panel (section 9.4 / 10).
 
 `renderTinChart(container, rows, config, context)` reads `config.x`, `config.y` and
 `config.z` and normalizes visual settings once through `normalizeTinOptions`. It is the
-heart of the system. It returns a `Result`: `ok({ triangles, polygons })` on
+heart of the system. It returns a `Result`: `ok({ triangleCount, surfaceLeafCount })` on
 success or `fail(reason)` when it cannot draw. Here is the full pipeline in order.
 The mathematical justification for each step lives in section 2; this section is the
 mechanics.
@@ -632,10 +632,11 @@ Policy, in order:
    (0–4) via `clampDepth`.
 3. **Leaf budget:** while `triangleCount * 4 ** depth > TIN_CHART.maxSurfaceLeaves`,
    decrement depth (floored at 0). This caps total geometry work on very large
-   renders. Uploads are already bounded elsewhere by `FILE_SIZE_LIMIT_BYTES` (15 MB)
-   and `ROW_LIMIT` (200000 rows), but a large allowed dataset can still be expensive
-   to triangulate, subdivide, overlay, and export. The fallback is a coarser surface
-   fill, not input rejection.
+   renders. Uploads above `LARGE_FILE_WARNING_BYTES` (15 MiB) or
+   `LARGE_DATASET_WARNING_ROWS` (200000 rows) prompt for confirmation; users can
+   approve larger inputs. Those thresholds do not bound rendering work. A large
+   dataset can still be expensive to triangulate, subdivide, overlay, and export.
+   The fallback is a coarser surface fill, not input rejection.
 
 ### 7.10 Subdivision and grouped path emission (`appendSubdividedFragments`)
 
@@ -759,11 +760,11 @@ up-right of the point.
 
 ### 7.18 Return value
 
-`ok({ triangles, polygons })` where `triangles` is the base Delaunay triangle count
-and `polygons` is the analytic leaf count (`triangleCount * 4 ** effectiveDepth`).
-`polygons` is computed, not counted (every base triangle yields exactly
-`4 ** depth` leaves, section 2.5). The field name `polygons` is kept for API/test
-stability even though leaves are no longer individual polygon elements.
+`ok({ triangleCount, surfaceLeafCount })` where `triangleCount` is the base Delaunay
+triangle count and `surfaceLeafCount` is the analytic leaf count
+(`triangleCount * 4 ** effectiveDepth`). Each base triangle yields exactly
+`4 ** depth` leaves (section 2.5). The leaves are drawn as grouped paths, so this
+is a count of surface leaves rather than SVG elements.
 
 ---
 
@@ -849,11 +850,12 @@ Grouping removes one-element-per-leaf DOM output, with the strongest fixed bound
 Optimized mode. Full ramp can produce more fill paths because it deliberately keeps
 exact colors. The Delaunay triangulation and subdivision CPU still run each render.
 This is a fill/render performance control, **not** a full client-side DoS guard. CHIVE
-has upload-level caps (`FILE_SIZE_LIMIT_BYTES = 15 MB`, `ROW_LIMIT = 200000`), but
-within those caps Delaunay construction, fill grouping, points/edges/z-label overlays,
-isoline segment counts, and panel-export payload size can still be large. Broader
-input-size policy is cross-cutting across chart types and is outside this
-renderer-specific design.
+prompts for confirmation above `LARGE_FILE_WARNING_BYTES` (15 MiB) and
+`LARGE_DATASET_WARNING_ROWS` (200000 rows), and users can approve larger inputs.
+Delaunay construction, fill grouping, points/edges/z-label overlays, isoline
+segment counts, and panel-export payload size can still be large, even below
+those thresholds. Broader input-size policy is cross-cutting across chart types
+and is outside this renderer-specific design.
 
 ### 9.4 The live-preview panel skip
 
@@ -863,7 +865,7 @@ Separately, `livePreviewRender` in
 doubling the work if a TIN chart was in the panel. That call was removed: panel
 blocks paint from detached `structuredClone` captures (section 6.2), so a live config
 edit can never change them. The picker's commit (`change`) event fires
-`CONFIG_UPDATED`, but that no longer re-renders the panel either: `onConfigUpdated`
+`DATASET_CONFIG_UPDATED`, but that no longer re-renders the panel either: `onConfigUpdated`
 repaints the workspace and chart-controls regions, and only an `activeTab` switch to
 the panel tab repaints the panel. A saved panel chart's appearance never tracks later
 config edits.
@@ -879,11 +881,11 @@ Two events are wired on each color input (the `color` widget in
 [describedControls.js](../../../src/charts/shared/controls/describedControls.js)):
 
 - **`input`** (fires continuously while the picker is open): writes the new color
-  through `normalizeActiveDatasetConfig` — a **non-emitting** facade that updates
-  state without firing `CONFIG_UPDATED` (which would trigger a config render and
+  through `transformActiveDatasetConfigSilently` — a **non-emitting** facade that updates
+  state without firing `DATASET_CONFIG_UPDATED` (which would trigger a config render and
   rebuild the controls sidebar). Then it calls `triggerLiveRender()`.
 - **`change`** (fires when the picker closes): writes through the normal emitting
-  updater so `CONFIG_UPDATED` fires, auto-save marks the project dirty, and the
+  updater so `DATASET_CONFIG_UPDATED` fires, auto-save marks the project dirty, and the
   sidebar refreshes.
 
 `triggerLiveRender` ([livePreviewBridge.js](../../../src/features/datasetWorkspace/chartControls/livePreviewBridge.js))
@@ -958,8 +960,8 @@ and [svg.fullRamp.test.js](../../../tests/charts/tin/renderers/svg.fullRamp.test
 Notable fill-path cases:
 
 - Subpath count (`M` count across `.tin-triangles path`) equals
-  `triangles * 4 ** depth` at depths 0 and 2; no stray `<polygon>` elements;
-  `result.polygons` matches the analytic count.
+  `triangleCount * 4 ** depth` at depths 0 and 2; no stray `<polygon>` elements;
+  `result.surfaceLeafCount` matches the analytic count.
 - Flat mode: one subpath per base triangle.
 - Optimized mode merges leaves into at most one path per bucket.
 - Full ramp uses `colorAt(meanZ)` rather than bucket-center colors, merges equal

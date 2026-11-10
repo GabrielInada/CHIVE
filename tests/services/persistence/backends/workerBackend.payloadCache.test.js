@@ -210,4 +210,52 @@ describe('workerBackend, needsResync recovery', () => {
 
 		await expect(backend.persist(snap())).rejects.toThrow(/resync/i);
 	});
+
+	it('completes through the fallback when the full retry gets no reply', async () => {
+		const fallback = spyFallback(nextDb());
+		let worker;
+		const backend = createWorkerBackend({
+			workerFactory: () => {
+				worker = new MockWorker();
+				// Answer the first persist with needsResync, then go silent, so only the
+				// retry's own watchdog can settle the op.
+				worker._deliver = data => {
+					if (worker.posted.length === 1) queueMicrotask(() => worker.emit({ id: data.id, ok: false, needsResync: true }));
+				};
+				return worker;
+			},
+			fallbackBackendFactory: () => fallback,
+			timeoutMs: 40,
+		});
+
+		await backend.persist(snap());
+
+		expect(worker.posted).toHaveLength(2);           // the original post and the full retry
+		expect(fallback.persist).toHaveBeenCalledTimes(1);
+		expect(worker.terminated).toBe(true);
+	});
+
+	it('completes through the fallback when posting the full retry throws', async () => {
+		const fallback = spyFallback(nextDb());
+		let worker;
+		const backend = createWorkerBackend({
+			workerFactory: () => {
+				worker = new MockWorker();
+				worker._deliver = data => {
+					if (worker.posted.length > 1) throw new Error('post failed');
+					queueMicrotask(() => worker.emit({ id: data.id, ok: false, needsResync: true }));
+				};
+				return worker;
+			},
+			fallbackBackendFactory: () => fallback,
+			// Far past the test timeout, so only the post-failure path settles the op in time.
+			timeoutMs: 60000,
+		});
+
+		await backend.persist(snap());
+
+		expect(worker.posted).toHaveLength(2);
+		expect(fallback.persist).toHaveBeenCalledTimes(1);
+		expect(worker.terminated).toBe(true);
+	});
 });

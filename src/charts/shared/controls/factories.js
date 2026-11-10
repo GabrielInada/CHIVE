@@ -26,7 +26,7 @@ import { normalizeHexColor } from '../../../utils/colorUtils.js';
  */
 export function createCheckboxControl(id, labelText, checked, disabled = false) {
 	const div = document.createElement('div');
-	div.className = 'chart-controle chart-controle-inline';
+	div.className = 'chart-control chart-control--inline';
 
 	const label = document.createElement('label');
 	label.className = 'chart-checkbox-label';
@@ -60,7 +60,7 @@ export function createCheckboxControl(id, labelText, checked, disabled = false) 
  */
 export function createTextControl(id, labelText, value, maxLength = 80, disabled = false) {
 	const div = document.createElement('div');
-	div.className = 'chart-controle';
+	div.className = 'chart-control';
 
 	const label = document.createElement('label');
 	label.htmlFor = id;
@@ -91,7 +91,7 @@ export function createTextControl(id, labelText, value, maxLength = 80, disabled
  */
 export function createNumberInputControl(id, labelText, value, { min, max, step, disabled } = {}) {
 	const div = document.createElement('div');
-	div.className = 'chart-controle';
+	div.className = 'chart-control';
 
 	const label = document.createElement('label');
 	label.htmlFor = id;
@@ -128,7 +128,7 @@ export function createNumberInputControl(id, labelText, value, { min, max, step,
  */
 export function createSliderControl(id, labelText, value, min, max, step, disabled = false) {
 	const div = document.createElement('div');
-	div.className = 'chart-controle';
+	div.className = 'chart-control';
 
 	const label = document.createElement('label');
 	label.htmlFor = id;
@@ -174,7 +174,7 @@ export function createSliderControl(id, labelText, value, min, max, step, disabl
  */
 export function createSelectControl(id, labelText, optionsArray, selectedValue, disabled = false) {
 	const div = document.createElement('div');
-	div.className = 'chart-controle';
+	div.className = 'chart-control';
 
 	const label = document.createElement('label');
 	label.htmlFor = id;
@@ -223,7 +223,7 @@ export function topNSelectOptions(topNOptions, allLabel) {
  */
 export function createColorInputControl(id, labelText, value, fallback, disabled = false) {
 	const div = document.createElement('div');
-	div.className = 'chart-controle';
+	div.className = 'chart-control';
 
 	const label = document.createElement('label');
 	label.htmlFor = id;
@@ -319,7 +319,7 @@ function localizedPaletteName(paletteId, translate) {
 export function createColorPresetControl(id, labelText, presetName, disabled = false, translate, onSelect) {
 	const resolve = typeof translate === 'function' ? translate : (key) => key;
 	const div = document.createElement('div');
-	div.className = 'chart-controle';
+	div.className = 'chart-control';
 
 	const label = document.createElement('label');
 	label.textContent = labelText;
@@ -388,7 +388,7 @@ export function createColorPresetControl(id, labelText, presetName, disabled = f
  */
 export function createColorPickerGridControl(id, labelText, items, colorMap, disabled = false, onColorChange, onColorPreview) {
 	const div = document.createElement('div');
-	div.className = 'chart-controle';
+	div.className = 'chart-control';
 
 	const label = document.createElement('label');
 	label.textContent = labelText;

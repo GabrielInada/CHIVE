@@ -79,8 +79,8 @@ describe('renderTinChart full-ramp color rendering mode', () => {
 		// One path per distinct color: no two paths share a fill.
 		expect(new Set(fills).size).toBe(fills.length);
 		// Grouping is real: far fewer paths than leaves.
-		expect(fills.length).toBeLessThan(result.polygons);
-		expect(countSubpaths(container)).toBe(result.polygons);
+		expect(fills.length).toBeLessThan(result.surfaceLeafCount);
+		expect(countSubpaths(container)).toBe(result.surfaceLeafCount);
 	});
 
 	it('generates identical triangle and leaf counts to optimized at the same depth', () => {
@@ -111,8 +111,8 @@ describe('renderTinChart full-ramp color rendering mode', () => {
 			...BW_RAMP,
 		}));
 
-		expect(fullRamp.triangles).toBe(optimized.triangles);
-		expect(fullRamp.polygons).toBe(optimized.polygons);
+		expect(fullRamp.triangleCount).toBe(optimized.triangleCount);
+		expect(fullRamp.surfaceLeafCount).toBe(optimized.surfaceLeafCount);
 		expect(countSubpaths(container2)).toBe(optimizedSubpaths);
 	});
 
@@ -128,9 +128,9 @@ describe('renderTinChart full-ramp color rendering mode', () => {
 			colorRenderingMode: 'full-ramp',
 		}));
 		expect(result.ok).toBe(true);
-		expect(result.polygons).toBeLessThanOrEqual(TIN_CHART.maxSurfaceLeaves);
-		expect(result.polygons).toBeLessThan(result.triangles * Math.pow(4, 4));
-		expect(countSubpaths(container)).toBe(result.polygons);
+		expect(result.surfaceLeafCount).toBeLessThanOrEqual(TIN_CHART.maxSurfaceLeaves);
+		expect(result.surfaceLeafCount).toBeLessThan(result.triangleCount * Math.pow(4, 4));
+		expect(countSubpaths(container)).toBe(result.surfaceLeafCount);
 	});
 
 	it('renders a single low-color path for constant Z', () => {
@@ -154,7 +154,7 @@ describe('renderTinChart full-ramp color rendering mode', () => {
 		}));
 		expect(result.ok).toBe(true);
 		expect(pathFills(container)).toEqual(['#000000']);
-		expect(countSubpaths(container)).toBe(result.triangles);
+		expect(countSubpaths(container)).toBe(result.triangleCount);
 	});
 
 	it('leaves overlays, axes, legend, and result fields on the shared path', () => {
@@ -177,6 +177,6 @@ describe('renderTinChart full-ramp color rendering mode', () => {
 		expect(container.querySelectorAll('.tin-edges line').length).toBeGreaterThan(0);
 		expect(container.querySelectorAll('.tin-points circle').length).toBe(VALID_ROWS.length);
 		expect(container.querySelectorAll('.tin-legend rect').length).toBe(12);
-		expect(result.polygons).toBe(result.triangles * 4);
+		expect(result.surfaceLeafCount).toBe(result.triangleCount * 4);
 	});
 });

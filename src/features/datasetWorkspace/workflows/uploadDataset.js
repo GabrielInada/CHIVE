@@ -13,7 +13,7 @@ import { t } from '../../../services/i18nService.js';
 import { formatFileSize } from '../../../utils/formatters.js';
 import { ingestFile } from '../../../services/dataIngestService.js';
 import { showError, clearErrors } from '../../../ui/feedback.js';
-import { FILE_SIZE_LIMIT_BYTES } from '../../../config/limits.js';
+import { LARGE_FILE_WARNING_BYTES } from '../../../config/limits.js';
 import { DELIMITED_EXTENSIONS } from '../../../config/formats.js';
 import { ok, fail } from '../../../utils/result.js';
 import { runIntake } from './intake.js';
@@ -63,12 +63,12 @@ async function uploadFile(file, { confirm }, options) {
 		showError(t('chive-error-format', file.name));
 		return;
 	}
-	if (file.size > FILE_SIZE_LIMIT_BYTES) {
+	if (file.size > LARGE_FILE_WARNING_BYTES) {
 		const approved = await confirm(t(
 			'chive-warn-large-file',
 			file.name,
 			formatFileSize(file.size),
-			formatFileSize(FILE_SIZE_LIMIT_BYTES),
+			formatFileSize(LARGE_FILE_WARNING_BYTES),
 		));
 		if (!approved) return;
 	}

@@ -25,7 +25,7 @@ function createDataset(overrides = {}) {
 				category: 'region',
 				measureMode: 'count',
 				valueColumn: null,
-				sort: 'count-desc',
+				sort: 'value-desc',
 				topN: 0,
 				customTitle: '',
 				chartHeight: 320,

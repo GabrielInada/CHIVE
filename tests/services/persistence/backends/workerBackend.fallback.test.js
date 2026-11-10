@@ -141,7 +141,7 @@ describe('workerBackend, watchdog + fallback', () => {
 		const fallback = {
 			hydrate: vi.fn(async () => ({ data: { datasets: [] } })),
 			persist: vi.fn(async () => {}),
-			exportBytes: vi.fn(async (_snapshot, options) => new Uint8Array(options.workOnly ? [9] : [8])),
+			exportBytes: vi.fn(async (_snapshot, options) => new Uint8Array(options.omitDataPayloads ? [9] : [8])),
 			importBytes: vi.fn(async input => ({ imported: Array.from(input) })),
 			clear: vi.fn(async () => ({ ok: true })),
 		};
@@ -152,12 +152,12 @@ describe('workerBackend, watchdog + fallback', () => {
 		});
 
 		await expect(backend.hydrate()).resolves.toEqual({ data: { datasets: [] } });
-		await expect(backend.exportBytes(snap(), { workOnly: true })).resolves.toEqual(new Uint8Array([9]));
+		await expect(backend.exportBytes(snap(), { omitDataPayloads: true })).resolves.toEqual(new Uint8Array([9]));
 		await expect(backend.importBytes(bytes)).resolves.toEqual({ imported: [1, 2, 3] });
 		// The fallback's clear outcome is forwarded, not swallowed: a caller that
 		// reports the wipe to a user needs to know whether it happened.
 		await expect(backend.clear()).resolves.toEqual({ ok: true });
-		expect(fallback.exportBytes.mock.calls[0][1]).toEqual({ workOnly: true });
+		expect(fallback.exportBytes.mock.calls[0][1]).toEqual({ omitDataPayloads: true });
 	});
 
 	it('rejects fallback import errors using worker-style error normalization', async () => {

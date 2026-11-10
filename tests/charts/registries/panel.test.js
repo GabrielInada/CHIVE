@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import en from '../../../src/i18n/en.json';
 import { CHART_DEFINITIONS } from '../../../src/config/charts/definitions.js';
 import { getPanelChartRenderer, SUPPORTED_PANEL_CHART_TYPES } from '../../../src/charts/registries/panel.js';
-import { renderChartFromSpec } from '../../../src/features/panel/slots/renderChartFromSpec.js';
+import { renderChartSnapshot } from '../../../src/features/panel/slots/renderChartSnapshot.js';
 import { clearChartContainer } from '../../../src/charts/shared/containerLifecycle.js';
 
 const three = vi.hoisted(() => ({ renderScatter3dChart: vi.fn() }));
@@ -57,7 +57,7 @@ function drawCanvas(container) {
 	const canvas = document.createElement('canvas');
 	canvas.className = 'chart-canvas-3d';
 	container.append(canvas);
-	return { ok: true, renderedCount: 0, validCount: 0, totalCount: 0, truncated: false };
+	return { ok: true, renderedCount: 0, validCount: 0, totalCount: 0, sampled: false };
 }
 
 function configFor(type, overrides = {}) {
@@ -96,19 +96,19 @@ describe('panel chart registry and render bridge', () => {
 		expect(getPanelChartRenderer('__proto__')).toBeNull();
 	});
 
-	it('returns invalid-args when container or spec is missing', () => {
-		expect(renderChartFromSpec(null, { type: 'bar' })).toEqual({ ok: false, reason: 'invalid-args' });
-		expect(renderChartFromSpec(mount(), null)).toEqual({ ok: false, reason: 'invalid-args' });
+	it('returns invalid-args when container or snapshot is missing', () => {
+		expect(renderChartSnapshot(null, { type: 'bar' })).toEqual({ ok: false, reason: 'invalid-args' });
+		expect(renderChartSnapshot(mount(), null)).toEqual({ ok: false, reason: 'invalid-args' });
 	});
 
 	it('returns unknown-type for unsupported chart types', () => {
-		expect(renderChartFromSpec(mount(), { type: 'sankey', config: {}, dataSnapshot: rows })).toEqual({ ok: false, reason: 'unknown-type' });
+		expect(renderChartSnapshot(mount(), { type: 'sankey', config: {}, dataSnapshot: rows })).toEqual({ ok: false, reason: 'unknown-type' });
 	});
 
 	it("returns the chart's own result", () => {
-		const spec = { type: 'pie', config: configFor('pie', { measureMode: 'sum', valueColumn: null }), dataSnapshot: rows, columnsSnapshot };
+		const snapshot = { type: 'pie', config: configFor('pie', { measureMode: 'sum', valueColumn: null }), dataSnapshot: rows, columnsSnapshot };
 
-		expect(renderChartFromSpec(mount(), spec)).toEqual({ ok: false, reason: 'no-value-column' });
+		expect(renderChartSnapshot(mount(), snapshot)).toEqual({ ok: false, reason: 'no-value-column' });
 	});
 });
 
@@ -135,7 +135,7 @@ describe('Panel captures', () => {
 	});
 
 	it('scatter3d: a capture without rows or config reaches the renderer with no rows', async () => {
-		renderChartFromSpec(mount(), { type: 'scatter3d' });
+		renderChartSnapshot(mount(), { type: 'scatter3d' });
 
 		await vi.waitFor(() => expect(three.renderScatter3dChart).toHaveBeenCalledTimes(1));
 		expect(three.renderScatter3dChart.mock.calls[0][1]).toEqual([]);

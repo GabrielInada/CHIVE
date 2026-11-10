@@ -24,11 +24,10 @@ import {
 	onStateChange,
 	STATE_EVENTS,
 	setPreviewRows,
-	updateActiveDatasetColumns,
+	setActiveDatasetColumnSelection as setStateColumnSelection,
 	updateActiveDatasetConfig,
 } from '../state/appState.js';
 import {
-	initializeLayoutSelector,
 	renderSidebarPanel,
 	renderCanvasPanel,
 } from '../features/panel/panelController.js';
@@ -37,7 +36,7 @@ import {
 	selectDataset,
 	removeDatasetByIndex,
 	handleJoinDatasetRequest,
-	handlePresetDatasetRequest,
+	handleSampleDatasetRequest,
 } from '../features/datasetWorkspace/datasetController.js';
 import { syncSidebarToTab } from './uiManager.js';
 
@@ -165,7 +164,7 @@ function onColumnsUpdated() {
 }
 
 /**
- * @param {{ activeTab?: string } & Object} [patch] - CONFIG_UPDATED payload.
+ * @param {{ activeTab?: string } & Object} [patch] - DATASET_CONFIG_UPDATED payload.
  */
 function onConfigUpdated(patch) {
 	if (patch?.activeTab) syncSidebarToTab(patch.activeTab);
@@ -178,11 +177,11 @@ function onConfigUpdated(patch) {
  * Wire every render-affecting state event to the full or region scheduler.
  */
 export function setupStateSubscriptions() {
-	onStateChange(STATE_EVENTS.ACTIVE_DATASET, scheduleFullRefresh);
+	onStateChange(STATE_EVENTS.ACTIVE_DATASET_CHANGED, scheduleFullRefresh);
 	onStateChange(STATE_EVENTS.DATASET_ADDED, scheduleFullRefresh);
 	onStateChange(STATE_EVENTS.DATASET_REMOVED, scheduleFullRefresh);
-	onStateChange(STATE_EVENTS.COLUMNS_UPDATED, onColumnsUpdated);
-	onStateChange(STATE_EVENTS.CONFIG_UPDATED, onConfigUpdated);
+	onStateChange(STATE_EVENTS.COLUMN_SELECTION_CHANGED, onColumnsUpdated);
+	onStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, onConfigUpdated);
 	onStateChange(STATE_EVENTS.STATE_HYDRATED, scheduleFullRefresh);
 	onStateChange(
 		STATE_EVENTS.PREVIEW_ROWS_CHANGED,
@@ -223,7 +222,7 @@ function renderDatasetListView(datasets, activeIndex) {
 		selectDataset,
 		removeDatasetByIndex,
 		handleJoinDatasetRequest,
-		handlePresetDatasetRequest,
+		handleSampleDatasetRequest,
 	);
 }
 
@@ -241,8 +240,8 @@ function renderActiveDatasetWorkspace(shown, previewRows) {
 	renderDatasetWorkspace(shown, {
 		previewRows,
 		onPreviewRowsChange: updatePreviewRows,
-		onColumnSelectionChange: updateDatasetColumns,
-		onChartConfigChange: updateDatasetConfig,
+		onColumnSelectionChange: setActiveDatasetColumnSelection,
+		onDatasetConfigChange: updateDatasetConfig,
 	});
 }
 
@@ -254,11 +253,7 @@ function renderChartControlsView(shown) {
 	renderChartControlsSidebar(shown);
 }
 
-/**
- * @param {{ withLayoutSelector?: boolean }} [options]
- */
-function renderPanelWorkspace({ withLayoutSelector = true } = {}) {
-	if (withLayoutSelector) initializeLayoutSelector();
+function renderPanelWorkspace() {
 	renderSidebarPanel();
 	renderCanvasPanel();
 }
@@ -278,7 +273,7 @@ function refreshView() {
 
 	if (datasets.length === 0) {
 		renderEmptyWorkspace();
-		renderPanelWorkspace({ withLayoutSelector: false });
+		renderPanelWorkspace();
 		return;
 	}
 
@@ -289,10 +284,10 @@ function refreshView() {
 }
 
 /**
- * @param {string[]} columns
+ * @param {string[]} columnNames
  */
-export function updateDatasetColumns(columns) {
-	updateActiveDatasetColumns(columns);
+export function setActiveDatasetColumnSelection(columnNames) {
+	setStateColumnSelection(columnNames);
 }
 
 /**

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
 	clearPersistedState: vi.fn(),
 	openConfirmDialog: vi.fn(),
-	replaceAllState: vi.fn(),
+	applyStateSnapshot: vi.fn(),
 	t: vi.fn(key => `tr:${key}`),
 }));
 
@@ -22,7 +22,7 @@ vi.mock('../../../src/ui/confirmDialog.js', () => ({
 }));
 
 vi.mock('../../../src/state/appState.js', () => ({
-	replaceAllState: mocks.replaceAllState,
+	applyStateSnapshot: mocks.applyStateSnapshot,
 }));
 
 import { clearStoredProjectData } from '../../../src/app/bindings/clearStoredData.js';
@@ -59,18 +59,18 @@ describe('clearStoredProjectData', () => {
 		mocks.openConfirmDialog.mockResolvedValue(false);
 
 		await expect(clearStoredProjectData()).resolves.toEqual({ ok: true, cancelled: true });
-		expect(mocks.replaceAllState).not.toHaveBeenCalled();
+		expect(mocks.applyStateSnapshot).not.toHaveBeenCalled();
 		expect(mocks.clearPersistedState).not.toHaveBeenCalled();
 	});
 
 	it('resets state to an empty project before wiping storage', async () => {
 		await expect(clearStoredProjectData()).resolves.toEqual({ ok: true });
 
-		expect(mocks.replaceAllState).toHaveBeenCalledWith({
+		expect(mocks.applyStateSnapshot).toHaveBeenCalledWith({
 			data: { datasets: [], activeIndex: -1 },
 			panel: {},
 		});
-		expect(mocks.replaceAllState.mock.invocationCallOrder[0])
+		expect(mocks.applyStateSnapshot.mock.invocationCallOrder[0])
 			.toBeLessThan(mocks.clearPersistedState.mock.invocationCallOrder[0]);
 		expect(mocks.clearPersistedState).toHaveBeenCalledTimes(1);
 	});

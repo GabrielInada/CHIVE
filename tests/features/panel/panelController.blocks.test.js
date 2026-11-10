@@ -11,7 +11,6 @@ import {
 
 function setupDom() {
   document.body.innerHTML = `
-    <select id="select-panel-layout"></select>
     <input type="checkbox" id="toggle-panel-slot-borders" />
     <input type="color" id="input-panel-slot-border-color" value="#5d645d" />
     <div id="panel-layout-canvas"></div>
@@ -21,7 +20,7 @@ function setupDom() {
 }
 
 function resetAppStateForTest() {
-  appState.replaceAllState({
+  appState.applyStateSnapshot({
     data: { datasets: [], activeIndex: -1 },
     panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
     ui: { sidebarMode: 'data', previewRows: 10 },

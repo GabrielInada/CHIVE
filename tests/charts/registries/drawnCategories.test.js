@@ -60,7 +60,7 @@ const cases = [
 	['bubble', { measureMode: 'sum', topN: 0 }, ['A', 'B', 'C', 'F', 'G']],
 	['bubble', { measureMode: 'mean', topN: 0 }, ['A', 'B', 'C', 'F', 'G']],
 	// Bar's Top-N keeps the first bars in its own sort order.
-	['bar', { measureMode: 'sum', topN: 3, sort: 'count-asc' }, ['E', 'D', 'G']],
+	['bar', { measureMode: 'sum', topN: 3, sort: 'value-asc' }, ['E', 'D', 'G']],
 	['bar', { measureMode: 'sum', topN: 3, sort: 'label-asc' }, ['A', 'B', 'C']],
 	['bar', { measureMode: 'sum', topN: 3, sort: 'label-desc' }, ['G', 'F', 'E']],
 ];

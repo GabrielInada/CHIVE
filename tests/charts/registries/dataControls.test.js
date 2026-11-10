@@ -106,8 +106,8 @@ describe.each(['en', 'pt-BR'])('data control labels in %s', language => {
 		const [descending, ascending] = LABELS[language].sorts[measureMode];
 		const [byName, byNameReversed] = LABELS[language].names;
 		expect(optionsOf('viz-select-bar-sort')).toEqual([
-			['count-desc', descending],
-			['count-asc', ascending],
+			['value-desc', descending],
+			['value-asc', ascending],
 			['label-asc', byName],
 			['label-desc', byNameReversed],
 		]);

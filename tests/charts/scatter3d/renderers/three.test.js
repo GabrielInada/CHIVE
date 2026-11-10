@@ -185,7 +185,7 @@ describe('renderScatter3dChart', () => {
 		const result = render(container);
 
 		expect(result.ok).toBe(true);
-		expect(result).toMatchObject({ renderedCount: 3, validCount: 3, totalCount: 3, truncated: false });
+		expect(result).toMatchObject({ renderedCount: 3, validCount: 3, totalCount: 3, sampled: false });
 
 		const canvas = container.querySelector('canvas.chart-canvas-3d');
 		expect(canvas).not.toBeNull();

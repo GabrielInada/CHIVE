@@ -2,9 +2,10 @@
  * CHIVE project transfer workflow.
  *
  * Wires the project menu (open/close) and its export / export-work-only / import
- * actions. Import replaces all state; the shared project-operation lock blocks
- * overlapping export/import runs and keeps them from overlapping a stored-data
- * clear, which would otherwise delete or recreate the other's project.
+ * actions. Import replaces the project's data and panel slices; UI preferences
+ * stay as they are. The shared project-operation lock blocks overlapping
+ * export/import runs and keeps them from overlapping a stored-data clear, which
+ * would otherwise delete or recreate the other's project.
  */
 
 import { t } from '../../services/i18nService.js';
@@ -15,8 +16,8 @@ import {
 	importProjectBytes,
 } from '../../services/persistence.js';
 import { downloadBytes } from '../../services/downloads/bytes.js';
-import { rehydratePanelChartSpecs } from '../../domain/panel/rehydration.js';
-import { getPersistenceSnapshot, replaceAllState } from '../../state/appState.js';
+import { mergePanelSnapshotConfigsWithDefaults } from '../../domain/panel/rehydration.js';
+import { applyStateSnapshot, getPersistenceStateView } from '../../state/appState.js';
 import { showProgress } from '../../ui/feedback.js';
 import { openConfirmDialog } from '../../ui/confirmDialog.js';
 import { acquireProjectOperation } from './projectOperationLock.js';
@@ -54,12 +55,12 @@ export function setupProjectTransferListeners() {
 	document.getElementById(PROJECT_TRANSFER_IDS.projectExportButton)
 		?.addEventListener('click', () => {
 			setProjectMenuOpen(false);
-			void handleProjectExport({ workOnly: false });
+			void handleProjectExport({ omitDataPayloads: false });
 		});
 	document.getElementById(PROJECT_TRANSFER_IDS.projectExportWorkOnlyButton)
 		?.addEventListener('click', () => {
 			setProjectMenuOpen(false);
-			void handleProjectExport({ workOnly: true });
+			void handleProjectExport({ omitDataPayloads: true });
 		});
 	document.getElementById(PROJECT_TRANSFER_IDS.projectImportButton)
 		?.addEventListener('click', () => {
@@ -122,13 +123,13 @@ function setProjectMenuOpen(open) {
 /**
  * @private
  */
-async function handleProjectExport({ workOnly = false } = {}) {
+async function handleProjectExport({ omitDataPayloads = false } = {}) {
 	const release = acquireProjectOperation('export');
 	if (!release) return;
 	const progress = showProgress(t('chive-project-exporting'));
 	try {
 		progress.update(20);
-		const result = await exportProject(getPersistenceSnapshot(), { workOnly });
+		const result = await exportProject(getPersistenceStateView(), { omitDataPayloads });
 		if (!result.ok) {
 			progress.fail(t('chive-project-export-error'));
 			return;
@@ -176,8 +177,8 @@ async function handleProjectImport(file, input) {
 			const bytes = new Uint8Array(await file.arrayBuffer());
 			progress.update(55);
 			const result = await importProjectBytes(bytes, {
-				replaceAllState,
-				transformPanel: rehydratePanelChartSpecs,
+				applyStateSnapshot,
+				transformPanel: mergePanelSnapshotConfigsWithDefaults,
 			});
 			if (!result.ok) {
 				progress.fail(t(getProjectImportErrorMessageKey(result.error)));

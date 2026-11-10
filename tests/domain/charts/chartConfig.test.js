@@ -51,6 +51,22 @@ describe('chartConfig', () => {
 			expect(result.scatter.categoricalPairMode).toBe('jitter');
 		});
 
+		it.each([
+			['count-desc', 'value-desc'],
+			['count-asc', 'value-asc'],
+		])('migrates saved bar sort %s without changing its direction', (legacySort, sort) => {
+			for (const measureMode of ['count', 'sum', 'mean']) {
+				const bar = Object.freeze({ sort: legacySort, measureMode, valueColumn: 'sales', topN: 5 });
+				const saved = Object.freeze({ bar });
+				const result = mergeChartConfigWithDefaults(saved);
+
+				expect(result.bar).toMatchObject({ sort, measureMode, valueColumn: 'sales', topN: 5 });
+				expect(canonicalizeChartConfig(result)).toEqual(result);
+				expect(saved.bar).toBe(bar);
+				expect(saved.bar.sort).toBe(legacySort);
+			}
+		});
+
 		it('merges partial network config with defaults', () => {
 			const result = mergeChartConfigWithDefaults({
 				network: { source: 'src', target: 'tgt' },

@@ -29,14 +29,14 @@ import { createGlobalFilterActions } from '../filters/globalFilterActions.js';
  * config is read, never changed.
  *
  * The pinned tooltips offer an action only when it has a callback, so
- * without `onChartConfigChange` they offer lookups but no filter actions.
+ * without `onDatasetConfigChange` they offer lookups but no filter actions.
  * Presentation supplies the text.
  *
  * @param {ShownDataset} shown
- * @param {((partial: Partial<ChartConfig>) => void) | null} [onChartConfigChange] - Receives the global filter a tooltip action produces.
+ * @param {((partial: Partial<ChartConfig>) => void) | null} [onDatasetConfigChange] - Receives the global filter a tooltip action produces.
  * @returns {void}
  */
-export function renderCharts(shown, onChartConfigChange = null) {
+export function renderCharts(shown, onDatasetConfigChange = null) {
 	const { dataset, rows, filter, visibleColumns, columnTypeByName, activeChartType } = shown;
 	const chartConfig = dataset.chartConfig;
 	const chartsGrid = document.getElementById(VIEW_IDS.chartsGrid);
@@ -84,7 +84,7 @@ export function renderCharts(shown, onChartConfigChange = null) {
 		globalFilter: chartConfig.globalFilter,
 		safeGlobalFilter: filter,
 		allColumnNames: dataset.columns.map(column => column.name),
-		onChartConfigChange,
+		onDatasetConfigChange,
 	});
 
 	for (const type of CHART_TYPE_KEYS) {

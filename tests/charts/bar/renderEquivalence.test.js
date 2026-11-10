@@ -55,7 +55,7 @@ function render(options, rows = ROWS) {
 
 const CASES = {
 	'count (default sort)': {},
-	'count, sort count-asc': { sort: 'count-asc' },
+	'count, sort value-asc': { sort: 'value-asc' },
 	'count, sort label-asc': { sort: 'label-asc' },
 	'count, sort label-desc': { sort: 'label-desc' },
 	'sum measure': { measureMode: 'sum', valueColumn: 'sales' },

@@ -21,7 +21,7 @@ describe('buildScatter3dPoints', () => {
 		expect(result.totalCount).toBe(5);
 		expect(result.validCount).toBe(2);
 		expect(result.renderedCount).toBe(2);
-		expect(result.truncated).toBe(false);
+		expect(result.sampled).toBe(false);
 		expect(result.points[0]).toEqual({ x: 1, y: 2, z: 3, index: 0 });
 		expect(result.points[1]).toEqual({ x: 4, y: 5, z: 6, index: 1 });
 	});
@@ -68,7 +68,7 @@ describe('buildScatter3dPoints', () => {
 			renderedCount: 0,
 			validCount: 0,
 			totalCount: 1,
-			truncated: false,
+			sampled: false,
 		});
 	});
 
@@ -85,7 +85,7 @@ describe('buildScatter3dPoints', () => {
 
 		const result = buildScatter3dPoints(rows, 'x', 'y', 'z');
 
-		expect(result.truncated).toBe(false);
+		expect(result.sampled).toBe(false);
 		expect(result.renderedCount).toBe(100);
 	});
 
@@ -95,7 +95,7 @@ describe('buildScatter3dPoints', () => {
 		const result = buildScatter3dPoints(rows, 'x', 'y', 'z');
 
 		it('respects the cap and reports honest counts', () => {
-			expect(result.truncated).toBe(true);
+			expect(result.sampled).toBe(true);
 			expect(result.renderedCount).toBeLessThanOrEqual(SCATTER3D_CHART.maxPoints);
 			// Stride picks colliding with extrema picks can shave a handful off.
 			expect(result.renderedCount).toBeGreaterThan(SCATTER3D_CHART.maxPoints - 10);
@@ -144,7 +144,7 @@ describe('buildScatter3dPoints', () => {
 
 		const result = buildScatter3dPoints(rows, 'x', 'y', 'z');
 
-		expect(result.truncated).toBe(true);
+		expect(result.sampled).toBe(true);
 		const zeros = result.points.filter(point => point.index === 0);
 		expect(zeros).toHaveLength(1);
 		const lasts = result.points.filter(point => point.index === count - 1);

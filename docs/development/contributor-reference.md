@@ -42,7 +42,9 @@ JSDoc rules:
   `StateEventType`, ...). Import via
   `@typedef {import('../types.js').Foo} Foo` at the top of the consuming file,
   then reference `Foo` unqualified downstream. Barrels do not propagate
-  typedefs; always import from `src/types.js` directly.
+  typedefs; always import from `src/types.js` directly. The path is relative
+  to the consuming file, and `tests/lint/importPaths.test.js` fails when a
+  move leaves one pointing at a missing file.
 - **Mutable vs cloned returns:** functions that return a live state reference
   must say `"Live reference, do not mutate."` in the `@returns` description.
   Cloned returns say `"Deep clone."` Mutating a getter return bypasses the
@@ -76,7 +78,7 @@ dialogs, the panel feature presentation paths under `src/features/panel/`, and
 the settings dialog; see
 [`eslint.config.js`](../../eslint.config.js))
 to the members listed in `APP_STATE_READS` in `eslint.config.js`: the current
-focused getters (excluding persistence-only `getPersistenceSnapshot`),
+focused getters (excluding persistence-only `getPersistenceStateView`),
 `getState`, `onStateChange`, `STATE_EVENTS`, and `sanitizeChartName`. Importing
 any write function from those directories is an error. If you need a write from
 a renderer or DOM builder, route it through a feature controller (`panelController.js`,
@@ -84,7 +86,7 @@ the `ChartConfigWriter` a chart's controls write through, or an `app/bindings/`
 workflow module), all outside the linted scope.
 When a new renderer-safe read is added, update `APP_STATE_READS` in
 `eslint.config.js`; reads meant for persistence, debug, or internal use are
-not added there (`getPersistenceSnapshot` is the precedent).
+not added there (`getPersistenceStateView` is the precedent).
 
 **The browser entrypoint boundary is enforced by lint.** `src/entries/*.js`
 import only from `src/app/` (and not from each other). Put initialization order in
@@ -96,8 +98,8 @@ import only from `src/app/` (and not from each other). Put initialization order 
 `no-restricted-syntax` rule in `eslint.config.js` catches inline assignments and
 in-place mutating method calls against the mutable-ref getters:
 `getActiveDataset`, `getAllDatasets`, `getPanelCharts`, `getChartSnapshot`,
-`getPanelBlocks`, `getState`, and `getPersistenceSnapshot`.
-`getPersistenceSnapshot` is the save path's read-only live-reference view; treat
+`getPanelBlocks`, `getState`, and `getPersistenceStateView`.
+`getPersistenceStateView` is the save path's read-only live-reference view; treat
 it exactly like the other live getters. The aliased form
 (`const ds = getActiveDataset(); ds.X = y`) is caught by the local
 `chive/no-facade-getter-mutation` rule
@@ -143,7 +145,7 @@ these rule classes in [`eslint.config.js`](../../eslint.config.js):
   errors. Banned forms include bare `d3` / `banana-i18n` imports, `https://esm.sh`
   runtime imports, the `?worker` / `?url` / `?raw` suffixes, and
   `import.meta.glob` / `import.meta.env`. `import.meta.url` stays allowed for
-  workers and preset asset URLs. Browser runtime dependencies should be vendored
+  workers and sample dataset asset URLs. Browser runtime dependencies should be vendored
   into `vendor/` with license files committed, then smoke-tested with a plain
   static server.
 - **Pure-layer boundaries.** `utils/` and `config/` are leaf layers and may not
@@ -220,7 +222,7 @@ npm test
 
 `app/debugApi.js` constructs `window.chiveDebug`, which exposes state getters
 (`getState`, `getStateSummary`, `getActiveDataset`, `getLoadedDatasets`), facade mutators
-(`updateDatasetColumns`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`,
+(`setActiveDatasetColumnSelection`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`,
 `showError`), and state-log helpers (`enableStateLog`, `disableStateLog`,
 `getStateLog`, `clearStateLog`).
 

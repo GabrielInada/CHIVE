@@ -25,7 +25,7 @@ let datasetIdCounter = 0;
  * @param {*} value
  * @returns {boolean}
  */
-function isPlainObject(value) {
+function isNonArrayObject(value) {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -61,8 +61,8 @@ function generateDatasetId() {
  *   addDataset: (dataset: Dataset) => number,
  *   removeDataset: (index: number) => void,
  *   updateActiveDatasetConfig: (updates: Object) => void,
- *   updateActiveDatasetColumns: (columnNames: string[]) => void,
- *   normalizeActiveDatasetConfig: (normalizer: (config: Object) => Object) => void,
+ *   setActiveDatasetColumnSelection: (columnNames: string[]) => void,
+ *   transformActiveDatasetConfigSilently: (updater: (config: Object) => Object) => void,
  *   setActiveChartType: (chartType: (ChartTypeKey | null), activatedOverrides?: (Object | null)) => void,
  * }}
  */
@@ -96,7 +96,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 *
 	 * @param {number} index - Zero-based index into the datasets array, or `-1` to deselect.
 	 * @throws {Error} When `index` is not an integer, is less than `-1`, or is beyond the datasets array.
-	 * @fires STATE_EVENTS.ACTIVE_DATASET - Only when the active index changes.
+	 * @fires STATE_EVENTS.ACTIVE_DATASET_CHANGED - Only when the active index changes.
 	 */
 	function setActiveDataset(index) {
 		if (!Number.isInteger(index) || index < -1 || index >= appState.data.datasets.length) {
@@ -104,7 +104,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		}
 		if (appState.data.activeIndex === index) return;
 		appState.data.activeIndex = index;
-		emitStateChange(STATE_EVENTS.ACTIVE_DATASET, index);
+		emitStateChange(STATE_EVENTS.ACTIVE_DATASET_CHANGED, index);
 	}
 
 	/**
@@ -171,20 +171,20 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 * dataset is active.
 	 *
 	 * @param {Object} updates - Partial `ChartConfig`-shaped patch.
-	 * @fires STATE_EVENTS.CONFIG_UPDATED
+	 * @fires STATE_EVENTS.DATASET_CONFIG_UPDATED
 	 */
 	function updateActiveDatasetConfig(updates) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
 		const columnNames = getDatasetColumnNames(dataset);
 		const current = canonicalizeChartConfig(dataset.chartConfig, columnNames);
-		const patch = isPlainObject(updates) ? updates : {};
+		const patch = isNonArrayObject(updates) ? updates : {};
 
 		dataset.chartConfig = canonicalizeChartConfig(
 			{ ...current, ...patch },
 			columnNames,
 		);
-		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, updates);
+		emitStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, updates);
 	}
 
 	/**
@@ -195,9 +195,9 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 *
 	 * @param {string[]} columnNames - Subset of names resolved from the dataset's column declarations (normally `columns[].name`; tolerated bare-string declarations also count).
 	 * @throws {Error} When an active dataset exists and the value is not an array of unique declared column names.
-	 * @fires STATE_EVENTS.COLUMNS_UPDATED - Only when the selection changes.
+	 * @fires STATE_EVENTS.COLUMN_SELECTION_CHANGED - Only when the selection changes.
 	 */
-	function updateActiveDatasetColumns(columnNames) {
+	function setActiveDatasetColumnSelection(columnNames) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
 
@@ -220,26 +220,25 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 
 		const nextColumns = [...columnNames];
 		dataset.selectedColumns = nextColumns;
-		emitStateChange(STATE_EVENTS.COLUMNS_UPDATED, nextColumns);
+		emitStateChange(STATE_EVENTS.COLUMN_SELECTION_CHANGED, nextColumns);
 	}
 
 	/**
-	 * Apply `normalizer` to `chartConfig` **without emitting**. Config is
-	 * canonicalized at the state boundaries (persistence restore, `addDataset`, and
-	 * the emitting config writes) via `canonicalizeChartConfig`; this escape hatch
-	 * exists for the intentional non-emitting live-preview writes (color picker,
-	 * chart-height drag). Emitting here would re-enter the render coordinator's
-	 * `refreshView` via the CONFIG_UPDATED subscription and loop indefinitely.
+	 * Replace `chartConfig` with the result of `updater` without emitting or
+	 * canonicalizing. Config is canonicalized at the state boundaries (persistence
+	 * restore, `addDataset`, and the emitting config writes) via
+	 * `canonicalizeChartConfig`. This escape hatch lets live-preview writes (color
+	 * picker, chart-height drag) avoid scheduling a full config-driven refresh.
 	 *
 	 * **Do not** add an emit to this function. If you need an emit, use
 	 * {@link updateActiveDatasetConfig} instead.
 	 *
-	 * @param {(config: Object) => Object} normalizer - Receives the current `chartConfig`; returns the replacement.
+	 * @param {(config: Object) => Object} updater - Receives the current `chartConfig`; returns the replacement.
 	 */
-	function normalizeActiveDatasetConfig(normalizer) {
+	function transformActiveDatasetConfigSilently(updater) {
 		const dataset = getActiveDataset();
 		if (!dataset) return;
-		dataset.chartConfig = normalizer(dataset.chartConfig);
+		dataset.chartConfig = updater(dataset.chartConfig);
 	}
 
 	/**
@@ -255,7 +254,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 *
 	 * @param {ChartTypeKey | null} chartType - Type to activate, or `null` to disable all.
 	 * @param {Object | null} [activatedOverrides] - Fields merged into the activated chart's config. Ignored when `chartType` is `null`.
-	 * @fires STATE_EVENTS.CONFIG_UPDATED - Single emit per call, regardless of overrides.
+	 * @fires STATE_EVENTS.DATASET_CONFIG_UPDATED - Single emit per call, regardless of overrides.
 	 */
 	function setActiveChartType(chartType, activatedOverrides = null) {
 		const dataset = getActiveDataset();
@@ -266,14 +265,14 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		const current = canonicalizeChartConfig(dataset.chartConfig, columnNames);
 		const next = { ...current };
 		CHART_TYPE_KEYS.forEach(type => {
-			const previous = isPlainObject(current[type]) ? current[type] : {};
+			const previous = isNonArrayObject(current[type]) ? current[type] : {};
 			next[type] = { ...previous, enabled: type === chartType };
 		});
-		if (chartType && isPlainObject(activatedOverrides)) {
+		if (chartType && isNonArrayObject(activatedOverrides)) {
 			next[chartType] = { ...next[chartType], ...activatedOverrides };
 		}
 		dataset.chartConfig = canonicalizeChartConfig(next, columnNames);
-		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { activeChartType: chartType });
+		emitStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, { activeChartType: chartType });
 	}
 
 	return {
@@ -284,8 +283,8 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		addDataset,
 		removeDataset,
 		updateActiveDatasetConfig,
-		updateActiveDatasetColumns,
-		normalizeActiveDatasetConfig,
+		setActiveDatasetColumnSelection,
+		transformActiveDatasetConfigSilently,
 		setActiveChartType,
 	};
 }

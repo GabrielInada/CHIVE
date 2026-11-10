@@ -17,7 +17,7 @@ import { PREVIEW_DEFAULT_ROWS, PREVIEW_MIN_ROWS } from '../../config/limits.js';
 import { renderCharts } from './views/chartsView.js';
 import { updateTabs } from './views/tabsView.js';
 import { renderTablePreview } from './views/tablePreviewView.js';
-import { renderStats, renderCategoricalStats } from './views/statsView.js';
+import { renderNumericStats, renderCategoricalStats } from './views/statsView.js';
 import { renderColumnControlsDOM } from './views/columnControlsView.js';
 import { VIEW_IDS, FILE_IDS, BADGE_IDS, WORKSPACE_ACTION_IDS } from './domIds.js';
 import { openGlobalFilterDialog } from './dialogs/globalFilterDialog.js';
@@ -35,14 +35,14 @@ import { openGlobalFilterDialog } from './dialogs/globalFilterDialog.js';
  * @param {number} [options.previewRows=PREVIEW_DEFAULT_ROWS] - Number of rows to show in the table preview.
  * @param {((rows: number) => void) | null} [options.onPreviewRowsChange]
  * @param {((names: string[]) => void) | null} [options.onColumnSelectionChange]
- * @param {((partial: Partial<ChartConfig>) => void) | null} [options.onChartConfigChange] - Receives tab, global filter and tooltip filter changes.
+ * @param {((partial: Partial<ChartConfig>) => void) | null} [options.onDatasetConfigChange] - Receives tab, global filter and tooltip filter changes.
  * @returns {void}
  */
 export function renderDatasetWorkspace(shown, {
   previewRows = PREVIEW_DEFAULT_ROWS,
   onPreviewRowsChange = null,
   onColumnSelectionChange = null,
-  onChartConfigChange = null,
+  onDatasetConfigChange = null,
 } = {}) {
   const { dataset, rows: filteredRows, filter: safeGlobalFilter, visibleColumns } = shown;
   const { rows, columns, chartConfig: config } = dataset;
@@ -83,7 +83,7 @@ export function renderDatasetWorkspace(shown, {
     onColumnSelectionChange,
   });
 
-  updateTabs(config.activeTab, onChartConfigChange, config, {
+  updateTabs(config.activeTab, onDatasetConfigChange, {
     triggerState: {
       hasDataset: true,
       globalFilter: safeGlobalFilter,
@@ -91,7 +91,7 @@ export function renderDatasetWorkspace(shown, {
       totalCount: rows.length,
     },
     onGlobalFilterOpen: async () => {
-      if (!onChartConfigChange) return;
+      if (!onDatasetConfigChange) return;
       const result = await openGlobalFilterDialog({
         rows,
         allColumns: columnNames,
@@ -101,7 +101,7 @@ export function renderDatasetWorkspace(shown, {
       });
       if (!result) return;
       if (result.action === 'apply' || result.action === 'clear') {
-        onChartConfigChange({ globalFilter: result.filter });
+        onDatasetConfigChange({ globalFilter: result.filter });
       }
     },
   });
@@ -128,9 +128,9 @@ export function renderDatasetWorkspace(shown, {
   );
 
   renderTablePreview(filteredRows, visibleColumns, rowLimit);
-  renderStats(filteredRows, visibleColumns);
+  renderNumericStats(filteredRows, visibleColumns);
   renderCategoricalStats(filteredRows, visibleColumns);
-  renderCharts(shown, onChartConfigChange);
+  renderCharts(shown, onDatasetConfigChange);
 
   document.getElementById(WORKSPACE_ACTION_IDS.advanceButton).disabled = false;
   document.getElementById(FILE_IDS.uploadZone).classList.add('loaded');

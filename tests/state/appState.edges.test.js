@@ -12,14 +12,14 @@ import {
 	getPanelCharts,
 	getPanelBlocks,
 	updateActiveDatasetConfig,
-	updateActiveDatasetColumns,
+	setActiveDatasetColumnSelection,
 	onStateChange,
-	replaceAllState,
+	applyStateSnapshot,
 	getState,
 } from '../../src/state/appState.js';
 
 function resetAppStateForTest() {
-	replaceAllState({
+	applyStateSnapshot({
 		data: { datasets: [], activeIndex: -1 },
 		panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
 		ui: { sidebarMode: 'data', previewRows: 10 },
@@ -100,8 +100,8 @@ describe('appState (edge cases - branch coverage)', () => {
 		});
 
 		it('does nothing if no active dataset (columns)', () => {
-			expect(() => updateActiveDatasetColumns(['x'])).not.toThrow();
-			expect(() => updateActiveDatasetColumns(null)).not.toThrow();
+			expect(() => setActiveDatasetColumnSelection(['x'])).not.toThrow();
+			expect(() => setActiveDatasetColumnSelection(null)).not.toThrow();
 		});
 
 		it('merges config into active dataset (and canonicalizes)', () => {
@@ -126,7 +126,7 @@ describe('appState (edge cases - branch coverage)', () => {
 				columns: ['a', 'b'],
 				selectedColumns: [],
 			});
-			updateActiveDatasetColumns(['a']);
+			setActiveDatasetColumnSelection(['a']);
 
 			const active = getActiveDataset();
 			expect(active.selectedColumns).toEqual(['a']);
@@ -236,12 +236,12 @@ describe('appState (edge cases - branch coverage)', () => {
 			expect(spy).toHaveBeenCalledWith({ x: 1 });
 		});
 
-		it('fires columnsUpdated on updateActiveDatasetColumns', () => {
+		it('fires columnsUpdated on setActiveDatasetColumnSelection', () => {
 			const spy = vi.fn();
 			addDataset({ rows: [{}], columns: ['a'], selectedColumns: [] });
 
 			onStateChange('columnsUpdated', spy);
-			updateActiveDatasetColumns(['a']);
+			setActiveDatasetColumnSelection(['a']);
 
 			expect(spy).toHaveBeenCalledWith(['a']);
 		});

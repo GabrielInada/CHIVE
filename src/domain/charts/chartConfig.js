@@ -14,15 +14,15 @@ import { CHART_DEFINITIONS } from '../../config/charts/definitions.js';
 import { normalizeGlobalFilter, createEmptyGlobalFilter, resolveGlobalFilterForColumns } from '../filters/globalFilter.js';
 
 /**
- * Return `value` when it is a plain object, otherwise an empty object. Keeps
- * malformed input (string/array/number/null) from spreading stray keys into a
- * merged config.
+ * Return `value` when it is a non-array object, otherwise an empty object.
+ * Keeps malformed input (string/array/number/null) from spreading stray keys
+ * into a merged config.
  *
  * @private
  * @param {*} value
  * @returns {Object}
  */
-function asPlainObject(value) {
+function nonArrayObjectOrEmpty(value) {
 	return value !== null && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
@@ -74,6 +74,10 @@ function withAllowedValues(block, allowedValues, defaultBlock) {
  * into a one-element `nestingColumns` array. This preserves pre-multilevel
  * bubble configs across reloads.
  *
+ * Legacy bar sort names `count-desc` and `count-asc` become `value-desc` and
+ * `value-asc` before the allowed-value check, preserving saved sort direction
+ * for count, sum, and mean measures, including Panel captures.
+ *
  * Each block's enumerated settings, the keys of its chart definition's
  * `allowedValues`, then hold only values the chart offers: any other value
  * becomes the chart's default. The check runs here, not only in
@@ -91,8 +95,8 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 	// into stray index keys instead of being treated as "no saved config". The same
 	// guard runs per chart block below, so a malformed block also falls back to
 	// defaults wherever this function is called (canonicalization, Panel rehydration).
-	const config = asPlainObject(chartConfig);
-	const scatterConfig = asPlainObject(config.scatter);
+	const config = nonArrayObjectOrEmpty(chartConfig);
+	const scatterConfig = nonArrayObjectOrEmpty(config.scatter);
 
 	const merged = {
 		...defaults,
@@ -100,30 +104,30 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 		globalFilter: pickGlobalFilter(config),
 		bar: {
 			...defaults.bar,
-			...asPlainObject(config.bar),
+			...nonArrayObjectOrEmpty(config.bar),
 		},
 		scatter: {
 			...defaults.scatter,
 			...scatterConfig,
 			regression: {
 				...defaults.scatter.regression,
-				...asPlainObject(scatterConfig.regression),
+				...nonArrayObjectOrEmpty(scatterConfig.regression),
 			},
 		},
 		network: {
 			...defaults.network,
-			...asPlainObject(config.network),
+			...nonArrayObjectOrEmpty(config.network),
 		},
 		pie: {
 			...defaults.pie,
-			...asPlainObject(config.pie),
+			...nonArrayObjectOrEmpty(config.pie),
 		},
 		treemap: {
 			...defaults.treemap,
-			...asPlainObject(config.treemap),
+			...nonArrayObjectOrEmpty(config.treemap),
 		},
 		bubble: (() => {
-			const merged = { ...defaults.bubble, ...asPlainObject(config.bubble) };
+			const merged = { ...defaults.bubble, ...nonArrayObjectOrEmpty(config.bubble) };
 			if (Array.isArray(merged.nestingColumns) && merged.nestingColumns.length > 0) {
 				// nestingColumns already set, keep it
 			} else if (merged.groupColumn && typeof merged.groupColumn === 'string') {
@@ -135,17 +139,22 @@ export function mergeChartConfigWithDefaults(chartConfig) {
 		})(),
 		line: {
 			...defaults.line,
-			...asPlainObject(config.line),
+			...nonArrayObjectOrEmpty(config.line),
 		},
 		tin: {
 			...defaults.tin,
-			...asPlainObject(config.tin),
+			...nonArrayObjectOrEmpty(config.tin),
 		},
 		scatter3d: {
 			...defaults.scatter3d,
-			...asPlainObject(config.scatter3d),
+			...nonArrayObjectOrEmpty(config.scatter3d),
 		},
 	};
+
+	// Both dataset configs and saved Panel snapshots pass through this migration.
+	// Translate before enum validation so an ascending choice cannot fall back.
+	if (merged.bar.sort === 'count-desc') merged.bar.sort = 'value-desc';
+	else if (merged.bar.sort === 'count-asc') merged.bar.sort = 'value-asc';
 
 	for (const { key, allowedValues } of Object.values(CHART_DEFINITIONS)) {
 		merged[key] = withAllowedValues(merged[key], allowedValues, defaults[key]);

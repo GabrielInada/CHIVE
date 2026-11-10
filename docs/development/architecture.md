@@ -69,13 +69,13 @@ flowchart LR
     VIEWS --> REGISTRIES
     REGISTRIES --> CHARTS
     AUTOSAVE --> PERSIST
-    HYDRATE -. "before subscriptions: replaceAllState" .-> API
+    HYDRATE -. "before subscriptions: applyStateSnapshot" .-> API
     API -. "hydration escape: replace slices directly" .-> STATE
     API -. "STATE_HYDRATED" .-> BUS
 ```
 
 The diagram shows ownership, not every import. Ordinary writes pass through a
-domain facade. `replaceAllState` is the deliberate exception: during boot,
+domain facade. `applyStateSnapshot` is the deliberate exception: during boot,
 `applicationInitializer.js` hydrates before the render coordinator, panel
 controller, and autosave subscriptions are installed. Its `STATE_HYDRATED`
 emit therefore has no production subscriber during that boot call; the
@@ -98,7 +98,7 @@ The bus has three production routing styles:
 | Feature flow owners | Dataset controller and bindings, chart-controls controller, panel controller, settings controller, `uiManager.js` | Translate intent, call public facades/services, and own domain-specific render triggering. |
 | State core | `state/appState.js`, domain facades, panel mutation internals, `stateEvents.js` | Ordinary durable writes enter through the public facade surface. |
 | Presentation | Feature views/dialogs, panel views/slots/export, chart packages and registries | Render from explicit inputs or read-only getters; surface user actions through callbacks. |
-| Browser services | Persistence, ingest worker host, i18n, settings, presets, storage and downloads | Own browser I/O and other effects; persistence internals stay behind `services/persistence.js`. |
+| Browser services | Persistence, ingest worker host, i18n, settings, sample datasets, storage and downloads | Own browser I/O and other effects; persistence internals stay behind `services/persistence.js`. |
 | Pure leaves | `config/`, `utils/`, and `domain/` | Hold static configuration, ownership-neutral helpers, and product rules without DOM effects. |
 | Ownerless UI mechanics | `ui/` | May touch the DOM but is a strict import leaf reusable by higher owners. |
 
@@ -137,10 +137,10 @@ The exact lint coverage and its known aliasing gap are documented in
 For a committed column-selection change:
 
 1. A workspace DOM handler invokes its injected callback.
-2. `renderCoordinator.updateDatasetColumns` calls
-   `updateActiveDatasetColumns` on the public state surface.
+2. `renderCoordinator.setActiveDatasetColumnSelection` calls
+   `setActiveDatasetColumnSelection` on the public state surface.
 3. The data facade validates unique declared names, stores a copied array, and
-   emits `STATE_EVENTS.COLUMNS_UPDATED` only when the ordered list changed.
+   emits `STATE_EVENTS.COLUMN_SELECTION_CHANGED` only when the ordered list changed.
 4. The render coordinator schedules the workspace and controls regions.
 5. A single animation-frame flush reads current state, derives the active
    dataset's shown dataset once (`domain/datasets/shownDataset.js`), and renders
@@ -152,14 +152,14 @@ Other render paths are intentionally different:
 |---|---|---|
 | Dataset add/remove/select or hydration after subscriptions | Render coordinator | One animation-frame-scheduled full refresh. |
 | Column/config/preview-row events | Render coordinator | Animation-frame-scheduled region refreshes. |
-| Panel chart/block events | Panel controller | Synchronous sidebar/canvas/layout-selector renders, depending on the event. |
+| Panel chart/block events | Panel controller | Synchronous sidebar and canvas renders, depending on the event. |
 | Boot and `chiveDebug.refreshView()` | Render coordinator | Synchronous full refresh through `runFullRefreshNow`. |
 | Locale or rendering-setting browser events | Application initializer + render coordinator | Animation-frame-scheduled full refresh. |
 | Continuous color/height control input | Chart-controls preview bridge | Throttled, charts-only `livePreviewRender`, with the same inputs as a full render; controls and saved panel captures are untouched. |
 
 Committed chart configuration is canonicalized at state boundaries:
 persistence normalization, `addDataset`, emitting config writes, and
-defensively in `replaceAllState`. Canonicalization also replaces an enumerated
+defensively in `applyStateSnapshot`. Canonicalization also replaces an enumerated
 setting that a chart's definition does not offer (its `allowedValues`) with the
 chart's default, so controls, presentation flows, and renderers read those
 settings as stored. Rendering may derive display values but does

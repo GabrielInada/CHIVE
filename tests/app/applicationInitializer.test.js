@@ -9,9 +9,9 @@ const mocks = vi.hoisted(() => ({
 	hydrateState: vi.fn(),
 	enablePersistenceAutoSave: vi.fn(),
 	getPersistenceErrorMessageKey: vi.fn(),
-	getPersistenceSnapshot: vi.fn(),
-	replaceAllState: vi.fn(),
-	rehydratePanelChartSpecs: vi.fn(),
+	getPersistenceStateView: vi.fn(),
+	applyStateSnapshot: vi.fn(),
+	mergePanelSnapshotConfigsWithDefaults: vi.fn(),
 	throttle: vi.fn(),
 	initChartControls: vi.fn(),
 	initPanelController: vi.fn(),
@@ -43,12 +43,12 @@ vi.mock('../../src/services/persistence.js', () => ({
 }));
 
 vi.mock('../../src/state/appState.js', () => ({
-	getPersistenceSnapshot: mocks.getPersistenceSnapshot,
-	replaceAllState: mocks.replaceAllState,
+	getPersistenceStateView: mocks.getPersistenceStateView,
+	applyStateSnapshot: mocks.applyStateSnapshot,
 }));
 
 vi.mock('../../src/domain/panel/rehydration.js', () => ({
-	rehydratePanelChartSpecs: mocks.rehydratePanelChartSpecs,
+	mergePanelSnapshotConfigsWithDefaults: mocks.mergePanelSnapshotConfigsWithDefaults,
 }));
 
 vi.mock('../../src/utils/throttle.js', () => ({
@@ -142,8 +142,8 @@ describe('application initializer', () => {
 		await initializeApplication();
 
 		expect(mocks.hydrateState).toHaveBeenCalledWith({
-			replaceAllState: mocks.replaceAllState,
-			transformPanel: mocks.rehydratePanelChartSpecs,
+			applyStateSnapshot: mocks.applyStateSnapshot,
+			transformPanel: mocks.mergePanelSnapshotConfigsWithDefaults,
 			onError: expect.any(Function),
 		});
 		expect(mocks.initChartControls).toHaveBeenCalledWith(null, mocks.throttledPreview);
@@ -152,7 +152,7 @@ describe('application initializer', () => {
 		expect(mocks.initializeDomBindings).toHaveBeenCalledTimes(1);
 		expect(mocks.setupStateSubscriptions).toHaveBeenCalledTimes(1);
 		expect(mocks.enablePersistenceAutoSave).toHaveBeenCalledWith(
-			mocks.getPersistenceSnapshot,
+			mocks.getPersistenceStateView,
 			{ onSaveError: expect.any(Function) },
 		);
 		expect(mocks.runFullRefreshNow).toHaveBeenCalledTimes(1);

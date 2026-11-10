@@ -132,7 +132,7 @@ function stripPayloadTables(db) {
 	`);
 }
 
-async function serializeSnapshot(sqlite3, snapshot, { workOnly = false, dbPath = '/chive-export.sqlite3' } = {}) {
+async function serializeSnapshot(sqlite3, snapshot, { omitDataPayloads = false, dbPath = '/chive-export.sqlite3' } = {}) {
 	const fingerprintsByDatasetId = await fingerprintDatasets(snapshot);
 	let db;
 	try {
@@ -140,7 +140,7 @@ async function serializeSnapshot(sqlite3, snapshot, { workOnly = false, dbPath =
 		sqlite3.capi.sqlite3_trace_v2(db.pointer, 0, 0, 0);
 		applySchema(db);
 		writeSnapshot(db, snapshot, { fingerprintsByDatasetId });
-		if (workOnly) stripPayloadTables(db);
+		if (omitDataPayloads) stripPayloadTables(db);
 		return sqlite3.capi.sqlite3_js_db_export(db).slice();
 	} finally {
 		if (db) db.close();
@@ -204,9 +204,13 @@ export function createBlobBackend({
 		}
 	}
 
-	async function exportBytes(snapshot, { workOnly = false } = {}) {
+	// Also accepts `workOnly`, this option's former name. A page left open
+	// across a deploy keeps its old workerBackend in memory; if that page's
+	// worker then fails, the old code imports this file as its fallback and
+	// passes `workOnly`, which must still leave the payloads out.
+	async function exportBytes(snapshot, { omitDataPayloads = false, workOnly = false } = {}) {
 		const sqlite3 = await getSqlite3();
-		return serializeSnapshot(sqlite3, snapshot, { workOnly });
+		return serializeSnapshot(sqlite3, snapshot, { omitDataPayloads: Boolean(omitDataPayloads || workOnly) });
 	}
 
 	async function importBytes(record) {

@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
-	calculateStatistics: vi.fn(),
+	calculateNumericStatistics: vi.fn(),
 	calculateCategoricalStatistics: vi.fn(),
 	getActiveDataset: vi.fn(),
 	t: vi.fn((key, ...args) => (args.length ? `${key}:${args.join(',')}` : key)),
@@ -11,7 +11,7 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock('../../../../src/domain/datasets/statistics.js', () => ({
-	calculateStatistics: mocks.calculateStatistics,
+	calculateNumericStatistics: mocks.calculateNumericStatistics,
 	calculateCategoricalStatistics: mocks.calculateCategoricalStatistics,
 }));
 
@@ -24,7 +24,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 	getLocale: mocks.getLocale,
 }));
 
-import { renderCategoricalStats, renderStats } from '../../../../src/features/datasetWorkspace/views/statsView.js';
+import { renderCategoricalStats, renderNumericStats } from '../../../../src/features/datasetWorkspace/views/statsView.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../../src/config/statistics.js';
 
 const rows = [
@@ -55,7 +55,7 @@ describe('statsView', () => {
 		setupDom();
 		vi.clearAllMocks();
 		mocks.getActiveDataset.mockReturnValue(null);
-		mocks.calculateStatistics.mockReturnValue([]);
+		mocks.calculateNumericStatistics.mockReturnValue([]);
 		mocks.calculateCategoricalStatistics.mockReturnValue([]);
 	});
 
@@ -71,9 +71,9 @@ describe('statsView', () => {
 			},
 		});
 
-		renderStats(rows, visibleColumns);
+		renderNumericStats(rows, visibleColumns);
 
-		expect(mocks.calculateStatistics).not.toHaveBeenCalled();
+		expect(mocks.calculateNumericStatistics).not.toHaveBeenCalled();
 		expect(document.getElementById('card-stats').hidden).toBe(false);
 		expect(document.getElementById('badge-num-columns').textContent).toBe('chive-stats-badge:1');
 		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
@@ -82,16 +82,16 @@ describe('statsView', () => {
 	});
 
 	it('falls back to live numeric calculation and hides the card when no stats exist', () => {
-		mocks.calculateStatistics.mockReturnValueOnce([
+		mocks.calculateNumericStatistics.mockReturnValueOnce([
 			{ name: 'value', n: 2, min: 10, max: 20, mean: 15, median: 15 },
 		]);
 
-		renderStats(rows, visibleColumns);
-		expect(mocks.calculateStatistics).toHaveBeenCalledWith(rows, visibleColumns);
+		renderNumericStats(rows, visibleColumns);
+		expect(mocks.calculateNumericStatistics).toHaveBeenCalledWith(rows, visibleColumns);
 		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
 
-		mocks.calculateStatistics.mockReturnValueOnce([]);
-		renderStats(rows, visibleColumns);
+		mocks.calculateNumericStatistics.mockReturnValueOnce([]);
+		renderNumericStats(rows, visibleColumns);
 		expect(document.getElementById('card-stats').hidden).toBe(true);
 		expect(document.getElementById('container-stats').children.length).toBe(0);
 	});
@@ -110,13 +110,13 @@ describe('statsView', () => {
 			columns: visibleColumns,
 			precomputedStats: { numericVersion, numeric: staleStats },
 		});
-		mocks.calculateStatistics.mockReturnValue([
+		mocks.calculateNumericStatistics.mockReturnValue([
 			{ name: 'value', n: 2, min: 10, max: 20, mean: 15, median: 15 },
 		]);
 
-		renderStats(ownRows, visibleColumns);
+		renderNumericStats(ownRows, visibleColumns);
 
-		expect(mocks.calculateStatistics).toHaveBeenCalledWith(ownRows, visibleColumns);
+		expect(mocks.calculateNumericStatistics).toHaveBeenCalledWith(ownRows, visibleColumns);
 		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
 	});
 
@@ -127,15 +127,15 @@ describe('statsView', () => {
 			columns: visibleColumns,
 			precomputedStats: { numeric: [], categorical: [] },
 		});
-		mocks.calculateStatistics.mockReturnValue([
+		mocks.calculateNumericStatistics.mockReturnValue([
 			{ name: 'value', n: 2, min: 10, max: 20, mean: 15, median: 15 },
 		]);
 
-		renderStats(ownRows, visibleColumns);
-		renderStats(ownRows, visibleColumns);
-		renderStats(ownRows, visibleColumns);
+		renderNumericStats(ownRows, visibleColumns);
+		renderNumericStats(ownRows, visibleColumns);
+		renderNumericStats(ownRows, visibleColumns);
 
-		expect(mocks.calculateStatistics).toHaveBeenCalledTimes(1);
+		expect(mocks.calculateNumericStatistics).toHaveBeenCalledTimes(1);
 		expect(document.querySelectorAll('#container-stats .stat-col').length).toBe(1);
 	});
 
@@ -149,19 +149,19 @@ describe('statsView', () => {
 						name: 'region',
 						n: 2,
 						missing: 0,
-						missingPct: 0,
+						missingFraction: 0,
 						unique: 2,
 						uniquenessRate: 1,
 						mode: 'A very long region name',
 						modeCount: 1,
-						modePct: 0.5,
-						top5Pct: 1,
+						modeFraction: 0.5,
+						top5Fraction: 1,
 					},
 					{
 						name: 'emptyText',
 						empty: true,
 						missing: 2,
-						missingPct: 1,
+						missingFraction: 1,
 					},
 				],
 			},
@@ -179,21 +179,24 @@ describe('statsView', () => {
 		expect(document.querySelectorAll('#container-cat-stats .stat-col').length).toBe(2);
 		expect(document.querySelector('[title="A very long region name"]')).not.toBeNull();
 		expect(document.getElementById('container-cat-stats').textContent).toContain('chive-cat-stat-empty');
+		expect(document.getElementById('container-cat-stats').textContent).toContain('50.0%');
+		expect(document.getElementById('container-cat-stats').textContent).toContain('100.0%');
 	});
 
 	it.each([
 		['a stale version', 0],
+		['version 1 with percentage-named fields', 1],
 		['no version at all', undefined],
 	])('recomputes categorical stats once when the cache carries %s', (_label, categoricalVersion) => {
 		const ownRows = rows.map(row => ({ ...row }));
-		const staleStats = [{ name: 'region', n: 2, missing: 0, unique: 2, mode: 'stale' }];
+		const staleStats = [{ name: 'region', n: 2, missing: 0, missingPct: 0, unique: 2, uniquenessRate: 1, mode: 'stale', modeCount: 1, modePct: 0.5, top5Pct: 1 }];
 		mocks.getActiveDataset.mockReturnValue({
 			rows: ownRows,
 			columns: visibleColumns,
 			precomputedStats: { categoricalVersion, categorical: staleStats },
 		});
 		mocks.calculateCategoricalStatistics.mockReturnValue([
-			{ name: 'region', n: 2, missing: 0, missingPct: 0, unique: 2, uniquenessRate: 1, mode: 'North', modeCount: 1, modePct: 0.5, top5Pct: 1 },
+			{ name: 'region', n: 2, missing: 0, missingFraction: 0, unique: 2, uniquenessRate: 1, mode: 'North', modeCount: 1, modeFraction: 0.5, top5Fraction: 1 },
 		]);
 
 		renderCategoricalStats(ownRows, visibleColumns);
@@ -202,6 +205,9 @@ describe('statsView', () => {
 		expect(mocks.calculateCategoricalStatistics).toHaveBeenCalledTimes(1);
 		expect(mocks.calculateCategoricalStatistics).toHaveBeenCalledWith(ownRows, visibleColumns);
 		expect(document.querySelector('[title="North"]')).not.toBeNull();
+		expect(document.querySelector('[title="stale"]')).toBeNull();
+		expect(document.getElementById('container-cat-stats').textContent).toContain('50.0%');
+		expect(document.getElementById('container-cat-stats').textContent).toContain('100.0%');
 	});
 
 	it('falls back to live categorical calculation and tolerates missing optional DOM nodes', () => {
@@ -210,13 +216,13 @@ describe('statsView', () => {
 				name: 'region',
 				n: 2,
 				missing: 0,
-				missingPct: 0,
+				missingFraction: 0,
 				unique: 2,
 				uniquenessRate: 1,
 				mode: 'North',
 				modeCount: 1,
-				modePct: 0.5,
-				top5Pct: 1,
+				modeFraction: 0.5,
+				top5Fraction: 1,
 			},
 		]);
 

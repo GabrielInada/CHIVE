@@ -1,44 +1,44 @@
 /**
- * Preset datasets picker dialog. Modal grid of bundled-preset cards;
- * resolves with the chosen `PresetCatalogEntry` or `null` on cancel.
+ * Sample datasets picker dialog. Modal grid of bundled sample dataset cards;
+ * resolves with the chosen `SampleDatasetCatalogEntry` or `null` on cancel.
  *
- * @typedef {import('../../types.js').PresetCatalogEntry} PresetCatalogEntry
+ * @typedef {import('../../../types.js').SampleDatasetCatalogEntry} SampleDatasetCatalogEntry
  */
 
-import { PRESET_CATALOG } from '../../../data/presetCatalog.js';
+import { SAMPLE_DATASET_CATALOG } from '../../../data/sampleDatasetCatalog.js';
 import { showNativeModal } from '../../../ui/nativeDialog.js';
 
 /**
- * Build one preset card: name, description, row/column counts, optional
+ * Build one sample dataset card: name, description, row/column counts, optional
  * source attribution + link.
  *
  * @private
  */
-function buildPresetCard(entry, translate) {
+function buildSampleDatasetCard(entry, translate) {
 	const card = document.createElement('button');
 	card.type = 'button';
-	card.className = 'preset-card';
-	card.dataset.presetId = entry.id;
+	card.className = 'picker-card';
+	card.dataset.sampleDatasetId = entry.id;
 
 	const name = document.createElement('div');
-	name.className = 'preset-card-name';
+	name.className = 'picker-card-name';
 	name.textContent = translate(entry.nameKey);
 	card.appendChild(name);
 
 	const desc = document.createElement('div');
-	desc.className = 'preset-card-desc';
+	desc.className = 'picker-card-desc';
 	desc.textContent = translate(entry.descKey);
 	card.appendChild(desc);
 
 	const meta = document.createElement('div');
-	meta.className = 'preset-card-meta';
-	meta.textContent = translate('chive-preset-card-meta', entry.rows, entry.columns);
+	meta.className = 'sample-dataset-card-meta';
+	meta.textContent = translate('chive-sample-dataset-card-meta', entry.rowCount, entry.columnCount);
 	card.appendChild(meta);
 
 	if (entry.sourceLabel || entry.sourceUrl) {
 		const source = document.createElement('div');
-		source.className = 'preset-card-source';
-		const label = translate('chive-preset-source-label');
+		source.className = 'sample-dataset-card-source';
+		const label = translate('chive-sample-dataset-source-label');
 		const labelSpan = document.createElement('span');
 		labelSpan.textContent = `${label} `;
 		source.appendChild(labelSpan);
@@ -57,7 +57,7 @@ function buildPresetCard(entry, translate) {
 			link.href = entry.sourceUrl;
 			link.target = '_blank';
 			link.rel = 'noopener noreferrer';
-			link.className = 'preset-card-source-link';
+			link.className = 'sample-dataset-card-source-link';
 			link.textContent = entry.sourceLinkLabel || entry.sourceUrl;
 			source.appendChild(link);
 		}
@@ -69,32 +69,32 @@ function buildPresetCard(entry, translate) {
 }
 
 /**
- * Open the preset datasets picker dialog. Returns a Promise that
+ * Open the sample datasets picker dialog. Returns a Promise that
  * resolves with the chosen catalog entry or `null` on cancel /
  * Escape / backdrop click. The "Load" button is disabled until a card
  * is selected.
  *
  * @param {{ translate: (key: string, ...args: *) => string }} args
- * @returns {Promise<PresetCatalogEntry | null>}
+ * @returns {Promise<SampleDatasetCatalogEntry | null>}
  */
-export function openPresetDatasetsDialog({ translate }) {
+export function openSampleDatasetsDialog({ translate }) {
 	return new Promise(resolve => {
 		const dialog = document.createElement('dialog');
 		dialog.className = 'app-dialog';
-		dialog.setAttribute('aria-labelledby', 'preset-dialog-title');
+		dialog.setAttribute('aria-labelledby', 'sample-datasets-dialog-title');
 
 		const surface = document.createElement('form');
 		surface.method = 'dialog';
-		surface.className = 'join-dialog preset-dialog';
+		surface.className = 'join-dialog sample-datasets-dialog';
 
 		const title = document.createElement('h3');
 		title.className = 'join-title';
-		title.id = 'preset-dialog-title';
-		title.textContent = translate('chive-preset-dialog-title');
+		title.id = 'sample-datasets-dialog-title';
+		title.textContent = translate('chive-sample-dataset-dialog-title');
 		surface.appendChild(title);
 
 		const grid = document.createElement('div');
-		grid.className = 'preset-cards-grid';
+		grid.className = 'sample-dataset-cards-grid';
 		surface.appendChild(grid);
 
 		const footer = document.createElement('div');
@@ -102,12 +102,12 @@ export function openPresetDatasetsDialog({ translate }) {
 		const cancelButton = document.createElement('button');
 		cancelButton.type = 'button';
 		cancelButton.className = 'btn-secondary';
-		cancelButton.textContent = translate('chive-preset-cancel');
+		cancelButton.textContent = translate('chive-sample-dataset-cancel');
 
 		const loadButton = document.createElement('button');
 		loadButton.type = 'button';
 		loadButton.className = 'btn-primary';
-		loadButton.textContent = translate('chive-preset-load');
+		loadButton.textContent = translate('chive-sample-dataset-load');
 		loadButton.disabled = true;
 
 		footer.appendChild(cancelButton);
@@ -125,12 +125,12 @@ export function openPresetDatasetsDialog({ translate }) {
 			resolve(result);
 		};
 
-		PRESET_CATALOG.forEach(entry => {
-			const card = buildPresetCard(entry, translate);
+		SAMPLE_DATASET_CATALOG.forEach(entry => {
+			const card = buildSampleDatasetCard(entry, translate);
 			card.addEventListener('click', () => {
 				selectedId = entry.id;
-				Array.from(grid.querySelectorAll('.preset-card')).forEach(node => {
-					node.classList.toggle('selected', node.dataset.presetId === selectedId);
+				Array.from(grid.querySelectorAll('.picker-card')).forEach(node => {
+					node.classList.toggle('selected', node.dataset.sampleDatasetId === selectedId);
 				});
 				loadButton.disabled = false;
 			});
@@ -139,7 +139,7 @@ export function openPresetDatasetsDialog({ translate }) {
 
 		cancelButton.addEventListener('click', () => closeDialog(null));
 		loadButton.addEventListener('click', () => {
-			const selected = PRESET_CATALOG.find(item => item.id === selectedId) || null;
+			const selected = SAMPLE_DATASET_CATALOG.find(item => item.id === selectedId) || null;
 			closeDialog(selected);
 		});
 

@@ -1,7 +1,7 @@
 /**
- * Chart-params pane view. Owns the chart-type picker trigger (the button
- * that opens the picker dialog) and the chart-specific control sections
- * built by the `chartControls` registry.
+ * Chart-controls view for the sidebar's params pane. Owns the chart-type
+ * picker trigger (the button that opens the picker dialog) and the
+ * chart-specific control sections built by the `chartControls` registry.
  */
 
 import { CHART_CATALOG } from '../../../charts/catalog.js';
@@ -63,7 +63,7 @@ function buildTriggerButton({ activeChartType, chartTitle, translate, onClick })
  * @param {() => void} [args.onChartTypeTriggerClick]
  * @returns {void}
  */
-export function renderChartParamsDOM({
+export function renderChartControlsDOM({
 	container,
 	activeChartType,
 	chartTitle,

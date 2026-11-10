@@ -86,7 +86,7 @@ normally precede its state and interaction selectors.
 | File | Owner | Purpose |
 |---|---|---|
 | `buttons.css` | Shared | Button variants |
-| `upload.css` | Dataset workspace | Upload, file list, join, and preset controls |
+| `upload.css` | Dataset workspace | Upload, file list, join, and sample dataset controls |
 | `columns.css` | Dataset workspace | Column selection and filter controls |
 | `chart-controls.css` | Dataset workspace | Chart-control sections and widgets |
 

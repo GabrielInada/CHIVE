@@ -12,8 +12,8 @@ import {
 	enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey,
 } from '../services/persistence.js';
-import { getPersistenceSnapshot, replaceAllState } from '../state/appState.js';
-import { rehydratePanelChartSpecs } from '../domain/panel/rehydration.js';
+import { applyStateSnapshot, getPersistenceStateView } from '../state/appState.js';
+import { mergePanelSnapshotConfigsWithDefaults } from '../domain/panel/rehydration.js';
 import { throttle } from '../utils/throttle.js';
 import { initChartControls } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
 import { initPanelController } from '../features/panel/panelController.js';
@@ -71,8 +71,8 @@ export async function initializeApplication() {
 	updateStartupScreen(t('chive-startup-restoring'));
 	if (isPersistenceAvailable()) {
 		await hydrateState({
-			replaceAllState,
-			transformPanel: rehydratePanelChartSpecs,
+			applyStateSnapshot,
+			transformPanel: mergePanelSnapshotConfigsWithDefaults,
 			onError: reportPersistenceLoadError,
 		});
 	}
@@ -88,7 +88,7 @@ export async function initializeApplication() {
 	initializeDomBindings();
 	setupStateSubscriptions();
 
-	autoSaveController = enablePersistenceAutoSave(getPersistenceSnapshot, {
+	autoSaveController = enablePersistenceAutoSave(getPersistenceStateView, {
 		onSaveError: reportPersistenceSaveError,
 	});
 

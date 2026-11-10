@@ -4,7 +4,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
 	clearPersistedState,
 	configurePersistenceBackend,
+	exportProject,
 	hydrateState,
+	importProjectBytes,
 	persistState,
 } from '../../src/services/persistence.js';
 import {
@@ -14,6 +16,8 @@ import {
 	writeLegacyState,
 } from './persistence.testSupport.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../src/config/statistics.js';
+import { calculateCategoricalStatistics } from '../../src/domain/datasets/statistics.js';
+import { mergePanelSnapshotConfigsWithDefaults } from '../../src/domain/panel/rehydration.js';
 
 describe('persistence', () => {
 	beforeEach(async () => {
@@ -41,16 +45,16 @@ describe('persistence', () => {
 				nextChartId: 0,
 			},
 		});
-		const replaceAllState = vi.fn();
+		const applyStateSnapshot = vi.fn();
 
-		await hydrateState({ replaceAllState });
+		await hydrateState({ applyStateSnapshot });
 
-		expect(replaceAllState).toHaveBeenCalledTimes(1);
-		expect(replaceAllState.mock.calls[0][0].data.datasets[0].id).toBe('legacy');
+		expect(applyStateSnapshot).toHaveBeenCalledTimes(1);
+		expect(applyStateSnapshot.mock.calls[0][0].data.datasets[0].id).toBe('legacy');
 		expect(localStorage.getItem('chive.migrated')).toBe('1');
 
 		const secondReplace = vi.fn();
-		await hydrateState({ replaceAllState: secondReplace });
+		await hydrateState({ applyStateSnapshot: secondReplace });
 		expect(secondReplace).toHaveBeenCalledTimes(1);
 		expect(secondReplace.mock.calls[0][0].data.datasets[0].id).toBe('legacy');
 	});
@@ -77,11 +81,11 @@ describe('persistence', () => {
 				nextChartId: 0,
 			},
 		});
-		const replaceAllState = vi.fn();
+		const applyStateSnapshot = vi.fn();
 
-		await hydrateState({ replaceAllState });
+		await hydrateState({ applyStateSnapshot });
 
-		const stats = replaceAllState.mock.calls[0][0].data.datasets[0].precomputedStats;
+		const stats = applyStateSnapshot.mock.calls[0][0].data.datasets[0].precomputedStats;
 		expect('numeric' in stats).toBe(false);
 		expect('categorical' in stats).toBe(false);
 	});
@@ -109,36 +113,118 @@ describe('persistence', () => {
 		});
 
 		const migrated = vi.fn();
-		await hydrateState({ replaceAllState: migrated });
+		await hydrateState({ applyStateSnapshot: migrated });
 		const reloaded = vi.fn();
-		await hydrateState({ replaceAllState: reloaded });
+		await hydrateState({ applyStateSnapshot: reloaded });
 
-		for (const replaceAllState of [migrated, reloaded]) {
-			const restored = replaceAllState.mock.calls[0][0];
+		for (const applyStateSnapshot of [migrated, reloaded]) {
+			const restored = applyStateSnapshot.mock.calls[0][0];
 			expect(restored.data.datasets[0].rows).toEqual(canonicalRows);
 			expect(restored.panel.charts[0].dataSnapshot).toEqual(canonicalRows);
 		}
 	});
+
+	it.each(['browser reload', 'project import', 'legacy IndexedDB'])(
+		'preserves saved sorts and numeric stats while discarding version 1 categorical stats on %s',
+		async entryPoint => {
+			const rows = [{ x: 1, label: 'A' }, { x: 2, label: null }];
+			const columns = [{ name: 'x', type: 'number' }, { name: 'label', type: 'text' }];
+			const numeric = [{ name: 'x', n: 2, min: 1, max: 2, mean: 1.5, median: 1.5 }];
+			const saved = makeSnapshot({
+				data: {
+					activeIndex: 0,
+					datasets: [{
+						...goodRecord('legacy-names'),
+						rows,
+						columns,
+						selectedColumns: ['x', 'label'],
+						chartConfig: { bar: { category: 'label', measureMode: 'mean', valueColumn: 'x', sort: 'count-asc' } },
+						precomputedStats: {
+							numericVersion: STATS_NUMERIC_VERSION,
+							categoricalVersion: 1,
+							numeric,
+							categorical: [{ name: 'label', n: 1, missing: 1, missingPct: 0.5, unique: 1, uniquenessRate: 1, mode: 'A', modeCount: 1, modePct: 1, top5Pct: 1, empty: false }],
+						},
+					}],
+				},
+			});
+			saved.panel.charts = ['count-asc', 'count-desc'].map((sort, id) => ({
+				id,
+				type: 'bar',
+				config: { category: 'label', measureMode: 'sum', valueColumn: 'x', sort },
+				dataSnapshot: rows,
+				columnsSnapshot: columns,
+			}));
+			saved.panel.nextChartId = 2;
+			const applyStateSnapshot = vi.fn();
+			const hooks = { applyStateSnapshot, transformPanel: mergePanelSnapshotConfigsWithDefaults };
+
+			if (entryPoint === 'project import') {
+				const exported = await exportProject(saved);
+				expect(exported.ok).toBe(true);
+				expect((await importProjectBytes(exported.bytes, hooks)).ok).toBe(true);
+			} else {
+				if (entryPoint === 'legacy IndexedDB') {
+					await writeLegacyState({
+						datasets: saved.data.datasets,
+						panelRecord: { ...saved.panel, activeDatasetId: 'legacy-names' },
+					});
+				} else {
+					expect((await persistState(saved)).ok).toBe(true);
+				}
+				await hydrateState(hooks);
+			}
+
+			expect(applyStateSnapshot).toHaveBeenCalledTimes(1);
+			const restored = applyStateSnapshot.mock.calls[0][0];
+			const dataset = restored.data.datasets[0];
+			expect(dataset.rows).toEqual(rows);
+			expect(dataset.precomputedStats.numeric).toEqual(numeric);
+			expect(dataset.precomputedStats).not.toHaveProperty('categorical');
+			expect(dataset.chartConfig.bar).toMatchObject({ sort: 'value-asc', measureMode: 'mean', valueColumn: 'x' });
+			expect(restored.panel.charts.map(chart => chart.config.sort)).toEqual(['value-asc', 'value-desc']);
+			for (const chart of restored.panel.charts) {
+				expect(chart.dataSnapshot).toEqual(rows);
+				expect(chart.config).toMatchObject({ measureMode: 'sum', valueColumn: 'x' });
+			}
+			expect(calculateCategoricalStatistics(dataset.rows, dataset.columns)[0])
+				.toMatchObject({ missingFraction: 0.5, modeFraction: 1, top5Fraction: 1 });
+
+			// Autosave writes the normalized names; the next reload keeps them.
+			expect((await persistState(restored)).ok).toBe(true);
+			const reloaded = vi.fn();
+			await hydrateState({ applyStateSnapshot: reloaded, transformPanel: mergePanelSnapshotConfigsWithDefaults });
+			// SQLite adds fingerprint metadata on the first save of legacy records.
+			expect(reloaded.mock.calls[0][0].data).toMatchObject(restored.data);
+			expect(reloaded.mock.calls[0][0].data.datasets[0].precomputedStats).not.toHaveProperty('categorical');
+			expect(reloaded.mock.calls[0][0].panel).toEqual(restored.panel);
+		},
+	);
 
 	it('round-trips current-version stats through SQLite unchanged', async () => {
 		const precomputedStats = {
 			numericVersion: STATS_NUMERIC_VERSION,
 			categoricalVersion: STATS_CATEGORICAL_VERSION,
 			numeric: [{ name: 'x', n: 1, min: 1, max: 1, mean: 1, median: 1 }],
-			categorical: [],
+			categorical: [{ name: 'label', n: 1, missing: 0, missingFraction: 0, unique: 1, uniquenessRate: 1, mode: 'A', modeCount: 1, modeFraction: 1, top5Fraction: 1, empty: false }],
 		};
 
 		await persistState(makeSnapshot({
 			data: {
 				activeDatasetId: 'kept',
-				datasets: [{ ...goodRecord('kept'), precomputedStats }],
+				datasets: [{
+					...goodRecord('kept'),
+					rows: [{ x: 1, label: 'A' }],
+					columns: [{ name: 'x', type: 'number' }, { name: 'label', type: 'text' }],
+					precomputedStats,
+				}],
 			},
 		}));
 
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
 
-		expect(replaceAllState.mock.calls[0][0].data.datasets[0].precomputedStats)
+		expect(applyStateSnapshot.mock.calls[0][0].data.datasets[0].precomputedStats)
 			.toEqual(precomputedStats);
 	});
 
@@ -154,8 +240,8 @@ describe('persistence', () => {
 		expect(localStorage.getItem('chive-locale')).toBe('en');
 		expect(JSON.parse(localStorage.getItem('chive.settings'))).toEqual({ tinColorRendering: 'full-ramp' });
 		expect(localStorage.getItem('chive.migrated')).toBe('1');
-		const replaceAllState = vi.fn();
-		await hydrateState({ replaceAllState });
-		expect(replaceAllState).not.toHaveBeenCalled();
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		expect(applyStateSnapshot).not.toHaveBeenCalled();
 	});
 });

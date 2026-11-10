@@ -16,11 +16,11 @@ import { compareCategoryKeys } from './categoryOrder.js';
  * @typedef {{ key: string, label: string, token: string, value: number, firstRow: Object<string, *> }} CategoryEntry
  */
 
-// The orders bar offers, by sort mode. The count orders follow the measure
-// despite their names. Ties fall back to the category key, missing bucket last.
+// The orders bar offers, by sort mode. Value orders compare the selected
+// measure. Ties fall back to the category key, missing bucket last.
 const ORDERS = Object.freeze({
-	'count-desc': (a, b) => b.value - a.value || compareCategoryKeys(a.key, b.key),
-	'count-asc': (a, b) => a.value - b.value || compareCategoryKeys(a.key, b.key),
+	'value-desc': (a, b) => b.value - a.value || compareCategoryKeys(a.key, b.key),
+	'value-asc': (a, b) => a.value - b.value || compareCategoryKeys(a.key, b.key),
 	'label-asc': (a, b) => compareCategoryKeys(a.key, b.key),
 	'label-desc': (a, b) => compareCategoryKeys(a.key, b.key, -1),
 });
@@ -39,16 +39,16 @@ const ORDERS = Object.freeze({
  * @param {Array<Object<string, *>>} rows - Canonical rows.
  * @param {string} categoryColumn - Column whose category keys group the rows.
  * @param {{ measureMode: string, valueColumn?: string|null, missingLabel?: string, positiveOnly?: boolean, sort?: string, topN?: number }} options - `missingLabel` is the localized label of the missing bucket.
- * @returns {{ ok: false, reason?: 'no-value-column'|'no-numeric'|'no-positive-value' } | { ok: true, entries: CategoryEntry[], rest: number|null, total: number }}
+ * @returns {{ ok: false, reason?: 'no-value-column'|'no-numeric'|'no-positive-value' } | { ok: true, entries: CategoryEntry[], omittedValueTotal: number|null, retainedValueTotal: number }}
  *   On success, at least one category, by default largest value first with
  *   ties by category key and the missing bucket last. `firstRow` is the first
- *   row counted toward the category. `rest` sums the values the Top-N cut
- *   leaves out, or is null when it leaves none out; `total` sums the values
- *   kept. Sum and mean fail with `'no-value-column'` without a value column
- *   or when no row has it, and with `'no-numeric'` when it holds no number in
- *   these rows. Count fails with no reason when there are no rows. With
- *   `positiveOnly`, the call fails with `'no-positive-value'` when no value
- *   is above 0.
+ *   row counted toward the category. `omittedValueTotal` sums the values the
+ *   Top-N cut leaves out, or is null when it leaves none out;
+ *   `retainedValueTotal` sums the values kept. Sum and mean fail with
+ *   `'no-value-column'` without a value column or when no row has it, and with
+ *   `'no-numeric'` when it holds no number in these rows. Count fails with no
+ *   reason when there are no rows. With `positiveOnly`, the call fails with
+ *   `'no-positive-value'` when no value is above 0.
  */
 export function aggregateCategories(rows, categoryColumn, { measureMode, valueColumn, missingLabel, positiveOnly = false, sort, topN = 0 }) {
 	const readsValues = measureMode === 'sum' || measureMode === 'mean';
@@ -81,9 +81,9 @@ export function aggregateCategories(rows, categoryColumn, { measureMode, valueCo
 		entries = entries.filter(entry => entry.value > 0);
 		if (entries.length === 0) return { ok: false, reason: 'no-positive-value' };
 	}
-	entries.sort(Object.hasOwn(ORDERS, sort) ? ORDERS[sort] : ORDERS['count-desc']);
+	entries.sort(Object.hasOwn(ORDERS, sort) ? ORDERS[sort] : ORDERS['value-desc']);
 	const cut = topN > 0 ? entries.splice(topN) : [];
-	return { ok: true, entries, rest: cut.length > 0 ? sumValues(cut) : null, total: sumValues(entries) };
+	return { ok: true, entries, omittedValueTotal: cut.length > 0 ? sumValues(cut) : null, retainedValueTotal: sumValues(entries) };
 }
 
 function sumValues(entries) {

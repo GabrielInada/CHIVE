@@ -22,7 +22,7 @@ import { canonicalizeChartConfig } from '../../domain/charts/chartConfig.js';
  * @param {*} value
  * @returns {boolean}
  */
-export function isPlainObject(value) {
+export function isNonArrayObject(value) {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
@@ -47,16 +47,16 @@ function sanitizeBubbleConfig(bubbleConfig, declaredColumnNames) {
 	};
 }
 
-// Drop chart-spec entries that aren't plain objects; renderers read sub-keys
+// Keep only non-array object chart-spec entries; renderers read sub-keys
 // and would explode on a string/number/array. The bubble block is additionally
 // depth-bounded against the record's declared columns. validateDatasetRecord then
 // runs canonicalizeChartConfig on the result to fill defaults and trim stale
 // global-filter rules, so restored configs are canonical before render.
 function sanitizeChartConfig(chartConfig, declaredColumnNames) {
-	if (!isPlainObject(chartConfig)) return {};
+	if (!isNonArrayObject(chartConfig)) return {};
 	const sanitized = {};
 	for (const [chartKey, chartTypeConfig] of Object.entries(chartConfig)) {
-		if (isPlainObject(chartTypeConfig)) {
+		if (isNonArrayObject(chartTypeConfig)) {
 			sanitized[chartKey] = chartKey === 'bubble'
 				? sanitizeBubbleConfig(chartTypeConfig, declaredColumnNames)
 				: chartTypeConfig;
@@ -68,10 +68,11 @@ function sanitizeChartConfig(chartConfig, declaredColumnNames) {
 // Cached stats are only trustworthy when they were produced by the current
 // statistics implementation. An older numeric blob may carry a string `min` or
 // a zero-skewed `mean` from when blank cells were counted, and an older
-// categorical blob keyed dates by text the canonical cells no longer match.
+// categorical blob may use legacy fraction fields or date keys the canonical
+// cells no longer match.
 // Drop each stale part and let statsView recompute it.
 function withValidStats(precomputedStats) {
-	if (!isPlainObject(precomputedStats)) return precomputedStats;
+	if (!isNonArrayObject(precomputedStats)) return precomputedStats;
 	const numericValid = precomputedStats.numericVersion === STATS_NUMERIC_VERSION;
 	const categoricalValid = precomputedStats.categoricalVersion === STATS_CATEGORICAL_VERSION;
 	if (numericValid && categoricalValid) return precomputedStats;
@@ -84,13 +85,13 @@ function withValidStats(precomputedStats) {
 // Drop records the renderers can't trust. Returns a sanitized copy with
 // canonical rows, or null when the record is unrecoverable.
 function validateDatasetRecord(record, formatVersion) {
-	if (!isPlainObject(record)) return null;
+	if (!isNonArrayObject(record)) return null;
 	if (!record.id) return null;
 	if (typeof record.name !== 'string') return null;
 	if (!Array.isArray(record.rows)) return null;
 	if (!Array.isArray(record.columns)) return null;
 	const columnsOk = record.columns.every(
-		column => isPlainObject(column) && typeof column.name === 'string' && typeof column.type === 'string'
+		column => isNonArrayObject(column) && typeof column.name === 'string' && typeof column.type === 'string'
 	);
 	if (!columnsOk) return null;
 	const declaredColumnNames = record.columns.map(column => column.name);
@@ -116,11 +117,11 @@ function validateDatasetRecord(record, formatVersion) {
 // dataset's. This runs here rather than in transformPanel because the legacy
 // IndexedDB import passes none.
 function withCanonicalCapture(chart, formatVersion) {
-	if (!isPlainObject(chart) || !Array.isArray(chart.dataSnapshot) || !Array.isArray(chart.columnsSnapshot)) {
+	if (!isNonArrayObject(chart) || !Array.isArray(chart.dataSnapshot) || !Array.isArray(chart.columnsSnapshot)) {
 		return chart;
 	}
 	const columns = chart.columnsSnapshot.filter(
-		column => isPlainObject(column) && typeof column.name === 'string' && typeof column.type === 'string'
+		column => isNonArrayObject(column) && typeof column.name === 'string' && typeof column.type === 'string'
 	);
 	const dataSnapshot = canonicalizeRows(chart.dataSnapshot, columns, { formatVersion });
 	return dataSnapshot === chart.dataSnapshot ? chart : { ...chart, dataSnapshot };
@@ -128,7 +129,7 @@ function withCanonicalCapture(chart, formatVersion) {
 
 function normalizePanel(panelRecord, transformPanel, formatVersion) {
 	if (!panelRecord) return null;
-	if (!isPlainObject(panelRecord)) return null;
+	if (!isNonArrayObject(panelRecord)) return null;
 	let panel = { ...panelRecord };
 	delete panel.key;
 	delete panel.activeDatasetId;

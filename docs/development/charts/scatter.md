@@ -175,7 +175,7 @@ flowchart TB
         CONTROLS["scatter/controls"] --> WRITER["ChartConfigWriter"]
         WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
         DFACADE --> DSTATE[("dataset.chartConfig.scatter")]
-        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DFACADE -- DATASET_CONFIG_UPDATED --> COORD["renderCoordinator"]
         DSTATE -. read through getters .-> COORD
         WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
         PREVIEW --> DSTATE
@@ -192,7 +192,7 @@ flowchart TB
         PSUB --> PVIEW["panelView"]
         PSTATE -. read through getters .-> PVIEW
         PVIEW -. callback via panelController .-> PFACADE
-        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartFromSpec"]
+        PVIEW -- snapshot preview or assigned slot --> MOUNT["mountSlot + renderChartSnapshot"]
         MOUNT --> PREG["panel registry"]
     end
 
@@ -355,7 +355,7 @@ in both the workspace and Panel. Sampling notices keep their existing approval f
 ### 6.2 Panel view
 
 The [panel registry](../../../src/charts/registries/panel.js) builds the chart input from
-the snapshot (`spec.dataSnapshot`, `spec.config`, and column types from every column in
+the snapshot (`snapshot.dataSnapshot`, `snapshot.config`, and column types from every column in
 `columnsSnapshot`) and hands it to the same `renderScatterInto` flow without
 `filterCallbacks` (no click-to-filter in panels).
 

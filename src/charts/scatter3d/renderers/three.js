@@ -41,7 +41,7 @@ let descriptionCounter = 0;
  * @param {Object} config - Stored chart config.
  * @param {Object} context - Localized accessibility labels from presentation.
  * @returns {import('../../../types.js').Result}
- *   `ok({ renderedCount, validCount, totalCount, truncated })`, or `fail`
+ *   `ok({ renderedCount, validCount, totalCount, sampled })`, or `fail`
  *   with `'no-valid-points'`, `'webgl-unavailable'`, `'render-error'`, or
  *   no reason for missing arguments.
  */
@@ -207,7 +207,7 @@ export function renderScatter3dChart(container, rows, config = {}, context = {})
 			renderedCount: data.renderedCount,
 			validCount: data.validCount,
 			totalCount: data.totalCount,
-			truncated: data.truncated,
+			sampled: data.sampled,
 		});
 	} catch (error) {
 		console.warn('scatter3d render failed mid-build:', error);

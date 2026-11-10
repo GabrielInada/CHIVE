@@ -36,7 +36,7 @@ let activeBackend = workerBackend;
 /**
  * Swap the storage backend. Used by tests and future storage strategies.
  *
- * @param {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes?: (snapshot: Partial<AppState>, options?: { workOnly?: boolean }) => Promise<Uint8Array>, importBytes?: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<{ ok: boolean, reason?: string } | void> } | null} backend
+ * @param {{ available: () => boolean, hydrate: () => Promise<*>, persist: (snapshot: Partial<AppState>) => Promise<void>, exportBytes?: (snapshot: Partial<AppState>, options?: { omitDataPayloads?: boolean }) => Promise<Uint8Array>, importBytes?: (bytes: Uint8Array | ArrayBuffer) => Promise<*>, clear: () => Promise<{ ok: boolean, reason?: string } | void> } | null} backend
  */
 export function configurePersistenceBackend(backend) {
 	activeBackend = backend || workerBackend;
@@ -87,16 +87,16 @@ async function importLegacyStateIfNeeded() {
 
 /**
  * Restore persisted state into appState. No-op on first visit, when storage is
- * unavailable, or when `replaceAllState` is not a function.
+ * unavailable, or when `applyStateSnapshot` is not a function.
  *
  * @param {Object} hooks
- * @param {(snapshot: Partial<AppState>) => void} hooks.replaceAllState
+ * @param {(snapshot: Partial<AppState>) => void} hooks.applyStateSnapshot
  * @param {(panel: Object) => Object} [hooks.transformPanel]
  * @param {(error: unknown) => void} [hooks.onError]
  * @returns {Promise<void>}
  */
-export async function hydrateState({ replaceAllState, transformPanel, onError } = {}) {
-	if (typeof replaceAllState !== 'function') return;
+export async function hydrateState({ applyStateSnapshot, transformPanel, onError } = {}) {
+	if (typeof applyStateSnapshot !== 'function') return;
 
 	let storedSnapshot = null;
 	if (isPersistenceAvailable()) {
@@ -119,7 +119,7 @@ export async function hydrateState({ replaceAllState, transformPanel, onError } 
 	const normalized = normalizeStoredSnapshot(storedSnapshot, { transformPanel });
 	if (!hasHydratableState(normalized, ui)) return;
 
-	replaceAllState({
+	applyStateSnapshot({
 		data: normalized.data,
 		panel: normalized.panel,
 		ui,
@@ -154,10 +154,10 @@ export async function persistState(snapshot) {
  * Serialize the current project to SQLite bytes.
  *
  * @param {Partial<AppState>} snapshot
- * @param {{ workOnly?: boolean }} [options]
+ * @param {{ omitDataPayloads?: boolean }} [options] - `omitDataPayloads` leaves dataset rows and Panel capture payloads out, producing a work-only project file.
  * @returns {Promise<{ ok: boolean, bytes?: Uint8Array, fileName?: string, error?: Error }>}
  */
-export async function exportProject(snapshot, { workOnly = false } = {}) {
+export async function exportProject(snapshot, { omitDataPayloads = false } = {}) {
 	if (!snapshot || typeof snapshot !== 'object') {
 		return { ok: false, error: new Error('No state snapshot was provided') };
 	}
@@ -169,11 +169,11 @@ export async function exportProject(snapshot, { workOnly = false } = {}) {
 	}
 
 	try {
-		const bytes = await activeBackend.exportBytes(snapshot, { workOnly: Boolean(workOnly) });
+		const bytes = await activeBackend.exportBytes(snapshot, { omitDataPayloads: Boolean(omitDataPayloads) });
 		return {
 			ok: true,
 			bytes,
-			fileName: buildProjectFileName({ workOnly: Boolean(workOnly) }),
+			fileName: buildProjectFileName({ omitDataPayloads: Boolean(omitDataPayloads) }),
 		};
 	} catch (err) {
 		const error = errorFrom(err, 'Project export failed');
@@ -184,18 +184,19 @@ export async function exportProject(snapshot, { workOnly = false } = {}) {
 
 /**
  * Import a full CHIVE SQLite project, persist it as the current browser
- * project, then replace in-memory state. Work-only imports are intentionally
- * rejected in v1 because dataset re-linking semantics are not implemented.
+ * project, then apply it to in-memory state. Work-only imports are
+ * intentionally rejected in v1 because dataset re-linking semantics are not
+ * implemented.
  *
  * @param {Uint8Array | ArrayBuffer} bytes
  * @param {Object} hooks
- * @param {(snapshot: Partial<AppState>) => void} hooks.replaceAllState
+ * @param {(snapshot: Partial<AppState>) => void} hooks.applyStateSnapshot
  * @param {(panel: Object) => Object} [hooks.transformPanel]
  * @returns {Promise<{ ok: boolean, snapshot?: Partial<AppState>, error?: Error }>}
  */
-export async function importProjectBytes(bytes, { replaceAllState, transformPanel } = {}) {
-	if (typeof replaceAllState !== 'function') {
-		return { ok: false, error: new Error('replaceAllState hook is required') };
+export async function importProjectBytes(bytes, { applyStateSnapshot, transformPanel } = {}) {
+	if (typeof applyStateSnapshot !== 'function') {
+		return { ok: false, error: new Error('applyStateSnapshot hook is required') };
 	}
 	if (!isPersistenceAvailable()) {
 		return { ok: false, error: new Error('IndexedDB is unavailable') };
@@ -228,7 +229,7 @@ export async function importProjectBytes(bytes, { replaceAllState, transformPane
 			return { ok: false, error: errorFrom(persistResult.error, 'Project import save failed') };
 		}
 
-		replaceAllState({
+		applyStateSnapshot({
 			data: normalized.data,
 			panel: importPanel,
 		});

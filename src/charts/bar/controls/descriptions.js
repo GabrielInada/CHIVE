@@ -43,13 +43,13 @@ export const BAR_CONTROLS = Object.freeze({
 					key: 'sort',
 					label: 'chive-chart-control-bar-sort',
 					optionLabels: {
-						'count-desc': 'chive-chart-sort-measure-desc',
-						'count-asc': 'chive-chart-sort-measure-asc',
+						'value-desc': 'chive-chart-sort-measure-desc',
+						'value-asc': 'chive-chart-sort-measure-asc',
 						'label-asc': 'chive-chart-sort-label-asc',
 						'label-desc': 'chive-chart-sort-label-desc',
 					},
-					// The count orders sort by the measure, so their labels name it.
-					optionLabelParams: (sort, config, translate) => (sort.startsWith('count-')
+					// Value orders name the selected measure in their labels.
+					optionLabelParams: (sort, config, translate) => (sort.startsWith('value-')
 						? [translate(measureLabelKey(config.measureMode))]
 						: []),
 				},

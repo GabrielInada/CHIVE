@@ -24,7 +24,6 @@ const { renderCanvasPanel, exportPanelLayoutSvg } = await import('../../../src/f
 function setupDom() {
   document.body.innerHTML = `
     <div id="panel-layout-canvas"></div>
-    <select id="select-panel-layout"></select>
   `;
 }
 
@@ -43,13 +42,13 @@ function rect(left, top, width, height) {
 }
 
 /**
- * Inject a live <svg> into each chart-bearing slot's .panel-slot-svg container.
+ * Inject a live <svg> into each chart-bearing slot's .panel-chart-container.
  * After Phase 1, the exporter clones the LIVE SVG from the DOM (no longer reads
  * a serialized svgMarkup string from state). Tests that exercise export geometry
  * therefore need to put real SVG elements in the slots before calling export.
  */
 function injectLiveSlotSvgs() {
-  document.querySelectorAll('[data-panel-slot][data-panel-chart-id] .panel-slot-svg').forEach(slotSvgEl => {
+  document.querySelectorAll('[data-panel-slot][data-panel-chart-id] .panel-chart-container').forEach(chartContainer => {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     // Intentionally NO width/height/x/y here, the exporter sets those fresh,
     // and tests rely on them appearing in canonical x y width height order in
@@ -59,12 +58,12 @@ function injectLiveSlotSvgs() {
     rect.setAttribute('width', '10');
     rect.setAttribute('height', '10');
     svg.appendChild(rect);
-    slotSvgEl.appendChild(svg);
+    chartContainer.appendChild(svg);
   });
 }
 
 function resetAppStateForTest() {
-  appState.replaceAllState({
+  appState.applyStateSnapshot({
     data: { datasets: [], activeIndex: -1 },
     panel: { charts: [], slots: {}, layout: 'template-2col', blocks: [], nextBlockId: 1, nextChartId: 0 },
     ui: { sidebarMode: 'data', previewRows: 10 },

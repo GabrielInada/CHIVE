@@ -9,7 +9,7 @@ const mocks = vi.hoisted(() => {
 		t: vi.fn(key => key),
 		getActiveDataset: vi.fn(() => dataset),
 		updateActiveDatasetConfig: vi.fn(),
-		normalizeActiveDatasetConfig: vi.fn(),
+		transformActiveDatasetConfigSilently: vi.fn(),
 		triggerLiveRender: vi.fn(),
 	};
 });
@@ -21,7 +21,7 @@ vi.mock('../../../../src/services/i18nService.js', () => ({
 vi.mock('../../../../src/state/appState.js', async (importOriginal) => ({
 	...(await importOriginal()),
 	getActiveDataset: mocks.getActiveDataset,
-	normalizeActiveDatasetConfig: mocks.normalizeActiveDatasetConfig,
+	transformActiveDatasetConfigSilently: mocks.transformActiveDatasetConfigSilently,
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
@@ -117,9 +117,9 @@ describe('ensureChartHeightResizeHandles', () => {
 			// Live write: container box tracks the cursor (+50px from 320).
 			expect(container.style.minHeight).toBe('370px');
 			expect(mocks.triggerLiveRender).toHaveBeenCalled();
-			expect(mocks.normalizeActiveDatasetConfig).toHaveBeenCalled();
+			expect(mocks.transformActiveDatasetConfigSilently).toHaveBeenCalled();
 			// The updater closure carries the new height.
-			const updater = mocks.normalizeActiveDatasetConfig.mock.calls[0][0];
+			const updater = mocks.transformActiveDatasetConfigSilently.mock.calls[0][0];
 			expect(updater({ bar: { chartHeight: 320 } }).bar.chartHeight).toBe(370);
 
 			window.dispatchEvent(pointer('pointerup'));
@@ -137,7 +137,7 @@ describe('ensureChartHeightResizeHandles', () => {
 		it('ignores non-primary pointer buttons', () => {
 			getHandle().dispatchEvent(pointer('pointerdown', { button: 1, clientY: 100 }));
 			window.dispatchEvent(pointer('pointermove', { clientY: 150 }));
-			expect(mocks.normalizeActiveDatasetConfig).not.toHaveBeenCalled();
+			expect(mocks.transformActiveDatasetConfigSilently).not.toHaveBeenCalled();
 			expect(mocks.triggerLiveRender).not.toHaveBeenCalled();
 		});
 	});

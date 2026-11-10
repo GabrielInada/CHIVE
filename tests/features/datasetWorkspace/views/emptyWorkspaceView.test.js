@@ -69,7 +69,7 @@ describe('renderEmptyState', () => {
 		expect(document.getElementById('btn-advance').disabled).toBe(true);
 		expect(document.getElementById('upload-zone').classList.contains('loaded')).toBe(false);
 		expect(document.querySelector('.upload-text-main').textContent).toBe('chive-upload-main');
-		expect(mocks.updateTabs).toHaveBeenCalledWith('preview', null, null, {
+		expect(mocks.updateTabs).toHaveBeenCalledWith('preview', null, {
 			triggerState: {
 				hasDataset: false,
 				globalFilter: null,
@@ -83,7 +83,7 @@ describe('renderEmptyState', () => {
 		document.body.innerHTML = '<section id="result-tabs"></section>';
 
 		expect(() => renderEmptyState()).not.toThrow();
-		expect(mocks.updateTabs).toHaveBeenCalledWith('preview', null, null, expect.objectContaining({
+		expect(mocks.updateTabs).toHaveBeenCalledWith('preview', null, expect.objectContaining({
 			triggerState: expect.objectContaining({ hasDataset: false }),
 		}));
 	});

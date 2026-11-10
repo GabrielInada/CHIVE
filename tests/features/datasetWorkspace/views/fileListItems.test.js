@@ -55,7 +55,7 @@ describe('fileListItems', () => {
 			visibleLimit: 2.8,
 		});
 
-		expect(result).toEqual({ total: 4, filtered: 3, rendered: 2, hasMore: true });
+		expect(result).toEqual({ total: 4, filteredCount: 3, renderedCount: 2, hasMore: true });
 		expect(list.querySelectorAll('.file-item').length).toBe(2);
 	});
 
@@ -76,7 +76,7 @@ describe('fileListItems', () => {
 			visibleLimit: 0,
 		});
 
-		expect(result.rendered).toBe(0);
+		expect(result.renderedCount).toBe(0);
 		expect(result.hasMore).toBe(false);
 		expect(list.querySelector('.file-list-empty')?.textContent).toBe('chive-files-no-match');
 

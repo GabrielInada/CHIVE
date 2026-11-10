@@ -45,7 +45,7 @@ import { sampleWithExtrema } from '../shared/pointSampling.js';
  *   renderedCount: number,
  *   validCount: number,
  *   totalCount: number,
- *   truncated: boolean,
+ *   sampled: boolean,
  * }} `extents` is `null` when there are no valid points.
  */
 export function buildScatter3dPoints(rows, x, y, z) {
@@ -63,13 +63,13 @@ export function buildScatter3dPoints(rows, x, y, z) {
 
 	const validCount = valid.length;
 	if (validCount === 0) {
-		return { points: [], extents: null, renderedCount: 0, validCount: 0, totalCount, truncated: false };
+		return { points: [], extents: null, renderedCount: 0, validCount: 0, totalCount, sampled: false };
 	}
 
 	const extents = computeExtents(valid);
 
 	if (validCount <= SCATTER3D_CHART.maxPoints) {
-		return { points: valid, extents, renderedCount: validCount, validCount, totalCount, truncated: false };
+		return { points: valid, extents, renderedCount: validCount, validCount, totalCount, sampled: false };
 	}
 
 	const points = sampleWithExtrema(valid, SCATTER3D_CHART.maxPoints, [
@@ -77,7 +77,7 @@ export function buildScatter3dPoints(rows, x, y, z) {
 		point => point.y,
 		point => point.z,
 	]);
-	return { points, extents, renderedCount: points.length, validCount, totalCount, truncated: true };
+	return { points, extents, renderedCount: points.length, validCount, totalCount, sampled: true };
 }
 
 /**

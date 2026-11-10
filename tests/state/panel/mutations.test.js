@@ -5,7 +5,7 @@ import {
 	removeChartSnapshotFromState,
 	getChartSnapshotFromState,
 	clearPanelState,
-	validatePanelSlotsState,
+	repairPanelSlotReferencesState,
 	addPanelBlockState,
 	removePanelBlockState,
 	movePanelBlockState,
@@ -152,7 +152,7 @@ describe('clearPanelState', () => {
 	});
 });
 
-describe('validatePanelSlotsState', () => {
+describe('repairPanelSlotReferencesState', () => {
 	it('removes slots referencing non-existent charts', () => {
 		const appState = makeAppState({
 			charts: [{ id: 1 }],
@@ -160,7 +160,7 @@ describe('validatePanelSlotsState', () => {
 		});
 		appState.panel.blocks[0].slots = { 'slot-1': 1, 'slot-2': 99 };
 
-		validatePanelSlotsState(appState, ensureDefault(appState));
+		repairPanelSlotReferencesState(appState, ensureDefault(appState));
 		expect(appState.panel.slots['slot-1']).toBe(1);
 		expect(appState.panel.slots['slot-2']).toBeUndefined();
 		expect(appState.panel.blocks[0].slots['slot-2']).toBeUndefined();
