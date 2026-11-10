@@ -81,8 +81,9 @@ describe('workerBackend, happy path + correlation', () => {
 
 	it('exports and imports project bytes through the worker', async () => {
 		const db = nextDb();
+		const workers = [];
 		const backend = createWorkerBackend({
-			workerFactory: () => { const w = new MockWorker(); attachRealHandler(w, db); return w; },
+			workerFactory: () => { const w = new MockWorker(); attachRealHandler(w, db); workers.push(w); return w; },
 			fallbackBackendFactory: () => spyFallback(`${db}-fb`),
 			timeoutMs: 5000,
 		});
@@ -94,9 +95,15 @@ describe('workerBackend, happy path + correlation', () => {
 		expect(bytes).toBeInstanceOf(Uint8Array);
 		expect(imported.data.datasets[0].rows).toEqual(rows);
 
-		const workOnlyBytes = await backend.exportBytes(snap({ rows }), { workOnly: true });
+		const workOnlyBytes = await backend.exportBytes(snap({ rows }), { omitDataPayloads: true });
 		const workOnly = await backend.importBytes(workOnlyBytes);
 		expect(workOnly.data.datasets[0].rows).toBeNull();
+
+		// The message keeps the former workOnly field, so a page left open across a
+		// deploy still talks to a worker started after it.
+		const exportMessages = workers[0].posted.filter(message => message.op === 'export');
+		expect(exportMessages.map(message => message.workOnly)).toEqual([false, true]);
+		expect(exportMessages.some(message => 'omitDataPayloads' in message)).toBe(false);
 	});
 
 	it('returns null on first hydrate and after clear', async () => {
@@ -216,7 +223,7 @@ describe('workerBackend, reset is idempotent + stale responses ignored', () => {
 
 		await expect(p).resolves.toBeUndefined();
 		expect(fallback.persist).toHaveBeenCalledTimes(1);  // exactly once
-		expect(warnSpy).not.toHaveBeenCalled();             // stale onerror returns at the gen guard, before the warn
+		expect(warnSpy).not.toHaveBeenCalled();             // stale onerror returns at the generation guard, before the warn
 	});
 
 	it('ignores a late ok:true from an already-terminated worker (no sentPayloads write)', async () => {

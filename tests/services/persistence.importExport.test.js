@@ -79,9 +79,16 @@ describe('persistence', () => {
 	});
 
 	it('rejects work-only project imports in v1', async () => {
-		const exported = await exportProject(makeSnapshot(), { workOnly: true });
+		const backend = makeBackend();
+		const exportBytes = vi.spyOn(backend, 'exportBytes');
+		configurePersistenceBackend(backend);
+
+		const exported = await exportProject(makeSnapshot(), { omitDataPayloads: true });
 		expect(exported.ok).toBe(true);
 		expect(exported.fileName).toContain('-work-only-');
+		// The real backend still honors the former `workOnly` key, so name the
+		// option here: a stale key would export the same file and pass.
+		expect(exportBytes).toHaveBeenCalledWith(expect.any(Object), { omitDataPayloads: true });
 
 		const applyStateSnapshot = vi.fn();
 		const imported = await importProjectBytes(exported.bytes, { applyStateSnapshot });

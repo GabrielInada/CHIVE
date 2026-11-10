@@ -539,6 +539,11 @@
  * The host side lives in `services/persistence/backends/workerBackend.js`; the
  * worker side lives in `workers/persistWorker.js`.
  *
+ * `workOnly` carries the backends' `omitDataPayloads` option under its former
+ * name. Keep the field name: a page left open across a deploy keeps its old
+ * host code while a restarted worker loads the new code, and both must read
+ * the same field.
+ *
  * @typedef {Object} PersistWorkerRequest
  * @property {number} id - Correlation id; mirrored on every response.
  * @property {'persist' | 'hydrate' | 'export' | 'import' | 'clear'} op - Backend operation to run.
