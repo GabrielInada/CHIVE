@@ -53,7 +53,7 @@ function handleChartAction(actionBtn) {
 		const title = getChartSnapshotTitle(containerId, fallbackTitle);
 		const metadata = buildChartSnapshotMetadata(containerId);
 
-		const result = addChartToPanel(containerId, title, metadata);
+		const result = addChartToPanel(title, metadata);
 		if (!result.ok) {
 			showError(t('chive-panel-add-error'));
 		} else {

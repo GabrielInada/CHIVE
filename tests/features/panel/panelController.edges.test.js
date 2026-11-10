@@ -121,7 +121,7 @@ describe('panelController (branch coverage)', () => {
 		it('builds spec from active dataset and adds to panel on success', () => {
 			initPanelController();
 
-			const result = addChartToPanel('container-id', 'My Chart', { type: 'bar', summary: 'cat: a' });
+			const result = addChartToPanel('My Chart', { type: 'bar', summary: 'cat: a' });
 
 			expect(result.ok).toBe(true);
 			expect(result.chartId).toBeDefined();
@@ -136,7 +136,7 @@ describe('panelController (branch coverage)', () => {
 		it('passes chart name to snapshot preserving content', () => {
 			initPanelController();
 
-			addChartToPanel('container', 'My Bar Chart', { type: 'bar' });
+			addChartToPanel('My Bar Chart', { type: 'bar' });
 
 			const call = mocks.appState.addChartSnapshot.mock.calls[0][0];
 			expect(call.name).toBe('My Bar Chart');
@@ -158,7 +158,7 @@ describe('panelController (branch coverage)', () => {
 				chartConfig: liveConfig,
 			});
 
-			const result = addChartToPanel('container', 'Chart', { type: 'bar' });
+			const result = addChartToPanel('Chart', { type: 'bar' });
 			expect(result.ok).toBe(true);
 			const snap = mocks.appState.addChartSnapshot.mock.calls[0][0];
 			expect(snap.config.color).toBe('#111111');
@@ -187,7 +187,7 @@ describe('panelController (branch coverage)', () => {
 				},
 			});
 
-			const result = addChartToPanel('container', 'Chart', { type: 'bar' });
+			const result = addChartToPanel('Chart', { type: 'bar' });
 
 			expect(result.ok).toBe(true);
 			const snap = mocks.appState.addChartSnapshot.mock.calls[0][0];
@@ -201,7 +201,7 @@ describe('panelController (branch coverage)', () => {
 		it('returns unknown-type when metadata.type is missing', () => {
 			initPanelController();
 
-			const result = addChartToPanel('container', 'Chart', null);
+			const result = addChartToPanel('Chart', null);
 
 			expect(result.ok).toBe(false);
 			expect(result.reason).toBe('unknown-type');
@@ -210,7 +210,7 @@ describe('panelController (branch coverage)', () => {
 		it('returns unknown-type when metadata.type is not a supported renderer', () => {
 			initPanelController();
 
-			const result = addChartToPanel('container', 'Chart', { type: 'sankey' });
+			const result = addChartToPanel('Chart', { type: 'sankey' });
 
 			expect(result.ok).toBe(false);
 			expect(result.reason).toBe('unknown-type');
@@ -220,7 +220,7 @@ describe('panelController (branch coverage)', () => {
 			initPanelController();
 			mocks.appState.getActiveDataset.mockReturnValueOnce(null);
 
-			const result = addChartToPanel('container', 'Chart', { type: 'bar' });
+			const result = addChartToPanel('Chart', { type: 'bar' });
 
 			expect(result.ok).toBe(false);
 			expect(result.reason).toBe('no-dataset');
@@ -232,7 +232,7 @@ describe('panelController (branch coverage)', () => {
 				throw new Error('boom');
 			});
 
-			const result = addChartToPanel('container', 'Chart', { type: 'bar' });
+			const result = addChartToPanel('Chart', { type: 'bar' });
 
 			expect(result.ok).toBe(false);
 			expect(result.reason).toBe('add-error');
@@ -245,7 +245,7 @@ describe('panelController (branch coverage)', () => {
 				throw new Error('boom');
 			});
 
-			addChartToPanel('container', 'Chart', { type: 'bar' });
+			addChartToPanel('Chart', { type: 'bar' });
 
 			expect(feedbackCb).toHaveBeenCalledWith(expect.any(String));
 		});
@@ -256,7 +256,7 @@ describe('panelController (branch coverage)', () => {
 				throw new Error('Unexpected');
 			});
 
-			expect(() => addChartToPanel('x', 'y', { type: 'bar' })).not.toThrow();
+			expect(() => addChartToPanel('y', { type: 'bar' })).not.toThrow();
 		});
 	});
 

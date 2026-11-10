@@ -83,7 +83,7 @@ export function renderDatasetWorkspace(shown, {
     onColumnSelectionChange,
   });
 
-  updateTabs(config.activeTab, onChartConfigChange, config, {
+  updateTabs(config.activeTab, onChartConfigChange, {
     triggerState: {
       hasDataset: true,
       globalFilter: safeGlobalFilter,

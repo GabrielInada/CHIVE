@@ -66,8 +66,8 @@ describe('renderTinChart', () => {
 			subdivisionDepth: 0,
 		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(depth0.ok).toBe(true);
-		expect(countSubpaths(container)).toBe(depth0.triangles);
-		expect(depth0.polygons).toBe(depth0.triangles * Math.pow(4, 0));
+		expect(countSubpaths(container)).toBe(depth0.triangleCount);
+		expect(depth0.surfaceLeafCount).toBe(depth0.triangleCount * Math.pow(4, 0));
 		expect(container.querySelectorAll('.tin-triangles polygon').length).toBe(0);
 		const paths0 = container.querySelectorAll('.tin-triangles path').length;
 		expect(paths0).toBeGreaterThanOrEqual(1);
@@ -82,8 +82,8 @@ describe('renderTinChart', () => {
 			subdivisionDepth: 2,
 		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(depth2.ok).toBe(true);
-		expect(countSubpaths(container2)).toBe(depth2.triangles * Math.pow(4, 2));
-		expect(depth2.polygons).toBe(depth2.triangles * Math.pow(4, 2));
+		expect(countSubpaths(container2)).toBe(depth2.triangleCount * Math.pow(4, 2));
+		expect(depth2.surfaceLeafCount).toBe(depth2.triangleCount * Math.pow(4, 2));
 		expect(container2.querySelectorAll('.tin-triangles path').length).toBeLessThanOrEqual(TIN_CHART.rampBuckets);
 		// Coordinates are formatted to 2dp, so no `d` attribute carries 3+ decimals.
 		for (const path of container2.querySelectorAll('.tin-triangles path')) {
@@ -101,8 +101,8 @@ describe('renderTinChart', () => {
 			subdivisionDepth: 2,
 		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(result.ok).toBe(true);
-		expect(countSubpaths(container)).toBe(result.triangles);
-		expect(result.polygons).toBe(result.triangles);
+		expect(countSubpaths(container)).toBe(result.triangleCount);
+		expect(result.surfaceLeafCount).toBe(result.triangleCount);
 	});
 
 	it('merges leaves into at most one path per color bucket', () => {
@@ -123,8 +123,8 @@ describe('renderTinChart', () => {
 		expect(new Set(fills).size).toBe(fills.length);
 		expect(fills.length).toBeLessThanOrEqual(TIN_CHART.rampBuckets);
 		// Real merging: far fewer paths than leaf triangles.
-		expect(fills.length).toBeLessThan(result.polygons);
-		expect(countSubpaths(container)).toBe(result.polygons);
+		expect(fills.length).toBeLessThan(result.surfaceLeafCount);
+		expect(countSubpaths(container)).toBe(result.surfaceLeafCount);
 	});
 
 	it('produces different fills for rank vs value distribution on skewed Z', () => {
@@ -186,8 +186,8 @@ describe('renderTinChart', () => {
 		expect(result.ok).toBe(true);
 		const paths = container.querySelectorAll('.tin-triangles path');
 		expect(paths.length).toBe(1);
-		expect(countSubpaths(container)).toBe(result.triangles);
-		expect(result.polygons).toBe(result.triangles);
+		expect(countSubpaths(container)).toBe(result.triangleCount);
+		expect(result.surfaceLeafCount).toBe(result.triangleCount);
 		expect(paths[0].getAttribute('fill')).toBe('#000000');
 	});
 
@@ -201,10 +201,10 @@ describe('renderTinChart', () => {
 			subdivisionDepth: 4,
 		}, renderContext({ x: 'x', y: 'y', z: 'z' }));
 		expect(result.ok).toBe(true);
-		expect(result.polygons).toBeLessThanOrEqual(TIN_CHART.maxSurfaceLeaves);
+		expect(result.surfaceLeafCount).toBeLessThanOrEqual(TIN_CHART.maxSurfaceLeaves);
 		// Budget actually bit: fewer leaves than an unclamped depth-4 render.
-		expect(result.polygons).toBeLessThan(result.triangles * Math.pow(4, 4));
-		expect(countSubpaths(container)).toBe(result.polygons);
+		expect(result.surfaceLeafCount).toBeLessThan(result.triangleCount * Math.pow(4, 4));
+		expect(countSubpaths(container)).toBe(result.surfaceLeafCount);
 	});
 
 	it('respects overlay toggles', () => {

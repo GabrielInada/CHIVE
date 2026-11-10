@@ -436,5 +436,6 @@ export function renderTinChart(container, rows, config = {}, context = {}) {
 		.attr('fill', '#5f5a53')
 		.text(formatNumber(zMax, locale));
 
-	return ok({ triangles: triangleCount, polygons: triangleCount * 4 ** effectiveSubdivisionDepth });
+	const surfaceLeafCount = triangleCount * 4 ** effectiveSubdivisionDepth;
+	return ok({ triangleCount, surfaceLeafCount });
 }

@@ -3,8 +3,8 @@
 exports[`tinChart render equivalence (pure-move guard) > is byte-stable: flat custom gradient, rank distribution 1`] = `
 {
   "ok": true,
-  "polygons": 8,
-  "triangles": 8,
+  "surfaceLeafCount": 8,
+  "triangleCount": 8,
 }
 `;
 
@@ -13,8 +13,8 @@ exports[`tinChart render equivalence (pure-move guard) > is byte-stable: flat cu
 exports[`tinChart render equivalence (pure-move guard) > is byte-stable: isolines count-mode with labels 1`] = `
 {
   "ok": true,
-  "polygons": 32,
-  "triangles": 8,
+  "surfaceLeafCount": 32,
+  "triangleCount": 8,
 }
 `;
 
@@ -23,8 +23,8 @@ exports[`tinChart render equivalence (pure-move guard) > is byte-stable: isoline
 exports[`tinChart render equivalence (pure-move guard) > is byte-stable: isolines step-mode + threshold 1`] = `
 {
   "ok": true,
-  "polygons": 8,
-  "triangles": 8,
+  "surfaceLeafCount": 8,
+  "triangleCount": 8,
 }
 `;
 
@@ -33,8 +33,8 @@ exports[`tinChart render equivalence (pure-move guard) > is byte-stable: isoline
 exports[`tinChart render equivalence (pure-move guard) > is byte-stable: smooth named ramp (viridis), value distribution, all overlays 1`] = `
 {
   "ok": true,
-  "polygons": 128,
-  "triangles": 8,
+  "surfaceLeafCount": 128,
+  "triangleCount": 8,
 }
 `;
 

@@ -203,13 +203,12 @@ export function updateGlobalFilterTrigger({
  *
  * @param {'preview' | 'charts' | 'panel'} activeTab
  * @param {(partial: Object) => void} onChartConfigChange
- * @param {*} _configIgnored - Kept for backward signature compatibility.
  * @param {Object} [options]
  * @param {() => void} [options.onGlobalFilterOpen]
  * @param {{ hasDataset: boolean, globalFilter: Object, filteredCount: number, totalCount: number }} [options.triggerState]
  * @returns {void}
  */
-export function updateTabs(activeTab, onChartConfigChange, _configIgnored, options = {}) {
+export function updateTabs(activeTab, onChartConfigChange, options = {}) {
 	setupTabListeners(onChartConfigChange, options.onGlobalFilterOpen);
 	updateTabsUI(activeTab);
 	if (options.triggerState) {

@@ -499,7 +499,7 @@ lets the live preview skip re-rendering the panel (section 9.4 / 10).
 
 `renderTinChart(container, rows, config, context)` reads `config.x`, `config.y` and
 `config.z` and normalizes visual settings once through `normalizeTinOptions`. It is the
-heart of the system. It returns a `Result`: `ok({ triangles, polygons })` on
+heart of the system. It returns a `Result`: `ok({ triangleCount, surfaceLeafCount })` on
 success or `fail(reason)` when it cannot draw. Here is the full pipeline in order.
 The mathematical justification for each step lives in section 2; this section is the
 mechanics.
@@ -760,11 +760,11 @@ up-right of the point.
 
 ### 7.18 Return value
 
-`ok({ triangles, polygons })` where `triangles` is the base Delaunay triangle count
-and `polygons` is the analytic leaf count (`triangleCount * 4 ** effectiveDepth`).
-`polygons` is computed, not counted (every base triangle yields exactly
-`4 ** depth` leaves, section 2.5). The field name `polygons` is kept for API/test
-stability even though leaves are no longer individual polygon elements.
+`ok({ triangleCount, surfaceLeafCount })` where `triangleCount` is the base Delaunay
+triangle count and `surfaceLeafCount` is the analytic leaf count
+(`triangleCount * 4 ** effectiveDepth`). Each base triangle yields exactly
+`4 ** depth` leaves (section 2.5). The leaves are drawn as grouped paths, so this
+is a count of surface leaves rather than SVG elements.
 
 ---
 
@@ -960,8 +960,8 @@ and [svg.fullRamp.test.js](../../../tests/charts/tin/renderers/svg.fullRamp.test
 Notable fill-path cases:
 
 - Subpath count (`M` count across `.tin-triangles path`) equals
-  `triangles * 4 ** depth` at depths 0 and 2; no stray `<polygon>` elements;
-  `result.polygons` matches the analytic count.
+  `triangleCount * 4 ** depth` at depths 0 and 2; no stray `<polygon>` elements;
+  `result.surfaceLeafCount` matches the analytic count.
 - Flat mode: one subpath per base triangle.
 - Optimized mode merges leaves into at most one path per bucket.
 - Full ramp uses `colorAt(meanZ)` rather than bucket-center colors, merges equal

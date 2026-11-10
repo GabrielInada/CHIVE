@@ -174,13 +174,12 @@ function handleUpdateBlockHeight(blockId, heightPx) {
  * resulting state object is not `Object.freeze`d and remains read-only by
  * facade policy.
  *
- * @param {string} containerId - DOM element ID of the chart container (unused inside the function; preserved for caller traceability).
- * @param {string} chartBaseName - Display name for the snapshot.
+ * @param {string} title - Display name for the snapshot.
  * @param {Object | null} [metadata] - Chart-specific metadata (must include `type: ChartTypeKey`). When the type is missing or not supported, the call fails with `'unknown-type'`.
  * @returns {Result} On success: `{ ok: true, chartId }` with the new snapshot id. On failure: `{ ok: false, reason }` where reason is `'unknown-type'`, `'no-dataset'`, or `'add-error'`.
  * @fires STATE_EVENTS.CHART_ADDED - On success.
  */
-export function addChartToPanel(containerId, chartBaseName, metadata = null) {
+export function addChartToPanel(title, metadata = null) {
 	try {
 		const type = metadata?.type;
 		if (!type || !SUPPORTED_PANEL_CHART_TYPES.includes(type)) {
@@ -193,7 +192,7 @@ export function addChartToPanel(containerId, chartBaseName, metadata = null) {
 		const shown = deriveShownDataset(dataset);
 
 		const chartId = addChartSnapshot({
-			name: chartBaseName,
+			name: title,
 			type,
 			config: structuredClone(dataset.chartConfig?.[type] || {}),
 			dataSnapshot: structuredClone(shown.rows),
