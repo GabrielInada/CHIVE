@@ -8,6 +8,7 @@
  */
 
 import { t } from '../../../services/i18nService.js';
+import { DATASET_TAB_NAMES } from '../../../config/datasetWorkspace.js';
 import { countGlobalFilterRules, isGlobalFilterActive } from '../../../domain/filters/globalFilter.js';
 import { TAB_CONTENT_IDS } from '../domIds.js';
 
@@ -15,8 +16,6 @@ let listenersRegistered = false;
 let currentOnDatasetConfigChange = null;
 let currentOnGlobalFilterOpen = null;
 let globalFilterDialogOpen = false;
-
-const TAB_NAMES = ['preview', 'charts', 'panel'];
 
 /** @private */
 function getTabElements() {
@@ -117,7 +116,7 @@ export function updateTabsUI(activeTab) {
 	const { tabPreview, tabCharts, tabPanel, previewPanel, chartsPanel, dashboardPanel } = getTabElements();
 	if (!tabPreview || !tabCharts || !tabPanel || !previewPanel || !chartsPanel || !dashboardPanel) return;
 
-	const normalizedTab = TAB_NAMES.includes(activeTab) ? activeTab : 'preview';
+	const normalizedTab = DATASET_TAB_NAMES.includes(activeTab) ? activeTab : 'preview';
 	const pairs = [
 		['preview', tabPreview, previewPanel],
 		['charts', tabCharts, chartsPanel],

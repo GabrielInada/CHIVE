@@ -14,6 +14,7 @@
 import { normalizeColumnNameList } from '../../domain/datasets/columns.js';
 import { canonicalizeRows } from '../../domain/datasets/cellValues.js';
 import { BUBBLE_CHART } from '../../config/charts/definitions/bubble.js';
+import { DATASET_TAB_NAMES } from '../../config/datasetWorkspace.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../config/statistics.js';
 import { canonicalizeChartConfig } from '../../domain/charts/chartConfig.js';
 
@@ -47,8 +48,8 @@ function sanitizeBubbleConfig(bubbleConfig, declaredColumnNames) {
 	};
 }
 
-// Keep only non-array object chart-spec entries; renderers read sub-keys
-// and would explode on a string/number/array. The bubble block is additionally
+// Preserve supported activeTab values; chart-spec entries must be non-array
+// objects because renderers read their sub-keys. The bubble block is additionally
 // depth-bounded against the record's declared columns. validateDatasetRecord then
 // runs canonicalizeChartConfig on the result to fill defaults and trim stale
 // global-filter rules, so restored configs are canonical before render.
@@ -56,7 +57,9 @@ function sanitizeChartConfig(chartConfig, declaredColumnNames) {
 	if (!isNonArrayObject(chartConfig)) return {};
 	const sanitized = {};
 	for (const [chartKey, chartTypeConfig] of Object.entries(chartConfig)) {
-		if (isNonArrayObject(chartTypeConfig)) {
+		if (chartKey === 'activeTab') {
+			if (DATASET_TAB_NAMES.includes(chartTypeConfig)) sanitized.activeTab = chartTypeConfig;
+		} else if (isNonArrayObject(chartTypeConfig)) {
 			sanitized[chartKey] = chartKey === 'bubble'
 				? sanitizeBubbleConfig(chartTypeConfig, declaredColumnNames)
 				: chartTypeConfig;
