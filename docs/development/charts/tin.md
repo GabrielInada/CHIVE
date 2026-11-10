@@ -30,7 +30,7 @@ tests:
 - Browser-local rendering setting: [settingsService.js](../../../src/services/settingsService.js)
   and [settings.js](../../../src/config/settings.js)
 - Per-dataset config defaults: [tin.js](../../../src/config/charts/definitions/tin.js)
-- Bundled preset catalog: [presetCatalog.js](../../../src/data/presetCatalog.js)
+- Bundled sample dataset catalog: [sampleDatasetCatalog.js](../../../src/data/sampleDatasetCatalog.js)
 - Renderer tests: [base](../../../tests/charts/tin/renderers/svg.test.js),
   [isolines](../../../tests/charts/tin/renderers/svg.isolines.test.js), and
   [full-ramp color mode](../../../tests/charts/tin/renderers/svg.fullRamp.test.js)

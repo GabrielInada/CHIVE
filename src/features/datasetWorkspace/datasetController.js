@@ -17,7 +17,7 @@ import { openConfirmDialog } from '../../ui/confirmDialog.js';
 import { FILE_IDS } from './domIds.js';
 import { uploadDatasetFiles } from './workflows/uploadDataset.js';
 import { createJoinedDataset } from './workflows/joinDatasets.js';
-import { loadPresetDataset } from './workflows/loadPresetDataset.js';
+import { loadSampleDataset } from './workflows/loadSampleDataset.js';
 
 function confirmLargeData(message) {
 	return openConfirmDialog({
@@ -163,13 +163,13 @@ export async function handleJoinDatasetRequest(spec) {
 }
 
 /**
- * Delegate a preset request to the controller-internal workflow. Dataset
+ * Delegate a sample dataset request to the controller-internal workflow. Dataset
  * selection stays on this public controller and is threaded into the workflow
  * to avoid a circular dependency.
  *
- * @param {import('../../types.js').PresetDescriptor & { nameKey: string, rowCount: number }} preset
+ * @param {import('../../types.js').SampleDatasetDescriptor & { nameKey: string, rowCount: number }} sampleDataset
  * @returns {Promise<Result>}
  */
-export async function handlePresetDatasetRequest(preset) {
-	return loadPresetDataset(preset, { selectDataset });
+export async function handleSampleDatasetRequest(sampleDataset) {
+	return loadSampleDataset(sampleDataset, { selectDataset });
 }

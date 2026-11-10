@@ -18,7 +18,7 @@ function buildChartCard(type, translate, isActive) {
 	const catalogEntry = CHART_CATALOG[type];
 	const card = document.createElement('button');
 	card.type = 'button';
-	card.className = `preset-card chart-picker-card${isActive ? ' selected' : ''}`;
+	card.className = `picker-card chart-picker-card${isActive ? ' selected' : ''}`;
 	card.dataset.chartType = type;
 
 	const preview = document.createElement('span');
@@ -28,7 +28,7 @@ function buildChartCard(type, translate, isActive) {
 	card.appendChild(preview);
 
 	const name = document.createElement('div');
-	name.className = 'preset-card-name';
+	name.className = 'picker-card-name';
 	name.textContent = translate(`chive-chart-toggle-${type}`);
 	card.appendChild(name);
 
@@ -38,7 +38,7 @@ function buildChartCard(type, translate, isActive) {
 	card.appendChild(tag);
 
 	const desc = document.createElement('div');
-	desc.className = 'preset-card-desc';
+	desc.className = 'picker-card-desc';
 	desc.textContent = translate(`chive-viz-${type}-desc`);
 	card.appendChild(desc);
 

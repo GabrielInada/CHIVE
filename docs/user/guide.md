@@ -141,7 +141,7 @@ For exact storage keys, payload contents, and trust boundaries, see
 
 - Project import currently accepts full project files. Work-only project files
   are export-only.
-- CHIVE does not currently bundle a network preset. Use the manual CSV example
+- CHIVE does not currently bundle a network sample dataset. Use the manual CSV example
   in [Chart and data reference](chart-reference.md#csv-examples-for-network-and-tin).
 - Scatter date columns currently classify as categorical axes. See the
   [scatter chart deep dive](../development/charts/scatter.md#22-axis-types-numeric-vs-categorical)

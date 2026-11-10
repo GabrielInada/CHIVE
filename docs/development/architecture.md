@@ -98,7 +98,7 @@ The bus has three production routing styles:
 | Feature flow owners | Dataset controller and bindings, chart-controls controller, panel controller, settings controller, `uiManager.js` | Translate intent, call public facades/services, and own domain-specific render triggering. |
 | State core | `state/appState.js`, domain facades, panel mutation internals, `stateEvents.js` | Ordinary durable writes enter through the public facade surface. |
 | Presentation | Feature views/dialogs, panel views/slots/export, chart packages and registries | Render from explicit inputs or read-only getters; surface user actions through callbacks. |
-| Browser services | Persistence, ingest worker host, i18n, settings, presets, storage and downloads | Own browser I/O and other effects; persistence internals stay behind `services/persistence.js`. |
+| Browser services | Persistence, ingest worker host, i18n, settings, sample datasets, storage and downloads | Own browser I/O and other effects; persistence internals stay behind `services/persistence.js`. |
 | Pure leaves | `config/`, `utils/`, and `domain/` | Hold static configuration, ownership-neutral helpers, and product rules without DOM effects. |
 | Ownerless UI mechanics | `ui/` | May touch the DOM but is a strict import leaf reusable by higher owners. |
 

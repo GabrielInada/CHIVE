@@ -36,7 +36,7 @@ import {
 	selectDataset,
 	removeDatasetByIndex,
 	handleJoinDatasetRequest,
-	handlePresetDatasetRequest,
+	handleSampleDatasetRequest,
 } from '../features/datasetWorkspace/datasetController.js';
 import { syncSidebarToTab } from './uiManager.js';
 
@@ -222,7 +222,7 @@ function renderDatasetListView(datasets, activeIndex) {
 		selectDataset,
 		removeDatasetByIndex,
 		handleJoinDatasetRequest,
-		handlePresetDatasetRequest,
+		handleSampleDatasetRequest,
 	);
 }
 

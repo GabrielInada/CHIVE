@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { loadPresetDataset } from '../../../../src/features/datasetWorkspace/workflows/loadPresetDataset.js';
+import { loadSampleDataset } from '../../../../src/features/datasetWorkspace/workflows/loadSampleDataset.js';
 import { __setIngestWorkerFactoryForTesting } from '../../../../src/services/dataIngestService.js';
 import { setLocale, t } from '../../../../src/services/i18nService.js';
 import { applyStateSnapshot, getAllDatasets } from '../../../../src/state/appState.js';
@@ -13,7 +13,7 @@ vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	LARGE_DATASET_WARNING_ROWS: 1,
 }));
 
-const preset = { nameKey: 'chive-preset-iris-name', rowCount: 1, dataUrl: '/iris.csv', dataFormat: 'csv' };
+const sampleDataset = { nameKey: 'chive-sample-dataset-iris-name', rowCount: 1, dataUrl: '/iris.csv', dataFormat: 'csv' };
 const namedFailure = {
 	en: 'Could not load sample dataset "Iris". Please try again.',
 	'pt-BR': 'Não foi possível carregar o dataset de exemplo "Iris". Tente novamente.',
@@ -57,23 +57,23 @@ describe.each(['en', 'pt-BR'])('sample loading feedback in %s', language => {
 	function expectFailure(message) {
 		expect(document.querySelector('.error-notice > div')?.textContent).toBe(message);
 		expect(document.querySelector('.toast-progress.failure .toast-progress-label')?.textContent).toBe(message);
-		expect(document.body.textContent).not.toMatch(/chive-|preset-fetch|worker-error|private-detail|Upload failed|joined file|arquivo unido/);
+		expect(document.body.textContent).not.toMatch(/chive-|sample-dataset-fetch|worker-error|private-detail|Upload failed|joined file|arquivo unido/);
 		expect(getAllDatasets()).toEqual([]);
 		expect(selectDataset).not.toHaveBeenCalled();
 	}
 
 	it('reports a network failure without exposing its reason code', async () => {
 		fetchSource.mockRejectedValue(new Error('private-detail'));
-		await loadPresetDataset(preset, { selectDataset });
+		await loadSampleDataset(sampleDataset, { selectDataset });
 		expectFailure(namedFailure[language]);
 	});
 	it.each([404, 503])('reports HTTP %s as a sample-load failure', async status => {
 		fetchSource.mockResolvedValue({ ok: false, status });
-		await loadPresetDataset(preset, { selectDataset });
+		await loadSampleDataset(sampleDataset, { selectDataset });
 		expectFailure(namedFailure[language]);
 	});
 	it('reports a missing data URL without a diagnostic code', async () => {
-		await loadPresetDataset({ ...preset, dataUrl: '' }, { selectDataset });
+		await loadSampleDataset({ ...sampleDataset, dataUrl: '' }, { selectDataset });
 		expectFailure(namedFailure[language]);
 		expect(fetchSource).not.toHaveBeenCalled();
 	});
@@ -81,17 +81,17 @@ describe.each(['en', 'pt-BR'])('sample loading feedback in %s', language => {
 		const timeout = new AbortController();
 		vi.spyOn(AbortSignal, 'timeout').mockReturnValue(timeout.signal);
 		vi.stubGlobal('fetch', pendingFetch());
-		const operation = loadPresetDataset(preset, { selectDataset });
+		const operation = loadSampleDataset(sampleDataset, { selectDataset });
 		timeout.abort();
 		await operation;
-		expectFailure(t('chive-preset-fetch-timeout', ['Iris']));
+		expectFailure(t('chive-sample-dataset-fetch-timeout', ['Iris']));
 	});
 	it.each([
 		['csv', '', 'chive-ingest-error-csv-empty'],
 		['json', '{broken', 'chive-ingest-error-json-syntax'],
 	])('retains translated %s parsing details through the real ingest pipeline', async (dataFormat, text, key) => {
 		fetchSource.mockResolvedValue({ ok: true, text: async () => text });
-		await loadPresetDataset({ ...preset, dataFormat }, { selectDataset });
+		await loadSampleDataset({ ...sampleDataset, dataFormat }, { selectDataset });
 		const prefix = language === 'en' ? 'Could not load sample dataset "Iris": ' : 'Não foi possível carregar o dataset de exemplo "Iris": ';
 		expectFailure(prefix + t(key));
 	});
@@ -102,15 +102,16 @@ describe.each(['en', 'pt-BR'])('sample loading feedback in %s', language => {
 			},
 			terminate() {},
 		}));
-		await loadPresetDataset(preset, { selectDataset });
+		await loadSampleDataset(sampleDataset, { selectDataset });
 		expectFailure(namedFailure[language]);
 	});
 	it('hides unexpected exception text', async () => {
-		await loadPresetDataset({ ...preset, get dropColumns() { throw new Error('private-detail'); } }, { selectDataset });
+		await loadSampleDataset({ ...sampleDataset, get dropColumns() { throw new Error('private-detail'); } }, { selectDataset });
 		expectFailure(namedFailure[language]);
 	});
-	it('reports a missing preset without creating a progress toast', async () => {
-		await loadPresetDataset(null, { selectDataset });
+	it('reports a missing sample dataset without creating a progress toast', async () => {
+		const result = await loadSampleDataset(null, { selectDataset });
+		expect(result).toEqual({ ok: false, reason: 'sample-dataset-missing' });
 		expect(document.querySelector('.error-notice > div')?.textContent).toBe(unnamedFailure[language]);
 		expect(document.querySelector('#toast-progress')).toBeNull();
 		expect(fetchSource).not.toHaveBeenCalled();
@@ -125,7 +126,7 @@ describe.each(['en', 'pt-BR'])('sample loading feedback in %s', language => {
 		} else {
 			__setIngestWorkerFactoryForTesting(() => ({ postMessage() { started(); }, terminate() {} }));
 		}
-		const operation = loadPresetDataset(preset, { selectDataset });
+		const operation = loadSampleDataset(sampleDataset, { selectDataset });
 		await ready;
 		document.querySelector('.toast-progress-cancel').click();
 		await operation;
@@ -137,16 +138,16 @@ describe.each(['en', 'pt-BR'])('sample loading feedback in %s', language => {
 	});
 	it('adds a sample above the row limit without asking', async () => {
 		fetchSource.mockResolvedValue({ ok: true, text: async () => 'value\n1\n2\n' });
-		await loadPresetDataset(preset, { selectDataset });
+		await loadSampleDataset(sampleDataset, { selectDataset });
 		expect(getAllDatasets()[0].rows).toEqual([{ value: 1 }, { value: 2 }]);
 		expect(selectDataset).toHaveBeenCalledWith(0);
 	});
 	it('still adds and selects a successfully ingested sample', async () => {
-		await loadPresetDataset(preset, { selectDataset });
+		await loadSampleDataset(sampleDataset, { selectDataset });
 		expect(getAllDatasets()).toHaveLength(1);
 		expect(getAllDatasets()[0].rows).toEqual([{ value: 1 }]);
 		expect(selectDataset).toHaveBeenCalledWith(0);
 		expect(document.querySelector('.error-notice')).toBeNull();
-		expect(document.querySelector('.toast-progress.success .toast-progress-label')?.textContent).toBe(t('chive-preset-load-success', ['Iris']));
+		expect(document.querySelector('.toast-progress.success .toast-progress-label')?.textContent).toBe(t('chive-sample-dataset-load-success', ['Iris']));
 	});
 });

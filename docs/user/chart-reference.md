@@ -18,7 +18,7 @@ message instead of a drawing. This document lists, per chart type, the required 
 optional settings, how aggregation works, and the exact empty-state messages you may see.
 
 For the bundled sample datasets referenced below, see the
-[Preset dataset contributor guide](../development/preset-datasets.md). For how chart data is snapshotted
+[Sample dataset contributor guide](../development/sample-datasets.md). For how chart data is snapshotted
 into the dashboard panel, see the [Architecture reference](../development/architecture-reference.md).
 
 For an in-depth, code-level walkthrough of a single chart (the underlying math or algorithm,
@@ -258,8 +258,8 @@ versions are in `src/i18n/pt-BR.json`.
 
 ## CSV examples for Network and TIN
 
-CHIVE does not currently bundle a network preset. TIN does have the bundled
-Terrain Surface preset; the TIN CSV below is only a tiny manual example. Copy
+CHIVE does not currently bundle a network sample dataset. TIN does have the bundled
+Terrain Surface sample dataset; the TIN CSV below is only a tiny manual example. Copy
 either example into a file, save it with a `.csv` extension, and upload it
 through the normal file picker when you want a minimal hand-made dataset.
 

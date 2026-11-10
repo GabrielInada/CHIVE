@@ -30,7 +30,7 @@ const mocks = vi.hoisted(() => ({
 	selectDataset: vi.fn(),
 	removeDatasetByIndex: vi.fn(),
 	handleJoinDatasetRequest: vi.fn(),
-	handlePresetDatasetRequest: vi.fn(),
+	handleSampleDatasetRequest: vi.fn(),
 	syncSidebarToTab: vi.fn(),
 }));
 
@@ -75,7 +75,7 @@ vi.mock('../../src/features/datasetWorkspace/datasetController.js', () => ({
 	selectDataset: mocks.selectDataset,
 	removeDatasetByIndex: mocks.removeDatasetByIndex,
 	handleJoinDatasetRequest: mocks.handleJoinDatasetRequest,
-	handlePresetDatasetRequest: mocks.handlePresetDatasetRequest,
+	handleSampleDatasetRequest: mocks.handleSampleDatasetRequest,
 }));
 
 vi.mock('../../src/app/uiManager.js', () => ({
@@ -153,7 +153,7 @@ describe('renderCoordinator', () => {
 			mocks.selectDataset,
 			mocks.removeDatasetByIndex,
 			mocks.handleJoinDatasetRequest,
-			mocks.handlePresetDatasetRequest,
+			mocks.handleSampleDatasetRequest,
 		);
 		expect(mocks.renderEmptyState).toHaveBeenCalledTimes(1);
 		expect(mocks.renderSidebarPanel).toHaveBeenCalledTimes(1);
