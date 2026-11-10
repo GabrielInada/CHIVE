@@ -140,7 +140,7 @@ For a committed column-selection change:
 2. `renderCoordinator.setActiveDatasetColumnSelection` calls
    `setActiveDatasetColumnSelection` on the public state surface.
 3. The data facade validates unique declared names, stores a copied array, and
-   emits `STATE_EVENTS.COLUMNS_UPDATED` only when the ordered list changed.
+   emits `STATE_EVENTS.COLUMN_SELECTION_CHANGED` only when the ordered list changed.
 4. The render coordinator schedules the workspace and controls regions.
 5. A single animation-frame flush reads current state, derives the active
    dataset's shown dataset once (`domain/datasets/shownDataset.js`), and renders

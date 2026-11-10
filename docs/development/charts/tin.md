@@ -289,7 +289,7 @@ flowchart TB
         CONTROLS["tin/controls"] --> WRITER["ChartConfigWriter"]
         WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
         DFACADE --> DSTATE[("dataset.chartConfig.tin")]
-        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DFACADE -- DATASET_CONFIG_UPDATED --> COORD["renderCoordinator"]
         DSTATE -. read through getters .-> COORD
         WRITER -. preview .-> PREVIEW["Non-emitting config write<br/>+ throttled livePreviewRender"]
         PREVIEW --> DSTATE
@@ -865,7 +865,7 @@ Separately, `livePreviewRender` in
 doubling the work if a TIN chart was in the panel. That call was removed: panel
 blocks paint from detached `structuredClone` captures (section 6.2), so a live config
 edit can never change them. The picker's commit (`change`) event fires
-`CONFIG_UPDATED`, but that no longer re-renders the panel either: `onConfigUpdated`
+`DATASET_CONFIG_UPDATED`, but that no longer re-renders the panel either: `onConfigUpdated`
 repaints the workspace and chart-controls regions, and only an `activeTab` switch to
 the panel tab repaints the panel. A saved panel chart's appearance never tracks later
 config edits.
@@ -882,10 +882,10 @@ Two events are wired on each color input (the `color` widget in
 
 - **`input`** (fires continuously while the picker is open): writes the new color
   through `transformActiveDatasetConfigSilently` — a **non-emitting** facade that updates
-  state without firing `CONFIG_UPDATED` (which would trigger a config render and
+  state without firing `DATASET_CONFIG_UPDATED` (which would trigger a config render and
   rebuild the controls sidebar). Then it calls `triggerLiveRender()`.
 - **`change`** (fires when the picker closes): writes through the normal emitting
-  updater so `CONFIG_UPDATED` fires, auto-save marks the project dirty, and the
+  updater so `DATASET_CONFIG_UPDATED` fires, auto-save marks the project dirty, and the
   sidebar refreshes.
 
 `triggerLiveRender` ([livePreviewBridge.js](../../../src/features/datasetWorkspace/chartControls/livePreviewBridge.js))

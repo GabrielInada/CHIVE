@@ -175,11 +175,11 @@ relies on stable array references.
 
 | Method | Mutation and event | Accepted values and no-ops |
 |---|---|---|
-| `setActiveDataset(index)` | Stores and emits `ACTIVE_DATASET` only when the index changes. | Accepts integer `-1` or an in-range dataset index; throws for every other value. |
+| `setActiveDataset(index)` | Stores and emits `ACTIVE_DATASET_CHANGED` only when the index changes. | Accepts integer `-1` or an in-range dataset index; throws for every other value. |
 | `addDataset(dataset)` | Mutates the caller by assigning a missing id and canonical `chartConfig`, pushes it, maybe selects it, emits `DATASET_ADDED`, returns the index. | Throws unless `dataset` is truthy and `dataset.rows` is an array. It does not validate the remaining record shape. |
 | `removeDataset(index)` | Splices a dataset, adjusts selection, preserves detached panel captures and both assignment maps, then emits `DATASET_REMOVED`. | Accepts only an in-range integer; throws before mutation otherwise. |
 | `updateActiveDatasetConfig(updates)` | Canonicalizes current config, shallow-merges a non-array object patch, canonicalizes again, stores it, and emits the raw `updates` argument. | No active dataset means no-op/no event. A null, array, or primitive patch is treated as `{}` for mutation but is still emitted verbatim. |
-| `setActiveDatasetColumnSelection(columnNames)` | Stores a copied list and emits it as `COLUMNS_UPDATED` only when ordered contents change. | No active dataset means no-op/no event, without validating the argument. Otherwise requires an array of distinct strings declared by the active dataset; malformed, duplicate, and unknown names throw before mutation. |
+| `setActiveDatasetColumnSelection(columnNames)` | Stores a copied list and emits it as `COLUMN_SELECTION_CHANGED` only when ordered contents change. | No active dataset means no-op/no event, without validating the argument. Otherwise requires an array of distinct strings declared by the active dataset; malformed, duplicate, and unknown names throw before mutation. |
 | `transformActiveDatasetConfigSilently(updater)` | Replaces config with `updater(currentConfig)` and emits nothing. | No active dataset means no-op. The callback and returned shape are not validated; exceptions propagate. Reserved for continuous preview writes. |
 | `setActiveChartType(chartType, activatedOverrides)` | Enables exactly the selected canonical chart key, or disables every chart for `null`; canonicalizes and emits `{ activeChartType }`. | No active dataset or an unknown non-null key means no-op/no event. Non-array object overrides apply only to a non-null selected type. A valid call emits even if it reproduces the current state. |
 
@@ -187,7 +187,7 @@ relies on stable array references.
 
 | Method | Mutation and event | Accepted values and no-ops |
 |---|---|---|
-| `addChartSnapshot(snapshot)` | Allocates `nextChartId`, normalizes snapshot fields, pushes, emits `CHART_ADDED`, and returns id. | Caller id is ignored. Name is stringified/sanitized; `metaSummary` is capped at 180; missing arrays become empty; missing type/config/metadata become `null`; missing `createdAt` gets the current ISO time. A missing snapshot object throws. The facade stores supplied config/data/column/metadata references; the production controller performs the structured clones before calling it. |
+| `addChartSnapshot(snapshot)` | Allocates `nextChartId`, normalizes snapshot fields, pushes, emits `CHART_SNAPSHOT_ADDED`, and returns id. | Caller id is ignored. Name is stringified/sanitized; `metaSummary` is capped at 180; missing arrays become empty; missing type/config/metadata become `null`; missing `createdAt` gets the current ISO time. A missing snapshot object throws. The facade stores supplied config/data/column/metadata references; the production controller performs the structured clones before calling it. |
 | `removeChartSnapshot(chartId)` | Removes the matching chart and legacy/per-block assignments, ensures a block, and emits the normalized id. | Accepts a non-negative safe integer or decimal-integer string. Malformed ids throw; a valid missing id is no-op/no event. |
 | `clearPanel()` | Drops charts and legacy slots, resets both counters, creates one default block, sets `panel.layout`, and emits `PANEL_CLEARED`. | Always mutates and emits. |
 | `addPanelBlock(templateId)` | Ensures a default block, appends one, increments id, emits `PANEL_BLOCK_ADDED`, and returns the block id. | Requires an exact registry template id. Returns `null` with no event at the four-block limit; invalid template ids throw. |
@@ -239,13 +239,13 @@ The `Emitters` and `Production subscriptions` cells use
 
 | Constant | Value | Emitters | Production subscriptions | Payload |
 |---|---|---|---|---|
-| `ACTIVE_DATASET` | `activeDataset` | `src/state/dataStateFacade.js#setActiveDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Stored index argument. |
+| `ACTIVE_DATASET_CHANGED` | `activeDataset` | `src/state/dataStateFacade.js#setActiveDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Stored index argument. |
 | `DATASET_ADDED` | `datasetAdded` | `src/state/dataStateFacade.js#addDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | `{ index, dataset }`, where dataset is the stored live record. |
 | `DATASET_REMOVED` | `datasetRemoved` | `src/state/dataStateFacade.js#removeDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw index argument. |
-| `CONFIG_UPDATED` | `configUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetConfig`<br>`src/state/dataStateFacade.js#setActiveChartType` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw update argument, or `{ activeChartType }`. |
-| `COLUMNS_UPDATED` | `columnsUpdated` | `src/state/dataStateFacade.js#setActiveDatasetColumnSelection` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Copied, validated column-selection array. |
-| `CHART_ADDED` | `chartAdded` | `src/state/panelStateFacade.js#addChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | `{ id, snapshot }`. |
-| `CHART_REMOVED` | `chartRemoved` | `src/state/panelStateFacade.js#removeChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | Normalized non-negative safe-integer chart id. |
+| `DATASET_CONFIG_UPDATED` | `configUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetConfig`<br>`src/state/dataStateFacade.js#setActiveChartType` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw update argument, or `{ activeChartType }`. |
+| `COLUMN_SELECTION_CHANGED` | `columnsUpdated` | `src/state/dataStateFacade.js#setActiveDatasetColumnSelection` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Copied, validated column-selection array. |
+| `CHART_SNAPSHOT_ADDED` | `chartAdded` | `src/state/panelStateFacade.js#addChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | `{ id, snapshot }`. |
+| `CHART_SNAPSHOT_REMOVED` | `chartRemoved` | `src/state/panelStateFacade.js#removeChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | Normalized non-negative safe-integer chart id. |
 | `PANEL_CLEARED` | `panelCleared` | `src/state/panelStateFacade.js#clearPanel` | `src/features/panel/panelController.js#initPanelController` | `undefined`. |
 | `PANEL_BLOCK_ADDED` | `panelBlockAdded` | `src/state/panelStateFacade.js#addPanelBlock` | `src/features/panel/panelController.js#initPanelController` | New live block. |
 | `PANEL_BLOCK_REMOVED` | `panelBlockRemoved` | `src/state/panelStateFacade.js#removePanelBlock` | `src/features/panel/panelController.js#initPanelController` | Raw block id. |
@@ -266,7 +266,7 @@ Production subscriptions are installed in three places:
 
 | Owner | Direct subscriptions | Timing | Render or side effect |
 |---|---|---|---|
-| `app/renderCoordinator.js` | `ACTIVE_DATASET`, `DATASET_ADDED`, `DATASET_REMOVED`, `COLUMNS_UPDATED`, `CONFIG_UPDATED`, `STATE_HYDRATED`, `PREVIEW_ROWS_CHANGED` | Schedules and coalesces work with `requestAnimationFrame`. | Full refresh for dataset selection/add/remove and hydration; workspace + controls for columns/config; panel region additionally when config payload has `activeTab === 'panel'`; workspace for preview rows. |
+| `app/renderCoordinator.js` | `ACTIVE_DATASET_CHANGED`, `DATASET_ADDED`, `DATASET_REMOVED`, `COLUMN_SELECTION_CHANGED`, `DATASET_CONFIG_UPDATED`, `STATE_HYDRATED`, `PREVIEW_ROWS_CHANGED` | Schedules and coalesces work with `requestAnimationFrame`. | Full refresh for dataset selection/add/remove and hydration; workspace + controls for columns/config; panel region additionally when config payload has `activeTab === 'panel'`; workspace for preview rows. |
 | `features/panel/panelController.js` | Eleven chart/block events listed in the event table. | Listener callbacks render synchronously in the emitter's call stack. | Chart add/remove/slot: sidebar + canvas. Layout events: canvas. Clear: sidebar + canvas. |
 | `services/persistence/autoSave.js` | `WILDCARD` | UI prefs are attempted immediately; project writes are debounced and asynchronous. | Writes `chive.ui` for the two UI events. Ignores those UI events and `STATE_HYDRATED` for project dirtiness; every other nonempty event type marks the project dirty. |
 
@@ -527,7 +527,7 @@ preserves these captures and their legacy/per-block slot assignments.
    the stored config block, the rows the global filter keeps, and every dataset
    column.
 2. `addChartSnapshot` normalizes and stores the snapshot, then synchronously
-   emits `CHART_ADDED`.
+   emits `CHART_SNAPSHOT_ADDED`.
 3. The panel controller's typed subscriber synchronously renders the sidebar
    and canvas.
 4. `panelView.js` builds assigned slots and the slot lifecycle resolves the

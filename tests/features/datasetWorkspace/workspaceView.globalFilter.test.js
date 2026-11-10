@@ -65,7 +65,7 @@ function makeDataset({ rows = ROWS, columns = COLUMNS, selectedColumns, chartCon
 
 function render(dataset, options = {}) {
 	const shown = deriveShownDataset(dataset);
-	renderDatasetWorkspace(shown, { previewRows: 10, onChartConfigChange: vi.fn(), ...options });
+	renderDatasetWorkspace(shown, { previewRows: 10, onDatasetConfigChange: vi.fn(), ...options });
 	return shown;
 }
 
@@ -120,10 +120,10 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 	});
 
 	it('hands the charts the shown dataset and the config-change callback', () => {
-		const onChartConfigChange = vi.fn();
-		const shown = render(makeDataset({ chartConfig: { activeTab: 'charts' } }), { onChartConfigChange });
+		const onDatasetConfigChange = vi.fn();
+		const shown = render(makeDataset({ chartConfig: { activeTab: 'charts' } }), { onDatasetConfigChange });
 
-		expect(mocks.renderCharts).toHaveBeenCalledWith(shown, onChartConfigChange);
+		expect(mocks.renderCharts).toHaveBeenCalledWith(shown, onDatasetConfigChange);
 	});
 
 	it('keeps applying a rule while the column list hides its column', () => {
@@ -157,12 +157,12 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 	});
 
 	it('opens the global-filter dialog and applies returned filters', async () => {
-		const onChartConfigChange = vi.fn();
+		const onDatasetConfigChange = vi.fn();
 		const dataset = makeDataset({ rows: [{ region: 'A', value: 1 }] });
 		const nextFilter = { combine: 'AND', rules: [{ column: 'region', mode: 'categorical', include: ['v:A'] }] };
 		mocks.openGlobalFilterDialog.mockResolvedValueOnce({ action: 'apply', filter: nextFilter });
 
-		render(dataset, { onChartConfigChange });
+		render(dataset, { onDatasetConfigChange });
 
 		await mocks.updateTabs.mock.calls[0][2].onGlobalFilterOpen();
 
@@ -173,7 +173,7 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 			initialFilter: expect.objectContaining({ rules: [] }),
 			translate: mocks.t,
 		}));
-		expect(onChartConfigChange).toHaveBeenCalledWith({ globalFilter: nextFilter });
+		expect(onDatasetConfigChange).toHaveBeenCalledWith({ globalFilter: nextFilter });
 	});
 
 	it.each([
@@ -190,13 +190,13 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 			expectedPreviewRows: 1,
 		},
 	])('derives $label locally without writing config back during render', ({ globalFilter, expectedRules, expectedPreviewRows }) => {
-		const onChartConfigChange = vi.fn();
+		const onDatasetConfigChange = vi.fn();
 
-		render(makeDataset({ chartConfig: { globalFilter } }), { onChartConfigChange });
+		render(makeDataset({ chartConfig: { globalFilter } }), { onDatasetConfigChange });
 
 		// Checked before any dialog/token callback runs: those still write config
 		// legitimately, but the render itself must not.
-		expect(onChartConfigChange).not.toHaveBeenCalled();
+		expect(onDatasetConfigChange).not.toHaveBeenCalled();
 		const triggerState = mocks.updateTabs.mock.calls[0][2].triggerState;
 		expect(triggerState.globalFilter.rules).toEqual(expectedRules);
 		expect(mocks.renderTablePreview.mock.calls[0][0]).toHaveLength(expectedPreviewRows);
@@ -240,21 +240,21 @@ describe('renderDatasetWorkspace global filter behavior', () => {
 	});
 
 	it('handles global-filter dialog clear, cancel, and disabled callback paths', async () => {
-		const onChartConfigChange = vi.fn();
+		const onDatasetConfigChange = vi.fn();
 		const dataset = makeDataset({ rows: [{ region: 'A', value: 1 }] });
 		const cleared = { combine: 'AND', rules: [] };
 
 		mocks.openGlobalFilterDialog.mockResolvedValueOnce({ action: 'clear', filter: cleared });
-		render(dataset, { onChartConfigChange });
+		render(dataset, { onDatasetConfigChange });
 		await mocks.updateTabs.mock.calls.at(-1)[2].onGlobalFilterOpen();
-		expect(onChartConfigChange).toHaveBeenCalledWith({ globalFilter: cleared });
+		expect(onDatasetConfigChange).toHaveBeenCalledWith({ globalFilter: cleared });
 
 		mocks.openGlobalFilterDialog.mockResolvedValueOnce(null);
-		render(dataset, { onChartConfigChange });
+		render(dataset, { onDatasetConfigChange });
 		await mocks.updateTabs.mock.calls.at(-1)[2].onGlobalFilterOpen();
-		expect(onChartConfigChange).toHaveBeenCalledTimes(1);
+		expect(onDatasetConfigChange).toHaveBeenCalledTimes(1);
 
-		render(dataset, { onChartConfigChange: null });
+		render(dataset, { onDatasetConfigChange: null });
 		await mocks.updateTabs.mock.calls.at(-1)[2].onGlobalFilterOpen();
 		expect(mocks.openGlobalFilterDialog).toHaveBeenCalledTimes(2);
 	});

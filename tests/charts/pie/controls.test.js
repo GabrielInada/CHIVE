@@ -325,7 +325,7 @@ describe('pieControls writes', () => {
 
 	// Per-slice color writes must never mutate dataset.chartConfig directly. On
 	// `input` the write goes through writer.preview (the non-emitting path: no
-	// CONFIG_UPDATED, no sidebar rebuild, so the open picker keeps focus); on
+	// DATASET_CONFIG_UPDATED, no sidebar rebuild, so the open picker keeps focus); on
 	// `change` writer.commit takes the final value. If a bypass assigned to
 	// dataset.chartConfig.pie.customSliceColors, neither writer method would be
 	// called and this test would fail. chartConfigAdapter.test.js owns which

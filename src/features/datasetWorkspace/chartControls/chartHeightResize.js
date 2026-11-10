@@ -11,7 +11,7 @@
  * controls write theirs. While a drag runs, `preview` stores the height
  * without emitting and repaints the chart through the throttled live render,
  * exactly like a color picker's `input`; `commit` runs once on release so
- * CONFIG_UPDATED, the sidebar refresh, and auto-save fire with the final
+ * DATASET_CONFIG_UPDATED, the sidebar refresh, and auto-save fire with the final
  * height.
  *
  * @typedef {import('../../../types.js').ChartTypeKey} ChartTypeKey
@@ -81,7 +81,7 @@ function readChartHeight(chartKey, container) {
 
 /**
  * Commit a height from the keyboard, clamped to the chart's limits. Same cost
- * and effects as a control's `change`: CONFIG_UPDATED, sidebar refresh,
+ * and effects as a control's `change`: DATASET_CONFIG_UPDATED, sidebar refresh,
  * auto-save dirty.
  *
  * @private

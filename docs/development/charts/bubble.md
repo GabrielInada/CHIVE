@@ -99,7 +99,7 @@ flowchart TB
         CONTROLS["bubble/controls"] --> WRITER["ChartConfigWriter"]
         WRITER -- commit --> DFACADE["Data Facade<br/>updateActiveDatasetConfig"]
         DFACADE --> DSTATE[("dataset.chartConfig.bubble")]
-        DFACADE -- CONFIG_UPDATED --> COORD["renderCoordinator"]
+        DFACADE -- DATASET_CONFIG_UPDATED --> COORD["renderCoordinator"]
         DSTATE -. read through getters .-> COORD
         COORD --> CHARTSVIEW["chartsView.renderCharts"]
         CHARTSVIEW --> WREG["workspace registry"]

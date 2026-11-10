@@ -88,11 +88,11 @@ export function createPanelStateFacade({
 	 *
 	 * @param {Partial<ChartSnapshot>} chartSnapshot - Caller-provided snapshot. `id` is assigned here and ignored if passed in.
 	 * @returns {number} The newly assigned snapshot id.
-	 * @fires STATE_EVENTS.CHART_ADDED
+	 * @fires STATE_EVENTS.CHART_SNAPSHOT_ADDED
 	 */
 	function addChartSnapshot(chartSnapshot) {
 		const { id, snapshot } = addChartSnapshotToState(appState.panel, chartSnapshot, sanitizeChartName);
-		emitStateChange(STATE_EVENTS.CHART_ADDED, { id, snapshot });
+		emitStateChange(STATE_EVENTS.CHART_SNAPSHOT_ADDED, { id, snapshot });
 		return id;
 	}
 
@@ -103,12 +103,12 @@ export function createPanelStateFacade({
 	 *
 	 * @param {number | string} chartId - Non-negative safe integer or decimal-integer DOM string.
 	 * @throws {Error} When `chartId` is malformed.
-	 * @fires STATE_EVENTS.CHART_REMOVED - Emitted only when a matching snapshot is removed.
+	 * @fires STATE_EVENTS.CHART_SNAPSHOT_REMOVED - Emitted only when a matching snapshot is removed.
 	 */
 	function removeChartSnapshot(chartId) {
 		const normalizedId = removeChartSnapshotFromState(appState, chartId, ensureDefaultPanelBlock);
 		if (normalizedId === null) return;
-		emitStateChange(STATE_EVENTS.CHART_REMOVED, normalizedId);
+		emitStateChange(STATE_EVENTS.CHART_SNAPSHOT_REMOVED, normalizedId);
 	}
 
 	/**

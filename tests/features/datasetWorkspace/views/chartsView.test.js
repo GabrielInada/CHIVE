@@ -182,13 +182,13 @@ describe('renderCharts tooltip filter actions', () => {
 		setupDom();
 	});
 
-	function filterCallbacks(dataset, onChartConfigChange) {
-		renderCharts(deriveShownDataset(dataset), onChartConfigChange);
+	function filterCallbacks(dataset, onDatasetConfigChange) {
+		renderCharts(deriveShownDataset(dataset), onDatasetConfigChange);
 		return inputsByType().bar.filterCallbacks;
 	}
 
 	it('turns each tooltip action into a chart config change', () => {
-		const onChartConfigChange = vi.fn();
+		const onDatasetConfigChange = vi.fn();
 		const dataset = makeDataset({
 			enabled: ['bar'],
 			globalFilter: {
@@ -197,47 +197,47 @@ describe('renderCharts tooltip filter actions', () => {
 			},
 		});
 
-		const callbacks = filterCallbacks(dataset, onChartConfigChange);
+		const callbacks = filterCallbacks(dataset, onDatasetConfigChange);
 		callbacks.onAddToGlobalFilter('region', 'v:C');
 		callbacks.onFocusGlobalFilter('region', 'v:C');
 		callbacks.onExcludeGlobalFilter('region', 'v:C');
 		callbacks.onRemoveFromGlobalFilter('region', 'v:A');
 		callbacks.onBringBackGlobalFilter('region', 'v:B');
 
-		expect(onChartConfigChange).toHaveBeenCalledTimes(5);
-		expect(onChartConfigChange.mock.calls[0][0].globalFilter.rules[0].include).toContain('v:C');
-		expect(onChartConfigChange.mock.calls[1][0].globalFilter.rules[0]).toEqual(expect.objectContaining({
+		expect(onDatasetConfigChange).toHaveBeenCalledTimes(5);
+		expect(onDatasetConfigChange.mock.calls[0][0].globalFilter.rules[0].include).toContain('v:C');
+		expect(onDatasetConfigChange.mock.calls[1][0].globalFilter.rules[0]).toEqual(expect.objectContaining({
 			column: 'region',
 			include: ['v:C'],
 		}));
-		expect(onChartConfigChange.mock.calls[2][0].globalFilter.rules[0].exclude).toContain('v:C');
-		expect(onChartConfigChange.mock.calls[3][0].globalFilter.rules[0].include).not.toContain('v:A');
-		expect(onChartConfigChange.mock.calls[4][0].globalFilter.rules[0].exclude).not.toContain('v:B');
+		expect(onDatasetConfigChange.mock.calls[2][0].globalFilter.rules[0].exclude).toContain('v:C');
+		expect(onDatasetConfigChange.mock.calls[3][0].globalFilter.rules[0].include).not.toContain('v:A');
+		expect(onDatasetConfigChange.mock.calls[4][0].globalFilter.rules[0].exclude).not.toContain('v:B');
 		expect(callbacks.getTokenFilterState('region', 'v:A')).toBe('included');
 		expect(callbacks.isShowOnlyThisRedundant('region', 'v:A')).toBe(false);
 	});
 
 	it('ignores an action on a column the dataset lacks or with a non-string token', () => {
-		const onChartConfigChange = vi.fn();
+		const onDatasetConfigChange = vi.fn();
 
-		const callbacks = filterCallbacks(makeDataset({ enabled: ['bar'] }), onChartConfigChange);
+		const callbacks = filterCallbacks(makeDataset({ enabled: ['bar'] }), onDatasetConfigChange);
 		callbacks.onAddToGlobalFilter('missing', 'v:A');
 		callbacks.onFocusGlobalFilter('region', 42);
 		callbacks.onExcludeGlobalFilter(42, 'v:A');
 		callbacks.onRemoveFromGlobalFilter('missing', 'v:A');
 		callbacks.onBringBackGlobalFilter('region', 42);
 
-		expect(onChartConfigChange).not.toHaveBeenCalled();
+		expect(onDatasetConfigChange).not.toHaveBeenCalled();
 	});
 
 	// A hidden column is still a dataset column, so its categories stay filterable.
 	it('filters by a column the column list hides', () => {
-		const onChartConfigChange = vi.fn();
+		const onDatasetConfigChange = vi.fn();
 
-		const callbacks = filterCallbacks(makeDataset({ enabled: ['bar'], selectedColumns: ['sales'] }), onChartConfigChange);
+		const callbacks = filterCallbacks(makeDataset({ enabled: ['bar'], selectedColumns: ['sales'] }), onDatasetConfigChange);
 		callbacks.onFocusGlobalFilter('region', 'v:A');
 
-		expect(onChartConfigChange).toHaveBeenCalledTimes(1);
+		expect(onDatasetConfigChange).toHaveBeenCalledTimes(1);
 	});
 
 	it('offers no actions without a callback, but still answers the lookups', () => {

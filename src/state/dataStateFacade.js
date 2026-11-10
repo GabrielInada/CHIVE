@@ -96,7 +96,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 *
 	 * @param {number} index - Zero-based index into the datasets array, or `-1` to deselect.
 	 * @throws {Error} When `index` is not an integer, is less than `-1`, or is beyond the datasets array.
-	 * @fires STATE_EVENTS.ACTIVE_DATASET - Only when the active index changes.
+	 * @fires STATE_EVENTS.ACTIVE_DATASET_CHANGED - Only when the active index changes.
 	 */
 	function setActiveDataset(index) {
 		if (!Number.isInteger(index) || index < -1 || index >= appState.data.datasets.length) {
@@ -104,7 +104,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		}
 		if (appState.data.activeIndex === index) return;
 		appState.data.activeIndex = index;
-		emitStateChange(STATE_EVENTS.ACTIVE_DATASET, index);
+		emitStateChange(STATE_EVENTS.ACTIVE_DATASET_CHANGED, index);
 	}
 
 	/**
@@ -171,7 +171,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 * dataset is active.
 	 *
 	 * @param {Object} updates - Partial `ChartConfig`-shaped patch.
-	 * @fires STATE_EVENTS.CONFIG_UPDATED
+	 * @fires STATE_EVENTS.DATASET_CONFIG_UPDATED
 	 */
 	function updateActiveDatasetConfig(updates) {
 		const dataset = getActiveDataset();
@@ -184,7 +184,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 			{ ...current, ...patch },
 			columnNames,
 		);
-		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, updates);
+		emitStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, updates);
 	}
 
 	/**
@@ -195,7 +195,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 *
 	 * @param {string[]} columnNames - Subset of names resolved from the dataset's column declarations (normally `columns[].name`; tolerated bare-string declarations also count).
 	 * @throws {Error} When an active dataset exists and the value is not an array of unique declared column names.
-	 * @fires STATE_EVENTS.COLUMNS_UPDATED - Only when the selection changes.
+	 * @fires STATE_EVENTS.COLUMN_SELECTION_CHANGED - Only when the selection changes.
 	 */
 	function setActiveDatasetColumnSelection(columnNames) {
 		const dataset = getActiveDataset();
@@ -220,7 +220,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 
 		const nextColumns = [...columnNames];
 		dataset.selectedColumns = nextColumns;
-		emitStateChange(STATE_EVENTS.COLUMNS_UPDATED, nextColumns);
+		emitStateChange(STATE_EVENTS.COLUMN_SELECTION_CHANGED, nextColumns);
 	}
 
 	/**
@@ -254,7 +254,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 	 *
 	 * @param {ChartTypeKey | null} chartType - Type to activate, or `null` to disable all.
 	 * @param {Object | null} [activatedOverrides] - Fields merged into the activated chart's config. Ignored when `chartType` is `null`.
-	 * @fires STATE_EVENTS.CONFIG_UPDATED - Single emit per call, regardless of overrides.
+	 * @fires STATE_EVENTS.DATASET_CONFIG_UPDATED - Single emit per call, regardless of overrides.
 	 */
 	function setActiveChartType(chartType, activatedOverrides = null) {
 		const dataset = getActiveDataset();
@@ -272,7 +272,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 			next[chartType] = { ...next[chartType], ...activatedOverrides };
 		}
 		dataset.chartConfig = canonicalizeChartConfig(next, columnNames);
-		emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { activeChartType: chartType });
+		emitStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, { activeChartType: chartType });
 	}
 
 	return {

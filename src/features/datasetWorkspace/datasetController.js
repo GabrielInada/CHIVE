@@ -38,7 +38,7 @@ let confirmFn = confirmLargeData;
  *
  * Dataset-list renders are not wired here: every add/remove/select routes
  * through the data facade and emits `DATASET_ADDED` / `DATASET_REMOVED` /
- * `ACTIVE_DATASET`, which `app/renderCoordinator.js` subscribes to. There is no
+ * `ACTIVE_DATASET_CHANGED`, which `app/renderCoordinator.js` subscribes to. There is no
  * change callback.
  *
  * @param {{ confirmCallback?: ((message: string) => boolean | Promise<boolean>) | null }} [options]
@@ -63,7 +63,7 @@ export async function handleFileUpload(files) {
 
 /**
  * Select a dataset as active. When the index changes, the facade emits
- * `ACTIVE_DATASET`, which drives the re-render; selecting the current index is
+ * `ACTIVE_DATASET_CHANGED`, which drives the re-render; selecting the current index is
  * a no-op.
  * @param {number} index - Dataset index
  */
@@ -153,7 +153,7 @@ export function setupFileInputListeners() {
 /**
  * Handle a join request from the dataset-list UI. The join workflow reports
  * its own progress, failures and success, and selects the new dataset.
- * Re-render is driven by the `DATASET_ADDED` / `ACTIVE_DATASET` emits.
+ * Re-render is driven by the `DATASET_ADDED` / `ACTIVE_DATASET_CHANGED` emits.
  *
  * @param {Object} spec - Forwarded to `createJoinedDataset`.
  * @returns {Promise<Result>}

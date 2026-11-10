@@ -20,49 +20,49 @@ export function createGlobalFilterActions({
   globalFilter,
   safeGlobalFilter,
   allColumnNames,
-  onChartConfigChange,
+  onDatasetConfigChange,
 }) {
-  const handleAddToGlobalFilter = onChartConfigChange
+  const handleAddToGlobalFilter = onDatasetConfigChange
     ? (column, token) => {
       if (typeof column !== 'string' || typeof token !== 'string') return;
       if (!allColumnNames.includes(column)) return;
       const merged = mergeIncludeTokenIntoFilter(globalFilter, column, token);
-      onChartConfigChange({ globalFilter: merged });
+      onDatasetConfigChange({ globalFilter: merged });
     }
     : null;
 
-  const handleShowOnlyThis = onChartConfigChange
+  const handleShowOnlyThis = onDatasetConfigChange
     ? (column, token) => {
       if (typeof column !== 'string' || typeof token !== 'string') return;
       if (!allColumnNames.includes(column)) return;
-      onChartConfigChange({ globalFilter: createSingleCategoryGlobalFilter(column, token) });
+      onDatasetConfigChange({ globalFilter: createSingleCategoryGlobalFilter(column, token) });
     }
     : null;
 
-  const handleExcludeFromGlobalFilter = onChartConfigChange
+  const handleExcludeFromGlobalFilter = onDatasetConfigChange
     ? (column, token) => {
       if (typeof column !== 'string' || typeof token !== 'string') return;
       if (!allColumnNames.includes(column)) return;
       const next = excludeTokenFromFilter(globalFilter, column, token);
-      onChartConfigChange({ globalFilter: next });
+      onDatasetConfigChange({ globalFilter: next });
     }
     : null;
 
-  const handleRemoveFromGlobalFilter = onChartConfigChange
+  const handleRemoveFromGlobalFilter = onDatasetConfigChange
     ? (column, token) => {
       if (typeof column !== 'string' || typeof token !== 'string') return;
       if (!allColumnNames.includes(column)) return;
       const next = removeIncludeTokenFromFilter(globalFilter, column, token);
-      onChartConfigChange({ globalFilter: next });
+      onDatasetConfigChange({ globalFilter: next });
     }
     : null;
 
-  const handleBringBackFromGlobalFilter = onChartConfigChange
+  const handleBringBackFromGlobalFilter = onDatasetConfigChange
     ? (column, token) => {
       if (typeof column !== 'string' || typeof token !== 'string') return;
       if (!allColumnNames.includes(column)) return;
       const next = removeExcludeTokenFromFilter(globalFilter, column, token);
-      onChartConfigChange({ globalFilter: next });
+      onDatasetConfigChange({ globalFilter: next });
     }
     : null;
 

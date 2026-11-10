@@ -35,9 +35,9 @@ describe('persistence', () => {
 
 	describe('dirty classification', () => {
 		it('treats the active dataset tab as durable project configuration', () => {
-			expect(isProjectDirtyEvent({ type: STATE_EVENTS.CONFIG_UPDATED, data: { activeTab: 'panel' } })).toBe(true);
-			expect(isProjectDirtyEvent({ type: STATE_EVENTS.CONFIG_UPDATED, data: { bar: { category: 'x' } } })).toBe(true);
-			expect(isProjectDirtyEvent({ type: STATE_EVENTS.ACTIVE_DATASET, data: 0 })).toBe(true);
+			expect(isProjectDirtyEvent({ type: STATE_EVENTS.DATASET_CONFIG_UPDATED, data: { activeTab: 'panel' } })).toBe(true);
+			expect(isProjectDirtyEvent({ type: STATE_EVENTS.DATASET_CONFIG_UPDATED, data: { bar: { category: 'x' } } })).toBe(true);
+			expect(isProjectDirtyEvent({ type: STATE_EVENTS.ACTIVE_DATASET_CHANGED, data: 0 })).toBe(true);
 			expect(isProjectDirtyEvent({ type: STATE_EVENTS.PREVIEW_ROWS_CHANGED, data: 50 })).toBe(false);
 		});
 	});
@@ -73,12 +73,12 @@ describe('persistence', () => {
 			});
 			activeController = enablePersistenceAutoSave(() => makeSnapshot(), { debounceMs: 2000 });
 
-			emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { activeTab: 'charts' });
+			emitStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, { activeTab: 'charts' });
 			await vi.advanceTimersByTimeAsync(2000);
 			expect(persist).toHaveBeenCalledTimes(1);
 			expect(activeController.getStatus().dirty).toBe(false);
 
-			emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { bar: { category: 'x' } });
+			emitStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, { bar: { category: 'x' } });
 			expect(activeController.getStatus().dirty).toBe(true);
 			await vi.advanceTimersByTimeAsync(1999);
 			expect(persist).toHaveBeenCalledTimes(1);
@@ -155,7 +155,7 @@ describe('persistence', () => {
 			await Promise.resolve();
 			expect(persist).toHaveBeenCalledTimes(1);
 
-			emitStateChange(STATE_EVENTS.CHART_ADDED, { chartId: 1 });
+			emitStateChange(STATE_EVENTS.CHART_SNAPSHOT_ADDED, { chartId: 1 });
 			let restoreVisibilityState = setDocumentVisibilityState('visible');
 			try {
 				document.dispatchEvent(new Event('visibilitychange'));
@@ -256,9 +256,9 @@ describe('persistence', () => {
 
 			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
 			await vi.advanceTimersByTimeAsync(1000);
-			emitStateChange(STATE_EVENTS.CHART_ADDED, { chartId: 1 });
+			emitStateChange(STATE_EVENTS.CHART_SNAPSHOT_ADDED, { chartId: 1 });
 			await vi.advanceTimersByTimeAsync(1000);
-			emitStateChange(STATE_EVENTS.CONFIG_UPDATED, { bar: { category: 'x' } });
+			emitStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, { bar: { category: 'x' } });
 			expect(persist).not.toHaveBeenCalled();
 
 			await vi.advanceTimersByTimeAsync(2000);
@@ -302,7 +302,7 @@ describe('persistence', () => {
 			// independent of the debounce trigger.
 			emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0 });
 			const first = activeController.saveNow();
-			emitStateChange(STATE_EVENTS.CHART_ADDED, { chartId: 1 });
+			emitStateChange(STATE_EVENTS.CHART_SNAPSHOT_ADDED, { chartId: 1 });
 			const second = activeController.saveNow();
 
 			expect(second).toBe(first);
@@ -364,7 +364,7 @@ describe('persistence', () => {
 				// Edited while the first save is in flight. Unsuspended, settling that
 				// save starts a second write from inside its own `finally`, which the
 				// caller of saveNow() has no handle on.
-				emitStateChange(STATE_EVENTS.CHART_ADDED, { chartId: 1 });
+				emitStateChange(STATE_EVENTS.CHART_SNAPSHOT_ADDED, { chartId: 1 });
 
 				const done = activeController.runWithSavesSuspended(async () => 'wiped');
 				resolvers[0]();

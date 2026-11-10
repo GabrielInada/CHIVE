@@ -79,7 +79,7 @@
  * @property {Array<Object<string, *>>} rows - Parsed rows. Each row's keys match `columns[i].name`.
  * @property {ColumnSpec[]} columns - Detected columns in source order.
  * @property {string[]} selectedColumns - Names of currently visible columns (subset of `columns[].name`).
- * @property {ChartConfig} chartConfig - Per-chart-type configuration.
+ * @property {ChartConfig} chartConfig - Dataset configuration: per-chart settings, active tab, and global filter.
  * @property {PrecomputedStats} [precomputedStats] - Worker-computed stats, optional.
  */
 
@@ -145,6 +145,10 @@
  * `src/config/charts/definitions/<type>.js` for each chart type's full field
  * set.
  *
+ * The `ChartConfig` name follows `Dataset.chartConfig`, which is also a
+ * persistence-worker message field. Both names stay to preserve that format
+ * when a page and its worker are running different code versions.
+ *
  * @typedef {Object} ChartConfig
  * @property {string} activeTab - Active tab id (e.g. `'preview'`, `'charts'`, `'panel'`).
  * @property {GlobalFilter} globalFilter
@@ -190,7 +194,7 @@
  *
  *   - `commit` writes through the emitting facade, so the chart config is
  *     canonicalized (an enumerated value the chart does not offer becomes its
- *     default), `CONFIG_UPDATED` fires, auto-save marks the project dirty, and
+ *     default), `DATASET_CONFIG_UPDATED` fires, auto-save marks the project dirty, and
  *     the controls sidebar refreshes.
  *   - `preview` writes through the non-emitting facade and repaints only the
  *     chart. Use it for continuous input (a color picker's `input` event):
