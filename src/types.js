@@ -1,10 +1,12 @@
 /**
  * CHIVE centralized JSDoc typedef catalog.
  *
- * No runtime exports. Consumers reference these shapes via:
- *   @typedef {import('../types.js').Dataset} Dataset
+ * No runtime exports. A consumer imports a shape with a typedef whose path
+ * runs from the consumer's own folder to this file, such as
+ * `@typedef {import('<relative path>/types.js').Dataset} Dataset`.
+ * Keep that example in backticks: a comment line that starts with
+ * `@typedef` declares a real typedef, which here would duplicate `Dataset`.
  *
- * Pull the relative path of this file from wherever the consumer lives.
  * Typedefs are not values, so barrel files do not propagate them. Always
  * import directly from this file.
  *

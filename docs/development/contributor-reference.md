@@ -42,7 +42,9 @@ JSDoc rules:
   `StateEventType`, ...). Import via
   `@typedef {import('../types.js').Foo} Foo` at the top of the consuming file,
   then reference `Foo` unqualified downstream. Barrels do not propagate
-  typedefs; always import from `src/types.js` directly.
+  typedefs; always import from `src/types.js` directly. The path is relative
+  to the consuming file, and `tests/lint/importPaths.test.js` fails when a
+  move leaves one pointing at a missing file.
 - **Mutable vs cloned returns:** functions that return a live state reference
   must say `"Live reference, do not mutate."` in the `@returns` description.
   Cloned returns say `"Deep clone."` Mutating a getter return bypasses the

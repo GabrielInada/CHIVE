@@ -64,8 +64,8 @@ function stopNetworkSimulation(container) {
  * (debounced via RAF).
  *
  * @param {HTMLElement} container
- * @param {import('../../types.js').ChartSnapshot} snapshot
- * @returns {import('../../types.js').Result | undefined} The render result; `undefined` when inputs are missing.
+ * @param {import('../../../types.js').ChartSnapshot} snapshot
+ * @returns {import('../../../types.js').Result | undefined} The render result; `undefined` when inputs are missing.
  */
 export function mountSlot(container, snapshot) {
 	if (!container || !snapshot) return;
