@@ -103,6 +103,7 @@ describe('createCheckboxControl', () => {
 		expect(input.type).toBe('checkbox');
 		expect(input.checked).toBe(true);
 		expect(input.id).toBe('cb-test');
+		expect(el.className).toBe('chart-control chart-control--inline');
 	});
 
 	it('creates unchecked disabled checkbox', () => {
@@ -167,7 +168,7 @@ describe('createSelectControl', () => {
 describe('createColorInputControl', () => {
 	it('creates wrapper, label, and color input with correct ids and classes', () => {
 		const el = createColorInputControl('color-test', 'My Color', '#abcdef', '#000000');
-		expect(el.className).toBe('chart-controle');
+		expect(el.className).toBe('chart-control');
 		const label = el.querySelector('label');
 		expect(label.htmlFor).toBe('color-test');
 		expect(label.textContent).toBe('My Color');

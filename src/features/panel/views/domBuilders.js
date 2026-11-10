@@ -281,11 +281,11 @@ export function createPanelSlotElement({
 		clearBtn.textContent = '×';
 		clearBtn.addEventListener('click', onClearSlot);
 
-		const svgDiv = document.createElement('div');
-		svgDiv.className = 'panel-slot-svg';
+		const chartContainer = document.createElement('div');
+		chartContainer.className = 'panel-chart-container';
 
 		slot.appendChild(clearBtn);
-		slot.appendChild(svgDiv);
+		slot.appendChild(chartContainer);
 
 		if (desktopDnd) {
 			slot.addEventListener('dragstart', e => {

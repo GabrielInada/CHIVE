@@ -263,6 +263,6 @@ the two surfaces. Panel export omission is covered in
   `viz-input-scatter3d-color`.
 - CSS: `.chart-canvas-3d` (canvas layout + `touch-action`),
   `.chart-canvas-title`, `.chart-sampling-notice`, `.visually-hidden`
-  (all in `chart-output.css`); `.panel-slot-svg canvas` in `panel.css`.
+  (all in `chart-output.css`); `.panel-chart-container canvas` in `panel.css`.
 - Tuning knobs: `SCATTER3D_CHART` in `config/charts/definitions/scatter3d.js` (`maxPoints`,
   `maxDevicePixelRatio`, camera speeds/clamps, size/opacity limits).

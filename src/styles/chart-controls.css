@@ -45,20 +45,13 @@
     background: var(--surface);
 }
 
-.charts-controles {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: var(--space-4);
-    margin-bottom: 14px;
-}
-
-.chart-controle {
+.chart-control {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
 }
 
-.chart-controle-inline {
+.chart-control--inline {
     justify-content: center;
 }
 
@@ -95,7 +88,7 @@
     color: var(--muted);
 }
 
-.chart-controle label {
+.chart-control label {
     font-size: var(--font-size-xs);
     color: var(--muted);
     text-transform: uppercase;

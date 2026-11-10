@@ -93,12 +93,12 @@ describe('panel slot lifecycle', () => {
 		expect(tooltipMock.hideChartTooltip).toHaveBeenCalled();
 	});
 
-	it('teardownAllSlots cleans every panel-slot-svg under root', () => {
+	it('teardownAllSlots cleans every panel-chart-container under root', () => {
 		const root = document.createElement('div');
 		const a = document.createElement('div');
-		a.className = 'panel-slot-svg';
+		a.className = 'panel-chart-container';
 		const b = document.createElement('div');
-		b.className = 'panel-slot-svg';
+		b.className = 'panel-chart-container';
 		root.appendChild(a);
 		root.appendChild(b);
 
