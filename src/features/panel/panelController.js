@@ -31,7 +31,6 @@ import {
 	updatePanelBlockProportions,
 	updatePanelBlockHeight,
 	repairPanelSlotReferences,
-	clearPanel,
 	onStateChange,
 	STATE_EVENTS,
 } from '../../state/appState.js';
@@ -304,14 +303,4 @@ export function setupPanelEventListeners() {
 		});
 	}
 
-}
-
-/**
- * Reset the panel to a single fresh `template-2col` block. Delegates to the
- * panel facade; the PANEL_CLEARED subscription re-renders sidebar and canvas.
- *
- * @fires STATE_EVENTS.PANEL_CLEARED
- */
-export function clearPanelData() {
-	clearPanel();
 }
