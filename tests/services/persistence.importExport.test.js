@@ -25,6 +25,39 @@ describe('persistence', () => {
 		configurePersistenceBackend(null);
 	});
 
+	it.each([
+		['preview', 'preview'],
+		['charts', 'charts'],
+		['panel', 'panel'],
+		[undefined, 'preview'],
+		['unknown', 'preview'],
+		['', 'preview'],
+		[null, 'preview'],
+		[1, 'preview'],
+		[true, 'preview'],
+		[['charts'], 'preview'],
+		[{ tab: 'charts' }, 'preview'],
+	])('imports saved activeTab %j as %s and retains it on reload', async (activeTab, expectedTab) => {
+		const dataset = {
+			...goodRecord(),
+			chartConfig: activeTab === undefined ? {} : { activeTab },
+		};
+		const exported = await exportProject(makeSnapshot({ data: { datasets: [dataset], activeIndex: 0 } }));
+		expect(exported.ok).toBe(true);
+		await clearPersistedState();
+
+		const applyStateSnapshot = vi.fn();
+		const imported = await importProjectBytes(exported.bytes, { applyStateSnapshot });
+		expect(imported.ok).toBe(true);
+		expect(applyStateSnapshot).toHaveBeenCalledTimes(1);
+		expect(applyStateSnapshot.mock.calls[0][0].data.datasets[0].chartConfig.activeTab).toBe(expectedTab);
+
+		const hydratedReplace = vi.fn();
+		await hydrateState({ applyStateSnapshot: hydratedReplace });
+		expect(hydratedReplace).toHaveBeenCalledTimes(1);
+		expect(hydratedReplace.mock.calls[0][0].data.datasets[0].chartConfig.activeTab).toBe(expectedTab);
+	});
+
 	it('exports full project bytes and imports them as the saved current project', async () => {
 		const exported = await exportProject(makeSnapshot());
 		expect(exported.ok).toBe(true);

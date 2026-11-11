@@ -34,7 +34,6 @@ const mocks = vi.hoisted(() => ({
     updatePanelBlockProportions: vi.fn(),
     updatePanelBlockHeight: vi.fn(),
     repairPanelSlotReferences: vi.fn(),
-    clearPanel: vi.fn(),
     onStateChange: vi.fn(),
   },
   panelView: {
@@ -149,7 +148,7 @@ describe('panelController facade branches', () => {
     expect(mocks.i18n.t).toHaveBeenCalledWith('chive-panel-export-omitted', 2);
   });
 
-  it('tolerates missing controls and exposes sidebar, clear, lookup, and export helpers', () => {
+  it('tolerates missing controls and exposes sidebar, lookup, and export helpers', () => {
     const feedback = vi.fn();
     panelController.initPanelController(feedback);
 
@@ -161,16 +160,6 @@ describe('panelController facade branches', () => {
     expect(mocks.appState.removeChartSnapshot).toHaveBeenCalledWith('chart-1');
 
     expect(panelController.getChartById('chart-1')).toEqual({ id: 'chart-1' });
-
-    // clearPanelData delegates to the facade; the re-render is driven by the
-    // PANEL_CLEARED subscription (the bus is mocked here, so it does not fan out),
-    // not by a direct render call.
-    mocks.panelView.renderSidebarPanel.mockClear();
-    mocks.panelView.renderCanvasPanel.mockClear();
-    panelController.clearPanelData();
-    expect(mocks.appState.clearPanel).toHaveBeenCalled();
-    expect(mocks.panelView.renderSidebarPanel).not.toHaveBeenCalled();
-    expect(mocks.panelView.renderCanvasPanel).not.toHaveBeenCalled();
 
     expect(panelController.exportPanelLayoutSvg()).toEqual({ ok: true });
     expect(mocks.svgExporter.exportPanelLayoutSvg).toHaveBeenCalled();
