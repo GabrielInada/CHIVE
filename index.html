@@ -83,7 +83,7 @@
         <aside class="panel-left">
             <div class="panel-top">
                 <span class="panel-top-label sidebar-expanded-only" data-i18n="chive-sidebar-nav">Navegação</span>
-                <button id="btn-toggle-sidebar" class="btn-toggle-sidebar" type="button" aria-expanded="true" aria-label="Recolher painel lateral" title="Recolher painel lateral">«</button>
+                <button id="btn-toggle-sidebar" class="btn-toggle-sidebar" type="button" aria-expanded="true" aria-controls="sidebar-panel-data sidebar-panel-viz sidebar-panel-dashboard" aria-label="Recolher painel lateral" title="Recolher painel lateral">«</button>
             </div>
 
             <section id="sidebar-panel-data" class="sidebar-panel active">
@@ -151,6 +151,7 @@
                     <button type="button" class="result-tab" id="tab-panel" role="tab" aria-selected="false" aria-controls="tab-content-dashboard" tabindex="-1" data-tab="panel" data-i18n="chive-tab-panel">Painel</button>
                 </div>
                 <div class="result-tabs-actions" id="result-tabs-actions">
+					<button type="button" class="btn-toggle-sidebar btn-toggle-controls" id="btn-toggle-controls" aria-expanded="false" aria-controls="sidebar-panel-data sidebar-panel-viz sidebar-panel-dashboard" data-i18n="chive-sidebar-controls">Controls</button>
                     <button type="button" class="global-filter-trigger" id="btn-global-filter" aria-haspopup="dialog" aria-expanded="false" data-active="false" disabled hidden>
                         <svg class="global-filter-trigger-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
@@ -173,7 +174,7 @@
             <div id="empty-state">
                 <span class="empty-icon">◫</span>
                 <p class="empty-title" data-i18n="chive-empty-title">Nenhum dado carregado ainda</p>
-                <p class="empty-sub" data-i18n="chive-empty-sub">Carregue um arquivo CSV ou JSON ao lado para ver o preview dos dados aqui.</p>
+                <p class="empty-sub" data-i18n="chive-empty-sub">Importe um projeto pelo menu Projeto ou use os controles para carregar um arquivo CSV ou JSON.</p>
             </div>
 
             <div id="data-state" hidden>

@@ -32,6 +32,7 @@ export function renderPieInto(container, { rows, config, filterCallbacks = EMPTY
 			measure: t(measureLabelKey(config.measureMode)),
 			percentage: t('chive-tooltip-percentage'),
 			other: t('chive-chart-pie-other'),
+			scrollLegend: t('chive-chart-scroll-legend'),
 		},
 		filterCallbacks,
 	});

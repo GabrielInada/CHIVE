@@ -1,7 +1,7 @@
 /**
  * CHIVE panel SVG exporter.
  *
- * Walks the rendered `#panel-layout-canvas` and composes a single
+ * Materializes deferred charts in `#panel-layout-canvas` and composes a single
  * standalone SVG file with the block borders and every slot chart that
  * HAS a live SVG. Chart slots without one (canvas-based charts such as
  * scatter3d, or failed-render empty states) are omitted and counted in
@@ -19,6 +19,7 @@ import { downloadSvgMarkup, ensureSvgAttributes } from '../../../services/downlo
 import { normalizeHexColor } from '../layout/resizeMath.js';
 import { ok, fail } from '../../../utils/result.js';
 import { PANEL_DOM_IDS } from '../domIds.js';
+import { renderAllSlots } from '../slots/lifecycle.js';
 
 /**
  * Export the live panel canvas as a single SVG file. Clones each slot's
@@ -45,6 +46,8 @@ export function exportPanelLayoutSvg() {
 	}
 
 	try {
+		// Export is explicit: include charts below the viewport as well as visible ones.
+		renderAllSlots(canvas);
 		const serializer = new XMLSerializer();
 		const docSvg = document.implementation.createDocument(
 			'http://www.w3.org/2000/svg',

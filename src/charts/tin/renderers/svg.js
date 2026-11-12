@@ -34,6 +34,7 @@
 
 import { Delaunay, axisBottom, axisLeft, extent, scaleLinear } from '../../../../vendor/d3/d3.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
 import { TIN_CHART } from '../../../config/charts/definitions/tin.js';
 import { formatNumber, toFiniteNumber } from '../../../utils/formatters.js';
 import { interpolateColor } from '../../../utils/colorUtils.js';
@@ -96,7 +97,7 @@ export function renderTinChart(container, rows, config = {}, context = {}) {
 
 	if (points.length < 3) return fail('insufficient-points');
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.tin.width, 320);
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.tin.width);
 	const height = cfg.chartHeight;
 	const margin = { ...CHART_DIMENSIONS.tin.margins };
 	const legendHeight = 14;
@@ -388,7 +389,7 @@ export function renderTinChart(container, rows, config = {}, context = {}) {
 	}
 
 	appendBottomAxis(group, {
-		axis: axisBottom(xScale).ticks(6),
+		axis: axisBottom(xScale).ticks(Math.min(6, Math.max(2, Math.floor(innerWidth / 70)))),
 		innerHeight,
 	});
 

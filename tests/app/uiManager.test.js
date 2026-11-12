@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({
   setSidebarMode: vi.fn(),
@@ -28,10 +28,12 @@ function setupDom() {
     <aside id="sidebar-panel-dashboard" class="inactive"></aside>
 
     <button id="btn-toggle-sidebar" aria-expanded="true"></button>
+		<div class="result-tabs"><button id="btn-toggle-controls"></button></div>
   `;
 }
 
 describe('uiManager', () => {
+  afterEach(() => vi.unstubAllGlobals());
   beforeEach(() => {
     mocks.setSidebarMode.mockReset();
     setupDom();
@@ -77,4 +79,46 @@ describe('uiManager', () => {
     document.getElementById('btn-toggle-sidebar').click();
     expect(document.getElementById('btn-toggle-sidebar').getAttribute('aria-expanded')).not.toBe(before);
   });
+
+	it('starts narrow controls closed and remembers independent desktop and phone choices', () => {
+		let change;
+		const media = { matches: true, addEventListener: (_type, listener) => { change = listener; } };
+		vi.stubGlobal('matchMedia', () => media);
+		setupSidebarToggleListener();
+		const button = document.getElementById('btn-toggle-sidebar');
+		expect(button.getAttribute('aria-expanded')).toBe('false');
+		expect(button.textContent).toBe('tr:chive-sidebar-show-controls');
+		button.click();
+		expect(button.getAttribute('aria-expanded')).toBe('true');
+		expect(button.textContent).toBe('tr:chive-sidebar-hide-controls');
+
+		media.matches = false;
+		change();
+		expect(button.getAttribute('aria-expanded')).toBe('true');
+		button.click();
+		expect(button.getAttribute('aria-expanded')).toBe('false');
+
+		media.matches = true;
+		change();
+		expect(button.getAttribute('aria-expanded')).toBe('true');
+		media.matches = false;
+		change();
+		expect(button.getAttribute('aria-expanded')).toBe('false');
+		expect(mocks.setSidebarMode).not.toHaveBeenCalled();
+	});
+
+	it('keeps the compact controls button synchronized with sidebar visibility', () => {
+		vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener() {} }));
+		setupSidebarToggleListener();
+		const compact = document.getElementById('btn-toggle-controls');
+		const original = document.getElementById('btn-toggle-sidebar');
+		expect(compact.getAttribute('aria-expanded')).toBe('false');
+		compact.click();
+		expect(compact.getAttribute('aria-expanded')).toBe('true');
+		expect(original.getAttribute('aria-expanded')).toBe('true');
+		original.click();
+		expect(compact.getAttribute('aria-expanded')).toBe('false');
+		expect(compact.getAttribute('aria-label')).toBe('tr:chive-sidebar-show-controls');
+		expect(mocks.setSidebarMode).not.toHaveBeenCalled();
+	});
 });

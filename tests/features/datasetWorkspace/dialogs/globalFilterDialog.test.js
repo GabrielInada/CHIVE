@@ -28,6 +28,20 @@ afterEach(() => {
 });
 
 describe('openGlobalFilterDialog (multi-rule)', () => {
+	it('associates numeric and categorical fields with tappable labels', () => {
+		openGlobalFilterDialog({
+			rows, allColumns, numericColumns, translate,
+			initialFilter: { rules: [
+				{ column: 'region', mode: 'categorical', include: [] },
+				{ column: 'age', mode: 'numeric', operator: 'between', min: 18, max: 50 },
+			] },
+		});
+		const fields = [...document.querySelectorAll('.gf-control input, .gf-control select')];
+		expect(fields).toHaveLength(6);
+		expect(new Set(fields.map(field => field.id)).size).toBe(fields.length);
+		fields.forEach(field => expect(field.labels).toHaveLength(1));
+	});
+
 	it('opens an empty rules state when initial filter has no rules', () => {
 		openGlobalFilterDialog({
 			rows,

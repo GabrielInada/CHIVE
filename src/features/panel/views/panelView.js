@@ -34,26 +34,28 @@ import {
 import { applyBlockProportions, renderGuidedResizeHandles, startBlockHeightResizeDrag } from '../layout/resize.js';
 import { mountSlot, teardownAllSlots } from '../slots/lifecycle.js';
 import { PANEL_DOM_IDS } from '../domIds.js';
+import { openExpandedChart } from './expandedChart.js';
 
-const DESKTOP_DND_QUERY = '(min-width: 901px)';
-let desktopMediaQuery = null;
+// Keep mouse/trackpad dragging available in narrow or zoomed windows.
+const DRAG_POINTER_QUERY = '(any-pointer: fine)';
+let dragMediaQuery = null;
 let matchMediaOwner = null;
 let latestSidebarRemove = null;
 let latestCanvasCallbacks = null;
 
-function getDesktopMediaQuery() {
-	if (matchMediaOwner === window.matchMedia && desktopMediaQuery) {
-		return desktopMediaQuery;
+function getDragMediaQuery() {
+	if (matchMediaOwner === window.matchMedia && dragMediaQuery) {
+		return dragMediaQuery;
 	}
 
-	desktopMediaQuery?.removeEventListener?.('change', handleDesktopModeChange);
+	dragMediaQuery?.removeEventListener?.('change', handleDragCapabilityChange);
 	matchMediaOwner = window.matchMedia;
-	desktopMediaQuery = window.matchMedia(DESKTOP_DND_QUERY);
-	desktopMediaQuery.addEventListener?.('change', handleDesktopModeChange);
-	return desktopMediaQuery;
+	dragMediaQuery = window.matchMedia(DRAG_POINTER_QUERY);
+	dragMediaQuery.addEventListener?.('change', handleDragCapabilityChange);
+	return dragMediaQuery;
 }
 
-function handleDesktopModeChange() {
+function handleDragCapabilityChange() {
 	if (latestSidebarRemove && document.getElementById('panel-chart-list')) {
 		renderSidebarPanel(latestSidebarRemove);
 	}
@@ -64,7 +66,7 @@ function handleDesktopModeChange() {
 
 /**
  * Render the sidebar list of saved chart snapshots into
- * `#panel-chart-list`. Each item gets a thumbnail (live chart render via
+ * `#panel-chart-list`. Each item gets a thumbnail (rendered near the viewport via
  * {@link mountSlot}) and a remove button wired to the provided callback.
  *
  * No-op when the container element is missing.
@@ -88,7 +90,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
 		return;
 	}
 
-	const desktopDnd = getDesktopMediaQuery().matches;
+	const desktopDnd = getDragMediaQuery().matches;
 	chartList.replaceChildren();
 
 	charts.forEach(chart => {
@@ -135,7 +137,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
 		article.appendChild(preview);
 		chartList.appendChild(article);
 
-		mountSlot(preview, chart);
+		mountSlot(preview, chart, { deferUntilVisible: true });
 
 		// Drag event
 		if (desktopDnd) {
@@ -181,8 +183,11 @@ export function renderCanvasPanel(callbacks) {
 	if (!canvas) return;
 	latestCanvasCallbacks = callbacks;
 	const blocks = getPanelBlocks();
-	const desktopDnd = getDesktopMediaQuery().matches;
+	const desktopDnd = getDragMediaQuery().matches;
 
+	// Disclosure choices are presentation-only and survive chart/layout updates.
+	const openControls = new Map(Array.from(canvas.querySelectorAll('.panel-block-controls'),
+		details => [details.dataset.panelBlockControls, details.open]));
 	teardownAllSlots(canvas);
 	canvas.replaceChildren();
 
@@ -195,6 +200,7 @@ export function renderCanvasPanel(callbacks) {
 			totalBlocks: blocks.length,
 			desktopDnd,
 			callbacks,
+			controlsOpen: openControls.get(block.id) ?? window.matchMedia('(min-width: 901px)').matches,
 		});
 		attachBlockResizeListener(blockEl, block, gridDiv, callbacks);
 		stack.appendChild(blockEl);
@@ -214,7 +220,7 @@ export function renderCanvasPanel(callbacks) {
 		if (!chart) return;
 		const chartContainer = slotEl.querySelector('.panel-chart-container');
 		if (!chartContainer) return;
-		mountSlot(chartContainer, chart);
+		mountSlot(chartContainer, chart, { deferUntilVisible: true });
 	});
 }
 
@@ -226,7 +232,7 @@ export function renderCanvasPanel(callbacks) {
  *
  * @private
  */
-function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks }) {
+function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks, controlsOpen }) {
 	const layout = getTemplateForBlock(block);
 	const blockEl = document.createElement('section');
 	blockEl.className = 'panel-block';
@@ -290,6 +296,7 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks }
 			borderColor,
 			desktopDnd,
 			translate: t,
+			onExpand: () => openExpandedChart(chart),
 			onClearSlot: () => callbacks.onAssignSlot(block.id, slotId, null),
 			onDropData: ({ targetSlotId, targetBlockId, sourceSlotId, sourceBlockId, chartId }) => {
 				if (!chartId || !getChartSnapshot(chartId)) return;
@@ -316,9 +323,22 @@ function createBlockElement(block, { index, totalBlocks, desktopDnd, callbacks }
 		gridDiv.appendChild(slot);
 	});
 
-	blockEl.appendChild(header);
-	blockEl.appendChild(templateSelect);
-	blockEl.appendChild(borderControls);
+	const controls = document.createElement('details');
+	controls.className = 'panel-block-controls';
+	controls.dataset.panelBlockControls = block.id;
+	controls.open = controlsOpen;
+	const summary = document.createElement('summary');
+	summary.className = 'panel-block-header';
+	summary.appendChild(header.querySelector('.panel-block-title'));
+	const editLabel = document.createElement('span');
+	editLabel.className = 'panel-block-edit-label';
+	editLabel.textContent = t('chive-panel-block-controls');
+	summary.appendChild(editLabel);
+	const controlsBody = document.createElement('div');
+	controlsBody.className = 'panel-block-controls-body';
+	controlsBody.append(header.querySelector('.panel-block-actions'), templateSelect, borderControls);
+	controls.append(summary, controlsBody);
+	blockEl.appendChild(controls);
 	blockEl.appendChild(gridDiv);
 
 	return { blockEl, gridDiv };

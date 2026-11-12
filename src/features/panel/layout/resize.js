@@ -51,7 +51,7 @@ function applyDynamicBlockHeight(gridDiv, block) {
 		? Math.max(BASE_MIN_HEIGHT, Math.min(userHeight, 760))
 		: BASE_MIN_HEIGHT;
 	const bounded = Math.max(userBounded, dynamicMinHeight);
-	gridDiv.style.minHeight = `${Math.round(bounded)}px`;
+	gridDiv.style.setProperty('--panel-block-min-height', `${Math.round(bounded)}px`);
 }
 
 /**

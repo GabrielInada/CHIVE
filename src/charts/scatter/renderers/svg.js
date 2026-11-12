@@ -16,6 +16,8 @@
 import { axisBottom, axisLeft } from '../../../../vendor/d3/d3.js';
 import { hideChartTooltip, hideHoverTooltip, moveChartTooltip } from '../../shared/tooltip/tooltip.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
+import { categoryTickValues } from '../../shared/axisTicks.js';
 import { ok, fail } from '../../../utils/result.js';
 import {
 	AXIS_TYPE_VALUES,
@@ -111,7 +113,7 @@ export function renderScatterPlot(container, rows, config = {}, context = {}) {
 		return fail(effectiveXScaleType === 'log' || effectiveYScaleType === 'log' ? 'log-no-positive' : undefined);
 	}
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.scatter.width);
 	const height = chartHeight;
 	const margin = computeAdaptiveMargins(CHART_DIMENSIONS.scatter.margins, points, axisTypes, categoryLabel);
 	const { svg, group, innerWidth, innerHeight } = setupChartSvg(container, {
@@ -235,8 +237,10 @@ export function renderScatterPlot(container, rows, config = {}, context = {}) {
 
 	appendBottomAxis(group, {
 		axis: axisTypes.x === AXIS_TYPE_VALUES.numeric
-			? axisBottom(xScale).ticks(8)
-			: axisBottom(xScale).tickFormat(key => truncateCategoryTick(categoryLabel(key))),
+			? axisBottom(xScale).ticks(width < 480 ? Math.max(2, Math.floor(innerWidth / 70)) : 8)
+			: axisBottom(xScale)
+				.tickValues(width < 480 ? categoryTickValues(xScale.domain(), innerWidth) : null)
+				.tickFormat(key => truncateCategoryTick(categoryLabel(key))),
 		innerHeight,
 		tickRotation: axisTypes.x === AXIS_TYPE_VALUES.categorical
 			? { angle: -28, dx: '-0.55em', dy: '0.2em' }

@@ -25,6 +25,7 @@ import { normalizeBubbleOptions } from '../options.js';
 import { BUBBLE_CHART } from '../../../config/charts/definitions/bubble.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
 import { formatNumber } from '../../../utils/formatters.js';
 import { ok, fail } from '../../../utils/result.js';
 import { setupChartSvg } from '../../shared/svg/scaffold.js';
@@ -87,7 +88,7 @@ export function renderBubbleChart(container, rows, config = {}, context = {}) {
 	if (!aggregation.ok) return fail(aggregation.reason);
 	const bubbles = aggregation.entries;
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bubble.width, 320);
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.bubble.width);
 	const height = chartHeight;
 	const margin = CHART_DIMENSIONS.bubble.margins;
 	const {

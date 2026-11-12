@@ -60,7 +60,7 @@ body {
 .workspace {
   --sidebar-width: 340px;
   display: grid;
-  grid-template-columns: var(--sidebar-width) 1fr;
+  grid-template-columns: var(--sidebar-width) minmax(0, 1fr);
   gap: 0;
   min-height: calc(100vh - 52px);
   min-height: calc(100dvh - 52px);
@@ -151,6 +151,7 @@ body {
 }
 
 .results-area {
+  min-width: 0;
   padding: 28px 32px;
 }
 }

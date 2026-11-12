@@ -70,7 +70,14 @@ function onViewportResize() {
  * @returns {HTMLElement}
  */
 function ensureTooltip() {
-	if (tooltipEl && tooltipEl.isConnected) return tooltipEl;
+	// A modal makes body-level overlays inert and paints above them. Keep chart
+	// tooltips inside the open dialog so tapping marks also works in expanded view.
+	const host = document.querySelector('dialog[open]') || document.body;
+	if (tooltipEl && tooltipEl.isConnected) {
+		if (tooltipEl.parentElement !== host) host.appendChild(tooltipEl);
+		tooltipEl.style.position = host === document.body ? '' : 'fixed';
+		return tooltipEl;
+	}
 	if (tooltipEl) hideChartTooltip();
 
 	tooltipEl = document.createElement('div');
@@ -78,7 +85,8 @@ function ensureTooltip() {
 	tooltipEl.hidden = true;
 	tooltipEl.tabIndex = -1;
 	measurementDirty = true;
-	document.body.appendChild(tooltipEl);
+	host.appendChild(tooltipEl);
+	tooltipEl.style.position = host === document.body ? '' : 'fixed';
 	if (!resizeListenerInstalled) {
 		window.addEventListener('resize', onViewportResize);
 		resizeListenerInstalled = true;
@@ -96,7 +104,7 @@ function clearPinState(el) {
 		pinnedKeydownHandler = null;
 	}
 	if (pinnedDocClickHandler) {
-		document.removeEventListener('mousedown', pinnedDocClickHandler, true);
+		document.removeEventListener('pointerdown', pinnedDocClickHandler, true);
 		pinnedDocClickHandler = null;
 	}
 	pinnedDismissHandler = null;
@@ -214,8 +222,9 @@ function writeTooltipPosition() {
 		top = scrollY + VIEWPORT_PADDING;
 	}
 
-	tooltipEl.style.left = `${left}px`;
-	tooltipEl.style.top = `${top}px`;
+	const fixed = tooltipEl.style.position === 'fixed';
+	tooltipEl.style.left = `${left - (fixed ? scrollX : 0)}px`;
+	tooltipEl.style.top = `${top - (fixed ? scrollY : 0)}px`;
 }
 
 /** @private */
@@ -272,12 +281,12 @@ function attachPinnedListeners() {
 	pinnedDocClickHandler = (event) => {
 		if (!tooltipEl) return;
 		if (tooltipEl.contains(event.target)) return;
-		// Let the mark's click toggle its pin. Clearing on mousedown would
+		// Let the mark's click toggle its pin. Clearing on pointerdown would
 		// make that click reopen it; a network-node drag also keeps its anchor.
 		if (pinnedTarget?.contains(event.target)) return;
 		dismissPinned();
 	};
-	document.addEventListener('mousedown', pinnedDocClickHandler, true);
+	document.addEventListener('pointerdown', pinnedDocClickHandler, true);
 }
 
 /**

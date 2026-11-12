@@ -45,6 +45,9 @@
 	"chive-sidebar-nav": "Navigation",
 	"chive-sidebar-collapse": "Collapse sidebar",
 	"chive-sidebar-expand": "Expand sidebar",
+	"chive-sidebar-show-controls": "Show controls",
+	"chive-sidebar-controls": "Controls",
+	"chive-sidebar-hide-controls": "Hide controls",
 
 	"chive-section-upload": "Upload file",
 	"chive-upload-main": "Drag your file here",
@@ -130,7 +133,7 @@
 	"chive-btn-go-panel": "Go to panel →",
 
 	"chive-empty-title": "No data loaded yet",
-	"chive-empty-sub": "Load a CSV or JSON file on the left to preview the data here.",
+	"chive-empty-sub": "Import a project from the Project menu, or use the controls to load a CSV or JSON file.",
 
 	"chive-card-preview": "Data preview",
 	"chive-tabs-label": "Workspace views",
@@ -411,6 +414,10 @@
 	"chive-panel-export-svg": "Export SVG",
 	"chive-panel-add-block": "Add block",
 	"chive-panel-block-title": "Block $1",
+	"chive-panel-block-controls": "Edit block",
+	"chive-chart-expand": "Expand chart",
+	"chive-chart-scroll-legend": "Scroll for the full legend",
+	"chive-chart-close-expanded": "Close",
 	"chive-panel-block-move-up": "Move block up",
 	"chive-panel-block-move-down": "Move block down",
 	"chive-panel-block-remove": "Remove block",

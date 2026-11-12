@@ -31,6 +31,7 @@ describe('chartScaffold', () => {
 		expect(result.innerHeight).toBe(230);
 		expect(container.querySelector('g').getAttribute('transform')).toBe('translate(50,30)');
 		expect(container.querySelectorAll('text')).toHaveLength(0);
+		expect(container.querySelector('svg').getAttribute('viewBox')).toBe('0 0 400 300');
 	});
 
 	it('appends the standard title attributes', () => {
@@ -59,6 +60,19 @@ describe('chartScaffold', () => {
 		});
 
 		expect(container.querySelector('svg').getAttribute('viewBox')).toBe('0 0 400 300');
+	});
+
+	it('wraps long titles and moves the plot below every title line', () => {
+		const text = 'Regional revenue and customer growth across international markets';
+		const { svg, appliedTitleOffset, group } = setupChartSvg(document.getElementById('chart'), {
+			width: 270, height: 360, margin: MARGIN, customTitle: text,
+		});
+		const title = svg.select('text');
+		const lines = Array.from(title.node().querySelectorAll('tspan'));
+		expect(lines.length).toBeGreaterThan(1);
+		expect(lines.map(line => line.textContent).join(' ')).toBe(text);
+		expect(appliedTitleOffset).toBe(20 + (lines.length - 1) * 16);
+		expect(group.attr('transform')).toBe(`translate(50,${30 + appliedTitleOffset})`);
 	});
 
 	it('applies optional clamps and inner height reserve only when provided', () => {

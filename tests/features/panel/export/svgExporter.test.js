@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const downloadMock = vi.hoisted(() => vi.fn(() => ({ ok: true })));
 
@@ -12,6 +12,8 @@ vi.mock('../../../../src/services/downloads/svg.js', () => ({
 }));
 
 import { exportPanelLayoutSvg } from '../../../../src/features/panel/export/svgExporter.js';
+import { mountSlot, teardownAllSlots } from '../../../../src/features/panel/slots/lifecycle.js';
+import { CHART_DEFINITIONS } from '../../../../src/config/charts/definitions.js';
 
 function rect(left, top, width, height) {
 	return {
@@ -54,6 +56,10 @@ function setupCanvas(slotContents) {
 }
 
 describe('exportPanelLayoutSvg', () => {
+	afterEach(() => {
+		teardownAllSlots(document.body);
+		vi.unstubAllGlobals();
+	});
 	beforeEach(() => {
 		document.body.innerHTML = '';
 		downloadMock.mockClear();
@@ -72,6 +78,31 @@ describe('exportPanelLayoutSvg', () => {
 
 		expect(result).toEqual({ ok: true, omittedChartCount: 0 });
 		expect(downloadMock).toHaveBeenCalledTimes(1);
+	});
+
+	it('includes a deferred chart that has never entered the viewport', () => {
+		vi.stubGlobal('IntersectionObserver', class {
+			observe() {}
+			disconnect() {}
+		});
+		const canvas = setupCanvas(['deferred']);
+		const container = document.createElement('div');
+		container.className = 'panel-chart-container';
+		Object.defineProperties(container, {
+			clientWidth: { value: 400 },
+			clientHeight: { value: 300 },
+		});
+		canvas.firstElementChild.appendChild(container);
+		mountSlot(container, {
+			id: 1, type: 'bar', name: 'Offscreen chart',
+			config: { ...CHART_DEFINITIONS.bar.createDefaultConfig(), category: 'region' },
+			dataSnapshot: [{ region: 'North' }, { region: 'South' }], columnsSnapshot: [],
+		}, { deferUntilVisible: true });
+		expect(container.querySelector('svg')).toBeNull();
+
+		expect(exportPanelLayoutSvg()).toEqual({ ok: true, omittedChartCount: 0 });
+		expect(downloadMock.mock.calls[0][0]).toContain('North');
+		expect(container.querySelector('svg')).not.toBeNull();
 	});
 
 	it('completes a mixed export, omitting the canvas slot and counting it', () => {

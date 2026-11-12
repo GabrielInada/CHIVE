@@ -7,6 +7,7 @@
  */
 
 import { select } from '../../../../vendor/d3/d3.js';
+import { wrapSvgText } from './wrapText.js';
 
 /**
  * Append the standard chart title text to an SVG.
@@ -36,7 +37,7 @@ export function appendChartTitle(svg, {
 	const titleText = String(text || '').trim();
 	if (!titleText) return svg.selectAll('text').filter(() => false);
 
-	return svg
+	const title = svg
 		.append('text')
 		.attr('x', x)
 		.attr('y', y)
@@ -45,6 +46,8 @@ export function appendChartTitle(svg, {
 		.attr('font-weight', fontWeight)
 		.attr('fill', fill)
 		.text(titleText);
+	wrapSvgText(title, width - 24);
+	return title;
 }
 
 /**
@@ -57,7 +60,7 @@ export function appendChartTitle(svg, {
  * @param {{left:number,right:number,top:number,bottom:number}} options.margin - Chart margins.
  * @param {string} [options.customTitle=''] - Optional title text.
  * @param {number} [options.titleOffset=20] - Offset applied only when a title exists.
- * @param {boolean|string|Array<number>} [options.viewBox=false] - ViewBox configuration.
+ * @param {boolean|string|Array<number>} [options.viewBox=true] - ViewBox configuration.
  * @param {?number} [options.minInnerWidth=null] - Optional minimum inner width.
  * @param {?number} [options.minInnerHeight=null] - Optional minimum inner height.
  * @param {number} [options.innerHeightReserve=0] - Extra vertical space reserved below the chart.
@@ -69,7 +72,7 @@ export function setupChartSvg(container, {
 	margin,
 	customTitle = '',
 	titleOffset = 20,
-	viewBox = false,
+	viewBox = true,
 	minInnerWidth = null,
 	minInnerHeight = null,
 	innerHeightReserve = 0,
@@ -77,7 +80,13 @@ export function setupChartSvg(container, {
 	container.replaceChildren();
 
 	const titleText = String(customTitle || '').trim();
-	const appliedTitleOffset = titleText ? titleOffset : 0;
+	const svg = select(container)
+		.append('svg')
+		.attr('width', width)
+		.attr('height', height);
+	const title = appendChartTitle(svg, { width, text: titleText });
+	const extraTitleHeight = Math.max(0, title.selectAll('tspan').size() - 1) * 16;
+	const appliedTitleOffset = titleText ? titleOffset + extraTitleHeight : 0;
 	const rawInnerWidth = width - margin.left - margin.right;
 	const rawInnerHeight = height - margin.top - margin.bottom - appliedTitleOffset - innerHeightReserve;
 	const innerWidth = Number.isFinite(Number(minInnerWidth))
@@ -87,18 +96,11 @@ export function setupChartSvg(container, {
 		? Math.max(Number(minInnerHeight), rawInnerHeight)
 		: rawInnerHeight;
 
-	const svg = select(container)
-		.append('svg')
-		.attr('width', width)
-		.attr('height', height);
-
 	if (viewBox === true) {
 		svg.attr('viewBox', `0 0 ${width} ${height}`);
 	} else if (viewBox) {
 		svg.attr('viewBox', Array.isArray(viewBox) ? viewBox.join(' ') : viewBox);
 	}
-
-	appendChartTitle(svg, { width, text: titleText });
 
 	const group = svg
 		.append('g')

@@ -36,7 +36,7 @@
 .settings-dialog {
   width: min(440px, 96vw);
   max-height: 90vh;
-  max-height: 90dvh;
+  max-height: min(90dvh, var(--dialog-max-height));
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -49,6 +49,7 @@
 
 .settings-dialog-header {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
@@ -86,6 +87,7 @@
 .settings-dialog-body {
   overflow-y: auto;
   min-height: 0;
+  overscroll-behavior: contain;
 }
 
 .settings-section {
@@ -175,7 +177,7 @@
   padding: var(--space-3) var(--space-6);
   font-size: var(--font-size-md);
   color: var(--muted);
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .settings-segment input:checked + span {
@@ -239,6 +241,20 @@
    line box and takes no height. */
 .settings-data-status:not(:empty) {
   margin-top: var(--space-3);
+}
+
+@media (max-width: 900px), (any-pointer: coarse) {
+    .settings-select {
+        font-size: 1rem;
+    }
+
+  .header-settings-btn,
+  .settings-close-btn,
+  .settings-segment,
+  .settings-select {
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 @media (max-width: 480px) {

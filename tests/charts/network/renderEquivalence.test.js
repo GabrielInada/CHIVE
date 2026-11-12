@@ -8,8 +8,8 @@
  * So this guard stops the simulation after each render, and pins only
  * immediately-stable structure derived from `buildNetworkData` (the thing the
  * extraction moves): the result object, the node/link counts, the node
- * ids+fills, and the link strokes. Gradient `<defs>` are created inside the
- * tick handler, so they are intentionally not asserted.
+ * ids+fills, and the link strokes. Initial geometry and gradients are covered
+ * by the renderer tests instead of this structural snapshot.
  */
 
 import { renderContext } from '../renderContext.js';

@@ -4,6 +4,8 @@
 
 .confirm-dialog {
   width: min(440px, 92vw);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
@@ -22,10 +24,14 @@
   margin: var(--space-4) 0 0;
   white-space: pre-line;
   color: var(--muted);
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .confirm-dialog-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-6);
@@ -117,8 +123,8 @@
   right: 18px;
   bottom: 18px;
   z-index: 12100;
-  min-width: 320px;
-  max-width: 420px;
+  width: min(420px, calc(100vw - 36px));
+  min-width: 0;
   background: var(--surface);
   color: var(--text);
   border: 1px solid var(--border);
@@ -128,7 +134,7 @@
   font-size: var(--font-size-md);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   grid-template-areas:
     "label percent close"
     "bar bar bar";

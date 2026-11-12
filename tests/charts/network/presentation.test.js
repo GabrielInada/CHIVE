@@ -77,6 +77,8 @@ describe('network presentation past the render budget', () => {
 		notice.querySelector('button').click();
 
 		expect(container.querySelectorAll('.network-node')).toHaveLength(91);
+		expect(container.querySelectorAll('.network-link')).toHaveLength(linksCount);
+		expect(container.querySelectorAll('linearGradient')).toHaveLength(linksCount);
 		expect(container.querySelector('.chart-render-budget-notice')).toBeNull();
 	});
 });

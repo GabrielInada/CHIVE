@@ -89,12 +89,17 @@ describe.each(['en', 'pt-BR'])('workspace and Panel empty states in %s', languag
 		vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {});
 		const panel = document.createElement('div');
 		panel.className = 'panel-chart-container';
+		Object.defineProperties(panel, {
+			clientWidth: { value: 400, writable: true },
+			clientHeight: { value: 300 },
+		});
 		document.body.append(panel);
 		const spec = {
 			id: 1, type: 'pie', columnsSnapshot, dataSnapshot: rows,
 			config: { ...CHART_DEFINITIONS.pie.createDefaultConfig(), category: 'category', measureMode: 'sum', valueColumn: 'value' },
 		};
 		mountSlot(panel, spec);
+		panel.clientWidth = 500;
 		resize();
 		frame();
 		expect(panel.querySelectorAll('.chart-empty')).toHaveLength(1);

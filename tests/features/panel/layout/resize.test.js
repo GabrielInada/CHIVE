@@ -73,7 +73,7 @@ describe('panel layout resize', () => {
 			heightPx: 900,
 		});
 		expect(grid.style.getPropertyValue('--split')).toBe('42%');
-		expect(grid.style.minHeight).toBe('760px');
+		expect(grid.style.getPropertyValue('--panel-block-min-height')).toBe('760px');
 
 		applyBlockProportions(grid, {
 			templateId: 'template-hero2',
@@ -88,7 +88,7 @@ describe('panel layout resize', () => {
 			proportions: { split: 80 },
 			heightPx: Number.NaN,
 		});
-		expect(parseInt(grid.style.minHeight, 10)).toBeGreaterThan(220);
+		expect(parseInt(grid.style.getPropertyValue('--panel-block-min-height'), 10)).toBeGreaterThan(220);
 
 		expect(() => applyBlockProportions(grid, null)).not.toThrow();
 	});
