@@ -241,6 +241,21 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		})
 		.attr('stroke-width', d => Math.max(1, Math.sqrt(Number(d.value) || 1)));
 
+	// Retain gradients and their fixed color stops; simulation ticks only move
+	// their endpoints, without searching or rebuilding the SVG definitions.
+	const gradients = edgeColorMode === 'gradient'
+		? defs.selectAll('linearGradient')
+			.data(links)
+			.enter()
+			.append('linearGradient')
+			.attr('id', d => d._gradientId)
+			.attr('gradientUnits', 'userSpaceOnUse')
+		: null;
+	if (gradients) {
+		gradients.append('stop').attr('offset', '0%').attr('stop-color', sourceNodeColor);
+		gradients.append('stop').attr('offset', '100%').attr('stop-color', targetNodeColor);
+	}
+
 	const node = viewport
 		.append('g')
 		.attr('stroke', '#fff')
@@ -368,23 +383,12 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 	}
 
 	const drawPositions = () => {
-		if (edgeColorMode === 'gradient') {
-			links.forEach(d => {
-				const gradient = defs.select(`#${d._gradientId}`).empty()
-					? defs.append('linearGradient').attr('id', d._gradientId)
-					: defs.select(`#${d._gradientId}`);
-
-				gradient
-					.attr('gradientUnits', 'userSpaceOnUse')
-					.attr('x1', d.source.x)
-					.attr('y1', d.source.y)
-					.attr('x2', d.target.x)
-					.attr('y2', d.target.y);
-
-				gradient.selectAll('stop').remove();
-				gradient.append('stop').attr('offset', '0%').attr('stop-color', sourceNodeColor);
-				gradient.append('stop').attr('offset', '100%').attr('stop-color', targetNodeColor);
-			});
+		if (gradients) {
+			gradients
+				.attr('x1', d => d.source.x)
+				.attr('y1', d => d.source.y)
+				.attr('x2', d => d.target.x)
+				.attr('y2', d => d.target.y);
 		}
 
 		link
