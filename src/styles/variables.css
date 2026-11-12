@@ -84,13 +84,15 @@ body {
 }
 
 .app-dialog {
-  max-width: calc(100vw - 2 * var(--space-5));
-  max-height: calc(100dvh - 2 * var(--space-5));
-  border: 0;
-  padding: 0;
-  overflow: visible;
-  background: transparent;
-  color: inherit;
+    max-width: calc(100vw - 2 * var(--space-5));
+    max-height: calc(100dvh - 2 * var(--space-5));
+    /* Restore native centering after the global margin reset. */
+    margin: auto;
+    border: 0;
+    padding: 0;
+    overflow: visible;
+    background: transparent;
+    color: inherit;
 }
 
 .app-dialog::backdrop {
