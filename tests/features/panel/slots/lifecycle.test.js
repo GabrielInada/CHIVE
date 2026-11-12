@@ -14,7 +14,7 @@ const tooltipMock = vi.hoisted(() => ({
 
 vi.mock('../../../../src/charts/shared/tooltip/tooltip.js', () => tooltipMock);
 
-import { mountSlot, teardownSlot, teardownAllSlots } from '../../../../src/features/panel/slots/lifecycle.js';
+import { mountSlot, teardownSlot, teardownAllSlots, renderAllSlots } from '../../../../src/features/panel/slots/lifecycle.js';
 import { CHART_DISPOSE_HOOK } from '../../../../src/charts/shared/containerLifecycle.js';
 
 const SIMULATION_KEY = '__chive_network_simulation__';
@@ -32,10 +32,37 @@ class FakeResizeObserver {
 }
 FakeResizeObserver.instances = [];
 
+class FakeIntersectionObserver {
+	static instances = [];
+	constructor(cb) {
+		this.cb = cb;
+		this.disconnect = vi.fn();
+		FakeIntersectionObserver.instances.push(this);
+	}
+	observe(target) { this.target = target; }
+	trigger(isIntersecting) { this.cb([{ target: this.target, isIntersecting }]); }
+}
+
+function sizedContainer(width = 400, height = 300) {
+	const container = document.createElement('div');
+	container.className = 'panel-chart-container';
+	Object.defineProperties(container, {
+		clientWidth: { value: width, writable: true },
+		clientHeight: { value: height, writable: true },
+	});
+	return container;
+}
+
 describe('panel slot lifecycle', () => {
 	let originalRO;
 	let originalRAF;
 	let originalCAF;
+	let frames;
+	const flushFrames = () => {
+		const callbacks = [...frames.values()];
+		frames.clear();
+		callbacks.forEach(cb => cb());
+	};
 
 	beforeEach(() => {
 		originalRO = globalThis.ResizeObserver;
@@ -43,8 +70,11 @@ describe('panel slot lifecycle', () => {
 		originalCAF = window.cancelAnimationFrame;
 		FakeResizeObserver.instances = [];
 		globalThis.ResizeObserver = FakeResizeObserver;
-		window.requestAnimationFrame = (cb) => { cb(); return 1; };
-		window.cancelAnimationFrame = vi.fn();
+		frames = new Map();
+		let nextFrame = 0;
+		window.requestAnimationFrame = cb => { frames.set(++nextFrame, cb); return nextFrame; };
+		window.cancelAnimationFrame = vi.fn(id => frames.delete(id));
+		FakeIntersectionObserver.instances = [];
 		dispatch.renderChartSnapshot.mockClear();
 		tooltipMock.hideChartTooltip.mockClear();
 	});
@@ -53,6 +83,7 @@ describe('panel slot lifecycle', () => {
 		globalThis.ResizeObserver = originalRO;
 		window.requestAnimationFrame = originalRAF;
 		window.cancelAnimationFrame = originalCAF;
+		vi.unstubAllGlobals();
 	});
 
 	it('mountSlot renders the chart and attaches a ResizeObserver', () => {
@@ -117,13 +148,15 @@ describe('panel slot lifecycle', () => {
 	});
 
 	it('the resize callback re-invokes the dispatcher with the original snapshot', () => {
-		const container = document.createElement('div');
+		const container = sizedContainer();
 		const snapshot = { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] };
 
 		mountSlot(container, snapshot);
 		dispatch.renderChartSnapshot.mockClear();
 
+		container.clientWidth = 500;
 		FakeResizeObserver.instances[0].trigger();
+		flushFrames();
 
 		expect(dispatch.renderChartSnapshot).toHaveBeenCalledWith(container, snapshot);
 	});
@@ -143,7 +176,7 @@ describe('panel slot lifecycle', () => {
 	});
 
 	it('the resize re-render runs the dispose hook before the replacement render', () => {
-		const container = document.createElement('div');
+		const container = sizedContainer();
 		const snapshot = { id: 1, type: 'bar', config: {}, dataSnapshot: [], columnsSnapshot: [] };
 		mountSlot(container, snapshot);
 		dispatch.renderChartSnapshot.mockClear();
@@ -155,7 +188,9 @@ describe('panel slot lifecycle', () => {
 			return { ok: true };
 		});
 
+		container.clientHeight = 400;
 		FakeResizeObserver.instances[0].trigger();
+		flushFrames();
 
 		expect(callOrder).toEqual(['dispose', 'render']);
 		expect(container[CHART_DISPOSE_HOOK]).toBeUndefined();
@@ -174,5 +209,108 @@ describe('panel slot lifecycle', () => {
 		expect(firstObserver.disconnected).toBe(true);
 		expect(FakeResizeObserver.instances).toHaveLength(2);
 		expect(dispatch.renderChartSnapshot).toHaveBeenLastCalledWith(container, snapshot2);
+	});
+
+	it('ignores the initial/unchanged resize and coalesces real changes into one render', () => {
+		const container = sizedContainer();
+		mountSlot(container, { id: 1, type: 'line' });
+		const observer = FakeResizeObserver.instances[0];
+		observer.trigger();
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(1);
+		container.clientWidth = 500;
+		observer.trigger();
+		container.clientHeight = 350;
+		observer.trigger();
+		expect(frames.size).toBe(1);
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(2);
+		observer.trigger();
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(2);
+	});
+
+	it('keeps the current chart when a queued resize becomes hidden', () => {
+		const container = sizedContainer();
+		mountSlot(container, { id: 1, type: 'line' });
+		const observer = FakeResizeObserver.instances[0];
+		container.clientWidth = 500;
+		observer.trigger();
+		container.clientWidth = 0;
+		observer.trigger();
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(1);
+		container.clientWidth = 500;
+		observer.trigger();
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(2);
+	});
+
+	it('renders deferred slots on approach and applies an offscreen resize on return', () => {
+		vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+		const container = sizedContainer();
+		const snapshot = Object.freeze({ id: 1, type: 'line', config: Object.freeze({ chartHeight: 320 }) });
+		mountSlot(container, snapshot, { deferUntilVisible: true });
+		const visibility = FakeIntersectionObserver.instances[0];
+		const resize = FakeResizeObserver.instances[0];
+		resize.trigger();
+		visibility.trigger(false);
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).not.toHaveBeenCalled();
+		visibility.trigger(true);
+		flushFrames();
+		resize.trigger();
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(1);
+		visibility.trigger(false);
+		container.clientWidth = 600;
+		resize.trigger();
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(1);
+		visibility.trigger(true);
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(2);
+		expect(dispatch.renderChartSnapshot).toHaveBeenLastCalledWith(container, snapshot);
+		expect(snapshot.config.chartHeight).toBe(320);
+	});
+
+	it('cancels deferred work on teardown and ignores callbacks from an old mount', () => {
+		vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+		const container = sizedContainer();
+		mountSlot(container, { id: 1, type: 'line' }, { deferUntilVisible: true });
+		const visibility = FakeIntersectionObserver.instances[0];
+		visibility.trigger(true);
+		teardownSlot(container);
+		flushFrames();
+		expect(visibility.disconnect).toHaveBeenCalledOnce();
+		expect(dispatch.renderChartSnapshot).not.toHaveBeenCalled();
+		mountSlot(container, { id: 2, type: 'line' });
+		visibility.trigger(true);
+		FakeResizeObserver.instances[0].trigger();
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(1);
+	});
+
+	it('materializes deferred slots for export without duplicating a queued render', () => {
+		vi.stubGlobal('IntersectionObserver', FakeIntersectionObserver);
+		const root = document.createElement('div');
+		const a = sizedContainer();
+		const b = sizedContainer();
+		root.append(a, b);
+		mountSlot(a, { id: 1, type: 'line' }, { deferUntilVisible: true });
+		mountSlot(b, { id: 2, type: 'bar' }, { deferUntilVisible: true });
+		FakeIntersectionObserver.instances[0].trigger(true);
+		renderAllSlots(root);
+		flushFrames();
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(2);
+		renderAllSlots(root);
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(2);
+	});
+
+	it('falls back to eager rendering without IntersectionObserver', () => {
+		vi.stubGlobal('IntersectionObserver', undefined);
+		const container = sizedContainer();
+		expect(mountSlot(container, { id: 1, type: 'line' }, { deferUntilVisible: true })).toEqual({ ok: true });
+		expect(dispatch.renderChartSnapshot).toHaveBeenCalledTimes(1);
 	});
 });

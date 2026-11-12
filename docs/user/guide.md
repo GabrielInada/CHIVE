@@ -134,6 +134,10 @@ removal controls. Dashboards adapt to two columns on tablets and one on phones,
 preserving the saved layout for wider screens. Rotate the device to give charts
 more width. Data tables scroll within their preview.
 
+Settings and filter dialogs fit the space above the phone keyboard. Scroll the
+filter form to reach more rules; **Apply** and **Cancel** remain at the bottom
+of the dialog. Increasing the browser's text size keeps these actions reachable.
+
 Use **Expand chart** in a dashboard slot to inspect that chart in a larger view.
 **Close** or Escape returns to the same dashboard position. Long titles wrap;
 pie charts retain their full legend. Where the legend needs more space, scroll

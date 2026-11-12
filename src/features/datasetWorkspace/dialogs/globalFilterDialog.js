@@ -65,6 +65,8 @@ function renderNumericRuleBody({ body, rule, rows, translate }) {
 	opLabel.textContent = translate('chive-chart-filter-operator');
 	const opSelect = document.createElement('select');
 	opSelect.className = 'rows-select gf-rule-operator';
+	opSelect.id = `gf-${rule._uid}-operator`;
+	opLabel.htmlFor = opSelect.id;
 	[
 		{ value: 'between', label: translate('chive-chart-filter-op-between') },
 		{ value: 'lt', label: translate('chive-chart-filter-op-lt') },
@@ -86,6 +88,8 @@ function renderNumericRuleBody({ body, rule, rows, translate }) {
 			const minLabel = document.createElement('label');
 			minLabel.textContent = translate('chive-chart-filter-min');
 			const minInput = document.createElement('input');
+			minInput.id = `gf-${rule._uid}-min`;
+			minLabel.htmlFor = minInput.id;
 			minInput.type = 'number';
 			minInput.className = 'rows-select';
 			configureInput(minInput);
@@ -100,6 +104,8 @@ function renderNumericRuleBody({ body, rule, rows, translate }) {
 			const maxLabel = document.createElement('label');
 			maxLabel.textContent = translate('chive-chart-filter-max');
 			const maxInput = document.createElement('input');
+			maxInput.id = `gf-${rule._uid}-max`;
+			maxLabel.htmlFor = maxInput.id;
 			maxInput.type = 'number';
 			maxInput.className = 'rows-select';
 			configureInput(maxInput);
@@ -114,6 +120,8 @@ function renderNumericRuleBody({ body, rule, rows, translate }) {
 			const valueLabel = document.createElement('label');
 			valueLabel.textContent = translate('chive-chart-filter-value');
 			const valueInput = document.createElement('input');
+			valueInput.id = `gf-${rule._uid}-value`;
+			valueLabel.htmlFor = valueInput.id;
 			valueInput.type = 'number';
 			valueInput.className = 'rows-select';
 			configureInput(valueInput);
@@ -149,6 +157,8 @@ function renderCategoricalRuleBody({ body, rule, rows, translate }) {
 	const searchLabel = document.createElement('label');
 	searchLabel.textContent = translate('chive-chart-filter-search');
 	const searchInput = document.createElement('input');
+	searchInput.id = `gf-${rule._uid}-search`;
+	searchLabel.htmlFor = searchInput.id;
 	searchInput.type = 'search';
 	searchInput.className = 'rows-select gf-rule-search';
 	searchInput.value = rule.search || '';
@@ -297,6 +307,8 @@ function renderRuleCard({ rule, index, rows, allColumns, numericColumns, transla
 	const columnLabel = document.createElement('label');
 	columnLabel.textContent = translate('chive-chart-filter-column');
 	const columnSelect = document.createElement('select');
+	columnSelect.id = `gf-${rule._uid}-column`;
+	columnLabel.htmlFor = columnSelect.id;
 	columnSelect.className = 'rows-select gf-rule-column';
 	columnSelect.appendChild(createOption('', translate('chive-chart-option-none'), !rule.column));
 	allColumns.forEach(name => columnSelect.appendChild(createOption(name, name, rule.column === name)));
@@ -368,10 +380,14 @@ export function openGlobalFilterDialog({
 		title.textContent = translate('chive-global-filter-dialog-title');
 		surface.appendChild(title);
 
+		const content = document.createElement('div');
+		content.className = 'gf-dialog-content';
+		surface.appendChild(content);
+
 		const hint = document.createElement('p');
 		hint.className = 'gf-hint';
 		hint.textContent = translate('chive-global-filter-combine-hint');
-		surface.appendChild(hint);
+		content.appendChild(hint);
 
 		const draftRules = createInitialDraftRules(initialFilter, {
 			numericColumns,
@@ -380,7 +396,7 @@ export function openGlobalFilterDialog({
 
 		const rulesContainer = document.createElement('div');
 		rulesContainer.className = 'gf-rules-container';
-		surface.appendChild(rulesContainer);
+		content.appendChild(rulesContainer);
 
 		const emptyState = document.createElement('div');
 		emptyState.className = 'gf-empty';
@@ -401,7 +417,7 @@ export function openGlobalFilterDialog({
 		clearAllBtn.textContent = translate('chive-global-filter-clear-all');
 		topActions.appendChild(clearAllBtn);
 
-		surface.appendChild(topActions);
+		content.appendChild(topActions);
 
 		const footer = document.createElement('div');
 		footer.className = 'join-footer gf-footer';

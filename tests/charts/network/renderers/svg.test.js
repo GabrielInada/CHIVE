@@ -55,6 +55,7 @@ describe('network graph visualization', () => {
 			target: 'destino',
 			weight: 'peso',
 			showNodeLabels: true,
+			edgeColorMode: 'gradient',
 		}, renderContext({ source: 'origem', target: 'destino' }));
 
 		expect(result.ok).toBe(true);
@@ -62,6 +63,10 @@ describe('network graph visualization', () => {
 		expect(result.linksCount).toBe(3);
 		expect(container.querySelectorAll('line').length).toBe(3);
 		expect(container.querySelectorAll('circle').length).toBe(3);
+		// Geometry must exist synchronously for a newly materialized SVG export.
+		expect(container.querySelector('circle').hasAttribute('cx')).toBe(true);
+		expect(container.querySelector('line').hasAttribute('x1')).toBe(true);
+		expect(container.querySelectorAll('linearGradient stop').length).toBe(6);
 	});
 
 	it('uses configured source/target labels in the legend', () => {

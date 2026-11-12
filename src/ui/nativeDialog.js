@@ -6,6 +6,8 @@
  * behavior CHIVE still owns: backdrop dismissal, DOM cleanup, and focus return.
  */
 
+import { observeDialogViewport } from './dialogViewport.js';
+
 /**
  * Append and show a modal dialog.
  *
@@ -41,12 +43,16 @@ export function showNativeModal(dialog, { onDismiss } = {}) {
 	dialog.addEventListener('cancel', onCancel);
 	dialog.addEventListener('click', onBackdropClick);
 	document.body.appendChild(dialog);
+	const stopObservingViewport = observeDialogViewport(dialog);
+	dialog.addEventListener('close', stopObservingViewport, { once: true });
 	dialog.showModal();
 
 	return {
 		close(returnValue = '') {
 			if (closed) return;
 			closed = true;
+			stopObservingViewport();
+			dialog.removeEventListener('close', stopObservingViewport);
 			dialog.removeEventListener('cancel', onCancel);
 			dialog.removeEventListener('click', onBackdropClick);
 			if (dialog.open) dialog.close(returnValue);

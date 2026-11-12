@@ -106,7 +106,8 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
-  min-height: 70px;
+  height: 100px;
+  min-height: 100px;
   padding: var(--space-1);
   display: flex;
   align-items: center;

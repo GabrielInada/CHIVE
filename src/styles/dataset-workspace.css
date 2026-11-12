@@ -214,6 +214,27 @@
 /* Global filter modal body */
 .gf-dialog {
   width: min(640px, 96vw);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gf-dialog > .join-title,
+.gf-footer {
+    flex-shrink: 0;
+}
+
+.gf-dialog-content {
+    min-height: 0;
+    overflow: auto;
+    overscroll-behavior: contain;
+    padding: 2px;
+    scroll-padding-block: var(--space-3);
+}
+
+.gf-footer {
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-3);
 }
 
 .gf-controls {
@@ -226,6 +247,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
+  min-width: 0;
+}
+
+.gf-control :where(input, select) {
+    min-width: 0;
+    max-width: 100%;
 }
 
 .gf-control label {
@@ -244,12 +271,13 @@
 
 .gf-numeric-inputs {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-4);
 }
 
 .gf-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-3);
 }
 
@@ -263,6 +291,7 @@
   gap: var(--space-2);
   max-height: 240px;
   overflow: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   padding: var(--space-3);
@@ -301,9 +330,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  max-height: 60vh;
-  max-height: 60dvh;
-  overflow: auto;
 }
 
 .gf-rule-card {
@@ -321,6 +347,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .gf-rule-title {
@@ -421,6 +448,14 @@
   height: 24px;
   line-height: 1;
   vertical-align: middle;
+}
+
+@media (max-width: 900px), (any-pointer: coarse) {
+    .app-dialog .rows-select {
+        height: auto;
+        min-height: 44px;
+        font-size: 1rem;
+    }
 }
 
 #select-preview-rows {

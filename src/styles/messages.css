@@ -4,6 +4,8 @@
 
 .confirm-dialog {
   width: min(440px, 92vw);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   box-sizing: border-box;
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
@@ -22,10 +24,14 @@
   margin: var(--space-4) 0 0;
   white-space: pre-line;
   color: var(--muted);
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 
 .confirm-dialog-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: var(--space-3);
   margin-top: var(--space-6);

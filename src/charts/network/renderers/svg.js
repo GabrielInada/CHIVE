@@ -367,7 +367,7 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		});
 	}
 
-	simulation.on('tick', () => {
+	const drawPositions = () => {
 		if (edgeColorMode === 'gradient') {
 			links.forEach(d => {
 				const gradient = defs.select(`#${d._gradientId}`).empty()
@@ -404,7 +404,11 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		}
 
 		repositionPinnedTooltip();
-	});
+	};
+	simulation.on('tick', drawPositions);
+	// A deferred slot may be exported in the same task as its first render.
+	// Draw the initialized layout now, before the simulation's first timer tick.
+	drawPositions();
 
 	return {
 		ok: true,

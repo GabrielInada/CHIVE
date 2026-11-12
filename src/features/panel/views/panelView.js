@@ -66,7 +66,7 @@ function handleDragCapabilityChange() {
 
 /**
  * Render the sidebar list of saved chart snapshots into
- * `#panel-chart-list`. Each item gets a thumbnail (live chart render via
+ * `#panel-chart-list`. Each item gets a thumbnail (rendered near the viewport via
  * {@link mountSlot}) and a remove button wired to the provided callback.
  *
  * No-op when the container element is missing.
@@ -137,7 +137,7 @@ export function renderSidebarPanel(removeChartFromPanel) {
 		article.appendChild(preview);
 		chartList.appendChild(article);
 
-		mountSlot(preview, chart);
+		mountSlot(preview, chart, { deferUntilVisible: true });
 
 		// Drag event
 		if (desktopDnd) {
@@ -220,7 +220,7 @@ export function renderCanvasPanel(callbacks) {
 		if (!chart) return;
 		const chartContainer = slotEl.querySelector('.panel-chart-container');
 		if (!chartContainer) return;
-		mountSlot(chartContainer, chart);
+		mountSlot(chartContainer, chart, { deferUntilVisible: true });
 	});
 }
 

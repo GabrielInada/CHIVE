@@ -285,6 +285,9 @@ export function createPanelSlotElement({
 		clearBtn.textContent = '×';
 		clearBtn.addEventListener('click', onClearSlot);
 
+		// Keep the chart identifiable before its deferred graphic is rendered.
+		slot.setAttribute('role', 'group');
+		slot.setAttribute('aria-label', chart.config?.customTitle || chart.name || translate('chive-chart-expand'));
 		const chartContainer = document.createElement('div');
 		chartContainer.className = 'panel-chart-container';
 

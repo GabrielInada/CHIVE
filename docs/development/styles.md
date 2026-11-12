@@ -155,6 +155,23 @@ Expanded charts use the native modal adapter and a separate slot mount, with
 teardown on dismissal. The original chart, focus, and dashboard scroll position
 are preserved. Chart tooltips attach inside an open dialog when present.
 
+Dashboard slots and sidebar thumbnails use IntersectionObserver to render near
+the viewport. Their CSS reserves space before rendering, and their controls and
+accessible chart names remain available. Resize notifications only redraw when
+the renderer's width or slot height actually changes; hidden/offscreen slots
+catch up when visible. Expanded charts render immediately. SVG export explicitly
+materializes every slot first, so deferred charts are included. Browsers without
+IntersectionObserver use the eager rendering fallback.
+
+The native modal adapter observes VisualViewport while a dialog is open. Its
+height and inset variables constrain surfaces above the software keyboard,
+including viewport panning; pinch zoom retains native magnification and panning.
+Listeners are removed on close. CSS viewport sizing remains the fallback when
+the API is absent. Dialogs respect safe-area insets. Settings, confirmations,
+and global filters scroll their content while keeping their primary actions
+reachable. Filter fields have associated labels and use a 1rem font on touch
+and narrow layouts.
+
 Chart renderers read their own container width, with a 240px drawing floor.
 SVGs carry a viewBox; panel charts receive a temporary height derived from
 their slot. Workspace chart width changes schedule a redraw without rebuilding
