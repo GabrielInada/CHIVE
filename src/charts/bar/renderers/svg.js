@@ -21,6 +21,8 @@ import {
 import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { BAR_CHART } from '../../../config/charts/definitions/bar.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
+import { categoryTickValues, truncateAxisLabel } from '../../shared/axisTicks.js';
 import { formatNumber } from '../../../utils/formatters.js';
 import { ok, fail } from '../../../utils/result.js';
 import {
@@ -84,7 +86,7 @@ export function renderBarChart(container, rows, config = {}, context = {}) {
 	if (!aggregated.ok) return fail(aggregated.reason);
 	const { entries, retainedValueTotal } = aggregated;
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bar.width, 320);
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.bar.width);
 	const height = chartHeight;
 	const margin = CHART_DIMENSIONS.bar.margins;
 	const { svg, group, innerWidth, innerHeight } = setupChartSvg(container, {
@@ -198,7 +200,12 @@ export function renderBarChart(container, rows, config = {}, context = {}) {
 	}
 
 	appendBottomAxis(group, {
-		axis: axisBottom(xScale).tickFormat(key => labelByKey.get(key) ?? key),
+		axis: axisBottom(xScale)
+			.tickValues(width < 480 ? categoryTickValues(xScale.domain(), innerWidth) : null)
+			.tickFormat(key => {
+				const label = labelByKey.get(key) ?? key;
+				return width < 480 ? truncateAxisLabel(label) : label;
+			}),
 		innerHeight,
 		tickRotation: { angle: -30, dx: '-0.6em', dy: '0.15em' },
 	});

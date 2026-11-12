@@ -59,6 +59,7 @@
   align-items: center;
   gap: var(--space-3);
   margin-left: auto;
+  flex-wrap: wrap;
 }
 
 #project-import-input {
@@ -390,6 +391,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--space-3);
   background: color-mix(in srgb, var(--accent) 3%, transparent);
 }
 
@@ -397,6 +400,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .rows-label {
@@ -468,5 +472,71 @@
 #tab-content-charts .result-card {
   display: flex;
   flex-direction: column;
+}
+
+@media (max-width: 900px) {
+  .result-tabs {
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+  }
+
+  .card-header {
+    padding: var(--space-5);
+  }
+
+  .card-body-charts {
+    padding: var(--space-3);
+  }
+
+  #empty-state {
+    height: auto;
+    padding: 40px var(--space-5);
+  }
+
+  .empty-sub {
+    font-size: var(--font-size-body);
+  }
+}
+
+@media (max-width: 640px) {
+  .result-tabs-group {
+    width: 100%;
+    gap: var(--space-2);
+  }
+
+  .result-tabs-actions {
+    width: 100%;
+    gap: var(--space-2);
+    justify-content: flex-end;
+  }
+
+  .result-tabs-actions .btn-toggle-controls {
+    margin-right: auto;
+  }
+
+  .result-tab {
+    flex: 1 0 auto;
+    padding-inline: var(--space-3);
+    font-family: var(--font-sans);
+  }
+
+  .global-filter-trigger,
+  .project-menu-trigger {
+    padding-inline: var(--space-3);
+    font-family: var(--font-sans);
+    font-weight: 500;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 900px), (any-pointer: coarse) {
+  .result-tab,
+  .project-menu-trigger,
+  .project-menu-item,
+  .global-filter-trigger,
+  #select-preview-rows {
+    min-height: 44px;
+    font-size: var(--font-size-body);
+  }
 }
 }

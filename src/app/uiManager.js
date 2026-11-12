@@ -60,30 +60,55 @@ export function updateSidebarUI(mode) {
  */
 export function toggleSidebarCollapsed() {
 	const toggleBtn = document.getElementById('btn-toggle-sidebar');
-	
-	if (toggleBtn) {
-		const isCollapsed = toggleBtn.getAttribute('aria-expanded') === 'false';
-		const newCollapsedState = !isCollapsed;
+	if (!toggleBtn) return false;
+	const collapsed = toggleBtn.getAttribute('aria-expanded') !== 'false';
+	applySidebarCollapsed(toggleBtn, collapsed);
+	return collapsed;
+}
 
-		toggleBtn.setAttribute('aria-expanded', String(!newCollapsedState));
-		const labelKey = newCollapsedState ? 'chive-sidebar-expand' : 'chive-sidebar-collapse';
-		const label = t(labelKey);
-		toggleBtn.setAttribute('aria-label', label);
-		toggleBtn.setAttribute('title', label);
-		toggleBtn.textContent = newCollapsedState ? '»' : '«';
-		
-		return newCollapsedState;
+function applySidebarCollapsed(button, collapsed) {
+	const narrow = window.matchMedia?.('(max-width: 900px)').matches;
+	const compactButton = document.getElementById('btn-toggle-controls');
+	if (collapsed && document.activeElement?.closest('.sidebar-panel')) {
+		const visibleButton = narrow && compactButton?.closest('.result-tabs:not([hidden])') ? compactButton : button;
+		visibleButton.focus({ preventScroll: true });
 	}
-	return false;
+	const labelKey = narrow
+		? (collapsed ? 'chive-sidebar-show-controls' : 'chive-sidebar-hide-controls')
+		: (collapsed ? 'chive-sidebar-expand' : 'chive-sidebar-collapse');
+	const label = t(labelKey);
+	button.setAttribute('aria-expanded', String(!collapsed));
+	button.setAttribute('aria-label', label);
+	button.setAttribute('title', label);
+	button.textContent = narrow ? label : (collapsed ? '»' : '«');
+	if (compactButton) {
+		compactButton.setAttribute('aria-expanded', String(!collapsed));
+		compactButton.setAttribute('aria-label', label);
+		compactButton.title = label;
+		compactButton.textContent = t('chive-sidebar-controls');
+	}
 }
 
 /**
- * Wire the click handler on the sidebar-toggle button to
- * {@link toggleSidebarCollapsed}. No-op when the button is absent.
+ * Keep separate, session-only disclosure choices for narrow and desktop
+ * layouts. A phone starts with controls closed; crossing the breakpoint
+ * restores that layout's choice without changing the saved project.
  */
 export function setupSidebarToggleListener() {
 	const toggleBtn = document.getElementById('btn-toggle-sidebar');
-	if (toggleBtn) {
-		toggleBtn.addEventListener('click', toggleSidebarCollapsed);
-	}
+	if (!toggleBtn) return;
+	const media = window.matchMedia?.('(max-width: 900px)');
+	let narrowCollapsed = true;
+	let desktopCollapsed = toggleBtn.getAttribute('aria-expanded') === 'false';
+	const refresh = () => applySidebarCollapsed(toggleBtn, media?.matches ? narrowCollapsed : desktopCollapsed);
+	const toggle = () => {
+		const collapsed = toggleSidebarCollapsed();
+		if (media?.matches) narrowCollapsed = collapsed;
+		else desktopCollapsed = collapsed;
+	};
+	toggleBtn.addEventListener('click', toggle);
+	document.getElementById('btn-toggle-controls')?.addEventListener('click', toggle);
+	media?.addEventListener('change', refresh);
+	window.addEventListener('chive-locale-changed', refresh);
+	refresh();
 }

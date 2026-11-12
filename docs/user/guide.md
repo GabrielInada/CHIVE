@@ -120,6 +120,33 @@ chart when you want the panel to reflect updated data, filters, or settings.
 
 ## Save, Import, And Export Projects
 
+### View A Project On A Phone Or Tablet
+
+Open CHIVE in the browser, choose **Project → Import project**, and select the
+full `.chive.sqlite3` file you received. Import is available even in an empty
+workspace. It replaces the current project after confirmation, just as on
+desktop. The file-transfer workflow and project format are the same on every
+screen size.
+
+On narrow screens, **Controls** opens or closes the dataset or chart settings.
+Use **Edit block** to reveal a dashboard block's layout, border, reorder, and
+removal controls. Dashboards adapt to two columns on tablets and one on phones,
+preserving the saved layout for wider screens. Rotate the device to give charts
+more width. Data tables scroll within their preview.
+
+Use **Expand chart** in a dashboard slot to inspect that chart in a larger view.
+**Close** or Escape returns to the same dashboard position. Long titles wrap;
+pie charts retain their full legend. Where the legend needs more space, scroll
+inside the chart (or focus the scroll region and use the keyboard).
+
+Tap a chart mark to keep its value tooltip open, then close it or tap outside
+to dismiss it. For line charts, tap near a data point even when its marker is
+hidden. Swipe with one finger to scroll; use two fingers to zoom or move pie
+and network charts. The 3D scatter retains its existing inspection limitations; vertical
+touch movement scrolls the page, while horizontal dragging rotates the plot.
+
+### Project Files
+
 CHIVE auto-saves browser work and can also transfer project files manually.
 
 - Auto-save keeps work in browser storage for the current origin.

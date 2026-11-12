@@ -17,6 +17,22 @@ describe('renderLineChart', () => {
 		hideChartTooltip();
 	});
 
+	it('pins a nearby value on tap even with point markers hidden', () => {
+		const container = document.getElementById('line');
+		renderLineChart(container, [{ x: 1, y: 10 }, { x: 2, y: 20 }], {
+			...BASE_OPTIONS, x: 'x', y: 'y', showPoints: false,
+		}, renderContext({ x: 'x', y: 'y' }, { axisTypes: { x: 'number', y: 'number' } }));
+		const path = container.querySelector('.line-path-main');
+		const [, x, y] = path.getAttribute('d').match(/^M([\d.-]+),([\d.-]+)/);
+		path.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: Number(x), clientY: Number(y) }));
+		const tooltip = document.querySelector('.chart-tooltip--fixado');
+		expect(tooltip.hidden).toBe(false);
+		expect(tooltip.textContent).toContain('10');
+		expect(container.querySelectorAll('.line-point')).toHaveLength(0);
+		document.body.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
+		expect(tooltip.hidden).toBe(true);
+	});
+
 	it('renders a single main line path for numeric X and Y', () => {
 		const container = document.getElementById('line');
 		const rows = [

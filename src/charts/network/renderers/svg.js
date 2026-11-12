@@ -36,6 +36,8 @@ import {
 import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { toCategoryToken } from '../../../domain/filters/filterRule.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
+import { allowChartZoom } from '../../shared/gestures.js';
 import { NETWORK_GRAPH } from '../../../config/charts/definitions/network.js';
 import { formatNumber } from '../../../utils/formatters.js';
 import { interpolateColor } from '../../../utils/colorUtils.js';
@@ -108,7 +110,7 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 	hideChartTooltip();
 	stopPreviousSimulation(container);
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.scatter.width);
 	const height = chartHeight;
 
 	const svg = select(container)
@@ -118,14 +120,16 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		.attr('viewBox', [-(width / 2), -(height / 2), width, height]);
 
 	const viewport = svg.append('g');
+	let titleHeight = 0;
 
 	if (customTitle) {
-		appendChartTitle(svg, {
+		const title = appendChartTitle(svg, {
 			width,
 			text: customTitle,
 			x: 0,
 			y: -(height / 2) + 18,
 		});
+		titleHeight = Math.max(1, title.selectAll('tspan').size()) * 16 + 8;
 	}
 
 	const links = network.links.map(link => ({ ...link }));
@@ -287,6 +291,8 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 
 	node.call(
 		drag()
+			// Touching a node still inspects it; dragging must not trap page scroll.
+			.filter(event => !event.touches && !event.ctrlKey && !event.button)
 			.on('start', event => {
 				if (!event.active) simulation.alphaTarget(0.3).restart();
 				event.subject.fx = event.subject.x;
@@ -320,6 +326,7 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		: null;
 
 	const zoomBehavior = zoom()
+		.filter(allowChartZoom)
 		.scaleExtent([NETWORK_GRAPH.minZoomScale, NETWORK_GRAPH.maxZoomScale])
 		.on('zoom', event => {
 			viewport.attr('transform', event.transform);
@@ -335,7 +342,7 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 	if (showLegend) {
 		const legend = svg
 			.append('g')
-			.attr('transform', `translate(${-(width / 2) + 12},${-(height / 2) + 12})`)
+			.attr('transform', `translate(${-(width / 2) + 12},${-(height / 2) + 12 + titleHeight})`)
 			.attr('class', 'network-legend');
 
 		[

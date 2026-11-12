@@ -9,6 +9,7 @@
 }
 
 .chart-block {
+  min-width: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -22,6 +23,7 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
+  flex-wrap: wrap;
   margin-bottom: var(--space-3);
 }
 
@@ -32,7 +34,7 @@
 }
 
 .chart-actions {
-  flex-shrink: 0;
+  flex-wrap: wrap;
   display: flex;
   align-items: center;
   gap: var(--space-2);
@@ -63,7 +65,7 @@
 
 .chart-container {
   min-height: 360px;
-  overflow: hidden;
+  overflow: auto;
 }
 
 /* WebGL canvas charts (scatter3d): explicit nonzero layout so the backing
@@ -82,12 +84,36 @@
 }
 
 .chart-canvas-title {
+  flex: none;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-family: var(--font-display);
   font-size: var(--font-size-md);
   font-weight: 700;
   color: var(--text);
   text-align: center;
   margin-bottom: var(--space-3);
+}
+
+.chart-scroll-region {
+  height: 100%;
+  overflow: auto;
+}
+
+.chart-scroll-region:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.chart-legend-scroll-hint {
+  position: sticky;
+  bottom: 0;
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: var(--font-size-sm);
 }
 
 .chart-sampling-notice {
@@ -190,7 +216,11 @@
 .chart-tooltip {
   position: absolute;
   z-index: 9999;
-  max-width: 280px;
+  max-width: min(360px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  max-height: calc(100dvh - 16px);
+  overflow: auto;
+  overflow-wrap: anywhere;
   background: color-mix(in srgb, var(--text) 96%, transparent);
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.2);
@@ -366,5 +396,39 @@
 .chart-tooltip__action[disabled]:hover,
 .chart-tooltip__action[aria-disabled="true"]:hover {
   background: rgba(200, 255, 77, 0.12);
+}
+
+@media (max-width: 900px) {
+  .chart-block {
+    padding-inline: var(--space-3);
+  }
+
+  .chart-container .tick text,
+  .panel-chart-container .tick text {
+    font-size: var(--font-size-ui);
+  }
+}
+
+@media (max-width: 900px), (any-pointer: coarse) {
+  .chart-action-btn,
+  .chart-tooltip__action,
+  .chart-tooltip__close {
+    min-height: 44px;
+    min-width: 44px;
+    font-size: var(--font-size-body);
+  }
+
+  .chart-tooltip {
+    font-size: var(--font-size-body);
+  }
+
+  .chart-tooltip__header-title {
+    white-space: normal;
+    font-size: var(--font-size-ui);
+  }
+
+  .chart-canvas-3d {
+    touch-action: pan-y;
+  }
 }
 }

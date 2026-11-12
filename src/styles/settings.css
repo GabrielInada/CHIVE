@@ -241,6 +241,16 @@
   margin-top: var(--space-3);
 }
 
+@media (max-width: 900px), (any-pointer: coarse) {
+  .header-settings-btn,
+  .settings-close-btn,
+  .settings-segment,
+  .settings-select {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 @media (max-width: 480px) {
   .settings-dialog {
     width: 100%;

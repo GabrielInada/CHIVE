@@ -45,6 +45,9 @@
 	"chive-sidebar-nav": "Navegação",
 	"chive-sidebar-collapse": "Recolher painel lateral",
 	"chive-sidebar-expand": "Expandir painel lateral",
+	"chive-sidebar-show-controls": "Mostrar controles",
+	"chive-sidebar-controls": "Controles",
+	"chive-sidebar-hide-controls": "Ocultar controles",
 
 	"chive-section-upload": "Carregar arquivo",
 	"chive-upload-main": "Arraste seu arquivo aqui",
@@ -130,7 +133,7 @@
 	"chive-btn-go-panel": "Ir para o painel →",
 
 	"chive-empty-title": "Nenhum dado carregado ainda",
-	"chive-empty-sub": "Carregue um arquivo CSV ou JSON ao lado para ver o preview dos dados aqui.",
+	"chive-empty-sub": "Importe um projeto pelo menu Projeto ou use os controles para carregar um arquivo CSV ou JSON.",
 
 	"chive-card-preview": "Preview dos dados",
 	"chive-tabs-label": "Visualizações da área de trabalho",
@@ -411,6 +414,10 @@
 	"chive-panel-export-svg": "Exportar SVG",
 	"chive-panel-add-block": "Adicionar bloco",
 	"chive-panel-block-title": "Bloco $1",
+	"chive-panel-block-controls": "Editar bloco",
+	"chive-chart-expand": "Ampliar gráfico",
+	"chive-chart-scroll-legend": "Role para ver a legenda completa",
+	"chive-chart-close-expanded": "Fechar",
 	"chive-panel-block-move-up": "Mover bloco para cima",
 	"chive-panel-block-move-down": "Mover bloco para baixo",
 	"chive-panel-block-remove": "Remover bloco",

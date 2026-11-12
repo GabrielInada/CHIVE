@@ -21,6 +21,7 @@ import {
 } from '../../shared/tooltip/tooltip.js';
 import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
@@ -76,17 +77,19 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 	container.replaceChildren();
 	hideChartTooltip();
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bar?.width || 700, 320);
-	const titleOffset = customTitle ? 24 : 0;
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.bar?.width || 700);
+	let titleOffset = customTitle ? 24 : 0;
 	const height = chartHeight;
 
 	const svg = select(container)
 		.append('svg')
 		.attr('width', width)
-		.attr('height', height);
+		.attr('height', height)
+		.attr('viewBox', `0 0 ${width} ${height}`);
 
 	if (customTitle) {
-		appendChartTitle(svg, { width, text: customTitle });
+		const title = appendChartTitle(svg, { width, text: customTitle });
+		titleOffset += Math.max(0, title.selectAll('tspan').size() - 1) * 16;
 	}
 
 	const treemapWidth = width;

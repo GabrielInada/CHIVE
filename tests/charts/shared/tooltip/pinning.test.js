@@ -43,10 +43,10 @@ describe('shared chart pin ownership', () => {
 		pending.forEach(callback => callback());
 	};
 
-	it('toggles the same mark after a real mousedown, including descendants of a group', () => {
+	it('toggles the same mark after a real pointerdown, including descendants of a group', () => {
 		pin(first);
 		expect(isTooltipPinned()).toBe(true);
-		first.querySelector('circle').dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+		first.querySelector('circle').dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
 		expect(isTooltipPinned()).toBe(true);
 		pin(first);
 		expect(isTooltipPinned()).toBe(false);
@@ -98,7 +98,7 @@ describe('shared chart pin ownership', () => {
 		pin(first);
 		if (action === 'close') tooltip().querySelector('button').click();
 		if (action === 'Escape') document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
-		if (action === 'outside') second.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }));
+		if (action === 'outside') second.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true }));
 		if (action === 'cleanup') hideChartTooltip();
 		expect(isTooltipPinned()).toBe(false);
 		expect(tooltip().hidden).toBe(true);

@@ -197,6 +197,32 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-3);
+  min-height: 32px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.panel-block-header::-webkit-details-marker {
+  display: none;
+}
+
+.panel-block-edit-label {
+  color: var(--accent);
+  font-size: var(--font-size-sm);
+}
+
+.panel-block-edit-label::after {
+  content: ' +';
+}
+
+.panel-block-controls[open] .panel-block-edit-label::after {
+  content: ' −';
+}
+
+.panel-block-controls-body {
+  display: grid;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
 }
 
 .panel-block-title {
@@ -288,9 +314,13 @@
 }
 
 .panel-layout {
+  --panel-chart-height-cap: 420px;
+  --panel-spatial-height-cap: 480px;
+
+  container-type: inline-size;
   width: 100%;
   height: 100%;
-  min-height: 220px;
+  min-height: var(--panel-block-min-height, 220px);
   position: relative;
   display: grid;
   gap: var(--space-4);
@@ -364,12 +394,12 @@
 }
 
 .panel-layout.template-2col {
-  grid-template-columns: minmax(0, var(--split, 50%)) minmax(0, calc(100% - var(--split, 50%)));
+  grid-template-columns: minmax(0, calc(var(--split, 50%) - var(--space-4) / 2)) minmax(0, calc(100% - var(--split, 50%) - var(--space-4) / 2));
 }
 
 .panel-layout.template-hero2 {
-  grid-template-columns: minmax(0, var(--split-main, 60%)) minmax(0, calc(100% - var(--split-main, 60%)));
-  grid-template-rows: minmax(0, var(--split-right, 50%)) minmax(0, calc(100% - var(--split-right, 50%)));
+  grid-template-columns: minmax(0, calc(var(--split-main, 60%) - var(--space-4) / 2)) minmax(0, calc(100% - var(--split-main, 60%) - var(--space-4) / 2));
+  grid-template-rows: minmax(0, calc(var(--split-right, 50%) - var(--space-4) / 2)) minmax(0, calc(100% - var(--split-right, 50%) - var(--space-4) / 2));
 }
 
 .panel-layout.template-hero2 [data-panel-slot='slot-1'] {
@@ -378,17 +408,18 @@
 
 .panel-layout.template-3col {
   grid-template-columns:
-    minmax(0, var(--a, 33%))
-    minmax(0, var(--b, 33%))
-    minmax(0, var(--c, 34%));
+    minmax(0, calc(var(--a, 33%) - var(--space-4) * 2 / 3))
+    minmax(0, calc(var(--b, 33%) - var(--space-4) * 2 / 3))
+    minmax(0, calc(var(--c, 34%) - var(--space-4) * 2 / 3));
 }
 
 .panel-layout.template-1x2 {
   grid-template-columns: 1fr;
-  grid-template-rows: minmax(0, var(--split, 50%)) minmax(0, calc(100% - var(--split, 50%)));
+  grid-template-rows: minmax(0, calc(var(--split, 50%) - var(--space-4) / 2)) minmax(0, calc(100% - var(--split, 50%) - var(--space-4) / 2));
 }
 
 .panel-slot {
+  min-width: 0;
   position: relative;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -440,6 +471,7 @@
   height: 100%;
   min-height: 0;
   display: flex;
+  flex-direction: column;
   align-items: stretch;
   justify-content: stretch;
 }
@@ -447,6 +479,16 @@
 .panel-chart-container svg {
   width: 100%;
   height: 100%;
+}
+
+.panel-chart-container:has(.pie-chart-scrollable) {
+  display: block;
+  overflow: auto;
+}
+
+.panel-chart-container svg.pie-chart-scrollable {
+  height: auto;
+  max-height: none;
 }
 
 .panel-item-preview > .chart-empty,
@@ -463,6 +505,8 @@
 .panel-chart-container canvas {
   width: 100%;
   height: 100%;
+  min-height: 0;
+  flex: 1;
 }
 
 .panel-slot-clear {
@@ -485,6 +529,86 @@
   border-color: var(--error-border-muted);
 }
 
+.panel-block:has(.panel-block-controls:not([open])) .panel-slot-clear {
+  display: none;
+}
+
+.panel-slot-expand {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--accent);
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.chart-expanded-surface {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(1200px, calc(100vw - 24px));
+  height: calc(100vh - 24px);
+  height: calc(100dvh - 24px);
+  padding: var(--space-4);
+  gap: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.chart-expanded-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.chart-expanded-header h2 {
+  min-width: 0;
+  max-height: 24vh;
+  max-height: 24dvh;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  font-size: var(--font-size-lg);
+}
+
+.chart-expanded-close {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: var(--space-3) var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--accent);
+  font: inherit;
+  cursor: pointer;
+}
+
+.chart-expanded-container {
+  min-width: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+
+.chart-expanded-container svg {
+  height: auto;
+  flex: none;
+}
+
+.chart-expanded-dialog:modal,
+.chart-expanded-dialog::backdrop {
+  overscroll-behavior: contain;
+}
+
+.chart-expanded-dialog::backdrop {
+  overflow: hidden;
+}
+
 .panel-empty {
   font-size: var(--font-size-ui);
   color: var(--muted);
@@ -497,28 +621,118 @@
 
 @media (max-width: 900px) {
   .btn-panel-export {
-    width: 100%;
+    width: auto;
   }
 
   .panel-canvas {
     min-height: 320px;
+    padding: 0;
+    border: 0;
   }
 
+  .card-body-panel {
+    padding: var(--space-3);
+  }
+
+  #tab-content-dashboard .card-body-panel {
+    max-height: none;
+    overflow: visible;
+  }
 }
 
-@container panel-canvas (max-width: 640px) {
+/* Keep roughly 300px per chart before restoring the saved multi-column layout. */
+@container panel-canvas (max-width: 1000px) {
   .panel-layout,
   .panel-layout.template-2col,
   .panel-layout.template-hero2,
   .panel-layout.template-3col,
   .panel-layout.template-1x2 {
-    grid-template-columns: 1fr;
+    --panel-columns: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: auto;
+    height: auto;
+    min-height: 0;
   }
 
   .panel-layout.template-hero2 [data-panel-slot='slot-1'] {
+    --panel-columns: 1;
+
     grid-row: auto;
+    grid-column: 1 / -1;
   }
 
+  .panel-layout.template-3col [data-panel-slot='slot-3'] {
+    --panel-columns: 1;
+
+    grid-column: 1 / -1;
+  }
+
+  .panel-layout.template-single,
+  .panel-layout.template-1x2 {
+    --panel-columns: 1;
+
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .panel-slot {
+    height: clamp(280px, calc(70cqw / var(--panel-columns)), var(--panel-chart-height-cap));
+  }
+
+  .panel-slot[data-chart-type='pie'],
+  .panel-slot[data-chart-type='bubble'],
+  .panel-slot[data-chart-type='network'],
+  .panel-slot[data-chart-type='treemap'],
+  .panel-slot[data-chart-type='scatter3d'] {
+    height: clamp(320px, calc(90cqw / var(--panel-columns)), var(--panel-spatial-height-cap));
+  }
+
+  /* The packed-circle renderer has a 400px drawing floor. Match it so SVG
+     fitting never shrinks all of its labels below their intended size. */
+  .panel-slot[data-chart-type='bubble'] {
+    height: clamp(400px, calc(90cqw / var(--panel-columns)), 480px);
+  }
+
+  .panel-resize-handle,
+  .panel-resize-rail,
+  .panel-block-size-handle {
+    display: none;
+  }
+
+  .panel-add-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@container panel-canvas (max-width: 680px) {
+  .panel-layout,
+  .panel-layout.template-2col,
+  .panel-layout.template-hero2,
+  .panel-layout.template-3col {
+    --panel-columns: 1;
+
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .panel-layout {
+    --panel-chart-height-cap: 300px;
+    --panel-spatial-height-cap: 340px;
+  }
+}
+
+@media (max-width: 900px), (any-pointer: coarse) {
+  .panel-block-btn,
+  .panel-slot-clear,
+  .panel-item-remove,
+  .panel-slot-expand,
+  .panel-block-header,
+  .btn-panel-export,
+  .panel-block-template,
+  .panel-add-template-select,
+  .panel-add-block-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
 }
 }

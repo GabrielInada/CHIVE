@@ -12,6 +12,7 @@
 import { t, getLocale } from '../../services/i18nService.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
 import { renderLineChart } from './renderers/svg.js';
+import { tooltipLabels } from '../shared/tooltip/labels.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 
@@ -33,6 +34,7 @@ export function renderLineInto(container, { rows, config, columnTypeByName = {},
 			y: columnTypeByName[config.y],
 		},
 		locale: getLocale(),
+		labels: tooltipLabels(t),
 		filterCallbacks,
 	});
 

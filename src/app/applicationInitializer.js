@@ -24,6 +24,7 @@ import { clearStoredProjectData } from './bindings/clearStoredData.js';
 import { initializeSharedPage } from './sharedPageInitializer.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
 import { showFeedback, showError } from '../ui/feedback.js';
+import { observeWidth } from '../ui/observeWidth.js';
 import {
 	livePreviewRender,
 	runFullRefreshNow,
@@ -94,6 +95,7 @@ export async function initializeApplication() {
 
 	runFullRefreshNow();
 	revealPageShell();
+	observeWidth(document.getElementById(VIEW_IDS.chartsGrid), throttle(livePreviewRender, 120));
 
 	window.addEventListener('chive-locale-changed', scheduleFullRefresh);
 	window.addEventListener(SETTINGS_CHANGE_EVENT, event => {

@@ -32,13 +32,18 @@ import { renderTreemapInto } from '../treemap/presentation.js';
  * config as an empty one; column types come from every captured column, as
  * Visualizations takes them from every dataset column.
  *
+ * @param {HTMLElement} container
  * @param {ChartSnapshot} snapshot
  * @returns {ChartInput}
  */
-function inputOf(snapshot) {
+function inputOf(container, snapshot) {
+	const config = snapshot.config || {};
+	// Layout height is a presentation concern. Draw at the slot's height so
+	// stacked phone charts keep legible text without rewriting the capture.
+	const slotHeight = container.classList.contains('panel-chart-container') ? container.clientHeight : 0;
 	return {
 		rows: Array.isArray(snapshot.dataSnapshot) ? snapshot.dataSnapshot : [],
-		config: snapshot.config || {},
+		config: slotHeight > 0 ? { ...config, chartHeight: slotHeight } : config,
 		columnTypeByName: getColumnTypesByName(snapshot.columnsSnapshot),
 	};
 }
@@ -54,7 +59,7 @@ const PANEL_RENDERERS = Object.freeze(Object.fromEntries(Object.entries({
 	network: renderNetworkInto,
 	treemap: renderTreemapInto,
 	tin: renderTinInto,
-}).map(([type, present]) => [type, (container, snapshot) => present(container, inputOf(snapshot))])));
+}).map(([type, present]) => [type, (container, snapshot) => present(container, inputOf(container, snapshot))])));
 
 /**
  * Chart types with panel renderers, in canonical chart order.
