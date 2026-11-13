@@ -16,7 +16,7 @@
  */
 
 import { CHART_TYPE_KEYS } from '../../config/charts/definitions.js';
-import { getColumnTypesByName } from '../../domain/datasets/columns.js';
+import { getColumnTypesByName, getColumnCurrenciesByName } from '../../domain/datasets/columns.js';
 import { renderBarInto } from '../bar/presentation.js';
 import { renderBubbleInto } from '../bubble/presentation.js';
 import { renderLineInto } from '../line/presentation.js';
@@ -45,6 +45,7 @@ function inputOf(container, snapshot) {
 		rows: Array.isArray(snapshot.dataSnapshot) ? snapshot.dataSnapshot : [],
 		config: slotHeight > 0 ? { ...config, chartHeight: slotHeight } : config,
 		columnTypeByName: getColumnTypesByName(snapshot.columnsSnapshot),
+		columnCurrencyByName: getColumnCurrenciesByName(snapshot.columnsSnapshot),
 	};
 }
 

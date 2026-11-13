@@ -26,6 +26,7 @@ export const STATE_EVENTS = Object.freeze({
 	DATASET_REMOVED: 'datasetRemoved',
 	DATASET_CONFIG_UPDATED: 'configUpdated',
 	COLUMN_SELECTION_CHANGED: 'columnsUpdated',
+	DATASET_COLUMNS_CHANGED: 'datasetColumnsChanged',
 
 	// panel domain
 	CHART_SNAPSHOT_ADDED: 'chartAdded',

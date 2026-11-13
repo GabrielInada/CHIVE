@@ -27,9 +27,9 @@ let renderEpoch = 0;
  * @param {string} locale
  * @returns {string}
  */
-function formatCell(value, type, locale) {
+function formatCell(value, type, locale, currency) {
 	if (value === null) return '—';
-	if (type === 'number') return formatNumber(value, locale);
+	if (type === 'number') return formatNumber(value, locale, currency);
 	// Only a date-time has a `T`; a date-only cell shows no time of day.
 	if (type === 'date') return formatDate(value, locale, value.includes('T') ? DATE_TIME_OPTIONS : undefined);
 	return value;
@@ -52,10 +52,10 @@ function appendRows(tbody, rows, visibleColumns, locale, start, end) {
 		tdIndex.classList.add('row-index');
 		tdIndex.textContent = String(index + 1);
 		tr.appendChild(tdIndex);
-		visibleColumns.forEach(({ name, type }) => {
+		visibleColumns.forEach(({ name, type, currency }) => {
 			const td = document.createElement('td');
 			if (type === 'number') td.classList.add('num');
-			td.textContent = formatCell(row[name], type, locale);
+			td.textContent = formatCell(row[name], type, locale, currency);
 			tr.appendChild(td);
 		});
 		fragment.appendChild(tr);
@@ -112,9 +112,9 @@ export function renderTablePreview(rows, visibleColumns, limit) {
 	const tdFootIndex = document.createElement('td');
 	tdFootIndex.classList.add('row-index');
 	trFoot.appendChild(tdFootIndex);
-	visibleColumns.forEach(({ type }) => {
+	visibleColumns.forEach(({ type, currency }) => {
 		const td = document.createElement('td');
-		td.textContent = translateType(type);
+		td.textContent = currency ? t('chive-type-currency', currency) : translateType(type);
 		trFoot.appendChild(td);
 	});
 	tfoot.appendChild(trFoot);

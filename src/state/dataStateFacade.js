@@ -2,6 +2,7 @@ import { STATE_EVENTS } from './stateEvents.js';
 import { canonicalizeChartConfig } from '../domain/charts/chartConfig.js';
 import { CHART_TYPE_KEYS } from '../config/charts/definitions.js';
 import { getDatasetColumnNames } from '../domain/datasets/columns.js';
+import { prepareCurrencyChange } from '../domain/datasets/currency.js';
 
 /**
  * CHIVE data-domain facade.
@@ -62,6 +63,7 @@ function generateDatasetId() {
  *   removeDataset: (index: number) => void,
  *   updateActiveDatasetConfig: (updates: Object) => void,
  *   setActiveDatasetColumnSelection: (columnNames: string[]) => void,
+ *   setDatasetColumnCurrency: (datasetId: string, columnName: string, options: Object) => Object,
  *   transformActiveDatasetConfigSilently: (updater: (config: Object) => Object) => void,
  *   setActiveChartType: (chartType: (ChartTypeKey | null), activatedOverrides?: (Object | null)) => void,
  * }}
@@ -275,6 +277,20 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		emitStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, { activeChartType: chartType });
 	}
 
+	/** Atomically apply a column format to the dataset that opened the editor. */
+	function setDatasetColumnCurrency(datasetId, columnName, options) {
+		const dataset = appState.data.datasets.find(item => item.id === datasetId);
+		const column = dataset?.columns.find(item => item.name === columnName);
+		if (!column || column.type === 'date') return { ok: false, reason: 'invalid' };
+		const change = prepareCurrencyChange(dataset.rows, column, options);
+		if (!change.ok) return change;
+		dataset.rows = change.rows;
+		dataset.columns = dataset.columns.map(item => item === column ? change.column : item);
+		delete dataset.precomputedStats;
+		emitStateChange(STATE_EVENTS.DATASET_COLUMNS_CHANGED, { datasetId, columnName });
+		return { ok: true };
+	}
+
 	return {
 		getActiveDataset,
 		getActiveDatasetIndex,
@@ -284,6 +300,7 @@ export function createDataStateFacade({ appState, emitStateChange }) {
 		removeDataset,
 		updateActiveDatasetConfig,
 		setActiveDatasetColumnSelection,
+		setDatasetColumnCurrency,
 		transformActiveDatasetConfigSilently,
 		setActiveChartType,
 	};

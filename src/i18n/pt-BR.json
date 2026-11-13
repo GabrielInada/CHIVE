@@ -1,4 +1,16 @@
 {
+    "chive-type-currency": "Moeda ($1)",
+    "chive-currency-title": "Formato monetário: $1",
+    "chive-currency-label": "Moeda",
+    "chive-currency-none": "Número simples",
+    "chive-currency-choose": "Escolha uma moeda",
+    "chive-currency-help": "Os valores permanecem na moeda original. Alterar a identificação da moeda não converte os valores. Para colunas de texto, escolha o separador decimal da origem se a detecção automática for ambígua.",
+    "chive-currency-edit": "Formatar $1: $2",
+    "chive-currency-unresolved": "Moeda?",
+    "chive-currency-apply": "Aplicar formato",
+    "chive-currency-preview": "Prévia: $1",
+    "chive-currency-error-mixed": "Esta coluna contém moedas conflitantes. Separe ou corrija as moedas no arquivo de origem antes de aplicar o formato.",
+    "chive-currency-error-invalid": "Alguns valores não podem ser lidos como quantias. Confira o separador decimal e os valores de origem. Nenhuma alteração foi aplicada.",
 	"@metadata": {
 		"authors": [],
 		"locale": "pt-BR",

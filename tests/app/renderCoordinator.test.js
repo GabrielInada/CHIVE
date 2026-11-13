@@ -17,12 +17,14 @@ const mocks = vi.hoisted(() => ({
 		DATASET_ADDED: 'dataset-added',
 		DATASET_REMOVED: 'dataset-removed',
 		COLUMN_SELECTION_CHANGED: 'columns-updated',
+		DATASET_COLUMNS_CHANGED: 'dataset-columns-changed',
 		DATASET_CONFIG_UPDATED: 'config-updated',
 		STATE_HYDRATED: 'state-hydrated',
 		PREVIEW_ROWS_CHANGED: 'preview-rows-changed',
 	},
 	setPreviewRows: vi.fn(),
 	setActiveDatasetColumnSelection: vi.fn(),
+	setDatasetColumnCurrency: vi.fn(),
 	updateActiveDatasetConfig: vi.fn(),
 	renderSidebarPanel: vi.fn(),
 	renderCanvasPanel: vi.fn(),
@@ -62,6 +64,7 @@ vi.mock('../../src/state/appState.js', () => ({
 	STATE_EVENTS: mocks.STATE_EVENTS,
 	setPreviewRows: mocks.setPreviewRows,
 	setActiveDatasetColumnSelection: mocks.setActiveDatasetColumnSelection,
+	setDatasetColumnCurrency: mocks.setDatasetColumnCurrency,
 	updateActiveDatasetConfig: mocks.updateActiveDatasetConfig,
 }));
 
@@ -212,6 +215,7 @@ describe('renderCoordinator', () => {
 			onPreviewRowsChange: expect.any(Function),
 			onColumnSelectionChange: coordinator.setActiveDatasetColumnSelection,
 			onDatasetConfigChange: coordinator.updateDatasetConfig,
+			onColumnCurrencyChange: expect.any(Function),
 		});
 		// The controls sidebar reads the value the workspace drew from.
 		expect(mocks.renderChartControlsSidebar).toHaveBeenCalledTimes(1);
@@ -230,17 +234,18 @@ describe('renderCoordinator', () => {
 		expect(() => options.onPreviewRowsChange(0)).not.toThrow();
 	});
 
-	it('wires the seven render-affecting state events', async () => {
+	it('wires the render-affecting state events', async () => {
 		const coordinator = await importCoordinator();
 
 		coordinator.setupStateSubscriptions();
 
-		expect(mocks.onStateChange).toHaveBeenCalledTimes(7);
+		expect(mocks.onStateChange).toHaveBeenCalledTimes(8);
 		expect(mocks.onStateChange.mock.calls.map(([event]) => event)).toEqual([
 			mocks.STATE_EVENTS.ACTIVE_DATASET_CHANGED,
 			mocks.STATE_EVENTS.DATASET_ADDED,
 			mocks.STATE_EVENTS.DATASET_REMOVED,
 			mocks.STATE_EVENTS.COLUMN_SELECTION_CHANGED,
+			mocks.STATE_EVENTS.DATASET_COLUMNS_CHANGED,
 			mocks.STATE_EVENTS.DATASET_CONFIG_UPDATED,
 			mocks.STATE_EVENTS.STATE_HYDRATED,
 			mocks.STATE_EVENTS.PREVIEW_ROWS_CHANGED,

@@ -169,3 +169,12 @@ export function getColumnTypesByName(columns) {
 	}
 	return typeByName;
 }
+
+/** Currency identity for numeric columns, including hidden columns. */
+export function getColumnCurrenciesByName(columns) {
+	const currencies = Object.create(null);
+	for (const column of Array.isArray(columns) ? columns : []) {
+		if (column?.type === 'number' && column.currency) currencies[column.name] = column.currency;
+	}
+	return currencies;
+}

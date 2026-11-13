@@ -1,4 +1,16 @@
 {
+    "chive-type-currency": "Currency ($1)",
+    "chive-currency-title": "Currency format: $1",
+    "chive-currency-label": "Currency",
+    "chive-currency-none": "Plain number",
+    "chive-currency-choose": "Choose a currency",
+    "chive-currency-help": "Amounts stay in their original currency. Changing the currency label does not convert amounts. For text columns, choose the source decimal separator if automatic detection is ambiguous.",
+    "chive-currency-edit": "Format $1: $2",
+    "chive-currency-unresolved": "Currency?",
+    "chive-currency-apply": "Apply format",
+    "chive-currency-preview": "Preview: $1",
+    "chive-currency-error-mixed": "This column contains conflicting currencies. Separate or correct them in the source file before applying a currency.",
+    "chive-currency-error-invalid": "Some values cannot be read as amounts. Check the decimal separator and source values. No changes were applied.",
 	"@metadata": {
 		"authors": [],
 		"locale": "en",

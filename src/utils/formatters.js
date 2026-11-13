@@ -86,11 +86,21 @@ export function formatFileSize(sizeBytes) {
  * Format a number with locale awareness and smart precision
  * @param {number} value - Number to format
  * @param {string} locale - Active app locale (e.g. 'en-US'). Required by convention — callers pass it explicitly so this stays pure (no global-state read).
+ * @param {string} [currency] - ISO currency code. Monetary displays use its minor-unit precision rather than magnitude-based rounding.
  * @returns {string} - Formatted number string
  */
-export function formatNumber(value, locale) {
+export function formatNumber(value, locale, currency) {
 	const numberValue = Number(value);
 	if (value === null || value === undefined || value === '' || Number.isNaN(numberValue)) return 'N/A';
+	if (typeof currency === 'string' && /^[A-Z]{3}$/.test(currency)) {
+		const key = `${locale}|${currency}`;
+		let formatter = currencyFormats.get(key);
+		if (!formatter) {
+			formatter = new Intl.NumberFormat(locale, { style: 'currency', currency });
+			currencyFormats.set(key, formatter);
+		}
+		return formatter.format(numberValue);
+	}
 
 	// Integer: no decimal places
 	if (Number.isInteger(numberValue)) return numberValue.toLocaleString(locale);
@@ -104,6 +114,8 @@ export function formatNumber(value, locale) {
 	// Small numbers: 4 significant digits
 	return numberValue.toPrecision(4);
 }
+
+const currencyFormats = new Map();
 
 const DEFAULT_DATE_OPTIONS = { year: 'numeric', month: 'short', day: '2-digit' };
 

@@ -2,6 +2,7 @@ import { parseCsv, parseJson } from './parse.js';
 import { joinDatasets } from './join.js';
 import { detectDecimalSeparator, detectType } from './typeDetection.js';
 import { toCanonicalCell } from './cellValues.js';
+import { analyzeCurrencyColumn } from './currency.js';
 import { calculateNumericStatistics, calculateCategoricalStatistics } from './statistics.js';
 import { DECIMAL_DETECTION } from '../../config/columnTypeDetection.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../config/statistics.js';
@@ -54,6 +55,8 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 	let rawData;
 	let columnOrder = [];
 	const inheritedSeparators = new Map();
+	const inheritedCurrencies = new Map();
+	const inheritedCurrencyIssues = new Set();
 
 	if (kind === 'join') {
 		report('joining', 0);
@@ -68,8 +71,12 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 		// A join can narrow a text column to numeric-looking strings. Keep each
 		// source's format, including when conflicting column names are renamed.
 		for (const { side, source, output } of joined.columnSources) {
-			const separator = sourceColumns[side].get(source)?.decimalSeparator;
+			const sourceColumn = sourceColumns[side].get(source);
+			const separator = sourceColumn?.decimalSeparator;
 			if (separator === '.' || separator === ',') inheritedSeparators.set(output, separator);
+			const currency = sourceColumn?.currency;
+			if (currency) inheritedCurrencies.set(output, currency);
+			if (sourceColumn?.currencyIssue) inheritedCurrencyIssues.add(output);
 		}
 		report('joining', 30);
 	} else {
@@ -112,6 +119,7 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 			name,
 			type: 'text',
 			decimalSeparator: columnSeparator(name, fileSeparator),
+			...(inheritedCurrencies.has(name) ? { type: 'number', currency: inheritedCurrencies.get(name) } : {}),
 		}));
 		return ok({ value: { rows: [], columns, precomputedStats: versionedStats([], []), truncatedFrom } });
 	}
@@ -130,7 +138,14 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 		const name = columnNames[i];
 		const values = rawData.map(row => row[name]);
 		const decimalSeparator = columnSeparator(name, fileSeparator);
-		columns.push({ name, type: detectType(values, decimalSeparator), decimalSeparator });
+		// An unresolved currency's fallback separator is not a confirmed source format.
+		const knownCurrencySeparator = explicitSeparator
+			|| (inheritedSeparators.has(name) && !inheritedCurrencyIssues.has(name));
+		const currencyFormat = analyzeCurrencyColumn(values, {
+			currency: inheritedCurrencies.get(name),
+			decimalSeparator: knownCurrencySeparator ? decimalSeparator : 'auto',
+		});
+		columns.push({ name, type: detectType(values, decimalSeparator), decimalSeparator, ...currencyFormat });
 		report('type-detection', 35 + Math.round(((i + 1) / columnNames.length) * 15));
 	}
 
@@ -181,10 +196,10 @@ function inSourceOrder(keys, columnOrder) {
  */
 function chunkedNormalize(rawData, columns, onChunk) {
 	const out = new Array(rawData.length);
-	const cells = columns.map(({ name, type, decimalSeparator }) => ({
+	const cells = columns.map(({ name, type, decimalSeparator, currency }) => ({
 		name,
 		type,
-		options: { decimalSeparator },
+		options: { decimalSeparator, currency },
 	}));
 
 	for (let i = 0; i < rawData.length; i += NORMALIZE_CHUNK_SIZE) {

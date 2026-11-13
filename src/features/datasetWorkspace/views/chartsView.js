@@ -14,7 +14,7 @@
  */
 
 import { t } from '../../../services/i18nService.js';
-import { getNumericColumns } from '../../../domain/datasets/columns.js';
+import { getNumericColumns, getColumnCurrenciesByName } from '../../../domain/datasets/columns.js';
 import { CHART_TYPE_KEYS } from '../../../config/charts/definitions.js';
 import { clearChartContainer } from '../../../charts/shared/containerLifecycle.js';
 import { CHART_CONTAINERS, CHART_BLOCKS } from '../../../charts/workspaceDomIds.js';
@@ -93,6 +93,7 @@ export function renderCharts(shown, onDatasetConfigChange = null) {
 			config: type === activeChartType || !config.enabled ? config : { ...config, enabled: false },
 			rows,
 			columnTypeByName,
+			columnCurrencyByName: getColumnCurrenciesByName(dataset.columns),
 			filterCallbacks,
 		});
 	}

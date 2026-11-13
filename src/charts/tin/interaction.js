@@ -18,7 +18,7 @@ import { formatNumber } from '../../utils/formatters.js';
  * @param {string|undefined} params.locale - Number-format locale.
  * @returns {(group: Object) => void} Attaches pointerover/move/out handlers to a d3 selection.
  */
-export function createIsolineHoverHandlers({ axisLabels, locale }) {
+export function createIsolineHoverHandlers({ axisLabels, locale, currency }) {
 	return (group) => {
 		group
 			.on('pointerover', event => {
@@ -27,7 +27,7 @@ export function createIsolineHoverHandlers({ axisLabels, locale }) {
 				const z = Number(target.dataset.z);
 				if (!Number.isFinite(z)) return;
 				const wrapper = document.createElement('div');
-				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(z, locale)));
+				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(z, locale, currency)));
 				showChartTooltip(wrapper, event.pageX, event.pageY);
 			})
 			.on('pointermove', event => {

@@ -255,6 +255,11 @@ export function setActiveDatasetColumnSelection(columnNames) {
 	return dataState.setActiveDatasetColumnSelection(columnNames);
 }
 
+/** Apply a currency format, preserving numeric values and rejecting mixed currencies. */
+export function setDatasetColumnCurrency(datasetId, columnName, options) {
+	return dataState.setDatasetColumnCurrency(datasetId, columnName, options);
+}
+
 /**
  * Replace the active dataset's `chartConfig` with the result of `updater`
  * without emitting or canonicalizing. Config is canonicalized at the state

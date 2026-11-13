@@ -26,6 +26,7 @@ import {
 	setPreviewRows,
 	setActiveDatasetColumnSelection as setStateColumnSelection,
 	updateActiveDatasetConfig,
+	setDatasetColumnCurrency,
 } from '../state/appState.js';
 import {
 	renderSidebarPanel,
@@ -181,6 +182,7 @@ export function setupStateSubscriptions() {
 	onStateChange(STATE_EVENTS.DATASET_ADDED, scheduleFullRefresh);
 	onStateChange(STATE_EVENTS.DATASET_REMOVED, scheduleFullRefresh);
 	onStateChange(STATE_EVENTS.COLUMN_SELECTION_CHANGED, onColumnsUpdated);
+	onStateChange(STATE_EVENTS.DATASET_COLUMNS_CHANGED, onColumnsUpdated);
 	onStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, onConfigUpdated);
 	onStateChange(STATE_EVENTS.STATE_HYDRATED, scheduleFullRefresh);
 	onStateChange(
@@ -242,6 +244,7 @@ function renderActiveDatasetWorkspace(shown, previewRows) {
 		onPreviewRowsChange: updatePreviewRows,
 		onColumnSelectionChange: setActiveDatasetColumnSelection,
 		onDatasetConfigChange: updateDatasetConfig,
+		onColumnCurrencyChange: (name, options) => setDatasetColumnCurrency(shown.dataset.id, name, options),
 	});
 }
 
