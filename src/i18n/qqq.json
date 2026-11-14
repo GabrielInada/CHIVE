@@ -1,4 +1,16 @@
 {
+    "chive-type-currency": "Numeric column type label. $1 is the ISO currency code.",
+    "chive-currency-title": "Column currency dialog title. $1 is the column name.",
+    "chive-currency-label": "Label for ISO currency selection.",
+    "chive-currency-none": "Option to remove currency formatting from a numeric column.",
+    "chive-currency-choose": "Prompt to select a currency for a text column.",
+    "chive-currency-help": "Explains source decimal conventions and that changing currency labels performs no exchange-rate conversion.",
+    "chive-currency-edit": "Accessible name of the column format button. $1 is the column name and $2 its displayed type.",
+    "chive-currency-unresolved": "Column badge for ambiguous, conflicting, or malformed monetary values retained as text.",
+    "chive-currency-apply": "Button applying the selected column currency format.",
+    "chive-currency-preview": "Preview of formatted amounts. $1 is up to three examples.",
+    "chive-currency-error-mixed": "Error when source values contain incompatible currency identifiers. No changes are applied.",
+    "chive-currency-error-invalid": "Error when a column cannot be parsed completely with the selected monetary format. No changes are applied.",
 	"@metadata": {
 		"authors": [],
 		"locale": "qqq",

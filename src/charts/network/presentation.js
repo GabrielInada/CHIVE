@@ -9,6 +9,7 @@
  * click-to-filter columns for node tooltips.
  */
 
+import { getChartCurrencies } from '../shared/currency.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { tooltipLabels } from '../shared/tooltip/labels.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
@@ -31,10 +32,11 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
  * @returns {import('../../types.js').Result}
  */
 export function renderNetworkInto(container, input) {
-	const { rows, config, filterCallbacks = EMPTY_FILTER_CALLBACKS } = input;
+	const { rows, config, columnCurrencyByName = {}, filterCallbacks = EMPTY_FILTER_CALLBACKS } = input;
 	container.querySelector('.chart-render-budget-notice')?.remove();
 	const result = renderNetworkGraph(container, rows, config, {
 		locale: getLocale(),
+		currencies: getChartCurrencies(config, columnCurrencyByName),
 		labels: {
 			...tooltipLabels(t),
 			node: t('chive-chart-control-network-source'),

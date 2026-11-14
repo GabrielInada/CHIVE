@@ -13,6 +13,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
+import { currencyAxisMargin } from '../../shared/currency.js';
 import {
 	axisBottom,
 	axisLeft,
@@ -89,7 +90,7 @@ const CURVE_BY_KEY = {
  */
 export function renderLineChart(container, rows, config = {}, context = {}) {
 	const { x: xColumn, y: yColumn } = config;
-	const { axisLabels = {}, axisTypes = {}, labels = {}, locale } = context;
+	const { axisLabels = {}, axisTypes = {}, labels = {}, locale, currencies = {} } = context;
 	if (!container || !xColumn || !yColumn) return fail('invalid-args');
 	if (!Array.isArray(rows) || rows.length === 0) return fail();
 
@@ -123,6 +124,7 @@ export function renderLineChart(container, rows, config = {}, context = {}) {
 	const width = resolveChartWidth(container, CHART_DIMENSIONS.line.width);
 	const height = chartHeight;
 	const margin = { ...CHART_DIMENSIONS.line.margins };
+	margin.left = currencyAxisMargin(margin.left, definedPoints.map(point => point.y), currencies.y, locale);
 	if (xKind === AXIS_KIND.categorical) {
 		margin.bottom = Math.max(margin.bottom, 64);
 	}
@@ -204,7 +206,7 @@ export function renderLineChart(container, rows, config = {}, context = {}) {
 			.attr('r', LINE_CHART.pointRadius)
 			.attr('fill', color)
 			.on('mouseenter', (event, point) => {
-				showChartTooltip(buildTooltipContent(point, axisLabels, xKind, locale), event.pageX, event.pageY);
+				showChartTooltip(buildTooltipContent(point, axisLabels, xKind, locale, currencies), event.pageX, event.pageY);
 			})
 			.on('mousemove', event => moveChartTooltip(event.pageX, event.pageY))
 			.on('mouseleave', () => hideHoverTooltip());
@@ -228,7 +230,7 @@ export function renderLineChart(container, rows, config = {}, context = {}) {
 			hideChartTooltip();
 			return;
 		}
-		showPinnedChartTooltip(buildTooltipContent(nearest, axisLabels, xKind, locale), event.pageX, event.pageY, {
+		showPinnedChartTooltip(buildTooltipContent(nearest, axisLabels, xKind, locale, currencies), event.pageX, event.pageY, {
 			closeLabel: labels.close,
 			target: svg.node(),
 		});
@@ -238,7 +240,7 @@ export function renderLineChart(container, rows, config = {}, context = {}) {
 		axis: xKind === AXIS_KIND.date
 			? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0)
 			: xKind === AXIS_KIND.numeric
-				? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0)
+				? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0).tickFormat(currencies.x ? value => formatNumber(value, locale, currencies.x) : null)
 				: axisBottom(xScale)
 					.tickValues(width < 480 ? categoryTickValues(xScale.domain(), innerWidth) : null)
 					.tickFormat(value => truncateAxisLabel(value, width < 480 ? 12 : 18)),
@@ -248,7 +250,7 @@ export function renderLineChart(container, rows, config = {}, context = {}) {
 			: null,
 	});
 
-	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(Math.max(2, Math.round(innerHeight / 40))) })
+	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(Math.max(2, Math.round(innerHeight / 40))).tickFormat(currencies.y ? value => formatNumber(value, locale, currencies.y) : null) })
 		.call(g => g.select('.domain').remove())
 		.call(g => g.selectAll('.tick line').clone()
 			.attr('x2', innerWidth)
@@ -268,9 +270,9 @@ export function renderLineChart(container, rows, config = {}, context = {}) {
 	return ok();
 }
 
-function buildTooltipContent(point, axisLabels, xKind, locale) {
+function buildTooltipContent(point, axisLabels, xKind, locale, currencies) {
 	const wrapper = document.createElement('div');
-	wrapper.appendChild(createTooltipLine(axisLabels.x, formatXValue(point.x, xKind, locale)));
-	wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(point.y, locale)));
+	wrapper.appendChild(createTooltipLine(axisLabels.x, currencies.x && xKind === AXIS_KIND.numeric ? formatNumber(point.x, locale, currencies.x) : formatXValue(point.x, xKind, locale)));
+	wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(point.y, locale, currencies.y)));
 	return wrapper;
 }

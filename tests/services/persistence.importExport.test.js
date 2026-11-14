@@ -111,6 +111,24 @@ describe('persistence', () => {
 		expect(joined.rows).toEqual([{ population: 1000 }]);
 	});
 
+	it('retains currency amounts and column metadata in datasets and panel captures', async () => {
+		const { rows, columns } = ingestDataset({ kind: 'csv', text: 'price\n"R$ 1.234,56"\n' }).value;
+		const dataset = { ...goodRecord('money'), rows, columns, selectedColumns: ['price'] };
+		const snapshot = makeSnapshot({ data: { datasets: [dataset], activeIndex: 0 } });
+		snapshot.panel.charts[0].dataSnapshot = structuredClone(rows);
+		snapshot.panel.charts[0].columnsSnapshot = structuredClone(columns);
+		const exported = await exportProject(snapshot);
+		expect(exported.ok).toBe(true);
+		await importProjectBytes(exported.bytes, { applyStateSnapshot: vi.fn() });
+		const applyStateSnapshot = vi.fn();
+		await hydrateState({ applyStateSnapshot });
+		const restored = applyStateSnapshot.mock.calls[0][0];
+		expect(restored.data.datasets[0].columns).toEqual(columns);
+		expect(restored.data.datasets[0].rows).toEqual([{ price: 1234.56 }]);
+		expect(restored.panel.charts[0].columnsSnapshot).toEqual(columns);
+		expect(restored.panel.charts[0].dataSnapshot).toEqual([{ price: 1234.56 }]);
+	});
+
 	it('rejects work-only project imports in v1', async () => {
 		const backend = makeBackend();
 		const exportBytes = vi.spyOn(backend, 'exportBytes');

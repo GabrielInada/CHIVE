@@ -11,6 +11,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
+import { formatCurrencyCategory } from '../../shared/currency.js';
 import { arc, pie, select, zoom, zoomIdentity } from '../../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
@@ -54,7 +55,7 @@ import { appendPieLegend } from './legend.js';
  */
 export function renderPieChart(container, rows, config = {}, context = {}) {
 	const { category: categoryColumn } = config;
-	const { labels = {}, locale, filterCallbacks } = context;
+	const { labels = {}, locale, filterCallbacks, currencies = {} } = context;
 	if (!container || !categoryColumn) return fail();
 
 	const normalized = normalizePieOptions(config);
@@ -74,6 +75,7 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 	const drawn = computePieSectors(rows, categoryColumn, normalized, labels);
 	if (!drawn.ok) return fail(drawn.reason);
 	const { sectors, total } = drawn;
+	for (const item of sectors) item.label = formatCurrencyCategory(item.label, currencies.category, locale);
 
 	container.replaceChildren();
 	hideChartTooltip();
@@ -86,7 +88,7 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 	const title = appendChartTitle(svg, { width, text: customTitle });
 	const titleOffset = customTitle ? 18 + Math.max(0, title.selectAll('tspan').size() - 1) * 16 : 0;
 	const legendLayout = showLegend
-		? appendPieLegend(svg, sectors, { stacked: stackedLegend, width: width - margin.left - margin.right, locale })
+		? appendPieLegend(svg, sectors, { stacked: stackedLegend, width: width - margin.left - margin.right, locale, currency: currencies.measure })
 		: null;
 	const legendHeight = stackedLegend ? legendLayout.height : 0;
 	// Preserve a readable plot and let the local chart surface scroll for long
@@ -131,7 +133,7 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 		const percentage = total > 0 ? ((item.value / total) * 100) : 0;
 		const wrapper = document.createElement('div');
 		wrapper.appendChild(createTooltipLine(labels.category, item.label));
-		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale, currencies.measure)));
 		wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		return wrapper;
 	};
@@ -212,7 +214,7 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 				if (showCategoryLabel && (maxLength >= 3 || item.data.label.length <= maxLength)) {
 					parts.push({ text: truncateAxisLabel(item.data.label, maxLength), dy: '0' });
 				}
-				const value = formatNumber(item.data.value, locale);
+				const value = formatNumber(item.data.value, locale, currencies.measure);
 				if (showValueLabel && value.length <= maxLength) {
 					parts.push({ text: value, dy: parts.length ? '1.1em' : '0' });
 				}
@@ -271,7 +273,7 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 				if (showCategoryLabel && (maxLength >= 3 || item.data.label.length <= maxLength)) {
 					parts.push({ text: truncateAxisLabel(item.data.label, maxLength), dy: '0' });
 				}
-				const value = formatNumber(item.data.value, locale);
+				const value = formatNumber(item.data.value, locale, currencies.measure);
 				if (showValueLabel && value.length <= maxLength) {
 					parts.push({ text: value, dy: parts.length ? '1.1em' : '0' });
 				}

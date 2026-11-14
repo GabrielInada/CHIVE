@@ -79,7 +79,7 @@ function stopPreviousSimulation(container) {
  */
 export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 	const { source: sourceColumn, target: targetColumn } = config;
-	const { labels = {}, locale, filterCallbacks, allowFullRender = false } = context;
+	const { labels = {}, locale, filterCallbacks, allowFullRender = false, currencies = {} } = context;
 	if (!container || !sourceColumn || !targetColumn) return fail();
 
 	const {
@@ -204,7 +204,7 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		const content = document.createElement('div');
 		content.appendChild(createTooltipLine(labels.source, String(linkData.source.id || linkData.source)));
 		content.appendChild(createTooltipLine(labels.target, String(linkData.target.id || linkData.target)));
-		content.appendChild(createTooltipLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale)));
+		content.appendChild(createTooltipLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale, currencies.weight)));
 		showChartTooltip(content, event.pageX, event.pageY);
 	};
 	const togglePinnedNode = (event, nodeData) => {

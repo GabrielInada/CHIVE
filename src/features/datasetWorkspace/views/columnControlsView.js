@@ -17,6 +17,7 @@
  * @param {(key: string, ...args: *) => string} args.translate
  * @param {(type: string) => string} args.translateType
  * @param {(names: string[]) => void} args.onColumnSelectionChange - Fired with the new selection list.
+ * @param {(name: string) => void} [args.onColumnFormat] - Opens the currency editor.
  * @returns {void}
  */
 export function renderColumnControlsDOM({
@@ -31,6 +32,7 @@ export function renderColumnControlsDOM({
 	translate,
 	translateType,
 	onColumnSelectionChange,
+	onColumnFormat,
 }) {
 	actionsContainer.replaceChildren();
 
@@ -70,9 +72,11 @@ export function renderColumnControlsDOM({
 	};
 
 	columnsList.replaceChildren();
-	columns.forEach(({ name, type }) => {
+	columns.forEach(({ name, type, currency, currencyIssue }) => {
+		const item = document.createElement('div');
+		item.className = 'column-item';
 		const label = document.createElement('label');
-		label.className = 'column-item';
+		label.className = 'column-selection';
 		label.title = name;
 
 		const checkbox = document.createElement('input');
@@ -85,14 +89,23 @@ export function renderColumnControlsDOM({
 		nameSpan.className = 'column-name';
 		nameSpan.textContent = name;
 
-		const typeSpan = document.createElement('span');
+		const editable = onColumnFormat && type !== 'date';
+		const typeSpan = document.createElement(editable ? 'button' : 'span');
 		typeSpan.className = `type-tag ${type}`;
-		typeSpan.textContent = translateType(type);
+		typeSpan.textContent = currency ? translate('chive-type-currency', currency)
+			: currencyIssue ? translate('chive-currency-unresolved') : translateType(type);
+		if (editable) {
+			typeSpan.type = 'button';
+			typeSpan.classList.add('column-format');
+			typeSpan.setAttribute('aria-label', translate('chive-currency-edit', name, typeSpan.textContent));
+			typeSpan.title = translate('chive-currency-title', name);
+			typeSpan.addEventListener('click', () => onColumnFormat(name));
+		}
 
 		label.appendChild(checkbox);
 		label.appendChild(nameSpan);
-		label.appendChild(typeSpan);
-		columnsList.appendChild(label);
+		item.append(label, typeSpan);
+		columnsList.appendChild(item);
 	});
 
 	columnsList.onchange = event => {

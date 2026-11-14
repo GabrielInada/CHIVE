@@ -9,6 +9,7 @@
  * receives `colorRenderingMode` explicitly instead of reading settings.
  */
 
+import { getChartCurrencies } from '../shared/currency.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
 import { getTinColorRendering } from '../../services/settingsService.js';
@@ -21,7 +22,7 @@ import { renderTinChart } from './renderers/svg.js';
  * @param {import('../../types.js').ChartInput} input
  * @returns {import('../../types.js').Result}
  */
-export function renderTinInto(container, { rows, config }) {
+export function renderTinInto(container, { rows, config, columnCurrencyByName = {} }) {
 	const result = renderTinChart(container, rows, config, {
 		colorRenderingMode: getTinColorRendering(),
 		axisLabels: {
@@ -30,6 +31,7 @@ export function renderTinInto(container, { rows, config }) {
 			z: config.z || t('chive-chart-control-tin-z'),
 		},
 		locale: getLocale(),
+		currencies: getChartCurrencies(config, columnCurrencyByName),
 	});
 
 	if (!result.ok) {

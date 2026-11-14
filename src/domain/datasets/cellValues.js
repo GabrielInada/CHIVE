@@ -1,5 +1,6 @@
 import { COLUMN_TYPES } from '../../config/columnTypeDetection.js';
 import { normalizeNumericString } from './typeDetection.js';
+import { parseCurrencyValue } from './currency.js';
 
 /**
  * CHIVE cell values: what a dataset cell means.
@@ -73,10 +74,11 @@ const CANONICAL_DATE = /^(?:[+-]\d{6}|\d{4})-\d{2}-\d{2}(?:T\d{2}:\d{2}:\d{2}\.\
  *
  * @param {*} raw - A parsed value: a CSV string, any JSON value, or a joined cell.
  * @param {ColumnType} type - The column's detected type.
- * @param {{ decimalSeparator?: '.' | ',' }} [options] - The column's string number format. Typed numbers keep their value.
+ * @param {{ decimalSeparator?: '.' | ',', currency?: string }} [options] - The column's string number format. Typed numbers keep their value.
  * @returns {number | string | null}
  */
-export function toCanonicalCell(raw, type, { decimalSeparator = '.' } = {}) {
+export function toCanonicalCell(raw, type, { decimalSeparator = '.', currency } = {}) {
+	if (type === COLUMN_TYPES.NUMBER && currency) return parseCurrencyValue(raw, { currency, decimalSeparator });
 	return canonicalCell(raw, type, decimalSeparator, true);
 }
 
@@ -217,6 +219,9 @@ function canonicalText(raw, trimText) {
 function columnReader(rows, column, legacy) {
 	const { name, type } = column;
 	const decimalSeparator = column.decimalSeparator === ',' ? ',' : '.';
+	if (type === COLUMN_TYPES.NUMBER && column.currency) {
+		return value => parseCurrencyValue(value, { currency: column.currency, decimalSeparator });
+	}
 	const read = value => canonicalCell(value, type, decimalSeparator, false);
 	if (type !== COLUMN_TYPES.DATE) return read;
 	// Saved dates already in a canonical form came from this module; parsing

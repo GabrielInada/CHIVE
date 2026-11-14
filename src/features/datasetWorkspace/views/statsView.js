@@ -139,6 +139,7 @@ export function renderNumericStats(rows, visibleColumns) {
 		const locale = getLocale();
 
 		stats.forEach(stat => {
+			const currency = visibleColumns.find(item => item.name === stat.name)?.currency;
 			const column = document.createElement('div');
 			column.className = 'stat-col';
 
@@ -149,10 +150,10 @@ export function renderNumericStats(rows, visibleColumns) {
 
 			column.appendChild(name);
 			column.appendChild(createStatLine(t('chive-stat-valid'), stat.n.toLocaleString(locale)));
-			column.appendChild(createStatLine(t('chive-stat-min'), formatNumber(stat.min, locale)));
-			column.appendChild(createStatLine(t('chive-stat-max'), formatNumber(stat.max, locale)));
-			column.appendChild(createStatLine(t('chive-stat-mean'), formatNumber(stat.mean, locale)));
-			column.appendChild(createStatLine(t('chive-stat-median'), formatNumber(stat.median, locale)));
+			column.appendChild(createStatLine(t('chive-stat-min'), formatNumber(stat.min, locale, currency)));
+			column.appendChild(createStatLine(t('chive-stat-max'), formatNumber(stat.max, locale, currency)));
+			column.appendChild(createStatLine(t('chive-stat-mean'), formatNumber(stat.mean, locale, currency)));
+			column.appendChild(createStatLine(t('chive-stat-median'), formatNumber(stat.median, locale, currency)));
 
 			containerStats.appendChild(column);
 		});

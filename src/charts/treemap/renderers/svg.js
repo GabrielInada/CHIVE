@@ -11,6 +11,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
+import { formatCurrencyCategory } from '../../shared/currency.js';
 import { hierarchy, select, treemap, treemapSquarify } from '../../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
@@ -51,7 +52,7 @@ function truncate(text, maxLen) {
  */
 export function renderTreemap(container, rows, config = {}, context = {}) {
 	const { category: categoryColumn } = config;
-	const { labels = {}, locale, filterCallbacks } = context;
+	const { labels = {}, locale, filterCallbacks, currencies = {} } = context;
 	if (!container || !categoryColumn) return { ok: false };
 
 	const {
@@ -73,6 +74,7 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 	});
 	if (!aggregated.ok) return aggregated;
 	const { entries, retainedValueTotal } = aggregated;
+	for (const item of entries) item.label = formatCurrencyCategory(item.label, currencies.category, locale);
 
 	container.replaceChildren();
 	hideChartTooltip();
@@ -122,7 +124,7 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 		const wrapper = document.createElement('div');
 
 		wrapper.appendChild(createTooltipLine(labels.category, d.data.label));
-		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(d.data.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(d.data.value, locale, currencies.measure)));
 		wrapper.appendChild(createTooltipLine(labels.percentage, `${pct.toFixed(1)}%`));
 		return wrapper;
 	};
@@ -201,7 +203,7 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 					.attr('font-size', clamp(Math.min(w / 7, h / 5, 11), 7, 11))
 					.attr('fill', 'rgba(255,254,249,0.8)')
 					.attr('pointer-events', 'none')
-					.text(formatNumber(d.data.value, locale));
+					.text(formatNumber(d.data.value, locale, currencies.measure));
 			} else if (showLabels) {
 				g.append('text')
 					.attr('x', cx)
@@ -221,7 +223,7 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 					.attr('font-size', clamp(Math.min(w / 7, h / 4, 12), 7, 12))
 					.attr('fill', '#fffef9')
 					.attr('pointer-events', 'none')
-					.text(formatNumber(d.data.value, locale));
+					.text(formatNumber(d.data.value, locale, currencies.measure));
 			}
 		});
 	}

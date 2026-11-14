@@ -21,6 +21,7 @@ import { renderNumericStats, renderCategoricalStats } from './views/statsView.js
 import { renderColumnControlsDOM } from './views/columnControlsView.js';
 import { VIEW_IDS, FILE_IDS, BADGE_IDS, WORKSPACE_ACTION_IDS } from './domIds.js';
 import { openGlobalFilterDialog } from './dialogs/globalFilterDialog.js';
+import { openCurrencyDialog } from './dialogs/currencyDialog.js';
 
 /**
  * Render the main data-interface for the active dataset: tabs, table
@@ -36,6 +37,7 @@ import { openGlobalFilterDialog } from './dialogs/globalFilterDialog.js';
  * @param {((rows: number) => void) | null} [options.onPreviewRowsChange]
  * @param {((names: string[]) => void) | null} [options.onColumnSelectionChange]
  * @param {((partial: Partial<ChartConfig>) => void) | null} [options.onDatasetConfigChange] - Receives tab, global filter and tooltip filter changes.
+ * @param {((name: string, options: Object) => Object) | null} [options.onColumnCurrencyChange] - Applies one column format atomically.
  * @returns {void}
  */
 export function renderDatasetWorkspace(shown, {
@@ -43,6 +45,7 @@ export function renderDatasetWorkspace(shown, {
   onPreviewRowsChange = null,
   onColumnSelectionChange = null,
   onDatasetConfigChange = null,
+  onColumnCurrencyChange = null,
 } = {}) {
   const { dataset, rows: filteredRows, filter: safeGlobalFilter, visibleColumns } = shown;
   const { rows, columns, chartConfig: config } = dataset;
@@ -81,6 +84,13 @@ export function renderDatasetWorkspace(shown, {
     translate: t,
     translateType,
     onColumnSelectionChange,
+    onColumnFormat: onColumnCurrencyChange ? name => openCurrencyDialog({
+      column: columns.find(column => column.name === name),
+      rows,
+      translate: t,
+      locale: getLocale(),
+      onApply: options => onColumnCurrencyChange(name, options),
+    }) : null,
   });
 
   updateTabs(config.activeTab, onDatasetConfigChange, {

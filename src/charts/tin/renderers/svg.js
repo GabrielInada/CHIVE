@@ -32,6 +32,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
+import { currencyAxisMargin } from '../../shared/currency.js';
 import { Delaunay, axisBottom, axisLeft, extent, scaleLinear } from '../../../../vendor/d3/d3.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
 import { resolveChartWidth } from '../../shared/chartWidth.js';
@@ -78,7 +79,7 @@ import { createIsolineHoverHandlers } from '../interaction.js';
  */
 export function renderTinChart(container, rows, config = {}, context = {}) {
 	const { x: xColumn, y: yColumn, z: zColumn } = config;
-	const { axisLabels = {}, locale, colorRenderingMode = 'optimized' } = context;
+	const { axisLabels = {}, locale, colorRenderingMode = 'optimized', currencies = {} } = context;
 	if (!container || !xColumn || !yColumn || !zColumn) return fail();
 
 	const cfg = normalizeTinOptions(config);
@@ -100,6 +101,7 @@ export function renderTinChart(container, rows, config = {}, context = {}) {
 	const width = resolveChartWidth(container, CHART_DIMENSIONS.tin.width);
 	const height = cfg.chartHeight;
 	const margin = { ...CHART_DIMENSIONS.tin.margins };
+	margin.left = currencyAxisMargin(margin.left, points.map(point => point.y), currencies.y, locale);
 	const legendHeight = 14;
 	const legendGap = 22;
 	const {
@@ -238,7 +240,7 @@ export function renderTinChart(container, rows, config = {}, context = {}) {
 		]);
 	}
 
-	const attachIsolineHoverHandlers = createIsolineHoverHandlers({ axisLabels, locale });
+	const attachIsolineHoverHandlers = createIsolineHoverHandlers({ axisLabels, locale, currency: currencies.z });
 
 	if (cfg.showIsolines && zMin !== zMax) {
 		const isolinesGroup = group.append('g').attr('class', 'tin-isolines');
@@ -295,7 +297,7 @@ export function renderTinChart(container, rows, config = {}, context = {}) {
 					.attr('stroke-width', 2.5)
 					.attr('paint-order', 'stroke')
 					.attr('pointer-events', 'none')
-					.text(formatNumber(level, locale));
+					.text(formatNumber(level, locale, currencies.z));
 			}
 		});
 		attachIsolineHoverHandlers(isolinesGroup);
@@ -366,9 +368,9 @@ export function renderTinChart(container, rows, config = {}, context = {}) {
 		circles
 			.on('mouseenter', (event, d) => {
 				const wrapper = document.createElement('div');
-				wrapper.appendChild(createTooltipLine(axisLabels.x, formatNumber(d.x, locale)));
-				wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(d.y, locale)));
-				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(d.z, locale)));
+				wrapper.appendChild(createTooltipLine(axisLabels.x, formatNumber(d.x, locale, currencies.x)));
+				wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(d.y, locale, currencies.y)));
+				wrapper.appendChild(createTooltipLine(axisLabels.z, formatNumber(d.z, locale, currencies.z)));
 				showChartTooltip(wrapper, event.pageX, event.pageY);
 			})
 			.on('mousemove', event => moveChartTooltip(event.pageX, event.pageY))
@@ -384,16 +386,16 @@ export function renderTinChart(container, rows, config = {}, context = {}) {
 				.attr('font-size', 9)
 				.attr('fill', '#3f3a33')
 				.attr('pointer-events', 'none')
-				.text(formatNumber(d.z, locale));
+				.text(formatNumber(d.z, locale, currencies.z));
 		});
 	}
 
 	appendBottomAxis(group, {
-		axis: axisBottom(xScale).ticks(Math.min(6, Math.max(2, Math.floor(innerWidth / 70)))),
+		axis: axisBottom(xScale).ticks(Math.min(6, Math.max(2, Math.floor(innerWidth / 70)))).tickFormat(currencies.x ? value => formatNumber(value, locale, currencies.x) : null),
 		innerHeight,
 	});
 
-	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(6) });
+	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(6).tickFormat(currencies.y ? value => formatNumber(value, locale, currencies.y) : null) });
 
 	appendAxisLabels(group, {
 		innerWidth,
@@ -428,14 +430,14 @@ export function renderTinChart(container, rows, config = {}, context = {}) {
 		.attr('y', legendHeight + 10)
 		.attr('font-size', 10)
 		.attr('fill', '#5f5a53')
-		.text(`${axisLabels.z}: ${formatNumber(zMin, locale)}`);
+		.text(`${axisLabels.z}: ${formatNumber(zMin, locale, currencies.z)}`);
 	legend.append('text')
 		.attr('x', legendWidth)
 		.attr('y', legendHeight + 10)
 		.attr('text-anchor', 'end')
 		.attr('font-size', 10)
 		.attr('fill', '#5f5a53')
-		.text(formatNumber(zMax, locale));
+		.text(formatNumber(zMax, locale, currencies.z));
 
 	const surfaceLeafCount = triangleCount * 4 ** effectiveSubdivisionDepth;
 	return ok({ triangleCount, surfaceLeafCount });
