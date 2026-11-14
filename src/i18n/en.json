@@ -1,4 +1,16 @@
 {
+    "chive-type-currency": "Currency ($1)",
+    "chive-currency-title": "Currency format: $1",
+    "chive-currency-label": "Currency",
+    "chive-currency-none": "Plain number",
+    "chive-currency-choose": "Choose a currency",
+    "chive-currency-help": "Amounts stay in their original currency. Changing the currency label does not convert amounts. For text columns, choose the source decimal separator if automatic detection is ambiguous.",
+    "chive-currency-edit": "Format $1: $2",
+    "chive-currency-unresolved": "Currency?",
+    "chive-currency-apply": "Apply format",
+    "chive-currency-preview": "Preview: $1",
+    "chive-currency-error-mixed": "This column contains conflicting currencies. Separate or correct them in the source file before applying a currency.",
+    "chive-currency-error-invalid": "Some values cannot be read as amounts. Check the decimal separator and source values. No changes were applied.",
 	"@metadata": {
 		"authors": [],
 		"locale": "en",
@@ -45,6 +57,9 @@
 	"chive-sidebar-nav": "Navigation",
 	"chive-sidebar-collapse": "Collapse sidebar",
 	"chive-sidebar-expand": "Expand sidebar",
+	"chive-sidebar-show-controls": "Show controls",
+	"chive-sidebar-controls": "Controls",
+	"chive-sidebar-hide-controls": "Hide controls",
 
 	"chive-section-upload": "Upload file",
 	"chive-upload-main": "Drag your file here",
@@ -130,7 +145,7 @@
 	"chive-btn-go-panel": "Go to panel →",
 
 	"chive-empty-title": "No data loaded yet",
-	"chive-empty-sub": "Load a CSV or JSON file on the left to preview the data here.",
+	"chive-empty-sub": "Import a project from the Project menu, or use the controls to load a CSV or JSON file.",
 
 	"chive-card-preview": "Data preview",
 	"chive-tabs-label": "Workspace views",
@@ -411,6 +426,10 @@
 	"chive-panel-export-svg": "Export SVG",
 	"chive-panel-add-block": "Add block",
 	"chive-panel-block-title": "Block $1",
+	"chive-panel-block-controls": "Edit block",
+	"chive-chart-expand": "Expand chart",
+	"chive-chart-scroll-legend": "Scroll for the full legend",
+	"chive-chart-close-expanded": "Close",
 	"chive-panel-block-move-up": "Move block up",
 	"chive-panel-block-move-down": "Move block down",
 	"chive-panel-block-remove": "Remove block",

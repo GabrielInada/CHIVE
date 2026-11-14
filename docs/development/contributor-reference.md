@@ -220,13 +220,74 @@ npm test
 
 ## Debugging
 
-`app/debugApi.js` constructs `window.chiveDebug`, which exposes state getters
-(`getState`, `getStateSummary`, `getActiveDataset`, `getLoadedDatasets`), facade mutators
-(`setActiveDatasetColumnSelection`, `updateDatasetConfig`), UI helpers (`switchTab`, `refreshView`, `showFeedback`,
-`showError`), and state-log helpers (`enableStateLog`, `disableStateLog`,
-`getStateLog`, `clearStateLog`).
+`app/applicationBootstrap.js` installs the lightweight `window.chiveDebug`
+surface from `app/diagnosticApi.js` before importing the application. Errors
+during application module loading or initialization therefore leave diagnostic
+reads available. If the bootstrap itself cannot load, the dependency-free
+startup guard still exposes recovery, but no diagnostic API can be installed.
+The About page does not install this surface.
 
-`chiveDebug.enableStateLog()` prints every emit as
-`[chive:state] <type> <data>` and stores the last 100 entries. To diagnose a
-surprising re-render, enable the log, perform the action, then read
-`getStateLog()` to see the exact event chain that fired.
+After successful startup, `app/debugApi.js` adds the full toolkit during an
+idle task: state getters (`getState`, `getActiveDataset`, `getLoadedDatasets`),
+facade mutators (`setActiveDatasetColumnSelection`, `updateDatasetConfig`), and
+UI helpers (`switchTab`, `refreshView`, `showFeedback`, `showError`).
+
+The early surface provides:
+
+| Command | Result |
+|---|---|
+| `getStateSummary()` | Counts, active index, layout and sidebar mode; no row/snapshot cloning. `null` before its reader is available. |
+| `getStartupStatus()` | Startup status, current/failing stage and timestamps. |
+| `getErrorLog()` / `clearErrorLog()` | Read detached local error records / discard them. |
+| `enableStateLog()` / `disableStateLog()` | Start/stop recording state-event metadata and printing it under `[chive:state]`. |
+| `getStateLog()` / `clearStateLog()` | Read detached event records / discard them. Disabling preserves existing records; clearing does not disable recording. |
+| `getDiagnosticReport()` | A shareable plain object using report schema version 1. |
+| `exportDiagnosticReport()` | The same report serialized as formatted JSON. No download or transmission happens automatically. |
+
+To investigate a surprising render:
+
+```js
+chiveDebug.enableStateLog();
+// Reproduce the problem in the UI.
+chiveDebug.getStateLog();
+chiveDebug.getErrorLog(); // Local error messages and stacks.
+chiveDebug.disableStateLog();
+```
+
+For a bug report, run `chiveDebug.exportDiagnosticReport()`. In a browser
+DevTools console with the `copy` helper, use:
+
+```js
+copy(chiveDebug.exportDiagnosticReport());
+```
+
+Save the copied JSON as `chive-diagnostics.json` and attach it to the issue
+alongside reproduction steps. Export before reloading: everything is held only
+in memory for this page session, with at most 100 state events and 50 errors.
+Event logging starts disabled; enabling it does not recover earlier events.
+Error capture runs regardless of that setting, including internal listener,
+scheduled-render, startup, persistence, uncaught and unhandled-rejection errors.
+The native browser error behavior is not suppressed.
+
+State events contain explicit metadata projections, such as indices, counts
+and known configuration field names. They never retain the original payload.
+Silent preview writes, arbitrary DOM interactions and render durations are not
+captured. This is an event history, not a complete mutation journal or replay.
+
+The report includes startup status, state summary, persistence availability,
+latest load/save outcomes, worker mode and fallback history when using the
+default backend, browser family/major version, and retained event/error
+metadata. `unknown`/`null` means a reader is unavailable; `not-started` means
+no operation has been attempted. Storage availability is a capability check,
+not a successful-save guarantee. A `fallback` mode is also not proof of success:
+check the load/save outcome. Application version is `null` because there is no
+runtime build identifier; include the tested commit in the issue separately.
+
+**Export policy:** uploaded rows, dataset/file/column names, arbitrary config
+values, full browser URLs, raw exception messages and raw stacks are omitted.
+Error reports keep type, timestamp, allowlisted error/event names and whether a
+stack exists. Entire message/stack strings are omitted rather than attempting
+to guess which substrings are uploaded values. Local `getErrorLog()` retains
+up to 2,000 message characters and 8,000 stack characters per error; do not
+attach that raw log without reviewing it. Ordinary state getters still expose
+uploaded data locally and are not part of the shareable report.

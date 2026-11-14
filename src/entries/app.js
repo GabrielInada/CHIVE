@@ -1,33 +1,14 @@
 /**
  * CHIVE application page entry (index.html).
  *
- * Application initialization lives in app/applicationInitializer.js. This
- * module owns DOM readiness and defers the browser-console debug surface until
- * successful startup and an idle period.
+ * Owns DOM readiness. The bootstrap installs lightweight diagnostics before
+ * loading the application, then defers the full console toolkit until idle.
  */
 
-import { startApplication } from '../app/applicationInitializer.js';
-
-function scheduleDebugApi() {
-	const install = () => {
-		import('../app/debugApi.js')
-			.then(({ installDebugApi }) => installDebugApi())
-			.catch(error => console.warn('CHIVE debug API could not be installed:', error));
-	};
-	if (typeof window.requestIdleCallback === 'function') {
-		window.requestIdleCallback(install);
-	} else {
-		window.setTimeout(install, 0);
-	}
-}
-
-async function start() {
-	const started = await startApplication();
-	if (started) scheduleDebugApi();
-}
+import { startApplicationPage } from '../app/applicationBootstrap.js';
 
 if (document.readyState === 'loading') {
-	document.addEventListener('DOMContentLoaded', start);
+	document.addEventListener('DOMContentLoaded', startApplicationPage);
 } else {
-	void start();
+	void startApplicationPage();
 }

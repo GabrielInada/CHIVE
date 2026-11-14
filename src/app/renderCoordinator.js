@@ -26,6 +26,7 @@ import {
 	setPreviewRows,
 	setActiveDatasetColumnSelection as setStateColumnSelection,
 	updateActiveDatasetConfig,
+	setDatasetColumnCurrency,
 } from '../state/appState.js';
 import {
 	renderSidebarPanel,
@@ -39,6 +40,7 @@ import {
 	handleSampleDatasetRequest,
 } from '../features/datasetWorkspace/datasetController.js';
 import { syncSidebarToTab } from './uiManager.js';
+import { recordDiagnosticError } from '../services/diagnostics.js';
 
 // State events repaint through one animation-frame scheduler. "Full wins":
 // scheduleFullRefresh() subsumes dirty regions in the same frame. The
@@ -63,8 +65,9 @@ let fullRenderInProgress = false;
  * @param {unknown} err
  */
 function reportRefreshError(err) {
+	const evidence = recordDiagnosticError('refresh-error', err);
 	window.dispatchEvent(new CustomEvent('chive-internal-error', {
-		detail: { type: 'refresh-error', message: String(err?.message || err) },
+		detail: { type: 'refresh-error', message: evidence.message || 'Render failed' },
 	}));
 }
 
@@ -181,6 +184,7 @@ export function setupStateSubscriptions() {
 	onStateChange(STATE_EVENTS.DATASET_ADDED, scheduleFullRefresh);
 	onStateChange(STATE_EVENTS.DATASET_REMOVED, scheduleFullRefresh);
 	onStateChange(STATE_EVENTS.COLUMN_SELECTION_CHANGED, onColumnsUpdated);
+	onStateChange(STATE_EVENTS.DATASET_COLUMNS_CHANGED, onColumnsUpdated);
 	onStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, onConfigUpdated);
 	onStateChange(STATE_EVENTS.STATE_HYDRATED, scheduleFullRefresh);
 	onStateChange(
@@ -242,6 +246,7 @@ function renderActiveDatasetWorkspace(shown, previewRows) {
 		onPreviewRowsChange: updatePreviewRows,
 		onColumnSelectionChange: setActiveDatasetColumnSelection,
 		onDatasetConfigChange: updateDatasetConfig,
+		onColumnCurrencyChange: (name, options) => setDatasetColumnCurrency(shown.dataset.id, name, options),
 	});
 }
 

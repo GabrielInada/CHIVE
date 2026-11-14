@@ -9,9 +9,11 @@
  * renderer can decide between numeric, point, and time scales.
  */
 
+import { getChartCurrencies } from '../shared/currency.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
 import { renderLineChart } from './renderers/svg.js';
+import { tooltipLabels } from '../shared/tooltip/labels.js';
 
 const EMPTY_FILTER_CALLBACKS = Object.freeze({});
 
@@ -22,7 +24,7 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
  * @param {import('../../types.js').ChartInput} input
  * @returns {import('../../types.js').Result}
  */
-export function renderLineInto(container, { rows, config, columnTypeByName = {}, filterCallbacks = EMPTY_FILTER_CALLBACKS }) {
+export function renderLineInto(container, { rows, config, columnCurrencyByName = {}, columnTypeByName = {}, filterCallbacks = EMPTY_FILTER_CALLBACKS }) {
 	const result = renderLineChart(container, rows, config, {
 		axisLabels: {
 			x: config.x || t('chive-chart-control-line-x'),
@@ -33,6 +35,8 @@ export function renderLineInto(container, { rows, config, columnTypeByName = {},
 			y: columnTypeByName[config.y],
 		},
 		locale: getLocale(),
+		currencies: getChartCurrencies(config, columnCurrencyByName),
+		labels: tooltipLabels(t),
 		filterCallbacks,
 	});
 

@@ -35,6 +35,7 @@ export function createScatterInteractions({
 	axisLabels,
 	labels,
 	locale,
+	currencies = {},
 	categoryLabel,
 	filterCallbacks,
 	xFilterColumn,
@@ -44,10 +45,10 @@ export function createScatterInteractions({
 		const wrapper = document.createElement('div');
 
 		const xValue = axisTypes.x === AXIS_TYPE_VALUES.numeric
-			? formatNumber(point.x, locale)
+			? formatNumber(point.x, locale, currencies.x)
 			: categoryLabel(point.xCategory);
 		const yValue = axisTypes.y === AXIS_TYPE_VALUES.numeric
-			? formatNumber(point.y, locale)
+			? formatNumber(point.y, locale, currencies.y)
 			: categoryLabel(point.yCategory);
 
 		wrapper.appendChild(createTooltipLine(axisLabels.x, xValue));

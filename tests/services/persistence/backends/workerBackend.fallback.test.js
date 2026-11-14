@@ -2,6 +2,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createBlobBackend } from '../../../../src/services/persistence/backends/blobBackend.js';
+import { clearErrorLog, getErrorLog } from '../../../../src/services/diagnostics.js';
 import {
 	__setPersistWorkerFactoryForTesting,
 	createWorkerBackend,
@@ -19,6 +20,7 @@ import {
 let warnSpy;
 
 beforeEach(() => {
+	clearErrorLog();
 	// onWorkerError logs a diagnostic on every worker `onerror`; mock it so the
 	// crash tests stay quiet, and reuse the spy to assert the log shape.
 	warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
@@ -58,6 +60,10 @@ describe('workerBackend, watchdog + fallback', () => {
 
 		expect(fallback.persist).toHaveBeenCalledTimes(2);
 		expect(spawnCalls).toBe(1);
+		expect(backend.getDiagnostics()).toEqual({
+			mode: 'fallback', fallbackCount: 1, lastFallbackReason: 'post-message-error',
+			workerDisabled: true, pendingOperations: 0,
+		});
 	});
 
 	it('a synchronous postMessage throw after proof resets but does not disable future workers', async () => {
@@ -98,6 +104,7 @@ describe('workerBackend, watchdog + fallback', () => {
 
 		expect(fallback.persist).toHaveBeenCalledTimes(1);
 		expect(workers).toHaveLength(2);
+		expect(backend.getDiagnostics()).toMatchObject({ mode: 'worker', fallbackCount: 1, workerDisabled: false });
 	});
 
 	it('a timeout completes the op via the fallback from the captured record (edit not lost)', async () => {
@@ -304,10 +311,14 @@ describe('workerBackend, crash drains every pending op serially in send order', 
 		});
 
 		const workerError = new Error('boom');
+		expect(backend.getDiagnostics()).toMatchObject({ mode: 'idle', fallbackCount: 0 });
 		const p = backend.persist(snap());
+		expect(backend.getDiagnostics()).toMatchObject({ mode: 'worker', pendingOperations: 1 });
 		worker.emitError({ error: workerError, message: 'crash', filename: 'persistWorker.js', lineno: 42, colno: 7 });
 
 		await expect(p).resolves.toBeUndefined();
+		expect(backend.getDiagnostics()).toMatchObject({ mode: 'fallback', lastFallbackReason: 'worker-error' });
+		expect(getErrorLog().at(-1)).toMatchObject({ type: 'persistence-worker-error', message: 'boom', stack: workerError.stack });
 		// The same error object is logged (so its stack survives), plus every ErrorEvent field.
 		expect(warnSpy).toHaveBeenCalledWith(
 			'[chive:persist] worker error; falling back to main thread:',

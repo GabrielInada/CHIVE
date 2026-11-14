@@ -1,4 +1,16 @@
 {
+    "chive-type-currency": "Numeric column type label. $1 is the ISO currency code.",
+    "chive-currency-title": "Column currency dialog title. $1 is the column name.",
+    "chive-currency-label": "Label for ISO currency selection.",
+    "chive-currency-none": "Option to remove currency formatting from a numeric column.",
+    "chive-currency-choose": "Prompt to select a currency for a text column.",
+    "chive-currency-help": "Explains source decimal conventions and that changing currency labels performs no exchange-rate conversion.",
+    "chive-currency-edit": "Accessible name of the column format button. $1 is the column name and $2 its displayed type.",
+    "chive-currency-unresolved": "Column badge for ambiguous, conflicting, or malformed monetary values retained as text.",
+    "chive-currency-apply": "Button applying the selected column currency format.",
+    "chive-currency-preview": "Preview of formatted amounts. $1 is up to three examples.",
+    "chive-currency-error-mixed": "Error when source values contain incompatible currency identifiers. No changes are applied.",
+    "chive-currency-error-invalid": "Error when a column cannot be parsed completely with the selected monetary format. No changes are applied.",
 	"@metadata": {
 		"authors": [],
 		"locale": "qqq",
@@ -45,6 +57,9 @@
 	"chive-sidebar-nav": "Label at the top of the left sidebar.",
 	"chive-sidebar-collapse": "Tooltip/aria-label for the sidebar toggle when sidebar is open (click will collapse it).",
 	"chive-sidebar-expand": "Tooltip/aria-label for the sidebar toggle when sidebar is collapsed (click will expand it).",
+	"chive-sidebar-show-controls": "Visible label and accessible name for expanding workspace controls on narrow screens.",
+	"chive-sidebar-controls": "Compact button label for toggling workspace controls next to the Project menu on narrow screens.",
+	"chive-sidebar-hide-controls": "Visible label and accessible name for collapsing workspace controls on narrow screens.",
 
 	"chive-section-upload": "Heading for the file upload section in the sidebar.",
 	"chive-upload-main": "Main text inside the drag-and-drop upload zone.",
@@ -130,7 +145,7 @@
 	"chive-btn-go-panel": "Button in visualization-management sidebar mode that switches to the panel tab/sidebar mode.",
 
 	"chive-empty-title": "Heading in the main area when no file is loaded.",
-	"chive-empty-sub": "Description below the empty-state heading.",
+	"chive-empty-sub": "Empty workspace guidance for importing an existing project or loading a dataset, on desktop and narrow screens.",
 
 	"chive-card-preview": "Title of the data preview card.",
 	"chive-tabs-label": "Accessible label and tooltip for the tab list that switches workspace views.",
@@ -411,6 +426,10 @@
 	"chive-panel-export-svg": "Button label to export the currently composed panel layout as SVG.",
 	"chive-panel-add-block": "Button label that appends a new panel block to the canvas stack.",
 	"chive-panel-block-title": "Title of a panel block in the canvas stack. $1 is the 1-based block position.",
+	"chive-panel-block-controls": "Disclosure label for panel block layout, border, reorder and removal controls.",
+	"chive-chart-expand": "Accessible label for opening a saved chart in a larger dialog.",
+	"chive-chart-scroll-legend": "Visible hint and accessible name for a chart that scrolls locally to show its full pie legend.",
+	"chive-chart-close-expanded": "Button label for closing the expanded chart and returning to the dashboard.",
 	"chive-panel-block-move-up": "Aria-label for the button that moves a panel block one position up.",
 	"chive-panel-block-move-down": "Aria-label for the button that moves a panel block one position down.",
 	"chive-panel-block-remove": "Aria-label for the button that removes a panel block.",

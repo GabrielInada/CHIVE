@@ -25,6 +25,7 @@ const ABOUT_ALLOWLIST = new Set([
 	'src/features/settings/settingsController.js',
 	'src/features/settings/settingsDialog.js',
 	'src/ui/nativeDialog.js',
+	'src/ui/dialogViewport.js',
 	'src/services/i18nService.js',
 	'src/services/settingsService.js',
 	'src/services/storageService.js',

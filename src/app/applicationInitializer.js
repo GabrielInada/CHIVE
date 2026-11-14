@@ -11,8 +11,12 @@ import {
 	hydrateState,
 	enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey,
+	getPersistenceDiagnostics,
 } from '../services/persistence.js';
 import { applyStateSnapshot, getPersistenceStateView } from '../state/appState.js';
+import { getStateSummary } from '../state/stateDebug.js';
+import { recordStartupFailure, setStartupStage } from '../services/diagnostics.js';
+import { configureDiagnosticReaders } from './diagnosticApi.js';
 import { mergePanelSnapshotConfigsWithDefaults } from '../domain/panel/rehydration.js';
 import { throttle } from '../utils/throttle.js';
 import { initChartControls } from '../features/datasetWorkspace/chartControls/chartControlsController.js';
@@ -24,6 +28,7 @@ import { clearStoredProjectData } from './bindings/clearStoredData.js';
 import { initializeSharedPage } from './sharedPageInitializer.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
 import { showFeedback, showError } from '../ui/feedback.js';
+import { observeWidth } from '../ui/observeWidth.js';
 import {
 	livePreviewRender,
 	runFullRefreshNow,
@@ -49,6 +54,7 @@ let autoSaveController = null;
  * @returns {Promise<void>}
  */
 export async function initializeApplication() {
+	setStartupStage('shared-setup');
 	// Shared page setup runs first because everything below depends on i18n. The
 	// settings dialog it wires is inside the app shell, which stays hidden and
 	// inert until revealPageShell() below, so the clear action is not a recovery
@@ -68,6 +74,7 @@ export async function initializeApplication() {
 		return;
 	}
 
+	setStartupStage('restoring-state');
 	updateStartupScreen(t('chive-startup-restoring'));
 	if (isPersistenceAvailable()) {
 		await hydrateState({
@@ -77,6 +84,7 @@ export async function initializeApplication() {
 		});
 	}
 
+	setStartupStage('preparing-ui');
 	updateStartupScreen(t('chive-startup-preparing'));
 	initDatasetController();
 	// Live color and height previews are rate-limited because heavy charts can
@@ -92,8 +100,10 @@ export async function initializeApplication() {
 		onSaveError: reportPersistenceSaveError,
 	});
 
+	setStartupStage('rendering');
 	runFullRefreshNow();
 	revealPageShell();
+	observeWidth(document.getElementById(VIEW_IDS.chartsGrid), throttle(livePreviewRender, 120));
 
 	window.addEventListener('chive-locale-changed', scheduleFullRefresh);
 	window.addEventListener(SETTINGS_CHANGE_EVENT, event => {
@@ -110,10 +120,13 @@ export async function initializeApplication() {
  * single-start lifecycle entry used by entries/app.js, not an idempotent utility.
  */
 export async function startApplication() {
+	configureDiagnosticReaders({ getStateSummary, getPersistenceDiagnostics });
 	try {
 		await initializeApplication();
+		setStartupStage('ready');
 		return true;
 	} catch (error) {
+		recordStartupFailure(error);
 		reportInitializationError(error);
 		return false;
 	}

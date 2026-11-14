@@ -36,6 +36,8 @@ import {
 import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { toCategoryToken } from '../../../domain/filters/filterRule.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
+import { allowChartZoom } from '../../shared/gestures.js';
 import { NETWORK_GRAPH } from '../../../config/charts/definitions/network.js';
 import { formatNumber } from '../../../utils/formatters.js';
 import { interpolateColor } from '../../../utils/colorUtils.js';
@@ -77,7 +79,7 @@ function stopPreviousSimulation(container) {
  */
 export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 	const { source: sourceColumn, target: targetColumn } = config;
-	const { labels = {}, locale, filterCallbacks, allowFullRender = false } = context;
+	const { labels = {}, locale, filterCallbacks, allowFullRender = false, currencies = {} } = context;
 	if (!container || !sourceColumn || !targetColumn) return fail();
 
 	const {
@@ -108,7 +110,7 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 	hideChartTooltip();
 	stopPreviousSimulation(container);
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.scatter.width);
 	const height = chartHeight;
 
 	const svg = select(container)
@@ -118,14 +120,16 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		.attr('viewBox', [-(width / 2), -(height / 2), width, height]);
 
 	const viewport = svg.append('g');
+	let titleHeight = 0;
 
 	if (customTitle) {
-		appendChartTitle(svg, {
+		const title = appendChartTitle(svg, {
 			width,
 			text: customTitle,
 			x: 0,
 			y: -(height / 2) + 18,
 		});
+		titleHeight = Math.max(1, title.selectAll('tspan').size()) * 16 + 8;
 	}
 
 	const links = network.links.map(link => ({ ...link }));
@@ -200,7 +204,7 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		const content = document.createElement('div');
 		content.appendChild(createTooltipLine(labels.source, String(linkData.source.id || linkData.source)));
 		content.appendChild(createTooltipLine(labels.target, String(linkData.target.id || linkData.target)));
-		content.appendChild(createTooltipLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale)));
+		content.appendChild(createTooltipLine(labels.linkWeight, formatNumber(Number(linkData.value) || 0, locale, currencies.weight)));
 		showChartTooltip(content, event.pageX, event.pageY);
 	};
 	const togglePinnedNode = (event, nodeData) => {
@@ -236,6 +240,21 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 			return `url(#${d._gradientId})`;
 		})
 		.attr('stroke-width', d => Math.max(1, Math.sqrt(Number(d.value) || 1)));
+
+	// Retain gradients and their fixed color stops; simulation ticks only move
+	// their endpoints, without searching or rebuilding the SVG definitions.
+	const gradients = edgeColorMode === 'gradient'
+		? defs.selectAll('linearGradient')
+			.data(links)
+			.enter()
+			.append('linearGradient')
+			.attr('id', d => d._gradientId)
+			.attr('gradientUnits', 'userSpaceOnUse')
+		: null;
+	if (gradients) {
+		gradients.append('stop').attr('offset', '0%').attr('stop-color', sourceNodeColor);
+		gradients.append('stop').attr('offset', '100%').attr('stop-color', targetNodeColor);
+	}
 
 	const node = viewport
 		.append('g')
@@ -287,6 +306,8 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 
 	node.call(
 		drag()
+			// Touching a node still inspects it; dragging must not trap page scroll.
+			.filter(event => !event.touches && !event.ctrlKey && !event.button)
 			.on('start', event => {
 				if (!event.active) simulation.alphaTarget(0.3).restart();
 				event.subject.fx = event.subject.x;
@@ -320,6 +341,7 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		: null;
 
 	const zoomBehavior = zoom()
+		.filter(allowChartZoom)
 		.scaleExtent([NETWORK_GRAPH.minZoomScale, NETWORK_GRAPH.maxZoomScale])
 		.on('zoom', event => {
 			viewport.attr('transform', event.transform);
@@ -335,7 +357,7 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 	if (showLegend) {
 		const legend = svg
 			.append('g')
-			.attr('transform', `translate(${-(width / 2) + 12},${-(height / 2) + 12})`)
+			.attr('transform', `translate(${-(width / 2) + 12},${-(height / 2) + 12 + titleHeight})`)
 			.attr('class', 'network-legend');
 
 		[
@@ -360,24 +382,13 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		});
 	}
 
-	simulation.on('tick', () => {
-		if (edgeColorMode === 'gradient') {
-			links.forEach(d => {
-				const gradient = defs.select(`#${d._gradientId}`).empty()
-					? defs.append('linearGradient').attr('id', d._gradientId)
-					: defs.select(`#${d._gradientId}`);
-
-				gradient
-					.attr('gradientUnits', 'userSpaceOnUse')
-					.attr('x1', d.source.x)
-					.attr('y1', d.source.y)
-					.attr('x2', d.target.x)
-					.attr('y2', d.target.y);
-
-				gradient.selectAll('stop').remove();
-				gradient.append('stop').attr('offset', '0%').attr('stop-color', sourceNodeColor);
-				gradient.append('stop').attr('offset', '100%').attr('stop-color', targetNodeColor);
-			});
+	const drawPositions = () => {
+		if (gradients) {
+			gradients
+				.attr('x1', d => d.source.x)
+				.attr('y1', d => d.source.y)
+				.attr('x2', d => d.target.x)
+				.attr('y2', d => d.target.y);
 		}
 
 		link
@@ -397,7 +408,11 @@ export function renderNetworkGraph(container, rows, config = {}, context = {}) {
 		}
 
 		repositionPinnedTooltip();
-	});
+	};
+	simulation.on('tick', drawPositions);
+	// A deferred slot may be exported in the same task as its first render.
+	// Draw the initialized layout now, before the simulation's first timer tick.
+	drawPositions();
 
 	return {
 		ok: true,

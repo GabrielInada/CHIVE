@@ -11,6 +11,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
+import { formatCurrencyCategory } from '../../shared/currency.js';
 import { hierarchy, select, treemap, treemapSquarify } from '../../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
@@ -21,6 +22,7 @@ import {
 } from '../../shared/tooltip/tooltip.js';
 import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
@@ -50,7 +52,7 @@ function truncate(text, maxLen) {
  */
 export function renderTreemap(container, rows, config = {}, context = {}) {
 	const { category: categoryColumn } = config;
-	const { labels = {}, locale, filterCallbacks } = context;
+	const { labels = {}, locale, filterCallbacks, currencies = {} } = context;
 	if (!container || !categoryColumn) return { ok: false };
 
 	const {
@@ -72,21 +74,24 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 	});
 	if (!aggregated.ok) return aggregated;
 	const { entries, retainedValueTotal } = aggregated;
+	for (const item of entries) item.label = formatCurrencyCategory(item.label, currencies.category, locale);
 
 	container.replaceChildren();
 	hideChartTooltip();
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bar?.width || 700, 320);
-	const titleOffset = customTitle ? 24 : 0;
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.bar?.width || 700);
+	let titleOffset = customTitle ? 24 : 0;
 	const height = chartHeight;
 
 	const svg = select(container)
 		.append('svg')
 		.attr('width', width)
-		.attr('height', height);
+		.attr('height', height)
+		.attr('viewBox', `0 0 ${width} ${height}`);
 
 	if (customTitle) {
-		appendChartTitle(svg, { width, text: customTitle });
+		const title = appendChartTitle(svg, { width, text: customTitle });
+		titleOffset += Math.max(0, title.selectAll('tspan').size() - 1) * 16;
 	}
 
 	const treemapWidth = width;
@@ -119,7 +124,7 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 		const wrapper = document.createElement('div');
 
 		wrapper.appendChild(createTooltipLine(labels.category, d.data.label));
-		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(d.data.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(d.data.value, locale, currencies.measure)));
 		wrapper.appendChild(createTooltipLine(labels.percentage, `${pct.toFixed(1)}%`));
 		return wrapper;
 	};
@@ -198,7 +203,7 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 					.attr('font-size', clamp(Math.min(w / 7, h / 5, 11), 7, 11))
 					.attr('fill', 'rgba(255,254,249,0.8)')
 					.attr('pointer-events', 'none')
-					.text(formatNumber(d.data.value, locale));
+					.text(formatNumber(d.data.value, locale, currencies.measure));
 			} else if (showLabels) {
 				g.append('text')
 					.attr('x', cx)
@@ -218,7 +223,7 @@ export function renderTreemap(container, rows, config = {}, context = {}) {
 					.attr('font-size', clamp(Math.min(w / 7, h / 4, 12), 7, 12))
 					.attr('fill', '#fffef9')
 					.attr('pointer-events', 'none')
-					.text(formatNumber(d.data.value, locale));
+					.text(formatNumber(d.data.value, locale, currencies.measure));
 			}
 		});
 	}

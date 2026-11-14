@@ -292,7 +292,7 @@
 .join-dialog {
   width: min(980px, 96vw);
   max-height: 90vh;
-  max-height: 90dvh;
+  max-height: min(90dvh, var(--dialog-max-height));
   overflow: auto;
   box-sizing: border-box;
   background: var(--surface);
@@ -310,7 +310,7 @@
 
 .join-controls {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr));
   gap: var(--space-4);
 }
 
@@ -331,7 +331,7 @@
 .join-columns-grid {
   margin-top: var(--space-5);
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(290px, 100%), 1fr));
   gap: var(--space-4);
 }
 
@@ -365,6 +365,7 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
+  flex-wrap: wrap;
 }
 
 .join-footer .btn-primary,

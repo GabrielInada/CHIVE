@@ -7,7 +7,7 @@
  * @typedef {import('../types.js').SidebarMode} SidebarMode
  */
 
-import { getState } from './appState.js';
+import { getPersistenceStateView } from './appState.js';
 
 /**
  * Compact state digest for debugging from the browser console. Counts and
@@ -17,7 +17,9 @@ import { getState } from './appState.js';
  * @returns {{ datasetsCount: number, activeDatasetIndex: number, panelChartsCount: number, panelLayout: string, sidebarMode: SidebarMode }}
  */
 export function getStateSummary() {
-	const state = getState();
+	// This view only assembles references. Read five scalars without cloning or
+	// traversing any uploaded rows or chart snapshots.
+	const state = getPersistenceStateView();
 	return {
 		datasetsCount: state.data.datasets.length,
 		activeDatasetIndex: state.data.activeIndex,

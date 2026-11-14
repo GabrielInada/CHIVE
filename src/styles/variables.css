@@ -84,17 +84,46 @@ body {
 }
 
 .app-dialog {
-  max-width: calc(100vw - 2 * var(--space-5));
-  max-height: calc(100dvh - 2 * var(--space-5));
-  border: 0;
-  padding: 0;
-  overflow: visible;
-  background: transparent;
-  color: inherit;
+    --dialog-viewport-top: 0px;
+    --dialog-viewport-bottom: 0px;
+    --dialog-max-height: calc(var(--dialog-viewport-height, 100dvh) - 2 * var(--space-5) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+
+    top: calc(var(--dialog-viewport-top) + env(safe-area-inset-top));
+    bottom: calc(var(--dialog-viewport-bottom) + env(safe-area-inset-bottom));
+    left: env(safe-area-inset-left);
+    right: env(safe-area-inset-right);
+    max-width: calc(100vw - 2 * var(--space-5) - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    max-height: var(--dialog-max-height);
+    /* Restore native centering after the global margin reset. */
+    margin: auto;
+    border: 0;
+    padding: 0;
+    overflow: visible;
+    background: transparent;
+    color: inherit;
+}
+
+.app-dialog > :first-child {
+    min-width: 0;
+    max-width: 100%;
+    max-height: var(--dialog-max-height);
+    overflow-wrap: anywhere;
+}
+
+.app-dialog:modal {
+    overscroll-behavior: contain;
 }
 
 .app-dialog::backdrop {
   background: rgb(0 0 0 / 45%);
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+@media (max-width: 900px), (any-pointer: coarse) {
+    .app-dialog :where(button, select, input:not([type='checkbox'], [type='radio']), .gf-list-item, .join-list-item) {
+        min-height: 44px;
+    }
 }
 
 .startup-screen {

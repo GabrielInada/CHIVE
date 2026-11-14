@@ -20,6 +20,7 @@ import {
 	updateDatasetConfig,
 } from './renderCoordinator.js';
 import { showFeedback, showError } from '../ui/feedback.js';
+import { createDiagnosticApi } from './diagnosticApi.js';
 
 function switchTab(tabName) {
 	updateDatasetConfig({ activeTab: tabName });
@@ -28,8 +29,9 @@ function switchTab(tabName) {
 /**
  * @returns {Object}
  */
-export function createDebugApi() {
+export function createDebugApi(target = window) {
 	return {
+		...createDiagnosticApi(target),
 		getState,
 		getStateSummary,
 		getActiveDataset,
@@ -52,6 +54,6 @@ export function createDebugApi() {
  * @returns {Object}
  */
 export function installDebugApi(target = window) {
-	target.chiveDebug = createDebugApi();
+	target.chiveDebug = Object.assign(target.chiveDebug || {}, createDebugApi(target));
 	return target.chiveDebug;
 }

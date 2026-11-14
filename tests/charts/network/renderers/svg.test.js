@@ -55,6 +55,7 @@ describe('network graph visualization', () => {
 			target: 'destino',
 			weight: 'peso',
 			showNodeLabels: true,
+			edgeColorMode: 'gradient',
 		}, renderContext({ source: 'origem', target: 'destino' }));
 
 		expect(result.ok).toBe(true);
@@ -62,6 +63,52 @@ describe('network graph visualization', () => {
 		expect(result.linksCount).toBe(3);
 		expect(container.querySelectorAll('line').length).toBe(3);
 		expect(container.querySelectorAll('circle').length).toBe(3);
+		// Geometry must exist synchronously for a newly materialized SVG export.
+		expect(container.querySelector('circle').hasAttribute('cx')).toBe(true);
+		expect(container.querySelector('line').hasAttribute('x1')).toBe(true);
+		expect(container.querySelectorAll('linearGradient stop').length).toBe(6);
+	});
+
+	it('keeps gradient elements and color stops while updating edge positions', () => {
+		const container = document.getElementById('network');
+		renderNetworkGraph(container, [
+			{ source: 'A', target: 'B' },
+			{ source: 'B', target: 'C' },
+		], {
+			source: 'source', target: 'target', edgeColorMode: 'gradient',
+			sourceNodeColor: '#123456', targetNodeColor: '#654321',
+		}, renderContext({ source: 'source', target: 'target' }));
+		const simulation = container.__chive_network_simulation__;
+		simulation.stop();
+		const gradients = [...container.querySelectorAll('linearGradient')];
+		const stops = [...container.querySelectorAll('linearGradient stop')];
+		const links = [...container.querySelectorAll('.network-link')];
+		expect(gradients).toHaveLength(2);
+		expect(stops.map(stop => stop.getAttribute('stop-color'))).toEqual([
+			'#123456', '#654321', '#123456', '#654321',
+		]);
+		const initialX = gradients[0].getAttribute('x1');
+
+		for (let tick = 0; tick < 2; tick++) {
+			simulation.tick();
+			// Manual D3 ticks do not dispatch the rendering listener.
+			simulation.on('tick')();
+			const currentGradients = container.querySelectorAll('linearGradient');
+			const currentStops = container.querySelectorAll('linearGradient stop');
+			expect(currentGradients).toHaveLength(gradients.length);
+			expect(currentStops).toHaveLength(stops.length);
+			gradients.forEach((gradient, index) => {
+				expect(currentGradients[index]).toBe(gradient);
+				expect(links[index].getAttribute('stroke')).toBe(`url(#${gradient.id})`);
+				for (const coordinate of ['x1', 'y1', 'x2', 'y2']) {
+					expect(gradient.getAttribute(coordinate)).toBe(links[index].getAttribute(coordinate));
+				}
+			});
+			stops.forEach((stop, index) => {
+				expect(currentStops[index] === stop, 'Redrawing must reuse gradient color stops').toBe(true);
+			});
+		}
+		expect(gradients[0].getAttribute('x1')).not.toBe(initialX);
 	});
 
 	it('uses configured source/target labels in the legend', () => {

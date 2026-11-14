@@ -1,4 +1,16 @@
 {
+    "chive-type-currency": "Moeda ($1)",
+    "chive-currency-title": "Formato monetário: $1",
+    "chive-currency-label": "Moeda",
+    "chive-currency-none": "Número simples",
+    "chive-currency-choose": "Escolha uma moeda",
+    "chive-currency-help": "Os valores permanecem na moeda original. Alterar a identificação da moeda não converte os valores. Para colunas de texto, escolha o separador decimal da origem se a detecção automática for ambígua.",
+    "chive-currency-edit": "Formatar $1: $2",
+    "chive-currency-unresolved": "Moeda?",
+    "chive-currency-apply": "Aplicar formato",
+    "chive-currency-preview": "Prévia: $1",
+    "chive-currency-error-mixed": "Esta coluna contém moedas conflitantes. Separe ou corrija as moedas no arquivo de origem antes de aplicar o formato.",
+    "chive-currency-error-invalid": "Alguns valores não podem ser lidos como quantias. Confira o separador decimal e os valores de origem. Nenhuma alteração foi aplicada.",
 	"@metadata": {
 		"authors": [],
 		"locale": "pt-BR",
@@ -45,6 +57,9 @@
 	"chive-sidebar-nav": "Navegação",
 	"chive-sidebar-collapse": "Recolher painel lateral",
 	"chive-sidebar-expand": "Expandir painel lateral",
+	"chive-sidebar-show-controls": "Mostrar controles",
+	"chive-sidebar-controls": "Controles",
+	"chive-sidebar-hide-controls": "Ocultar controles",
 
 	"chive-section-upload": "Carregar arquivo",
 	"chive-upload-main": "Arraste seu arquivo aqui",
@@ -130,7 +145,7 @@
 	"chive-btn-go-panel": "Ir para o painel →",
 
 	"chive-empty-title": "Nenhum dado carregado ainda",
-	"chive-empty-sub": "Carregue um arquivo CSV ou JSON ao lado para ver o preview dos dados aqui.",
+	"chive-empty-sub": "Importe um projeto pelo menu Projeto ou use os controles para carregar um arquivo CSV ou JSON.",
 
 	"chive-card-preview": "Preview dos dados",
 	"chive-tabs-label": "Visualizações da área de trabalho",
@@ -411,6 +426,10 @@
 	"chive-panel-export-svg": "Exportar SVG",
 	"chive-panel-add-block": "Adicionar bloco",
 	"chive-panel-block-title": "Bloco $1",
+	"chive-panel-block-controls": "Editar bloco",
+	"chive-chart-expand": "Ampliar gráfico",
+	"chive-chart-scroll-legend": "Role para ver a legenda completa",
+	"chive-chart-close-expanded": "Fechar",
 	"chive-panel-block-move-up": "Mover bloco para cima",
 	"chive-panel-block-move-down": "Mover bloco para baixo",
 	"chive-panel-block-remove": "Remover bloco",

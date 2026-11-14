@@ -77,8 +77,8 @@ normally precede its state and interaction selectors.
 | `animations.css` | Application reveal animation |
 | `layout.css` | Fixed header, workspace grid, sidebar container, and shared structural rules |
 | `collapsed.css` | Sidebar presentation derived from the toggle's `aria-expanded` state |
-| `responsive.css` | Main page's 900px viewport adaptation |
-| `header-nav.css` | Shared top navigation and its 768px/480px reflow |
+| `responsive.css` | Compact header and collapsible workspace controls at 900px and below |
+| `header-nav.css` | Shared top navigation and its 900px adaptation |
 | `settings.css` | Shared Settings entry and dialog presentation |
 
 ### Controls
@@ -131,11 +131,61 @@ The sidebar is a named inline-size container. At desktop widths, the workspace
 sets its width to 74px when the toggle has `aria-expanded="false"`; a
 `@container sidebar (max-width: 120px)` rule hides
 `.sidebar-expanded-only`. At 900px and below, the workspace stacks and the
-collapse toggle is hidden.
+same toggle becomes a labeled controls disclosure, initially closed. Desktop
+and narrow disclosure choices are kept separately for the session; neither
+changes project state. The header stays in document flow with sticky
+positioning, so wrapped navigation does not overlap the workspace.
+Native panel drag-and-drop follows fine-pointer availability, keeping mouse
+and trackpad dragging usable in narrow or zoomed browser windows.
 
-The panel canvas is a named inline-size container. Panel templates stack at
-640px of canvas width, independent of the browser viewport. JavaScript still
-reads actual container width when sizing SVG or canvas backing stores.
+The panel canvas is a named inline-size container. Below 1000px, multi-column
+templates use two readable columns; below 680px they stack. The hero chart and
+the final chart of a three-column block span the intermediate layout. These
+thresholds use canvas width, independent of the viewport. Reflowed chart heights
+follow the available width, chart type, and landscape height bounds. Proportion
+and height resize handles are hidden while reflowed. Saved block heights live
+in `--panel-block-min-height`, which only the wider layout uses; reflow never
+rewrites stored heights, proportions, templates, or slot order. On narrow
+screens the dashboard uses document scrolling.
+
+The compact Controls button shares the sidebar toggle state. Block editing
+controls use native details disclosures, initially closed on narrow screens;
+their open state survives canvas rerenders without entering project state.
+Expanded charts use the native modal adapter and a separate slot mount, with
+teardown on dismissal. The original chart, focus, and dashboard scroll position
+are preserved. Chart tooltips attach inside an open dialog when present.
+
+Dashboard slots and sidebar thumbnails use IntersectionObserver to render near
+the viewport. Their CSS reserves space before rendering, and their controls and
+accessible chart names remain available. Resize notifications only redraw when
+the renderer's width or slot height actually changes; hidden/offscreen slots
+catch up when visible. Expanded charts render immediately. SVG export explicitly
+materializes every slot first, so deferred charts are included. Browsers without
+IntersectionObserver use the eager rendering fallback.
+
+The native modal adapter observes VisualViewport while a dialog is open. Its
+height and inset variables constrain surfaces above the software keyboard,
+including viewport panning; pinch zoom retains native magnification and panning.
+Listeners are removed on close. CSS viewport sizing remains the fallback when
+the API is absent. Dialogs respect safe-area insets. Settings, confirmations,
+and global filters scroll their content while keeping their primary actions
+reachable. Filter fields have associated labels and use a 1rem font on touch
+and narrow layouts.
+
+Chart renderers read their own container width, with a 240px drawing floor.
+SVGs carry a viewBox; panel charts receive a temporary height derived from
+their slot. Workspace chart width changes schedule a redraw without rebuilding
+controls or writing state. Narrow categorical axes show fewer labels while
+retaining all marks. SVG titles wrap and reserve space above the plot. Pie
+legends move below narrow plots and include every category; long legends scroll
+locally with a visible hint and a keyboard-focusable region. SVG exports retain
+the complete legend. Touch targets for
+navigation, chart actions, and inspection controls are at least 44px on narrow
+screens or when a coarse pointer is available.
+
+Pie and network zoom handlers accept two-finger gestures, leaving one finger
+for document scrolling and inspection taps. Network node dragging uses the
+mouse; touch gestures on nodes follow the same scrolling/zoom behavior.
 
 Viewport-height declarations use a `vh` fallback immediately followed by the
 equivalent `dvh` value.

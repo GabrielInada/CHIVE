@@ -11,6 +11,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
+import { formatCurrencyCategory } from '../../shared/currency.js';
 import { hierarchy, pack, scaleOrdinal, select } from '../../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
@@ -25,6 +26,7 @@ import { normalizeBubbleOptions } from '../options.js';
 import { BUBBLE_CHART } from '../../../config/charts/definitions/bubble.js';
 import { CHART_COLOR_PALETTES } from '../../../config/charts/shared.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
 import { formatNumber } from '../../../utils/formatters.js';
 import { ok, fail } from '../../../utils/result.js';
 import { setupChartSvg } from '../../shared/svg/scaffold.js';
@@ -58,7 +60,7 @@ import {
  */
 export function renderBubbleChart(container, rows, config = {}, context = {}) {
 	const { category: categoryColumn } = config;
-	const { labels = {}, locale, filterCallbacks } = context;
+	const { labels = {}, locale, filterCallbacks, currencies = {} } = context;
 	if (!container || !categoryColumn) return fail();
 
 	const {
@@ -86,8 +88,16 @@ export function renderBubbleChart(container, rows, config = {}, context = {}) {
 	});
 	if (!aggregation.ok) return fail(aggregation.reason);
 	const bubbles = aggregation.entries;
+	for (const item of bubbles) item.label = formatCurrencyCategory(item.label, currencies.category, locale);
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bubble.width, 320);
+	for (const item of bubbles) {
+		item.nestingPath.forEach((segment, index) => {
+			segment.label = formatCurrencyCategory(segment.label, currencies.nesting?.[index], locale);
+		});
+		item.groupLabel = item.nestingPath[0]?.label || item.label;
+	}
+
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.bubble.width);
 	const height = chartHeight;
 	const margin = CHART_DIMENSIONS.bubble.margins;
 	const {
@@ -280,7 +290,7 @@ export function renderBubbleChart(container, rows, config = {}, context = {}) {
 	const createLeafTooltip = item => {
 		const wrapper = document.createElement('div');
 		wrapper.appendChild(createTooltipLine(labels.category, item.data.label));
-		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.data.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.data.value, locale, currencies.measure)));
 		if (isGrouped) {
 			wrapper.appendChild(createTooltipLine(labels.group, getTopLevelGroup(item).label));
 		}
@@ -290,7 +300,7 @@ export function renderBubbleChart(container, rows, config = {}, context = {}) {
 	const createParentTooltip = item => {
 		const wrapper = document.createElement('div');
 		wrapper.appendChild(createTooltipLine(labels.group, item.data.groupLabel));
-		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale, currencies.measure)));
 		wrapper.appendChild(createTooltipLine(labels.children, item.children.length));
 		wrapper.appendChild(createTooltipLine(labels.level, item.depth));
 		return wrapper;
@@ -389,7 +399,7 @@ export function renderBubbleChart(container, rows, config = {}, context = {}) {
 	node.append('title').text(d => {
 		const lines = [
 			`${labels.category}: ${d.data.label}`,
-			`${labels.measure}: ${formatNumber(d.data.value, locale)}`,
+			`${labels.measure}: ${formatNumber(d.data.value, locale, currencies.measure)}`,
 		];
 		if (isGrouped) {
 			lines.push(`${labels.group}: ${getTopLevelGroup(d).label}`);

@@ -5,6 +5,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { escapeHtml, formatDate, formatFileSize, formatNumber, toFiniteNumber } from '../../src/utils/formatters.js';
 
 describe('formatters', () => {
+	it('formats monetary values with currency precision independently of magnitude', () => {
+		expect(formatNumber(1234.56, 'pt-BR', 'BRL')).toBe('R$\u00a01.234,56');
+		expect(formatNumber(1234.56, 'en-US', 'BRL')).toBe('R$1,234.56');
+		expect(formatNumber(0, 'en-US', 'USD')).toBe('$0.00');
+		expect(formatNumber(1234, 'en-US', 'JPY')).toBe('¥1,234');
+		expect(formatNumber(12.345, 'en-US', 'KWD')).toBe('KWD\u00a012.345');
+		expect(formatNumber(null, 'en-US', 'USD')).toBe('N/A');
+	});
   it('escapes sensitive HTML characters', () => {
     const value = `<div class="x">O'Reilly & Co</div>`;
     expect(escapeHtml(value)).toBe('&lt;div class=&quot;x&quot;&gt;O&#39;Reilly &amp; Co&lt;/div&gt;');

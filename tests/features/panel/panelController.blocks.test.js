@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as appState from '../../../src/state/appState.js';
+import { CHART_DEFINITIONS } from '../../../src/config/charts/definitions.js';
 import {
   renderCanvasPanel,
   renderSidebarPanel,
@@ -28,6 +29,7 @@ function resetAppStateForTest() {
 }
 
 describe('panelController multi-block canvas', () => {
+	afterEach(() => vi.unstubAllGlobals());
   beforeEach(() => {
     resetAppStateForTest();
     setupDom();
@@ -59,11 +61,56 @@ describe('panelController multi-block canvas', () => {
     expect(blockEls.length).toBe(2);
   });
 
-  it('re-evaluates drag-and-drop when the desktop media query changes', () => {
+	it('preserves an open block disclosure across layout edits without saving the disclosure state', () => {
+		renderCanvasPanel();
+		const controls = document.querySelector('.panel-block-controls');
+		const before = JSON.stringify(appState.getPanelBlocks());
+		controls.open = true;
+		expect(JSON.stringify(appState.getPanelBlocks())).toBe(before);
+		const toggle = controls.querySelector('input[type="checkbox"]');
+		toggle.checked = true;
+		toggle.dispatchEvent(new Event('change', { bubbles: true }));
+		expect(document.querySelector('.panel-block-controls').open).toBe(true);
+		expect(appState.getPanelBlocks()[0].borderEnabled).toBe(true);
+	});
+
+	it('drops a saved line chart into a slot in a narrow window with a mouse', () => {
+		vi.stubGlobal('innerWidth', 800);
+		const mediaMatches = { '(min-width: 901px)': false, '(any-pointer: fine)': true };
+		vi.stubGlobal('matchMedia', query => ({
+			matches: mediaMatches[query] ?? false,
+			media: query,
+			addEventListener() {},
+			removeEventListener() {},
+		}));
+		const chartId = appState.addChartSnapshot({
+			name: 'Line chart',
+			type: 'line',
+			config: { ...CHART_DEFINITIONS.line.createDefaultConfig(), x: 'x', y: 'y' },
+			dataSnapshot: [{ x: 1, y: 2 }, { x: 2, y: 5 }],
+		});
+		renderSidebarPanel();
+		renderCanvasPanel();
+		const preview = document.querySelector('.panel-item-preview svg');
+		const slot = document.querySelector('[data-panel-slot="slot-1"]');
+		const payload = new Map();
+		const dataTransfer = {
+			setData: (type, value) => payload.set(type, String(value)),
+			getData: type => payload.get(type) || '',
+		};
+		const dragEvent = type => Object.assign(new Event(type, { bubbles: true, cancelable: true }), { dataTransfer });
+		preview.dispatchEvent(dragEvent('dragstart'));
+		slot.dispatchEvent(dragEvent('dragover'));
+		slot.dispatchEvent(dragEvent('drop'));
+		expect(appState.getPanelBlocks()[0].slots['slot-1']).toBe(chartId);
+		expect(document.querySelector('.panel-item').draggable).toBe(true);
+	});
+
+  it('re-evaluates drag-and-drop when pointer capabilities change', () => {
     let onChange;
     const mediaQuery = {
       matches: false,
-      media: '(min-width: 901px)',
+      media: '(any-pointer: fine)',
       addEventListener: (_type, listener) => { onChange = listener; },
       removeEventListener: () => {},
     };
@@ -222,7 +269,7 @@ describe('panelController multi-block canvas', () => {
     const grid = document.querySelector(`[data-panel-layout-block="${blockId}"]`);
     expect(grid).toBeTruthy();
 
-    const minHeight = Number.parseInt(grid.style.minHeight, 10);
+    const minHeight = Number.parseInt(grid.style.getPropertyValue('--panel-block-min-height'), 10);
     expect(Number.isFinite(minHeight)).toBe(true);
     expect(minHeight).toBeGreaterThan(220);
     expect(minHeight).toBeLessThanOrEqual(620);
@@ -262,7 +309,7 @@ describe('panelController multi-block canvas', () => {
   it('swaps chart assignments across blocks via drop', () => {
     window.matchMedia = () => ({
       matches: true,
-      media: '(min-width: 901px)',
+      media: '(any-pointer: fine)',
       onchange: null,
       addListener: () => {},
       removeListener: () => {},

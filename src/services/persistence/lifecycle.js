@@ -26,12 +26,36 @@ import {
 import { errorFrom, namedError, PROJECT_IMPORT_ERROR_NAMES } from './errors.js';
 import { buildProjectFileName } from './projectFile.js';
 import { clearUiPrefs, readUiPrefs } from './uiPrefs.js';
+import { recordDiagnosticError } from '../diagnostics.js';
 
 // The worker backend runs SQLite off the main thread. It does NOT statically
 // import sqlite, so this default keeps SQLite-WASM off the boot/main bundle
 // (it loads in the worker chunk, or via the worker backend's dynamic-import
 // fallback only when a worker is unavailable).
 let activeBackend = workerBackend;
+let lastLoad = { status: 'not-started', t: null };
+let lastSave = { status: 'not-started', t: null };
+
+function recordLoad(status, error) {
+	lastLoad = { status, t: Date.now() };
+	if (error) recordDiagnosticError('persistence-load-error', error);
+}
+
+function finishSave(status, error) {
+	lastSave = { status, t: Date.now() };
+	if (error) recordDiagnosticError('persistence-save-error', error);
+	return error ? { ok: false, error } : { ok: true };
+}
+
+/** Metadata only. Availability is capability, not proof that the last save succeeded. */
+export function getPersistenceDiagnostics() {
+	return {
+		available: isPersistenceAvailable(),
+		backend: activeBackend === workerBackend ? workerBackend.getDiagnostics() : { mode: 'custom' },
+		load: { ...lastLoad },
+		save: { ...lastSave },
+	};
+}
 
 /**
  * Swap the storage backend. Used by tests and future storage strategies.
@@ -40,6 +64,8 @@ let activeBackend = workerBackend;
  */
 export function configurePersistenceBackend(backend) {
 	activeBackend = backend || workerBackend;
+	lastLoad = { status: 'not-started', t: null };
+	lastSave = { status: 'not-started', t: null };
 }
 
 /**
@@ -78,6 +104,8 @@ async function importLegacyStateIfNeeded() {
 		}
 		return legacySnapshot;
 	} catch (err) {
+		recordLoad('failed');
+		recordDiagnosticError('persistence-legacy-error', err);
 		console.warn('[chive:persist] legacy import failed:', err);
 		return null;
 	} finally {
@@ -97,12 +125,22 @@ async function importLegacyStateIfNeeded() {
  */
 export async function hydrateState({ applyStateSnapshot, transformPanel, onError } = {}) {
 	if (typeof applyStateSnapshot !== 'function') return;
+	recordLoad(isPersistenceAvailable() ? 'pending' : 'unavailable');
+	try {
+		await restoreState({ applyStateSnapshot, transformPanel, onError });
+	} catch (error) {
+		recordLoad('failed', error);
+		throw error;
+	}
+}
 
+async function restoreState({ applyStateSnapshot, transformPanel, onError }) {
 	let storedSnapshot = null;
 	if (isPersistenceAvailable()) {
 		try {
 			storedSnapshot = await activeBackend.hydrate();
 		} catch (err) {
+			recordLoad('failed', err);
 			console.warn('[chive:persist] could not read SQLite persistence:', err);
 			if (typeof onError === 'function') onError(err);
 			return;
@@ -114,16 +152,23 @@ export async function hydrateState({ applyStateSnapshot, transformPanel, onError
 	}
 
 	const ui = readUiPrefs();
-	if (!storedSnapshot && !ui) return;
+	if (!storedSnapshot && !ui) {
+		if (lastLoad.status === 'pending') recordLoad('empty');
+		return;
+	}
 
 	const normalized = normalizeStoredSnapshot(storedSnapshot, { transformPanel });
-	if (!hasHydratableState(normalized, ui)) return;
+	if (!hasHydratableState(normalized, ui)) {
+		if (lastLoad.status === 'pending') recordLoad('empty');
+		return;
+	}
 
 	applyStateSnapshot({
 		data: normalized.data,
 		panel: normalized.panel,
 		ui,
 	});
+	if (lastLoad.status === 'pending') recordLoad('restored');
 }
 
 /**
@@ -134,19 +179,20 @@ export async function hydrateState({ applyStateSnapshot, transformPanel, onError
  */
 export async function persistState(snapshot) {
 	if (!snapshot || typeof snapshot !== 'object') {
-		return { ok: false, error: new Error('No state snapshot was provided') };
+		return finishSave('failed', new Error('No state snapshot was provided'));
 	}
 	if (!isPersistenceAvailable()) {
-		return { ok: false, error: new Error('IndexedDB is unavailable') };
+		return finishSave('unavailable', new Error('IndexedDB is unavailable'));
 	}
 
+	lastSave = { status: 'pending', t: Date.now() };
 	try {
 		await activeBackend.persist(snapshot);
-		return { ok: true };
+		return finishSave('saved');
 	} catch (err) {
 		const error = errorFrom(err);
 		console.warn('[chive:persist] save failed:', error);
-		return { ok: false, error };
+		return finishSave('failed', error);
 	}
 }
 

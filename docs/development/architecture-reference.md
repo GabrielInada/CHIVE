@@ -115,6 +115,7 @@ This is the complete named-export surface of `src/state/appState.js`:
     "setActiveChartType",
     "setActiveDataset",
     "setActiveDatasetColumnSelection",
+    "setDatasetColumnCurrency",
     "setPanelBlockTemplate",
     "setPreviewRows",
     "setSidebarMode",
@@ -179,6 +180,7 @@ relies on stable array references.
 | `addDataset(dataset)` | Mutates the caller by assigning a missing id and canonical `chartConfig`, pushes it, maybe selects it, emits `DATASET_ADDED`, returns the index. | Throws unless `dataset` is truthy and `dataset.rows` is an array. It does not validate the remaining record shape. |
 | `removeDataset(index)` | Splices a dataset, adjusts selection, preserves detached panel captures and both assignment maps, then emits `DATASET_REMOVED`. | Accepts only an in-range integer; throws before mutation otherwise. |
 | `updateActiveDatasetConfig(updates)` | Canonicalizes current config, shallow-merges a non-array object patch, canonicalizes again, stores it, and emits the raw `updates` argument. | No active dataset means no-op/no event. A null, array, or primitive patch is treated as `{}` for mutation but is still emitted verbatim. |
+| `setDatasetColumnCurrency(datasetId, columnName, options)` | Replaces rows and column metadata atomically, clears cached statistics, and emits `DATASET_COLUMNS_CHANGED`. Numeric values keep their amount when the currency label changes. | Returns a failed Result without mutation for missing/date columns, mixed currencies, or unparseable monetary values. Currency removal leaves numeric values unchanged. |
 | `setActiveDatasetColumnSelection(columnNames)` | Stores a copied list and emits it as `COLUMN_SELECTION_CHANGED` only when ordered contents change. | No active dataset means no-op/no event, without validating the argument. Otherwise requires an array of distinct strings declared by the active dataset; malformed, duplicate, and unknown names throw before mutation. |
 | `transformActiveDatasetConfigSilently(updater)` | Replaces config with `updater(currentConfig)` and emits nothing. | No active dataset means no-op. The callback and returned shape are not validated; exceptions propagate. Reserved for continuous preview writes. |
 | `setActiveChartType(chartType, activatedOverrides)` | Enables exactly the selected canonical chart key, or disables every chart for `null`; canonicalizes and emits `{ activeChartType }`. | No active dataset or an unknown non-null key means no-op/no event. Non-array object overrides apply only to a non-null selected type. A valid call emits even if it reproduces the current state. |
@@ -243,6 +245,7 @@ The `Emitters` and `Production subscriptions` cells use
 | `DATASET_ADDED` | `datasetAdded` | `src/state/dataStateFacade.js#addDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | `{ index, dataset }`, where dataset is the stored live record. |
 | `DATASET_REMOVED` | `datasetRemoved` | `src/state/dataStateFacade.js#removeDataset` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw index argument. |
 | `DATASET_CONFIG_UPDATED` | `configUpdated` | `src/state/dataStateFacade.js#updateActiveDatasetConfig`<br>`src/state/dataStateFacade.js#setActiveChartType` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Raw update argument, or `{ activeChartType }`. |
+| `DATASET_COLUMNS_CHANGED` | `datasetColumnsChanged` | `src/state/dataStateFacade.js#setDatasetColumnCurrency` | `src/app/renderCoordinator.js#setupStateSubscriptions` | `{ datasetId, columnName }` after an atomic currency format edit. |
 | `COLUMN_SELECTION_CHANGED` | `columnsUpdated` | `src/state/dataStateFacade.js#setActiveDatasetColumnSelection` | `src/app/renderCoordinator.js#setupStateSubscriptions` | Copied, validated column-selection array. |
 | `CHART_SNAPSHOT_ADDED` | `chartAdded` | `src/state/panelStateFacade.js#addChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | `{ id, snapshot }`. |
 | `CHART_SNAPSHOT_REMOVED` | `chartRemoved` | `src/state/panelStateFacade.js#removeChartSnapshot` | `src/features/panel/panelController.js#initPanelController` | Normalized non-negative safe-integer chart id. |
@@ -266,7 +269,7 @@ Production subscriptions are installed in three places:
 
 | Owner | Direct subscriptions | Timing | Render or side effect |
 |---|---|---|---|
-| `app/renderCoordinator.js` | `ACTIVE_DATASET_CHANGED`, `DATASET_ADDED`, `DATASET_REMOVED`, `COLUMN_SELECTION_CHANGED`, `DATASET_CONFIG_UPDATED`, `STATE_HYDRATED`, `PREVIEW_ROWS_CHANGED` | Schedules and coalesces work with `requestAnimationFrame`. | Full refresh for dataset selection/add/remove and hydration; workspace + controls for columns/config; panel region additionally when config payload has `activeTab === 'panel'`; workspace for preview rows. |
+| `app/renderCoordinator.js` | `ACTIVE_DATASET_CHANGED`, `DATASET_ADDED`, `DATASET_REMOVED`, `COLUMN_SELECTION_CHANGED`, `DATASET_COLUMNS_CHANGED`, `DATASET_CONFIG_UPDATED`, `STATE_HYDRATED`, `PREVIEW_ROWS_CHANGED` | Schedules and coalesces work with `requestAnimationFrame`. | Full refresh for dataset selection/add/remove and hydration; workspace + controls for columns/config; panel region additionally when config payload has `activeTab === 'panel'`; workspace for preview rows. |
 | `features/panel/panelController.js` | Eleven chart/block events listed in the event table. | Listener callbacks render synchronously in the emitter's call stack. | Chart add/remove/slot: sidebar + canvas. Layout events: canvas. Clear: sidebar + canvas. |
 | `services/persistence/autoSave.js` | `WILDCARD` | UI prefs are attempted immediately; project writes are debounced and asynchronous. | Writes `chive.ui` for the two UI events. Ignores those UI events and `STATE_HYDRATED` for project dirtiness; every other nonempty event type marks the project dirty. |
 
@@ -295,6 +298,12 @@ package owns lifecycle, normalization, autosave, dirty tracking, errors,
 project-file naming, UI preferences, storage backends, and SQLite SQL.
 `workers/persistWorker.js` is the one allowed importer of persistence internals
 outside that package.
+
+`getPersistenceDiagnostics()` is a read-only metadata export from the public
+facade. It reports availability, the latest load/save outcome and timestamp,
+and the default worker backend's mode, fallback count/reason, disabled flag and
+pending-operation count. Custom backends report mode `custom`; their internal
+objects are not exposed. None of these reads opens storage or starts a worker.
 
 ### Execution And Failure Paths
 
@@ -588,6 +597,22 @@ Supported panel chart types, in canonical chart-definition order:
 
 `window.chiveDebug` exposes `enableStateLog`, `disableStateLog`, `getStateLog`,
 and `clearStateLog`. When enabled, the bus prints each emission as
-`[chive:state] <type> <data>` and retains at most 100 entries. Payloads in the
-log are live references; the returned array is shallow-copied, so do not mutate
-its entries.
+`[chive:state] <type> <metadata>` and retains at most 100 entries. The
+`stateEventSummary.js` projection captures metadata at emit time without
+retaining payloads; `getStateLog()` returns detached records. Unknown events
+are represented as `unknown` with no payload. Silent preview writes do not
+emit, so they are absent from this log.
+
+`services/diagnostics.js` separately retains at most 50 detached error records
+and the startup stage/outcome. Listener and scheduled-render failures record
+their error before dispatching the existing `chive-internal-error` UI event.
+The bootstrap installs `app/diagnosticApi.js` before dynamically importing the
+initializer; the initializer attaches state and persistence readers before
+initialization. This keeps reports available after initialization/module-load
+failure without pulling state, features or rendering into the bootstrap.
+The full mutation/UI debug toolkit still loads only after successful startup.
+
+`getDiagnosticReport()` and `exportDiagnosticReport()` compose versioned,
+metadata-only reports; raw messages and stacks remain in the local error log
+and are omitted from exports. See the [debugging workflow and export
+policy](contributor-reference.md#debugging) for capture limits and commands.

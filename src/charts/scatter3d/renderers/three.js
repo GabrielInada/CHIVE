@@ -22,6 +22,7 @@ import * as THREE from '../../../../vendor/three/three.module.js';
 import { ok, fail } from '../../../utils/result.js';
 import { clearChartContainer, CHART_DISPOSE_HOOK } from '../../shared/containerLifecycle.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
 import { SCATTER3D_CHART } from '../../../config/charts/definitions/scatter3d.js';
 import { buildScatter3dPoints } from '../data.js';
 import { normalizeScatter3dOptions } from '../options.js';
@@ -56,8 +57,16 @@ export function renderScatter3dChart(container, rows, config = {}, context = {})
 	if (data.validCount === 0) return fail('no-valid-points');
 
 	const opts = normalizeScatter3dOptions(config);
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter3d.width, 320);
-	const height = opts.chartHeight;
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.scatter3d.width);
+	let titleHeight = 0;
+	if (opts.customTitle) {
+		const title = document.createElement('div');
+		title.className = 'chart-canvas-title';
+		title.textContent = opts.customTitle;
+		container.appendChild(title);
+		titleHeight = title.getBoundingClientRect().height + (parseFloat(window.getComputedStyle(title).marginBottom) || 0);
+	}
+	const height = Math.max(1, opts.chartHeight - titleHeight);
 
 	let renderer;
 	try {
@@ -178,12 +187,6 @@ export function renderScatter3dChart(container, rows, config = {}, context = {})
 		});
 		disposers.push(() => interaction.detach());
 
-		if (opts.customTitle) {
-			const title = document.createElement('div');
-			title.className = 'chart-canvas-title';
-			title.textContent = opts.customTitle;
-			container.appendChild(title);
-		}
 		container.appendChild(canvas);
 		container.appendChild(contextStatus);
 		if (labels.controlsInstructions) {

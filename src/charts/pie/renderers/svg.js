@@ -11,6 +11,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
+import { formatCurrencyCategory } from '../../shared/currency.js';
 import { arc, pie, select, zoom, zoomIdentity } from '../../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
@@ -21,12 +22,16 @@ import {
 } from '../../shared/tooltip/tooltip.js';
 import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
+import { truncateAxisLabel } from '../../shared/axisTicks.js';
+import { allowChartZoom } from '../../shared/gestures.js';
 import { PIE_CHART } from '../../../config/charts/definitions/pie.js';
 import { formatNumber, clamp } from '../../../utils/formatters.js';
 import { ok, fail } from '../../../utils/result.js';
 import { appendChartTitle } from '../../shared/svg/scaffold.js';
 import { normalizePieOptions } from '../options.js';
 import { computePieSectors } from '../data.js';
+import { appendPieLegend } from './legend.js';
 
 /**
  * Render a pie chart into `container`. Returns `ok()` on success, or
@@ -50,7 +55,7 @@ import { computePieSectors } from '../data.js';
  */
 export function renderPieChart(container, rows, config = {}, context = {}) {
 	const { category: categoryColumn } = config;
-	const { labels = {}, locale, filterCallbacks } = context;
+	const { labels = {}, locale, filterCallbacks, currencies = {} } = context;
 	if (!container || !categoryColumn) return fail();
 
 	const normalized = normalizePieOptions(config);
@@ -70,17 +75,32 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 	const drawn = computePieSectors(rows, categoryColumn, normalized, labels);
 	if (!drawn.ok) return fail(drawn.reason);
 	const { sectors, total } = drawn;
+	for (const item of sectors) item.label = formatCurrencyCategory(item.label, currencies.category, locale);
 
 	container.replaceChildren();
 	hideChartTooltip();
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.pie.width, 320);
-	const height = chartHeight;
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.pie.width);
 	const margin = CHART_DIMENSIONS.pie.margins;
-	const titleOffset = customTitle ? 18 : 0;
+	const stackedLegend = showLegend && (width < 480 || sectors.length > 8);
+	const svg = select(container).append('svg').attr('width', width);
+	const viewport = svg.append('g');
+	const title = appendChartTitle(svg, { width, text: customTitle });
+	const titleOffset = customTitle ? 18 + Math.max(0, title.selectAll('tspan').size() - 1) * 16 : 0;
+	const legendLayout = showLegend
+		? appendPieLegend(svg, sectors, { stacked: stackedLegend, width: width - margin.left - margin.right, locale, currency: currencies.measure })
+		: null;
+	const legendHeight = stackedLegend ? legendLayout.height : 0;
+	// Preserve a readable plot and let the local chart surface scroll for long
+	// legends. The live SVG (and therefore SVG exports) contains every category.
+	const height = stackedLegend
+		? Math.max(chartHeight, 200 + margin.top + margin.bottom + titleOffset + legendHeight)
+		: chartHeight;
+	if (stackedLegend) svg.attr('class', 'pie-chart-scrollable');
+	svg.attr('height', height).attr('viewBox', `0 0 ${width} ${height}`);
 	const centerX = (width - margin.left - margin.right) / 2 + margin.left;
-	const centerY = (height - margin.top - margin.bottom - titleOffset) / 2 + margin.top + titleOffset;
-	const maxRadius = Math.max(PIE_CHART.minOuterRadius, Math.min(centerX - margin.left, centerY - margin.top));
+	const centerY = (height - legendHeight - margin.top - margin.bottom - titleOffset) / 2 + margin.top + titleOffset;
+	const maxRadius = Math.max(PIE_CHART.minOuterRadius, Math.min(centerX - margin.left, centerY - margin.top - titleOffset));
 	const outerRadius = clamp(
 		Number.isFinite(rawOuter) ? rawOuter : PIE_CHART.defaultOuterRadius,
 		PIE_CHART.minOuterRadius,
@@ -91,17 +111,6 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 		PIE_CHART.minInnerRadius,
 		Math.max(0, outerRadius - 8)
 	);
-
-	const svg = select(container)
-		.append('svg')
-		.attr('width', width)
-		.attr('height', height);
-
-	const viewport = svg.append('g');
-
-	if (customTitle) {
-		appendChartTitle(svg, { width, text: customTitle });
-	}
 
 	const group = viewport
 		.append('g')
@@ -124,7 +133,7 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 		const percentage = total > 0 ? ((item.value / total) * 100) : 0;
 		const wrapper = document.createElement('div');
 		wrapper.appendChild(createTooltipLine(labels.category, item.label));
-		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale, currencies.measure)));
 		wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		return wrapper;
 	};
@@ -173,6 +182,7 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 	});
 
 	const zoomBehavior = zoom()
+		.filter(event => allowChartZoom(event) && !event.target?.closest?.('.pie-legend-stacked'))
 		.extent([[0, 0], [width, height]])
 		.scaleExtent([PIE_CHART.minZoomScale, PIE_CHART.maxZoomScale])
 		.on('zoom', event => {
@@ -196,8 +206,18 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 			.selectAll('tspan')
 			.data(item => {
 				const parts = [];
-				if (showCategoryLabel) parts.push({ text: item.data.label, dy: '0' });
-				if (showValueLabel) parts.push({ text: formatNumber(item.data.value, locale), dy: showCategoryLabel ? '1.1em' : '0' });
+				const labelRadius = innerRadius + (outerRadius - innerRadius) * 0.62;
+				const sliceWidth = 2 * labelRadius * Math.sin(Math.min(Math.PI, item.endAngle - item.startAngle) / 2);
+				const maxLength = width < 480 || sectors.length > 8
+					? Math.floor(Math.min(outerRadius, sliceWidth * 0.85) / 6)
+					: Infinity;
+				if (showCategoryLabel && (maxLength >= 3 || item.data.label.length <= maxLength)) {
+					parts.push({ text: truncateAxisLabel(item.data.label, maxLength), dy: '0' });
+				}
+				const value = formatNumber(item.data.value, locale, currencies.measure);
+				if (showValueLabel && value.length <= maxLength) {
+					parts.push({ text: value, dy: parts.length ? '1.1em' : '0' });
+				}
 				return parts;
 			})
 			.enter()
@@ -245,8 +265,18 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 			.selectAll('tspan')
 			.data(item => {
 				const parts = [];
-				if (showCategoryLabel) parts.push({ text: item.data.label, dy: '0' });
-				if (showValueLabel) parts.push({ text: formatNumber(item.data.value, locale), dy: showCategoryLabel ? '1.1em' : '0' });
+				const [x] = outsideArc.centroid(item);
+				const availableWidth = x >= 0
+					? width - margin.right - (centerX + x + 18)
+					: centerX + x - 18 - margin.left;
+				const maxLength = Math.floor(availableWidth / 6);
+				if (showCategoryLabel && (maxLength >= 3 || item.data.label.length <= maxLength)) {
+					parts.push({ text: truncateAxisLabel(item.data.label, maxLength), dy: '0' });
+				}
+				const value = formatNumber(item.data.value, locale, currencies.measure);
+				if (showValueLabel && value.length <= maxLength) {
+					parts.push({ text: value, dy: parts.length ? '1.1em' : '0' });
+				}
 				return parts;
 			})
 			.enter()
@@ -257,24 +287,23 @@ export function renderPieChart(container, rows, config = {}, context = {}) {
 	}
 
 	if (showLegend) {
-		const legend = svg
-			.append('g')
-			.attr('transform', `translate(${Math.max(centerX + outerRadius + 26, width - 180)},${Math.max(14, centerY - outerRadius)})`);
-
-		sectors.slice(0, 8).forEach((item, index) => {
-			const row = legend.append('g').attr('transform', `translate(0,${index * 16})`);
-			row.append('rect')
-				.attr('width', 10)
-				.attr('height', 10)
-				.attr('rx', 2)
-				.attr('fill', item.color);
-			row.append('text')
-				.attr('x', 14)
-				.attr('y', 9)
-				.attr('font-size', 10)
-				.attr('fill', '#3f3a33')
-				.text(`${item.label} (${formatNumber(item.value, locale)})`);
-		});
+		legendLayout.legend.attr('transform', stackedLegend
+				? `translate(${margin.left},${height - legendHeight + 8})`
+				: `translate(${Math.max(centerX + outerRadius + 26, width - 180)},${Math.max(14, centerY - outerRadius)})`);
+		// Keep the legend above the zoomable marks in SVG paint order.
+		svg.node().appendChild(legendLayout.legend.node());
+	}
+	if (stackedLegend && container.clientHeight > 0 && height > container.clientHeight + 1 && labels.scrollLegend) {
+		const scrollRegion = document.createElement('div');
+		scrollRegion.className = 'chart-scroll-region';
+		scrollRegion.tabIndex = 0;
+		scrollRegion.setAttribute('role', 'region');
+		scrollRegion.setAttribute('aria-label', labels.scrollLegend);
+		const hint = document.createElement('p');
+		hint.className = 'chart-legend-scroll-hint';
+		hint.textContent = labels.scrollLegend;
+		scrollRegion.append(svg.node(), hint);
+		container.appendChild(scrollRegion);
 	}
 
 	return ok();

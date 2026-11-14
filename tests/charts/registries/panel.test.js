@@ -113,6 +113,23 @@ describe('panel chart registry and render bridge', () => {
 });
 
 describe('Panel captures', () => {
+	it.each(svgTypes)('%s: fits a narrow slot without changing the stored capture', type => {
+		const container = mount();
+		container.className = 'panel-chart-container';
+		Object.defineProperties(container, {
+			clientWidth: { value: 270 },
+			clientHeight: { value: 358 },
+		});
+		const config = Object.freeze(configFor(type, { chartHeight: 600 }));
+		const snapshot = Object.freeze({ type, config, dataSnapshot: rows, columnsSnapshot });
+		expect(renderChartSnapshot(container, snapshot).ok).toBe(true);
+		const svg = container.querySelector('svg');
+		expect(Number(svg.getAttribute('width'))).toBe(270);
+		expect(Number(svg.getAttribute('height'))).toBe(Math.max(358, CHART_DEFINITIONS[type].heightLimits.min));
+		expect(svg.hasAttribute('viewBox')).toBe(true);
+		expect(snapshot.config.chartHeight).toBe(600);
+	});
+
 	it.each(svgTypes)('%s: a capture without rows draws like a capture with no rows', type => {
 		const config = configFor(type);
 		const expected = mount();

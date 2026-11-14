@@ -89,6 +89,7 @@ export function createBlockTemplateSelect({ blockId, templateId, templates, tran
 	const templateSelect = document.createElement('select');
 	templateSelect.className = 'panel-block-template';
 	templateSelect.dataset.panelBlockTemplate = blockId;
+	templateSelect.setAttribute('aria-label', translate('chive-panel-layout-label'));
 
 	Object.entries(templates).forEach(([id, config]) => {
 		const option = document.createElement('option');
@@ -236,18 +237,19 @@ export function createBlockBorderControls({
  * placeholder for the chart's SVG, and drag-source listeners, or an
  * "empty" slot with a translated placeholder text.
  *
- * Drag-and-drop is wired only when `desktopDnd` is `true`. Mobile and
- * narrow layouts use a tap-to-pick UX (handled at the renderer level).
+ * Native drag-and-drop is wired when `desktopDnd` is `true`, indicating
+ * that a fine pointer is available, regardless of the window width.
  *
  * @param {Object} params
  * @param {string} params.slotId
  * @param {string} params.blockId
- * @param {{ id: number | string } | null} params.chart - Snapshot or `null` for empty.
+ * @param {{ id: number | string, type?: string } | null} params.chart - Snapshot or `null` for empty.
  * @param {boolean} params.borderEnabled
  * @param {string} params.borderColor
  * @param {boolean} params.desktopDnd
  * @param {(key: string) => string} params.translate
  * @param {() => void} params.onClearSlot
+ * @param {() => void} [params.onExpand]
  * @param {(payload: { targetSlotId: string, targetBlockId: string, sourceSlotId: string, sourceBlockId: string, chartId: string }) => void} params.onDropData
  * @returns {HTMLElement}
  */
@@ -260,6 +262,7 @@ export function createPanelSlotElement({
 	desktopDnd,
 	translate,
 	onClearSlot,
+	onExpand,
 	onDropData,
 }) {
 	const slot = document.createElement('div');
@@ -271,6 +274,7 @@ export function createPanelSlotElement({
 
 	if (chart) {
 		slot.dataset.panelChartId = chart.id;
+		slot.dataset.chartType = chart.type || '';
 		slot.draggable = desktopDnd;
 
 		const clearBtn = document.createElement('button');
@@ -281,11 +285,28 @@ export function createPanelSlotElement({
 		clearBtn.textContent = '×';
 		clearBtn.addEventListener('click', onClearSlot);
 
+		// Keep the chart identifiable before its deferred graphic is rendered.
+		slot.setAttribute('role', 'group');
+		slot.setAttribute('aria-label', chart.config?.customTitle || chart.name || translate('chive-chart-expand'));
 		const chartContainer = document.createElement('div');
 		chartContainer.className = 'panel-chart-container';
 
 		slot.appendChild(clearBtn);
 		slot.appendChild(chartContainer);
+		if (onExpand) {
+			const expandBtn = document.createElement('button');
+			expandBtn.type = 'button';
+			expandBtn.className = 'panel-slot-expand';
+			expandBtn.textContent = '⤢';
+			expandBtn.title = translate('chive-chart-expand');
+			expandBtn.setAttribute('aria-label', translate('chive-chart-expand'));
+			expandBtn.setAttribute('aria-haspopup', 'dialog');
+			expandBtn.addEventListener('click', () => {
+				expandBtn.focus({ preventScroll: true });
+				onExpand();
+			});
+			slot.appendChild(expandBtn);
+		}
 
 		if (desktopDnd) {
 			slot.addEventListener('dragstart', e => {

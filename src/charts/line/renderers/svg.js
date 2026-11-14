@@ -13,6 +13,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
+import { currencyAxisMargin } from '../../shared/currency.js';
 import {
 	axisBottom,
 	axisLeft,
@@ -27,6 +28,7 @@ import {
 	max as d3Max,
 	min as d3Min,
 	scaleLinear,
+	pointer,
 } from '../../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
@@ -34,8 +36,11 @@ import {
 	hideHoverTooltip,
 	moveChartTooltip,
 	showChartTooltip,
+	showPinnedChartTooltip,
 } from '../../shared/tooltip/tooltip.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
+import { categoryTickValues, truncateAxisLabel } from '../../shared/axisTicks.js';
 import { LINE_CHART } from '../../../config/charts/definitions/line.js';
 import { formatNumber } from '../../../utils/formatters.js';
 import { ok, fail } from '../../../utils/result.js';
@@ -66,12 +71,6 @@ const CURVE_BY_KEY = {
 	cardinal: curveCardinal,
 };
 
-function truncateCategoryTick(value, maxLength = 18) {
-	const text = String(value);
-	if (text.length <= maxLength) return text;
-	return `${text.slice(0, Math.max(1, maxLength - 1))}…`;
-}
-
 /**
  * Render a line chart into `container`. Returns `ok()` on success, or
  * `fail()` when required arguments are missing or the data resolves to
@@ -91,7 +90,7 @@ function truncateCategoryTick(value, maxLength = 18) {
  */
 export function renderLineChart(container, rows, config = {}, context = {}) {
 	const { x: xColumn, y: yColumn } = config;
-	const { axisLabels = {}, axisTypes = {}, locale } = context;
+	const { axisLabels = {}, axisTypes = {}, labels = {}, locale, currencies = {} } = context;
 	if (!container || !xColumn || !yColumn) return fail('invalid-args');
 	if (!Array.isArray(rows) || rows.length === 0) return fail();
 
@@ -122,13 +121,14 @@ export function renderLineChart(container, rows, config = {}, context = {}) {
 	const definedPoints = points.filter(p => Number.isFinite(p.y));
 	if (definedPoints.length === 0) return fail('no-numeric');
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.line.width, 320);
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.line.width);
 	const height = chartHeight;
 	const margin = { ...CHART_DIMENSIONS.line.margins };
+	margin.left = currencyAxisMargin(margin.left, definedPoints.map(point => point.y), currencies.y, locale);
 	if (xKind === AXIS_KIND.categorical) {
 		margin.bottom = Math.max(margin.bottom, 64);
 	}
-	const { group, innerWidth, innerHeight } = setupChartSvg(container, {
+	const { svg, group, innerWidth, innerHeight } = setupChartSvg(container, {
 		width,
 		height,
 		margin,
@@ -206,25 +206,51 @@ export function renderLineChart(container, rows, config = {}, context = {}) {
 			.attr('r', LINE_CHART.pointRadius)
 			.attr('fill', color)
 			.on('mouseenter', (event, point) => {
-				showChartTooltip(buildTooltipContent(point, axisLabels, xKind, locale), event.pageX, event.pageY);
+				showChartTooltip(buildTooltipContent(point, axisLabels, xKind, locale, currencies), event.pageX, event.pageY);
 			})
 			.on('mousemove', event => moveChartTooltip(event.pageX, event.pageY))
 			.on('mouseleave', () => hideHoverTooltip());
 	}
 
+	// A tap near a data point inspects its value even when point markers are
+	// turned off. SVG coordinates preserve the hit distance in resized slots.
+	svg.on('click', event => {
+		const [x, y] = pointer(event, group.node());
+		const scale = width / (svg.node().getBoundingClientRect().width || width);
+		let distance = (24 * scale) ** 2;
+		let nearest = null;
+		for (const point of definedPoints) {
+			const next = (projectX(point) - x) ** 2 + (projectY(point) - y) ** 2;
+			if (next <= distance) {
+				distance = next;
+				nearest = point;
+			}
+		}
+		if (!nearest) {
+			hideChartTooltip();
+			return;
+		}
+		showPinnedChartTooltip(buildTooltipContent(nearest, axisLabels, xKind, locale, currencies), event.pageX, event.pageY, {
+			closeLabel: labels.close,
+			target: svg.node(),
+		});
+	});
+
 	appendBottomAxis(group, {
 		axis: xKind === AXIS_KIND.date
 			? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0)
 			: xKind === AXIS_KIND.numeric
-				? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0)
-				: axisBottom(xScale).tickFormat(value => truncateCategoryTick(value)),
+				? axisBottom(xScale).ticks(Math.max(2, Math.round(innerWidth / 80))).tickSizeOuter(0).tickFormat(currencies.x ? value => formatNumber(value, locale, currencies.x) : null)
+				: axisBottom(xScale)
+					.tickValues(width < 480 ? categoryTickValues(xScale.domain(), innerWidth) : null)
+					.tickFormat(value => truncateAxisLabel(value, width < 480 ? 12 : 18)),
 		innerHeight,
 		tickRotation: xKind === AXIS_KIND.categorical
 			? { angle: -28, dx: '-0.55em', dy: '0.2em' }
 			: null,
 	});
 
-	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(Math.max(2, Math.round(innerHeight / 40))) })
+	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(Math.max(2, Math.round(innerHeight / 40))).tickFormat(currencies.y ? value => formatNumber(value, locale, currencies.y) : null) })
 		.call(g => g.select('.domain').remove())
 		.call(g => g.selectAll('.tick line').clone()
 			.attr('x2', innerWidth)
@@ -244,9 +270,9 @@ export function renderLineChart(container, rows, config = {}, context = {}) {
 	return ok();
 }
 
-function buildTooltipContent(point, axisLabels, xKind, locale) {
+function buildTooltipContent(point, axisLabels, xKind, locale, currencies) {
 	const wrapper = document.createElement('div');
-	wrapper.appendChild(createTooltipLine(axisLabels.x, formatXValue(point.x, xKind, locale)));
-	wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(point.y, locale)));
+	wrapper.appendChild(createTooltipLine(axisLabels.x, currencies.x && xKind === AXIS_KIND.numeric ? formatNumber(point.x, locale, currencies.x) : formatXValue(point.x, xKind, locale)));
+	wrapper.appendChild(createTooltipLine(axisLabels.y, formatNumber(point.y, locale, currencies.y)));
 	return wrapper;
 }

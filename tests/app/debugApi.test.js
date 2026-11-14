@@ -23,7 +23,8 @@ vi.mock('../../src/state/appState.js', () => ({
 	getActiveDataset: mocks.getActiveDataset,
 }));
 
-vi.mock('../../src/state/stateEvents.js', () => ({
+vi.mock('../../src/state/stateEvents.js', async importOriginal => ({
+	...await importOriginal(),
 	enableStateLog: mocks.enableStateLog,
 	disableStateLog: mocks.disableStateLog,
 	getStateLog: mocks.getStateLog,
@@ -61,7 +62,7 @@ describe('debugApi', () => {
 		const { createDebugApi, installDebugApi } = await import('../../src/app/debugApi.js');
 		const api = createDebugApi();
 
-		expect(api).toEqual({
+		expect(api).toMatchObject({
 			getState: mocks.getState,
 			getStateSummary: mocks.getStateSummary,
 			getActiveDataset: mocks.getActiveDataset,
@@ -76,12 +77,19 @@ describe('debugApi', () => {
 			disableStateLog: mocks.disableStateLog,
 			getStateLog: mocks.getStateLog,
 			clearStateLog: mocks.clearStateLog,
+			getErrorLog: expect.any(Function),
+			clearErrorLog: expect.any(Function),
+			getStartupStatus: expect.any(Function),
+			getDiagnosticReport: expect.any(Function),
+			exportDiagnosticReport: expect.any(Function),
 		});
 
 		api.switchTab('charts');
 		expect(mocks.updateDatasetConfig).toHaveBeenCalledWith({ activeTab: 'charts' });
 
-		expect(installDebugApi()).toEqual(api);
-		expect(window.chiveDebug).toEqual(api);
+		const early = {};
+		window.chiveDebug = early;
+		expect(installDebugApi()).toBe(early);
+		expect(window.chiveDebug.getState).toBe(api.getState);
 	});
 });

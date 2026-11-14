@@ -106,6 +106,26 @@ describe('tooltip', () => {
 		expect(tooltip.style.top).toBe('72px');
 	});
 
+	it('keeps a tooltip in the modal top layer and converts page coordinates to its viewport', () => {
+		showChartTooltip('Outside', 50, 60);
+		hideChartTooltip();
+		const dialog = document.createElement('dialog');
+		document.body.appendChild(dialog);
+		dialog.showModal();
+		vi.stubGlobal('scrollY', 500);
+		showChartTooltip('Expanded chart value', 50, 560);
+		flushFrame();
+		const tooltip = dialog.querySelector('.chart-tooltip');
+		expect(tooltip).not.toBeNull();
+		expect(tooltip.style.position).toBe('fixed');
+		expect(tooltip.style.top).toBe('72px');
+		dialog.close();
+		hideChartTooltip();
+		showChartTooltip('Back in dashboard', 50, 560);
+		expect(tooltip.parentElement).toBe(document.body);
+		expect(tooltip.style.position).toBe('');
+	});
+
 	it('hides tooltip', () => {
 		showChartTooltip('Visible', 0, 0);
 		hideChartTooltip();
@@ -444,7 +464,7 @@ describe('tooltip', () => {
 		expect(tooltip.hidden).toBe(false);
 	});
 
-	it('mousedown outside the pinned tooltip dismisses it', () => {
+	it('pointerdown outside the pinned tooltip dismisses it', () => {
 		const onDismiss = vi.fn();
 		showPinnedChartTooltip(document.createElement('div'), 100, 100, {
 			headerTitle: 'Y',
@@ -452,19 +472,19 @@ describe('tooltip', () => {
 		});
 		const outside = document.createElement('div');
 		document.body.appendChild(outside);
-		const event = new MouseEvent('mousedown', { bubbles: true });
+		const event = new MouseEvent('pointerdown', { bubbles: true });
 		outside.dispatchEvent(event);
 		expect(onDismiss).toHaveBeenCalledTimes(1);
 	});
 
-	it('mousedown inside the pinned tooltip does not dismiss it', () => {
+	it('pointerdown inside the pinned tooltip does not dismiss it', () => {
 		const onDismiss = vi.fn();
 		showPinnedChartTooltip(document.createElement('div'), 100, 100, {
 			headerTitle: 'Z',
 			onDismiss,
 		});
 		const tooltip = document.querySelector('.chart-tooltip');
-		const event = new MouseEvent('mousedown', { bubbles: true });
+		const event = new MouseEvent('pointerdown', { bubbles: true });
 		tooltip.dispatchEvent(event);
 		expect(onDismiss).not.toHaveBeenCalled();
 	});

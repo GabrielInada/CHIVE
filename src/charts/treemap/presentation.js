@@ -8,6 +8,7 @@
  * stateless and i18n-free.
  */
 
+import { getChartCurrencies } from '../shared/currency.js';
 import { t, getLocale } from '../../services/i18nService.js';
 import { tooltipLabels } from '../shared/tooltip/labels.js';
 import { showChartMessage } from '../shared/containerLifecycle.js';
@@ -23,9 +24,10 @@ const EMPTY_FILTER_CALLBACKS = Object.freeze({});
  * @param {import('../../types.js').ChartInput} input
  * @returns {import('../../types.js').Result}
  */
-export function renderTreemapInto(container, { rows, config, filterCallbacks = EMPTY_FILTER_CALLBACKS }) {
+export function renderTreemapInto(container, { rows, config, columnCurrencyByName = {}, filterCallbacks = EMPTY_FILTER_CALLBACKS }) {
 	const result = renderTreemap(container, rows, config, {
 		locale: getLocale(),
+		currencies: getChartCurrencies(config, columnCurrencyByName),
 		labels: {
 			...tooltipLabels(t),
 			category: t('chive-chart-control-treemap-category'),

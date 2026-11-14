@@ -54,6 +54,74 @@ describe('renderPieChart behavior', () => {
 		expect(new Set(fills).size).toBe(12);
 	});
 
+	it('places the legend below a narrow pie while retaining every sector', () => {
+		const container = document.getElementById('pie');
+		Object.defineProperty(container, 'clientWidth', { value: 270 });
+		const rows = Array.from({ length: 8 }, (_, index) => ({ categoria: `Region ${index}` }));
+		renderPieChart(container, rows, { category: 'categoria', showLegend: true }, renderContext({ category: 'categoria' }));
+		const legend = container.querySelector('.pie-legend-stacked');
+		expect(legend).not.toBeNull();
+		expect(legend.querySelectorAll('text')).toHaveLength(8);
+		expect(container.querySelectorAll('path')).toHaveLength(8);
+	});
+
+	it('keeps every legend entry and full long label readable beyond eight categories', () => {
+		const container = document.getElementById('pie');
+		Object.defineProperty(container, 'clientWidth', { value: 270 });
+		const rows = Array.from({ length: 12 }, (_, index) => ({ categoria: `International sales region number ${index}` }));
+		renderPieChart(container, rows, { category: 'categoria', showLegend: true, chartHeight: 320, labelPosition: 'inside' });
+		const legend = container.querySelector('.pie-legend-stacked');
+		expect(legend.querySelectorAll('text')).toHaveLength(12);
+		expect(container.querySelectorAll('path')).toHaveLength(12);
+		expect(legend.querySelector('text').getAttribute('aria-label')).toContain('International sales region number');
+		expect(Number(container.querySelector('svg').getAttribute('height'))).toBeGreaterThan(320);
+		const sliceLabels = Array.from(container.querySelector('svg > g').querySelectorAll('text tspan'));
+		expect(sliceLabels.some(label => label.textContent.includes('…'))).toBe(true);
+		expect(sliceLabels.every(label => label.textContent.length <= 4)).toBe(true);
+	});
+
+	it('makes an overflowing legend keyboard-scrollable and leaves wheel scrolling over legend labels native', () => {
+		const container = document.getElementById('pie');
+		Object.defineProperties(container, { clientWidth: { value: 270 }, clientHeight: { value: 320 } });
+		const rows = Array.from({ length: 12 }, (_, index) => ({ categoria: `Region ${index}` }));
+		renderPieChart(container, rows, { category: 'categoria', showLegend: true, chartHeight: 320 }, {
+			labels: { scrollLegend: 'Scroll for the full legend' },
+		});
+		const region = container.querySelector('.chart-scroll-region');
+		region.focus();
+		expect(document.activeElement).toBe(region);
+		expect(region.getAttribute('aria-label')).toBe('Scroll for the full legend');
+		const wheel = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 80 });
+		region.querySelector('.pie-legend-stacked text').dispatchEvent(wheel);
+		expect(wheel.defaultPrevented).toBe(false);
+		expect(region.querySelector('svg').__zoom.k).toBe(1);
+		renderPieChart(container, rows, { category: 'categoria', showLegend: false });
+		expect(container.querySelector('.chart-scroll-region')).toBeNull();
+	});
+
+	it('leaves one-finger scrolling to the browser and zooms with two fingers', () => {
+		const container = document.getElementById('pie');
+		renderPieChart(container, [{ categoria: 'A' }, { categoria: 'B' }], { category: 'categoria' });
+		const svg = container.querySelector('svg');
+		const touch = (identifier, clientX) => ({ identifier, clientX, clientY: 100 });
+		const dispatch = (type, touches, changedTouches = touches) => {
+			const event = Object.assign(new Event(type, { bubbles: true, cancelable: true }), { touches, changedTouches });
+			svg.dispatchEvent(event);
+			return event;
+		};
+		const first = touch(1, 100);
+		dispatch('touchstart', [first]);
+		expect(dispatch('touchmove', [touch(1, 120)]).defaultPrevented).toBe(false);
+		expect(svg.__zoom.k).toBe(1);
+		dispatch('touchend', [], [first]);
+
+		dispatch('touchstart', [first, touch(2, 200)]);
+		const moved = [touch(1, 80), touch(2, 220)];
+		expect(dispatch('touchmove', moved).defaultPrevented).toBe(true);
+		expect(svg.__zoom.k).toBeCloseTo(1.4);
+		dispatch('touchend', [], moved);
+	});
+
 	it('supports pie sum mode with legend and outside labels', () => {
 		const container = document.getElementById('pie');
 		const rows = [

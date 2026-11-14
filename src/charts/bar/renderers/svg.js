@@ -10,6 +10,7 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
+import { formatCurrencyCategory, currencyAxisMargin } from '../../shared/currency.js';
 import { axisBottom, axisLeft, max, min, scaleBand, scaleLinear } from '../../../../vendor/d3/d3.js';
 import {
 	createTooltipLine,
@@ -21,6 +22,8 @@ import {
 import { togglePinnedFilterTooltip } from '../../shared/tooltip/filterActions.js';
 import { BAR_CHART } from '../../../config/charts/definitions/bar.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
+import { categoryTickValues, truncateAxisLabel } from '../../shared/axisTicks.js';
 import { formatNumber } from '../../../utils/formatters.js';
 import { ok, fail } from '../../../utils/result.js';
 import {
@@ -59,7 +62,7 @@ import { createBarColorAccessor } from '../color.js';
  */
 export function renderBarChart(container, rows, config = {}, context = {}) {
 	const { category: categoryColumn } = config;
-	const { labels = {}, axisLabels = {}, locale, filterCallbacks } = context;
+	const { labels = {}, axisLabels = {}, locale, filterCallbacks, currencies = {} } = context;
 	if (!container || !categoryColumn) return fail();
 	const {
 		sort,
@@ -83,10 +86,12 @@ export function renderBarChart(container, rows, config = {}, context = {}) {
 	});
 	if (!aggregated.ok) return fail(aggregated.reason);
 	const { entries, retainedValueTotal } = aggregated;
+	for (const item of entries) item.label = formatCurrencyCategory(item.label, currencies.category, locale);
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.bar.width, 320);
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.bar.width);
 	const height = chartHeight;
-	const margin = CHART_DIMENSIONS.bar.margins;
+	const margin = { ...CHART_DIMENSIONS.bar.margins };
+	margin.left = currencyAxisMargin(margin.left, entries.map(item => item.value), currencies.measure, locale);
 	const { svg, group, innerWidth, innerHeight } = setupChartSvg(container, {
 		width,
 		height,
@@ -104,7 +109,7 @@ export function renderBarChart(container, rows, config = {}, context = {}) {
 		const wrapper = document.createElement('div');
 
 		wrapper.appendChild(createTooltipLine(labels.category, item.label));
-		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale)));
+		wrapper.appendChild(createTooltipLine(labels.measure, formatNumber(item.value, locale, currencies.measure)));
 		if (showsShare) {
 			wrapper.appendChild(createTooltipLine(labels.percentage, `${percentage.toFixed(1)}%`));
 		}
@@ -198,12 +203,17 @@ export function renderBarChart(container, rows, config = {}, context = {}) {
 	}
 
 	appendBottomAxis(group, {
-		axis: axisBottom(xScale).tickFormat(key => labelByKey.get(key) ?? key),
+		axis: axisBottom(xScale)
+			.tickValues(width < 480 ? categoryTickValues(xScale.domain(), innerWidth) : null)
+			.tickFormat(key => {
+				const label = labelByKey.get(key) ?? key;
+				return width < 480 ? truncateAxisLabel(label) : label;
+			}),
 		innerHeight,
 		tickRotation: { angle: -30, dx: '-0.6em', dy: '0.15em' },
 	});
 
-	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(BAR_CHART.ticks) });
+	appendLeftAxis(group, { axis: axisLeft(yScale).ticks(BAR_CHART.ticks).tickFormat(currencies.measure ? value => formatNumber(value, locale, currencies.measure) : null) });
 
 	appendAxisLabels(group, {
 		innerWidth,

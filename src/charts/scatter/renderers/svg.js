@@ -13,9 +13,13 @@
  * @typedef {import('../../../types.js').Result} Result
  */
 
+import { currencyAxisMargin } from '../../shared/currency.js';
+import { formatNumber } from '../../../utils/formatters.js';
 import { axisBottom, axisLeft } from '../../../../vendor/d3/d3.js';
 import { hideChartTooltip, hideHoverTooltip, moveChartTooltip } from '../../shared/tooltip/tooltip.js';
 import { CHART_DIMENSIONS } from '../../../config/charts/definitions.js';
+import { resolveChartWidth } from '../../shared/chartWidth.js';
+import { categoryTickValues } from '../../shared/axisTicks.js';
 import { ok, fail } from '../../../utils/result.js';
 import {
 	AXIS_TYPE_VALUES,
@@ -58,7 +62,7 @@ import { createScatterInteractions } from '../interaction.js';
  */
 export function renderScatterPlot(container, rows, config = {}, context = {}) {
 	const { x: xColumn, y: yColumn } = config;
-	const { labels = {}, axisLabels = {}, axisTypes: configuredAxisTypes = {}, locale, filterCallbacks, allowFullRender = false } = context;
+	const { labels = {}, axisLabels = {}, axisTypes: configuredAxisTypes = {}, locale, filterCallbacks, allowFullRender = false, currencies = {} } = context;
 	if (!container || !xColumn || !yColumn) return fail();
 	const {
 		xScaleType,
@@ -111,9 +115,10 @@ export function renderScatterPlot(container, rows, config = {}, context = {}) {
 		return fail(effectiveXScaleType === 'log' || effectiveYScaleType === 'log' ? 'log-no-positive' : undefined);
 	}
 
-	const width = Math.max(container.clientWidth || CHART_DIMENSIONS.scatter.width, 320);
+	const width = resolveChartWidth(container, CHART_DIMENSIONS.scatter.width);
 	const height = chartHeight;
 	const margin = computeAdaptiveMargins(CHART_DIMENSIONS.scatter.margins, points, axisTypes, categoryLabel);
+	margin.left = currencyAxisMargin(margin.left, points.map(point => point.y), currencies.y, locale);
 	const { svg, group, innerWidth, innerHeight } = setupChartSvg(container, {
 		width,
 		height,
@@ -129,6 +134,7 @@ export function renderScatterPlot(container, rows, config = {}, context = {}) {
 		axisLabels,
 		labels,
 		locale,
+		currencies,
 		categoryLabel,
 		filterCallbacks,
 		xFilterColumn: xColumn,
@@ -235,8 +241,10 @@ export function renderScatterPlot(container, rows, config = {}, context = {}) {
 
 	appendBottomAxis(group, {
 		axis: axisTypes.x === AXIS_TYPE_VALUES.numeric
-			? axisBottom(xScale).ticks(8)
-			: axisBottom(xScale).tickFormat(key => truncateCategoryTick(categoryLabel(key))),
+			? axisBottom(xScale).ticks(width < 480 ? Math.max(2, Math.floor(innerWidth / 70)) : 8).tickFormat(currencies.x ? value => formatNumber(value, locale, currencies.x) : null)
+			: axisBottom(xScale)
+				.tickValues(width < 480 ? categoryTickValues(xScale.domain(), innerWidth) : null)
+				.tickFormat(key => truncateCategoryTick(categoryLabel(key))),
 		innerHeight,
 		tickRotation: axisTypes.x === AXIS_TYPE_VALUES.categorical
 			? { angle: -28, dx: '-0.55em', dy: '0.2em' }
@@ -245,7 +253,7 @@ export function renderScatterPlot(container, rows, config = {}, context = {}) {
 
 	const yAxis = appendLeftAxis(group, {
 		axis: axisTypes.y === AXIS_TYPE_VALUES.numeric
-			? axisLeft(yScale).ticks(8)
+			? axisLeft(yScale).ticks(8).tickFormat(currencies.y ? value => formatNumber(value, locale, currencies.y) : null)
 			: axisLeft(yScale).tickFormat(key => categoryLabel(key)),
 	});
 

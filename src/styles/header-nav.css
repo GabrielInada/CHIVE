@@ -45,23 +45,18 @@
 }
 
 /* Responsive para telas menores */
-@media (max-width: 768px) {
+@media (max-width: 900px) {
     .header-nav {
-        gap: var(--space-6);
-        margin: 0 var(--space-5);
+        gap: var(--space-1);
+        margin: 0;
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
-    .header-steps {
+    .header-nav a {
+        min-height: 44px;
+        padding: var(--space-3);
         font-size: var(--font-size-ui);
-    }
-}
-
-@media (max-width: 480px) {
-    .header-nav {
-        gap: var(--space-5);
-        order: 3;
-        width: 100%;
-        margin: var(--space-3) 0 0 0;
     }
 }
 }
