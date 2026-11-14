@@ -8,6 +8,9 @@
  * @see docs/development/architecture.md
  */
 
+import { recordDiagnosticError } from '../services/diagnostics.js';
+import { summarizeStateEvent } from './stateEventSummary.js';
+
 /**
  * Canonical names for every state-change event the app emits.
  *
@@ -60,7 +63,8 @@ export const STATE_EVENTS = Object.freeze({
  */
 const stateListeners = {};
 
-const STATE_LOG_CAP = 100;
+export const STATE_LOG_LIMIT = 100;
+const eventNames = new Set(Object.values(STATE_EVENTS));
 const stateLog = [];
 let stateLogEnabled = false;
 
@@ -69,8 +73,8 @@ let stateLogEnabled = false;
  * stateLog and printed via console.log under the `[chive:state]` tag. Off by
  * default; flip on at runtime via `window.chiveDebug.enableStateLog()`.
  *
- * Log entries hold live references to payloads (no clone), mutations after
- * emit will affect the recorded entry. Acceptable for a debug tool.
+ * Entries contain bounded metadata captured at emission time, never live
+ * payload references. Uploaded values and arbitrary config values are omitted.
  */
 export function enableStateLog() {
 	stateLogEnabled = true;
@@ -87,10 +91,14 @@ export function disableStateLog() {
 /**
  * Read the current mutation log.
  *
- * @returns {Array<{ type: StateEventType, data: *, t: number }>} Shallow copy of the log buffer (last 100 entries max). Each entry's `data` is a live reference to the original payload, do not mutate.
+ * @returns {Array<{ type: string, data: *, t: number }>} Detached metadata records (last 100 entries max).
  */
 export function getStateLog() {
-	return stateLog.slice();
+	return JSON.parse(JSON.stringify(stateLog));
+}
+
+export function isStateLogEnabled() {
+	return stateLogEnabled;
 }
 
 /**
@@ -101,11 +109,12 @@ export function clearStateLog() {
 }
 
 function reportListenerError(errorType, eventType, err) {
+	const evidence = recordDiagnosticError(errorType, err, eventType);
 	window.dispatchEvent(new CustomEvent('chive-internal-error', {
 		detail: {
 			type: errorType,
 			eventType,
-			message: String(err?.message || err),
+			message: evidence.message || 'State listener failed',
 		},
 	}));
 }
@@ -213,11 +222,18 @@ function invokeRegistrations(registrations, errorType, eventType, makeArg) {
  */
 export function emitStateChange(eventType, data) {
 	if (stateLogEnabled) {
-		stateLog.push({ type: eventType, data, t: Date.now() });
-		if (stateLog.length > STATE_LOG_CAP) {
+		const entry = {
+			type: eventNames.has(eventType) ? eventType : 'unknown',
+			data: summarizeStateEvent(eventType, data, STATE_EVENTS),
+			t: Date.now(),
+		};
+		stateLog.push(entry);
+		if (stateLog.length > STATE_LOG_LIMIT) {
 			stateLog.shift();
 		}
-		console.log('[chive:state]', eventType, data);
+		try {
+			console.log('[chive:state]', entry.type, entry.data);
+		} catch { /* A console hook must not interrupt the state bus. */ }
 	}
 
 	// Both sinks are snapshotted before any listener runs, so one emission has

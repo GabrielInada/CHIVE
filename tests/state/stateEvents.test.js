@@ -10,6 +10,7 @@ import {
 	getStateLog,
 	clearStateLog,
 } from '../../src/state/stateEvents.js';
+import { clearErrorLog, getErrorLog } from '../../src/services/diagnostics.js';
 
 /**
  * The bus is module-singleton state, so a listener that outlives its test makes
@@ -34,11 +35,15 @@ function listenOnWindow(type, handler) {
 
 beforeEach(() => {
 	cleanup = [];
+	clearErrorLog();
 });
 
 afterEach(() => {
 	cleanup.forEach(detach => detach());
 	cleanup = [];
+	disableStateLog();
+	clearStateLog();
+	vi.restoreAllMocks();
 });
 
 describe('stateEvents', () => {
@@ -119,6 +124,10 @@ describe('stateEvents', () => {
 		expect(detail.eventType).toBe('errorTest');
 		expect(detail.message).toBe('boom');
 		expect(goodCb).toHaveBeenCalledTimes(1);
+		expect(getErrorLog()[0]).toMatchObject({
+			type: 'state-listener-error', eventType: 'errorTest', message: 'boom',
+			stack: expect.stringContaining('Error: boom'),
+		});
 	});
 
 	it('reports wildcard listener errors and keeps the fan-out going', () => {
@@ -149,11 +158,11 @@ describe('stateEvents', () => {
 		expect(getStateLog()).toHaveLength(0);
 
 		enableStateLog();
-		emitStateChange('logDuring', { x: 2 });
+		emitStateChange(STATE_EVENTS.ACTIVE_DATASET_CHANGED, 2);
 		const afterEnable = getStateLog();
 		expect(afterEnable).toHaveLength(1);
-		expect(afterEnable[0]).toMatchObject({ type: 'logDuring', data: { x: 2 } });
-		expect(consoleSpy).toHaveBeenCalledWith('[chive:state]', 'logDuring', { x: 2 });
+		expect(afterEnable[0]).toMatchObject({ type: 'activeDataset', data: { index: 2 } });
+		expect(consoleSpy).toHaveBeenCalledWith('[chive:state]', 'activeDataset', { index: 2 });
 
 		clearStateLog();
 		expect(getStateLog()).toHaveLength(0);
@@ -167,6 +176,44 @@ describe('stateEvents', () => {
 
 		clearStateLog();
 		consoleSpy.mockRestore();
+	});
+
+	it('captures stable metadata without retaining uploaded payloads', () => {
+		vi.spyOn(console, 'log').mockImplementation(() => {});
+		enableStateLog();
+		const dataset = { name: 'private.csv', rows: [{ salary: 'secret' }], columns: [{ name: 'salary' }] };
+		emitStateChange(STATE_EVENTS.DATASET_ADDED, { index: 0, dataset });
+		dataset.rows.push({ salary: 'another secret' });
+		dataset.columns.length = 0;
+		const log = getStateLog();
+		expect(log[0].data).toEqual({ index: 0, rowsCount: 1, columnsCount: 1 });
+		expect(JSON.stringify(log)).not.toMatch(/private|salary|secret/);
+		log[0].data.rowsCount = 999;
+		expect(getStateLog()[0].data.rowsCount).toBe(1);
+	});
+
+	it('bounds the history and detaches nested metadata in returned records', () => {
+		vi.spyOn(console, 'log').mockImplementation(() => {});
+		enableStateLog();
+		for (let index = 0; index < 105; index += 1) {
+			emitStateChange(STATE_EVENTS.ACTIVE_DATASET_CHANGED, index);
+		}
+		expect(getStateLog()).toHaveLength(100);
+		expect(getStateLog()[0].data.index).toBe(5);
+		emitStateChange(STATE_EVENTS.DATASET_CONFIG_UPDATED, { bar: { title: 'secret' }, privateKey: 'secret' });
+		getStateLog().at(-1).data.fields.push('injected');
+		expect(getStateLog().at(-1).data).toEqual({ fields: ['bar'] });
+	});
+
+	it('never lets malformed diagnostic payloads or a throwing console stop delivery', () => {
+		vi.spyOn(console, 'log').mockImplementation(() => { throw new Error('console failure'); });
+		enableStateLog();
+		const payload = new Proxy({}, { get() { throw new Error('getter failure'); } });
+		const listener = vi.fn();
+		subscribe(STATE_EVENTS.DATASET_ADDED, listener);
+		expect(() => emitStateChange(STATE_EVENTS.DATASET_ADDED, payload)).not.toThrow();
+		expect(listener.mock.calls[0][0] === payload).toBe(true);
+		expect(getStateLog()[0].data).toBeNull();
 	});
 
 	it('supports multiple listeners on the same event', () => {

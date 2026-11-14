@@ -6,6 +6,7 @@ const mocks = vi.hoisted(() => ({
 	initializeI18n: vi.fn(),
 	t: vi.fn(),
 	isPersistenceAvailable: vi.fn(),
+	getPersistenceDiagnostics: vi.fn(),
 	hydrateState: vi.fn(),
 	enablePersistenceAutoSave: vi.fn(),
 	getPersistenceErrorMessageKey: vi.fn(),
@@ -37,6 +38,7 @@ vi.mock('../../src/services/i18nService.js', () => ({
 
 vi.mock('../../src/services/persistence.js', () => ({
 	isPersistenceAvailable: mocks.isPersistenceAvailable,
+	getPersistenceDiagnostics: mocks.getPersistenceDiagnostics,
 	hydrateState: mocks.hydrateState,
 	enablePersistenceAutoSave: mocks.enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey: mocks.getPersistenceErrorMessageKey,
@@ -205,6 +207,9 @@ describe('application initializer', () => {
 		expect(mocks.failStartupScreen).toHaveBeenCalledWith('chive-error-internal');
 		expect(consoleError).toHaveBeenCalledWith('CHIVE initialization failed:', error);
 		expect(mocks.showError).toHaveBeenCalledWith('chive-error-internal');
+		const { getErrorLog, getStartupStatus } = await import('../../src/services/diagnostics.js');
+		expect(getStartupStatus()).toMatchObject({ status: 'failed', stage: 'rendering' });
+		expect(getErrorLog().at(-1)).toMatchObject({ type: 'startup-error', message: error.message, stack: error.stack });
 	});
 
 	it('uses a static fallback when initialization and translation both fail', async () => {
@@ -223,5 +228,7 @@ describe('application initializer', () => {
 		expect(consoleError).toHaveBeenCalledWith('CHIVE initialization failed:', error);
 		expect(mocks.showError).toHaveBeenCalledWith('An internal application error occurred.');
 		expect(mocks.initDatasetController).not.toHaveBeenCalled();
+		const { getStartupStatus } = await import('../../src/services/diagnostics.js');
+		expect(getStartupStatus()).toMatchObject({ status: 'failed', stage: 'shared-setup' });
 	});
 });

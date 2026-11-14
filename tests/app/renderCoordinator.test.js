@@ -279,6 +279,10 @@ describe('renderCoordinator', () => {
 		expect(dispatchSpy).toHaveBeenCalledWith(
 			expect.objectContaining({ type: 'chive-internal-error' }),
 		);
+		const { getErrorLog } = await import('../../src/services/diagnostics.js');
+		expect(getErrorLog().at(-1)).toMatchObject({
+			type: 'refresh-error', message: 'render boom', stack: expect.stringContaining('render boom'),
+		});
 
 		mocks.renderFileList.mockClear();
 		callbacks[mocks.STATE_EVENTS.DATASET_ADDED]();

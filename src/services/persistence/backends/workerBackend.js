@@ -27,6 +27,8 @@
  * @typedef {import('../../../types.js').PersistWorkerResponse} PersistWorkerResponse
  */
 
+import { recordDiagnosticError } from '../../diagnostics.js';
+
 const DEFAULT_TIMEOUT_MS = 120000;
 
 let testWorkerFactory = null;
@@ -100,6 +102,16 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	let workerProven = false;      // has the worker ever returned a response?
 	let workerDisabled = false;    // startup failure → fall back for the session
 	let nextId = 1;
+	let mode = 'idle';
+	let fallbackCount = 0;
+	let lastFallbackReason = null;
+
+	function recordFallback(reason, error) {
+		mode = 'fallback';
+		fallbackCount += 1;
+		lastFallbackReason = reason;
+		if (error) recordDiagnosticError('persistence-worker-error', error);
+	}
 
 	/** @type {Map<number, { id: number, record: Object, workerGeneration: number, resolve: Function, reject: Function, timer: *, retried: boolean, includedKeys: Set<string> }>} */
 	const pending = new Map();      // insertion order = original send order (load-bearing for the drain)
@@ -314,6 +326,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		w.onmessage = event => handleWorkerMessage(workerGeneration, event);
 		w.onerror = event => onWorkerError(workerGeneration, event);
 		worker = w;
+		mode = 'worker';
 	}
 
 	function clearEntry(entry) {
@@ -379,16 +392,16 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		entry.timer = setTimeout(() => onWatchdog(entry.id, entry.workerGeneration), timeoutMs);
 		try {
 			worker.postMessage(message);
-		} catch {
+		} catch (error) {
 			// Keep the entry pending so the reset drains it via the fallback.
-			resetAndDrain(entry.workerGeneration, !workerProven);
+			resetAndDrain(entry.workerGeneration, !workerProven, 'post-message-error', error);
 		}
 	}
 
 	function onWatchdog(id, workerGeneration) {
 		if (workerGeneration !== currentGeneration) return;
 		if (!pending.has(id)) return;
-		resetAndDrain(workerGeneration, false);         // a timeout never disables (may just be slow)
+		resetAndDrain(workerGeneration, false, 'timeout', new Error('Persistence worker timed out'));
 	}
 
 	function onWorkerError(workerGeneration, event) {
@@ -405,7 +418,7 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			lineno: event?.lineno,
 			colno: event?.colno,
 		});
-		resetAndDrain(workerGeneration, !workerProven); // startup onerror disables; post-success only resets
+		resetAndDrain(workerGeneration, !workerProven, 'worker-error', event?.error || event?.message);
 	}
 
 	/**
@@ -418,8 +431,9 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 	 * @param {boolean} disable - Disable worker mode for the session (startup failure).
 	 * @returns {Promise<void>}
 	 */
-	function resetAndDrain(workerGeneration, disable) {
+	function resetAndDrain(workerGeneration, disable, reason, error) {
 		if (workerGeneration !== currentGeneration) return drainPromise || Promise.resolve();
+		recordFallback(reason, error);
 
 		// Snapshot pending FIRST (in insertion order) before clearing, else the
 		// records needed for fallback are lost.
@@ -511,10 +525,11 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 			try {
 				ensureWorker();                           // sync `new Worker()` may throw
 				entry.workerGeneration = currentGeneration;
-			} catch {
+			} catch (error) {
 				// Startup spawn failure: complete this op on the fallback and disable
 				// the (unproven) worker for the session.
 				if (!workerProven) workerDisabled = true;
+				recordFallback('spawn-error', error);
 				runEntryOnFallback(entry);
 				return;
 			}
@@ -539,10 +554,10 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 
 			try {
 				worker.postMessage(message);              // structured clone captures the included payloads HERE
-			} catch {
+			} catch (error) {
 				// Sync postMessage throw: the entry is pending, so the reset drains it
 				// via the fallback (settling this op's original promise).
-				resetAndDrain(entry.workerGeneration, !workerProven);
+				resetAndDrain(entry.workerGeneration, !workerProven, 'post-message-error', error);
 			}
 		});
 	}
@@ -576,7 +591,11 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 		return runOp({ op: 'clear' });
 	}
 
-	return { available, hydrate, persist, exportBytes, importBytes, clear };
+	function getDiagnostics() {
+		return { mode, fallbackCount, lastFallbackReason, workerDisabled, pendingOperations: pending.size };
+	}
+
+	return { available, hydrate, persist, exportBytes, importBytes, clear, getDiagnostics };
 }
 
 export const workerBackend = createWorkerBackend();

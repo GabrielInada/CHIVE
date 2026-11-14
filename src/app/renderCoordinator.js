@@ -40,6 +40,7 @@ import {
 	handleSampleDatasetRequest,
 } from '../features/datasetWorkspace/datasetController.js';
 import { syncSidebarToTab } from './uiManager.js';
+import { recordDiagnosticError } from '../services/diagnostics.js';
 
 // State events repaint through one animation-frame scheduler. "Full wins":
 // scheduleFullRefresh() subsumes dirty regions in the same frame. The
@@ -64,8 +65,9 @@ let fullRenderInProgress = false;
  * @param {unknown} err
  */
 function reportRefreshError(err) {
+	const evidence = recordDiagnosticError('refresh-error', err);
 	window.dispatchEvent(new CustomEvent('chive-internal-error', {
-		detail: { type: 'refresh-error', message: String(err?.message || err) },
+		detail: { type: 'refresh-error', message: evidence.message || 'Render failed' },
 	}));
 }
 

@@ -26,6 +26,7 @@ beforeEach(() => {
 	vi.useFakeTimers();
 	mocks.startApplication.mockResolvedValue(true);
 	delete window.requestIdleCallback;
+	delete window.chiveDebug;
 });
 
 describe('application page entry', () => {
@@ -68,7 +69,7 @@ describe('application page entry', () => {
 		});
 	});
 
-	it('does not load debug after failed startup', async () => {
+	it('keeps diagnostic reads available without loading the full toolkit after failed startup', async () => {
 		Object.defineProperty(document, 'readyState', { configurable: true, value: 'complete' });
 		mocks.startApplication.mockResolvedValue(false);
 
@@ -77,5 +78,17 @@ describe('application page entry', () => {
 		await vi.runAllTimersAsync();
 
 		expect(mocks.installDebugApi).not.toHaveBeenCalled();
+		expect(window.chiveDebug.getDiagnosticReport()).toHaveProperty('schemaVersion', 1);
+	});
+
+	it('installs diagnostic reads before invoking the application initializer', async () => {
+		Object.defineProperty(document, 'readyState', { configurable: true, value: 'complete' });
+		mocks.startApplication.mockImplementation(async () => {
+			expect(window.chiveDebug.getStartupStatus()).toMatchObject({ stage: 'loading-modules' });
+			return false;
+		});
+		await import('../../src/entries/app.js');
+		await flush();
+		expect(mocks.startApplication).toHaveBeenCalledTimes(1);
 	});
 });

@@ -18,6 +18,7 @@ export { PROJECT_FILE_EXTENSION, PROJECT_FILE_MIME } from './persistence/project
 export {
 	configurePersistenceBackend,
 	isPersistenceAvailable,
+	getPersistenceDiagnostics,
 	hydrateState,
 	persistState,
 	exportProject,

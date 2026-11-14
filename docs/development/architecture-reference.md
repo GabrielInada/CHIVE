@@ -299,6 +299,12 @@ project-file naming, UI preferences, storage backends, and SQLite SQL.
 `workers/persistWorker.js` is the one allowed importer of persistence internals
 outside that package.
 
+`getPersistenceDiagnostics()` is a read-only metadata export from the public
+facade. It reports availability, the latest load/save outcome and timestamp,
+and the default worker backend's mode, fallback count/reason, disabled flag and
+pending-operation count. Custom backends report mode `custom`; their internal
+objects are not exposed. None of these reads opens storage or starts a worker.
+
 ### Execution And Failure Paths
 
 ```mermaid
@@ -591,6 +597,22 @@ Supported panel chart types, in canonical chart-definition order:
 
 `window.chiveDebug` exposes `enableStateLog`, `disableStateLog`, `getStateLog`,
 and `clearStateLog`. When enabled, the bus prints each emission as
-`[chive:state] <type> <data>` and retains at most 100 entries. Payloads in the
-log are live references; the returned array is shallow-copied, so do not mutate
-its entries.
+`[chive:state] <type> <metadata>` and retains at most 100 entries. The
+`stateEventSummary.js` projection captures metadata at emit time without
+retaining payloads; `getStateLog()` returns detached records. Unknown events
+are represented as `unknown` with no payload. Silent preview writes do not
+emit, so they are absent from this log.
+
+`services/diagnostics.js` separately retains at most 50 detached error records
+and the startup stage/outcome. Listener and scheduled-render failures record
+their error before dispatching the existing `chive-internal-error` UI event.
+The bootstrap installs `app/diagnosticApi.js` before dynamically importing the
+initializer; the initializer attaches state and persistence readers before
+initialization. This keeps reports available after initialization/module-load
+failure without pulling state, features or rendering into the bootstrap.
+The full mutation/UI debug toolkit still loads only after successful startup.
+
+`getDiagnosticReport()` and `exportDiagnosticReport()` compose versioned,
+metadata-only reports; raw messages and stacks remain in the local error log
+and are omitted from exports. See the [debugging workflow and export
+policy](contributor-reference.md#debugging) for capture limits and commands.
