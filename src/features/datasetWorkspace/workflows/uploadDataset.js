@@ -108,7 +108,7 @@ function fileSource(file, kind, options) {
 			return ingestFile({ kind, text: read.text, options }, { ...request, onRowCount: confirmRowCount });
 		},
 		sizeLabel: () => formatFileSize(file.size),
-		rowWarning: (rowCount, rowLimit) => t('chive-warn-large-rows', file.name, rowCount, rowLimit),
+		rowWarning: ({ rows, columns, limit, columnCount }) => t('chive-warn-large-rows', file.name, rows, columns, limit, columnCount),
 		successMessage: t('chive-progress-ready', file.name),
 		failureMessage: (detail, reason) => {
 			if (reason === 'file-too-large-to-read') {

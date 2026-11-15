@@ -43,11 +43,11 @@ function addSources(leftIds = ['a', 'b']) {
 // Spelled out so a parameter in the wrong slot fails the test.
 const messages = {
 	en: {
-		largeJoin: (rows, limit) => `This join would create ${rows} rows, above the recommended limit (${limit}). Keep the complete result?`,
+		largeJoin: (rows, columns, limit) => `This join would create ${rows} rows and ${columns} columns, above the recommended ${limit} rows. Every row will be kept, and adding and saving the result will take longer and use more memory. Continue?`,
 		failed: (left, right) => `Could not join "${left}" and "${right}". Please try again.`,
 	},
 	'pt-BR': {
-		largeJoin: (rows, limit) => `Esta junção criaria ${rows} linhas, acima do limite recomendado (${limit}). Deseja manter o resultado completo?`,
+		largeJoin: (rows, columns, limit) => `Esta junção criaria ${rows} linhas e ${columns} colunas, acima do recomendado (${limit} linhas). Todas as linhas serão mantidas, e adicionar e salvar o resultado levará mais tempo e usará mais memória. Deseja continuar?`,
 		failed: (left, right) => `Não foi possível unir "${left}" e "${right}". Tente novamente.`,
 	},
 };
@@ -119,7 +119,7 @@ describe.each(['en', 'pt-BR'])('dataset join in %s', language => {
 		addSources(['a', 'b', 'c']);
 		await createJoinedDataset(spec, { confirm, selectDataset });
 
-		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeJoin(format(3), format(2)));
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeJoin(format(3), format(3), format(2)));
 		expect(workerRequests).toHaveLength(1);
 		expect(workerRequests[0].options).not.toHaveProperty('awaitRowCount');
 		expect(getAllDatasets()[2].rows).toHaveLength(3);

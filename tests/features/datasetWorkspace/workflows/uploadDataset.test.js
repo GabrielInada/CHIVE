@@ -27,15 +27,17 @@ function fileOf(name, text, size) {
 // Spelled out so a parameter in the wrong slot fails the test.
 const messages = {
 	en: {
-		largeFile: (name, size, limit) => `File "${name}" has size ${size}, above the recommended limit (${limit}). Continue anyway?`,
-		largeRows: (name, rows, limit) => `File "${name}" has ${rows} rows, above the recommended limit (${limit}). Continue anyway?`,
+		largeFile: (name, size, limit) => `File "${name}" is ${size}, above the recommended ${limit}. Every row will be imported, and importing and saving will take longer and use more memory. Continue?`,
+		largeRows: (name, rows, columns, limit) => `File "${name}" has ${rows} rows and ${columns}, above the recommended ${limit} rows. Every row will be imported, and importing and saving will take longer and use more memory. Continue?`,
+		columns: (shown, count) => `${shown} ${count === 1 ? 'column' : 'columns'}`,
 		failed: name => `Could not load file "${name}". Please try again.`,
 		failedDetail: (name, detail) => `Could not load file "${name}": ${detail}`,
 		tooLarge: (name, size) => `File "${name}" (${size}) is too large to open in this browser.`,
 	},
 	'pt-BR': {
-		largeFile: (name, size, limit) => `O arquivo "${name}" tem tamanho ${size}, acima do recomendado (${limit}). Deseja continuar?`,
-		largeRows: (name, rows, limit) => `O arquivo "${name}" possui ${rows} linhas, acima do recomendado (${limit}). Deseja continuar?`,
+		largeFile: (name, size, limit) => `O arquivo "${name}" tem ${size}, acima do recomendado (${limit}). Todas as linhas serão importadas, e a importação e o salvamento levarão mais tempo e usarão mais memória. Deseja continuar?`,
+		largeRows: (name, rows, columns, limit) => `O arquivo "${name}" tem ${rows} linhas e ${columns}, acima do recomendado (${limit} linhas). Todas as linhas serão importadas, e a importação e o salvamento levarão mais tempo e usarão mais memória. Deseja continuar?`,
+		columns: (shown, count) => `${shown} ${count === 1 ? 'coluna' : 'colunas'}`,
 		failed: name => `Não foi possível carregar o arquivo "${name}". Tente novamente.`,
 		failedDetail: (name, detail) => `Não foi possível carregar o arquivo "${name}": ${detail}`,
 		tooLarge: (name, size) => `O arquivo "${name}" (${size}) é grande demais para ser aberto neste navegador.`,
@@ -132,13 +134,22 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 		const reads = vi.spyOn(FileReader.prototype, 'readAsText');
 		await uploadDatasetFiles([fileOf('big.csv', 'v\n1\n2\n3\n')], { confirm }, { decimalSeparator: ',' });
 
-		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('big.csv', format(3), format(2)));
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('big.csv', format(3), text.columns(format(1), 1), format(2)));
 		expect(workerRequests.map(request => request.options)).toEqual([
 			{ decimalSeparator: ',', awaitRowCount: true },
 		]);
 		expect(workerRequests.workers).toBe(1);
 		expect(getAllDatasets()[0].rows).toEqual([{ v: 1 }, { v: 2 }, { v: 3 }]);
 		expect(reads).toHaveBeenCalledTimes(1);
+	});
+
+	it('formats a column count above a thousand for the locale and keeps it plural', async () => {
+		const header = Array.from({ length: 1001 }, (_, index) => `c${index + 1}`).join(',');
+		const row = Array(1001).fill('1').join(',');
+		await uploadDatasetFiles([fileOf('wide.csv', `${header}\n${row}\n${row}\n${row}\n`)], { confirm });
+
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('wide.csv', format(3), text.columns(format(1001), 1001), format(2)));
+		expect(getAllDatasets()[0].columns).toHaveLength(1001);
 	});
 
 	it('closes quietly when the row warning is declined', async () => {
