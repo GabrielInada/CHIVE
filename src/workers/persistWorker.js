@@ -178,7 +178,12 @@ export function createPersistHandler(backend, post) {
 			post({
 				id,
 				ok: false,
-				error: { name: err?.name || 'Error', message: err?.message || 'persist worker error' },
+				error: {
+					name: err?.name || 'Error',
+					message: err?.message || 'persist worker error',
+					// Names the dataset or saved chart too large to save.
+					...(err?.tooLarge ? { tooLarge: err.tooLarge } : {}),
+				},
 			});
 		}
 	}

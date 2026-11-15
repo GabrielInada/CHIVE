@@ -148,4 +148,19 @@ describe('blobBackend', () => {
 		await expect(backend.importBytes(new Uint8Array())).rejects.toMatchObject({ name: 'EmptyProjectFileError' });
 		await expect(backend.importBytes(new Uint8Array([1, 2, 3]))).rejects.toThrow(/database|deserialize/i);
 	});
+
+	it('names a dataset too large to fingerprint and keeps the previous save', async () => {
+		const backend = nextBackend();
+		await backend.persist(makeSnapshot());
+
+		const snapshot = makeSnapshot();
+		snapshot.data.datasets[0].rows = [{ x: { toJSON() { throw new RangeError('Invalid string length'); } } }];
+		await expect(backend.persist(snapshot)).rejects.toMatchObject({
+			name: 'PayloadTooLargeError',
+			tooLarge: { kind: 'dataset', name: 'a.csv' },
+		});
+
+		const restored = await backend.hydrate();
+		expect(restored.data.datasets[0].rows).toEqual([{ x: 1 }]);
+	});
 });

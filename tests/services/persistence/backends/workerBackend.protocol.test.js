@@ -135,6 +135,36 @@ describe('workerBackend, happy path + correlation', () => {
 		await expect(backend.persist(snap())).rejects.toMatchObject({ name: 'QuotaExceededError' });
 	});
 
+	it('carries the too-large owner from the worker envelope, read defensively', async () => {
+		const envelopes = [
+			{ name: 'PayloadTooLargeError', message: 'too large', tooLarge: { kind: 'chart', name: 'Totals' } },
+			{ name: 'PayloadTooLargeError', message: 'too large', tooLarge: { kind: 'other', name: 42 } },
+			{ name: 'Error', message: 'db', tooLarge: 'not an object' },
+		];
+		const backend = createWorkerBackend({
+			workerFactory: () => {
+				const w = new MockWorker();
+				w._deliver = data => queueMicrotask(() =>
+					w.emit({ id: data.id, ok: false, error: envelopes.shift() }));
+				return w;
+			},
+			fallbackBackendFactory: () => spyFallback(nextDb()),
+			timeoutMs: 5000,
+		});
+
+		await expect(backend.persist(snap())).rejects.toMatchObject({
+			name: 'PayloadTooLargeError',
+			tooLarge: { kind: 'chart', name: 'Totals' },
+		});
+		await expect(backend.persist(snap())).rejects.toMatchObject({
+			name: 'PayloadTooLargeError',
+			tooLarge: { kind: 'dataset', name: '' },
+		});
+		const error = await backend.persist(snap()).catch(err => err);
+		expect(error).toBeInstanceOf(Error);
+		expect(error.tooLarge).toBeUndefined();
+	});
+
 	it('correlates two concurrent ops by id', async () => {
 		const db = nextDb();
 		const backend = createWorkerBackend({

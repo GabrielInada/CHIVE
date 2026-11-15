@@ -529,6 +529,8 @@
 	"chive-save-failed": "Unable to save this project right now.",
 	"chive-load-failed": "Saved work could not be restored. CHIVE started with an empty workspace.",
 	"chive-save-failed-quota": "Unable to save. Browser storage quota is full.",
+	"chive-save-failed-dataset-too-large": "Unable to save this project: the dataset \"$1\" is too large to save in this browser. Changes are not being saved; remove the dataset to save again.",
+	"chive-save-failed-chart-too-large": "Unable to save this project: the saved chart \"$1\" holds too much data to save in this browser. Changes are not being saved; remove the chart from the Panel to save again.",
 	"chive-chart-color-palette": "Color palette",
 	"chive-chart-color-palette-help": "Colorblind-Safe is recommended for accessibility. Other palettes offer different visual styles.",
 	"chive-chart-palette-tableau10": "Standard",

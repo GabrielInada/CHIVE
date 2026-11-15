@@ -352,6 +352,12 @@ failure, SQLite failure, or fallback IndexedDB failure rejects the operation.
 the project dirty and calls its error callback. The main-thread fallback can
 also block the UI while it performs SQLite work.
 
+Rows too large to serialize as one string (the engine's maximum string length)
+reject with a `PayloadTooLargeError` whose `tooLarge: { kind, name }` names the
+dataset or saved chart; the worker error envelope carries that field, the
+SQLite transaction rolls back, and the previous save stays in IndexedDB. The
+save notice names the owner and is not repeated while an identical one is open.
+
 ### Storage Contract
 
 ```json architecture-persistence-storage

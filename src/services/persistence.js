@@ -25,6 +25,10 @@ export {
 	importProjectBytes,
 	clearPersistedState,
 } from './persistence/lifecycle.js';
-export { getPersistenceErrorMessageKey, getProjectImportErrorMessageKey } from './persistence/errors.js';
+export {
+	getPersistenceErrorMessageKey,
+	getPersistenceErrorMessageParams,
+	getProjectImportErrorMessageKey,
+} from './persistence/errors.js';
 export { isProjectDirtyEvent } from './persistence/dirtyTracking.js';
 export { enablePersistenceAutoSave } from './persistence/autoSave.js';

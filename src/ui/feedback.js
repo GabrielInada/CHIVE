@@ -97,6 +97,21 @@ export function showError(message, duration = 0) {
 }
 
 /**
+ * Show an error notice unless one with the same text is still open. For a
+ * failure that repeats on its own, such as every autosave of a project that
+ * cannot be saved, so the notices do not pile up.
+ *
+ * @param {string} message
+ * @param {number} [duration=0]
+ */
+export function showErrorOnce(message, duration = 0) {
+	const region = document.getElementById(ERRORS_REGION_ID);
+	const isOpen = Boolean(region) && [...region.querySelectorAll('.error-notice > div')]
+		.some(node => node.textContent === message);
+	if (!isOpen) showError(message, duration);
+}
+
+/**
  * Clear all error messages
  */
 export function clearErrors() {
