@@ -454,7 +454,7 @@
  * @property {JoinDatasetsOptions} [join] - Complete join input for a join request.
  * @property {Object} [options]
  * @property {'auto' | '.' | ','} [options.decimalSeparator='auto'] - Explicit string number format, overriding saved column formats, or automatic detection with a dot fallback. Joins retain each source column's saved format in automatic mode. Typed numbers are preserved.
- * @property {number} [options.rowLimit] - Cap the rows after parse or join; surplus rows set `truncatedFrom`. Uploads use this only for a bounded threshold probe, then rerun uncapped after approval.
+ * @property {boolean} [options.awaitRowCount] - Worker only: stop after parsing, post a `row-count` message, and wait for `continue`. `ingestFile` sets it when its caller passes `onRowCount`.
  * @property {string[]} [options.dropColumns] - Column names to strip before normalization (sample dataset use case).
  */
 
@@ -467,7 +467,31 @@
  * @property {Array<Object<string, *>>} rows - Canonical rows: every row has every column, each cell in its column type's canonical form.
  * @property {ColumnSpec[]} columns - Columns in source order, each with its type and decimal separator. JSON columns follow the first row's keys, which list integer-like names first. A join that matched nothing keeps its output columns, typed as text.
  * @property {PrecomputedStats} precomputedStats - Numeric and categorical stats with both versions stamped. Both lists are empty when there are no rows.
- * @property {number | null} truncatedFrom - Original row count when `options.rowLimit` truncated; `null` otherwise.
+ */
+
+/**
+ * A parsed or joined input that has not been typed yet, as `prepareIngest`
+ * returns it at `result.value` and `completeIngest` takes it. It stays inside
+ * the worker; only its counts are posted.
+ *
+ * @typedef {Object} PreparedIngest
+ * @property {Array<Object<string, *>>} rawData - Parsed or joined rows, with dropped columns removed.
+ * @property {string[]} columnNames - Column names in source order.
+ * @property {number} rowCount
+ * @property {number} columnCount
+ * @property {'auto' | '.' | ',' | undefined} decimalSeparator - The request's `options.decimalSeparator`.
+ * @property {Map<string, '.' | ','>} inheritedSeparators - A joined column's source format, by output name.
+ * @property {Map<string, string>} inheritedCurrencies - A joined column's source currency, by output name.
+ * @property {Set<string>} inheritedCurrencyIssues - Output names whose source currency was unresolved.
+ */
+
+/**
+ * The size of a parsed input, posted by the worker in its `row-count`
+ * message and passed to `onRowCount`.
+ *
+ * @typedef {Object} IngestRowCount
+ * @property {number} rowCount
+ * @property {number} columnCount
  */
 
 /**
@@ -486,22 +510,27 @@
 /**
  * Wire shape posted to the data-ingest Worker via `postMessage`: an
  * {@link IngestRequest} plus an `id`, which is reflected in every response so
- * the host can correlate concurrent ingests. The host side lives in
- * `services/dataIngestService.js`; the worker side lives in
+ * the host can correlate concurrent ingests, or `continue` with that `id` to
+ * resume a worker waiting after its `row-count` message. The host side lives
+ * in `services/dataIngestService.js`; the worker side lives in
  * `workers/dataIngestWorker.js`.
  *
- * @typedef {IngestRequest & { id: string }} IngestWorkerRequest
+ * @typedef {(IngestRequest & { id: string }) | { id: string, type: 'continue' }} IngestWorkerRequest
  */
 
 /**
  * Discriminated union covering every message the Worker can post back.
- * Discriminate via `type` (`'progress'` | `'done'` | `'error'`).
+ * Discriminate via `type` (`'progress'` | `'row-count'` | `'done'` | `'error'`).
+ *
+ * `'row-count'` is posted only for a request with `options.awaitRowCount`,
+ * after parsing; the worker then waits for `continue`.
  *
  * The `'error'` arm carries a stable `reason` code (from the parser) and/or a `message` (from the
  * onmessage catch-all for unexpected throws); the host prefers `reason`.
  *
  * @typedef {(
  *   { id: string, type: 'progress', stage: string, percent: number }
+ *   | { id: string, type: 'row-count', rowCount: number, columnCount: number }
  *   | { id: string, type: 'done', result: IngestPayload }
  *   | { id: string, type: 'error', reason?: string, message?: string }
  * )} IngestWorkerResponse
@@ -728,9 +757,21 @@
  * @property {string} progressLabel - The progress toast's label until the worker reports a stage.
  * @property {(request: IntakeRequest) => Promise<Result>} ingest - Loads the source's data when it needs to, then runs Ingest in the data worker. Resolves with the worker's result, whose `value` holds the {@link IngestPayload}, or with a failure such as `'cancelled'`.
  * @property {(rowCount: number) => string} sizeLabel - The new dataset's size label, given its row count.
- * @property {((rowCount: string, rowLimit: string) => string) | null} rowWarning - The question asked when the rows are over the row limit, with both numbers formatted for the current locale. `null` exempts the source from the row limit.
+ * @property {((counts: IntakeRowWarningCounts) => string) | null} rowWarning - The question asked when rows × columns is over the cell limit. `null` exempts the source from the limit.
  * @property {string} successMessage - The progress toast's text once the dataset is added.
  * @property {(detail: string, reason: string) => string} failureMessage - Text for the toast and the error notice when the intake fails. `detail` is Ingest's translated explanation of a known parse failure, otherwise empty. `reason` lets a source word its own failures, such as a fetch timeout, and is never shown.
+ */
+
+/**
+ * What `IntakeSource.rowWarning` receives. The strings are formatted for the
+ * current locale; `columnCount` is the plain number, for choosing a plural.
+ *
+ * @typedef {Object} IntakeRowWarningCounts
+ * @property {string} rows - The row count.
+ * @property {string} columns - The column count.
+ * @property {string} cells - Rows × columns.
+ * @property {string} limit - The recommended maximum cell count.
+ * @property {number} columnCount
  */
 
 /**
@@ -739,7 +780,7 @@
  * @typedef {Object} IntakeRequest
  * @property {AbortSignal} signal - Aborts when the user cancels from the progress toast.
  * @property {(progress: IngestProgress) => void} onProgress - Updates the progress toast.
- * @property {number} [rowLimit] - Present on the first request of a source with a row warning. A source that can cap its rows passes it to Ingest; one that cannot ignores it.
+ * @property {(counts: IngestRowCount) => Promise<boolean>} [confirmRowCount] - Present for a source with a row warning. A source that can pause after parsing passes it to `ingestFile` as `onRowCount`, so the user is asked before the rest of ingest runs; one that cannot ignores it, and the intake checks its complete result.
  */
 
 export {};

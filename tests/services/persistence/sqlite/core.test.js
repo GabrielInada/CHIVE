@@ -224,3 +224,65 @@ describe('sqliteCore', () => {
 		}
 	});
 });
+
+describe('writeSnapshot when rows are too large for one string', () => {
+	/** A row that fails to serialize the way an engine at its string limit does. */
+	const unserializable = error => ({ toJSON() { throw error; } });
+	const lengthError = () => new RangeError('Invalid string length');
+	const firefoxError = () => Object.assign(new Error('allocation size overflow'), { name: 'InternalError' });
+
+	function writeOver(db, mutate) {
+		writeSnapshot(db, makeSnapshot(), { fingerprintsByDatasetId: makeFingerprints() });
+		const snapshot = makeSnapshot();
+		mutate(snapshot);
+		try {
+			writeSnapshot(db, snapshot, { fingerprintsByDatasetId: makeFingerprints() });
+		} catch (error) {
+			return error;
+		}
+		return null;
+	}
+
+	it.each([
+		['V8 and JavaScriptCore', lengthError],
+		['Firefox', firefoxError],
+	])('names the dataset, as %s report it, and keeps the previous save', (_engine, makeError) => {
+		const db = makeDb('/too-large-dataset-test.sqlite3');
+		try {
+			const error = writeOver(db, snapshot => { snapshot.data.datasets[0].rows = [unserializable(makeError())]; });
+
+			expect(error).toMatchObject({ name: 'PayloadTooLargeError', tooLarge: { kind: 'dataset', name: 'B.csv' } });
+			expect(error.message).not.toContain('B.csv');
+			expect(readSnapshot(db).data.datasets.map(dataset => dataset.rows)).toEqual([
+				[{ city: 'B', value: 2 }],
+				[{ city: 'A', value: 1 }],
+			]);
+		} finally {
+			db.close();
+		}
+	});
+
+	it('names a saved chart whose captured rows are too large', () => {
+		const db = makeDb('/too-large-chart-test.sqlite3');
+		try {
+			const error = writeOver(db, snapshot => { snapshot.panel.charts[0].dataSnapshot = [unserializable(lengthError())]; });
+
+			expect(error).toMatchObject({ name: 'PayloadTooLargeError', tooLarge: { kind: 'chart', name: 'Saved' } });
+			expect(readSnapshot(db).panel.charts[0].dataSnapshot).toEqual([{ city: 'A', value: 1 }]);
+		} finally {
+			db.close();
+		}
+	});
+
+	it('rethrows any other serialization failure unchanged', () => {
+		const db = makeDb('/other-serialize-error-test.sqlite3');
+		try {
+			const cause = new TypeError('Do not know how to serialize a BigInt');
+			const error = writeOver(db, snapshot => { snapshot.data.datasets[1].rows = [unserializable(cause)]; });
+
+			expect(error).toBe(cause);
+		} finally {
+			db.close();
+		}
+	});
+});

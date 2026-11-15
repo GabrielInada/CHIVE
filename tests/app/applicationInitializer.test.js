@@ -10,6 +10,7 @@ const mocks = vi.hoisted(() => ({
 	hydrateState: vi.fn(),
 	enablePersistenceAutoSave: vi.fn(),
 	getPersistenceErrorMessageKey: vi.fn(),
+	getPersistenceErrorMessageParams: vi.fn(),
 	getPersistenceStateView: vi.fn(),
 	applyStateSnapshot: vi.fn(),
 	mergePanelSnapshotConfigsWithDefaults: vi.fn(),
@@ -21,6 +22,7 @@ const mocks = vi.hoisted(() => ({
 	initSettingsController: vi.fn(),
 	showFeedback: vi.fn(),
 	showError: vi.fn(),
+	showErrorOnce: vi.fn(),
 	livePreviewRender: vi.fn(),
 	throttledPreview: vi.fn(),
 	runFullRefreshNow: vi.fn(),
@@ -42,6 +44,7 @@ vi.mock('../../src/services/persistence.js', () => ({
 	hydrateState: mocks.hydrateState,
 	enablePersistenceAutoSave: mocks.enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey: mocks.getPersistenceErrorMessageKey,
+	getPersistenceErrorMessageParams: mocks.getPersistenceErrorMessageParams,
 }));
 
 vi.mock('../../src/state/appState.js', () => ({
@@ -84,6 +87,7 @@ vi.mock('../../src/config/settings.js', () => ({
 vi.mock('../../src/ui/feedback.js', () => ({
 	showFeedback: mocks.showFeedback,
 	showError: mocks.showError,
+	showErrorOnce: mocks.showErrorOnce,
 }));
 
 vi.mock('../../src/app/renderCoordinator.js', () => ({
@@ -113,6 +117,7 @@ beforeEach(() => {
 	mocks.isPersistenceAvailable.mockReturnValue(true);
 	mocks.hydrateState.mockResolvedValue(undefined);
 	mocks.getPersistenceErrorMessageKey.mockReturnValue('chive-persistence-error');
+	mocks.getPersistenceErrorMessageParams.mockReturnValue(['big.csv']);
 	mocks.throttle.mockReturnValue(mocks.throttledPreview);
 });
 
@@ -168,7 +173,9 @@ describe('application initializer', () => {
 			.toBeLessThan(mocks.runFullRefreshNow.mock.invocationCallOrder[0]);
 
 		mocks.enablePersistenceAutoSave.mock.calls[0][1].onSaveError(new Error('db'));
-		expect(mocks.showError).toHaveBeenCalledWith('chive-persistence-error');
+		expect(mocks.t).toHaveBeenCalledWith('chive-persistence-error', 'big.csv');
+		expect(mocks.showErrorOnce).toHaveBeenCalledWith('chive-persistence-error');
+		expect(mocks.showError).not.toHaveBeenCalledWith('chive-persistence-error');
 
 		listeners.get('chive-locale-changed')();
 		listeners.get('chive-settings-changed')({ detail: { key: 'tinColorRendering' } });

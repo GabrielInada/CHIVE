@@ -3,7 +3,7 @@
  *
  * Every way to add a dataset runs through {@link runIntake}: an uploaded
  * file, a join and a sample dataset. It owns the progress toast and its
- * cancel button, the row-limit question, the failure and success messages,
+ * cancel button, the large-dataset question, the failure and success messages,
  * the new Dataset's assembly, `addDataset`, and selecting the new dataset.
  * Each workflow describes its data as an {@link IntakeSource}.
  *
@@ -17,7 +17,7 @@ import { getLocale } from '../../../services/i18nService.js';
 import { ingestErrorMessage, progressLabelForStage } from '../../../services/dataIngestService.js';
 import { addDataset } from '../../../state/appState.js';
 import { showError, showProgress } from '../../../ui/feedback.js';
-import { LARGE_DATASET_WARNING_ROWS } from '../../../config/limits.js';
+import { LARGE_DATASET_WARNING_CELLS } from '../../../config/limits.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
 import { ok, fail } from '../../../utils/result.js';
 
@@ -30,10 +30,11 @@ import { ok, fail } from '../../../utils/result.js';
  * detail for a known parse failure and an empty string for anything else, so
  * no internal reason code reaches the page.
  *
- * A source with a row warning gets the row limit with its first request.
- * When the rows it returns are over the limit, `confirm` decides, and rows
- * that were capped are ingested again without the cap once approved, so the
- * dataset keeps every row. A source that cannot cap returns its complete
+ * A source with a row warning gets `confirmRowCount` with its request. A
+ * source that can pause after parsing calls it with the row and column counts
+ * before the rest of ingest runs, so the data is parsed once whatever the
+ * answer. When rows × columns is above the cell limit, `confirm` decides;
+ * approval keeps every row. A source that cannot pause returns its complete
  * result, which is checked the same way.
  *
  * @param {IntakeSource} source
@@ -65,27 +66,31 @@ export async function runIntake(source, { confirm = () => false, selectDataset }
 		return fail(reason);
 	};
 
+	const limited = typeof source.rowWarning === 'function';
+	let rowsChecked = false;
+	const approveRows = async ({ rowCount, columnCount }) => {
+		rowsChecked = true;
+		const cellCount = rowCount * columnCount;
+		if (cellCount <= LARGE_DATASET_WARNING_CELLS) return true;
+		const locale = getLocale();
+		return Boolean(await confirm(source.rowWarning({
+			rows: rowCount.toLocaleString(locale),
+			columns: columnCount.toLocaleString(locale),
+			cells: cellCount.toLocaleString(locale),
+			limit: LARGE_DATASET_WARNING_CELLS.toLocaleString(locale),
+			columnCount,
+		})));
+	};
+	if (limited) request.confirmRowCount = approveRows;
+
 	try {
-		const limited = typeof source.rowWarning === 'function';
-		let result = await source.ingest(limited ? { ...request, rowLimit: LARGE_DATASET_WARNING_ROWS } : request);
-		if (result.ok && limited) {
-			const { rows, truncatedFrom } = result.value;
-			const rowCount = truncatedFrom ?? rows.length;
-			if (rowCount > LARGE_DATASET_WARNING_ROWS) {
-				const locale = getLocale();
-				const approved = await confirm(source.rowWarning(
-					rowCount.toLocaleString(locale),
-					LARGE_DATASET_WARNING_ROWS.toLocaleString(locale),
-				));
-				if (!approved) return cancelled();
-				if (truncatedFrom) {
-					// The capped pass only measured the size.
-					progress.update(0, source.progressLabel);
-					result = await source.ingest(request);
-				}
-			}
-		}
+		const result = await source.ingest(request);
 		if (!result.ok) return result.reason === 'cancelled' ? cancelled() : failed(result.reason);
+		// A source that could not pause is checked on its complete result.
+		if (limited && !rowsChecked) {
+			const { rows, columns } = result.value;
+			if (!(await approveRows({ rowCount: rows.length, columnCount: columns.length }))) return cancelled();
+		}
 
 		const index = addDataset(assembleDataset(source, result.value));
 		selectDataset?.(index);

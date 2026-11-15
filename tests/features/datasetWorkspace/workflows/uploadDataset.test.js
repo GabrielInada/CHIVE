@@ -14,7 +14,7 @@ const TIMERS_TO_FAKE = ['setTimeout', 'clearTimeout', 'setInterval', 'clearInter
 
 vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	...(await importOriginal()),
-	LARGE_DATASET_WARNING_ROWS: 2,
+	LARGE_DATASET_WARNING_CELLS: 2,
 }));
 
 /** A real File; `size` overrides the reported size without a large buffer. */
@@ -27,18 +27,30 @@ function fileOf(name, text, size) {
 // Spelled out so a parameter in the wrong slot fails the test.
 const messages = {
 	en: {
-		largeFile: (name, size, limit) => `File "${name}" has size ${size}, above the recommended limit (${limit}). Continue anyway?`,
-		largeRows: (name, rows, limit) => `File "${name}" has ${rows} rows, above the recommended limit (${limit}). Continue anyway?`,
+		largeFile: (name, size, limit) => `File "${name}" is ${size}, above the recommended ${limit}. Every row will be imported, and importing and saving will take longer and use more memory. Continue?`,
+		largeRows: (name, rows, columns, cells, limit) => `File "${name}" has ${rows} rows and ${columns} (${cells} cells), above the recommended ${limit} cells. Every row will be imported, and importing and saving will take longer and use more memory. Continue?`,
+		columns: (shown, count) => `${shown} ${count === 1 ? 'column' : 'columns'}`,
 		failed: name => `Could not load file "${name}". Please try again.`,
 		failedDetail: (name, detail) => `Could not load file "${name}": ${detail}`,
+		tooLarge: (name, size) => `File "${name}" (${size}) is too large to open in this browser.`,
 	},
 	'pt-BR': {
-		largeFile: (name, size, limit) => `O arquivo "${name}" tem tamanho ${size}, acima do recomendado (${limit}). Deseja continuar?`,
-		largeRows: (name, rows, limit) => `O arquivo "${name}" possui ${rows} linhas, acima do recomendado (${limit}). Deseja continuar?`,
+		largeFile: (name, size, limit) => `O arquivo "${name}" tem ${size}, acima do recomendado (${limit}). Todas as linhas serão importadas, e a importação e o salvamento levarão mais tempo e usarão mais memória. Deseja continuar?`,
+		largeRows: (name, rows, columns, cells, limit) => `O arquivo "${name}" tem ${rows} linhas e ${columns} (${cells} células), acima do recomendado (${limit} células). Todas as linhas serão importadas, e a importação e o salvamento levarão mais tempo e usarão mais memória. Deseja continuar?`,
+		columns: (shown, count) => `${shown} ${count === 1 ? 'coluna' : 'colunas'}`,
 		failed: name => `Não foi possível carregar o arquivo "${name}". Tente novamente.`,
 		failedDetail: (name, detail) => `Não foi possível carregar o arquivo "${name}": ${detail}`,
+		tooLarge: (name, size) => `O arquivo "${name}" (${size}) é grande demais para ser aberto neste navegador.`,
 	},
 };
+
+/** Make every read finish like Chromium does past its string limit: `load`, no text. */
+function readNothing() {
+	vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(function () {
+		Object.defineProperty(this, 'result', { value: '', configurable: true });
+		queueMicrotask(() => this.onload?.(new Event('load')));
+	});
+}
 
 const notices = () => [...document.querySelectorAll('.error-notice > div')].map(node => node.textContent);
 const failedToastLabel = () => document.querySelector('.toast-progress.failure .toast-progress-label')?.textContent;
@@ -118,17 +130,33 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 		expect(getAllDatasets()).toEqual([]);
 	});
 
-	it('asks above the row warning threshold and keeps every row it approves', async () => {
+	it('asks above the cell warning threshold and keeps every row it approves', async () => {
 		const reads = vi.spyOn(FileReader.prototype, 'readAsText');
 		await uploadDatasetFiles([fileOf('big.csv', 'v\n1\n2\n3\n')], { confirm }, { decimalSeparator: ',' });
 
-		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('big.csv', format(3), format(2)));
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('big.csv', format(3), text.columns(format(1), 1), format(3), format(2)));
 		expect(workerRequests.map(request => request.options)).toEqual([
-			{ decimalSeparator: ',', rowLimit: 2 },
-			{ decimalSeparator: ',' },
+			{ decimalSeparator: ',', awaitRowCount: true },
 		]);
+		expect(workerRequests.workers).toBe(1);
 		expect(getAllDatasets()[0].rows).toEqual([{ v: 1 }, { v: 2 }, { v: 3 }]);
 		expect(reads).toHaveBeenCalledTimes(1);
+	});
+
+	it('formats a column count above a thousand for the locale and keeps it plural', async () => {
+		const header = Array.from({ length: 1001 }, (_, index) => `c${index + 1}`).join(',');
+		const row = Array(1001).fill('1').join(',');
+		await uploadDatasetFiles([fileOf('wide.csv', `${header}\n${row}\n${row}\n${row}\n`)], { confirm });
+
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('wide.csv', format(3), text.columns(format(1001), 1001), format(3003), format(2)));
+		expect(getAllDatasets()[0].columns).toHaveLength(1001);
+	});
+
+	it('asks about a single row when its columns put it over the cell threshold', async () => {
+		await uploadDatasetFiles([fileOf('row.csv', 'a,b,c\n1,2,3\n')], { confirm });
+
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('row.csv', format(1), text.columns(format(3), 3), format(3), format(2)));
+		expect(getAllDatasets()[0].rows).toEqual([{ a: 1, b: 2, c: 3 }]);
 	});
 
 	it('closes quietly when the row warning is declined', async () => {
@@ -190,6 +218,36 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 		expect(notices()).toEqual([message]);
 		expect(failedToastLabel()).toBe(message);
 		expect(workerRequests).toEqual([]);
+	});
+
+	it('says a large file is too large when the browser returns no text for it', async () => {
+		readNothing();
+		const size = 540 * 1024 * 1024;
+		await uploadDatasetFiles([fileOf('big.csv', 'v\n1\n', size)], { confirm });
+		const message = text.tooLarge('big.csv', formatFileSize(size));
+
+		expect(notices()).toEqual([message]);
+		expect(failedToastLabel()).toBe(message);
+		expect(workerRequests).toEqual([]);
+		expect(getAllDatasets()).toEqual([]);
+	});
+
+	it('reports a small file that reads as nothing as unreadable, not as empty', async () => {
+		readNothing();
+		await uploadDatasetFiles([fileOf('odd.csv', 'v\n1\n')], { confirm });
+		const message = text.failed('odd.csv');
+
+		expect(notices()).toEqual([message]);
+		expect(failedToastLabel()).toBe(message);
+		expect(workerRequests).toEqual([]);
+	});
+
+	it('still calls a file that holds only a byte order mark empty', async () => {
+		await uploadDatasetFiles([fileOf('bom.csv', '\uFEFF')], { confirm });
+		const message = text.failedDetail('bom.csv', t('chive-ingest-error-csv-empty'));
+
+		expect(notices()).toEqual([message]);
+		expect(getAllDatasets()).toEqual([]);
 	});
 
 	it('names the file when its size warning cannot open', async () => {

@@ -3,20 +3,38 @@ import { runIngest } from '../../src/workers/dataIngestWorker.js';
 
 /**
  * Run the data worker in-process: each request goes through the real Ingest
- * pipeline on a microtask instead of a worker thread. Call
+ * pipeline on a microtask instead of a worker thread, and a `continue`
+ * message resumes a request waiting after its row count. Call
  * {@link restoreIngestWorker} in `afterEach`.
  *
- * @returns {Object[]} The requests the worker received, in order.
+ * @returns {Object[]} The requests the workers received, in order. `continue` messages are not listed; the array's `workers` property counts the workers spawned.
  */
 export function useInProcessIngestWorker() {
 	const requests = [];
-	__setIngestWorkerFactoryForTesting(() => ({
-		postMessage(request) {
-			requests.push(request);
-			queueMicrotask(() => runIngest(request, message => this.onmessage({ data: message })));
-		},
-		terminate() {},
-	}));
+	let workers = 0;
+	// Not enumerable, so `toEqual([])` still compares only the requests.
+	Object.defineProperty(requests, 'workers', { get: () => workers });
+	__setIngestWorkerFactoryForTesting(() => {
+		workers += 1;
+		let resume = null;
+		return {
+			postMessage(message) {
+				if (message?.type === 'continue') {
+					const next = resume;
+					resume = null;
+					next?.();
+					return;
+				}
+				requests.push(message);
+				queueMicrotask(() => runIngest(
+					message,
+					reply => this.onmessage?.({ data: reply }),
+					() => new Promise(resolve => { resume = resolve; }),
+				));
+			},
+			terminate() {},
+		};
+	});
 	return requests;
 }
 

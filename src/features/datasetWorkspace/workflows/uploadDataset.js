@@ -2,7 +2,8 @@
  * Controller-internal upload workflow.
  *
  * Checks each file's format and size, then adds it through the shared intake
- * with a source that reads the file and runs Ingest on its text. The
+ * with a source that reads the file and runs Ingest on its text, once. The
+ * row warning is asked while the worker waits with the parsed rows. The
  * controller supplies its injectable confirmation for each batch.
  *
  * @typedef {import('../../../types.js').IntakeSource} IntakeSource
@@ -17,6 +18,10 @@ import { LARGE_FILE_WARNING_BYTES } from '../../../config/limits.js';
 import { DELIMITED_EXTENSIONS } from '../../../config/formats.js';
 import { ok, fail } from '../../../utils/result.js';
 import { runIntake } from './intake.js';
+
+// A byte order mark is the only content that decodes to no text, and the
+// longest one a text decoder strips is three bytes (UTF-8).
+const BYTE_ORDER_MARK_MAX_BYTES = 3;
 
 /**
  * Add every file from the input or drop event, one at a time. A file that
@@ -94,26 +99,25 @@ function fileKind(fileName) {
  * @returns {IntakeSource}
  */
 function fileSource(file, kind, options) {
-	let text = null;
 	return {
 		name: file.name,
 		progressLabel: t('chive-progress-parsing', file.name),
-		async ingest({ rowLimit, ...request }) {
-			// The uncapped run after an approved row warning reuses the text.
-			if (text === null) {
-				const read = await readFileText(file);
-				if (!read.ok) return read;
-				text = read.text;
-			}
-			const ingestOptions = rowLimit === undefined ? options : { ...options, rowLimit };
-			return ingestFile({ kind, text, options: ingestOptions }, request);
+		async ingest({ confirmRowCount, ...request }) {
+			const read = await readFileText(file);
+			if (!read.ok) return read;
+			return ingestFile({ kind, text: read.text, options }, { ...request, onRowCount: confirmRowCount });
 		},
 		sizeLabel: () => formatFileSize(file.size),
-		rowWarning: (rowCount, rowLimit) => t('chive-warn-large-rows', file.name, rowCount, rowLimit),
+		rowWarning: ({ rows, columns, cells, limit, columnCount }) => t('chive-warn-large-rows', file.name, rows, columns, limit, columnCount, cells),
 		successMessage: t('chive-progress-ready', file.name),
-		failureMessage: detail => (detail
-			? t('chive-upload-load-failed-detail', file.name, detail)
-			: t('chive-upload-load-failed', file.name)),
+		failureMessage: (detail, reason) => {
+			if (reason === 'file-too-large-to-read') {
+				return t('chive-upload-file-too-large', file.name, formatFileSize(file.size));
+			}
+			return detail
+				? t('chive-upload-load-failed-detail', file.name, detail)
+				: t('chive-upload-load-failed', file.name);
+		},
 	};
 }
 
@@ -121,14 +125,27 @@ function fileSource(file, kind, options) {
  * Read a file as text. FileReader, unlike `Blob.text()`, honors a UTF-16
  * byte order mark.
  *
+ * A browser that cannot hold the text in one string reports no error:
+ * Chromium fires `load` with an empty result once the content exceeds its
+ * maximum string length. A file with more than a byte order mark never
+ * decodes to nothing, so that empty result is a failed read, not an empty
+ * file.
+ *
  * @private
  * @param {File} file
- * @returns {Promise<Result>} `ok({ text })`, or `fail('file-read-error')`.
+ * @returns {Promise<Result>} `ok({ text })`, `fail('file-too-large-to-read')` when a file above the size warning threshold reads as nothing, or `fail('file-read-error')`.
  */
 function readFileText(file) {
 	return new Promise(resolve => {
 		const reader = new FileReader();
-		reader.onload = () => resolve(ok({ text: reader.result }));
+		reader.onload = () => {
+			const text = reader.result;
+			if (text !== '' || file.size <= BYTE_ORDER_MARK_MAX_BYTES) {
+				resolve(ok({ text }));
+				return;
+			}
+			resolve(fail(file.size > LARGE_FILE_WARNING_BYTES ? 'file-too-large-to-read' : 'file-read-error'));
+		};
 		reader.onerror = () => resolve(fail('file-read-error'));
 		reader.readAsText(file);
 	});

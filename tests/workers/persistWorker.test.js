@@ -128,6 +128,29 @@ describe('createPersistHandler', () => {
 		expect(posts[1]).toEqual({ id: 2, ok: true, result: null });
 	});
 
+	it('forwards which dataset or saved chart was too large to save', async () => {
+		const tooLarge = Object.assign(new Error('A dataset is too large to save'), {
+			name: 'PayloadTooLargeError',
+			tooLarge: { kind: 'dataset', name: 'big.csv' },
+		});
+		const backend = spyBackend({ persist: vi.fn(() => Promise.reject(tooLarge)) });
+		const posts = [];
+		const h = createPersistHandler(backend, m => posts.push(m));
+
+		await h.handleMessage(persistMsg(1, [{ id: 'ds-1', rows: [{ x: 1 }] }]));
+
+		expect(posts[0]).toEqual({
+			id: 1,
+			ok: false,
+			error: {
+				name: 'PayloadTooLargeError',
+				message: 'A dataset is too large to save',
+				tooLarge: { kind: 'dataset', name: 'big.csv' },
+			},
+		});
+		expect(h.rowsCache.has('ds-1')).toBe(false);
+	});
+
 	it('empties both caches on clear', async () => {
 		const backend = spyBackend();
 		const h = createPersistHandler(backend, () => {});

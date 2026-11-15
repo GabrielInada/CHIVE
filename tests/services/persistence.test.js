@@ -6,6 +6,7 @@ import {
 	configurePersistenceBackend,
 	exportProject,
 	getPersistenceErrorMessageKey,
+	getPersistenceErrorMessageParams,
 	getProjectImportErrorMessageKey,
 	hydrateState,
 	importProjectBytes,
@@ -32,10 +33,32 @@ describe('persistence', () => {
 		expect(Object.keys(mod).sort()).toEqual([
 			'PROJECT_FILE_EXTENSION', 'PROJECT_FILE_MIME', 'clearPersistedState',
 			'configurePersistenceBackend', 'enablePersistenceAutoSave', 'exportProject', 'getPersistenceDiagnostics',
-			'getPersistenceErrorMessageKey', 'getProjectImportErrorMessageKey', 'hydrateState',
+			'getPersistenceErrorMessageKey', 'getPersistenceErrorMessageParams', 'getProjectImportErrorMessageKey', 'hydrateState',
 			'importProjectBytes', 'isPersistenceAvailable',
 			'isProjectDirtyEvent', 'persistState',
 		].sort());
+	});
+
+	it('names the dataset or saved chart that is too large to save', () => {
+		const tooLarge = (kind, name) => Object.assign(new Error('too large'), {
+			name: 'PayloadTooLargeError',
+			tooLarge: { kind, name },
+		});
+
+		expect(getPersistenceErrorMessageKey(tooLarge('dataset', 'big.csv'))).toBe('chive-save-failed-dataset-too-large');
+		expect(getPersistenceErrorMessageParams(tooLarge('dataset', 'big.csv'))).toEqual(['big.csv']);
+		expect(getPersistenceErrorMessageKey(tooLarge('chart', 'Totals'))).toBe('chive-save-failed-chart-too-large');
+		expect(getPersistenceErrorMessageParams(tooLarge('chart', 'Totals'))).toEqual(['Totals']);
+
+		// Without a name to show, the generic message stands in.
+		expect(getPersistenceErrorMessageKey(tooLarge('dataset', ''))).toBe('chive-save-failed');
+		expect(getPersistenceErrorMessageParams(tooLarge('dataset', ''))).toEqual([]);
+		expect(getPersistenceErrorMessageKey({ name: 'PayloadTooLargeError' })).toBe('chive-save-failed');
+		// Other failures take no parameters, and a stray tooLarge field is ignored.
+		expect(getPersistenceErrorMessageParams(new Error('db'))).toEqual([]);
+		expect(getPersistenceErrorMessageKey(Object.assign(new Error('db'), { tooLarge: { kind: 'chart', name: 'x' } })))
+			.toBe('chive-save-failed');
+		expect(getPersistenceErrorMessageParams(null)).toEqual([]);
 	});
 
 	it('reports availability from the active backend', () => {

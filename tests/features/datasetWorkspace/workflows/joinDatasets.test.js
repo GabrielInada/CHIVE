@@ -14,7 +14,8 @@ const TIMERS_TO_FAKE = ['setTimeout', 'clearTimeout', 'setInterval', 'clearInter
 
 vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	...(await importOriginal()),
-	LARGE_DATASET_WARNING_ROWS: 2,
+	// Two joined rows of three columns are at the limit; three rows are above it.
+	LARGE_DATASET_WARNING_CELLS: 6,
 }));
 
 const spec = {
@@ -43,11 +44,11 @@ function addSources(leftIds = ['a', 'b']) {
 // Spelled out so a parameter in the wrong slot fails the test.
 const messages = {
 	en: {
-		largeJoin: (rows, limit) => `This join would create ${rows} rows, above the recommended limit (${limit}). Keep the complete result?`,
+		largeJoin: (rows, columns, cells, limit) => `This join would create ${rows} rows and ${columns} columns (${cells} cells), above the recommended ${limit} cells. Every row will be kept, and adding and saving the result will take longer and use more memory. Continue?`,
 		failed: (left, right) => `Could not join "${left}" and "${right}". Please try again.`,
 	},
 	'pt-BR': {
-		largeJoin: (rows, limit) => `Esta junção criaria ${rows} linhas, acima do limite recomendado (${limit}). Deseja manter o resultado completo?`,
+		largeJoin: (rows, columns, cells, limit) => `Esta junção criaria ${rows} linhas e ${columns} colunas (${cells} células), acima do recomendado (${limit} células). Todas as linhas serão mantidas, e adicionar e salvar o resultado levará mais tempo e usará mais memória. Deseja continuar?`,
 		failed: (left, right) => `Não foi possível unir "${left}" e "${right}". Tente novamente.`,
 	},
 };
@@ -115,13 +116,13 @@ describe.each(['en', 'pt-BR'])('dataset join in %s', language => {
 		expect(getAllDatasets()).toHaveLength(2);
 	});
 
-	it('asks before keeping a join above the row limit and runs it only once', async () => {
+	it('asks before keeping a join above the cell limit and runs it only once', async () => {
 		addSources(['a', 'b', 'c']);
 		await createJoinedDataset(spec, { confirm, selectDataset });
 
-		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeJoin(format(3), format(2)));
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeJoin(format(3), format(3), format(9), format(6)));
 		expect(workerRequests).toHaveLength(1);
-		expect(workerRequests[0].options).not.toHaveProperty('rowLimit');
+		expect(workerRequests[0].options).not.toHaveProperty('awaitRowCount');
 		expect(getAllDatasets()[2].rows).toHaveLength(3);
 		expect(selectDataset).toHaveBeenCalledExactlyOnceWith(2);
 	});

@@ -8,6 +8,11 @@
  * worker errors or goes silent, or a message cannot be sent, read or
  * recognized. The call never rejects.
  *
+ * A caller that passes `onRowCount` has the worker stop after parsing and
+ * report its row and column counts. The callback's answer decides whether
+ * the same worker continues or is terminated, so a file is never parsed
+ * twice to ask about its size.
+ *
  * The worker is spawned lazily with the browser-native
  * `new Worker(new URL(...), { type: 'module' })` pattern so the app runs
  * unchanged under both raw static hosting (nginx) and Vite dev. Tests
@@ -15,6 +20,7 @@
  *
  * @typedef {import('../types.js').IngestPayload} IngestPayload
  * @typedef {import('../types.js').IngestProgress} IngestProgress
+ * @typedef {import('../types.js').IngestRowCount} IngestRowCount
  * @typedef {import('../types.js').Result} Result
  */
 
@@ -73,6 +79,8 @@ export function ingestErrorMessage(reason, fallbackMessage) {
 /**
  * How long the worker may stay silent before the call fails. A healthy worker
  * reports progress between stages, so each progress message restarts the wait.
+ * The wait is stopped while the worker waits for an answer about its row
+ * count, which is the user's to give.
  * @private
  */
 const WORKER_IDLE_TIMEOUT_MS = 120000;
@@ -125,6 +133,13 @@ function isFiniteNumber(value) {
 }
 
 /**
+ * @private
+ */
+function isCount(value) {
+	return Number.isInteger(value) && value >= 0;
+}
+
+/**
  * Run one data-worker request. On success, the resolved
  * {@link Result} carries the parsed payload at `result.value` (an
  * {@link IngestPayload} or joined-data payload). On failure,
@@ -134,16 +149,23 @@ function isFiniteNumber(value) {
  * `'ingest-error'`, `'ingest-malformed-result'`, `'ingest-unknown-message'`, …).
  *
  * The call fails with `'worker-timeout'` after two minutes without a message
- * from the worker. The worker is terminated and the abort listener is removed
- * before the Promise settles, regardless of outcome. The Promise never rejects.
+ * from the worker, not counting the time `onRowCount` takes to answer. The
+ * worker is terminated and the abort listener is removed before the Promise
+ * settles, regardless of outcome. The Promise never rejects.
+ *
+ * With `onRowCount`, the request carries `options.awaitRowCount`. When the
+ * worker reports its counts, a `true` answer sends it `continue`; `false`
+ * settles with `'cancelled'`, and a callback that throws or rejects settles
+ * with `'row-count-confirm-failed'`. An answer that arrives after the call
+ * has settled, for example after a cancel, is ignored.
  *
  * @param {Object} input
- * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal }} [config]
+ * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal, onRowCount?: (counts: IngestRowCount) => boolean | Promise<boolean> }} [config]
  * @returns {Promise<Result>} `{ ok: true, value: IngestPayload }` on success; `{ ok: false, reason }` otherwise.
  * @private
  */
 async function runDataWorker(input, config = {}) {
-	const { onProgress, signal } = config;
+	const { onProgress, signal, onRowCount } = config;
 
 	if (signal?.aborted) return fail('cancelled');
 
@@ -184,6 +206,44 @@ async function runDataWorker(input, config = {}) {
 			}, WORKER_IDLE_TIMEOUT_MS);
 		};
 
+		const continueWorker = () => {
+			restartWatchdog();
+			try {
+				worker.postMessage({ id, type: 'continue' });
+			} catch (err) {
+				console.warn('[chive:ingest] could not tell the worker to continue', err);
+				finalize();
+				resolve(fail('worker-post-failed'));
+			}
+		};
+
+		const answerRowCount = (counts) => {
+			// The user may take any time to answer; the worker is idle meanwhile.
+			clearTimeout(watchdog);
+			if (typeof onRowCount !== 'function') {
+				continueWorker();
+				return;
+			}
+			Promise.resolve()
+				.then(() => onRowCount(counts))
+				.then(
+					approved => {
+						if (settled) return;
+						if (approved) {
+							continueWorker();
+							return;
+						}
+						finalize();
+						resolve(fail('cancelled'));
+					},
+					() => {
+						if (settled) return;
+						finalize();
+						resolve(fail('row-count-confirm-failed'));
+					},
+				);
+		};
+
 		worker.onmessage = (event) => {
 			if (settled) return;
 			const message = event.data || {};
@@ -201,6 +261,16 @@ async function runDataWorker(input, config = {}) {
 					const label = typeof message.label === 'string' ? message.label : undefined;
 					onProgress({ stage: message.stage, percent: message.percent, label });
 				}
+				return;
+			}
+
+			if (message.type === 'row-count') {
+				if (!isCount(message.rowCount) || !isCount(message.columnCount)) {
+					finalize();
+					resolve(fail('ingest-malformed-row-count'));
+					return;
+				}
+				answerRowCount({ rowCount: message.rowCount, columnCount: message.columnCount });
 				return;
 			}
 
@@ -250,8 +320,11 @@ async function runDataWorker(input, config = {}) {
 			signal.addEventListener('abort', onAbort, { once: true });
 		}
 
+		const options = typeof onRowCount === 'function'
+			? { ...input.options, awaitRowCount: true }
+			: input.options || {};
 		try {
-			worker.postMessage({ id, ...input, options: input.options || {} });
+			worker.postMessage({ id, ...input, options });
 		} catch (err) {
 			// Keep the error for diagnosis; the reason id drops it.
 			console.warn('[chive:ingest] could not send the request to the worker', err);
@@ -266,8 +339,11 @@ async function runDataWorker(input, config = {}) {
 /**
  * Parse and normalize a CSV/JSON file in the data worker.
  *
- * @param {{ kind: 'csv' | 'json', text: string, options?: { rowLimit?: number, dropColumns?: string[], decimalSeparator?: 'auto' | '.' | ',' } }} input
- * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal }} [config]
+ * Pass `onRowCount` to be asked about the row and column counts after the
+ * file is parsed and before the rest of ingest runs; see {@link runDataWorker}.
+ *
+ * @param {{ kind: 'csv' | 'json', text: string, options?: { dropColumns?: string[], decimalSeparator?: 'auto' | '.' | ',' } }} input
+ * @param {{ onProgress?: (progress: IngestProgress) => void, signal?: AbortSignal, onRowCount?: (counts: IngestRowCount) => boolean | Promise<boolean> }} [config]
  * @returns {Promise<Result>}
  */
 export function ingestFile(input, config = {}) {

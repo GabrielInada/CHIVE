@@ -11,6 +11,7 @@ import {
 	hydrateState,
 	enablePersistenceAutoSave,
 	getPersistenceErrorMessageKey,
+	getPersistenceErrorMessageParams,
 	getPersistenceDiagnostics,
 } from '../services/persistence.js';
 import { applyStateSnapshot, getPersistenceStateView } from '../state/appState.js';
@@ -27,7 +28,7 @@ import { initializeDomBindings } from './domBindings.js';
 import { clearStoredProjectData } from './bindings/clearStoredData.js';
 import { initializeSharedPage } from './sharedPageInitializer.js';
 import { SETTINGS_CHANGE_EVENT } from '../config/settings.js';
-import { showFeedback, showError } from '../ui/feedback.js';
+import { showFeedback, showError, showErrorOnce } from '../ui/feedback.js';
 import { observeWidth } from '../ui/observeWidth.js';
 import {
 	livePreviewRender,
@@ -133,10 +134,13 @@ export async function startApplication() {
 }
 
 /**
+ * Autosave reports a failure on every attempt, so an identical notice that is
+ * still open is not shown again.
+ *
  * @param {unknown} error
  */
 function reportPersistenceSaveError(error) {
-	showError(t(getPersistenceErrorMessageKey(error)));
+	showErrorOnce(t(getPersistenceErrorMessageKey(error), ...getPersistenceErrorMessageParams(error)));
 }
 
 function reportPersistenceLoadError() {

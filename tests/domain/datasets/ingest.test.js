@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ingestDataset } from '../../../src/domain/datasets/ingest.js';
+import { completeIngest, ingestDataset, prepareIngest } from '../../../src/domain/datasets/ingest.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../src/config/statistics.js';
 
 function ingest(request) {
@@ -36,7 +36,6 @@ describe('ingestDataset', () => {
 					numericVersion: STATS_NUMERIC_VERSION,
 					categoricalVersion: STATS_CATEGORICAL_VERSION,
 				},
-				truncatedFrom: null,
 			},
 		});
 	});
@@ -370,11 +369,11 @@ describe('ingestDataset', () => {
 		});
 	});
 
-	it('caps rows at options.rowLimit and reports the original count', () => {
+	it('keeps every row; there is no row limit', () => {
 		const csv = 'a\n' + Array.from({ length: 100 }, (_, i) => i).join('\n') + '\n';
 		const value = ingest({ kind: 'csv', text: csv, options: { rowLimit: 10 } });
-		expect(value.rows).toHaveLength(10);
-		expect(value.truncatedFrom).toBe(100);
+		expect(value.rows).toHaveLength(100);
+		expect(value).not.toHaveProperty('truncatedFrom');
 	});
 
 	it('drops columns named in options.dropColumns before type detection', () => {
@@ -440,7 +439,6 @@ describe('ingestDataset', () => {
 			{ id: 2, amount: 20, target: 88 },
 		]);
 		expect(result.value.columns.map(c => c.name)).toEqual(['id', 'amount', 'target']);
-		expect(result.value.truncatedFrom).toBeNull();
 	});
 
 	it('keeps the output columns as text when a join matches nothing', () => {
@@ -473,7 +471,6 @@ describe('ingestDataset', () => {
 					numericVersion: STATS_NUMERIC_VERSION,
 					categoricalVersion: STATS_CATEGORICAL_VERSION,
 				},
-				truncatedFrom: null,
 			},
 		});
 		expect(progress).toEqual([
@@ -515,5 +512,57 @@ describe('ingestDataset', () => {
 			join: { leftRows: [], rightRows: [], leftKeys: [], rightKeys: [] },
 		});
 		expect(result).toEqual({ ok: false, reason: 'join-keys-required' });
+	});
+});
+
+describe('prepareIngest and completeIngest', () => {
+	it('report the row and column counts after parsing, before any per-column stage', () => {
+		const progress = [];
+		const prepared = prepareIngest(
+			{ kind: 'csv', text: 'a,b,c\n1,2,3\n4,5,6\n7,8,9\n', options: { dropColumns: ['b'] } },
+			{ onProgress: tick => progress.push(tick) },
+		);
+
+		expect(prepared.ok).toBe(true);
+		expect(prepared.value).toMatchObject({ rowCount: 3, columnCount: 2, columnNames: ['a', 'c'] });
+		expect(progress).toEqual([
+			{ stage: 'parsing', percent: 0 },
+			{ stage: 'parsing', percent: 30 },
+		]);
+	});
+
+	it.each([
+		['a JSON file, from its first row', { kind: 'json', text: '[{"x":1,"2024":2},{"x":3}]' }, 2, ['2024', 'x']],
+		['a CSV header without rows', { kind: 'csv', text: 'a,b\n' }, null, null],
+		['a join that matched nothing', {
+			kind: 'join',
+			join: {
+				leftRows: [{ id: 1 }], rightRows: [{ id: 2, w: 'a' }],
+				leftKeys: ['id'], rightKeys: ['id'], joinType: 'inner',
+				leftColumns: ['id'], rightColumns: ['w'],
+			},
+		}, 0, ['id', 'w']],
+	])('count %s', (_label, request, rowCount, columnNames) => {
+		const prepared = prepareIngest(request);
+		if (rowCount === null) {
+			expect(prepared).toEqual({ ok: false, reason: 'csv-empty' });
+			return;
+		}
+		expect(prepared.value).toMatchObject({ rowCount, columnCount: columnNames.length, columnNames });
+	});
+
+	it('produce exactly what ingestDataset produces, with the same progress', () => {
+		const request = { kind: 'csv', text: 'name;amount\nAna;1,5\nBia;2,25\n', options: { decimalSeparator: 'auto' } };
+		const whole = ingestWithProgress(request);
+		const progress = [];
+		const onProgress = tick => progress.push(tick);
+		const prepared = prepareIngest(request, { onProgress });
+
+		expect(completeIngest(prepared.value, { onProgress })).toEqual(whole.result);
+		expect(progress).toEqual(whole.progress);
+	});
+
+	it('pass a parse failure through without a prepared value', () => {
+		expect(prepareIngest({ kind: 'json', text: '{broken' })).toEqual({ ok: false, reason: 'json-syntax' });
 	});
 });

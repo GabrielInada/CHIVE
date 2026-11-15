@@ -62,7 +62,6 @@ describe('ingestFile', () => {
 						rows: [{ x: 1 }],
 						columns: [{ name: 'x', type: 'number' }],
 						precomputedStats: { numeric: [], categorical: [] },
-						truncatedFrom: null,
 					},
 				});
 			});
@@ -78,20 +77,20 @@ describe('ingestFile', () => {
 		expect(worker.terminated).toBe(true);
 	});
 
-	it('forwards options including rowLimit and dropColumns to the worker', async () => {
+	it('forwards options including decimalSeparator and dropColumns to the worker', async () => {
 		worker.onPost((data, w) => {
 			queueMicrotask(() => {
-				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
+				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] } } });
 			});
 		});
 
 		await ingestFile(
-			{ kind: 'csv', text: 'x', options: { rowLimit: 100, dropColumns: ['drop_me'] } },
+			{ kind: 'csv', text: 'x', options: { decimalSeparator: ',', dropColumns: ['drop_me'] } },
 		);
 
 		expect(worker.postMessages).toHaveLength(1);
 		expect(worker.postMessages[0].kind).toBe('csv');
-		expect(worker.postMessages[0].options).toEqual({ rowLimit: 100, dropColumns: ['drop_me'] });
+		expect(worker.postMessages[0].options).toEqual({ decimalSeparator: ',', dropColumns: ['drop_me'] });
 	});
 
 	it.each([undefined, ','])('sends join inputs and the %s separator through the worker host', async decimalSeparator => {
@@ -110,7 +109,6 @@ describe('ingestFile', () => {
 						rows: [{ id: 1 }],
 						columns: [{ name: 'id', type: 'number' }],
 						precomputedStats: { numeric: [], categorical: [] },
-						truncatedFrom: null,
 					},
 				});
 			});
@@ -138,7 +136,7 @@ describe('ingestFile', () => {
 			worker.onPost((data, w) => {
 				expect(data.id).toMatch(/^ingest-\d+-\d+$/);
 				queueMicrotask(() => {
-					w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
+					w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] } } });
 				});
 			});
 
@@ -233,7 +231,7 @@ describe('ingestFile', () => {
 		worker.onPost((data, w) => {
 			queueMicrotask(() => {
 				w.emit({ id: 'wrong-id', type: 'progress', stage: 'parsing', percent: 50 });
-				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
+				w.emit({ id: data.id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] } } });
 			});
 		});
 
@@ -267,7 +265,7 @@ describe('ingestFile message validation', () => {
 	});
 
 	function validResult() {
-		return { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null };
+		return { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] } };
 	}
 
 	it('skips a progress message with a non-string stage', async () => {
@@ -455,10 +453,139 @@ describe('ingestFile when the worker misbehaves', () => {
 		const { id } = worker.postMessages[0];
 		worker.emit({ id, type: 'progress', stage: 'parsing', percent: 30 });
 		await vi.advanceTimersByTimeAsync(100000);
-		worker.emit({ id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] }, truncatedFrom: null } });
+		worker.emit({ id, type: 'done', result: { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] } } });
 
 		await expect(promise).resolves.toMatchObject({ ok: true });
 		expect(vi.getTimerCount()).toBe(0);
+	});
+});
+
+describe('ingestFile with a row count question', () => {
+	let worker;
+	const result = { rows: [], columns: [], precomputedStats: { numeric: [], categorical: [] } };
+
+	beforeEach(() => {
+		vi.useFakeTimers();
+		worker = new MockWorker();
+		__setIngestWorkerFactoryForTesting(() => worker);
+	});
+
+	afterEach(() => {
+		__setIngestWorkerFactoryForTesting(null);
+		vi.restoreAllMocks();
+		vi.useRealTimers();
+	});
+
+	/** Reply to the request with a row count; reply to `continue` with `done`. */
+	function countThenFinish(rowCount = 300, columnCount = 4) {
+		worker.onPost((data, w) => queueMicrotask(() => {
+			if (data.type === 'continue') w.emit({ id: data.id, type: 'done', result });
+			else w.emit({ id: data.id, type: 'row-count', rowCount, columnCount });
+		}));
+	}
+
+	it('asks the worker to stop after parsing only when a callback can answer', async () => {
+		countThenFinish();
+		await ingestFile({ kind: 'csv', text: 'x', options: { decimalSeparator: ',' } }, { onRowCount: () => true });
+		expect(worker.postMessages[0].options).toEqual({ decimalSeparator: ',', awaitRowCount: true });
+
+		worker = new MockWorker();
+		worker.onPost((data, w) => queueMicrotask(() => w.emit({ id: data.id, type: 'done', result })));
+		await ingestFile({ kind: 'csv', text: 'x' });
+		expect(worker.postMessages[0].options).toEqual({});
+	});
+
+	it('passes the counts to the callback and continues the same worker on approval', async () => {
+		countThenFinish(300, 4);
+		const onRowCount = vi.fn(() => true);
+		const promise = ingestFile({ kind: 'csv', text: 'x' }, { onRowCount });
+
+		await expect(promise).resolves.toEqual({ ok: true, value: result });
+		expect(onRowCount).toHaveBeenCalledExactlyOnceWith({ rowCount: 300, columnCount: 4 });
+		expect(worker.postMessages.map(message => message.type ?? 'request')).toEqual(['request', 'continue']);
+		expect(worker.postMessages[1].id).toBe(worker.postMessages[0].id);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it('terminates the worker and resolves cancelled when the answer is no', async () => {
+		countThenFinish();
+		const promise = ingestFile({ kind: 'csv', text: 'x' }, { onRowCount: async () => false });
+
+		await expect(promise).resolves.toEqual({ ok: false, reason: 'cancelled' });
+		expect(worker.terminated).toBe(true);
+		expect(worker.postMessages).toHaveLength(1);
+		expect(vi.getTimerCount()).toBe(0);
+	});
+
+	it('does not time out while the answer is pending, and waits again after it', async () => {
+		worker.onPost((data, w) => {
+			if (!data.type) queueMicrotask(() => w.emit({ id: data.id, type: 'row-count', rowCount: 1, columnCount: 1 }));
+		});
+		let answer;
+		const promise = ingestFile({ kind: 'csv', text: 'x' }, { onRowCount: () => new Promise(resolve => { answer = resolve; }) });
+		await vi.advanceTimersByTimeAsync(10 * 60 * 1000);
+		expect(worker.terminated).toBe(false);
+
+		answer(true);
+		await vi.advanceTimersByTimeAsync(0);
+		expect(worker.postMessages.at(-1).type).toBe('continue');
+		await vi.advanceTimersByTimeAsync(120000);
+		await expect(promise).resolves.toEqual({ ok: false, reason: 'worker-timeout' });
+	});
+
+	it.each([
+		['throws', () => { throw new Error('dialog broke'); }],
+		['rejects', () => Promise.reject(new Error('dialog broke'))],
+	])('resolves row-count-confirm-failed when the callback %s', async (_label, onRowCount) => {
+		countThenFinish();
+		await expect(ingestFile({ kind: 'csv', text: 'x' }, { onRowCount })).resolves.toEqual({ ok: false, reason: 'row-count-confirm-failed' });
+		expect(worker.terminated).toBe(true);
+	});
+
+	it.each([
+		{ rowCount: -1, columnCount: 2 },
+		{ rowCount: 1.5, columnCount: 2 },
+		{ rowCount: 3, columnCount: '2' },
+	])('rejects a malformed count %o', async counts => {
+		worker.onPost((data, w) => queueMicrotask(() => w.emit({ id: data.id, type: 'row-count', ...counts })));
+		const onRowCount = vi.fn(() => true);
+
+		await expect(ingestFile({ kind: 'csv', text: 'x' }, { onRowCount })).resolves.toEqual({ ok: false, reason: 'ingest-malformed-row-count' });
+		expect(onRowCount).not.toHaveBeenCalled();
+		expect(worker.terminated).toBe(true);
+	});
+
+	it('ignores an answer that arrives after a cancel', async () => {
+		worker.onPost((data, w) => {
+			if (!data.type) queueMicrotask(() => w.emit({ id: data.id, type: 'row-count', rowCount: 1, columnCount: 1 }));
+		});
+		const controller = new AbortController();
+		let answer;
+		const promise = ingestFile({ kind: 'csv', text: 'x' }, {
+			signal: controller.signal,
+			onRowCount: () => new Promise(resolve => { answer = resolve; }),
+		});
+		await vi.advanceTimersByTimeAsync(0);
+		controller.abort();
+
+		await expect(promise).resolves.toEqual({ ok: false, reason: 'cancelled' });
+		answer(true);
+		await vi.advanceTimersByTimeAsync(0);
+		expect(worker.postMessages).toHaveLength(1);
+	});
+
+	it('reports a continue that cannot be sent', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+		countThenFinish();
+		const post = worker.postMessage.bind(worker);
+		worker.postMessage = data => {
+			if (data.type === 'continue') throw new Error('gone');
+			post(data);
+		};
+
+		await expect(ingestFile({ kind: 'csv', text: 'x' }, { onRowCount: () => true })).resolves.toEqual({ ok: false, reason: 'worker-post-failed' });
+		expect(worker.terminated).toBe(true);
+		expect(warn).toHaveBeenCalledTimes(1);
 	});
 });
 

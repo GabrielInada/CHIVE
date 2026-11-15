@@ -53,7 +53,7 @@ function sampleDatasetSource(sampleDataset) {
 			return ingestFile({ kind, text, options: { dropColumns } }, request);
 		},
 		sizeLabel: () => t('chive-sample-dataset-generated-size', sampleDataset.rowCount),
-		// Samples ship with CHIVE and are kept small, so the row limit does not apply.
+		// Samples ship with CHIVE and are kept small, so the cell limit does not apply.
 		rowWarning: null,
 		successMessage: t('chive-sample-dataset-load-success', name),
 		failureMessage: (detail, reason) => {

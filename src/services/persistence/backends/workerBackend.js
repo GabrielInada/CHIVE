@@ -28,6 +28,7 @@
  */
 
 import { recordDiagnosticError } from '../../diagnostics.js';
+import { readTooLargeOwner } from '../errors.js';
 
 const DEFAULT_TIMEOUT_MS = 120000;
 
@@ -70,16 +71,19 @@ function cloneBytes(bytes) {
 }
 
 /**
- * Rebuild a real `Error` from a worker's `{ name, message }` envelope so
- * `isQuotaError` (which keys off `error.name`) still classifies quota failures.
+ * Rebuild a real `Error` from a worker's `{ name, message, tooLarge? }`
+ * envelope so `isQuotaError` (which keys off `error.name`) still classifies
+ * quota failures, and a payload too large to save still names its owner.
  *
- * @param {{ name?: string, message?: string } | * } errLike
+ * @param {{ name?: string, message?: string, tooLarge?: { kind: string, name: string } } | * } errLike
  * @returns {Error}
  */
 function errorFromWorker(errLike) {
 	if (errLike instanceof Error) return errLike;
 	const error = new Error(String(errLike?.message || 'persistence worker error'));
 	if (errLike?.name) error.name = errLike.name;
+	const tooLarge = readTooLargeOwner(errLike?.tooLarge);
+	if (tooLarge) error.tooLarge = tooLarge;
 	return error;
 }
 

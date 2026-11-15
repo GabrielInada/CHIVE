@@ -86,8 +86,8 @@ function joinSource({ leftDataset, rightDataset, leftKeys, rightKeys, leftColumn
 	return {
 		name,
 		progressLabel: t('chive-progress-joining'),
-		// No row limit here: a capped first pass would run the join twice once
-		// approved, so the intake checks the complete result instead.
+		// The join does not pause after joining, so it ignores `confirmRowCount`
+		// and the intake checks the complete result instead.
 		ingest: ({ signal, onProgress }) => joinDatasetsInWorker({
 			leftRows: leftDataset.rows,
 			rightRows: rightDataset.rows,
@@ -106,7 +106,7 @@ function joinSource({ leftDataset, rightDataset, leftKeys, rightKeys, leftColumn
 			},
 		}, { signal, onProgress }),
 		sizeLabel: rowCount => t('chive-join-generated-size', rowCount),
-		rowWarning: (rowCount, rowLimit) => t('chive-warn-large-join', rowCount, rowLimit),
+		rowWarning: ({ rows, columns, cells, limit, columnCount }) => t('chive-warn-large-join', rows, columns, limit, columnCount, cells),
 		successMessage: t('chive-join-success', name),
 		failureMessage: () => t('chive-join-failed', leftDataset.name, rightDataset.name),
 	};
