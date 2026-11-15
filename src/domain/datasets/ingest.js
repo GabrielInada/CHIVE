@@ -20,6 +20,7 @@ import { ok, fail } from '../../utils/result.js';
  * @typedef {import('../../types.js').IngestPayload} IngestPayload
  * @typedef {import('../../types.js').IngestProgress} IngestProgress
  * @typedef {import('../../types.js').IngestRequest} IngestRequest
+ * @typedef {import('../../types.js').PreparedIngest} PreparedIngest
  * @typedef {import('../../types.js').NumericColumnStats} NumericColumnStats
  * @typedef {import('../../types.js').CategoricalColumnStats} CategoricalColumnStats
  * @typedef {import('../../types.js').PrecomputedStats} PrecomputedStats
@@ -29,9 +30,11 @@ import { ok, fail } from '../../utils/result.js';
 const NORMALIZE_CHUNK_SIZE = 20000;
 
 /**
- * Ingest a file or a join: parse or join, drop columns, apply the row limit,
- * pick each column's decimal separator and type, canonicalize every cell, and
- * compute the stats.
+ * Ingest a file or a join: parse or join, drop columns, pick each column's
+ * decimal separator and type, canonicalize every cell, and compute the
+ * stats. It runs {@link prepareIngest}, then {@link completeIngest}; the
+ * worker runs the two halves itself so it can report the row count between
+ * them.
  *
  * A column's decimal separator is `options.decimalSeparator` when that is a
  * dot or a comma. Otherwise a joined column keeps its source column's
@@ -49,9 +52,25 @@ const NORMALIZE_CHUNK_SIZE = 20000;
  * @param {{ onProgress?: (progress: IngestProgress) => void }} [config]
  * @returns {Result} `ok({ value })` with the {@link IngestPayload}, or `fail(reason)` with the parser's or the join's reason. Throws only on bugs.
  */
-export function ingestDataset({ kind, text, join, options = {} }, { onProgress } = {}) {
+export function ingestDataset(request, config = {}) {
+	const prepared = prepareIngest(request, config);
+	if (!prepared.ok) return prepared;
+	return completeIngest(prepared.value, config);
+}
+
+/**
+ * The first half of {@link ingestDataset}: parse the file or run the join,
+ * then drop unwanted columns. Reports the `'parsing'` or `'joining'` stage.
+ *
+ * The prepared input carries its row and column counts, which are known
+ * before any per-column work starts.
+ *
+ * @param {IngestRequest} request
+ * @param {{ onProgress?: (progress: IngestProgress) => void }} [config]
+ * @returns {Result} `ok({ value })` with the {@link PreparedIngest}, or `fail(reason)` with the parser's or the join's reason.
+ */
+export function prepareIngest({ kind, text, join, options = {} }, { onProgress } = {}) {
 	const report = (stage, percent) => onProgress?.({ stage, percent });
-	const rowLimit = Number.isFinite(options.rowLimit) ? options.rowLimit : Infinity;
 	let rawData;
 	let columnOrder = [];
 	const inheritedSeparators = new Map();
@@ -101,27 +120,57 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 		columnOrder = columnOrder.filter(name => !dropSet.has(name));
 	}
 
-	let truncatedFrom = null;
-	if (rawData.length > rowLimit) {
-		truncatedFrom = rawData.length;
-		rawData = rawData.slice(0, rowLimit);
-	}
+	// With no rows to read, the source's column list is all there is.
+	const columnNames = rawData.length > 0 ? inSourceOrder(Object.keys(rawData[0]), columnOrder) : columnOrder;
+	return ok({
+		value: {
+			rawData,
+			columnNames,
+			rowCount: rawData.length,
+			columnCount: columnNames.length,
+			decimalSeparator: options.decimalSeparator,
+			inheritedSeparators,
+			inheritedCurrencies,
+			inheritedCurrencyIssues,
+		},
+	});
+}
 
-	const explicitSeparator = options.decimalSeparator === '.' || options.decimalSeparator === ',';
+/**
+ * The second half of {@link ingestDataset}: pick each column's decimal
+ * separator and type, canonicalize every cell, and compute the stats.
+ * Reports every stage after parsing.
+ *
+ * @param {PreparedIngest} prepared - From {@link prepareIngest}.
+ * @param {{ onProgress?: (progress: IngestProgress) => void }} [config]
+ * @returns {Result} `ok({ value })` with the {@link IngestPayload}.
+ */
+export function completeIngest(prepared, { onProgress } = {}) {
+	const report = (stage, percent) => onProgress?.({ stage, percent });
+	const {
+		rawData,
+		columnNames,
+		decimalSeparator: separatorOption,
+		inheritedSeparators,
+		inheritedCurrencies,
+		inheritedCurrencyIssues,
+	} = prepared;
+
+	const explicitSeparator = separatorOption === '.' || separatorOption === ',';
 	const columnSeparator = (name, fileSeparator) => (
 		explicitSeparator ? fileSeparator : inheritedSeparators.get(name) ?? fileSeparator
 	);
 
 	if (rawData.length === 0) {
 		// No values to type: a join that matched nothing keeps its output columns as text.
-		const fileSeparator = detectDecimalSeparator([], options.decimalSeparator);
-		const columns = columnOrder.map(name => ({
+		const fileSeparator = detectDecimalSeparator([], separatorOption);
+		const columns = columnNames.map(name => ({
 			name,
 			type: 'text',
 			decimalSeparator: columnSeparator(name, fileSeparator),
 			...(inheritedCurrencies.has(name) ? { type: 'number', currency: inheritedCurrencies.get(name) } : {}),
 		}));
-		return ok({ value: { rows: [], columns, precomputedStats: versionedStats([], []), truncatedFrom } });
+		return ok({ value: { rows: [], columns, precomputedStats: versionedStats([], []) } });
 	}
 
 	report('decimal-detection', 32);
@@ -129,10 +178,9 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 	const allRawValues = rawData
 		.slice(0, DECIMAL_DETECTION.sampleSize)
 		.flatMap(row => Object.values(row));
-	const fileSeparator = detectDecimalSeparator(allRawValues, options.decimalSeparator);
+	const fileSeparator = detectDecimalSeparator(allRawValues, separatorOption);
 	report('decimal-detection', 35);
 
-	const columnNames = inSourceOrder(Object.keys(rawData[0]), columnOrder);
 	const columns = [];
 	for (let i = 0; i < columnNames.length; i++) {
 		const name = columnNames[i];
@@ -159,7 +207,7 @@ export function ingestDataset({ kind, text, join, options = {} }, { onProgress }
 	const categorical = calculateCategoricalStatistics(rows, columns);
 	report('stats', 100);
 
-	return ok({ value: { rows, columns, precomputedStats: versionedStats(numeric, categorical), truncatedFrom } });
+	return ok({ value: { rows, columns, precomputedStats: versionedStats(numeric, categorical) } });
 }
 
 /**

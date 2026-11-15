@@ -2,7 +2,8 @@
  * Controller-internal upload workflow.
  *
  * Checks each file's format and size, then adds it through the shared intake
- * with a source that reads the file and runs Ingest on its text. The
+ * with a source that reads the file and runs Ingest on its text, once. The
+ * row warning is asked while the worker waits with the parsed rows. The
  * controller supplies its injectable confirmation for each batch.
  *
  * @typedef {import('../../../types.js').IntakeSource} IntakeSource
@@ -98,19 +99,13 @@ function fileKind(fileName) {
  * @returns {IntakeSource}
  */
 function fileSource(file, kind, options) {
-	let text = null;
 	return {
 		name: file.name,
 		progressLabel: t('chive-progress-parsing', file.name),
-		async ingest({ rowLimit, ...request }) {
-			// The uncapped run after an approved row warning reuses the text.
-			if (text === null) {
-				const read = await readFileText(file);
-				if (!read.ok) return read;
-				text = read.text;
-			}
-			const ingestOptions = rowLimit === undefined ? options : { ...options, rowLimit };
-			return ingestFile({ kind, text, options: ingestOptions }, request);
+		async ingest({ confirmRowCount, ...request }) {
+			const read = await readFileText(file);
+			if (!read.ok) return read;
+			return ingestFile({ kind, text: read.text, options }, { ...request, onRowCount: confirmRowCount });
 		},
 		sizeLabel: () => formatFileSize(file.size),
 		rowWarning: (rowCount, rowLimit) => t('chive-warn-large-rows', file.name, rowCount, rowLimit),

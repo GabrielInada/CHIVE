@@ -134,9 +134,9 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 
 		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('big.csv', format(3), format(2)));
 		expect(workerRequests.map(request => request.options)).toEqual([
-			{ decimalSeparator: ',', rowLimit: 2 },
-			{ decimalSeparator: ',' },
+			{ decimalSeparator: ',', awaitRowCount: true },
 		]);
+		expect(workerRequests.workers).toBe(1);
 		expect(getAllDatasets()[0].rows).toEqual([{ v: 1 }, { v: 2 }, { v: 3 }]);
 		expect(reads).toHaveBeenCalledTimes(1);
 	});

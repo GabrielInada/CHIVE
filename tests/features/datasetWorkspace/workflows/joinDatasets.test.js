@@ -121,7 +121,7 @@ describe.each(['en', 'pt-BR'])('dataset join in %s', language => {
 
 		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeJoin(format(3), format(2)));
 		expect(workerRequests).toHaveLength(1);
-		expect(workerRequests[0].options).not.toHaveProperty('rowLimit');
+		expect(workerRequests[0].options).not.toHaveProperty('awaitRowCount');
 		expect(getAllDatasets()[2].rows).toHaveLength(3);
 		expect(selectDataset).toHaveBeenCalledExactlyOnceWith(2);
 	});
