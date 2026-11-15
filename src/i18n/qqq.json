@@ -501,9 +501,9 @@
 	"chive-type-number": "Display label for numeric columns (used in column list tags and table footer). Keep short.",
 	"chive-type-text": "Display label for text columns (used in column list tags and table footer). Keep short.",
 	"chive-type-date": "Display label for date columns (used in column list tags and table footer). Keep short.",
-	"chive-warn-large-file": "Confirmation warning before parsing a large file. $1 = file name, $2 = current file size (formatted), $3 = recommended max size.",
-	"chive-warn-large-rows": "Confirmation warning after parsing when row count is large. $1 = file name, $2 = parsed row count (formatted), $3 = recommended max row count (formatted).",
-	"chive-warn-large-join": "Confirmation warning before an over-limit joined dataset is added. $1 = complete joined row count, $2 = recommended max row count. No rows are truncated.",
+	"chive-warn-large-file": "Confirmation warning before reading a file above the recommended size. States that every row will be imported and that importing and saving take longer and use more memory; gives no time or memory estimate. Shown every time. $1 = file name; $2 = file size (formatted); $3 = recommended maximum size (formatted).",
+	"chive-warn-large-rows": "Confirmation warning after parsing, when the row count is above the recommended maximum. States that every row will be imported and that importing and saving take longer and use more memory; gives no estimate. Shown every time. $1 = file name; $2 = row count (formatted for the locale); $3 = column count (formatted for the locale); $4 = recommended maximum row count (formatted for the locale); $5 = column count as a plain number, used only to choose singular or plural.",
+	"chive-warn-large-join": "Confirmation warning before a joined dataset above the recommended row count is added. States that every row will be kept and that adding and saving take longer and use more memory; gives no estimate. No rows are truncated. $1 = joined row count (formatted for the locale); $2 = column count (formatted for the locale); $3 = recommended maximum row count (formatted for the locale); $4 = column count as a plain number, used only to choose singular or plural.",
 
 	"chive-error-format": "Error when user uploads an unsupported file type. $1 = file name. Lists all accepted extensions.",
 	"chive-upload-load-failed": "Upload failure shown in both the error notice and the progress toast when no translated detail is available, including a file the browser cannot read. $1 = file name. Internal diagnostic codes are not displayed.",

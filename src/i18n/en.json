@@ -502,9 +502,9 @@
 	"chive-type-text": "text",
 	"chive-type-date": "date",
 
-	"chive-warn-large-file": "File \"$1\" has size $2, above the recommended limit ($3). Continue anyway?",
-	"chive-warn-large-rows": "File \"$1\" has $2 rows, above the recommended limit ($3). Continue anyway?",
-	"chive-warn-large-join": "This join would create $1 rows, above the recommended limit ($2). Keep the complete result?",
+	"chive-warn-large-file": "File \"$1\" is $2, above the recommended $3. Every row will be imported, and importing and saving will take longer and use more memory. Continue?",
+	"chive-warn-large-rows": "File \"$1\" has $2 rows and $3 {{PLURAL:$5|column|columns}}, above the recommended $4 rows. Every row will be imported, and importing and saving will take longer and use more memory. Continue?",
+	"chive-warn-large-join": "This join would create $1 rows and $2 {{PLURAL:$4|column|columns}}, above the recommended $3 rows. Every row will be kept, and adding and saving the result will take longer and use more memory. Continue?",
 
 	"chive-error-format": "Format not supported for \"$1\". Please upload a CSV, TSV, DSV, TXT, or JSON file.",
 	"chive-upload-load-failed": "Could not load file \"$1\". Please try again.",

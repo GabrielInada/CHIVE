@@ -38,7 +38,7 @@ function csvSource(text, { pausing = true, ...overrides } = {}) {
 			const { confirmRowCount, ...config } = request;
 			return ingestFile({ kind: 'csv', text }, pausing ? { ...config, onRowCount: confirmRowCount } : config);
 		},
-		rowWarning: (rowCount, rowLimit) => `numbers.csv has ${rowCount} rows, above ${rowLimit}.`,
+		rowWarning: ({ rows, columns, limit, columnCount }) => `numbers.csv has ${rows} rows and ${columns} columns (${columnCount}), above ${limit}.`,
 		successMessage: 'numbers.csv is ready.',
 		failureMessage: vi.fn(detail => (detail ? `numbers.csv failed: ${detail}` : 'numbers.csv failed.')),
 		...overrides,
@@ -180,7 +180,7 @@ describe.each(['en', 'pt-BR'])('dataset intake in %s', language => {
 		const result = await runIntake(source, { confirm });
 
 		expect(result).toEqual({ ok: true, index: 0 });
-		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has ${format(1001)} rows, above ${format(1000)}.`);
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has ${format(1001)} rows and 1 columns (1), above ${format(1000)}.`);
 		expect(source.requests).toHaveLength(1);
 		expect(workerRequests.workers).toBe(1);
 		expect(workerRequests.map(request => request.options)).toEqual([{ awaitRowCount: true }]);
@@ -192,7 +192,7 @@ describe.each(['en', 'pt-BR'])('dataset intake in %s', language => {
 		const confirm = vi.fn(() => true);
 		await runIntake(csvSource(csvOf(1001), { pausing: false }), { confirm });
 
-		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has ${format(1001)} rows, above ${format(1000)}.`);
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has ${format(1001)} rows and 1 columns (1), above ${format(1000)}.`);
 		expect(workerRequests.map(request => request.options)).toEqual([{}]);
 		expect(getAllDatasets()[0].rows).toHaveLength(1001);
 	});

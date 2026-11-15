@@ -68,22 +68,27 @@ export async function runIntake(source, { confirm = () => false, selectDataset }
 
 	const limited = typeof source.rowWarning === 'function';
 	let rowsChecked = false;
-	const approveRows = async rowCount => {
+	const approveRows = async ({ rowCount, columnCount }) => {
 		rowsChecked = true;
 		if (rowCount <= LARGE_DATASET_WARNING_ROWS) return true;
 		const locale = getLocale();
-		return Boolean(await confirm(source.rowWarning(
-			rowCount.toLocaleString(locale),
-			LARGE_DATASET_WARNING_ROWS.toLocaleString(locale),
-		)));
+		return Boolean(await confirm(source.rowWarning({
+			rows: rowCount.toLocaleString(locale),
+			columns: columnCount.toLocaleString(locale),
+			limit: LARGE_DATASET_WARNING_ROWS.toLocaleString(locale),
+			columnCount,
+		})));
 	};
-	if (limited) request.confirmRowCount = ({ rowCount }) => approveRows(rowCount);
+	if (limited) request.confirmRowCount = approveRows;
 
 	try {
 		const result = await source.ingest(request);
 		if (!result.ok) return result.reason === 'cancelled' ? cancelled() : failed(result.reason);
 		// A source that could not pause is checked on its complete result.
-		if (limited && !rowsChecked && !(await approveRows(result.value.rows.length))) return cancelled();
+		if (limited && !rowsChecked) {
+			const { rows, columns } = result.value;
+			if (!(await approveRows({ rowCount: rows.length, columnCount: columns.length }))) return cancelled();
+		}
 
 		const index = addDataset(assembleDataset(source, result.value));
 		selectDataset?.(index);
