@@ -86,8 +86,8 @@ function joinSource({ leftDataset, rightDataset, leftKeys, rightKeys, leftColumn
 	return {
 		name,
 		progressLabel: t('chive-progress-joining'),
-		// No row limit here: a capped first pass would run the join twice once
-		// approved, so the intake checks the complete result instead.
+		// The join does not pause after joining, so it ignores `confirmRowCount`
+		// and the intake checks the complete result instead.
 		ingest: ({ signal, onProgress }) => joinDatasetsInWorker({
 			leftRows: leftDataset.rows,
 			rightRows: rightDataset.rows,

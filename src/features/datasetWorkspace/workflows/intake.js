@@ -30,11 +30,12 @@ import { ok, fail } from '../../../utils/result.js';
  * detail for a known parse failure and an empty string for anything else, so
  * no internal reason code reaches the page.
  *
- * A source with a row warning gets the row limit with its first request.
- * When the rows it returns are over the limit, `confirm` decides, and rows
- * that were capped are ingested again without the cap once approved, so the
- * dataset keeps every row. A source that cannot cap returns its complete
- * result, which is checked the same way.
+ * A source with a row warning gets `confirmRowCount` with its request. A
+ * source that can pause after parsing calls it with the row count before the
+ * rest of ingest runs, so the data is parsed once whatever the answer. Above
+ * the row limit, `confirm` decides; approval keeps every row. A source that
+ * cannot pause returns its complete result, whose rows are checked the same
+ * way.
  *
  * @param {IntakeSource} source
  * @param {Object} [dependencies]
@@ -65,27 +66,24 @@ export async function runIntake(source, { confirm = () => false, selectDataset }
 		return fail(reason);
 	};
 
+	const limited = typeof source.rowWarning === 'function';
+	let rowsChecked = false;
+	const approveRows = async rowCount => {
+		rowsChecked = true;
+		if (rowCount <= LARGE_DATASET_WARNING_ROWS) return true;
+		const locale = getLocale();
+		return Boolean(await confirm(source.rowWarning(
+			rowCount.toLocaleString(locale),
+			LARGE_DATASET_WARNING_ROWS.toLocaleString(locale),
+		)));
+	};
+	if (limited) request.confirmRowCount = ({ rowCount }) => approveRows(rowCount);
+
 	try {
-		const limited = typeof source.rowWarning === 'function';
-		let result = await source.ingest(limited ? { ...request, rowLimit: LARGE_DATASET_WARNING_ROWS } : request);
-		if (result.ok && limited) {
-			const { rows, truncatedFrom } = result.value;
-			const rowCount = truncatedFrom ?? rows.length;
-			if (rowCount > LARGE_DATASET_WARNING_ROWS) {
-				const locale = getLocale();
-				const approved = await confirm(source.rowWarning(
-					rowCount.toLocaleString(locale),
-					LARGE_DATASET_WARNING_ROWS.toLocaleString(locale),
-				));
-				if (!approved) return cancelled();
-				if (truncatedFrom) {
-					// The capped pass only measured the size.
-					progress.update(0, source.progressLabel);
-					result = await source.ingest(request);
-				}
-			}
-		}
+		const result = await source.ingest(request);
 		if (!result.ok) return result.reason === 'cancelled' ? cancelled() : failed(result.reason);
+		// A source that could not pause is checked on its complete result.
+		if (limited && !rowsChecked && !(await approveRows(result.value.rows.length))) return cancelled();
 
 		const index = addDataset(assembleDataset(source, result.value));
 		selectDataset?.(index);

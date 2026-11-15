@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { runIntake } from '../../../../src/features/datasetWorkspace/workflows/intake.js';
 import { createDefaultChartConfig } from '../../../../src/config/charts/defaults.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../../../src/config/statistics.js';
-import { ingestFile } from '../../../../src/services/dataIngestService.js';
+import { __setIngestWorkerFactoryForTesting, ingestFile } from '../../../../src/services/dataIngestService.js';
 import { setLocale, t } from '../../../../src/services/i18nService.js';
 import { applyStateSnapshot, getActiveDatasetIndex, getAllDatasets } from '../../../../src/state/appState.js';
 import { clearAllFeedback } from '../../../../src/ui/feedback.js';
@@ -23,10 +23,10 @@ function csvOf(count) {
 
 /**
  * A source over CSV text that runs the real Ingest through the worker.
- * A capped source passes the row limit on, as a file does; an uncapped one
- * ignores it, as a join does.
+ * A pausing source hands the row question to the worker, as a file does;
+ * one that cannot pause ignores it, as a join does.
  */
-function csvSource(text, { capped = true, ...overrides } = {}) {
+function csvSource(text, { pausing = true, ...overrides } = {}) {
 	const requests = [];
 	return {
 		requests,
@@ -35,14 +35,30 @@ function csvSource(text, { capped = true, ...overrides } = {}) {
 		sizeLabel: rowCount => `${rowCount} rows`,
 		ingest(request) {
 			requests.push(request);
-			const options = capped && request.rowLimit !== undefined ? { rowLimit: request.rowLimit } : {};
-			return ingestFile({ kind: 'csv', text, options }, request);
+			const { confirmRowCount, ...config } = request;
+			return ingestFile({ kind: 'csv', text }, pausing ? { ...config, onRowCount: confirmRowCount } : config);
 		},
 		rowWarning: (rowCount, rowLimit) => `numbers.csv has ${rowCount} rows, above ${rowLimit}.`,
 		successMessage: 'numbers.csv is ready.',
 		failureMessage: vi.fn(detail => (detail ? `numbers.csv failed: ${detail}` : 'numbers.csv failed.')),
 		...overrides,
 	};
+}
+
+/**
+ * A confirmation that stays open until the test answers it.
+ *
+ * @returns {{ confirm: import('vitest').Mock, asked: Promise<void>, answer: (approved: boolean) => void }}
+ */
+function pendingConfirm() {
+	let markAsked;
+	let answer;
+	const asked = new Promise(resolve => { markAsked = resolve; });
+	const confirm = vi.fn(() => {
+		markAsked();
+		return new Promise(resolve => { answer = resolve; });
+	});
+	return { confirm, asked, answer: approved => answer(approved) };
 }
 
 /** A source that waits for its signal, then settles with `onAbort()`. */
@@ -158,35 +174,35 @@ describe.each(['en', 'pt-BR'])('dataset intake in %s', language => {
 		expect(source.failureMessage).not.toHaveBeenCalled();
 	});
 
-	it('asks before keeping more rows than the limit, then runs a capped source again without the cap', async () => {
+	it('asks about the parsed rows, then keeps every row it approves from the same worker', async () => {
 		const confirm = vi.fn(() => true);
 		const source = csvSource(csvOf(1001));
 		const result = await runIntake(source, { confirm });
 
 		expect(result).toEqual({ ok: true, index: 0 });
 		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has ${format(1001)} rows, above ${format(1000)}.`);
-		expect(source.requests.map(request => request.rowLimit)).toEqual([1000, undefined]);
-		expect(workerRequests.map(request => request.options.rowLimit)).toEqual([1000, undefined]);
+		expect(source.requests).toHaveLength(1);
+		expect(workerRequests.workers).toBe(1);
+		expect(workerRequests.map(request => request.options)).toEqual([{ awaitRowCount: true }]);
 		expect(getAllDatasets()[0].rows).toHaveLength(1001);
 		expect(getAllDatasets()[0].sizeLabel).toBe('1001 rows');
 	});
 
-	it('checks a source that cannot cap after its complete run and never runs it again', async () => {
+	it('checks a source that cannot pause after its complete run and never runs it again', async () => {
 		const confirm = vi.fn(() => true);
-		await runIntake(csvSource(csvOf(1001), { capped: false }), { confirm });
+		await runIntake(csvSource(csvOf(1001), { pausing: false }), { confirm });
 
 		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has ${format(1001)} rows, above ${format(1000)}.`);
-		expect(workerRequests).toHaveLength(1);
+		expect(workerRequests.map(request => request.options)).toEqual([{}]);
 		expect(getAllDatasets()[0].rows).toHaveLength(1001);
 	});
 
-	it('keeps a capped pass at the limit without asking', async () => {
+	it('continues at the limit without asking', async () => {
 		const confirm = vi.fn(() => true);
-		const source = csvSource(csvOf(1000));
-		await runIntake(source, { confirm });
+		await runIntake(csvSource(csvOf(1000)), { confirm });
 
 		expect(confirm).not.toHaveBeenCalled();
-		expect(source.requests.map(request => request.rowLimit)).toEqual([1000]);
+		expect(workerRequests.workers).toBe(1);
 		expect(getAllDatasets()[0].rows).toHaveLength(1000);
 	});
 
@@ -196,7 +212,8 @@ describe.each(['en', 'pt-BR'])('dataset intake in %s', language => {
 		await runIntake(source, { confirm });
 
 		expect(confirm).not.toHaveBeenCalled();
-		expect(source.requests.map(request => Object.hasOwn(request, 'rowLimit'))).toEqual([false]);
+		expect(source.requests.map(request => Object.hasOwn(request, 'confirmRowCount'))).toEqual([false]);
+		expect(workerRequests.map(request => request.options)).toEqual([{}]);
 		expect(getAllDatasets()[0].rows).toHaveLength(1001);
 	});
 
@@ -204,24 +221,67 @@ describe.each(['en', 'pt-BR'])('dataset intake in %s', language => {
 		const source = csvSource(csvOf(1001));
 		await expectQuietCancel(runIntake(source, { confirm: () => false }));
 		expect(source.requests).toHaveLength(1);
+		expect(workerRequests.workers).toBe(1);
 	});
 
 	it('declines the row warning itself when nothing can confirm it', async () => {
 		await expectQuietCancel(runIntake(csvSource(csvOf(1001))));
 	});
 
-	it('closes quietly when cancelled during the uncapped run', async () => {
-		let askedAbout;
-		const asked = new Promise(resolve => { askedAbout = resolve; });
-		const confirm = () => {
-			askedAbout(useSilentIngestWorker());
-			return true;
-		};
+	it('waits for the row warning as long as it stays open, without timing out', async () => {
+		const { confirm, asked, answer } = pendingConfirm();
+		const run = runIntake(csvSource(csvOf(1001)), { confirm });
+		await asked;
+		await vi.advanceTimersByTimeAsync(5 * 60 * 1000);
+		answer(true);
+
+		expect(await run).toEqual({ ok: true, index: 0 });
+		expect(getAllDatasets()[0].rows).toHaveLength(1001);
+	});
+
+	it('closes quietly when cancelled while the row warning is open, and ignores the later answer', async () => {
+		const { confirm, asked, answer } = pendingConfirm();
 		const run = runIntake(csvSource(csvOf(1001)), { confirm });
 		await asked;
 		clickCancel();
 
 		await expectQuietCancel(run);
+		answer(true);
+		await vi.advanceTimersByTimeAsync(0);
+		expect(getAllDatasets()).toEqual([]);
+	});
+
+	it('reports a worker that fails while the row warning is open', async () => {
+		let worker;
+		__setIngestWorkerFactoryForTesting(() => {
+			worker = {
+				postMessage(message) {
+					if (message.type === 'continue') return;
+					queueMicrotask(() => this.onmessage({ data: { id: message.id, type: 'row-count', rowCount: 1001, columnCount: 1 } }));
+				},
+				terminate() {},
+			};
+			return worker;
+		});
+		const { confirm, asked, answer } = pendingConfirm();
+		const run = runIntake(csvSource(csvOf(1001)), { confirm });
+		await asked;
+		worker.onerror({});
+
+		expect(await run).toEqual({ ok: false, reason: 'worker-error' });
+		expect(notices()).toEqual(['numbers.csv failed.']);
+		answer(true);
+		await vi.advanceTimersByTimeAsync(0);
+		expect(getAllDatasets()).toEqual([]);
+	});
+
+	it('reports a row warning that cannot open without its exception text', async () => {
+		const confirm = () => { throw new Error('private-detail'); };
+
+		expect(await runIntake(csvSource(csvOf(1001)), { confirm })).toEqual({ ok: false, reason: 'row-count-confirm-failed' });
+		expect(notices()).toEqual(['numbers.csv failed.']);
+		expect(document.body.textContent).not.toContain('private-detail');
+		expect(getAllDatasets()).toEqual([]);
 	});
 
 	it('names the source with the translated Ingest detail in the toast and the notice', async () => {
@@ -246,10 +306,12 @@ describe.each(['en', 'pt-BR'])('dataset intake in %s', language => {
 		expect(document.body.textContent).not.toContain('worker-timeout');
 	});
 
-	it('reports a failure in the uncapped run after the warning was approved', async () => {
-		const source = csvSource(csvOf(1001));
-		const capped = source.ingest;
-		source.ingest = request => (request.rowLimit === undefined ? Promise.resolve(fail('worker-timeout')) : capped(request));
+	it('reports a failure after the row warning was approved', async () => {
+		const source = csvSource('', {
+			ingest: async ({ confirmRowCount }) => (
+				(await confirmRowCount({ rowCount: 1001, columnCount: 1 })) ? fail('worker-timeout') : fail('cancelled')
+			),
+		});
 
 		expect(await runIntake(source, { confirm: () => true })).toEqual({ ok: false, reason: 'worker-timeout' });
 		expect(notices()).toEqual(['numbers.csv failed.']);
