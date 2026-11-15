@@ -3,7 +3,7 @@
  *
  * Every way to add a dataset runs through {@link runIntake}: an uploaded
  * file, a join and a sample dataset. It owns the progress toast and its
- * cancel button, the row-limit question, the failure and success messages,
+ * cancel button, the large-dataset question, the failure and success messages,
  * the new Dataset's assembly, `addDataset`, and selecting the new dataset.
  * Each workflow describes its data as an {@link IntakeSource}.
  *
@@ -17,7 +17,7 @@ import { getLocale } from '../../../services/i18nService.js';
 import { ingestErrorMessage, progressLabelForStage } from '../../../services/dataIngestService.js';
 import { addDataset } from '../../../state/appState.js';
 import { showError, showProgress } from '../../../ui/feedback.js';
-import { LARGE_DATASET_WARNING_ROWS } from '../../../config/limits.js';
+import { LARGE_DATASET_WARNING_CELLS } from '../../../config/limits.js';
 import { createDefaultChartConfig } from '../../../config/charts/defaults.js';
 import { ok, fail } from '../../../utils/result.js';
 
@@ -31,11 +31,11 @@ import { ok, fail } from '../../../utils/result.js';
  * no internal reason code reaches the page.
  *
  * A source with a row warning gets `confirmRowCount` with its request. A
- * source that can pause after parsing calls it with the row count before the
- * rest of ingest runs, so the data is parsed once whatever the answer. Above
- * the row limit, `confirm` decides; approval keeps every row. A source that
- * cannot pause returns its complete result, whose rows are checked the same
- * way.
+ * source that can pause after parsing calls it with the row and column counts
+ * before the rest of ingest runs, so the data is parsed once whatever the
+ * answer. When rows × columns is above the cell limit, `confirm` decides;
+ * approval keeps every row. A source that cannot pause returns its complete
+ * result, which is checked the same way.
  *
  * @param {IntakeSource} source
  * @param {Object} [dependencies]
@@ -70,12 +70,14 @@ export async function runIntake(source, { confirm = () => false, selectDataset }
 	let rowsChecked = false;
 	const approveRows = async ({ rowCount, columnCount }) => {
 		rowsChecked = true;
-		if (rowCount <= LARGE_DATASET_WARNING_ROWS) return true;
+		const cellCount = rowCount * columnCount;
+		if (cellCount <= LARGE_DATASET_WARNING_CELLS) return true;
 		const locale = getLocale();
 		return Boolean(await confirm(source.rowWarning({
 			rows: rowCount.toLocaleString(locale),
 			columns: columnCount.toLocaleString(locale),
-			limit: LARGE_DATASET_WARNING_ROWS.toLocaleString(locale),
+			cells: cellCount.toLocaleString(locale),
+			limit: LARGE_DATASET_WARNING_CELLS.toLocaleString(locale),
 			columnCount,
 		})));
 	};

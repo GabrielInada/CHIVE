@@ -13,7 +13,7 @@ import { restoreIngestWorker, useInProcessIngestWorker, useSilentIngestWorker } 
 
 vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	...(await importOriginal()),
-	LARGE_DATASET_WARNING_ROWS: 1000,
+	LARGE_DATASET_WARNING_CELLS: 1000,
 }));
 
 /** A one-column CSV with `count` rows. */
@@ -38,7 +38,7 @@ function csvSource(text, { pausing = true, ...overrides } = {}) {
 			const { confirmRowCount, ...config } = request;
 			return ingestFile({ kind: 'csv', text }, pausing ? { ...config, onRowCount: confirmRowCount } : config);
 		},
-		rowWarning: ({ rows, columns, limit, columnCount }) => `numbers.csv has ${rows} rows and ${columns} columns (${columnCount}), above ${limit}.`,
+		rowWarning: ({ rows, columns, cells, limit, columnCount }) => `numbers.csv has ${rows} rows and ${columns} columns (${columnCount}), ${cells} cells, above ${limit}.`,
 		successMessage: 'numbers.csv is ready.',
 		failureMessage: vi.fn(detail => (detail ? `numbers.csv failed: ${detail}` : 'numbers.csv failed.')),
 		...overrides,
@@ -180,7 +180,7 @@ describe.each(['en', 'pt-BR'])('dataset intake in %s', language => {
 		const result = await runIntake(source, { confirm });
 
 		expect(result).toEqual({ ok: true, index: 0 });
-		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has ${format(1001)} rows and 1 columns (1), above ${format(1000)}.`);
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has ${format(1001)} rows and 1 columns (1), ${format(1001)} cells, above ${format(1000)}.`);
 		expect(source.requests).toHaveLength(1);
 		expect(workerRequests.workers).toBe(1);
 		expect(workerRequests.map(request => request.options)).toEqual([{ awaitRowCount: true }]);
@@ -192,7 +192,7 @@ describe.each(['en', 'pt-BR'])('dataset intake in %s', language => {
 		const confirm = vi.fn(() => true);
 		await runIntake(csvSource(csvOf(1001), { pausing: false }), { confirm });
 
-		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has ${format(1001)} rows and 1 columns (1), above ${format(1000)}.`);
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has ${format(1001)} rows and 1 columns (1), ${format(1001)} cells, above ${format(1000)}.`);
 		expect(workerRequests.map(request => request.options)).toEqual([{}]);
 		expect(getAllDatasets()[0].rows).toHaveLength(1001);
 	});
@@ -204,6 +204,24 @@ describe.each(['en', 'pt-BR'])('dataset intake in %s', language => {
 		expect(confirm).not.toHaveBeenCalled();
 		expect(workerRequests.workers).toBe(1);
 		expect(getAllDatasets()[0].rows).toHaveLength(1000);
+	});
+
+	it('counts cells, so a wide source under the row count is asked about', async () => {
+		const confirm = vi.fn(() => true);
+		const rows = Array.from({ length: 501 }, (_, index) => `${index},${index}`).join('\n');
+		await runIntake(csvSource(`a,b\n${rows}\n`), { confirm });
+
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(`numbers.csv has 501 rows and 2 columns (2), ${format(1002)} cells, above ${format(1000)}.`);
+		expect(getAllDatasets()[0].rows).toHaveLength(501);
+	});
+
+	it('continues without asking when rows × columns is at the limit', async () => {
+		const confirm = vi.fn(() => true);
+		const rows = Array.from({ length: 500 }, (_, index) => `${index},${index}`).join('\n');
+		await runIntake(csvSource(`a,b\n${rows}\n`), { confirm });
+
+		expect(confirm).not.toHaveBeenCalled();
+		expect(getAllDatasets()[0].rows).toHaveLength(500);
 	});
 
 	it('never limits a source without a row warning', async () => {

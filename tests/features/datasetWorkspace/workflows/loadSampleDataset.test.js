@@ -10,7 +10,7 @@ import { runIngest } from '../../../../src/workers/dataIngestWorker.js';
 
 vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	...(await importOriginal()),
-	LARGE_DATASET_WARNING_ROWS: 1,
+	LARGE_DATASET_WARNING_CELLS: 1,
 }));
 
 const sampleDataset = { nameKey: 'chive-sample-dataset-iris-name', rowCount: 1, dataUrl: '/iris.csv', dataFormat: 'csv' };
@@ -136,7 +136,7 @@ describe.each(['en', 'pt-BR'])('sample loading feedback in %s', language => {
 		expect(getAllDatasets()).toEqual([]);
 		expect(selectDataset).not.toHaveBeenCalled();
 	});
-	it('adds a sample above the row limit without asking', async () => {
+	it('adds a sample above the cell limit without asking', async () => {
 		fetchSource.mockResolvedValue({ ok: true, text: async () => 'value\n1\n2\n' });
 		await loadSampleDataset(sampleDataset, { selectDataset });
 		expect(getAllDatasets()[0].rows).toEqual([{ value: 1 }, { value: 2 }]);
