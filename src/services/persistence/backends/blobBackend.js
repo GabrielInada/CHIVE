@@ -12,6 +12,7 @@
 import sqlite3InitModule from '../../../../vendor/sqlite/sqlite3.js';
 import { computeDatasetFingerprint } from '../../../domain/datasets/fingerprint.js';
 import { applySchema, assertMeta, readSnapshot, writeSnapshot } from '../sqlite/core.js';
+import { isStringLimitError, payloadTooLargeError } from '../errors.js';
 
 export const SQLITE_IDB_NAME = 'chive-sqlite';
 export const SQLITE_IDB_STORE = 'db';
@@ -119,7 +120,13 @@ async function fingerprintDatasets(snapshot) {
 		: [];
 	const fingerprints = new Map();
 	for (const dataset of datasets) {
-		fingerprints.set(dataset.id, await computeDatasetFingerprint(dataset));
+		try {
+			fingerprints.set(dataset.id, await computeDatasetFingerprint(dataset));
+		} catch (error) {
+			// The fingerprint serializes every row too, and can hit the limit first.
+			if (isStringLimitError(error)) throw payloadTooLargeError({ kind: 'dataset', name: dataset.name });
+			throw error;
+		}
 	}
 	return fingerprints;
 }

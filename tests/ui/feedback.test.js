@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   showFeedback,
   showError,
+  showErrorOnce,
   clearErrors,
   clearAllFeedback,
 } from '../../src/ui/feedback.js';
@@ -39,6 +40,27 @@ describe('ui/feedback', () => {
     const close = errorsContainer.querySelector('.btn-close-notice');
     close.click();
     expect(errorsContainer.querySelector('.error-notice')).toBeNull();
+  });
+
+  it('does not repeat an error notice that is still open', () => {
+    const errorsContainer = document.createElement('div');
+    errorsContainer.id = 'errors-container';
+    document.body.appendChild(errorsContainer);
+
+    showErrorOnce('save failed');
+    showErrorOnce('save failed');
+    showErrorOnce('other failure');
+    expect(errorsContainer.querySelectorAll('.error-notice')).toHaveLength(2);
+
+    errorsContainer.querySelector('.btn-close-notice').click();
+    showErrorOnce('save failed');
+    expect([...errorsContainer.querySelectorAll('.error-notice')].map(notice => notice.textContent))
+      .toEqual([expect.stringContaining('other failure'), expect.stringContaining('save failed')]);
+  });
+
+  it('shows a first error notice before its region exists', () => {
+    showErrorOnce('fallback once');
+    expect(document.getElementById('errors-container')?.textContent).toContain('fallback once');
   });
 
   it('defensively creates an assertive error region when it is missing', () => {

@@ -8,6 +8,7 @@
  */
 
 import { CELL_FORMAT_VERSION } from '../../../domain/datasets/cellValues.js';
+import { isStringLimitError, payloadTooLargeError } from '../errors.js';
 
 export const SQLITE_SCHEMA_VERSION = '1';
 export const SQLITE_FORMAT = 'chive-project';
@@ -18,6 +19,23 @@ const CELL_FORMAT_META_KEY = 'cell_format_version';
 
 function jsonStringify(value, fallback) {
 	return JSON.stringify(value === undefined ? fallback : value);
+}
+
+/**
+ * Serialize rows, naming their owner when the text would exceed the engine's
+ * maximum string length.
+ *
+ * @param {Array<Object>} rows
+ * @param {{ kind: 'dataset' | 'chart', name: string }} owner
+ * @returns {string}
+ */
+function stringifyRows(rows, owner) {
+	try {
+		return JSON.stringify(rows);
+	} catch (error) {
+		if (isStringLimitError(error)) throw payloadTooLargeError(owner);
+		throw error;
+	}
 }
 
 function jsonParse(raw, fallback) {
@@ -69,6 +87,7 @@ function buildPanelRecord(panel) {
 			if (Number.isInteger(chartId)) {
 				snapshotPayloads.push({
 					chartId,
+					name: typeof chart.name === 'string' ? chart.name : '',
 					rows: Array.isArray(dataSnapshot) ? dataSnapshot : [],
 					columns: Array.isArray(columnsSnapshot) ? columnsSnapshot : [],
 				});
@@ -166,6 +185,9 @@ export function applySchema(db) {
  * Replace all project content in the SQLite DB with `snapshot`. Its cells are
  * canonical, as every in-memory row is, so the current cell format is stamped.
  *
+ * Rows too large for one string throw a `PayloadTooLargeError` naming the
+ * dataset or saved chart, and the transaction rolls back.
+ *
  * @param {*} db sqlite-wasm oo1 DB instance
  * @param {Partial<AppState>} snapshot
  * @param {{ fingerprintsByDatasetId: Map<string, { fingerprint: string, algorithm: string }> | Object<string, { fingerprint: string, algorithm: string }> }} options
@@ -216,7 +238,7 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 			bindExec(
 				db,
 				'INSERT INTO dataset_payload(dataset_id, rows_json) VALUES (?, ?)',
-				[dataset.id, jsonStringify(Array.isArray(dataset.rows) ? dataset.rows : [], [])],
+				[dataset.id, stringifyRows(Array.isArray(dataset.rows) ? dataset.rows : [], { kind: 'dataset', name: dataset.name })],
 			);
 		});
 
@@ -237,7 +259,7 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 				'INSERT INTO panel_snapshot_payload(chart_id, rows_json, columns_json) VALUES (?, ?, ?)',
 				[
 					payload.chartId,
-					jsonStringify(payload.rows, []),
+					stringifyRows(payload.rows, { kind: 'chart', name: payload.name }),
 					jsonStringify(payload.columns, []),
 				],
 			);

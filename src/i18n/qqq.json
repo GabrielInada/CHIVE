@@ -528,6 +528,8 @@
 	"chive-save-failed": "Error toast shown when a project auto-save fails.",
 	"chive-load-failed": "Persistent error shown when saved work cannot be restored and CHIVE continues with an empty workspace.",
 	"chive-save-failed-quota": "Error toast shown when saving fails because browser storage quota is full.",
+	"chive-save-failed-dataset-too-large": "Error notice shown when autosave fails because one dataset's rows are too large to serialize in this browser (the engine's maximum string length). Every later save fails too until the dataset is removed. $1 = dataset name.",
+	"chive-save-failed-chart-too-large": "Error notice shown when autosave fails because a chart saved to the Panel holds too many rows to serialize in this browser. Every later save fails too until the chart is removed from the Panel. $1 = saved chart name.",
 	"chive-chart-color-palette": "Label for quick-apply color palette preset buttons (Pastel, Bold, Colorblind-Safe).",
 	"chive-chart-color-palette-help": "Help text below palette buttons explaining that Colorblind-Safe is the accessibility-first default.",
 	"chive-chart-palette-tableau10": "Display name for the Tableau10 palette (the 'Standard' option).",
