@@ -509,6 +509,7 @@
 	"chive-error-format": "Formato não suportado em \"$1\". Envie um arquivo CSV, TSV, DSV, TXT ou JSON.",
 	"chive-upload-load-failed": "Não foi possível carregar o arquivo \"$1\". Tente novamente.",
 	"chive-upload-load-failed-detail": "Não foi possível carregar o arquivo \"$1\": $2",
+	"chive-upload-file-too-large": "O arquivo \"$1\" ($2) é grande demais para ser aberto neste navegador.",
 	"chive-error-upload-input-missing": "O controle de upload está indisponível no momento.",
 	"chive-error-upload-zone-missing": "A área de upload está indisponível no momento.",
 	"chive-ingest-error-csv-empty": "O arquivo CSV está vazio.",

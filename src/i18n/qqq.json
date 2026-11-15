@@ -508,6 +508,7 @@
 	"chive-error-format": "Error when user uploads an unsupported file type. $1 = file name. Lists all accepted extensions.",
 	"chive-upload-load-failed": "Upload failure shown in both the error notice and the progress toast when no translated detail is available, including a file the browser cannot read. $1 = file name. Internal diagnostic codes are not displayed.",
 	"chive-upload-load-failed-detail": "Upload failure shown in both the error notice and the progress toast when a translated parsing explanation is available. $1 = file name; $2 = translated parser detail, never an internal code.",
+	"chive-upload-file-too-large": "Upload failure shown in both the error notice and the progress toast when the browser returns no text for a file above the size warning threshold, which happens when the content exceeds the engine's maximum string length. $1 = file name; $2 = file size (formatted).",
 	"chive-error-upload-input-missing": "Error shown when the hidden file input element is missing from the DOM during setup.",
 	"chive-error-upload-zone-missing": "Error shown when the upload drop zone element is missing from the DOM during setup.",
 	"chive-ingest-error-csv-empty": "Parse-error detail: the uploaded CSV file is empty or has no data rows.",
