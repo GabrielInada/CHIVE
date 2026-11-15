@@ -633,9 +633,10 @@ Policy, in order:
 3. **Leaf budget:** while `triangleCount * 4 ** depth > TIN_CHART.maxSurfaceLeaves`,
    decrement depth (floored at 0). This caps total geometry work on very large
    renders. Uploads above `LARGE_FILE_WARNING_BYTES` (15 MiB) or
-   `LARGE_DATASET_WARNING_ROWS` (200000 rows) prompt for confirmation; users can
-   approve larger inputs. Those thresholds do not bound rendering work. A large
-   dataset can still be expensive to triangulate, subdivide, overlay, and export.
+   `LARGE_DATASET_WARNING_CELLS` (2400000 rows × columns) prompt for
+   confirmation; users can approve larger inputs. Those thresholds do not bound
+   rendering work. A large dataset can still be expensive to triangulate,
+   subdivide, overlay, and export.
    The fallback is a coarser surface fill, not input rejection.
 
 ### 7.10 Subdivision and grouped path emission (`appendSubdividedFragments`)
@@ -851,7 +852,8 @@ Optimized mode. Full ramp can produce more fill paths because it deliberately ke
 exact colors. The Delaunay triangulation and subdivision CPU still run each render.
 This is a fill/render performance control, **not** a full client-side DoS guard. CHIVE
 prompts for confirmation above `LARGE_FILE_WARNING_BYTES` (15 MiB) and
-`LARGE_DATASET_WARNING_ROWS` (200000 rows), and users can approve larger inputs.
+`LARGE_DATASET_WARNING_CELLS` (2400000 rows × columns), and users can approve
+larger inputs.
 Delaunay construction, fill grouping, points/edges/z-label overlays, isoline
 segment counts, and panel-export payload size can still be large, even below
 those thresholds. Broader input-size policy is cross-cutting across chart types

@@ -757,7 +757,7 @@
  * @property {string} progressLabel - The progress toast's label until the worker reports a stage.
  * @property {(request: IntakeRequest) => Promise<Result>} ingest - Loads the source's data when it needs to, then runs Ingest in the data worker. Resolves with the worker's result, whose `value` holds the {@link IngestPayload}, or with a failure such as `'cancelled'`.
  * @property {(rowCount: number) => string} sizeLabel - The new dataset's size label, given its row count.
- * @property {((counts: IntakeRowWarningCounts) => string) | null} rowWarning - The question asked when the rows are over the row limit. `null` exempts the source from the row limit.
+ * @property {((counts: IntakeRowWarningCounts) => string) | null} rowWarning - The question asked when rows × columns is over the cell limit. `null` exempts the source from the limit.
  * @property {string} successMessage - The progress toast's text once the dataset is added.
  * @property {(detail: string, reason: string) => string} failureMessage - Text for the toast and the error notice when the intake fails. `detail` is Ingest's translated explanation of a known parse failure, otherwise empty. `reason` lets a source word its own failures, such as a fetch timeout, and is never shown.
  */
@@ -769,7 +769,8 @@
  * @typedef {Object} IntakeRowWarningCounts
  * @property {string} rows - The row count.
  * @property {string} columns - The column count.
- * @property {string} limit - The recommended maximum row count.
+ * @property {string} cells - Rows × columns.
+ * @property {string} limit - The recommended maximum cell count.
  * @property {number} columnCount
  */
 

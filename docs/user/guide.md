@@ -31,7 +31,8 @@ Start from either a bundled sample dataset or a local file.
   `1234`, and `2345`. An explicit choice applies to every file in that upload
   batch. Typed JSON numbers keep their values regardless of the choice.
 - Files larger than 15 MB ask for confirmation before processing, and so do
-  files with more than 200,000 rows. CHIVE keeps every row when you continue.
+  files with more than 2,400,000 cells (rows × columns), such as 200,000 rows
+  with 12 columns. CHIVE keeps every row when you continue.
 
 After a dataset loads, CHIVE shows the table preview, detected columns, and
 column controls. Hide columns you do not want available to charts.
@@ -49,8 +50,8 @@ Use the preview and statistics views before building charts.
 
 If a dataset needs to combine fields from two loaded datasets, use the join
 builder and choose the join keys, join type, and output columns. A join that
-would create more than 200,000 rows asks for confirmation first, and CHIVE keeps
-the complete result when you continue.
+would create more than 2,400,000 cells (rows × columns) asks for confirmation
+first, and CHIVE keeps the complete result when you continue.
 Each column keeps its source decimal format through joins and project saves.
 For example, `1.000` imported with **Comma** still means 1000 if a join narrows
 a mixed text column to numeric values, even when the other dataset uses **Dot**.

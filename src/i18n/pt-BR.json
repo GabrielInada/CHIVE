@@ -503,8 +503,8 @@
 	"chive-type-date": "data",
 
 	"chive-warn-large-file": "O arquivo \"$1\" tem $2, acima do recomendado ($3). Todas as linhas serão importadas, e a importação e o salvamento levarão mais tempo e usarão mais memória. Deseja continuar?",
-	"chive-warn-large-rows": "O arquivo \"$1\" tem $2 linhas e $3 {{PLURAL:$5|coluna|colunas}}, acima do recomendado ($4 linhas). Todas as linhas serão importadas, e a importação e o salvamento levarão mais tempo e usarão mais memória. Deseja continuar?",
-	"chive-warn-large-join": "Esta junção criaria $1 linhas e $2 {{PLURAL:$4|coluna|colunas}}, acima do recomendado ($3 linhas). Todas as linhas serão mantidas, e adicionar e salvar o resultado levará mais tempo e usará mais memória. Deseja continuar?",
+	"chive-warn-large-rows": "O arquivo \"$1\" tem $2 linhas e $3 {{PLURAL:$5|coluna|colunas}} ($6 células), acima do recomendado ($4 células). Todas as linhas serão importadas, e a importação e o salvamento levarão mais tempo e usarão mais memória. Deseja continuar?",
+	"chive-warn-large-join": "Esta junção criaria $1 linhas e $2 {{PLURAL:$4|coluna|colunas}} ($5 células), acima do recomendado ($3 células). Todas as linhas serão mantidas, e adicionar e salvar o resultado levará mais tempo e usará mais memória. Deseja continuar?",
 
 	"chive-error-format": "Formato não suportado em \"$1\". Envie um arquivo CSV, TSV, DSV, TXT ou JSON.",
 	"chive-upload-load-failed": "Não foi possível carregar o arquivo \"$1\". Tente novamente.",

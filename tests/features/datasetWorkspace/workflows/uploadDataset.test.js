@@ -14,7 +14,7 @@ const TIMERS_TO_FAKE = ['setTimeout', 'clearTimeout', 'setInterval', 'clearInter
 
 vi.mock('../../../../src/config/limits.js', async importOriginal => ({
 	...(await importOriginal()),
-	LARGE_DATASET_WARNING_ROWS: 2,
+	LARGE_DATASET_WARNING_CELLS: 2,
 }));
 
 /** A real File; `size` overrides the reported size without a large buffer. */
@@ -28,7 +28,7 @@ function fileOf(name, text, size) {
 const messages = {
 	en: {
 		largeFile: (name, size, limit) => `File "${name}" is ${size}, above the recommended ${limit}. Every row will be imported, and importing and saving will take longer and use more memory. Continue?`,
-		largeRows: (name, rows, columns, limit) => `File "${name}" has ${rows} rows and ${columns}, above the recommended ${limit} rows. Every row will be imported, and importing and saving will take longer and use more memory. Continue?`,
+		largeRows: (name, rows, columns, cells, limit) => `File "${name}" has ${rows} rows and ${columns} (${cells} cells), above the recommended ${limit} cells. Every row will be imported, and importing and saving will take longer and use more memory. Continue?`,
 		columns: (shown, count) => `${shown} ${count === 1 ? 'column' : 'columns'}`,
 		failed: name => `Could not load file "${name}". Please try again.`,
 		failedDetail: (name, detail) => `Could not load file "${name}": ${detail}`,
@@ -36,7 +36,7 @@ const messages = {
 	},
 	'pt-BR': {
 		largeFile: (name, size, limit) => `O arquivo "${name}" tem ${size}, acima do recomendado (${limit}). Todas as linhas serão importadas, e a importação e o salvamento levarão mais tempo e usarão mais memória. Deseja continuar?`,
-		largeRows: (name, rows, columns, limit) => `O arquivo "${name}" tem ${rows} linhas e ${columns}, acima do recomendado (${limit} linhas). Todas as linhas serão importadas, e a importação e o salvamento levarão mais tempo e usarão mais memória. Deseja continuar?`,
+		largeRows: (name, rows, columns, cells, limit) => `O arquivo "${name}" tem ${rows} linhas e ${columns} (${cells} células), acima do recomendado (${limit} células). Todas as linhas serão importadas, e a importação e o salvamento levarão mais tempo e usarão mais memória. Deseja continuar?`,
 		columns: (shown, count) => `${shown} ${count === 1 ? 'coluna' : 'colunas'}`,
 		failed: name => `Não foi possível carregar o arquivo "${name}". Tente novamente.`,
 		failedDetail: (name, detail) => `Não foi possível carregar o arquivo "${name}": ${detail}`,
@@ -130,11 +130,11 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 		expect(getAllDatasets()).toEqual([]);
 	});
 
-	it('asks above the row warning threshold and keeps every row it approves', async () => {
+	it('asks above the cell warning threshold and keeps every row it approves', async () => {
 		const reads = vi.spyOn(FileReader.prototype, 'readAsText');
 		await uploadDatasetFiles([fileOf('big.csv', 'v\n1\n2\n3\n')], { confirm }, { decimalSeparator: ',' });
 
-		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('big.csv', format(3), text.columns(format(1), 1), format(2)));
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('big.csv', format(3), text.columns(format(1), 1), format(3), format(2)));
 		expect(workerRequests.map(request => request.options)).toEqual([
 			{ decimalSeparator: ',', awaitRowCount: true },
 		]);
@@ -148,8 +148,15 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 		const row = Array(1001).fill('1').join(',');
 		await uploadDatasetFiles([fileOf('wide.csv', `${header}\n${row}\n${row}\n${row}\n`)], { confirm });
 
-		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('wide.csv', format(3), text.columns(format(1001), 1001), format(2)));
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('wide.csv', format(3), text.columns(format(1001), 1001), format(3003), format(2)));
 		expect(getAllDatasets()[0].columns).toHaveLength(1001);
+	});
+
+	it('asks about a single row when its columns put it over the cell threshold', async () => {
+		await uploadDatasetFiles([fileOf('row.csv', 'a,b,c\n1,2,3\n')], { confirm });
+
+		expect(confirm).toHaveBeenCalledExactlyOnceWith(text.largeRows('row.csv', format(1), text.columns(format(3), 3), format(3), format(2)));
+		expect(getAllDatasets()[0].rows).toEqual([{ a: 1, b: 2, c: 3 }]);
 	});
 
 	it('closes quietly when the row warning is declined', async () => {

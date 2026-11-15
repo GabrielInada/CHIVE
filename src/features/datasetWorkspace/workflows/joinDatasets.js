@@ -106,7 +106,7 @@ function joinSource({ leftDataset, rightDataset, leftKeys, rightKeys, leftColumn
 			},
 		}, { signal, onProgress }),
 		sizeLabel: rowCount => t('chive-join-generated-size', rowCount),
-		rowWarning: ({ rows, columns, limit, columnCount }) => t('chive-warn-large-join', rows, columns, limit, columnCount),
+		rowWarning: ({ rows, columns, cells, limit, columnCount }) => t('chive-warn-large-join', rows, columns, limit, columnCount, cells),
 		successMessage: t('chive-join-success', name),
 		failureMessage: () => t('chive-join-failed', leftDataset.name, rightDataset.name),
 	};
