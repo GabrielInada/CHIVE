@@ -31,14 +31,24 @@ const messages = {
 		largeRows: (name, rows, limit) => `File "${name}" has ${rows} rows, above the recommended limit (${limit}). Continue anyway?`,
 		failed: name => `Could not load file "${name}". Please try again.`,
 		failedDetail: (name, detail) => `Could not load file "${name}": ${detail}`,
+		tooLarge: (name, size) => `File "${name}" (${size}) is too large to open in this browser.`,
 	},
 	'pt-BR': {
 		largeFile: (name, size, limit) => `O arquivo "${name}" tem tamanho ${size}, acima do recomendado (${limit}). Deseja continuar?`,
 		largeRows: (name, rows, limit) => `O arquivo "${name}" possui ${rows} linhas, acima do recomendado (${limit}). Deseja continuar?`,
 		failed: name => `Não foi possível carregar o arquivo "${name}". Tente novamente.`,
 		failedDetail: (name, detail) => `Não foi possível carregar o arquivo "${name}": ${detail}`,
+		tooLarge: (name, size) => `O arquivo "${name}" (${size}) é grande demais para ser aberto neste navegador.`,
 	},
 };
+
+/** Make every read finish like Chromium does past its string limit: `load`, no text. */
+function readNothing() {
+	vi.spyOn(FileReader.prototype, 'readAsText').mockImplementation(function () {
+		Object.defineProperty(this, 'result', { value: '', configurable: true });
+		queueMicrotask(() => this.onload?.(new Event('load')));
+	});
+}
 
 const notices = () => [...document.querySelectorAll('.error-notice > div')].map(node => node.textContent);
 const failedToastLabel = () => document.querySelector('.toast-progress.failure .toast-progress-label')?.textContent;
@@ -190,6 +200,36 @@ describe.each(['en', 'pt-BR'])('file upload in %s', language => {
 		expect(notices()).toEqual([message]);
 		expect(failedToastLabel()).toBe(message);
 		expect(workerRequests).toEqual([]);
+	});
+
+	it('says a large file is too large when the browser returns no text for it', async () => {
+		readNothing();
+		const size = 540 * 1024 * 1024;
+		await uploadDatasetFiles([fileOf('big.csv', 'v\n1\n', size)], { confirm });
+		const message = text.tooLarge('big.csv', formatFileSize(size));
+
+		expect(notices()).toEqual([message]);
+		expect(failedToastLabel()).toBe(message);
+		expect(workerRequests).toEqual([]);
+		expect(getAllDatasets()).toEqual([]);
+	});
+
+	it('reports a small file that reads as nothing as unreadable, not as empty', async () => {
+		readNothing();
+		await uploadDatasetFiles([fileOf('odd.csv', 'v\n1\n')], { confirm });
+		const message = text.failed('odd.csv');
+
+		expect(notices()).toEqual([message]);
+		expect(failedToastLabel()).toBe(message);
+		expect(workerRequests).toEqual([]);
+	});
+
+	it('still calls a file that holds only a byte order mark empty', async () => {
+		await uploadDatasetFiles([fileOf('bom.csv', '\uFEFF')], { confirm });
+		const message = text.failedDetail('bom.csv', t('chive-ingest-error-csv-empty'));
+
+		expect(notices()).toEqual([message]);
+		expect(getAllDatasets()).toEqual([]);
 	});
 
 	it('names the file when its size warning cannot open', async () => {
