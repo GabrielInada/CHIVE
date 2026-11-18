@@ -9,8 +9,9 @@
 
 import { CELL_FORMAT_VERSION } from '../../../domain/datasets/cellValues.js';
 import { isStringLimitError, payloadTooLargeError } from '../errors.js';
+import { mapPlacementPayloads, placementKey } from '../placementPayloads.js';
 
-export const SQLITE_SCHEMA_VERSION = '1';
+export const SQLITE_SCHEMA_VERSION = '2';
 export const SQLITE_FORMAT = 'chive-project';
 
 // Meta key for the generation of the stored cell format. Projects saved before
@@ -79,6 +80,7 @@ function getFingerprintForDataset(dataset, fingerprintsByDatasetId) {
 function buildPanelRecord(panel) {
 	const source = isNonArrayObject(panel) ? panel : {};
 	const snapshotPayloads = [];
+	const placementPayloads = [];
 	const charts = Array.isArray(source.charts)
 		? source.charts.map(chart => {
 			if (!isNonArrayObject(chart)) return chart;
@@ -96,9 +98,19 @@ function buildPanelRecord(panel) {
 		})
 		: [];
 
+	const blocks = mapPlacementPayloads(source.blocks, (placement, blockId, slotId, chartId) => {
+		const { dataSnapshot, columnsSnapshot, ...metadata } = placement;
+		if (Array.isArray(dataSnapshot) && Array.isArray(columnsSnapshot)) {
+			placementPayloads.push({
+				blockId, slotId, rows: dataSnapshot, columns: columnsSnapshot,
+				name: charts.find(chart => chart?.id === chartId)?.name || '',
+			});
+		}
+		return metadata;
+	});
 	return {
 		panelDoc: {
-			blocks: Array.isArray(source.blocks) ? source.blocks : [],
+			blocks,
 			charts,
 			slots: isNonArrayObject(source.slots) ? source.slots : {},
 			layout: typeof source.layout === 'string' ? source.layout : 'template-2col',
@@ -106,6 +118,7 @@ function buildPanelRecord(panel) {
 			nextChartId: Number.isInteger(source.nextChartId) ? source.nextChartId : 0,
 		},
 		snapshotPayloads,
+		placementPayloads,
 	};
 }
 
@@ -137,7 +150,7 @@ export function assertMeta(db, { requireMeta = false } = {}) {
 	if (Object.hasOwn(meta, 'format') && meta.format !== SQLITE_FORMAT) {
 		throw new Error(`Unsupported CHIVE SQLite format: ${meta.format}`);
 	}
-	if (Object.hasOwn(meta, 'schema_version') && meta.schema_version !== SQLITE_SCHEMA_VERSION) {
+	if (Object.hasOwn(meta, 'schema_version') && !['1', SQLITE_SCHEMA_VERSION].includes(meta.schema_version)) {
 		throw new Error(`Unsupported CHIVE SQLite schema version: ${meta.schema_version}`);
 	}
 }
@@ -178,6 +191,13 @@ export function applySchema(db) {
 			rows_json TEXT NOT NULL,
 			columns_json TEXT NOT NULL
 		);
+		CREATE TABLE IF NOT EXISTS panel_placement_payload (
+			block_id TEXT NOT NULL,
+			slot_id TEXT NOT NULL,
+			rows_json TEXT NOT NULL,
+			columns_json TEXT NOT NULL,
+			PRIMARY KEY (block_id, slot_id)
+		);
 	`);
 }
 
@@ -199,7 +219,7 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 		: [];
 	const activeDatasetId = getActiveDatasetId(snapshot, allDatasets);
 	const datasets = allDatasets.filter(dataset => dataset?.id);
-	const { panelDoc, snapshotPayloads } = buildPanelRecord(snapshot?.panel);
+	const { panelDoc, snapshotPayloads, placementPayloads } = buildPanelRecord(snapshot?.panel);
 
 	db.exec('BEGIN IMMEDIATE');
 	try {
@@ -208,6 +228,7 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 		db.exec('DELETE FROM app_state');
 		db.exec('DELETE FROM dataset_payload');
 		db.exec('DELETE FROM panel_snapshot_payload');
+		db.exec('DELETE FROM panel_placement_payload');
 
 		bindExec(db, 'INSERT INTO meta(key, value) VALUES (?, ?)', ['format', SQLITE_FORMAT]);
 		bindExec(db, 'INSERT INTO meta(key, value) VALUES (?, ?)', ['schema_version', SQLITE_SCHEMA_VERSION]);
@@ -265,6 +286,12 @@ export function writeSnapshot(db, snapshot, { fingerprintsByDatasetId } = {}) {
 			);
 		});
 
+		placementPayloads.forEach(payload => {
+			bindExec(db,
+				'INSERT INTO panel_placement_payload(block_id, slot_id, rows_json, columns_json) VALUES (?, ?, ?, ?)',
+				[payload.blockId, payload.slotId, stringifyRows(payload.rows, { kind: 'chart', name: payload.name }), jsonStringify(payload.columns, [])],
+			);
+		});
 		db.exec('COMMIT');
 	} catch (error) {
 		try {
@@ -319,9 +346,16 @@ export function readSnapshot(db) {
 			}])
 	);
 
+	const payloadByPlacement = new Map(selectRows(db, 'SELECT block_id, slot_id, rows_json, columns_json FROM panel_placement_payload')
+		.map(row => [placementKey(row.block_id, row.slot_id), {
+			dataSnapshot: jsonParse(row.rows_json, []), columnsSnapshot: jsonParse(row.columns_json, []),
+		}]));
 	const panel = panelDoc
 		? {
 			...panelDoc,
+			blocks: mapPlacementPayloads(panelDoc.blocks, (placement, blockId, slotId) => ({
+				...placement, ...payloadByPlacement.get(placementKey(blockId, slotId)),
+			})),
 			charts: Array.isArray(panelDoc.charts)
 				? panelDoc.charts.map(chart => {
 					const payload = payloadByChartId.get(Number(chart?.id));

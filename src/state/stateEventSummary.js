@@ -34,6 +34,8 @@ export function summarizeStateEvent(type, data, events) {
 				};
 			case events.CHART_SNAPSHOT_REMOVED:
 				return { id: integer(data) };
+			case events.PANEL_PLACEMENTS_UPDATED:
+				return { count: integer(data?.count) };
 			case events.PANEL_BLOCK_MOVED:
 				return { targetIndex: integer(data?.targetIndex) };
 			case events.PANEL_BLOCK_HEIGHT_UPDATED:

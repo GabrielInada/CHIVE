@@ -13,6 +13,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const renderMocks = vi.hoisted(() => ({
 	renderSidebarPanel: vi.fn(),
 	renderCanvasPanel: vi.fn(),
+	refreshPanelPlacements: vi.fn(),
 }));
 vi.mock('../../../src/features/panel/views/panelView.js', () => renderMocks);
 

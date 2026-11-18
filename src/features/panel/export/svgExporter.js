@@ -114,7 +114,7 @@ export function exportPanelLayoutSvg() {
 			}
 			exportedChartCount += 1;
 
-			const slotRect = slotEl.getBoundingClientRect();
+			const slotRect = (slotEl.querySelector('.panel-chart-container') || slotEl).getBoundingClientRect();
 			const x = slotRect.left - rectCanvas.left;
 			const y = slotRect.top - rectCanvas.top;
 			const w = slotRect.width;

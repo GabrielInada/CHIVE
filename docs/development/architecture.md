@@ -125,7 +125,7 @@ The following are contributor policies, backed by lint or tests where noted:
 - Keep `panel.layout` synchronized with the authoritative first block template;
   it exists only as a persisted compatibility field.
 - Panel chart captures are independent of dataset lifetime. Dataset removal
-  preserves captures and their assignments.
+  freezes linked placements at their current result and preserves captures and assignments.
 - Treat the import restrictions as composition and leaf-layer boundaries, not
   as proof that the complete module graph is a directed acyclic graph.
 

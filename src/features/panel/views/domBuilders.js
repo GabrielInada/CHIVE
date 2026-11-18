@@ -264,6 +264,8 @@ export function createPanelSlotElement({
 	onClearSlot,
 	onExpand,
 	onDropData,
+	placement,
+	onFollowGlobalFilter,
 }) {
 	const slot = document.createElement('div');
 	slot.className = chart ? 'panel-slot' : 'panel-slot empty';
@@ -293,6 +295,26 @@ export function createPanelSlotElement({
 
 		slot.appendChild(clearBtn);
 		slot.appendChild(chartContainer);
+		if (placement) {
+			const controls = document.createElement('div');
+			controls.className = 'panel-slot-controls';
+			const lock = document.createElement('button');
+			lock.type = 'button';
+			lock.className = 'panel-follow-lock';
+			lock.dataset.panelFollow = '1';
+			lock.setAttribute('aria-label', translate('chive-panel-lock-view'));
+			const help = document.createElement('span');
+			help.className = 'panel-follow-help visually-hidden';
+			help.id = `panel-follow-${blockId}-${slotId}-help`;
+			lock.setAttribute('aria-describedby', help.id);
+			lock.addEventListener('click', () => {
+				if (lock.getAttribute('aria-disabled') === 'true') return;
+				onFollowGlobalFilter?.(lock.getAttribute('aria-pressed') === 'true');
+			});
+			controls.append(lock, help);
+			slot.appendChild(controls);
+			updatePlacementControls(slot, placement, translate);
+		}
 		if (onExpand) {
 			const expandBtn = document.createElement('button');
 			expandBtn.type = 'button';
@@ -310,6 +332,10 @@ export function createPanelSlotElement({
 
 		if (desktopDnd) {
 			slot.addEventListener('dragstart', e => {
+				if (e.target.closest('button, input, label, .panel-slot-controls')) {
+					e.preventDefault();
+					return;
+				}
 				e.dataTransfer.effectAllowed = 'move';
 				e.dataTransfer.setData('text/panel-chart-id', String(chart.id));
 				e.dataTransfer.setData('text/panel-slot-id', slotId);
@@ -347,4 +373,18 @@ export function createPanelSlotElement({
 	}
 
 	return slot;
+}
+
+/** Update existing controls in place so keyboard focus survives live refreshes. */
+export function updatePlacementControls(slot, placement, translate) {
+	const lock = slot.querySelector('[data-panel-follow]');
+	const help = slot.querySelector('.panel-follow-help');
+	if (!lock || !help || !placement) return;
+	lock.setAttribute('aria-pressed', String(!placement.followGlobalFilter));
+	// Keep unavailable locks focusable so their explanation remains discoverable.
+	lock.setAttribute('aria-disabled', String(placement.sourceStatus !== 'available'));
+	help.textContent = placement.sourceStatus === 'available'
+		? `${translate(placement.followGlobalFilter ? 'chive-panel-follow-unlocked' : 'chive-panel-follow-locked')} ${translate('chive-panel-follow-source', placement.sourceName)}`
+		: translate(placement.sourceStatus === 'missing' ? 'chive-panel-follow-missing' : 'chive-panel-follow-unlinked');
+	lock.title = help.textContent;
 }

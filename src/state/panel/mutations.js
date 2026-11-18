@@ -72,6 +72,8 @@ export function addChartSnapshotToState(panelState, chartSnapshot, sanitizeChart
 		id,
 		name: sanitizeChartName(chartSnapshot.name),
 		type: chartSnapshot.type || null,
+		sourceDatasetId: typeof chartSnapshot.sourceDatasetId === 'string' && chartSnapshot.sourceDatasetId
+			? chartSnapshot.sourceDatasetId : null,
 		config: chartSnapshot.config || null,
 		dataSnapshot: Array.isArray(chartSnapshot.dataSnapshot) ? chartSnapshot.dataSnapshot : [],
 		columnsSnapshot: Array.isArray(chartSnapshot.columnsSnapshot) ? chartSnapshot.columnsSnapshot : [],
@@ -112,6 +114,7 @@ export function removeChartSnapshotFromState(appState, chartId, ensureDefaultPan
 		Object.keys(block.slots).forEach(slotId => {
 			if (block.slots[slotId] === normalizedId) {
 				delete block.slots[slotId];
+				if (block.placements) delete block.placements[slotId];
 			}
 		});
 	});
@@ -172,6 +175,9 @@ export function repairPanelSlotReferencesState(appState, ensureDefaultPanelBlock
 			if (!validChartIds.has(chartId)) {
 				delete block.slots[slotId];
 			}
+		});
+		Object.keys(block.placements || {}).forEach(slotId => {
+			if (!Object.hasOwn(block.slots, slotId)) delete block.placements[slotId];
 		});
 	});
 }
@@ -410,6 +416,10 @@ export function setPanelBlockTemplateState(
 	block.templateId = templateId;
 	block.proportions = createDefaultProportions(templateId);
 	block.slots = nextSlots;
+	if (block.placements) {
+		block.placements = Object.fromEntries(Object.entries(block.placements)
+			.filter(([slotId]) => Object.hasOwn(nextSlots, slotId)));
+	}
 
 	return { ok: true, changed: true, templateId };
 }
@@ -451,6 +461,7 @@ export function assignChartToPanelBlockSlotState(
 			return { ok: true, changed: false, normalizedId: null };
 		}
 		delete block.slots[slotId];
+		if (block.placements) delete block.placements[slotId];
 		return { ok: true, changed: true, normalizedId: null };
 	}
 
@@ -463,9 +474,10 @@ export function assignChartToPanelBlockSlotState(
 		throw new Error(`Chart ${chartId} not found`);
 	}
 
-	if (block.slots[slotId] === normalizedId) {
+	if (block.slots[slotId] === normalizedId && !block.placements?.[slotId]) {
 		return { ok: true, changed: false, normalizedId };
 	}
 	block.slots[slotId] = normalizedId;
+	if (block.placements) delete block.placements[slotId];
 	return { ok: true, changed: true, normalizedId };
 }

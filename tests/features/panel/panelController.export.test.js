@@ -59,6 +59,7 @@ function injectLiveSlotSvgs() {
     rect.setAttribute('height', '10');
     svg.appendChild(rect);
     chartContainer.appendChild(svg);
+    chartContainer.getBoundingClientRect = () => chartContainer.closest('[data-panel-slot]').getBoundingClientRect();
   });
 }
 

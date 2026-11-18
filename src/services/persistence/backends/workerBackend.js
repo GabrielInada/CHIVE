@@ -29,6 +29,7 @@
 
 import { recordDiagnosticError } from '../../diagnostics.js';
 import { readTooLargeOwner } from '../errors.js';
+import { mapPlacementPayloads, placementKey } from '../placementPayloads.js';
 
 const DEFAULT_TIMEOUT_MS = 120000;
 
@@ -182,7 +183,17 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 				}
 				return rest; // metadata only, no snapshots
 			});
-			metaPanel = { ...srcPanel, charts: metaCharts };
+			const blocks = mapPlacementPayloads(srcPanel.blocks, (placement, blockId, slotId) => {
+				const { dataSnapshot, columnsSnapshot, ...rest } = placement;
+				const key = placementKey(blockId, slotId);
+				for (const [field, value] of [['data', dataSnapshot], ['cols', columnsSnapshot]]) {
+					const payloadKey = `placement:${key}:${field}`;
+					presentKeys.add(payloadKey);
+					refByKey.set(payloadKey, Array.isArray(value) ? value : []);
+				}
+				return rest;
+			});
+			metaPanel = { ...srcPanel, charts: metaCharts, ...(srcPanel.blocks ? { blocks } : {}) };
 		}
 
 		// Strip-then-clone: the envelope already has payloads removed, so this
@@ -255,7 +266,21 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 				}
 				return out;
 			});
-			panel = { ...panel, charts };
+			const blocks = mapPlacementPayloads(panel.blocks, (placement, blockId, slotId) => {
+				const out = { ...placement };
+				const key = placementKey(blockId, slotId);
+				for (const [field, suffix] of [['dataSnapshot', 'data'], ['columnsSnapshot', 'cols']]) {
+					const payloadKey = `placement:${key}:${suffix}`;
+					const ref = record.refByKey.get(payloadKey);
+					if (!forceFull && sentPayloads.get(payloadKey) === ref) out[`${field}Cached`] = true;
+					else {
+						includedKeys.add(payloadKey);
+						out[field] = ref || [];
+					}
+				}
+				return out;
+			});
+			panel = { ...panel, charts, ...(panel.blocks ? { blocks } : {}) };
 		}
 
 		const message = {
@@ -289,7 +314,12 @@ export function createWorkerBackend({ workerFactory, fallbackBackendFactory, tim
 					columnsSnapshot: record.refByKey.get(chartColsKey(cid)) || [],
 				};
 			});
-			panel = { ...panel, charts };
+			const blocks = mapPlacementPayloads(panel.blocks, (placement, blockId, slotId) => ({
+				...placement,
+				dataSnapshot: record.refByKey.get(`placement:${placementKey(blockId, slotId)}:data`) || [],
+				columnsSnapshot: record.refByKey.get(`placement:${placementKey(blockId, slotId)}:cols`) || [],
+			}));
+			panel = { ...panel, charts, ...(panel.blocks ? { blocks } : {}) };
 		}
 		return { ...meta, data: { ...meta.data, datasets }, panel };
 	}

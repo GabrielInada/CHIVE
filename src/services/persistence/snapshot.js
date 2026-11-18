@@ -17,6 +17,7 @@ import { BUBBLE_CHART } from '../../config/charts/definitions/bubble.js';
 import { DATASET_TAB_NAMES } from '../../config/datasetWorkspace.js';
 import { STATS_CATEGORICAL_VERSION, STATS_NUMERIC_VERSION } from '../../config/statistics.js';
 import { canonicalizeChartConfig } from '../../domain/charts/chartConfig.js';
+import { mapPlacementPayloads } from './placementPayloads.js';
 
 /**
  * @internal
@@ -138,6 +139,9 @@ function normalizePanel(panelRecord, transformPanel, formatVersion) {
 	delete panel.activeDatasetId;
 	if (Array.isArray(panel.charts)) {
 		panel.charts = panel.charts.map(chart => withCanonicalCapture(chart, formatVersion));
+	}
+	if (Array.isArray(panel.blocks)) {
+		panel.blocks = mapPlacementPayloads(panel.blocks, placement => withCanonicalCapture(placement, formatVersion));
 	}
 	if (typeof transformPanel === 'function') {
 		try {
