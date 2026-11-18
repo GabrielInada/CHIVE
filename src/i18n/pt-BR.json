@@ -628,5 +628,11 @@
 	"chive-settings-data-clear-busy": "Outra operação de projeto ainda está em andamento. Aguarde a conclusão e tente novamente.",
 
 	"chive-about-page-title": "Sobre: CHIVE",
-	"chive-footer-copyright": "© 2026 CHIVE. Todos os direitos reservados."
+	"chive-footer-copyright": "© 2026 CHIVE. Todos os direitos reservados.",
+    "chive-panel-lock-view": "Travar gráfico na visualização atual",
+    "chive-panel-follow-locked": "Travado: mantém a visualização atual. Destrave para seguir o filtro global.",
+    "chive-panel-follow-unlocked": "Destravado: segue o filtro global. Trave para manter a visualização atual.",
+    "chive-panel-follow-source": "Fonte: $1.",
+    "chive-panel-follow-missing": "Fonte indisponível. Este gráfico mantém a última visualização.",
+    "chive-panel-follow-unlinked": "Para seguir um filtro, adicione este gráfico novamente pela aba Visualizações."
 }

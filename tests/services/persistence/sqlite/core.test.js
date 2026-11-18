@@ -75,6 +75,37 @@ function makeFingerprints() {
 }
 
 describe('sqliteCore', () => {
+	it('stores placement payloads outside metadata and reads version-1 projects without their table', () => {
+		const db = makeDb('/placements-roundtrip.sqlite3');
+		try {
+			const snapshot = makeSnapshot();
+			snapshot.panel.charts[0].sourceDatasetId = 'ds-a';
+			snapshot.panel.blocks[0].placements = {
+				'slot-1': { followGlobalFilter: true, dataSnapshot: [], columnsSnapshot: snapshot.data.datasets[1].columns },
+			};
+			writeSnapshot(db, snapshot, { fingerprintsByDatasetId: makeFingerprints() });
+			const panelDoc = JSON.parse(selectRows(db, "SELECT doc FROM app_state WHERE key = 'panel'")[0].doc);
+			expect(panelDoc.blocks[0].placements['slot-1']).toEqual({ followGlobalFilter: true });
+			expect(selectRows(db, 'SELECT * FROM panel_placement_payload')).toHaveLength(1);
+			expect(selectRows(db, "SELECT value FROM meta WHERE key = 'schema_version'")[0].value).toBe('2');
+			expect(readSnapshot(db).panel.blocks[0].placements).toEqual(snapshot.panel.blocks[0].placements);
+
+			// A real v1 shape: no placement table, no source link or per-slot state.
+			delete snapshot.panel.blocks[0].placements;
+			delete snapshot.panel.charts[0].sourceDatasetId;
+			writeSnapshot(db, snapshot, { fingerprintsByDatasetId: makeFingerprints() });
+			db.exec("UPDATE meta SET value = '1' WHERE key = 'schema_version'");
+			db.exec('DROP TABLE panel_placement_payload');
+			expect(() => assertMeta(db, { requireMeta: true })).not.toThrow();
+			const old = readSnapshot(db);
+			expect(old.panel.charts[0].dataSnapshot).toEqual(snapshot.panel.charts[0].dataSnapshot);
+			expect(old.panel.charts[0].sourceDatasetId).toBeUndefined();
+			expect(old.panel.blocks[0].placements).toBeUndefined();
+		} finally {
+			db.close();
+		}
+	});
+
 	it('creates the export-ready schema including dataset position', () => {
 		const db = makeDb('/schema-test.sqlite3');
 		try {
@@ -85,6 +116,7 @@ describe('sqliteCore', () => {
 				'dataset_payload',
 				'datasets',
 				'meta',
+				'panel_placement_payload',
 				'panel_snapshot_payload',
 			]);
 			expect(tables.find(row => row.name === 'datasets').sql).toContain('position INTEGER NOT NULL');
@@ -217,7 +249,7 @@ describe('sqliteCore', () => {
 		try {
 			applySchema(wrongVersion);
 			wrongVersion.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: ['format', 'chive-project'] });
-			wrongVersion.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: ['schema_version', '2'] });
+			wrongVersion.exec({ sql: 'INSERT INTO meta(key, value) VALUES (?, ?)', bind: ['schema_version', '99'] });
 			expect(() => assertMeta(wrongVersion, { requireMeta: true })).toThrow('Unsupported CHIVE SQLite schema version');
 		} finally {
 			wrongVersion.close();

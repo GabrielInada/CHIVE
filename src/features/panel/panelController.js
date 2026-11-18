@@ -28,6 +28,8 @@ import {
 	movePanelBlock,
 	updatePanelBlockBorder,
 	assignChartToPanelBlockSlot,
+	setPanelPlacementFollowGlobalFilter,
+	movePanelPlacement,
 	updatePanelBlockProportions,
 	updatePanelBlockHeight,
 	repairPanelSlotReferences,
@@ -37,6 +39,7 @@ import {
 import {
 	renderSidebarPanel as renderSidebar,
 	renderCanvasPanel as renderCanvas,
+	refreshPanelPlacements,
 } from './views/panelView.js';
 import { exportPanelLayoutSvg as exportSvg } from './export/svgExporter.js';
 import { SUPPORTED_PANEL_CHART_TYPES } from '../../charts/registries/panel.js';
@@ -78,6 +81,7 @@ export function initPanelController(feedbackFn = null) {
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_PROPORTIONS_UPDATED, handleLayoutChange));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_HEIGHT_UPDATED, handleLayoutChange));
 	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_BLOCK_BORDER_UPDATED, handleLayoutChange));
+	panelSubscriptions.push(onStateChange(STATE_EVENTS.PANEL_PLACEMENTS_UPDATED, refreshPanelPlacements));
 }
 
 /**
@@ -193,6 +197,7 @@ export function addChartToPanel(title, metadata = null) {
 		const chartId = addChartSnapshot({
 			name: title,
 			type,
+			sourceDatasetId: dataset.id,
 			config: structuredClone(dataset.chartConfig?.[type] || {}),
 			dataSnapshot: structuredClone(shown.rows),
 			columnsSnapshot: structuredClone(dataset.columns || []),
@@ -256,6 +261,8 @@ export function renderCanvasPanel() {
 		onChangeBlockTemplate: handleChangeBlockTemplate,
 		onUpdateBlockBorder: handleUpdateBlockBorder,
 		onAssignSlot: handleAssignSlot,
+		onFollowGlobalFilter: setPanelPlacementFollowGlobalFilter,
+		onMovePlacement: movePanelPlacement,
 		onUpdateBlockProportions: handleUpdateBlockProportions,
 		onUpdateBlockHeight: handleUpdateBlockHeight,
 	});

@@ -7,6 +7,7 @@ import { getDatasetColumnNames, normalizeColumnNameList } from '../domain/datase
 import { createDataStateFacade } from './dataStateFacade.js';
 import { createUiStateFacade } from './uiStateFacade.js';
 import { createPanelStateFacade } from './panelStateFacade.js';
+import { reconcilePlacementBlocks } from '../domain/panel/placements.js';
 
 export { onStateChange, STATE_EVENTS };
 
@@ -228,7 +229,10 @@ export function addDataset(dataset) {
  * @fires STATE_EVENTS.DATASET_REMOVED
  */
 export function removeDataset(index) {
-	return dataState.removeDataset(index);
+	const dataset = Number.isInteger(index) ? dataState.getAllDatasets()[index] : null;
+	if (dataset) panelState.refreshSourcePlacements(dataset.id, { freeze: true, notify: false });
+	dataState.removeDataset(index);
+	if (dataset) panelState.refreshSourcePlacements(dataset.id);
 }
 
 /**
@@ -239,7 +243,12 @@ export function removeDataset(index) {
  * @fires STATE_EVENTS.DATASET_CONFIG_UPDATED
  */
 export function updateActiveDatasetConfig(updates) {
-	return dataState.updateActiveDatasetConfig(updates);
+	const dataset = dataState.getActiveDataset();
+	const previousFilter = JSON.stringify(dataset?.chartConfig?.globalFilter);
+	dataState.updateActiveDatasetConfig(updates);
+	if (dataset && previousFilter !== JSON.stringify(dataset.chartConfig.globalFilter)) {
+		panelState.refreshSourcePlacements(dataset.id);
+	}
 }
 
 /**
@@ -257,7 +266,9 @@ export function setActiveDatasetColumnSelection(columnNames) {
 
 /** Apply a currency format, preserving numeric values and rejecting mixed currencies. */
 export function setDatasetColumnCurrency(datasetId, columnName, options) {
-	return dataState.setDatasetColumnCurrency(datasetId, columnName, options);
+	const result = dataState.setDatasetColumnCurrency(datasetId, columnName, options);
+	if (result.ok) panelState.refreshSourcePlacements(datasetId);
+	return result;
 }
 
 /**
@@ -455,6 +466,21 @@ export function assignChartToPanelBlockSlot(blockId, slotId, chartId) {
 	return panelState.assignChartToPanelBlockSlot(blockId, slotId, chartId);
 }
 
+/** Read-only effective snapshot, follow flag, and source availability for a slot. */
+export function getPanelPlacement(blockId, slotId) {
+	return panelState.getPanelPlacement(blockId, slotId);
+}
+
+/** Follow the original source, or freeze its current result. Unavailable sources are a no-op. */
+export function setPanelPlacementFollowGlobalFilter(blockId, slotId, enabled) {
+	return panelState.setPanelPlacementFollowGlobalFilter(blockId, slotId, enabled);
+}
+
+/** Atomically move/swap assignments together with their captures and follow settings. */
+export function movePanelPlacement(sourceBlockId, sourceSlotId, targetBlockId, targetSlotId) {
+	return panelState.movePanelPlacement(sourceBlockId, sourceSlotId, targetBlockId, targetSlotId);
+}
+
 // ─── UI domain ──────────────────────────────────────────────────────────
 
 /**
@@ -567,5 +593,6 @@ export function applyStateSnapshot({ data, panel, ui } = {}) {
 		}
 	}
 
+	appState.panel.blocks = reconcilePlacementBlocks(appState.panel.blocks, appState.panel.charts, appState.data.datasets);
 	emitStateChange(STATE_EVENTS.STATE_HYDRATED);
 }

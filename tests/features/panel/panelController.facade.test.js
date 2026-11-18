@@ -12,7 +12,8 @@ const mocks = vi.hoisted(() => ({
       CHART_SNAPSHOT_ADDED: 'chart-added',
       CHART_SNAPSHOT_REMOVED: 'chart-removed',
       PANEL_CLEARED: 'panel-cleared',
-      PANEL_BLOCK_SLOT_ASSIGNED: 'panel-block-slot-assigned',
+      PANEL_PLACEMENTS_UPDATED: 'panelPlacementsUpdated',
+			PANEL_BLOCK_SLOT_ASSIGNED: 'panel-block-slot-assigned',
       PANEL_BLOCK_ADDED: 'panel-block-added',
       PANEL_BLOCK_REMOVED: 'panel-block-removed',
       PANEL_BLOCK_MOVED: 'panel-block-moved',
@@ -31,6 +32,9 @@ const mocks = vi.hoisted(() => ({
     setPanelBlockTemplate: vi.fn(),
     updatePanelBlockBorder: vi.fn(),
     assignChartToPanelBlockSlot: vi.fn(),
+		setPanelPlacementFollowGlobalFilter: vi.fn(),
+		movePanelPlacement: vi.fn(),
+		getPanelPlacement: vi.fn(() => null),
     updatePanelBlockProportions: vi.fn(),
     updatePanelBlockHeight: vi.fn(),
     repairPanelSlotReferences: vi.fn(),
@@ -39,6 +43,7 @@ const mocks = vi.hoisted(() => ({
   panelView: {
     renderSidebarPanel: vi.fn(),
     renderCanvasPanel: vi.fn(),
+	refreshPanelPlacements: vi.fn(),
   },
   svgExporter: {
     exportPanelLayoutSvg: vi.fn(),
@@ -83,7 +88,7 @@ describe('panelController facade branches', () => {
     panelController.initPanelController(firstFeedback);
     panelController.initPanelController(latestFeedback);
 
-    expect(mocks.appState.onStateChange).toHaveBeenCalledTimes(11);
+    expect(mocks.appState.onStateChange).toHaveBeenCalledTimes(12);
     const registeredEvents = mocks.appState.onStateChange.mock.calls.map(([event]) => event);
     expect(registeredEvents).toContain('panel-cleared');
 

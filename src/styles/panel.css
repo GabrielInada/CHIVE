@@ -103,6 +103,7 @@
 }
 
 .panel-item-preview {
+  pointer-events: none;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
   background: var(--surface);
@@ -420,6 +421,8 @@
 }
 
 .panel-slot {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   position: relative;
   border: 1px solid var(--border);
@@ -482,6 +485,54 @@
   height: 100%;
 }
 
+.panel-slot > .panel-chart-container {
+    flex: 1;
+    height: auto;
+}
+
+.panel-slot-controls {
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    z-index: 2;
+}
+
+.panel-follow-lock {
+    display: grid;
+    place-items: center;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--error-medium);
+    cursor: pointer;
+}
+
+.panel-follow-lock::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    background: currentColor;
+    mask: url('../icons/lock-closed.svg') center / contain no-repeat;
+    pointer-events: none;
+    forced-color-adjust: none;
+}
+
+.panel-follow-lock[aria-pressed='false']::before {
+    mask-image: url('../icons/lock-open.svg');
+}
+
+.panel-follow-lock:hover {
+    border-color: currentColor;
+}
+
+.panel-follow-lock[aria-disabled='true'] {
+    color: var(--muted);
+    cursor: default;
+}
+
 .panel-chart-container:has(.pie-chart-scrollable) {
   display: block;
   overflow: auto;
@@ -530,7 +581,8 @@
   border-color: var(--error-border-muted);
 }
 
-.panel-block:has(.panel-block-controls:not([open])) .panel-slot-clear {
+.panel-block:has(.panel-block-controls:not([open])) .panel-slot-clear,
+.panel-block:has(.panel-block-controls:not([open])) .panel-slot-controls {
   display: none;
 }
 
@@ -727,6 +779,7 @@
   .panel-slot-clear,
   .panel-item-remove,
   .panel-slot-expand,
+  .panel-follow-lock,
   .panel-block-header,
   .btn-panel-export,
   .panel-block-template,

@@ -4,13 +4,20 @@ import { t } from '../../../services/i18nService.js';
 import { showNativeModal } from '../../../ui/nativeDialog.js';
 import { mountSlot, teardownSlot } from '../slots/lifecycle.js';
 
+let refreshCurrent = null;
+
+/** Called by the panel render owner, without a second subscription inside the view. */
+export function refreshExpandedChart() {
+	refreshCurrent?.();
+}
+
 /**
  * Open a viewport-sized chart with native keyboard dismissal and focus return.
  * Reuses slot lifecycle ownership for resize, simulations and WebGL disposal.
  *
  * @param {import('../../../types.js').ChartSnapshot | null} snapshot
  */
-export function openExpandedChart(snapshot) {
+export function openExpandedChart(snapshot, { resolveSnapshot } = {}) {
 	if (!snapshot || document.querySelector('.chart-expanded-dialog[open]')) return;
 	const dialog = document.createElement('dialog');
 	dialog.className = 'app-dialog chart-expanded-dialog';
@@ -40,6 +47,7 @@ export function openExpandedChart(snapshot) {
 	const close = () => {
 		if (closed) return;
 		closed = true;
+		refreshCurrent = null;
 		teardownSlot(container);
 		lifecycle.close();
 		if (invoker?.isConnected && (window.innerWidth !== viewport.width || window.innerHeight !== viewport.height)) {
@@ -55,4 +63,14 @@ export function openExpandedChart(snapshot) {
 	// Also release resources if the browser closes the native dialog directly.
 	dialog.addEventListener('close', close, { once: true });
 	mountSlot(container, { ...snapshot, config: { ...snapshot.config, customTitle: '' } });
+	refreshCurrent = () => {
+		if (!resolveSnapshot) return;
+		const next = resolveSnapshot();
+		if (!next) { close(); return; }
+		if (next.id === snapshot.id && next.config === snapshot.config
+			&& next.dataSnapshot === snapshot.dataSnapshot && next.columnsSnapshot === snapshot.columnsSnapshot) return;
+		snapshot = next;
+		title.textContent = snapshot.config?.customTitle || snapshot.name || t('chive-chart-expand');
+		mountSlot(container, { ...snapshot, config: { ...snapshot.config, customTitle: '' } });
+	};
 }

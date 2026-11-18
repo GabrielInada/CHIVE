@@ -309,6 +309,7 @@
  * @property {string} id - Pattern `block-<n>`. Monotonic; reused across reloads via `panel.nextBlockId`.
  * @property {PanelTemplateId} templateId
  * @property {Object<string, number>} slots - Map of `slotId` (e.g. `'slot-1'`) → `ChartSnapshot.id`.
+ * @property {Object<string, PanelPlacement>} [placements] - Independent slot captures; missing entries use the original frozen chart.
  * @property {PanelBlockProportions} proportions
  * @property {number | null} heightPx - Pixel height; `null` means auto (template default).
  * @property {boolean} borderEnabled
@@ -332,10 +333,18 @@
  * edits and survive source-dataset removal. The snapshot is not deep-frozen;
  * facade getters expose live references that callers must treat as read-only.
  *
+ * @typedef {Object} PanelPlacement
+ * @property {boolean} followGlobalFilter
+ * @property {Array<Object<string, *>>} dataSnapshot - Detached latest filtered rows; replaced on refresh.
+ * @property {ColumnSpec[]} columnsSnapshot - Detached latest source column metadata.
+ */
+
+/**
  * @typedef {Object} ChartSnapshot
  * @property {number} id - Monotonic; assigned by `addChartSnapshot`.
  * @property {string} name - Sanitized title, max 100 chars.
  * @property {ChartTypeKey | null} type
+ * @property {string | null} [sourceDatasetId] - Stable original dataset ID; never inferred for older charts.
  * @property {Object | null} config - Production capture: structured clone of `chartConfig[type]`.
  * @property {Array<Object<string, *>>} dataSnapshot - Production capture: structured clone of the rows used.
  * @property {ColumnSpec[]} columnsSnapshot - Production capture: structured clone of the dataset columns.
@@ -405,7 +414,7 @@
  *   | 'chartAdded' | 'chartRemoved' | 'panelCleared'
  *   | 'panelBlockAdded' | 'panelBlockRemoved' | 'panelBlockMoved'
  *   | 'panelBlockProportionsUpdated' | 'panelBlockHeightUpdated'
- *   | 'panelBlockBorderUpdated' | 'panelBlockTemplateChanged' | 'panelBlockSlotAssigned'
+ *   | 'panelBlockBorderUpdated' | 'panelBlockTemplateChanged' | 'panelBlockSlotAssigned' | 'panelPlacementsUpdated'
  *   | 'sidebarModeChanged' | 'previewRowsChanged'
  *   | 'stateHydrated' | '*'
  * )} StateEventType

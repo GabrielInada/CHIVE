@@ -23,6 +23,7 @@ const TRACKED_GETTERS = new Set([
 	'getAllDatasets',
 	'getPanelCharts',
 	'getChartSnapshot',
+	'getPanelPlacement',
 	'getPanelBlocks',
 	'getState',
 	'getPersistenceStateView',
