@@ -147,8 +147,7 @@
   width: auto;
 }
 
-/* Screen-reader-only text (aria-describedby targets for interactive
-   canvases). Kept here while canvas charts are its only consumer. */
+/* Screen-reader-only text, including chart instructions and control descriptions. */
 .visually-hidden {
   position: absolute;
   width: 1px;

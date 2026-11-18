@@ -491,38 +491,44 @@
 }
 
 .panel-slot-controls {
-    flex: none;
-    max-height: 45%;
-    overflow: auto;
-    padding: 0 var(--space-3) var(--space-2);
-    padding-inline-end: 50px;
-    border-top: 1px solid var(--border);
-    background: var(--bg);
-    cursor: default;
-    font-size: var(--font-size-sm);
+    position: absolute;
+    left: 6px;
+    bottom: 6px;
+    z-index: 2;
 }
 
-.panel-follow-label {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    min-height: 44px;
+.panel-follow-lock {
+    display: grid;
+    place-items: center;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+    color: var(--error-medium);
     cursor: pointer;
 }
 
-.panel-follow-label input {
-    flex: none;
-    margin: 0;
+.panel-follow-lock::before {
+    content: '';
+    width: 18px;
+    height: 18px;
+    background: currentColor;
+    mask: url('../icons/lock-closed.svg') center / contain no-repeat;
+    pointer-events: none;
+    forced-color-adjust: none;
 }
 
-.panel-follow-help {
-    margin: 0;
-    color: var(--muted);
-    overflow-wrap: anywhere;
-    font-size: var(--font-size-xs);
+.panel-follow-lock[aria-pressed='false']::before {
+    mask-image: url('../icons/lock-open.svg');
 }
 
-.panel-follow-label:has(input:disabled) {
+.panel-follow-lock:hover {
+    border-color: currentColor;
+}
+
+.panel-follow-lock[aria-disabled='true'] {
     color: var(--muted);
     cursor: default;
 }
@@ -773,6 +779,7 @@
   .panel-slot-clear,
   .panel-item-remove,
   .panel-slot-expand,
+  .panel-follow-lock,
   .panel-block-header,
   .btn-panel-export,
   .panel-block-template,

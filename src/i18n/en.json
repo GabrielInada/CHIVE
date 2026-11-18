@@ -629,8 +629,10 @@
 
 	"chive-about-page-title": "About: CHIVE",
 	"chive-footer-copyright": "© 2026 CHIVE. All rights reserved.",
-    "chive-panel-follow-filter": "Follow global filter",
-    "chive-panel-follow-source": "Source: $1. Turn off to keep the current view.",
+    "chive-panel-lock-view": "Lock chart to current view",
+    "chive-panel-follow-locked": "Locked: keeps the current view. Unlock to follow the global filter.",
+    "chive-panel-follow-unlocked": "Unlocked: follows the global filter. Lock to keep the current view.",
+    "chive-panel-follow-source": "Source: $1.",
     "chive-panel-follow-missing": "Source unavailable. This chart keeps its last view.",
     "chive-panel-follow-unlinked": "To follow a filter, add this chart again from Visualizations."
 }

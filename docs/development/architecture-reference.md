@@ -584,8 +584,12 @@ rows and zero matches stays empty. Disabling following captures the current resu
 removing a source preserves it and disables following.
 
 Sidebar previews render the original capture inside an inert subtree while their
-parent remains draggable and removable. Placement updates preserve the checkbox
-DOM and focus, replace render inputs through slot lifecycle, and refresh any
+parent remains draggable and removable. A compact red lock toggle is closed
+when the placement is frozen and open when following. Its pressed state means
+locked; tooltips describe the behavior and source. Unavailable locks remain
+focusable with `aria-disabled` so their explanation is accessible, but ignore
+activation. Placement updates preserve the lock DOM and focus, replace render
+inputs through slot lifecycle, and refresh any
 expanded view. Deferred slots keep the new input until visible or exported. SVG
 exports position chart content using its container geometry, excluding controls.
 

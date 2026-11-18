@@ -40,24 +40,34 @@ afterEach(() => {
 });
 
 describe('panel placement controls and rendering', () => {
-	it('keeps a native labeled checkbox focused and the sidebar unchanged after toggles and filters', () => {
-		const checkbox = slot('slot-1').querySelector('input');
+	it('keeps the lock focused and the sidebar unchanged while unlocking and freezing the current view', () => {
+		const lock = slot('slot-1').querySelector('[data-panel-follow]');
 		const sidebar = document.querySelector('.panel-item');
-		expect(checkbox.type).toBe('checkbox');
-		expect(checkbox.labels).toHaveLength(1);
-		expect(checkbox.checked).toBe(false);
-		expect(checkbox.disabled).toBe(false);
-		expect(document.getElementById(checkbox.getAttribute('aria-describedby')).textContent).toContain('Sales.csv');
-		checkbox.focus();
-		checkbox.click();
+		expect(lock.tagName).toBe('BUTTON');
+		expect(lock.type).toBe('button');
+		expect(lock.getAttribute('aria-label')).toBe('Lock chart to current view');
+		expect(lock.getAttribute('aria-pressed')).toBe('true');
+		expect(lock.getAttribute('aria-disabled')).toBe('false');
+		expect(lock.title).toContain('Locked: keeps the current view.');
+		expect(document.getElementById(lock.getAttribute('aria-describedby')).textContent).toContain('Sales.csv');
+		lock.focus();
+		lock.click();
 		filterSouth();
-		expect(document.activeElement).toBe(checkbox);
-		expect(checkbox.checked).toBe(true);
+		expect(document.activeElement).toBe(lock);
+		expect(lock.getAttribute('aria-pressed')).toBe('false');
+		expect(lock.title).toContain('Unlocked: follows the global filter.');
 		expect(document.querySelector('.panel-item')).toBe(sidebar);
 		expect(mountSlot).not.toHaveBeenCalled();
 		const live = updateSlotSnapshot.mock.calls.filter(([element]) => element === slot('slot-1').querySelector('.panel-chart-container')).at(-1)[1];
 		expect(live.dataSnapshot).toEqual([{ region: 'South' }]);
-		expect(slot('slot-2').querySelector('input').checked).toBe(false);
+		expect(slot('slot-2').querySelector('[data-panel-follow]').getAttribute('aria-pressed')).toBe('true');
+		lock.click();
+		state.updateActiveDatasetConfig({ globalFilter: { rules: [], combine: 'AND' } });
+		expect(lock.getAttribute('aria-pressed')).toBe('true');
+		expect(state.getPanelPlacement(blockId, 'slot-1').snapshot.dataSnapshot).toEqual([{ region: 'South' }]);
+		lock.click();
+		expect(state.getPanelPlacement(blockId, 'slot-1').snapshot.dataSnapshot).toEqual([{ region: 'North' }, { region: 'South' }]);
+		expect(document.activeElement).toBe(lock);
 	});
 
 	it('keeps previews inert while drag and removal remain available', () => {
@@ -74,22 +84,31 @@ describe('panel placement controls and rendering', () => {
 	});
 
 	it('updates the expanded view and freezes it when the source disappears', () => {
-		slot('slot-1').querySelector('input').click();
+		const lock = slot('slot-1').querySelector('[data-panel-follow]');
+		lock.click();
 		slot('slot-1').querySelector('.panel-slot-expand').click();
 		filterSouth();
 		expect(mountSlot.mock.calls.at(-1)[1].dataSnapshot).toEqual([{ region: 'South' }]);
 		state.removeDataset(0);
-		expect(slot('slot-1').querySelector('input').disabled).toBe(true);
-		expect(slot('slot-1').querySelector('input').checked).toBe(false);
+		expect(lock.getAttribute('aria-disabled')).toBe('true');
+		expect(lock.getAttribute('aria-pressed')).toBe('true');
+		expect(lock.title).toContain('Source unavailable');
+		lock.click();
+		expect(state.getPanelPlacement(blockId, 'slot-1').followGlobalFilter).toBe(false);
 		expect(mountSlot.mock.calls.at(-1)[1].dataSnapshot).toEqual([{ region: 'South' }]);
 	});
 
 	it('explains legacy charts and routes slot drops through an atomic swap', () => {
 		const legacy = state.addChartSnapshot({ name: 'Old chart' });
 		state.assignChartToPanelBlockSlot(blockId, 'slot-2', legacy);
-		expect(slot('slot-2').querySelector('input').disabled).toBe(true);
+		const legacyLock = slot('slot-2').querySelector('[data-panel-follow]');
+		expect(legacyLock.getAttribute('aria-disabled')).toBe('true');
 		expect(slot('slot-2').querySelector('.panel-follow-help').textContent).toContain('Visualizations');
-		slot('slot-1').querySelector('input').click();
+		legacyLock.focus();
+		expect(document.activeElement).toBe(legacyLock);
+		legacyLock.click();
+		expect(state.getPanelPlacement(blockId, 'slot-2').followGlobalFilter).toBe(false);
+		slot('slot-1').querySelector('[data-panel-follow]').click();
 		const event = new Event('drop', { cancelable: true });
 		Object.defineProperty(event, 'dataTransfer', { value: { getData: key => ({
 			'text/panel-chart-id': String(chartId), 'text/panel-slot-id': 'slot-1', 'text/panel-block-id': blockId,
